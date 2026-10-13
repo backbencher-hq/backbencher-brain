@@ -88,7 +88,43 @@ function stringContent(node: any): string | undefined {
   return out
 }
 
-/** The first `string` child of a node, which is where a specifier lives. */
+/**
+ * Is this node a STATIC module specifier?
+ *
+ * A `string` is one. A `template_string` is one only when it has NO
+ * `template_substitution` child — a fact, not a convention, proven against
+ * tree-sitter-typescript 0.23.2 on 2026-10-09: `` `./a` `` parses to
+ * `template_string{string_fragment}` and `` `./${x}` `` to
+ * `template_string{string_fragment,template_substitution}`, while a template in
+ * an `import ... from` position is a parse error outright (the grammar requires
+ * a string there).
+ *
+ * A computed specifier names no module: `m:${x}` is not a target any injector
+ * can serve or any exporter can publish, so it is not an edge. Both halves of
+ * this rule were WRONG in this file before 2026-10-09, in opposite directions:
+ * `specifierOf` below refused even literal templates because it tested
+ * `x.type !== "string"` — true of `string_fragment`, the only child a literal
+ * template has — and the dynamic `import()`/`require()` branch in
+ * `deriveImportsTruth` accepted computed ones. The DERIVATION instrument
+ * (ts-deriv-oracle-audit.ts) exposed the second half as 2 MISSING `imports` rows
+ * on a 12-file draw: `data:text/javascript;charset=utf-8,${encodeURIComponent(
+ * enumSource)}:*` and `${PACKAGE}/${property}/code-points.js:*`. Both are
+ * aliases for rows the analyzer already refused by the same rule
+ * (real-typescript-analyzer.ts, `literalModulePath`), so the fix makes this
+ * oracle refuse them for the language's reason rather than copy a ruling.
+ */
+function isStaticSpecifier(node: any): boolean {
+  if (!node) return false
+  if (node.type === "string") return true
+  if (node.type !== "template_string") return false
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const c = node.namedChild(i)
+    if (c && c.type === "template_substitution") return false
+  }
+  return true
+}
+
+/** The first static-specifier child of a node, which is where a module path lives. */
 function specifierOf(node: any): any {
   const stack: any[] = [node]
   while (stack.length > 0) {
@@ -96,14 +132,8 @@ function specifierOf(node: any): any {
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
       if (!c) continue
-      if (c.type === "string") return c
-      if (c.type === "template_string") {
-        // A template specifier with no substitution IS a literal path; one with a
-        // substitution is computed, and `m:${x}` names nothing anybody can join.
-        const hasSub = c.namedChildren?.some((x: any) => x && x.type !== "string")
-        if (!hasSub) return c
-        return null
-      }
+      if (isStaticSpecifier(c)) return c
+      if (c.type === "template_string") return null
       stack.push(c)
     }
   }
@@ -184,9 +214,9 @@ export function deriveImportsTruth(root: any, moduleLeaf: string): ImportsExport
       if (isDynamic || isRequire) {
         const args = n.childForFieldName("arguments")
         const first = args && args.namedChildCount > 0 ? args.namedChild(0) : null
-        const modulePath = first && (first.type === "string" || first.type === "template_string")
-          ? stringContent(first)
-          : undefined
+        // A computed specifier (`require(`./${x}`)`, `import(`data:...,${y}`)`) has
+        // no static module path, so it derives no row — see isStaticSpecifier.
+        const modulePath = isStaticSpecifier(first) ? stringContent(first) : undefined
         if (modulePath) add(`${modulePath}:*`)
       }
     }
