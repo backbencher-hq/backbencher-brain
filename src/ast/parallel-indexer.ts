@@ -7723,8 +7723,16 @@ export async function runPostProcessing(
 
 /** One cross-file edge INTO a to-be-re-parsed file, captured before storeResults deletes it. */
 export interface InEdgeSnapshotRow {
-  source_symbol_id: string
-  target_name: string
+  /** UNION (main): the row's own primary key — the re-point matches on it, and without it a repair can
+   *  only re-insert a copy (which is what this branch's old repair did). */
+  id: string
+  source_symbol_id: string | null
+  /** UNION (main): the symbol the row pointed at when it was CAPTURED. Pass 1 restores this exactly,
+   *  instead of re-resolving by name — a name match can pick a DIFFERENT same-named symbol. */
+  target_symbol_id: string | null
+  /** What to re-point by when that symbol no longer exists: the row's own `target_external` spelling,
+   *  or the target symbol's name when it carried no spelling (some resolved rows have none). */
+  target_name: string | null
   relationship_type: string
   confidence: number
   context: string | null
@@ -7746,20 +7754,31 @@ export async function snapshotInEdges(projectId: ProjectID, fileIds: string[]): 
   for (let i = 0; i < fileIds.length; i += CHUNK) {
     const chunk = fileIds.slice(i, i + CHUNK)
     const placeholders = chunk.map(() => "?").join(",")
+    // UNION (main): the capture carries the row's ID and its captured TARGET POINTER, and it no
+    // longer filters out rows whose `target_external` is empty — it falls back to the target
+    // symbol's NAME for those. Main's measurement of why: of the rows that changed payload after a
+    // re-index, some "existed nowhere at all" precisely because this filter dropped them.
+    //
+    // AND THE COMMENT LIVES OUT HERE ON PURPOSE: a JS `//` line inside a SQL template literal is not
+    // a comment to either parser — tsc reported TS1005 on it, and SQLite would have rejected the
+    // statement. This is the same class as the backtick-in-a-template-literal hazard that has cost
+    // this fleet several runs; the compiler caught this one because it is inside a .ts file's string.
     const part = rawDb.prepare(`
-      SELECT r.source_symbol_id, r.target_external AS target_name, r.relationship_type,
-             r.confidence, r.context, r.line_number, r.metadata
+      SELECT r.id, r.source_symbol_id, r.target_symbol_id,
+             COALESCE(NULLIF(r.target_external, ''), t.name) AS target_name,
+             r.relationship_type, r.confidence, r.context, r.line_number, r.metadata
       FROM brain_relationship r
       JOIN brain_symbol t ON t.id = r.target_symbol_id
       WHERE r.project_id = ?
         AND t.file_id IN (${placeholders})
         AND r.source_symbol_id NOT IN (SELECT id FROM brain_symbol WHERE file_id IN (${placeholders}))
-        AND r.target_external IS NOT NULL AND r.target_external != ''
     `).all(projectId, ...chunk, ...chunk) as any[]
     for (const r of part) {
       rows.push({
-        source_symbol_id: r.source_symbol_id,
-        target_name: r.target_name,
+        id: String(r.id),
+        source_symbol_id: r.source_symbol_id ?? null,
+        target_symbol_id: r.target_symbol_id ?? null,
+        target_name: r.target_name ?? null,
         relationship_type: r.relationship_type,
         confidence: typeof r.confidence === "number" ? r.confidence : 0.5,
         context: r.context ?? null,
@@ -7772,50 +7791,197 @@ export async function snapshotInEdges(projectId: ProjectID, fileIds: string[]): 
 }
 
 /**
- * Restore snapshot edges as unresolved rows (target_external set, target NULL)
- * so the resolution phase re-resolves them against the fresh symbol table.
- * Deterministic ids make re-runs idempotent (INSERT OR IGNORE).
+ * UNION (src/ast batch): this function is MAIN's, PORTED WHOLE, because the two sides are two DESIGNS
+ * of the same repair rather than two edits of one:
+ *
+ *   THIS BRANCH  re-INSERTED the snapshot row as unresolved (target NULL, `:m40` id suffix) and let the
+ *                resolution phase re-resolve it BY NAME.
+ *   MAIN         UPDATEs the surviving row in place: pass 1 restores the captured target POINTER
+ *                (exact, never by name), pass 2 re-binds by name ONLY for rows whose symbol is
+ *                genuinely gone, within the touched files. Its own doc calls this branch's shape
+ *                "the old repair" and records why it was replaced: measured with
+ *                `script/m14/verify-store-path-parity.ts`, **187 of 10,171 rows stored a different
+ *                payload after a re-index, 185 of them is_cross_file** — "a name match can pick a
+ *                DIFFERENT same-named symbol, which is the divergence this change exists to remove".
+ *
+ * MAIN'S DOC IS KEPT VERBATIM BELOW, and the caller was ported with it (fileIds/out).
+ */
+
+/**
+ * Put back the target POINTER of every snapshot row that the store re-stored
+ * over. The row itself was never deleted (see the note in `storeResults`), so
+ * this is an UPDATE of the rows that are still there, in two passes:
+ *
+ *   1. EXACT — the row pointed at symbol S, and S is still in the index. This is
+ *      the ordinary case (an unchanged file's symbol ids are a function of file,
+ *      name and line), and it must NOT go through name resolution: a name match
+ *      can pick a DIFFERENT same-named symbol, which is the divergence this
+ *      change exists to remove. Measured before it existed
+ *      (`script/m14/verify-store-path-parity.ts`): 187 of 10,171 rows stored a
+ *      different payload after a re-index, 185 of them `is_cross_file` and 112
+ *      `target`, and 652 rows existed nowhere at all.
+ *
+ *   2. BY NAME — only for the rows whose symbol is genuinely gone (a symbol
+ *      really did move or vanish in the re-stored file). These re-bind within
+ *      the touched files only, by qualified_name first then name, lowest id
+ *      breaking ties, matching the store's own `resolveTargetStmt` proximity
+ *      order. When `fileIds` is not given, this pass is skipped and such rows
+ *      are reported as still-unresolved rather than guessed at.
+ *
+ * M59/#821 stays enforced, and it MOVES. A legacy index's stored `line_number =
+ * 0` used to be healed on the way back in because the old repair re-INSERTED the
+ * row (the inserted copy carried NULL). Nothing is inserted now, so the heal is a
+ * statement of its own — `healLegacyZeroLines` below — over EVERY captured row,
+ * not just the re-pointed ones: a row whose target symbol is gone never reaches
+ * either UPDATE, and the old shape healed it as a side effect of inserting. See
+ * `script/m59/verify-legacy-zero-heal.ts`.
+ *
+ * Returns the number of rows re-pointed. `stillUnresolved` and
+ * `healedZeroLines` are written to `opts.out` so a caller can report the
+ * remainder and the heal instead of hiding them.
  */
 // M59/#821: exported for the legacy-zero-heal gate (verify-legacy-zero-heal.ts) —
-// the repair path is the one place a pre-M59 index's stored 0 can re-enter the DB.
-export async function repairInEdges(projectId: ProjectID, snapshot: InEdgeSnapshotRow[]): Promise<number> {
+// the repair path is the one place a pre-M59 index's stored 0 could re-enter the DB.
+export async function repairInEdges(
+  projectId: ProjectID,
+  snapshot: InEdgeSnapshotRow[],
+  opts: {
+    fileIds?: string[]
+    out?: { stillUnresolved?: number; healedZeroLines?: number; importResolvedInEdges?: number }
+  } = {},
+): Promise<number> {
   if (snapshot.length === 0) return 0
   const rawDb = await BrainDatabase.getRawInstance(projectId)
   const now = Date.now()
-  const insert = rawDb.prepare(`
-    INSERT OR IGNORE INTO brain_relationship
-    (id, project_id, source_symbol_id, target_symbol_id, source_external, target_external, relationship_type, confidence, context, line_number, is_cross_file, is_cross_language, bridge_mechanism, metadata, time_created, time_updated)
-    VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, 1, 0, NULL, ?, ?, ?)
-  `)
-  let repaired = 0
-  const tx = rawDb.transaction((rows: InEdgeSnapshotRow[]) => {
-    // Batched multi-row INSERT (50 rows/statement): the per-run() overhead of
-    // single-row binds measured ~700ms for 12K rows on the A2 fixture — this
-    // pass sits on bb_edit/LSP's interactive path, so bind overhead matters.
-    for (let i = 0; i < rows.length; i += 50) {
-      const batch = rows.slice(i, i + 50)
-      const valuesSql = batch.map(() => "(?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, 1, 0, NULL, ?, ?, ?)").join(",")
-      const params: any[] = []
-      for (const r of batch) {
-        // M59/#821: snapshot rows from a LEGACY index may carry the old stored
-        // 0 ("unknown" written as a number). Re-storing it verbatim would let
-        // the class survive every reindex. Heal at the boundary: > 0 keeps the
-        // analyzer's line; 0/NULL/undefined becomes NULL. The id keeps the
-        // legacy `?? 0` component so re-runs stay idempotent with existing rows.
-        const ln = typeof r.line_number === "number" && r.line_number > 0 ? r.line_number : null
-        const id = `${r.source_symbol_id}:${r.relationship_type}:${r.target_name}:${r.line_number ?? 0}:m40`
-        // Idempotency: deterministic id + INSERT OR IGNORE (PK dedup).
-        params.push(id, projectId, r.source_symbol_id, r.target_name, r.relationship_type, r.confidence, r.context, ln, r.metadata, now, now)
-      }
-      rawDb.prepare(`
-        INSERT OR IGNORE INTO brain_relationship
-        (id, project_id, source_symbol_id, target_symbol_id, source_external, target_external, relationship_type, confidence, context, line_number, is_cross_file, is_cross_language, bridge_mechanism, metadata, time_created, time_updated)
-        VALUES ${valuesSql}
-      `).run(...params)
-      repaired += batch.length
+  rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _m40_inbound (rel_id TEXT PRIMARY KEY, target_id TEXT, target_name TEXT)`)
+  rawDb.run(`DELETE FROM _m40_inbound`)
+  const ins = rawDb.prepare(`INSERT OR IGNORE INTO _m40_inbound (rel_id, target_id, target_name) VALUES (?, ?, ?)`)
+  const tx0 = rawDb.transaction((rows: InEdgeSnapshotRow[]) => {
+    for (const r of rows) {
+      if (r.target_symbol_id) ins.run(r.id, r.target_symbol_id, r.target_name)
+      else ins.run(r.id, null, r.target_name)
     }
   })
-  tx(snapshot)
+  tx0(snapshot)
+
+  let repaired = 0
+  try {
+    // ── pass 1: exact ──────────────────────────────────────────────────────
+    // `s.id = i.target_id` is the guard that makes this exact: the row is only
+    // touched when the symbol it already pointed at is still in the index.
+    const exact = rawDb.prepare(`
+      UPDATE brain_relationship
+         SET target_symbol_id = i.target_id,
+             time_updated = ?
+        FROM _m40_inbound i
+        JOIN brain_symbol s ON s.id = i.target_id
+       WHERE brain_relationship.id = i.rel_id
+         AND brain_relationship.project_id = ?
+         AND brain_relationship.target_symbol_id IS NULL
+    `).run(now, projectId)
+    repaired += exact.changes
+
+    // ── pass 2: by name, inside the touched files only ──────────────────────
+    if (opts.fileIds && opts.fileIds.length > 0) {
+      rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _m40_touched (id TEXT PRIMARY KEY, name TEXT, qualified_name TEXT)`)
+      rawDb.run(`DELETE FROM _m40_touched`)
+      for (let i = 0; i < opts.fileIds.length; i += 500) {
+        const chunk = opts.fileIds.slice(i, i + 500)
+        const ph = chunk.map(() => "?").join(",")
+        rawDb.prepare(`INSERT OR IGNORE INTO _m40_touched (id, name, qualified_name)
+                       SELECT id, name, qualified_name FROM brain_symbol WHERE project_id = ? AND file_id IN (${ph})`).run(projectId, ...chunk)
+      }
+      // Same two-pass shape as the store's own name resolution: qualified name
+      // first (its rows win), bare name filling the rest, MIN(id) tie-break so
+      // the same input always yields the same target.
+      rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _m40_match (rel_id TEXT PRIMARY KEY, symbol_id TEXT)`)
+      rawDb.run(`DELETE FROM _m40_match`)
+      const matchFilter = `r.project_id = ? AND r.target_symbol_id IS NULL`
+      rawDb.prepare(`INSERT OR IGNORE INTO _m40_match (rel_id, symbol_id)
+        SELECT j.rel_id, MIN(j.symbol_id) FROM (
+          SELECT r.id AS rel_id, t.id AS symbol_id
+          FROM brain_relationship r JOIN _m40_inbound i ON i.rel_id = r.id
+          JOIN _m40_touched t ON t.qualified_name = i.target_name
+          WHERE ${matchFilter}
+        ) j GROUP BY j.rel_id`).run(projectId)
+      rawDb.prepare(`INSERT OR IGNORE INTO _m40_match (rel_id, symbol_id)
+        SELECT j.rel_id, MIN(j.symbol_id) FROM (
+          SELECT r.id AS rel_id, t.id AS symbol_id
+          FROM brain_relationship r JOIN _m40_inbound i ON i.rel_id = r.id
+          JOIN _m40_touched t ON t.name = i.target_name
+          WHERE ${matchFilter}
+        ) j GROUP BY j.rel_id`).run(projectId)
+      const byName = rawDb.prepare(`
+        UPDATE brain_relationship
+           SET target_symbol_id = m.symbol_id,
+               time_updated = ?
+          FROM _m40_match m
+         WHERE brain_relationship.id = m.rel_id
+           AND brain_relationship.project_id = ?
+           AND brain_relationship.target_symbol_id IS NULL
+      `).run(now, projectId)
+      repaired += byName.changes
+    }
+
+    // ── pass 3: the shared `<module>:<item>` resolver, scoped to the rows this
+    // call captured ────────────────────────────────────────────────────────
+    // A re-stored file's symbols MOVE (an inserted line shifts every id), so
+    // pass 1 cannot land (the id it captured is gone) and pass 2 cannot either
+    // when the row spells its target the way its own language writes an export:
+    // a JS/TS `imports` row spells `./module:name`, which is not any symbol's
+    // `name` or `qualified_name`. MEASURED (`js-repoint-miss-probe.ts`): a
+    // 5-file project whose hub gained a line lost all 6 of its inbound
+    // `imports` rows (14 → 10 edges into the hub) with `repairedInEdges = 8`, and
+    // A2 surfaced the same shape at scale — 3995 of 15994 in-edges lost, ALL of
+    // them this form. `resolveImportTargets` is the decider the full pass uses
+    // for it (M60/JD2), so this is a call, not a fourth copy of the rules; the
+    // id scope is what keeps a `--changed` run's writes inside its own scope.
+    //
+    // Skipped outright when no captured row carries a `:` spelling — the common
+    // (bare-name) case must not pay for a project-wide read it cannot use.
+    if (snapshot.some((r) => (r.target_name ?? "").includes(":"))) {
+      try {
+        const ids = new Set(snapshot.map((r) => r.id))
+        const imp = resolveImportTargets(rawDb as any, projectId, { onlyRowIds: ids })
+        if (imp.resolved > 0) repaired += imp.resolved
+        if (opts.out) opts.out.importResolvedInEdges = imp.resolved
+      } catch {
+        // A project without the import tables must not fail an index run over a
+        // relationship class that is a bonus; the remainder is counted below.
+      }
+    }
+
+    // ── M59/#821 heal — scoped to exactly the rows this call captured ───────
+    // A pre-M59 index holds rows stored with `line_number = 0`. The old repair
+    // healed them by re-inserting the row; nothing is inserted now, so the zero
+    // would have survived on every row that is NOT re-pointed (target symbol
+    // gone, spelling unmatched). `line_number = 0` is never a real line — the
+    // store's own contract is 1-based or NULL — so NULL is the honest value, and
+    // the heal is bounded to the captured population: a legacy zero on a row
+    // this run never touched is left for the run that does.
+    const healed = rawDb.prepare(`
+      UPDATE brain_relationship
+         SET line_number = NULL, time_updated = ?
+       WHERE project_id = ? AND line_number = 0
+         AND id IN (SELECT rel_id FROM _m40_inbound)
+    `).run(now, projectId)
+    // Reported through `opts.out`, not logged here: this function has no logger
+    // of its own (the caller's `_log` is call-scoped), and a module-level
+    // function must not reach for one — the first cut of this heal did, and the
+    // ReferenceError it threw after the UPDATEs left the caller's counters at
+    // zero while the DB was already changed. One writer, one reporter.
+    if (opts.out) opts.out.healedZeroLines = healed.changes
+
+    // What is left is the honest remainder: the row survives, its symbol is
+    // gone, and no symbol of the re-stored files answers to its spelling.
+    const left = rawDb.prepare(`
+      SELECT COUNT(*) c FROM brain_relationship r JOIN _m40_inbound i ON i.rel_id = r.id
+       WHERE r.project_id = ? AND r.target_symbol_id IS NULL
+    `).get(projectId) as any
+    if (opts.out) opts.out.stillUnresolved = Number(left?.c ?? 0)
+  } finally {
+    rawDb.run(`DELETE FROM _m40_inbound`)
+  }
   return repaired
 }
 
@@ -7906,12 +8072,18 @@ export async function runBoundedPostProcessing(
 
   // 1. in-edge repair
   let repairedInEdges = 0
+  const repairOut: { stillUnresolved?: number; healedZeroLines?: number } = {}
   {
     const _t = Date.now()
     try {
-      repairedInEdges = await repairInEdges(projectId, opts.snapshot)
+      // UNION (main): the repair UPDATEs surviving rows in place and needs the touched FILE ids for
+      // its by-name pass, plus an out-object so the remainder and the legacy-zero heal are REPORTED
+      // rather than hidden. This branch's caller passed neither.
+      repairedInEdges = await repairInEdges(projectId, opts.snapshot, { fileIds: touchedFileIds, out: repairOut })
       recordPhase("relationships", Date.now() - _t, "ok")
-      if (repairedInEdges > 0) _log.log(`  bounded: restored ${repairedInEdges} cross-file edge(s) into re-parsed files`)
+      if (repairedInEdges > 0) _log.log(`  bounded: re-pointed ${repairedInEdges} cross-file edge(s) into re-parsed files`)
+      if ((repairOut.stillUnresolved ?? 0) > 0) _log.log(`  bounded: ${repairOut.stillUnresolved} in-edge(s) survive unresolved (target symbol gone; named in the index report)`)
+      if ((repairOut.healedZeroLines ?? 0) > 0) _log.log(`  bounded: healed ${repairOut.healedZeroLines} legacy zero line(s) (M59/#821)`)
     } catch (e: any) {
       recordPhase("relationships", Date.now() - _t, "failed")
       log.warn("bounded in-edge repair failed", { error: e?.message })

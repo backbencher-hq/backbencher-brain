@@ -379,7 +379,19 @@ export interface ImportResolutionOutcome {
  * Resolve the `<module>:<item>` import edges this project left unresolved.
  * Safe to call when there is nothing to do; never throws into the caller.
  */
-export function resolveImportTargets(db: MinimalDb, projectId: string): ImportResolutionOutcome {
+export function resolveImportTargets(
+  db: MinimalDb,
+  projectId: string,
+  /**
+   * UNION (main): SCOPE THE SCAN TO THE ROWS THE CALLER NAMES. The in-edge repair
+   * (`parallel-indexer.ts` `repairInEdges`, ported from main with its target-pointer pass) captures
+   * the ids it is about to re-point and passes them here, so a `--changed` run's resolution writes
+   * stay inside its own scope instead of scanning the project. Main's other option,
+   * `onlySourceFileIds`, is not ported because nothing on this branch calls with it — a parameter
+   * with no caller is the wiring gap in reverse.
+   */
+  opts: { onlyRowIds?: Set<string> } = {},
+): ImportResolutionOutcome {
   const byReason: Record<string, number> = {}
   const bump = (k: string) => { byReason[k] = (byReason[k] ?? 0) + 1 }
   const out: ImportResolutionOutcome = { scanned: 0, resolved: 0, byReason }
@@ -451,6 +463,9 @@ export function resolveImportTargets(db: MinimalDb, projectId: string): ImportRe
     // must not fail an index run over a relationship class that is a bonus.
     return out
   }
+  // ...and the scope is applied HERE, after the inline load, so the rest of this function reads the
+  // same `rows` it always did and `out.scanned` reports the SCOPED count rather than the project's.
+  if (opts.onlyRowIds) rows = rows.filter((r) => opts.onlyRowIds!.has(r.id))
   out.scanned = rows.length
   if (rows.length === 0) return out
 
