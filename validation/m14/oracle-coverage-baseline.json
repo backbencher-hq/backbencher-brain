@@ -19,7 +19,9 @@
   ],
   "clojure": [
     "calls",
-    "references"
+    "contains",
+    "references",
+    "uses"
   ],
   "cpp": [
     "calls",
@@ -28,11 +30,11 @@
   "csharp": [
     "calls",
     "contains",
-    "references",
-    "uses",
     "extends",
     "implements",
-    "instantiates"
+    "instantiates",
+    "references",
+    "uses"
   ],
   "css": [
     "contains",
@@ -42,6 +44,11 @@
   ],
   "dart": [
     "calls",
+    "contains",
+    "exports",
+    "imports",
+    "overrides",
+    "references",
     "uses"
   ],
   "elixir": [
@@ -50,6 +57,7 @@
   ],
   "erlang": [
     "calls",
+    "contains",
     "references",
     "uses"
   ],
@@ -61,7 +69,11 @@
     "uses"
   ],
   "go": [
-    "calls"
+    "calls",
+    "contains",
+    "imports",
+    "references",
+    "uses"
   ],
   "groovy": [
     "calls",
@@ -84,6 +96,13 @@
     "calls",
     "contains",
     "exports",
+    "imports",
+    "references",
+    "uses"
+  ],
+  "julia": [
+    "calls",
+    "contains",
     "references",
     "uses"
   ],
@@ -104,6 +123,9 @@
   ],
   "php": [
     "calls",
+    "contains",
+    "exports",
+    "imports",
     "references",
     "uses"
   ],
@@ -116,6 +138,9 @@
   ],
   "python": [
     "calls",
+    "contains",
+    "exports",
+    "imports",
     "references",
     "uses"
   ],
@@ -125,15 +150,26 @@
   ],
   "rust": [
     "calls",
+    "contains",
     "references",
     "uses"
   ],
   "scala": [
-    "calls"
+    "calls",
+    "contains",
+    "references",
+    "uses"
   ],
   "scss": [
     "contains",
     "imports",
+    "references",
+    "uses"
+  ],
+  "solidity": [
+    "calls",
+    "contains",
+    "exports",
     "references",
     "uses"
   ],
@@ -146,11 +182,15 @@
     "uses"
   ],
   "toml": [
-    "contains"
+    "contains",
+    "imports",
+    "references"
   ],
   "typescript": [
     "calls",
-    "contains"
+    "contains",
+    "references",
+    "uses"
   ],
   "vue": [
     "calls"
