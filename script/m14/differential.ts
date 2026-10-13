@@ -486,7 +486,10 @@ export const LANG_REPOS: Record<string, string> = {
   c: "sqlite",
   cpp: "fmt",
   rust: "ripgrep",
-  go: "go-tools",
+  // The corpus directory is go_tools (underscore), not go-tools: every gate that asked for the
+  // hyphen form was reading a directory that has never existed, so the corpus leg passed
+  // VACUOUSLY — no error, no finding, nothing measured. (From origin/main.)
+  go: "go_tools",
   zig: "zig",
   csharp: "powershell",
   dart: "proxicall",
@@ -600,6 +603,18 @@ export const LANG_REPOS: Record<string, string> = {
 // release. Each repo is an independent git checkout under CORPUS_ROOT whose
 // pin is recorded in corpusPins.
 export const SECOND_CORPUS: Record<string, string> = {
+  // RESTORED FROM origin/main 2026-10-13 — five lanes a MERGE silently unregistered.
+  // `git log -S 'xml: "grails-core"'` shows the xml lane ADDED at dec3b3c65 and never removed, yet HEAD
+  // had no entry: the removal happened in a MERGE (16075a5a1, "merge(m48-recovery)"), and a merge commit's
+  // diff is not walked by a path-limited `-S`. Its first parent carries these lanes, its second does not,
+  // and the merge kept the second parent's copy. Ported here by key comparison against main: main's
+  // SECOND_CORPUS has 36 keys and HEAD's 31, HEAD has none that main lacks, so this loses nothing.
+  fsharp: "fsharp-data",
+  hcl: "tf-aws-components",
+  make: "consul",
+  nim: "pixie",
+  perl: "plack",
+
   // M14 (#288): html's second corpus is `sqlite` — 21 files, 21/21 of them FULL
   // hand-written documents (ext/wasm demos: tables, forms, framesets, canvas),
   // which is the property `svelte` and `vue-core` lack. A defect with zero
