@@ -1156,7 +1156,30 @@ interface TreeEdge { label: string; from: string; target: string }
 // independently-written core-HTML/SVG set is a component usage. The set
 // below is written from the HTML spec, deliberately NOT copied from the
 // analyzer's list, so disagreements surface as missing/unexplained.
-const ORACLE_HTML_TAGS = new Set(["a","abbr","address","area","article","aside","audio","b","base","bdi","bdo","blockquote","body","br","button","canvas","caption","cite","code","col","colgroup","data","datalist","dd","del","details","dfn","dialog","div","dl","dt","em","embed","fieldset","figcaption","figure","footer","form","h1","h2","h3","h4","h5","h6","head","header","hgroup","hr","html","i","iframe","img","input","ins","kbd","label","legend","li","link","main","map","mark","menu","meta","meter","nav","noscript","object","ol","optgroup","option","output","p","picture","pre","progress","q","rp","rt","ruby","s","samp","script","search","section","select","slot","small","source","span","strong","style","sub","summary","sup","table","tbody","td","template","textarea","tfoot","th","thead","time","title","tr","track","u","ul","var","video","wbr","svg","path","g","rect","circle","ellipse","line","polyline","polygon","text","tspan","use","defs","stop","view","linearGradient","radialGradient","clipPath","mask","pattern","marker","symbol"])
+const ORACLE_HTML_TAGS = new Set(["a","abbr","address","area","article","aside","audio","b","base","bdi","bdo","blockquote","body","br","button","canvas","caption","cite","code","col","colgroup","data","datalist","dd","del","details","dfn","dialog","div","dl","dt","em","embed","fieldset","figcaption","figure","footer","form","h1","h2","h3","h4","h5","h6","head","header","hgroup","hr","html","i","iframe","img","input","ins","kbd","label","legend","li","link","main","map","mark","menu","meta","meter","nav","noscript","object","ol","optgroup","option","output","p","picture","pre","progress","q","rp","rt","ruby","s","samp","script","search","section","select","slot","small","source","span","strong","style","sub","summary","sup","table","tbody","td","template","textarea","tfoot","th","thead","time","title","tr","track","u","ul","var","video","wbr","svg","path","g","rect","circle","ellipse","line","polyline","polygon","text","tspan","use","defs","stop","view","linearGradient","radialGradient","clipPath","mask","pattern","marker","symbol",
+
+// F30 (2026-10-12): the SVG FILTER module and the rest of the element vocabulary.
+//
+// This set is written from the HTML spec and deliberately NOT copied from the
+// analyzer's list, so a disagreement surfaces as a missing/unexplained row — but that
+// independence is about PROVENANCE, not about being allowed to disagree with the
+// specification. The SVG spec defines `<filter>` and 25 filter primitives as elements;
+// before this the oracle called every one of them a component usage, which is how the
+// vue lane's 377 dangling `instantiates` edges (6 primitives, 1,162-file draw) were
+// reproduced rather than caught. verify-cross-language-consistency.ts holds this set and
+// both analyzers' HTML_BUILTIN_TAGS IDENTICAL, so all three move together — by
+// construction, not by convention.
+"filter","feBlend","feColorMatrix","feComponentTransfer","feComposite",
+"feConvolveMatrix","feDiffuseLighting","feDisplacementMap","feDistantLight",
+"feDropShadow","feFlood","feFuncA","feFuncB","feFuncG","feFuncR",
+"feGaussianBlur","feImage","feMerge","feMergeNode","feMorphology","feOffset",
+"fePointLight","feSpecularLighting","feSpotLight","feTile","feTurbulence",
+"switch","foreignObject","desc","metadata","textPath","tref","mpath",
+"animate","animateMotion","animateTransform","set","discard","solidColor",
+"mesh","meshgradient","meshpatch","meshrow","hatch","hatchpath",
+"altGlyph","altGlyphDef","altGlyphItem","glyphRef","animateColor","cursor",
+"color-profile","font","font-face","font-face-format","font-face-name",
+"font-face-src","font-face-uri","glyph","hkern","missing-glyph","vkern"])
 function deriveVueComponentUsages(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
