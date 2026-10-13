@@ -583,7 +583,20 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     const low = f.toLowerCase()
     return exts.some((e) => low.endsWith("." + e))
   }
-  const sources = fs.readdirSync(dir).filter(f => matchesExt(f) && !f.endsWith(".expectation.json"))
+  // A SUPERSEDED EXPECTATION COPY IS STILL AN EXPECTATION, AND TREATING IT AS A SOURCE IS A
+  // PHANTOM FAILURE NO ANALYZER FIX CAN EVER CLEAR. Measured 2026-10-13: this checkout carries
+  // 224 `*.expectation.superseded-<sha>.json` copies. The old exclusion tested the SUFFIX
+  // `.expectation.json`, which `…/manifest/package.expectation.superseded-e7c9819f4.json` does
+  // not match — so on the `json` lane (whose own extension IS `json`) the superseded copy was
+  // discovered as a fixture SOURCE and then reported as "missing expectation file" for
+  // `…superseded-e7c9819f4.expectation.json`. That row is counted as a failure, was recorded
+  // into `fixture-baseline.json` as `json: 1`, and would have been enforced forever by the
+  // regression gate: a permanent false failure sitting under a real gate, which is worse than
+  // no gate. `.expectation.` (with both dots) covers `.expectation.json` AND every superseded
+  // copy, and cannot collide with a real source: none of the 48 lanes holds a fixture whose own
+  // name contains that infix.
+  const isExpectationFile = (f: string): boolean => f.includes(".expectation.")
+  const sources = fs.readdirSync(dir).filter(f => matchesExt(f) && !isExpectationFile(f))
 
   // A LANE WITH EXPECTATIONS BUT NO SOURCES IS AN ERROR, NOT A PASS. The paragraph above earned
   // this guard: zero discovered sources used to flow through as a clean run, so a runner/lane
@@ -617,7 +630,7 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue
     const members = fs.readdirSync(path.join(dir, entry.name))
-      .filter((f) => exts.some((e) => f.endsWith("." + e)) && !f.endsWith(".expectation.json"))
+      .filter((f) => exts.some((e) => f.endsWith("." + e)) && !isExpectationFile(f))
       .sort()
     if (members.length > 0) subDirs.set(entry.name, members)
   }
