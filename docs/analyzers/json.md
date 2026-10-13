@@ -479,3 +479,75 @@ store. **If the owner rules that no external claim may be unverifiable, json fai
 120 edges**, and the failure is structural: those targets are vocabulary URIs, and the only
 alternative to ruling them is to refute them. `r-lane` verifies independently before this is
 recorded.
+
+## 10. The 120-second file — and the PASS it was blocking (2026-10-13)
+
+Every number in §9 was measured over a population that CONTAINED one degraded file, and the
+incoming gate refuses a PASS over a degraded population — so json's 120-file stride read
+`44339 edges · resolved 44337 · amb 0 · unresolved 0 · extOK 2` and still **exited 1**:
+
+    incoming gate: 1 of 120 file(s) were NOT measured by the analyzer (regex fallback, or the
+    analyzer's own 2.0-basic-fallback), so a PASS over this population is not claimable:
+    .../otp/lib/stdlib/test/json_SUITE_data/n_structure_open_array_object.json
+
+**The file.** 50,000 unclosed `[` (`'[{"":' x 50,000`, 250,001 bytes). The pinned grammar
+error-recovers it into an ERROR root with **50,000 named children**; `parseFile` spent
+**349,705 ms** on it and returned **0 symbols**. The engine's 120 s analyzer timeout had fired
+at 120,000 ms and logged an abort — the call still returned only at 349,705 ms, so the timeout
+does not stop the work and cannot rescue a quadratic walk.
+
+**The cause, in one line.** `namedChild(i)` is **O(i)** in this binding, so a
+`for (i = 0; i < namedChildCount; i++)` loop over a node's children is **O(k^2)** — and this
+analyzer had fourteen of them.
+
+MEASURED on the 20,000-child ERROR root (synthetic `'[{"":' x 20,000`, production `parseFile`,
+2026-10-13):
+
+| access over 20,000 children | time |
+|---|---|
+| `for (i...) node.namedChild(i)` | **60,297 ms** |
+| one `node.namedChildren` read | **90 ms** |
+| cursor walk (`node.walk()`) | **84 ms** |
+| `nextNamedSibling` chain | **115,833 ms** (O(n) per step too) |
+
+| population | before | after |
+|---|---|---|
+| synthetic 8,000 levels | 6,014 ms | 1,649 ms |
+| synthetic 20,000 levels | 54,150 ms | 1,541 ms |
+| `n_structure_open_array_object.json` (50,000) | **349,705 ms · 0 symbols · DEGRADED** | **5,558 ms · 1 symbol · not degraded** |
+
+**The fix.** All fourteen index loops in `real-json-analyzer.ts` became one `namedChildren` read
+each (same nodes, same order); `pushArrayChildren` and `pushTopLevelValues` keep their index for
+`[i]` naming. **Behaviour-preserving, and the gate proves it**: the 120-file stride reads the
+SAME 44,339 edges / 44,337 resolved / extOK 2 before and after — the only column that moves is
+`degraded 1 -> 0`, which is the point.
+
+**Evidence.**
+- `validation/m14/fixtures/json/deep-tree-control.ts` — NEW, and it can FAIL: through the
+  engine's own parser it asserts both roots really are wide ERROR nodes (50,000 named children
+  on the corpus file, 20,000 on the synthetic), then through production `parseFile` that both
+  parse UN-DEGRADED, yield symbols, and finish under a bound (30 s / 60 s; measured 1.1 s /
+  2.4 s). Output: `measurements/deep-tree-control.txt` (`CONTROL PASS`, 10 checks).
+- `measurements/deep-tree-before.txt` · `deep-tree-after.txt` (the probe above) ·
+  `incoming-json-120-before.txt` (**exit 1**) · `incoming-json-120-after.txt` (**exit 0**) ·
+  `incoming-json-400-after.txt` (**exit 0** — 132,905 edges, all resolved, `degraded 0`,
+  `extOK 0`, `ext? 0`).
+- `bun run script/m14/run-fixtures.ts --lang json` -> **17/17**; `bun run
+  validation/m14/fixtures/json/mutants.ts` -> **20/20 caught, 0 survivors** — and the run
+  refreshed `validation/m14/results/json-lane-mutants.json`, whose committed copy still read
+  `total 19 / caught 19` while the registry had carried
+  `json/document-identity-not-project-scoped` since `222adbd65`: a mutant that was not RUN is
+  indistinguishable from a defect class with no mutant, and the artifact had been stale since
+  the commit that added it.
+
+**Why no mutant pins this.** The fix is behaviour-preserving — every symbol, edge and line is
+identical — so no output-shaped mutant can distinguish the revisions. What changed is
+termination, and the pin is the control above (a timing + degradation assertion with a 5x
+margin).
+
+**REPORTED, not fixed — the same accessor pattern in shared files and other lanes** (the
+measured price transfers; none of these is json's to edit): `engine.ts` (twelve sites,
+including the `:1340`–`:1542` block and `:2563`/`:2621`), `node-walk.ts:50`, `project-index.ts`
+(six sites), and the analyzers that walk their own error-recovered trees (`real-bash-analyzer.ts`
+among others). A loop over k children costs ~k^2/2 child-steps at ~3 ms per step; whether a
+given lane can absorb its own adversarial input is that lane's measurement to make.

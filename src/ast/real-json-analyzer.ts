@@ -285,8 +285,14 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           severity: "warning",
         })
       }
-      for (let i = node.namedChildCount - 1; i >= 0; i--) {
-        const child = node.namedChild(i)
+      // ONE READ, NOT ONE CALL PER INDEX. `namedChild(i)` is O(i) in this binding, so a loop
+      // over a node's children is O(k^2). MEASURED on the 20,000-child ERROR root the grammar
+      // recovers otp's `n_structure_open_array_object.json` into: the index loop 60.3 s, a
+      // single `namedChildren` read 90 ms, a cursor walk 84 ms — and `nextNamedSibling` is
+      // O(n) per step too (115.8 s for the same 20,000). Same nodes, same order, O(k).
+      const children = node.namedChildren ?? []
+      for (let i = children.length - 1; i >= 0; i--) {
+        const child = children[i]
         if (child) stack.push(child)
       }
     }
@@ -363,8 +369,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "object") {
         const schemaKeys = new Set<string>()
         let requiredNames: Set<string> | undefined
-        for (let i = 0; i < node.namedChildCount; i++) {
-          const pair = node.namedChild(i)
+        for (const pair of node.namedChildren ?? []) {
           if (pair?.type !== "pair") continue
           const key = this.keyText(pair)
           const value = pair.childForFieldName("value")
@@ -373,8 +378,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           schemaKeys.add(key)
           if (key === "required" && value?.type === "array") {
             const required = new Set<string>()
-            for (let j = 0; j < value.namedChildCount; j++) {
-              const item = value.namedChild(j)
+            for (const item of value.namedChildren ?? []) {
               if (item?.type === "string") required.add(this.stripQuotes(item.text))
             }
             if (required.size > 0) requiredNames = required
@@ -1007,8 +1011,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         metadata: { jsonSpecific: true, exportForm: "manifest_entry_point", evidenceClass: "structural" },
       })
     }
-    for (let i = 0; i < rootObject.namedChildCount; i++) {
-      const pair = rootObject.namedChild(i)
+    for (const pair of rootObject.namedChildren ?? []) {
       if (pair?.type !== "pair") continue
       const key = this.keyText(pair)
       const value = pair.childForFieldName("value")
@@ -1019,8 +1022,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (key === "bin") {
         if (value.type === "string") emit("bin", line)
         else {
-          for (let k = 0; k < value.namedChildCount; k++) {
-            const binPair = value.namedChild(k)
+          for (const binPair of value.namedChildren ?? []) {
             if (binPair?.type !== "pair") continue
             const binName = this.keyText(binPair)
             if (binName) emit(binName, binPair.startPosition.row + 1, "bin")
@@ -1029,8 +1031,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (key === "exports") {
         if (value.type === "string") emit("exports", line)
         else {
-          for (let k = 0; k < value.namedChildCount; k++) {
-            const sub = value.namedChild(k)
+          for (const sub of value.namedChildren ?? []) {
             if (sub?.type !== "pair") continue
             const subPath = this.keyText(sub)
             if (subPath) emit(subPath, sub.startPosition.row + 1, "exports")
@@ -1293,8 +1294,7 @@ const bracket = parent.lastIndexOf("[")
     if (!scriptsObject) return
 
     const declared = new Map<string, Node>()
-    for (let i = 0; i < scriptsObject.namedChildCount; i++) {
-      const pair = scriptsObject.namedChild(i)
+    for (const pair of scriptsObject.namedChildren ?? []) {
       if (pair?.type !== "pair") continue
       const key = this.keyText(pair)
       if (key) declared.set(key, pair)
@@ -1392,8 +1392,7 @@ const bracket = parent.lastIndexOf("[")
 
   /** The object value of a named top-level key, or undefined. */
   private topLevelObjectValue(rootObject: any, name: string): any {
-    for (let i = 0; i < rootObject.namedChildCount; i++) {
-      const pair = rootObject.namedChild(i)
+    for (const pair of rootObject.namedChildren ?? []) {
       if (pair?.type !== "pair") continue
       if (this.keyText(pair) !== name) continue
       const value = pair.childForFieldName("value")
@@ -1575,8 +1574,7 @@ const bracket = parent.lastIndexOf("[")
   private hasValidation(ctx: JsonContext, key: string, value: Node): boolean {
     if (VALIDATION_KEYS.has(key)) return true
     if (value.type !== "object") return false
-    for (let i = 0; i < value.namedChildCount; i++) {
-      const pair = value.namedChild(i)
+    for (const pair of value.namedChildren ?? []) {
       if (pair?.type === "pair" && VALIDATION_KEYS.has(this.keyText(pair))) return true
     }
     return false
@@ -1585,8 +1583,7 @@ const bracket = parent.lastIndexOf("[")
   private isApiEndpoint(key: string, value: Node): boolean {
     if (key.length === 0 || key[0] !== "/") return false
     if (value.type !== "object") return false
-    for (let i = 0; i < value.namedChildCount; i++) {
-      const pair = value.namedChild(i)
+    for (const pair of value.namedChildren ?? []) {
       if (pair?.type === "pair" && API_METHOD_KEYS.has(this.keyText(pair))) return true
     }
     return false
@@ -1814,8 +1811,10 @@ const bracket = parent.lastIndexOf("[")
   }
 
   private pushArrayChildren(stack: PathFrame[], node: Node, parentPath: string, parentName: string, rootName: string): void {
-    for (let i = node.namedChildCount - 1; i >= 0; i--) {
-      const child = node.namedChild(i)
+    // `namedChildren` read ONCE — the index accessor is O(i) (see `collectErrors`).
+    const children = node.namedChildren ?? []
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i]
       if (!child) continue
       const itemPath = `${parentPath}[${i}]`
       // The frame's parentName is the ITEM's symbol name, so the keys inside an
@@ -1858,8 +1857,10 @@ const bracket = parent.lastIndexOf("[")
   }
 
   private pushNamedChildren(stack: PathFrame[], node: Node, parentPath: string, parentName: string = parentPath, duplicateKeys?: Map<string, number>): void {
-    for (let i = node.namedChildCount - 1; i >= 0; i--) {
-      const child = node.namedChild(i)
+    // `namedChildren` read ONCE — the loop this replaced was O(k^2) in the child count.
+    const children = node.namedChildren ?? []
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i]
       if (child) stack.push({ node: child, parentPath, parentName, duplicateKeys })
     }
   }
@@ -1914,8 +1915,8 @@ const bracket = parent.lastIndexOf("[")
    */
   private pushTopLevelValues(stack: PathFrame[], node: Node, parentPath: string, parentName: string): void {
     let valueCount = 0
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
+    const children = node.namedChildren ?? []
+    for (const child of children) {
       if (child && this.isValueNode(child)) valueCount++
     }
     if (valueCount <= 1) {
@@ -1925,8 +1926,8 @@ const bracket = parent.lastIndexOf("[")
       return
     }
     let position = 0
-    for (let i = node.namedChildCount - 1; i >= 0; i--) {
-      const child = node.namedChild(i)
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i]
       if (!child) continue
       if (!this.isValueNode(child)) continue
       const name = `${parentPath}[${position}]`
