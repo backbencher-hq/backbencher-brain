@@ -75,6 +75,41 @@ const HTML_BUILTIN_TAGS = new Set([
   "svg", "path", "g", "rect", "circle", "ellipse", "line", "polyline", "polygon",
   "text", "tspan", "use", "defs", "linearGradient", "radialGradient", "stop", "mask",
   "pattern", "marker", "view", "symbol", "clipPath",
+  // SVG — the FILTER module and the rest of the element vocabulary (F30, 2026-10-12).
+  //
+  // Kept in LOCKSTEP with the vue lane's list: script/m14/verify-cross-language-consistency.ts
+  // extracts both sets and both against the oracle's ORACLE_HTML_TAGS, and fails if they
+  // differ, because whether a tag is markup or a component is a fact about the tag, not
+  // about the language it is written in. NO DOUBLE QUOTES OR CLOSING-BRACKET-PAREN PAIR in
+  // this comment: the parity gate slices this literal to the first such pair and treats
+  // every quoted string in the slice as a tag.
+  //
+  // Measured on THIS lane's corpora before assuming, and the number is zero: 0 of the
+  // 6,436 .svelte files on disk (svelte 4,561 + shadcn-svelte 1,878) contain a filter
+  // primitive or a `<filter>` element at all. So this lane inherits the vocabulary from
+  // the parity rule rather than from a defect anyone can see here today — the live
+  // measurement is the vue lane's, and this lane's obligation is that it USES the set,
+  // which is what svelte/svg-filter-builtin-tags pins and
+  // svelte/reemit-svg-filter-tags regresses.
+  // The defect it fixes was measured on the vue corpus (<filter>
+  // and every filter PRIMITIVE published `instantiates` edges to targets no file declares:
+  // 377 edges, 6 primitives); this lane has the same gap by construction, and the svelte
+  // fixture set carries the twin check through the parity gate rather than a second corpus
+  // measurement it has no draw for. An unknown namespace still fails toward VISIBILITY (see
+  // BUILTIN_NAMESPACES); an element the SVG spec DEFINES is markup.
+  "filter", "feBlend", "feColorMatrix", "feComponentTransfer", "feComposite",
+  "feConvolveMatrix", "feDiffuseLighting", "feDisplacementMap", "feDistantLight",
+  "feDropShadow", "feFlood", "feFuncA", "feFuncB", "feFuncG", "feFuncR",
+  "feGaussianBlur", "feImage", "feMerge", "feMergeNode", "feMorphology", "feOffset",
+  "fePointLight", "feSpecularLighting", "feSpotLight", "feTile", "feTurbulence",
+  // the rest of SVG 2's element list, plus the SVG 1.1 elements browsers still parse —
+  // the SPEC's vocabulary, counted separately from the measured block above.
+  "switch", "foreignObject", "desc", "metadata", "textPath", "tref", "mpath",
+  "animate", "animateMotion", "animateTransform", "set", "discard", "solidColor",
+  "mesh", "meshgradient", "meshpatch", "meshrow", "hatch", "hatchpath",
+  "altGlyph", "altGlyphDef", "altGlyphItem", "glyphRef", "animateColor", "cursor",
+  "color-profile", "font", "font-face", "font-face-format", "font-face-name",
+  "font-face-src", "font-face-uri", "glyph", "hkern", "missing-glyph", "vkern",
 ])
 
 const SVELTE_BUILTIN_TAGS = new Set([
@@ -290,6 +325,28 @@ function isRuneCallee(calleeExpression: string): boolean {
   return RUNE_LEAF_SEGMENTS.has(leaf)
 }
 
+/**
+ * THE DELEGATE'S FILE-LEVEL ACTOR — the spelling the JavaScript delegate uses for an
+ * edge whose actor is the FILE rather than a symbol, and which THIS seam must translate.
+ *
+ * `"(file)"` is the family's declared sentinel (`real-javascript-analyzer.ts`
+ * `FILE_LEVEL_SOURCE`, paired there with `metadata.fileLevel: true` and pinned by that
+ * lane's own fixtures; rust, scala, kotlin, zig, graphql and nim publish it too). `(` and
+ * `)` cannot appear in an identifier at all, so it can never collide with a name.
+ *
+ * WHY THE SEAM TRANSLATES IT. This seam runs the delegate with the SFC's OWN file path
+ * (see the `new RealJavaScriptAnalyzer().analyze(…, filePath, …)` call), so every
+ * module-scope row the delegate produces is a statement about THIS component — the
+ * component symbol is the module's identity. `(file)` names no symbol in a `.svelte`
+ * file, so a row left carrying it dangles and `svelte/relationship-kind-catalog`'s
+ * `imports` pin (sourced at the component) cannot be reached.
+ *
+ * TRANSLATION, NOT SUPPRESSION: `metadata.fileLevel` and `metadata.scopeName` stay exactly
+ * as the delegate wrote them, so the row is still marked module-scope and the delegate's
+ * module name is preserved. Only the ACTOR is respelled as the artifact it belongs to.
+ */
+const DELEGATE_FILE_ACTOR = "(file)"
+
 export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -411,6 +468,18 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // with a bare-identifier value are DYNAMIC component references,
     // resolved post-merge (imports are unknown until the script pass).
     const thisTargets = new Map<string, number>()
+    // F22 (2026-10-12): THE SITE MAP for the same references, because
+    // `thisTargets` is a `Map<name, line>` and a name written at several sites
+    // silently lost every one but the last. The fixture's own corpus measurement:
+    // 125 bare-identifier `this={X}` sites in 73 files over 6,439 corpus `.svelte`
+    // files, of which 11 files write one name at more than one site and 36 sites
+    // collapse — `svelte-component/input.svelte` writes `Component` 11 times and
+    // `stuff` 8 times in one file. The EDGE was right in every case, which is why
+    // no gate ever saw the loss: only the payload's reach into the earlier sites
+    // was gone. `line_number` keeps the LAST site on purpose (the fixture pins
+    // 33 for `Widget`, not 25, so no shared payload baseline moves), and the whole
+    // set travels in `metadata.dynamicTargetLines`.
+    const thisTargetSites = new Map<string, number[]>()
     // ONTOLOGY-WORKSTREAM SVELTE3: a DOTTED component tag — `<Card.Root/>` — is
     // Svelte's namespaced-component syntax, resolved by reading the NAMESPACE OBJECT
     // bound to `Card`. Three measured facts make the old shape wrong:
@@ -476,8 +545,9 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             visibility: "public",
             metadata: { isSnippet: true },
           })
-          // snippet params ({#snippet row(label)} of) are template-local
-          this.collectSnippetParams(n, childShadowed)
+          // snippet params ({#snippet row(label)} of) are template-local — and
+          // F28: a parameter DEFAULT is a read on the same line.
+          this.collectSnippetParams(n, templateExprNames, childShadowed, templateReadSites)
         }
       }
       if (t === "render_tag") {
@@ -509,6 +579,42 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             line_number: n.startPosition.row + 1,
             metadata: { context: "Svelte {@render} tag" },
           })
+          // F24 (2026-10-12): THE ARGUMENTS ARE READS, and they are the only part
+          // of a render tag that is. The branch above publishes the CALLEE as a
+          // `calls` edge and the argument list was read by nothing at all: on the
+          // fixture, `{@render row(alpha)}` published `calls -> row` and not one
+          // `uses` row, so a snippet call's inputs were invisible to the graph.
+          //
+          // Three boundaries are the fixture's, and each is a forbid row of its
+          // own rather than a consequence of this code:
+          //
+          //   the CALLEE is excluded (sliced off with the paren), because it
+          //     belongs to the `calls` edge — publishing it here would
+          //     double-count one fact as two;
+          //   a member LEAF stays out (`row(obj.eps)` reads `obj`): the
+          //     collector's receiver-only dot rule already refuses a dot-preceded
+          //     token, and that rule is deliberately reused rather than
+          //     re-implemented;
+          //   a SNIPPET PARAMETER stays out (`{#snippet row(u)}` above), because
+          //     the walk's shadow set still holds it — the control that this
+          //     sweep did not simply read the whole fragment.
+          //
+          // The BASE LINE is the tag's own row plus the newlines before the
+          // argument list, so the multiline form's identifiers land on THEIR
+          // lines (41/42, not the tag's 40) — the M59 #825 rule this lane follows
+          // for every other template read, and the fixture forbids the tag-line
+          // spelling on both arguments.
+          const open = text.indexOf("(")
+          if (open >= 0) {
+            const args = text.slice(open + 1, text.endsWith(")") ? text.length - 1 : text.length)
+            if (args.trim()) {
+              this.collectIdentifiersFromText(
+                args, templateExprNames, childShadowed,
+                n.startPosition.row + 1 + RealSvelteAnalyzer.linesBefore(text, open + 1),
+                templateReadSites,
+              )
+            }
+          }
         }
       }
       // Template DECISION constructs: {#if}/{:else if} branches, {#each}
@@ -628,7 +734,13 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (!valueNode) continue
               let vt = valueNode.text.trim()
               if (vt.startsWith("{") && vt.endsWith("}")) vt = vt.slice(1, -1).trim()
-              if (vt && isIdentifier(vt)) thisTargets.set(vt, valueNode.startPosition.row + 1)
+              if (vt && isIdentifier(vt)) {
+                const siteLine = valueNode.startPosition.row + 1
+                thisTargets.set(vt, siteLine)
+                const prior = thisTargetSites.get(vt)
+                if (prior) prior.push(siteLine)
+                else thisTargetSites.set(vt, [siteLine])
+              }
             }
           }
         }
@@ -947,6 +1059,12 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (typeof r.line_number === "number") r.line_number += lineOffset
         // M49 #868: the metadata line mirrors move with it (see the helper).
         shiftMetadataLineMirrors(r.metadata as Record<string, unknown> | undefined, lineOffset)
+        // THE DELEGATE'S FILE-LEVEL ACTOR NAMES THIS COMPONENT. Before the javascript
+        // lane respelled its module-scope actor (M14 cross-lane, 2026-10-11) this row
+        // arrived sourced at the SFC stem, because the delegate was handed this file's
+        // path; the sentinel broke that, and the pin that requires the delegated
+        // `imports` row to source at the component went red. See the constant above.
+        if (r.source === DELEGATE_FILE_ACTOR) r.source = moduleName
         r.metadata = { ...(r.metadata ?? {}), sfcDelegated: true, sfcLineOffset: lineOffset }
         relationships.push(r)
       }
@@ -1157,14 +1275,30 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (const [name, line] of thisTargets) {
         if (memberNames.has(name) || !importBindings.has(name)) continue
+        const sites = thisTargetSites.get(name)
         relationships.push({
           source: moduleName,
           target: name,
           type: ASTEngine.RelationshipType.Instantiates,
           confidence: 0.95,
-          // M59 (#825): the `this={X}` value's line.
+          // M59 (#825): the `this={X}` value's line. F22: the LAST site, kept
+          // deliberately — see the site map's declaration.
           ...(line > 0 ? { line_number: line } : {}),
-          metadata: { isComponentUsage: true },
+          metadata: {
+            isComponentUsage: true,
+            // F22: the full site set, sorted ascending so two runs agree.
+            //
+            // EMITTED FOR A SINGLE SITE TOO, and that is a PIN rather than a
+            // preference: `svelte/dynamic-target-sites` requires
+            // `dynamicTargetLines: [30]` for its one-site `Panel`, while
+            // `svelte/multi-site-read-record` requires the read map to be ABSENT
+            // (`templateReadSites: null`) for its one-site reads. The two
+            // conventions therefore DIVERGE, and the divergence is recorded here
+            // rather than smoothed over: unifying them is a payload change on one
+            // fixture or the other, not a fix, and it belongs to whichever round
+            // decides which of the two shapes a consumer should read.
+            ...(sites && sites.length > 0 ? { dynamicTargetLines: [...sites].sort((a, b) => a - b) } : {}),
+          },
         })
       }
     }
@@ -1211,13 +1345,30 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // DEDUPE: sub-analyzers emit their own contains edges; combined with
     // the ownerName-based pass above, identical triples appeared twice.
-    const relSeen = new Set<string>()
+    //
+    // F29 (2026-10-12): AND THE ROW THAT LOSES IS RECORDED, not just dropped. The
+    // delegate's rows are pushed in step 3b and the template read pass runs in 3c, so
+    // when a component reads the same member in its SCRIPT and in its TEMPLATE the
+    // TEMPLATE row loses — measured on the 3,085 corpus files where an independent
+    // read oracle's shadow model is provably equivalent to this analyzer's (no
+    // `{#each}`, `{#await}`, `{#snippet}` or `{@const}` anywhere in the file): 384 of
+    // 5,781 template reads, 6.6%, and every one of them had a script twin. The
+    // surviving row carried the script's line and the script's 0.6 confidence with no
+    // `isTemplateExpression`, so a consumer could not tell that the member is ALSO
+    // read by the template. `line_number` and `confidence` are deliberately NOT
+    // touched (a payload field the shared budget and the differential baseline pin),
+    // and the graph contract is unchanged: still one edge per triple.
+    const relSeen = new Map<string, ASTEngine.UniversalRelationship>()
     const uniqueRelationships: ASTEngine.UniversalRelationship[] = []
     for (const r of relationships) {
       const key = `${String(r.type)}|${String(r.source)}|${String(r.target)}`
-      if (relSeen.has(key)) continue
-      relSeen.add(key)
-      uniqueRelationships.push(r)
+      const prior = relSeen.get(key)
+      if (!prior) {
+        relSeen.set(key, r)
+        uniqueRelationships.push(r)
+        continue
+      }
+      RealSvelteAnalyzer.recordDroppedTemplateRead(prior, r)
     }
     relationships.length = 0
     relationships.push(...uniqueRelationships)
@@ -1720,13 +1871,61 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isIdentPart = (ch: string): boolean => isIdentStart(ch) || (ch >= "0" && ch <= "9")
     const isSpace = (ch: string): boolean => ch === " " || ch === "\t" || ch === "\n" || ch === "\r"
     const stack: string[] = []
+    // F27 (2026-10-12): the open-bracket stack and a per-depth "a `?` is pending"
+    // flag, which is what the OBJECT-KEY rule needs to be positional rather than
+    // textual. Both are parallel to `stack` by construction — every push/pop of one
+    // is a push/pop of all three.
+    const brackets: string[] = []
+    const ternary: boolean[] = []
+    /**
+     * F27: is the identifier that ENDS at `end - 1` the KEY of an object literal?
+     *
+     * M60 SVELTE-D3. `{ month: d.desktop }` WRITES `month`; `{ foo }` READS it;
+     * `{ [k]: v }` reads `k`. The flat walker could not tell them apart and
+     * published both, which the fixture's rationale measures at 49 edges over 38 of
+     * the 6,439 corpus files — every one naming a member the template never reads,
+     * and the worst of them RESOLVED, because `chart-pie-stacked.svelte` declares
+     * `{#snippet tooltip()}` and so published `uses -> tooltip` off a Recharts
+     * config key.
+     *
+     * The rule is positional and TERNARY-AWARE, because `? :` and `: ` are the same
+     * character:
+     *   a word is a KEY  <=>  the next non-space character is `:` AND the innermost
+     *                         open bracket is `{` AND no `?` is pending at this depth;
+     *   a `:` that RESOLVES a pending `?` is a ternary else and leaves the word a
+     *                         read (`cond ? a : b` reads both `a` and `b`).
+     * An optional chain (`?.`) and a nullish coalesce (`??`) are not ternaries and
+     * must not arm the flag, so both are recognised before it is set.
+     *
+     * A COMPUTED key (`{ [k]: v }`) is inside `[`, so the innermost bracket is not
+     * `{` and its contents stay reads — which is the fixture's third shape, and the
+     * reason this asks about the BRACKET rather than about the following colon alone.
+     */
+    const isObjectKey = (end: number): boolean => {
+      let j = end
+      while (j < text.length && isSpace(text[j])) j++
+      if (text[j] !== ":") return false
+      const top = brackets.length > 0 ? brackets[brackets.length - 1] : ""
+      if (top !== "{") return false
+      const t = ternary.length > 0 ? ternary[ternary.length - 1] : false
+      return !t
+    }
     const emit = (word: string, start: number): void => {
       let k = start - 1
       while (k >= 0 && isSpace(text[k])) k--
       const prev = k >= 0 ? text[k] : ""
       const prev2 = k - 1 >= 0 ? text[k - 1] : ""
-      if (prev === "." || (prev2 === "?" && prev === ".") || prev === "#") return
+      // M60 SVELTE-SPREAD / F27: `...foo` is a SPREAD ARGUMENT, which is a READ,
+      // and the receiver-only dot rule suppressed it because the token before `foo`
+      // is a dot — `[...list]` and `f(...list)` published nothing. A run of exactly
+      // one dot is a receiver; `?.` is optional chaining and still a receiver; three
+      // dots is a spread. The fixture pins both sides: `list` on line 60 must be a
+      // read, `rows.`/`foo.` leaves must not.
+      if (prev === "." && prev2 !== ".") return
+      if (prev2 === "?" && prev === ".") return
+      if (prev === "#") return
       if (shadowed.has(word)) return
+      if (isObjectKey(start + word.length)) return
       const site = baseLine + RealSvelteAnalyzer.linesBefore(text, start)
       out.set(word, site)
       if (sites) {
@@ -1747,15 +1946,38 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (top === "`") {
         if (ch === "\\") { i += 2; continue }
-        if (ch === "$" && text[i + 1] === "{") { stack.push("${"); i += 2; continue }
-        if (ch === "`") { stack.pop(); i++; continue }
+        if (ch === "$" && text[i + 1] === "{") { stack.push("${"); brackets.push("{"); ternary.push(false); i += 2; continue }
+        if (ch === "`") { stack.pop(); brackets.pop(); ternary.pop(); i++; continue }
         i++
         continue
       }
       if (ch === "'" || ch === '"' || ch === "`") { stack.push(ch); i++; continue }
-      if (ch === "{") { stack.push(ch); i++; continue }
+      if (ch === "{") { stack.push(ch); brackets.push("{"); ternary.push(false); i++; continue }
+      // `(` and `[` are pushed only so the KEY rule can tell an object literal's
+      // brace from a computed key's bracket — nothing else reads them.
+      if (ch === "(" || ch === "[") { stack.push(ch); brackets.push(ch); ternary.push(false); i++; continue }
       if (ch === "}") {
-        if (top === "{" || top === "${") stack.pop()
+        if (top === "{" || top === "${") { stack.pop(); brackets.pop(); ternary.pop() }
+        else if (top === "(") { stack.pop(); brackets.pop(); ternary.pop() }
+        i++
+        continue
+      }
+      if (ch === ")") { if (top === "(") { stack.pop(); brackets.pop(); ternary.pop() } i++; continue }
+      if (ch === "]") { if (top === "[") { stack.pop(); brackets.pop(); ternary.pop() } i++; continue }
+      if (ch === "?") {
+        // `?.` optional chain and `??` nullish coalesce are not ternaries, so both
+        // are recognised BEFORE the flag is armed — otherwise every `a?.b : c`
+        // would look like a ternary else.
+        if (text[i + 1] === "?" || text[i + 1] === ".") { i += 2; continue }
+        if (ternary.length > 0) ternary[ternary.length - 1] = true
+        i++
+        continue
+      }
+      if (ch === ":") {
+        // A `:` at object-literal depth is the key/value separator, and one that
+        // resolves a pending `?` is a ternary else. Both CLEAR the flag: the value
+        // side is a value, whichever it was.
+        if (ternary.length > 0) ternary[ternary.length - 1] = false
         i++
         continue
       }
@@ -1795,7 +2017,45 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // machinery was dead for `{#each}` and only "passed" fixtures where no
     // same-named member existed to collide (the vue V4 bug class).
     const vars = rawTexts[1]
-    this.collectShadowNames(vars?.text ?? "", shadowed)
+    const varsText = vars?.text ?? ""
+    // F25 (2026-10-12): THE KEYED FORM (`{#each rows as row (keyExpr)}`). The
+    // grammar keeps the key INSIDE the second fragment — `{#each rows as row}`
+    // gives `row` and `{#each rows as row (row.id)}` gives `row (row.id)` — so the
+    // whole fragment went through the flat word collector above, with two measured
+    // consequences over the 6,439-file corpus (the keyed form occurs 699 times in
+    // 486 files):
+    //
+    //   1. a FALSE SHADOW. Every word of the key was registered as a template-local
+    //      binding, so `{#each todos as todo (todo.id)}` silenced a member named
+    //      `id` for the whole block — a binding it never was.
+    //   2. NO READ. The key itself published nothing, while the COLLECTION on the
+    //      same line does: `{#each rows as row (keyOf(row))}` published `uses rows`
+    //      and nothing for `keyOf`.
+    //
+    // So the head is the binding list and the parenthesised tail is an EXPRESSION,
+    // on the same S1 argument the collection is: a template expression naming a
+    // member is a use of it. The collector's own dot rule then skips the key's
+    // property LEAVES, which is why the ordinary keyed block (`(row.id)`) still
+    // contributes no read of `id` — the fixture pins that as a forbid row — and
+    // only a key naming something else (`(keyOf(row))`, `(sortKey)`) adds an edge.
+    // That is the whole point of the rule.
+    //
+    // F28 (2026-10-12): the head is a BINDING PATTERN, not a word list, so
+    // `{#each rows as { [firstString]: firstProp }}` reads `firstString` and binds
+    // `firstProp` (and `firstProp` is never a read), which `collectShadowNames`
+    // could not express: it put every word in the shadow set, losing 27 measured
+    // reads and fabricating shadows for 81 sites' worth of computed keys.
+    const varsBase = (vars?.startPosition.row ?? 0) + 1
+    const keyClause = RealSvelteAnalyzer.patternKeySplit(varsText)
+    if (keyClause) {
+      this.collectBindingPattern(keyClause.pattern, out, shadowed, varsBase, sites)
+      this.collectIdentifiersFromText(
+        keyClause.keyText, out, shadowed,
+        varsBase + RealSvelteAnalyzer.linesBefore(varsText, keyClause.keyAt), sites,
+      )
+    } else {
+      this.collectBindingPattern(varsText, out, shadowed, varsBase, sites)
+    }
   }
 
   /** {#await promise then value} {:catch err} — promise is a use; vars shadow. */
@@ -1820,9 +2080,14 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       // M4 (review wave): the INLINE then/as vars (`then value` with no
       // then_block node) were never registered — {value} later leaked as a
       // member use. Register the remainder as template-local bindings.
+      // F28: it is a PATTERN, so `then { [k]: v = fallback }` reads `k` and
+      // `fallback` and binds `v`; the base line is the one the `then` keyword's own
+      // fragment starts on, because the inline form is one fragment.
       if (m) {
-        const rest = text.slice(m.matchLength)
-        this.collectShadowNames(rest, shadowed)
+        this.collectBindingPattern(
+          text.slice(m.matchLength), out, shadowed,
+          firstLine + RealSvelteAnalyzer.linesBefore(text, m.matchLength), sites,
+        )
       }
     }
     // then/catch var names shadow members within their block.
@@ -1832,9 +2097,15 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // nothing on their own, which is already correct.
     for (const blk of [thenBlk, catchBlk]) {
       if (!blk) continue
-      // Shadow bindings only — no line is needed (and none is claimed).
-      const rawTexts = this.rawTextNodes(blk).map((r) => r.text)
-      this.collectShadowNames(rawTexts.join(" "), shadowed)
+      // F28: a PATTERN again (`{:then { a, b = c }}`), and this time the pattern's
+      // own expressions DO carry a line: a default value is a read, so the block's
+      // first fragment is the base and `value`/`err` still bind with no line
+      // claimed for them.
+      const rawNodes = this.rawTextNodes(blk)
+      this.collectBindingPattern(
+        rawNodes.map((r) => r.text).join(" "), out, shadowed,
+        rawNodes[0] ? rawNodes[0].startPosition.row + 1 : 0, sites,
+      )
     }
   }
 
@@ -1858,19 +2129,521 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.collectIdentifiersFromText(rawNodes.map((r) => r.text).join(" "), out, shadowed, baseLine, sites)
   }
 
-  /** {#snippet row(label, count)} heads — params are template-local. */
-  private collectSnippetParams(node: Node, shadowed: Set<string>): void {
+  /**
+   * {#snippet row(label, count)} heads — params are template-local.
+   *
+   * F28: `{#snippet counter(c = count)}` binds `c` and READS `count`, and the
+   * grammar hands the parameter list over WITHOUT its parens or the snippet name
+   * (measured: `snippet_start` raw text is `c = count` for exactly that head), so the
+   * pattern scanner takes the fragment as-is. A parameter annotation is a type and
+   * the bare `{#snippet typed(c: number = 4)}` spelling is the fixture's shape for
+   * it: `number` is neither a read nor a binding.
+   */
+  private collectSnippetParams(node: Node, out: Map<string, number>, shadowed: Set<string>, sites?: Map<string, number[]>): void {
     const start = this.findDescendant(node, (c) => c.type === "snippet_start")
     if (!start) return
-    // Shadow bindings only — no line is claimed for them.
-    const rawTexts = this.rawTextNodes(start).map((r) => r.text)
-    this.collectShadowNames(rawTexts.join(" "), shadowed)
+    const rawNodes = this.rawTextNodes(start)
+    this.collectBindingPattern(
+      rawNodes.map((r) => r.text).join(" "), out, shadowed,
+      rawNodes[0] ? rawNodes[0].startPosition.row + 1 : 0, sites,
+    )
   }
 
   /** A template expression body ({count}, label={label}, {@html raw}). */
   private collectExpressionIdentifiers(node: Node, out: Map<string, number>, shadowed: Set<string>, sites?: Map<string, number[]>): void {
     const textNode = this.expressionTextNode(node)
-    this.collectIdentifiersFromText(textNode?.text ?? "", out, shadowed, textNode ? textNode.startPosition.row + 1 : 0, sites)
+    const text = textNode?.text ?? ""
+    // F23 (2026-10-12): AN EVENT CARRIER'S ARROW PARAMETERS ARE LOCALS OF THIS
+    // EXPRESSION, and the walk published them as members. `<button
+    // on:click={(evt) => { payload = evt }}>` emitted `uses -> evt` — an
+    // endpoint that resolves to nothing in the file or the corpus — and a
+    // DESTRUCTURED parameter is the same defect one shape further in
+    // (`({ data }) => { payload = data }` published `data`, which in this
+    // fixture is the script's own `let data = 3`). The fixture's second shape is
+    // also the trap: a first version of the parameter scan took the FIRST WORD
+    // of the pattern and still published this name.
+    //
+    // The shadow set is widened ONLY for the two spellings that bind a parameter
+    // — `on:click={…}` and the Svelte-5 `onclick={…}` on an intrinsic tag — and
+    // only for this expression, because the set is per-expression: which is what
+    // `eventCarrierName` asks structurally rather than by name guessing.
+    // F26 (2026-10-12): A DECLARATION TAG BINDS. `{let counter = …}` and
+    // `{const doubler = …}` are Svelte 5.36 template declarations, and the walk
+    // read them as ordinary mustaches — so the declared name was published as a
+    // member READ of a declaration it shadows, and the shadow it creates was
+    // never registered, which is why a LATER sibling using that name still
+    // resolved to a member.
+    //
+    // The split is positional and keyword-bounded: `declarationTagSplit` requires
+    // a leading `let`/`const` followed by a word boundary AND a top-level `=`, so
+    // `{letter = 5}` — an assignment to a member named `letter` — is not a tag,
+    // and `{constantly}` / `{letter}` are untouched. The HEAD is the binding list
+    // (registered into the walk's shadow set by MUTATION, which is what carries it
+    // to the following siblings, exactly as the `{#each}` var list does above) and
+    // the TAIL is an initialiser EXPRESSION, collected as reads — `{const n = limit}`
+    // reads `limit` and binds `n`.
+    const decl = RealSvelteAnalyzer.declarationTagSplit(text)
+    if (decl) {
+      // F28: the head is a PATTERN too — `{let { [k]: v = d } = src}` binds `v` and
+      // reads `k`, `d` and `src`, and `{let x = 1}` is the degenerate one-name case.
+      this.collectBindingPattern(decl.head, out, shadowed, textNode ? textNode.startPosition.row + 1 : 0, sites)
+      this.collectIdentifiersFromText(
+        decl.tail, out, shadowed,
+        (textNode ? textNode.startPosition.row + 1 : 0) + RealSvelteAnalyzer.linesBefore(text, decl.eqAt + 1),
+        sites,
+      )
+      return
+    }
+    const scope = this.eventCarrierName(node.parent) ? this.withArrowParams(shadowed, text) : shadowed
+    this.collectIdentifiersFromText(text, out, scope, textNode ? textNode.startPosition.row + 1 : 0, sites)
+  }
+
+  /**
+   * M60 SVELTE-D6 / F26: split a Svelte 5.36 declaration tag `{let x = …}` /
+   * `{const x = …}` into its binding head and its initialiser. Returns null for
+   * an ordinary mustache, which is the overwhelming majority. A leading
+   * `let`/`const` is REQUIRED and so is the word boundary after it: without the
+   * boundary `{letter = 5}` — an assignment to a member named `letter` — parses as
+   * a `let` tag binding `ter`, a fabricated shadow rather than a real one.
+   */
+  private static declarationTagSplit(text: string): { head: string; tail: string; eqAt: number } | null {
+    const ws = (i: number): number => {
+      while (i < text.length && (text[i] === " " || text[i] === "\t" || text[i] === "\n" || text[i] === "\r")) i++
+      return i
+    }
+    const i = ws(0)
+    const kw = text.startsWith("let", i) ? "let" : text.startsWith("const", i) ? "const" : null
+    if (!kw) return null
+    const after = i + kw.length
+    const next = text[after]
+    const boundary = next === "{" || next === "[" || next === " " || next === "\t" || next === "\n" || next === "\r"
+    if (!boundary) return null
+    const body = ws(after)
+    // the head must actually contain a top-level `=` — `{const}` alone is not a tag
+    let depth = 0
+    for (let j = body; j < text.length; j++) {
+      const ch = text[j]
+      if (ch === "(" || ch === "[" || ch === "{") depth++
+      else if (ch === ")" || ch === "]" || ch === "}") depth--
+      else if (ch === "=" && depth === 0) {
+        if (text[j + 1] === "=" || text[j - 1] === "=" || text[j - 1] === "!" || text[j - 1] === "<" || text[j - 1] === ">") continue
+        return { head: text.slice(body, j), tail: text.slice(j + 1), eqAt: j }
+      }
+    }
+    return null
+  }
+
+  /**
+   * F28 (2026-10-12): A BINDING PATTERN HAS READ POSITIONS AND BINDING POSITIONS.
+   *
+   * Every template site that writes a PATTERN — `{#each rows as …}`, `{#await p
+   * then …}`, `{:catch …}`, `{#snippet name(…)}`, `{let …}` / `{@const …}` heads —
+   * used to hand its text to the flat word collector, which did two wrong things at
+   * once:
+   *
+   *   a LOST READ     `{#snippet counter(c = count)}` binds `c` and READS `count`;
+   *   a FALSE SHADOW  `{#each xs as { a: b }}` binds `b` alone — `a` is a PROPERTY
+   *                   name, so registering it silenced a member named `a` for the
+   *                   whole block.
+   *
+   * Measured before this fix over the 6,439-file corpus (svelte 4,561 + shadcn-svelte
+   * 1,878 git-tracked .svelte files) with the grammar-derived oracle
+   * (`script/m14/tmp/svelte-uses-oracle.ts`, which re-parses each template fragment
+   * with the JAVASCRIPT grammar and so decides the split from
+   * `assignment_pattern.right` and `computed_property_name` rather than from a
+   * character walk): 35 template reads the payload does not publish, 27 of them this
+   * class, over 81 sites carrying a computed key or a default value.
+   *
+   * The split, and nothing wider than the split:
+   *   COMPUTED KEY  `{ [k]: v }`      the inside of `[ ]` is an EXPRESSION (a read)
+   *   DEFAULT VALUE `x = expr`        `expr` is an EXPRESSION (a read) and `x` binds
+   *   PROPERTY NAME `{ a: b }`        `a` is neither a read nor a binding
+   *   VALUE         `{ a: b }`        `b` binds, recursively (nested patterns too)
+   *   SHORTHAND     `{ a }`           `a` binds
+   *   REST          `...props`        `props` binds
+   *   ANNOTATION    `c: number = 4`   `number` is neither: it is a type
+   *   BOUND EARLIER `{ idx, [idx - 1]: last }`  `idx` is a template-local by the
+   *                   time the computed key reads it, so it publishes NOTHING
+   *
+   * The last rule is why the walk is ONE LEFT-TO-RIGHT PASS that mutates the shadow
+   * set as it binds: a reader that collects all reads before all bindings publishes
+   * a false edge on the first entry of every `{ name, [name …] }` pattern, and that
+   * is the one row the fixture pins as forbidden precisely because it would silently
+   * ADD edges rather than lose them.
+   *
+   * Pure-String scanning: this family's regex census is 0 and stays 0.
+   */
+  private collectBindingPattern(text: string, out: Map<string, number>, shadowed: Set<string>, baseLine = 0, sites?: Map<string, number[]>): void {
+    if (!text) return
+    const isSpace = (c: string): boolean => c === " " || c === "\t" || c === "\n" || c === "\r"
+    const isIdentStart = (c: string): boolean =>
+      (c >= "A" && c <= "Z") || (c >= "a" && c <= "z") || c === "_" || c === "$"
+    const isIdentPart = (c: string): boolean => isIdentStart(c) || (c >= "0" && c <= "9")
+    const skipWs = (i: number, e: number): number => {
+      while (i < e && isSpace(text[i])) i++
+      return i
+    }
+    const identAt = (i: number): { name: string; end: number } | null => {
+      if (i >= text.length || !isIdentStart(text[i])) return null
+      let j = i + 1
+      while (j < text.length && isIdentPart(text[j])) j++
+      return { name: text.slice(i, j), end: j }
+    }
+    /** The expression `[s, e)` is a READ, at the line its offset falls on. */
+    const read = (s: number, e: number): void => {
+      if (s >= e) return
+      this.collectIdentifiersFromText(
+        text.slice(s, e), out, shadowed,
+        baseLine + RealSvelteAnalyzer.linesBefore(text, s), sites,
+      )
+    }
+    const bind = (name: string): void => { if (isIdentifier(name)) shadowed.add(name) }
+    /** `{@const …}` — the first top-level `=` splits the head from the initialiser. */
+    const atTopLevel = (i: number, e: number, ch: string): number => {
+      let d = 0
+      let j = i
+      while (j < e) {
+        const c = text[j]
+        if (c === "'" || c === '"' || c === "`") { j = RealSvelteAnalyzer.skipQuoted(text, j); continue }
+        if (c === "(" || c === "[" || c === "{") { d++; j++; continue }
+        if (c === ")" || c === "]" || c === "}") { d--; j++; continue }
+        if (c === ch && d === 0) {
+          const prev = j > 0 ? text[j - 1] : ""
+          const next = text[j + 1] ?? ""
+          if (ch === "=" && (next === "=" || prev === "=" || prev === "!" || prev === "<" || prev === ">")) { j++; continue }
+          return j
+        }
+        j++
+      }
+      return -1
+    }
+    /** One parameter or one entry VALUE: a name, a nested pattern, a rest, a default. */
+    const scanValue = (s0: number, e: number): void => {
+      const s = skipWs(s0, e)
+      if (s >= e) return
+      if (text.startsWith("...", s)) { const w = identAt(skipWs(s + 3, e)); if (w) bind(w.name); return }
+      const ch = text[s]
+      if (ch === "{" || ch === "[") {
+        const close = RealSvelteAnalyzer.matchingBracket(text, s)
+        const end = close < 0 || close > e ? e : close
+        if (ch === "{") scanObject(s + 1, end)
+        else scanArray(s + 1, end)
+        return
+      }
+      const w = identAt(s)
+      if (!w) { read(s, e); return }
+      let k = skipWs(w.end, e)
+      // `d?: string` — the optional marker is part of the ANNOTATION spelling.
+      if (k < e && text[k] === "?" && text[k + 1] === ":") k = skipWs(k + 1, e)
+      if (k < e && text[k] === ":") {
+        // a TypeScript ANNOTATION: the type is neither a read nor a binding, so
+        // only a DEFAULT after it is an expression.
+        bind(w.name)
+        const eq = atTopLevel(k + 1, e, "=")
+        if (eq >= 0) read(eq + 1, e)
+        return
+      }
+      if (k < e && text[k] === "=") { bind(w.name); read(k + 1, e); return }
+      bind(w.name)
+    }
+    /** `{ … }` entries, left to right, binding as it goes. */
+    const scanObject = (s: number, e: number): void => {
+      for (const [a, b] of RealSvelteAnalyzer.splitTopLevel(text, s, e)) {
+        const i = skipWs(a, b)
+        if (i >= b) continue
+        if (text.startsWith("...", i)) { const w = identAt(skipWs(i + 3, b)); if (w) bind(w.name); continue }
+        const ch = text[i]
+        if (ch === "[") {
+          // a COMPUTED key is a READ; what follows it is the bound value (or, on a
+          // computed key with a default, an expression and no binding at all).
+          const close = RealSvelteAnalyzer.matchingBracket(text, i)
+          const end = close < 0 || close > b ? b : close
+          read(i + 1, end)
+          const k = skipWs(end + 1, b)
+          if (k < b && text[k] === ":") scanValue(k + 1, b)
+          else if (k < b && text[k] === "=") read(k + 1, b)
+          continue
+        }
+        if (ch === "'" || ch === '"' || ch === "`") {
+          // a STRING key is a property name; only a rename's value binds.
+          const k = skipWs(RealSvelteAnalyzer.skipQuoted(text, i), b)
+          if (k < b && text[k] === ":") scanValue(k + 1, b)
+          continue
+        }
+        const w = identAt(i)
+        if (!w) { read(i, b); continue }
+        const k = skipWs(w.end, b)
+        if (k < b && text[k] === ":") { scanValue(k + 1, b); continue } // rename: the key is a property name
+        if (k < b && text[k] === "=") { bind(w.name); read(k + 1, b); continue } // shorthand with a default
+        bind(w.name) // shorthand
+      }
+    }
+    /** `[ … ]` positions: each one is a parameter (a nested pattern binds). */
+    const scanArray = (s: number, e: number): void => {
+      for (const [a, b] of RealSvelteAnalyzer.splitTopLevel(text, s, e)) scanValue(a, b)
+    }
+    // entry point: a comma-separated parameter list, with or without its parens.
+    let s = skipWs(0, text.length)
+    let e = text.length
+    if (s < e && text[s] === "(") {
+      const close = RealSvelteAnalyzer.matchingBracket(text, s)
+      if (close >= 0 && skipWs(close + 1, e) >= e) { s = s + 1; e = close }
+    }
+    for (const [a, b] of RealSvelteAnalyzer.splitTopLevel(text, s, e)) scanValue(a, b)
+  }
+
+  /**
+   * `i` is at a quote: the index just past its closing quote (or the end of the
+   * text when it never closes). A TEMPLATE literal's `${ … }` re-enters code, so its
+   * braces are tracked — otherwise a `,` inside an interpolation would split a
+   * parameter list. Structural scanning only; the READ side is the ordinary
+   * character collector, which has its own (identical) quote machine.
+   */
+  private static skipQuoted(text: string, i: number): number {
+    const q = text[i]
+    let j = i + 1
+    let depth = 0
+    while (j < text.length) {
+      const c = text[j]
+      if (c === "\\") { j += 2; continue }
+      if (q === "`") {
+        if (c === "$" && text[j + 1] === "{") { depth++; j += 2; continue }
+        if (c === "}" && depth > 0) { depth--; j++; continue }
+      }
+      if (c === q && depth === 0) return j + 1
+      j++
+    }
+    return text.length
+  }
+
+  /** Index of the bracket matching the opener at `open`, or -1 when unbalanced. */
+  private static matchingBracket(text: string, open: number): number {
+    const closerOf = (c: string): string => (c === "(" ? ")" : c === "[" ? "]" : c === "{" ? "}" : "")
+    const stack: string[] = []
+    let i = open
+    while (i < text.length) {
+      const ch = text[i]
+      if (ch === "'" || ch === '"' || ch === "`") { i = RealSvelteAnalyzer.skipQuoted(text, i); continue }
+      const expect = closerOf(ch)
+      if (expect) { stack.push(expect); i++; continue }
+      if (ch === ")" || ch === "]" || ch === "}") {
+        if (stack.length === 0 || stack[stack.length - 1] !== ch) return -1
+        stack.pop()
+        if (stack.length === 0) return i
+      }
+      i++
+    }
+    return -1
+  }
+
+  /** `[s, e)` split on TOP-LEVEL commas: quotes, brackets and `${…}` are skipped whole. */
+  private static splitTopLevel(text: string, s: number, e: number): Array<[number, number]> {
+    const segs: Array<[number, number]> = []
+    let start = s
+    let i = s
+    while (i < e) {
+      const ch = text[i]
+      if (ch === "'" || ch === '"' || ch === "`") { i = RealSvelteAnalyzer.skipQuoted(text, i); continue }
+      if (ch === "(" || ch === "[" || ch === "{") {
+        const close = RealSvelteAnalyzer.matchingBracket(text, i)
+        i = close < 0 || close >= e ? e : close + 1
+        continue
+      }
+      if (ch === ",") { segs.push([start, i]); start = i + 1; i++; continue }
+      i++
+    }
+    segs.push([start, e])
+    return segs
+  }
+
+  /**
+   * F25/F28: split a loop binding list's trailing KEY CLAUSE off its pattern —
+   * `row (keyOf(row))` gives the pattern `row ` and the key `keyOf(row)`.
+   *
+   * The grammar keeps the key INSIDE the same fragment as the bindings
+   * (`{#each rows as row}` gives `row`, `{#each rows as row (row.id)}` gives
+   * `row (row.id)`), so the two halves have to be separated by hand. The test is
+   * STRUCTURAL rather than `indexOf("(")`: the key clause is the parenthesised group
+   * that ends the list, which keeps a `(` inside a pattern's own default
+   * (`{ [k]: v = f() }`) from being mistaken for it.
+   */
+  private static patternKeySplit(text: string): { pattern: string; keyText: string; keyAt: number } | null {
+    let e = text.length
+    while (e > 0 && (text[e - 1] === " " || text[e - 1] === "\t" || text[e - 1] === "\n" || text[e - 1] === "\r")) e--
+    if (e === 0 || text[e - 1] !== ")") return null
+    let depth = 0
+    let openAt = -1
+    for (let i = 0; i < e; i++) {
+      const ch = text[i]
+      if (ch === "'" || ch === '"' || ch === "`") { i = RealSvelteAnalyzer.skipQuoted(text, i) - 1; continue }
+      if (ch === "(" || ch === "[" || ch === "{") {
+        if (depth === 0 && ch === "(") openAt = i
+        depth++
+        continue
+      }
+      if (ch === ")" || ch === "]" || ch === "}") {
+        depth--
+        if (depth === 0) {
+          if (i === e - 1 && openAt >= 0) {
+            return { pattern: text.slice(0, openAt), keyText: text.slice(openAt + 1, e - 1), keyAt: openAt + 1 }
+          }
+          openAt = -1
+        }
+      }
+    }
+    return null
+  }
+
+  /**
+   * F29: record the TEMPLATE read a dedupe drop would otherwise lose.
+   *
+   * Called only from the graph dedupe, for a row that is being DROPPED in favour of a
+   * row already published for the same `type|source|target`. It does nothing unless
+   * the dropped row is a template read and the survivor is not one — the case the
+   * fixture measures — and it writes onto the SURVIVOR:
+   *
+   *   `isTemplateRead: true`        "this row stands for a template read too"
+   *   `templateReadSites: [ … ]`    WHICH sites, merged with any already recorded
+   *
+   * The site list is written even for a SINGLE site, unlike the read map's
+   * `templateReadSites` convention (present only when a member is read on more than
+   * one line). The two are not inconsistent, and the difference is what
+   * `line_number` means on each: on a template-read row `line_number` IS a site, so a
+   * one-element list adds nothing; here `line_number` is the SCRIPT's line, so for a
+   * single dropped site the list is the only place that site exists. The divergence
+   * is recorded in `docs/analyzers/BRANCH-INVENTORY-2026-10-07.md` rather than smoothed
+   * over. Returns whether anything was recorded, so a caller could assert the empty
+   * case.
+   */
+  private static recordDroppedTemplateRead(
+    survivor: ASTEngine.UniversalRelationship,
+    dropped: ASTEngine.UniversalRelationship,
+  ): boolean {
+    if (dropped.metadata?.isTemplateExpression !== true) return false
+    if (survivor.metadata?.isTemplateExpression === true) return false
+    const sites = new Set<number>((survivor.metadata?.templateReadSites as number[] | undefined) ?? [])
+    for (const s of (dropped.metadata?.templateReadSites as number[] | undefined) ?? []) {
+      if (typeof s === "number") sites.add(s)
+    }
+    if (typeof dropped.line_number === "number") sites.add(dropped.line_number)
+    if (sites.size === 0) return false
+    survivor.metadata = {
+      ...(survivor.metadata ?? {}),
+      isTemplateRead: true,
+      templateReadSites: [...sites].sort((a, b) => a - b),
+    }
+    return true
+  }
+
+  /**
+   * F23: is this attribute one of the two EVENT CARRIERS — the two spellings that
+   * make their value a function Svelte calls, and therefore the only two whose
+   * arrow parameters bind?
+   *
+   * `eventCarrierName` is deliberately narrower than "an attribute whose name
+   * starts with on": `onclick` is an event only on an INTRINSIC tag (on a
+   * component it is a prop, and the parent attribute node does not carry the tag
+   * this walk already resolved), so the caller's own `on:`/`onclick` decision is
+   * what this reads. A bare `on:click={save}` has no arrow at all and
+   * `arrowParams` returns nothing, which is correct: a bare identifier is a call
+   * target and is handled by `onHandlerCall`.
+   */
+  private eventCarrierName(parent: Node | null): string | null {
+    if (!parent || parent.type !== "attribute") return null
+    const name = this.attributeName(parent)
+    if (!name) return null
+    if (name.startsWith("on:")) return name
+    return isOnEventAttrName(name) && name.length > 4 ? name : null
+  }
+
+  /** `shadowed` widened by the parameters written at the head of `text`. */
+  private withArrowParams(shadowed: Set<string>, text: string): Set<string> {
+    const params = RealSvelteAnalyzer.arrowParams(text)
+    if (params.length === 0) return shadowed
+    const out = new Set(shadowed)
+    for (const p of params) out.add(p)
+    return out
+  }
+
+  /**
+   * F23: the bound names of an arrow function's parameters, read off the text
+   * before the FIRST top-level `=>`. Pure-String scanning, no regex — this
+   * family's regex census is 0 and stays 0.
+   *
+   * `(evt) =>` gives `evt`; `() =>` gives nothing; `async ({ data }) =>` gives
+   * `data`. Inside a DESTRUCTURING pattern an identifier immediately after a `:`
+   * is the rename KEY (`{ a: local }` binds `local`, not `a`) and one inside
+   * `[ ]` is a COMPUTED key, which is a read rather than a binding — both are
+   * skipped rather than over-shadowed, because over-shadowing silently drops a
+   * true read instead of publishing a false one.
+   */
+  private static arrowParams(text: string): string[] {
+    const out: string[] = []
+    let depth = 0
+    let arrow = -1
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i]
+      if (c === "(" || c === "[" || c === "{") depth++
+      else if (c === ")" || c === "]" || c === "}") depth--
+      else if (depth === 0 && c === "=" && text[i + 1] === ">") { arrow = i; break }
+      else if (c === ";") break
+    }
+    if (arrow < 0) return out
+    let head = text.slice(0, arrow).trim()
+    if (head.startsWith("async")) head = head.slice(5).trim()
+    if (head.startsWith("(") && head.endsWith(")")) head = head.slice(1, -1)
+    else if (!isIdentifier(head)) return out
+    const isWordChar = (ch: string): boolean =>
+      (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9") || ch === "_" || ch === "$"
+    /** One parameter: `name`, `name = default`, `name: Type`, `{ a, b: c }`. */
+    const binding = (raw: string): void => {
+      let t = raw.trim()
+      if (!t) return
+      if (t.startsWith("...")) t = t.slice(3).trim()
+      if (!t) return
+      const destructured = t.indexOf("{") >= 0 || t.indexOf("[") >= 0
+      if (!destructured) {
+        let end = t.length
+        for (let i = 0; i < t.length; i++) {
+          if (t[i] === "=" || t[i] === ":") { end = i; break }
+        }
+        const w = t.slice(0, end).trim()
+        if (isIdentifier(w)) out.push(w)
+        return
+      }
+      let bracket = 0
+      let i = 0
+      while (i < t.length) {
+        const c = t[i]
+        if (c === "[") { bracket++; i++; continue }
+        if (c === "]") { if (bracket > 0) bracket--; i++; continue }
+        if (bracket > 0 || !isWordChar(c) || (c >= "0" && c <= "9")) { i++; continue }
+        let j = i
+        while (j < t.length && isWordChar(t[j])) j++
+        const w = t.slice(i, j)
+        let k = i - 1
+        while (k >= 0 && (t[k] === " " || t[k] === "\t")) k--
+        if (!(t[k] === ":")) out.push(w)
+        i = j
+      }
+    }
+    let d = 0
+    let token = ""
+    for (const ch of head) {
+      if (ch === "(" || ch === "[" || ch === "{") { d++; token += ch; continue }
+      if (ch === ")" || ch === "]" || ch === "}") {
+        d--
+        if (d < 0) break
+        token += ch
+        if (d === 0) binding(token)
+        token = ""
+        continue
+      }
+      if (d === 0 && ch === ",") { binding(token); token = ""; continue }
+      token += ch
+    }
+    binding(token)
+    return [...new Set(out)]
   }
 
   /** D4: last all-identifier segment of a dotted render target
@@ -1907,6 +2680,12 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (node.type === "const_tag") {
       const eq = this.topLevelEq(text)
       if (eq >= 0) {
+        // F28: the LHS is a binding PATTERN — `{@const { [labelKey]: bound =
+        // pick(obj.a) } = obj}` binds `bound` and READS `labelKey`, `pick` and `obj`
+        // (the last one from the trailing initialiser, below). Before this the head
+        // was dropped entirely, so a computed key or a default in it published
+        // nothing AND the bound name was never registered as a template-local.
+        this.collectBindingPattern(text.slice(0, eq), out, shadowed, baseLine, sites)
         // The RHS starts after the `=` — advance the base by the breaks the
         // `{@const name =` prefix contains, so the line stays the expression's.
         base = baseLine + RealSvelteAnalyzer.linesBefore(text, eq + 1)

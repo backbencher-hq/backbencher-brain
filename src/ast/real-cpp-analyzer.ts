@@ -61,6 +61,48 @@ function lastScopeSegment(text: string): string {
 }
 
 /**
+ * D27: collapse every run of whitespace to ONE space and trim the ends.
+ *
+ * Pure-String, for the reason `lastScopeSegment` above gives: this analyzer's own D6
+ * contract is that its source uses no regular expression, and the rule was stated as
+ * a census rather than as an argument — `script/cpp-review/defect-register.ts` counts
+ * regex literals in THIS file and fails on any, and `script/cpp-review/source-integrity.ts`
+ * re-counts them with a self-test that each assertion can fail.
+ *
+ * The rule this replaces was a global whitespace-run substitution written as a
+ * regular-expression literal — `.replace(<ws-run>, " ").trim()` — introduced by the
+ * ontology batch that added `exports`/`imports` and never noticed: that batch's own
+ * report said "regex inventory 0 regex literals", and the lane document has said
+ * "Zero — re-derived from the analyzer's own source on every defect-register run"
+ * since before it. `defect-register.ts` DOES catch it (the character before the
+ * literal is the `(` of the call it is an argument of, which is in that gate's
+ * position set), so the claim was false for the whole of that batch — and the
+ * register could not be run to say so, because its five corpora are absent from this
+ * machine. A documented zero that no runnable gate re-derives is the defect the
+ * ontology workstream is about.
+ *
+ * Single pass, one allocation, and it is the same answer: a whitespace run becomes
+ * one space, and leading/trailing whitespace is dropped.
+ */
+function collapseSpaces(text: string): string {
+  let out = ""
+  let pendingSpace = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    const isWs = c === " " || c === "\t" || c === "\n" || c === "\r" || c === "\f" || c === "\v"
+    if (isWs) {
+      // A space only matters if something has already been kept, which is what
+      // trims the leading run and collapses an interior one without a second pass.
+      if (out) pendingSpace = true
+      continue
+    }
+    if (pendingSpace) { out += " "; pendingSpace = false }
+    out += c
+  }
+  return out
+}
+
+/**
  * D15: does this `function_definition` exist only because the grammar could not read a
  * macro-decorated class head?
  *
@@ -70,6 +112,24 @@ function lastScopeSegment(text: string): string {
  * minimal repro — the first version of this guard changed nothing, for exactly that
  * reason.
  */
+/**
+ * Are these two nodes the same node?
+ *
+ * `web-tree-sitter` hands back a FRESH JS wrapper for each access to one
+ * underlying node, so `a === b` is false for two reads of the same node. Any rule
+ * of the form "the child I already have is this child" therefore has to compare
+ * EXTENT, and the file has been bitten by this twice: the D15 body skip re-pushed
+ * the class body and walked every member twice, and the A2 sibling scan published
+ * three classes as the literal string `class BENCHMARK_EXPORT`.
+ *
+ * Both indexes are offsets into the same source, so `(startIndex, endIndex)` is
+ * an identity within one file — and every caller here is within one file.
+ */
+function sameExtent(a: Node | null | undefined, b: Node | null | undefined): boolean {
+  if (!a || !b) return false
+  return a.startIndex === b.startIndex && a.endIndex === b.endIndex
+}
+
 function isMacroDecoratedClassFunction(node: Node): boolean {
   for (let i = 0; i < node.namedChildCount; i++) {
     const c = node.namedChild(i)
@@ -145,9 +205,43 @@ function isMacroSpelling(s: string): boolean {
   return true
 }
 
-function macroDecoratedClassDecl(spec: Node): { name: string; nameNode: Node; body: Node; owner: Node } | null {
+/**
+ * ONTOLOGY/D21: the analyzer's NO-NAME SENTINEL.
+ *
+ * This string is not a name any C++ program can contain, and it is deliberately
+ * never PUBLISHED. It appears in exactly three places in this file — the
+ * fallbacks for `namespace_definition`, the class/struct/union specifier and
+ * `enum_specifier` — and each of the three branches now DECLINES to publish a
+ * symbol when the name it read is this sentinel, walking the children with the
+ * ENCLOSING scope instead.
+ *
+ * It is exported as a constant rather than left as three literals because a
+ * sentinel compared by string is a sentinel one edit can miss, and because the
+ * lane's own fixtures and probes need to name it. `enclosingScopeOf` above
+ * already refused to return it as an owner for the same reason.
+ */
+export const CPP_ANONYMOUS = "anonymous"
+
+function macroDecoratedClassDecl(spec: Node): { name: string; nameNode: Node; body: Node; owner: Node; bases: Node[] } | null {
   if (spec.type !== "class_specifier" && spec.type !== "struct_specifier" && spec.type !== "union_specifier") return null
   // (a) a real specifier carries its own body and needs none of this
+  //
+  // `field_declaration_list` is the ONLY body node this grammar has. `class_body` is
+  // the UPSTREAM tree-sitter-cpp spelling and the pinned fork declares no rule for
+  // it: `grammars/tree-sitter-cpp/grammar.js` has no `class_body:` definition, and
+  // over the two pinned corpora (128 admitted files) the fork produced
+  // `field_declaration_list` 235 times and `class_body` **0** times (`script/cpp-review/language-shape-census.ts`).
+  // The seven `c.type === "class_body"` tests this file carried were therefore
+  // branches that could never match, which is the dead-branch class the M14 L2
+  // precondition names and `script/m14/verify-fixture-coverage.ts` was already
+  // reporting as `deadLiterals: class_body`.
+  //
+  // The coupling is deliberate and stated: the fork is byte-pinned
+  // (`validation/m14/grammar-pins.json`, `script/m14/verify-grammar-pins.ts` fails on
+  // drift), so the node surface cannot change under this analyzer without a pin
+  // failure. If the fork is ever replaced by upstream, these alternatives must come
+  // back WITH the grammar change, and the pin is what forces that to be a decision
+  // rather than a silent behaviour change.
   for (let i = 0; i < spec.namedChildCount; i++) {
     const c = spec.namedChild(i)
     if (c && c.type === "field_declaration_list") return null
@@ -164,30 +258,119 @@ function macroDecoratedClassDecl(spec: Node): { name: string; nameNode: Node; bo
     if (c && c.type === "compound_statement") { body = c; break }
   }
   if (!body) return null
-  // (2) the real name is a bare identifier SIBLING of the specifier, outside the body
+
+  // ---- ONTOLOGY/D18, the other two shapes a decorated head is recovered in.
   //
-  // D29 — the `c === spec || c === body` guard this loop used to carry was DEAD, and
-  // the shared hygiene gate named it (`bare-node-identity-comparison`, KAD2/TSD2).
-  // Measured on the wired web-tree-sitter: two wrappers for the same underlying node
-  // compare FALSE by identity and TRUE by `.id` —
+  //   A2 (an inheritance clause)   class BENCHMARK_EXPORT ConsoleReporter : public BenchmarkReporter { … };
+  //     ERROR "ConsoleReporter : public"   <- the NAME and the COLON
+  //     identifier "BenchmarkReporter"     <- the BASE
   //
-  //     namedChild(0) === namedChild(0)   ->  false
-  //     namedChild(0).id === ...id        ->  true
+  //   A3 (a trailing specifier)    class BENCHMARK_EXPORT PerfCounters final { … };
+  //     identifier "PerfCounters"          <- the NAME
+  //     ERROR "final"                      <- a KEYWORD, so not a name
   //
-  // so the comparison never skipped anything. It was also REDUNDANT: `spec` is a
-  // class/struct/union specifier and `body` is a `compound_statement`, and the very
-  // next line already refuses every node whose type is not `identifier`. Removed
-  // rather than repaired to `.id`, because a guard that cannot fire is not a guard,
-  // and `.id` would be a second answer to a question the type check already answers.
+  //   A4 (a second head marker)     class BENCHMARK_EXPORT BENCHMARK_INTERNAL_CACHELINE_ALIGNED State { … };
+  //     identifier "BENCHMARK_INTERNAL_CACHELINE_ALIGNED"   <- a second MACRO
+  //     ERROR "State"                                        <- the NAME
+  //
+  // The first cut of this rule handled A2 only, by looking for a bare `identifier`
+  // sibling and calling it the name. That is the base on A2, the second macro on
+  // A4, and the right answer on A1 — measured as SIX declarations deleted or
+  // misnamed over the two pinned C++ corpora (`JSONReporter` and `ConsoleReporter`
+  // both published as `BenchmarkReporter`; `State` published as
+  // `BENCHMARK_INTERNAL_CACHELINE_ALIGNED`; `FunctionBenchmark`, whose base is
+// `benchmark::Benchmark`, published nowhere) while the differential stayed quiet,
+  // because the oracle asks the same helper.
+  //
+  // Each arm is keyed on the EVIDENCE rather than on position, in this order, and
+  // the first that fires wins:
+  //
+  //   1. an ERROR holding exactly `identifier` then `:` — the grammar's own account
+  //      that a base clause followed the head. The name is in the ERROR and every
+  //      name-sibling after it is a BASE.
+  //   2. an ERROR holding exactly one `identifier`, and the name-sibling IMMEDIATELY
+  //      before it reads as a MACRO — a second head marker, so the name is in the
+  //      ERROR. `final` is not a macro spelling, so A3 does not reach this arm.
+  //   3. otherwise the first name-sibling that is NOT a macro spelling; and if
+  //      every sibling reads as a macro, the first sibling anyway, so a genuinely
+  //      all-caps class is still published rather than deleted.
+  //
+  // A name is never read out of an ERROR that holds anything else, so a recovery
+  // that parked unrelated soup here publishes nothing rather than a guess.
+  type Sibling = { node: Node; error: boolean; errorName: Node | null; hasColon: boolean; prevWasMacro: boolean; namedCount: number }
+  const siblings: Sibling[] = []
+  let prevWasMacro = false
   for (let i = 0; i < parent.namedChildCount; i++) {
     const c = parent.namedChild(i)
     if (!c) continue
-    if (c.type !== "identifier") continue
-    if (c.endIndex <= body.startIndex) {
-      return { name: c.text.trim(), nameNode: c, body, owner: parent }
+    // Compare by EXTENT, never by object identity: `parent.namedChild(i)` returns
+    // a fresh JS wrapper per call in this binding, so `c === spec` is false even
+    // for the very node `spec` is. The first cut of this branch used identity and
+    // put the SPECIFIER itself into the sibling list, so the name came out as the
+    // specifier's text — three classes published as the literal string
+    // `class BENCHMARK_EXPORT` with `extends` edges pointing at their own NAME.
+    // The same trap is recorded for the body's skip at the D15 guard below.
+    if (sameExtent(c, spec) || (body && sameExtent(c, body))) continue
+    if (c.endIndex > body!.startIndex) continue
+    if (c.type === "ERROR") {
+      let firstNamed: Node | null = null
+      let named = 0
+      for (let k = 0; k < c.namedChildCount; k++) {
+        const kc = c.namedChild(k)
+        if (!kc || !kc.isNamed) continue
+        named++
+        if (firstNamed === null) firstNamed = kc
+      }
+      // The `:` token is UNNAMED, so the colon test reads the FULL child list
+      // while the name comes from the named list.
+      let hasColon = false
+      for (let k = 0; k < c.childCount; k++) {
+        const kc = c.child(k)
+        if (kc && kc.type === ":") { hasColon = true; break }
+      }
+      // The name is the ERROR's FIRST named child, and the rest of the ERROR is
+      // not required to be empty: `: public LIB_EXPORT Base` puts the base's OWN
+      // head marker in here too, so demanding a single named child (which the
+      // first cut did) missed the shape whenever the base was macro-decorated and
+      // re-published the class under its base's name. The `:` is the load-bearing
+      // evidence — an identifier followed by a colon at class-head position is an
+      // inheritance clause and nothing else is.
+      siblings.push({
+        node: c, error: true,
+        errorName: firstNamed && firstNamed.type === "identifier" ? firstNamed : null,
+        hasColon, prevWasMacro, namedCount: named,
+      })
+      prevWasMacro = false
+      continue
+    }
+    siblings.push({ node: c, error: false, errorName: null, hasColon: false, prevWasMacro, namedCount: 0 })
+    prevWasMacro = c.type === "identifier" && isMacroSpelling(c.text.trim())
+  }
+
+  let nameNode: Node | null = null
+  const bases: Node[] = []
+  const colonArm = siblings.find((s) => s.error && s.errorName && s.hasColon)
+  if (colonArm) {
+    nameNode = colonArm.errorName
+    const at = siblings.indexOf(colonArm)
+    for (let i = at + 1; i < siblings.length; i++) {
+      const c = siblings[i].node
+      if (c.type === "identifier" || c.type === "qualified_identifier" || c.type === "template_type") bases.push(c)
+    }
+  } else {
+    const attrArm = siblings.find((s) => s.error && s.errorName && s.prevWasMacro)
+    if (attrArm) {
+      nameNode = attrArm.errorName
+    } else {
+      const names = siblings.filter((s) => !s.error && (s.node.type === "identifier" || s.node.type === "template_type"))
+      const nonMacro = names.find((s) => !isMacroSpelling(s.node.text.trim()))
+      nameNode = (nonMacro ?? names[0])?.node ?? null
     }
   }
-  return null
+  if (!nameNode) return null
+  const name = nameNode.text.trim()
+  if (!isCppSpelledName(name)) return null
+  return { name, nameNode, body, owner: parent, bases }
 }
 
 
@@ -236,76 +419,112 @@ function enclosingFriendDeclaration(node: Node): Node | null {
 }
 
 /**
- * D13: does this friend declaration DEFINE a function (carry a body), rather than
- * merely declare one? A declaration has no `compound_statement` anywhere under it.
+ * D13: the owner a FRIEND function's body is re-owned to — decided from the walk's
+ * own scope stack, which is the single source of a context's name.
+ *
+ * A friend defined in a class body is NOT a member of that class, so the owning
+ * class is skipped outright: no class/struct/union entry can be the answer here,
+ * and the nearest entry that is not one (a namespace, an enclosing function) is.
+ * When nothing encloses it, the owner is the file-scope sentinel `global` — never
+ * the string `anonymous`, which is this analyzer's own no-name SENTINEL and would
+ * be indistinguishable from a class whose name the analyzer failed to read (D7's
+ * collision note, measured: 239 edges once moved onto it).
+ *
+ * WHY THE STACK AND NOT THE TREE. This replaced a second reader that walked the
+ * ancestors and read a name off the enclosing node's own fields, so it could return
+ * text that is not a name at all. A `#define`-opened namespace is the shape that
+ * breaks that approach, and it is measured, not hypothesized:
+ *
+ *   NLOHMANN_JSON_NAMESPACE_BEGIN
+ *   namespace detail { class primitive_iterator_t { … friend bool operator==(…) { return lhs.m_it == rhs.m_it; } }; }
+ *
+ * The grammar swallows the bare macro and the namespace head into ONE
+ * `function_definition` whose declarator text is the two words `namespace detail`,
+ * and the friend body was published as
+ * `uses namespace detail -> m_it`
+ * (`include/nlohmann/detail/iterators/primitive_iterator.hpp:72`): a source that is
+ * a symbol in no file, so no store can resolve it and no consumer can tell it from
+ * a real one. The keyword test the second reader used could not see it — `namespace
+ * detail` is not IN the keyword set, it merely contains a keyword — and the stack
+ * cannot produce it at all: it holds only scopes whose symbols the walk PUBLISHED,
+ * so a recovery that published nothing leaves the file scope behind and the honest
+ * answer is `global`.
  */
-function nodeHasFunctionBody(decl: Node): boolean {
-  let cur: Node | null = decl
-  let guard = 0
-  while (cur && guard++ < 64) {
-    if (cur.type === "compound_statement" || cur.type === "function_definition") return true
-    for (let i = 0; i < cur.namedChildCount; i++) {
-      const c = cur.namedChild(i)
-      if (c && (c.type === "compound_statement" || c.type === "function_definition")) return true
+function friendBodyOwner(
+  scopeStack: ReadonlyArray<{ node: Node; name: string; kind: ASTEngine.SymbolKind }>,
+  fallback: Node,
+): { node: Node; name: string; kind: ASTEngine.SymbolKind } {
+  for (let i = scopeStack.length - 1; i >= 0; i--) {
+    const scope = scopeStack[i]
+    if (
+      scope.kind === ASTEngine.SymbolKind.Class ||
+      scope.kind === ASTEngine.SymbolKind.Struct ||
+      scope.kind === ASTEngine.SymbolKind.Union
+    ) {
+      continue
     }
-    cur = cur.parent
+    return scope
   }
-  return false
+  return { node: fallback, name: "global", kind: ASTEngine.SymbolKind.Function }
 }
 
 /**
- * D13: the scope that lexically ENCLOSES the class a friend definition sits in.
+ * The names a template PARAMETER LIST binds — one reader for both spellings the
+ * grammar produces: a clean `template_parameter_list`, and the `< … >` frame a
+ * recovery leaves behind (see `isTemplateParameterListFrame`).
  *
- * Walked off the tree rather than carried on `Scope`, which holds no owner link. A
- * friend function is not a member of that class, so its body's reads belong to
- * whatever contains the class — a namespace, an outer class, or the file.
+ * A parameter's declared name is the LAST direct `identifier`/`type_identifier`
+ * child of the parameter (`typename T` → `type_identifier T`, `int N` →
+ * `identifier N`), with a DFS fallback for a shape that wraps the name one level
+ * down. A default (`= std::vector<int>`) hangs off a separate node, so it cannot
+ * displace the name.
  */
-/**
- * D13: the scope a friend function's body belongs to.
- *
- * A friend defined in a class body is NOT a member of that class, so the class is
- * skipped outright and the walk continues to whatever genuinely encloses it — a
- * namespace, an enclosing function, or the file.
- *
- * The first version of this helper returned the CONTAINING CLASS, which is the one
- * scope a friend's body can never belong to; it therefore re-attributed the reads to
- * exactly the owner the fix was written to remove, and the reproducer did not move at
- * all. That is why there is no class/struct/union arm here rather than merely a
- * reordered one: for this rule a class is never the answer.
- */
-function enclosingScopeOf(node: Node): { node: Node; name: string; kind: ASTEngine.SymbolKind } {
-  let cur: Node | null = node.parent
-  let guard = 0
-  while (cur && guard++ < 64) {
-    const t = cur.type
-    // class_specifier / struct_specifier / union_specifier are deliberately absent:
-    // a friend of a class is not a member of it, so no enclosing class owns the body.
-    // An unnamed enclosing scope falls back to `global`, NEVER to the string
-    // "anonymous": that string is the analyzer's own no-name SENTINEL, and D7's
-    // contract calls the collision out explicitly ("Publishing `anonymous` also
-    // collides with the analyzer's own no-name sentinel"). Measured: a first
-    // version of this helper used `nm || "anonymous"` and moved 239 edges ONTO
-    // the sentinel corpus-wide — trading one wrong named owner for a worse one,
-    // since a sentinel owner cannot be told apart from a class whose name the
-    // analyzer failed to read.
-    if (t === "namespace_definition") {
-      const nm = cur.childForFieldName?.("name")?.text
-      if (nm) return { node: cur, name: nm, kind: ASTEngine.SymbolKind.Namespace }
-      break
+function templateParameterNames(list: Node): Set<string> {
+  const names = new Set<string>()
+  for (let j = 0; j < list.namedChildCount; j++) {
+    const param = list.namedChild(j)
+    if (!param) continue
+    let declared: Node | null = null
+    for (let k = 0; k < param.namedChildCount; k++) {
+      const c = param.namedChild(k)
+      if (c && (c.type === "identifier" || c.type === "type_identifier")) declared = c
     }
-    if (t === "function_definition" || t === "function_declarator") {
-      const nm = cur.childForFieldName?.("declarator")?.text
-      if (nm) return { node: cur, name: nm, kind: ASTEngine.SymbolKind.Function }
-      break
+    if (!declared) {
+      const stack: Node[] = [param]
+      while (stack.length > 0) {
+        const n = stack.pop()!
+        if (n.type === "identifier" || n.type === "type_identifier") declared = n
+        for (let k = 0; k < n.namedChildCount; k++) {
+          const c = n.namedChild(k)
+          if (c) stack.push(c)
+        }
+      }
     }
-    if (t === "translation_unit") {
-      return { node: cur, name: "global", kind: ASTEngine.SymbolKind.Function }
-    }
-    cur = cur.parent
+    if (declared?.text) names.add(declared.text)
   }
-  // Nothing above it but classes: a friend defined at file scope belongs to the file,
-  // which is the same `global` owner an out-of-line definition already gets.
-  return { node, name: "global", kind: ASTEngine.SymbolKind.Function }
+  return names
+}
+
+/**
+ * Is this node the `< … >` FRAME of a template parameter list — the shape a
+ * recovery leaves when it cannot keep the list as a `template_parameter_list`?
+ *
+ * Measured (`tests/thirdparty/doctest/doctest.h:2104`, whose whole file is inside
+ * one ERROR region): `template <typename Reporter>` is left as an unnamed `template`
+ * token followed by `ERROR("<typename Reporter>")`, a preceding sibling of the
+ * recovered return type. Its token frame survives intact, and the test is on token
+ * TYPES, never on text: the first and last children are `<` and `>`, and the frame
+ * carries at least one `typename`/`class` keyword token — which no template
+ * ARGUMENT list (`<int>`, `<Foo, Bar>`) carries.
+ */
+function isTemplateParameterListFrame(node: Node): boolean {
+  if (node.childCount < 3) return false
+  if (node.child(0)?.type !== "<" || node.child(node.childCount - 1)?.type !== ">") return false
+  for (let i = 1; i < node.childCount - 1; i++) {
+    const t = node.child(i)?.type
+    if (t === "typename" || t === "class") return true
+  }
+  return false
 }
 
 export function extendsTargetName(baseText: string, className: string): string | null {
@@ -477,6 +696,75 @@ function joinHeadingLines(text: string): string {
 }
 
 /**
+ * D17, the arm for a return type the grammar REJOINED to the name. With a macro
+ * standing before the return type the grammar cannot place the type and splices it
+ * onto the declared name as extra qualifier segments joined by an EMPTY `::`
+ * token:
+ *
+ *     DOCTEST_INTERFACE String operator+(const String& lhs, const String& rhs);
+ *     //  function_declarator > qid[ns String, ``, operator_name operator+]
+ *
+ * `qualifiedDeclaratorLeaf` — which reads that same evidence to split NAME from
+ * OWNER — reports the join as phantom by returning `scopeQid: null`. When it does,
+ * the qid's own text before the name leaf IS the displaced type, spelled the way
+ * the source wrote it. A REAL join (`bool Provider::parse(int)`) returns undefined:
+ * nothing was displaced, and that prefix is an owner, not a type.
+ */
+function phantomQualifierType(nameField: Node | null): string | undefined {
+  if (!nameField || nameField.type !== "qualified_identifier") return undefined
+  const leaf = qualifiedDeclaratorLeaf(nameField)
+  if (!leaf || leaf.scopeQid !== null) return undefined
+  const type = collapseSpaces(nameField.text.slice(0, leaf.nameNode.startIndex - nameField.startIndex))
+  return type || undefined
+}
+
+/**
+ * The DECLARED type a `type` field states, with the decorator peeled. The grammar
+ * splits the two itself when it can, and says so with a node name:
+ *
+ *   LIB_API  void Shutdown();           ->  macro_prefixed_type_specifier
+ *   DOCTEST_INTERFACE bool operator==()      [macro_specifier LIB_API,
+ *                                             primitive_type void/bool]
+ *
+ * so the type is the specifier's NON-MACRO children's text, JOINED — and joined
+ * through `collapseSpaces` because the pieces are separate nodes whose source spacing
+ * is the author's alignment (`unsigned` `long` `long` written with padding or across
+ * lines), and `returnType` is an overload-resolution input rather than a display
+ * field. Returns undefined when nothing but the decorator is there.
+ *
+ * ONTOLOGY/D17. Reading the whole node verbatim published the MARKER as the type.
+ * Measured on the two pinned C++ corpora: **87
+ * published `returnType` values are the marker**, e.g.
+ * `cpp-sample/include/benchmark/benchmark_api.h` `returnType:
+ * "BENCHMARK_EXPORT void"` for `Shutdown` and `returnType: "BENCHMARK_EXPORT"`
+ * for `GetBenchmarkVersion` (the declared types are `void` and `std::string`).
+ * The out-of-line definition of the same function in `src/benchmark.cc` publishes
+ * `void`, so ONE C++ function carried two different return types in one index —
+ * not a display slip, because `returnType` is an overload-resolution input and a
+ * consumer comparing the two rows sees a contradiction. When the marker is all
+ * the node carries the answer is `undefined`: the field is omitted rather than
+ * filled with a name that is not a type.
+ *
+ * ONE READER, and the reconciliation of two. The lane's ontology round wrote this
+ * rule a SECOND time as a private method of the same name, with its own reader for
+ * the `type` field (`macroNames`-gated, so a macro the file defines LATER was still
+ * published as a type). Both were live in their own trees and neither tree could
+ * see the other; on the reconciled tree the method had no callers left, so it was
+ * removed and its measurement — the 87 counts above — moved HERE, onto the reader
+ * that actually runs. `returnType` is an overload-resolution input, so two readers
+ * of it is two answers to one question, which is the same defect D19's parameter
+ * signature had.
+ */
+function specifierTypeText(specifier: Node): string | undefined {
+  const parts: string[] = []
+  for (let i = 0; i < specifier.namedChildCount; i++) {
+    const c = specifier.namedChild(i)
+    if (c && c.type !== "macro_specifier") parts.push(c.text)
+  }
+  return collapseSpaces(parts.join(" ")) || undefined
+}
+
+/**
  * #924: C++ keywords that name a BUILTIN TYPE. As in the C lane
  * (`C_SPECIFIER_KEYWORDS`), a callee spelled with one of these is a functional
  * cast, never a call: the language has no identifier by that name, so publishing
@@ -487,6 +775,43 @@ function joinHeadingLines(text: string): string {
 export const CPP_BUILTIN_TYPE_KEYWORDS: Set<string> = new Set([
   "void", "bool", "char", "char8_t", "char16_t", "char32_t", "wchar_t",
   "short", "int", "long", "float", "double", "signed", "unsigned", "auto",
+])
+
+/**
+ * Standard library typedefs that are MANDATED to name non-class types.
+ *
+ * ISO 14882 names these in `<cstdint>` / `<cstddef>`, and every one of them is
+ * required to be an integer type (or, for `nullptr_t`, the type of `nullptr`) —
+ * so a name spelled this way can NEVER be a class being constructed, in any
+ * translation unit that includes the standard header, and the standard reserves
+ * the spellings against redeclaration. They are not KEYWORDS (`isCppSpelledName`
+ * is right to pass them: `size_t x;` is a real declaration), which is why the
+ * `instantiates` gate needs this set of its own — the D1 keyword funnel cannot
+ * see them.
+ *
+ * MEASURED, this is what the set is for: `auto* v = new uint8_t[5];` in
+ * cpp-example's `tests/src/unit-deserialization.cpp:551` published
+ * `instantiates -> uint8_t` — an array of integers, not a constructed class.
+ * One row corpus-wide (21 `instantiates` rows over 465 files), and a target no
+ * store can ever resolve to a class symbol, so it is the same impossibility the
+ * D1 ruling names, reached through a name the keyword set cannot spell.
+ *
+ * The DELIBERATELY absent classes are the same as D1's: no `std::`-qualified
+ * aliases (`string`, `vector`) are here, because those are class types and a
+ * consumer with an index may well resolve them.
+ */
+export const CPP_NON_CLASS_STANDARD_TYPES: Set<string> = new Set([
+  // <cstdint> exact-width
+  "int8_t", "int16_t", "int32_t", "int64_t", "uint8_t", "uint16_t", "uint32_t", "uint64_t",
+  // <cstdint> least/fast variants
+  "int_least8_t", "int_least16_t", "int_least32_t", "int_least64_t",
+  "uint_least8_t", "uint_least16_t", "uint_least32_t", "uint_least64_t",
+  "int_fast8_t", "int_fast16_t", "int_fast32_t", "int_fast64_t",
+  "uint_fast8_t", "uint_fast16_t", "uint_fast32_t", "uint_fast64_t",
+  // <cstdint> pointer-width and widest
+  "intptr_t", "uintptr_t", "intmax_t", "uintmax_t",
+  // <cstddef>
+  "size_t", "ptrdiff_t", "nullptr_t",
 ])
 
 /**
@@ -564,6 +889,151 @@ export const CPP_KEYWORDS: Set<string> = new Set([
 export function isCppSpelledName(text: string | null | undefined): boolean {
   if (!text) return false
   return !CPP_KEYWORDS.has(text)
+}
+
+/**
+ * ONTOLOGY/D23: is this declaration a PURE VIRTUAL — `virtual T f(...) = 0;`?
+ *
+ * The member a pure virtual declares is the C++ spelling of an interface
+ * operation ([class.abstract]), so this predicate is the substrate both
+ * `metadata.isPureVirtual` / `metadata.isAbstract` and any `implements` reading
+ * rest on. It is exported so the lane's probes and its oracle can ask the same
+ * question of the same node, per #916: a second copy of a rule is a second
+ * answer, and the two cancelling out of every count is how the CPPD15
+ * self-agreeing `uses num_bits` survived a year of gates.
+ *
+ * TWO SHAPES, because the grammar produces two, and they occur in the same
+ * corpus in the same file:
+ *
+ *     field_declaration [declarator=function_declarator type=primitive_type]
+ *       virtual, primitive_type "bool", function_declarator …          <- `0` direct
+ *
+ *     declaration [declarator=init_declarator type=primitive_type]
+ *       virtual, primitive_type "bool",
+ *         init_declarator [declarator=function_declarator value=number_literal]
+ *                                                                        <- `0` nested
+ *
+ * The discriminator is the `= 0` INITIALISER, read off the `value` FIELD of an
+ * `init_declarator` (or, in the first shape, off the declaration's own direct
+ * children) — never a text shape, because a recovery moves text and the
+ * `init_declarator`'s `value` field is what the grammar states.
+ *
+ * The declarator must be a `function_declarator` in BOTH shapes. A member
+ * variable initialised to zero (`virtual int x = 0;`) is not a pure virtual, and
+ * a rule that only looks for the literal `0` cannot tell the two apart.
+ *
+ * The pinned fork DOES declare a `pure_virtual_clause` rule — in
+ * `grammars/tree-sitter-cpp/grammar.js` it is `pure_virtual_clause`, a three-token
+ * sequence of `=`, the grammar's zero-literal token and `;`, quoted here in words
+ * because writing the token the way the grammar file writes it puts a slash-delimited
+ * run in THIS comment, and this file's own D6 contract is that it uses no regular
+ * expression (see `collapseSpaces` for what that costs when it is forgotten).
+ * It is reachable only from `inline_method_definition` and
+ * `constructor_or_destructor_definition`, and over the two pinned corpora the
+ * fork produced **0** of them while producing 7 pure virtuals in the shapes
+ * above. A reader that watches for `pure_virtual_clause` therefore sees nothing,
+ * which is exactly what `script/cpp-review/language-shape-census.ts`'s
+ * `pure_virtual_in_inherited_class` probe did before ONTOLOGY/D23 — see that file.
+ */
+export function cppPureVirtualDeclaration(node: Node | null | undefined): boolean {
+  if (!node) return false
+  if (node.type !== "declaration" && node.type !== "field_declaration" && node.type !== "function_definition") return false
+  // shape 1: the declarator IS the function declarator, so the `= 0` is a direct child
+  const direct = node.childForFieldName?.("declarator")
+  if (direct?.type === "function_declarator" && hasZeroLiteralChild(node)) return true
+  // shape 2: the declarator is an `init_declarator` whose VALUE is the `0`
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const c = node.namedChild(i)
+    if (!c || c.type !== "init_declarator") continue
+    const value = c.childForFieldName?.("value")
+    const inner = c.childForFieldName?.("declarator")
+    if (value?.type === "number_literal" && value.text.trim() === "0" && inner?.type === "function_declarator") return true
+  }
+  return false
+}
+
+/** A `0` among this node's DIRECT children — shape 1 of `cppPureVirtualDeclaration`.
+ *  `fieldDeclaration`/`init_declarator` also satisfy this, so the caller pairs it
+ *  with the `declarator` FIELD test; that pairing is the whole rule. */
+function hasZeroLiteralChild(node: Node): boolean {
+  for (let i = 0; i < node.childCount; i++) {
+    const child = node.child(i)
+    if (child && child.type === "number_literal" && child.text.trim() === "0") return true
+  }
+  return false
+}
+
+/**
+ * ONTOLOGY `exports`: is this macro SPELLING a shared-library EXPORT marker?
+ *
+ * C++ before C++20 has no `export` keyword, so the construct that means "this
+ * declaration is part of the library's public ABI" is a CONVENTION, written as a
+ * macro in the declaration-specifier position:
+ *
+ *     BENCHMARK_EXPORT void Shutdown();                    <- exported
+ *     BENCHMARK_ALWAYS_INLINE std::string join(int);       <- decorated, not exported
+ *     typedef void* HANDLE;                                <- an all-caps TYPE, not a macro
+ *
+ * Measured on the two pinned C++ corpora (128 admitted files, 267 distinct node
+ * types): 102 `macro_prefixed_type_specifier` sites and 16 macro-decorated
+ * class/struct heads. Reading "an all-caps identifier in type position" as the
+ * export marker would have fired on all 118 and been wrong on 44 of them —
+ * `BENCHMARK_ALWAYS_INLINE` 17, `BENCHMARK_UNUSED` 4, `HANDLE` 3, `DWORD` 3,
+ * `BENCHMARK_NORETURN` 2, `WORD` 2 and the rest. An `exports` edge pointing at
+ * `BENCHMARK_ALWAYS_INLINE` asserts an ABI fact that is false, and a fabricated
+ * edge is counted as unexplained and poisons `bb_graph`.
+ *
+ * So the marker is decided on the macro's own NAME, and on underscore-delimited
+ * COMPONENTS rather than a substring. `BENCHMARK_EXPORT` -> `EXPORT` yes;
+ * `BENCHMARK_ALWAYS_INLINE` -> `ALWAYS`, `INLINE` no; `HANDLE` -> `HANDLE` no.
+ * The component set is what a compiler-generated export header spells —
+ * `CMAKE_CXX_VISIBILITY_PRESET`/`__declspec(dllexport)` wrappers are named
+ * `*_EXPORT`, `*_API`, `*_DLLEXPORT` or `*_VISIBILITY` in every generator this
+ * lane can name (CMake `generate_export_header`, autotools `-export-symbols`,
+ * abseil's `ABSL_EXPORT`).
+ *
+ * WHAT THE EDGE ASSERTS, precisely: source = the DECLARED name, target = the
+ * macro **as written**, `metadata.exportMacro` = the same spelling. That is a
+ * syntactic fact read from a `macro_specifier` node, so `confidence` is 1.0 and
+ * the inference (this macro means "exported") is carried by the rule and stated
+ * here rather than smuggled into the number. The C lane states it the same way
+ * (`module_export` + `exportMacro`, confidence 1.0).
+ *
+ * Exported for the same reason `isCppSpelledName` and `extendsTargetName` are: a
+ * second copy of this rule is a second answer, and the two sides cancelling out
+ * of every count is how a wrong edge survives a year of gates (#916).
+ */
+export const CPP_EXPORT_MARKER_COMPONENTS: ReadonlySet<string> = new Set([
+  "EXPORT", "EXPORTS", "EXPORTABLE", "DLLEXPORT", "API", "VISIBILITY", "PUBLIC_API",
+])
+
+// The `_`-delimited components of a macro spelling — pure String, no regex (D6).
+// (`//` and not `/** … */`: D6 is a character test that counts a slash-delimited run
+// wherever the preceding non-space character is in its position set, so a ONE-LINE
+// doc comment's own delimiters read as a regex literal. That is a limitation of D6
+// rather than of the code, and it is recorded rather than worked around by making the
+// detector weaker.)
+function identifierComponents(text: string): string[] {
+  const out: string[] = []
+  let cur = ""
+  for (let i = 0; i <= text.length; i++) {
+    const c = i < text.length ? text.charCodeAt(i) : 95
+    if (c === 95) {
+      if (cur) out.push(cur)
+      cur = ""
+      continue
+    }
+    cur += text[i]
+  }
+  return out
+}
+
+export function cppExportMarker(macro: string | null | undefined): boolean {
+  if (!macro) return false
+  const comps = identifierComponents(macro.trim())
+  if (comps.length === 0) return false
+  for (const c of comps) if (CPP_EXPORT_MARKER_COMPONENTS.has(c)) return true
+  return false
 }
 
 /**
@@ -945,6 +1415,16 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     // include directives wants the count; the GRAPH keeps the dependency, which
     // is what an edge means. Same split the family makes for `uses`.
     const referencesSeen = new Set<string>()
+    // ONTOLOGY `exports`: one edge per (declared name, marker) pair. A class or
+    // function decorated by the same export macro twice is one declaration; the
+    // overloads stay SYMBOLS (same split D3 makes for `contains`).
+    const exportsSeen = new Set<string>()
+    // Every `#define` this analyzer publishes, by name. Used by `declaredReturnType`
+    // to tell a MACRO in type position from a real all-caps TYPE (`DWORD`), which a
+    // spelling test cannot do. A Set filled as macros are published rather than an
+    // O(symbols) scan per declaration: the scan was measured, not guessed at — it is
+    // O(n) on the file's whole symbol list and it runs once per declaration.
+    const macroNames = new Set<string>()
     let fileDecisions = 0
     const classVirtuals = new Map<string, Map<string, string[]>>()
     const pendingOverrides: Array<{ cls: string; method: string; params: string; line?: number; keyword?: "override" | "final" }> = []
@@ -962,7 +1442,6 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     // however many times it is declared (an in-class declaration and an out-of-line
     // definition are two nodes stating one export).
     const pendingExports: Array<{ name: string; owner: string | null; line: number; spelling: string }> = []
-    const exportsSeen = new Set<string>()
 
     // CP1 (cpp review) bare-read resolution sets. C++ has no runtime —
     // every bare `identifier` that names a file-visible VALUE is a Uses
@@ -1027,7 +1506,11 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         const t = n.type
         if (t === "namespace_definition") {
           const nm = this.childText(n, "namespace_identifier")
-          if (nm && nm !== "anonymous") {
+          // ONTOLOGY/D21: `nm !== CPP_ANONYMOUS` is now a belt, not a load-bearing
+          // clause — `childText` returns the identifier or nothing, and ONTOLOGY/D21
+          // removed the `"anonymous"` fallback from the walk. Kept as one named
+          // constant so a reader grepping the sentinel finds every mention.
+          if (nm && nm !== CPP_ANONYMOUS) {
             for (let i = n.namedChildCount - 1; i >= 0; i--) {
               const c = n.namedChild(i)
               if (c) pre.push({ n: c, ns: [...ns, nm], inFn, inClass })
@@ -1342,14 +1825,6 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       return false
     }
-    const hasFriendAncestor = (node: Node): boolean => {
-      let cur: Node | null = node.parent
-      while (cur) {
-        if (cur.type === "friend_declaration") return true
-        cur = cur.parent
-      }
-      return false
-    }
     // Qualified reads (`ns::x`, `Foo::y`) resolve through scopes the
     // single-TU graph cannot see — recorded limitation, stays silent.
     const hasQualifiedAncestor = (node: Node): boolean => {
@@ -1358,8 +1833,8 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         const t: string = cur.type
         if (t === "qualified_identifier") return true
         if (t.includes("statement") || t.includes("declaration") || t.includes("declarator") ||
-            t.includes("expression") || t.includes("function_definition") || t.includes("field_declaration_list") ||
-            t.includes("argument_list")) return false
+            t.includes("expression") || t.includes("function_definition") ||
+            t.includes("field_declaration_list") || t.includes("argument_list")) return false
         cur = cur.parent
       }
       return false
@@ -1371,7 +1846,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         const t: string = cur.type
         if (t === "attribute" || t === "attribute_declaration" || t === "attribute_specifier") return true
         if (t.includes("statement") || t.includes("declaration") || t.includes("function_definition") ||
-            t.includes("expression")) return false
+            t.includes("expression") || t.includes("field_declaration_list")) return false
         cur = cur.parent
       }
       return false
@@ -1477,7 +1952,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           const mm = classMembers.get(s.classScope)
           if (mm && mm.has(name)) return true
         }
-        if (s.kind === ASTEngine.SymbolKind.Namespace && s.name !== "anonymous") enclosingNs.push(s.name)
+        if (s.kind === ASTEngine.SymbolKind.Namespace && s.name !== CPP_ANONYMOUS) enclosingNs.push(s.name)
       }
       for (const ns of enclosingNs) {
         const nm = namespaceValues.get(ns)
@@ -1710,17 +2185,185 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
      * child of the DECLARATOR and the plain type is a field of the DECLARATION, so
      * finding either one from the other means a `findChild` walk on the hot path
      * for a node the caller already has in hand.
+     *
+     * D17/D27 (decorated head). A macro standing before the return type is a
+     * DECORATOR, and the `type` field then holds either the decorator alone or the
+     * decorator and the type TOGETHER — the grammar splits the two itself when it
+     * can:
+     *
+     *   LIB_EXPORT  void Shutdown();           -> specifier[macro_specifier LIB_EXPORT,
+     *   DOCTEST_INTERFACE bool operator==(…);      primitive_type void/bool]
+     *
+     * Publishing the field's whole text gave ONE C++ function two different return
+     * types in one index — the header said `LIB_EXPORT void`, its out-of-line
+     * definition in the .cpp said `void` (87 rows over the two pinned corpora) —
+     * and `returnType` is an overload-resolution input, not a display field. So the
+     * decorator is peeled and the declared type is REBUILT from the specifier's
+     * non-macro children, joined by a single space (D27: `unsigned   long   long
+     * Counter()` publishes `unsigned long long`).
+     *
+     * When the `type` field is the DECORATOR ALONE the grammar has displaced the
+     * type, and WHERE it went is read off the recovery rather than guessed — the two
+     * arms this delegates to (`phantomQualifierType` for a type rejoined to the name,
+     * `displacedReturnType` for a type left inside the recovery's ERROR). Neither
+     * arm fires and the head is recovered => the decorator stands alone, which is a
+     * CONSTRUCTOR's decorated head: the construct states no type, and a macro name
+     * published there is a claim about a signature that does not exist. A bare
+     * all-caps spelling with a clean head keeps its field, because that is a real
+     * type a source may declare (`typedef void* HANDLE; … HANDLE Open();`) — the
+     * spelling alone can never be the test.
      */
-    const declaredReturnType = (node: Node | null, declarator: Node | null): string | undefined => {
+    /**
+ * The override-matching SIGNATURE of a parameter list: the parameter TYPES only.
+ *
+ * CPPD5 (M37.9, fmt gtest.h): parameter NAMES are not part of a C++ signature, and
+ * the gtest idiom of commenting an unused name out (`const TestInfo& /*test_info*\/`)
+ * made the old full-text comparison diverge from the base declaration. Parameter
+ * types are the only thing that discriminates an overload.
+ *
+ * **It was reading the NAMES again.** This function's own comment said "names,
+ * comments and whitespace never enter the signature" and the measurement says they
+ * did: the name lookup was a SECOND, weaker rule (a `declarator`-FIELD chain only),
+ * so a parameter declared `const Context& context` — whose name sits under a
+ * `reference_declarator` as a plain NAMED child, not a field — resolved to no name
+ * node, and the whole parameter text including `context` became the "type". A base
+ * naming its parameter `report` and a derived naming the SAME TYPE `reports` then
+ * produced two different signature keys and no `overrides` edge. Measured on the two
+ * pinned C++ corpora, `cpp-sample/include/benchmark/reporter.h`:
+ *
+ *   register cls=BenchmarkReporter m=ReportContext sig="const Context& context"
+ *   register cls=ConsoleReporter  m=ReportContext sig="const Context& context"   <- matched
+ *   register cls=BenchmarkReporter m=ReportRuns     sig="const std::vector<Run>& report"
+ *   register cls=JSONReporter     m=ReportRuns     sig="const std::vector<Run>& reports" <- NOT matched
+ *
+ * Both halves are wrong in the same way: a name is not part of a C++ signature, so
+ * two declarations of the same type with different parameter names ARE the same
+ * signature and one of them overriding the other is real virtual dispatch.
+ *
+ * The rule is now the analyzer's SINGLE declared-name funnel (`declaredNameNode`),
+ * which is the same one the published `parameters` payload uses — the two had
+ * drifted into a second answer about a second question, and the divergence was
+ * invisible because the payload's own fixture passes while the override key does
+ * not. Also handles the `= <default>` value (`optional_parameter_declaration`),
+ * which is not part of a signature either.
+ *
+ * Declared as a closure rather than a method for exactly that reason: it has to
+ * reach `declaredNameNode`, which lives in the walk, and a method cannot. That is
+ * also why the private `declaredNameNodeFor` it used to call is gone — keeping it
+ * would have left two name rules in the file, one of which is the wrong one.
+ */
+const buildParamSig = (parametersNode: Node | null): string => {
+  if (!parametersNode) return ""
+  const parts: string[] = []
+  for (let i = 0; i < parametersNode.namedChildCount; i++) {
+    const pc = parametersNode.namedChild(i)
+    if (!pc) continue
+    if (pc.type === "comment") continue
+    if (pc.type === "variadic_parameter_declaration") {
+      parts.push("...")
+      continue
+    }
+    if (pc.type !== "parameter_declaration" && pc.type !== "optional_parameter_declaration") {
+      // stray nodes: include raw text, as before — an unreadable parameter is
+      // not silently dropped, because a dropped one makes two signatures equal
+      continue
+    }
+    // `= default` / `= expr` is not part of the signature either; the type text
+    // precedes the `=`.
+    const eqAt = pc.text.indexOf("=")
+    const nameNode = declaredNameNode(pc)
+    let t = pc.text
+    if (nameNode) {
+      const cut = nameNode.startIndex - pc.startIndex
+      if (cut > 0) t = t.slice(0, cut)
+    } else if (eqAt !== -1) {
+      t = t.slice(0, eqAt)
+    }
+    t = t.trim()
+    if (t) parts.push(t)
+  }
+  return parts.join(",")
+}
+
+const declaredReturnType = (node: Node | null, declarator: Node | null): string | undefined => {
       if (declarator) {
         const tail: Node | null = this.findChild(declarator, "trailing_return_type") ?? null
         const td: Node | null = tail ? (this.findChild(tail, "type_descriptor") ?? tail.namedChild(0)) : null
         const t = td?.text?.trim()
         if (t) return t
       }
-      const t: Node | null = node?.childForFieldName?.("type") ?? null
-      const text = t?.text?.trim()
-      return text || undefined
+      const typeField: Node | null = node?.childForFieldName?.("type") ?? null
+      if (!typeField) return undefined
+      if (typeField.type === "macro_prefixed_type_specifier") return specifierTypeText(typeField)
+      const stated = collapseSpaces(typeField.text)
+      if (!stated) return undefined
+      if (!isMacroSpelling(stated)) return stated
+      const rejoined = phantomQualifierType(declarator?.childForFieldName?.("declarator") ?? null)
+      if (rejoined) return rejoined
+      if (!node) return stated
+      const displaced = this.displacedReturnType(node, declarator)
+      if (displaced) return displaced
+      return this.recoveredDecoratorHead(node, declarator) ? undefined : stated
+    }
+
+    /**
+     * The ONE place a cpp function symbol is built. Every path that publishes a
+     * function-like declaration calls it — the member arm (which is also the
+     * destructor/constructor/out-of-line arm) and the friend arm — so the shared
+     * discipline lives here instead of being re-derived per construct: the node's
+     * range, its complexity, the declared signature, the decorators, and the OWNER.
+     *
+     * The caller decides what is specific to the construct — name, kind, owner,
+     * visibility, whether it is static, and the metadata flags — and this function
+     * decides how a symbol STATES it:
+     *
+     *   * `parameters`/`returnType` are OMITTED rather than emitted empty when there
+     *     is no real signature: an empty list is a claim that the function takes no
+     *     arguments, and for one that genuinely takes none (`void f()`) that is a
+     *     true claim worth making, so only the unknowable case is withheld.
+     *   * the owner name `global` is this analyzer's FILE-SCOPE SENTINEL, the answer
+     *     `friendBodyOwner` gives when the walk published no enclosing scope. It is
+     *     not a name any translation unit can declare, so it never reaches the
+     *     symbol: the owner becomes absent, and `ownerKind` with it (an owner KIND
+     *     describing no owner is a claim about nobody).
+     *
+     * The macro-heading branch is deliberately NOT a caller: it publishes a macro
+     * heading — `isCppFunction: false`, no signature to read — not a C++ function.
+     */
+    const buildFunctionSymbol = (
+      node: Node,
+      declarator: Node | null,
+      parts: {
+        name: string
+        kind: ASTEngine.SymbolKind
+        metadata: Record<string, unknown>
+        visibility?: string
+        ownerName?: string
+        ownerKind?: ASTEngine.SymbolKind
+        isStatic?: boolean
+        decorators?: string[]
+      },
+    ): ASTEngine.UniversalSymbol => {
+      const parameters = declaratorParameters(declarator)
+      const returnType = declaredReturnType(node, declarator)
+      const ownerName = parts.ownerName === "global" ? undefined : parts.ownerName
+      const decorators = parts.decorators ?? []
+      return {
+        name: parts.name,
+        kind: parts.kind,
+        range: this.nodeToRange(node),
+        complexity: this.methodComplexityCpp(node),
+        visibility: parts.visibility || "public",
+        // Absent for a construct with no linkage of its own (a friend definition),
+        // present-and-false for every member declaration: the store reads the KEY.
+        ...(parts.isStatic === undefined ? {} : { isStatic: parts.isStatic }),
+        ownerName,
+        ownerKind: ownerName === undefined ? undefined : parts.ownerKind,
+        ...(parameters.length > 0 ? { parameters } : {}),
+        ...(returnType ? { returnType } : {}),
+        ...(decorators.length > 0 ? { decorators } : {}),
+        metadata: { isCppFunction: true, ...parts.metadata },
+      }
     }
 
     while (stack.length > 0) {
@@ -2049,11 +2692,27 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         // depends: #include = compile-time dependency (includePath computed above)
         if (includePath) {
-          // #419 family contract: include edges carry the SAME metadata shape
-          // as the C analyzer (relationshipType "include_dependency" +
-          // isImport) — the C++ variant previously emitted only
-          // isIncludeDependency, so the completeness gate's Section B saw no
-          // pin for the include dependency kind.
+          // ONTOLOGY `imports` (M60/#910 family). The kind is `imports`, not
+          // `references`, and this is a CONSUMER argument rather than a taste
+          // argument: `src/lsp/graph_request.ts` builds its file-level
+          // `dependencies` section from
+          //
+          //   WHERE relationship_type = 'imports' AND source_symbol_id IS NULL
+          //     AND target_symbol_id IS NULL AND source_external = <file>
+          //
+          // so a C++ `#include` stored as `references` is not merely mislabelled —
+          // it is INVISIBLE to the one reader that answers "what does this
+          // translation unit depend on". The C lane made this exact relabel in
+          // #910 and `script/m14/mutate-analyzer.ts` carries a mutant for it
+          // ("downgrades the include edge from the first-class `imports` kind
+          // back to the old `references` + metadata shape — the asymmetry every
+          // harness was blind to"); nim's mutant says the same about nim.
+          //
+          // The metadata keys `module` and `fileLevel` are the C lane's and are
+          // load-bearing: `module` is what a consumer reads as the module
+          // specifier, and `fileLevel` is what tells `parallel-indexer.ts`
+          // (line ~3481) that a relationship with no resolvable source symbol
+          // belongs to the FILE rather than to a symbol.
           //
           // M60/#910, the ONTOLOGY correction (this round, measured): the KIND
           // was wrong, not the metadata. A `#include` is C++'s file inclusion —
@@ -2141,11 +2800,33 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (type === "namespace_definition") {
-        const name = this.childText(node, "namespace_identifier") || "anonymous"
+        const name = this.childText(node, "namespace_identifier") || CPP_ANONYMOUS
         // D1: a namespace is named by an identifier; a keyword spelling is
-        // recovery. (The "anonymous" sentinel is the deliberate no-name marker,
-        // not a keyword, and is unaffected.)
-        if (!isCppSpelledName(name)) {
+        // recovery.
+        //
+        // ONTOLOGY/D21: an UNNAMED namespace publishes NOTHING. `namespace { … }`
+        // is a real and very common C++ construct — it is how a TU gets internal
+        // linkage — and C++ gives it no name to publish. The old code published
+        // the literal string `anonymous`, which is not a name any C++ program
+        // contains, and the corpus then measured what that costs:
+        //
+        //   92 `namespace` symbols named `anonymous` over 65 files, and
+        //   1,073 relationship rows (882 `calls`, 191 `uses`) whose SOURCE
+        //   endpoint is that string.
+        //
+        // Every one of those rows is an edge out of a name that 92 DIFFERENT
+        // scopes share, so `bb_graph` on `anonymous` merges unrelated scopes and
+        // `bb_impact` cannot tell which one broke. That is the R7
+        // placeholder-literal endpoint the ontology workstream's definition of
+        // done forbids, arriving through the SOURCE side as well as the target
+        // side.
+        //
+        // Declining the symbol is also the C++-correct owner, not a consolation:
+        // an unnamed namespace has an implicit using-directive in its enclosing
+        // scope ([namespace.unnamed]), so its members ARE found by unqualified
+        // lookup there. The members are walked with the ENCLOSING context, which
+        // is where the language says they live.
+        if (name === CPP_ANONYMOUS || !isCppSpelledName(name)) {
           newContext = parentContext
           for (let i = node.namedChildCount - 1; i >= 0; i--) {
             const child = node.namedChild(i)
@@ -2186,7 +2867,77 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // same-named CONSTRUCTOR. The body and the name both come off the parent.
           const decorated = macroDecoratedClassDecl(node)
           if (decorated) {
-            symbols.push({
+            // D16 (ONTOLOGY `contains`): this symbol used to be published with
+            // `scope: "global"` and NO `ownerName`, which is not a cosmetic
+            // difference. `parallel-indexer.ts` reads the owner as
+            // `symbol.ownerName || symbol.scope`, so a nested decorated class
+            // stored with ownerName undefined resolved its owner to the literal
+            // string "global", found no such symbol, and persisted it with
+            // `owner_symbol_id = NULL` — the containment fact was gone from the
+            // store, and the post-loop `contains` post-pass (which reads the
+            // same `ownerName || scope`) emitted `contains global -> X`, an edge
+            // shape this lane's own ontology table says never occurs. Measured on
+            // the two pinned C++ corpora: 10 decorated classes published with no
+            // owner, one of them (`struct BENCHMARK_EXPORT Run` nested inside
+            // `class BENCHMARK_EXPORT BenchmarkReporter`) a class that HAS a
+            // real owner and lost it.
+            const ownerName = parentContext?.name
+            // D18: the bases an inheritance clause on the decorated head carried.
+            // Read through `extendsTargetName`, the SAME helper the ordinary
+            // `base_class_clause` branch and the override resolver use, so the D2
+            // self-base refusal and the template-argument strip cannot disagree
+            // across the two shapes. Without this the clause is simply absent —
+            // measured as 3 sites over 128 files where the grammar put
+            // `Name : access Base` in an ERROR node and the analyzer published no
+            // `extends` edge and no `classBases` entry, which is also why
+            // `overrides` fired ZERO times on this corpus despite 77 WRITTEN
+            // `override` specifiers in 26 files.
+            const decorBases: string[] = []
+            for (const b of decorated.bases) {
+              const target = extendsTargetName(b.text, decorated.name)
+              if (!target) continue
+              decorBases.push(target)
+              relationships.push({
+                source: decorated.name,
+                target,
+                type: ASTEngine.RelationshipType.Extends,
+                confidence: 1.0,
+                line_number: this.nameLine(b),
+                metadata: { nodeType: b.type, macroDecoratedHead: true },
+              })
+            }
+            classBases.set(decorated.name, decorBases)
+            // ONTOLOGY `exports`: a macro in the class head that is an export
+            // marker. See `cppExportMarker` for why the marker cannot be decided
+            // by "some all-caps macro".
+            const decorMacro = node.childForFieldName?.("name")?.text?.trim() ?? ""
+            if (decorMacro && cppExportMarker(decorMacro)) {
+              const ek = `exports::${decorated.name}::${decorMacro}`
+              if (!exportsSeen.has(ek)) {
+                exportsSeen.add(ek)
+                relationships.push({
+                  source: decorated.name,
+                  target: decorMacro,
+                  type: ASTEngine.RelationshipType.Exports,
+                  confidence: 1.0,
+                  line_number: this.nodeLine(node),
+                  metadata: { relationshipType: "module_export", exportMacro: decorMacro, reasonCode: "export-marker-in-specifier" },
+                })
+              }
+            }
+            // The bare sibling is the NAME, not a declarator: descending into it would
+            // mint a function symbol for the class's own name.
+            //
+            // ONTOLOGY/D23, second half: this scope carried no `symbolRef`, so the
+            // `isExit` handler that copies `isAbstract` onto the class SYMBOL could
+            // not fire for a macro-decorated head — and those are precisely the
+            // abstract bases the corpus inherits most: `BenchmarkReporter` (9 of the
+            // 42 `extends` edges), `ConsoleReporter`, `JSONReporter`, `BenchmarkName`.
+            // The exit record is pushed BEFORE the body so the LIFO pops the body
+            // first and the flag lands after the members have been walked; the
+            // shared exit push at the end of the loop is unreachable from here
+            // because this branch `continue`s.
+            const decoratedSym: ASTEngine.UniversalSymbol = {
               name: decorated.name,
               kind: ASTEngine.SymbolKind.Class,
               range: {
@@ -2197,17 +2948,17 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                 startIndex: node.startIndex,
                 endIndex: decorated.body.endIndex,
               },
-              scope: "global",
+              ...(ownerName ? { ownerName, ownerKind: parentContext?.kind } : { scope: "global" }),
               visibility: parentContext?.visibility || "public",
               metadata: {
                 isCppClass: true,
                 isTemplate: false,
                 nameLine: this.nodeLine(decorated.nameNode),
                 macroDecoratedHead: node.childForFieldName?.("name")?.text?.trim() ?? "",
+                baseClasses: decorated.bases.map((b) => extendsTargetName(b.text, decorated.name)).filter((x): x is string => !!x),
               },
-            })
-            // The bare sibling is the NAME, not a declarator: descending into it would
-            // mint a function symbol for the class's own name.
+            }
+            symbols.push(decoratedSym)
             newContext = {
               node: decorated.owner,
               name: decorated.name,
@@ -2216,9 +2967,11 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               isTemplate: false,
               isAbstract: false,
               friends: [],
+              symbolRef: decoratedSym,
               locals: new Set<string>(),
             } as any
             pushedScope = true
+            stack.push({ node: decorated.owner, parentContext: newContext, isExit: true })
             stack.push({ node: decorated.body, parentContext: newContext })
             continue
           }
@@ -2257,9 +3010,34 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
             return null
           })() ||
-          "anonymous"
+          CPP_ANONYMOUS
         const kind = ASTEngine.SymbolKind.Class
         const defaultVis = type === "class_specifier" ? "private" : "public"
+
+        // ONTOLOGY/D21, the class half: an ANONYMOUS union or struct is a real
+        // C++ construct — `union { void (*xLegacy)(void*,const char*); int (*xV2)(u32,void*,void*,void*); } trace;`
+        // — and it has no name. The old fallback published the literal
+        // `anonymous` for all of them.
+        //
+        // PROBED IN BOTH DIRECTIONS before the rule was written, because
+        // "declined" and "lost" look identical on a symbol count. Over the two
+        // pinned corpora, every one of the 41 non-namespace `anonymous` symbols
+        // sits on a line whose text after the `class`/`struct`/`union` keyword
+        // carries NO identifier at all (39 anonymous unions/structs in
+        // `sqlite/src/sqliteInt.h`, 2 anonymous enums) — 0 carry a name that
+        // failed to resolve, so nothing real is deleted. And the members are not
+        // lost either: an anonymous union's members are members of the ENCLOSING
+        // class by definition ([class.union.anon]), so `contains` now reads
+        // `Table -> addColOffset` where it read `anonymous -> addColOffset`, and
+        // the first resolves to a real symbol.
+        if (name === CPP_ANONYMOUS) {
+          newContext = parentContext
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push({ node: child, parentContext: newContext })
+          }
+          continue
+        }
 
         // D1: a class/struct/union is named by an identifier, and the name is
         // the anchor for every `contains`, `extends` and `overrides` edge that
@@ -2504,10 +3282,13 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // so a qualified path in this slot is never a name (see
         // `attributeDisplacedEnumName` for the full shape and the narrowness).
         const displaced = attributeDisplacedEnumName(node)
-        const name = displaced || this.childText(node, "type_identifier") || specifierDeclaredName(node) || "anonymous"
+        const name = displaced || this.childText(node, "type_identifier") || specifierDeclaredName(node) || CPP_ANONYMOUS
         // D1: an enum is named by an identifier; a keyword spelling is recovery.
         // The scope is not entered either, for the reason the class branch gives.
-        if (!isCppSpelledName(name)) {
+        // ONTOLOGY/D21: an UNNAMED enum (`enum { A, B };` inside a class) is the
+        // same case as an anonymous union — C++ writes no name, so none is
+        // published. Measured: 2 sites over the two pinned corpora.
+        if (name === CPP_ANONYMOUS || !isCppSpelledName(name)) {
           newContext = parentContext
           for (let i = node.namedChildCount - 1; i >= 0; i--) {
             const child = node.namedChild(i)
@@ -2571,12 +3352,88 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // and only re-OWNs a definition's body, to the scope that lexically encloses
         // the CLASS rather than the class itself. A friend is not a member, so its
         // body is not the class's.
-        if (hasFriendAncestor(node)) {
-          newContext = parentContext
-          const friendDecl = enclosingFriendDeclaration(node)
-          if (friendDecl && nodeHasFunctionBody(friendDecl)) {
-            const outer = enclosingScopeOf(friendDecl)
-            newContext = { ...parentContext!, node: outer.node, name: outer.name, kind: outer.kind }
+        const friendDecl = enclosingFriendDeclaration(node)
+        if (friendDecl) {
+          // CP2 stands for a friend DECLARATION: `friend void helper();` declares
+          // someone else's function and mints no symbol.
+          //
+          // A friend DEFINITION is different, and leaving it unpublished was the
+          // corpus's largest real loss — the free functions the source writes
+          // (`operator==`, `to_json`, `from_json`, `int_to_string`) that no symbol
+          // described, so every edge naming one was unresolvable. Per C++
+          // [class.friend] it defines a FREE FUNCTION in the enclosing namespace,
+          // reachable through ADL only, which is how nlohmann's serializers are
+          // found — so it is published as a `Function` owned by the scope the walk
+          // published around the class (`friendBodyOwner`), never by the class, and
+          // its body's reads belong to the friend itself.
+          //
+          // AND ONLY A DEFINITION: the visited node's own type is the test, because
+          // a definition wraps a `function_definition` and a declaration wraps a
+          // `declaration` (`friend_declaration > function_definition`, verified on
+          // this grammar; `template_declaration > friend_declaration >
+          // function_definition` when the friend is templated). The first cut asked
+          // a helper instead, and that helper climbed ANCESTORS looking for a body,
+          // so in any file with a definition above it every friend declaration
+          // published a symbol claiming a body it does not have.
+          const friendDefines = type === "function_definition"
+          const friendDetails = friendDefines ? this.getFunctionDetails(node) : null
+          if (friendDetails && !friendDetails.isDestructor && !this.isMacroFunctionShape(node, friendDetails.name)) {
+            const owner = friendBodyOwner(scopeStack, friendDecl)
+            const fnDeclarator: Node = friendDetails.declarator
+            const sym = buildFunctionSymbol(node, fnDeclarator, {
+              name: friendDetails.name,
+              kind: ASTEngine.SymbolKind.Function,
+              visibility: parentContext?.visibility,
+              // `global` (nothing published encloses the class) is the sentinel the
+              // builder turns into "no owner": the friend belongs to the FILE then.
+              ownerName: owner.name,
+              ownerKind: owner.kind,
+              metadata: {
+                isCppFriendDefinition: true,
+                isDestructor: false,
+                isOperatorOverload: friendDetails.isOperator,
+                // The friend's OWN template parameter list hangs one level higher
+                // than a member's: `template_declaration > friend_declaration >
+                // function_definition`, not `template_declaration >
+                // function_definition`. The outer class's template is the CLASS
+                // symbol's `isTemplate`, not this function's.
+                isTemplate:
+                  node.parent?.type === "template_declaration" ||
+                  friendDecl.parent?.type === "template_declaration",
+                nameLine: this.nodeLine(friendDetails.nameNode),
+              },
+            })
+            symbols.push(sym)
+            newContext = {
+              node,
+              name: friendDetails.name,
+              kind: ASTEngine.SymbolKind.Function,
+              visibility: "public",
+              isTemplate: false,
+              isAbstract: false,
+              friends: [],
+              symbolRef: sym,
+              locals: new Set(declaratorParamNames(fnDeclarator)),
+            }
+            scopeStack.push(newContext)
+            pushedScope = true
+            // The branch continues past the shared exit-record push below, so record
+            // the pop here (as the macro-heading branch above already warns). Without
+            // it the friend stayed on `scopeStack` for the rest of the file and the
+            // NEXT friend published under the previous one's name, with a fabricated
+            // `contains` edge between them — both endpoints published, so only the
+            // owner assert in cpp/friend-definition-published can catch it.
+            stack.push({ node, parentContext: newContext, isExit: true })
+          } else {
+            newContext = parentContext
+            if (friendDefines) {
+              // A friend definition whose name or shape this analyzer must not publish
+              // (a macro heading, a destructor spelling, no readable declarator): its
+              // body is still re-owned to the scope the walk published, so a read
+              // inside it is never attributed to the class that befriended it.
+              const outer = friendBodyOwner(scopeStack, friendDecl)
+              newContext = { ...parentContext!, node: outer.node, name: outer.name, kind: outer.kind }
+            }
           }
           for (let i = node.namedChildCount - 1; i >= 0; i--) {
             const child = node.namedChild(i)
@@ -2598,20 +3455,18 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // this collapses: one scan of each node answers both.
         //
         // The declarator is passed in rather than re-found for the same reason
-        // `declaratorParameters`/`declaredReturnType` take it: it is a child of
-        // this node, and three separate `findChild` lookups for one child is one
-        // lookup too many on a hot path.
-        const fnDeclarator: Node | null = this.findChild(node, "function_declarator")
+        // `declaratorParameters`/`declaredReturnType` take it, and it comes off
+        // `getFunctionDetails` because that is where the declarator CHAIN is walked:
+        // a direct-child lookup here returned null exactly where the chain walk
+        // succeeds (a macro-decorated head, a pure virtual's `init_declarator`), so
+        // the SIGNATURE payload — `parameters` — was dropped for every one of those
+        // shapes while the name was read correctly. One reader, one answer.
+        const fnDeclarator: Node | null = funcDetails?.declarator ?? null
         const cppDecorators = this.declarationDecorators(node, fnDeclarator)
         let isStatic = cppDecorators.includes("static")
         let isConstexpr = cppDecorators.includes("constexpr")
         let isConst = cppDecorators.includes("const")
         let isVirtual = cppDecorators.includes("virtual") || cppDecorators.includes("override")
-
-        // M60.P1: the declared signature, resolved once (see the spread below for
-        // why the duplicate call was worth removing).
-        const fnParameters = declaratorParameters(fnDeclarator)
-        const fnReturnType = declaredReturnType(node, fnDeclarator)
 
         // D8: a TRAILING ANNOTATION is not a declaration, so it is refused HERE,
         // before `funcDetails` — and the placement is load-bearing, not tidiness.
@@ -2701,8 +3556,13 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
 
         if (type === "function_definition" && this.returnTypeIsClassDefinition(node)) {
+          // ONTOLOGY/D22, third and last site: same count/accessor mismatch. This one
+          // is reachable WITHOUT ONTOLOGY/D21 — it fires whenever a function's return type is a
+          // class definition (`Widget Widget::make() { … }` where the declarator chain
+          // recovered a specifier), and it dropped the whole function body. Reported
+          // with a measurement rather than counted as fixed silently: see the lane doc.
           for (let i = node.namedChildCount - 1; i >= 0; i--) {
-            const child = node.child(i)
+            const child = node.namedChild(i)
             if (child) stack.push({ node: child, parentContext })
           }
           continue
@@ -2740,6 +3600,42 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // symbol, no scope, and the children walk under the enclosing function
           // unchanged.
           const ownerIsFunction = ownerIsFunctionScope(parentContext)
+
+          // ONTOLOGY `exports`, shape B: the declaration's SPECIFIER carries an export
+          // marker macro (`BENCHMARK_EXPORT void Shutdown();`). Measured 102
+          // `macro_prefixed_type_specifier` sites over 23 files on the two pinned C++
+          // corpora, of which 65 name a marker that is an export. The edge SOURCE is
+          // the DECLARED name — never the marker — so the row answers "what does
+          // this translation unit publish", which is the question the `exports` type
+          // exists for and the one `ExportInfo[]` cannot answer (it carries no link
+          // to the declaration's owner or kind).
+          //
+          // Placed beside the symbol it describes rather than in a post-loop: the
+          // marker is on THIS node, and a post-loop would re-derive the association
+          // by name — which is how two same-named overloads in different classes end
+          // up sharing one marker.
+          if (funcDetails) {
+            const marker = this.specifierExportMacro(node.childForFieldName?.("type") ?? null)
+            if (marker && cppExportMarker(marker) && isCppSpelledName(funcName)) {
+              const ek = `exports::${funcName}::${marker}`
+              if (!exportsSeen.has(ek)) {
+                exportsSeen.add(ek)
+                relationships.push({
+                  source: funcName,
+                  target: marker,
+                  type: ASTEngine.RelationshipType.Exports,
+                  confidence: 1.0,
+                  line_number: this.nodeLine(funcNameNode ?? node),
+                  metadata: {
+                    relationshipType: "module_export",
+                    exportMacro: marker,
+                    reasonCode: "export-marker-in-specifier",
+                  },
+                })
+              }
+            }
+          }
+
           if (ownerIsFunction && !explicitScope) {
             const fnScope = enclosingFunctionScope()
             if (fnScope && isCppSpelledName(funcName)) {
@@ -2835,118 +3731,109 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isConstructor = actualOwnerName === funcName && actualOwnerKind === ASTEngine.SymbolKind.Class
 
           // 2. Pure Virtual Hallucination Fix: Only check direct immediate children for '0' in a field declaration
-          let isPureVirtual = false
-          if (isVirtual || type === "field_declaration" || type === "declaration") {
-            for (let i = 0; i < node.childCount; i++) {
-              const child = node.child(i)
-              if (child && child.type === "number_literal" && child.text === "0") {
-                isPureVirtual = true
-                break
-              }
-            }
-          }
+          //
+          // ONTOLOGY/D23: "direct immediate children" was the defect. A pure virtual
+          // is `= 0`, and in this grammar the `0` sits in ONE OF TWO PLACES, and the
+          // old rule saw only the first:
+          //
+          //   field_declaration [declarator=function_declarator type=primitive_type]
+          //     virtual, primitive_type, function_declarator          <- `0` is a DIRECT child
+          //
+          //   declaration [declarator=init_declarator type=primitive_type]
+          //     virtual, primitive_type,
+          //       init_declarator [declarator=function_declarator value=number_literal]
+          //                                                                <- ONE LEVEL DOWN
+          //
+          // Measured over the two pinned C++ corpora (7 pure-virtual sites in 4
+          // files, counted structurally by `script/cpp-review/pure-virtual-census.ts`):
+          // the old rule flagged 3 and MISSED 4 — both `= 0` shapes above occur in
+          // one file each. The member SYMBOLS were published in all 7 cases (the
+          // name does not depend on the `0`), which is why the miss was invisible to
+          // every symbol count: what was lost is `metadata.isPureVirtual` on 4
+          // symbols and `metadata.isAbstract` on the classes that own them.
+          //
+          // `BenchmarkReporter` is the corpus's most-inherited abstract base — 9 of
+          // the 42 `extends` edges name it — and it was one of the misses, so
+          // `isAbstract` did not fire on it. That flag is not decoration: it is the
+          // only published statement that a C++ class is abstract, which is the
+          // predicate any consumer (and any `implements` reader) must ask, and this
+          // lane's own `implements` ruling is measured against it.
+          //
+          // `cppPureVirtualDeclaration` also REQUIRES the declarator to be a
+          // `function_declarator`, which the direct-child scan did not: `virtual int
+          // x = 0;` is a member with an initialiser, not a pure virtual.
+          const isPureVirtual = cppPureVirtualDeclaration(node)
 
           if (isPureVirtual && parentContext && parentContext.name === actualOwnerName) {
             parentContext.isAbstract = true
           }
 
-          const isTemplate = node.parent?.type === "template_declaration"
-        // Destructors are compiler-managed lifecycle members; exclude them from
-        // the declaration symbol set (matching the universal contract's focus on
-        // user declarations).
-        if (isDestructor) {
-          // still walk children for nested declarations
-          newContext = parentContext
-          for (let i = node.namedChildCount - 1; i >= 0; i--) {
-            const child = node.namedChild(i)
-            if (child) stack.push({ node: child, parentContext: newContext })
-          }
-          continue
-        }
+        const isTemplate = node.parent?.type === "template_declaration"
 
+        // DESTRUCTORS ARE PUBLISHED (loss audit). The old rule — "compiler-managed
+        // lifecycle members; exclude them from the declaration symbol set" — is not
+        // true of the construct: a destructor is DECLARED BY THE SOURCE, it has a
+        // name the source writes, a body whose reads belong to it, and it is a member
+        // of its class like any other. Excluding it left every edge naming one
+        // unresolvable and dropped the member from its class's `contains` edge.
+        //
+        // The name keeps the SOURCE spelling (`~lexer`, the `destructor_name` node),
+        // the way operator overloads keep theirs. Constructors are the one normalized
+        // spelling (`constructor`) because a constructor's spelling IS the class name
+        // and would collide with the class symbol; a destructor's `~`-spelling
+        // collides with nothing, so normalizing it would discard what the source
+        // wrote.
         const kind = isConstructor
-            ? ASTEngine.SymbolKind.Constructor
-            : actualOwnerKind === ASTEngine.SymbolKind.Class
-              ? ASTEngine.SymbolKind.Method
-              : ASTEngine.SymbolKind.Function
+          ? ASTEngine.SymbolKind.Constructor
+          : actualOwnerKind === ASTEngine.SymbolKind.Class
+            ? ASTEngine.SymbolKind.Method
+            : ASTEngine.SymbolKind.Function
 
-        // Universal contract: constructors are normalized to the name
-        // "constructor" (identical to the C# normalization). The C++ class name
-        // remains available via ownerName.
-        let symName = funcName
-        if (isConstructor) symName = "constructor"
-
-          const sym: ASTEngine.UniversalSymbol = {
-            name: symName,
-            kind: kind,
-            range: this.nodeToRange(node),
-            complexity: this.methodComplexityCpp(node),
-            // CP3 (cpp review, HC1 parity): file-scope `static` (internal
-            // linkage) is private. Class-member `static` is NOT internal
-            // linkage — members keep their access-specifier visibility.
-            visibility: (isStatic && actualOwnerKind !== ASTEngine.SymbolKind.Class
-              ? "private"
-              : parentContext?.visibility) || "public",
+        // Universal contract: constructors are normalized to the name "constructor"
+        // (identical to the C# normalization); the class name stays in `ownerName`.
+        const sym = buildFunctionSymbol(node, fnDeclarator, {
+          name: isConstructor ? "constructor" : funcName,
+          kind,
+          // CP3 (cpp review, HC1 parity): file-scope `static` (internal linkage) is
+          // private. Class-member `static` is NOT internal linkage — members keep
+          // their access-specifier visibility.
+          visibility: isStatic && actualOwnerKind !== ASTEngine.SymbolKind.Class
+            ? "private"
+            : parentContext?.visibility,
+          isStatic,
+          ownerName: actualOwnerName,
+          ownerKind: actualOwnerKind,
+          decorators: cppDecorators,
+          metadata: {
+            isTemplate,
+            isVirtual,
+            isPureVirtual,
+            isConst,
             isStatic,
-            ownerName: actualOwnerName,
-            ownerKind: actualOwnerKind,
-            // M60.P1: the three declared payload fields the lane read but never
-            // published. The M60 payload-seam matrix recorded `parameters`,
-            // `returnType` and `decorators` as DEAD emit cells for cpp while
-            // this file's own documentation claimed all three were supported —
-            // a claim that was false, and the data for all three was already
-            // extracted (the parameter NAMES bound the local roster, the return
-            // type and the modifier specifiers were on the node).
-            //
-            // `parameters` and `returnType` are OMITTED rather than emitted empty
-            // when there is no real signature: an empty list is a claim that the
-            // function takes no arguments, and for a function that genuinely does
-            // not (`void f()`) that is a true claim worth making, so this only
-            // withholds the field where withholding it is the honest answer.
-            // A macro-declared heading never reaches here — its branch returns
-            // before the symbol is built — which is right, because its
-            // "parameters" are macro paste-tokens rather than parameters.
-            //
-            // Computed ONCE each. The spread reads like a property access, so the
-            // first draft called each helper twice — once for the `.length`/truth
-            // test and once for the value — and `declaratorParameters` re-walks to
-            // the `function_declarator` on each call. That is a second full
-            // `findChild` scan and a second parameter-list walk per function
-            // declaration, on the hot path, for a value already in hand.
-            ...(fnParameters.length > 0 ? { parameters: fnParameters } : {}),
-            ...(fnReturnType ? { returnType: fnReturnType } : {}),
-            ...(cppDecorators.length > 0 ? { decorators: cppDecorators } : {}),
-            metadata: {
-              isCppFunction: true,
-              isTemplate,
-              isVirtual,
-              isPureVirtual,
-              isConst,
-              isStatic,
-              isConstexpr,
-              isConstructor,
-              isDestructor,
-              isOperatorOverload: isOperator,
-              // #612 store-phase: DECLARATION vs DEFINITION. This branch is
-              // reached for all three node types that can name a function, and
-              // the type itself is the whole discriminator — the grammar parses
-              // a body as `function_definition` and a prototype (file-scope
-              // `int f(void);`, an in-class `int f();`, a field declaration) as
-              // `declaration`/`field_declaration`. Without this key the only
-              // signal the store had was the symbol NAME, so a cpp header
-              // prototype competed on equal footing with the .cpp definition
-              // in another file and name resolution could pick the prototype.
-              ...(type === "function_definition" ? {} : { isDeclaration: true }),
-              // #921 (M60): the line the declared NAME is written on. A wrapped
-              // return type puts it below the declaration's start
-              // (`void NORETURN` then `CheckFailed(const char *file, …)`), and the
-              // containment edge this symbol may own has to name THAT line — the
-              // rule every other relationship type already follows. Absent when
-              // the tree gives no name node (the containment edge then falls back
-              // to the symbol range, which is the pre-#921 behaviour).
-              nameLine: this.nodeLine(funcNameNode),
-            },
-          }
+            isConstexpr,
+            isConstructor,
+            isDestructor,
+            isOperatorOverload: isOperator,
+            // #612 store-phase: DECLARATION vs DEFINITION. This branch is reached for
+            // all three node types that can name a function, and the type itself is
+            // the whole discriminator — the grammar parses a body as
+            // `function_definition` and a prototype (file-scope `int f(void);`, an
+            // in-class `int f();`, a field declaration) as
+            // `declaration`/`field_declaration`. Without this key the only signal the
+            // store had was the symbol NAME, so a cpp header prototype competed on
+            // equal footing with the .cpp definition in another file and name
+            // resolution could pick the prototype.
+            ...(type === "function_definition" ? {} : { isDeclaration: true }),
+            // #921 (M60): the line the declared NAME is written on. A wrapped return
+            // type puts it below the declaration's start (`void NORETURN` then
+            // `CheckFailed(const char *file, …)`), and the containment edge this
+            // symbol may own has to name THAT line — the rule every other
+            // relationship type already follows. Absent when the tree gives no name
+            // node (the containment edge then falls back to the symbol range, which
+            // is the pre-#921 behaviour).
+            nameLine: this.nodeLine(funcNameNode),
+          },
+        })
           // Override tracking. The OLD code stored registries on `this`
           // AND gated registration on a prior base_class_clause - base-class
           // methods were never registered before Derived was walked
@@ -2973,9 +3860,9 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             // never affect virtual-dispatch matching — while DIFFERENT
             // parameter TYPES still correctly hide (the override-signature-
             // aware fixture contract).
-            const decl2 = this.findChild(node, "function_declarator")
+            const decl2 = this.functionDeclaratorOf(node)
             const paramsNode = decl2?.childForFieldName("parameters") ?? null
-            const normParams = this.buildParamSig(paramsNode)
+            const normParams = buildParamSig(paramsNode)
             const sigs = classVirtuals.get(parentContext.name) ?? new Map()
             // CPPD11 (deep review 2026-09-05): overloaded virtuals — a base
             // declaring BOTH `virtual void f(int)` and `virtual void f(double)`
@@ -3053,9 +3940,9 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               // Class symbol) instead of the Constructor symbol, and the
               // qualified_calls payload never reached the constructor. The
               // family contract (groovy/java/csharp) scopes ctors under the
-              // normalized "constructor" name. Class-scope (non-ctor) funcs
-              // keep funcName == symName already.
-              name: symName,
+              // normalized "constructor" name, which is why the scope takes the
+              // name off the SYMBOL rather than keeping a second copy of it.
+              name: sym.name,
               kind,
               visibility: "public",
               isTemplate: false,
@@ -3533,7 +4420,29 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // ≡ /^[A-Za-z_]\w*$/ — full-string identifier shape: first char a
           // letter/underscore, every later char word-class. \w ≡ [A-Za-z0-9_]
           // in non-unicode mode, which is how this file's regexes run.
-          if (this.isPlainIdentifier(typeName)) {
+          // THREE TRUTH GUARDS, all measured on cpp-example and all about a
+          // target that cannot be a class no matter which file is read:
+          //
+          //   `new char[4]` publishes `instantiates -> char` — a primitive, and a
+          //   name spelled with a KEYWORD resolves to nothing (the D1 rule this
+          //   analyzer already holds every declared name to; CPP_KEYWORDS carries
+          //   the type keywords, so one funnel covers every builtin spelling).
+          //
+          //   `new Reporter(n)` inside `template <typename Reporter> …` publishes
+          //   `instantiates -> Reporter` — a TEMPLATE PARAMETER bound by the
+          //   enclosing parameter list (doctest's `reporterCreator<Reporter>`),
+          //   which is a type, not a declared class, so no store can resolve it.
+          //   `isTemplateParameterName` reads the binding off the tree.
+          //
+          //   `new uint8_t[5]` publishes `instantiates -> uint8_t` — an array of
+          //   integers: a standard typedef the standard REQUIRES to name an
+          //   integer type, so it is never a class being constructed, and the
+          //   keyword funnel cannot see it because `size_t x;` is a legal
+          //   declaration (which is why the set is separate from CPP_KEYWORDS).
+          //   One row corpus-wide (`unit-deserialization.cpp:551`).
+          if (this.isPlainIdentifier(typeName) && isCppSpelledName(typeName) &&
+              !CPP_NON_CLASS_STANDARD_TYPES.has(typeName) &&
+              !this.isTemplateParameterName(node, typeName)) {
             const source = parentContext?.name || "global"
             relationships.push({
               source,
@@ -3661,7 +4570,12 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // linkage in every macro that writes this shape (gtest's TEST, doctest's
         // TEST_CASE, fmt's own macros), so it is not an export.
         const isMacroExpansion = sym.metadata?.expandedFrom === "macro-heading"
-        if (!isPrivate && !isMacroExpansion && !sym.name.startsWith("anonymous") && !seenExportNames.has(sym.name)) {
+        // ONTOLOGY/D21: this was `startsWith("anonymous")`, which also excluded a
+        // class legitimately named e.g. `anonymousCallback` or
+        // `anonymous_namespace_helper` — real C++ spellings, not the sentinel.
+        // With ONTOLOGY/D21 nothing is published under the sentinel, so the exact test is
+        // both sufficient and narrower.
+        if (!isPrivate && !isMacroExpansion && sym.name !== CPP_ANONYMOUS && !seenExportNames.has(sym.name)) {
           seenExportNames.add(sym.name)
           exports.push({
             name: sym.name,
@@ -3765,10 +4679,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           seenOv.add(k)
           relationships.push({
             source: `${pend.cls}.${pend.method}`,
-            // THE TARGET IS THE DECLARED MEMBER, NOT `Base.method`: the resolver binds against
-            // DECLARATIONS, and a declaration is named by its leaf. Measured on this lane: 0 of 86
-            // `overrides` edges resolved with the dotted spelling.
-            target: pend.method,
+            target: `${hit.base}.${pend.method}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: hit.confidence,
             // M59.A7 (#825): the overriding method's own declaration site (the
@@ -3778,12 +4689,6 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: {
               isVirtualOverride: true,
               reasonCode: hit.reasonCode,
-              // THE OWNER CARRIES THE DISTINCTION THE TARGET NO LONGER CAN, and the four-lane fix
-              // learned this the hard way: two fixtures there told a RIGHT edge from a WRONG one by
-              // the owner qualifier alone, and collapsing both spellings to the leaf left them
-              // unable to distinguish the rows. The owner moves HERE rather than disappearing, the
-              // same way `imports` keeps `module` when its target became the item.
-              overriddenOwner: hit.base,
               // M14-HONESTY-CONTRACT §4: any edge under 1.0 carries a
               // machine-readable reason code, and `override`/`final` is
               // recorded so a reader can tell an asserted override from an
@@ -3897,6 +4802,15 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of symbols) {
       const _owner = s.ownerName || s.scope
       if (!_owner) continue
+      // D24: the separator was a LITERAL NUL byte in this source file. Two measured
+      // costs, neither of them visible in a diff: `grep` classifies a file holding a
+      // NUL as BINARY and answers "binary file matches" instead of printing lines, so
+      // every grep-based reader of this analyzer silently got nothing; and
+      // `script/m14/audit-analyzer-grammar.ts` parses this file with
+      // tree-sitter-typescript, where the NUL became an ERROR node, so it printed
+      // "[warn] real-cpp-analyzer.ts: source did not parse cleanly; extraction may be
+      // incomplete" over cpp's `refs=88 unknown=0` row. The escape below is the SAME
+      // runtime string and the same key, written as source text.
       const relKey = `${_owner}\u0000${s.name}`
       if (containsSeen.has(relKey)) continue
       containsSeen.add(relKey)
@@ -4161,9 +5075,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     ) {
       return false
     }
-    return (spec.namedChildren ?? []).some(
-      (c: any) => c.type === "field_declaration_list",
-    )
+    return (spec.namedChildren ?? []).some((c: any) => c.type === "field_declaration_list")
   }
 
   private isTrailingAnnotationMacro(node: Node, content: string): boolean {
@@ -4443,70 +5355,39 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     return out
   }
 
-  private buildParamSig(parametersNode: Node | null): string {
-    // CPPD5 (M37.9 fmt probe, gtest.h): parameter TYPE-ONLY signature. Each
-    // parameter_declaration's name lives in its trailing `declarator` field;
-    // the TYPE is the parameter text minus that declarator. Names, comments
-    // (`/*test_info*/`), and whitespace never enter the signature — matching
-    // real C++ overload semantics where only the types discriminate.
-    //
-    // D8 (M60.P1): the slice is taken at the NAME node, not at the declarator.
-    // A `reference_declarator`'s text is `& b` and its start index points at the
-    // `&`, so subtracting the declarator's LENGTH from the parameter text turned
-    // `const std::string& b` into `const std::string` and `const char* p` into
-    // `const char`. That is not a cosmetic slip in a display field — this
-    // signature IS the override-matching key, so `virtual void f(Widget&)` and
-    // `virtual void f(Widget)` hashed to the SAME signature and a derived
-    // `void f(Widget)` matched the base's `f(Widget&)`. It is the same slice the
-    // published `parameters` payload had to learn (see `declaratorParameters`),
-    // and the two are now the same rule for the same reason.
-    if (!parametersNode) return ""
-    const parts: string[] = []
-    for (let i = 0; i < parametersNode.namedChildCount; i++) {
-      const pc = parametersNode.namedChild(i)
-      if (!pc) continue
-      if (pc.type === "comment") continue
-      if (pc.type === "variadic_parameter_declaration") {
-        parts.push("...")
-        continue
-      }
-      if (pc.type !== "parameter_declaration" && pc.type !== "optional_parameter_declaration") {
-        // stray nodes: include raw text, as before — an unreadable parameter is
-        // not silently dropped, because a dropped one makes two signatures equal
-        continue
-      }
-      // `= default` / `= expr` is not part of the signature either; the type text
-      // precedes the `=`.
-      const eqAt = pc.text.indexOf("=")
-      const nameNode = this.declaredNameNodeFor(pc)
-      let t = pc.text
-      if (nameNode) {
-        const cut = nameNode.startIndex - pc.startIndex
-        if (cut > 0) t = t.slice(0, cut)
-      } else if (eqAt !== -1) {
-        t = t.slice(0, eqAt)
-      }
-      t = t.trim()
-      if (t) parts.push(t)
-    }
-    return parts.join(",")
-  }
-
   /**
-   * D8: the declared name node of a `parameter_declaration` /
-   * `optional_parameter_declaration`, for the signature slice. A thin wrapper so
-   * the two call sites that need it (`buildParamSig`) read the same name the
-   * published `parameters` payload does.
-   */
-  private declaredNameNodeFor(param: Node): Node | null {
-    const d: Node | null = param.childForFieldName?.("declarator") ?? null
-    if (!d) return null
-    let cur: Node | null = d
-    for (let i = 0; i < 8 && cur; i++) {
-      if (cur.type === "identifier" || cur.type === "field_identifier") return cur
-      cur = cur.childForFieldName?.("declarator") ?? null
-    }
-    return null
+ * The `function_declarator` of a declaration, descending one `init_declarator`.
+ *
+ * ONTOLOGY `overrides`, second-order defect. `virtual bool ReportContext(const
+ * Context&) = 0;` — the PURE VIRTUAL, which is how C++ spells the interface a
+ * derived class implements — does not put the declarator where the shallow scan
+ * looks:
+ *
+ *   declaration [declarator=init_declarator type=primitive_type]
+ *     virtual, primitive_type "bool"
+ *     init_declarator [declarator=function_declarator value=number_literal]
+ *       function_declarator [declarator=identifier parameters=parameter_list]
+ *
+ * So `findChild(node, "function_declarator")` returned null, the signature
+ * normaliser registered the base method with an EMPTY parameter list, and no
+ * derived signature could ever equal it. `Finalize()` resolved only because it
+ * takes no parameters and `""` matched `""` — which is why the pre-fix count on
+ * `reporter.h` was 2 of 4 and both happened to be the zero-argument ones.
+ *
+ * Scoped to ONE level and ONE wrapper on purpose. A general "descend until you
+ * find a declarator" walk would also reach through `pointer_declarator` and
+ * `reference_declarator`, where the pointer/reference is part of the C++ type
+ * and dropping the wrapper would make `void f(Widget&)` and `void f(Widget)`
+ * hash alike — the exact defect D8 removed from the published `parameters`
+ * field. `init_declarator` carries no type, so descending through it loses
+ * nothing.
+ */
+private functionDeclaratorOf(node: Node | null): Node | null {
+    if (!node) return null
+    const direct = this.findChild(node, "function_declarator")
+    if (direct) return direct
+    const init = this.findChild(node, "init_declarator")
+    return init ? this.findChild(init, "function_declarator") : null
   }
 
   private methodComplexityCpp(node: Node): number {
@@ -4552,6 +5433,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       // usage and says nothing about a module dependency.
       if (t === "imports") { md.evidenceClass = "import_based"; continue }
       if (t === "references") { md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"; continue }
+      if (t === "imports") { md.evidenceClass = md.isImport ? "import_based" : "usage_contextual"; continue }
       if (t === "extends" || t === "implements" || t === "overrides") {
         md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
         continue
@@ -4559,6 +5441,25 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "instantiates") { md.evidenceClass = "structural"; continue }
       md.evidenceClass = "usage_contextual"
     }
+  }
+
+  /**
+   * The EXPORT MARKER macro of a declaration-specifier, or `undefined`.
+   *
+   * The other half of `specifierTypeText`, and the reader for ONTOLOGY `exports`.
+   * Both walk the same node and neither imports the other, because they answer
+   * different questions — one asks what the type IS, the other asks what the
+   * declaration is DECORATED with — and a node can answer both at once only if
+   * both are asked. `cppExportMarker` decides whether the macro is an export
+   * marker; see its comment for the measured population that forced the rule.
+   */
+  private specifierExportMacro(t: Node | null): string | undefined {
+    if (!t || t.type !== "macro_prefixed_type_specifier") return undefined
+    for (let i = 0; i < t.namedChildCount; i++) {
+      const c = t.namedChild(i)
+      if (c && c.type === "macro_specifier") return c.text.trim()
+    }
+    return undefined
   }
 
   /**
@@ -4781,31 +5682,96 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Is this class-scope function declaration PURE VIRTUAL — `virtual void f() = 0;`?
    *
-   * Structural, because the pinned grammar has no node for it: measured on the
-   * fork,
+   * Structural, because the pinned grammar has no reachable node for it. The
+   * fork DOES declare a `pure_virtual_clause` rule, but reaches it only from
+   * `inline_method_definition` / `constructor_or_destructor_definition` and the
+   * corpus produces none of them, so the marker has to be read from the tree.
    *
-   *   field_declaration[declarator="go()"]
-   *     virtual  primitive_type
-   *     function_declarator[declarator="go"] field_identifier parameter_list
-   *     "="                                  <- UNNAMED token
-   *     number_literal "0"                   <- the pure-specifier
+   * TWO SHAPES, because the grammar produces two and they occur inside the same
+   * file (measured on cpp-example: 19 of 34 sites are the first, 15 the second):
    *
-   * so the signature is "a declaration with a function declarator, an unnamed `=`
-   * child, and a `0` right after it". Reading it any looser would sweep in a
-   * member initializer (`int x = 0;` is a `field_declaration` with an
-   * `init_declarator`, and it has no function declarator at all) or a defaulted
-   * argument (`void f(int x = 0)` puts the `=` inside the `parameter_list`, not on
-   * the declaration) — both measured shapes, both excluded by the two conditions.
+   *   field_declaration [declarator=function_declarator type=primitive_type]
+   *     virtual, primitive_type "bool", function_declarator …
+   *     "=", number_literal "0"                       <- `0` a DIRECT child
+   *
+   *   declaration [declarator=init_declarator type=primitive_type]
+   *     virtual, primitive_type "bool",
+   *       init_declarator [declarator=function_declarator value=number_literal]
+   *                                                     <- `0` nested under value
+   *
+   * D23: the first cut read the `=`/`0` pair off the declaration's own direct
+   * children only, which is why the second shape — the one `reporter.h` and
+   * `json.hpp` actually use — was never registered as an interface operation.
+   * A member variable initialised to zero (`virtual int x = 0;`) is NOT a pure
+   * virtual, and in both shapes the declarator must be a `function_declarator`;
+   * that pairing is what separates the two. A defaulted argument (`void f(int x =
+   * 0)`) puts its `=` inside the `parameter_list`, which no arm here reads.
    */
   private isPureVirtualDeclaration(declaration: Node): boolean {
     if (declaration.type !== "field_declaration" && declaration.type !== "declaration") return false
-    const decl = this.findChild(declaration, "function_declarator")
-    if (!decl) return false
-    for (let i = 0; i < declaration.childCount; i++) {
-      const c = declaration.child(i)
-      if (!c || c.isNamed || c.type !== "=") continue
-      const nxt = declaration.child(i + 1)
-      if (nxt && nxt.type === "number_literal" && String(nxt.text ?? "").trim() === "0") return true
+    // shape 1: the declarator IS the function declarator, so the `= 0` is direct
+    const direct = declaration.childForFieldName?.("declarator")
+    if (direct?.type === "function_declarator" && hasZeroLiteralChild(declaration)) return true
+    // shape 2: the declarator is an `init_declarator` whose VALUE is the `0`
+    for (let i = 0; i < declaration.namedChildCount; i++) {
+      const c = declaration.namedChild(i)
+      if (!c || c.type !== "init_declarator") continue
+      const value = c.childForFieldName?.("value")
+      const inner = c.childForFieldName?.("declarator")
+      if (value?.type === "number_literal" && String(value.text ?? "").trim() === "0" &&
+          inner?.type === "function_declarator") return true
+    }
+    return false
+  }
+
+  /**
+   * Truth guard for `instantiates`: is this constructed-type name bound by an
+   * enclosing template's parameter list?
+   *
+   * `new Reporter(n)` inside `template <typename Reporter> Reporter*
+   * reporterCreator(...)` constructs a TYPE PARAMETER, not a class, and the
+   * published row named a target no translation unit can declare — measured on
+   * cpp-example as `instantiates -> Reporter` from doctest's
+   * `reporterCreator<Reporter>`, next to `instantiates -> char` from
+   * `new char[4]` (refused by the keyword funnel beside this call). Both are
+   * fabricated rows in the sense the honesty contract cares about: they are
+   * stored, compared against nothing, and unresolvable in every file.
+   *
+   * TWO ARMS, because the binding survives in two spellings:
+   *
+   *   (1) the ORDINARY shape — an ancestor `template_declaration` whose
+   *       `template_parameter_list` is a real node. The walk ascends through every
+   *       one of them (a nested template's inner list can bind a name an outer list
+   *       does not), and the declared names come from `templateParameterNames`.
+   *   (2) the RECOVERY shape — the list is displaced out of the ancestor chain
+   *       entirely, left as a `< … >` frame among the preceding children of the ERROR
+   *       region the grammar produced (`isTemplateParameterListFrame`), introduced by
+   *       the `template` token beside it. Measured at `doctest.h:2104`: that whole
+   *       file is one ERROR region, no `template_declaration` node exists for
+   *       `reporterCreator`, and arm (1) can never see the binding — which is why
+   *       `instantiates -> Reporter` survived this guard's first cut. Both arms ask
+   *       `templateParameterNames` the same question, so the two spellings cannot
+   *       drift apart.
+   *
+   * Arm (2) reads only nodes that START before the construction: a frame written
+   * after it cannot have bound the name.
+   */
+  private isTemplateParameterName(node: Node, name: string): boolean {
+    for (let cur: Node | null = node.parent, i = 0; cur && i < 64; i++, cur = cur.parent) {
+      if (cur.type === "template_declaration") {
+        const params = this.findChild(cur, "template_parameter_list")
+        if (params && templateParameterNames(params).has(name)) return true
+        continue
+      }
+      if (cur.type !== "ERROR") continue
+      for (let k = 0; k < cur.childCount; k++) {
+        const frame = cur.child(k)
+        if (!frame || frame.startIndex >= node.startIndex) break
+        if (!isTemplateParameterListFrame(frame)) continue
+        if (cur.child(k - 1)?.type !== "template") continue
+        if (frame.startIndex <= node.startIndex && frame.endIndex >= node.endIndex) continue
+        if (templateParameterNames(frame).has(name)) return true
+      }
     }
     return false
   }
@@ -4844,7 +5810,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private getFunctionDetails(
     node: Node,
-  ): { name: string; scope?: string; isDestructor: boolean; isOperator: boolean; nameNode: Node } | null {
+  ): { name: string; scope?: string; isDestructor: boolean; isOperator: boolean; nameNode: Node; declarator: Node } | null {
     // CPPD17/CPPD18 (#612 family round): the function_declarator can sit UNDER a
     // declarator wrapper, because a macro between the return type and the name
     // changes how the grammar nests the declaration. Measured in
@@ -4869,11 +5835,34 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     // it SUBSUMES the one-level pointer/reference fallback it replaces.
     let decl = this.findChild(node, "function_declarator")
     if (!decl) {
-      const WRAPPERS = ["pointer_declarator", "reference_declarator", "parenthesized_declarator"]
+      // ONTOLOGY `overrides`, and the SYMBOL loss under it: `init_declarator` is
+      // the wrapper for `= <initialiser>`, and the place C++ writes a PURE VIRTUAL:
+      //
+      //   virtual bool ReportContext(const Context& context) = 0;
+      //     declaration [declarator=init_declarator type=primitive_type]
+      //       init_declarator [declarator=function_declarator value=number_literal]
+      //
+      // `init_declarator` was missing from this list, so the lookup missed the
+      // declarator and `getFunctionDetails` returned null — and the caller takes
+      // the function's SYMBOL and its SCOPE out of this result, so a pure virtual
+      // was published nowhere at all. Measured on the two pinned C++ corpora
+      // (`cpp-sample/include/benchmark/reporter.h`): `BenchmarkReporter` published
+      // `ReportRunsConfig`, `Finalize`, `List` and nine more, and NOT
+      // `ReportContext` or `ReportRuns` — the two members that are the interface.
+      // The base is then absent from the virtual registry, so the derived
+      // `bool ReportContext(const Context&) override;` has nothing to match.
+      //
+      // It belongs here, and the three wrappers below stay, because
+      // `init_declarator` carries no TYPE: descending through it loses nothing,
+      // whereas descending through `pointer_declarator` or `reference_declarator`
+      // would drop the pointer/reference that is part of the C++ type. The
+      // `= 0` is a `value` field, not a declarator, so it is not followed.
+      const WRAPPERS = ["init_declarator", "pointer_declarator", "reference_declarator", "parenthesized_declarator"]
       let cur: Node | null = null
       for (const w of WRAPPERS) { cur = this.findChild(node, w); if (cur) break }
+      const enterRecovery = !!this.findChild(node, "compound_statement") || this.recoveryStatesType(cur)
       for (let i = 0; cur && i < 8; i++) {
-        const found = this.findChild(cur, "function_declarator")
+        const found = this.firstDeclaratorIn(cur, enterRecovery)
         if (found) { decl = found; break }
         let next: Node | null = null
         for (const w of WRAPPERS) { next = this.findChild(cur, w); if (next) break }
@@ -4986,7 +5975,182 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    return { name, scope, isDestructor, isOperator, nameNode: namedNode }
+    return { name, scope, isDestructor, isOperator, nameNode: namedNode, declarator: decl }
+  }
+
+  /**
+   * The FIRST `function_declarator` in DOCUMENT order under a declarator wrapper.
+   * `findChild` scans one level, and inside a recovered head the wrapper's DIRECT
+   * children can hold a DECOY the recovery read out of a mem-initializer, while the
+   * declarator the source wrote sits one level deeper, in the grammar's own ERROR:
+   *
+   *   JSON_HEDLEY_NON_NULL(3)
+   *   invalid_iterator(int id_, const char* what_arg) : exception(id_, what_arg) {}
+   *     function_definition[type: JSON_HEDLEY_NON_NULL]
+   *       parenthesized_declarator            <- the macro's own parens
+   *         ERROR                             <- the recovery
+   *           number_literal(3)
+   *           function_declarator(invalid_iterator)   <- the DECLARED name
+   *         function_declarator(exception)            <- the base ctor CALL
+   *
+   * The recovery writes them in source order, so the first is the declared name;
+   * taking the direct child instead published `method invalid_iterator.exception` —
+   * a member named after the class's own BASE, with no parameters and a body it
+   * does not have, while the constructor itself stayed unpublished. Depth is bounded
+   * and the descent stays inside declarator wrappers, so a declarator inside the
+   * function's BODY can never be reached.
+   *
+   * `enterRecovery` gates the descent into an ERROR, and the caller sets it from the
+   * declaration's own evidence: a body, or a TYPE in the recovery. The same recovery
+   * wraps a macro INVOCATION in the macro's parens, and there the ERROR holds an
+   * EXPRESSION, not a declarator — `CHECK(p3.getHairColor() == "blue");` inside a
+   * test macro's body recovers with the CALL's own `function_declarator`, and reading
+   * it published a method nobody declared.
+   */
+  private firstDeclaratorIn(container: Node, enterRecovery: boolean, depth = 0): Node | null {
+    if (depth > 6) return null
+    for (let i = 0; i < container.namedChildCount; i++) {
+      const c = container.namedChild(i)
+      if (!c) continue
+      if (c.type === "function_declarator") return c
+      if (c.type.endsWith("declarator")) {
+        const inner = this.firstDeclaratorIn(c, enterRecovery, depth + 1)
+        if (inner) return inner
+      } else if (enterRecovery && c.type === "ERROR") {
+        const inner = this.firstDeclaratorIn(c, enterRecovery, depth + 1)
+        if (inner) return inner
+      }
+    }
+    return null
+  }
+
+  /**
+   * The other half of the declaration test for entering a recovery: does the wrapper
+   * the macro left behind STATE A TYPE? That is what separates the declaration the
+   * recovery swallowed from a macro INVOCATION, and the two are one node type apart:
+   *
+   *   JSON_HEDLEY_RETURNS_NON_NULL            CHECK(p3.getHairColor() == "blue");
+   *   char* to_chars(…)                       //  field_declaration
+   *     parenthesized_declarator                parenthesized_declarator
+   *       ERROR                                   ERROR
+   *         identifier(JSON_HEDLEY_…)               identifier(p3)
+   *         primitive_type(char)   <- the TYPE      function_declarator(getHairColor)
+   *         pointer_declarator       <-    (the call, no parameters)
+   *
+   * `char` is the discriminator: only a declaration of something states a type before
+   * its declarator, and `recoveredTypeSpelling` reads it with the same narrowness the
+   * return-type arm uses.
+   */
+  private recoveryStatesType(wrapper: Node | null): boolean {
+    if (!wrapper) return false
+    for (let i = 0; i < wrapper.namedChildCount; i++) {
+      const c = wrapper.namedChild(i)
+      if (c && c.type === "ERROR" && this.recoveredTypeSpelling(c)) return true
+    }
+    return false
+  }
+
+  /**
+   * D17's premise test: did the recovery leave material BETWEEN the decorator and
+   * the declarator? A decorated head does — the macro's own parens, or an ERROR
+   * holding the displaced type — while `HANDLE Open();` does not, and only the
+   * first can be a decorator. Stops at the declarator, so an unrelated ERROR inside
+   * the function's BODY cannot make a type look decorated.
+   */
+  private recoveredDecoratorHead(node: Node, declarator: Node | null): boolean {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c || (declarator && c.startIndex > declarator.startIndex)) break
+      if (c.type === "ERROR" || c.type === "parenthesized_declarator") return true
+    }
+    return false
+  }
+
+  /**
+   * D18 arm B: the return type the recovery DISPLACED out of the `type` field,
+   * visible as material between the decorator and the declarator:
+   *
+   *   JSON_HEDLEY_NON_NULL(1)                 JSON_HEDLEY_WARN_UNUSED_RESULT
+   *   void grisu2(char* buf, …)                 constexpr bool is_primitive() const
+   *     ERROR[number_literal(1),                  type_qualifier(constexpr)
+   *           primitive_type(void)]               ERROR[identifier(bool)]
+   *
+   * The type is the LAST type the recovery left before the declarator, read
+   * OUTWARD from the declarator (its own ERROR first, then each enclosing node up
+   * to the declaration) so the nearest evidence wins. Returns undefined when the
+   * recovery left no type at all — a constructor's decorated head, where the ERROR
+   * holds only the macro's argument and the declarator.
+   */
+  private displacedReturnType(node: Node, declarator: Node | null): string | undefined {
+    if (!declarator) return undefined
+    let cur: Node | null = declarator
+    for (let depth = 0; cur && depth < 8; depth++) {
+      const parent: Node | null = cur.parent
+      if (!parent) break
+      // The walk is bounded by the DECLARATION's span, not by node identity: a
+      // `Node` handle is not reference-stable in this binding (the `child !== body`
+      // lesson this file already records), so `parent === node` compared two fresh
+      // handles and never fired — measured on `exceptions.hpp:233`, where the walk
+      // left the constructor, crossed into the class, and published the CLASS NAME
+      // as the constructor's return type.
+      if (parent.startIndex < node.startIndex || parent.endIndex > node.endIndex) break
+      let found: string | undefined = undefined
+      for (let i = 0; i < parent.namedChildCount; i++) {
+        const c = parent.namedChild(i)
+        if (!c || c.startIndex >= declarator.startIndex) break
+        const spelling = this.recoveredTypeSpelling(c)
+        if (spelling) found = spelling
+      }
+      if (found) return found
+      cur = parent
+    }
+    return undefined
+  }
+
+  /**
+   * The type ONE recovered node states, or undefined when it states none.
+   *
+   * A bare `identifier` counts only when the ERROR holds exactly one named child,
+   * the same narrowness `recoveredDeclaredName` uses for a displaced NAME: `bool`
+   * and `T` arrive that way (the recovery does not classify them as types), and
+   * anything richer is the recovery's own soup rather than a type. A macro
+   * spelling never counts — the decorator is not the type it decorates, which is
+   * the whole point of the arm.
+   */
+  private recoveredTypeSpelling(n: Node, depth = 0): string | undefined {
+    if (depth > 6 || n.type === "function_declarator") return undefined
+    if (n.type === "ERROR") {
+      if (n.namedChildCount === 1) {
+        const only = n.namedChild(0)
+        if (only && only.type === "identifier") {
+          const single = collapseSpaces(only.text)
+          return single && !isMacroSpelling(single) ? single : undefined
+        }
+      }
+      let found: string | undefined = undefined
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c || c.type === "function_declarator") break
+        const spelling = this.recoveredTypeSpelling(c, depth + 1)
+        if (spelling) found = spelling
+      }
+      return found
+    }
+    if (
+      n.type === "primitive_type" || n.type === "sized_type_specifier" ||
+      n.type === "template_type" || n.type === "qualified_identifier" ||
+      n.type === "dependent_type" || n.type === "decltype" ||
+      n.type === "struct_specifier" || n.type === "union_specifier" ||
+      n.type === "enum_specifier" || n.type === "placeholder_type_specifier" ||
+      n.type === "macro_prefixed_type_specifier" || n.type === "type_identifier"
+    ) {
+      // `specifierTypeText` is for the SPECIFIER alone (its children are the decorator
+      // and one type); every other node here states its type in its own TEXT, where the
+      // `::` of a qualified name is an unnamed token a children-join would drop.
+      const text = n.type === "macro_prefixed_type_specifier" ? (specifierTypeText(n) ?? "") : collapseSpaces(n.text)
+      return text && !isMacroSpelling(text) ? text : undefined
+    }
+    return undefined
   }
 
   // ≡ /^[A-Za-z_]\w*$/ (zero-regex helper, M49 closure wave) — full-string

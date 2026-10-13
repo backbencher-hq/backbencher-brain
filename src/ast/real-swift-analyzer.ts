@@ -92,31 +92,42 @@ const MEMBER_OWNER_KINDS = new Set([
   ASTEngine.SymbolKind.Extension,
 ])
 
-// ----------------------------------------------------------------------------
-// EXPORT-LEVEL ACCESS MODIFIERS (Swift `exports`, ONTOLOGY wave)
-// ----------------------------------------------------------------------------
-// Swift has no `export` keyword. What it has is an ACCESS LEVEL: a declaration
-// marked `public` (or `open`, or `package`) is part of its module's interface
-// and a declaration that is not is not. That IS this language's export
-// construct, and the corpus says it is common — 5,751 file-scope declarations
-// across a 3,656-file draw (11.04% of the 52,113 file-scope declarations),
-// measured by script/m14/swift-import-export-probe.ts.
+// ---------------------------------------------------------------------------
+// SWIFT4b — SCOPE, not just ownership. INCOMING_SWIFT JOB 2 rules that a
+// declaration whose lexical owner is a BODY is a LOCAL and never a member or a
+// module declaration. SWIFT4 enforced it for FUNCTION bodies with a parent-kind
+// check; every OTHER body kept the enclosing TYPE as its frame's parent, so its
+// locals were minted as members. Measured on the 1,256-file draw after the
+// lane's oracle learned to read bodies correctly: 220+ fabricated
+// `contains Type -> local` edges — `Lock -> err` from a `deinit`
+// (lock.swift:89), `AtomicBox -> oldPtrBits`/`oldPtr` (atomics.swift:476-477),
+// `NIONetworkInterface -> baseString`/`maskString` from `debugDescription`'s
+// getter (Interfaces.swift:190-191), `ByteCount -> byteBufferMaxIndex` from
+// `byteBufferCapacity`'s getter (ByteCount.swift:124).
 //
-// Measured at the same draw, by that probe:
-//   public 5,708 · open 43 (all classes — `open` is class-only in Swift) ·
-//   internal 1,325 (explicit) · (no modifier) 43,368 · fileprivate 195 ·
-//   private 1,470
-// `private` / `fileprivate` / `internal` and the no-modifier default are the
-// ABSENCE of export, so they are not in this set. `package` is here because
-// Swift 5.9 defines it and `getVisibility` recognises it — but MEASURED HONESTY:
-// the pinned grammar (npm tree-sitter-swift 0.7.1) CANNOT REDUCE IT. All six
-// synthetic shapes (`package func`, `package struct`, `package var`,
-// `package typealias`, `package enum`, `package class`) parse to an ERROR while
-// `public func` reduces cleanly, and the corpus probe finds 0 `package`
-// visibility_modifier nodes in 3,656 files. So the `package` branch of this
-// rule is a declared grammar-version boundary, NOT a measured one: it cannot
-// fire on this corpus and this lane does not claim it does.
-const SWIFT_EXPORT_LEVELS = new Set(["public", "open", "package"])
+// These are the BODY node types in the pinned grammar; entering one makes its
+// contents local scope.
+const LOCAL_SCOPE_BODIES = new Set([
+  "function_body",
+  "computed_property",
+  "computed_getter",
+  "computed_setter",
+  "willset_didset_block",
+  "willset_clause",
+  "didset_clause",
+  "lambda_literal",
+])
+// A container declaration opens its OWN member scope: a nested type's members
+// ARE `contains Nested -> member` (the nested type itself is the local, not
+// what it declares), and a nested function re-enters local scope at its own
+// body. Clearing the flag here is what keeps those edges alive.
+const SCOPE_RESET_DECLARATIONS = new Set([
+  "class_declaration",
+  "protocol_declaration",
+  "function_declaration",
+  "protocol_function_declaration",
+  "init_declaration",
+])
 
 // The anonymous SCOPE-KIND tokens Swift's `import` grammar admits between the
 // `import` keyword and the path (`import struct Foundation.URLSession`). The
@@ -204,12 +215,22 @@ interface OverrideTask {
 interface ReExportSite {
   module: string
   node: Node
+  /**
+   * Which Swift form spelled the re-export. `public_import` is SE-0409's
+   * access-controlled import; `underscored_exported_import` is `@_exported`.
+   * The two are DIFFERENT constructs that publish the same fact, so the form is
+   * carried rather than flattened (DERIV_EXPORTS_SWIFT4 pins both by name, one
+   * per fixture).
+   */
+  form: string
 }
 
 interface WalkFrame {
   node: Node
   parentSymbol: ASTEngine.UniversalSymbol | null
   typeName: string | null
+  /** SWIFT4b: this node sits inside a BODY (see LOCAL_SCOPE_BODIES). */
+  localScope: boolean
 }
 
 export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -307,28 +328,48 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the walk (they need no symbol table, but they share the references edge's
     // emission site so one statement cannot publish two differently-sourced rows).
     const reExports: ReExportSite[] = []
+    // DERIV_EXPORTS_SWIFT4: the SOURCE of every `exports` edge is the file's own
+    // leaf name — typescript's moduleLeafName() spelling for a module-level edge
+    // endpoint, and NOT the literal `root` this analyzer uses for `references`.
+    // `root` is in parallel-indexer's SYMBOL_NAME_DENYLIST, so an edge sourced
+    // there can never bind to a stored symbol; an `exports` TARGET is a
+    // declaration in this very file and DOES bind (pinned by
+    // swift/exports-visibility, whose forbid list names `exports root -> Shape`).
+    const moduleSource = this.moduleLeafName(filePath)
+    // One name, one row: a second declaration publishing a name the compiler
+    // would reject the file for, and a duplicate row is noise a reader cannot
+    // act on (go GO7's export-uniqueness invariant). Shared by the visibility
+    // exports emitted in the walk and the module re-exports emitted after it.
+    const emittedExportNames = new Set<string>()
 
     const stack: WalkFrame[] = [
-      { node: rootNode, parentSymbol: null, typeName: null },
+      { node: rootNode, parentSymbol: null, typeName: null, localScope: false },
     ]
 
     while (stack.length > 0) {
       const popped = stack.pop()
       if (!popped) continue
 
-      const { node: curr, parentSymbol } = popped
+      const { node: curr, parentSymbol, localScope } = popped
       let newParentSymbol = parentSymbol
       let newTypeName = popped.typeName
+      // SWIFT4b: the scope THIS node's children inherit. A body node makes its
+      // contents LOCAL; a container declaration opens a fresh member scope; any
+      // other node propagates the frame's scope.
+      const nominalRecovery = curr.type === "ERROR" && this.isNominalRecovery(curr)
+      const childLocalScope = SCOPE_RESET_DECLARATIONS.has(curr.type) || nominalRecovery
+        ? false
+        : (LOCAL_SCOPE_BODIES.has(curr.type) ? true : localScope)
 
       if (curr.type === "import_declaration") {
         this.handleImport(curr, imports, frameworksObj, reExports)
       } else if (curr.type === "protocol_declaration") {
-        newParentSymbol = this.handleProtocol(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy)
+        newParentSymbol = this.handleProtocol(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, localScope)
         if (newParentSymbol) newTypeName = newParentSymbol.name
       } else if (curr.type === "class_declaration") {
-        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, cross.kinds, superByClass)
+        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, cross.kinds, superByClass, localScope)
         if (newParentSymbol) newTypeName = newParentSymbol.name
-      } else if (curr.type === "ERROR" && this.isNominalRecovery(curr)) {
+      } else if (nominalRecovery) {
         // SW-D23 (#940): the pinned grammar fails to REDUCE some nominal
         // headers (measured: `nonisolated(unsafe)` in the body costs
         // AsyncTestingChannel.swift its whole `class` header — the header and
@@ -339,17 +380,17 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         // read from the tokens alone — the kind is the same anonymous keyword
         // token SWIFTD1 already decides by, the name is the recovery's own
         // name node — never from source text.
-        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, cross.kinds, superByClass)
+        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, cross.kinds, superByClass, localScope)
         if (newParentSymbol) newTypeName = newParentSymbol.name
       } else if (curr.type === "function_declaration" || curr.type === "protocol_function_declaration") {
-        newParentSymbol = this.handleFunction(curr, symbols, relationships, parentSymbol, overrideTasks, context?.overrideCompanion)
+        newParentSymbol = this.handleFunction(curr, symbols, relationships, parentSymbol, overrideTasks, context?.overrideCompanion, localScope)
       } else if (curr.type === "init_declaration") {
         // init -> constructor named "constructor" (Java/C# family convention)
         const vis = this.getVisibility(curr)
         const meta: Record<string, any> = {}
         const funcAttrs = this.extractAttributes(curr)
         if (funcAttrs.length > 0) meta.annotations = funcAttrs
-        const sym = this.createSymbol("constructor", ASTEngine.SymbolKind.Constructor, curr, parentSymbol, symbols, meta, vis)
+        const sym = this.createSymbol("constructor", ASTEngine.SymbolKind.Constructor, curr, parentSymbol, symbols, meta, vis, this.getDeclaredVisibility(curr), localScope)
         this.collectFunctionMeta(curr, meta, sym)
         newParentSymbol = sym
       } else if (curr.type === "deinit_declaration" || curr.type === "subscript_declaration") {
@@ -358,11 +399,11 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         curr.type === "property_declaration" ||
         curr.type === "protocol_property_declaration"
       ) {
-        this.handleVariable(curr, symbols, parentSymbol, newTypeName, frameworksObj, patternsObj)
+        this.handleVariable(curr, symbols, parentSymbol, newTypeName, frameworksObj, patternsObj, localScope)
       } else if (curr.type === "enum_entry") {
         // enum_member ONLY inside an enum body — the parent symbol is the
         // enum. Switch `case` patterns are never symbols.
-        if (parentSymbol && parentSymbol.kind === ASTEngine.SymbolKind.Enum) {
+        if (!localScope && parentSymbol && parentSymbol.kind === ASTEngine.SymbolKind.Enum) {
           // #924 (swift half): an attributed case (`@available(...) case x`)
           // puts a `modifiers` node FIRST, so taking the first named child
           // published the ATTRIBUTE PAYLOAD as the member's name — 5 cases in
@@ -397,12 +438,12 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           // supported, and for this declaration kind it was not read at all. The
           // export rule reads the same field, so leaving it would have made
           // `public typealias` silently unexportable.
-          this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isTypeAlias: true }, this.getVisibility(curr))
+          this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isTypeAlias: true }, this.getVisibility(curr), this.getDeclaredVisibility(curr), localScope)
         }
       } else if (curr.type === "associatedtype_declaration") {
         const nameNode = this.findChildByType(curr, "type_identifier") || this.firstNamedChild(curr)
         if (nameNode && (nameNode.type === "type_identifier" || nameNode.type === "simple_identifier" || nameNode.type === "identifier")) {
-          this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isAssociatedType: true }, this.getVisibility(curr))
+          this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isAssociatedType: true }, this.getVisibility(curr), this.getDeclaredVisibility(curr), localScope)
         }
       } else if (curr.type === "call_expression") {
         this.handleCall(curr, relationships, parentSymbol, emittedCalls, enumCtorCandidates, superByClass, callSiteCounts, callSiteLines)
@@ -419,6 +460,18 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         // reads WHICH member to set through). `\.self` names the whole
         // value, never a member.
         this.handleKeyPathUses(curr, relationships, parentSymbol, newTypeName, emittedUses)
+      }
+
+      // DERIV_EXPORTS_SWIFT4 — `exports`: a FILE-SCOPE declaration whose access
+      // level is `public`/`open`/`package` is part of the module's interface.
+      // `parentSymbol === null` IS the file-scope test at declaration time, and
+      // it is what excludes a member (its parent is the owning type or
+      // extension) and a type declared inside a function body (its parent is
+      // the function). Extensions are excluded by isExportingDeclaration: an
+      // extension is named after the EXTENDED type, so exporting it would name
+      // a declaration this file does not contain.
+      if (parentSymbol === null && !localScope && this.isExportingDeclaration(curr)) {
+        this.emitDeclarationExport(curr, moduleSource, relationships, exports, emittedExportNames)
       }
 
       // ---- pattern / metadata flags (unchanged from M11 behavior) ----
@@ -483,7 +536,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       for (let i = curr.childCount - 1; i >= 0; i--) {
         const child = curr.child(i)
-        if (child) stack.push({ node: child, parentSymbol: newParentSymbol, typeName: newTypeName })
+        if (child) stack.push({ node: child, parentSymbol: newParentSymbol, typeName: newTypeName, localScope: childLocalScope })
       }
     }
 
@@ -613,7 +666,15 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Post-loop: contains (real ownership only) + references (imports).
     for (const s of symbols) {
       const _owner = s.ownerName || s.scope
-      if (_owner && s.kind !== ASTEngine.SymbolKind.Extension) {
+      // M14 endpoint integrity: a declaration the parser recovered with NO name
+      // (measured: swift-corpus's validation-test/compiler_crashers_fixed/
+      // 27700-swift-modulefile-loadallmembers.swift, whose `let:Boolean` yields a
+      // symbol with name "") has no target to name. An edge with an empty endpoint
+      // is a defect in the emitting lane: the fleet instrument counts it in `edges`
+      // and then skips it in every class (incoming-gate.ts's `if (tgt.length === 0)
+      // continue`), which is exactly the unclassed edge the declaration gate refuses
+      // to ratchet. The nameless symbol still exists in `symbols` — only the edge is withheld.
+      if (_owner && s.name && s.kind !== ASTEngine.SymbolKind.Extension) {
         const key = `${_owner}\u0000${s.name}`
         if (!emittedContains.has(key)) {
           emittedContains.add(key)
@@ -642,117 +703,104 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           confidence: 1.0,
           // The import statement's own line (handleImport records the range).
           ...(typeof imp.range?.startLine === "number" ? { line_number: imp.range.startLine } : {}),
-          metadata: { importModule: imp.module },
+          // `isImportNameReference` is the marker the `references` family uses to
+          // say this edge names a MODULE brought into scope rather than a symbol
+          // the graph holds (INCOMING_SWIFT JOB 2, preserved by DERIV_EXPORTS_SWIFT4).
+          // It is why leaving `references` in place beside `imports` is not a
+          // duplicate claim: the two carry different markers and answer different
+          // questions ("what names came into scope" vs "what does this file depend on").
+          metadata: { importModule: imp.module, isImportNameReference: true },
         })
       }
     }
     // SWIFTD21: `exports` — the re-export half of an `@_exported import M`.
     //
-    // SOURCE, and why it is "root": the family contract for this type is an edge
-    // from the thing that PUBLISHES a name to the name. Every lane that emits it
-    // has a module identity declared in the file — go's `package` clause
-    // (`packageName -> Name`), typescript's and python's file-is-the-module,
-    // julia's `module` block, dart's `library`. Swift's file declares NO module:
-    // instrument A over 3,954 files of swift-corpus found zero node types naming
-    // a module, a library or an export, and instrument B found zero `export`
-    // keyword tokens, so the target is the compilation target and no file-level
-    // construct can name it. "root" is therefore the same file-scope source this
-    // lane's `references` edge already uses for the very same statement, and the
-    // indexer's own M60/#910 rule reads a file-level source as "the importing
-    // FILE is the importer". Publishing `exports <Type> -> M` instead would assert
-    // that a nested type exports a module, which is not a thing.
+    // SOURCE (superseded by DERIV_EXPORTS_SWIFT4, the pin wave that decides it):
+    // the source is the FILE'S LEAF NAME, not the literal `root`. The
+    // root-sourcing argument was that Swift's file declares no module, so no
+    // file-level construct can name one — and that argument is right about
+    // MODULES and wrong about EDGE ENDPOINTS. `root` is in parallel-indexer's
+    // SYMBOL_NAME_DENYLIST, so an edge sourced there can never bind to a stored
+    // symbol; the family spells a file-as-module endpoint with the file's leaf
+    // name (typescript's moduleLeafName(), go's packageName, python's
+    // moduleName), and swift/exports-visibility pins that spelling — including
+    // the forbid `exports root -> Shape`. The leaf is a name for the file this
+    // edge was read from, not a claim that SwiftPM's module is called that; a
+    // consumer that needs the compiled module name still cannot get it here,
+    // which is why the endpoint is spelled the way every other lane spells the
+    // file it parsed.
     //
-    // SCOPE, stated rather than hidden: this covers the explicit re-export verb
-    // only. A `public`/`open`/`package` declaration is 8,091 sites in 979 files of
-    // the same sample and IS a real module interface, but it is not expressible as
-    // an edge from anything the file names — the measurement and the ruling are
-    // in docs/analyzers/swift-ontology-measurements.md, and that surface is
-    // deliberately NOT emitted rather than emitted with a source that means
-    // something else.
+    // SCOPE: this block is the explicit re-export half (`public import` per
+    // SE-0409, and `@_exported import`). The declaration half — a `public`/
+    // `open`/`package` FILE-SCOPE declaration, 8,091 sites in 979 files of the
+    // same sample — is emitted beside it in the walk, through
+    // isExportingDeclaration / emitDeclarationExport, under the SAME leaf-name
+    // source, so one module interface carries one source spelling.
     //
     // Confidence 1.0: `@_exported` is SPELLED on the statement, so this is a fact
     // about the declaration rather than an inference about it. `classifyEvidenceTier`
     // labels it `import_based`, the same tier as the `references` edge beside it.
     //
-    // WHY NO `ExportInfo` ROW accompanies it, which is the other half of the
-    // decision and the half the fixture caught: `ParseResult.exports` is the
-    // index's IMPORTABLE-UNIT set, and the harness enforces that contract on every
-    // fixture in every language (run-fixtures.ts, the M49 JVM-closure exports-family
-    // invariant) — names must be unique and must resolve to a top-level unit,
-    // because bare members are not importable and membership rides `contains`.
-    // A re-exported MODULE is not a unit this index binds: nothing in the file
-    // declares `Basic`, the index has no Swift import-resolution path that would
-    // look for one, and publishing the row would put an unresolvable name into the
-    // set import-resolution gates symbol joins on. The first version of this change
-    // pushed the row and the fixture rejected it with exactly those two
-    // diagnostics; the relationship is the ontology surface and the array is not.
+    // WHY the module IS an `ExportInfo` row, `type: "module"`: the harness's
+    // export invariant requires every export name to resolve to a top-level
+    // symbol, and a MODULE is not one — which is exactly what the row's own
+    // `type: "module"` declares. The name is importable by construction (that is
+    // what a re-export means) and the binding is the import statement in this
+    // same file, published as the `imports` edge carrying `isModuleReExport`.
+    // run-fixtures.ts admits the row on those grounds — its invariant opens "an
+    // export must name an IMPORTABLE UNIT, i.e. a name an importer can bind" —
+    // corroborated by that import edge, so the exemption cannot be claimed by
+    // labeling a member a module. The alternative (no row, to dodge the check)
+    // was rejected: DERIV_EXPORTS_SWIFT4 was authored with the rows, and hiding
+    // a real binding because a check's premise does not cover it is the wrong
+    // direction — the check gains the category instead.
     {
       const seen = new Set<string>()
       for (const re of reExports) {
-        const key = `root\u0000${re.module}`
+        const key = `${moduleSource}\u0000${re.module}`
         if (seen.has(key)) continue
         seen.add(key)
+        const reLine = this.nodeLine(re.node)
         relationships.push({
           type: ASTEngine.RelationshipType.Exports,
-          source: "root",
+          source: moduleSource,
           target: re.module,
           isExternal: true,
           weight: 0.9,
           confidence: 1.0,
           // The MODULE NAME's own line — the site a reader checks, the same node
-          // the ImportInfo row and the references edge are lined at.
-          ...(typeof this.nodeLine(re.node) === "number" ? { line_number: this.nodeLine(re.node)! } : {}),
-          metadata: { exportForm: "@_exported_import", reexportsModule: re.module },
+          // the ImportInfo row and the references edge are lined at (M59.A7:
+          // `@_exported\nimport Basic` lines the edge at the module name, 11,
+          // never the attribute's line, 10).
+          ...(typeof reLine === "number" ? { line_number: reLine } : {}),
+          metadata: { exportForm: re.form, reExport: true, reexportsModule: re.module },
         })
+        if (!emittedExportNames.has(re.module)) {
+          emittedExportNames.add(re.module)
+          exports.push({
+            name: re.module,
+            type: "module",
+            range: {
+              startLine: re.node.startPosition.row + 1,
+              startColumn: re.node.startPosition.column + 1,
+              endLine: re.node.endPosition.row + 1,
+              endColumn: re.node.endPosition.column + 1,
+              startIndex: re.node.startIndex,
+              endIndex: re.node.endIndex,
+            },
+            metadata: { exportForm: re.form, reExport: true, reexportsModule: re.module },
+          })
+        }
       }
     }
 
-    // DERIV_EXPORTS_SWIFT — `exports`: the module's published surface. One edge per
-    // exported NAME, sourced to `root`, which is this lane's established file-scope
-    // owner (its import rule already publishes `references root -> module`). A Swift
-    // module's name is NOT in the source file — SwiftPM derives it from the build
-    // manifest — so `root` is the honest owner and a module name reconstructed from
-    // the file path would be a fabrication.
-    //
-    // Built from the SYMBOL TABLE rather than a second walk, so the edge endpoint and
-    // the symbol are the same string by construction: an `exports` edge that named
-    // something the symbol table does not hold could not be resolved, hovered or
-    // followed, and the whole point of the type is to name what the module publishes.
-    // Deduped on (source, name) because two declarations can publish one name only
-    // when the compiler would reject the file, and a duplicate row is noise a reader
-    // cannot act on.
-    {
-      const emittedExports = new Set<string>()
-      for (const s of symbols) {
-        const md = s.metadata ?? {}
-        if (md.isExportedFromModule !== true) continue
-        const target = s.name
-        if (!target) continue
-        const key = `root\u0000${target}`
-        if (emittedExports.has(key)) continue
-        emittedExports.add(key)
-        relationships.push({
-          type: ASTEngine.RelationshipType.Exports,
-          source: "root",
-          target,
-          isExternal: false,
-          weight: 1,
-          // 1.0: the access level is a grammar clause read off the declaration's own
-          // `modifiers` node. Nothing here is inferred, so per the honesty contract
-          // §4 no reason code is owed — and the reason the edge EXISTS is in
-          // `exportForm`, so a reader can see which rule produced it.
-          confidence: 1.0,
-          // The declaration's NAME line (`public struct Foo` -> the `Foo` line), the
-          // same node createSymbol recorded the symbol's range from.
-          ...(typeof s.range?.startLine === "number" ? { line_number: s.range.startLine } : {}),
-          metadata: {
-            exportForm: "swift_access_level",
-            accessLevel: String(md.exportAccessLevel ?? ""),
-            symbolKind: String(s.kind ?? ""),
-          },
-        })
-      }
-    }
+    // (The visibility half of `exports` — a FILE-SCOPE `public`/`open`/`package`
+    // declaration — is emitted IN THE WALK, at `isExportingDeclaration`, so the
+    // edge endpoint and the name node come from the declaration being visited
+    // rather than from the symbol table. DERIV_EXPORTS_SWIFT4 supersedes the
+    // symbol-table version that stood here: it was sourced at `root`, which
+    // cannot bind, and it carried the `swift_access_level` vocabulary that no
+    // fixture pins. See emitDeclarationExport below.)
 
     // ----------------------------------------------------------------------------
     // ONTOLOGY: `imports` — the module dependency, under its own label.
@@ -811,7 +859,15 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     for (const imp of imports) {
       const md = (imp.metadata ?? {}) as Record<string, any>
-      const moduleName = typeof md.module === "string" && md.module ? md.module : null
+      // The module name comes from the statement's own metadata, with the
+      // first-segment rule re-applied as a fallback so this channel can never go
+      // silently dead again: keying on a metadata field that the producer does not
+      // set emitted 0 `imports` edges while every other type stayed live, and the
+      // fixture that pins this (`swift/scoped-import-metadata`) read the absence as
+      // a missing rule rather than as a broken producer.
+      const spelled = typeof imp.module === "string" ? imp.module : ""
+      const moduleName =
+        typeof md.module === "string" && md.module ? md.module : spelled.split(".")[0] || null
       if (!moduleName || emittedImports.has(moduleName)) continue
       emittedImports.add(moduleName)
       const scopedHere = scopedImportsPerModule.get(moduleName) ?? 0
@@ -845,82 +901,19 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // ----------------------------------------------------------------------------
-    // ONTOLOGY: `exports` — Swift's API surface.
-    //
-    // Two of the language's own constructs, both measured (see
-    // SWIFT_EXPORT_LEVELS above and swift-import-export-probe.ts):
-    //
-    //   E1 API SURFACE — a FILE-SCOPE declaration (`ownerName` unset) whose
-    //      access level is public/open/package. Ownership is the filter, not
-    //      indentation: a member's export is reached through its type's export,
-    //      so emitting `exports` for a member would restate a `contains` edge
-    //      under a second label (go GO7 / clean's `ownerName !== undefined`
-    //      exclusion, same rule).
-    //      EXTENSIONS ARE EXCLUDED, and the reason is measurable rather than
-    //      stylistic: an extension symbol is named after the EXTENDED type
-    //      (`public extension ByteBufferInches`), so `exports root ->
-    //      ByteBufferInches` would name a type whose own declaration is in
-    //      another file, or — `public extension Int` — a stdlib type this file
-    //      does not declare at all. The measured cost of excluding them is 54
-    //      file-scope `public extension` sites in a 3,656-file draw.
-    //      Uniqueness: first occurrence wins (go GO7's export-uniqueness
-    //      invariant — two rows for one name would double the target surface).
-    //
-    //   E2 MODULE RE-EXPORT — `@_exported import M` is Swift's own spelling for
-    //      "this module re-exports M": 58 occurrences over the same draw
-    //      (swift-nio's own Sources/NIO/Exports.swift and Sources/NIOFS/
-    //      Exports.swift are umbrella files built entirely from it).
-    //
-    //      MEASURED, AND DELIBERATELY NOT AN EDGE. The harness's export
-    //      invariant requires every export name to resolve to a TOP-LEVEL
-    //      SYMBOL — `export(s) … do not resolve to a top-level symbol
-    //      (membership rides Contains)` — and a MODULE is not a symbol: Swift's
-    //      `import M` binds a module into scope, and the run-fixtures gate
-    //      failed this rule on the first run of this very fixture, which is the
-    //      measurement rather than an argument. A module re-export is therefore
-    //      published where it is true and where a consumer can bind it: as an
-    //      `imports` edge carrying `isModuleReExport: true`, and as
-    //      `metadata` on the ImportInfo row. Inventing a symbol to satisfy the
-    //      edge is the fabrication the workstream forbids.
-    //
-    // Confidence 1.0 for E1: each is stated outright by a token on the
-    // declaration — the access-level modifier itself. There is no inference in
-    // the rule, so it needs no reason code.
+    // `exports` — SUPERSEDED BLOCK, deliberately removed rather than kept beside
+    // the walk emission. It read the symbol table and published every file-scope
+    // `public`/`open`/`package` symbol at `source: "root"` with the
+    // `access_level` vocabulary. DERIV_EXPORTS_SWIFT4 replaces it on three
+    // counts, all pinned: the source is the file's LEAF NAME (root cannot bind
+    // — it is in parallel-indexer's SYMBOL_NAME_DENYLIST), the form vocabulary
+    // is `visibility_modifier` / `public_import` / `underscored_exported_import`
+    // and the evidence class keys on it (`reExport` → import_based), and the
+    // MODULE re-export is an `ExportInfo` row (`type: "module"`) rather than an
+    // edge-only fact. Two implementations of one rule is exactly the shape that
+    // produced the earlier `imports` dead channel: the emission now lives in ONE
+    // place, the walk, reached through isExportingDeclaration.
     // ----------------------------------------------------------------------------
-    const exportedNames = new Set<string>()
-    for (const s of symbols) {
-      if (s.ownerName) continue
-      if (s.kind === ASTEngine.SymbolKind.Extension) continue
-      if (!s.visibility || !SWIFT_EXPORT_LEVELS.has(s.visibility)) continue
-      if (!s.name || exportedNames.has(s.name)) continue
-      const exportName = s.name
-      exportedNames.add(exportName)
-      exports.push({
-        name: exportName,
-        kind: s.kind,
-        range: s.range,
-        visibility: s.visibility,
-        metadata: { exportForm: "access_level", accessLevel: s.visibility },
-      })
-      relationships.push({
-        type: ASTEngine.RelationshipType.Exports,
-        source: "root",
-        target: exportName,
-        isExternal: true,
-        weight: 1,
-        confidence: 1.0,
-        // The DECLARATION's own line — the same site a `contains` edge for this
-        // symbol would name, so a reader checking the export checks the
-        // declaration.
-        ...(typeof s.range?.startLine === "number" ? { line_number: s.range.startLine } : {}),
-        metadata: {
-          exportForm: "access_level",
-          accessLevel: s.visibility,
-          // #910: the exporter is this FILE.
-          fileLevel: true,
-        },
-      })
-    }
 
     this.resolveOverrides(
       overrideTasks,
@@ -984,16 +977,16 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       const md: any = r.metadata ?? {}
       if (type === "contains") { md.evidenceClass = "structural"; continue }
       if (type === "imports" || type === "references") { md.evidenceClass = "import_based"; continue }
-      // DERIV_EXPORTS_SWIFT: an `exports` edge in this lane is an ACCESS-LEVEL
-      // clause read off the declaration's own `modifiers` node, so it is
-      // structural evidence — the same class the family's import-based exports
-      // (bash `export NAME`, go's capitalized name, python `__all__`) fall into
-      // by a different route. Keyed on `exportForm` rather than on the label so
-      // that a future import-driven export (`@_exported import Darwin`, 2 corpus
-      // occurrences in 400 files) keeps its own class instead of inheriting this
-      // one.
+      // DERIV_EXPORTS_SWIFT4: the two halves of Swift's export surface carry
+      // DIFFERENT evidence classes, and `reExport` is the discriminator. A
+      // visibility-modifier export is a grammar clause read off the
+      // declaration's own `modifiers` node — structural, confidence 1.0, nothing
+      // inferred. A re-exporting import (`public import` / `@_exported import`)
+      // is import-based, the same class as the `references` edge beside it. The
+      // marker is `reExport` rather than `exportForm` so a new form spelling
+      // cannot silently inherit the wrong class.
       if (type === "exports") {
-        md.evidenceClass = md.exportForm === "swift_access_level" ? "structural" : "import_based"
+        md.evidenceClass = md.reExport === true ? "import_based" : "structural"
         continue
       }
       if (type === "calls" || type === "uses") {
@@ -1028,6 +1021,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     parent: ASTEngine.UniversalSymbol | null,
     patternsObj: Record<string, boolean>,
     classHierarchy: Map<string, string[]>,
+    localScope: boolean = false,
   ): ASTEngine.UniversalSymbol | null {
     patternsObj["Protocol-Oriented Programming"] = true
     const nameNode = this.findChildByType(node, "type_identifier") || this.firstNamedChild(node)
@@ -1039,7 +1033,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const meta: Record<string, any> = { isProtocol: true, hasGenerics: this.hasChildType(node, "type_parameters") }
     if (meta.hasGenerics) patternsObj["Generics"] = true
     const vis = this.getVisibility(node)
-    const symbol = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Interface, nameNode, parent, symbols, meta, vis)
+    const symbol = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Interface, nameNode, parent, symbols, meta, vis, this.getDeclaredVisibility(node), localScope)
 
     // Protocol inheritance IS materialized as extends edges (family
     // contract, probe-verified 2026-09: csharp `interface IX : IA` ->
@@ -1080,6 +1074,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     inFileKinds: Map<string, string>,
     crossFileKinds?: Map<string, string>,
     superByClass?: Map<string, string>,
+    localScope: boolean = false,
   ): ASTEngine.UniversalSymbol | null {
     let kind = ASTEngine.SymbolKind.Class
 
@@ -1147,7 +1142,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (rawType && ENUM_RAW_VALUE_TYPES.has(rawType)) meta.rawType = rawType
     }
 
-    const symbol = this.createSymbol(rawName, kind, nameNode, parent, symbols, meta, vis)
+    const symbol = this.createSymbol(rawName, kind, nameNode, parent, symbols, meta, vis, this.getDeclaredVisibility(node), localScope)
 
     const baseSites = this.extractBaseSites(node)
     const bases = baseSites.map((b) => b.name)
@@ -1233,6 +1228,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     parent: ASTEngine.UniversalSymbol | null,
     overrideTasks: OverrideTask[],
     companion?: OverrideCompanion,
+    localScope: boolean = false,
   ): ASTEngine.UniversalSymbol | null {
     const nameNode = this.findChildByType(node, "simple_identifier") || this.findChildByType(node, "identifier")
     // Operator overloads (`static func + (l:r:) -> V`): the name is the
@@ -1252,7 +1248,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const funcAttrs = this.extractAttributes(node)
     if (funcAttrs.length > 0) meta.annotations = funcAttrs
 
-    const symbol = this.createSymbol(opName ?? nameNode!.text, kind, opName ? node : nameNode!, parent, symbols, meta, vis)
+    const symbol = this.createSymbol(opName ?? nameNode!.text, kind, opName ? node : nameNode!, parent, symbols, meta, vis, this.getDeclaredVisibility(node), localScope)
     this.collectFunctionMeta(node, meta, symbol)
     // Per-symbol cyclomatic complexity (managed-OO family contract — csharp
     // #264 / dart #265 waves; same node set as the file-level counter).
@@ -1288,9 +1284,16 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     typeName: string | null,
     frameworksObj: Record<string, boolean>,
     patternsObj: Record<string, boolean>,
+    localScope: boolean = false,
   ) {
     // Locals are NOT symbols (C# LocalsAreNotSymbols). Only type-scope
     // members (property) and file-scope bindings (variable) qualify.
+    //
+    // SWIFT4b: the parent check alone missed every body that mints no symbol of
+    // its own — a `deinit`/`subscript` body, a computed getter/setter, a
+    // willSet/didSet block, a closure — because there the frame's parent is
+    // still the enclosing TYPE (see LOCAL_SCOPE_BODIES).
+    if (localScope) return
     if (parent && !MEMBER_OWNER_KINDS.has(parent.kind as ASTEngine.SymbolKind)) return
 
     const vis = this.getVisibility(node)
@@ -1341,13 +1344,13 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const pn of patternNodes) {
         const idNode = this.findChildByType(pn, "simple_identifier") || this.findChildByType(pn, "identifier") || this.firstNamedChild(pn)
         if (idNode) {
-          this.createSymbol(idNode.text, kind, idNode, parent, symbols, meta, vis)
+          this.createSymbol(idNode.text, kind, idNode, parent, symbols, meta, vis, this.getDeclaredVisibility(node), localScope)
         }
       }
     } else {
       const idNode = this.findChildByType(node, "simple_identifier") || this.findChildByType(node, "identifier")
       if (idNode) {
-        this.createSymbol(idNode.text, kind, idNode, parent, symbols, meta, vis)
+        this.createSymbol(idNode.text, kind, idNode, parent, symbols, meta, vis, this.getDeclaredVisibility(node))
       }
     }
   }
@@ -2074,42 +2077,50 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     meta: Record<string, any> = {},
     visibility: string = "internal",
+    declaredVisibility: string | null = null,
+    /** SWIFT4b: the declaration sits inside a BODY (see LOCAL_SCOPE_BODIES). */
+    localScope: boolean = false,
   ): ASTEngine.UniversalSymbol {
     name = this.stripNameQuoting(name)
-    // DERIV_EXPORTS_SWIFT: the ONE place the module's exported surface is decided,
-    // so it cannot drift per declaration handler — the four handlers that mint a
-    // top-level symbol (handleDeclaration, handleFunction, handleVariable, the
-    // typealias/associatedtype branches) all reach here, and a fifth handler added
-    // later is covered by construction rather than by remembering to update it.
-    //
-    // Swift has no `export` keyword: measured on 400 tracked corpus files the
-    // pinned grammar produced 150 distinct node types, none naming an export
-    // declaration, and zero anonymous `export` tokens. The export CONSTRUCT is
-    // access control instead — a top-level declaration marked `public` or `open`
-    // is visible to every module that imports this one. That is the relation
-    // java's exports oracle derives from JLS 7.6 ("a top-level type is exported
-    // iff it is public"), go from a capitalized package-scope name, python from
-    // `__all__`.
-    //
-    // Scope, each part pinned by a `forbidRelationships` entry in
-    // validation/m14/fixtures/swift/module-exports.expectation.json:
-    //   - TOP-LEVEL ONLY (`parent === null`). A member is published as part of its
-    //     type and is never imported alone, so it is not a second publication.
-    //     Corpus: 1,381 top-level public/open declarations vs 2,326 member ones.
-    //   - NOT an extension. `public extension` is not legal Swift (only
-    //     `private`/`fileprivate extension` is) and an extension's members belong
-    //     to the extended type, declared and exported elsewhere.
-    //   - NOT `package` (SE-0386): 0 parseable occurrences corpus-wide because the
-    //     pinned grammar does not reduce it. Declared as a limitation, not as an
-    //     absence of the construct.
+    // Swift ACCESS CONTROL is inherited through an EXTENSION and nowhere else
+    // (DERIV_EXPORTS_SWIFT4): `public extension Store { func added() {} }` makes
+    // `added` public — Swift's own rule, and the rule INCOMING_SWIFT JOB 2's
+    // symbol pin states — while a `public struct` does NOT lift its members
+    // (each member states its own level). `declaredVisibility` is the
+    // declaration's OWN modifier, read off the DECLARATION node; it is a
+    // separate parameter because this method receives the NAME node, which has
+    // no modifiers of its own — reading them here would make every member of an
+    // extension inherit, including one that spells `private`.
     if (
-      !parent &&
-      (visibility === "public" || visibility === "open") &&
-      kind !== ASTEngine.SymbolKind.Extension
+      parent &&
+      parent.kind === ASTEngine.SymbolKind.Extension &&
+      declaredVisibility === null &&
+      parent.visibility
     ) {
-      meta.isExportedFromModule = true
-      meta.exportAccessLevel = visibility
+      visibility = parent.visibility
     }
+    // A declaration inside a FUNCTION BODY (or an initializer) is NOT a member of
+    // the function: Swift's grammar admits a nested type there, and the local
+    // type owns only what is declared inside it. Publishing
+    // `ownerName = <function>` minted `contains <function> -> <Type>` for every
+    // such declaration (measured at 355 truth edges by the lane's own oracle),
+    // and INCOMING_SWIFT JOB 2 forbids it in both spellings. Withholding the
+    // owner is what removes the edge — the symbol itself still exists, still
+    // names its members, and is still reachable as an `instantiates` target.
+    //
+    // SWIFT4b: the parent-kind half is not enough. It sees a function body
+    // because that body's parent IS the function symbol, but the walk keeps the
+    // enclosing TYPE as the frame's parent inside every body that mints no
+    // symbol of its own — `deinit`, `subscript`, a computed getter/setter, a
+    // willSet/didSet block, a closure — so `localScope` carries the fact from
+    // the walk (LOCAL_SCOPE_BODIES) and extends the same rule to those.
+    const functionScoped =
+      localScope ||
+      (!!parent &&
+        (parent.kind === ASTEngine.SymbolKind.Function ||
+          parent.kind === ASTEngine.SymbolKind.Method ||
+          parent.kind === ASTEngine.SymbolKind.Constructor))
+    const owner = functionScoped ? null : parent
     const symbol: ASTEngine.UniversalSymbol = {
       id: parent ? `${parent.id}.${name}` : name,
       name,
@@ -2122,9 +2133,9 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         startIndex: node.startIndex,
         endIndex: node.endIndex,
       },
-      parentId: parent ? parent.id : undefined,
-      ownerName: parent ? parent.name : undefined,
-      parent: parent ? parent.name : undefined,
+      parentId: owner ? owner.id : undefined,
+      ownerName: owner ? owner.name : undefined,
+      parent: owner ? owner.name : undefined,
       metadata: meta,
       visibility,
     }
@@ -2153,7 +2164,16 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (throws) { meta.throws = true; symbol.throws = "true" }
   }
 
-  private getVisibility(node: Node): string {
+  /**
+   * The declaration's OWN access-level modifier, or null when it states none.
+   *
+   * The null case is load-bearing (DERIV_EXPORTS_SWIFT4): a member of an
+   * extension INHERITS the extension's level only when it declares none of its
+   * own, so "no modifier" and "explicitly internal" must be distinguishable —
+   * `getVisibility` returns "internal" for both, which is right for the symbol
+   * field and wrong for the inheritance rule.
+   */
+  private getDeclaredVisibility(node: Node): string | null {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (child && child.type === "modifiers") {
@@ -2172,7 +2192,266 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
     }
-    return "internal"
+    return null
+  }
+
+  private getVisibility(node: Node): string {
+    return this.getDeclaredVisibility(node) ?? "internal"
+  }
+
+  /**
+   * The EXPORTING access levels, or null when the declaration is not part of the
+   * module's interface. Swift has no `export` keyword (measured: 150 node types
+   * over 400 corpus files, none an export declaration, 0 anonymous `export`
+   * tokens) — its export construct IS access control. What counts as an export
+   * is measured, over 3,656 files (script/m14/swift-import-export-probe.ts) with
+   * 52,113 file-scope declarations as the denominator: 5,708 `public`, 43
+   * `open`, against 1,325 explicit `internal`, 1,470 `private`, 195
+   * `fileprivate` and 43,368 with no modifier at all — 5,751 of 52,113 (11.04%).
+   * `internal`, `private`, `fileprivate` and the no-modifier default are the
+   * ABSENCE of an export, so they are not in this set. `package` IS in the
+   * condition below as a declared grammar-version boundary, not a measured one:
+   * the pinned grammar (npm tree-sitter-swift 0.7.1) cannot reduce it — all six
+   * synthetic shapes parse to an ERROR while `public func` reduces cleanly, and
+   * the corpus probe finds 0 `package` visibility_modifier nodes in 3,656 files
+   * — so it cannot fire on this corpus and this lane does not claim it does.
+   */
+  private exportingVisibility(node: Node): string | null {
+    const vis = this.getDeclaredVisibility(node)
+    if (vis === "public" || vis === "open" || vis === "package") return vis
+    return null
+  }
+
+  /**
+   * The MODULE-LEVEL SOURCE of an `exports` edge: the file's own leaf name
+   * (typescript's moduleLeafName() convention), e.g.
+   * `…/fixtures/swift/exports-visibility.swift` -> `exports-visibility`.
+   *
+   * FOREIGN ON PURPOSE: never `root`. `root` is in parallel-indexer's
+   * SYMBOL_NAME_DENYLIST, so an edge sourced there can never bind to a stored
+   * symbol; the leaf name is what every other lane spells for a file-as-module
+   * endpoint (go's packageName, python's moduleName). This is a NAME for the
+   * file the edge was read from, not a claim about SwiftPM's module name, which
+   * no Swift source file contains.
+   */
+  private moduleLeafName(filePath: string): string {
+    let start = 0
+    for (let i = filePath.length - 1; i >= 0; i--) {
+      if (filePath[i] === "/") { start = i + 1; break }
+    }
+    let end = filePath.length
+    for (let i = start; i < filePath.length; i++) {
+      if (filePath[i] === ".") { end = i; break }
+    }
+    return filePath.slice(start, end)
+  }
+
+  /**
+   * DERIV_EXPORTS_SWIFT4 — does this declaration publish a name for the module?
+   *
+   * Returns the kind the export row carries, or null when the declaration
+   * exports nothing. Three gates, in order:
+   *
+   *   1. an EXPORTING access level (`exportingVisibility`): `public`/`open`/
+   *      `package` and nothing else;
+   *   2. NOT an extension: an extension symbol is named after the EXTENDED type
+   *      (`public extension Array`), so exporting it would name a declaration
+   *      this file does not contain — measured at 54 file-scope sites in a
+   *      3,656-file draw, all of which would be fabrications;
+   *   3. the declaration KINDS that can carry a level: a nominal
+   *      (`class`/`struct`/`enum`/`actor`), a protocol, a function, a
+   *      property binding and a typealias.
+   *
+   * The caller gates on `parentSymbol === null` (file scope) — a member and a
+   * function-local type never reach here.
+   */
+  private isExportingDeclaration(node: Node): ASTEngine.SymbolKind | null {
+    if (this.exportingVisibility(node) === null) return null
+    if (node.type === "class_declaration" && this.hasAnonToken(node, "extension")) return null
+    if (node.type === "ERROR") {
+      if (!this.isNominalRecovery(node)) return null
+      return this.recoveryKind(node)
+    }
+    if (node.type === "class_declaration") {
+      const valueType = this.hasAnonToken(node, "struct") || this.hasAnonToken(node, "enum")
+      if (valueType) {
+        if (this.hasAnonToken(node, "struct")) return ASTEngine.SymbolKind.Struct
+        if (this.hasAnonToken(node, "enum")) return ASTEngine.SymbolKind.Enum
+      }
+      if (this.hasAnonToken(node, "actor")) return ASTEngine.SymbolKind.Actor
+      return ASTEngine.SymbolKind.Class
+    }
+    if (node.type === "protocol_declaration") return ASTEngine.SymbolKind.Interface
+    if (node.type === "function_declaration" || node.type === "protocol_function_declaration") {
+      return ASTEngine.SymbolKind.Function
+    }
+    if (node.type === "property_declaration" || node.type === "protocol_property_declaration") {
+      return ASTEngine.SymbolKind.Variable
+    }
+    if (node.type === "typealias_declaration") return ASTEngine.SymbolKind.Type
+    return null
+  }
+
+  /**
+   * The NAME (and its node, for the line rule) a declaration publishes — one
+   * entry per binding, because a multi-binding declaration (`var a = 1, b = 2`)
+   * carries a sibling `pattern` per binding (SWIFTD18) and publishing only the
+   * first would silently drop the rest.
+   *
+   * Polled by the export emission only: the symbol table already carries these
+   * names, but the export LINE must come from the declaration's own name node
+   * (M59.A7: a decorated declaration's line is its NAME's line, never the
+   * decorator's — pinned by the `Decorated` row of swift/exports-visibility and
+   * mutant SW-EXP-14).
+   */
+  private exportedDeclarationNames(node: Node): Array<{ name: string; node: Node }> {
+    const out: Array<{ name: string; node: Node }> = []
+    if (node.type === "property_declaration" || node.type === "protocol_property_declaration") {
+      const pat = this.findChildByType(node, "pattern")
+      if (pat) {
+        const pats: Node[] = []
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const c = node.namedChild(i)
+          if (c && c.type === "pattern") pats.push(c)
+        }
+        for (const pn of pats) {
+          const idNode = this.findChildByType(pn, "simple_identifier") || this.findChildByType(pn, "identifier") || this.firstNamedChild(pn)
+          if (idNode) out.push({ name: idNode.text, node: idNode })
+        }
+      }
+      return out
+    }
+    if (node.type === "protocol_declaration") {
+      const nm = this.findChildByType(node, "type_identifier")
+      if (nm) out.push({ name: nm.text, node: nm })
+      return out
+    }
+    if (node.type === "class_declaration") {
+      const nm = this.findChildByType(node, "type_identifier") || this.findChildByType(node, "user_type")
+      if (nm) {
+        const leaf = nm.type === "user_type" ? this.lastTypeIdentifier(nm) : nm
+        if (leaf) out.push({ name: leaf.text, node: leaf })
+      }
+      return out
+    }
+    if (node.type === "function_declaration" || node.type === "protocol_function_declaration") {
+      const nm = this.findChildByType(node, "simple_identifier") || this.findChildByType(node, "identifier")
+      if (nm) out.push({ name: nm.text, node: nm })
+      else {
+        // Operator overloads (`static func + `) have no identifier; the name is
+        // the anonymous operator token (the same recovery handleFunction uses).
+        const opName = this.operatorName(node)
+        if (opName) out.push({ name: opName, node })
+      }
+      return out
+    }
+    if (node.type === "typealias_declaration") {
+      const nm = this.findChildByType(node, "type_identifier") || this.firstNamedChild(node)
+      if (nm) out.push({ name: nm.text, node: nm })
+      return out
+    }
+    if (node.type === "ERROR") {
+      const nm = this.recoveryNameNode(node)
+      if (nm) out.push({ name: nm.text, node: nm })
+      return out
+    }
+    return out
+  }
+
+  /**
+   * DERIV_EXPORTS_SWIFT4 — publish ONE file-scope declaration as an `exports`
+   * edge and an `ExportInfo` row.
+   *
+   * `swiftExport: true` is the marker the CLASSIFICATION keys on indirectly
+   * (`reExport` absent -> structural): the access level is a grammar clause read
+   * off the declaration's own `modifiers` node, so nothing here is inferred and
+   * no reason code is owed (honesty contract §4).
+   */
+  private emitDeclarationExport(
+    node: Node,
+    moduleSource: string,
+    relationships: ASTEngine.UniversalRelationship[],
+    exports: ASTEngine.ExportInfo[],
+    emitted: Set<string>,
+  ): void {
+    const vis = this.exportingVisibility(node)
+    if (!vis) return
+    const kind = this.isExportingDeclaration(node) ?? ASTEngine.SymbolKind.Class
+    for (const resolved of this.exportedDeclarationNames(node)) {
+      this.publishDeclarationExport(node, resolved, kind, vis, moduleSource, relationships, exports, emitted)
+    }
+  }
+
+  /** One published NAME: the row, the edge, and the (source, name) dedupe. */
+  private publishDeclarationExport(
+    node: Node,
+    resolved: { name: string; node: Node },
+    kind: ASTEngine.SymbolKind,
+    vis: string,
+    moduleSource: string,
+    relationships: ASTEngine.UniversalRelationship[],
+    exports: ASTEngine.ExportInfo[],
+    emitted: Set<string>,
+  ): void {
+    const name = this.stripNameQuoting(resolved.name)
+    if (!name || emitted.has(name)) return
+    const nameNode = resolved.node
+    // ENDPOINT INTEGRITY: the name node must lie INSIDE the declaration node it
+    // was read from. A resolver that returned a node from another subtree would
+    // publish a name — and a LINE — belonging to a different declaration, and
+    // the line is the one field a reader checks against the source (M59.A7:
+    // `Decorated`'s edge must carry the NAME's line, 73, never the
+    // `@available` declaration's, 71). A foreign node is withheld, not published.
+    if (nameNode.startIndex < node.startIndex || nameNode.endIndex > node.endIndex) return
+    emitted.add(name)
+    exports.push({
+      name,
+      kind,
+      range: {
+        startLine: nameNode.startPosition.row + 1,
+        startColumn: nameNode.startPosition.column + 1,
+        endLine: nameNode.endPosition.row + 1,
+        endColumn: nameNode.endPosition.column + 1,
+        startIndex: nameNode.startIndex,
+        endIndex: nameNode.endIndex,
+      },
+      visibility: vis,
+      metadata: { exportForm: "visibility_modifier", accessLevel: vis },
+    })
+    relationships.push({
+      type: ASTEngine.RelationshipType.Exports,
+      source: moduleSource,
+      target: name,
+      isExternal: false,
+      weight: 1,
+      confidence: 1.0,
+      ...(typeof this.nodeLine(nameNode) === "number" ? { line_number: this.nodeLine(nameNode)! } : {}),
+      metadata: { exportForm: "visibility_modifier", accessLevel: vis, swiftExport: true },
+    })
+  }
+
+  /** `@_exported` — the underscored re-export attribute, by its NAME node. */
+  private hasExportedAttribute(node: Node): boolean {
+    return this.hasAttributeNamed(node, "_exported")
+  }
+
+  /**
+   * The form in which an import RE-PUBLISHES its module, or null for an
+   * ordinary import (which is a dependency and nothing else).
+   *
+   * Two forms, both pinned by swift/exports-visibility:
+   *   - `public import M` (SE-0409) — the `public` modifier on the import;
+   *   - `@_exported import M` — Swift's literal re-export attribute.
+   * `public` is checked first so a hypothetical `@_exported public import M`
+   * keeps the access-controlled form; both publish the same fact.
+   */
+  private importReExportForm(node: Node): string | null {
+    let reExportForm: string | null = null
+    if (node.type === "import_declaration") {
+      if (this.exportingVisibility(node) === "public") reExportForm = "public_import"
+      else if (this.hasExportedAttribute(node)) reExportForm = "underscored_exported_import"
+    }
+    return reExportForm
   }
 
   private extractAttributes(node: Node): string[] {
@@ -2197,15 +2476,39 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     frameworksObj: Record<string, boolean>,
     reExports: ReExportSite[],
   ) {
-    let moduleName = ""
+    // The module PATH: the import's own `identifier` node, which holds one
+    // `simple_identifier` per dotted segment (`(identifier ["."] (simple_identifier)
+    // (simple_identifier))`), or the bare `simple_identifier` of a plain import.
+    // Probe-verified: script/m14/swift-grammar-shape-probe.ts. Never source text —
+    // the kind keyword and the attributes are SEPARATE children of the
+    // declaration, so reading the first identifier-ish child reads the path only.
+    let spelled = ""
     let moduleNode: Node | null = null
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
       if (c && (c.type === "simple_identifier" || c.type === "type_identifier" || c.type === "identifier")) {
-        moduleName = c.text
+        spelled = c.text
         moduleNode = c
         break
       }
+    }
+    // The MODULE is the FIRST dotted segment; anything after it is a submodule
+    // path or a scoped declaration hanging off the module (the doc's rule, and
+    // swift-ontology-measurements.md: `import let WinSDK.IPPROTO_IP` is a
+    // dependency on `WinSDK`). `identifier` children are the segments, so the
+    // split is over a node's own name rather than over source text.
+    const moduleName = spelled.split(".")[0] ?? ""
+    // The SCOPE KEYWORD, when the import restricts what it brings in
+    // (`import struct Foo.Bar`): an ANONYMOUS token on the declaration beside
+    // `import` — the grammar's own token name (`struct`, `let`, `func`, `enum`,
+    // `class`, `protocol`, `var`, `typealias`), never a substring of the path.
+    let scopeKind = ""
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c || c.isNamed) continue
+      if (c.type === "import") continue
+      scopeKind = c.type
+      break
     }
     if (moduleName) {
       // M59.A7: the range is the MODULE NAME's site, not the whole import
@@ -2222,7 +2525,33 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         startIndex: site.startIndex,
         endIndex: site.endIndex,
       }
-      imports.push({ module: moduleName, isExternal: true, range })
+      // The per-STATEMENT row keeps the SPELLED path in `module` — that is what the
+      // `references` edge beside it names (per statement, 6 statements -> 6 edges),
+      // and the module-level `imports` edge reads the module name out of the
+      // metadata below. The two labels are deliberately different rules over one
+      // statement: one per statement, one per MODULE.
+      const importMd: Record<string, any> = {
+        module: moduleName,
+        moduleSpecifier: spelled,
+        isModuleDependency: true,
+      }
+      // A dotted path is the submodule/scope spelling of the same module.
+      if (spelled !== moduleName) importMd.submodulePath = spelled
+      if (scopeKind.length > 0) {
+        importMd.isScopedImport = true
+        importMd.scopedKind = scopeKind
+        const item = spelled.split(".").slice(1).join(".")
+        if (item.length > 0) importMd.scopedItem = item
+      }
+      // The explicit re-export forms: it is still an import (the module is
+      // bound into scope), and the fact that this file's module re-publishes it
+      // rides this edge's metadata as well as the `exports` edge.
+      const reExportForm = this.importReExportForm(node)
+      if (reExportForm) {
+        importMd.isModuleReExport = true
+        importMd.reExportForm = reExportForm
+      }
+      imports.push({ module: spelled, isExternal: true, range, metadata: importMd })
       // SWIFTD21 (the ontology lane, DERIV_EXPORTS_SWIFT3): `@_exported import M`
       // is Swift's one explicit RE-EXPORT verb — the module this file belongs to
       // re-publishes M's API to ITS importers. The pre-fix lane read the module
@@ -2231,8 +2560,10 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `exports` relationship type never fired at all (measured: 0 on every
       // corpus, against 40 `@_exported import` sites in 27 files of
       // swift-corpus — see docs/analyzers/swift-ontology-measurements.md).
-      if (this.isReExportImport(node)) {
-        reExports.push({ module: moduleName, node: site })
+      if (reExportForm) {
+        // The re-export names the module the path SPELLS (`Mixed.Submodule` stays
+        // whole — a dotted module name is a module name, DERIV_EXPORTS_SWIFT3).
+        reExports.push({ module: spelled, node: site, form: reExportForm })
       }
       if (moduleName === "SwiftUI") frameworksObj["SwiftUI"] = true
       if (moduleName === "Combine") frameworksObj["Combine"] = true
@@ -2242,22 +2573,15 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * `@_exported import M` — the re-export test, and the ONLY thing that makes
-   * this a re-export.
+   * The NAME of an `attribute` node: its first named child.
    *
    * The attribute arrives as `import_declaration > modifiers > attribute`, and
-   * the pinned grammar spells the attribute as `('@' (user_type
-   * (type_identifier)))` — so the attribute's NAME is its first named child's
-   * text, not the attribute node's own text and never the file's text. Reading
-   * the name node is what stops `@objc(name: "_exported")` and a comment from
-   * producing a hit, and it is the same rule the census's probe P2 uses on the
-   * other side of the comparison.
+   * the pinned grammar spells it `('@' (user_type (type_identifier)))` — so the
+   * attribute's NAME is its first named child's text, never the attribute node's
+   * own text and never the file's text. Reading the name node is what stops
+   * `@objc(name: "_exported")` and a comment from producing a hit, and it is the
+   * same rule the census's probe P2 uses on the other side of the comparison.
    */
-  private isReExportImport(node: Node): boolean {
-    return this.hasAttributeNamed(node, "_exported")
-  }
-
-  /** The NAME of an `attribute` node: its first named child. */
   private attributeName(node: Node): string | null {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
@@ -2355,7 +2679,26 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     return !!args && this.hasAnonToken(args, "[")
   }
 
-  /** Operator overload name: the anonymous operator token after `func`. */
+  /**
+   * Operator overload name: the token immediately after `func`.
+   *
+   * The grammar reads most operator tokens as ANONYMOUS children (`==`, `+`,
+   * `<`, `===`) but falls back to a NAMED `custom_operator` node for sequences
+   * it has no reserved token for — measured on the pinned wasm: `func !==` and
+   * `func ~=` both parse as `custom_operator`, `func ===`/`func <`/`func ==` as
+   * anonymous tokens. The pre-fix loop accepted only anonymous children, so the
+   * named forms fell through to the first anonymous child that was not a paren
+   * — the parameter comma — and minted `operator ,`: measured in the corpus as
+   * a symbol and an `exports` edge naming `operator ,` in
+   * swift-corpus/SwiftCompilerSources/Sources/SIL/ApplySite.swift (the `~=`
+   * overload), SIL/Instruction.swift and COM/IUnknown+Identity.swift (the `!==`
+   * overloads). A comma is not an operator Swift can declare, so that endpoint
+   * was FABRICATED, the defect class INCOMING_SWIFT JOB 2 forbids.
+   *
+   * `custom_operator` is the only named node accepted here; a named
+   * `simple_identifier` is a normal function name (return null), and anything
+   * else before the first paren is not a name token.
+   */
   private operatorName(node: Node): string | null {
     let sawFunc = false
     for (let i = 0; i < node.childCount; i++) {
@@ -2364,6 +2707,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!c.isNamed && c.type === "func") { sawFunc = true; continue }
       if (sawFunc) {
         if (c.isNamed && c.type === "simple_identifier") return null
+        if (c.isNamed && c.type === "custom_operator") return `operator ${c.text}`
         if (!c.isNamed && c.type !== "(" && c.type !== ")" && c.type !== "{") {
           return `operator ${c.text}`
         }
