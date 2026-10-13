@@ -48,7 +48,7 @@ if (process.argv.includes("--child")) {
       await new Promise((r) => setTimeout(r, 10))
     },
   })
-  console.log(JSON.stringify({ walked: stats.walked, resumed: stats.alreadyDone, died: stats.died, bad: stats.skippedBad, partial: stats.partial }))
+  console.log(JSON.stringify({ walked: stats.walked, resumed: stats.alreadyDone, died: stats.unfinishedFromPreviousRun, bad: stats.skippedBad, partial: stats.partial }))
   process.exit(0)
 }
 
@@ -86,7 +86,7 @@ checks.push(["the killed file is abandoned rather than re-walked", second.died >
 checks.push(["the walk reports itself partial while any file is abandoned", second.partial === true, `partial=${second.partial}`])
 
 const ck = readCheckpoint(CK)
-checks.push([`the abandoned file is named exactly once (${KILL_AT}) and never retried`, ck.died.length >= 1 && ck.died.every((p) => p.includes("file-")), JSON.stringify(ck.died)])
+checks.push([`the abandoned file is named exactly once (${KILL_AT}) and never retried`, ck.unfinished.length >= 1 && ck.unfinished.every((p) => p.includes("file-")), JSON.stringify(ck.unfinished)])
 
 // The third run must WALK NOTHING: everything is either done or abandoned. A walk that
 // re-tries an abandoned file would reproduce the original stall one file at a time.
