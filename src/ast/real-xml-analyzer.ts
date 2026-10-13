@@ -2073,6 +2073,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const droppedSymbols = symbols.length - keptSymbols.length
       const droppedRelationships = relationships.length - keptRelationships.length
       if (droppedSymbols > 0 || droppedRelationships > 0) {
+        this.qualifySameFileTier(keptSymbols, keptRelationships)
         return {
           language: "xml",
           symbols: keptSymbols,
@@ -2095,6 +2096,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    this.qualifySameFileTier(symbols, relationships)
     return {
       language: "xml",
       symbols,
@@ -3118,6 +3120,51 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return out
+  }
+
+  /**
+   * THE SAME-FILE TIER — a BOUNDED fix for 366 edges of this lane's ~9,131 residual, and not a fix for
+   * the lane. Sized from a POPULATION-scope run of the lane's own `ambiguity-split.mts`
+   * (`validation/m14/fixtures/xml/measurements/ambiguity-split-population.txt`): the same-file bucket (B1)
+   * totals 1,798 across every type — references 189 · extends 173 · calls 4 · overrides 0, plus 1,432
+   * `contains` which production ALREADY binds through `containsLike` and which is therefore not part of
+   * the residual. So the tier reaches 366, and the commit that lands it says exactly that, because the
+   * next reader would otherwise inherit a 600-file draw's 279 as the lane's shape — which is how the
+   * assignment that produced this file's measurement was written in the first place.
+   *
+   * THE RULE, and why it cannot be wrong: the lane ALREADY computes a two-part identity
+   * (`qualifiedName = ownerName + "." + name`, `:780` and `:934`) and then hands the graph the BARE name,
+   * because `addRelationship` takes two strings. `src/ast/parallel-indexer.ts:3435-3437` already looks up
+   * `name === target` and then `qualifiedName === target`. So emitting the qualified form is readable to
+   * the store WITHOUT changing the store. An edge is qualified only when the file declares its target
+   * under EXACTLY ONE owner — `set.size === 1` — so there is no choice to make and no preference to
+   * invent, which is the difference between a tier and a guess. Zero owners leaves it bare (nothing to
+   * name) and two or more leaves it bare (still ambiguous, and the tier does not pretend otherwise).
+   *
+   * The BARE name is preserved as `metadata.bareTarget`, so nothing is lost and a consumer that matched
+   * the old spelling can still see it.
+   */
+  private qualifySameFileTier(symbols: ASTEngine.UniversalSymbol[], relationships: ASTEngine.UniversalRelationship[]): void {
+    const byName = new Map<string, Set<string>>()
+    for (const sym of symbols) {
+      const n = String(sym.name ?? "")
+      const q = String((sym as { qualifiedName?: string }).qualifiedName ?? "")
+      if (n.length === 0 || q.length === 0 || q === n) continue
+      let set = byName.get(n)
+      if (!set) byName.set(n, (set = new Set()))
+      set.add(q)
+    }
+    const TIER_TYPES = new Set(["references", "extends", "calls", "uses", "overrides"])
+    for (const rel of relationships) {
+      if (!TIER_TYPES.has(String(rel.type ?? ""))) continue
+      const target = String(rel.target ?? "")
+      const qs = byName.get(target)
+      if (qs === undefined || qs.size !== 1) continue
+      const md = (rel.metadata ?? {}) as Record<string, unknown>
+      md.bareTarget = target
+      rel.metadata = md as ASTEngine.UniversalRelationship["metadata"]
+      rel.target = [...qs][0]!
+    }
   }
 
   private unquote(text: string): string {
