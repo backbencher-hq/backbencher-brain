@@ -70,9 +70,14 @@ function buildProject(): { db: Database.Database; rows: Row[] } {
       id TEXT PRIMARY KEY, project_id TEXT, name TEXT, qualified_name TEXT,
       symbol_type TEXT, super_types TEXT
     );
+    -- source_symbol_id is part of the pass's read (parallel-indexer.ts's schema has
+    -- carried it since the relationship table existed), so a fixture that omits it is
+    -- not a smaller copy of the schema — it is a table the pass's own SELECT cannot
+    -- run against. The omission was invisible while the read was source_external-only;
+    -- the row below named r8 is why it stopped being.
     CREATE TABLE brain_relationship (
       id TEXT PRIMARY KEY, project_id TEXT, source_external TEXT, target_external TEXT,
-      relationship_type TEXT, confidence REAL
+      relationship_type TEXT, confidence REAL, source_symbol_id TEXT
     );
   `)
   const PID = "p"
@@ -86,8 +91,11 @@ function buildProject(): { db: Database.Database; rows: Row[] } {
     return db.prepare(`INSERT INTO brain_symbol VALUES (?,?,?,?,?,?)`)
       .run(`s:${qualifiedName}`, PID, bare, qualifiedName, kind, sup ? JSON.stringify(sup) : null)
   }
-  const rel = (id: string, src: string, tgt: string, conf: number, type = "overrides") =>
-    db.prepare(`INSERT INTO brain_relationship VALUES (?,?,?,?,?,?)`).run(id, PID, src, tgt, type, conf)
+  const rel = (id: string, src: string | null, tgt: string, conf: number, type = "overrides", srcSymbolId: string | null = null) =>
+    db.prepare(
+      `INSERT INTO brain_relationship (id, project_id, source_external, target_external, relationship_type, confidence, source_symbol_id)
+       VALUES (?,?,?,?,?,?,?)`,
+    ).run(id, PID, src, tgt, type, conf, srcSymbolId)
 
   sym("Base", "class", null)
   sym("Middle", "class", ["Base"])
@@ -98,6 +106,20 @@ function buildProject(): { db: Database.Database; rows: Row[] } {
   sym("Base.run", "method", null)
   sym("Base.toText", "method", null)
   sym("Middle.extra", "method", null)
+  // ── THE RESOLVED-SOURCE SHAPE (JavaScript) ──
+  //
+  // An analyzer that names the overriding member in container-qualified form gets
+  // that name RESOLVED by the store's source lookup, so the row arrives with
+  // `source_external` NULL and `source_symbol_id` pointing at the member. Measured on
+  // the pinned JavaScript corpus (svelte, 1,200-file draw): 52 of 52 `overrides` rows
+  // are this shape, and the pass skipped all of them at its first read because it
+  // looked only at `source_external`. `JsLeaf`/`JsBase` is that shape, with the same
+  // first-parent-guess defect as `Leaf`: the analyzer's guess (`Unknown.render`) is not
+  // the ancestor that declares `render`.
+  sym("JsBase", "class", null)
+  sym("JsBase.render", "method", null)
+  sym("JsLeaf", "class", ["JsBase"])
+  sym("JsLeaf.render", "method", null)
 
   // Leaf.run's first supertype is Middle, which does NOT declare `run` -> the defect shape
   rel("r1", "Leaf.run", "Middle.run", 0.5)
@@ -107,6 +129,8 @@ function buildProject(): { db: Database.Database; rows: Row[] } {
   rel("r5", "Leaf.toText", "Middle.toText", 0.5) // depth-2, correct parent Base
   rel("r6", "Leaf.extra", "Middle.extra", 1.0)   // HIGH confidence; must not touch
   rel("r7", "Leaf.run", "Middle.run", 1.0, "calls") // wrong label; must not touch
+  // the resolved-source row: no `source_external` at all, source symbol is the member
+  rel("r8", null, "Unknown.render", 0.5, "overrides", "s:JsLeaf.render")
   return { db, rows: [] }
 }
 
@@ -127,7 +151,7 @@ function main(): void {
   const res = retargetCrossFileOverrides(db, "p")
   const after = targets(db)
 
-  check("scans every low-confidence overrides row", res.scanned === 5, `scanned=${res.scanned} expected 5`)
+  check("scans every low-confidence overrides row", res.scanned === 6, `scanned=${res.scanned} expected 6`)
   check("moves the depth-2 mis-parented row to the ancestor that DECLARES it",
     after.get("r1") === "Base.run", `${before.get("r1")} -> ${after.get("r1")}`)
   check("moves a second depth-2 row", after.get("r5") === "Base.toText", `${before.get("r5")} -> ${after.get("r5")}`)
@@ -140,14 +164,20 @@ function main(): void {
   // and found nothing" and "we had nothing to look at".
   check("counts unverifiable rows rather than dropping them", res.unverifiable === 1, `unverifiable=${res.unverifiable}`)
   check("counts owner-with-no-hierarchy separately", res.noHierarchy === 1, `noHierarchy=${res.noHierarchy}`)
-  check("resolved exactly the rows whose ancestor declares the method", res.resolved === 3, `resolved=${res.resolved} expected 3`)
+  check("resolved exactly the rows whose ancestor declares the method", res.resolved === 4, `resolved=${res.resolved} expected 4`)
+  // The arm that pins the resolved-source read: with `source_external` NULL the owner is
+  // taken from the source SYMBOL, and the row is still re-pointed at the declaring
+  // ancestor. Before the read existed this row was invisible to the pass (scanned 0 of
+  // the JavaScript shape) while `scanned` still looked healthy on hand-written rows.
+  check("reads the owner from the RESOLVED source symbol when source_external is NULL",
+    after.get("r8") === "JsBase.render", `Unknown.render -> ${after.get("r8")}`)
 
   // ── 2. non-inventing, non-touching ────────────────────────────────────────
   check("never touches a HIGH-confidence overrides row", after.get("r6") === "Middle.extra", after.get("r6"))
   check("never touches another relationship type", after.get("r7") === "Middle.run", after.get("r7"))
 
   const rowsNow = (db.prepare(`SELECT count(*) c FROM brain_relationship`).get() as any).c
-  check("creates no rows", rowsNow === 7, `rows=${rowsNow} expected 7`)
+  check("creates no rows", rowsNow === 8, `rows=${rowsNow} expected 8`)
   const confs = db.prepare(`SELECT DISTINCT confidence FROM brain_relationship ORDER BY confidence`).all() as any[]
   check("raises no confidence", confs.map((c) => c.confidence).join(",") === "0.5,1", confs.map((c) => c.confidence).join(","))
 
@@ -177,10 +207,10 @@ function main(): void {
   const db2 = new Database(":memory:")
   db2.exec(`
     CREATE TABLE brain_symbol (id TEXT PRIMARY KEY, project_id TEXT, name TEXT, qualified_name TEXT, symbol_type TEXT, super_types TEXT);
-    CREATE TABLE brain_relationship (id TEXT PRIMARY KEY, project_id TEXT, source_external TEXT, target_external TEXT, relationship_type TEXT, confidence REAL);
+    CREATE TABLE brain_relationship (id TEXT PRIMARY KEY, project_id TEXT, source_external TEXT, target_external TEXT, relationship_type TEXT, confidence REAL, source_symbol_id TEXT);
   `)
   db2.prepare(`INSERT INTO brain_symbol VALUES ('s1','p','Base','Base','class',NULL)`).run()
-  db2.prepare(`INSERT INTO brain_relationship VALUES ('r1','p','Leaf.run','Middle.run','overrides',0.5)`).run()
+  db2.prepare(`INSERT INTO brain_relationship VALUES ('r1','p','Leaf.run','Middle.run','overrides',0.5,NULL)`).run()
   const r2 = retargetCrossFileOverrides(db2, "p")
   const t2 = (db2.prepare(`SELECT target_external FROM brain_relationship`).get() as any).target_external
   check("a database with no persisted hierarchy is left untouched", r2.moved === 0 && t2 === "Middle.run", `moved=${r2.moved} target=${t2}`)
