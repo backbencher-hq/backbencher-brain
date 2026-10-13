@@ -1,0 +1,7 @@
+{
+  "name": "flyram",
+  "version": "0.1.0",
+  "description": "A laptop with no RAM — working memory lives on the network. The box holds a cache; a remote heap holds the truth.",
+  "type": "module",
+  "scripts": { "test": "tsx test/noram.test.ts" }
+}
