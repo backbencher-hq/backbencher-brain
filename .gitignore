@@ -349,3 +349,11 @@ validation/m14/fixtures/julia/__ambkind-split.ts
 validation/m14/fixtures/julia/__*.ts
 # Any r-lane scratch instrument in src/ast (the __ prefix is the convention).
 src/ast/__*.ts
+
+# AND A SCRATCH FILE BESIDE ITS REAL SUBJECT IS THE ONE MOST LIKELY TO BE SWEPT OR COMMITTED BY ACCIDENT:
+# `src/ast/real-scss-analyzer-prefix-scratch.ts` sat UNTRACKED in `src/ast/` while its lane ran an acceptance,
+# and only the `__*.ts` rule above existed. A scratch beside the file it modifies is visible to `git status` AND
+# to any peer staging `src/ast/` — so the pattern must cover the SUFFIX, not a prefix convention alone.
+# Found by the Lead, 2026-10-13, while checking whether a lane's live scratch could be swept.
+*-scratch.ts
+*-scratch.mts
