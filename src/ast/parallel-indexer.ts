@@ -6535,7 +6535,12 @@ export async function indexProjectParallel(
               `override companion (${companionLang}): ${passStats.owners} owners, ` +
                 `${passStats.refiles} file(s) re-analyzed, ${passStats.reapplied} reapplied, ` +
                 `${passStats.confirmed} confirmed, ${passStats.stillGuess} still a guess, ` +
-                `${passStats.failed} failed`,
+                `${passStats.failed} failed, ` +
+                // THE WIRING MADE VISIBLE (r-lane). Without these two numbers the id path could be
+                // POPULATED AND CONSUMED BY NOTHING and no log would say so — the exact defect this
+                // programme spent the evening finding in the companion tier itself. A run whose
+                // `ids` is 0 while `confirmed` is not has a wiring fault, and this line reports it.
+                `${passStats.confirmedIds.length} id(s) computed, ${passStats.confirmedIdsMissed} without one`,
             )
           }
           // ── THE WRITE-BACK (r-lane, 2026-10-12) ────────────────────────────────────────────────
