@@ -49,11 +49,30 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { emitEvidence, type Check } from "./evidence-harness"
 import { fileURLToPath } from "node:url"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const CORPUS_ROOTS = [
-  "$HOME/fixtures/repositories/svelte",
-  "$HOME/fixtures/repositories/shadcn-svelte",
+  //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+  //  each repo path below resolved to a filesystem that does not exist here and the leg
+  //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+  //  candidates in order and names them all when none exists.
+  //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+  //  each repo path below resolved to a filesystem that does not exist here and the leg
+  //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+  //  candidates in order and names them all when none exists.
+  // Per-repo corpus paths were built on the literal foreign root
+  //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+  //  each repo path below resolved to a filesystem that does not exist here and the leg
+  //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+  //  candidates in order and names them all when none exists.
+  `${CORPUS_BASE}/svelte`,
+  //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+  //  each repo path below resolved to a filesystem that does not exist here and the leg
+  //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+  //  candidates in order and names them all when none exists.
+  `${CORPUS_BASE}/shadcn-svelte`,
 ]
 
 // --- DECLARED DISPOSITIONS -------------------------------------------------

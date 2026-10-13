@@ -42,10 +42,19 @@ import * as path from "node:path"
 import { parseFile, ASTEngine } from "../../src/ast/engine"
 import { getParser } from "./run-fixtures"
 import { emitEvidence } from "./evidence-harness"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+import { fileURLToPath } from "node:url"
 
-const ROOT = path.resolve(__dirname, "..", "..")
-const REPOS = "$HOME/fixtures/repositories"
-
+// `__dirname` does not exist in an ES module, and package.json declares
+  // "type": "module". Using it here threw `ReferenceError: __dirname is not defined in
+  // ES module scope` at load — the gate printed a stack trace and exited, having run
+  // no check at all. It was in `npm run verify`, so the leg contributed nothing.
+  // The repo already has the idiom (script/m14/html-ontology-census.ts and others use
+  // fileURLToPath(import.meta.url)); this now matches it.
+const HERE = path.dirname(fileURLToPath(import.meta.url))
+const ROOT = path.resolve(HERE, "..", "..")
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+const REPOS = resolveCorpusRoot(process.cwd()) ?? "REPOS_UNRESOLVED"
 const LANES: Array<{ lang: "c" | "cpp" | "rust" | "go" | "clean"; dirs: string[]; exts: string[]; limit?: number; why?: string }> = [
   { lang: "c", dirs: ["jq", "sqlite"], exts: [".c"] },
   { lang: "cpp", dirs: ["fmt", "nlohmann-json"], exts: [".cpp", ".cc", ".cxx", ".hpp", ".hh", ".hxx", ".h"] },
@@ -69,7 +78,13 @@ const LANES: Array<{ lang: "c" | "cpp" | "rust" | "go" | "clean"; dirs: string[]
   // are then comparable to the census's own full-draw reading
   // (`--lane go --sample 2200`: syms=25962 rels=270842 sep=11933).
   {
-    lang: "go", dirs: ["go-tools", "terraform"], exts: [".go"], limit: Number.MAX_SAFE_INTEGER,
+    // The corpus directory is go_tools (underscore), not go-tools. Every gate that
+    //  asked for the hyphen form was reading a directory that has never existed on any
+    //  machine, so the corpus leg passed VACUOUSLY — no error, no finding, nothing
+    //  measured. script/m13/verify-analyze-e2e-corpus.ts reported exactly this once the
+    //  corpus root was fixed: "corpus go-tools/go/analysis/passes (Go): present … missing".
+    //  Verified against the corpus on disk, which lists go_tools.
+    lang: "go", dirs: ["go_tools", "terraform"], exts: [".go"], limit: Number.MAX_SAFE_INTEGER,
     why: "full extent of both corpora — the R10 census's canonical draw is 40 go-tools + 24 terraform files, and the class this round changed is sparse (a qualified type use, an import path); reading the draw would let the gate read clean on files it never opened.",
   },
   {

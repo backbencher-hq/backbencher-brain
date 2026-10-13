@@ -44,9 +44,21 @@ import * as path from "node:path"
 import { execSync } from "node:child_process"
 import * as WTS from "web-tree-sitter"
 import { emitEvidence } from "./evidence-harness"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+import { fileURLToPath } from "node:url"
 
-const ROOT = path.resolve(__dirname, "..", "..")
-const REPOS = "$HOME/fixtures/repositories"
+// `__dirname` / `__filename` do not exist in an ES module, and package.json
+//  declares "type": "module". Reaching for one here means this file dies at LOAD
+//  with a ReferenceError, prints a stack trace, and runs no check at all — while
+//  `tsc` stays silent, because @types/node declares both.
+//  The repo already has the idiom (script/m14/html-ontology-census.ts):
+//    const SELF = fileURLToPath(import.meta.url)
+//  which is correct under tsx, bun and plain node alike.
+const SELF_PATH = fileURLToPath(import.meta.url)
+const HERE = path.dirname(SELF_PATH)
+const ROOT = path.resolve(HERE, "..", "..")
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+const REPOS = resolveCorpusRoot(process.cwd()) ?? "REPOS_UNRESOLVED"
 const FIXTURE = path.join(ROOT, "validation", "m14", "fixtures", "cpp", "multiline-attribute-line-base-920.cpp")
 
 /** The two multi-line patterns the engine blanks, and the explicit blankers. */

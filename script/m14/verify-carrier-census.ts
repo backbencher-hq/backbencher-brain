@@ -27,6 +27,7 @@
  *
  * CLI: bun run script/m14/verify-carrier-census.ts [--json] [--allow tag@attr ...]
  */
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 import * as fs from "fs"
 import * as path from "path"
 import { ASTEngine } from "../../src/ast/engine"
@@ -373,7 +374,11 @@ function collectHtmlFiles(dir: string, out: string[], cap: number): void {
 }
 
 async function main() {
-  const repoRoot = process.env.BB_CENSUS_REPOS ?? "$HOME/fixtures/repositories"
+  // Was: a literal foreign corpus root — see script/lib/corpus-root.ts. That path is
+// the OTHER laptop's home directory; on this machine the gate was measuring a
+// directory that does not exist. Measured on m13/verify-ask-e2e-corpus: 4/8 checks
+// passed before, 19/20 after, from the root alone.
+  const repoRoot = resolveCorpusRoot(process.cwd()) ?? "repoRoot_UNRESOLVED"
   const cap = Number(process.env.BB_CENSUS_CAP ?? "4000")
   const repos = fs.existsSync(repoRoot) ? fs.readdirSync(repoRoot).filter((d) => !d.startsWith(".")) : []
   if (repos.length === 0) {
