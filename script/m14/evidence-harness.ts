@@ -20,6 +20,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
+import { canonicalizeKeys, sealFor } from "../lib/evidence.ts"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const RESULTS_DIR = path.join(ROOT, "validation", "m14", "results")
@@ -183,10 +184,45 @@ export function emitEvidence(input: EvidenceInput, resultsDir = RESULTS_DIR): st
   const lineage = {
     ...artifact,
     regeneratedAtCommit: gitCommit(),
-    regeneratedAt: new Date().toISOString(),
+    // COMMIT time, not wall clock — see the seal note below. Two re-emissions at the same HEAD
+    // must be byte-identical: that is this harness's determinism claim (checked by the F2 probe,
+    // which emits twice into a temp dir and compares), it is what makes the sealed digest stable
+    // for a reader who re-runs a producer, and it is what the M49 lineage gate needs (a parseable
+    // date, which a commit time is). A wall-clock stamp here ALSO differed between the two
+    // emissions, and because the seal digests the whole record it dragged `contentSha256` with
+    // it: measured 2026-10-12, emitting F2's probe payload twice gave two different digests whose
+    // only textual difference was this line. Readers that displayed it as "when the artifact was
+    // produced" now display the commit it describes, which is the more useful fact and the one
+    // `regeneratedAtCommit` already carries.
+    regeneratedAt: gitCommitTime(),
   }
+  // M61 D-1 (the seal law) — THIS WRITER IS 42 SCRIPTS' ONLY WRITE PATH, and it
+  // used to stamp RAW JSON. Every m14 record it wrote therefore carried no
+  // `bbSeal`: the seal machinery could never verify them, and a re-run
+  // SILENTLY DE-SEALED records that a one-shot M61 refresh had sealed
+  // (validation/m14/results/M14.0.SPEC.json is the measured instance — the M61
+  // seal register recorded its digest, then a lane re-measure here rewrote the
+  // file raw and the register no longer matched any seal in the record). The
+  // seal is computed over the CANONICALIZED record — the same sorted-key shape
+  // `stableStringify` writes — so a verifier that parses the file, drops the
+  // envelope and re-serializes recomputes exactly the digest sealed here
+  // (script/lib/evidence.ts verifySeal). Key order is load-bearing for that
+  // recomputation: sealing the unsorted in-memory object while writing sorted
+  // bytes would produce a record whose own seal reads as `tampered`.
+  const canonical = canonicalizeKeys(lineage)
+  // The seal's `sealedAt` is the COMMIT time, not the wall clock, and that is load-bearing
+  // rather than cosmetic (found 2026-10-12 by re-emitting F2 after the sealing fix landed):
+  // this harness's own determinism claim is "sorted keys + commit-time timestamp => regeneration
+  // at the same HEAD is byte-identical (drift = tampering)", and `Object.keys`-sorted bytes with a
+  // `new Date()` seal inside them are not byte-identical across two runs — so the sealed write path
+  // broke the property it was added to serve. The F2 gate measures exactly this (emit twice into a
+  // temp dir, compare after stripping the lineage timestamp), and it read `pass` for two days only
+  // because F2's committed artifact was emitted BEFORE sealing existed. `sealedAt` is not part of
+  // the sealed content (`sealFor` digests the record without the envelope), so nothing already on
+  // disk loses validity: re-sealing a legacy record keeps its old `sealedAt`, which is honest.
+  const seal = sealFor(canonical, new Date(gitCommitTime()))
   const tmp = `${file}.tmp-${process.pid}`
-  fs.writeFileSync(tmp, stableStringify(lineage) + "\n")
+  fs.writeFileSync(tmp, stableStringify({ ...(canonical as Record<string, unknown>), bbSeal: seal }) + "\n")
   fs.renameSync(tmp, file)
   return file
 }

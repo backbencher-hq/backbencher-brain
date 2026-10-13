@@ -186,10 +186,35 @@ const spec = {
     reproducibility: "bash fixtures/xml/run-all.sh [--full]",
   },
   knownGateGaps: [],
-  // Sections E and F are CLOSED. They read a `grails-core:xml` floor row out of
-  // differential-baseline.json, and `script/m14/differential.ts` had no xml lane.
-  // It has one now, and the row is PINNED: missing=0, unexplained=0, heuristic=0,
-  // avgMsPerFile 25.5, sampleSetHash ca66a7bb0706a21a. 8/8 sections pass.
+  // Sections E and F are NOT closed, and this note used to say they were. The
+  // correction (2026-10-12) is the whole reason the note is kept rather than
+  // deleted:
+  //
+  //   The line here read "Sections E and F are CLOSED ... the row is PINNED:
+  //   missing=0, unexplained=0, heuristic=0, avgMsPerFile 25.5, sampleSetHash
+  //   ca66a7bb0706a21a. 8/8 sections pass." Every number in it was measured. But
+  //   the row it described is not in validation/m14/differential-baseline.json at
+  //   HEAD, and no gate compares a producer's prose to the file it names — so the
+  //   contradiction sat in the tree, with sections E/F reading red for weeks while
+  //   this file claimed 8/8.
+  //
+  //   What actually happened: the lane's differential ORACLE could not be trusted
+  //   (it resolved the XSD namespace for 1 of 62 elements and published
+  //   `xsd:element` where the analyzer published `component-scan`; the full run
+  //   reported contains-attribute recall 0.910 over 76,372 spurious edges), so the
+  //   recall claim was WITHDRAWN and replaced by CHECK G (c82067ea9, 2026-09-27 —
+  //   one symbol per `element` node and one per `Attribute` node per file, exact on
+  //   both sides), and then merge 16075a5a1 (2026-09-29) resolved differential.ts
+  //   by taking the other parent's copy and dropped the lane's 324-line oracle
+  //   block, its LANG_REPOS entry and the 9 floor rows with it.
+  //
+  //   So the recovered row (missing=0, unexplained=0, perf 9.9 ms/file, hash
+  //   886d9f67517b879e, recorded at 7ab888b79) is EVIDENCE about a withdrawn
+  //   instrument, not a floor: `recovered` in the baseline, with the cause in
+  //   `unmeasured`, and E/F read red naming it. Restoring the oracle block would
+  //   restore an instrument this lane already judged broken; the stood-up
+  //   replacement is CHECK G, and the sweep now DECLARES the lane instead of
+  //   aborting on it.
   //
   // What it took, in order, and none of it was the analyzer:
   //
