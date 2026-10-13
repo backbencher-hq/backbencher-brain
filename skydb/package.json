@@ -1,0 +1,8 @@
+{
+  "name": "skydb",
+  "version": "0.1.0",
+  "description": "A flying database — no fixed host. Every node holds the whole store, writes work offline, and nodes converge when they meet.",
+  "type": "module",
+  "bin": { "sky": "./src/cli.ts" },
+  "scripts": { "test": "tsx test/converge.test.ts" }
+}
