@@ -2,13 +2,391 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-07T08:14:41.673Z",
+  "generatedAt": "2026-10-13T23:02:27.146Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 0,
+  "totalRegexUsages": 30,
   "analyzersScanned": 48,
-  "byClassification": {},
-  "byReceiverCategory": {},
-  "perFile": []
+  "byClassification": {
+    "needs_review": 30
+  },
+  "byReceiverCategory": {
+    "identifier": 19,
+    "other": 11
+  },
+  "perFile": [
+    {
+      "file": "real-yaml-analyzer.ts",
+      "count": 18,
+      "usages": [
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 1619,
+          "column": 30,
+          "source": "/^(.*)\\.steps\\[(\\d+)\\]$/",
+          "operation": "other",
+          "receiver": "",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 1620,
+          "column": 76,
+          "source": "/^(.*)\\.steps\\[(\\d+)\\]\\.with$/",
+          "operation": "other",
+          "receiver": "",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 1689,
+          "column": 15,
+          "source": "/^(.*)\\.steps\\[(\\d+)\\]\\.uses$/",
+          "operation": "test",
+          "receiver": "use.source",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 1694,
+          "column": 45,
+          "source": "/\\/+$/",
+          "operation": "replace",
+          "receiver": "use.action.slice(2)",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 1700,
+          "column": 40,
+          "source": "/^actions\\/checkout(@|$)/",
+          "operation": "test",
+          "receiver": "facts.uses",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 1702,
+          "column": 47,
+          "source": "/^\\.\\//",
+          "operation": "replace",
+          "receiver": "facts.path",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 1702,
+          "column": 68,
+          "source": "/\\/+$/",
+          "operation": "replace",
+          "receiver": "facts.path.replace(/^\\.\\//, \"\")",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 2020,
+          "column": 12,
+          "source": "/\\.ya?ml$/i",
+          "operation": "test",
+          "receiver": "entry",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 2044,
+          "column": 34,
+          "source": "/^kind:[ \\t]*[\"']?([A-Za-z][\\w.-]*)[\"']?[ \\t]*$/m",
+          "operation": "match",
+          "receiver": "text",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 2046,
+          "column": 30,
+          "source": "/^metadata:[ \\t]*$/m",
+          "operation": "search",
+          "receiver": "text",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 2048,
+          "column": 46,
+          "source": "/^[ \\t]+name:[ \\t]*[\"']?([^\"'\\n#]+?)[\"']?[ \\t]*$/m",
+          "operation": "match",
+          "receiver": "text.slice(meta)",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 2361,
+          "column": 57,
+          "source": "/(^|\\.)matrix$/",
+          "operation": "test",
+          "receiver": "parentPath",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 3416,
+          "column": 9,
+          "source": "/[{}$*?]/",
+          "operation": "test",
+          "receiver": "written",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 3417,
+          "column": 20,
+          "source": "/\\s/",
+          "operation": "test",
+          "receiver": "written",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 3420,
+          "column": 9,
+          "source": "/^[A-Za-z][A-Za-z0-9+.-]*:/",
+          "operation": "test",
+          "receiver": "written",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 3422,
+          "column": 9,
+          "source": "/^[A-Za-z_][A-Za-z0-9_]*=/",
+          "operation": "test",
+          "receiver": "written",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 3507,
+          "column": 10,
+          "source": "/\\.ya?ml$/i",
+          "operation": "test",
+          "receiver": "written",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 3615,
+          "column": 11,
+          "source": "/\\.ya?ml$/i",
+          "operation": "test",
+          "receiver": "action",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-protobuf-analyzer.ts",
+      "count": 4,
+      "usages": [
+        {
+          "file": "real-protobuf-analyzer.ts",
+          "line": 63,
+          "column": 49,
+          "source": "/^\\s*package\\s+/",
+          "operation": "replace",
+          "receiver": "String(c.text ?? \"\")",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-protobuf-analyzer.ts",
+          "line": 63,
+          "column": 79,
+          "source": "/;\\s*$/",
+          "operation": "replace",
+          "receiver": "String(c.text ?? \"\").replace(/^\\s*package\\s+/, \"\")",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-protobuf-analyzer.ts",
+          "line": 1665,
+          "column": 44,
+          "source": "/\\/$/",
+          "operation": "replace",
+          "receiver": "dirOf(fileRel)",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-protobuf-analyzer.ts",
+          "line": 1668,
+          "column": 38,
+          "source": "/\\/$/",
+          "operation": "replace",
+          "receiver": "dirOf(rel)",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-scss-analyzer.ts",
+      "count": 3,
+      "usages": [
+        {
+          "file": "real-scss-analyzer.ts",
+          "line": 1258,
+          "column": 23,
+          "source": "/[\\\\/]/",
+          "operation": "split",
+          "receiver": "spelling",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-scss-analyzer.ts",
+          "line": 1258,
+          "column": 59,
+          "source": "/\\.(scss|sass|css)$/i",
+          "operation": "replace",
+          "receiver": "(spelling.split(/[\\\\/]/).pop() ?? spelling)",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-scss-analyzer.ts",
+          "line": 1258,
+          "column": 94,
+          "source": "/^_/",
+          "operation": "replace",
+          "receiver": "(spelling.split(/[\\\\/]/).pop() ?? spelling).replace(/\\.(scss|sass|css)$/i, \"\")",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-python-analyzer.ts",
+      "count": 2,
+      "usages": [
+        {
+          "file": "real-python-analyzer.ts",
+          "line": 4162,
+          "column": 17,
+          "source": "/^[A-Za-z]*([\"'])([\\s\\S]*)\\1$/",
+          "operation": "test",
+          "receiver": "text",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-python-analyzer.ts",
+          "line": 4166,
+          "column": 14,
+          "source": "/^[A-Za-z_][A-Za-z0-9_]*$/",
+          "operation": "test",
+          "receiver": "value",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-julia-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-julia-analyzer.ts",
+          "line": 38,
+          "column": 15,
+          "source": "/^[ \t]*name[ \t]*=[ \t]*\"([^\"]+)\"/m",
+          "operation": "test",
+          "receiver": "text",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-powershell-analyzer.ts",
+          "line": 2951,
+          "column": 36,
+          "source": "/[.:$[\\]()]/",
+          "operation": "test",
+          "receiver": "target",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-vue-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-vue-analyzer.ts",
+          "line": 207,
+          "column": 27,
+          "source": "/[A-Z]/",
+          "operation": "test",
+          "receiver": "tag",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    }
+  ]
 }
