@@ -4210,3 +4210,7 @@ same symbol.
   `.dart` index entry §5hh says is absent, so it is the entry's second-order value rather than a standalone
   change. Also reported, not edited: `real-dart-analyzer.ts:2343` still describes `indexDeclares` as "the
   same read the override pass makes" when the override pass reads what `buildResolutionTables` RETURNS.
+  **And READ B is MEASURED INERT WITHOUT AN INDEX:** with the edit applied, `run-fixtures --lang dart` is
+  **32/0 with no regressions**, because the fixture path supplies no project index — so the candidate's
+  whole effect is gated on the entry existing, and it cannot move a per-file reading. The edit was reverted
+  after the run and the analyzer digest re-verified (`dc7b55e4…`).

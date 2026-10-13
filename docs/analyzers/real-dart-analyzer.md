@@ -7348,7 +7348,11 @@ reach should show.
 
 **WHAT THIS DOES NOT SAY.** (1) READ B is a MEASURED CANDIDATE, not a shipped change — the analyzer at
 HEAD is unchanged (`dc7b55e4…`), the edit was reverted after each run, and nothing here touches the
-gate's numbers. (2) Two repositories, 1,628 files, ~4.8 % of the population; the corpus is dominated by
+gate's numbers. It is also MEASURED INERT WITHOUT AN INDEX, which is the property that makes it cheap to
+ship: with the edit applied, `run-fixtures --lang dart` is **32/0 and the baseline gate reports no
+regressions** — the fixture path supplies no project index, so every existing pin is untouched and the
+fix's entire effect is gated on the entry existing. A candidate that cannot move a per-file reading is a
+candidate that cannot break one. (2) Two repositories, 1,628 files, ~4.8 % of the population; the corpus is dominated by
 `dart-sdk` and `flutter-packages`, and no scaling to 33,738 is claimed. (3) The instrument's resolution
 rule is its own (`decls === 1` over the names it collects), so its columns are comparable between its
 arms and not to the gate's. (4) A production version of READ B needs the index to be SUPPLIED first,
