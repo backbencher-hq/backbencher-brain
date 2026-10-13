@@ -488,10 +488,14 @@ export const LANG_REPOS: Record<string, string> = {
   c: "sqlite",
   cpp: "fmt",
   rust: "ripgrep",
-  // The corpus directory is go_tools (underscore), not go-tools: every gate that asked for the
-  // hyphen form was reading a directory that has never existed, so the corpus leg passed
-  // VACUOUSLY — no error, no finding, nothing measured. (From origin/main.)
-  go: "go_tools",
+  // The corpus directory is `go-tools` WITH A HYPHEN on this root, and the underscore form is the
+  // one that does not exist. Ported from origin/main where the comment claimed the opposite —
+  // "verified against the corpus on disk, which lists go_tools" — and the disk here lists
+  // `$HOME/fixtures/repositories/go-tools`. MEASURED, not assumed: with `go_tools` the
+  // leg dies `Error: corpus repo missing: …/go_tools` (exit 1), so the port did not fix a vacuous
+  // pass, it CREATED one — and the vacuous pass it claimed to fix was real on main's root.
+  // THE CORRECT SPELLING IS A PROPERTY OF THE CORPUS ROOT, NOT OF THE FILE.
+  go: "go-tools",
   zig: "zig",
   csharp: "powershell",
   dart: "proxicall",
