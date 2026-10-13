@@ -6541,7 +6541,8 @@ export async function indexProjectParallel(
                 // programme spent the evening finding in the companion tier itself. A run whose
                 // `ids` is 0 while `confirmed` is not has a wiring fault, and this line reports it.
                 `${passStats.confirmedIds.length} id(s) computed, ${passStats.confirmedIdsMissed} without one, ` +
-                `${passStats.confirmedIdsDuplicates} collapsed onto an id another row already claimed`,
+                `${passStats.confirmedIdsDuplicates} collapsed onto an id another row already claimed, ` +
+                `${passStats.confirmedNewInReparse} new in the re-parse`,
             )
           }
           // ── THE WRITE-BACK (r-lane, 2026-10-12) ────────────────────────────────────────────────
@@ -6651,6 +6652,28 @@ export async function indexProjectParallel(
                 `override companion (${companionLang}) write-back: ${res.matched} row(s) matched of ` +
                   `${attempted} id(s) attempted, ${res.zeroRow} matched NOTHING`,
               )
+              // THE STORE CENSUS, IN EVERY RUN — so the acceptance does not need a second instrument.
+              // `0.95` must rise by (confirmed - rows already at 0.95) and `0.5` must fall by exactly that;
+              // the TOTAL must not move, which is clause 4 at the store level: NO ROW LOST. And the
+              // unconfirmed rows must still be AT 0.5 — a write-back that tidies the confirmed count by
+              // moving the rest would show here as a `0.5` that fell further than the `0.95` rose.
+              try {
+                const cen = wbDb
+                  .prepare(
+                    "SELECT confidence AS c, COUNT(*) AS n FROM brain_relationship " +
+                      "WHERE relationship_type = 'overrides' GROUP BY confidence ORDER BY c",
+                  )
+                  .all() as any[]
+                const tot = wbDb
+                  .prepare("SELECT COUNT(*) AS n FROM brain_relationship WHERE relationship_type = 'overrides'")
+                  .get() as any
+                log.info(
+                  `override companion (${companionLang}) census: overrides conf = ` +
+                    `${cen.map((r) => `${r.c}=${r.n}`).join(" ") || "(none)"} · total=${tot?.n}`,
+                )
+              } catch (e: any) {
+                log.warn(`override companion (${companionLang}) census failed: ${e?.message ?? e}`)
+              }
               // THE FALSIFIER, MADE LOUD. Reading A breaks by matching nothing; this line says so
               // without anyone asking, AND REPORTS RATHER THAN RECOVERS — no fallback is attempted.
               if (res.zeroRow > 0) {

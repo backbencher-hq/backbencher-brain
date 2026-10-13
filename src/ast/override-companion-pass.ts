@@ -155,6 +155,12 @@ export interface OverrideCompanionPassStats {
    */
   confirmedIdsDuplicates: number
   /**
+   * CONFIRMED EDGES THE FIRST PARSE DID NOT EMIT — present only in the companion-assisted re-parse.
+   * A confirmed edge that is new in the re-parse has NO STORE ROW, because the store was written from the
+   * FIRST parse. This is the counter that tests the hypothesis behind the seven unmatched ids.
+   */
+  confirmedNewInReparse: number
+  /**
    * THE IDENTITIES OF THE UNCONFIRMED (r-lane). Clause 4's second form asks whether these rows are STILL
    * PRESENT AND STILL AT 0.5 after the write-back — the clause that catches a write-back which tidies a
    * confirmed count by quietly moving the rest. Symmetric to `confirmedKeys`, and exposed for the same
@@ -186,12 +192,15 @@ export async function populateOverrideCompanion(
     confirmedIds: [],
     confirmedIdsMissed: 0,
     confirmedIdsDuplicates: 0,
+    confirmedNewInReparse: 0,
     stillGuessKeys: [],
     stillGuess: 0,
     failed: 0,
   }
 
   const language = opts.language ?? "perl"
+  /** The FIRST parse's `overrides` keys per affected file, captured before the companion re-parse replaced them. */
+  const firstParseKeys = new WeakMap<object, Set<string>>()
   const results = opts.results
   const reparse = opts.reparse
   if (!reparse) return stats
@@ -228,6 +237,20 @@ export async function populateOverrideCompanion(
     // project and does not declare the method. Keeping the first run's guess
     // here would discard the whole point of the pass, so the replacement is
     // unconditional on success.
+    // ── WHAT THE FIRST PARSE EMITTED, CAPTURED BEFORE THE REPLACEMENT (r-lane) ────────────────────
+    // The check "was its file among the 516 reapplied" is VACUOUS: the confirmed ids are computed over
+    // `affected`, which IS the 516 re-analyzed files, so it is true by construction. The question the
+    // hypothesis actually asks is WHETHER THE FIRST PARSE EMITTED THE EDGE — and before the line below,
+    // `result.relationships` holds the first parse. Within one file the pair `(target, line)` identifies
+    // the edge, which is all this question needs.
+    if (Array.isArray(result.relationships)) {
+      const first = new Set<string>()
+      for (const r of result.relationships as any[]) {
+        if (r?.type !== OVERRIDES) continue
+        first.add(`${String(r?.target ?? "")}\u0000${r?.line_number ?? "?"}`)
+      }
+      firstParseKeys.set(result as unknown as object, first)
+    }
     result.symbols = again.symbols ?? result.symbols
     result.relationships = again.relationships
     result.imports = again.imports ?? result.imports
@@ -293,6 +316,11 @@ export async function populateOverrideCompanion(
         const key = relIdOf(result, rel)
         if (key) stats.confirmedIds.push({ id: key, confidence: Number((rel as any).confidence ?? 0) })
         else stats.confirmedIdsMissed++
+        // WAS THIS EDGE IN THE FIRST PARSE? If not, the store cannot have it.
+        const fp = firstParseKeys.get(result as unknown as object)
+        if (fp && !fp.has(`${String((rel as any).target ?? "")}\u0000${(rel as any).line_number ?? "?"}`)) {
+          stats.confirmedNewInReparse++
+        }
       } else {
         stats.stillGuess++
         stats.stillGuessKeys.push({
