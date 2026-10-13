@@ -151,16 +151,42 @@ async function main() {
     const region = pi.slice(regionStart, regionEnd)
     check("738: old correlated INSERT..SELECT shape removed", !region.includes("SELECT r.id, ("))
     check("738: no ORDER BY inside the match-building statements", !region.includes("ORDER BY"))
-    const qnamePass = region.match(/INSERT OR IGNORE INTO _m40_match[\s\S]*?JOIN _m40_touched t ON t\.qualified_name = r\.target_external/)
-    const namePass = region.match(/INSERT OR IGNORE INTO _m40_match[\s\S]*?JOIN _m40_touched t ON t\.name = r\.target_external/)
+    // The two passes are keyed on the CAPTURED target name (`i.target_name`, the
+    // spelling the inbound repair snapshotted), not on the row's live
+    // `target_external`: M14.JS JSD52 moved the match to the captured rows so a
+    // re-store cannot lose a name it no longer publishes. These predicates named
+    // `r.target_external` until this repair, so they read 2 FAILURES against the
+    // shape that landed — while the two properties they exist for (no correlated
+    // ORDER BY subquery, two JOIN passes rather than one) were both still true.
+    // A gate that pins a spelling the code deliberately moved is a stale gate, so
+    // it now pins the shape it means, and the mutation arm below stops being
+    // vacuous (its `replace` was on the EMPTY string when the prefix stopped
+    // matching, which prepended the old shape and then passed for a reason that
+    // had nothing to do with detection).
+    const QNAME_PASS =
+      /INSERT OR IGNORE INTO _m40_match[\s\S]*?JOIN _m40_touched t ON t\.qualified_name = i\.target_name/
+    const NAME_PASS =
+      /INSERT OR IGNORE INTO _m40_match[\s\S]*?JOIN _m40_touched t ON t\.name = i\.target_name/
+    const qnamePass = region.match(QNAME_PASS)
+    const namePass = region.match(NAME_PASS)
     check("738: two-pass JOIN shape present (qname pass)", !!qnamePass)
     check("738: two-pass JOIN shape present (bare-name pass)", !!namePass)
+    check(
+      "738: the match reads the CAPTURED target name, not the live spelling",
+      /JOIN _m40_inbound i ON i\.rel_id = r\.id/.test(region),
+    )
 
-    // Mutation: feeding the OLD source region to the conformance predicate
-    // must fail — the gate can detect a regression to the buggy shape.
+    // Mutation: substituting the OLD correlated shape for the matched qname pass
+    // must make the SAME predicate the checks above apply refuse the region —
+    // otherwise "detected" would only mean "the old text appears somewhere".
     const oldShape = `SELECT r.id, (SELECT t.id FROM _m40_touched t WHERE t.qualified_name = r.target_external ORDER BY t.id LIMIT 1) FROM brain_relationship r`
-    const mutated = region.replace(qnamePass?.[0] ?? "", `INSERT OR IGNORE INTO _m40_match (rel_id, symbol_id)\n          ${oldShape}`)
-    check("738: MUTATION detected (old shape fails conformance)", !(mutated.includes("JOIN _m40_touched t ON t.qualified_name") && !mutated.includes("SELECT r.id, (")))
+    const mutated = qnamePass
+      ? region.replace(qnamePass[0], `INSERT OR IGNORE INTO _m40_match (rel_id, symbol_id)\n          ${oldShape}`)
+      : region
+    check(
+      "738: MUTATION detected (the correlated shape fails the two-pass conformance)",
+      !!qnamePass && !QNAME_PASS.test(mutated),
+    )
 
     // Behavioral: the fix shape resolves correctly on THIS runtime.
     // FK-honest fixture: a real parent file + source symbol for the edges.

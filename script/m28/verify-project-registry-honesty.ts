@@ -76,9 +76,21 @@ const emptyPath = path.join(projDir, EMPTY, "brain.db")
 }
 
 process.env.BB_DATA_DIR = dataDir
+// The registry's own entry type, reached through a type-only dynamic import.
+// `import(expr).T` needs a string LITERAL, so the path.join() specifier below
+// cannot carry it; this form is the equivalent that works with one. Using the
+// real type means the gate tracks the real shape — `unreadable` and `broken` are
+// declared fields on ProjectEntry, and this gate reads both.
+type ProjectEntry = import("../../src/ast/project-registry.ts").ProjectEntry
 const { listProjects } = await import(path.join(ROOT, "src", "ast", "project-registry"))
 const entries = listProjects()
-const byId = new Map(entries.map((e) => [e.id, e]))
+// The key/value types must be stated. `[e.id, e]` infers as an ARRAY, not a
+// tuple, so `new Map` cannot tell the key from the value and the value came out
+// `{}` — which is why every read of `e.unreadable` below reported a phantom
+// diagnostic. Same one-token class as script/m31/verify-bb-docs-truth.ts, where
+// the identical pattern produced 36. `as const` on the tuple alone was tried and
+// did NOT do it; the parameter annotation is what carries.
+const byId = new Map<string, ProjectEntry>(entries.map((e) => [e.id, e]))
 const broken = byId.get(BROKEN)
 const empty = byId.get(EMPTY)
 

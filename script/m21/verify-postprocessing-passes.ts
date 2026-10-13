@@ -89,6 +89,12 @@ export class Service { run(input: string): string { return query(input) } }
   if (projectId) rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true })
 }
 mkdirSync(path.join(ROOT, "validation/m21/results"), { recursive: true })
-writeFileSync(path.join(ROOT, "validation/m21/results/R2.json"), JSON.stringify(result, null, 2) + "\n")
+// SEALED WRITE (M61). This record is REGISTERED, and the writer stamped raw JSON,
+// so every re-run dropped the envelope the register names — measured 2026-10-12
+// after the M54.X1 closure gate re-ran this file live: `seal=None` against a
+// register row read as `387cbabb`. A KNOWN-GAP verdict is sealed like any other:
+// the seal is about the bytes, not about the verdict.
+const { writeSealed } = await import("../lib/evidence")
+writeSealed(path.join(ROOT, "validation/m21/results/R2.json"), result)
 console.log(`R2: ${result.status.toUpperCase()} (${result.passed}/${result.checks}, ${result.negativeCases} negative)`)
 process.exit(result.status === "verified" ? 0 : 1)

@@ -58,13 +58,7 @@ try {
     check(`${contract.name} required fields frozen`, JSON.stringify(required) === JSON.stringify(expectedRequired), `got ${required.join(",")}`)
   }
 
-  // The COUNT is not restated here: line 47 above already freezes `listed.tools.length`
-  // against the derived contracts, and docs/data/public-tools.json is the published
-  // authority. This check keeps its original intent — no duplicate names on the public
-  // surface — without pinning a literal that went stale the day the surface grew from
-  // ten to sixteen. That literal failed at command 126 of 358 in `npm run verify`.
-  const uniqueNames = new Set(contracts.map((tool) => tool.name)).size
-  check(`target surface has ${contracts.length} unique tools`, uniqueNames === contracts.length, `unique ${uniqueNames} of ${contracts.length}`)
+  check("target surface has ten unique tools", contracts.length === 10 && new Set(contracts.map((tool) => tool.name)).size === 10)
 
   let result: any = await client.callTool({ name: "bb_search", arguments: { query: "duplicateName", limit: 1 } })
   const firstPage = textOf(result)
@@ -81,13 +75,8 @@ try {
   check("bb_health default output includes counts and freshness", /files=\d+ symbols=\d+ relationships=\d+ imports=\d+/.test(textOf(result)) && textOf(result).includes("freshness:"), textOf(result).slice(0, 180))
 
   writeFileSync(fixture.sourceFile, `${readFileSync(fixture.sourceFile, "utf8")}\n// stale marker\n`)
-  // `refresh: false` opts OUT of bb_search's inline auto-refresh. Without it the handler
-  // repairs exactly the stale file inside the call and answers from the repaired index, so
-  // no row can carry [STALE] — this check was asserting the behavior that the freshness
-  // automation replaced, and it failed from the day that landed rather than detecting a
-  // defect. Opting out is what makes the staleness block the answer instead of a side effect.
-  result = await client.callTool({ name: "bb_search", arguments: { query: "handleRequest", refresh: false } })
-  check("bb_search reports stale indexed files when auto-refresh is opted out", textOf(result).includes("[STALE]"), textOf(result).slice(0, 180))
+  result = await client.callTool({ name: "bb_search", arguments: { query: "handleRequest" } })
+  check("bb_search reports stale indexed files", textOf(result).includes("[STALE]"), textOf(result).slice(0, 180))
 
   result = await client.callTool({ name: "bb_health", arguments: { refresh: true, wait: true } })
   check("bb_health refreshes before canonical mutation", !result.isError && /symbols=\d+/.test(textOf(result)), textOf(result).slice(0, 180))

@@ -231,12 +231,23 @@ const MUTANTS: Mutant[] = [
     reverts: "D25: the `source === targetName && parentContext.kind === class` guard goes away, so a constructor declared at class scope inside a macro-decorated head's recovered body is published as `calls C -> C`.",
     mustFail: "cpp/class-scope-constructor",
     note: "The direction that fabricates. The corpus cost is 9 rows over 6 files (4,660 -> 4,651 `calls`), and the fixture's four `expectRelationships` rows are what stop a guard keyed on 'inside a decorated body' from passing by deleting the real member call in `MutexLock`'s member-initialiser — so this mutant must fail on the two `forbidRelationships` rows AND leave those four in place.",
+    // The anchor is the guard AS IT READS ON THIS TREE. It was first written against
+    // the lane branch's spelling of the same rule
+    // (`source === targetName && parentContext?.kind === ASTEngine.SymbolKind.Class`),
+    // which stopped matching when the branch was reconciled with main's reader — the
+    // rule is stated over the ENCLOSING SCOPE's kind and NAME (`ownerIsTypeScope &&
+    // parentContext?.name === targetName`) because main's `class-self-call-925` pins
+    // real METHOD recursion as a row that must survive, and the lane's spelling
+    // suppressed it. A mutation gate whose anchor no longer exists certifies nothing,
+    // so the revert is re-anchored rather than dropped.
     apply: (src) => {
       return replaceOnce(
         src,
-        `          const calleeIsOwnConstructorAtClassScope =
-            source === targetName && parentContext?.kind === ASTEngine.SymbolKind.Class
-          if (!targetName.startsWith("operator") && !calleeIsTempCall && !calleeIsUnnamed && !calleeIsError && !calleeIsOwnConstructorAtClassScope) {`,
+        `          const ownerIsTypeScope =
+            parentContext?.kind === ASTEngine.SymbolKind.Class ||
+            parentContext?.kind === ASTEngine.SymbolKind.Struct
+          const classCallingItself = ownerIsTypeScope && parentContext?.name === targetName
+          if (!targetName.startsWith("operator") && !calleeIsTempCall && !calleeIsUnnamed && !calleeIsError && !classCallingItself) {`,
         `          if (!targetName.startsWith("operator") && !calleeIsTempCall && !calleeIsUnnamed && !calleeIsError) {`,
         "D25 class-scope constructor guard",
       )
@@ -248,11 +259,16 @@ const MUTANTS: Mutant[] = [
     reverts: "D25, OVER-firing direction: the `parentContext.kind === class` half is dropped, so ANY `source === target` call is suppressed — which deletes every real recursive call.",
     mustFail: "cpp/class-scope-constructor",
     note: "The control that makes the previous mutant mean something. 43 `source === target` call rows survive over the same corpus and every one is a real call from a function or a method (`void String::size_impl() { size_impl(); }`). A guard that read only the spelling would remove all 43, and the fixture's `measure`/`step` rows are what make that visible.",
+    // Re-anchored with the mutant above, for the same reason: the rule on this tree
+    // reads `ownerIsTypeScope && parentContext?.name === targetName`, and dropping the
+    // KIND half (`ownerIsTypeScope`) leaves a guard keyed on the callee's spelling —
+    // which is exactly the text-based rule the fixture's `measure`/`step` rows exist to
+    // refuse.
     apply: (src) => {
       return replaceOnce(
         src,
-        `            source === targetName && parentContext?.kind === ASTEngine.SymbolKind.Class`,
-        `            source === targetName`,
+        `          const classCallingItself = ownerIsTypeScope && parentContext?.name === targetName`,
+        `          const classCallingItself = !!parentContext?.name && parentContext?.name === targetName`,
         "D25 class-scope half",
       )
     },
@@ -284,11 +300,29 @@ const MUTANTS: Mutant[] = [
     reverts: "D27: `collapseSpaces` goes back to a plain `trim()`, so a declared type written across lines or with alignment padding reaches `returnType` with its original spacing.",
     mustFail: "cpp/exports-marker-910",
     note: "Under-firing direction, on a payload field: `returnType` is an overload-resolution input rather than a display field, and `unsigned   long   long` is not a spelling of any C++ type a compiler accepts. Before this round NO assertion in the suite covered the collapse — the revert was applied and 39 of 39 fixtures stayed green, which is why the `Counter` row was added to `exports-marker-910` rather than a new fixture. `collapseSpaces` was introduced to remove the ONE genuine regex literal this analyzer had (`D6`), which the ontology batches added and the lane document continued to report as zero.",
+    // The anchor is the call site that actually normalises a marker-peeled type on
+    // this tree. Three candidate sites exist and only one of them is the one the
+    // `Counter` row reads, which is why this anchor took three attempts:
+    //
+    //   * `const piece = collapseSpaces(c.text)` (lane branch) — inside a private
+    //     helper with no callers after the reconciliation: the revert APPLIED to dead
+    //     code and the mutant SURVIVED with `suite failure count 0`.
+    //   * `const stated = collapseSpaces(typeField.text)` — live, but NOT the path
+    //     `Counter` takes: `LIB_EXPORT` in front of the type makes the specifier a
+    //     `macro_prefixed_type_specifier`, so the reader goes through
+    //     `specifierTypeText`, and that mutation again SURVIVED.
+    //   * `return collapseSpaces(parts.join(" ")) || undefined` — the join inside
+    //     `specifierTypeText` itself, where the pieces (`unsigned`, `long`, `long`) are
+    //     separate nodes whose source spacing is the author's alignment. Reverted, the
+    //     declaration publishes `unsigned   long   long` and the fixture fails.
+    //
+    // An anchor that APPLIES is not the same as an anchor that MATTERS; `suite
+    // failure count 0` with `applied: true` is the signature of the second case.
     apply: (src) => {
       return replaceOnce(
         src,
-        "      const piece = collapseSpaces(c.text)",
-        "      const piece = c.text.trim()",
+        '  return collapseSpaces(parts.join(" ")) || undefined',
+        '  return parts.join(" ").trim() || undefined',
         "collapseSpaces call site",
       )
     },
