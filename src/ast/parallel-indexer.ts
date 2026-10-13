@@ -6569,21 +6569,63 @@ export async function indexProjectParallel(
           //
           // The identity comes from the pass itself (`confirmedKeys`), NOT from re-matching here: a second
           // computation of the same predicate is a second answer.
-          if (passStats.confirmedKeys?.length) {
+          // ── THE WRITE-BACK, KEYED ON THE PRIMARY KEY (r-lane, 2026-10-12) ─────────────────────
+          //
+          // WHY THIS EXISTS, MEASURED RATHER THAN READ: the pass re-analyzes into an IN-MEMORY array and
+          // its confirmations were DISCARDED. On python the pass reported `1301 confirmed` and the store's
+          // `overrides` confidence census was `0.5=2204 0.95=507` BEFORE the pass and IDENTICAL AFTER it —
+          // not by 1301, not by one. On ruby, `53 confirmed` against `0.5=732 0.95=3`, unchanged across a
+          // two-arm A/B. So the companion tier — "read by fifteen lanes and populated by nobody in
+          // production" — was never persisted, in any lane, in any round.
+          //
+          // THE TUPLE KEY IS REMOVED, AND THAT IS A DISPOSITION RATHER THAN A TIDY-UP. The first landing
+          // keyed on `(project_id, relationship_type, target_external, line_number)` and MOVED 826 ROWS;
+          // its key matched 2,100 store rows for 1,301 keys — 1.61 per key, 292 multi-matching — and it
+          // OMITTED `sourceId`, the component that distinguishes one source's override from another's at
+          // the same target and line. Clause 4's second form then found 93 rows reachable by an
+          // UNCONFIRMED key sitting at 0.95 and could not say whether that was harm. Keeping it for an
+          // A/B would compare a key against a defect; REMOVING IT REVERTS 826 MOVEMENTS OF UNKNOWN
+          // CORRECTNESS, which is the stronger reason — it is the only disposition that does not leave
+          // possibly-wrong rows in the store under a superseded commit.
+          //
+          // THE ID CANNOT COLLIDE: `brain_relationship.id` is TEXT PRIMARY KEY with no secondary unique
+          // constraint, and the pass computes it from its own re-parse using THE STORE'S OWN functions
+          // (`buildSpans`, `enclosingSpanId`) and THE STORE'S OWN factory (`makeStoreableName`) — one
+          // implementation, two callers. A row no confirmation names is never the subject of a statement,
+          // so clause 4 is a STRUCTURAL PROPERTY here rather than a test.
+          //
+          // AND THE MISS COUNTER IS PART OF THE FIX, NOT AN EXTRA: `changes()` is summed and compared
+          // against the ids attempted, because Reading A's failure mode is an UPDATE THAT MATCHES NOTHING
+          // and a silent failure is the one thing this design must not have.
+          if (passStats.confirmedIds?.length) {
             try {
               const wbDb: any = await BrainDatabase.getRawInstance(projectId)
-              const upd = wbDb.prepare(
-                "UPDATE brain_relationship SET confidence = ? " +
-                  "WHERE project_id = ? AND relationship_type = 'overrides' " +
-                  "AND target_external = ? AND line_number IS ?",
-              )
-              const apply = wbDb.transaction((keys: any[]) => {
-                let n = 0
-                for (const k of keys) n += upd.run(k.confidence, String(projectId), k.target, k.line).changes
-                return n
+              const upd = wbDb.prepare("UPDATE brain_relationship SET confidence = ? WHERE id = ?")
+              const attempted = passStats.confirmedIds.length
+              let matched = 0
+              let zeroRow = 0
+              const apply = wbDb.transaction((rows: Array<{ id: string; confidence: number }>) => {
+                for (const r of rows) {
+                  const n = upd.run(r.confidence, r.id).changes
+                  matched += n
+                  if (n === 0) zeroRow++
+                }
+                return { matched, zeroRow }
               })
-              const moved = apply(passStats.confirmedKeys)
-              log.info(`override companion (${companionLang}) write-back: ${moved} of ${passStats.confirmedKeys.length} confirmed rows persisted`)
+              const res = apply(passStats.confirmedIds)
+              log.info(
+                `override companion (${companionLang}) write-back: ${res.matched} row(s) matched of ` +
+                  `${attempted} id(s) attempted, ${res.zeroRow} matched NOTHING`,
+              )
+              // THE FALSIFIER, MADE LOUD. Reading A breaks by matching nothing; this line says so
+              // without anyone asking, AND REPORTS RATHER THAN RECOVERS — no fallback is attempted.
+              if (res.zeroRow > 0) {
+                log.warn(
+                  `override companion (${companionLang}) WRITE-BACK MISS: ${res.zeroRow} of ${attempted} ` +
+                    `ids matched no stored row — Reading A is wrong for those rows and Reading B is the ` +
+                    `design for them. REPORTED, NOT RECOVERED: no fallback is attempted in this run.`,
+                )
+              }
             } catch (e: any) {
               // The write-back must never turn a completed index into a failed one.
               log.warn(`override companion (${companionLang}) write-back failed: ${e?.message ?? e}`)

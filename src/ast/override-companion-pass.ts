@@ -142,7 +142,7 @@ export interface OverrideCompanionPassStats {
    * found, or whose `line_number` is absent — and it is reported rather than silently dropped, because a
    * confirmation with no id is a row the write-back cannot reach.
    */
-  confirmedIds: string[]
+  confirmedIds: Array<{ id: string; confidence: number }>
   /** Confirmations for which no store id could be computed: no spans, or no enclosing symbol at the line. */
   confirmedIdsMissed: number
   /**
@@ -281,7 +281,7 @@ export async function populateOverrideCompanion(
         })
         // THE KEY, BESIDE THE COUNT AND BESIDE THE TUPLE. Only this one can be unique.
         const key = relIdOf(result, rel)
-        if (key) stats.confirmedIds.push(key)
+        if (key) stats.confirmedIds.push({ id: key, confidence: Number((rel as any).confidence ?? 0) })
         else stats.confirmedIdsMissed++
       } else {
         stats.stillGuess++
