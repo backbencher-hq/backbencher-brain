@@ -1656,7 +1656,16 @@ async function main() {
       .readdirSync(FIXTURES_DIR, { withFileTypes: true })
       .filter((d) => d.isDirectory())
       .map((d) => d.name)
-    const orphaned = dirs.filter((d) => !(d in LANGS))
+    // A DIRECTORY IS A FIXTURE LANE ONLY IF IT HOLDS AN EXPECTATION FILE. Measured 2026-10-13:
+    // `index/`, `laptop-a/` and `overrides-guess-audit/` hold 11 TRACKED artifacts between them (a `.cjs`
+    // probe, an `.mts` claim re-derivation, eight measurement notes, an `audit.ts`) and ZERO expectation
+    // files. The old predicate flagged them as orphan LANES, which is why `--update-baseline` exited 0
+    // having written NOTHING and left the stale 48-language baseline standing behind it. The gate's own
+    // docstring gives the right predicate — "an expectation file nothing executes is evidence of
+    // nothing" — so a directory with NO expectation file is not evidence and is not an orphan lane.
+    const hasExpectation = (d: string) =>
+      fs.readdirSync(path.join(FIXTURES_DIR, d)).some((f) => f.endsWith(".expectation.json"))
+    const orphaned = dirs.filter((d) => !(d in LANGS) && hasExpectation(d))
     if (orphaned.length) {
       console.error(`\nfixture-lane gate: ${orphaned.length} fixture director(ies) no runner lane claims: ${orphaned.join(", ")}`)
       for (const d of orphaned) {
@@ -1665,7 +1674,14 @@ async function main() {
       }
       process.exit(6)
     }
-    console.log(`fixture-lane gate: ${dirs.length} fixture director(ies), every one named in LANGS`)
+          const skippedNoExpectation = dirs.filter(
+        (d) => !(d in LANGS) && !fs.readdirSync(path.join(FIXTURES_DIR, d)).some((f) => f.endsWith(".expectation.json")),
+      )
+      console.log(
+        `fixture-lane gate: ${dirs.length} fixture director(ies) — ${dirs.length - skippedNoExpectation.length} named in LANGS, ` +
+        `${skippedNoExpectation.length} carrying documentation/probes/audits and NO expectation file, skipped and named: ` +
+        `${skippedNoExpectation.join(", ") || "(none)"}`,
+      )
   }
 
   const allDetails: any[] = []
