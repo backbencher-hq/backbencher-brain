@@ -132,26 +132,42 @@ const MUTANTS: Mutant[] = [
             confidence: 0.9,`,
   },
   {
+    // RE-POINTED (M60 java fold). This mutant used to disable
+    // `pushModuleDirective`'s `role === "requires_module"` arm. That arm is gone:
+    // the JPMS dependency edge now comes from emitJavaModuleDeclaration, which is
+    // the only place that can read the `requires_modifier` that decides
+    // transitive-vs-static, so the old guard's site no longer exists and the
+    // intent is re-expressed at the surviving one. (The old arm also produced a
+    // SECOND `imports` row per `requires` directive, labeled
+    // `module_requires_dependency`, disagreeing with the other one about the
+    // modifier — see the analyzer's note where the arm was.)
     id: "I6",
     what: "drop the JPMS `requires` MODULE DEPENDENCY edge (`imports`), keeping only the `references` mention",
-    find: `    if (role === "requires_module") {`,
-    replace: `    if (role === "never_matches_any_role") {`,
+    find: `          type: ASTEngine.RelationshipType.Imports,
+          // 0.9 for \`requires static\`: the module is OPTIONAL at compile time and`,
+    replace: `          type: ASTEngine.RelationshipType.References,
+          // 0.9 for \`requires static\`: the module is OPTIONAL at compile time and`,
   },
   {
-    // This mutant is the one that FOUND the dead branch. `pushModuleDirective`'s
-    // guard was first written against a role name the directive table never
-    // produces (`module_requires_module` instead of `requires_module`), so it
-    // matched nothing and the JPMS dependency edge was never emitted — while the
-    // firing check still counted the function as covered because the `references`
-    // branch beside it fires on every module-info file. Re-pointing the guard at
-    // a role the corpus DOES produce produced byte-identical output, which is the
-    // signature of a predicate that cannot match. It is kept as a permanent
-    // regression mutant: the role string lives in a table 2,000 lines away from
-    // the guard, so nothing but a mutation keeps them honest.
+    // This mutant's ancestor FOUND a dead branch. `pushModuleDirective`'s guard
+    // was first written against a role name the directive table never produces
+    // (`module_requires_module` instead of `requires_module`), so it matched
+    // nothing and the JPMS dependency edge was never emitted — while the firing
+    // check still counted the function as covered because the `references` branch
+    // beside it fires on every module-info file. Re-pointing the guard at a role
+    // the corpus DOES produce produced byte-identical output, which is the
+    // signature of a predicate that cannot match.
+    //
+    // RE-POINTED (M60 java fold) at the same class of defect in the surviving
+    // implementation: the `requires_modifier` is now read by its OWN TEXT
+    // (`transitive` vs `static`), and a comparison that can never be true is again
+    // the way this comes back — the two tokens arrive as the SAME node type, so
+    // only the string distinguishes them and nothing else in the lane can notice
+    // if the string is wrong.
     id: "I7",
-    what: "point the JPMS requires guard at a role the grammar never produces — the dead-branch shape, re-introduced on purpose",
-    find: `    if (role === "requires_module") {`,
-    replace: `    if (role === "module_requires_module") {`,
+    what: "compare the JPMS `requires_modifier` against a token the grammar never writes — the dead-branch shape, re-introduced on purpose",
+    find: `            if (c.text.trim() === "transitive") transitive = true`,
+    replace: `            if (c.text.trim() === "transitively") transitive = true`,
   },
   {
     id: "I8",
@@ -224,6 +240,53 @@ const MUTANTS: Mutant[] = [
           confidence: isPublic ? 1.0 : 0.6,`,
     replace: `          type: ASTEngine.RelationshipType.Uses,
           confidence: isPublic ? 1.0 : 0.6,`,
+  },
+  // ---- the M60 java FOLD: ctor identity, declaration lines, the file-level
+  // import source, and the JPMS surface. One mutant per ruling, each aimed at the
+  // assertion that would go quiet if the ruling were reverted.
+  {
+    id: "J1",
+    what: "name a constructor with the literal `constructor` again instead of its class name — three fixtures pin the class name (M37.21 C3)",
+    find: `          const memberName = isConstructor ? (parentContext?.name ?? name) : name`,
+    replace: `          const memberName = isConstructor ? "constructor" : name`,
+  },
+  {
+    id: "J2",
+    what: "anchor a symbol's range at the raw declaration NODE again — the annotation line, which is what java/declaration-lines-825 exists to kill",
+    find: `    const decl = this.declarationLineNode(node)
+    const base = this.nodeToRange(node)`,
+    replace: `    const decl = node
+    const base = this.nodeToRange(node)`,
+  },
+  {
+    id: "J3",
+    what: "let the primary-type rewrite re-source the FILE-LEVEL import dependency too — the row then binds to a symbol and stops answering bb_graph's per-file query",
+    find: `        const isFileLevel = (rel.metadata ?? {}).fileLevel === true`,
+    replace: `        const isFileLevel = false`,
+  },
+  {
+    id: "J4",
+    what: "label the JPMS exported-package mention with the pre-fold spelling (`module_exports_package`) — the vocabulary the fold retired",
+    find: `              relationshipType: "module_exports_mention",`,
+    replace: `              relationshipType: "module_exports_package",`,
+  },
+  {
+    id: "J5",
+    what: "publish `requires static` at 1.0 like a plain `requires` — an OPTIONAL compile-time dependency claimed as unconditional",
+    find: `          confidence: isStatic ? 0.9 : 1.0,`,
+    replace: `          confidence: 1.0,`,
+  },
+  {
+    id: "J6",
+    what: "exclude the module symbol from `exports[]` again — java/module-exports-jpms pins it there with `kind: module`",
+    find: `        exportNodeType === "module_declaration"`,
+    replace: `        false`,
+  },
+  {
+    id: "J7",
+    what: "flatten the JPMS `requires` importType — `requires transitive` becomes indistinguishable from a plain `requires` on the ImportInfo channel",
+    find: `          importType: transitive ? "java-module-requires-transitive" : "java-module-requires",`,
+    replace: `          importType: "java-module-requires",`,
   },
 ]
 
