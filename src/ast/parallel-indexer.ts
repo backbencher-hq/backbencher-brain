@@ -6540,7 +6540,8 @@ export async function indexProjectParallel(
                 // POPULATED AND CONSUMED BY NOTHING and no log would say so — the exact defect this
                 // programme spent the evening finding in the companion tier itself. A run whose
                 // `ids` is 0 while `confirmed` is not has a wiring fault, and this line reports it.
-                `${passStats.confirmedIds.length} id(s) computed, ${passStats.confirmedIdsMissed} without one`,
+                `${passStats.confirmedIds.length} id(s) computed, ${passStats.confirmedIdsMissed} without one, ` +
+                `${passStats.confirmedIdsDuplicates} collapsed onto an id another row already claimed`,
             )
           }
           // ── THE WRITE-BACK (r-lane, 2026-10-12) ────────────────────────────────────────────────

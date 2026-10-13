@@ -146,6 +146,15 @@ export interface OverrideCompanionPassStats {
   /** Confirmations for which no store id could be computed: no spans, or no enclosing symbol at the line. */
   confirmedIdsMissed: number
   /**
+   * CONFIRMED ROWS THAT PRODUCED AN ID ANOTHER CONFIRMED ROW HAD ALREADY PRODUCED (r-lane).
+   * The id is `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine ?? "?"}`, so two rows from
+   * one source with the same target and type and NO LINE collapse to one key — and `INSERT OR IGNORE` at
+   * the insert site would itself have dropped the second at write time. This counter is how that is SEEN
+   * rather than inferred: if the write-back reports N ids matching nothing, this says whether N rows
+   * collapsed onto ids other rows already claimed.
+   */
+  confirmedIdsDuplicates: number
+  /**
    * THE IDENTITIES OF THE UNCONFIRMED (r-lane). Clause 4's second form asks whether these rows are STILL
    * PRESENT AND STILL AT 0.5 after the write-back — the clause that catches a write-back which tidies a
    * confirmed count by quietly moving the rest. Symmetric to `confirmedKeys`, and exposed for the same
@@ -176,6 +185,7 @@ export async function populateOverrideCompanion(
     confirmedKeys: [],
     confirmedIds: [],
     confirmedIdsMissed: 0,
+    confirmedIdsDuplicates: 0,
     stillGuessKeys: [],
     stillGuess: 0,
     failed: 0,
@@ -292,5 +302,9 @@ export async function populateOverrideCompanion(
       }
     }
   }
+  // HOW MANY CONFIRMED ROWS COLLAPSED ONTO AN ID ANOTHER HAD ALREADY CLAIMED. Computed here rather than
+  // inferred from the store, because the collapse happens in THIS function's id construction.
+  stats.confirmedIdsDuplicates = stats.confirmedIds.length - new Set(stats.confirmedIds.map((x) => x.id)).size
+
   return stats
 }
