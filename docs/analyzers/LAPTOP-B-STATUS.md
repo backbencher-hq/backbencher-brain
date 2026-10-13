@@ -4175,3 +4175,22 @@ same symbol.
   the count movement**, because the harness's own emitted limitation is that mutants wrap analyzer OUTPUT
   rather than rewriting source: the ±few-hundred-row movement is pinned by NOTHING, and that gap is named
   rather than left implied. Full receipt in `real-dart-analyzer.md` §arm14 (result) and §store lever.
+- **dart — the gap arm14 NAMED is closed the same day, and closing it exposed a second one.** The receipt
+  recorded that the count/line movement had no pin, on the theory that closing it needed a source-level
+  injection the mutant harness does not have. It does not: both observables are properties of the
+  analyzer's OUTPUT, which is exactly what a mutant wraps. New fixture
+  `dart/dedup-first-producer` states them on one screen — (A) three producers of one key → one row at the
+  FIRST site's line, (B) a file holds BOTH the bare and the spelled key for one member and one source,
+  (C) a typed METHOD parameter's read and a typed CLOSURE parameter's read of the same member are ONE
+  key, so the closure's retargeted row is dropped as a duplicate and contributes only the line it is
+  walked at. Two mutants re-break it separately (`dart/dedup-multiplicity-regression` → caught by the
+  `equals: 1` count, `dart/dedup-first-producer-line-lost` → count stays 1, only the `line_number` pin
+  fails) and **both are CAUGHT by that fixture alone**. `run-fixtures --lang dart` **32/0**;
+  `completeness-inventory --lang dart` **A–H 8/8**; `audit:script-typecheck` **PASS, 0 errors, canary
+  proved diagnostics were reported** (the shared mutation file was edited). **And the run found a pin that
+  could no longer fire:** `dart/representation-field-decl-line` read as a SURVIVOR (0 → 0) because the
+  2026-10-08 contains-qualification round retargeted its fixture's row to `Wrapped.inner$`, moved the
+  expectation's forbid — and said in its own note that leaving the forbid on the old spelling "would have
+  made it unfireable" — while leaving the mutant matching the bare `inner$`. Retargeted, it is CAUGHT by
+  `dart/extension-type`, so the dart mutation run is **48 caught / 0 survived**. A mutation pin that
+  matches nothing is the same false assurance as a fixture that cannot fail, and this one was green.

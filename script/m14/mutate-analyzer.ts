@@ -10782,11 +10782,11 @@ export const MUTANTS: Mutant[] = [
     id: "dart/representation-field-decl-line",
     language: "dart",
     defectClass: "line-attribution",
-    description: "M60 line contract revert for the WRAPPED representation declaration: `contains X -> field` goes back to the DECLARATION node's start line instead of the line the field's NAME is written on (`extension type Wrapped._(` at 44, the field at 45). This is the exact ONE edge the lane's consistency probe flagged out of 32,989 on a 120-file draw over the real FFI bindings — the shape is how those bindings write all 303 of their extension types. Caught by dart/extension-type: the `contains Wrapped -> inner$` expect names line 45 and the forbid names line 44.",
+    description: "M60 line contract revert for the WRAPPED representation declaration: `contains X -> field` goes back to the DECLARATION node's start line instead of the line the field's NAME is written on (`extension type Wrapped._(` at 44, the field at 45). This is the exact ONE edge the lane's consistency probe flagged out of 32,989 on a 120-file draw over the real FFI bindings — the shape is how those bindings write all 303 of their extension types. Caught by dart/extension-type: the `contains Wrapped -> Wrapped.inner$` expect names line 45 and the forbid names line 44. RETARGETED 2026-10-13 from the bare `inner$`: the 2026-10-08 contains-qualification round moved the fixture's target to the published `Owner.member` spelling and updated the expectation's forbid WITH ITS OWN NOTE saying a forbid left on the old spelling 'would have made it unfireable' — the mutation was not moved with it, so the mutant could no longer match anything and read as a SURVIVOR (0 -> 0 failures) while the suite looked green on this line contract. Found by this round's dart-only run and fixed here, because a mutation pin that cannot fire is the same false assurance as a fixture that cannot fail.",
     transform: r => ({
       ...r,
       relationships: (r.relationships ?? []).map((x: any) =>
-        x.type === "contains" && x.source === "Wrapped" && x.target === "inner$"
+        x.type === "contains" && x.source === "Wrapped" && x.target === "Wrapped.inner$"
           ? { ...x, line_number: 44 }
           : x),
     }),
@@ -17709,6 +17709,44 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-fabrication",
     description: "OVER-READS the source instead of under-reading it: the rule reads the type written INSIDE a Dart 3 record pattern, so `for (final (int n, Element element) in …)` types its binding and the pattern's `element.poke()` stops being bare. This is the DECLINE half of the typed-receiver-heads fixture — the type is in the source and it must still not be read, because DARTGAP1 re-scoped pattern bindings to its own bucket by measurement, not by this rule. Caught by the fixture's `forbidRelationships calls controls->Element.poke`, the row that would move if the scope ever widened; the untyped `var` for-in and the untyped closure parameter are the same claim at two other spellings.",
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "controls", target: "Element.poke", confidence: 0.9, metadata: { qualifier: "chain" } }] }),
+  },
+  // THE PIN THAT HAD NO MUTANT UNTIL arm14. The two below are about the DEDUPE, not about any rule
+  // that reads the source: DARTD7 keeps the FIRST row per `type|source|target|confidence` key and
+  // the line number is deliberately not in that key, so a file's edge COUNT and the LINE the store
+  // reports for a collapsed key are both functions of the walk order. arm14's falsified registered
+  // cell is exactly this interaction (+1,727 corpus edges from a change that is a pure retarget per
+  // site, and on `icon_button_test.dart` a key both arms produce surviving at a different line), and
+  // its receipt records that NOTHING in the suite could fail on it, because a mutant wraps analyzer
+  // OUTPUT and so cannot add a row. These two can: one adds a row, one moves a row's line. Both
+  // target `dart/dedup-first-producer`'s own symbols, so a green suite cannot rest on either the
+  // count pin or the line pin alone — and each is caught by a DIFFERENT assertion.
+  {
+    id: "dart/dedup-multiplicity-regression",
+    language: "dart",
+    defectClass: "relationship-noise",
+    description: "THE COUNT HALF: the dedupe stops collapsing a key that has TWO producers in one file — a typed METHOD parameter's read and a typed CLOSURE parameter's read of the same member in `collapses` are one key and must be one row, so this re-emits the row and `expectRelationshipCount equals: 1` fails with 2. The duplicate carries the SAME line, deliberately: that leaves the `line_number` pin satisfied, so this mutant can only be caught by the count, and the line mutant below can only be caught by the line. Kept as two mutants because arm14's mechanism has two observables and a single mutant could not show which one a green suite was resting on.",
+    transform: r => {
+      const dup: any[] = []
+      const kept = (r.relationships ?? []).map((x: any) => {
+        if (String(x.type) === "calls" && x.source === "collapses" && x.target === "Element.poke") dup.push({ ...x })
+        return x
+      })
+      return { ...r, relationships: [...kept, ...dup] }
+    },
+  },
+  {
+    id: "dart/dedup-first-producer-line-lost",
+    language: "dart",
+    defectClass: "line-attribution",
+    description: "THE LINE HALF: the dedupe keeps a LATER producer instead of the first, so `calls threeSites -> Element.poke` — three call sites of one key at three lines — reports a line that is not the first site's. The count is untouched (still one row), which is the whole point: this moved the reported evidence of an edge, and until `dart/dedup-first-producer` there was no pin on WHICH line survives a collapse anywhere in the suite. Real, not theoretical — arm14 measured the same effect on 374 real files (`calls main -> WidgetTester.getSize` surviving at line 3,597 before the change and 448 after).",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        String(x.type) === "calls" && x.source === "threeSites" && x.target === "Element.poke"
+          ? { ...x, line_number: (x.line_number ?? 0) + 1 }
+          : x,
+      ),
+    }),
   },
   {
     id: "json/extends-dropped",

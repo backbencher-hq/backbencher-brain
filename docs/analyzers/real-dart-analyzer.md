@@ -7107,6 +7107,30 @@ counts and forbids; the ±few-hundred-row count movement measured above is pinne
 later change could move it again without a single red. That is a named gap in the suite, not a
 resolved one, and closing it needs a source-level injection the harness does not have (reported, not
 built here).
+
+**CLOSED THE SAME DAY, from the OUTPUT side, which turns out to be enough.** The paragraph above names
+the gap and is kept as written; what follows is the fix. The count movement has TWO observables — how
+many rows a key keeps, and which LINE the survivor carries — and both are properties of the analyzer's
+output, which is exactly what a mutant wraps. So the pin did not need source injection at all:
+`validation/m14/fixtures/dart/dedup-first-producer.dart` states the three behaviours on one screen
+(three producers of one key collapse to one row at the FIRST site's line; a file can hold BOTH the bare
+and the spelled key for one member and one source; and a typed METHOD parameter's read and a typed
+CLOSURE parameter's read of the same member are ONE key, so the closure's retargeted row is dropped as a
+duplicate and contributes only the line it happens to be walked at), and two mutants re-break them
+separately — `dart/dedup-multiplicity-regression` (re-emits the collapsed row, caught by the `equals: 1`
+count with the line pin deliberately left satisfied) and `dart/dedup-first-producer-line-lost` (keeps the
+SECOND producer, so the count stays 1 and only the `line_number` pin fails). Both are CAUGHT, each by
+`dart/dedup-first-producer` alone. `run-fixtures --lang dart` is now **32/0**.
+
+**AND THE RUN FOUND A PIN THAT COULD NO LONGER FIRE, which is the same defect one layer up.**
+`dart/representation-field-decl-line` — the M60 revert that puts the wrapped representation field's
+`contains` edge back on the declaration node's line — was reading as a SURVIVOR (0 → 0 failures): the
+2026-10-08 contains-qualification round retargeted that fixture's row to the published `Wrapped.inner$`
+spelling and moved the expectation's forbid with it, **saying in its own note that leaving the forbid on
+the old spelling would have made it unfireable** — and then did not move the mutant, which still matched
+the bare `inner$`. A mutation pin that matches nothing reads as a green suite on the exact line contract
+it was built for. Retargeted to `Wrapped.inner$`, it is CAUGHT by `dart/extension-type`, and the dart-only
+mutation run is **48 caught / 0 survived**.
 ### The store lever, PRICED — and the measurement says the receiver cut is not where it lands
 
 The residual table above ends with its own to-do: *"What would firm these numbers: `--all` … and the
