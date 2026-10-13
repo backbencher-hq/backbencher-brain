@@ -70,6 +70,46 @@ const TYPES = ["calls", "contains", "exports", "extends", "implements", "imports
 type Type = (typeof TYPES)[number]
 
 /* ------------------------------------------------------------------ *
+ * WHICH TYPES THE LANE EMITS — MEASURED, not a literal.
+ *
+ * This file used to carry `const emitted = TYPES.filter((t) => t === "contains" || t === "references")`
+ * on line 616, and that literal did not learn about `imports` when the analyzer did. Measured
+ * 2026-10-13: the audit printed "EMITTED and implemented: 2 [contains, references]" and "APPLICABLE,
+ * NOT implemented: 1 [imports]" while the whole-population residual gate read `imports 331 edges,
+ * 321 carrying claims the project VERIFIES`. An instrument under-reporting its own lane's coverage is
+ * the exact failure class this programme exists to find — and a hardcoded list cannot age, so it
+ * cannot be right for long.
+ *
+ * The emitted set is read from the lane's OWN whole-corpus census artifact (the same one the
+ * completeness spec's `_implemented_measured` block cites), which carries a `fired` array and a
+ * per-type edge count over the whole admitted 1,485-file population. A census that cannot be read is
+ * a REFUSAL (exit 2), never a fallback to a remembered list: an unmeasurable emitted-set printed as a
+ * number is the defect this change removes.
+ * ------------------------------------------------------------------ */
+const EMITTED_CENSUS = path.join(ROOT, "validation/m14/fixtures/toml/tools/census-whole-corpus.json")
+function emittedFromCensus(): { types: Set<Type>; evidence: string } {
+  let raw: any
+  try {
+    raw = JSON.parse(fs.readFileSync(EMITTED_CENSUS, "utf8"))
+  } catch (e) {
+    console.error(`FATAL: cannot read the whole-corpus census at ${EMITTED_CENSUS}: ${String(e)}`)
+    console.error("An emitted-set that cannot be MEASURED must not be guessed, so this audit refuses to print a verdict.")
+    process.exit(2)
+  }
+  if (!Array.isArray(raw?.fired) || !Array.isArray(raw?.relationshipTypes)) {
+    console.error(`FATAL: ${EMITTED_CENSUS} carries no \`fired\` array and no \`relationshipTypes\` table.`)
+    console.error("Refusing to substitute a remembered list for a measurement.")
+    process.exit(2)
+  }
+  const withEdges: string[] = raw.relationshipTypes.filter((r: any) => Number(r?.edges ?? 0) > 0).map((r: any) => String(r.type))
+  const types = new Set<Type>([...raw.fired.map(String), ...withEdges].filter((t): t is Type => (TYPES as readonly string[]).includes(t)))
+  const counts = raw.relationshipTypes.filter((r: any) => types.has(String(r.type) as Type)).map((r: any) => `${r.type} ${Number(r.edges).toLocaleString()} edges`).join(" · ")
+  const pop = raw.population ?? {}
+  const evidence = `${path.relative(ROOT, EMITTED_CENSUS)} — population ${pop.parsed ?? "?"} parsed of ${pop.admitted ?? "?"} admitted · ${pop.repos ?? "?"} repos · emitted: ${counts || "none"}`
+  return { types, evidence }
+}
+
+/* ------------------------------------------------------------------ *
  * Corpus. DISCOVERED, and its exclusions counted, because a population
  * claim must be answerable from the project and not from the run's budget.
  * ------------------------------------------------------------------ */
@@ -387,7 +427,7 @@ const sum = (m: Map<string, number>, re: RegExp): number => {
 const topMatches = (m: Map<string, number>, re: RegExp, n = 6): string[] =>
   [...m].filter(([k]) => re.test(k)).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, c]) => `${k}×${c}`)
 
-function adjudicate(s: Survey, docs: Doc[]): Verdict[] {
+function adjudicate(s: Survey, docs: Doc[], emitted: Set<Type>): Verdict[] {
   const V: Verdict[] = []
   const NT = s.nodeTypes
 
@@ -417,12 +457,19 @@ function adjudicate(s: Survey, docs: Doc[]): Verdict[] {
   // and `lib`, which name this crate's OWN source) and the ruling table dismissed
   // that whole population. The dependency-shaped subset is the part that survives.
   const singleNamed = s.fileNaming.filter((f) => !f.arrayValued)
+  // THE GRADE IS DERIVED FROM THE MEASURED EMITTED SET, not from a remembered state. `imports` was
+  // graded `applicable-unimplemented` when the ruling table was written and the analyzer emitted
+  // nothing; the analyzer emits it now, so the same grade would be a claim about a revision the
+  // measurement contradicts. `sound` stays false either way — the CONSTRUCT exists, so the
+  // inapplicability ruling does not hold — and the difference between the two grades is whether the
+  // lane ACTS on that: `arguable` when it does, `applicable-unimplemented` when it does not.
+  const importsEmitted = emitted.has("imports")
   V.push({
     type: "imports",
     sound: false,
-    grade: "applicable-unimplemented",
+    grade: importsEmitted ? "arguable" : "applicable-unimplemented",
     question: "does a key that DECLARES A DEPENDENCY point at a path reaching another real manifest?",
-    answer: `${s.depSites} \`path\` sites sit in a DEPENDENCY section (dependencies, dev-dependencies, build-dependencies, workspace.dependencies, sources, patch.*), and ${s.depResolvesToManifest} of them resolve to a directory that holds a Cargo.toml / Project.toml — ${s.depSites === 0 ? 0 : Math.round((s.depResolvesToManifest / s.depSites) * 100)}% resolution. ${s.depSelfReferential} are self-referential and ${s.depUnresolvable} do not resolve. A path dependency is a dependency in the plainest sense: \`[dependencies] foo = { path = "../foo" }\` says this manifest cannot be built without another unit, and that unit's manifest is a real file. **THE RULING TABLE IS WRONG ON THIS ROW** and the audit reports it unverified rather than rounding it up. Note the shape it is written in — an ordinary inline table — is exactly why instrument A could not see it and why the ruling's own dismissal ("lists a tool is told about") does not reach it.`,
+    answer: `${s.depSites} \`path\` sites sit in a DEPENDENCY section (dependencies, dev-dependencies, build-dependencies, workspace.dependencies, sources, patch.*), and ${s.depResolvesToManifest} of them resolve to a directory that holds a Cargo.toml / Project.toml — ${s.depSites === 0 ? 0 : Math.round((s.depResolvesToManifest / s.depSites) * 100)}% resolution. ${s.depSelfReferential} are self-referential and ${s.depUnresolvable} do not resolve. A path dependency is a dependency in the plainest sense: \`[dependencies] foo = { path = "../foo" }\` says this manifest cannot be built without another unit, and that unit's manifest is a real file. **THE RULING TABLE IS WRONG ON THIS ROW** and the audit reports it unverified rather than rounding it up. Note the shape it is written in — an ordinary inline table — is exactly why instrument A could not see it and why the ruling's own dismissal ("lists a tool is told about") does not reach it.${importsEmitted ? ` AND THE LANE ACTS ON IT: the whole-corpus census measures \`imports\` EMITTED, and the residual gate reads 331 edges with 321 carrying a file claim the project VERIFIES — so this row is graded \`arguable\`, not \`applicable-unimplemented\`.` : ""}` + ` READ THIS PROBE'S SCOPE: its predicate is the FILE-RELATIVE FOLD ALONE (line 369). It does not implement Cargo's \`[path-bases]\` base rule, which the analyzer's claim pass does, so \`${s.depUnresolvable} do not resolve\` describes the CONSTRUCT'S shape and is NOT the lane's residual — the residual gate reads 10 unresolved / 321 verified claims over the same 1,485-file population.`,
     examples: s.depExamples,
   })
 
@@ -604,25 +651,37 @@ async function main(): Promise<void> {
 
   console.log("\n\nVERDICT PER RULED TYPE")
   console.log("-".repeat(96))
-  const verdicts = adjudicate(s, docs)
+  const census = emittedFromCensus()
+  const verdicts = adjudicate(s, docs, census.types)
   for (const v of verdicts) {
-    const mark = v.grade === "applicable-unimplemented" ? "APPLICABLE! " : !v.sound ? "UNVERIFIED " : v.grade === "strong" ? "SOUND      " : "SOUND?     "
+    // A type the census MEASURES as emitted cannot be marked UNVERIFIED: its ruling was refuted by
+    // the lane's own output, and that is a different verdict with different consequences.
+    const mark = v.grade === "applicable-unimplemented" ? "APPLICABLE! " : census.types.has(v.type) && !v.sound ? "REFUTED!   " : !v.sound ? "UNVERIFIED " : v.grade === "strong" ? "SOUND      " : "SOUND?     "
     console.log(`\n${v.type.toUpperCase().padEnd(13)} ${mark}`)
     console.log(`  asked     ${v.question}`)
     console.log(`  answered  ${v.answer}`)
     for (const e of v.examples.slice(0, 3)) console.log(`            e.g. ${e}`)
   }
 
-  const emitted = TYPES.filter((t) => t === "contains" || t === "references")
-  const applicableUnimplemented = verdicts.filter((v) => v.grade === "applicable-unimplemented")
+  // MEASURED, never a literal — see `emittedFromCensus`'s header for what the literal cost.
+  const emitted = TYPES.filter((t) => census.types.has(t))
+  // An emitted type cannot also be applicable-unimplemented: the census measured it firing.
+  const applicableUnimplemented = verdicts.filter((v) => v.grade === "applicable-unimplemented" && !census.types.has(v.type))
   const strong = verdicts.filter((v) => v.sound && v.grade === "strong")
-  const unverified = verdicts.filter((v) => !v.sound && v.grade !== "applicable-unimplemented")
+  // A RULING THE LANE'S OWN EMISSION REFUTES IS NOT "UNVERIFIED" — it is refuted. `imports` sat in
+  // the unverified bucket only because the literal above did not know the analyzer emits it; keeping
+  // it there would report a measured refutation as an open question, which is a softer claim than
+  // the evidence supports. It is counted in `emitted` (applicable, implemented) and reported here as
+  // refuted so the reader sees the ruling table's error rather than a row that quietly moved.
+  const refuted = verdicts.filter((v) => !v.sound && census.types.has(v.type))
+  const unverified = verdicts.filter((v) => !v.sound && v.grade !== "applicable-unimplemented" && !census.types.has(v.type))
   const applicable = emitted.length + applicableUnimplemented.length
   const ruled = strong.length
 
   console.log("=".repeat(96))
   console.log("THE DENOMINATOR")
   console.log("=".repeat(96))
+  console.log(`  emitted set, MEASURED            : ${census.evidence}`)
   console.log(`  types in the ontology           : ${TYPES.length}`)
   console.log(`  EMITTED and implemented         : ${emitted.length}  [${emitted.join(", ")}]`)
   console.log(`  APPLICABLE, NOT implemented     : ${applicableUnimplemented.length}  [${applicableUnimplemented.map((v) => v.type).join(", ") || "none"}]`)
@@ -635,6 +694,10 @@ async function main(): Promise<void> {
   console.log(`     of which verified by MEASUREMENT: ${ruled}  [${strong.map((v) => v.type).join(", ")}]`)
   console.log(`     of which UNVERIFIED            : ${unverified.length}  [${unverified.map((v) => v.type).join(", ") || "none"}]`)
   console.log(`                                    ${emitted.length}+${applicableUnimplemented.length}+${ruledTotal} = ${emitted.length + applicableUnimplemented.length + ruledTotal} of ${TYPES.length}`)
+  if (refuted.length > 0) {
+    console.log(`  RULINGS REFUTED BY THE LANE'S OWN EMISSION: ${refuted.length}  [${refuted.map((v) => v.type).join(", ")}]`)
+    console.log(`     these are APPLICABLE and IMPLEMENTED, so they are counted in the EMITTED line above and NOT in RULED`)
+  }
 
   console.log(`\n  APPLICABLE = ${applicable} of ${TYPES.length}   (types whose construct EXISTS in the language)`)
   console.log(`  IMPLEMENTED = ${emitted.length}/${applicable} of those — the figure that is actually a completion score`)
@@ -651,6 +714,10 @@ async function main(): Promise<void> {
   console.log(`  (\`x.workspace = true\`, 1,269 sites) is the SAME type and is NOT implemented either, so even`)
   console.log(`  ${emitted.length}/${applicable} overstates how much of each applicable type is covered.`)
 
+  if (refuted.length > 0) {
+    console.log(`\n  ${refuted.length} ruling(s) were REFUTED and the lane emits the type anyway: ${refuted.map((v) => v.type).join(", ")}`)
+    console.log("  Nothing is open on those rows — the ruling table is wrong and the measurement says so above.")
+  }
   if (unverified.length > 0) {
     console.log(`\n  ${unverified.length} ruling(s) are UNVERIFIED by this audit: ${unverified.map((v) => v.type).join(", ")}`)
     console.log("  The measured denominator is stated above; the honest total is UNKNOWN, not 2/2.")
