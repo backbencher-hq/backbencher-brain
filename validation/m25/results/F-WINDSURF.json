@@ -3,7 +3,7 @@
   "code": "E6",
   "fork": "windsurf",
   "status": "blocked",
-  "reason": "windsurf CLI not found on PATH — install or record the waiver (E6 honest blocked state)",
+  "reason": "windsurf not found — looked at: bundle: /Applications/Windsurf.app/Contents/Resources/app/bin/windsurf; bundle: $HOME/Applications/Windsurf.app/Contents/Resources/app/bin/windsurf; bundle: /Applications/Preview/Windsurf.app/Contents/Resources/app/bin/windsurf; legacy: /usr/bin/windsurf",
   "os": "darwin",
   "machine": {
     "kernel": "Darwin 23.6.0",
@@ -12,16 +12,16 @@
     "node": "v22.14.0",
     "runtime": "fork-run"
   },
-  "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
+  "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-WINDSURF.json",
-  "generatedAt": "2026-10-08T19:51:45.385Z",
+  "generatedAt": "2026-10-12T19:07:13.795Z",
   "limitations": [
     "fork unavailable on this machine — claim level stays unset; no inheritance from other forks"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T19:51:45.385Z",
-    "contentSha256": "cc3601d7898bfcf36aadfa7a15ad85f6d8e9623a83058341cddc334fc490136d"
+    "sealedAt": "2026-10-12T19:07:13.795Z",
+    "contentSha256": "a278dacfe2fe3a47dfce3b2f37a987412941fc0ddd1ee148dafdd1299b76f09c"
   }
 }

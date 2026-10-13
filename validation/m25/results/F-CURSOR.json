@@ -3,7 +3,7 @@
   "code": "E6",
   "fork": "cursor",
   "status": "blocked",
-  "reason": "cursor CLI not found on PATH — install or record the waiver (E6 honest blocked state)",
+  "reason": "cursor not found — looked at: bundle: /Applications/Cursor.app/Contents/Resources/app/bin/cursor; bundle: $HOME/Applications/Cursor.app/Contents/Resources/app/bin/cursor; bundle: /Applications/Preview/Cursor.app/Contents/Resources/app/bin/cursor; legacy: /usr/bin/cursor",
   "os": "darwin",
   "machine": {
     "kernel": "Darwin 23.6.0",
@@ -12,16 +12,16 @@
     "node": "v22.14.0",
     "runtime": "fork-run"
   },
-  "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
+  "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-CURSOR.json",
-  "generatedAt": "2026-10-08T19:51:45.382Z",
+  "generatedAt": "2026-10-12T19:07:13.793Z",
   "limitations": [
     "fork unavailable on this machine — claim level stays unset; no inheritance from other forks"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T19:51:45.383Z",
-    "contentSha256": "0f3c1d0dc7ad82c25fa7acdf341c5d19447b5a35e3eb6e1fb9dd1ae6628adb23"
+    "sealedAt": "2026-10-12T19:07:13.794Z",
+    "contentSha256": "95d691d89e1e4dc33b2e859c31736f6e875a2b548c3b34a3199921d33596025c"
   }
 }
