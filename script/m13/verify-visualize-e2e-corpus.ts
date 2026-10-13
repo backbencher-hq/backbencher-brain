@@ -8,6 +8,7 @@ import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { visualizeProject, formatVisualization } from "../../src/intelligence/visualization/visualization-engine"
 import { Harness } from "./harness"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 const harness = new Harness({
   issue: "M13.46", code: "V3", tool: "bb_visualize",
@@ -83,7 +84,9 @@ rmSync(root, { recursive: true, force: true })
 }
 
 // 3. Corpus
-const REPO_ROOT = "$HOME/fixtures/repositories"
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see
+// script/lib/corpus-root.ts, which is where the corpus actually lives on THIS machine.
+const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 for (const [repo, subPath, family] of [["rake", "lib/rake", "Ruby"], ["graphql-js", "src", "TypeScript"], ["rebar3", "apps", "Erlang"]]) {
   const idxRoot = path.join(REPO_ROOT, repo, subPath)
   if (!existsSync(idxRoot)) { harness.check("corpus " + repo + ": present", false, "missing"); continue }
