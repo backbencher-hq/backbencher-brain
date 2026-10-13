@@ -7290,3 +7290,72 @@ cannot answer (`receiverTypeUnknown`, `receiverUnnamed`), which barely move on e
 corpus-scale version of this table needs a whole-corpus dart index (25,734 files of `dart-sdk` alone) —
 the two-repo A/B is what is available now, and the cell's corpus size stays the sample-scaled estimate
 the residual table already labels as one.
+### TWO WAYS TO REPAIR THE STORE READ, PRICED — and one of them is a TRAP
+
+The section above ends on a claim about the READ: the store lever's cell grows because `declaringOwner`
+walks this file's heritage and nothing else, while `indexDeclares` consults the DECLARED map
+(`projectIndex.typeMembers`) and never the inheritance-closed map (`__closedMembers`, which
+`buildResolutionTables` attaches). That claim was code-cited and is now MEASURED, and the measurement
+kills the obvious fix.
+
+**Both candidates were measured by repairing ONE READ in the analyzer and nothing else** (temporary
+edits, reverted immediately; the file's digest is verified `dc7b55e4099c4107…` after each run, and the
+instrument reproduces its own baseline byte-for-byte — dart-http arm B `receiverMemberOutsideRun`
+223 → 658 rows, Δ resolved 116, exactly the number the table above carries). The instrument gained one
+prep for this: it calls `buildResolutionTables` so the closed map EXISTS before either read is asked
+(408 closed types against 380 declared on dart-http), because comparing a read against missing data
+would price nothing.
+
+```
+READ A — the CLOSED map (`__closedMembers`): "does this type EXPOSE the member, inherited or not"
+READ B — the DECLARING BASE (`typeBases` walk + `typeMembers`): "which base DECLARES it" (Base.member)
+```
+
+**dart-http, 333 files, arm B (the index) before → after each repair.** The right-hand column is the
+instrument's TOTAL resolution over the whole cut table (every `receiverCause` bucket), because a row
+that leaves the cell can land in any bucket and only the total says whether the lane gained or lost:
+
+| | cut cell ROWS | cell RESOLVED | `(qualified)` RESOLVED | `(qualified)` UNRESOLVED | TOTAL Δ resolved |
+|---|---|---|---|---|---|
+| declared read (today) | 658 | 252 | 7,486 | 5,273 | 743 |
+| **closed map** | **589** (−69) | 247 (−5) | 7,488 (+2) | **5,348 (+75)** | **740 (−3)** |
+| **declaring base** | **589** (−69) | 247 (−5) | **7,557 (+71)** | 5,273 (**±0**) | **809 (+66)** |
+
+**READ A IS A NAMING TRAP, and the two rows beside each other are the whole argument.** It empties the
+cell by the same 69 rows as READ B — the closed map does answer "this type has the member" — and then
+SPELLS the target `Subclass.member`, a name **the store does not hold**: the declaration is
+`Base.member`, and no symbol answers `Subclass.member`. So those rows leave the honest "member outside
+the run, and here is why" bucket and become spelled claims that resolve to nothing: **+2 resolved
+against +75 unresolved, and the cut table's total resolution FALLS 743 → 740.** The lane's numbers get
+WORSE — a cut cause disappears from rows that still failed, which is the one outcome this lane's
+contract exists to prevent — and a `baseBeyondRunScope` claim is exactly what those rows no longer
+carry.
+
+**READ B RESOLVES 66 OF THE SAME 69 ROWS AND CREATES NO UNRESOLVED EDGE AT ALL.** `(qualified)`
+unresolved does not move by one row (5,273 → 5,273), `spelled:baseBeyondRunScope` does not move (1,455
+both), and the gain lands where it should: `calls` Δ resolved 8 → 53, `uses` −62 → −41, for a cut-table
+total of **743 → 809 (+66)** — the mirror image of READ A's −3 on the same 69 rows. The mechanism is the
+one Dart itself uses — a member is addressable through the type that inherits it, but the DECLARATION is
+what a qualified name names — so naming the base names a symbol that exists.
+
+**And it is not one repository's accident. `riverpod`, 1,295 files, the same two edits:** READ B takes
+`receiverMemberOutsideRun` from 3,676 → 3,467 rows (−209), `(qualified)` resolved 27,870 → 28,069, and
+the cut table's total Δ resolved 4,363 → 4,551 (**+188**) with `(qualified)` unresolved unchanged at
+17,267 and the cell's own unresolved unchanged at 234 — the same direction, the same sign on both
+unresolved columns, no new unresolved row anywhere. The two controls also hold: `receiverTypeUnknown`
+and `receiverUnnamed` move by −12/−8 and −2/−2, which is the noise a receiver question the index cannot
+reach should show.
+
+**WHAT THIS DOES NOT SAY.** (1) READ B is a MEASURED CANDIDATE, not a shipped change — the analyzer at
+HEAD is unchanged (`dc7b55e4…`), the edit was reverted after each run, and nothing here touches the
+gate's numbers. (2) Two repositories, 1,628 files, ~4.8 % of the population; the corpus is dominated by
+`dart-sdk` and `flutter-packages`, and no scaling to 33,738 is claimed. (3) The instrument's resolution
+rule is its own (`decls === 1` over the names it collects), so its columns are comparable between its
+arms and not to the gate's. (4) A production version of READ B needs the index to be SUPPLIED first,
+which is the `.dart` entry §5hh says is absent — so this is the value of the entry's second-order
+effect, on top of the `references` and override winnings the section above prices, not a standalone
+change. (5) And the comment at `real-dart-analyzer.ts:2343` still describes `indexDeclares` as "the same
+read the override pass makes (`buildResolutionTables`' `typeMembers`)" — the override pass reads the
+tables that function RETURNS (`memberOwners`/`allMembers`); `typeMembers` is the index's own declared
+map. Reported, not edited: this round's receipts pin the analyzer blob, and a comment-only edit would
+move that digest for no measured gain.

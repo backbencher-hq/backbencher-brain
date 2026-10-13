@@ -4194,3 +4194,19 @@ same symbol.
   made it unfireable" — while leaving the mutant matching the bare `inner$`. Retargeted, it is CAUGHT by
   `dart/extension-type`, so the dart mutation run is **48 caught / 0 survived**. A mutation pin that
   matches nothing is the same false assurance as a fixture that cannot fail, and this one was green.
+- **dart — THE STORE READ IS PRICED TWO WAYS, and the obvious repair is a TRAP.** The store section claimed
+  the index's cell grows because `declaringOwner` walks only THIS file's heritage while `indexDeclares`
+  reads the DECLARED `typeMembers` and never the attached `__closedMembers`. Both halves are now measured
+  by repairing ONE READ in the analyzer and reverting it (digest verified `dc7b55e4…` after every run; the
+  instrument reproduces its own baseline byte-for-byte). **READ A, the closed map:** it empties the same 69
+  rows on dart-http but spells `Subclass.member` — a name the store does not hold, since the declaration is
+  `Base.member` — so **+2 resolved against +75 new unresolved and the cut table's total resolution FALLS
+  743 → 740.** A cut cause vanishing from rows that still failed is the one outcome this lane's contract
+  exists to prevent. **READ B, the declaring BASE** (`typeBases` walk + `typeMembers`): the same 69 rows
+  leave, **66 resolve, and NOT ONE new unresolved row appears** — `(qualified)` unresolved ±0, cell
+  unresolved ±0, total Δ resolved 743 → 809. **riverpod (1,295 files) agrees on every sign:** cell
+  3,676 → 3,467 rows, total Δ resolved 4,363 → 4,551 (+188), both unresolved columns unchanged. READ B is
+  a MEASURED CANDIDATE, not shipped — the analyzer at HEAD is untouched, and a production version needs the
+  `.dart` index entry §5hh says is absent, so it is the entry's second-order value rather than a standalone
+  change. Also reported, not edited: `real-dart-analyzer.ts:2343` still describes `indexDeclares` as "the
+  same read the override pass makes" when the override pass reads what `buildResolutionTables` RETURNS.
