@@ -33,6 +33,14 @@ import { MARKDOWN_MUTANTS } from "../m60/markdown-mutants"
 import { SCSS_MUTANTS } from "../m60/scss-mutants"
 import { SOLIDITY_MUTANTS } from "../m60/solidity-mutants"
 import { YAML_MUTANTS } from "../m60/yaml-mutants"
+// PORTED FROM ORIGINAL MAIN (1b71d837c), 2 lines, and MEASURED here rather than assumed.
+// `script/m14/javascript-mutants.ts` exports JAVASCRIPT_MUTANTS; this registry did not import it,
+// so `npx tsx script/m14/verify-orphaned-mutants.ts` listed it among 11 orphaned registries and
+// the canonical F4 run never executed its mutants while reporting the lane green.
+// BEFORE: 56 javascript/* mutants selected, 4 lane ids absent from the registry.
+// AFTER:  63 selected, the lane ids present. Main had this import; this branch did not.
+// The other 10 orphaned registries are orphaned on BOTH sides and are NOT this lane's delta.
+import { JAVASCRIPT_MUTANTS } from "./javascript-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2458,6 +2466,9 @@ export const MUTANTS: Mutant[] = [
   ...NIM_MUTANTS,
   ...PROTOBUF_MUTANTS,
   ...JSON_MUTANTS,
+  // PORTED FROM ORIGINAL MAIN, the second half of the same 2-line delta: an import with no spread
+  // is still an orphan, and a spread with no import does not compile. Both lines or neither.
+  ...JAVASCRIPT_MUTANTS,
   ...CLEAN_MUTANTS,
   // The php lane's registry — MEASURED as orphaned before this line existed, not suspected.
   // `npx tsx script/m14/verify-orphaned-mutants.ts` reported
