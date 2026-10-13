@@ -97,7 +97,17 @@ async function measure(repo: (typeof repositories)[0]) {
   const stats = await indexProjectParallel(projectId, repo.path, {
     files,
     skipDiscovery: true,
-    conflictMode: "replace",
+    // `conflictMode: "replace"` used to be passed here and was removed: the option
+    // exists NOWHERE in src/ (0 occurrences), so it was accepted by nobody and did
+    // nothing. TypeScript reported it as TS2353 only in files whose call was
+    // type-checked, which is why it survived so long.
+    //
+    // It was safe to delete only after MEASURING that re-indexing really does replace
+    // rather than accumulate. It does — and the mechanism is the `ON DELETE CASCADE`
+    // from brain_symbol.file_id, fired by `INSERT OR REPLACE INTO brain_file`, not the
+    // explicit DELETE that the code appears to use. See
+    // script/m62/verify-reindex-replaces.ts, which re-runs that measurement and is
+    // canary-proven to go red if stale rows ever survive.
     logger: { log: () => {}, write: () => {} },
   })
   const indexWallMs = performance.now() - indexStart
@@ -185,3 +195,14 @@ for (const repo of repositories) {
   await Bun.write(outPath, JSON.stringify(evidence, null, 2) + "\n")
 }
 console.log(`Evidence written to ${outPath}`)
+
+// MODULE MARKER. These five m11 corpus scripts are standalone programs that share
+// top-level names (`repositories`, `repoFilter`, `results`, …). Without this line
+// each file is a global SCRIPT, so its top-level `const`s land in the shared global
+// scope and a program that loads several of them — which
+// script/m62/verify-gate-typecheck-coverage.ts does, 213 files at a time — sees
+// `Cannot redeclare block-scoped variable` 38 times across five files that are each
+// correct on their own. Marking the file a MODULE scopes its top-level bindings to
+// itself, which is what they always meant. Nothing is exported; this is a scope
+// declaration, not an API.
+export {}
