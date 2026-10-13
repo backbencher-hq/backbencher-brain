@@ -72,6 +72,36 @@ export interface OverrideCompanionPassOptions {
   reparse?: ReparseFile
   /** Restrict to one language. Perl only, deliberately — see the module note. */
   language?: string
+  /**
+   * THE ID-CARRYING JOIN (r-lane, 2026-10-12). The store's primary key is
+   * `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine ?? "?"}`, and `sourceId` is the
+   * SOURCE SYMBOL's id, found by scanning the file's storeable spans for the innermost holder of the
+   * edge's line. So the pass needs exactly three things it does not have, and THEY ARE PASSED IN rather
+   * than imported: this module must not import `parallel-indexer`, which imports this one.
+   *
+   * A KEY CAN ONLY BE UNIQUE IF IT IS `brain_relationship.id`. The tuple key that preceded this one
+   * multi-matched 292 of 1,301 times on the corpus — because it omitted `sourceId`, the component that
+   * distinguishes one source's override from another's at the same target and line. A row keyed by id
+   * cannot collide, so clause 4 (no unconfirmed row is ever touched) becomes a STRUCTURAL PROPERTY
+   * rather than a test.
+   *
+   * ALL THREE ARE OPTIONAL, AND THAT IS DELIBERATE: with them absent the pass behaves exactly as it does
+   * today and `confirmedIds` stays empty, so the write-back is skipped. The change is inert until the call
+   * site supplies them.
+   */
+  projectId?: string
+  /** The store's file id for a path — `${projectId}:${relativePath}` in `storeResults`. */
+  fileIdOf?: (filePath: string) => string
+  /** The store's span index for one file's symbols. INCLUDES ITS SORT — a caller-supplied one must too. */
+  buildSpans?: (
+    symbols: any[],
+    fileId: string,
+  ) => Array<{ id: string; name: string; start: number; end: number; kind: string }>
+  /** The store's innermost-enclosing-span scan. */
+  enclosingSpanId?: (
+    spans: Array<{ id: string; name: string; start: number; end: number; kind: string }>,
+    line: number | null,
+  ) => string | null
 }
 
 export interface OverrideCompanionPassStats {
@@ -94,6 +124,16 @@ export interface OverrideCompanionPassStats {
    * assumed so the write-back stores the value the analyzer actually produced.
    */
   confirmedKeys: Array<{ target: string; line: number | null; confidence: number }>
+  /**
+   * THE STORE PRIMARY KEYS BEHIND `confirmed`. Empty when the id-carrying inputs were not supplied, which
+   * is what makes this change inert until the call site provides them. `confirmedIdsMissed` is the count
+   * of confirmations the id path could NOT serve — a confirmed edge whose enclosing symbol could not be
+   * found, or whose `line_number` is absent — and it is reported rather than silently dropped, because a
+   * confirmation with no id is a row the write-back cannot reach.
+   */
+  confirmedIds: string[]
+  /** Confirmations for which no store id could be computed: no spans, or no enclosing symbol at the line. */
+  confirmedIdsMissed: number
   /**
    * THE IDENTITIES OF THE UNCONFIRMED (r-lane). Clause 4's second form asks whether these rows are STILL
    * PRESENT AND STILL AT 0.5 after the write-back — the clause that catches a write-back which tidies a
@@ -123,6 +163,8 @@ export async function populateOverrideCompanion(
     reapplied: 0,
     confirmed: 0,
     confirmedKeys: [],
+    confirmedIds: [],
+    confirmedIdsMissed: 0,
     stillGuessKeys: [],
     stillGuess: 0,
     failed: 0,
@@ -175,6 +217,39 @@ export async function populateOverrideCompanion(
     stats.reapplied++
   }
 
+  // ── THE STORE PRIMARY KEY, COMPUTED FROM THE PASS'S OWN RE-PARSE ─────────────────────────────────
+  // The store's id is `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine ?? "?"}`, and
+  // `sourceId` is the SOURCE SYMBOL's id found by scanning the file's storeable spans. The spans are
+  // built ONCE PER FILE and cached: building them per relationship would repeat the same work for every
+  // edge in a file, and the store's own construction includes a sort.
+  //
+  // RETURNS null WHEN IT CANNOT KNOW — no inputs supplied, no symbols, no enclosing symbol at the line.
+  // null is COUNTED (`confirmedIdsMissed`) rather than dropped: a confirmation with no id is a row the
+  // write-back cannot reach, and the acceptance needs that number.
+  //
+  // AND IT DOES NOT COMPUTE THE SPAN INDEX ITSELF. `buildSpans` and `enclosingSpanId` are the STORE'S
+  // functions, passed in — one implementation, two callers. Computing them here from copied rules would
+  // be the second computation the design forbids, and two copies are free to drift apart silently.
+  const spansByResult = new WeakMap<object, Array<{ id: string; name: string; start: number; end: number; kind: string }>>()
+  const relIdOf = (result: FileResult, rel: any): string | null => {
+    if (!opts.projectId || !opts.buildSpans || !opts.enclosingSpanId || !opts.fileIdOf) return null
+    try {
+      let spans = spansByResult.get(result as unknown as object)
+      if (!spans) {
+        if (!result.filePath) return null
+        spans = opts.buildSpans(result.symbols ?? [], opts.fileIdOf(result.filePath))
+        spansByResult.set(result as unknown as object, spans)
+      }
+      const line = (rel as any).line_number ?? null
+      const sourceId = opts.enclosingSpanId(spans, line)
+      if (!sourceId) return null
+      // EXACTLY THE STORE'S FORMULA, including `?? "?"` — a line-less edge keeps the previous identity.
+      return `${opts.projectId}:rel:${sourceId}:${String((rel as any).target ?? "")}:${String((rel as any).type ?? "")}:${line ?? "?"}`
+    } catch {
+      return null
+    }
+  }
+
   for (const result of affected) {
     for (const rel of result.relationships ?? []) {
       if ((rel as any).type !== OVERRIDES) continue
@@ -187,6 +262,10 @@ export async function populateOverrideCompanion(
           line: (rel as any).line_number ?? null,
           confidence: Number((rel as any).confidence ?? 0),
         })
+        // THE KEY, BESIDE THE COUNT AND BESIDE THE TUPLE. Only this one can be unique.
+        const key = relIdOf(result, rel)
+        if (key) stats.confirmedIds.push(key)
+        else stats.confirmedIdsMissed++
       } else {
         stats.stillGuess++
         stats.stillGuessKeys.push({
