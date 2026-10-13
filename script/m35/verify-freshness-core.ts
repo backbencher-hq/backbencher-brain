@@ -24,6 +24,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { tmpdir } from "node:os"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULT = path.join(ROOT, "validation/m35/results/F1.json")
@@ -203,7 +204,16 @@ async function main() {
       let mutatedExit = 0
       let out = ""
       try {
-        execFileSync("bun", ["run", __filename.replaceAll("\\", "/")], { cwd: ROOT, encoding: "utf8", stdio: "pipe", env: { ...process.env, BB_M35_EVIDENCE: "" } })
+        // `__dirname` / `__filename` do not exist in an ES module, and package.json
+        //  declares "type": "module". Reaching for one here means this file dies at LOAD
+        //  with a ReferenceError, prints a stack trace, and runs no check at all — while
+        //  `tsc` stays silent, because @types/node declares both.
+        //  The repo already has the idiom (script/m14/html-ontology-census.ts):
+        //    const SELF = fileURLToPath(import.meta.url)
+        //  which is correct under tsx, bun and plain node alike.
+        const SELF_PATH = fileURLToPath(import.meta.url)
+        const HERE = path.dirname(SELF_PATH)
+        execFileSync("bun", ["run", SELF_PATH.replaceAll("\\", "/")], { cwd: ROOT, encoding: "utf8", stdio: "pipe", env: { ...process.env, BB_M35_EVIDENCE: "" } })
       } catch (e: unknown) {
         mutatedExit = (e as { status?: number }).status ?? 1
         out = String((e as { stdout?: unknown }).stdout ?? "")

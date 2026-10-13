@@ -24,6 +24,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const M49_DIR = path.join(ROOT, "script/m49")
@@ -176,7 +177,16 @@ function main() {
 
   // --- 3. Verifier registry wiring ----------------------------------------
   const onDisk = readdirSync(M49_DIR).filter((f) => /^verify-.*\.ts$/.test(f)).sort()
-  const governanceSrc = readFileSync(__filename, "utf8")
+  // `__dirname` / `__filename` do not exist in an ES module, and package.json
+  //  declares "type": "module". Reaching for one here means this file dies at LOAD
+  //  with a ReferenceError, prints a stack trace, and runs no check at all — while
+  //  `tsc` stays silent, because @types/node declares both.
+  //  The repo already has the idiom (script/m14/html-ontology-census.ts):
+  //    const SELF = fileURLToPath(import.meta.url)
+  //  which is correct under tsx, bun and plain node alike.
+  const SELF_PATH = fileURLToPath(import.meta.url)
+  const HERE = path.dirname(SELF_PATH)
+  const governanceSrc = readFileSync(SELF_PATH, "utf8")
   const registered = ["verify-governance.ts", "verify-r1-intake.ts", "verify-r2-regex.ts", "verify-closure.ts", "verify-evidence-lineage.ts", "verify-script-integrity.ts", "verify-census-lineage.ts", "verify-evidence-identity.ts", "verify-family-parity.ts", "verify-sweep-state-freeze.ts"]
   for (const f of onDisk) {
     check(`verifier ${f} is registered in governance`, registered.includes(f))

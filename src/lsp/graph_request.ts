@@ -284,9 +284,21 @@ export async function handleGraphRequest(
     // by IMPORTER instead: rows whose source is this file, whose type is the
     // first-class `imports` kind, and whose target is external (a specifier,
     // not a symbol). Exact path match on source_external — no basename
-    // guessing, so a language whose imports rows name a module leaf (ts/js)
-    // is untouched, and a row that cannot name its importer is NOT returned
+    // guessing, so a language whose imports rows name a module leaf is
+    // untouched, and a row that cannot name its importer is NOT returned
     // here (it stays a declared external row).
+    //
+    // JAVASCRIPT IS NO LONGER ONE OF THOSE LANGUAGES, and the clause that said
+    // so is corrected here rather than left to read as coverage it does not
+    // have. Until the file-level wave `real-javascript-analyzer.ts` spelled a
+    // module-scope actor with the module basename, so its rows could only match
+    // a path by accident; they now carry the family sentinel `(file)` plus
+    // `metadata.fileLevel`, the store rewrites `source_external` to the
+    // project-relative path, and this query returns them — measured on the
+    // pinned JS draw: 3 rows for `benchmarking/analyze-compiler-profile.js`
+    // (`node:fs:fs`, `node:path:path`, `node:url:fileURLToPath`), 2 for
+    // `clean_effects.bench.js`, and 924 `imports` rows addressable by path across
+    // the 250-file sample. Typescript still names a module leaf.
     const fileDepsRaw = db
       .prepare(
         "SELECT id AS rowId, relationship_type AS relationshipType, target_external AS moduleSpecifier, confidence " +
