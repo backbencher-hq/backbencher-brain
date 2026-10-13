@@ -19,6 +19,7 @@
 
 import * as fs from "fs"
 import * as path from "path"
+import { fileURLToPath } from "node:url"
 import * as WTS from "web-tree-sitter"
 
 // `__dirname` / `__filename` do not exist in an ES module, and package.json

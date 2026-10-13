@@ -24,7 +24,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { fileURLToPath } from "node:url"
-import { emitEvidence } from "./evidence-harness.ts"
+import { emitEvidence, type Check } from "./evidence-harness.ts"
 
 // `__dirname` / `__filename` do not exist in an ES module, and package.json
 //  declares "type": "module". Reaching for one here means this file dies at LOAD
@@ -331,11 +331,14 @@ export function main() {
   // The static import goes at module scope, where ESM requires it.
   const perLang = new Map<string, number>()
   for (const f of allFindings) perLang.set(f.lang, (perLang.get(f.lang) || 0) + 1)
-  const checks = langs.map((lang) => ({
+  const checks: Check[] = langs.map((lang) => ({
     id: `analyzer-hygiene-${lang}`,
     description: "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
+    // `Check.status` is the literal union `"pass" | "fail" | "retired"`, and a bare
+    //  ternary inside `.map()` WIDENS to `string`, which is not assignable to it.
+    //  Annotating the array (`Check[]`) is the fix that does not need a cast.
     status: (perLang.get(lang) || 0) === 0 ? "pass" : "fail",
-    findings: perLang.get(lang) || 0,
+    detail: `${perLang.get(lang) || 0} finding(s)`,
   }))
   // Scoped-run guard (M14 W16 / #886 class): a --lang run is for inspecting
   // one analyzer — it prints here and writes NO evidence. This gate HAD no

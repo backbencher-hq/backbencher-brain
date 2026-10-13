@@ -18997,7 +18997,8 @@ export const MUTANTS: Mutant[] = [
       const source = "svg-filter-builtin-tags" // pinned: first-edge source is unstable across sub-analyzer evolution
       const revert = ["filter", "feGaussianBlur", "feFlood", "feColorMatrix", "feOffset", "feBlend", "feComposite"]
       return { ...r, relationships: [...rels, ...revert.map(target => ({ source, target, type: "instantiates", confidence: 0.95, metadata: { isComponentUsage: true } }))] }
-    },,
+    },
+  },
   {
     id: "svelte/object-key-is-a-read",
     language: "svelte",
@@ -19062,7 +19063,8 @@ export const MUTANTS: Mutant[] = [
       )
       if (added.length === 0 && kept.length === rels.length) return r
       return { ...r, relationships: [...kept, ...added] }
-    },,
+    },
+  },
   {
     id: "svelte/dropped-template-read-not-recorded",
     language: "svelte",
@@ -19082,7 +19084,8 @@ export const MUTANTS: Mutant[] = [
         return { ...x, metadata: m }
       })
       return touched === 0 ? r : { ...r, relationships: out }
-    },,
+    },
+  },
   {
     id: "svelte/binding-pattern-reads-lost",
     language: "svelte",
@@ -19201,7 +19204,8 @@ export const MUTANTS: Mutant[] = [
         (x: any) => !(String(x.type) === "uses" && x.source === component && x.metadata?.isTemplateExpression === true && dead.has(String(x.target))),
       )
       return kept.length === rels.length ? r : { ...r, relationships: kept }
-    },,
+    },
+  },
   {
     id: "svelte/declaration-tag-not-bound",
     language: "svelte",
@@ -19252,7 +19256,8 @@ export const MUTANTS: Mutant[] = [
       }
       if (added.length === 0) return r
       return { ...r, relationships: [...rels, ...added] }
-    },,
+    },
+  },
   {
     id: "svelte/each-key-expression-not-read",
     language: "svelte",
@@ -19292,7 +19297,8 @@ export const MUTANTS: Mutant[] = [
           (x: any) => !(String(x.type) === "uses" && x.source === component && x.metadata?.isTemplateExpression === true && names.has(String(x.target))),
         ),
       }
-    },,
+    },
+  },
   {
     id: "svelte/render-tag-argument-reads-dropped",
     language: "svelte",
@@ -19342,7 +19348,8 @@ export const MUTANTS: Mutant[] = [
           (x: any) => !(String(x.type) === "uses" && x.source === component && x.metadata?.isTemplateExpression === true && names.has(String(x.target))),
         ),
       }
-    },,
+    },
+  },
   {
     id: "svelte/handler-param-not-shadowed",
     language: "svelte",
@@ -19417,7 +19424,8 @@ export const MUTANTS: Mutant[] = [
       }
       if (added.length === 0) return r
       return { ...r, relationships: [...rels, ...added] }
-    },,
+    },
+  },
   {
     id: "svelte/drop-dynamic-target-sites",
     language: "svelte",
@@ -19436,7 +19444,7 @@ export const MUTANTS: Mutant[] = [
         return { ...x, metadata: rest }
       }),
     }),
-  },,
+  },
   {
     id: "vue/local-const-name-revert",
     language: "vue",
@@ -19465,7 +19473,8 @@ export const MUTANTS: Mutant[] = [
           return src === e.source && tgt === e.target ? e : { ...e, source: src, target: tgt }
         }),
       }
-    },,
+    },
+  },
   {
     id: "vue/kebab-target-revert",
     language: "vue",
@@ -19488,7 +19497,7 @@ export const MUTANTS: Mutant[] = [
         return { ...x, target: md.tagAsWritten, metadata: rest }
       }),
     }),
-  },,
+  },
   {
     id: "vue/inject-name-guard-revert",
     language: "vue",
@@ -19541,7 +19550,8 @@ export const MUTANTS: Mutant[] = [
       }
       if (added.length === 0) return r
       return { ...r, relationships: [...(r.relationships ?? []), ...added] }
-    },,
+    },
+  },
   {
     id: "groovy/declared-type-qualified-only",
     language: "groovy",
@@ -19553,7 +19563,7 @@ export const MUTANTS: Mutant[] = [
       const DECLARED = ["declared_type", "return_type", "throws_type", "instanceof_expression", "case_pattern", "cast_type", "method_reference"]
       return !(rel.type === "references" && DECLARED.indexOf(label) >= 0 && (rel.target ?? "").indexOf(".") === -1)
     }) }),
-  },,
+  },
   {
     id: "groovy/declared-type-class-attribution",
     language: "groovy",
@@ -19577,7 +19587,8 @@ export const MUTANTS: Mutant[] = [
         }
         return x
       }) }
-    },,
+    },
+  },
   {
     id: "groovy/filelevel-import-rewrite",
     language: "groovy",
@@ -19591,7 +19602,8 @@ export const MUTANTS: Mutant[] = [
         x.type === "imports" && (x.metadata ?? {}).fileLevel === true
           ? { ...x, source: primary.name, from: primary.name, metadata: { ...x.metadata, fileLevel: undefined } }
           : x) }
-    },,
+    },
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
