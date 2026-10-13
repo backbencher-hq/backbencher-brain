@@ -203,10 +203,50 @@ for (const line of output.split("\n")) {
   if (!m) continue
   const file = m[1]!
   if (file.includes("__typecheck-canary")) continue
+  // ONLY script/ counts. src/ and ide/ appear in this run because the gates
+  // import them, but they are checked under THIS config's loose options, and
+  // those options manufacture errors in a strict codebase.
+  //
+  // Measured 2026-10-09, which is why this filter exists. `noImplicitAny: false`
+  // is set here so one-off census scripts do not drown in implicit-any noise,
+  // but disabling it changes how TypeScript infers unannotated generics. The
+  // same file, same compiler, same code:
+  //   tsconfig.json (strict, noImplicitAny on)          -> engine.ts: 0 errors
+  //   tsconfig.json + noImplicitAny:false, nothing else  -> engine.ts: 6 errors
+  // and the whole of src/ went from clean to 24 phantom diagnostics, including
+  // `Type 'RegExpMatchArray | null' is not assignable to type 'null'`.
+  //
+  // The 36 src/ide diagnostics this ratchet used to publish were therefore an
+  // artifact of the measuring instrument, not defects in shipping code. src/ and
+  // ide/ are checked properly by `npm run typecheck`, which runs strict with
+  // noImplicitAny on and reports 0 errors. Counting them here double-checked them
+  // with the wrong settings and invented problems.
+  if (!file.startsWith("script/")) continue
   counts.set(file, (counts.get(file) ?? 0) + 1)
   codes.set(m[2]!, (codes.get(m[2]!) ?? 0) + 1)
 }
 const total = [...counts.values()].reduce((a, b) => a + b, 0)
+
+// The ratchet must be incapable of blaming src/ on this config's loose options.
+// Proven, not asserted: count the diagnostics this run attributes to src/ and
+// ide/, and require the number to be reported rather than folded into the total.
+{
+  const nonScript = output
+    .split("\n")
+    .map((l) => /^[^(]+\(\d+,\d+\): error TS\d+:/.exec(l))
+    .filter((m): m is RegExpExecArray => m !== null)
+    .map((m) => m[0].replace(/\(.*/, ""))
+    .filter((f) => !f.includes("__typecheck-canary") && !f.startsWith("script/"))
+  console.log(
+    `      (this run also produced ${nonScript.length} diagnostic(s) under src/ and ide/; they are NOT counted —` +
+      ` npm run typecheck covers those files under strict options and reports 0 errors)`,
+  )
+  check(
+    "the counted set excludes src/ and ide/, which npm run typecheck owns",
+    ![...counts.keys()].some((f) => !f.startsWith("script/")),
+    `${counts.size} counted file(s), all under script/`,
+  )
+}
 
 check(
   "the measured total matches the recorded baseline (no drift since it was taken)",

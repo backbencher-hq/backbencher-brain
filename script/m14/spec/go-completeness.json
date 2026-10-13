@@ -39,7 +39,11 @@
       "var_spec",
       "variadic_argument",
       "expression_list"
-    ]
+    ,
+      "ERROR"],
+    "_notes": {
+      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-go-analyzer.ts:333-337 and :3084), and `r7-empty-endpoints.go` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
+    }
   },
   "internal_silent": {
     "types": [
@@ -110,7 +114,11 @@
       "type_switch_statement",
       "union_type",
       "variadic_parameter_declaration"
-    ]
+    ,
+      "MISSING"],
+    "_notes": {
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-go-analyzer.ts:337 and :3084); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+    }
   },
   "gap": {
     "_description": "Go declared-type reference graph is fixture-pinned (go/type-usage-graph). Remaining declaration-ish nodes — type_parameter_list (generics bounds), function_type (callback types) — are parsed but not emitted as standalone symbols; they are structural, not declaration sites. differential go-tools:go is 0 missing / 0 unexplained at the pinned floor; at FULL extent (#914 round, script/m14/tmp/go-799-surface.ts and script/m14/tmp/go-914-sweep.ts) go-tools reads 1,931 files / truth 30,695 / MISSING 0 / unexplained 0, terraform 1,993 files / truth 40,913 / MISSING 0 / unexplained 0, and kubernetes 13,488 files / MISSING 0 / unexplained 0 in four index-range chunks with 0 parse skips — the 10+2 and 22 name-only `implements` rows GO24 describes are gone, not rounded away. analyzer literals that are structural-internal (func_type/function_type, string_literal/interpreted_string_literal) are internal_silent by contract.",

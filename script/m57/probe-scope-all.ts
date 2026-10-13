@@ -92,3 +92,12 @@ async function main() {
 }
 
 main().catch((e) => { console.error("PROBE FAIL", e?.stack || e?.message); process.exit(1) })
+
+// MODULE MARKER. These two m57 probes declare `ROOT` and `ROUNDS` at top level.
+// Neither file imports or exports, so each is a global SCRIPT and both bindings
+// land in the shared global scope — which a program loading several gate scripts
+// at once (script/m62/verify-gate-typecheck-coverage.ts loads 213 files) reports
+// as `Cannot redeclare block-scoped variable`. Marking the file a MODULE scopes its
+// top-level bindings to itself, which is what they always meant. Nothing is
+// exported; this is a scope declaration, not an API.
+export {}

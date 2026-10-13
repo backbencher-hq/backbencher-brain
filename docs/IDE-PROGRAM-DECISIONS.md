@@ -87,6 +87,44 @@ whatever language server the user already runs.
 - **Fork verification availability** — a fork we cannot run locally is
   recorded `blocked`, never claimed.
 
+## Open decision: which governance decision core is current (2026-10-12)
+
+`script/m61/governance_core.ts` and `script/m62/governance_core.ts` are two copies of the
+same core. Four gates import each. Every governance result is therefore an artefact of which
+file imported which copy. `script/m62/verify-duplicate-cores.ts` stays red on this until it
+is ruled on.
+
+**Measured on 2026-10-12, by the gate, re-runnable.** Of the eight shared functions, six
+diverge — and they are not six of a kind:
+
+| function | which copy is ahead |
+|---|---|
+| `ledgerEntryFrom` | **m62**, a strict superset (+3 optional evidence fields) |
+| `projectionMoved` | **m62**, a strict superset (+ a `recordSealedAt` re-seal check) |
+| `entryDrift` | **m62** — its owned-key list is m61's 10 keys **plus `recordSealedAt`**. Adopting m61 would *lose* a drift key. m61's only extra is an explanatory comment. |
+| `validateLedger` | **not drift** — both are milestone-specific by design (m61 hardcodes M61/M29/M44, m62 hardcodes M62/M55/M61). m62's shape is the more general one. |
+| `laneViolations` | **m61**, cosmetically: m62's D-7 message drops the `script/m<n>/` path. One line, worth carrying over. |
+| `isClosable` | **a real policy difference — see below** |
+
+**The one decision left.** Does a `blocked` issue close when its evidence carries a non-empty
+`blockedReason`?
+
+- m61 **yes** — it has an explicit branch, so a blocked entry with a stated reason is
+  closable.
+- m62 **no** — no such branch, so only `verified` entries close.
+
+That single choice decides which entries can ever be sealed. It is a statement about which
+milestone's rules govern, so it is recorded here rather than inferred from a type error.
+
+**Recommendation, if the owner wants one:** adopt **m62** as the single core. Three of the
+six divergences are m62 supersets, the fourth is a milestone-specific pair that is not a
+conflict, the fifth is a one-line message worth carrying over, and only `isClosable` is a
+genuine question. Adopting m61 would lose `recordSealedAt` from the drift rule.
+
+Two `LedgerIssue.evidence` declarations are also short of the real ledger, independently of
+which copy wins: m61 omits `recordCommit` (present on 8/8 issues) and m62 omits
+`blockedReason` (6/8).
+
 ## Research base (2026-08-30)
 
 Findings that ground the decisions above, with sources recorded in the

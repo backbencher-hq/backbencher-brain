@@ -201,6 +201,17 @@ export function deriveTypeScriptUsesTruth(root: any): TruthEdge[] {
     const t = n.type
 
     if (PUSHES.has(t)) {
+      // MEASURED AND REVERTED 2026-10-09. Reading the parameter node under the
+      // SINGULAR `parameter` field too (the fix the `references` oracle needed,
+      // and the analyzer needed) makes THIS label worse: truth 1331 -> 1314,
+      // covered 941 -> 924, unexplained 49 -> 50, cov% 70.7 -> 70.3 against the
+      // same corpus and matching rule. It is not a bug on this side: surface 3
+      // publishes a template read of a PARAMETER on purpose (the `interp-uses`
+      // fixture pins `greet -> name` for a template interpolation of its own
+      // parameter), so a nested arrow's parameter is a name this label WANTS to
+      // publish, and binding it deletes real edges. The `references` rule is the
+      // opposite one — a bound name is not a reference — which is why the same
+      // grammar fact is a fix on one label and an experiment here.
       const next = new Set(bound)
       const fp = n.childForFieldName?.("parameters")
       if (fp) for (const b of paramNames(fp)) next.add(b)
