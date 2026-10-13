@@ -27,11 +27,23 @@
 
 import * as fs from "fs"
 import * as path from "path"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+import { fileURLToPath } from "node:url"
 
-const ROOT = path.resolve(__dirname, "..", "..")
+// `__dirname` / `__filename` do not exist in an ES module, and package.json
+//  declares "type": "module". Reaching for one here means this file dies at LOAD
+//  with a ReferenceError, prints a stack trace, and runs no check at all — while
+//  `tsc` stays silent, because @types/node declares both.
+//  The repo already has the idiom (script/m14/html-ontology-census.ts):
+//    const SELF = fileURLToPath(import.meta.url)
+//  which is correct under tsx, bun and plain node alike.
+const SELF_PATH = fileURLToPath(import.meta.url)
+const HERE = path.dirname(SELF_PATH)
+const ROOT = path.resolve(HERE, "..", "..")
 const SPEC_DIR = path.join(ROOT, "script", "m14", "spec")
 const WASM_DIR = path.join(ROOT, "wasm")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+const CORPUS_ROOT = resolveCorpusRoot(process.cwd()) ?? "CORPUS_ROOT_UNRESOLVED"
 const EVIDENCE = path.join(ROOT, "validation", "m14", "results", "M14.0.F8.json")
 const CENSUS_FILES = process.argv.includes("--files") ? parseInt(process.argv[process.argv.indexOf("--files") + 1]) : 60
 
@@ -75,7 +87,13 @@ const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
   c: { wasm: "tree-sitter-c.wasm", ext: [".c", ".h"], repo: "sqlite" },
   cpp: { wasm: "tree-sitter-cpp.wasm", ext: [".cc", ".cpp", ".h", ".hpp"], repo: "fmt" },
   rust: { wasm: "tree-sitter-rust.wasm", ext: [".rs"], repo: "ripgrep" },
-  go: { wasm: "tree-sitter-go.wasm", ext: [".go"], repo: "go-tools" },
+  // The corpus directory is go_tools (underscore), not go-tools. Every gate that
+  //  asked for the hyphen form was reading a directory that has never existed on any
+  //  machine, so the corpus leg passed VACUOUSLY — no error, no finding, nothing
+  //  measured. script/m13/verify-analyze-e2e-corpus.ts reported exactly this once the
+  //  corpus root was fixed: "corpus go-tools/go/analysis/passes (Go): present … missing".
+  //  Verified against the corpus on disk, which lists go_tools.
+  go: { wasm: "tree-sitter-go.wasm", ext: [".go"], repo: "go_tools" },
   zig: { wasm: "tree-sitter-zig.wasm", ext: [".zig"], repo: "zig" },
   csharp: { wasm: "tree-sitter-c_sharp.wasm", ext: [".cs"], repo: "powershell" },
   dart: { wasm: "tree-sitter-dart.wasm", ext: [".dart"], repo: "proxicall" },
