@@ -62,7 +62,7 @@
  * file's characters.
  */
 import * as path from "path"
-import { statSync } from "fs"
+import { readFileSync, statSync } from "fs"
 import { ASTEngine } from "./engine"
 import { dirOf, fileClaimForTarget, projectRelativeOf } from "./file-claim"
 import { applyDocumentScope, documentDirScope } from "./project-scoped-identity"
@@ -90,16 +90,24 @@ const DEPENDENCY_MANIFESTS = ["Cargo.toml", "Project.toml", "JuliaProject.toml",
  * MEASURED over the whole admitted population (`.tmp-toml/imports-claim-probe2.mts`, 331 `imports`
  * edges): 318 candidates verify, 13 name nothing, and the filesystem test below agrees with the
  * gate's admitted-list verdict on all 331 — zero claimed-but-refuted, zero unclaimed-but-verifiable.
- * The 13 are cargo's own `cargo_add` fixtures, whose `path = "./dependency"` intentionally names a
- * directory that does not exist because the test asserts that failure; they are ruled with a count
- * rather than marked external to make the number smaller.
+ * The 13 are cargo's own `cargo_add` fixtures and Pkg.jl's `WorkspacePathResolution` fixture, whose
+ * `path` intentionally names a directory that does not exist beside the declaring manifest; they are
+ * ruled with a count rather than marked external to make the number smaller.
+ *
+ * THE COUNT MOVED ON 2026-10-13, and the direction is the point: 8 of those fixtures declared Cargo's
+ * `base =`, and THREE of them resolve through the nearest `.cargo/config.toml` `[path-bases]` entry
+ * (see the fallback in the body) into a manifest the project carries. Measured over the SAME whole
+ * population, that took the unresolved column from 13 to 10 and `extOK` from 318 to 321, with the
+ * edge count unchanged at 331. The other five `base` sites have no config in their ancestor chain —
+ * the base is undefined and Cargo itself would refuse — so they stay unresolved along with the five
+ * paths that name nothing beside their manifest, and those 10 are the ruling.
  *
  * Null is returned — never a guess — when there is no project root, when the value is not a plain
  * relative path (a URL, an absolute path, a glob, whitespace), or when it escapes the project.
  * A WRONG claim is worse than no claim: the gate counts a refutation against the lane exactly as it
  * counts an unresolved edge, and a fabricated candidate would manufacture the refutation.
  */
-function dependencyFileClaim(written: string, filePath: string, projectRoot: string | null): string | null {
+function dependencyFileClaim(written: string, filePath: string, projectRoot: string | null, base: string | null): string | null {
   // ON THE SHARED GUARD since 2026-10-11. The arithmetic stays TOML's own — a `path` dependency names
   // a DIRECTORY, and the file the project can confirm is the manifest inside it — while the admitting
   // (admitted extension, project boundary, `statSync`) is `fileClaimForTarget`.
@@ -126,13 +134,158 @@ function dependencyFileClaim(written: string, filePath: string, projectRoot: str
     for (const m of DEPENDENCY_MANIFESTS) extraCandidates.push(posix.length === 0 ? m : `${posix}/${m}`)
     if (posix.length > 0) extraCandidates.push(posix)
   }
-  return fileClaimForTarget({
+  const standard = fileClaimForTarget({
     projectRoot: root,
     filePath,
     written,
     admittedExtensions: ["toml"],
     extraCandidates,
   })
+  if (standard !== null) return standard
+  // ── CARGO'S `path-bases` SPELLING, tried ONLY as a fallback ───────────────────────────────────
+  //
+  // A path dependency may name a BASE instead of spelling the whole path:
+  //
+  //     cargo-features = ["path-bases"]
+  //     [dependencies]
+  //     dep = { version = "0.0.0", base = "my_base", path = "./dependency" }
+  //
+  // and the base is a `[path-bases]` entry in a `.cargo/config.toml`:
+  //
+  //     [path-bases]
+  //     my_base = "deps"
+  //
+  // Cargo resolves the dependency at `resolve(base, path)` (`src/workspace/parser/mod.rs:2456-2483`,
+  // `lookup_path_base`), with a config path itself relative to the directory CONTAINING `.cargo`
+  // (`ConfigRelativePath::resolve_path`). MEASURED over the whole admitted population: 8 `imports`
+  // edges declared a `base`, and THREE of them resolve to a manifest the project really carries
+  // (`cargo_add/detect_workspace_inherit_path_base/in/Cargo.toml` → `in/deps/dependency/Cargo.toml`;
+  // two more fixtures with `my_base = "."`). For those the edge is a REAL dependency whose claim was
+  // simply not computable without this rule; the other five name a base their fixture tree does not
+  // define, so no spelling of them names anything and they stay unresolved on purpose.
+  //
+  // FALLBACK-ONLY, and that is the safety property rather than a nicety: the standard spellings are
+  // tried first and returned unchanged when one of them names a file, so this rule can only ever ADD
+  // a claim where the lane previously emitted NOTHING. It cannot move, replace or re-point a claim
+  // that already existed, which is what makes a wrong pick here impossible to reach through a path
+  // the old code already handled.
+  if (base === null) return null
+  const baseCandidates = pathBaseCandidates(base, written, filePath, root)
+  if (baseCandidates.length === 0) return null
+  return fileClaimForTarget({
+    projectRoot: root,
+    filePath,
+    written,
+    admittedExtensions: ["toml"],
+    extraCandidates: [...baseCandidates, ...extraCandidates],
+  })
+}
+
+/**
+ * THE VALUE A `.cargo/config.toml` GIVES A `[path-bases]` NAME, or null when this reader will not
+ * vouch for it.
+ *
+ * WHY A TEXT READ OF THE CONFIG, when the analyzer's own header says it reads AST nodes and never a
+ * file's characters: the config is NOT the document under analysis. It is an external artifact
+ * consulted to decide whether a CLAIM IS TRUE, exactly like the `statSync` the file claim already
+ * performs; the analyzed document is still read as AST nodes only. This is the same boundary the
+ * lane already crossed for the manifest's presence, and it is stated rather than implied.
+ *
+ * THE READER IS NARROW ON PURPOSE AND REFUSES RATHER THAN GUESSES. Null is returned for: a dotted
+ * or array-of-tables header, an unterminated quote, a line with no `=`, a value that is not a plain
+ * quoted string, any backslash inside a value, and TWO entries for the same base. Every one of those
+ * refusals leaves the edge in the state it is in today (unresolved) — a mis-read would attach a
+ * claim to the wrong file, which the arbiter cannot see and which this lane's bar counts as worse
+ * than a gap. Pure String throughout: no regex, no backtracking.
+ */
+function pathBaseValueIn(configText: string, base: string): string | null {
+  let inSection = false
+  let found: string | null = null
+  for (const raw of configText.split("\n")) {
+    const uncommented = stripCommentOutsideQuotes(raw)
+    if (uncommented === null) return null
+    const line = uncommented.trim()
+    if (line.length === 0) continue
+    if (line.charCodeAt(0) === 91) {
+      // 91 `[` — a table header. Only the exact `[path-bases]` form is understood.
+      const close = line.indexOf("]")
+      if (close < 0) return null
+      inSection = line.slice(1, close).trim() === "path-bases"
+      continue
+    }
+    if (!inSection) continue
+    const eq = line.indexOf("=")
+    if (eq < 0) return null
+    if (unquoteKey(line.slice(0, eq).trim()) !== base) continue
+    const value = line.slice(eq + 1).trim()
+    if (value.length < 2) return null
+    const q = value.charCodeAt(0)
+    if ((q !== 34 && q !== 39) || value.charCodeAt(value.length - 1) !== q) return null
+    const inner = value.slice(1, -1)
+    if (inner.includes("\\")) return null
+    if (found !== null) return null
+    found = inner
+  }
+  return found
+}
+
+/**
+ * The part of a line before a `#` that is OUTSIDE quotes, or null when the line's quoting is not
+ * understood. 92 is `\`, 34 `"`, 39 `'`, 35 `#`.
+ */
+function stripCommentOutsideQuotes(line: string): string | null {
+  let quote = 0
+  for (let i = 0; i < line.length; i++) {
+    const c = line.charCodeAt(i)
+    if (quote !== 0) {
+      if (c === 92) { i++; continue }
+      if (c === quote) quote = 0
+      continue
+    }
+    if (c === 34 || c === 39) { quote = c; continue }
+    if (c === 35) return line.slice(0, i)
+  }
+  return quote === 0 ? line : null
+}
+
+/**
+ * The project-relative candidate paths a `base`-carrying dependency resolves to, or an empty array.
+ *
+ * Cargo's config discovery walks UP from the working directory; a per-file analyzer has no working
+ * directory, so it walks up from the MANIFEST's directory to the project root, nearest first, and
+ * takes the first config that defines the base. A config that exists but does not define the base is
+ * passed over rather than treated as authoritative, because Cargo MERGES the config chain and a
+ * higher level may define it. A candidate that escapes the project is refused, and an empty result
+ * means "no claim" — never a guess.
+ */
+function pathBaseCandidates(base: string, written: string, filePath: string, projectRoot: string): string[] {
+  const root = path.resolve(projectRoot)
+  let dir = path.dirname(path.resolve(filePath))
+  // 64 levels is a bound on a pathological tree, not a policy: the walk already stops at the project
+  // root, and at the filesystem root for a `projectRoot` that is not an ancestor.
+  for (let depth = 0; depth < 64; depth++) {
+    const configPath = path.join(dir, ".cargo", "config.toml")
+    let text: string | null = null
+    try {
+      if (statSync(configPath).isFile()) text = readFileSync(configPath, "utf8")
+    } catch { text = null }
+    if (text !== null) {
+      const value = pathBaseValueIn(text, base)
+      if (value !== null) {
+        const joined = path.resolve(path.resolve(dir, value), written.trim())
+        const rel = path.relative(root, joined).split(path.sep).join("/")
+        if (rel.length === 0 || rel === ".." || rel.startsWith("../")) return []
+        const out: string[] = []
+        for (const m of DEPENDENCY_MANIFESTS) out.push(`${rel}/${m}`)
+        out.push(rel)
+        return out
+      }
+    }
+    const parent = path.dirname(dir)
+    if (dir === root || parent === dir) break
+    dir = parent
+  }
+  return []
 }
 
 /** TOML's bare-key alphabet is A-Za-z0-9_-; a quoted key is anything in quotes. */
@@ -721,18 +874,24 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
       "sources",
       "patch.crates-io",
     ])
-    /** `foo = { path = "../foo" }` sites, emitted after the walk. */
-    const pendingImports: { source: string; pathValue: string; section: string; line: number }[] = []
+    /** `foo = { path = "../foo" }` sites, emitted after the walk. `base` is Cargo's `path-bases`
+     *  name when the site declares one — `foo = { base = "my_base", path = "./dependency" }` — and it
+     *  is what makes the claim computable at all (see `dependencyFileClaim`). */
+    const pendingImports: { source: string; pathValue: string; section: string; line: number; base: string | null }[] = []
 
     /**
-     * The `path` a dependency declares, read off the inline table.
+     * A STRING MEMBER of a dependency's inline table, by its FINAL key segment — or null.
      *
      * The DEPENDENCY is the outer key and `path` is the inner one, so a probe that
      * reads the outer key as `path` sees nothing at all — which is what the
      * applicability audit's first version did, and it reported 0 on a population
      * the corpus carries 331 times.
+     *
+     * `base` is read the same way and for the same reason: it is a member of the same inline table
+     * and it decides WHICH DIRECTORY the `path` is relative to, so an analyzer that ignores it folds
+     * the path against the wrong base and finds nothing.
      */
-    const pathDependencyOf = (pair: Node): string | null => {
+    const stringMemberOf = (pair: Node, leaf: string): string | null => {
       const value = valueOf(pair)
       if (!value || value.type !== "inline_table") return null
       for (const inner of (value.namedChildren ?? []) as Node[]) {
@@ -740,12 +899,13 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
         const ik = keyOf(inner)
         if (!ik) continue
         const isegs = segmentsOf(ik)
-        if (isegs[isegs.length - 1] !== "path") continue
+        if (isegs[isegs.length - 1] !== leaf) continue
         const v = stringValueOf(valueOf(inner))
         if (v && v.length > 0) return v
       }
       return null
     }
+    const pathDependencyOf = (pair: Node): string | null => stringMemberOf(pair, "path")
 
     const emitKey = (pair: Node, path: string, owner: string): void => {
       const keyNode = keyOf(pair)
@@ -907,6 +1067,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
                 pathValue: depPath,
                 section: path,
                 line: ck.startPosition.row + 1,
+                base: stringMemberOf(child, "base"),
               })
             }
           }
@@ -1062,19 +1223,21 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // nothing at all — an honest option that left every `imports` edge unresolved, which is exactly
     // the state this replaces. The check is one `statSync` per candidate on the ALREADY-COMPUTED
     // absolute path, it never decides a symbol identity, and it is the same fact the applicability
-    // audit measures. The 13 that name nothing are cargo's own `cargo_add` fixtures, where
-    // `path = "./dependency"` is written to NOT exist because the test asserts that failure; they
-    // are ruled with a count in the completeness spec rather than marked external to shrink the
-    // number, and they stay unresolved on purpose.
+    // audit measures. The ones that name nothing are cargo's own `cargo_add` fixtures and Pkg.jl's
+    // `WorkspacePathResolution` fixture; they are ruled with a count in the completeness spec rather
+    // than marked external to shrink the number, and they stay unresolved on purpose. THREE of the
+    // original thirteen are claimed since 2026-10-13 through Cargo's `[path-bases]` (see the
+    // fallback in `dependencyFileClaim`), and each claim is VERIFIED by the project's own admitted
+    // list — the row reads `extOK 321`, `unresolved 10` over the same whole population.
     let importEdges = 0
-    for (const { source, pathValue, section, line } of pendingImports) {
+    for (const { source, pathValue, section, line, base } of pendingImports) {
       importEdges++
       // THE FILE CLAIM, or nothing. A `path` dependency names a directory, and the statement the
       // gate can CHECK is that this target names a file of the project (`FILE_CLAIM_KEY`). It is
       // emitted only where the manifest is really there (see `dependencyFileClaim`), so the gate
       // verifies it; a target naming nothing carries NO claim and stays an unresolved edge that
       // this lane rules with a count, rather than a statement the project would refute.
-      const fileClaim = dependencyFileClaim(pathValue, filePath, projectRoot)
+      const fileClaim = dependencyFileClaim(pathValue, filePath, projectRoot, base)
       relationships.push({
         source: qualified(source),
         target: pathValue,
