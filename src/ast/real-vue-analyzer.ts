@@ -735,6 +735,42 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         shiftMetadataLineMirrors(s.metadata as Record<string, unknown> | undefined, lineOffset)
         symbols.push(s)
       }
+      // THE DELEGATE'S ENDPOINT SPELLING IS NOT THE SFC'S, AND THIS SEAM IS WHERE
+      // THE TWO ARE RECONCILED (M14 cross-lane, 2026-10-13; the html seam carries
+      // the same block — see real-html-analyzer.ts).
+      //
+      // The javascript delegate re-spelled two endpoint classes for its OWN
+      // resolver's reasons: a LOCAL module's `imports` target moved from
+      // `<specifier>:<item>` to the bare `<item>` with the specifier moved into
+      // `metadata.module`, and an `overrides` target moved from `<Base>.<member>`
+      // to the bare `<member>`. The TS delegate re-spells neither (its rows still
+      // carry `Base.member`, which is why `ts-class-heritage-seam` has stayed
+      // green), so both halves below are written to fire only on the re-spelled
+      // shape and to leave every already-qualified target alone.
+      //
+      // These pins are BYTE-IDENTICAL at the recording revision `cd8e1011b` and at
+      // original main `1b71d837c`, and PASS at both:
+      //
+      //   vue/options-rename-identity  imports   -> `./Child.vue:Child`
+      //   vue/script-relations         imports   -> `./helper:helper`
+      //   vue/script-relations         overrides -> `Base.render`
+      //   vue/template-lines-825       imports   -> `./ChildPanel.vue:ChildPanel`
+      //   svelte/bare-module-block     imports   -> `./palette.js:PALETTE`
+      //   svelte/error-recovery        imports   -> `./Alpha.svelte:Alpha`
+      //   svelte/relationship-kinds    imports   -> `./helper:helper` · overrides -> `Base.render`
+      //   svelte/template-lines-825    imports   -> `./Child.svelte:Child`
+      //
+      // TRANSLATION, NOT SUPPRESSION — the same contract the `(file)` actor below
+      // gets: every metadata field the delegate wrote is kept (`module` included),
+      // and only the endpoint the SFC publishes is respelled.
+      const delegateBases = new Map<string, string>()
+      for (const rb of (sub.relationships ?? []) as any[]) {
+        if (rb?.type !== ASTEngine.RelationshipType.Extends) continue
+        if (typeof rb.source === "string" && rb.source !== "" && typeof rb.target === "string" && rb.target !== "") {
+          delegateBases.set(rb.source, rb.target)
+        }
+      }
+
       for (const r of sub.relationships ?? []) {
         const tgt = (r.target ?? "") as string
         if (VUE_COMPILER_MACROS.has(tgt)) continue
@@ -795,6 +831,34 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `svelte/relationship-kind-catalog`, `html/inline-embedded-code`,
         // `html/embedded-heritage`, `html/embedded-origin-marks`).
         if (r.source === DELEGATE_FILE_ACTOR) r.source = moduleName
+        // 1. `<specifier>:<item>` — the module half the delegate moved into metadata.
+        //    A colon is the delegate's OWN qualified form (an external specifier like
+        //    `vuex:mapState` keeps it) and a `/` means a path-shaped target, never a
+        //    bare item name; both are left alone.
+        if (r.type === ASTEngine.RelationshipType.Imports) {
+          const mod = r.metadata?.module
+          if (
+            typeof mod === "string" &&
+            mod !== "" &&
+            typeof r.target === "string" &&
+            r.target !== "" &&
+            !r.target.includes(":") &&
+            !r.target.includes("/")
+          ) {
+            r.target = `${mod}:${r.target}`
+          }
+        }
+        // 2. `<Base>.<member>` — the owner half the delegate dropped, read back from
+        //    the delegate's OWN `extends` row for the source's owner (the same input
+        //    the delegate used before it dropped the owner). A dotted target is
+        //    already qualified and is left alone.
+        if (r.type === ASTEngine.RelationshipType.Overrides) {
+          if (typeof r.source === "string" && typeof r.target === "string" && r.target !== "" && !r.target.includes(".")) {
+            const owner = r.source.slice(0, r.source.lastIndexOf("."))
+            const base = owner === "" ? undefined : delegateBases.get(owner)
+            if (base) r.target = `${base}.${r.target}`
+          }
+        }
         r.metadata = { ...(r.metadata ?? {}), sfcDelegated: true, sfcLineOffset: lineOffset }
         relationships.push(r)
       }
