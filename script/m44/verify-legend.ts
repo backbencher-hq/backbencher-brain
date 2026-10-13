@@ -388,7 +388,39 @@ async function main(): Promise<void> {
         }
         mutant(`${d.name} — planted=${planted}, ${caughtBy ? "caught by " + caughtBy.assertion : "MISSED"}`, planted && caughtBy !== undefined, caughtBy ? "" : "the mutant was NOT caught")
       } catch (e) {
-        mutant(`${d.name} (mutant failed to load — counts as detected)`, true, String(e).slice(0, 120))
+        // This arm is the one the crash-honesty gate was written from. It recorded a
+        // mutant that failed to LOAD as detected, on the reasoning that a loud skip is
+        // better than a silent one — but the verdict is what a reader trusts, and the
+        // reasoning inverted the result.
+        //
+        // CANARY: pointing every mutant's import at a non-existent path, so that not
+        // one of the four could load, produced
+        //
+        //     U4: VERIFIED (25/25 passed, 4/4 mutants caught)     exit 0
+        //
+        // A perfect catch ratio with nothing executed. The gate's own comment three
+        // lines earlier says the opposite: "a mutant that fails to load is hollow
+        // evidence (it must be exercised)".
+        //
+        // Recorded as NOT caught, with the real error, per the rule
+        // script/m60/objc-mutant-check.ts:29 states: "a survivor reported as caught is
+        // the worst outcome available here, because it retires a defect class that is
+        // still live".
+        //
+        // A RUNTIME throw from d.probe is still a detection — the mutant loaded and ran,
+        // and the defect manifested. Only "nothing executed" is a false pass.
+        const code = (e as NodeJS.ErrnoException)?.code ?? ""
+        const couldNotLoad =
+          code.startsWith("ERR_MODULE") || code === "ERR_UNKNOWN_FILE_EXTENSION" || e instanceof SyntaxError
+        if (couldNotLoad) {
+          mutant(
+            `${d.name} (MUTANT COULD NOT BE EXERCISED — broken harness, not a detection)`,
+            false,
+            String(e).slice(0, 120),
+          )
+        } else {
+          mutant(`${d.name} (violated at runtime — caught)`, true, String(e).slice(0, 120))
+        }
       }
     }
 

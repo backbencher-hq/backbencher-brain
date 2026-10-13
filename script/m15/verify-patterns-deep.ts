@@ -16,6 +16,9 @@ import { detectOrphans } from "../../src/intelligence/patterns/orphans"
 import { detectIndexRules } from "../../src/intelligence/patterns/rules"
 import { PatternBrainTools } from "../../src/ast/tools"
 import { fileURLToPath } from "node:url"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+import { resolveOptionalCorpus } from "../lib/optional-corpus.ts"
+const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(label: string, cond: boolean, detail?: string) { checks++; if (cond) passed++; else { failed++; console.log("  FAIL: " + label + (detail ? " — " + detail : "")) } }
@@ -167,7 +170,20 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   // P5: real-repo e2e — real repos on disk (rake/lib + graphql-js/src)
   // ═══════════════════════════════════════════════════════════════════
   {
-    const rake = "$HOME/fixtures/repositories/rake/lib"
+    //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+    //  each repo path below resolved to a filesystem that does not exist here and the leg
+    //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+    //  candidates in order and names them all when none exists.
+    //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+    //  each repo path below resolved to a filesystem that does not exist here and the leg
+    //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+    //  candidates in order and names them all when none exists.
+    // Per-repo corpus paths were built on the literal foreign root
+    //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+    //  each repo path below resolved to a filesystem that does not exist here and the leg
+    //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+    //  candidates in order and names them all when none exists.
+    const rake = `${CORPUS_BASE}/rake/lib`
     if (existsSync(rake)) {
       const projectId = await indexProject(rake)
       try {
@@ -184,7 +200,11 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
       ck("P5: real repo present", false, "missing " + rake)
     }
     // Second real repo: graphql-js/src (TypeScript) via the full PatternBrainTools path
-    const gql = "$HOME/TypeScript/src/compiler"
+      // WAS a literal foreign path — the owner's clone on the OTHER laptop, absent here, so
+//  this leg measured nothing. Resolved through script/lib/optional-corpus.ts (env
+//  override first, then the known locations) so a machine that HAS the clone uses it.
+  const gql_ROOT = resolveOptionalCorpus("TypeScript", "BB_TYPESCRIPT_REPO")
+    const gql = gql_ROOT === null ? "gql_UNRESOLVED" : path.join(gql_ROOT, "src/compiler")
     if (existsSync(gql)) {
       const projectId = await indexProject(gql)
       try {

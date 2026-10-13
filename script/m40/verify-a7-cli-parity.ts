@@ -148,9 +148,16 @@ try {
 
 console.log(`A7 cli-parity: ${passed} passed, ${failed} failed, ${negatives} negatives${MUTATE ? " [MUTATION RUN]" : ""}`)
 if (failed === 0 && !MUTATE && !CONTROL && process.env.BB_M40_READ_ONLY !== "1") {
-  const { mkdirSync: mkd, writeFileSync: wfs } = await import("node:fs")
+  // M61: evidence is written SEALED — see the sibling note in
+  // verify-a2-bounded-post. The raw writeFileSync this replaces stamped an
+  // unsealed record on every run and, on a re-record, dropped the `bbSeal`
+  // envelope the committed evidence carried (measured 2026-10-12: a re-run of
+  // this gate de-sealed A7.json while its measured values — 24 passed, 0
+  // failed, 5 negatives — were unchanged).
+  const { mkdirSync: mkd } = await import("node:fs")
+  const { writeSealed } = await import("../lib/evidence")
   mkd(RESULTS_DIR, { recursive: true })
-  wfs(path.join(RESULTS_DIR, "A7.json"), JSON.stringify({
+  writeSealed(path.join(RESULTS_DIR, "A7.json"), {
     status: "verified",
     currentCommit: (() => { try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch { return "unknown" } })(),
     workingTreeRelevantChanges: [],
@@ -160,7 +167,7 @@ if (failed === 0 && !MUTATE && !CONTROL && process.env.BB_M40_READ_ONLY !== "1")
     passed,
     failed,
     negativeCases: negatives,
-  }, null, 2) + "\n")
-  console.log("evidence stamped: validation/m40/results/A7.json")
+  })
+  console.log("evidence stamped (sealed): validation/m40/results/A7.json")
 }
 if (failed !== 0) process.exit(1)

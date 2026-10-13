@@ -85,7 +85,19 @@ NoDefault()
 const cli: any = await import(path.join(ROOT, "src/cli/index"))
 await cli.runCli(["index", proj])
 
-const Database = (await import("better-sqlite3")).default
+// THE DB IS OPENED THROUGH THE PROJECT'S OWN DRIVER, not better-sqlite3 directly
+// (`src/storage/db.node.ts` / `db.bun.ts`, the same pair `BrainDatabase` selects
+// between). Importing better-sqlite3 here made this gate unable to start under
+// the runner the pipeline declares for it: `bun run script/m40/verify-import-resolution.ts`
+// dies with `'better-sqlite3' is not yet supported in Bun … ERR_DLOPEN_FAILED`
+// before the first check runs, so `verify` and `verify:m40` stopped at this step
+// and the gate read as "not run" rather than as red. Measured both ways: crash
+// under `bun`, 7 passed / 0 failed under `npx tsx`. The driver pair exists
+// precisely so a script does not have to know which runtime it is on.
+const isBun = typeof (globalThis as any).Bun !== "undefined"
+const { openDatabase } = await import(
+  path.join(ROOT, isBun ? "src/storage/db.bun.ts" : "src/storage/db.node.ts"),
+) as typeof import("../../src/storage/db.node.ts")
 const { bbProjectsDir } = await import(path.join(ROOT, "src/util/bb-data-dir"))
 
 // find the project dir the CLI just wrote
@@ -95,7 +107,7 @@ let db: any = null
 for (const d of dirs) {
   const candidate = path.join(projectsRoot, d, "brain.db")
   if (!existsSync(candidate)) continue
-  const probe = new Database(candidate, { readonly: true })
+  const probe = openDatabase(candidate, { readonly: true })
   const n = probe.prepare(`SELECT count(*) c FROM brain_file WHERE relative_path LIKE '%app.js'`).get() as any
   if (n?.c > 0) { db = probe; break }
   probe.close()
@@ -152,9 +164,19 @@ check("JD2.7 NEGATIVE: a default import of a module with no default export is RE
 
 // 6. no import edge may point at a symbol its target file does not export
 {
+  // The names a module's surface offers. A NAMED default declaration contributes
+  // TWO: the public name it is exported UNDER (`default`, which is what JD-J14
+  // measured and pinned) and the declaration's own name, which is the symbol a
+  // default import actually reaches and which the analyzer records in
+  // `metadata.localName` — the same field the resolver recovers the target from.
+  // Without the second, this check contradicts JD2.4 above: that check requires
+  // `import Def from "./lib.js"` to attach to the symbol `Main`, while a surface
+  // built only from `target_external` says the module never exported `Main`.
+  // (Before JD-J14 renamed the row's target, both passed by accident.)
   const exportNames = new Set(
     (db.prepare(
-      `SELECT DISTINCT target_external AS n FROM brain_relationship WHERE relationship_type='exports'`,
+      `SELECT DISTINCT COALESCE(json_extract(metadata, '$.localName'), target_external) AS n
+         FROM brain_relationship WHERE relationship_type='exports'`,
     ).all() as any[]).map((r) => r.n),
   )
   const bad = imports.filter((r) => r.name && r.tgt.includes(":") && !exportNames.has(r.name))

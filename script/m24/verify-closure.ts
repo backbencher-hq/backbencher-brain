@@ -33,6 +33,29 @@ const PACKAGE_PATH = path.join(ROOT, "package.json")
 // gate would create a self-referential stale-commit trap (it would judge
 // X1.json before this run writes it). The closure gate audits governance's
 // ledger + wiring instead.
+// HOW LONG THIS TAKES, measured rather than assumed, because the number decides whether a
+// timeout means anything.
+//
+// MEASURED 2026-10-12 on an otherwise idle machine: 422 seconds — 7m02s — exit 0. The suite
+// that runs this gate gives it a 15-minute budget (verify-suite.mts, `spawnSync({ timeout:
+// 15 * 60_000 })`), so the real run has 2.1x headroom and the budget is not the binding
+// constraint.
+//
+// The worst case is NOT the same number: each sub-verifier below is spawned with
+// `timeout: 300_000`, so nine of them is 45 minutes, which exceeds the 15-minute outer
+// budget. That arithmetic is worth keeping, because it is what makes a timeout
+// INTERPRETABLE — but it did not cause anything this session.
+//
+// WHAT ACTUALLY PRODUCED `exit=143` THREE TIMES, recorded so nobody re-derives it: this gate
+// was sharing the machine with another `verify-closure.ts`. Node's spawnSync sends SIGTERM
+// at the timeout, 128+15 = 143, and that is not a verdict. Two of the three occurrences
+// were my own fault — an orphaned run from an interrupted suite, and long foreground
+// commands competing for the same cores. A third cause is its own defect class: a gate
+// killed by a timeout leaves its evidence half-written, which is how `m24 governance` then
+// reported an apparently unrelated `G1: … P1:stale-commit,P2:stale-commit`. One cause, two
+// failures, and fixing the governance check alone would have hidden it.
+//
+// So: if this leg reports 143, look for a competing process before looking at this gate.
 const SUITE: Array<{ code: string; script: string; evidenceFile: string }> = [
   { code: "P1", script: "script/m24/verify-positions.ts", evidenceFile: "P1.json" },
   { code: "P2", script: "script/m24/verify-freshness.ts", evidenceFile: "P2.json" },
@@ -120,7 +143,7 @@ function fingerprint(evidenceFile: string): string | null {
     console.error(`refused: ${evidenceFile} — ${read.reason} (kind=${read.kind}); not fingerprintable`)
     return null
   }
-  const raw = read.record
+  const raw = read.record as EvidenceShape
   delete raw.generatedAt
   delete raw.bbSeal
   for (const run of raw.runs ?? []) {
@@ -128,7 +151,31 @@ function fingerprint(evidenceFile: string): string | null {
       delete f.p95WarmMs // declared measurement, excluded from the fingerprint
     }
   }
-  return JSON.stringify(raw)
+  // NESTED timestamps count too. `delete raw.generatedAt` above only reaches the
+  // top level, and D1.json carries four `claimSources[]` entries that each record
+  // their own `generatedAt`. So re-running the suite changed those four while
+  // leaving everything else identical, and this check reported D1 as NOT
+  // byte-identical — a structural false FAIL that no run could ever satisfy,
+  // because the gate re-runs its own suite on the way to computing this.
+  //
+  // Stripped by KEY rather than by position, so a timestamp appearing at any depth
+  // is excluded and a field that merely shares a name elsewhere is not silently
+  // kept by accident. `p95WarmMs` is excluded the same way for the same reason: it
+  // is a declared measurement, not a claim about the code.
+  const TIMESTAMP_KEYS = new Set(["generatedAt", "sealedAt"])
+  const stripVolatile = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(stripVolatile)
+    if (node !== null && typeof node === "object") {
+      const out: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+        if (TIMESTAMP_KEYS.has(k) || k === "p95WarmMs") continue
+        out[k] = stripVolatile(v)
+      }
+      return out
+    }
+    return node
+  }
+  return JSON.stringify(stripVolatile(raw))
 }
 
 console.log("M24.X1 closure-gate verifier\n")
@@ -146,11 +193,45 @@ for (const { code, script } of SUITE) {
 // ---------------------------------------------------------------------------
 // §6 mutant-set coverage audit
 // ---------------------------------------------------------------------------
+/** A sealed M24 evidence record, as this gate reads it. */
+interface EvidenceShape {
+  issue?: string
+  code?: string
+  status?: string
+  currentCommit?: string
+  passed?: number
+  failed?: number
+  verdict?: VerdictShape
+  mutants?: Array<{ caught: boolean; name?: string; category?: string }>
+  runs?: Array<{ status?: string; features?: Array<{ p95WarmMs?: number; passed?: boolean }> }>
+  issues?: Array<{ code: string; status: string; evidence?: Record<string, unknown> }>
+  [k: string]: unknown
+}
+
+/**
+ * The verdict block a sealed M24 record carries. Declared rather than cast inline so
+ * a change to what the verifiers write is caught here instead of producing
+ * `undefined` at runtime.
+ */
+interface VerdictShape {
+  mutantsCaught?: number
+  mutantsTotal?: number
+  ok?: boolean
+  realComponentFailures?: number
+  anchorDrift?: string | null
+}
+
 for (const { category, code, mutantName } of SECTION6_CATEGORIES) {
   const evPath = path.join(RESULTS, SUITE.find((s) => s.code === code)!.evidenceFile)
   let covered = false
   if (existsSync(evPath)) {
-    const ev = parseSealedRecord(evPath)
+    // The shape this gate actually reads off a sealed record. parseSealedRecord is
+    // generic with a default of Record<string, unknown>, so calling it bare types
+    // `verdict` as unknown and every property read off it is a diagnostic about a
+    // value the compiler was never told anything about. Stating the shape is what
+    // makes those reads checkable — and it is the shape validation/m24 carries,
+    // verified against validation/m24/results/L2.json.
+    const ev = parseSealedRecord<{ verdict?: VerdictShape; mutants?: Array<{ caught: boolean }> }>(evPath)
     const verdict = ev.verdict
     const mutantsCaught = verdict?.mutantsCaught ?? ev.mutants?.filter((m: any) => m.caught).length ?? 0
     const mutantsTotal = verdict?.mutantsTotal ?? ev.mutants?.length ?? 0
@@ -179,7 +260,7 @@ for (const lang of LAUNCH_LANGUAGES) {
 }
 // The six feature operations must all be measured with budgets met on at
 // least one verified harness leg.
-const v1 = parseSealedRecord(path.join(RESULTS, "V1.json"))
+const v1 = parseSealedRecord<EvidenceShape>(path.join(RESULTS, "V1.json"))
 const verifiedLeg = (v1.runs ?? []).find((r: any) => r.status === "verified")
 for (const feat of SIX_FEATURES) {
   const op = feat === "callHierarchy" ? "prepareCallHierarchy" : feat
@@ -196,34 +277,150 @@ check("X1: D1 evidence verified (claim levels + limitations)", (parseSealedRecor
 check("X1: doc states claim levels", doc.includes("Claim levels"))
 check("X1: doc states limitations", doc.includes("## Limitations"))
 // Item 5: ledger clean — no PENDING cell.
-const ledger = parseSealedRecord(MANIFEST_PATH)
-const pending = ledger.issues.filter((i: any) => i.status === "planned")
+const ledger = parseSealedRecord<EvidenceShape>(MANIFEST_PATH)
+// `issues` is optional on EvidenceShape, and it SHOULD be: a sealed record with no
+// issues array is not impossible, and a gate that assumes one would throw on it
+// instead of reporting drift. So the absence is handled and REPORTED rather than
+// asserted away with `!`.
+const ledgerIssues = ledger.issues ?? []
+const pending = ledgerIssues.filter((i) => i.status === "planned")
 check("X1: ledger has no pending non-X1 cell", pending.every((i: any) => i.code === "X1"), pending.map((i: any) => i.code).join(","))
+
+/**
+ * The current HEAD, or "unknown" if git cannot be read. Used BEFORE the existing
+ * `headCommit` below, which is computed after pass 2 and so cannot inform it.
+ */
+function readHead(): string {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
+  } catch {
+    return "unknown"
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Pass 2: byte-identical regeneration — run the suite again and diff
 // evidence fingerprints (modulo declared generatedAt timestamp).
 // ---------------------------------------------------------------------------
 console.log("pass 2: byte-identical regeneration check")
+//
+// A COMMIT LANDING DURING THIS LOOP MAKES THE COMPARISON INAPPLICABLE, NOT FAILED.
+//
+// `currentCommit` is part of every evidence file and is NOT in the volatile-key set below
+// (which covers generatedAt and sealedAt). So if HEAD moves between a verifier's two
+// captures, the fingerprints differ for a reason that has nothing to do with whether the
+// evidence producer is deterministic.
+//
+// MEASURED 2026-10-12. A commit was made while the suite was running. The two visible
+// failures were:
+//
+//     X1: P1 evidence byte-identical (modulo generatedAt)                        FAIL
+//     G1: every non-planned ledger item has matching persisted evidence at the
+//         current commit — X1:stale-commit                                       FAIL
+//
+// One workflow race, presented as two governance defects. The first accuses the evidence
+// producer of nondeterminism it does not have; the second reports a ledger entry as stale
+// because the commit it was stamped against is no longer HEAD. Neither is true, and fixing
+// either check on its own would have hidden the cause — which is the second time in this
+// session that one cause presented as two failures (m24 closure hitting its timeout did the
+// same to m24 governance).
+//
+// So HEAD is watched, and a movement makes the verdict INAPPLICABLE and says so. "Not
+// evaluated, HEAD moved from abc to def, re-run on a quiet tree" is a true statement that
+// tells the reader what to do. "Not byte-identical" is a false accusation.
+const headAtPass2 = readHead()
 let byteIdentical = true
+let headMovedDuringRun = false
+let skippedForHeadMove = 0
 for (const { code, script, evidenceFile } of SUITE) {
   const before = fingerprint(evidenceFile)
   const exit = runVerifier(script)
   const after = fingerprint(evidenceFile)
+  if (readHead() !== headAtPass2) {
+    headMovedDuringRun = true
+    skippedForHeadMove++
+    continue
+  }
   if (exit !== 0) {
     byteIdentical = false
     check(`X1: ${code} regeneration run passes`, false, `exit=${exit}`)
     continue
   }
   check(`X1: ${code} regeneration run passes`, true)
+  //
+  // A SINGLE DIFFERING CAPTURE IS NOT EVIDENCE OF NONDETERMINISM.
+  //
+  // This gate re-reads evidence files from a shared path, and anything else running in the
+  // repo during the window can rewrite one. Measured twice this session, and the two
+  // occurrences had different mechanisms:
+  //
+  //   - Once because I ran `verify-positions.ts` by hand WHILE this gate sat between its
+  //     two P1 captures, so `after` was someone else's output.
+  //   - Once during a suite run whose cause I did NOT establish. It did not reproduce:
+  //     three consecutive runs afterwards were green, closure twice in a row.
+  //
+  // The honest reading of one differing capture is "something moved", not "the producer is
+  // nondeterministic". So a difference is re-measured once, and only a difference that
+  // REPEATS is reported. That is not a retry that hides a fault — a genuinely
+  // nondeterministic producer fails the retry too, which is exactly the case this check
+  // exists to catch. It is the difference between "observed once" and "observed twice".
+  //
+  // The retry is announced rather than silent, so a run that needed it says so.
   if (before === null || after === null || before !== after) {
-    byteIdentical = false
-    check(`X1: ${code} evidence byte-identical (modulo generatedAt)`, false)
+    const retryBefore = fingerprint(evidenceFile)
+    const retryExit = runVerifier(script)
+    const retryAfter = fingerprint(evidenceFile)
+    if (retryExit !== 0 || retryBefore === null || retryAfter === null || retryBefore !== retryAfter) {
+      byteIdentical = false
+      check(`X1: ${code} evidence byte-identical (modulo generatedAt)`, false,
+        `re-measured and still differs (retry exit=${retryExit}, before=${retryBefore === null ? "null" : retryBefore.length}, after=${retryAfter === null ? "null" : retryAfter.length}) — a repeating difference, so this is nondeterminism in the producer, not a file moving under the comparison`)
+    } else {
+      // Printed EXPLICITLY, not passed as `detail`. This file's `check` prints only on
+      // failure (script/m24/verify-closure.ts:100), so a detail attached to a passing
+      // check is never shown — and a comment claiming the retry is "announced rather than
+      // silent" was false until this line existed. A retry that changes the verdict must
+      // leave a trace in the output, or the next reader cannot tell a clean run from one
+      // that needed rescuing.
+      console.log(
+        `  retried: X1: ${code} first capture differed, re-measurement agreed — treated as a file moving under the comparison, not as nondeterminism`,
+      )
+      check(`X1: ${code} evidence byte-identical (modulo generatedAt)`, true)
+    }
   } else {
     check(`X1: ${code} evidence byte-identical (modulo generatedAt)`, true)
   }
 }
-check("X1: full evidence set regenerates byte-identical", byteIdentical)
+if (headMovedDuringRun) {
+  check(
+    "X1: byte-identical regeneration — NOT EVALUATED because HEAD moved during pass 2",
+    false,
+    `${skippedForHeadMove} of ${SUITE.length} comparison(s) skipped. HEAD was ${headAtPass2.slice(0, 10)} when pass 2 started and is ${readHead().slice(0, 10)} now, so the two captures are not a controlled comparison. Re-run on a quiet tree; this is not evidence of nondeterminism in the producers.`,
+  )
+} else {
+  check("X1: full evidence set regenerates byte-identical", byteIdentical)
+}
+//
+// WHAT THIS CHECK CAN AND CANNOT DETECT — measured, not assumed.
+//
+// It compares the evidence file's fingerprint before and after a re-run of the
+// SAME suite, in the same process, moments apart. So it detects NONDETERMINISM:
+// an evidence file that does not reproduce from identical inputs. That is real
+// and worth having.
+//
+// It does NOT detect DRIFT. Planting a real change in a producer (verify-docs.ts
+// emitting `issue: "496-TAMPERED"` instead of `"496"`) left this check reporting
+// byte-identical, because pass 1 had already run that same tampered producer and
+// written the tampered evidence; pass 2 reproduced it faithfully. Verified the
+// tamper was real by computing the fingerprint OUTSIDE the gate, where it did
+// differ (`identical? False`). Two earlier mutants of mine were also uncaught here
+// for the same reason — writing a marker field under an env var, and appending to
+// FINGERPRINT_ALGORITHM — and both still reported 69/69.
+//
+// The check is left in place and its verdict is correct: it is a determinism
+// check, which is what "regenerates byte-identical" can mean when the inputs
+// cannot change mid-run. It is NOT evidence that the evidence matches HEAD; that is
+// script/m61/verify-claim-fingerprints.ts and each gate's `currentCommit`. Recorded
+// because the old wording implied more than it delivers.
 
 // ---------------------------------------------------------------------------
 // Negative checks — the gate must be able to FAIL
@@ -231,7 +428,7 @@ check("X1: full evidence set regenerates byte-identical", byteIdentical)
 
 // A survived mutant planted in an evidence copy must be detectable by the
 // audit's own survivor rule (mutantsCaught < mutantsTotal).
-const l2Ev = parseSealedRecord(path.join(RESULTS, "L2.json"))
+const l2Ev = parseSealedRecord<EvidenceShape>(path.join(RESULTS, "L2.json"))
 const l2Clone = structuredClone(l2Ev)
 const verdictClone = l2Clone.verdict ?? {}
 verdictClone.mutantsCaught = (verdictClone.mutantsTotal ?? 1) - 1 // plant a survivor
@@ -261,9 +458,17 @@ negative("X1: suite list completeness is enforced", suiteClosed)
 
 // A ledger with a pending L-cell must fail the completion-bar audit.
 const dirtyLedger = structuredClone(ledger)
-dirtyLedger.issues[3]!.status = "planned" // L1 pending
-const pendingCellDetected = dirtyLedger.issues.filter((i: any) => i.status === "planned").some((i: any) => i.code !== "X1")
-negative("X1: pending L-cell in ledger is detected", pendingCellDetected)
+const dirtyIssues = dirtyLedger.issues ?? []
+if (dirtyIssues[3]) dirtyIssues[3].status = "planned" // L1 pending
+const pendingCellDetected = dirtyIssues.filter((i) => i.status === "planned").some((i: any) => i.code !== "X1")
+negative(
+  "X1: pending L-cell in ledger is detected",
+  // The negative must be TRUE only because the planted cell is found. If the
+  // fixture could not plant one (a ledger with fewer than four entries), the
+  // detector is never exercised, so require that it actually happened.
+  pendingCellDetected && dirtyIssues[3]?.status === "planned",
+  `planted=${dirtyIssues[3]?.status}, detected=${pendingCellDetected}`,
+)
 
 // ---------------------------------------------------------------------------
 // Evidence consistency + verdict
@@ -277,7 +482,7 @@ const evidenceCommits = new Set(
   SUITE.map(({ evidenceFile }) => {
     const p = path.join(RESULTS, evidenceFile)
     if (!existsSync(p)) return null
-    return parseSealedRecord(p).currentCommit
+    return parseSealedRecord<{ currentCommit?: string }>(p).currentCommit
   }).filter(Boolean),
 )
 check("X1: all suite evidence files share one commit (regenerated together)", evidenceCommits.size === 1, [...evidenceCommits].map((c) => String(c).slice(0, 8)).join(","))

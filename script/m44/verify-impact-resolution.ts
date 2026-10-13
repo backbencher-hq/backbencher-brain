@@ -32,7 +32,7 @@ import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
 import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 // The fixture this gate indexes. Written BY the run (see indexFixture) — see the
@@ -47,6 +47,9 @@ const EVIDENCE = path.join(EVIDENCE_DIR, "U5.json")
 const SERVER = path.join(ROOT, "dist/lsp/server.js")
 const BB = path.join(ROOT, "bin/bb")
 const CORE = path.join(ROOT, "script/m26/graph-core.ts")
+/** The sibling `impact.ts` imports as "./evidence_tier". Copied beside the mutants so
+ *  that relative specifier resolves; see the withComponent comment. */
+const EVIDENCE_TIER = path.join(ROOT, "src/lsp/evidence_tier.ts")
 const IMPACT = path.join(ROOT, "src/lsp/impact.ts")
 // M55.T1: the member-resolution rules now live in the ONE identity resolver;
 // affected mutant anchors may sit in either file (see withComponent).
@@ -338,10 +341,62 @@ async function main(): Promise<void> {
     const componentSource = readFileSync(IMPACT, "utf8")
     const identitySource = readFileSync(IDENTITY, "utf8")
     const coreSource = readFileSync(CORE, "utf8")
-    const importComponent = (src: string): string =>
-      src
-        .replace(/from "\.\.\/intelligence\/graph\/graph-engine"/g, `from "file://${path.join(ROOT, "src", "intelligence", "graph", "graph-engine.ts").replace(/\\/g, "/")}"`)
-        .replace(/from "\.\.\/intelligence\/contracts"/g, `from "file://${path.join(ROOT, "src", "intelligence", "contracts.ts").replace(/\\/g, "/")}"`)
+    // THIS REWRITE WAS INCOMPLETE, AND EVERY MUTANT HAD BEEN DYING AT IMPORT.
+    //
+    // src/lsp/impact.ts — the file these mutants are copies of — has SIX relative
+    // imports:
+    //
+    //   from "../ast/analysis-exclusions"           from "../intelligence/contracts"
+    //   from "../intelligence/graph/graph-engine"   from "../intelligence/graph/line-address"
+    //   from "./evidence_tier"                      from "./identity"
+    //
+    // Only two of the six were rewritten. The rest resolved against the TEMP dir the
+    // mutant is written into, so every mutant with an anchor in impact.ts died with
+    //
+    //   Error: Cannot find module '../intelligence/graph/line-address'
+    //
+    // and the catch recorded it as CAUGHT. The gate reported "planted defect caught"
+    // for mutants that never executed — the same hollow-evidence failure as
+    // script/m55/verify-status-panel.ts, found here by the crash-honesty fix.
+    //
+    // Now DERIVED rather than enumerated: every relative specifier is resolved against
+    // the original file's directory and rewritten to an absolute file:// URL. A new
+    // import added to impact.ts is then handled automatically, instead of silently
+    // breaking every mutant again — which is exactly how this one rotted.
+    // Built with pathToFileURL, not by string-concatenating "file://" + path. This
+    // repository's path contains a SPACE ("Documents/Default Project/…"), and a
+    // file:// URL with a raw space does not resolve — canary: every mutant died with
+    //   Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher…
+    // pathToFileURL percent-encodes it, which is what a hand-built URL must do.
+    // `fromFile` is the SOURCE FILE the copy was made from, not its directory. The
+    // earlier version took a "baseDir" argument that every call site passed as the
+    // file path itself (IMPACT, IDENTITY), so path.resolve treated the FILE as a
+    // directory and produced
+    //
+    //   src/lsp/impact.ts/../intelligence/… -> src/lsp/intelligence/graph/graph-engine.ts
+    //
+    // Canary: every mutant died with `Cannot find module '<ROOT>/src/lsp/intelligence/
+    // graph/graph-engine.ts'`. Deriving the directory inside the function removes the
+    // chance of a call site getting it wrong, which is how the enumerated version rotted.
+    const importComponent = (src: string, fromFile: string): string => {
+      const dir = path.dirname(fromFile)
+      return src.replace(/from "(\.{1,2}\/[^"]+)"/g, (_whole, spec: string) => {
+        // SIBLINGS STAY RELATIVE. The two copies are written into ONE temp dir
+        // precisely so `import "./identity"` inside the impact copy finds the mutated
+        // identity copy beside it — that is the whole mechanism (see the M55.T1 note
+        // above). Rewriting it to the real src/ path loads the UNMUTATED resolver, so
+        // the mutation never reaches the module under test.
+        //
+        // I broke exactly this by rewriting every relative specifier, and the symptom
+        // was a probe that reported "not detected" no matter which row it was asked
+        // for. A ./identity specifier is satisfied by the sibling in the temp dir;
+        // only specifiers that ESCAPE that dir (../…) need to be made absolute.
+        if (!spec.startsWith("../")) return _whole
+        const abs = path.resolve(dir, spec)
+        const withExt = abs.endsWith(".ts") ? abs : `${abs}.ts`
+        return `from "${pathToFileURL(withExt).href}"`
+      })
+    }
     // M55.T1: an anchor may live in the impact door OR in the identity
     // resolver it now reads. Both copies are written into one temp dir (the
     // mutated one where the anchor is, the other verbatim) so `import
@@ -357,13 +412,49 @@ async function main(): Promise<void> {
       const dir = mkdtempSync(path.join(tmpdir(), "m44-u5-mut-"))
       const mutantIdentity = path.join(dir, "identity.ts")
       const mutantImpact = path.join(dir, "impact.ts")
-      writeFileSync(mutantIdentity, anchorInIdentity ? identitySource.replace(from, to) : identitySource)
-      writeFileSync(mutantImpact, importComponent(anchorInImpact ? componentSource.replace(from, to) : componentSource))
+      // BOTH copies need their relative imports rewritten, not just the impact one.
+      //
+      // identitySource was written VERBATIM while impactSource went through
+      // importComponent. So when an anchor lives in identity.ts — which is where
+      // M1b's disambiguation anchor now lives, after the resolver moved — the mutated
+      // copy's `from "./…"` specifiers resolved against the temp dir, and the impact
+      // copy's `import "./identity"` then loaded a copy that could not resolve its own
+      // siblings. The mutant failed to load, or loaded an UNMUTATED identity, and the
+      // probe reported "not detected".
+      //
+      // Both are now rewritten from their own original directory. The comment above
+      // this block already said the intent — "Both copies are written into one temp
+      // dir … so `import "./identity"` inside the impact copy resolves to that
+      // sibling" — and the identity copy was the one that broke it.
+      writeFileSync(mutantIdentity, importComponent(anchorInIdentity ? identitySource.replace(from, to) : identitySource, IDENTITY))
+      writeFileSync(mutantImpact, importComponent(anchorInImpact ? componentSource.replace(from, to) : componentSource, IMPACT))
+      // The impact copy's `./identity` and `./evidence_tier` are resolved against THIS
+      // temp dir, which is what makes the mutated identity sibling the one under test.
+      // So the unmutated sibling they need must be here too — otherwise the import
+      // fails and the mutant is reported as "could not be exercised" (canary:
+      // `Cannot find module './evidence_tier'`).
+      //
+      // Copied verbatim: neither is ever the mutation target, and copying the mutated
+      // one twice would be wrong. The rewrite in importComponent deliberately leaves
+      // `./…` specifiers alone for exactly this reason.
+      writeFileSync(path.join(dir, "evidence_tier.ts"), readFileSync(EVIDENCE_TIER, "utf8"))
       try {
         const m = await import(mutantImpact)
         mutant(name, await probe(m))
       } catch (e) {
-        mutant(name, true, `mutant failed to load: ${String(e).slice(0, 80)}`)
+            // A mutant that failed to LOAD is not a caught mutant — the law was never
+            // exercised, so nothing was proven. This arm recorded `true`, which made the
+            // headline ratio unfalsifiable: break the mutant import and every mutant still
+            // counted as caught. Measured on the identical shape in
+            // script/m44/verify-legend.ts, where breaking every mutant's import produced
+            // `U4: VERIFIED (25/25 passed, 4/4 mutants caught)` with exit 0 and nothing
+            // executed.
+            //
+            // Recorded as NOT caught, with the real error, per the rule
+            // script/m60/objc-mutant-check.ts:29 already states: "a survivor reported as
+            // caught is the worst outcome available here, because it retires a defect
+            // class that is still live".
+        mutant(name, false, `MUTANT COULD NOT BE EXERCISED (broken harness, not a detection) — failed to load: ${String(e).slice(0, 80)}`)
       } finally {
         try { rmSync(dir, { recursive: true, force: true }) } catch {}
       }
@@ -379,7 +470,19 @@ async function main(): Promise<void> {
         const m = await import(mutantPath)
         mutant(name, await probe(m))
       } catch (e) {
-        mutant(name, true, `mutant failed to load: ${String(e).slice(0, 80)}`)
+            // A mutant that failed to LOAD is not a caught mutant — the law was never
+            // exercised, so nothing was proven. This arm recorded `true`, which made the
+            // headline ratio unfalsifiable: break the mutant import and every mutant still
+            // counted as caught. Measured on the identical shape in
+            // script/m44/verify-legend.ts, where breaking every mutant's import produced
+            // `U4: VERIFIED (25/25 passed, 4/4 mutants caught)` with exit 0 and nothing
+            // executed.
+            //
+            // Recorded as NOT caught, with the real error, per the rule
+            // script/m60/objc-mutant-check.ts:29 already states: "a survivor reported as
+            // caught is the worst outcome available here, because it retires a defect
+            // class that is still live".
+        mutant(name, false, `MUTANT COULD NOT BE EXERCISED (broken harness, not a detection) — failed to load: ${String(e).slice(0, 80)}`)
       } finally {
         try { rmSync(mutantPath, { force: true }) } catch {}
       }
@@ -419,13 +522,49 @@ async function main(): Promise<void> {
     await withComponent(
       "disambiguation dropped (wrong same-name member resolved)",
       "const narrowed = memberRows.filter((r) => memberFileMatches(fileHint, r.file))",
+      // `memberRows.slice(0, 1)` — "arbitrary first row" instead of the hinted one.
+      //
+      // This mutation was reported as a SURVIVOR for a long time, and the reason was
+      // not the probe. The memberRows query has no ORDER BY
+      // (`WHERE s.project_id = ? AND s.name = ?`), so the row order is the engine's.
+      // I first assumed slice(0,1) picked the wrong row and changed it to slice(-1);
+      // instrumenting the probe then showed the mutant rooting at Registry either way,
+      // because on this fixture the LAST row is the registry one. Measuring the
+      // engine's order directly:
+      //
+      //   engine order: sym-ctor@main.ts, sym-registry-ctor@registry.ts
+      //   first = main.ts   last = registry.ts
+      //
+      // So slice(0,1) — the original — picks main.ts, the WRONG file for a registry.ts
+      // hint, which is exactly the defect. It is restored, and the probe below asserts
+      // the law rather than a class name.
       "const narrowed = memberRows.slice(0, 1) // disambiguation dropped: arbitrary first row",
+      // This probe asserted `root?.name === "Greeter"` — that the mutant picked the
+      // WRONG same-name member. It could not fail, because the mutation it plants is
+      // `memberRows.slice(0, 1)` and the query feeding memberRows has NO ORDER BY:
+      //
+      //   WHERE s.project_id = ? AND s.name = ?
+      //
+      // so `memberRows[0]` is whatever SQLite returns. In this fixture that happens to
+      // be the Registry row, so the mutant resolves to the RIGHT class and the probe
+      // reports "not detected". The probe was not wrong about the defect — it was
+      // relying on an unstable row order, so it was testing luck rather than the law.
+      //
+      // The law is: a file hint MUST select the member stored in that file, and the
+      // result must DECLARE when it cannot. So the probe asserts that instead of
+      // naming one class:
+      //   - rooted somewhere whose file does NOT match the hint  => defect
+      //   - rooted with a declared absence and no root           => correct
+      // Verified against the unmutated resolver, which roots at Registry for the
+      // registry.ts hint (root.file === "registry.ts"), so this is false there.
       async (m) => {
         try {
           const r = await m.computeImpact(sfx.raw, sfx.projectId, "constructor", {}, "registry.ts")
-          return r.root?.name === "Greeter" // resolved to the WRONG class (arbitrary first row) => defect visible
+          const rootFile = typeof r.root?.file === "string" ? r.root.file : null
+          if (rootFile === null) return false // declared absence, or nothing to root: correct
+          return !rootFile.endsWith("registry.ts") // resolved to a member from ANOTHER file => defect
         } catch {
-          return false // declared error = correct behavior => mutant caught
+          return false // declared error thrown = correct behaviour
         }
       },
     )

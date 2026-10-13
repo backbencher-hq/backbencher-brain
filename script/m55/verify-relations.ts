@@ -50,6 +50,16 @@ import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { T3_EXPECT, T3_ROWS, T3_SYMBOLS, seedT3Db, writeT3Workspace } from "./t3-fixture.ts"
 import { StdioLsp, ensureServerBuilt } from "./lsp-wire.ts"
+// The REAL shapes, imported as types. The three dynamic-import casts below used to
+// hand-write their own signatures, and every one of them was a SUBSET of the real
+// one — which is how `callSite`, `coalescedRows`, `omittedUnresolvable` and
+// `omittedUnpositionable` came to report as non-existent fields when all four are
+// declared in src/. A hand-copied signature is a snapshot that is wrong the moment
+// the product moves, and nothing but a compiler complains. Importing the type makes
+// drift a type error instead of a lie.
+import type { RichSite } from "../../src/lsp/rich_hover.ts"
+import type { ReferencesResult } from "../../src/lsp/navigation.ts"
+import type { HoverResult } from "../../src/lsp/hover.ts"
 import { writeSealed } from "../lib/evidence.ts"
 import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
@@ -100,16 +110,36 @@ check("R1: the unresolvable other end is stored with NULL coordinates", ghostCoo
 
 // --- R2: component level ---------------------------------------------------------
 console.log("\nR2: one vocabulary (hover count = rendered rows = independent SQL count)")
+// This cast said `=> Promise<any>`. That is worse than a stale snapshot: `any`
+// disables checking entirely, so every read of `hoverGreet.data.usages` below was
+// unchecked, and a rename in src/lsp/hover.ts would have broken this gate at runtime
+// with nothing to say so. hover() returns `HoverResult` (src/lsp/hover.ts:531) and
+// that type is exported, so the honest cast anchors to it.
 const { hover, countUsages } = (await import(path.join(ROOT, "src/lsp/hover.ts"))) as {
-  hover: (db: unknown, req: { filePath: string; position: { line: number; character: number } }) => Promise<any>
+  hover: (db: unknown, req: { filePath: string; position: { line: number; character: number } }) => Promise<HoverResult>
   countUsages: (db: unknown, symbolId: string) => number
 }
+// `RichSite` carries `callSite`, which this gate reads at lines 237/238 to classify
+// a row as an exact address or a declared substitute. The hand-written cast omitted
+// it, so those two reads looked like invented fields.
 const { richSitesForSymbol, usageSitesOf } = (await import(path.join(ROOT, "src/lsp/rich_hover.ts"))) as {
-  richSitesForSymbol: (db: unknown, symbolId: string) => Array<{ name: string; path: string; line: number; character: number; relationshipType: string; reversed: boolean }>
-  usageSitesOf: (sites: readonly any[]) => Array<{ name: string; path: string; line: number; character: number; relationshipType: string; reversed: boolean }>
+  richSitesForSymbol: (db: unknown, symbolId: string) => RichSite[]
+  usageSitesOf: (sites: readonly RichSite[]) => RichSite[]
 }
+// `ReferencesResult` (src/lsp/navigation.ts:190) declares `truncated`, `limit`,
+// `evidenceTier`, `absence`, `omittedUnresolvable`, `omittedUnpositionable` and
+// `coalescedRows`; its `locations` are `NavigationLocation`, which carries
+// `callSite`. The cast below kept only `locations[{path,line,character}]` and
+// `totalCount`. Every omitted field then read as missing — including the three
+// counts this gate exists to check that the account CLOSES over, which is the whole
+// point of the R2 assertion at line 351. Line 359 shows the symptom: someone hit
+// this exact error and patched that ONE site with `as { coalescedRows?: number }`.
+//
+// A reference result that accounts for nothing is the failure mode §13.2 names
+// ("nothing is merged into silence"). A gate whose type cannot see the accounting
+// fields cannot check that law.
 const { resolveReferences } = (await import(path.join(ROOT, "src/lsp/navigation.ts"))) as {
-  resolveReferences: (db: unknown, req: { filePath: string; line: number; character: number; includeDeclaration: boolean }) => { locations: Array<{ path: string; line: number; character: number }>; totalCount: number }
+  resolveReferences: (db: unknown, req: { filePath: string; line: number; character: number; includeDeclaration: boolean }) => ReferencesResult
 }
 
 /** Declaration positions (0-based LSP) derived from the fixture data. */
@@ -255,8 +285,28 @@ check("R2: the usages header declares its semantics", greetMd.includes("**usages
     "L-A/MUTANT: the substitute law REJECTS a silent substitute (the caveat deleted from a row that needs one)",
     (() => {
       if (declaredCount === 0) return true // nothing to catch — stated, not assumed
-      const stripped = greetSites.map((s) => ({ ...s, callSite: { kind: "call-site", file: "", line: 1 } as never }))
-      return stripped.every((s) => s.callSite.kind === "call-site") && !stripped.some((s) => (s.callSite as never as { note?: string }).note !== undefined)
+      // Both `as never` casts here existed only because the hand-written RichSite
+      // had no `callSite` field to type against, so the object literal had nothing
+      // to satisfy and was silenced instead. With the real `CallSiteAddress` — a
+      // discriminated union — the literal is EXACTLY its first member, so no cast
+      // is needed at all:
+      //
+      //   { kind: "call-site"; file: string; line: number }
+      //   | { kind: "declaration"; file: string; line: number; note: string }
+      //   | { kind: "unknown"; file: string; line: null; note: string }
+      //
+      // The mutant replaces every address with the first member, which by
+      // construction has NO `note` — that is the whole "silent substitute" shape.
+      // The check below is a canary on the SIMULATION, not on the product: it
+      // confirms the label set it built really is all-exact-with-no-caveat, so the
+      // law it claims to exercise was actually exercised. `"note" in` narrows the
+      // union honestly, where the old cast asserted an optional field the type
+      // never had.
+      const stripped = greetSites.map((s) => ({ ...s, callSite: { kind: "call-site", file: "", line: 1 } as const }))
+      return (
+        stripped.every((s) => s.callSite.kind === "call-site") &&
+        !stripped.some((s) => "note" in s.callSite && s.callSite.note !== undefined)
+      )
     })(),
     "the simulation could not produce a silent-substitute label set, so the law proves nothing",
   )
@@ -340,9 +390,7 @@ const greetTargetRows = (
     .all() as Array<{ id: string; type: string; source_symbol_id: string | null; target_symbol_id: string | null; ln: number | null; name: string | null; decl: number | null; bs: number | null }>
 )
 {
-  const { isUsageSiteRow: isUsage } = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as {
-    isUsageSiteRow: (row: { source_symbol_id: string | null; target_symbol_id: string | null; relationship_type: string }, symbolId: string) => boolean
-  }
+  const { isUsageSiteRow: isUsage } = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as typeof import("../../src/lsp/relations.ts")
   // The predicate takes `relationship_type`; the query aliases it `type` for
   // readability, so the shape is named here rather than left for the reader to
   // infer from a crash.
@@ -356,12 +404,12 @@ const greetTargetRows = (
   check(
     "R2: every stored usage row of greet is either served, coalesced onto a served position, or omitted-and-counted (the account is closed)",
     accounted === usageTargetRows.length && usageTargetRows.every((r) => servedIds.has(r.id) || true),
-    `served=${refsGreet.locations.length} coalesced=${String((refsGreet as { coalescedRows?: number }).coalescedRows)} unresolvable=${refsGreet.omittedUnresolvable} unpositionable=${refsGreet.omittedUnpositionable} of ${usageTargetRows.length} stored usage rows`,
+    `served=${refsGreet.locations.length} coalesced=${String(refsGreet.coalescedRows)} unresolvable=${refsGreet.omittedUnresolvable} unpositionable=${refsGreet.omittedUnpositionable} of ${usageTargetRows.length} stored usage rows`,
   )
   check(
     "R2: the rows sharing one served position are DECLARED, not merged into silence (§13.2)",
-    (refsGreet as { coalescedRows?: number }).coalescedRows === 1,
-    `coalescedRows=${String((refsGreet as { coalescedRows?: number }).coalescedRows)}, expected 1 (r4 and r5 resolve to greetAll's one declaration)`,
+    refsGreet.coalescedRows === 1,
+    `coalescedRows=${String(refsGreet.coalescedRows)}, expected 1 (r4 and r5 resolve to greetAll's one declaration)`,
   )
   check(
     "R2: no two served locations share a served position (§13.1 — the eye must be able to tell them apart)",
@@ -420,10 +468,7 @@ try {
   // usage" is three answers; that is the defect this milestone exists to kill,
   // and a gate that keeps its own copy cannot catch it. The per-row shape the
   // predicates take is named next to the call so the mapping is checkable.
-  const { isUsageSiteRow, isResolvableUsageSiteRow } = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as {
-    isUsageSiteRow: (row: { source_symbol_id: string | null; target_symbol_id: string | null; relationship_type: string }, symbolId: string) => boolean
-    isResolvableUsageSiteRow: (row: { otherName?: string | null; otherPath?: string | null; byteStart?: number | null; byteEnd?: number | null; lineStart?: number | null; lineEnd?: number | null }) => boolean
-  }
+  const { isUsageSiteRow, isResolvableUsageSiteRow } = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as typeof import("../../src/lsp/relations.ts")
   const referrerRows = (
     raw
       .prepare(
@@ -510,7 +555,7 @@ try {
   )
   // The unit sentence must be the vocabulary owner's SINGLE copy, quoted by
   // every surface — three paraphrases of "usages" is how four numbers happened.
-  const { USAGE_COUNT_UNIT_LABEL: unitFromOwner } = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as { USAGE_COUNT_UNIT_LABEL: string }
+  const { USAGE_COUNT_UNIT_LABEL: unitFromOwner } = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as typeof import("../../src/lsp/relations.ts")
   check(
     "R3: the hub's unit sentence is the owner's copy, verbatim (no surface may paraphrase the unit)",
     countUnit === unitFromOwner && greetMd.includes(unitFromOwner),
@@ -657,9 +702,7 @@ let r5PastEof: {
   mkdirSync(path.join(r5data, "projects", r5projectId), { recursive: true })
   const priorDataDir = process.env.BB_DATA_DIR
   process.env.BB_DATA_DIR = r5data
-  const { BrainDatabase } = (await import(path.join(ROOT, "src/brain/database.ts"))) as {
-    BrainDatabase: { getRawInstance(projectId: string): Promise<any> }
-  }
+  const { BrainDatabase } = (await import(path.join(ROOT, "src/brain/database.ts"))) as typeof import("../../src/brain/database.ts")
   const r5db = await BrainDatabase.getRawInstance(r5projectId)
   const fIns = r5db.prepare("INSERT INTO brain_file (id, project_id, path, relative_path, language, file_hash) VALUES (?,?,?,?,?,?)")
   fIns.run("rf-caller", r5projectId, path.join(r5ws, "src/caller.ts"), "src/caller.ts", "typescript", "h1")
@@ -708,19 +751,14 @@ let r5PastEof: {
   relIns.run("r5-past-eof-a", r5projectId, "r5-twice", "r5-target2", "calls", 0.9, 40)
   relIns.run("r5-past-eof-b", r5projectId, "r5-other", "r5-target2", "calls", 0.9, 41)
 
-  const r5nav = (await import(path.join(ROOT, "src/lsp/navigation.ts"))) as {
-    resolveReferences: (db: unknown, req: { filePath: string; line: number; character: number; includeDeclaration: boolean }) => {
-      locations: Array<{ path: string; line: number; character: number; callSite?: { rowId: string; kind: string } }>
-      totalCount: number
-      omittedUnresolvable: number
-      omittedUnpositionable: number
-      coalescedRows: number
-    }
-  }
-  const r5rich = (await import(path.join(ROOT, "src/lsp/rich_hover.ts"))) as {
-    usageSitesForSymbol: (db: unknown, symbolId: string) => Array<{ name: string; line: number; path: string }>
-  }
-  const r5rel = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as { countUsageSites: (db: unknown, symbolId: string) => number }
+  // A second, separate hand-copy of the SAME function's return type — this file had
+  // two, and the two disagreed with each other. This one had six of the nine fields
+  // and omitted `truncated`, `limit`, `evidenceTier` and `absence`; the R5 mutation
+  // suite below flips `coalescedRows++` and re-asserts, so a stale copy here would
+  // let the mutation pass without the product's real counter moving. Anchored.
+  const r5nav = (await import(path.join(ROOT, "src/lsp/navigation.ts"))) as typeof import("../../src/lsp/navigation.ts")
+  const r5rich = (await import(path.join(ROOT, "src/lsp/rich_hover.ts"))) as typeof import("../../src/lsp/rich_hover.ts")
+  const r5rel = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as typeof import("../../src/lsp/relations.ts")
 
   const r5local = r5nav.resolveReferences(r5db, {
     filePath: path.join(r5ws, "src/target.ts"),

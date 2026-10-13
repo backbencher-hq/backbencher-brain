@@ -102,14 +102,27 @@ check("F0: dist is fresh (rebuilt after the last hover.ts change)", distMtime >=
   // sub-0.7 structural edge stays inferred (F4) — probed through the real db.
   const fx = seedTierFixture()
   try {
-    const Database = require("better-sqlite3")
-    const db = new Database(fx.dbPath)
+    // OPENED THROUGH THE PROJECT'S OWN DRIVER PAIR (`src/storage/db.node.ts` /
+    // `db.bun.ts`, the same pair `BrainDatabase` selects between), not
+    // better-sqlite3 directly: `require("better-sqlite3")` made this gate unable
+    // to START under the runner package.json declares for it —
+    // `bun run script/m29/verify-precision-improvements.ts` dies with
+    // `'better-sqlite3' is not yet supported in Bun … ERR_DLOPEN_FAILED` before
+    // the first check, so the step read as "not run" instead of failing.
+    // `evidenceTiersFor` is typed on `CoreDatabase` already, so the handle it
+    // wants is exactly what `openDatabase` returns.
+    const isBun = typeof (globalThis as any).Bun !== "undefined"
+    const { openDatabase } = await import(
+      path.join(ROOT, isBun ? "src/storage/db.bun.ts" : "src/storage/db.node.ts")
+    ) as typeof import("../../src/storage/db.node.ts")
+    const db = openDatabase(fx.dbPath)
     db.prepare("INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence, is_cross_language, metadata) VALUES (?,?,?,?,?,?,0,?)")
       .run("e4", "r5-tier-fixture", fx.symbolId, null, "uses", 0.95, JSON.stringify({ evidenceClass: "inferred" }))
     const { evidenceTiersFor } = await import(path.join(process.cwd(), "src/lsp/hover.ts"))
-    const raw = new Database(fx.dbPath)
+    const raw = openDatabase(fx.dbPath)
     const tiers = evidenceTiersFor(raw, fx.symbolId) as string[]
     raw.close()
+    db.close()
     check("F4: stored inferred class is honored (not re-upgraded)", tiers.includes("inferred"), JSON.stringify(tiers))
   } finally {
     fx.cleanup()
