@@ -2,10 +2,10 @@
   "note": "Edge rowIds per root, captured from the walk BEFORE the UNRESOLVED arm's index pin. The oracle for verify-external-arm-plan.ts: comparing two arms of the same code proves self-consistency, not correctness.",
   "projectId": "064be526733c31e95c0ac2beb42d209af9bab8e6",
   "indexFingerprint": {
-    "symbols": 10467,
+    "symbols": 10468,
     "files": 202,
-    "relationships": 62288,
-    "externalRelationships": 18229
+    "relationships": 63212,
+    "externalRelationships": 18758
   },
   "roots": 12,
   "externalCalleeEdges": 1767,
@@ -2478,6 +2478,8 @@
     {
       "root": "ast/parallel-indexer.ts:2596 storeResults",
       "callees": [
+        "064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:storeResults:2596:calls:debug:4333:m40",
+        "064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:storeResults:2596:calls:debug:4406:m40",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/analysis-exclusions.ts:isIndexArtifactName:168:includes:calls:177",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/analysis-exclusions.ts:isIndexArtifactName:168:startsWith:calls:177",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/analysis-exclusions.ts:isIndexArtifactName:168:test:calls:171",
@@ -2702,8 +2704,6 @@
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:storeResults:2596:add:calls:3597",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:storeResults:2596:boundSourceText:calls:3567",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:storeResults:2596:createStoreDiagnostics:calls:4186",
-        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:storeResults:2596:debug:calls:4333",
-        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:storeResults:2596:debug:calls:4406",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:storeResults:2596:diagnoseBatchFailure:calls:4203",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:storeResults:2596:enclosingNonContainerSpanId:calls:3510",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:storeResults:2596:enclosingStoreableId:calls:4116",
@@ -4246,6 +4246,12 @@
     {
       "root": "ast/parallel-indexer.ts:5085 indexProjectParallel",
       "callees": [
+        "064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:calls:debug:5127:m40",
+        "064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:calls:debug:5188:m40",
+        "064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:calls:debug:5696:m40",
+        "064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:calls:debug:5726:m40",
+        "064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:calls:debug:5789:m40",
+        "064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:calls:debug:5864:m40",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/index-lock.ts:IndexLockHeldError:90:Error:extends:90",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/index-lock.ts:IndexLockHeldError:90:LockHolderInfo:references:91",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/index-lock.ts:IndexLockHeldError:90:constructor:contains:96",
@@ -4397,12 +4403,6 @@
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:cpus:calls:5132",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:dbBatchSize:uses:5152",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:dbFlushMs:uses:5498",
-        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:debug:calls:5127",
-        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:debug:calls:5188",
-        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:debug:calls:5696",
-        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:debug:calls:5726",
-        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:debug:calls:5789",
-        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:debug:calls:5864",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:detectLanguageFromPath:calls:5543",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:detectLanguageFromPath:calls:5558",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:indexProjectParallel:5085:detectLanguageFromPath:calls:5570",
