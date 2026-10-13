@@ -2945,6 +2945,103 @@ async function drainBackgroundEmbeddings() {
   }
 }
 
+// ── HOISTED FOR THE ID-CARRYING JOIN (r-lane, 2026-10-12) ─────────────────────────────────────────
+// These two were inline inside `storeResults`. They are MUTATION-FREE — every use is a read
+// (`CONTAINER_TYPES_LOOKUP.has`, `CONTAINER_PRIORITY[…]`) — so hoisting them is a pure move and the
+// store's counts cannot change. They are hoisted because the companion pass needs the SAME span index
+// the store builds: "one computation, one answer" means one implementation with two callers, not two
+// implementations that agree. Hoisting the MUTABLE state is a different matter and is NOT done here
+// (see the denylist note at the span-index construction).
+const CONTAINER_TYPES_LOOKUP = new Set([
+  "class", "interface", "struct", "trait", "enum", "object", "actor",
+  "module", "namespace", "package", "impl", "type",
+])
+
+/** Container kinds sort first (class, interface, …) so FK references from methods to their containers
+ *  resolve. Read-only, hoisted with the set above. */
+const CONTAINER_PRIORITY: Record<string, number> = {
+  class: 0, interface: 0, struct: 0, trait: 0, enum: 0, object: 0,
+  module: 0, namespace: 0, package: 0, impl: 0, type: 0,
+  method: 1, function: 1, constructor: 1, field: 2, property: 2,
+  variable: 2,
+}
+
+/** The span index the store builds over a file's STOREABLE symbols. `start`/`end` are 1-based lines.
+ *  Hoisted so the companion pass can build the SAME index the store builds — one implementation, two
+ *  callers. The array is sorted by `start` ascending; the scans below rely on that. */
+export type StoreableSpan = { id: string; name: string; start: number; end: number; kind: string }
+
+/** The innermost storeable span whose extent covers `line`. A BACKWARD SCAN, not a predicate: the pass
+ *  re-parses the same file, gets the same symbols, and FINDS the same span. */
+export function enclosingSpanId(spans: StoreableSpan[], line: number | null): string | null {
+  if (!line || line < 1) return null
+  for (let i = spans.length - 1; i >= 0; i--) {
+    const sp = spans[i]
+    if (sp.start > line) continue
+    if (sp.end >= line) return sp.id
+  }
+  return null
+}
+
+/** The innermost STOREABLE span carrying this NAME whose extent covers `line`. Same-name candidates are
+ *  FIRST-WINS in the in-memory lookups, so the containment rule replaces them with the innermost. */
+export function enclosingSpanIdByName(spans: StoreableSpan[], name: string, line: number | null): string | null {
+  if (!name || !line || line < 1) return null
+  for (let i = spans.length - 1; i >= 0; i--) {
+    const sp = spans[i]
+    if (sp.name !== name) continue
+    if (sp.start > line) continue
+    if (sp.end >= line) return sp.id
+  }
+  return null
+}
+
+/** The nearest enclosing span that is NOT a container and is not the span itself. */
+export function enclosingNonContainerId(
+  spans: StoreableSpan[],
+  start: number,
+  end: number,
+  selfId: string,
+): string | null {
+  if (start < 1) return null
+  for (let i = spans.length - 1; i >= 0; i--) {
+    const sp = spans[i]
+    if (sp.id === selfId) continue
+    if (sp.start >= start) continue
+    if (sp.end < end) continue
+    if (CONTAINER_TYPES_LOOKUP.has(sp.kind)) continue
+    return sp.id
+  }
+  return null
+}
+
+/** Build the span index for one file's symbols. INCLUDES THE SORT: a caller that skips it changes every
+ *  scan result, and the sort is part of the construction rather than an optimisation.
+ *  `isStoreable` IS A PARAMETER ON PURPOSE — see the denylist note at the call site: the name filter is
+ *  per-call mutable state and must not be read from module scope. */
+export function buildStoreableSpans(
+  symbols: any[],
+  fileId: string,
+  isStoreable: (nm: string | undefined, startLine: number) => boolean,
+): StoreableSpan[] {
+  const out: StoreableSpan[] = []
+  for (const s of symbols ?? []) {
+    const sStart = s.startLine ?? s.range?.startLine ?? 0
+    const sEnd = s.endLine ?? s.range?.endLine ?? sStart
+    if (sStart < 1) continue
+    if (!isStoreable(s.name, sStart)) continue
+    out.push({
+      id: `${fileId}:${s.name}:${sStart}`,
+      name: String(s.name || ""),
+      start: sStart,
+      end: Math.max(sEnd, sStart),
+      kind: String(s.type || s.kind || "unknown"),
+    })
+  }
+  out.sort((a, b) => a.start - b.start)
+  return out
+}
+
 export async function storeResults(
   projectId: ProjectID,
   projectPath: string,
@@ -3516,15 +3613,8 @@ export async function storeResults(
          // only, so defining it per relationship would allocate a closure per
          // edge for no reason.
          const enclosingStoreableId = (line: number | null): string | null => {
-           if (!line || line < 1) return null
-           // Sorted by start ascending: scanning backwards from the last span that
-           // begins at or before the line returns the INNERMOST holder first.
-           for (let i = storeableSpans.length - 1; i >= 0; i--) {
-             const sp = storeableSpans[i]
-             if (sp.start > line) continue
-             if (sp.end >= line) return sp.id
-           }
-           return null
+           // THIN WRAPPER over the module-level scan, so the pass can use the same implementation.
+           return enclosingSpanId(storeableSpans, line)
          }
          // #612 follow-up (the SOURCE half of the containment target rule): the
          // innermost STOREABLE span carrying this NAME whose extent covers
@@ -3541,14 +3631,8 @@ export async function storeResults(
          // place it, and the caller keeps the existing choice rather than inventing
          // one.
          const enclosingStoreableIdByName = (name: string, line: number | null): string | null => {
-           if (!name || !line || line < 1) return null
-           for (let i = storeableSpans.length - 1; i >= 0; i--) {
-             const sp = storeableSpans[i]
-             if (sp.name !== name) continue
-             if (sp.start > line) continue
-             if (sp.end >= line) return sp.id
-           }
-           return null
+           // THIN WRAPPER over the module-level scan.
+           return enclosingSpanIdByName(storeableSpans, name, line)
          }
          // M59 #879: the innermost storeable NON-container symbol enclosing a
          // span — the lexical owner a nested declaration executes under (a method
@@ -3558,16 +3642,8 @@ export async function storeResults(
          // itself and any span sharing its start line, and makes an owner cycle
          // arithmetically impossible.
          const enclosingNonContainerSpanId = (start: number, end: number, selfId: string): string | null => {
-           if (start < 1) return null
-           for (let i = storeableSpans.length - 1; i >= 0; i--) {
-             const sp = storeableSpans[i]
-             if (sp.id === selfId) continue
-             if (sp.start >= start) continue
-             if (sp.end < end) continue
-             if (CONTAINER_TYPES_LOOKUP.has(sp.kind)) continue
-             return sp.id
-           }
-           return null
+           // THIN WRAPPER over the module-level scan.
+           return enclosingNonContainerId(storeableSpans, start, end, selfId)
          }
          let firstContainerSymbol: any = undefined
  
@@ -3595,10 +3671,7 @@ export async function storeResults(
          // ("CONTAINER_TYPES_LOOKUP is not defined") — the same silent-failure
          // shape this milestone keeps finding in its own instruments. Function
          // scope removes the ordering trap and the three call sites share one list.
-         const CONTAINER_TYPES_LOOKUP = new Set([
-           "class", "interface", "struct", "trait", "enum", "object", "actor",
-           "module", "namespace", "package", "impl", "type",
-         ])
+         // CONTAINER_TYPES_LOOKUP is hoisted to module scope (mutation-free).
 
          if (result.symbols) {
            const insertedSymbolIds = new Set<string>()
@@ -3606,12 +3679,7 @@ export async function storeResults(
            // scope objects, and root-level nodes that are always noise.
            // Sort symbols: container types first (class, interface, etc.) so FK
            // references from methods to their containers resolve successfully.
-           const CONTAINER_PRIORITY: Record<string, number> = {
-             class: 0, interface: 0, struct: 0, trait: 0, enum: 0, object: 0,
-             module: 0, namespace: 0, package: 0, impl: 0, type: 0,
-             method: 1, function: 1, constructor: 1, field: 2, property: 2,
-             variable: 2,
-           }
+           // CONTAINER_PRIORITY is hoisted to module scope (mutation-free).
            result.symbols.sort((a: any, b: any) => {
              const pa = CONTAINER_PRIORITY[a.type || a.kind] ?? 3
              const pb = CONTAINER_PRIORITY[b.type || b.kind] ?? 3
@@ -3652,22 +3720,10 @@ export async function storeResults(
            // M59/#855: build the storeable-interval index used by the
            // relationship-source fallback below. Sorted by start ascending, so a
            // backwards scan returns the INNERMOST enclosing span first.
-           for (const s of result.symbols) {
-             const sStart = s.startLine ?? s.range?.startLine ?? 0
-             const sEnd = s.endLine ?? s.range?.endLine ?? sStart
-             if (sStart < 1) continue
-             if (!storeableName(s.name, sStart)) continue
-             storeableSpans.push({
-               id: `${fileId}:${s.name}:${sStart}`,
-               // #612 source half reads this: the name lookup's FIRST-WINS order
-               // is what the containment rule replaces for same-name candidates.
-               name: String(s.name || ""),
-               start: sStart,
-               end: Math.max(sEnd, sStart),
-               kind: String(s.type || s.kind || "unknown"),
-             })
-           }
-           storeableSpans.sort((a, b) => a.start - b.start)
+           // THE BUILD IS HOISTED, INCLUDING ITS SORT. `storeableName` is passed IN as the predicate
+           // rather than read from module scope — see the note below: it is PER-CALL MUTABLE STATE and
+           // a module-level denylist would leak the fallback entries across files.
+           storeableSpans.push(...buildStoreableSpans(result.symbols, fileId, storeableName))
            // First container-kind symbol in sorted order (used for this/self resolution)
            const INTRA_CONTAINER_KINDS = new Set(["class", "interface", "struct", "trait", "enum", "object", "actor", "impl"])
            firstContainerSymbol = result.symbols.find((s: any) => INTRA_CONTAINER_KINDS.has(s.type || s.kind || "unknown"))
