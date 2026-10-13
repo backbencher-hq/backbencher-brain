@@ -28,6 +28,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TARGET = ROOT / "src" / "ast" / "real-python-analyzer.ts"
+# ROUND 18 — a mutant may live in another file, and the fixture suite cannot see every file it
+# mutates: the store's row model is in the INDEXER, and every python fixture reads the analyzer's
+# return value. `target` names the file to mutate and `checker` names the gate that can see it.
+INDEXER = ROOT / "src" / "ast" / "parallel-indexer.ts"
+TARGETS = {"analyzer": TARGET, "indexer": INDEXER}
+PIN = ROOT / "validation" / "m14" / "fixtures" / "python" / "import-bound-name-seam.mts"
 
 MUTANTS = [
     {
@@ -535,11 +541,44 @@ MUTANTS = [
         "new": '      // MUTANT round15: the import channel not consulted at all',
         "expect": "CAUGHT",
     },
+    {
+        "id": "round18/row-id-per-statement-restored",
+        "what": "THE ROUND-17 STATE restored in the store: the row id is `module:line` again, so every item but the LAST of a multi-item statement is overwritten by the next one (3,000 of 11,903 projected rows on a 2,000-file corpus sample). Checked by the SEAM PIN, not by fixtures: the row model lives in the indexer and no fixture indexes anything — this is the mutant that would have been reported SURVIVED by a harness that only knows one checker",
+        "target": "indexer",
+        "checker": "seam-pin",
+        "old": '''             const importIdBase = `${fileId}:import:${moduleName}:${impLine}`
+             const importIdSeqN = (importIdSeq.get(importIdBase) ?? 0) + 1
+             importIdSeq.set(importIdBase, importIdSeqN)
+             const importId = importIdSeqN === 1 ? importIdBase : `${importIdBase}:${importIdSeqN}`''',
+        "new": '             const importId = `${fileId}:import:${moduleName}:${impLine}`  // MUTANT round18',
+        "expect": "CAUGHT",
+    },
+    {
+        "id": "round18/module-item-skipped-by-text-restored",
+        "what": "the item loop skips the module BY TEXT again, so any ITEM that spells the module name is dropped from `items` and from the edge list — `from datetime import UTC, datetime` publishes `UTC` alone and `from clock import clock` publishes nothing (158 priced items; caught by `python/import-surface-is-a-set`'s `datetime` row edge and its `clock:clock` edge)",
+        "old": '          if (moduleNodeId === undefined || c.id !== moduleNodeId) {',
+        "new": '          if (c.text !== moduleName) {',
+        "expect": "CAUGHT",
+    },
+    {
+        "id": "round18/future-import-dispatch-dropped",
+        "what": "`future_import_statement` dropped from the walk's dispatch, so `from __future__ import annotations` publishes no row and no edge again (1,286 statements / 1,298 items over the python population; caught by `python/import-surface-is-a-set`'s `__future__` row and edge)",
+        "old": '''        case "import_statement":
+        case "import_from_statement":
+        // ROUND 18: tree-sitter-python gives `from __future__ import x` a node type of its own, so a
+        // dispatch that lists only the two above leaves the file's own `__future__` dependency
+        // unwalked — no row, no edge. See `extractImport` for the measurement and for what is
+        // deliberately NOT changed for this shape (it binds no name).
+        case "future_import_statement": {''',
+        "new": '''        case "import_statement":
+        case "import_from_statement": {''',
+        "expect": "CAUGHT",
+    },
 ]
 
 
-def digest() -> str:
-    return hashlib.sha256(TARGET.read_bytes()).hexdigest()
+def digest(path: Path = TARGET) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def run_fixtures() -> tuple[int, list[str]]:
@@ -551,32 +590,75 @@ def run_fixtures() -> tuple[int, list[str]]:
     return len(fails), fails
 
 
+def run_seam_pin() -> tuple[int, list[str]]:
+    """ROUND 18 — the SECOND CHECKER, because one defect is in the INDEXER and the fixture suite never
+    indexes anything.
+
+    The store-side row model lives in `src/ast/parallel-indexer.ts`, and every python fixture reads the
+    ANALYZER's return value — so a mutant that reverted the indexer would be reported SURVIVED by this
+    harness for the only reason that can make a surviving mutant meaningless: the suite cannot see the
+    code under test. `validation/m14/fixtures/python/import-bound-name-seam.mts` runs the real
+    `indexProjectParallel` and asserts the store, so a mutant names its CHECKER and the harness runs the
+    one that can see it. A mutant is caught when the checker reports at least one problem; the problem
+    IDs are printed, so `caught by` names the exact assertion rather than just 'the gate failed'.
+    """
+    proc = subprocess.run(
+        ["bun", PIN], cwd=ROOT, capture_output=True, text=True, timeout=1800,
+    )
+    if proc.returncode == 0:
+        return 0, []
+    ids = []
+    for line in proc.stdout.splitlines():
+        s = line.strip()
+        if len(s) > 2 and s[0] in "ABCDEFG" and s[1] == "-" and ":" in s:
+            ids.append(s.split(":", 1)[0])
+    return (1, ids) if ids else (1, [f"seam pin exit {proc.returncode}"])
+
+
+CHECKERS = {"fixtures": run_fixtures, "seam-pin": run_seam_pin}
+
+
 def main() -> int:
     verbose = "--verbose" in sys.argv
-    original = TARGET.read_text()
-    base_digest = hashlib.sha256(original.encode()).hexdigest()
+    # `--only <substr>` runs a SUBSET, for iteration while a round is being worked. The full run is the
+    # record, and the CONTROL is still taken over the whole suite either way, so a filtered run cannot
+    # report a green control it did not take.
+    only = None
+    if "--only" in sys.argv:
+        i = sys.argv.index("--only")
+        if i + 1 < len(sys.argv):
+            only = sys.argv[i + 1]
+    selected = [m for m in MUTANTS if only is None or only in m["id"]]
+    if only is not None:
+        print(f"--only {only!r}: {len(selected)} of {len(MUTANTS)} mutant(s)")
+    originals = {name: path.read_text() for name, path in TARGETS.items()}
+    base_digests = {name: hashlib.sha256(text.encode()).hexdigest() for name, text in originals.items()}
 
     n0, f0 = run_fixtures()
     print(f"control (unmutated): {n0} failing fixture(s) {f0}")
     if n0 != 0:
         print("CONTROL IS RED - the suite must be green before a mutant result means anything.")
-        TARGET.write_text(original)
+        for name, path in TARGETS.items():
+            path.write_text(originals[name])
         return 2
 
     results = []
-    for m in MUTANTS:
+    for m in selected:
+        target_name = m.get("target", "analyzer")
+        path = TARGETS[target_name]
+        original = originals[target_name]
         if m["old"] not in original:
             results.append((m, "NOT APPLIED", [], "pattern absent from the source"))
             continue
-        TARGET.write_text(original.replace(m["old"], m["new"], 1))
-        if digest() == base_digest:
-            TARGET.write_text(original)
+        path.write_text(original.replace(m["old"], m["new"], 1))
+        if digest(path) == base_digests[target_name]:
+            path.write_text(original)
             results.append((m, "NOT APPLIED", [], "replacement was a no-op"))
             continue
         try:
-            n, fails = run_fixtures()
+            n, fails = CHECKERS[m.get("checker", "fixtures")]()
         finally:
-            TARGET.write_text(original)
+            path.write_text(original)
         verdict = "CAUGHT" if n > 0 else "SURVIVED"
         results.append((m, verdict, fails, ""))
         if verbose and n == 0:
@@ -603,9 +685,11 @@ def main() -> int:
         if why:
             print(f"               {why}")
 
-    TARGET.write_text(original)
+    for name, path in TARGETS.items():
+        path.write_text(originals[name])
     print()
-    print("ANALYZER RESTORED to the unmutated source" if digest() == base_digest else "RESTORE FAILED")
+    restored = all(digest(path) == base_digests[name] for name, path in TARGETS.items())
+    print("SOURCES RESTORED to the unmutated state" if restored else "RESTORE FAILED")
     # A surviving mutant fails the suite, not the mutant (docs/M14-HONESTY-CONTRACT.md 5.3).
     if survived or notapplied:
         print(f"SUITE FAILS: {survived} surviving, {notapplied} unapplied.")

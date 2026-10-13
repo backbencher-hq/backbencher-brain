@@ -729,7 +729,12 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "import_statement":
-        case "import_from_statement": {
+        case "import_from_statement":
+        // ROUND 18: tree-sitter-python gives `from __future__ import x` a node type of its own, so a
+        // dispatch that lists only the two above leaves the file's own `__future__` dependency
+        // unwalked — no row, no edge. See `extractImport` for the measurement and for what is
+        // deliberately NOT changed for this shape (it binds no name).
+        case "future_import_statement": {
           this.extractImport(node, ctx)
           break
         }
@@ -1902,17 +1907,59 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           ...(alias ? { importedAs: alias } : {}),
         }, this.nodeLine(name))
       }
-    } else if (node.type === "import_from_statement") {
+    } else if (node.type === "import_from_statement" || node.type === "future_import_statement") {
       // `from .models import User, Role, format_name as fmt`
       // module = relative_import or dotted_name (first named child before import)
+      //
+      // ROUND 18 — THE MODULE IS RECORDED BY NODE, because the ITEM loop below has to skip it and
+      // skipping it by TEXT is what dropped a real binding. `from datetime import datetime` spells
+      // the module and the item with the SAME string, so
+      // `if (c.text !== moduleName)` threw away the item and kept the module: the row carried
+      // `items: ["UTC"]` for `from datetime import UTC, datetime`, both the row and the EDGE lost the
+      // binding `datetime`, and `datetime.date(...)` in that file named a name bound by nothing.
+      // Measured: **158** such items in the python population, each with its file and line in
+      // `.tmp-py/round18-surface-price.log` (`.tmp-py/price-import-surface-ast.py`); found by the
+      // two-instrument cross-check in `.tmp-py/compare-rows-instruments.py`, where this is the cause
+      // of the one file the projection and the `ast` model disagreed on by one.
+      //
+      // `id`, NOT OBJECT IDENTITY, for the reason this file's own PY-D18 collector records at its own
+      // module-vs-item guard: web-tree-sitter hands back a FRESH wrapper on every access, so `c ===
+      // moduleNode` is never true. The comparison has to be on the underlying node id.
       let moduleName = ""
       let seenImport = false
-      for (let i = 0; i < node.namedChildCount; i++) {
-        const c = node.namedChild(i)
-        if (!c) continue
-        if (c.type === "import" || c.text === "import") { seenImport = true; continue }
-        if (c.type === "relative_import" || c.type === "dotted_name") {
-          if (!seenImport && !moduleName) moduleName = c.text
+      let moduleNodeId: number | undefined
+      if (node.type === "future_import_statement") {
+        // A `__future__` IMPORT IS A NODE TYPE OF ITS OWN, and the module is NOT a named child. The
+        // grammar hard-codes the module in the rule, so before this round `from __future__ import
+        // annotations` fell through the walk's dispatch (`import_statement` /
+        // `import_from_statement` only) and produced NO row and NO edge — the file's own import
+        // surface silently lacked it. Measured over the population: **1,286** statements, **1,298**
+        // items, each reaching nothing (`.tmp-py/round18-surface-price.log`); the sample that found it
+        // is the cross-check's third disagreement, `cython/Demos/run_primes.py:1`.
+        //
+        // The module is stated HERE rather than derived, because there is nothing to derive it from:
+        // the item loop over this node sees `absolute_import`, `print_function`, `annotations` — the
+        // ITEMS — and would otherwise read the first item as the module (that is exactly what the
+        // scan below would do). `__future__` is the one module python has under that name, and a
+        // statement of this node type cannot name any other.
+        //
+        // NOTHING ELSE IS CHANGED FOR THIS SHAPE, and the omissions are decisions, not oversights: a
+        // `__future__` import BINDS NO NAME (`from __future__ import annotations` does not make
+        // `annotations` callable, it is a compiler directive), so `addImportBoundNames` must keep
+        // ignoring it — adding it there would publish a symbol that no file can use — and
+        // `ctx.importRoots` (the pre-scan and the PY-D18 collector) must keep ignoring it too, for the
+        // same reason: `annotations` is not an imported root a `annotations.X()` call could resolve
+        // against. What the file genuinely does declare is a DEPENDENCY on `__future__`, and that is
+        // what the row and the edge carry.
+        moduleName = "__future__"
+      } else {
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const c = node.namedChild(i)
+          if (!c) continue
+          if (c.type === "import" || c.text === "import") { seenImport = true; continue }
+          if (c.type === "relative_import" || c.type === "dotted_name") {
+            if (!seenImport && !moduleName) { moduleName = c.text; moduleNodeId = c.id }
+          }
         }
       }
 
@@ -1927,7 +1974,11 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         const c = node.namedChild(i)
         if (!c) continue
         if (c.type === "dotted_name" || c.type === "identifier") {
-          if (c.text !== moduleName) { items.push(c.text); itemNodes.push({ name: c.text, node: c }) }
+          // ROUND 18: skip the MODULE by node id, not by its text. The text guard dropped every ITEM
+          // that spells the module name; see the note on `moduleNodeId` above for the measurement.
+          if (moduleNodeId === undefined || c.id !== moduleNodeId) {
+            items.push(c.text); itemNodes.push({ name: c.text, node: c })
+          }
         } else if (c.type === "aliased_import") {
           // PY-D13 (round 7) — `from x import Z as W` binds `W`, and this branch recorded only
           // the IMPORTED name `Z`: the alias node was read for nothing, so the name the file

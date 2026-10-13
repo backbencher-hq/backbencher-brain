@@ -12,9 +12,9 @@ defects behind them, see [`reviews/python/master-review.md`](../../reviews/pytho
 | Analyzer | `src/ast/real-python-analyzer.ts` (`RealPythonAnalyzer`) |
 | Extensions | `.py`, `.pyi` |
 | Grammar | `tree-sitter-python` 0.25.0, `wasm/tree-sitter-python.wasm`, **pinned by sha256** |
-| Fixtures | **52**, all passing (`bun script/m14/run-fixtures.ts --lang python`, exit 0) |
-| Mutants | **59, none surviving** (`python3 script/m14/python-implements-mutants.py`: 59 caught · 0 survived · 0 not applied) |
-| Completeness | **127 named node types classified** — 71 handled-verified, 56 internal-silent, **0 gaps**, **30 design decisions** (`script/m14/spec/python-completeness.json`, re-read by `npx tsx script/m14/completeness-inventory.ts --lang python` → sections A–H **8/8**; the file is ASCII-only) |
+| Fixtures | **53**, all passing (`bun script/m14/run-fixtures.ts --lang python`, exit 0) |
+| Mutants | **65, none surviving** (`python3 script/m14/python-implements-mutants.py`: 65 caught · 0 survived · 0 not applied). Three of them (`round18/*`) are checked by `import-bound-name-seam.mts` rather than by the fixture suite, because the store's row model lives in the indexer and no fixture indexes anything — the harness takes a `checker` per mutant for exactly that reason |
+| Completeness | **127 named node types classified** — **72** handled-verified, **55** internal-silent, **0 gaps**, **33 design decisions** (`script/m14/spec/python-completeness.json`, re-read by `npx tsx script/m14/completeness-inventory.ts --lang python` → sections A–H **8/8**; the file is ASCII-only) |
 | Regex | **0 executable regex literals**, 0 `new RegExp(`, 0 `RegExp` — verified by stripping comments and strings first. **Caveat:** `clean-completeness-gate.ts` §4a hardcodes the `clean` lane and does not check this one, and the committed M12 census record is stale for python (`STALE … :589:/^@/`, a regex since removed) — see `reviews/regex-policy.md` |
 | Corpus | **11,488 files, 206,953 symbols, 1,290,653 relationships, 0 parse failures** — `validation/m14/fixtures/python/resolution-verdict.current.json`, re-measured 2026-10-12 (round 15). **42 rows still live in files CPython itself rejects** (ASN.1 documents and a py2 build script carrying a `.py` extension, a highlighter fragment) and are declared as a file-level residual rather than counted as damage |
 | Independent oracle | **Ten labels emitted, all ten under an independent derivation**, and the differential's two lanes read `covered=100% MISSING=0 unexplained=0` (cython rotation + the fixed 37-file `requests` corpus). Incoming `UNEXPLAINED` over the whole population is **5, all in `exports`** — 4 SUBMODULE rows and 1 stale `__all__` row, each named below — and **0** for the other nine labels; outgoing (source) unresolved is **0** for all ten |
@@ -32,7 +32,7 @@ population's, from `resolution-verdict.current.json`.
 | --- | --- | --- | --- |
 | `contains` | 1.0 | 135,652 | Derived from `ownerName`, so it is a statement about the parse, not an inference. |
 | `extends` | 1.0 | 20,954 | Bases are read from the class's own argument list. |
-| `imports` | 1.0 | 97,112 | Read from `import_statement` / `import_from_statement`. |
+| `imports` | 1.0 | 97,112 | Read from `import_statement` / `import_from_statement` — and, since round 18, `future_import_statement`, which the grammar gives a node type of its own (`from __future__ import x`; PY-D33). The count is the 2026-10-12 measurement and therefore predates that axis: the population carries **1,286** such statements and **1,298** items, so a re-measure moves this cell, and the whole-population re-take is owed (see the note below the table). |
 | `exports` | 1.0 | 3,043 | Read from `__all__` assigned a **list**, **tuple** or **set** literal — and, since round 14, an entry is **resolvable** when the file's own module-level `__getattr__` spells the name (PY-D28). |
 | `calls` | 0.9 | 535,006 | A name in call position, including an **imported** class — the commonest call shape in the language. |
 | `uses` | 0.9 | 389,972 | A member **read** (`self.x`), marked `isMemberRead`. Excludes assignment targets, call callees, and call receivers. |
@@ -40,6 +40,8 @@ population's, from `resolution-verdict.current.json`.
 | `references` | 0.95 | 61,955 | A name used in a **type or annotation position**, carrying a `reasonCode` for which position (`annotation-type`, `instanceof-check`, …). |
 | `implements` | 1.0 structural / 0.9 contextual | 333 | An `ABC`/`Protocol` base the file declares; the 0.9 tier is the 3 `.register(...)` sites that are proven rather than spelled. |
 | `overrides` | **0.95 verified / 0.5 guessed** | 33,492 (3,176 / 30,316) | See the resolution contract below — the two confidences mean two different things. |
+
+**These counts are the 2026-10-12 measurement and one axis is OWED a re-take after round 18.** Two changes move them and neither is a new label: `future_import_statement` now publishes (PY-D33), and the store's `brain_import` row model went from one row per statement to one row per item (PY-D32). The row model moves NO relationship count (each item already emitted its own edge), and it moves `brain_import` rows by the item-count, not the statement-count: measured through the production projection over 2,000 stride-sampled corpus files, **11,903 item rows projected against 8,903 distinct ids written before the fix (+33.70 %, 785 files affected)**. The `imports` label grows by **1,298** edges on the frame the price ran on (5,949 CPython-parsable files; the lane's own population is larger, so the re-taking instrument owns the final number). `resolution-verdict.current.json` has NOT been regenerated, and this table is not claiming otherwise.
 
 **All ten emitted types are under independent verification**, each label compared against its own
 derivation rather than against a shared helper — `contains` `extends` `overrides` `calls`
@@ -155,13 +157,15 @@ silently changing what the graph claims.
   not state.
 - `overrides` is **not** guessed for a base that is declared in this file but does not define
   the method. The method does not exist to override.
-- **The store seam has two declared halves left (round 17).** `brain_import.imported_as` is written now
-  (`t`, `PV`, `v` — and NULL for a plain import), but the CLASSIFICATION the projection puts in its own
-  `type` field is not read by the indexer (which reads `importType`), and `brain.sql.ts` fixes
-  `import_type` to a four-term vocabulary while ten other lanes declare values like `make_include` — so
-  routing it is a contract decision on a shared column, not a plumbing widen. And the row model keeps
-  ONE item per statement: the indexer's id is keyed on `module:line` and the insert is `INSERT OR
-  REPLACE`, so the LAST item wins (6 aliased statements corpus-wide lose their binding; PY-D32).
+- **The store seam has ONE declared half left, and it is the classification.** `brain_import.imported_as`
+  is written (`t`, `PV`, `v` — and NULL for a plain import) since round 17, and since round 18 the ROW
+  MODEL holds every item of a statement rather than its last one (`from m import a as b, c` is two rows;
+  PY-D32). What remains declared is the CLASSIFICATION: the projection puts the analyzer's own value in
+  its `type` field, the indexer reads `importType` (never emitted), and `brain.sql.ts` fixes
+  `import_type` to a four-term vocabulary (`default`, `named`, `namespace`, `side_effect`) while ten
+  other lanes declare `make_include`, `include`, `sql_extension`, `java-module-requires`, … — so routing
+  it is a vocabulary decision on a shared column, not a plumbing widen. Pinned at its current value
+  (`named`) by `import-bound-name-seam.mts` check B so the deferral cannot drift unseen.
 - **Cython is not a framework.** It is the corpus's second-largest import root (429 sites
   across both spellings) and it is a *dialect* — and no analyzer in this repository publishes a
   `dialect` field, so recording it as a framework would be a false claim. Filed as **PY-16**.
@@ -192,8 +196,8 @@ first. Over the corpus, **2,029 of 3,271 files (62.0%)** carry a framework.
 | Claim | Where it is pinned |
 | --- | --- |
 | grammar bytes | `validation/m14/grammar-pins.json`, lane `python` |
-| 52 fixtures | `validation/m14/fixtures/python/` |
-| 61 mutants | `script/m14/python-implements-mutants.py` (ids prefixed `round*`/`python/`) |
+| 53 fixtures | `validation/m14/fixtures/python/` |
+| 65 mutants | `script/m14/python-implements-mutants.py` (ids prefixed `round*`/`python/`) |
 | node-type classification | `script/m14/spec/python-completeness.json` |
 | independent truth | `script/m14/oracles/python-truth.ts` + `python-truth-diff.ts` |
 | the whole-population verdict | `validation/m14/fixtures/python/resolution-verdict.current.json` + `resolution-verdict-gate.ts` (the per-label contract, with each residual's cause and ceiling — `exports` now **0**) |

@@ -4214,3 +4214,81 @@ same symbol.
   **32/0 with no regressions**, because the fixture path supplies no project index — so the candidate's
   whole effect is gated on the entry existing, and it cannot move a per-file reading. The edit was reverted
   after the run and the analyzer digest re-verified (`dc7b55e4…`).
+
+## Round 18 (2026-10-13) — THE IMPORT SURFACE AS A SET: the store kept one row per STATEMENT (+33.70 % of the surface was overwritten), and the price's cross-check found two more classes that never reached a row at all
+
+Round 18 takes the last declared half of the store seam — PY-D32's row model — and comes out with three
+defects, because the price for the first was validated by a SECOND instrument and the two disagreed on
+four files out of 800. Every number is measured through the production pipeline; nothing here is
+reasoned from the shape of the code.
+
+**1. `brain_import` held one row per STATEMENT, and the store is per ITEM (PY-D32, CLOSED).** The
+projection emits one row per item (`{name, path, alias?, type, isExternal, line}`) and always did, while
+the indexer's id was `` `${fileId}:import:${moduleName}:${impLine}` `` — module and line, both shared by
+every item of a statement — with `INSERT OR REPLACE`, so the LAST item was the one that survived and
+every item before it was overwritten. **Priced through the production projection over 2,000 stride-sampled
+corpus files (python 800 / typescript 600 / javascript 600, every repo, <= 1 MiB): 11,903 item rows
+projected against 8,903 distinct ids written — 3,000 rows lost, 785 files affected, +33.70 %, largest
+single statement 45 items.** The fix is the id: an OCCURRENCE COUNTER inside one (module, line) group
+(not the item name — a statement may legally bind the same name twice), with the FIRST row of each group
+keeping its historical id byte for byte. Consumers were mapped before the change: `dependencies.ts`
+already dedupes by (path, external) so it does not move, `import-resolution.ts` builds a specifier set,
+`doc-engine` caps at 40 rows per file, and the row COUNT moves in `quick-answer` / `database.ts` /
+`health-provider` — correctly, because an item is an import.
+
+**2. `from __future__ import annotations` never reached a row or an edge (PY-D33).** tree-sitter-python
+gives that construct a node type of its own and hard-codes the module in the rule (the node holds only
+its items), while the walk dispatched `import_statement` and `import_from_statement` only. **1,286
+statements / 1,298 items over the python population, every one reaching nothing** — and the spec had
+classified the node type `internal_silent` under PY-D5 ("no legal Python 3 source produces them"), a rule
+true of `print_statement` and `exec_statement` and false of this one, so the correction landed in the
+analyzer AND in the classification in the same edit. A `__future__` import binds no name, so
+`addImportBoundNames` and `ctx.importRoots` deliberately keep ignoring it: the row and the edge carry the
+DEPENDENCY, not a binding.
+
+**3. An item that spells the module name was dropped, by comparing TEXT where the module node was meant
+(PY-D34).** `from datetime import UTC, datetime` published `UTC` alone. **158 items over the population**,
+each named with file and line; fixed by comparing node IDs (`.id`, not `===`, which this file's own
+PY-D18 guard already warns is never true under web-tree-sitter).
+
+**The cross-check is the round's best instrument decision.** The row-model price costs ~350 ms/file, so a
+second arm was written in CPython's `ast` (whole population, milliseconds) and run on the SAMPLE'S OWN
+file list, written out by the first arm. **The two agree per file on 796 of 800** — and the four
+exceptions ARE findings 2 and 3 (three `__future__` files, one module-named item). A verification run that
+disagrees on four rows out of 800 is not a failed verification; it is a defect list.
+
+**Verified in a detached worktree at HEAD, because this checkout is shared** — another lane is mid-edit in
+`src/ast/parallel-indexer.ts` itself (the r-lane's per-id clause-4 work), so the five source edits were
+stated as a script (`.tmp-py/apply-round18-edits.py`, apply/revert, anchors asserted exactly once) and
+applied to `git worktree add --detach /tmp/bb-r18 HEAD`: `tsc --noEmit` exit 0 · python fixtures **53/0** ·
+`import-bound-name-seam.mts` exit 0 with checks **A–G** (F: the store keeps every item of two multi-item
+statements built in BOTH orders, 8 `models` rows named; G: the `__future__` row and the `clock:clock`
+edge) · `resolution-verdict-gate.ts` exit 0, total incoming UNEXPLAINED **0** · `export-residual-gate.mts`
+exit 0 · `typecheck:scripts` exit 0. **THE LANE'S MUTANT BATTERY WAS RED AT HEAD AND IS GREEN AGAIN:**
+`python/companion-index/comp-child`'s forbid row stopped discriminating when `d2ca95628` respelled the
+override target (its forbidden pattern matched the 0.95 promotion it exists to permit), and that commit
+left the fixture failing on purpose with its own recorded follow-up. The re-anchor moves the
+discrimination to CONFIDENCE (`confidenceMax: 0.5` forbids the unpromoted guess, the `expectRelationships`
+row keeps requiring the promotion at `confidenceMin: 0.9`) — measured before/after: the unbounded row
+failed on `overrides[Redirect.send->send]@0.95`, the bounded one passes and still fires if the promotion
+stops.
+
+**One harness change, because a mutant the suite cannot see is not a survivor.** The row model lives in
+the INDEXER and every python fixture reads the analyzer's return value, so that mutant would have read
+SURVIVED for the reason that makes a survivor meaningless. The harness now takes `target` and `checker`
+per mutant (`fixtures` or `seam-pin`), snapshots and restores every target, and gained `--only` for
+iteration while the full run stays the record. Three new mutants: `round18/row-id-per-statement-restored`
+(seam pin), `round18/module-item-skipped-by-text-restored`, `round18/future-import-dispatch-dropped`.
+
+**Still open after round 18, with numbers.** (1) **The CLASSIFICATION half is now the seam's only declared
+item:** the projection's own `type` field carries the analyzer's value, the indexer reads `importType`
+(never emitted), and `brain.sql.ts` fixes `import_type` to four terms while ten lanes declare
+`make_include`, `include`, `sql_extension`, … — a vocabulary decision on a shared column, pinned at
+`named` so it cannot drift unseen. (2) **The row-count movement is real and OWED a re-take:** committed
+`brain_import` snapshots in other lanes (`validation/m14/kotlin-gap/census-kotlinc-300.json`,
+`validation/m14/go/go-oracle-*.json`) predate this change, and `resolution-verdict.current.json` has NOT
+been regenerated — the `imports` label gains 1,298 edges on the frame the price ran on (5,949
+CPython-parsable files), and the population counts in `python.md` say so instead of being quietly
+re-quoted. `validation/m14/verification/instrumented-parallel-indexer.ts` is a FROZEN round-16 copy of
+the indexer and still carries the old id; it is a historical instrument, nothing reads it, and it is left
+as it stands rather than silently re-synced.

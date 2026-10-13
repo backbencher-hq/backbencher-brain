@@ -1269,6 +1269,97 @@ exit 0, the verdict gate exit 0 with total UNEXPLAINED **0** and outgoing 0 on a
 and **PY-D30** kept `DECLARED` — the rows are still unresolved, so the status is unchanged on
 purpose — and each carrying an appended paragraph that records the closure of the defect axis.
 
+### The import surface as a set — every item of every statement, and two item classes that
+### never reached a row (round 18, 2026-10-13)
+
+**THREE DEFECTS, ONE QUESTION: can a file's import surface be read as a SET?** The round was declared
+as one item (PY-D32's row model, PY-D13's sibling) and came out as three, because the price for the
+first was cross-checked by a second instrument and the cross-check disagreed — on four files out of
+800, and each disagreement was a defect nobody had named.
+
+**1. The store kept one row per STATEMENT (PY-D32, closed).** Every layer above the store was already
+per ITEM: `src/ast/pool-worker.ts` projects `{name, path, alias?, type, isExternal, line}`, one entry
+per name the statement binds, and its own comment calls that granularity the thing that "directly
+determines audit precision". The indexer then built the row id as
+`` `${fileId}:import:${moduleName}:${impLine}` `` — module and line, BOTH of which every item of a
+statement shares — and wrote the rows with `INSERT OR REPLACE`, so each item overwrote the one before
+it and only the LAST survived. `from m import Sku as SKU, fixture` stored `fixture`; the binding was
+gone and the item with it. **Priced through the production projection** (`parseFile`, the same
+function the indexer calls through the pool) over **2,000 stride-sampled corpus files** (python 800 /
+typescript 600 / javascript 600, every repo, <= 1 MiB): **11,903 item rows projected, 8,903 distinct
+ids written — 3,000 rows lost, 785 files affected, +33.70 %**, largest single statement 45 items
+(`.tmp-py/probe-import-rows-sample.mts` → `.tmp-py/round18-sample.json`). **The fix is the id:** an
+OCCURRENCE COUNTER inside one (module, line) group — not the item name, because a statement may
+legally bind the same name twice (`from m import a, a`) and an id that can collide is the defect being
+fixed. The first row of each group keeps its historical id byte for byte, so nothing that already
+reads an id sees a new value; ids are per file, the loop is per file, and the file's rows are deleted
+and rewritten together (`deleteFileImports`), so no stale id survives a reindex.
+
+**2. `from __future__ import x` was invisible to the walk (PY-D33).** tree-sitter-python gives that
+construct a **node type of its own** (`future_import_statement`) and hard-codes the module inside the
+rule — probed: the node holds ONLY its items, `dotted_name`s, and `__future__` is not a named child.
+The walk dispatched `import_statement` and `import_from_statement` only, so the statement produced NO
+row and NO edge. **Over the population: 1,286 statements, 1,298 items, every one reaching nothing**
+(`.tmp-py/round18-surface-price.log`); the dominant item is `annotations`, a real request that changes
+how a module's annotations are evaluated. The spec had this node type classified `internal_silent` in
+**PY-D5** — "no legal Python 3 source produces them", a rule that is true of `print_statement` and
+`exec_statement` and FALSE of this one — so the fix included correcting the classification in the same
+edit that corrected the analyzer. **What was deliberately NOT changed:** a `__future__` import binds NO
+NAME, so `addImportBoundNames` and `ctx.importRoots` keep ignoring it; adding it there would publish a
+symbol no file can use. The row and the edge carry the DEPENDENCY, which is what the file declares.
+
+**3. An item that spells the module name was dropped (PY-D34).** The item loop skipped the module with
+`if (c.text !== moduleName)` — a TEXT comparison, written to skip the module NODE (one of the same
+loop's named children). Any ITEM that spells the module name is indistinguishable from the module under
+that rule, so `from datetime import UTC, datetime` published `items: ["UTC"]`: the row lost
+`datetime`, the edge lost it too, and `datetime.date(...)` in such a file named a name bound by nothing.
+**Over the population: 158 such items**, each with file and line in
+`.tmp-py/round18-surface-price.log` (`from netrc import netrc` in `requests/src/requests/utils.py:246`,
+`from datetime import datetime` in `ansible/lib/ansible/modules/uri.py:442`, …). The fix records the
+module NODE and compares **node ids** — `.id`, not `===`, for the reason this file's own PY-D18
+collector already records at its own module-vs-item guard (web-tree-sitter hands back a fresh wrapper
+per access). `from a.b import b` and `from . import y` already behaved and are unchanged.
+
+**The instrument that found 2 and 3, and why building it was the round's best decision.** The row-model
+price is `parseFile` per file (~350 ms), so it can only reach a sample. A second arm was written in
+CPython's `ast` (milliseconds, whole population) and **run on the sample's own file list** — 800 python
+files, the exact set written out by the projection arm. The two agreed per file on **796 of 800**, and
+the four exceptions are the two defects above: three files where `from __future__ import …` produced
+nothing, one where the module-named item was dropped (`gql-saleor/saleor/webhook/transport/metrics.py`,
+`ast` 7 rows vs projection 6). **A cross-check whose purpose was to validate a price is what found the
+round's second and third defects** — the same lesson as round 17's corrected price, one level up: an
+instrument that agrees is evidence, and an instrument that disagrees on four rows is a finding list.
+
+**Verified in a detached worktree at HEAD, because this checkout is shared.** Another lane is mid-edit in
+`src/ast/parallel-indexer.ts` itself (the r-lane's per-id clause-4 work) and in three analyzers, so the
+five source edits were stated as a script (`.tmp-py/apply-round18-edits.py`, apply/revert, every anchor
+asserted present exactly once) and applied to `git worktree add --detach /tmp/bb-r18 HEAD`. There:
+`npx tsc --noEmit` exit 0 · fixtures **53/0** · `import-bound-name-seam.mts` exit 0 with **A–G** (F and
+G are new: F asserts the store holds every item of two multi-item statements built in BOTH orders,
+G asserts the `__future__` row and the `clock:clock` edge through `indexProjectParallel`) ·
+`resolution-verdict-gate.ts` exit 0 with total incoming UNEXPLAINED **0** · `export-residual-gate.mts`
+exit 0 · `typecheck:scripts` exit 0.
+
+**The lane's control was RED at HEAD and is green again, with the discrimination preserved.** Commit
+`d2ca95628` respelled the `overrides` target from `Owner.member` to the declared member, which collapsed
+`python/companion-index/comp-child`'s forbid row — its forbidden pattern (`Redirect.send -> send`) then
+matched the 0.95 TIER-2 promotion it is meant to permit — and that commit left the fixture failing on
+purpose, naming the follow-up (carry the owner in metadata and re-anchor there). That fixture is in this
+lane's directory and it blocked every mutant run (the harness refuses to report a mutant result against a
+red control). **The re-anchor keeps the original claim and moves it to the fact that still separates the
+two cases:** the promotion raises the confidence from the 0.5 guess to 0.95, so the row now carries
+`confidenceMax: 0.5` — it forbids exactly the unpromoted guess (and would fire if the promotion stopped
+happening), while the `expectRelationships` row above keeps requiring the promoted edge at
+`confidenceMin: 0.9`. The two-sided pair is intact; only the anchor moved from spelling to confidence.
+
+**One harness change, because a mutant the fixture suite cannot see is not a survivor.** The store's row
+model lives in the INDEXER, and every python fixture reads the analyzer's return value — so the row-model
+mutant would have been reported SURVIVED for the one reason that makes a survivor meaningless. The
+harness now takes `target` (which file to mutate) and `checker` (`fixtures` or `seam-pin`) per mutant,
+snapshots and restores every target, and gained `--only <substr>` for iteration while the full run stays
+the record. The three new mutants: `round18/row-id-per-statement-restored` (checked by the seam pin),
+`round18/module-item-skipped-by-text-restored`, `round18/future-import-dispatch-dropped`.
+
 ## Census
 
 - Baseline (M12 issue #166): 5 census regex entries in `real-python-analyzer.ts`.
