@@ -75,7 +75,23 @@ export function renderVisualizationStudio(documents: {
       var status = document.getElementById("status");
       var buttons = Array.prototype.slice.call(document.querySelectorAll(".mode"));
       var labels = { graph: "Graph", codemap: "Code map", class: "UML" };
+      function tuneViewport() {
+        var doc = frame.contentDocument;
+        if (!doc) return;
+        var style = doc.createElement("style");
+        style.textContent = [
+          "@media (max-width:760px) {",
+          "#hud { width: 210px !important; max-width: 210px !important; padding: 12px 14px !important; }",
+          "#stats { grid-template-columns: auto minmax(0, 1fr) !important; gap: 2px 12px !important; }",
+          "#stats span { overflow-wrap: anywhere !important; }",
+          "#search { width: 170px !important; }",
+          "#search input { width: 100% !important; }",
+          "}"
+        ].join("");
+        doc.head.appendChild(style);
+      }
       function mount(mode) {
+        frame.addEventListener("load", tuneViewport, { once: true });
         frame.srcdoc = docs[mode];
         buttons.forEach(function (button) {
           button.classList.toggle("active", button.dataset.mode === mode);
