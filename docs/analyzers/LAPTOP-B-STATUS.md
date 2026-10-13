@@ -4105,3 +4105,47 @@ same symbol.
   (+1/+1 memberOutsideRun, +2/+2 unnamed). arm14 (`incoming-gate.ts dart dart 0`) was **pre-registered
   before its run** — edge totals unchanged at 3,436,077, `causeOK` and `resolved` up, ≈10,000 rows
   leaving the receiver-cause population — receipt in `real-dart-analyzer.md` §arm14.
+
+- **dart — THE TYPED-RECEIVER CHANGE IS FALSIFIABLE IN FOUR DIRECTIONS, AND THE STORE LEVER IS NOW
+  PRICED (it does not pay where the residual table said to look for it).** Three things this round,
+  none of them a new analyzer edit: the falsifiers the change owed, the store-side measurement the
+  residual table asked for, and two code facts found while making it.
+  (1) **Four mutants, each CAUGHT, each isolating one claim** (`script/m14/mutate-analyzer.ts`, run
+  filtered with `BB_MUTANT_ONLY` so a slice never overwrites the canonical M14.0.F4 artifact):
+  `dart/typed-receiver-heads-unread` reverts BOTH reads to the pre-fix output (bare `poke`/`id` with
+  `receiverCause: receiverTypeUnknown`, the method-parameter control untouched) — `0 -> 1` failures,
+  new failure `dart/typed-receiver-heads`; `dart/closure-param-type-unread` and
+  `dart/forin-var-type-unread` revert ONE read each, so a green suite cannot rest on both — same
+  `0 -> 1`, same single fixture, which is what makes them separate claims rather than one;
+  `dart/record-pattern-type-read` over-reads the source instead (types a Dart 3 record pattern's
+  binding, DARTGAP1's bucket) and dies on the fixture's `forbidRelationships` — `0 -> 4` failures,
+  `dart/receiver-cause`, `dart/receiver-spelling`, `dart/typed-receiver-heads`,
+  `dart/untyped-method-is-method`. Script typecheck ratchet PASS (`0` errors, canary proved
+  diagnostics were reported); fixture-coverage all 27 languages PASS (dart `96` handled, `0`
+  uncovered); `completeness-inventory --lang dart` **8/8** and `run-fixtures --lang dart` **all
+  fixtures pass, no regressions** against the FINAL file state.
+  (2) **The store lever, measured** (`project-index-effect.ts`, A = no context = production today,
+  B = the `DART_DECLARATION_SPEC` index the lane's own gates build; the instrument gained a
+  per-`receiverCause` table so the question is asked about the right rows). On **dart-http** (333
+  files) and **riverpod** (1,295) the index buys +743 and +4,363 resolved edges, and the movement is
+  NOT in the receiver cut: `receiverMemberOutsideRun` — the cell the residual sizes the store lever
+  from — RESOLVES 116 rows and CREATES 435 on dart-http, and resolves 193 while creating 1,016 on
+  riverpod (**0.27** and **0.19** resolved per row created). It grows because `visibleTypes` is file
+  types PLUS index types, and `declaringOwner` still walks only THIS file's heritage, so an index
+  that knows the base in another file cannot name the declarer; `indexDeclares` reads the DECLARED
+  `typeMembers`, never the closed `__closedMembers`. The index's real winnings are elsewhere and
+  large: **`references` 476 → 1,227 and 3,520 → 8,774 edges** (the type-mention gate stops dropping
+  cross-file mentions — the class whose 44,181 ambiguous rows joined the contract row last round) and
+  the override pass trading guesses for checks (`overrides` unresolved 191 → 18 and 4,832 → 2,175).
+  The controls hold: `receiverTypeUnknown` and `receiverUnnamed` move by −2/−2 and −13/−8.
+  (3) **Why it was never supplied, in code — CITED, NOT DISCOVERED:** `HANDOFF.md` §5hh already
+  adjudicated this fleet-wide ("PRODUCTION INDEXES `.sol` AND `.fs`, AND DART'S SPEC IS UNREACHABLE …
+  there is no `.dart` entry that reaches it"), and the registry now reads
+  `PROJECT_INDEX_EXTENSIONS` (`parallel-indexer.ts:1631`) = `.sol`/`.fs`/`.proto`/`.scss` with no
+  `.dart`, while `wasm/tree-sitter-dart.wasm` is on disk and `DART_DECLARATION_SPEC` is exported —
+  consistent with that map's stated policy ("only entries … this repository has measured the benefit
+  of"), which this round's measurement now supplies. What is still stale: `pool-worker.ts:1865`
+  explains the shape of its context with "`INDEX_SPECS` carries `dart` alone" — a symbol that does not
+  exist (the registry is the function-local `PROJECT_INDEX_EXTENSIONS`), the exact sentence §5hh names
+  as the wrong explanation — and that sentence is why `project-index-effect.ts`'s header had asserted
+  production passes a dart index. Header corrected this round, not the shared comment (reported).

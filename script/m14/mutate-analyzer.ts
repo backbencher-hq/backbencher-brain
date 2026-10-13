@@ -17653,6 +17653,64 @@ export const MUTANTS: Mutant[] = [
     })) }),
   },
   {
+    id: "dart/typed-receiver-heads-unread",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "reverts the two receiver-head reads (dart/typed-receiver-heads): an ANONYMOUS CLOSURE's own parameter list is handed to `extractParameters` as the body's previous named sibling and then searched for a CHILD list that is not there, and `collectDartLocalTypes` never reads `for_loop_parts` — so a typed closure parameter and a typed for-in variable lose the type the SOURCE writes and `Element.poke`/`Element.id` out of `closures`/`loops` revert to a bare `poke`/`id` carrying `receiverCause: receiverTypeUnknown`. The transform is the pre-fix output, not an erased row: the bare rows are RE-ADDED with the typing-gap cause, so the fixture must be caught by its expectations and its forbids independently. The method-parameter CONTROL (`calls methodParam->Element.poke`) is deliberately untouched — it was typed before the change — so a mutant that reverted the whole receiver pass could not pass for the same reason.",
+    transform: r => {
+      const lost: any[] = []
+      const kept = (r.relationships ?? []).filter((x: any) => {
+        const fromFixed = x.source === "closures" || x.source === "loops"
+        const bare = !fromFixed ? null : x.target === "Element.poke" ? "poke" : x.target === "Element.id" ? "id" : null
+        if (!bare) return true
+        lost.push({ ...x, target: bare, metadata: { ...(x.metadata ?? {}), receiverCause: "receiverTypeUnknown" } })
+        return false
+      })
+      return { ...r, relationships: [...kept, ...lost] }
+    },
+  },
+  {
+    id: "dart/closure-param-type-unread",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "ONE READ of the typed-receiver-heads change: `extractParameters` stops accepting the `formal_parameter_list` it is handed as the body's previous named sibling, so a typed ANONYMOUS CLOSURE parameter loses its type while the METHOD parameter control keeps its own (a local function is unaffected either way — its body's sibling is a real `function_signature`). Kept separate from the for-in mutant because the change is TWO independent reads of the source and a single combined revert cannot show which one a green suite is resting on: this one is caught by `uses closures->Element.id` and `calls closures->Element.poke` together with their forbids of the bare rows.",
+    transform: r => {
+      const lost: any[] = []
+      const kept = (r.relationships ?? []).filter((x: any) => {
+        if (x.source !== "closures") return true
+        const bare = x.target === "Element.poke" ? "poke" : x.target === "Element.id" ? "id" : null
+        if (!bare) return true
+        lost.push({ ...x, target: bare, metadata: { ...(x.metadata ?? {}), receiverCause: "receiverTypeUnknown" } })
+        return false
+      })
+      return { ...r, relationships: [...kept, ...lost] }
+    },
+  },
+  {
+    id: "dart/forin-var-type-unread",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "THE OTHER read of the typed-receiver-heads change: `collectDartLocalTypes` has no `for_loop_parts` branch again, so `for (Element element in xs)` and its `final`/`await for` spellings bind the name and never read the type written beside it. Caught by `calls loops->Element.poke` and its forbid of the bare row — and by the fixture's `equals: 1` count, which is why the three spellings are one pin: a mutant that reverted only the `await for` arm would still leave the count at 1 and be caught only by the expect, so the count is the assertion that all three sites are read.",
+    transform: r => {
+      const lost: any[] = []
+      const kept = (r.relationships ?? []).filter((x: any) => {
+        if (x.source !== "loops") return true
+        const bare = x.target === "Element.poke" ? "poke" : x.target === "Element.id" ? "id" : null
+        if (!bare) return true
+        lost.push({ ...x, target: bare, metadata: { ...(x.metadata ?? {}), receiverCause: "receiverTypeUnknown" } })
+        return false
+      })
+      return { ...r, relationships: [...kept, ...lost] }
+    },
+  },
+  {
+    id: "dart/record-pattern-type-read",
+    language: "dart",
+    defectClass: "relationship-fabrication",
+    description: "OVER-READS the source instead of under-reading it: the rule reads the type written INSIDE a Dart 3 record pattern, so `for (final (int n, Element element) in …)` types its binding and the pattern's `element.poke()` stops being bare. This is the DECLINE half of the typed-receiver-heads fixture — the type is in the source and it must still not be read, because DARTGAP1 re-scoped pattern bindings to its own bucket by measurement, not by this rule. Caught by the fixture's `forbidRelationships calls controls->Element.poke`, the row that would move if the scope ever widened; the untyped `var` for-in and the untyped closure parameter are the same claim at two other spellings.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "controls", target: "Element.poke", confidence: 0.9, metadata: { qualifier: "chain" } }] }),
+  },
+  {
     id: "json/extends-dropped",
     language: "json",
     defectClass: "missing-relationship-type",

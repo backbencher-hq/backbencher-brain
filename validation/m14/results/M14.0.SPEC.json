@@ -76,8 +76,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "5159deaf70dd6821bbb87adce61cd5e1218bf8eb",
-  "committedAt": "2026-10-12T17:21:08-04:00",
+  "commit": "51a21d85fd097451d8ee83e1f8f10e70a6dca132",
+  "committedAt": "2026-10-12T18:20:38-04:00",
   "data": {
     "languages": {
       "dart": {
@@ -193,9 +193,9 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-12T21:24:51.949Z",
-  "regeneratedAtCommit": "5159deaf70dd6821bbb87adce61cd5e1218bf8eb",
-  "runtime": "node v24.3.0",
+  "regeneratedAt": "2026-10-12T22:24:56.257Z",
+  "regeneratedAtCommit": "51a21d85fd097451d8ee83e1f8f10e70a6dca132",
+  "runtime": "node v22.22.1",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
 }
