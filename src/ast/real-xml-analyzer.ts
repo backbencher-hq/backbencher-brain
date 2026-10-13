@@ -1,5 +1,6 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { fileClaimForTarget } from "./file-claim"
 
 /**
  * XML analyzer backed exclusively by the vendored tree-sitter-xml AST.
@@ -412,7 +413,12 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private xsdDerivationElement = false
   private derivationKind: "extension" | "restriction" = "extension"
 
-  public analyze(rootNode: Node, content: string, _filePath: string): ASTEngine.ParseResult {
+  public analyze(
+    rootNode: Node,
+    content: string,
+    filePath: string,
+    context?: ASTEngine.AnalyzeContext,
+  ): ASTEngine.ParseResult {
     this.bareNameReference = false
     this.bareNameDeclarationElement = false
     this.xsltCallElement = false
@@ -2074,6 +2080,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const droppedRelationships = relationships.length - keptRelationships.length
       if (droppedSymbols > 0 || droppedRelationships > 0) {
         this.qualifySameFileTier(keptSymbols, keptRelationships)
+        this.attachFileClaims(keptRelationships, filePath, context)
         return {
           language: "xml",
           symbols: keptSymbols,
@@ -2097,6 +2104,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     this.qualifySameFileTier(symbols, relationships)
+    this.attachFileClaims(relationships, filePath, context)
     return {
       language: "xml",
       symbols,
@@ -3144,6 +3152,49 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * The BARE name is preserved as `metadata.bareTarget`, so nothing is lost and a consumer that matched
    * the old spelling can still see it.
    */
+  /**
+   * THE FILE CLAIM — the ~466-edge lever, taken through infrastructure that ALREADY EXISTS.
+   *
+   * The lane's own note above the DOCTYPE emission says a file claim "REFUTES when no candidate is an
+   * admitted file, and `extFAIL` must stay 0" — and that is true of an UNGUARDED claim. It is not true of
+   * `fileClaimForTarget` (`src/ast/file-claim.ts:137`), whose whole contract is the opposite: it returns
+   * the project-relative path ONLY when a candidate is CONFIRMED, and null otherwise, "because an
+   * unconfirmed claim is what REFUTES". Two lanes already use it in production — `real-clean-analyzer.ts`
+   * and `real-graphql-analyzer.ts` — and `resolveImportTargets` (`src/ast/import-resolution.ts:382`) is
+   * wired into the indexer at `parallel-indexer.ts:5015` and `:5561`. So this is a USE of a channel rather
+   * than a file model to build.
+   *
+   * WHAT IT DOES TO THE COLUMNS: the arbiter's `projectFile` branch is the one claim it can CHECK against
+   * the project's own file list (`verifyFileClaim`), so a confirmed claim moves an edge out of
+   * `unresolved` and into `extOK` — a claim the project VERIFIES, which is what clause 1 asks for and is
+   * a RESOLUTION in the owner's standard rather than a ruling. An edge whose path cannot be confirmed is
+   * left exactly as it was: no claim, no refutation, extFAIL stays zero.
+   */
+  private attachFileClaims(
+    relationships: ASTEngine.UniversalRelationship[],
+    filePath: string,
+    context: ASTEngine.AnalyzeContext | undefined,
+  ): void {
+    const projectRoot = typeof context?.projectRoot === "string" && context.projectRoot.length > 0 ? context.projectRoot : null
+    if (projectRoot === null) return
+    for (const rel of relationships) {
+      if (String(rel.type ?? "") !== ASTEngine.RelationshipType.Imports) continue
+      const md = (rel.metadata ?? {}) as Record<string, unknown>
+      if (typeof md.importProjectFile === "string") continue
+      const written = String(rel.target ?? "")
+      if (written.length === 0) continue
+      const claim = fileClaimForTarget({
+        projectRoot,
+        filePath,
+        written,
+        admittedExtensions: ["xml", "xsd", "dtd", "svg", "xsl", "xslt", "rng"],
+      })
+      if (claim === null) continue
+      md.importProjectFile = claim
+      rel.metadata = md as ASTEngine.UniversalRelationship["metadata"]
+    }
+  }
+
   private qualifySameFileTier(symbols: ASTEngine.UniversalSymbol[], relationships: ASTEngine.UniversalRelationship[]): void {
     const byName = new Map<string, Set<string>>()
     for (const sym of symbols) {
