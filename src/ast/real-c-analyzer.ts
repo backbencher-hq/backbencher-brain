@@ -6062,7 +6062,7 @@ private isAttributeInternalCall(callNode: Node, fnNode: Node): boolean {
       //     up to the next such boundary, so a `uint32_t a:1, b:31, c:1` costs 8
       //     bytes rather than 4 -- the classic case;
       //   - a ZERO-width field (`unsigned int :0;`) consumes no bits and forces
-      //     the next field up to the declared type's boundary; me
+      //     the next field up to the declared type's boundary;
       //   - the STRUCT's alignment is the maximum of its members' declared-type
       //     alignments, bitfields included, and the size is rounded up to it.
       //
@@ -6196,7 +6196,7 @@ private isAttributeInternalCall(callNode: Node, fnNode: Node): boolean {
 
   /**
    * #927: the STRUCT-map key this member's declared type resolves to, or null.
-   * Only where the spelling allows it -- a member written `union U` is  mea union
+   * Only where the spelling allows it -- a member written `union U` is a union
    * even if a struct of that name exists, and `enum E` is neither. A bare/typedef
    * spelling keeps the historical behaviour (structs first), which is precisely
    * why the in-progress set, and not this rule, is the crash guarantee.
