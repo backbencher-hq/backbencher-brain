@@ -60,6 +60,15 @@
  * opinion on anything the fixtures do not already pin.
  */
 
+// THE BINDING SEPARATOR, IMPORTED RATHER THAN SPELLED — task-100, after task-99.
+// This oracle spelled the binding as `<callable>#<binding>` while its own comments named
+// `BINDING_SEP` as the convention. `BINDING_SEP` is `"\u0000"` (src/ast/types.ts:190), and the
+// arbiter's `verifyBindingClaim` refutes any marked target that carries no separator — so the
+// analyzer and THIS ORACLE agreed with each other, the differential could never flag the
+// divergence, and the arbiter was the only side using the real constant. Fixing the analyzer
+// alone left the oracle asserting the old spelling at :773; both sides now use the constant.
+import { BINDING_SEP } from "../../src/ast/types"
+
 /** One derived fact, in the shape the F5 harness consumes. */
 export interface TruthEdge {
   label: string
@@ -353,7 +362,7 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
   // A `let` inside a body is a LOCAL: the walk below says so at the `inBody && t !== "member_defn"`
   // branch, and the lane's contract is that a local publishes no symbol. A callee spelled with a
   // local's name therefore names a BINDING, not a declaration, and the convention for saying so is
-  // the separator spelling `<callable>#<binding>` (`BINDING_SEP`, src/ast/types.ts).
+  // the separator spelling `<callable>\u0000<binding>` (`BINDING_SEP`, src/ast/types.ts).
   //
   // This set is built by THIS walk, over THIS file, from the language. It is deliberately NOT read
   // from the analyzer's output: the differential exists so the two derivations can disagree, and a
@@ -768,9 +777,9 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
             } else {
               // THE BINDING SPELLING, derived from this file's own `let`s. A callee naming a
               // LOCAL has no declaration to resolve to, and the convention for saying so is
-              // `<callable>#<binding>` — the same convention the analyzer's binding claim uses,
+              // `<callable>\u0000<binding>` — the same convention the analyzer's binding claim uses,
               // reached here by an independent walk so the differential can still disagree.
-              emit("calls", owner, localBindings.has(leaf) ? `${owner}#${leaf}` : leaf, node)
+              emit("calls", owner, localBindings.has(leaf) ? `${owner}${BINDING_SEP}${leaf}` : leaf, node)
             }
           }
         }
@@ -805,7 +814,7 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
     } else if (t === "fun_expression") {
       // A LAMBDA PARAMETER IS A BINDING — `fun completions -> …` binds `completions` with no
       // symbol, exactly as a `let` inside a body does. A callee spelled with the name therefore
-      // names a binding, and the truth spells it `<callable>#<binding>` like every other binding.
+      // names a binding, and the truth spells it `<callable>\u0000<binding>` like every other binding.
       //
       // MEASURED 2026-10-10: this arm was MISSING, and it was the whole of a 4-row residue. In
       // `Tests.LanguageService.Completion.fs`, `(fun completions -> …)` at :213 is in scope at the
