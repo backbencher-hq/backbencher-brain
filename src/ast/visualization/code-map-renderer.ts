@@ -167,7 +167,20 @@ export const CODE_MAP_CSS = assemble([
   #path.on{display:block}
   .note{margin-top:10px;padding-top:9px;border-top:1px solid var(--edge);
     color:var(--muted);font-size:11.5px}
-  @media (max-width:900px){#side{width:250px}#hud{max-width:218px}}
+  @media (max-width:900px){
+    #side{width:250px}
+    #map{left:250px}
+    #path{left:262px}
+    #hud{max-width:218px}
+  }
+  @media (max-width:560px){
+    #side{width:220px;padding:12px}
+    #map{left:220px}
+    #path{left:232px}
+    #group{flex-wrap:wrap}
+    #group label{width:100%}
+    #group button{flex:1;padding-left:6px;padding-right:6px}
+  }
 `,
 ])
 
@@ -417,22 +430,14 @@ export const CODE_MAP_SCRIPT = assemble([
         } else break
       }
       // Place the row along the SHORTER side of what is left, all items sharing one
-      // THICKNESS, which is the row's area divided by that shorter side.
+      // THICKNESS, which is the row's area divided by that shorter side. The items
+      // themselves advance along the LONGER axis: a wide rectangle gets a horizontal
+      // row, while a tall rectangle gets a vertical row.
       //
-      // MEASURED, and the bug was a single confused axis. The row advanced its
-      // offset along x while each item was given a height of frac*h -- so items in
-      // one row were laid out SIDE BY SIDE but given INDIVIDUAL heights that all
-      // started at the same y. They overlapped each other, the row's total width was
-      // thickness*n, and rectangles ran past the right and bottom edges of the map.
-      // On cargo's src/compiler every one of the 6 directory groups overlapped: the
-      // worst pair covered 85,032px^2, and 2 of the 6 escaped the box entirely.
-      //
-      // The fix is that a row's items STACK along the short axis and share the
-      // thickness, so each item varies only along the axis the offset advances. The
-      // thickness divides by the short side because that is the axis the row spans;
-      // dividing by the long side instead under-fills the box by a near-constant
-      // fraction -- MEASURED 16-26% across every case in viz-13 -- because a row then
-      // covers less area than it is owed.
+      // The previous implementation confused those axes. Wide rows were given one
+      // shared width and stacked vertically, producing giant strips and leaving the
+      // supposed treemap looking like a set of wedges. The row must advance along the
+      // long axis while its thickness occupies the short axis.
       //
       // viz-13 asserts the two properties a treemap must have, so this cannot come
       // back silently: every pair of rectangles disjoint, and the areas summing to
@@ -442,14 +447,14 @@ export const CODE_MAP_SCRIPT = assemble([
       for (var j = 0; j < row.length; j++) {
         var frac = row[j].lines * scale / (rowArea || 1)
         if (w >= h) {
-          out.push({ item: row[j], x: x, y: y + offset, w: thickness, h: frac * h })
-          offset += frac * h
-        } else {
           out.push({ item: row[j], x: x + offset, y: y, w: frac * w, h: thickness })
           offset += frac * w
+        } else {
+          out.push({ item: row[j], x: x, y: y + offset, w: thickness, h: frac * h })
+          offset += frac * h
         }
       }
-      if (w >= h) { x += thickness; w -= thickness } else { y += thickness; h -= thickness }
+      if (w >= h) { y += thickness; h -= thickness } else { x += thickness; w -= thickness }
       idx = i
     }
     return out

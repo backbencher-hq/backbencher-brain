@@ -35,6 +35,8 @@ export interface VisualizationResult {
   view: VisualizationView
   nodes: any[]
   links: any[]
+  /** Stored fields, methods, and enum members grouped by class-like symbol. */
+  classMembers?: Record<string, { name: string; type: string; stale?: boolean }[]>
   /** What the noise filter removed, and on whose authority. A partial graph must
    *  never be allowed to look like a whole one. */
   excluded?: { symbols: number; byPattern: Record<string, number>; patterns: string[]; includesTestFiles: boolean }
@@ -234,7 +236,7 @@ function renderClassDiagram(result: VisualizationResult): string {
   const byId = new Map(result.nodes.map((n: any) => [n.id, n]))
   let outside = 0
   let members = 0
-  const membersByClass: Record<string, { name: string; type: string; stale?: boolean }[]> = {}
+  const membersByClass: Record<string, { name: string; type: string; stale?: boolean }[]> = { ...(result.classMembers ?? {}) }
   for (const l of result.links as any[]) {
     if (!EDGEY.has(l.type)) continue
     if (classIds.has(l.source) && classIds.has(l.target)) continue
@@ -466,6 +468,47 @@ export async function visualizeProject(projectId: string, request: Visualization
   const graph = DependencyGraphVisualizer.generateGraphData(symbols, filteredRelationships, { excludePatterns: request.excludePatterns, includeTests: request.includeTests })
   const originalNodes = graph.nodes.length
   const originalLinks = graph.links.length
+  const classMembers: Record<string, { name: string; type: string; stale?: boolean }[]> = {}
+  if (request.view === "class" && symbols.length > 0) {
+    const classSymbols = symbols.filter((symbol) => ["class", "struct", "interface", "enum", "trait", "type", "protocol", "object"].includes(String(symbol.symbol_type)))
+    if (classSymbols.length > 0) {
+      const classIds = classSymbols.map((symbol) => symbol.id)
+      const memberPlaceholders = classIds.map(() => "?").join(",")
+      const memberRows = raw.prepare(
+        `SELECT r.source_symbol_id AS source_id, r.target_symbol_id AS target_id,
+                child.name AS member_name, child.symbol_type AS member_type
+           FROM brain_relationship r
+           JOIN brain_symbol child
+             ON child.id = CASE
+               WHEN r.source_symbol_id IN (${memberPlaceholders}) THEN r.target_symbol_id
+               ELSE r.source_symbol_id
+             END
+          WHERE r.project_id = ?
+            AND r.relationship_type = 'contains'
+            AND (
+              (r.source_symbol_id IN (${memberPlaceholders}) AND r.target_symbol_id NOT IN (${memberPlaceholders}))
+              OR
+              (r.target_symbol_id IN (${memberPlaceholders}) AND r.source_symbol_id NOT IN (${memberPlaceholders}))
+            )
+          ORDER BY r.source_symbol_id, child.line_start`,
+      ).all(
+        ...classIds,
+        projectId,
+        ...classIds,
+        ...classIds,
+        ...classIds,
+        ...classIds,
+      ) as any[]
+      const classIdSet = new Set(classIds)
+      for (const row of memberRows) {
+        const host = classIdSet.has(row.source_id) ? row.source_id : row.target_id
+        const list = classMembers[host] ?? (classMembers[host] = [])
+        if (list.length < 200 && !list.some((member) => member.name === row.member_name && member.type === row.member_type)) {
+          list.push({ name: String(row.member_name), type: String(row.member_type) })
+        }
+      }
+    }
+  }
   // The class view must survive its OWN budget cut.
   //
   // MEASURED, and this quietly undid the widening above. `symbols` was widened with
@@ -542,7 +585,7 @@ export async function visualizeProject(projectId: string, request: Visualization
       ? `no indexed symbol matches scope=${scope}${target ? ` target="${target}"` : ""}${request.languages?.length ? ` languages=[${request.languages.join(",")}]` : ""}${request.relationshipTypes?.length ? ` relationshipTypes=[${request.relationshipTypes.join(",")}]` : ""} — absence declared, never guessed`
       : `${totalNodesAvailable} symbol(s) match this query but none survived the projection — absence declared, never guessed`)
     : null
-  return { scope, target: target || null, format: request.format ?? "text", view: request.view ?? "graph", nodes, links, excluded: graph.excluded, declaredAbsent, absenceNote, totalNodesAvailable, provenance: { source: "canonical-graph-engine", indexedProject: projectId, omittedDanglingLinks }, considered: { relationshipsBetweenSelectedNodes, relationshipSelection: `every relationship connecting two of the ${nodeIds.size} returned nodes — complete for this node set, not a slice of the relationship table`, relationshipSetTruncated: originalLinks > links.length, nodeSelection: nodeSelectionNote, languagesConsidered: request.languages?.length ? request.languages : null }, truncation: { truncated, originalNodes, originalLinks, maxNodes, maxLinks, reason: truncated ? "output limits" : null, totalNodesAvailable } }
+  return { scope, target: target || null, format: request.format ?? "text", view: request.view ?? "graph", nodes, links, classMembers, excluded: graph.excluded, declaredAbsent, absenceNote, totalNodesAvailable, provenance: { source: "canonical-graph-engine", indexedProject: projectId, omittedDanglingLinks }, considered: { relationshipsBetweenSelectedNodes, relationshipSelection: `every relationship connecting two of the ${nodeIds.size} returned nodes — complete for this node set, not a slice of the relationship table`, relationshipSetTruncated: originalLinks > links.length, nodeSelection: nodeSelectionNote, languagesConsidered: request.languages?.length ? request.languages : null }, truncation: { truncated, originalNodes, originalLinks, maxNodes, maxLinks, reason: truncated ? "output limits" : null, totalNodesAvailable } }
 }
 
 export function formatVisualization(result: VisualizationResult): string {
