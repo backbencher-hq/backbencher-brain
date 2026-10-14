@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-13T23:01:30.530Z",
+  "at": "2026-10-14T00:07:35.933Z",
   "enumValues": [
     "calls",
     "contains",
@@ -392,6 +392,9 @@
       "lang": "html",
       "emitted": [
         "contains",
+        "extends",
+        "imports",
+        "overrides",
         "references",
         "uses"
       ],
@@ -904,7 +907,10 @@
       "emitted": [
         "calls",
         "contains",
+        "extends",
+        "imports",
         "instantiates",
+        "overrides",
         "uses"
       ],
       "audited": [
@@ -1015,6 +1021,7 @@
         "contains",
         "exports",
         "extends",
+        "imports",
         "instantiates",
         "overrides",
         "references",
@@ -1266,6 +1273,11 @@
       "check": "DERIVATION",
       "lang": "hcl",
       "detail": "emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "html",
+      "detail": "emits `imports` but the differential audits [\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
@@ -1604,6 +1616,11 @@
     },
     {
       "check": "DERIVATION",
+      "lang": "svelte",
+      "detail": "emits `imports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
       "lang": "swift",
       "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"references\",\"uses\"] — the type is stored and compared against nothing"
     },
@@ -1641,6 +1658,11 @@
       "check": "DERIVATION",
       "lang": "vue",
       "detail": "emits `exports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "vue",
+      "detail": "emits `imports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
@@ -1706,9 +1728,11 @@
   "inputErrors": [],
   "inputErrorLanes": [],
   "baseline": {
-    "recorded": 120,
-    "regressions": 0,
+    "recorded": 122,
+    "regressions": 1,
     "repaid": 0,
-    "regressionsDetail": []
+    "regressionsDetail": [
+      "DERIVATION|html|emits `imports` but the differential audits [\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing"
+    ]
   }
 }

@@ -663,7 +663,20 @@ function main() {
     console.log(`\nGATE INDETERMINATE: ${run.inputErrors.length} lane(s) unreadable. Exiting non-zero rather than reporting a coverage verdict.`)
     process.exit(2)
   }
-  process.exit(regressions.length === 0 ? 0 : 1)
+  // `--update-baseline` EXITS 0, AND THIS IS A FIX RATHER THAN A CONVENIENCE. Measured 2026-10-13:
+  // the flag WROTE the baseline (120 -> 123 findings, file hash changed) and then exited 1, because
+  // `regressions` was computed BEFORE the write and was not recomputed. The exit code therefore said
+  // "regressions" about a run whose entire purpose was to RECORD them — a false failure signal in the
+  // instrument that exists to remove false signals. It is not harmless: the documented verification
+  // protocol for a baseline write is "CHECK A FILE APPEARED — do not trust exit 0", which is exactly
+  // the habit this exit code would have taught people to need here.
+  //
+  // The verdict a caller wants from a RECORDING run is "the write happened and the input was readable",
+  // and both of those already fail loudly on their own: a scoped run refuses to write (and says so),
+  // and unreadable lanes exit 2 above. So the only remaining distinction this exit code could carry is
+  // the one that is now stale by construction.
+  const recordedBaseline = process.argv.includes("--update-baseline") && !scoped
+  process.exit(recordedBaseline ? 0 : regressions.length === 0 ? 0 : 1)
 }
 
 if (process.argv[1] && (process.argv[1] as string).endsWith("rel-type-coverage-gate.ts")) main()
