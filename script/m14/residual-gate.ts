@@ -151,7 +151,12 @@ function runLane(lang: string): { rows: Array<{ type: string; edges: number; res
   const ext = { fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble", php: "php", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql", protobuf: "proto", json: "json,jsonc", yaml: "yaml,yml", css: "css,less", scss: "scss", hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl", bash: "sh,bash,zsh" }[lang] ?? derivedExts(lang) ?? lang
   let out = ""
   try {
-    out = execFileSync("npx", ["tsx", "script/m14/incoming-gate.ts", lang, ext, "0"], { cwd: ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] })
+    out = execFileSync("npx", ["tsx", "script/m14/incoming-gate.ts", lang, ext, "0"], { cwd: ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, // THE RUNNER'S STDERR IS NO LONGER DISCARDED. It was `stdio: ["ignore","pipe","ignore"]`, which meant a
+    // gate-read lane COULD NOT report a force-abort even when one occurred — the log would look identical to a
+    // clean run. That is the same silent-instrument class as the `?? lang` fallback and the `NaN%` table: the
+    // gate reported a number without being able to report what it excluded. Capturing stderr changes NOTHING about
+    // stdout, the table, the numbers or the exit codes — it only forwards the runner's own diagnostics.
+    stdio: ["ignore", "pipe", "pipe"] })
   } catch (e: any) {
     out = typeof e?.stdout === "string" ? e.stdout : ""
     if (out === "") throw e
