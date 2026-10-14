@@ -109,6 +109,78 @@ measured as such rather than assumed:
 | `m62 handwritten-type-copies` | 22 | 1 → 0 | fixed here |
 | `m62 gate-typecheck` | 684 vs baseline 723 | 607 vs 723 | inherited; this work improved it |
 
+## 4. Probes that could not fail, and a fixture that could not express its defect
+
+Three mutants in `script/m55/verify-status-panel.ts` survived, and every one of them was a defect
+in the probe rather than in the product. They had survived the honesty fix precisely because
+reporting them honestly is what exposed them.
+
+**M10 — the fixture could not express the defect it named.** `status-model.ts:197` builds each
+per-language row as `description: describeLevel(level)`, and `describeLevel("I4")` returns
+`"I4 — editor-verified"` — the level is *already* the first thing the description says. The fixture
+used free text, which `describeLevel` cannot return. So the mutation that prepends the level
+produced `I4 — index-sourced, …`, a level stated **once**, and the mutant survived. Worse, the S1
+assertion "no per-language row states its level twice" searched for `I4 — I4` in a fixture where
+that substring could not exist however the renderer misbehaved.
+
+**M8 — the probe asked for a string the fixture prints twice.** `serverFacts[0]` is byte-identical
+to `lines[5]`, so the server-fact block could be disabled entirely and the string still rendered
+from the main facts. The probe now picks a fact that does *not* appear in `lines`, and asserts that
+uniqueness rather than trusting it, so it cannot go quietly vacuous again.
+
+**M4 — the mutant was not the one it was named after, and the probe could not see it.** It is
+called "buried below the facts" but it replaces the append with nothing, so the badge *disappears*.
+The probe asked only whether the marker rendered below the first fact; an absent marker gives
+`indexOf(...) === -1`, which is "before everything", so a missing badge read as a correctly placed
+one. Absence is now a defect in its own right, and the order question is still asked.
+
+`verify-status-panel` went from an honest 8/11 to **VERIFIED 42/42, 11/11**.
+
+## 5. A type reference that checked nothing
+
+`verify-status-panel.ts` declared `const INPUT: mod.StatusSurfaceInput`, where `mod` is the
+destructured *value*. That reported `TS2503` for as long as the file existed — a type reference
+that does not resolve checks nothing, so the fixture was never verified against the product's
+input shape. Two forms were wrong before one was right:
+
+```
+typeof import("…").StatusSurfaceInput   ->  TS2694, no exported member
+import("…").StatusSurfaceInput          ->  correct
+```
+
+`typeof import(…)` is the module's **value** shape, and `StatusSurfaceInput` is an exported
+*interface*, so it is not reachable through it. The fixture now fails to compile if the product's
+input shape moves — which is the only thing that makes a hand-written fixture trustworthy.
+
+## 6. A gate whose rule could not be satisfied without an exemption it refuses to give
+
+`script/m62/verify-live-db-snapshot.ts` names `script/m25/e5-inner.js`, which reads a `brain.db`
+off the filesystem. The read is now guarded — `brainDbPath` is asserted lexically inside this run's
+data dir *before* the read, canaried against the same predicate the file uses, and an absent
+snapshot is reported rather than swallowed by a ternary.
+
+The gate is **still red**, deliberately. Its rule is a text scan for `readFileSync(<…Db…>)`, the
+file still does that, and its own comment is explicit that it carries no exemption mechanism
+because "an exemption is a claim about a file that has not been checked". Adding one here would be
+the laundering the gate exists to prevent, and it would do it on an agent's say-so, in a test that
+cannot run on this machine. The real fix is to stop reading the file at all — restore from a fresh
+fixture built by the driver, which already calls `buildFixtureWorkspace()` per fork — and that
+restructures the extension host's mid-run sequence with no way to verify it here.
+
+## A ratchet with no way to record a shrink
+
+`m62/verify-gate-typecheck-coverage` compared `total === baseline.totalErrors` **exactly** and had
+no update mechanism, so every reduction in debt left it red with `measured 607, baseline 723` and
+the only remedy was a hand edit of a JSON file — where nothing distinguishes a deliberate
+re-baseline from a number typed to turn a gate green.
+
+`--update-baseline` now exists, mirroring the m14 sibling that already had this shape. The
+ratchet's promise is preserved and made explicit: debt may fall without ceremony; it may not rise
+without `--allow-increase "<why>"`, and the reason is written into the file. Both directions were
+canaried — an artificially lowered baseline is refused with exit 2 and the file is not written.
+
+`723 -> 607 errors, 202 -> 186 files`, with the reason naming the four remediations above.
+
 ## Still red, and honestly so
 
 Left standing rather than papered over, because each is real and none is a one-line fix:
