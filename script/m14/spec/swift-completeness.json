@@ -442,5 +442,55 @@
       }
     ],
     "lastUpdated": "2026-09-25"
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates"
+    ],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. WHOLE admitted population on the production path (`npx tsx script/m14/residual-gate.ts --lane swift`): 1,507 parsed of 1,507 admitted .swift files across 14 repos, 0 parse failures, 0 degraded; artifact validation/m14/measurements/task105/swift-whole-population-gate.txt. ALL TEN types fire, each measured with its own count: calls 42,887 · uses 37,970 · contains 30,629 · imports 3,703 · references 3,953 · exports 592 · extends 1,713 · implements 2,744 · overrides 820 · instantiates 14,584 — TOTAL 139,595, exactly the sum of the ten rows. 1 file holds content and returned nothing and the artifact NAMES it; its kind is deliberately not decided here. TWO PRIOR ABSENCE CLAIMS ARE REFUTED BY THIS RUN AND BOTH WERE ABOUT SAMPLES: (1) the firing log's SWIFT row is stale — validation/m14/results/firing-laptop-b.current.log line 27 reads `SWIFT 0 types fired NO CORPUS under swift-corpus` and marks all ten SILENT, while the current corpus root holds the 1,507 admitted files measured here; (2) the lane's own docs/analyzers/swift-ontology-measurements.md records a 200-file baseline in which `imports` is said to live only on the separate ParseResult.imports channel and `exports` is called \"the only genuinely silent type\" — the whole population fires `imports` 3,703 and `exports` 592 as RELATIONSHIP edges, so the 200-file reading was a property of its sample. A stride sample cannot certify absence; this is the fifth lane in this programme caught in that class. NO TYPE IS EXCLUDED: the language expresses all ten and the whole admitted population fires all ten, so there is no grammar-absence claim to make and no zero-sites entry to file. The three `gap.gaps` entries above are NODE-TYPE work items (operator/precedence declarations, generic packs, key-path/metatype expressions) and no relationship type depends on them; nothing here closes or contradicts them. ARITHMETIC: 10 implemented + 0 corpus-unexercised + 0 gaps = 10 applicable = 10 − 0 grammar-absence − 0 unclassified. Every implemented type carries its own `_implemented_measured` count, so the per-type silence attribution has a pointer for each of the ten.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the WHOLE admitted 1,507-file swift population (14 repos, 0 parse failures) — CLOSURE block of validation/m14/measurements/task105/swift-whole-population-gate.txt, whose ten per-type rows sum to its own TOTAL of 139,595",
+      "calls": {
+        "edges": 42887
+      },
+      "uses": {
+        "edges": 37970
+      },
+      "contains": {
+        "edges": 30629
+      },
+      "imports": {
+        "edges": 3703
+      },
+      "references": {
+        "edges": 3953
+      },
+      "exports": {
+        "edges": 592
+      },
+      "extends": {
+        "edges": 1713
+      },
+      "implements": {
+        "edges": 2744
+      },
+      "overrides": {
+        "edges": 820
+      },
+      "instantiates": {
+        "edges": 14584
+      }
+    }
   }
 }

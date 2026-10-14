@@ -597,5 +597,55 @@
         "closes_when": "an exports oracle exists; then admit the label and reconcile"
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates"
+    ],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. THE POPULATION IS A STRIDE SAMPLE AND SAYS SO: `npx tsx script/m14/incoming-gate.ts typescript ts,tsx,mts,cts 600` — 600 parsed of 600 sampled of 17,350 ADMITTED .ts/.tsx/.mts/.cts files across 41 repos, 0 parse failures, 0 degraded; artifact validation/m14/measurements/task105/typescript-stride600-incoming-table1.txt, whose own disclosure line reads `SAMPLE, NOT POPULATION: 600 of 17350 files`. ALL TEN types fire on it, each with its own count: calls 14,757 · uses 1,341 · contains 2,306 · imports 3,214 · references 3,453 · exports 1,121 · extends 121 · implements 5 · overrides 6 · instantiates 620 — TOTAL 26,944, exactly the sum of the ten rows. A SAMPLE IS A POSITIVE INSTRUMENT HERE AND NOT AN ABSENCE ONE: every entry is a measured count of edges that were EMITTED, no type is declared absent from it, and no zero is claimed anywhere in this block. TWO INSTRUMENT FACTS THE READER NEEDS, because they qualify the population rather than the result: (1) `.tsx` is admitted here because the SAME analyzer serves it — production routes `tsx` to tree-sitter-tsx.wasm and RealTypeScriptAnalyzer (src/ast/engine.ts:947 and :2263-2264) while `.ts`/`.mts` are language `typescript` (src/ast/language-detection.ts:39) — but this run parses EVERY file with the pinned tree-sitter-typescript.wasm, so the `.tsx` share of the counts is a floor rather than a like-for-like reading; (2) a WHOLE-POPULATION run of this lane was started at the same HEAD over `ts,mts,cts` (13,973 files, `residual-gate.ts --lane typescript`) and had parsed 4,000 of them when this block was written, so it is NOT the source of these numbers. The two thinnest counts above are `implements` 5 and `overrides` 6: small, measured, and the reason a whole-population reading would be worth having rather than a reason to round them to zero or to claim a zero. THE GAP LIST'S NINE `CLOSED` ENTRIES WERE CHECKED AGAINST THE CODE, NOT READ OFF THE COMMIT MESSAGE, as this programme requires: every one of T1-T9 is a claim about an edge SHAPE inside a type (tier label, type-alias RHS, template interpolation, field-access uses, satisfies target, destructuring scope, dynamic import, angle-bracket assertion, generic type arguments) and NONE claims a whole type is silent, so none contradicts this block. Spot-verified in code: T7 — `isDynamicImport` at src/ast/real-typescript-analyzer.ts:5801 with the `imports` edge built at :5814-5824, matching its `CLOSED` status. AND THE ONE APPARENT CONTRADICTION IS EXPLAINED BY THE GAP ENTRY ITSELF: `instantiation_expression` is among the 64 named node types this analyzer never NAMES, and T9's own text says `f<Baz>(x) parses as call_expression with a type_arguments child (no instantiation_expression node)` — a grammar node the analyzer reaches through a different node, not a missing type. THE FIRING LOG'S typescript ROW IS STALE: validation/m14/results/firing-laptop-b.current.log line 45 reads `TYPESCRIPT 0 types fired NO CORPUS under typescript` and marks all ten SILENT, while the current corpus root holds 17,350 admitted files across 41 repos. ARITHMETIC: 10 implemented + 0 corpus-unexercised + 0 gaps = 10 applicable = 10 − 0 grammar-absence − 0 unclassified.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over a 600-file EVEN STRIDE of the 17,350 admitted typescript files (.ts/.tsx/.mts/.cts, 41 repos, 0 parse failures) — `incoming-gate.ts typescript ts,tsx,mts,cts 600`, TABLE 1 of validation/m14/measurements/task105/typescript-stride600-incoming-table1.txt, whose ten rows sum to its own TOTAL of 26,944. THIS IS A SAMPLE, NOT THE WHOLE POPULATION",
+      "calls": {
+        "edges": 14757
+      },
+      "uses": {
+        "edges": 1341
+      },
+      "contains": {
+        "edges": 2306
+      },
+      "imports": {
+        "edges": 3214
+      },
+      "references": {
+        "edges": 3453
+      },
+      "exports": {
+        "edges": 1121
+      },
+      "extends": {
+        "edges": 121
+      },
+      "implements": {
+        "edges": 5
+      },
+      "overrides": {
+        "edges": 6
+      },
+      "instantiates": {
+        "edges": 620
+      }
+    }
   }
 }

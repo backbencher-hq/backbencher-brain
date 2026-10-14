@@ -196,5 +196,33 @@
         "rationale": "SOL-8. An EVM opcode is not a callable function: `yul_function_call`'s `function:` field is `choice(yul_identifier, yul_evm_builtin)`, so `add(1,2)` in assembly is an opcode. Emitting `calls -> add` would put 2,800 rows naming a name no Solidity identifier can hold. LOSSLESS because the lexer always spells a bare `add` in Yul as the builtin, so a user-defined Yul function can never be named `add` — there is no name this silence could swallow."
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates"
+    ],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. WHOLE admitted population on the production path: 421 parsed of 421 admitted .sol files across 2 repos, 0 parse failures, 0 degraded (`npx tsx script/m14/residual-gate.ts --lane solidity`; artifact validation/m14/measurements/task105/solidity-whole-population-gate.txt). NINE of the ten types fire, each measured with its own count: calls 6,734 · uses 17,880 · contains 6,531 · references 1,452 · exports 534 · extends 588 · implements 7 · overrides 423 · instantiates 26 — TOTAL 34,175, exactly the sum of the nine rows. `imports` IS THE ONE GAP AND IT STAYS IN THE DENOMINATOR. The construct exists in the language (the pinned grammar declares `import_directive`, `using_directive` and `using_alias` — 3 keyword-shaped named types, .tmp-f48/cov/grammar-nodes.json) and the analyzer HANDLES the directive: real-solidity-analyzer.ts:1574-1594 collects one importEdge per directive and :2666-2680 publishes them as `References` edges carrying `import: true` and `importPath`. But `RelationshipType.Imports` occurs ZERO times in the analyzer source (measured: `grep -c RelationshipType.Imports src/ast/real-solidity-analyzer.ts` = 0), so the type CANNOT be emitted, and the direct whole-population run prints the row explicitly: `imports 0 0 0 0 0 0 0 0 0 0 0 0 0 0` in validation/m14/measurements/task105/solidity-whole-population-incoming-table1.txt. A type with 0 edges because the analyzer has no code for it is a GAP, not an exclusion — the same refusal the toml lane made when offered a reclassification that would have read 4/4. ARITHMETIC: 9 implemented + 0 corpus-unexercised + 1 gap (imports) = 10 applicable = 10 − 0 grammar-absence − 0 unclassified. INSTRUMENT NOTE, because it is the reason two artifacts are cited: the residual gate does NOT print a row for a zero-edge type (its CLOSURE block and its sorted table both `continue` on `edges === 0`), so `imports` is ABSENT from solidity-whole-population-gate.txt while it is PRESENT as a fifteen-column zero in the direct `incoming-gate.ts solidity sol 0` TABLE 1. A cell that was not printed must not be read as clean; both artifacts are committed so the difference is checkable.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the WHOLE admitted 421-file solidity population (2 repos, 0 parse failures) — CLOSURE block of validation/m14/measurements/task105/solidity-whole-population-gate.txt, whose nine per-type rows sum to its own TOTAL of 34,175",
+      "calls": { "edges": 6734 },
+      "uses": { "edges": 17880 },
+      "contains": { "edges": 6531 },
+      "references": { "edges": 1452 },
+      "exports": { "edges": 534 },
+      "extends": { "edges": 588 },
+      "implements": { "edges": 7 },
+      "overrides": { "edges": 423 },
+      "instantiates": { "edges": 26 }
+    }
   }
 }

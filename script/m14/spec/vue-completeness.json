@@ -473,5 +473,60 @@
         "known_defect_elsewhere": "The one oracle row with no analyzer edge is `cascader-panel/…/panel-date-pick.vue :: KeyControl -> [key]`. The TS oracle attributes the index signature to `type KeyControl`, where the source writes it; the analyzer attributes it to the following `interface KeyControlMapping`. A `.ts` repro of the same shape emits NO index signature at all, so this is a TypeScript-lane ownership defect surfaced from the Vue side, not a Vue one. Not fixed here."
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "instantiates"
+    ],
+    "excluded": [
+      {
+        "label": "implements",
+        "evidence": "zero-sites",
+        "from": "WHOLE admitted population, production path: `npx tsx script/m14/incoming-gate.ts vue vue 0` prints TABLE 1 row `implements 0` with all fifteen columns zero for 1,155 parsed of 1,155 admitted .vue files across 6 repos, 0 parse failures (validation/m14/measurements/task105/vue-whole-population-incoming-table1.txt). The construct EXISTS and the analyzer IMPLEMENTS it: the pinned tree-sitter-typescript.wasm declares `implements_clause` and `interface_declaration` (3 keyword-shaped named types, .tmp-f48/cov/grammar-nodes.json), the typescript delegate emits `implements` at src/ast/real-typescript-analyzer.ts:4432, the vue seam copies every delegate relationship unchanged at src/ast/real-vue-analyzer.ts:774, and the lane's own fixtures assert it — validation/m14/fixtures/vue/ts-class-heritage.expectation.json and ts-class-heritage-seam.expectation.json expect 3 `implements` edges. The corpus fires it 0 times in 1,155 files.",
+        "quote": "constructible and implemented, exercised ZERO times by this corpus — zero-sites, disclosed rather than counted as coverage; it stays in the denominator"
+      },
+      {
+        "label": "overrides",
+        "evidence": "zero-sites",
+        "from": "WHOLE admitted population, production path: TABLE 1 row `overrides 0` with all fifteen columns zero for 1,155 parsed of 1,155 admitted .vue files across 6 repos (validation/m14/measurements/task105/vue-whole-population-incoming-table1.txt). The construct EXISTS and the analyzer IMPLEMENTS it on two independent paths: the lane's OWN Options-API mixin pass emits `overrides` at src/ast/real-vue-analyzer.ts:2006, and the javascript delegate emits it at src/ast/real-javascript-analyzer.ts:1600 and :1687 with the seam copying those rows through at src/ast/real-vue-analyzer.ts:774. The lane's fixtures assert 24 `overrides` edges across validation/m14/fixtures/vue/ts-class-heritage.expectation.json, options-mixin-overrides.expectation.json, script-relations.expectation.json and ts-class-heritage-seam.expectation.json. The corpus fires it 0 times in 1,155 files.",
+        "quote": "constructible and implemented, exercised ZERO times by this corpus — zero-sites, disclosed rather than counted as coverage; it stays in the denominator"
+      }
+    ],
+    "corpusUnexercised": [],
+    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. WHOLE admitted population on the production path: 1,155 parsed of 1,155 admitted .vue files across 6 repos, 0 parse failures (artifact validation/m14/measurements/task105/vue-whole-population-gate.txt for the closure, and validation/m14/measurements/task105/vue-whole-population-incoming-table1.txt for the all-ten-rows TABLE 1). EIGHT types fire, each measured with its own count: calls 7,960 · uses 5,319 · contains 1,469 · imports 3,898 · references 3,632 · exports 2 · extends 10 · instantiates 2,251 — TOTAL 24,541, exactly the sum of the eight rows. `exports` fires exactly 2 edges over 1,155 files: small, measured, and NOT rounded away — a non-zero count is what makes it implemented rather than a zero-sites entry. TWO TYPES ARE zero-sites, NOT exclusions from the denominator: `implements` and `overrides` are both implemented (code sites and fixtures cited on each entry) and both fire 0 times on this corpus, so they stay IN `applicable` and are disclosed as measured zeros; listing them as implemented instead would claim a count no run has ever produced. ARITHMETIC: 8 implemented + 0 corpus-unexercised + 2 gaps (implements, overrides — both measured zero-sites) = 10 applicable = 10 − 0 grammar-absence − 0 unclassified. THE FIRING LOG'S vue ROW IS STALE AND IS NOT THE SOURCE OF THIS BLOCK: validation/m14/results/firing-laptop-b.current.log reads `VUE 0 types fired NO CORPUS under vuejs` and marks all ten SILENT, while the current corpus root holds the 1,155 admitted .vue files measured here. Every implemented type carries its own `_implemented_measured` count, so the per-type silence attribution has a pointer for each of the eight rather than a shared sentence.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the WHOLE admitted 1,155-file vue population (6 repos, 0 parse failures) — CLOSURE block of validation/m14/measurements/task105/vue-whole-population-gate.txt, whose eight per-type rows sum to its own TOTAL of 24,541",
+      "calls": {
+        "edges": 7960
+      },
+      "uses": {
+        "edges": 5319
+      },
+      "contains": {
+        "edges": 1469
+      },
+      "imports": {
+        "edges": 3898
+      },
+      "references": {
+        "edges": 3632
+      },
+      "exports": {
+        "edges": 2
+      },
+      "extends": {
+        "edges": 10
+      },
+      "instantiates": {
+        "edges": 2251
+      }
+    }
   }
 }

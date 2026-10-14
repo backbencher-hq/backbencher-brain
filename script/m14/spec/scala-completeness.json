@@ -680,5 +680,55 @@
     ],
     "_incoming_scala_note": "SCL-ONT-1..5 and SCL-DETECT-1 were added by the INCOMING_SCALA lane; `imports` and `exports` entries describe edges the lane emits and its own oracle derives while the shared allowlist does not yet audit them."
   },
-  "_incoming_scala_note": "Decisions SCL-ONT-1 .. SCL-ONT-6 were added by the INCOMING_SCALA lane (branch analyzer/INCOMING_SCALA). Each carries the corpus measurement that supports it, because the ontology workstream's rule is that a ruling with prose and no measurement is a defect: `overrides` had a prose justification for a whole wave and it was wrong. Every count below is from $HOME/fixtures/repositories/scala through the production entry (`parseFile`), never through `analyze()` alone."
+  "_incoming_scala_note": "Decisions SCL-ONT-1 .. SCL-ONT-6 were added by the INCOMING_SCALA lane (branch analyzer/INCOMING_SCALA). Each carries the corpus measurement that supports it, because the ontology workstream's rule is that a ruling with prose and no measurement is a defect: `overrides` had a prose justification for a whole wave and it was wrong. Every count below is from $HOME/fixtures/repositories/scala through the production entry (`parseFile`), never through `analyze()` alone.",
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates"
+    ],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. THE POPULATION IS A STRIDE SAMPLE AND SAYS SO: `npx tsx script/m14/incoming-gate.ts scala scala,sc,sbt 600` — 600 parsed of 600 sampled of 19,345 ADMITTED .scala/.sc/.sbt files across 3 repos, 0 parse failures, 0 degraded; artifact validation/m14/measurements/task105/scala-stride600-incoming-table1.txt, whose own disclosure line reads `SAMPLE, NOT POPULATION: 600 of 19345 files`. ALL TEN types fire on it, each with its own count: calls 6,694 · uses 1,642 · contains 5,948 · imports 958 · references 8,173 · exports 2,866 · extends 638 · implements 85 · overrides 445 · instantiates 2,029 — TOTAL 29,478, exactly the sum of the ten rows. A SAMPLE IS A POSITIVE INSTRUMENT HERE AND NOT AN ABSENCE ONE: every entry below is a measured count of edges that were EMITTED, no type is declared absent from it, and the one thing a sample may never certify — a zero — is not claimed anywhere in this block. THE LANE'S OWN PRIOR READING AGREES: SCL-ONT-3 in this file records `10 of 10 fire` after SCL-ONT-1/SCL-ONT-2 implemented the two then-missing types, measured by script/m14/tmp/scala-ontology-census.ts over 400 corpus files. TWO OPEN ITEMS IN THIS FILE ARE REFUTED BY THE CODE AND CORPUS AT THIS HEAD and are REPORTED here rather than edited, because neither is this block's to rule: (1) SCL-ONT-5 states that scala3 and cats-effect are `absent from $HOME/fixtures/repositories` — measured, scala3 is present with 18,446 admitted .scala files and cats-effect with 457, and they are 2 of the 3 repos behind this block's population; (2) SCL-DETECT-1's question `is .sbt routed to the scala analyzer` answers NO on the ground that `EXT_LANGUAGE` carries no `sbt:` entry — at this HEAD src/ast/language-detection.ts:136 carries `sbt: \"scala\"`, and this run admits 164 .sbt files through it. THE FIRING LOG'S scala ROW IS STALE TOO: validation/m14/results/firing-laptop-b.current.log line 18 reads `SCALA 0 types fired NO CORPUS under scala` and marks all ten SILENT. NO TYPE IS EXCLUDED: the language expresses all ten and every one of the ten is measured emitting, so there is no grammar-absence claim to make and no zero-sites entry to file. ARITHMETIC: 10 implemented + 0 corpus-unexercised + 0 gaps = 10 applicable = 10 − 0 grammar-absence − 0 unclassified. A whole-population run of this lane was started at the same HEAD and had not completed when this block was written; the stride above is the measurement it rests on and the sample population is printed in `_unit` so the two cannot be confused.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over a 600-file EVEN STRIDE of the 19,345 admitted scala files (.scala/.sc/.sbt, 3 repos, 0 parse failures) — `incoming-gate.ts scala scala,sc,sbt 600`, TABLE 1 of validation/m14/measurements/task105/scala-stride600-incoming-table1.txt, whose ten rows sum to its own TOTAL of 29,478. THIS IS A SAMPLE, NOT THE WHOLE POPULATION",
+      "calls": {
+        "edges": 6694
+      },
+      "uses": {
+        "edges": 1642
+      },
+      "contains": {
+        "edges": 5948
+      },
+      "imports": {
+        "edges": 958
+      },
+      "references": {
+        "edges": 8173
+      },
+      "exports": {
+        "edges": 2866
+      },
+      "extends": {
+        "edges": 638
+      },
+      "implements": {
+        "edges": 85
+      },
+      "overrides": {
+        "edges": 445
+      },
+      "instantiates": {
+        "edges": 2029
+      }
+    }
+  }
 }

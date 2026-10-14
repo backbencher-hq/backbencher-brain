@@ -386,5 +386,58 @@
         "resolution": "RULED \u2014 THREE FAMILIES, THREE OBLIGATIONS (2026-09-27). READS A MEMBER -> `uses` at 0.95, on the S1 argument: `bind:value={m}`, `bind:this={el}`, `class:active={c}`, `style:color={col}`. `bind:` is TWO-WAY, so `uses` understates it; the read half is what the vocabulary expresses and the write half is a declared non-emission rather than a new relationship invented to hold it. The emitted edge carries `metadata.carrierDirective` so a consumer can tell a two-way binding from an ordinary template read \u2014 that is information a reader wants, and without it the collection site is unrecoverable. INVOKED BY THE FRAMEWORK -> `calls` at 0.85, on the D8 argument: `use:action`, `use:tooltip`, `transition:slide`, `in:fly`, `out:fade`, `animate:flip`. The target is the directive's OWN NAME, written in the attribute name, so the line is the attribute's; a dotted value's callable leaf is the target. Their previous silence was an internal INCONSISTENCY rather than a position: `on:click` emitted `calls` because the framework calls the name, and Svelte calls an action on mount and a transition on state change by the same mechanism. A directive's PARAMETER expression is a template read and still yields `uses` \u2014 `use:action={p}` publishes both `calls action` and `uses p`, which are different facts about the same attribute. DECLARES, DOES NOT READ -> silent: `let:item` names a slot prop the component ACCEPTS, so there is no member read. This was the one silent carrier that was always right, and it is now pinned rather than merely left alone. TAILWIND CANNOT COLLIDE, and the reason is worth stating because it is the shape-collision trap twice over. `md:grid-cols-2`, `dark:bg-background`, `hover:text-primary` and `after:absolute` have the exact `prefix:value` shape of a directive and live INSIDE a quoted `class` value; only ATTRIBUTE NAMES are examined, so all four stay silent. The obvious repair for a missing family \u2014 matching the shape \u2014 would publish every one of them, which is the same failure the bare-leaf rune fix had when it swallowed `$my.eager`. `after:*` is not a Svelte directive at all and is absent from the corpus carrier set once quoted values are stripped. PINNED by `svelte/directive-carriers` (both obligations, plus both silent cases, plus the Tailwind guard) and the mutants `svelte/member-read-carriers-dropped` and `svelte/invoked-carriers-dropped`. The first mutant SURVIVED on its first form because it keyed on a `metadata.context` marker only the CALL edges carry, and a blanket `uses` drop would have been caught by a dozen unrelated fixtures while proving nothing about D12 \u2014 so the edge gained real provenance and the mutant targets that. GATED by the census's carrier dimension, which is the instrument that found it: a node-type census classifies `attribute` as handled and can never see a space INSIDE it. **MEASURED CORRECTION, appended after the census controls ran.** The ruling originally described EIGHT silent families at ~2,049 corpus occurrences. That was overstated ~7x: only the FIVE INVOKED families were actually silent (292 occurrences), while `bind:`/`class:`/`style:` were already published as `uses` by the general attribute-expression walk and this work's contribution there is PROVENANCE (`metadata.carrierDirective`), not the edge itself. The overstatement came from a probe that imported the identifiers it expected to read \u2014 `uses` publishes only for a declared member \u2014 and it was caught by a census negative control that failed to fire. So the ruling's substance stands and its magnitude did not; both are recorded rather than the first one quietly edited away."
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "instantiates"
+    ],
+    "excluded": [
+      {
+        "label": "overrides",
+        "evidence": "zero-sites",
+        "from": "WHOLE admitted population, production path: 6,147 parsed of 6,147 admitted .svelte files across 6 repos, 0 parse failures, and TABLE 1 prints the row `overrides 0` with all fifteen columns zero (validation/m14/measurements/task105/svelte-whole-population-incoming-table1.txt; the residual-gate closure for the same run is validation/m14/measurements/task105/svelte-whole-population-gate.txt, whose nine printed rows sum to its own TOTAL of 45,134). The construct EXISTS and the analyzer IMPLEMENTS it: the SFC seam copies every delegate relationship, and it READS `overrides` rows on purpose to respell their target from `<Base>.<member>` back to the owner spelling (src/ast/real-svelte-analyzer.ts:1118-1124), while the javascript delegate emits them at src/ast/real-javascript-analyzer.ts:1600 and :1687. The lane's own fixtures assert 4 `overrides` edges across validation/m14/fixtures/svelte/relationship-kinds.expectation.json and heritage-implements-overrides.expectation.json. The corpus fires it 0 times in 6,147 files.",
+        "quote": "constructible and implemented, exercised ZERO times by this corpus — zero-sites, disclosed rather than counted as coverage; it stays in the denominator"
+      }
+    ],
+    "corpusUnexercised": [],
+    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. WHOLE admitted population on the production path (`npx tsx script/m14/residual-gate.ts --lane svelte`): 6,147 parsed of 6,147 admitted .svelte files across 6 repos, 0 parse failures. NINE types fire, each measured with its own count: calls 3,591 · uses 11,403 · contains 6,239 · imports 8,972 · references 727 · exports 2,482 · extends 16 · implements 1 · instantiates 11,703 — TOTAL 45,134, exactly the sum of the nine printed rows. ONE TYPE IS zero-sites, NOT an exclusion from the denominator: `overrides` is implemented (the seam reads and respells the rows, the delegate emits them, two fixtures pin them) and fires 0 times on this corpus, so it stays IN `applicable` as a disclosed measured zero. THE 120-FILE FIRING LOG'S SILENCE IS REFUTED ON TWO OF ITS THREE TYPES BY THE WHOLE POPULATION, and this is the fourth lane this programme has caught in the same class: validation/m14/results/firing-laptop-b.current.log line 78 reads `SVELTE ... SILENT (constructible but produced nothing): extends implements overrides` over 120 files, while the whole admitted population fires `extends` 16 edges and `implements` 1 edge. A stride sample invents absences; the denominator at the time of the sample was 750 corpus files, the measured population here is 6,147. ARITHMETIC: 9 implemented + 0 corpus-unexercised + 1 gap (overrides, measured zero-sites) = 10 applicable = 10 − 0 grammar-absence − 0 unclassified. The `gap.gaps` entries above are NODE-TYPE work items and are NOT rewritten by this block: X5 and X8 remain OPEN and neither is a ruling about a relationship type, so nothing here closes or contradicts them.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the WHOLE admitted 6,147-file svelte population (6 repos, 0 parse failures) — CLOSURE block of validation/m14/measurements/task105/svelte-whole-population-gate.txt, whose nine per-type rows sum to its own TOTAL of 45,134",
+      "calls": {
+        "edges": 3591
+      },
+      "uses": {
+        "edges": 11403
+      },
+      "contains": {
+        "edges": 6239
+      },
+      "imports": {
+        "edges": 8972
+      },
+      "references": {
+        "edges": 727
+      },
+      "exports": {
+        "edges": 2482
+      },
+      "extends": {
+        "edges": 16
+      },
+      "implements": {
+        "edges": 1
+      },
+      "instantiates": {
+        "edges": 11703
+      }
+    }
   }
 }

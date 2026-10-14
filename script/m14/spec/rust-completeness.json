@@ -488,5 +488,55 @@
         "resolution": "RULED (2026-09-30). Asking what F5's one remaining `unexplained` row on the full 208-file serde corpus actually was produced `instantiates skip_field -> Ok` at ser/mod.rs:1925 \\\\u2014 where the source is a bare `Ok(())` in a trait default body. A minimal case settles what it is: given a LOCAL `struct Ok;` and a prelude `Ok(())` in the same file, the analyzer emits `instantiates -> Ok` naming the local type. So the edge exists because a name collided, not because anything was constructed: `Ok(())` is the PRELUDE's enum variant and there is no relationship to a same-named local struct. Two readings were defensible at one site, which is why RUST-D16 REGISTERED it rather than ruling it; at full corpus extent the same shape has now surfaced in a case where the collision is unambiguous, so the question can be answered rather than deferred. RULED: a bare `Ok(..)` is a PRELUDE construction and does NOT instantiate a same-named local declaration. The general rule that answers every variant of this at once: a CONSTRUCTION resolves to a local type only when the receiver is SPELLED as that type \\\\u2014 a scoped or path-qualified receiver (`LocalType { .. }`, `path::to::LocalType { .. }`), a `Self(..)` that resolves to the enclosing impl, or an imported alias. A bare single-segment name is ambiguous against the prelude, and the analyzer already refuses to guess for the ambiguous `new`/`from` family, so it must refuse here too; publishing the edge makes a same-named local type look constructed when it was never mentioned. NOT YET IMPLEMENTED \\\\u2014 this is the ruling that closes the last open contract question in the lane's F5 evidence, and it lands with the analyzer change, a fixture, a mutant and the oracle mirror together, as the lane's closing pattern requires."
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates"
+    ],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. WHOLE admitted population on the production path (`npx tsx script/m14/residual-gate.ts --lane rust`): 2,532 parsed of 2,532 admitted .rs files across 9 repos, 0 parse failures; artifact validation/m14/measurements/task105/rust-whole-population-gate.txt. ALL TEN types fire, each measured with its own count: calls 178,084 · uses 28,019 · contains 21,702 · imports 11,685 · references 38,648 · exports 4,571 · extends 29 · implements 1,793 · overrides 2,169 · instantiates 6,019 — TOTAL 292,719, exactly the sum of the ten rows. THE RUN IS A LOWER BOUND AND SAYS SO, which is the part that must not be smoothed: of the 303 files returning no symbols and no relationships, 253 hold NO CONTENT AT ALL (0 bytes or whitespace — the run missed nothing) and 50 HOLD CONTENT AND RETURNED NOTHING, named in the artifact (cargo's `cargo-test-support` container stubs, `rustfix` no_main fixtures, `cargo_add` fixtures). The gate explicitly REFUSES to decide whether those 50 are parse failures or content that cannot declare anything, and this block does not decide for it. ONE file was DEGRADED (regex fallback) and one analyzer TIMEOUT was logged and aborted (`ripgrep/crates/core/flags/defs.rs`, engine timeout, basic parse result). Every count above is therefore a FLOOR over the files the run could measure, not a ceiling. NO TYPE IS EXCLUDED: the language expresses all ten and the whole admitted population fires all ten, so there is no grammar-absence claim to make and no zero-sites entry to file. ARITHMETIC: 10 implemented + 0 corpus-unexercised + 0 gaps = 10 applicable = 10 − 0 grammar-absence − 0 unclassified. THE 120-FILE FIRING LOG AGREES HERE rather than being refuted — validation/m14/results/firing-laptop-b.current.log line 6-7 reads `RUST 10 types fired 110/110 parsed` with every type counted — and the earlier lane measurement in RUST-D14 (7 labels, 74,584 relationships over 450 files, 2026-09-29) is a SAMPLE whose counts this whole-population run is not comparable with. Every implemented type carries its own `_implemented_measured` count, so the per-type silence attribution has a pointer for each of the ten.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the WHOLE admitted 2,532-file rust population (9 repos, 0 parse failures, 1 degraded, 50 content-bearing files returning nothing — so a LOWER BOUND) — CLOSURE block of validation/m14/measurements/task105/rust-whole-population-gate.txt, whose ten per-type rows sum to its own TOTAL of 292,719",
+      "calls": {
+        "edges": 178084
+      },
+      "uses": {
+        "edges": 28019
+      },
+      "contains": {
+        "edges": 21702
+      },
+      "imports": {
+        "edges": 11685
+      },
+      "references": {
+        "edges": 38648
+      },
+      "exports": {
+        "edges": 4571
+      },
+      "extends": {
+        "edges": 29
+      },
+      "implements": {
+        "edges": 1793
+      },
+      "overrides": {
+        "edges": 2169
+      },
+      "instantiates": {
+        "edges": 6019
+      }
+    }
   }
 }
