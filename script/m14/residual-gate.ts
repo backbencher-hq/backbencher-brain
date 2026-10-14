@@ -39,6 +39,12 @@
 import { readFileSync, existsSync } from "node:fs"
 import { resolve, dirname } from "node:path"
 import { execFileSync } from "node:child_process"
+// THE SINGLE SOURCE OF TRUTH for lane -> extension: `src/ast/language-detection.ts` already publishes
+// extension -> language, and this gate DERIVES from it instead of keeping a second hand-written list.
+// The defect this replaces: the literal map below covers 23 lanes and EVERY OTHER LANE fell through
+// `?? lang`, i.e. the LANE NAME was used as a file extension — `--lane python` ran `incoming-gate.ts python
+// python 0`, found no `*.python` files, and printed an all-zero table with `NaN%` at exit 0. Silent.
+import { EXTENSION_LANGUAGE } from "../../src/ast/language-detection.ts"
 
 const HERE: string = (import.meta as any).dir ?? dirname(new URL(import.meta.url).pathname)
 const ROOT = resolve(HERE, "..", "..")
@@ -129,8 +135,20 @@ type Population = {
   sampleOf: number | null; sampleTotal: number | null
 }
 
+
+/** Lane -> extensions, INVERTED from the single source of truth (`EXTENSION_LANGUAGE`). Returns null when the
+ * source has nothing for this lane, so the caller falls back to the old behaviour AND the guard below fires. */
+const LANE_ALIASES: Record<string, string[]> = { objc: ["objective-c", "objc"], csharp: ["csharp", "c#"] }
+function derivedExts(lane: string): string | null {
+  const want = new Set((LANE_ALIASES[lane] ?? [lane]).map((x) => x.toLowerCase()))
+  const exts = Object.entries(EXTENSION_LANGUAGE)
+    .filter(([, l]) => want.has(String(l).toLowerCase()))
+    .map(([e]) => e.replace(/^\./, ""))
+  return exts.length ? exts.join(",") : null
+}
+
 function runLane(lang: string): { rows: Array<{ type: string; edges: number; resolved: number; ambColl?: number; amb: number; ambKind: number; unres: number; extOK: number; extQ: number; extFAIL: number; bindOK: number; bindQ: number; bindFAIL: number; causeOK: number; causeFAIL: number }>; total: any; intent: Map<string, { intended: number; sameFileUnproven: number; arbitraryTwin: number; noDeclaration: number }>; intentBlockSeen: boolean; intentWidthBad: number; population: Population; intentClosure: string | null; claimBlock: string[] } {
-  const ext = { fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble", php: "php", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql", protobuf: "proto", json: "json,jsonc", yaml: "yaml,yml", css: "css,less", scss: "scss", hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl", bash: "sh,bash,zsh" }[lang] ?? lang
+  const ext = { fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble", php: "php", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql", protobuf: "proto", json: "json,jsonc", yaml: "yaml,yml", css: "css,less", scss: "scss", hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl", bash: "sh,bash,zsh" }[lang] ?? derivedExts(lang) ?? lang
   let out = ""
   try {
     out = execFileSync("npx", ["tsx", "script/m14/incoming-gate.ts", lang, ext, "0"], { cwd: ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] })
@@ -285,6 +303,23 @@ const LANE = argv.includes("--lane") ? argv[argv.indexOf("--lane") + 1] : null
 
 if (LANE) {
   const { rows, total, intent, intentBlockSeen, intentWidthBad, population, intentClosure, claimBlock } = runLane(LANE)
+  // A LANE THAT READ NOTHING IS NOT A CLEAN LANE. Before this guard, an unreadable lane printed an all-zero
+  // TOTAL with `NaN%` (0/0) and exited 0, which is exactly how a lane gets recorded as checked when it was
+  // never read. Exit 2 is deliberate: exit 1 already means "refuted claims exist" in the fleet branch below,
+  // so a second meaning for 1 would collide.
+  // MEASURED CORRECTION: `rows.length === 0` CANNOT FIRE — the runner emits a TOTAL row even when the
+  // population is empty (the parser accepts `parts[0] === "TOTAL"`), so a nonsense lane yielded ONE row and
+  // the first draft of this guard passed silently. The condition that actually separates "read nothing" from
+  // "read something clean" is the EDGE COUNT.
+  if (total.edges === 0) {
+    const resolvedExt = derivedExts(LANE) ?? LANE
+    console.error(`residual-gate: LANE "${LANE}" READ NOTHING — the runner produced 0 edges. ` +
+      `resolved extension: "${resolvedExt}". invocation: ` +
+      `\`npx tsx script/m14/incoming-gate.ts ${LANE} ${resolvedExt} 0\`. ` +
+      `An all-zero table is NOT a clean lane.`)
+    process.exit(2)
+  }
+
   if (JSON_MODE) { console.log(JSON.stringify({ gate: "residual-gate", lane: LANE, rows, total, population }, null, 2)); process.exit(0) }
   const w = (s: any, n: number) => (String(s) + " ".repeat(n)).slice(0, n)
   // THE HEADER READS THE RUN, IT DOES NOT ASSERT OVER IT. It used to say `WHOLE admitted population,
