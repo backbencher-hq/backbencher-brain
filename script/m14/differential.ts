@@ -23009,6 +23009,18 @@ async function main() {
         for (const e of deriveHtmlEdges(root, htmlModule)) {
           ;(truth as any[]).push(e)
         }
+        // M60 rel-type coverage (2026-10-13): html's `imports` truth. The analyzer
+        // publishes this label ONLY from its embedded `<script>` blocks — the seam
+        // merges the JS delegate's rows into the document — so the truth is the same
+        // `script_element` walk the SFC lanes use (`extractSfcScriptBlocks` matches
+        // `script_element`, which the html grammar produces too), pushed through the
+        // JS import oracle whose `<specifier>:<item>` target contract is what the
+        // pins in this lane assert (`./lib/mount.js:mount`).
+        for (const st of await deriveEmbeddedScriptTrees(root, content, "html")) {
+          for (const e of deriveJavaScriptImportEdges(st)) {
+            ;(truth as any[]).push(e)
+          }
+        }
       }
       if (lang === "markdown") {
         // M14 (#290): the markdown truth. `deriveMarkdownEdges` needs the file
@@ -23128,6 +23140,16 @@ async function main() {
           for (const e of deriveTypeScriptEdges(st)) {
             if (lang === "vue" && e.label === "calls" && MACROS.has(e.target)) continue
             if (lang === "svelte" && e.label === "calls" && isRuneCalleeMirror(e.fullCallee ?? e.target)) continue
+            ;(truth as any[]).push(e)
+          }
+          // M60 rel-type coverage (2026-10-13): the SFC's `imports` truth. It comes
+          // from the SAME embedded subtrees — the JS import oracle's node types
+          // (`import_statement` / `export_statement` / `call_expression` /
+          // `import_specifier`, and `string_fragment` for the payload) are identical
+          // in the TypeScript grammar, so one push covers `lang="ts"` and plain
+          // `<script>` blocks alike. Paired with the allowlist entry in this file;
+          // without either half the label is stored and compared against nothing.
+          for (const e of deriveJavaScriptImportEdges(st)) {
             ;(truth as any[]).push(e)
           }
         }
@@ -24121,6 +24143,17 @@ async function main() {
           // truth row MISSING. That is the #910 (c imports) and bash trap this file records
           // twice, in both directions.
           ...(lang === "php" ? ["imports"] : []),
+          // M60 rel-type coverage (2026-10-13): `imports` joins html/svelte/vue's compared
+          // set, and the TRUTH half is pushed in the same change (the html branch and the
+          // vue/svelte embedded-script branch below). Both edits are required and neither is
+          // optional — the rule this file states three times: an oracle with no entry compares
+          // nothing, and an entry with no oracle reads every analyzer row unexplained. These
+          // three lanes publish `imports` ONLY through their embedded script blocks (the seam
+          // merges the JS/TS delegate's rows into the document), and the ONLY import oracle in
+          // this file until now was wired for `lang === "javascript"` on a `.js` file's own
+          // root — so the label was stored and compared against nothing, which is exactly the
+          // DERIVATION row `rel-type-coverage-gate` reported for each of them.
+          ...(lang === "html" || lang === "svelte" || lang === "vue" ? ["imports"] : []),
           // 2026-10-08: `exports` joins the compared set for php, on the same terms as the
           // two above — a label is comparable exactly when this lane's oracle derives it.
           // Until today it was the one DERIVATION row left in `rel-type-coverage-gate`.
