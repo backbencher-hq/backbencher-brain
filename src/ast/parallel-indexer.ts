@@ -3732,8 +3732,37 @@ export async function storeResults(
              if (nm && sScope) {
                const q = `${sScope}.${nm}`
                if (!nameToSymbol.has(q)) nameToSymbol.set(q, s)
-               const sArity = s.metadata?.arity
+               // TASK-112 — THE ARITY WAS READ FROM A KEY PRODUCTION DOES NOT CARRY.
+               //
+               // `s.metadata?.arity` is written by the elixir analyzer
+               // (`real-elixir-analyzer.ts:2667`), and `pool-worker.ts`'s symbol-metadata
+               // allowlist does not carry it, so on every production path it is `undefined`
+               // and this alias NEVER registered. Measured through both entry points on the
+               // same source: `engine.parseFile` -> arity 1 and 2 present;
+               // `pool-worker.parseFile` -> `undefined` (task-109 §3.1).
+               //
+               // THE FACT ALREADY CROSSES, UNDER ANOTHER NAME: the analyzer defines its arity
+               // as `const arity = parameters.length` (`real-elixir-analyzer.ts:2552`) and
+               // `parameters` IS on the wire (`pool-worker.ts` symbol mapping). So this reads
+               // the crossed field instead of widening the allowlist — no new wire key, no new
+               // annotation payload. It is inert for any lane that does not use arity-qualified
+               // identities, because such a lane never emits a `Scope.name/N` source for the
+               // alias to answer.
+               //
+               // SCOPE, stated: it covers function/method symbols, where that identity holds. A
+               // `@callback` symbol carries no `parameters` array, so it derives nothing — the
+               // same `undefined` production had before, and no relationship is sourced from a
+               // callback (a callback has no body).
+               const metaArity = s.metadata?.arity
+               const sKind = String(s.type || s.kind || "")
+               const sArity =
+                 typeof metaArity === "number"
+                   ? metaArity
+                   : (sKind === "function" || sKind === "method") && Array.isArray(s.parameters)
+                     ? s.parameters.length
+                     : undefined
                if (typeof sArity === "number" && !nameToSymbol.has(`${q}/${sArity}`)) nameToSymbol.set(`${q}/${sArity}`, s)
+             }
              }
              const k = s.type || s.kind || "unknown"
              if (CONTAINER_TYPES_LOOKUP.has(k)) {
