@@ -33,6 +33,18 @@ import { PHP_MUTANTS } from "./php-mutants"
 import { CSHARP_MUTANTS } from "./csharp-mutants"
 import { ELIXIR4_MUTANTS } from "./elixir4-mutants"
 import { PERL_MUTANTS } from "./perl-mutants"
+// task-7 batch B: locally-typed registries. Their entries carry `id`/`language`/`defectClass`/
+// `description`/`transform` and their `transform` takes `(any, source?)`; `any` is assignable to
+// `MutantPayload`, so the shape matches the canonical interface and `tsc` is the arbiter rather than
+// an eyeball. Wired and verified one batch at a time.
+import { GO_MUTANTS } from "./go-mutants"
+import { TS_MUTANTS } from "./ts-mutants"
+// NOT WIRED, and deliberately: `ts-deriv-mutants.ts` is skipped with a NAMED blocker. Its mutant
+// `ts/placeholder-signature-member` exhausts a 4 GB heap on its own (EXIT 134, "Ineffective
+// mark-compacts near heap limit", 68 s) and `ts/computed-import-specifier-published` +
+// `ts/type-mention-double-label` run clean. A registry that cannot be RUN cannot be VERIFIED, and
+// wiring it would add a mutant that aborts any canonical run selecting it. Left orphaned so the
+// gate keeps reporting it. See validation/m14/verification/SCRIPT-UNION-PROGRESS.md.
 import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
 import { SQL_ONTOLOGY_MUTANTS } from "../m60/sql-ontology-mutants"
 import { JULIA_MUTANTS } from "../m60/julia-mutants"
@@ -2483,6 +2495,15 @@ export const MUTANTS: Mutant[] = [
   ...CSHARP_MUTANTS,
   ...ELIXIR4_MUTANTS,
   ...PERL_MUTANTS,
+  // task-7 batch B.
+  ...GO_MUTANTS,
+  ...TS_MUTANTS,
+  // The ts-deriv registry is deliberately NOT spread here. Do NOT write its identifier with three
+  // leading dots in any comment in this file: `verify-orphaned-mutants.ts` decides "wired" with
+  // `new RegExp("\.\.\." + exportName)`, a plain text search, so a COMMENTED-OUT spread satisfies it
+  // and the gate reports a registry as running when it is not. This comment previously did exactly
+  // that and turned the gate's verdict for ts-deriv into a false "wired". See the import block above
+  // and SCRIPT-UNION-PROGRESS.md for the blocker that keeps that registry orphaned.
   // The php lane's registry — MEASURED as orphaned before this line existed, not suspected.
   // `npx tsx script/m14/verify-orphaned-mutants.ts` reported
   // `script/m14/php-mutants.ts  PHP_MUTANTS  6  ORPHANED` and FAILED with "3 mutant file(s)
