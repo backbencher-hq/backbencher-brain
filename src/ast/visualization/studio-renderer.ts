@@ -79,18 +79,54 @@ export function renderVisualizationStudio(documents: {
         var doc = frame.contentDocument;
         if (!doc) return;
         var style = doc.createElement("style");
-        style.textContent = [
+        var common = [
           "@media (max-width:760px) {",
-          "#hud { width: 210px !important; max-width: 210px !important; padding: 12px 14px !important; }",
-          "#stats { grid-template-columns: auto minmax(0, 1fr) !important; gap: 2px 12px !important; }",
-          "#stats span { overflow-wrap: anywhere !important; }",
-          "#search { width: 170px !important; }",
+          "#hud { width: 300px !important; max-width: 300px !important; padding: 12px 14px !important; }",
+          "#stats { grid-template-columns: auto auto !important; gap: 2px 12px !important; }",
+          "#stats span { white-space: nowrap !important; }",
+          "#search { top: 62px !important; right: 16px !important; width: 220px !important; }",
           "#search input { width: 100% !important; }",
+          "#savebtn { top: 16px !important; right: 16px !important; }",
           "}"
-        ].join("");
+        ];
+        if (frame.dataset.mode === "graph" || frame.dataset.mode === "class") {
+          common.push(
+            "#hud { left: 88px !important; }",
+            "#legend { left: 88px !important; }",
+            "#detail { right: 88px !important; }"
+          );
+          if (frame.dataset.mode === "graph") {
+            common.push(
+              "#hud, #legend { display: none !important; }",
+              "#search { top: 16px !important; }"
+            );
+          } else {
+            common.push("#hud, #legend { display: none !important; }");
+          }
+        } else if (frame.dataset.mode === "codemap") {
+          common.push(
+            "#side { left: 72px !important; }",
+            "#map { left: 394px !important; }",
+            "#path { left: 406px !important; }"
+          );
+        }
+        style.textContent = common.join("");
         doc.head.appendChild(style);
+        if (frame.dataset.mode === "graph") {
+          var canvas = doc.getElementById("c");
+          if (canvas && doc.defaultView && doc.defaultView.WheelEvent) {
+            canvas.dispatchEvent(new doc.defaultView.WheelEvent("wheel", {
+              deltaY: -420,
+              clientX: Math.round(canvas.clientWidth / 2),
+              clientY: Math.round(canvas.clientHeight / 2),
+              bubbles: true,
+              cancelable: true
+            }));
+          }
+        }
       }
       function mount(mode) {
+        frame.dataset.mode = mode;
         frame.addEventListener("load", tuneViewport, { once: true });
         frame.srcdoc = docs[mode];
         buttons.forEach(function (button) {
