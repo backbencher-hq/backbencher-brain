@@ -695,6 +695,39 @@
     "src/ast/real-go-analyzer.ts:3132"
    ]
   },
-  "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-go-analyzer.ts, named per type in `_emissionSites`. TWO OF THEM ARE GO'S OWN CONSTRUCTS RATHER THAN THE JVM SHAPES, and are named so the mapping is auditable: `extends` is struct embedding (metadata relationshipType go_struct_embedding, embedType struct_composition_extends, :2434/:2475 \u2014 Go's composition-of-types relation) and `overrides` is method-promotion shadowing (metadata go_method_promotion_shadowing, :2354 \u2014 the outer declaration that makes x.M select this method rather than the promoted one, depth-resolved per the Go spec's shallowest-depth rule). `implements` is interface satisfaction (interface_type is 1 of the 103 distinct named types in wasm/tree-sitter-go.wasm, sha256 9963ca89b616eaf0) and `instantiates` is composite_literal. NO EXCLUSIONS: the pinned grammar carries a production for every one of the ten. NOT YET CLAIMED: a per-type edge count \u2014 the firing log validation/m14/results/firing-laptop-b.current.log records GO as NO CORPUS under go-stdlib (0 of 10 fired), so the emission sites are the evidence here and a measured count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified."
+  "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-go-analyzer.ts, named per type in `_emissionSites`. TWO OF THEM ARE GO'S OWN CONSTRUCTS RATHER THAN THE JVM SHAPES, and are named so the mapping is auditable: `extends` is struct embedding (metadata relationshipType go_struct_embedding, embedType struct_composition_extends, :2434/:2475 \u2014 Go's composition-of-types relation) and `overrides` is method-promotion shadowing (metadata go_method_promotion_shadowing, :2354 \u2014 the outer declaration that makes x.M select this method rather than the promoted one, depth-resolved per the Go spec's shallowest-depth rule). `implements` is interface satisfaction (interface_type is 1 of the 103 distinct named types in wasm/tree-sitter-go.wasm, sha256 9963ca89b616eaf0) and `instantiates` is composite_literal. NO EXCLUSIONS: the pinned grammar carries a production for every one of the ten. NOT YET CLAIMED: a per-type edge count \u2014 the firing log validation/m14/results/firing-laptop-b.current.log records GO as NO CORPUS under go-stdlib (0 of 10 fired), so the emission sites are the evidence here and a measured count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified. MEASURED, 2026-10-14: `npx tsx script/m14/incoming-gate.ts go go 500` over a 500-file even stride of the 49,915 admitted .go files in 26 repositories (instrument disclosure: `population: 500 parsed of 500 sampled`) fires ALL TEN types, so the code reading and the measurement agree for every one of them: calls 14509, uses 9763, references 9438, contains 4620, exports 4028, imports 3116, instantiates 2432, extends 147, implements 73 and overrides 8. `overrides` is the smallest margin at 8 edges and is named so a lower bound is not mistaken for a total.",
+  "_implemented_measured": {
+   "_unit": "STRIDE SAMPLE, NOT POPULATION: `npx tsx script/m14/incoming-gate.ts go go 500` \u2014 instrument disclosure `population: 500 parsed of 500 sampled (corpus has 49915 .go files across 26 repos; stride sample)` and `SAMPLE, NOT POPULATION: 500 of 49915 files`; per-type edges are TABLE 1 of that run, read 2026-10-14, wall clock 289s. A stride is a lower bound by construction, so these are lower bounds and not corpus totals \u2014 the corpus is 100x the stride, so a type's true count may be far larger and none of these numbers may be read as an absence.",
+   "calls": {
+    "edges": 14509
+   },
+   "uses": {
+    "edges": 9763
+   },
+   "contains": {
+    "edges": 4620
+   },
+   "imports": {
+    "edges": 3116
+   },
+   "references": {
+    "edges": 9438
+   },
+   "exports": {
+    "edges": 4028
+   },
+   "extends": {
+    "edges": 147
+   },
+   "implements": {
+    "edges": 73
+   },
+   "overrides": {
+    "edges": 8
+   },
+   "instantiates": {
+    "edges": 2432
+   }
+  }
  }
 }

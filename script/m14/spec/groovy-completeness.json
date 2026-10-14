@@ -433,6 +433,39 @@
     "src/ast/real-groovy-analyzer.ts:1318"
    ]
   },
-  "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-groovy-analyzer.ts, named per type in `_emissionSites`. The pinned grammar wasm/tree-sitter-groovy.wasm (sha256 f1e68cb398e63f34) carries all ten productions: superclass + extends_interfaces for `extends`, interface_declaration/super_interfaces for `implements`, method_invocation/juxt_function_call for `calls`, import_declaration for `imports`, exports_module_directive for `exports` (Groovy 4 module directives \u2014 the `exports` edge is not a JVM visibility flag), object_creation_expression/explicit_constructor_invocation for `instantiates`. NO EXCLUSIONS. NOT YET CLAIMED: a per-type edge count \u2014 the firing log validation/m14/results/firing-laptop-b.current.log records GROOVY as NO CORPUS under groovy (0 of 10 fired), so the emission sites are the evidence here and a measured count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified."
+  "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-groovy-analyzer.ts, named per type in `_emissionSites`. The pinned grammar wasm/tree-sitter-groovy.wasm (sha256 f1e68cb398e63f34) carries all ten productions: superclass + extends_interfaces for `extends`, interface_declaration/super_interfaces for `implements`, method_invocation/juxt_function_call for `calls`, import_declaration for `imports`, exports_module_directive for `exports` (Groovy 4 module directives \u2014 the `exports` edge is not a JVM visibility flag), object_creation_expression/explicit_constructor_invocation for `instantiates`. NO EXCLUSIONS. NOT YET CLAIMED: a per-type edge count \u2014 the firing log validation/m14/results/firing-laptop-b.current.log records GROOVY as NO CORPUS under groovy (0 of 10 fired), so the emission sites are the evidence here and a measured count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified. MEASURED, 2026-10-14: `npx tsx script/m14/incoming-gate.ts groovy groovy,gradle 600` over a 600-file even stride of the 8102 admitted .groovy/.gradle files in 8 repositories (instrument disclosure: `population: 600 parsed of 600 sampled`) fires ALL TEN types, so the code reading and the measurement agree for every one of them: calls 10941, imports 5532, contains 3789, references 2821, uses 2548, instantiates 1917, exports 729, overrides 468, extends 351 and implements 233. The smallest margin is `implements` at 233 edges.",
+  "_implemented_measured": {
+   "_unit": "STRIDE SAMPLE, NOT POPULATION: `npx tsx script/m14/incoming-gate.ts groovy groovy,gradle 600` \u2014 instrument disclosure `population: 600 parsed of 600 sampled (corpus has 8102 .groovy,gradle files across 8 repos; stride sample)` and `SAMPLE, NOT POPULATION: 600 of 8102 files`; per-type edges are TABLE 1 of that run, read 2026-10-14, wall clock 86s. A stride is a lower bound by construction; these are lower bounds, not corpus totals.",
+   "calls": {
+    "edges": 10941
+   },
+   "uses": {
+    "edges": 2548
+   },
+   "contains": {
+    "edges": 3789
+   },
+   "imports": {
+    "edges": 5532
+   },
+   "references": {
+    "edges": 2821
+   },
+   "exports": {
+    "edges": 729
+   },
+   "extends": {
+    "edges": 351
+   },
+   "implements": {
+    "edges": 233
+   },
+   "overrides": {
+    "edges": 468
+   },
+   "instantiates": {
+    "edges": 1917
+   }
+  }
  }
 }
