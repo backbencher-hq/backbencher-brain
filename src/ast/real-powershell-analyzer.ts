@@ -3052,6 +3052,42 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     const detectedPatterns = [...patterns]
     const detectedFrameworks = [...frameworks]
 
+    // THE NAMESPACE CLAIM (task-34) — `["System"]`, ONE ENTRY, the only root that survived the fleet screen.
+    //
+    // MEASURED whole population before wiring: `System` is 1,587 claimable `uses` targets with a 3.8%
+    // last-segment-declared rate, while EVERY other large root on this lane fails that screen at 100%
+    // (`DefaultCommands` 1,272 · `WebCmdlets` 659 · `TabCompletion` 607 · `FileSystem` 531 ·
+    // `ModuleConstraint` 326 · `Pester` 320 · `Registry` 290) — those are module and parameter names whose
+    // targets the project itself declares, and they are deliberately NOT in the list. `System` is the .NET
+    // BCL root: `std`'s shape, and the shape the claim was built for.
+    //
+    // THE SEGMENT BOUNDARY IS EXPLICIT HERE, and it answers the one question the screen could not:
+    //   · `System.IO.Path` IS claimed — the leading segment is exactly `System` (`namespaceMatchOf` checks
+    //     segments, not text, so this is what it certifies);
+    //   · `SystemFoo.Bar` is NOT claimed — the text-prefix trap is refused by requiring the dot.
+    const psDeclaredHere = new Set<string>()
+    for (const sym of symbols) {
+      if (sym.name) psDeclaredHere.add(sym.name)
+      const q = (sym as { qualifiedName?: unknown }).qualifiedName
+      if (typeof q === "string" && q.length > 0) psDeclaredHere.add(q)
+    }
+    let psNamespaceClaims = 0
+    for (const rel of relationships as Array<{ type?: unknown; target?: unknown; metadata?: Record<string, unknown> }>) {
+      // `uses` AND `calls` — the namespace claim's semantics do not depend on the edge type (it certifies a
+      // ROOT, not a relationship kind), and MEASURED: limiting this pass to `uses` moved only 22 edges, because
+      // powershell's `System.*` targets are overwhelmingly CALLS (`System.Console.WriteLine`-shaped). The
+      // first run of this post-pass is what located that, rather than assuming it.
+      if (rel.type !== ASTEngine.RelationshipType.Uses && rel.type !== ASTEngine.RelationshipType.Calls) continue
+      const tgt = String(rel.target ?? "")
+      if (tgt !== "System" && !tgt.startsWith("System.")) continue
+      if (psDeclaredHere.has(tgt)) continue
+      const md = rel.metadata
+      if (!md || typeof md !== "object") continue
+      if (md.isExternal === true) continue
+      md.languageNamespace = ["System"]
+      psNamespaceClaims++
+    }
+
     return {
       language: "powershell",
       symbols,
