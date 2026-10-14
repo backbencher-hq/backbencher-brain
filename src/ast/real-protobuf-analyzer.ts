@@ -1738,7 +1738,25 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           admittedExtensions: ["proto"],
           extraCandidates,
         })
-        if (claim === null) continue
+        if (claim === null) {
+          // THE SOURCE-PATH CLAIM (task-29) — attached AT THE POINT THE FILE CLAIM FAILED, which is the
+          // only place the distinction exists.
+          //
+          // WHY IT IS SAFE, AND WHY IT IS HERE RATHER THAN SOMEWHERE ELSE: this loop's own guard skips
+          // every edge that already carries `importProjectFile` (`:1700`), so the 981 imports the analyzer
+          // DOES resolve are STRUCTURALLY UNREACHABLE by this line — their claim is stronger, it names an
+          // admitted file, and nothing here can weaken it. MEASURED BEFORE WIRING, on the unclaimed 574:
+          // 569 are path-shaped and 569 of 569 verify against the project's admitted list, 0 refuted.
+          // (The task-27 figure that refused this adoption, 286 refutations, was an instrument artifact: a
+          // probe that classified EVERY import with `claim = null` and so attached this claim to edges the
+          // analyzer had already resolved. See FOUR-CLAUSE-protobuf.md §10.)
+          //
+          // PATH-SHAPED TARGETS ONLY. A bare name has no shape to check — `planfile.proto`,
+          // `any.proto` — and certifying one is the laundering four lanes have now refused.
+          const src = String(r.target ?? "")
+          if (/[/\\]/.test(src) || /^[a-z][a-z0-9+.-]*:/i.test(src)) md.sourcePathClaim = [src]
+          continue
+        }
         md.importProjectFile = claim
       }
     }
