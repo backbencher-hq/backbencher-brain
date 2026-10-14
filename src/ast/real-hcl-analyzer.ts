@@ -540,6 +540,24 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
               for (const ref of refs) {
                 // A builtin root is a `uses` edge (global namespace, unresolvable);
                 // anything else is a project address and is a `references` edge.
+                //
+                // THE NAMESPACE CLAIM — the first lane to adopt the kind the design authorized
+                // (`docs/analyzers/HANDOFF.md:654-668`; the rule side is `NAMESPACE_CLAIM_KEY` in
+                // `script/m14/incoming-rule.ts`). This is what the LANE was missing rather than what
+                // the arbiter was: `hclBuiltin: true` is a marker the arbiter has never read — it is
+                // not one of `EXTERNAL_KEYS` — so the arbiter saw a plain `uses`, found no
+                // declaration, and called 2,041 of them unresolved. The claim carries
+                // `BUILTIN_ROOTS` AS ITS EVIDENCE (property 2 of the design: the list is part of the
+                // claim, so widening it is a visible act by this lane), and the verifier checks the
+                // target's ROOT against THAT list and never against the symbol table — which is the
+                // one thing the owner test could not do, because a builtin namespace and a project
+                // declaration can share a spelling (`path`, `count`, `terraform`).
+                //
+                // PROPERTY 1 IS THE REASON THIS IS SAFE TO EMIT: a target whose root is NOT in the
+                // list reads `externalRefuted`, so the claim can never shelter an unresolved edge.
+                // Only the builtin branch carries it; a project ADDRESS (`var.x`, `local.y`,
+                // `module.z`, `data.t.n`, `<resource_type>.<name>`) is a declaration question and
+                // keeps its `references` outcome untouched.
                 const root = ref.path.split(".")[0]
                 const builtin = BUILTIN_ROOTS.has(root)
                 addRelationship(
@@ -547,7 +565,10 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
                   ref.path,
                   builtin ? ASTEngine.RelationshipType.Uses : ASTEngine.RelationshipType.References,
                   ref.line,
-                  { hclSite: builtin ? "builtin-use" : "reference", ...(builtin ? { hclBuiltin: true } : {}) },
+                  {
+                    hclSite: builtin ? "builtin-use" : "reference",
+                    ...(builtin ? { hclBuiltin: true, languageNamespace: [...BUILTIN_ROOTS] } : {}),
+                  },
                 )
               }
             }

@@ -108,6 +108,10 @@ export type ExternalClaim =
   // THE REFERENCE CLAIM — `<owner>/<repo>@<ref>` or `docker://…`, verified by the spelling and
   // refuted by the key space (see `REMOTE_REF_CLAIM_KEY`).
   | { kind: "remoteRef" }
+  // THE NAMESPACE CLAIM — the target's ROOT is a language namespace, and `roots` IS the analyzer's
+  // declared list. Checked against that list INSTEAD of the symbol table; see NAMESPACE_CLAIM_KEY
+  // for the four required properties and the four lanes' measurements that produced the design.
+  | { kind: "namespace"; roots: string[] }
   // BUCKET 3 — A DECLARED CAUSE, and deliberately NOT an external claim.
   //
   // `base` is the reason the analyzer states (`baseBeyondRunScope`'s value: the heritage base
@@ -250,6 +254,52 @@ export const REMOTE_REF_CLAIM_KEY = "remoteRef"
  */
 export const CAUSE_CLAIM_KEY = "baseBeyondRunScope"
 
+/**
+ * THE NAMESPACE CLAIM — the capability four lanes measured as missing, built from the authorized
+ * design (`docs/analyzers/HANDOFF.md:654-668`, "THE DESIGN FOR THE MISSING CLAIM KIND"):
+ *
+ *   *"A namespace claim — 'this target's ROOT is a language namespace, not a declaration' —
+ *    carrying the analyzer's root list as its evidence, so the verifier checks the root against
+ *    THAT list and never against the symbol table."*
+ *
+ * WHY IT EXISTS. `verifyExternalClaim` verifies externality by NOT FINDING the target
+ * (`decls === 0`) and refutes by finding one (`decls > 0`), and `classifyEdge` reaches the
+ * verifier only inside the `decls === 0` branch — so a claim is either unfalsifiable or refuted
+ * the moment the project happens to ship the thing. Four lanes converged on that wall with
+ * measured counts: toml 10 · yaml 833 · protobuf 2,621 (37 of whose declared-namespace claims
+ * were REFUTED, which is why that fix was reverted) · hcl 65,771. **A builtin NAMESPACE and a
+ * project DECLARATION can share a spelling, and the owner test cannot tell them apart**
+ * (HANDOFF:648-655, where the same claim was measured to add "29 false externalities").
+ *
+ * THE FOUR PROPERTIES THE DESIGN REQUIRES, each implemented rather than described:
+ *
+ *   1. REFUTABLE. A target whose ROOT is not in the declared list reads `externalRefuted` — the
+ *      property that stops this becoming the laundering vector this file's own docstring warns
+ *      about ("mark every unresolved edge external and `unresolved` reads 0"). The check NEVER
+ *      consults the symbol table: the list is the sole authority, so a project that ships
+ *      `google.protobuf` cannot refute a claim that does not list it, and a target whose root the
+ *      analyzer did not declare cannot be sheltered by the claim.
+ *   2. THE LIST IS PART OF THE CLAIM. `metadata.languageNamespace` is a non-empty array of root
+ *      strings on the edge itself, so widening it is a visible, reviewable act by the lane — a
+ *      reviewer diffs one array, not an opaque boolean.
+ *   3. A DISTINCT CLAIM KIND (`kind: "namespace"`), not a flag on the external marker, so a
+ *      reader can see WHICH mechanism verified what (`verifiedBy: "namespace"`).
+ *   4. CROSS-TABBED LIKE ANY OTHER CLAIM — it flows through the same `ExternalClaim` union, the
+ *      same `classifyEdge`, the same ambiguous-edge disposition table and the same counters, and
+ *      it is counted in `extOK` / `extFAIL` exactly as the other kinds are.
+ *
+ * IT IS ADDITIVE: `externalClaimOf` returns this kind ONLY when the key is present, and no
+ * analyzer emitted it before hcl adopted it, so a lane that does not use it is behaviourally
+ * unchanged — which is what makes a fleet-level file safe to extend for one lane.
+ */
+export const NAMESPACE_CLAIM_KEY = "languageNamespace"
+
+/** The ROOT of a target: its first dot-segment, which is the thing a namespace claim names. */
+export function namespaceRootOf(tgt: string): string {
+  const dot = tgt.indexOf(".")
+  return (dot > 0 ? tgt.slice(0, dot) : tgt).trim()
+}
+
 export function externalClaimOf(rel: any): ExternalClaim | null {
   const md = rel?.metadata
   if (!md || typeof md !== "object") return null
@@ -271,6 +321,16 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
   if (Array.isArray(fileClaim)) {
     const candidates = fileClaim.filter((c: any): c is string => typeof c === "string" && c.length > 0)
     if (candidates.length > 0) return { kind: "projectFile", candidates }
+  }
+  // THE NAMESPACE CLAIM, read before the population claims for the file claim's own reason: it
+  // makes a statement the LIST can check, and routing such an edge to the weaker `owner` marker
+  // would let a lane be excused by the very mechanism this claim exists to replace.
+  const nsRoots = md[NAMESPACE_CLAIM_KEY]
+  if (Array.isArray(nsRoots)) {
+    const roots = nsRoots
+      .filter((r: any): r is string => typeof r === "string" && r.trim().length > 0)
+      .map((r: string) => r.trim())
+    if (roots.length > 0) return { kind: "namespace", roots }
   }
   if (md[IMPORT_CLAIM_KEY] === true) return { kind: "projectFacts" }
   const cause = md[CAUSE_CLAIM_KEY]
@@ -684,7 +744,7 @@ export type Classified = {
   kinds: string
   /** WHICH evidence confirmed a verified external claim — reported so a lane can audit the
    *  mechanism that produced the number, not only the number. */
-  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling"
+  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling" | "namespace"
   /**
    * WHAT A CLAIM SAYS ABOUT A TARGET THAT NAMES TWO OR MORE DECLARATIONS — recorded WITH ITS KIND,
    * and deliberately NOT allowed to move the outcome. See `claimDispositionOnAmbiguous`.
@@ -757,6 +817,12 @@ function claimDispositionOnAmbiguous(
   // re-label a gap, and it has nothing to verify against an ambiguous target. (The conflicting form was
   // already settled before the count and never reaches here.)
   if (claim.kind === "cause") return { kind: "cause", disposition: "notApplicable" }
+  if (claim.kind === "namespace") {
+    // PROPERTY 4, cross-tabbed: an ambiguous edge carrying a namespace claim reports which way the
+    // LIST settled it, exactly as the other kinds report theirs — never merged into the raw column.
+    const root = namespaceRootOf(tgt)
+    return { kind: "namespace", disposition: claim.roots.includes(root) ? "verified" : "refuted" }
+  }
   if (claim.kind === "projectFacts") {
     return { kind: "projectFacts", disposition: facts ? map(verifyImportClaim(facts, tgt)) : "unverified" }
   }
@@ -837,6 +903,27 @@ export function classifyEdge(
   }
   const kindSet = kinds.get(tgt)
   const kindText = [...(kindSet ?? [])].sort().join("|")
+  // THE NAMESPACE CLAIM IS THE SOLE AUTHORITY FOR ITS EDGES, checked before every count-based
+  // branch because the design's whole point is that the ROOT is checked against the LIST and never
+  // against the symbol table (property 1). Refutable by construction: a root the analyzer did not
+  // declare reads `externalRefuted`, so the claim can never become a blanket excuse.
+  if (claim !== null && claim.kind === "namespace") {
+    const root = namespaceRootOf(tgt)
+    const listed = root.length > 0 && claim.roots.includes(root)
+    // PROPERTY 4 — CROSS-TABBED LIKE ANY OTHER CLAIM. This branch returns before the shared
+    // cross-tab block, because the claim is the sole authority for the OUTCOME and returning early
+    // is the point; the disposition therefore has to be attached HERE, or an ambiguous
+    // namespace-claimed edge would report no disposition at all. Found by the refutation test's
+    // arm E — which is why that arm exists.
+    const disposition: AmbiguousClaimDisposition = listed ? "verified" : "refuted"
+    return {
+      outcome: listed ? "externalVerified" : "externalRefuted",
+      decls,
+      kinds: kindText,
+      verifiedBy: listed ? "namespace" : undefined,
+      ...(decls > 1 ? { claimOnAmbiguous: { kind: "namespace", disposition } } : {}),
+    }
+  }
   // A BINDING CLAIM IS CHECKED BEFORE THE COUNT, and that ordering is the whole point: the
   // claim says "this target names a binding, not a declaration", so the moment the key space
   // answers the target with a declaration the claim is FALSE — even though the edge would
