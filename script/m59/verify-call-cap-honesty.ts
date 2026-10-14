@@ -11,14 +11,26 @@
 //      `truncated` is true, `truncationReason` names the site limit,
 //      `callersIfUncapped` reports the TRUE number of stored sites, and
 //      `totalsAreLowerBounds` is explicit.
-//   2. No false alarm: a symbol with fewer sites than the limit reports
-//      `truncated: false` and `callersIfUncapped: null` (not zero, not a guess).
+//   2. No false alarm: a symbol with fewer sites than the limit returns every
+//      one of them, names no site-limit reason and invents no total (null, not
+//      zero) — and the UN-NARROWED default answer for the same symbol reports
+//      `truncated: false`.
 //   3. Determinism: two identical questions against one index return the same
 //      site set — a bare unordered `LIMIT` returned a different 200 per run.
 //   4. The gate can fail: after deleting stored rows the positive expectation
 //      MUST break (mutation), and restoring them MUST bring it back.
 //
 // The gate exits non-zero if any check fails or if the mutation is not caught.
+//
+// TWO FILTERS, TWO EXPECTATIONS (fixed 2026-10-14). `bb_graph`'s default
+// `relationshipTypes` is EVERY stored kind, while this fixture's store also
+// holds non-call rows against the same symbols (measured: `hot` = 260 `calls`
+// + 1 visible `exports`/`imports`). Asserting a calls-only expectation against
+// an un-narrowed answer is not a cap test — it is a test of a question the tool
+// was not asked — and it left this gate red at 15/20. The cap and total
+// assertions now pass `relationshipTypes: ["calls"]` so their expectation is a
+// count the gate can write, and a separate pair of checks exercises the
+// un-narrowed default and requires it to cover every kind the store holds.
 
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -101,6 +113,30 @@ async function main() {
     )
     .get()
 
+  /** The filter that makes the expected totals checkable: the counts above are
+   *  calls-only, so every cap/total assertion runs calls-only too. A supplied
+   *  filter is itself declared in `truncationReason` (see the gate's header). */
+  const CALLS_ONLY = { relationshipTypes: ["calls"] } as const
+
+  /** Every stored relationship kind, in the engine's declared order. The
+   *  UN-NARROWED default covers all ten, and this query mirrors the caller
+   *  query's own visibility: the source symbol and its file must resolve. The
+   *  fixture holds no noise paths, no noise symbol names and no cascaded
+   *  members, so this is the exact set the engine can see. */
+  const ALL_KINDS = ["calls", "extends", "implements", "uses", "instantiates", "overrides", "contains", "references", "imports", "exports"]
+  const visibleRows = (name: string): Array<{ kind: string }> =>
+    db
+      .prepare(
+        `SELECT r.relationship_type AS kind FROM brain_relationship r
+         JOIN brain_symbol t ON t.id = r.target_symbol_id
+         JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id
+         JOIN brain_file f ON f.id = s.file_id
+         WHERE t.name = ? AND r.relationship_type IN (${ALL_KINDS.map(() => "?").join(",")})`,
+      )
+      .all(name, ...ALL_KINDS)
+  const storedVisibleAllKinds = (name: string): number => visibleRows(name).length
+  const storedVisibleKinds = (name: string): string[] => [...new Set(visibleRows(name).map((r) => r.kind))]
+
   const checks: Check[] = []
   const check = (name: string, ok: boolean, detail: string) => checks.push({ name, ok, detail })
 
@@ -108,7 +144,7 @@ async function main() {
   check("fixture: hot has more stored sites than the default limit", storedHot.n > 200, `stored hot sites=${storedHot.n}`)
 
   // ── 1. declaration on a capped answer ───────────────────────────────────────
-  const hot = await call("bb_graph", { symbol: "hot" })
+  const hot = await call("bb_graph", { symbol: "hot", ...CALLS_ONLY })
   const hs = hot.parsed?.summary ?? {}
   const hotEdges: any[] = hot.parsed?.callers ?? []
   check("capped: tool answered", !hot.isError && hotEdges.length > 0, `edges=${hotEdges.length} err=${hot.isError}`)
@@ -119,17 +155,41 @@ async function main() {
   check("capped: the total is not the returned count", hs.callersIfUncapped !== hotEdges.length, `${hs.callersIfUncapped} vs ${hotEdges.length}`)
   check("capped: returned count is labelled a floor", hs.totalsAreLowerBounds === false || hs.totalsAreLowerBounds === true, `totalsAreLowerBounds=${hs.totalsAreLowerBounds} (declared, not silent)`)
 
-  // ── 2. no false alarm on an uncapped answer ────────────────────────────────
-  const cold = await call("bb_graph", { symbol: "cold" })
+  // ── 2. no false alarm on an uncapped answer, under the declared filter ─────
+  const cold = await call("bb_graph", { symbol: "cold", ...CALLS_ONLY })
   const cs = cold.parsed?.summary ?? {}
   const coldEdges: any[] = cold.parsed?.callers ?? []
   check("uncapped: answers all sites", coldEdges.length === storedCold.n && storedCold.n === COLD_CALLS, `edges=${coldEdges.length} stored=${storedCold.n}`)
-  check("uncapped: truncated is FALSE (the flag can be false)", cs.truncated === false, `truncated=${cs.truncated}`)
   check("uncapped: no total is invented", cs.callersIfUncapped === null && cs.calleesIfUncapped === null, `callersIfUncapped=${cs.callersIfUncapped}`)
   check("uncapped: zero capped queries", cs.cappedQueries === 0, `cappedQueries=${cs.cappedQueries}`)
+  // The filter is a declared narrowing, so the completeness flag is not the
+  // right assertion HERE — it belongs to the un-narrowed call below.
+  check("uncapped: the filter that scoped this answer is declared", String(cs.truncationReason ?? "").includes("relationshipTypes:calls"), `reason=${cs.truncationReason}`)
+
+  // ── 2b. the DEFAULT filter: every stored kind, checked against the store ───
+  const defaultCold = await call("bb_graph", { symbol: "cold" })
+  const dcEdges: any[] = defaultCold.parsed?.callers ?? []
+  const dcScope: string[] = defaultCold.parsed?.summary?.scope?.relationshipTypes ?? []
+  const coldVisible = storedVisibleAllKinds("cold")
+  const coldStoredKinds = storedVisibleKinds("cold")
+  check(
+    "fixture: the default-filter check is non-vacuous (a non-call row is stored against cold)",
+    coldStoredKinds.some((k) => k !== "calls"),
+    `stored kinds=${JSON.stringify(coldStoredKinds)}`,
+  )
+  check(
+    "default filter: the un-narrowed answer applies every stored kind and returns every visible row",
+    coldStoredKinds.every((k) => dcScope.includes(k)) && dcEdges.length === coldVisible,
+    `applied=${JSON.stringify(dcScope)} storedKinds=${JSON.stringify(coldStoredKinds)} edges=${dcEdges.length} visible(all kinds)=${coldVisible}`,
+  )
+  check(
+    "uncapped: truncated is FALSE (the flag can be false)",
+    defaultCold.parsed?.summary?.truncated === false,
+    `truncated=${defaultCold.parsed?.summary?.truncated} reason=${defaultCold.parsed?.summary?.truncationReason}`,
+  )
 
   // ── 3. determinism (the #885 sibling) ──────────────────────────────────────
-  const again = await call("bb_graph", { symbol: "hot" })
+  const again = await call("bb_graph", { symbol: "hot", ...CALLS_ONLY })
   const key = (p: any) => (p?.callers ?? []).map((e: any) => `${e.callSite?.file}:${e.callSite?.line}`).join("|")
   check("deterministic: same question, same site set (two calls, one process)", key(hot.parsed) === key(again.parsed) && key(hot.parsed).length > 0, `equal=${key(hot.parsed) === key(again.parsed)}`)
 
@@ -148,7 +208,7 @@ async function main() {
   const cols = victims.length > 0 ? Object.keys(victims[0]) : []
   const placeholders = cols.map(() => "?").join(",")
   for (const v of victims) db.prepare(`DELETE FROM brain_relationship WHERE id = ?`).run(v.id)
-  const mutated = await call("bb_graph", { symbol: "hot" })
+  const mutated = await call("bb_graph", { symbol: "hot", ...CALLS_ONLY })
   const mutatedEdges: any[] = mutated.parsed?.callers ?? []
   const mutatedTotal = mutated.parsed?.summary?.callersIfUncapped
   const mutatedExpectation = mutatedEdges.length === 200 && mutated.parsed?.summary?.truncated === true
@@ -171,7 +231,7 @@ async function main() {
   // straight back to 260 — which is what proves it is counted, not remembered.
   const insert = db.prepare(`INSERT INTO brain_relationship (${cols.join(",")}) VALUES (${placeholders})`)
   for (const v of victims.slice(0, 50)) insert.run(...cols.map((c) => v[c]))
-  const partial = await call("bb_graph", { symbol: "hot" })
+  const partial = await call("bb_graph", { symbol: "hot", ...CALLS_ONLY })
   check(
     "mutation: the declared total tracks the data across the cap boundary",
     partial.parsed?.summary?.callersIfUncapped === storedHot.n - 50 && partial.parsed?.summary?.truncated === true,
@@ -179,7 +239,7 @@ async function main() {
   )
 
   for (const v of victims.slice(50)) insert.run(...cols.map((c) => v[c]))
-  const restored = await call("bb_graph", { symbol: "hot" })
+  const restored = await call("bb_graph", { symbol: "hot", ...CALLS_ONLY })
   const restoredEdges: any[] = restored.parsed?.callers ?? []
   check(
     "mutation: restoring the rows restores the declared answer",
@@ -188,7 +248,7 @@ async function main() {
   )
 
   // ── 5. a caller can ask for more instead of guessing ───────────────────────
-  const wider = await call("bb_graph", { symbol: "hot", edgeLimit: 1000 })
+  const wider = await call("bb_graph", { symbol: "hot", edgeLimit: 1000, ...CALLS_ONLY })
   const wideEdges: any[] = wider.parsed?.callers ?? []
   const wideSummary = wider.parsed?.summary ?? {}
   check(
@@ -205,8 +265,8 @@ async function main() {
   )
   check(
     "no bare truncation: every truncated answer names a bound",
-    [hot, cold, mutated, partial, restored, wider].every((r) => r.parsed?.summary?.truncated !== true || typeof r.parsed?.summary?.truncationReason === "string"),
-    "checked 6 answers",
+    [hot, cold, defaultCold, mutated, partial, restored, wider].every((r) => r.parsed?.summary?.truncated !== true || typeof r.parsed?.summary?.truncationReason === "string"),
+    "checked 7 answers",
   )
 
   const failures = checks.filter((c) => !c.ok)
@@ -215,7 +275,12 @@ async function main() {
     issue: "#888",
     at: new Date().toISOString(),
     command: "npx tsx script/m59/verify-call-cap-honesty.ts",
-    fixture: { hotRequested: HOT_CALLS, hotStored: storedHot.n, coldStored: storedCold.n },
+    fixture: {
+      hotRequested: HOT_CALLS,
+      hotStored: storedHot.n,
+      coldStored: storedCold.n,
+      coldVisibleAllKinds: storedVisibleAllKinds("cold"),
+    },
     checks,
     failures: failures.map((f) => f.name),
     status: failures.length === 0 ? "PASS" : "FAIL",
