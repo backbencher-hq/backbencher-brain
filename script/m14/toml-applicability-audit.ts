@@ -710,9 +710,12 @@ async function main(): Promise<void> {
   }
 
   console.log(`\n  APPLICABILITY IS NOT COVERAGE, and the two are reported separately above.`)
-  console.log(`  \`references\` fires on the Gradle catalogue only; the Cargo workspace-inheritance population`)
-  console.log(`  (\`x.workspace = true\`, 1,269 sites) is the SAME type and is NOT implemented either, so even`)
-  console.log(`  ${emitted.length}/${applicable} overstates how much of each applicable type is covered.`)
+  console.log(`  \`references\` carries BOTH halves since 2026-10-13: the Gradle catalogue aliases AND the Cargo`)
+  console.log(`  workspace-inheritance population (\`x.workspace = true\`, 1,269 sites) — 1,183 emitted, all of them`)
+  console.log(`  resolving, 86 measured-residual (84 \`[lints] workspace = true\`, where no single declaration exists`)
+  console.log(`  for a single edge to name, and 2 whose root does not declare the inherited path). The residual`)
+  console.log(`  gate reads \`references\` 1,350 of 1,350 resolved, so ${emitted.length}/${applicable} does not`)
+  console.log(`  overstate this type any more; the counts are in the completeness spec's TOML-G1 entry.`)
 
   if (refuted.length > 0) {
     console.log(`\n  ${refuted.length} ruling(s) were REFUTED and the lane emits the type anyway: ${refuted.map((v) => v.type).join(", ")}`)
