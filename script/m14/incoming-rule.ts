@@ -112,6 +112,9 @@ export type ExternalClaim =
   // declared list. Checked against that list INSTEAD of the symbol table; see NAMESPACE_CLAIM_KEY
   // for the four required properties and the four lanes' measurements that produced the design.
   | { kind: "namespace"; roots: string[] }
+  // THE SOURCE-PATH CLAIM — evidence is the WRITTEN SOURCE STRING as the document spells it, and the
+  // verdict is the inverse of a file claim: a candidate the project admits REFUTES it.
+  | { kind: "sourcePath"; sources: string[] }
   // BUCKET 3 — A DECLARED CAUSE, and deliberately NOT an external claim.
   //
   // `base` is the reason the analyzer states (`baseBeyondRunScope`'s value: the heritage base
@@ -294,6 +297,43 @@ export const CAUSE_CLAIM_KEY = "baseBeyondRunScope"
  */
 export const NAMESPACE_CLAIM_KEY = "languageNamespace"
 
+/**
+ * THE `source-path` CLAIM — "nothing the project ADMITS resolves to this written source string".
+ *
+ * WHY IT EXISTS. The same SHAPE blocked three lanes independently: protobuf's 581 unresolved module paths,
+ * yaml's 229 path-shaped rows, toml's 10 (`"./dependency"`). A path is a FILE, not a namespace, so the
+ * namespace claim cannot reach any of them; `importProjectFile` cannot either, because it verifies only when
+ * the file IS admitted and finds nothing here. MEASURED full-population: toml 299 path-shaped unresolved
+ * (127 distinct) and protobuf 1,555 (243 distinct), with **0 would-be-refuted** in either lane under the most
+ * generous match — `std`'s risk number, not toml's dotted class's 100%.
+ *
+ * IT IS REFUTABLE BY A RUN, which is the property that decides whether a claim may exist at all: the verdict
+ * is a pure function of the project's ADMITTED FILE LIST, so an independent actor adds the file and the claim
+ * flips. Demonstrated against `verifyFileClaim` before a line of this was written: with no such file admitted
+ * → `externalRefuted`; add the file → `externalVerified`.
+ *
+ * POLARITY: the INVERSE of `FILE_CLAIM_KEY`. A candidate resolving in `facts.files` → `externalRefuted`;
+ * nothing resolving → `externalVerified`; **absent `facts` → `externalUnverified`, never quietly accepted.**
+ * This is a distinct kind, not a flag (property 3): `verifiedBy: "sourcePath"` says which mechanism spoke.
+ *
+ * BARE NAMES ARE NOT REACHABLE BY CONSTRUCTION and must never be: the key is attached only to a target
+ * containing `/` (or a scheme), so `"dependency"` / `"SubProjectB"` style single segments stay `unresolved` —
+ * yaml's shape rule exists for exactly that reason.
+ */
+export const SOURCE_PATH_CLAIM_KEY = "sourcePathClaim"
+
+/** The candidates a written source string resolves to, cheapest-first: the string, `./`-stripped, basename. */
+export function sourcePathCandidates(src: string): string[] {
+  const out: string[] = []
+  const push = (v: string) => { const t = v.trim(); if (t.length > 0 && !out.includes(t)) out.push(t) }
+  push(src)
+  push(src.replace(/^\.\//, ""))
+  push(src.replace(/^\.\.\//, ""))
+  const segs = src.split("/").filter((x) => x.length > 0 && x !== "." && x !== "..")
+  if (segs.length > 0) { push(segs.join("/")); push(segs[segs.length - 1]) }
+  return out
+}
+
 /** The ROOT of a target: its first dot-segment, which is the thing a namespace claim names. */
 export function namespaceRootOf(tgt: string): string {
   const dot = tgt.indexOf(".")
@@ -367,6 +407,13 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
       .filter((r: any): r is string => typeof r === "string" && r.trim().length > 0)
       .map((r: string) => r.trim())
     if (roots.length > 0) return { kind: "namespace", roots }
+  }
+  const srcPaths = md[SOURCE_PATH_CLAIM_KEY]
+  if (Array.isArray(srcPaths)) {
+    const sources = srcPaths
+      .filter((v: any): v is string => typeof v === "string" && v.trim().length > 0)
+      .map((v: string) => v.trim())
+    if (sources.length > 0) return { kind: "sourcePath", sources }
   }
   if (md[IMPORT_CLAIM_KEY] === true) return { kind: "projectFacts" }
   const cause = md[CAUSE_CLAIM_KEY]
@@ -780,7 +827,7 @@ export type Classified = {
   kinds: string
   /** WHICH evidence confirmed a verified external claim — reported so a lane can audit the
    *  mechanism that produced the number, not only the number. */
-  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling" | "namespace"
+  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling" | "namespace" | "sourcePath"
   /**
    * WHAT A CLAIM SAYS ABOUT A TARGET THAT NAMES TWO OR MORE DECLARATIONS — recorded WITH ITS KIND,
    * and deliberately NOT allowed to move the outcome. See `claimDispositionOnAmbiguous`.
@@ -853,6 +900,16 @@ function claimDispositionOnAmbiguous(
   // re-label a gap, and it has nothing to verify against an ambiguous target. (The conflicting form was
   // already settled before the count and never reaches here.)
   if (claim.kind === "cause") return { kind: "cause", disposition: "notApplicable" }
+  if (claim.kind === "sourcePath") {
+    // PROPERTY 4, cross-tabbed: an ambiguous edge carrying a source-path claim reports which way the
+    // ADMITTED FILE LIST settled it — the same discipline every other kind follows.
+    const files = (facts as { files?: Set<string> } | undefined)?.files
+    let admitted = false
+    for (const src of claim.sources) {
+      for (const cand of sourcePathCandidates(src)) if (files !== undefined && files.has(cand)) admitted = true
+    }
+    return { kind: "sourcePath", disposition: admitted ? "refuted" : "verified" }
+  }
   if (claim.kind === "namespace") {
     // PROPERTY 4, cross-tabbed: an ambiguous edge carrying a namespace claim reports which way the
     // LIST settled it, exactly as the other kinds report theirs — never merged into the raw column.
@@ -959,6 +1016,31 @@ export function classifyEdge(
       kinds: kindText,
       verifiedBy: listed ? "namespace" : undefined,
       ...(decls > 1 ? { claimOnAmbiguous: { kind: "namespace", disposition } } : {}),
+    }
+  }
+  // THE SOURCE-PATH CLAIM, checked before every count-based branch for the namespace claim's reason: the
+  // LIST OF ADMITTED FILES is the sole authority, and the polarity is inverted — a candidate the project
+  // admits REFUTES this claim. Absent facts means the check could not be run at all: `externalUnverified`,
+  // never a quiet acceptance.
+  if (claim !== null && claim.kind === "sourcePath") {
+    if (facts === undefined || facts === null) {
+      return { outcome: "externalUnverified", decls, kinds: kindText }
+    }
+    let admitted: string | null = null
+    const files = (facts as { files?: Set<string> }).files
+    for (const src of claim.sources) {
+      for (const cand of sourcePathCandidates(src)) {
+        if (files !== undefined && files.has(cand)) { admitted = cand; break }
+      }
+      if (admitted !== null) break
+    }
+    const disposition: AmbiguousClaimDisposition = admitted === null ? "verified" : "refuted"
+    return {
+      outcome: admitted === null ? "externalVerified" : "externalRefuted",
+      decls,
+      kinds: kindText,
+      verifiedBy: admitted === null ? "sourcePath" : undefined,
+      ...(decls > 1 ? { claimOnAmbiguous: { kind: "sourcePath", disposition } } : {}),
     }
   }
   // A BINDING CLAIM IS CHECKED BEFORE THE COUNT, and that ordering is the whole point: the

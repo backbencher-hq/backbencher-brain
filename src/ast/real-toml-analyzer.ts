@@ -1578,6 +1578,18 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // PATH, not about a symbol.
           resolvedBy: null,
           ...(fileClaim !== null ? { importProjectFile: fileClaim } : {}),
+          // THE SOURCE-PATH CLAIM (task-24). When no admitted file answers this path, the claim states
+          // the ONE thing that can be checked about it: the source string does not resolve inside this
+          // project's admitted population — verified against that list, and REFUTED the moment the project
+          // ships the file (measured before it was built: adding the file flips `verifyFileClaim`).
+          //
+          // ONLY PATH-SHAPED TARGETS. A bare name (`"dependency"`, `"SubProjectB"`) has no shape to check
+          // and is never claimed — that is the laundering vector yaml's shape rule exists to refuse, and
+          // 27 of this lane's unresolved targets are bare. They stay `unresolved`, which is the honest
+          // outcome for a target nothing can check.
+          ...(fileClaim === null && /[/\\]|^[a-z][a-z0-9+.-]*:/i.test(pathValue)
+            ? { sourcePathClaim: [pathValue] }
+            : {}),
           evidenceClass: "structural",
         },
       })
