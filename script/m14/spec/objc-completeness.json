@@ -58,7 +58,7 @@
    "imports": {
     "edges": 851
    },
-   "_residual": "imports 851 = resolved 0 / amb(decl) 0 / unresolved 851, extOK 0, ext? 0, extFAIL 0 — +851 UNRESOLVED edges with no external claim attached (c lane reads the same shape: 1427/0/1427). Whether a file/external claim is the right treatment is an owner/master decision; none was attached here."
+   "_residual": "imports 851 = resolved 0 / amb(decl) 0 / unresolved 851, extOK 0, ext? 0, extFAIL 0 — +851 UNRESOLVED edges with NO claim attached (the c lane reads the same shape: 1427/0/1427). ** RULED BY THE LEAD 2026-10-14: UNRESOLVED IS THE INTENDED END STATE for these edges and no claim attaches.** The two cited reasons: (1) the declared-cause mechanism does not fit — incoming-rule.ts:243-254 makes `baseBeyondRunScope` property 3 REQUIRE that the reason be checked against its own target, with `base` an identifier that IS the target's owner, and `#import <Foundation/Foundation.h>` has NO identifier owner, so a cause claim cannot be honestly written for it; (2) an external claim is worse — `verifyExternalClaim` on a bare target is the §5l laundering vector, the exact thing the toml lane measured and refused. So the record is a SENTENCE, not a claim: edges to external modules the corpus does not carry; unresolved by design, and no claim mechanism in this instrument truthfully describes them. The +851 stays +851 and the column does not move."
   }
  },
   "handled_verified": {
