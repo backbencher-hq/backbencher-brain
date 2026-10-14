@@ -411,6 +411,7 @@
    "calls",
    "uses",
    "contains",
+   "imports",
    "references",
    "exports",
    "extends",
@@ -454,9 +455,13 @@
    "instantiates": [
     "src/ast/real-csharp-analyzer.ts:1965",
     "src/ast/real-csharp-analyzer.ts:1980"
+   ],
+   "imports": [
+    "src/ast/real-csharp-analyzer.ts:1343",
+    "src/ast/real-csharp-analyzer.ts:1382"
    ]
   },
-  "_from": "DERIVATION. implemented = the nine types with an emission site in src/ast/real-csharp-analyzer.ts, named per type in `_emissionSites`. THE ONE GAP IS NAMED, NOT HIDDEN: `imports` is a GAP and stays in the denominator. The construct EXISTS and the analyzer READS it \u2014 `using_directive` is dispatched at src/ast/real-csharp-analyzer.ts:1103 and its target published as both an ImportInfo row (the `imports` array the persistence layer writes to brain_import) and a `references` relationship at :1148 with metadata isUsingDirective + isImport \u2014 but the file emits NO relationship of type Imports at all (0 `RelationshipType.Imports` sites in the whole 4,571-line file, checked by enumeration, not by memory), and the import array is not converted to edges by the engine or the indexer (src/ast/parallel-indexer.ts:4311 persists result.imports as rows, it does not mint edges). So a `using` directive produces `references` edges and zero `imports` edges: the analyzer has the vocabulary and uses it for a different type. The pinned grammar has the production (using_directive, 2 probe hits in tree-sitter-c_sharp.wasm, sha256 6f69e1cae44e1c32), which is exactly why this is a gap rather than a grammar-absence. CLOSURE: implemented 9 + corpusUnexercised 0 + gaps 1 (imports) = applicable 10 = 10 - 0 grammar-absence - 0 unclassified. MEASURED CONFIRMATION OF THE GAP, 2026-10-14: a 500-file even stride of the 14,424 admitted .cs/.csx files (npx tsx script/m14/incoming-gate.ts csharp cs,csx 500, TABLE 1) reads `imports` 0 edges against `references` 6854, `calls` 15280, `instantiates` 3230, `overrides` 361, `exports` 431, `extends` 254, `implements` 168, `uses` 7916 and `contains` 5961 on the SAME run. A type-specific zero beside nine firing types on the same files is the analyzer not emitting, not the corpus not containing: the `using` directives are there and this lane publishes them as references. This is a GAP, and it is the only licensed verdict for a construct the language has and the analyzer does not emit.",
+  "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-csharp-analyzer.ts, named per type in `_emissionSites`. THE TENTH WAS A GAP AND IS NOW CLOSED BY RESTORING THIS LANE'S OWN COMMITTED IMPLEMENTATION, not by re-wording: `imports` had 0 `RelationshipType.Imports` sites in the file while `using_directive` was dispatched at :1103 and published as an ImportInfo row (:1138) plus a `references` edge (:1145, isUsingDirective + isImport). No other path minted the edge \u2014 src/ast/parallel-indexer.ts:4311 persists `result.imports` into the brain_import TABLE, and no non-analyzer file in src/ writes a relationship of type `imports` \u2014 so the `imports` column read 0 edges over a 500-file stride while 6854 `references` edges fired on the same files, and the lane's own fixture csharp/import-export-edges FAILED on 8 pinned `imports` rows. The emission, the four-form `importKind` discriminator, the tuple-module rule and the unparsed-directive guard were taken from this lane's committed revisions 7f43f41cf and 9ccd0cb5b (neither an ancestor of this branch: the pins landed without the analyzer). MEASURED AFTER, same 500-file stride of the 14424 admitted .cs/.csx files: `imports` 0 -> 1293 edges, every other type byte-identical (calls 15280 uses 7916 contains 5961 references 6854 exports 431 extends 254 implements 168 overrides 361 instantiates 3230), and csharp/using-tuple-alias now PASSES (20 pass / 4 fail -> 21 pass / 3 fail). CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified. MEASURED AFTER THE FIX, 2026-10-14, SAME STRIDE AND SAME COMMAND: `npx tsx script/m14/incoming-gate.ts csharp cs,csx 500` (instrument disclosure `population: 500 parsed of 500 sampled (corpus has 14424 .cs,csx files across 22 repos; stride sample)`) now reads `imports` 1293 edges (resolved 135, ambiguous 336, unresolved 822) against 0 before, while ALL NINE other types are byte-identical to the before-run (calls 15280 uses 7916 contains 5961 references 6854 exports 431 extends 254 implements 168 overrides 361 instantiates 3230) \u2014 an additive, type-specific movement, not a reshuffle. THE PIN AGREES: csharp/import-export-edges had FAILED on 8 pinned `imports` rows and now has EVERY imports arm green (targets, lines, importKind namespace/static/alias/global_*/extern_alias, alias metadata, evidenceClass import_based); it remains RED on its `exports` arms only, which are the separate half of the same lost revision and are NOT taken here. csharp/using-tuple-alias moved from FAIL to PASS. Lane total 20 pass / 4 fail -> 21 pass / 3 fail.",
   "_implemented_measured": {
    "_unit": "STRIDE SAMPLE, NOT POPULATION: `npx tsx script/m14/incoming-gate.ts csharp cs,csx 500` \u2014 the instrument's own disclosure reads `population: 500 parsed of 500 sampled (corpus has 14424 .cs,csx files across 22 repos; stride sample)` and `SAMPLE, NOT POPULATION: 500 of 14424 files`; per-type edges are TABLE 1 of that run, read 2026-10-14; wall clock 242s. NINE of the ten types fire; `imports` is the tenth and reads 0 (see `_from`). The stride is a lower bound, so the nine counts below are lower bounds, not corpus totals.",
    "calls": {
@@ -485,6 +490,9 @@
    },
    "instantiates": {
     "edges": 3230
+   },
+   "imports": {
+    "edges": 1293
    }
   }
  }

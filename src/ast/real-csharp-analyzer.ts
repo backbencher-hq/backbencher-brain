@@ -400,8 +400,30 @@ const CSHARP_BUILTINS = new Set([
  */
 export function csharpUsingDirectiveTarget(
   node: any,
-): { module: string; typeArguments: string[]; targetNode: any; alias: string | null } | null {
+): { module: string; typeArguments: string[]; targetNode: any; alias: string | null; kind: string } | null {
   if (!node) return null
+  // A DIRECTIVE THAT DID NOT PARSE PUBLISHES NOTHING. `using OneElement = (string Only);`
+  // — a one-element tuple, which C# does not have — parses as a `using_directive` whose
+  // `= (string Only)` is an ERROR node, so the `=` is not a direct child, the alias form
+  // is undetectable, and `firstNamed` below returns the ALIAS (`OneElement`) as the
+  // module. Measured on this branch after the `imports` emission was restored: that
+  // published `imports root -> OneElement` with `importKind: "namespace"` — a dependency
+  // on a name the file imports nothing from, which is the CSD7/R1 fabrication this lane
+  // already fixed once for the well-formed alias form, reachable again through the
+  // parser's error recovery. The pin
+  // `validation/m14/fixtures/csharp/using-tuple-alias.expectation.json` forbids exactly
+  // that row, twice (by module and by relationship target).
+  //
+  // `hasError` rather than "does it look wrong", because the tree already carries the
+  // answer and the alternative is a second guess about what a valid directive looks like.
+  // The file is not silently dropped: ERROR/MISSING nodes are pushed as `ParseError`
+  // warnings by this analyzer's own error pass, so the unparsed directive is REPORTED —
+  // just not turned into a dependency.
+  //
+  // RESTORED FROM THIS LANE'S OWN COMMITTED REVISION `9ccd0cb5b`, together with
+  // `csharpUsingDirectiveModule` below; the pin landed on this branch without the
+  // analyzer, the same union loss the `imports` emission had.
+  if (node.hasError) return null
   const firstNamed = (pred: (n: any) => boolean): any => {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
@@ -463,11 +485,95 @@ export function csharpUsingDirectiveTarget(
   const module = csharpCleanTypeLeaf(spelled)
   if (!module) return null
   return {
-    module,
+    module: csharpUsingDirectiveModule(targetNode, module),
     typeArguments: csharpTypeExpressionArguments(targetNode),
     targetNode,
     alias: aliasNode ? csharpTypeNameText(String(aliasNode.text ?? "")) : null,
+    kind: csharpUsingDirectiveKind(node, aliasNode != null),
   }
+}
+
+/**
+ * The MODULE a using directive publishes, for the one target shape whose text is not
+ * already a name: a TUPLE. RESTORED FROM THIS LANE'S COMMITTED REVISION `9ccd0cb5b`.
+ *
+ * `using FieldKey = (Type ContainerType, string FieldName);` declares a dependency on a
+ * TUPLE TYPE. A tuple type's identity is its element TYPES — `(Type ContainerType,
+ * string FieldName)` and `(Type, string)` are the same type, and the element names are
+ * only labels the declaration gives them. Publishing the raw text published two element
+ * NAMES that are not part of the type, in the one position where the lane's contract says
+ * the published value is a NAME ("a type EXPRESSION is not a module" — the D3 rule, which
+ * strips a generic alias's arguments and already strips element names from a tuple
+ * ARGUMENT via `csharpTypeExpressionArguments`). The same rule was simply not applied
+ * when the tuple is the target itself.
+ *
+ * Measured where the fix came from: an independent derivation over 800 aspnetcore `src`
+ * files disagreed with the analyzer on exactly one row out of 2,185, and that row was
+ * `src/Components/Endpoints/src/Forms/ClientValidationCache.cs:17` publishing
+ * `(Type ContainerType,string FieldName)`. On this branch the pin is
+ * `validation/m14/fixtures/csharp/using-tuple-alias.expectation.json`, which requires
+ * BOTH tuple spellings to publish the SAME string — a property the raw text cannot hold.
+ *
+ * Built from the TREE (`tuple_element` -> its `type` field), so the element names are
+ * never read. `fallback` is the text-derived value, used when the tree yields no
+ * elements, so a malformed tuple publishes what it wrote rather than nothing.
+ */
+function csharpUsingDirectiveModule(targetNode: any, fallback: string): string {
+  if (targetNode?.type !== "tuple_type") return fallback
+  const parts: string[] = []
+  for (const el of targetNode.namedChildren ?? []) {
+    if (el?.type !== "tuple_element") continue
+    const ty = el.childForFieldName?.("type") ?? el.namedChild(0)
+    if (!ty) continue
+    const leaf = csharpCleanTypeLeaf(csharpTypeNameText(csharpTypeSpelling(String(ty.text ?? ""))))
+    if (leaf) parts.push(leaf)
+  }
+  return parts.length ? `(${parts.join(",")})` : fallback
+}
+
+/**
+ * WHICH KIND of import a `using_directive` is — C# has four import forms behind ONE node
+ * type, plus the `global` variants, and the label alone cannot tell them apart.
+ *
+ * THIS FUNCTION IS RESTORED FROM THIS LANE'S OWN COMMITTED REVISION, not invented here:
+ * `7f43f41cf` / `88f82a196` ("feat(csharp): emit `imports` and `exports`") implemented it,
+ * the pin corpus landed on this branch without the analyzer (`cd8e1011b`), and the fixture
+ * `validation/m14/fixtures/csharp/import-export-edges.expectation.json` pins every value
+ * below. Measured on the current branch before restoring it: `csharp/import-export-edges`
+ * FAILED and `imports` read 0 edges on a 500-file stride of 14,424 admitted files.
+ *
+ * Read from the directive's own ANONYMOUS CHILD TOKENS, never from its text. The tree
+ * (probe in that revision: script/m14/tmp/cs-ont-04-using-shapes.ts, 10 shapes) is
+ *
+ *     using System;                      ->  using  <target>  ;
+ *     using static System.Math;          ->  using  static  <target>  ;
+ *     using A = System.Text;             ->  using  identifier =  <target>  ;
+ *     global using System;               ->  global  using  <target>  ;
+ *     global using static System.Math;   ->  global  using  static  <target>  ;
+ *     global using A = System.Text;      ->  global  using  identifier =  <target>  ;
+ *
+ * so `global` and `static` are anonymous tokens on the directive itself and the alias is
+ * the `name` FIELD. The kind is payload, not decoration: `using X;` imports a NAMESPACE's
+ * types into every file that writes it, `using static X;` imports one type's STATIC
+ * MEMBERS, `using A = X;` binds ONE name, and `global using` applies to the whole
+ * COMPILATION rather than this file. A consumer asking "what does this file depend on"
+ * cannot answer those the same way.
+ *
+ * `hasAlias` is passed rather than re-derived because the caller already has the `=`
+ * position; asking the tree twice for one fact is how the two answers drift.
+ */
+export function csharpUsingDirectiveKind(node: any, hasAlias: boolean): string {
+  let isGlobal = false
+  let isStatic = false
+  for (let i = 0; i < (node?.childCount ?? 0); i++) {
+    const c = node.child(i)
+    if (!c || c.isNamed) continue
+    if (c.type === "global") isGlobal = true
+    else if (c.type === "static") isStatic = true
+  }
+  if (hasAlias) return isGlobal ? "global_alias" : "alias"
+  if (isStatic) return isGlobal ? "global_static" : "static"
+  return isGlobal ? "global_namespace" : "namespace"
 }
 
 /**
@@ -1133,8 +1239,28 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `references` label is comparable, so the using references must be
           // confirmable) — a second reading here would be free to drift from it.
           const usingTarget = csharpUsingDirectiveTarget(node)
-          if (!usingTarget) continue
-          const { module: text, typeArguments, targetNode: nameNode2, alias: usingAlias } = usingTarget
+          if (!usingTarget) {
+            // REPORT THE SKIP, DO NOT JUST SKIP. `continue` also skips the child walk,
+            // and the child walk is where ERROR/MISSING nodes become `ParseError`
+            // warnings — so skipping a directive that failed to parse would drop its
+            // dependency AND its parse failure, and a file with an unread directive and no
+            // reported error is the state the honesty contract names as guilt rather than
+            // honesty. Measured on this branch before this block existed: with
+            // `using OneElement = (string Only);` (line 32 of
+            // validation/m14/fixtures/csharp/using-tuple-alias.cs) the analyzer reported
+            // `errors: []` while publishing nothing — a silent parse failure, which the
+            // pin `using-tuple-alias` refuses. RESTORED FROM THE LANE'S COMMITTED REVISION
+            // `9ccd0cb5b` with the guard above it.
+            if (node.hasError) {
+              errors.push({
+                message: "Syntax ERROR detected in using directive.",
+                range: this.nodeToRange(node),
+                severity: "warning",
+              })
+            }
+            continue
+          }
+          const { module: text, typeArguments, targetNode: nameNode2, alias: usingAlias, kind: usingKind } = usingTarget
           imports.push({
             module: text,
             source: text,
@@ -1188,6 +1314,81 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { relationshipType: "using_type_argument" },
             })
           }
+          // ONTOLOGY (imports) — RESTORED FROM THIS LANE'S OWN COMMITTED REVISION
+          // (`7f43f41cf`), because the pin was on this branch and the emission was not:
+          // `csharp/import-export-edges` FAILED here and `imports` read 0 edges over
+          // 500 of the 14,424 admitted files while 6,854 `references` edges fired on the
+          // same run. The `references` edge above says this file READS the name; it does
+          // not say the file DEPENDS ON it, and the difference is the whole point of the
+          // label — `graph_usages`'s file-level section and `relations.ts`'s declaration
+          // set read `imports`/`exports`, so until this row existed a C# file's dependency
+          // on `System.Text.Json` lived only as a reference and a consumer asking "what
+          // does this file import" had nothing to find.
+          //
+          // SAME TARGET, DIFFERENT LABEL, ON PURPOSE — neither row is removable:
+          //   - `references` is R9's declared-type/reference graph, which the
+          //     differential ORACLE derives and compares. Relabelling it would turn
+          //     every audited C# reference edge into a MISSING row (the compared set is
+          //     shared, master-owned), so it must stay.
+          //   - `imports` is the file-level dependency declaration and carries one thing
+          //     the references edge cannot: the KIND of import (`importKind`).
+          //
+          // Confidence 1.0 against the references twin's 0.9, and the difference is
+          // earned: a `using` directive is a DECLARATION written verbatim in the file,
+          // while the references row carries R9's normalisation (D3 strips a generic
+          // alias's type arguments off the module name).
+          relationships.push({
+            source: "root",
+            target: text,
+            type: ASTEngine.RelationshipType.Imports,
+            confidence: 1.0,
+            line_number: this.nodeLine(this.nodeNamingToken(nameNode2, text) ?? nameNode2),
+            metadata: {
+              isUsingDirective: true,
+              isImport: true,
+              relationshipType: "using_import",
+              importKind: usingKind,
+              ...(usingAlias ? { isUsingAlias: true, usingAlias } : {}),
+            },
+          })
+        }
+      }
+
+      // `extern alias Legacy;` (C# 1, rare) binds an alias to a REFERENCED ASSEMBLY. It is
+      // an import directive — the grammar has a node for it, `extern_alias_directive` — and
+      // on this branch it produced nothing of any kind: no `imports` payload row, no
+      // relationship, no `references` edge. The pin names it (`LegacyLib`, line 28,
+      // importKind `extern_alias`).
+      //
+      // ONLY an `imports` row, deliberately: the target is an ASSEMBLY ALIAS, not a
+      // namespace or a type, and the differential's csharp `references` truth derives from
+      // `csharpUsingDirectiveTarget`, which does not model this node. Adding a `references`
+      // twin here would put an edge on the ANALYZER side of a label the ORACLE does not
+      // derive, and an un-derived row is reported as fabrication by construction.
+      if (type === "extern_alias_directive") {
+        const aliasNode = node.childForFieldName?.("name") ?? this.findChild(node, "identifier")
+        const aliasText = aliasNode ? csharpTypeNameText(String(aliasNode.text ?? "")) : ""
+        if (aliasText) {
+          imports.push({
+            module: aliasText,
+            source: aliasText,
+            imported: [],
+            range: this.nodeToRange(node),
+            isTypeOnly: false,
+          })
+          relationships.push({
+            source: "root",
+            target: aliasText,
+            type: ASTEngine.RelationshipType.Imports,
+            confidence: 1.0,
+            line_number: this.nodeLine(aliasNode),
+            metadata: {
+              isImport: true,
+              isExternAlias: true,
+              relationshipType: "extern_alias_import",
+              importKind: "extern_alias",
+            },
+          })
         }
       }
 
