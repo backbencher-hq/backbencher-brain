@@ -732,6 +732,15 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   // invocation changes population. The admitted set travels into the report and is printed.
   const exts = ext.split(",").map((e) => e.trim().toLowerCase().replace(/^\./, "")).filter(Boolean)
   const { files, admitted, total, repos, absent, overCap, overCapLargest } = discoverFiles(lang, ext, exts, maxFiles, onlyRepos)
+  // OPT-IN DISCOVERY DISCLOSURE (task-86). Form chosen deliberately: AN ENV VAR, printing to STDERR and exiting
+  // BEFORE any parsing — so it cannot alter any existing consumer's stdout, table, numbers or exit code, and it is
+  // fast because it stops at discovery. It closes the tooling gap that kept CAUSE 2 open: the runner's own file set
+  // was previously unobtainable, so a file marked by another instrument could not be checked against it by name.
+  if (process.env.BB_LIST_FILES) {
+    console.error(`BB_LIST_FILES: lane=${lang} ext="${ext}" discovered=${files.length} total=${total} repos=${Array.isArray(repos) ? repos.length : String(repos)}`)
+    for (const f of files) console.error(`BB_LIST_FILES_FILE: ${f}`)
+    process.exit(0)
+  }
 
   // name -> how many DECLARATIONS publish it, and the distinct kinds among them.
   // Both, because the whole point of this gate is that the kind-count is not the
