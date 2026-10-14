@@ -164,6 +164,24 @@ function findHandwrittenCopies(rel: string, abs: string, text: string, census: M
     if (!line.includes("await import(")) return
     // The specifier may sit on this line or the next two (multi-line import call).
     const window = lines.slice(i, i + 3).join(" ")
+    //
+    // WHERE THE IMPORT EXPRESSION ENDS. Needed by the ownership check below: the window is
+    // three lines wide, so "the next `as {`" is not automatically a cast ON the module.
+    const importAt = window.indexOf("await import(")
+    let importEnd = -1
+    if (importAt !== -1) {
+      let d = 0
+      for (let k = window.indexOf("(", importAt); k < window.length; k++) {
+        if (window[k] === "(") d++
+        else if (window[k] === ")") {
+          d--
+          if (d === 0) {
+            importEnd = k + 1
+            break
+          }
+        }
+      }
+    }
     let m = window.match(/(?:path\.join\(ROOT,\s*)?["']((?:\.\.\/)*[a-z][\w./-]*\.ts)["']/)
     let spec = m?.[1]
     //
@@ -200,6 +218,34 @@ function findHandwrittenCopies(rel: string, abs: string, text: string, census: M
     if (!census.has(productModule)) return
     const castAt = window.indexOf("as {")
     if (castAt === -1) return
+    //
+    // THE CAST MUST BE APPLIED TO THE IMPORT'S OWN RESULT.
+    //
+    // Found by a real instance, not by reading. script/m14/tmp/protobuf/probe/extraction-ab.mts
+    // lines 37-39:
+    //
+    //     const { RealProtobufAnalyzer } = await import(path.join(ROOT, "src/ast/real-protobuf-analyzer.ts"))
+    //
+    //     const manifest = JSON.parse(fs.readFileSync(MANIFEST, "utf8")) as { corpora: any[] }
+    //
+    // The `as {` is inside the three-line window, so this gate paired it with the analyzer
+    // import and reported a hand-written copy of a product type. There is none: the cast is
+    // on `JSON.parse`'s result, a JSON manifest on disk, and `corpora` is not an export of
+    // real-protobuf-analyzer.ts at all. The gate had INVENTED the pairing it then reported,
+    // which is the exact failure this class of gate exists to prevent — and it had survived
+    // every earlier fix because each of those fixed a different gap in the same detector.
+    //
+    // Discriminator: any `(` between the import's closing paren and the `as {` is a CALL, and
+    // a call means the value being cast came out of that call rather than out of the module.
+    // Type annotations cannot be mistaken for one: they live INSIDE the `as { … }` body,
+    // never between the import and the `as`. A bare binding —
+    //
+    //     const shell = await import(SHELL)
+    //     const { buildWebviewHtml } = shell as { … }
+    //
+    // — has no `(` in between and is still correctly attributed, which is the case this must
+    // not break.
+    if (importEnd !== -1 && window.slice(importEnd, castAt).includes("(")) return
     //
     // BALANCED BRACES, NOT THE FIRST "}".
     //

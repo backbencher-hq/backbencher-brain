@@ -963,13 +963,7 @@ console.log("\nV: drift gate + the containment law (negative tests)\n")
   // V2a: `contains` is never a usage site. The vocabulary owner decides, so the
   // test is over the owner's own output, not over a copy of its rule.
   const { containmentSitesOf, usageSitesOf, connectedGroups: cg, containmentSection: cs, usagesSection: us } =
-    await import(path.join(ROOT, "src/lsp/rich_hover.ts")) as {
-      containmentSitesOf: (s: readonly any[]) => any[]
-      usageSitesOf: (s: readonly any[]) => any[]
-      connectedGroups: (s: readonly any[]) => Array<{ verb: string; sites: any[] }>
-      containmentSection: (s: readonly any[]) => string
-      usagesSection: (s: readonly any[], t: number, sym: string, f: string, l: number, c: number) => string
-    }
+    await import(path.join(ROOT, "src/lsp/rich_hover.ts")) as typeof import("../../src/lsp/rich_hover.ts")
   // The hub symbol, whose stored rows are 4 outgoing `contains` plus 2 incoming
   // `instantiates` — so it exercises both halves at once.
   const hubSites = richSitesForSymbol(raw, "s-hub")

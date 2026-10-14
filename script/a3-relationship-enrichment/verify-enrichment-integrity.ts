@@ -543,12 +543,19 @@ try {
       afterPass1 === afterPass2,
       pass2.enriched === 0 ? "0 rows rewritten; not one byte differs" : `pass2 rewrote ${pass2.enriched} rows`,
     )
+    // The condition below was an UNAWAITED async IIFE:
+    //     (async () => { ... })()
+    // A Promise is an object, so it is always truthy — the check passed whatever the
+    // third pass actually did, and could not fail. TypeScript could not see it either:
+    // the call takes three arguments and arity matched, so TS2554 stayed silent, and the
+    // line survived in a ratchet that moves one way.
+    //
+    // Fixed by hoisting the awaited work instead of awaiting the IIFE: the same work is
+    // done, in the same order, and the condition is now a boolean the check can evaluate.
+    const p3 = await enrichRelationships(pid as any)
     check(
       "L2b: idempotence holds for a THIRD pass too (no drift, no accumulating keys)",
-      (async () => {
-        const p3 = await enrichRelationships(pid as any)
-        return JSON.stringify(metadataSnapshot()) === afterPass2 && p3.enriched === 0 && p3.unchanged === pass2.unchanged
-      })(),
+      JSON.stringify(metadataSnapshot()) === afterPass2 && p3.enriched === 0 && p3.unchanged === pass2.unchanged,
       "pass3 == pass2 metadata, and the unchanged count is stable",
     )
     check(

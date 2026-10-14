@@ -135,9 +135,7 @@ const { applyResolutionTitle, substitutionLabel } = (await import(pathToFileURL(
   "../../ide/vscode/src/identity-label.ts"
 )
 
-const { BrainDatabase } = (await import(pathToFileURL(path.join(ROOT, "src/brain/database.ts")).href)) as {
-  BrainDatabase: { getRawInstance(projectId: string): unknown }
-}
+const { BrainDatabase } = (await import(pathToFileURL(path.join(ROOT, "src/brain/database.ts")).href)) as typeof import("../../src/brain/database.ts")
 
 // The real index's own connection (read-only use; the resolver only reads).
 // BB_DATA_DIR must be the fixture's data dir HERE too: `getRawInstance` reads

@@ -233,10 +233,7 @@ check(
   D.indexing.ignoreFiles.join(","),
 )
 
-const { AUTO_REFRESH_DEFAULTS, AUTO_REFRESH_ENV_ALLOWLIST } = (await import(path.join(ROOT, "src/ast/auto-refresh.ts"))) as {
-  AUTO_REFRESH_DEFAULTS: { maxFiles: number; maxBytes: number }
-  AUTO_REFRESH_ENV_ALLOWLIST: readonly string[]
-}
+const { AUTO_REFRESH_DEFAULTS, AUTO_REFRESH_ENV_ALLOWLIST } = (await import(path.join(ROOT, "src/ast/auto-refresh.ts"))) as typeof import("../../src/ast/auto-refresh.ts")
 check(
   "D1: the generated auto-refresh budget equals the module's defaults",
   D.freshness.autoRefresh.maxFiles === AUTO_REFRESH_DEFAULTS.maxFiles && D.freshness.autoRefresh.maxBytes === AUTO_REFRESH_DEFAULTS.maxBytes,
@@ -263,11 +260,7 @@ check(
 
 const probeDir = path.join(tmpdir(), `m56-d1-verify-datadir-${process.pid}`)
 process.env.BB_DATA_DIR = probeDir
-const { bbDataDir, bbProjectsDir, bbWasmDir } = (await import(path.join(ROOT, "src/util/bb-data-dir.ts"))) as {
-  bbDataDir: () => string
-  bbProjectsDir: () => string
-  bbWasmDir: () => string
-}
+const { bbDataDir, bbProjectsDir, bbWasmDir } = (await import(path.join(ROOT, "src/util/bb-data-dir.ts"))) as typeof import("../../src/util/bb-data-dir.ts")
 check(
   "D1: the documented storage shape is the resolved one (temp BB_DATA_DIR)",
   D.storage.indexFile === "<data-dir>/projects/<project-id>/brain.db" &&

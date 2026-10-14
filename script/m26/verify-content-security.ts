@@ -41,12 +41,7 @@ function check(label: string, condition: boolean, detail = ""): void {
 
 async function main(): Promise<void> {
   const shell = await import(SHELL)
-  const { cspFor, escapeHtml, buildWebviewHtml, ADVERSARIAL_FIXTURES } = shell as {
-    cspFor: (nonce: string, cspSource: string) => string
-    escapeHtml: (v: string) => string
-    buildWebviewHtml: (o: { nonce?: string; cspSource: string; stateJson: string }) => { html: string; nonce: string; csp: string }
-    ADVERSARIAL_FIXTURES: Array<{ name: string; payload: string; mustContain: string; mustNotContain: string[] }>
-  }
+  const { cspFor, escapeHtml, buildWebviewHtml, ADVERSARIAL_FIXTURES } = shell as typeof import("./webview-html.ts")
   const source = readFileSync(SHELL, "utf8")
 
   // --- G1: CSP law ------------------------------------------------------------
