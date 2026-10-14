@@ -156,7 +156,7 @@ function runLane(lang: string): { rows: Array<{ type: string; edges: number; res
     // clean run. That is the same silent-instrument class as the `?? lang` fallback and the `NaN%` table: the
     // gate reported a number without being able to report what it excluded. Capturing stderr changes NOTHING about
     // stdout, the table, the numbers or the exit codes — it only forwards the runner's own diagnostics.
-    stdio: ["ignore", "pipe", "pipe"] })
+    stdio: ["ignore", "pipe", "inherit"] })
   } catch (e: any) {
     out = typeof e?.stdout === "string" ? e.stdout : ""
     if (out === "") throw e
