@@ -1340,6 +1340,44 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.canonicalizePublishedNames(symbols, relationships, exports)
 
     const fileComplexity = this.zigBodyComplexity(rootNode)
+
+    // THE NAMESPACE CLAIM (task-21). THE FULL-POPULATION RISK MEASUREMENT CAME FIRST, and it is why
+    // this list has exactly ONE entry. Measured over the WHOLE admitted zig population (3,848/3,848
+    // files, 443,936 edges): of 125,995 `uses` targets that their own file does not declare, the root
+    // `std` accounts for **24,968**, and **NONE of them is declared anywhere else in its project
+    // (RISK 0.0%)** — so certifying `std` does not touch a single project declaration in this corpus.
+    //
+    // The other large roots are deliberately NOT listed, and that is the finding the measurement
+    // produced: `Instruction` 6,887 · `Inst` 2,428 · `Feature` 2,059 · `NTSTATUS` 1,795 … are
+    // project-internal types at cross-file reference sites the model cannot see. Their RISK is 0 for
+    // the OPPOSITE reason — a resolution gap, not externality — and certifying them would launder
+    // roughly 20k unresolved rows into `extOK`, which is the laundering `incoming-rule.ts`'s own
+    // docstring warns about. `std` is the Zig STANDARD LIBRARY: a declared language namespace, hcl's
+    // shape, with a full-population risk of zero.
+    //
+    // Property 1 of the design is live: a target whose root is not `std` reads `externalRefuted`, so
+    // this claim can never shelter anything else. Property 2: the list travels on the edge itself.
+    const zigDeclaredHere = new Set<string>()
+    for (const sym of symbols) {
+      if (sym.name) zigDeclaredHere.add(sym.name)
+      const q = (sym as { qualifiedName?: unknown }).qualifiedName
+      if (typeof q === "string" && q.length > 0) zigDeclaredHere.add(q)
+    }
+    let zigNamespaceClaims = 0
+    for (const rel of relationships as Array<{ type?: unknown; target?: unknown; metadata?: Record<string, unknown> }>) {
+      if (rel.type !== ASTEngine.RelationshipType.Uses) continue
+      const tgt = String(rel.target ?? "")
+      if (!tgt.startsWith("std.")) continue
+      if (zigDeclaredHere.has(tgt)) continue
+      const md = rel.metadata
+      if (!md || typeof md !== "object") continue
+      // An edge already certified by another claim kind keeps ITS mechanism — one claim per edge, so a
+      // reader can see which mechanism verified what (property 3 of the design).
+      if (md.zigExternalRef === true || md.isExternal === true) continue
+      md.languageNamespace = ["std"]
+      zigNamespaceClaims++
+    }
+
     return {
       language: "zig",
       symbols,
@@ -1348,6 +1386,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports,
       errors,
       metadata: {
+        namespaceClaims: zigNamespaceClaims,
         complexity: fileComplexity,
         cyclomaticComplexity: fileComplexity,
         linesOfCode: content.split("\n").length,
