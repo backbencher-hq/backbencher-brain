@@ -112,24 +112,43 @@ function runVerifier(script: string): number {
  * fingerprinting, which makes the regeneration check seal-aware: content
  * under a valid seal must reproduce, or the closure fails.
  */
-function fingerprint(evidenceFile: string): string | null {
-  const p = path.join(RESULTS, evidenceFile)
-  if (!existsSync(p)) return null
-  const read = readEvidenceAllowingLegacy<Record<string, unknown>>(p)
-  if (!read.ok) {
-    console.error(`refused: ${evidenceFile} — ${read.reason} (kind=${read.kind}); not fingerprintable`)
-    return null
-  }
-  const raw = read.record
-  delete raw.generatedAt
-  delete raw.bbSeal
-  for (const run of raw.runs ?? []) {
-    for (const f of run.features ?? []) {
-      delete f.p95WarmMs // declared measurement, excluded from the fingerprint
+// DECLARED-VOLATILE FIELDS ARE VOLATILE AT EVERY DEPTH.
+  //
+  // The old strip removed `generatedAt` and `bbSeal` from the record itself and walked
+  // `runs[].features[]` for `p95WarmMs`. It did not descend any further — and D1's evidence embeds
+  // an `upstream` array of the legs it consumed, each carrying its OWN `generatedAt`. So the
+  // closure compared two timestamps it had already declared volatile, at depth 1, and reported
+  // `X1: D1 evidence byte-identical (modulo generatedAt)` as a FAILURE.
+  //
+  // This check's whole claim is "byte-identical MODULO DECLARED VARIABLE FIELDS". A field is
+  // declared volatile by what it IS, not by where it happens to sit: two evidence records stamped
+  // four minutes apart are the same evidence. Stripping only the top level made the check fail on
+  // exactly the difference it promised to ignore — which is worse than not having the check,
+  // because it reports a real reproducibility guarantee as broken.
+  function stripDeclaredVolatile(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(stripDeclaredVolatile)
+    if (value !== null && typeof value === "object") {
+      const out: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+        // timestamps and seals are declared volatile; p95WarmMs is a declared measurement
+        if (k === "generatedAt" || k === "sealedAt" || k === "bbSeal" || k === "p95WarmMs") continue
+        out[k] = stripDeclaredVolatile(v)
+      }
+      return out
     }
+    return value
   }
-  return JSON.stringify(raw)
-}
+
+  function fingerprint(evidenceFile: string): string | null {
+    const p = path.join(RESULTS, evidenceFile)
+    if (!existsSync(p)) return null
+    const read = readEvidenceAllowingLegacy<Record<string, unknown>>(p)
+    if (!read.ok) {
+      console.error(`refused: ${evidenceFile} — ${read.reason} (kind=${read.kind}); not fingerprintable`)
+      return null
+    }
+    return JSON.stringify(stripDeclaredVolatile(read.record))
+  }
 
 console.log("M24.X1 closure-gate verifier\n")
 
