@@ -51,6 +51,16 @@ export const SVELTE_ORACLE_LABELS: string[] = [
   "calls",
   "contains",
   "uses",
+  // `imports` joins the list with its derivation (M60 rel-type coverage, 2026-10-13). The
+  // lane publishes this label from its EMBEDDED script blocks, and until now this reader
+  // derived none of them, so the gate's `DERIVATION|svelte|emits imports …` row was TRUE
+  // about this file and STALE about the differential: the shared filter had already been
+  // given the label plus its truth (`deriveJavaScriptImportEdges` over the same embedded
+  // trees). A label list that is honest about a reader which no longer matches the lane
+  // is the divergence, not the fix — so the derivation below mirrors the shared oracle's
+  // contract exactly (same trees, same targets, same dedupe) as its OWN walk, and
+  // `--compare` measures the two against the analyzer rather than assuming they agree.
+  "imports",
 ]
 
 export interface SvelteTruthEdge {
@@ -96,6 +106,110 @@ function descendants(n: any, out: any[] = []): any[] {
   }
   return out
 }
+
+// ---------------------------------------------------------------------------
+// THE `imports` CONTRACT — mirrored from the shared differential's own oracle
+// (`deriveJavaScriptImportEdges`, differential.ts:5277), NOT delegated to it.
+//
+// Two readers that agree because one CALLS the other are one reader, and this file's whole
+// purpose is to be the second one. So this is its own walk over the same trees (the SFC's
+// embedded script bodies) producing the same targets:
+//
+//   import def from "m.js"             ->  m.js:def
+//   import { a, b as c } from "m.js"   ->  m.js:a · m.js:c   (the LOCAL binding)
+//   import * as ns from "m.js"         ->  m.js:*
+//   import "m.js"                      ->  nothing (no clause => nothing is bound)
+//   export { x } from "m.js"           ->  m.js:*            (a module edge, not a name)
+//   import("m.js") / require("m.js")   ->  m.js:*
+//
+// `from` is `(module)` — the shared oracle's own placeholder. The differential compares this
+// label site-agnostically (label + target only), and this file's `--compare` does the same
+// for it rather than inventing a source the analyzer never publishes.
+//
+// NO REGEX (master rule 1): the quote strip below is an explicit character walk.
+// ---------------------------------------------------------------------------
+
+/** The unquoted payload of a string node. `string_fragment` when the grammar gives one,
+ *  else the leading/trailing quote pair stripped by character walk — the same result the
+ *  shared oracle gets from its `replace`, without a regex literal. */
+function stringPayload(str: any): string {
+  if (!str) return ""
+  const frag = namedChildren(str)[0]
+  if (frag && frag.type === "string_fragment") return frag.text
+  const text = String(str.text ?? "")
+  const isQuote = (c: string): boolean => c === '"' || c === "'" || c === "`"
+  let a = 0
+  let b = text.length
+  if (a < b && isQuote(text[a])) a++
+  if (b > a && isQuote(text[b - 1])) b--
+  return text.slice(a, b)
+}
+
+/** The FIRST `string` child, which is where a dynamic import's or `require`'s specifier
+ *  lives in the call's arguments. */
+function firstStringChild(n: any): any {
+  if (!n) return null
+  for (const c of namedChildren(n)) if (c.type === "string") return c
+  return null
+}
+
+/** One script tree -> its `imports` targets, deduped the way the shared oracle dedupes
+ *  (`imports|<target>`, so two spellings of one binding yield one row). */
+export function deriveScriptImportTargets(root: any): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+  const push = (target: string): void => {
+    if (seen.has(target)) return
+    seen.add(target)
+    out.push(target)
+  }
+  const walk = (n: any): void => {
+    if (!n) return
+    const t = n.type
+    if (t === "import_statement") {
+      // The `source` FIELD, not the first string child: a bare `import "x"` has no clause,
+      // and reading the field is what keeps the two shapes apart.
+      const modPath = stringPayload(field(n, "source"))
+      let clause: any = null
+      for (const c of namedChildren(n)) if (c.type === "import_clause") clause = c
+      if (modPath && clause) {
+        for (const c of namedChildren(clause)) {
+          if (c.type === "identifier") {
+            push(`${modPath}:${c.text}`)
+          } else if (c.type === "namespace_import") {
+            push(`${modPath}:*`)
+          } else if (c.type === "named_imports") {
+            for (const spec of namedChildren(c)) {
+              if (spec.type !== "import_specifier") continue
+              // LOCAL BINDING: the alias when present, else the name. The grammar orders
+              // them name-then-alias, so the FIELD is what says which is which.
+              const alias = field(spec, "alias")
+              const name = field(spec, "name") ?? namedChildren(spec)[0]
+              const local = alias ?? name
+              if (local) push(`${modPath}:${local.text}`)
+            }
+          }
+        }
+      }
+    } else if (t === "export_statement") {
+      // A re-export declares a module EDGE, not a local name: the whole module is the
+      // target whatever the clause says.
+      const modPath = stringPayload(field(n, "source"))
+      if (modPath) push(`${modPath}:*`)
+    } else if (t === "call_expression") {
+      const fn = field(n, "function")
+      const args = field(n, "arguments")
+      if (fn && args && (fn.type === "import" || (fn.type === "identifier" && fn.text === "require"))) {
+        const modPath = stringPayload(firstStringChild(args))
+        if (modPath) push(`${modPath}:*`)
+      }
+    }
+    for (const c of namedChildren(n)) walk(c)
+  }
+  walk(root)
+  return out
+}
+
 function attrName(a: any): string {
   for (const c of namedChildren(a)) if (c.type === "attribute_name") return c.text
   return ""
@@ -247,6 +361,24 @@ export function deriveSvelteTruth(
   const members = new Set<string>()
   const locals = new Set<string>()
   const blocks: number[] = []
+
+  // ---- the `imports` half: one row per imported binding, over the SAME embedded trees
+  // the shared differential now pushes its truth from. Same contract (see the helper's
+  // header), same dedupe, and `from` is that oracle's own `(module)` placeholder.
+  const importSeen = new Set<string>()
+  for (const sub of scriptTrees) {
+    if (!sub || !sub.rootNode) continue
+    for (const target of deriveScriptImportTargets(sub.rootNode)) {
+      if (importSeen.has(target)) continue
+      importSeen.add(target)
+      edges.push({
+        label: "imports",
+        from: "(module)",
+        target,
+        because: "import statement in an embedded script block",
+      })
+    }
+  }
 
   // ---- script half: what the component owns, and what a read can name -------
   const imports = new Set<string>()
@@ -709,12 +841,12 @@ async function main(): Promise<void> {
   walk(dir)
 
   const eng: any = await import(path.join(ROOT, "src/ast/engine.ts"))
-  const AUDITED = ["contains", "uses"]
+  const AUDITED = ["contains", "uses", "imports"]
   const stat: Record<string, { truth: number; analyzer: number; missing: number; unexplained: number }> = {}
   for (const l of AUDITED) stat[l] = { truth: 0, analyzer: 0, missing: 0, unexplained: 0 }
-  const delegated: Record<string, number> = { contains: 0, uses: 0 }
-  const missingSamples: Record<string, string[]> = { contains: [], uses: [] }
-  const unexplainedSamples: Record<string, string[]> = { contains: [], uses: [] }
+  const delegated: Record<string, number> = { contains: 0, uses: 0, imports: 0 }
+  const missingSamples: Record<string, string[]> = { contains: [], uses: [], imports: [] }
+  const unexplainedSamples: Record<string, string[]> = { contains: [], uses: [], imports: [] }
   let filesRead = 0
 
   for (const f of files) {
@@ -782,11 +914,17 @@ async function main(): Promise<void> {
     const component = truth.componentName
 
     for (const label of AUDITED) {
+      // `imports` is compared SITE-AGNOSTICALLY (label + target), which is how the shared
+      // differential compares it: its truth sources at `(module)` and the analyzer at the
+      // component, and neither spelling is the other's — matching on `from` here would
+      // report 100% disagreement between two readers that name the same edges.
+      const siteAgnostic = label === "imports"
+      const key = (from: string, target: string): string => (siteAgnostic ? target : `${from}|${target}`)
       // `new Set(...)` over a chain read from an `any` receiver infers `Set<unknown>`, so the
       // element type is stated at both sets below (`aSet.has(k)` and `tSet.has(k)` are how the
       // two unknown-set inferences showed up).
       const tSet = new Set<string>(
-        truth.edges.filter((e) => e.label === label).map((e) => `${e.from}|${e.target}`),
+        truth.edges.filter((e) => e.label === label).map((e) => key(e.from, e.target)),
       )
       // PROVENANCE, taken structurally rather than from analyzer metadata: an
       // edge whose SOURCE is the component itself was derived from the SFC
@@ -798,8 +936,9 @@ async function main(): Promise<void> {
       const all = (res.relationships ?? []).filter(
         (r: any) => String(r.relationshipType ?? r.type) === label,
       )
+      const sfcRows = all.filter((r: any) => r.source === component)
       const aSet = new Set<string>(
-        all.filter((r: any) => r.source === component).map((r: any) => `${r.source}|${r.target}`),
+        sfcRows.map((r: any) => key(String(r.source), String(r.target))),
       )
       delegated[label] += all.length - [...aSet].length
       stat[label].truth += tSet.size
@@ -821,7 +960,7 @@ async function main(): Promise<void> {
   }
 
   console.log(`svelte-truth --compare  corpus=${corpusName}  files read ${filesRead}`)
-  console.log(`labels compared: ${AUDITED.join(" ")}   (the two the M60 DERIVATION check reports unaudited)`)
+  console.log(`labels compared: ${AUDITED.join(" ")}   (contains/uses are this file's original pair; imports joined 2026-10-13 with its derivation)`)
   console.log("SFC-derived edges (source = the component): compared against this lane's truth")
   console.log("label      truth  analyzer  missing  unexplained   delegated-to-js")
   for (const l of AUDITED) {

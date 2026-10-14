@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-14T00:19:05.083Z",
+  "at": "2026-10-14T00:24:37.542Z",
   "enumValues": [
     "calls",
     "contains",
@@ -919,6 +919,7 @@
         "contains",
         "extends",
         "implements",
+        "imports",
         "instantiates",
         "overrides",
         "uses"
@@ -1613,11 +1614,6 @@
     },
     {
       "check": "DERIVATION",
-      "lang": "svelte",
-      "detail": "emits `imports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
       "lang": "swift",
       "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"references\",\"uses\"] — the type is stored and compared against nothing"
     },
@@ -1720,7 +1716,7 @@
   "inputErrors": [],
   "inputErrorLanes": [],
   "baseline": {
-    "recorded": 121,
+    "recorded": 120,
     "regressions": 0,
     "repaid": 0,
     "regressionsDetail": []
