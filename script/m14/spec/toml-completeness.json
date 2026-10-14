@@ -106,6 +106,12 @@
         "evidence": "grammar-absence",
         "from": "construct-census vocabulary.perType.instantiates: grammarNodeTypesMatchingCount=0; keySites=0; corpusNodeOccurrencesMatching=0",
         "quote": "no construction production and no constructor-naming key; every TOML value is a literal"
+      },
+      {
+        "label": "exports",
+        "evidence": "zero-sites",
+        "from": "LEAD RULING #2 (validation/m14/verification/FOUR-CLAUSE-toml.md, committed 9521a1f2e), on the lane's own measurement: 31 analyzer-visible publish-surface CANDIDATES over the whole 1,485-file population (the census's 174 also counts 143 pairs nested inside INLINE TABLES, which this lane does not publish as symbols), and 0 whose value names a declaration of the same document outside the site's own context. The type is IMPLEMENTED in src/ast/real-toml-analyzer.ts (candidates from the eleven conventional leaves; the decision is data, json's measured standard) and pinned by the fixture toml/publish-surface-and-paths, which can FAIL: with both guards removed the corpus mutant reads exports 20 edges / 0 resolved / 1 amb / 19 unresolved / residual 10 -> 30, and the fixture fails on its positive control plus five forbidden pins. Corpus artifact: validation/m14/fixtures/toml/tools/residual-whole-population.txt (all ten ontology types printed, `exports` explicitly 0).",
+        "quote": "the construct exists in TOML and the analyzer implements it; this corpus exercises it ZERO times, because no publish-surface value names an importable declaration here — the ruled zero-sites class, disclosed rather than hidden"
       }
     ],
     "corpusUnexercised": [],
