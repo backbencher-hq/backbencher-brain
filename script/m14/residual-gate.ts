@@ -416,7 +416,7 @@ if (LANE) {
     // with these numbers.**
     console.log()
   }
-  console.log(`${w("type", 14)} ${w("edges", 9)} ${w("resolved", 9)} ${w("ofWhich", 8)} ${w("amb(decl)", 10)} ${w("unresolved", 11)} ${w("extOK", 8)} ${w("ext?", 6)} ${w("extFAIL", 8)} ${w("bindFAIL", 9)} ${w("causeFAIL", 10)} ${w("residual%", 10)}${intentBlockSeen ? "  " + w("intended", 9) + w("twin", 6) + w("noDecl", 7) : ""}`)
+  console.log(`${w("type", 14)} ${w("edges", 9)} ${w("resolved", 9)} ${w("ofWhich", 8)} ${w("amb(decl)", 10)} ${w("unresolved", 11)} ${w("extOK", 8)} ${w("ext?", 6)} ${w("extFAIL", 8)} ${w("bindFAIL", 9)} ${w("causeFAIL", 10)} ${w("residual%", 10)}${intentBlockSeen ? "  " + w("intended", 9) + " " + w("twin", 6) + " " + w("noDecl", 7) : ""}`)
   // THE LABEL MUST NOT ASSERT MORE THAN THE CLASSIFIER ESTABLISHES. This legend said
   // `"twin" = ONLY another file answers (a wrong edge)` — which is true only for the types the
   // analyzer writes on the target symbol's own line. `classifyIntent` (incoming-gate.ts:433-445) is a
@@ -490,7 +490,20 @@ if (LANE) {
     if (r.edges === 0) continue
     const resid = r.amb + r.unres + r.extFAIL + r.bindFAIL + r.causeFAIL
     const it = intent.get(r.type)
-    const tail = intentBlockSeen ? "  " + w(it ? it.intended : "-", 9) + w(it ? it.arbitraryTwin : "-", 6) + w(it ? it.noDeclaration : "-", 7) : ""
+    // THE THREE INTENT FIELDS ARE SEPARATED, AND THIS LINE IS WHY. `w()` right-pads AND truncates to an
+    // exact width, so the tail used to be `w(intended,9) + w(twin,6) + w(noDeclaration,7)` with NOTHING
+    // between the fields: a value that FILLS its field abuts the next one and the two read as a single
+    // legitimate number. MEASURED on `.tmp-pb/fin-dart.out` (whole-population dart, 33,738 files):
+    //
+    //   uses  1361206  317350  0  392076  41271  0  ...  31.8%       0        422800630490
+    //                                                                          ^^^^^^^^^^^^
+    //                         arbitraryTwin 422800 | nothingAnywhere 630490, printed as ONE token
+    //
+    // A reader that split the tail on whitespace therefore either read 422,800,630,490 as one class or
+    // DROPPED the row; the second is what happened to a cause table built from these files (dart `uses`,
+    // 1,361,206 edges, lost). The correction is one separator per boundary, and it changes NOTHING else:
+    // every other column keeps its width and every other line is byte-identical.
+    const tail = intentBlockSeen ? "  " + w(it ? it.intended : "-", 9) + " " + w(it ? it.arbitraryTwin : "-", 6) + " " + w(it ? it.noDeclaration : "-", 7) : ""
     console.log(`${w(r.type, 14)} ${w(r.edges, 9)} ${w(r.resolved, 9)} ${w(r.ambColl ?? "-", 8)} ${w(r.amb, 10)} ${w(r.unres, 11)} ${w(r.extOK, 8)} ${w(r.extQ, 6)} ${w(r.extFAIL, 8)} ${w(r.bindFAIL, 9)} ${w(r.causeFAIL, 10)} ${w(((resid / r.edges) * 100).toFixed(1) + "%", 10)}${tail}`)
   }
   if (total) {
