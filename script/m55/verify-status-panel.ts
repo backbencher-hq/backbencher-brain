@@ -80,7 +80,18 @@ const { renderStatusMarkup, statusSurfaceState } = mod
 /** The model's own shape, as the frames' input produced it (seven facts, two
  *  languages, one action). Kept literal so a change in the model is visible
  *  here as a diff, not swallowed by a helper. */
-const INPUT: mod.StatusSurfaceInput = {
+// Typed against the REAL module. This line reported TS2503 — "cannot find namespace 'mod'" —
+// for as long as the file existed, because `mod` is the destructured VALUE and a value is not a
+// namespace. A type reference that does not resolve checks nothing, so the fixture was never
+// verified against the product's input shape at all.
+//
+// Two forms were wrong before one was right, and the difference is worth stating:
+//   typeof import("…").StatusSurfaceInput   -> TS2694, no exported member
+//   import("…").StatusSurfaceInput          -> correct
+// `typeof import(…)` is the module's VALUE shape, and `StatusSurfaceInput` is an exported
+// INTERFACE, so it is not reachable through it. `import(…)` in a type position is the type
+// namespace. The gate now fails HERE if the product's input shape moves.
+const INPUT: import("../../ide/vscode/src/status-markup").StatusSurfaceInput = {
   lines: [
     "server: running (0.1.0)",
     "activation: 132ms / declared 150ms budget — within budget",
@@ -102,8 +113,21 @@ const INPUT: mod.StatusSurfaceInput = {
   staleBadge: null,
   noActiveFileNote: null,
   perLanguage: [
-    { language: "typescript", level: "I4", description: "index-sourced, structural relationships verified" },
-    { language: "java", level: "I4", description: "index-sourced, structural relationships verified" },
+    // FAITHFUL TO THE MODEL, and that is load-bearing rather than cosmetic.
+    //
+    // status-model.ts:197 builds this as `description: describeLevel(CLAIM_LEVELS[l])`, and
+    // describeLevel("I4") returns "I4 — editor-verified" — the level is ALREADY the first thing
+    // the description says. This fixture used free text ("index-sourced, structural …"), which
+    // is not anything describeLevel can return.
+    //
+    // Two checks were reading a shape production never produces. S1's "no per-language row states
+    // its level twice" looked for `I4 — I4`, which the free-text form can never contain however
+    // the renderer misbehaves. And mutant M10, which prepends the level, produced
+    // "I4 — index-sourced, …" — a level stated ONCE — so the defect it names was not expressible
+    // and the mutant survived. A fixture that cannot reproduce the defect is a gate that cannot
+    // fail on it.
+    { language: "typescript", level: "I4", description: "I4 — editor-verified" },
+    { language: "java", level: "I4", description: "I4 — editor-verified" },
   ],
   actions: [{ title: "Index now", command: "bbLsp.indexNow" }],
 }
@@ -350,14 +374,26 @@ await withModule(
     return out.includes("<script>") || out.indexOf("<script>") === -1
   },
 )
-// M4: the stale marker is buried below the facts.
+// M4: the staleness marker stops rendering — or renders below the facts, which is the same
+// failure to a reader: the one line that changes a decision is not where they look for it.
+//
+// The mutant is named for what it PLANTS, which is not what it used to be named for. It replaces
+// the append with nothing, so the badge disappears entirely; the old name said "buried" and the
+// old probe asked only whether the marker rendered below the first fact. An ABSENT marker gave
+// `indexOf(...) === -1`, which is "before everything", so a missing badge read as a correctly
+// placed one and the mutant SURVIVED — coverage that was reported and did not exist.
+//
+// Absence is now a defect in its own right, and the order question is still asked, because a
+// later mutation may bury the badge without deleting it.
 await withModule(
-  "M4: the stale marker is buried below the facts",
+  "M4: the staleness marker stops rendering (or renders below the facts)",
   "    root.appendChild(marker)\n  }",
-  "    // buried: appended last instead of first\n  }",
+  "    // the append is gone: the marker is never placed\n  }",
   (m) => {
     const out = m.renderStatusMarkup({ ...INPUT, staleBadge: "STALE — results may be wrong" })
-    return out.indexOf("STALE — results may be wrong") > out.indexOf(INPUT.lines[0]!)
+    const at = out.indexOf("STALE — results may be wrong")
+    if (at === -1) return true
+    return at > out.indexOf(INPUT.lines[0]!)
   },
 )
 // M5: an empty per-language table renders silently.
@@ -369,7 +405,27 @@ await withModule(
 )
 // M8: the provenance section is dropped (the second notification's facts go
 // missing again — the exact regression this fix exists to prevent).
-await withModule("M8: the provenance facts stop rendering", "  if (input.serverFacts.length > 0) {", "  if (false) {", (m) => !m.renderStatusMarkup(INPUT).includes(INPUT.serverFacts[0]!))
+await withModule(
+    "M8: the provenance facts stop rendering",
+    "  if (input.serverFacts.length > 0) {",
+    "  if (false) {",
+    // Probe a server fact that the MAIN facts do not also print.
+    //
+    // This used to probe `INPUT.serverFacts[0]`, which is byte-identical to `INPUT.lines[5]`
+    // ("launch: compiled dist (bundled) — /repo/dist/lsp/server.js"). So the string the probe
+    // looked for was rendered by the main-fact loop whether or not the server-fact block ran,
+    // the mutation changed nothing observable, and the mutant SURVIVED — reported as coverage
+    // that did not exist. The S1 assertion beside it was never fooled, because it also counts
+    // `data-server-fact="` markers; this probe asked only "is the text present".
+    //
+    // Two changes, so it cannot go quietly vacuous again: the probe uses a fact that does not
+    // appear in `lines`, and it asserts that uniqueness rather than trusting it.
+    (m) => {
+      const unique = INPUT.serverFacts.find((f) => !INPUT.lines.includes(f))
+      if (unique === undefined) return false // every fact is duplicated -> cannot judge
+      return !m.renderStatusMarkup(INPUT).includes(unique)
+    },
+  )
 // M6: the surface goes back to being a notification (the wiring lint must see it).
 {
   const mutated = ext.replace(
