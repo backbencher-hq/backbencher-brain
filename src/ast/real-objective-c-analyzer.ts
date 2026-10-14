@@ -281,13 +281,103 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             lineNumber: node.startPosition.row + 1,
             isExternal: isSystem || !modName.startsWith("."),
           })
+          // OC-ONT-1 — RESTORED FROM THIS LANE'S OWN COMMITTED REVISION `be3415738`, because
+          // the pin is on this branch and the emission is not. The `#import`/`#include` is a
+          // first-class `imports` edge, not only a `references` edge with import metadata:
+          // the reader that answers "what does this module depend on" filters on
+          // `relationship_type IN ('imports','exports')` (src/lsp/graph_usages.ts,
+          // src/lsp/graph_request.ts), so a C include was visible to it and an Objective-C
+          // include was not. Measured in that revision: 902 edges over this lane's admitted
+          // corpus, none of them reachable by that query.
+          //
+          // The pre-existing `references` edge is KEPT, not replaced. Both statements are
+          // true of `#import <Foundation/Foundation.h>` (the file depends on that module AND
+          // references it), so the change is additive — no consumer loses a label it had —
+          // and it follows the precedent this lane already set for the one fact that needs
+          // two labels (`calls` AND `instantiates` for `[[Foo alloc] init]`).
+          //
+          // `isObjCModuleImport: false` is written rather than left absent so the flag is
+          // TOTAL over both dependency forms: a consumer can branch on it without a null
+          // check, and the fixture objc/module-imports pins that an `#include` is not a
+          // module import instead of asserting the absence of a field.
+          relationships.push({
+            source: "root",
+            target: modName,
+            type: ASTEngine.RelationshipType.Imports,
+            confidence: 1.0,
+            line_number: this.nodeLine(modNode ?? node),
+            metadata: {
+              relationshipType: "include_dependency",
+              isObjCImport: true,
+              isObjCModuleImport: false,
+              isImport: true,
+              isSystem,
+              module: modName,
+              fileLevel: true,
+            },
+          })
           relationships.push({
             source: "root",
             target: modName,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
             line_number: this.nodeLine(modNode ?? node),
-            metadata: { isObjCImport: true },
+            metadata: { isObjCImport: true, isObjCModuleImport: false },
+          })
+        }
+      }
+      // 0b. Clang MODULE imports — `@import Module;`. Objective-C has TWO dependency
+      // declarations and this branch read only the `#import` above. The pinned grammar
+      // emits a `module_import` node for the `@import` form, whose single named child is
+      // an `identifier` holding the module name — there are no `<>` or quotes to strip,
+      // which is why the branch above cannot simply be widened to cover it.
+      //
+      // RESTORED FROM THE SAME COMMITTED REVISION `be3415738`, which measured it before
+      // writing it (the router's own 322 admitted files, production `parseFile`):
+      // `preproc_include` 904 sites -> 902 imports + 902 references, while
+      // `module_import` 6 sites / 6 files -> 0 edges. Six is few, but a dependency a
+      // consumer cannot see is not less of a dependency for being rare, and clang modules
+      // are the form Apple's own modern example code uses.
+      //
+      // Same two labels as `#import` and for the same reason; `relationshipType` differs
+      // (`module_import` vs `include_dependency`) because a clang module is not a header
+      // path: the target names a MODULE, and nothing in this walk knows whether the build
+      // defines one under that name. The fixture objc/module-imports pins both spellings,
+      // and a later revision of this file (`b727b0fe4`) relabelled the module branch back
+      // to `include_dependency` — which is why the pin and the revision must agree before
+      // anything is restored, not just the presence of an emission.
+      if (node.type === "module_import") {
+        const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "type_identifier")
+        const modName = nameNode ? nameNode.text.trim() : ""
+        if (modName) {
+          imports.push({
+            module: modName, items: [], importType: "module",
+            lineNumber: node.startPosition.row + 1,
+            isExternal: true,
+          })
+          relationships.push({
+            source: "root",
+            target: modName,
+            type: ASTEngine.RelationshipType.References,
+            confidence: 0.9,
+            line_number: this.nodeLine(nameNode ?? node),
+            metadata: { isObjCImport: true, isObjCModuleImport: true },
+          })
+          relationships.push({
+            source: "root",
+            target: modName,
+            type: ASTEngine.RelationshipType.Imports,
+            confidence: 1.0,
+            line_number: this.nodeLine(nameNode ?? node),
+            metadata: {
+              relationshipType: "module_import",
+              isObjCImport: true,
+              isObjCModuleImport: true,
+              isImport: true,
+              isSystem: false,
+              module: modName,
+              fileLevel: true,
+            },
           })
         }
       }
