@@ -742,6 +742,48 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     ctx.metadata.detectedFrameworks = ctx.frameworks
     ctx.metadata.frameworkPatterns = ctx.frameworkPatterns
 
+    // A CLAIM THE FILE'S OWN KEY SPACE CONTRADICTS IS NOT A CLAIM (yaml clause 3, 2026-10-13).
+    //
+    // MEASURED, whole admitted population, before this guard: 137 ambiguous edges carry an
+    // external claim and **5 of them are CONTRADICTED** — the edge's OWN FILE declares the target
+    // while the edge says the target names something outside the declared population. A
+    // contradiction under BOTH scope readings is a WRONG CLAIM, not a scope disagreement, and the
+    // arbiter counts it against the lane (`externalRefuted`). The five are real; for example
+    //   ansible/test/integration/targets/include_import/apply/import_apply.yml:19 -> import_role
+    // carries `isExternal: true` while that same document declares the key `import_role`.
+    //
+    // THE GUARD IS A SUBTRACTION, and that is the whole reason it is safe: it only ever REMOVES a
+    // marker, so it cannot manufacture a claim, cannot turn an `ext?` into an `extOK`, and cannot
+    // produce an `externalRefuted`. An edge that loses its marker falls back to the classification
+    // of the target itself (resolved / ambiguous / unresolved) — the honest reading of an edge
+    // whose own file answers to the name it wrote. It is deliberately NOT a `projectFile` claim:
+    // converting one claim kind into another by guessing a path is exactly the trade
+    // `externalRefuted` exists to punish.
+    //
+    // A POST-PASS rather than a check at each emission site: `ctx.symbols` is only complete once
+    // the walk and the resolve passes have run, so a claim-time check would miss precisely the keys
+    // declared AFTER the edge — the common case, because a task's own key is registered in the
+    // same visit that emits the import.
+    const declaredOwn = new Set<string>()
+    for (const s of ctx.symbols) {
+      if (typeof s.name === "string" && s.name.length > 0) declaredOwn.add(s.name)
+      const q = typeof s.qualifiedName === "string" ? s.qualifiedName : ""
+      if (q.length > 0) declaredOwn.add(q)
+    }
+    let strippedOwnContradicted = 0
+    for (const r of ctx.relationships as Array<{ target?: unknown; metadata?: Record<string, unknown> }>) {
+      const md = r?.metadata
+      if (!md || typeof md !== "object" || md.isExternal !== true) continue
+      const tgt = String(r.target ?? "")
+      if (tgt.length === 0 || !declaredOwn.has(tgt)) continue
+      delete md.isExternal
+      strippedOwnContradicted++
+    }
+    if (strippedOwnContradicted > 0) {
+      ;(ctx.metadata as unknown as Record<string, unknown>).isExternalStrippedOwnFileContradicted =
+        strippedOwnContradicted
+    }
+
     return {
       symbols: ctx.symbols,
       relationships: ctx.relationships,
