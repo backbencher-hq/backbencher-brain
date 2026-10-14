@@ -34,7 +34,7 @@
  * Usage:
  *   npx tsx script/m14/coverage-block-gate.ts [--strict] [--json]
  */
-import { readFileSync, existsSync } from "node:fs"
+import { readFileSync, existsSync, readdirSync } from "node:fs"
 import { resolve, dirname } from "node:path"
 
 const HERE: string = (import.meta as any).dir ?? dirname(new URL(import.meta.url).pathname)
@@ -71,31 +71,44 @@ function stripComments(src: string): string {
   }
   return out
 }
+/**
+ * THE LANE SET IS THE FLEET, NOT `LANES_B`.
+ *
+ * This function used to parse `export const LANES_B` out of `incoming-gate.ts` and return those 23
+ * keys. `LANES_B` is a split of the fleet across two laptops (`_B` against `_A`), and the owner has
+ * retired it: **the fleet is `src/ast/real-*-analyzer.ts`, and there are 48 of them.** So this gate
+ * was asking its questions about 23 lanes and reporting "declared 23/23" — a coverage claim resting
+ * on a lane set that half the fleet is not in. Measured 2026-10-14: 47 spec files exist, 23 declare
+ * a `coverage` block, and the other 25 lanes had never been asked at all. A gate that cannot see a
+ * lane cannot report it missing, which is the silent-instrument class this programme keeps paying for.
+ *
+ * THE UNION OF TWO INDEPENDENT ENUMERATIONS, so neither can silently shrink the set:
+ *   (a) every `src/ast/real-*-analyzer.ts`, mapped to its lane key — so a lane that declares NOTHING
+ *       is reported as undeclared instead of being absent from the report; and
+ *   (b) every `script/m14/spec/<lane>-completeness.json` (excluding `.superseded-*`) — the gate's own
+ *       subject, so a lane that DECLARES coverage is always asked even if its analyzer is renamed.
+ * A spec with no analyzer and an analyzer with no spec are both reported rather than dropped.
+ *
+ * THE NAME MAP IS THE ONLY NON-MECHANICAL PART, and both entries are derived rather than guessed:
+ * `real-makefile-analyzer.ts` is lane `make` (the key `EXTENSION_LANGUAGE` maps `.mk`/`.mak`/`Makefile`
+ * to), and `real-objective-c-analyzer.ts` is lane `objc`. The two spec files in the tree are literally
+ * `make-completeness.json` and `objc-completeness.json`, which is the same spelling arrived at the
+ * other way round.
+ */
+const ANALYZER_LANE: Readonly<Record<string, string>> = { makefile: "make", "objective-c": "objc" }
 function lanes(): string[] {
-  const src = stripComments(readFileSync(resolve(ROOT, "script/m14/incoming-gate.ts"), "utf8"))
-  const decl = src.indexOf("export const LANES_B")
-  if (decl < 0) return []
-  const open = src.indexOf("{", decl)
-  let depth = 0, quote = "", end = -1
-  for (let i = open; i < src.length; i++) {
-    const ch = src[i]
-    if (quote !== "") { if (ch === "\\") i++; else if (ch === quote) quote = ""; continue }
-    if (ch === '"' || ch === "'" || ch === "`") quote = ch
-    else if (ch === "{") depth++
-    else if (ch === "}" && --depth === 0) { end = i; break }
+  const out = new Set<string>()
+  for (const f of readdirSync(resolve(ROOT, "src/ast"))) {
+    const m = /^real-(.+)-analyzer\.ts$/.exec(f)
+    if (!m) continue
+    out.add(ANALYZER_LANE[m[1]] ?? m[1])
   }
-  if (end < 0) return []
-  const out: string[] = []
-  for (const part of src.slice(open + 1, end).split(",")) {
-    const c = part.indexOf(":")
-    if (c < 0) continue
-    const k = part.slice(0, c).trim()
-    if (k === "" || k.length > 24) continue
-    let ident = true
-    for (const ch of k) if (!((ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || ch === "_" || ch === "-")) ident = false
-    if (ident) out.push(k)
+  for (const f of readdirSync(resolve(ROOT, SPEC_DIR))) {
+    const m = /^(.+)-completeness\.json$/.exec(f)
+    if (!m || f.includes(".superseded")) continue
+    out.add(m[1])
   }
-  return out
+  return [...out].sort()
 }
 
 type Firing = { fired: Set<string>; silent: Set<string>; label: string | null; parsed: string | null }
