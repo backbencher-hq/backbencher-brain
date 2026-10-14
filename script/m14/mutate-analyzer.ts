@@ -54,6 +54,11 @@ import { GROOVY_ONTOLOGY_MUTANTS, GROOVY_R7_MUTANTS, GROOVY_RECEIVER_MUTANTS } f
 // in mutate-analyzer.ts is REPORTED to master, not made here". It was reported and never made, so
 // the 16 mutants were correct, lane-owned, and executed by nothing.
 import { SWIFT_ONTOLOGY_MUTANTS } from "./swift-mutants"
+// DO NOT add imports for php-mutants.ts's other three exports. The file assembles PHP_MUTANTS by
+// MUTATION at module load -- `PHP_MUTANTS.push(...PHP_RECEIVER_OWNER_MUTANTS)` and six more, line
+// 604 onward -- so its four `export const`s are SOURCE ORGANISATION and PHP_MUTANTS already carries
+// all 23 ids. Spreading them again double-registers 19 mutants and runs each twice. Measured, then
+// reverted: see validation/m14/verification/SCRIPT-UNION-PROGRESS.md.
 // NOT WIRED, and deliberately: `ts-deriv-mutants.ts` is skipped with a NAMED blocker. Its mutant
 // `ts/placeholder-signature-member` exhausts a 4 GB heap on its own (EXIT 134, "Ineffective
 // mark-compacts near heap limit", 68 s) and `ts/computed-import-specifier-published` +
