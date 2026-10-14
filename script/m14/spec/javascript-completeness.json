@@ -1,6 +1,24 @@
 {
   "language": "javascript",
   "grammar": "tree-sitter-javascript.wasm",
+  "coverage": {
+    "implemented": ["calls", "uses", "contains", "imports", "references", "exports", "extends", "overrides", "instantiates"],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_from": "NINE OF TEN MEASURED OVER THE WHOLE ADMITTED POPULATION, AND THE TENTH IS A REPORTED GAP. Reading: .tmp-covb/census.mts --lane javascript, the production path (engine.getParser -> RealJavaScriptAnalyzer.analyze) over 12,348 files (11,891 .js + 284 .mjs + 126 .jsx + 47 .cjs) across 93 repos — 12,348 parsed of 12,348, 0 read failures, 0 parse throws, 0 analyze throws. Per-type totals: calls 757,774 edges in 10,950 files · uses 566,383 in 10,623 · imports 43,264 in 10,593 · contains 27,745 in 1,850 · instantiates 17,461 in 1,408 · exports 15,836 in 8,737 · references 6,310 in 1,289 · overrides 4,670 in 1,111 · extends 1,728 in 1,418. THE FIRING LOG'S ROW IS A LOWER BOUND, NOT A LANE FACT, AND THIS IS THE THIRD TYPE IT GOT WRONG THIS SESSION: validation/m14/results/firing-laptop-b.current.log reads `JAVASCRIPT 7 types fired 51/51 parsed` with `extends implements overrides` SILENT — a 51-file stride — while the whole population fires extends 1,728 and overrides 4,670. THE TENTH, `implements`, IS 0 EDGES OVER 12,348 FILES AND IS KEPT IN THE DENOMINATOR AS A GAP. The evidence was measured in full and is recorded here, but it is NOT claimed as a grammar-absence exclusion, because the toml lane was offered exactly that route and the owner refused it: (1) THE ANALYZER HAS NO EMISSION SITE — `RelationshipType.Implements` appears nowhere in src/ast/real-javascript-analyzer.ts; (2) THE PINNED GRAMMAR CANNOT EXPRESS IT — 0 of its 116 distinct named node types match the conformance vocabulary, and a CONTROL through the production parser shows `class A implements B {}` parses with hasError=true and an ERROR node, while the sibling `class A extends B {}` parses clean and produces `class_heritage`; (3) THE CORPUS HAS NO DECLARATION — a whole-population text census found 372 sites of `implements`/`@implements` in 66 files, and EVERY one of them is a comment, a JSDoc tag, GraphQL SDL inside a string or template, a syntax-highlighter keyword list for another language, an ESLint rule name, or a codemod regex — none is a JavaScript conformance declaration. WHY IT IS A GAP ANYWAY: the ecosystem convention (`@implements`, the ICSS precedent that kept css's `exports` in the denominator) means the construct's carrier exists in the corpus, and this programme's rule is that a construct which exists but which the analyzer does not implement is a GAP, never an exclusion. AN AUDITOR WHO DISAGREES CAN MOVE IT WITH ONE LINE — the grammar-absence evidence above is complete; the conservative reading is the one this block takes. THIS BLOCK AGREES WITH `gap.gaps`: every javascript entry J1..J12, JSD-744, J10 and JSD54 carries status CLOSED or RESOLVED and each is a NODE-LEVEL fix inside a type this walk measured FIRING (imports 43,264 · uses 566,383 · calls 757,774 · overrides 4,670 · extends 1,728), so no CLOSED entry is contradicted at the type level. THE VERIFICATION WAS TYPE-LEVEL, NOT FIXTURE-LEVEL, and is stated as such: the measurement above establishes that each closed entry's LABEL emits and fires; it does not re-run that entry's fixture or mutant.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the WHOLE admitted javascript population — 12,348 files (11,891 .js + 284 .mjs + 126 .jsx + 47 .cjs) across 93 repos, 12,348 parsed of 12,348, 0 parse failures, 0 analyze throws. Instrument .tmp-covb/census.mts --lane javascript, which constructs the PRODUCTION parser (engine.getParser) and enumerates the grammar through that parser's own Language.",
+      "calls": { "edges": 757774, "files": 10950 },
+      "uses": { "edges": 566383, "files": 10623 },
+      "imports": { "edges": 43264, "files": 10593 },
+      "contains": { "edges": 27745, "files": 1850 },
+      "instantiates": { "edges": 17461, "files": 1408 },
+      "exports": { "edges": 15836, "files": 8737 },
+      "references": { "edges": 6310, "files": 1289 },
+      "overrides": { "edges": 4670, "files": 1111 },
+      "extends": { "edges": 1728, "files": 1418 }
+    }
+  },
   "handled_verified": {
     "types": [
       "arguments",

@@ -1,4 +1,23 @@
 {
+  "coverage": {
+    "implemented": ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_from": "TEN OF TEN, MEASURED WHOLE-POPULATION, and this lane needs no exclusion: every one of the ten relationship types fires on the admitted .java population. The reading is script/m14/residual-gate.ts --lane java` at whole population — 11,152 .java files across 19 repos, 11,152 parsed, 0 parse failures, 0 degraded, one spelling — whose per-type totals are 1,377,933 edges in total (calls 356336 · references 453692 · imports 209100 · contains 160783 · uses 99669 · instantiates 41811 · overrides 33642 · exports 10777 · extends 6863 · implements 5260). THIS BLOCK AGREES WITH `gap.gaps` RATHER THAN QUIETLY OVERRIDING IT: G1–G4 (array_access uses, super()/this() calls, record_pattern references, method_invocation outside method bodies) are PARTIAL emission gaps and NONE of them removes a type — a gap can be a missing SITE while the type still emits hundreds of thousands of edges, so the ten stay implemented and the four gaps stay listed as gaps. AND THE FIRING LOG'S ROW FOR THIS LANE IS NOT A CONTRADICTION: validation/m14/results/firing-laptop-b.current.log reads `JAVA 0 types fired  NO CORPUS under java-lib` with all ten SILENT, which is a claim about the pin `java-lib` (it admits 0 files at this HEAD) and not about java — the same one-repo/sample-pin defect the programme has measured repeatedly. Per-type edge counts and an emission site in src/ast/real-java-analyzer.ts are named per type in `_implemented_measured`.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the WHOLE admitted .java population — 11,152 files across 19 repos, 11,152 parsed of 11,152, 0 parse failures, 0 degraded. Instrument script/m14/residual-gate.ts --lane java. Reading taken at .tmp-pb/fin-java.out, a gitignored scratch artifact, and restated in the committed validation/m14/verification/FOUR-CLAUSE-java.md.",
+      "calls": { "edges": 356336 },
+      "references": { "edges": 453692 },
+      "imports": { "edges": 209100 },
+      "contains": { "edges": 160783 },
+      "uses": { "edges": 99669 },
+      "instantiates": { "edges": 41811 },
+      "overrides": { "edges": 33642 },
+      "exports": { "edges": 10777 },
+      "extends": { "edges": 6863 },
+      "implements": { "edges": 5260 }
+    }
+  },
   "_comment": "#419 java pilot — complete classification of ALL 143 public named node types in the pinned tree-sitter-java wasm. Every type is bucketed; a type in no bucket is itself a gate failure (silence is guilt). Buckets: handled_verified (analyzer emits correctly, probe/fixture-confirmed), internal_silent (container/literal/keyword correctly emitting nothing itself), gap (confirmed missing emission, numbered G1..), design_decision (owner ruling required before closure). Generated mechanically + probe-verified 2026-08-26 (see script/m14/completeness-inventory.ts).",
   "handled_verified": {
     "_description": "Node types whose required emissions are produced and verified by probes and/or existing F3 fixtures",

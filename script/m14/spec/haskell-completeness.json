@@ -1,6 +1,25 @@
 {
   "language": "haskell",
   "grammar": "tree-sitter-haskell.wasm",
+  "coverage": {
+    "implemented": ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_from": "TEN OF TEN, MEASURED OVER THE WHOLE ADMITTED POPULATION, and this lane needs no exclusion. Reading: .tmp-covb/census.mts --lane haskell, a walk through the production path (engine.getParser -> RealHaskellAnalyzer.analyze) over 3,702 .hs/.lhs files (3,695 .hs + 7 .lhs) across 6 repos — 3,702 parsed of 3,702, 0 read failures, 0 parse throws, 0 analyze throws. Per-type totals: calls 57,682 edges in 1,777 files · contains 45,507 in 3,488 · imports 32,704 in 3,240 · instantiates 26,466 in 1,613 · exports 16,341 in 2,041 · implements 13,721 in 974 · uses 2,172 in 356 · overrides 1,274 in 91 · extends 189 in 64 · references 32 in 21. THE TWO SMALLEST, `references` (32) and `extends` (189), ARE SMALL AND MEASURED, NOT ZERO AND NOT ASSUMED: `extends` is the class-context constraint (6124 `=>` sites corpus-wide by the independent source-text probe, 189 of which became edges — the difference is the construct's other uses, not a failure of the count), and `references` is the qualified-name reference pass at 32 edges over 21 files. THIS BLOCK AGREES WITH `gap.gaps` RATHER THAN OVERRIDING IT: HS-G1..HS-G10 are node-type gaps in advanced GHC-extension surfaces (type synonyms, GADTs, type/data families, FFI, Template Haskell, pattern synonyms, class defaults/fundeps, anonymous lambdas, deriving via, mdo) and NONE of them removes a relationship type; HS-G9 is the sharpest case and is a PARTIAL gap in an IMPLEMENTED type — `implements` fires 13,721 edges over 974 files while deriving-via strategies alone are not resolved. AND THE FIRING LOG'S ROW IS NOT A CONTRADICTION: validation/m14/results/firing-laptop-b.current.log reads `HASKELL 0 types fired  NO CORPUS under haskell` with all ten SILENT, a claim about the pin `haskell` (it admits 0 files at this HEAD) and not about the 3,702-file population measured here.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the WHOLE admitted haskell population — 3,702 files (3,695 .hs + 7 .lhs) across 6 repos, 3,702 parsed of 3,702, 0 parse failures, 0 analyze throws. Instrument .tmp-covb/census.mts --lane haskell, which constructs the PRODUCTION parser (engine.getParser) and enumerates the grammar through that parser's own Language.",
+      "calls": { "edges": 57682, "files": 1777 },
+      "contains": { "edges": 45507, "files": 3488 },
+      "imports": { "edges": 32704, "files": 3240 },
+      "instantiates": { "edges": 26466, "files": 1613 },
+      "exports": { "edges": 16341, "files": 2041 },
+      "implements": { "edges": 13721, "files": 974 },
+      "uses": { "edges": 2172, "files": 356 },
+      "overrides": { "edges": 1274, "files": 91 },
+      "extends": { "edges": 189, "files": 64 },
+      "references": { "edges": 32, "files": 21 }
+    }
+  },
   "handled_verified": {
     "_description": "Analyzer-referenced node types; behavior probe/fixture-verified 2026-09-03 (real-haskell-analyzer.ts at the HSD wave).",
     "types": [

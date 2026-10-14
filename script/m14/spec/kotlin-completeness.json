@@ -1,6 +1,25 @@
 {
   "language": "kotlin",
   "grammar": "tree-sitter-kotlin.wasm",
+  "coverage": {
+    "implemented": ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_from": "TEN OF TEN, MEASURED OVER THE WHOLE ADMITTED POPULATION, and this lane needs no exclusion. Reading: .tmp-covb/census.mts --lane kotlin, a walk through the production path (engine.getParser -> RealKotlinAnalyzer.analyze) over 2,346 files (2,067 .kt + 279 .kts) across 8 repos — 2,346 parsed of 2,346, 0 read failures, 0 parse throws, 0 analyze throws. Per-type totals: calls 110,928 edges in 2,098 files · references 53,701 in 2,125 · contains 31,636 in 1,714 · imports 28,094 in 1,972 · uses 21,481 in 1,703 · instantiates 11,124 in 1,328 · exports 10,297 in 1,638 · overrides 5,101 in 754 · extends 2,391 in 1,273 · implements 563 in 320. THE SMALLEST, `implements` at 563 edges over 320 files, IS MEASURED AND NON-ZERO, which is the whole point of reading rather than inferring. THIS BLOCK AGREES WITH `gap.gaps`: all nine kotlin entries (K1..K9) carry status CLOSED, and each one is a NODE-LEVEL fix inside a type that this walk measured firing — K1 indexing uses, K2 constructor-delegation calls, K3 callable-reference type refs, K4 template uses, K5 typealias, K6 object literals, K7 init-block attribution, K8 import tier, K9 override ancestor resolution — so a CLOSED entry and a fired type are consistent, and no entry is contradicted by the measurement. THE ONE MEASUREMENT CAVEAT, STATED RATHER THAN IMPLIED: the analyzer reads `context.overrideCompanion` (src/ast/real-kotlin-analyzer.ts:815), a companion index the DIFFERENTIAL harness supplies and this walk did not, so the 5,101 `overrides` edges are the analyzer's own output without companion-assisted verification — an edge COUNT unaffected by the missing companion, and the same component the lane's K9 closure names. AND THE FIRING LOG'S ROW IS NOT A CONTRADICTION: validation/m14/results/firing-laptop-b.current.log reads `KOTLIN 0 types fired  NO CORPUS under kotlin` with all ten SILENT, a claim about the pin `kotlin` (it admits 0 files at this HEAD) and not about the 2,346-file population measured here.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the WHOLE admitted kotlin population — 2,346 files (2,067 .kt + 279 .kts) across 8 repos, 2,346 parsed of 2,346, 0 parse failures, 0 analyze throws. Instrument .tmp-covb/census.mts --lane kotlin, which constructs the PRODUCTION parser (engine.getParser) and enumerates the grammar through that parser's own Language.",
+      "calls": { "edges": 110928, "files": 2098 },
+      "references": { "edges": 53701, "files": 2125 },
+      "contains": { "edges": 31636, "files": 1714 },
+      "imports": { "edges": 28094, "files": 1972 },
+      "uses": { "edges": 21481, "files": 1703 },
+      "instantiates": { "edges": 11124, "files": 1328 },
+      "exports": { "edges": 10297, "files": 1638 },
+      "overrides": { "edges": 5101, "files": 754 },
+      "extends": { "edges": 2391, "files": 1273 },
+      "implements": { "edges": 563, "files": 320 }
+    }
+  },
   "handled_verified": {
     "types": [
       "annotation",

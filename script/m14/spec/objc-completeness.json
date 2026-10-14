@@ -1,6 +1,24 @@
 {
   "language": "objc",
   "grammar": "tree-sitter-objc (pinned wasm/wasm/tree-sitter-objc.wasm)",
+  "coverage": {
+    "implemented": ["calls", "uses", "contains", "references", "exports", "extends", "implements", "overrides", "instantiates"],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_from": "NINE OF TEN MEASURED, AND THE TENTH IS A GAP — NOT AN EXCLUSION. The reading is a whole-admitted-population walk through the production path (getParser -> RealObjectiveCAnalyzer.analyze, .tmp-covb/census.mts --lane objc): 262 files (259 .m + 3 .mm) across 9 repos, 262 parsed of 262, 0 read failures, 0 parse throws, 0 analyze throws. Nine types fire: calls 12,534 edges in 246 files · uses 15,966 in 246 · contains 4,205 in 226 · instantiates 1,239 in 164 · overrides 790 in 61 · references 779 in 258 · extends 135 in 79 · implements 39 in 25 · exports 2 in 1. `imports` reads ZERO relationship edges and is classified as a GAP on two measured halves, neither of which is an exclusion: (1) THE GRAMMAR CAN EXPRESS IT — 11 of the pinned grammar's 187 distinct named node types match the import vocabulary (preproc_include/module_import/@import/@package/extern), and (2) THE CORPUS CONTAINS IT — 856 import sites over all 262 files by independent source-text scan (#import 767, @import 73, #include 16). The missing half is PUBLICATION, not parsing: the analyzer fills `imports` ImportInfo at src/ast/real-objective-c-analyzer.ts (preproc_include branch) and the indexer writes those rows into the brain_import TABLE (src/ast/parallel-indexer.ts storeResults), while NO `RelationshipType.Imports` push exists anywhere in src/ast/real-objective-c-analyzer.ts — so the ontology's `imports` RELATIONSHIP is 0. That is why it stays in the denominator as a gap: a type with 0 edges because the analyzer has no emission site for it is a gap, and calling it grammar-absence or zero-sites would both be false. THIS AGREES WITH THE LANE'S OWN GAP LIST rather than overriding it: gap entry 1 says the preprocessor conditionals are untracked and that preproc_include IS consumed (imports) — true at the ImportInfo layer — and this block adds the measurement at the RELATIONSHIP layer, where nothing is emitted. AND THE FIRING LOG'S ROW IS NOT A CONTRADICTION: validation/m14/results/firing-laptop-b.current.log reads `OBJECTIVE_C 0 types fired  NO CORPUS under objc` with all ten SILENT, which is a claim about the pin `objc` (it admits 0 files at this HEAD) and not about the 262-file population measured here.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the WHOLE admitted objective-c population — 262 files (259 .m + 3 .mm) across 9 repos, 262 parsed of 262, 0 parse failures, 0 analyze throws. Instrument .tmp-covb/census.mts --lane objc, which constructs the PRODUCTION parser (engine.getParser) and enumerates the grammar through that parser's own Language.",
+      "calls": { "edges": 12534, "files": 246 },
+      "uses": { "edges": 15966, "files": 246 },
+      "contains": { "edges": 4205, "files": 226 },
+      "instantiates": { "edges": 1239, "files": 164 },
+      "overrides": { "edges": 790, "files": 61 },
+      "references": { "edges": 779, "files": 258 },
+      "extends": { "edges": 135, "files": 79 },
+      "implements": { "edges": 39, "files": 25 },
+      "exports": { "edges": 2, "files": 1 }
+    }
+  },
   "handled_verified": {
     "types": [
       "assignment_expression",
