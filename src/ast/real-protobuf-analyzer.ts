@@ -157,6 +157,56 @@ export const PROTOBUF_DECLARATION_SPEC = {
  * list: a `type` node that contains a `message_or_enum_type` child is a
  * reference, and one with no named children is a scalar keyword.
  */
+/**
+ * THE RUNTIME'S OWN NAMESPACES, DECLARED AS THE EVIDENCE OF A NAMESPACE CLAIM (task-19).
+ *
+ * These are the namespaces this analyzer certifies as external when a type reference is not declared
+ * in the file that writes it. They are carried ON THE EDGE (`metadata.languageNamespace`) so the
+ * arbiter checks the target's leading segments against THIS LIST and never against the symbol table
+ * (`script/m14/incoming-rule.ts`, `NAMESPACE_CLAIM_KEY`), and so widening the list is one reviewable
+ * diff in this file.
+ *
+ * WHY EACH ENTRY IS HERE, from measurement rather than convenience:
+ *   * `google.protobuf` — 904 of this lane's 971 unresolved `uses` name `google.protobuf.*`: the
+ *     well-known types (`Timestamp`, `Struct`, `StringValue`, `Duration`, `FieldMask`, …) that the
+ *     protobuf RUNTIME provides and no admitted corpus file declares. This is the class the claim
+ *     exists for.
+ *   * `google.api` · `gogoproto` · `protoc-gen-openapiv2` — the three namespaces this lane's
+ *     unresolved `imports` name by path (`google/api/annotations.proto` 30, `gogoproto/gogo.proto` 22,
+ *     `protoc-gen-openapiv2/options/annotations.proto` 30), i.e. the same runtime surface reached
+ *     through type references.
+ *
+ * WHY THE ENTRIES ARE MULTI-SEGMENT, and this is the whole reason the rule grew a segment-boundary
+ * matcher for its second adopter: the ROOT of `google.protobuf.Timestamp` is `google`, and `google`
+ * is a namespace PROJECTS USE FOR THEIR OWN PACKAGES. MEASURED whole-corpus: of 3,608 `uses` targets
+ * not declared in their own file, 2,637 (73.1%) ARE declared elsewhere in the same project — 810
+ * under `k8s.*`, 441 under `controller.*`, 187 under `docker.*` and 534 under `google.*`. Declaring
+ * `google` would have certified all of those as external.
+ *
+ * WHAT THIS LIST WOULD WRONGLY *REFUTE* IF SOMEONE NARROWED IT: any type reference whose namespace is
+ * removed reads `externalRefuted`, which `extFAIL` counts against the lane — the reason the entries
+ * are exactly the measured ones. WHAT IT WOULD WRONGLY *CERTIFY* IF SOMEONE WIDENED IT: a project
+ * package whose namespace was added would have its cross-file references certified external. The list
+ * is asymmetric in that way, and property 1 is the half that protects the graph.
+ */
+const PROTOBUF_EXTERNAL_NAMESPACES: readonly string[] = [
+  "google.protobuf",
+  "google.api",
+  "gogoproto",
+  "protoc-gen-openapiv2",
+]
+
+/** The declared namespace this target belongs to, or null. Segment-boundary matching, longest first. */
+function protobufExternalNamespaceOf(target: string): string | null {
+  if (target.length === 0) return null
+  const segs = target.split(".")
+  for (let n = segs.length; n >= 1; n--) {
+    const cand = segs.slice(0, n).join(".")
+    if (PROTOBUF_EXTERNAL_NAMESPACES.includes(cand)) return cand
+  }
+  return null
+}
+
 export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -639,7 +689,20 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         relationshipType: type,
         line_number: line,
         confidence: 1.0,
-        metadata: { evidenceClass: evidenceClassFor(type), ...metadata },
+        metadata: {
+          evidenceClass: evidenceClassFor(type),
+          // THE NAMESPACE CLAIM (task-19). Attached ONLY where this edge is a TYPE REFERENCE that
+          // this file does not declare AND whose namespace is one of the declared runtime
+          // namespaces above — i.e. exactly the class that used to read `unresolved` with no claim
+          // at all. The `declaredTypeIds` guard is what keeps the lane from certifying a reference
+          // its own file already answers; it is also why this adoption moves no `resolved` edge.
+          ...(type === ASTEngine.RelationshipType.Uses
+            && !declaredTypeIds.has(target)
+            && protobufExternalNamespaceOf(target) !== null
+            ? { languageNamespace: [...PROTOBUF_EXTERNAL_NAMESPACES] }
+            : {}),
+          ...metadata,
+        },
       })
     }
 

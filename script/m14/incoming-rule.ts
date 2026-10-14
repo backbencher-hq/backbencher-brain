@@ -300,6 +300,42 @@ export function namespaceRootOf(tgt: string): string {
   return (dot > 0 ? tgt.slice(0, dot) : tgt).trim()
 }
 
+/**
+ * DOES THE TARGET BELONG TO A DECLARED NAMESPACE? — the PROTOBUF-FACING EXTENSION of the claim kind
+ * (protobuf is its second adopter; task-19).
+ *
+ * A single-segment ROOT check is exact for hcl, whose namespaces are `count`, `each`, `self`, `path`,
+ * `terraform`. It is not usable as-is for protobuf, and the measurement says why: the lane's external
+ * surface is `google.protobuf.*` (904 of its 971 unresolved `uses`), but the ROOT of
+ * `google.protobuf.Timestamp` is `google` — so a root-only list would have to declare `google`, and
+ * `google` is a namespace projects use for their OWN packages. MEASURED whole-corpus: of 3,608 `uses`
+ * targets not declared in their own file, **2,637 (73.1%) ARE declared elsewhere in the same project**
+ * (`k8s.*` 810, `controller.*` 441, `docker.*` 187, and 534 under `google.*` alone). Declaring
+ * `google` would certify every one of those as external — the hcl lane's "29 false externalities"
+ * mistake at 18x the scale, in the opposite direction from the one property 1 guards.
+ *
+ * So an entry may be a MULTI-SEGMENT namespace, matched on SEGMENT BOUNDARIES against the target's
+ * leading segments, longest entry first:
+ *
+ *   entry `google.protobuf`  ·  `google.protobuf.Timestamp`  -> match
+ *   entry `google.protobuf`  ·  `google.api.Annotations`     -> NO match (a neighbouring namespace
+ *                                                              is never certified by this entry)
+ *   entry `count`            ·  `count.index`                -> match (identical to the root check)
+ *   entry `count`            ·  `counter.x`                  -> NO match (a boundary, not prefix text)
+ *
+ * A target matching NO entry is still `externalRefuted` — property 1 is untouched: the claim carries
+ * the namespaces it certifies, and anything outside them is refused rather than sheltered.
+ */
+export function namespaceMatchOf(tgt: string, roots: readonly string[]): string | null {
+  if (tgt.length === 0 || roots.length === 0) return null
+  const segs = tgt.split(".")
+  for (let n = segs.length; n >= 1; n--) {
+    const cand = segs.slice(0, n).join(".")
+    if (roots.includes(cand)) return cand
+  }
+  return null
+}
+
 export function externalClaimOf(rel: any): ExternalClaim | null {
   const md = rel?.metadata
   if (!md || typeof md !== "object") return null
@@ -820,8 +856,10 @@ function claimDispositionOnAmbiguous(
   if (claim.kind === "namespace") {
     // PROPERTY 4, cross-tabbed: an ambiguous edge carrying a namespace claim reports which way the
     // LIST settled it, exactly as the other kinds report theirs — never merged into the raw column.
-    const root = namespaceRootOf(tgt)
-    return { kind: "namespace", disposition: claim.roots.includes(root) ? "verified" : "refuted" }
+    return {
+      kind: "namespace",
+      disposition: namespaceMatchOf(tgt, claim.roots) !== null ? "verified" : "refuted",
+    }
   }
   if (claim.kind === "projectFacts") {
     return { kind: "projectFacts", disposition: facts ? map(verifyImportClaim(facts, tgt)) : "unverified" }
@@ -908,8 +946,7 @@ export function classifyEdge(
   // against the symbol table (property 1). Refutable by construction: a root the analyzer did not
   // declare reads `externalRefuted`, so the claim can never become a blanket excuse.
   if (claim !== null && claim.kind === "namespace") {
-    const root = namespaceRootOf(tgt)
-    const listed = root.length > 0 && claim.roots.includes(root)
+    const listed = namespaceMatchOf(tgt, claim.roots) !== null
     // PROPERTY 4 — CROSS-TABBED LIKE ANY OTHER CLAIM. This branch returns before the shared
     // cross-tab block, because the claim is the sole authority for the OUTCOME and returning early
     // is the point; the disposition therefore has to be attached HERE, or an ambiguous
