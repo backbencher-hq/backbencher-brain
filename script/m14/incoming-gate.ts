@@ -1088,7 +1088,14 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     // was green while the live path could never verify one. The json lane found it with a
     // falsifier rather than a complaint: 82 file-shaped `$ref` edges carry `importProjectFile`,
     // 81 of them naming a file that EXISTS in the project, and all of them read `ext?`.
-    const needsFacts = e.claim?.kind === "projectFacts" || e.claim?.kind === "projectFile"
+    // A `sourcePath` CLAIM NEEDS THE SAME EVIDENCE, and until 2026-10-14 it did not get it — the THIRD
+    // instance of this exact gate (json found the `projectFile` one with a falsifier). The kind verifies
+    // the written source string against the project's admitted file list and returns `externalUnverified`
+    // when `facts` is absent, BY DESIGN — never a quiet acceptance — so gating the lookup on two kinds
+    // left toml's 5 path-shaped rows reading `ext?` with no way to be verified. MEASURED after the fix:
+    // 5 of 5 verified, 0 refuted, `extFAIL` 0 — the 0.0% refutation risk the claim was admitted on.
+    const needsFacts =
+      e.claim?.kind === "projectFacts" || e.claim?.kind === "projectFile" || e.claim?.kind === "sourcePath"
     const facts = needsFacts ? projectFacts?.get(e.repo) : undefined
     // CONTAINS GOES THROUGH A DIFFERENT RESOLVER — see `classifyEdge`'s `containsLike`. Production
     // binds it with `resolveContainsTargetStmt`, which prefers the edge's own file and returns
