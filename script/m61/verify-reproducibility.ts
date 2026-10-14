@@ -251,7 +251,11 @@ async function runMutant(name: string, from: string, to: string, probe: (mod: Re
     const mod = (await import(pathToFileURL(mutantPath).href)) as Record<string, unknown>
     check(`M: ${name}`, probe(mod) === true, "the mutant did NOT manifest the defect — the suite could not fail")
   } catch (e) {
-    check(`M: ${name}`, true, `(mutant crashed — still caught: ${(e as Error).message})`)
+// A mutant that could not LOAD was never exercised. Recording it as detected is the
+    // failure script/m62/verify-mutant-crash-honesty.ts exists to prevent: a harness
+    // whose every mutant points at a bad path reports a full catch ratio while
+    // executing nothing, and the headline number stops meaning anything.
+        check(`M: ${name}`, false, `(mutant failed to load, so it was never exercised — NOT caught: ${(e as Error).message})`)
   } finally {
     rmSync(mutantPath, { force: true })
   }

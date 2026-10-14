@@ -342,6 +342,28 @@ async function main(): Promise<void> {
       src
         .replace(/from "\.\.\/intelligence\/graph\/graph-engine"/g, `from "file://${path.join(ROOT, "src", "intelligence", "graph", "graph-engine.ts").replace(/\\/g, "/")}"`)
         .replace(/from "\.\.\/intelligence\/contracts"/g, `from "file://${path.join(ROOT, "src", "intelligence", "contracts.ts").replace(/\\/g, "/")}"`)
+      // The two rewrites above are an ALLOWLIST of exactly two specifiers, and the allowlist was
+      // the whole bug: `../intelligence/graph/line-address` is a THIRD relative import in this
+      // module, nothing rewrote it, and from a temp dir it does not resolve — so M1–M4 failed at
+      // LOAD and, before script/m62/verify-mutant-crash-honesty.ts reported an unrun mutant as
+      // NOT detected, were recorded as caught. The gate's own comment said a mutant that fails to
+      // load is hollow evidence.
+      //
+      // So every relative specifier is absolutised against the directory the module really lives
+      // in, EXCEPT the sibling wiring that is the point of the arrangement: the door's
+      // `import "./identity"` must keep reaching the MUTATED copy sitting beside it, or the
+      // mutant stops being exercised through the door.
+      const absolutize = (src: string, base: string, keep: string[]): string =>
+        src.replace(
+          /(\bfrom\s*|\bimport\s*\(\s*)(["'])(\.\.?\/[^"']+)\2/g,
+          (match, head: string, quote: string, spec: string) =>
+            keep.includes(spec)
+              ? match
+              : `${head}${quote}file://${path.resolve(base, spec).replace(/\\/g, "/")}${quote}`,
+        )
+      const importIdentity = (src: string): string => absolutize(src, path.dirname(IDENTITY), [])
+      const importComponentGeneric = (src: string): string =>
+        absolutize(src, path.dirname(IMPACT), ["./identity"])
     // M55.T1: an anchor may live in the impact door OR in the identity
     // resolver it now reads. Both copies are written into one temp dir (the
     // mutated one where the anchor is, the other verbatim) so `import
@@ -357,13 +379,17 @@ async function main(): Promise<void> {
       const dir = mkdtempSync(path.join(tmpdir(), "m44-u5-mut-"))
       const mutantIdentity = path.join(dir, "identity.ts")
       const mutantImpact = path.join(dir, "impact.ts")
-      writeFileSync(mutantIdentity, anchorInIdentity ? identitySource.replace(from, to) : identitySource)
-      writeFileSync(mutantImpact, importComponent(anchorInImpact ? componentSource.replace(from, to) : componentSource))
+      writeFileSync(mutantIdentity, importIdentity(anchorInIdentity ? identitySource.replace(from, to) : identitySource))
+      writeFileSync(mutantImpact, importComponentGeneric(anchorInImpact ? componentSource.replace(from, to) : componentSource))
       try {
         const m = await import(mutantImpact)
         mutant(name, await probe(m))
       } catch (e) {
-        mutant(name, true, `mutant failed to load: ${String(e).slice(0, 80)}`)
+// A mutant that could not LOAD was never exercised. Recording it as detected is the
+        // failure script/m62/verify-mutant-crash-honesty.ts exists to prevent: a harness
+        // whose every mutant points at a bad path reports a full catch ratio while
+        // executing nothing, and the headline number stops meaning anything.
+                mutant(name, false, `mutant failed to load, so it was never exercised — NOT detected: ${String(e).slice(0, 80)}`)
       } finally {
         try { rmSync(dir, { recursive: true, force: true }) } catch {}
       }
@@ -379,7 +405,7 @@ async function main(): Promise<void> {
         const m = await import(mutantPath)
         mutant(name, await probe(m))
       } catch (e) {
-        mutant(name, true, `mutant failed to load: ${String(e).slice(0, 80)}`)
+        mutant(name, false, `mutant failed to load, so it was never exercised — NOT detected: ${String(e).slice(0, 80)}`)
       } finally {
         try { rmSync(mutantPath, { force: true }) } catch {}
       }

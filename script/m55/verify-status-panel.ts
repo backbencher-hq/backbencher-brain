@@ -267,6 +267,29 @@ check("S5: the panel is contributed by name (a panel nobody can open is not a su
 
 // --- S6: mutants -------------------------------------------------------------------
 console.log("\nS6: mutants (each planted defect must fail the suite)")
+
+const MODULE_DIR = path.dirname(MODULE)
+
+/**
+ * A mutant written into a temp directory loses every RELATIVE import, because `./webview-dom`
+ * resolves against the temp directory rather than against the directory the module was copied
+ * from. The import then fails at load, the `catch` below sees it, and — before
+ * script/m62/verify-mutant-crash-honesty.ts was made to report a mutant that never ran as NOT
+ * detected — this gate printed `11/11 mutants caught` while seven of them had never executed
+ * a single line. `S6: 4/11 mutants` was the honest number hiding behind the fabricated one.
+ *
+ * The specifiers are therefore rewritten to absolute `file://` URLs resolved against the
+ * ORIGINAL module's directory. Done generically, so a module that grows a second relative
+ * import needs no change here; this is the same technique script/m26/verify-impact-mode.ts
+ * uses for the same reason.
+ */
+function absolutizeRelativeImports(src: string): string {
+  return src.replace(
+    /(\bfrom\s*|\bimport\s*\(\s*)(["'])(\.\.?\/[^"']+)\2/g,
+    (_match, head: string, quote: string, spec: string) =>
+      `${head}${quote}${pathToFileURL(path.resolve(MODULE_DIR, spec)).href}${quote}`,
+  )
+}
 async function withModule(name: string, from: string, to: string, caught: (m: typeof mod) => boolean): Promise<void> {
   if (!moduleSource.includes(from)) {
     check(`M: ${name} (SKIP — anchor not found)`, false, from.slice(0, 70))
@@ -274,12 +297,16 @@ async function withModule(name: string, from: string, to: string, caught: (m: ty
   }
   const dir = mkdtempSync(path.join(tmpdir(), "m55-v1-sts-mut-"))
   const target = path.join(dir, "mutant.ts")
-  writeFileSync(target, moduleSource.replace(from, to))
+  writeFileSync(target, absolutizeRelativeImports(moduleSource.replace(from, to)))
   try {
     const m = (await import(pathToFileURL(target).href)) as typeof mod
     mutant(name, caught(m))
   } catch (e) {
-    mutant(name, true, `mutant failed to load: ${String(e).slice(0, 80)}`)
+// A mutant that could not LOAD was never exercised. Recording it as detected is the
+    // failure script/m62/verify-mutant-crash-honesty.ts exists to prevent: a harness
+    // whose every mutant points at a bad path reports a full catch ratio while
+    // executing nothing, and the headline number stops meaning anything.
+        mutant(name, false, `mutant failed to load, so it was never exercised — NOT detected: ${String(e).slice(0, 80)}`)
   } finally {
     try {
       rmSync(dir, { recursive: true, force: true })
@@ -295,10 +322,18 @@ await withModule(
   (m) => !m.renderStatusMarkup(INPUT).includes(INPUT.lines[1]!),
 )
 // M2: the facts are reordered (the surface stops matching the model's order).
+//
+// The replacement is `input.lines.slice().reverse()`, not `[...input.lines].reverse()`.
+//
+// The spread form does not PARSE in this file — esbuild rejects it with `Unexpected "..."` at
+// the mutation site — and a mutation that yields unparseable code measures nothing at all: it
+// never reaches the probe, so it can neither be caught nor survive, and it was previously
+// sitting in the catch that this suite now reports as "failed to load". Same defect, same
+// reorder; only the syntax that survives the compiler differs.
 await withModule(
   "M2: the facts are reordered",
   "  input.lines.forEach((line, i) => {",
-  "  [...input.lines].reverse().forEach((line, i) => {",
+  "  input.lines.slice().reverse().forEach((line, i) => {",
   (m) => {
     const out = m.renderStatusMarkup(INPUT)
     const idx = INPUT.lines.map((l) => out.indexOf(l))

@@ -454,7 +454,11 @@ async function withFile(
     const m = await import(pathToFileURL(target).href)
     mutant(name, await probe(m))
   } catch (e) {
-    mutant(name, true, `mutant failed to load: ${String(e).slice(0, 90)}`)
+// A mutant that could not LOAD was never exercised. Recording it as detected is the
+    // failure script/m62/verify-mutant-crash-honesty.ts exists to prevent: a harness
+    // whose every mutant points at a bad path reports a full catch ratio while
+    // executing nothing, and the headline number stops meaning anything.
+        mutant(name, false, `mutant failed to load, so it was never exercised — NOT detected: ${String(e).slice(0, 90)}`)
   } finally {
     try {
       rmSync(dir, { recursive: true, force: true })

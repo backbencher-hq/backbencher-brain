@@ -330,7 +330,11 @@ async function main(): Promise<void> {
       } catch (error: any) {
         // A mutant whose anchor drifted or whose load failed is a mutant the
         // suite cannot judge — counted as caught (loud), never silently skipped.
-        mutant(`${m.name} (mutant could not be judged)`, true, String(error?.message ?? error).slice(0, 160))
+// A mutant that could not LOAD was never exercised. Recording it as detected is the
+        // failure script/m62/verify-mutant-crash-honesty.ts exists to prevent: a harness
+        // whose every mutant points at a bad path reports a full catch ratio while
+        // executing nothing, and the headline number stops meaning anything.
+                mutant(`${m.name} (mutant failed to load — NOT detected)`, false, String(error?.message ?? error).slice(0, 160))
       }
     }
     check("M: every planted defect is caught", mutants.caught === mutants.total && mutants.total >= 9, `${mutants.caught}/${mutants.total}`)

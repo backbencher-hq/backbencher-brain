@@ -388,7 +388,11 @@ async function main(): Promise<void> {
         }
         mutant(`${d.name} — planted=${planted}, ${caughtBy ? "caught by " + caughtBy.assertion : "MISSED"}`, planted && caughtBy !== undefined, caughtBy ? "" : "the mutant was NOT caught")
       } catch (e) {
-        mutant(`${d.name} (mutant failed to load — counts as detected)`, true, String(e).slice(0, 120))
+// A mutant that could not LOAD was never exercised. Recording it as detected is the
+        // failure script/m62/verify-mutant-crash-honesty.ts exists to prevent: a harness
+        // whose every mutant points at a bad path reports a full catch ratio while
+        // executing nothing, and the headline number stops meaning anything.
+                mutant(`${d.name} (mutant failed to load — NOT detected)`, false, String(e).slice(0, 120))
       }
     }
 
