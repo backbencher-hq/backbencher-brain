@@ -49,6 +49,11 @@ import { KOTLIN_EXPORTS_MUTANTS } from "./kotlin-exports-mutants"
 // GROOVY_R7_MUTANTS and GROOVY_RECEIVER_MUTANTS, 6 mutants -- were never in the gate's census at
 // all. Found by counting exports per file instead of trusting the gate's one-per-file regex.
 import { GROOVY_ONTOLOGY_MUTANTS, GROOVY_R7_MUTANTS, GROOVY_RECEIVER_MUTANTS } from "./groovy-ontology-mutants"
+// task-7 batch E. `swift-mutants.ts`'s OWN header asks for exactly these two lines and says the
+// lane REPORTED the wiring to master rather than making it -- "The one-line wiring this lane needs
+// in mutate-analyzer.ts is REPORTED to master, not made here". It was reported and never made, so
+// the 16 mutants were correct, lane-owned, and executed by nothing.
+import { SWIFT_ONTOLOGY_MUTANTS } from "./swift-mutants"
 // NOT WIRED, and deliberately: `ts-deriv-mutants.ts` is skipped with a NAMED blocker. Its mutant
 // `ts/placeholder-signature-member` exhausts a 4 GB heap on its own (EXIT 134, "Ineffective
 // mark-compacts near heap limit", 68 s) and `ts/computed-import-specifier-published` +
@@ -2515,6 +2520,8 @@ export const MUTANTS: Mutant[] = [
   ...GROOVY_ONTOLOGY_MUTANTS,
   ...GROOVY_R7_MUTANTS,
   ...GROOVY_RECEIVER_MUTANTS,
+  // task-7 batch E.
+  ...SWIFT_ONTOLOGY_MUTANTS,
   // The ts-deriv registry is deliberately NOT spread here. Do NOT write its identifier with three
   // leading dots in any comment in this file: `verify-orphaned-mutants.ts` decides "wired" with
   // `new RegExp("\.\.\." + exportName)`, a plain text search, so a COMMENTED-OUT spread satisfies it
