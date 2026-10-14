@@ -3,15 +3,15 @@
   "blocked": true,
   "reason": "OVSX_PAT not set in the environment — live publish awaits owner credentials (declared blocked state, issue #502 closure requirement).",
   "artifact": "ide/vscode/bb-lsp-vscode-0.1.0.vsix",
-  "artifactBytes": 13020085,
+  "artifactBytes": 13141191,
   "extensionVersion": "0.1.0",
   "targetRegistry": "https://open-vsx.org",
   "publishCommand": "OVSX_PAT=... npx --yes ovsx publish --pat $OVSX_PAT ide/vscode/bb-lsp-vscode-0.1.0.vsix",
   "listingUrl": null,
-  "generatedAt": "2026-10-14T19:17:54.429Z",
+  "generatedAt": "2026-10-14T20:41:24.017Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-14T19:17:54.437Z",
-    "contentSha256": "43d7a1b082b13fc42af27f3c17359c35194d1411a0063a490cd76a2e2485d89d"
+    "sealedAt": "2026-10-14T20:41:24.024Z",
+    "contentSha256": "72c090f14e28288f9195043d15cfb3da8407d3ed5c1d5c9220cfbc351a9172ac"
   }
 }

@@ -4,14 +4,13 @@
   "milestone": "M25",
   "status": "known-gap",
   "checks": 37,
-  "passed": 28,
-  "failed": 9,
+  "passed": 29,
+  "failed": 8,
   "failures": [
     "X1: V1 verifier passes at HEAD — exit=1",
     "X1: E5 verifier passes at HEAD — exit=1",
     "X1: E7 verifier passes at HEAD — exit=1",
     "X1: D1 verifier passes at HEAD — exit=1",
-    "X1: D1i verifier passes at HEAD — exit=1",
     "X1: v1 completion bar audited item-by-item — zero violations — bar1: VS Code I3 (pinned in-editor run) not verified; bar1: no fork verified at I4 (or all forks blocked with owner waiver — not recorded); bar4: cross-platform record not verified",
     "X1: V1 regeneration run passes — exit=1",
     "X1: E7 regeneration run passes — exit=1",
@@ -28,7 +27,7 @@
     "E6": 0,
     "E7": 1,
     "D1": 1,
-    "D1i": 1
+    "D1i": 0
   },
   "section6": [
     {
@@ -72,10 +71,10 @@
       "where": "planted HERE against the status surface's law-budget"
     }
   ],
-  "currentCommit": "d82177e3e2245505ef8db330214bef6751f40ad7",
+  "currentCommit": "b71ef1ea0a7a591c6bee83f20d51e1e649939b44",
   "verifierCommand": "npx tsx script/m25/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-10-14T19:19:31.157Z",
+  "generatedAt": "2026-10-14T20:42:43.741Z",
   "limitations": [
     "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract.",
     "The completion bar's publish item is met at the pipeline level (E4 verified; live OpenVSX publish is owner-gated via OVSX_PAT and recorded blocked-with-reason — the waiver decision stays the owner's).",
@@ -83,7 +82,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-14T19:19:31.160Z",
-    "contentSha256": "4d6f2b7ec7fd8613725387dd2eddd031a6920d84988e5753a37a934573bf19cc"
+    "sealedAt": "2026-10-14T20:42:43.743Z",
+    "contentSha256": "f7d751c6061bb257edf6acf16421403fa61b92d104811f2c764066532b2b1822"
   }
 }

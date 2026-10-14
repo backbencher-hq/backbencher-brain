@@ -82,9 +82,9 @@
     "filesScanned": 184,
     "spawnSitesJudged": 559,
     "spawnSitesByReach": {
-      "directCallSitesResolvedByName": 242,
+      "directCallSitesResolvedByName": 238,
       "localWrapperCallSitesArgumentScanned": 273,
-      "commandComputedAtRuntimeNotJudgedByName": 44
+      "commandComputedAtRuntimeNotJudgedByName": 48
     },
     "findings": [],
     "plantedDefectsCaught": 14,
@@ -275,7 +275,7 @@
     ],
     "ok": true
   },
-  "currentCommit": "d82177e3e2245505ef8db330214bef6751f40ad7",
+  "currentCommit": "b71ef1ea0a7a591c6bee83f20d51e1e649939b44",
   "sourceFingerprint": "8f156b68257952e2e20aa72585047fe6348c926646522ea0eb7e08a2899e1ed9",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -286,7 +286,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-10-14T19:02:11.424Z",
+  "generatedAt": "2026-10-14T20:30:25.116Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -300,7 +300,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-14T19:02:11.425Z",
-    "contentSha256": "c25177a722f80e480a5e0405ba97d536bcfb191a0fce10f1b8b92316e5c4bb8f"
+    "sealedAt": "2026-10-14T20:30:25.117Z",
+    "contentSha256": "1c7a051682fd9c9f88170491330eea82c0049d245997e177856556b96edf78ad"
   }
 }
