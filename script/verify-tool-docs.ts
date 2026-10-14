@@ -236,7 +236,13 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
       "`summary.edgesByType`: the composition of the RETURNED edges by stored relationship kind, counted from the emitted edges. The default filter covers every stored kind, so an answer is usually not all call edges — measured: lodash `baseConvert` 99 of 230, cobra `getCompletions` 36 of 65, rake `standard_rake_options` 72 of 76. This is how you learn the ratio without walking the edges",
       "`summary.maxEdges` / `totalEdgeLimitReached`: the bound on the WHOLE answer, across both directions and every depth, and whether it bit. `edgeLimit` bounds one query; this bounds the answer, and their product is what a caller receives",
       "`summary.edgeKindPriority`: the order in which kinds survive the per-symbol site limit — dependency kinds first, then lexical, then module-level, then membership. Only observable under `truncated`, published always",
-      "`summary.relationshipTypesUsed`: the relationship kinds this run actually searched, resolved. `summary.scope.relationshipTypes` echoes it, so the filter that produced the answer is never a restatement of a default that may have moved",
+      // 2026-10-14: this bullet named `summary.relationshipTypesUsed`, a key on
+      // the ENGINE's summary that the tool payload never carried — the handler
+      // echoes the resolved list at `summary.scope.relationshipTypes` and
+      // publishes no top-level copy. Found by
+      // script/verify-tool-page-claims.ts, which resolves every qualified path a
+      // page names against a live reply. The claim is kept, the path corrected.
+      "`summary.scope.relationshipTypes`: the relationship kinds this run actually searched, RESOLVED from the engine's own registered list rather than restated, so the filter that produced the answer is never a restatement of a default that may have moved",
       "`summary.exactCallers` / `cascadedCallers` / `exactCallees` / `cascadedCallees`: DEPTH 0 only — how much of the answer is about the symbol that was asked for and how much the owner cascade folded in from its members. `deeperCallers` / `deeperCallees` hold the edges about symbols the traversal discovered, so exact + cascaded + deeper is the number of edges returned",
       "`summary.callerBudget` / `calleeBudget` with `callerBudgetExhausted` / `calleeBudgetExhausted`: the fan-out bound in force and whether it bit. `truncationReason` can name `caller-budget-exhausted`; this says what the budget was",
       "`summary.edgesInBothDirections`: stored rows present in both the caller and the callee list — `totalCallers + totalCallees` double-counts exactly this many",
@@ -432,6 +438,16 @@ export const FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string
   // accept. Both facts are now true.
   bb_impact: { modes: ["impact"], surfaces: "per-dependent `stale` flag (three states: `true`/`false`, or `null` when the file is not in the index at all), the root's own `rootStale`, and a `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`). Stale files inside the answer are repaired within budget and the walk is re-run, declared in `autoRefresh`; `refresh=false` opts out" },
   bb_ask: { modes: ["answer"], surfaces: "per-source `[STALE — file changed since index]` markers on retrieval answers, repeated in the source list; a verified aggregate answer carries no per-file marker (it describes the whole index, not a file)" },
+  // M64.H1/H5/R: bb_health is the tool whose report IS the freshness answer, and
+  // it was missing from this table. The generator therefore took its "no
+  // freshness surface" branch and the page said "This tool does not report
+  // per-file index staleness and does not auto-refresh" while every call
+  // returned a `freshness` block naming fresh/stale/missing counts, the files
+  // behind them, and WHY each file was classified as it was. Found 2026-10-14 by
+  // script/verify-tool-page-claims.ts, which checks a page against the live
+  // payload instead of against this table — the table and the page agreed with
+  // each other and disagreed with the tool.
+  bb_health: { modes: [], surfaces: "a top-level `freshness` block on every report (`{ mode, requestedMode, checked, total, fresh, stale, missing, staleFiles, missingFiles, unresolved, isComplete, why }`) — `mode` is what was actually CHECKED, `isComplete` is the boolean to branch on before reading `stale` as a project total, `unresolved` is counted as neither fresh nor stale, and `why` separates the two kinds of fresh verdict (`hash-match` compared the content; `mtime+size` did not read the file). `paths` answers per-path state for named files; `verbose` adds the stale/missing file NAMES" },
 }
 // M48.D1 (#701): explicit cross-reference map. Every overlapping tool pair
 // states when to use which — rendered into every per-tool doc so an agent or
@@ -490,6 +506,15 @@ function stalenessSection(tool: any): string {
     return `This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only).`
   }
   const modePart = info.modes.length ? `Freshness modes (registered as \`freshnessModes\`): ${info.modes.map((m) => `\`${m}\``).join(", ")}.` : "Freshness applies to the tool's read output (no registered per-mode split)."
+  // bb_health REPORTS freshness and does not auto-refresh on a read: a refresh
+  // happens only because the caller asked for one, which is a different fact
+  // from a read tool repairing itself and must be said differently. The
+  // remediation text is the MANUAL one inline, because the shared constant
+  // names automatic refresh and would otherwise contradict the sentence beside
+  // it (the same mistake this branch was added to remove from bb_graph's page).
+  if (tool.name === "bb_health") {
+    return `${modePart} Staleness surfaces as: ${info.surfaces}. It does not auto-refresh on a read: the report DESCRIBES the index and a reindex happens only when asked for (\`refresh: true\` reindexes before reporting, \`force: true\` wipes and rebuilds first and is destructive, \`wait: false\` detaches it), so a stale report is a measurement, not a repair. When the report names stale or missing files, repair them with the manual interface: run: \`bb index --changed\` (or the \`bb_index\` tool with the project path — incremental, changed files only), or pass \`paths\` to check named files instead of scanning the project. Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
+  }
   // bb_ask reports staleness but never auto-refreshes, and unlike the graph
   // tools it emits no `freshness` envelope. The two facts are stated so the
   // page cannot be read as promising either — and its remediation text is the

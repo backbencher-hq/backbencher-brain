@@ -49,35 +49,42 @@ async function main() {
   const { PUBLIC_TOOL_DESCRIPTORS } = await import(path.join(ROOT, "src/mcp/tool-registry"))
   const { FRESHNESS_REMEDIATION } = await import(path.join(ROOT, "src/brain/freshness"))
 
-  // The registered staleness surfaces (must mirror FRESHNESS_TOOLS in
-  // script/verify-tool-docs.ts — checked below so the two cannot diverge).
-  const FRESHNESS_TOOLS: Record<string, { modes: string[]; hasEnvelope: boolean }> = {
-    bb_search: { modes: ["symbol", "content", "file"], hasEnvelope: true },
-    bb_analyze: { modes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], hasEnvelope: true },
-    bb_visualize: { modes: [], hasEnvelope: true },
-    bb_migrate: { modes: ["plan"], hasEnvelope: true },
-    bb_patterns: { modes: [], hasEnvelope: false },
-    bb_security: { modes: [], hasEnvelope: false },
-    bb_doc: { modes: [], hasEnvelope: true },
+  // The registered staleness surfaces are the GENERATOR's tables, imported
+  // rather than restated.
+  //
+  // They used to be a second hardcoded copy here, and the two drifted exactly
+  // as two lists do. Measured at HEAD 793abd97f, before this import: 11 failures,
+  // every one of them a disagreement between the copies rather than a defect in
+  // a page — bb_ask, bb_impact and bb_health were registered freshness surfaces
+  // by the generator (correctly, from the handlers' real behavior) while this
+  // file still listed them as tools that "do not report index staleness", and
+  // the predicate below searched for a sentence the generator had stopped
+  // emitting ("does not report index staleness" against the generated "does not
+  // report per-file index staleness"). A gate cannot check a table it also
+  // maintains; it reads the table the pages are rendered from.
+  const { FRESHNESS_TOOLS, CUSTOM_STALENESS_TOOLS } = await import(path.join(ROOT, "script/verify-tool-docs.ts")) as {
+    FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string }>
+    CUSTOM_STALENESS_TOOLS: Set<string>
   }
 
-  // Cross-check against the LIVE registry: the map above must exactly cover
-  // the tools with freshnessModes + the S2/S3 handler-surfaced set.
+  // Cross-check against the LIVE registry, both directions: every tool that
+  // registers freshnessModes must have a page-map entry that describes it, and
+  // every page-map entry must be a real public tool. This is the check that
+  // catches a tool gaining a freshness surface without its page following.
   const registryFresh = new Map<string, string[]>()
   for (const d of PUBLIC_TOOL_DESCRIPTORS as any[]) {
     if (Array.isArray(d.freshnessModes) && d.freshnessModes.length) registryFresh.set(d.name, [...d.freshnessModes])
   }
-  for (const [name, modes] of Object.entries(FRESHNESS_TOOLS)) {
-    if (modes.modes.length) {
-      check(`${name}: doc-map modes match registry freshnessModes`, JSON.stringify([...(registryFresh.get(name) ?? [])].sort()) === JSON.stringify([...modes.modes].sort()), `registry=${JSON.stringify(registryFresh.get(name))} map=${JSON.stringify(modes.modes)}`)
-    } else {
-      negative(`${name}: no freshnessModes registered (surfaces staleness via handlers)`, !registryFresh.has(name), "")
-    }
+  const publicNames = new Set((PUBLIC_TOOL_DESCRIPTORS as any[]).map((d) => d.name))
+  for (const [name, modes] of registryFresh) {
+    check(`registry tool ${name}: its freshness surface is described by the page map`, FRESHNESS_TOOLS[name] !== undefined, JSON.stringify(modes))
   }
-  const handlerSurfaced = new Set(Object.keys(FRESHNESS_TOOLS))
-  for (const [name] of registryFresh) {
-    check(`registry tool ${name}: covered by doc map`, handlerSurfaced.has(name), "")
-  }
+  for (const name of Object.keys(FRESHNESS_TOOLS)) check(`page map entry is a public tool: ${name}`, publicNames.has(name), "")
+  for (const name of CUSTOM_STALENESS_TOOLS) check(`custom staleness entry is a public tool: ${name}`, publicNames.has(name), "")
+
+  // Every registered mode vocabulary, for the "claims someone else's modes"
+  // negative below.
+  const allRegisteredModes = new Set(Object.values(FRESHNESS_TOOLS).flatMap((info) => info.modes))
 
   // ── per-tool docs: Staleness section truth ──
   for (const d of PUBLIC_TOOL_DESCRIPTORS as any[]) {
@@ -89,20 +96,48 @@ async function main() {
     check(`${d.name}: Staleness section present`, secMatch !== null, "")
     if (!secMatch) continue
     const sec = secMatch[1]
-    const claims = FRESHNESS_TOOLS[d.name] !== undefined
+    const claims = FRESHNESS_TOOLS[d.name] !== undefined || CUSTOM_STALENESS_TOOLS.has(d.name)
     if (claims) {
-      check(`${d.name}: staleness doc names both registered remediation constants`, sec.includes(FRESHNESS_REMEDIATION.dir) && sec.includes(FRESHNESS_REMEDIATION.file), sec.slice(0, 120))
-      if (FRESHNESS_TOOLS[d.name].modes.length) {
-        check(`${d.name}: staleness doc names the registered modes`, FRESHNESS_TOOLS[d.name].modes.every((m) => sec.includes(`\`${m}\``)), sec.slice(0, 140))
+      check(`${d.name}: a page with a freshness surface does not deny it`, !/does not report per-file index staleness|does not report index staleness/.test(sec), sec.slice(0, 120))
+      // Custom sections (bb_edit) state their own surface in their own words —
+      // m48.D1 holds them to that wording; the generated branches use the two
+      // registered phrasings.
+      if (!CUSTOM_STALENESS_TOOLS.has(d.name)) {
+        check(`${d.name}: staleness describes a real surface`, /staleness surfaces as|Freshness (modes|applies)/i.test(sec), sec.slice(0, 120))
       }
-      if (FRESHNESS_TOOLS[d.name].hasEnvelope) {
-        check(`${d.name}: staleness doc names the envelope contract`, sec.includes("freshness") && (sec.includes("staleRatio") || sec.includes("envelope")), sec.slice(0, 160))
-        check(`${d.name}: staleness doc mentions silence-when-fresh`, sec.includes("silence"), sec.slice(-120))
+      // The interface a reader can act on, in either spelling: the registered
+      // constants quote it, and the pages that must NOT quote them (the tools
+      // that do not auto-refresh, where the constant's own wording would
+      // contradict the sentence beside it) inline it instead.
+      check(`${d.name}: staleness names a real reindex interface`, sec.includes("bb index --changed") && sec.includes("bb_index"), sec.slice(0, 140))
+      const modes = FRESHNESS_TOOLS[d.name]?.modes ?? []
+      if (modes.length) {
+        check(`${d.name}: staleness doc names the registered modes`, modes.every((m) => sec.includes(`\`${m}\``)), sec.slice(0, 140))
+        const registered = registryFresh.get(d.name)
+        if (registered) {
+          check(`${d.name}: page modes match registry freshnessModes`, JSON.stringify([...modes].sort()) === JSON.stringify([...registered].sort()), `registry=${JSON.stringify(registered)} map=${JSON.stringify(modes)}`)
+        } else {
+          // A tool that surfaces staleness from its handler (bb_ask, bb_impact)
+          // registers no freshnessModes; the mode the page names must still be a
+          // mode the tool actually executes.
+          const executable = new Set<string>((d.modes ?? []) as string[])
+          check(`${d.name}: page mode is an executable mode (no freshnessModes registered to compare)`, modes.every((m) => executable.has(m)), `modes=${JSON.stringify([...executable])} map=${JSON.stringify(modes)}`)
+        }
       }
-      negative(`${d.name}: doc does NOT claim unimplemented modes`, !/mode[s]? `.+(?<!symbol|content|file|plan|callers|callees|trace|dependencies|stats|complexity|impact|test_mapping|test_gaps|test_impact|test_quality)`/.test(sec), "")
+      negative(`${d.name}: page claims no OTHER tool's registered mode`, [...allRegisteredModes].filter((m) => !modes.includes(m) && sec.includes(`\`${m}\``)).length === 0, "")
+      if (sec.includes(FRESHNESS_REMEDIATION.dir)) {
+        // A page that quotes the auto-refresh remediation must not deny the
+        // behavior it names — and a GENERATED page that quotes the project-scope
+        // constant quotes the file-scope one beside it. Custom sections
+        // (bb_edit) state their own scope and are held to m48.D1 instead.
+        check(`${d.name}: a page quoting auto-refresh does not deny it`, !/does not auto-refresh/.test(sec), sec.slice(0, 160))
+        if (!CUSTOM_STALENESS_TOOLS.has(d.name)) {
+          check(`${d.name}: quoting the project-scope remediation also names the file-scope one`, sec.includes(FRESHNESS_REMEDIATION.file), sec.slice(0, 160))
+        }
+      }
     } else {
-      check(`${d.name}: non-staleness tool doc says so`, sec.includes("does not report index staleness"), sec.slice(0, 120))
-      negative(`${d.name}: non-staleness doc does NOT name remediation constants`, !sec.includes(FRESHNESS_REMEDIATION.dir) && !sec.includes(FRESHNESS_REMEDIATION.file), "")
+      check(`${d.name}: non-staleness tool doc says so`, sec.includes("does not report per-file index staleness"), sec.slice(0, 120))
+      negative(`${d.name}: non-staleness doc does NOT quote the registered remediation`, !sec.includes(FRESHNESS_REMEDIATION.dir) && !sec.includes(FRESHNESS_REMEDIATION.file), "")
     }
   }
 

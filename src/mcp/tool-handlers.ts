@@ -2542,7 +2542,14 @@ const handlers: Record<string, ToolHandler> = {
     const prior = raw.prepare(
       "SELECT author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name = ? AND author_class = 'agent' AND COALESCE(symbol_path, '') = COALESCE(?, '')",
     ).get(projectId, symbol, annotationPath) as { author_class: string; tool_identity: string; body: string; time_created: number; time_updated: number } | undefined
-    const isReplacement = prior !== undefined && prior.body !== body
+    // `!= null`, not `!== undefined`: the two drivers disagree about the shape of
+    // "no row". better-sqlite3 (Node) returns undefined; bun:sqlite returns
+    // NULL. The strict-undefined test therefore read a bun:sqlite miss as a hit
+    // and crashed on `prior.body` the first time a note was written to a symbol
+    // under Bun — measured by script/verify-tool-page-claims.ts, which probes
+    // every tool through the real door on a fresh index and reported
+    // "null is not an object (evaluating 'prior.body')".
+    const isReplacement = prior != null && prior.body !== body
     raw.prepare(
       `INSERT INTO brain_annotation (id, project_id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated)
        VALUES (?, ?, ?, ?, 'agent', ?, ?, ?, ?)
