@@ -248,6 +248,64 @@ const total = [...counts.values()].reduce((a, b) => a + b, 0)
   )
 }
 
+// ---------------------------------------------------------------------------------------
+// --update-baseline: record a SHRINK, re-runnable, with an increase refused by default.
+//
+// The gate compares `total === baseline.totalErrors` EXACTLY, so the baseline must be
+// re-recorded whenever the debt shrinks — and it had no way to do that. Every shrink therefore
+// left the gate red with `measured N, baseline M`, and the only remedy was a hand edit of a JSON
+// file. That is the opposite of reviewable: nothing distinguishes a deliberate re-baseline from
+// a number someone typed to turn a gate green.
+//
+// This mirrors script/m14/verify-script-typecheck-baseline.ts, which already has exactly this
+// shape, and it keeps the ratchet's real promise: the debt may go DOWN without ceremony, and may
+// not go UP without a written reason that lands in the file itself.
+//
+//   npx tsx script/m62/verify-gate-typecheck-coverage.ts --update-baseline --note "why"
+//   npx tsx script/m62/verify-gate-typecheck-coverage.ts --update-baseline --allow-increase "why"
+//
+// The per-file map is re-derived too, and a file that no longer reports is DROPPED rather than
+// left at its old count — which is what the per-file check below already demands ("expected to be
+// dropped from the baseline deliberately"). So the updater performs that deliberate drop instead
+// of leaving it as a permanent FAIL that nobody is permitted to resolve.
+const UPDATE = process.argv.includes("--update-baseline")
+const NOTE_IDX = process.argv.indexOf("--note")
+const NOTE = NOTE_IDX >= 0 ? process.argv[NOTE_IDX + 1] : undefined
+const INC_IDX = process.argv.indexOf("--allow-increase")
+const JUSTIFICATION = INC_IDX >= 0 ? process.argv[INC_IDX + 1] : undefined
+
+if (UPDATE) {
+  if (total > baseline.totalErrors && !JUSTIFICATION) {
+    console.error(`  REFUSING to move the ratchet UP: ${baseline.totalErrors} -> ${total}.`)
+    console.error("  The baseline is a floor: a decrease may be recorded, an increase needs a reason.")
+    console.error('  Re-run with --allow-increase "<why>" and the reason is written into the file.')
+    process.exit(2)
+  }
+  const next: Baseline = {
+    ...baseline,
+    totalErrors: total,
+    filesWithErrors: counts.size,
+    perFile: Object.fromEntries([...counts.entries()].sort(([a], [b]) => a.localeCompare(b))),
+    byCode: Object.fromEntries([...codes.entries()].sort(([a], [b]) => a.localeCompare(b))),
+  } as Baseline
+  // The reason is part of the record. A bare number is precisely what this mechanism exists to
+  // prevent, so the note travels with the value rather than living in a commit message that a
+  // later reader may never connect to this file.
+  ;(next as unknown as Record<string, unknown>)._revision_note =
+    `Revised ${new Date().toISOString().slice(0, 10)}: ${baseline.totalErrors} -> ${total} errors, ` +
+    `${baseline.filesWithErrors} -> ${counts.size} files.` +
+    (NOTE ? ` ${NOTE}` : " (NO NOTE GIVEN)") +
+    (JUSTIFICATION ? ` INCREASE JUSTIFIED: ${JUSTIFICATION}` : "")
+  writeFileSync(path.join(ROOT, BASELINE), JSON.stringify(next, null, 2) + "\n")
+  console.log(
+    `  baseline updated: ${baseline.totalErrors} -> ${total} errors, ` +
+      `${baseline.filesWithErrors} -> ${counts.size} files${JUSTIFICATION ? ` (increase justified: ${JUSTIFICATION})` : ""}`,
+  )
+  console.log(`  note: ${(next as unknown as Record<string, unknown>)._revision_note as string}`)
+  process.exit(0)
+}
+
+
 check(
   "the measured total matches the recorded baseline (no drift since it was taken)",
   total === baseline.totalErrors,
