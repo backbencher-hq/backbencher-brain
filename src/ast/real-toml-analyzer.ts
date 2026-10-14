@@ -288,6 +288,80 @@ function pathBaseCandidates(base: string, written: string, filePath: string, pro
   return []
 }
 
+/**
+ * THE DECLARED KEY PATHS OF A WORKSPACE ROOT, as full dotted paths — the fact that decides whether a
+ * workspace-inheritance edge can be emitted.
+ *
+ * `x.workspace = true` says the value is declared by the workspace manifest, and the path it inherits
+ * is `workspace.<section>.<field>` (Cargo's `[workspace.package]` / `[workspace.dependencies]`). The
+ * edge is emitted ONLY when the root really declares that path, so the analyzer needs the root's key
+ * paths. Three spellings exist in the corpus and all three must land on the same path:
+ *
+ *     [workspace.package]           [workspace]                    [workspace.dependencies]
+ *     version = "3.0.0"             package.version = "3.0.0"      serde = "1"
+ *
+ * MEASURED, and this is why the reader is a full-path one: the first version of the lane's census
+ * recorded `[table] -> bare keys` and read `hasura-engine/v3/Cargo.toml` — which uses the DOTTED form
+ * — as NOT declaring the fields its members inherit, while the target it computed existed in the key
+ * space. The analyzer publishes `workspace.package.version` for `package.version` under `[workspace]`,
+ * so the target was right and the READER was wrong. 124 sites moved from "unresolvable" to "fixable"
+ * when this was corrected, and that error is the reason the two columns are printed side by side.
+ *
+ * Pure String, and it REFUSES nothing: a line without `=` is a value continuation and is skipped.
+ */
+function workspaceDeclaredPaths(text: string): Set<string> {
+  const paths = new Set<string>()
+  let table = ""
+  for (const raw of text.split("\n")) {
+    const line = raw.trim()
+    if (line.length === 0 || line.charAt(0) === "#") continue
+    if (line.charAt(0) === "[") {
+      const close = line.indexOf("]")
+      table = close < 0 ? "" : line.slice(1, close).trim()
+      continue
+    }
+    const eq = line.indexOf("=")
+    if (eq < 0) continue
+    let key = line.slice(0, eq).trim()
+    // One layer of TOML quoting, so `"rust-version"` and `rust-version` are one path.
+    if (key.length >= 2) {
+      const q = key.charCodeAt(0)
+      if ((q === 34 || q === 39) && key.charCodeAt(key.length - 1) === q) key = key.slice(1, -1)
+    }
+    if (key.length === 0) continue
+    paths.add(table.length > 0 ? `${table}.${key}` : key)
+  }
+  return paths
+}
+
+/** Does this manifest text declare a `[workspace]` table? */
+function declaresWorkspace(text: string): boolean {
+  for (const raw of text.split("\n")) if (raw.trim() === "[workspace]") return true
+  return false
+}
+
+/** The nearest ancestor manifest declaring `[workspace]`, with the module name IT publishes under —
+ *  the exact key prefix an inherited value resolves to. Null when there is none, or no project. */
+function findWorkspaceRoot(filePath: string, projectRoot: string | null): { abs: string; moduleName: string } | null {
+  if (projectRoot === null || projectRoot.length === 0) return null
+  const root = path.resolve(projectRoot)
+  let dir = path.dirname(path.resolve(filePath))
+  for (let depth = 0; depth < 64; depth++) {
+    for (const m of ["Cargo.toml", "Project.toml", "pyproject.toml", "Package.toml"]) {
+      const abs = path.join(dir, m)
+      let text: string | null = null
+      try { if (statSync(abs).isFile()) text = readFileSync(abs, "utf8") } catch { text = null }
+      if (text === null || !declaresWorkspace(text)) continue
+      const stem = path.basename(abs, path.extname(abs)) || "document"
+      return { abs, moduleName: applyDocumentScope(stem, documentDirScope(abs, root)) }
+    }
+    const parent = path.dirname(dir)
+    if (dir === root || parent === dir) break
+    dir = parent
+  }
+  return null
+}
+
 /** TOML's bare-key alphabet is A-Za-z0-9_-; a quoted key is anything in quotes. */
 function isBareKeyChar(code: number): boolean {
   return (
@@ -880,6 +954,80 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const pendingImports: { source: string; pathValue: string; section: string; line: number; base: string | null }[] = []
 
     /**
+     * TOML-G1 — Cargo WORKSPACE INHERITANCE sites (`x.workspace = true`), emitted after the walk.
+     *
+     * MEASURED over the whole admitted population (1,485 files): **1,269 sites in 137 documents**, in
+     * five shapes, and the split is what decided this implementation rather than a reading of Cargo's
+     * docs — `validation/m14/fixtures/toml/tools/residual-whole-population.mts --workspace`:
+     *
+     *     dependency-inline   503 sites /  88 files   target exists in the project key space: 503
+     *     package-field       417 sites / 101 files                                    : 417
+     *     dependency-dotted   251 sites /  38 files                                    : 248
+     *     lints                84 sites /  84 files                                    :   0
+     *     dependency-table     14 sites /   8 files                                    :  12
+     *
+     * `target exists` is the test that separates a fix from a boundary: the edge the analyzer would
+     * emit is `<rootModule>.workspace.<section>.<field>`, and that name must be a declaration the
+     * project really publishes. 1,180 of the 1,269 pass. The 84 `lints` sites do not and are SKIPPED
+     * on purpose: `[lints] workspace = true` inherits the WHOLE `[workspace.lints]` table, which the
+     * corpus declares only as sub-tables (`[workspace.lints.clippy]`), so there is no single
+     * declaration a single edge could name — one site would need N targets or an invented container
+     * symbol, and inventing one is the guess this lane refuses.
+     *
+     * THE EMISSION IS CONDITIONAL ON THE ROOT DECLARING THE PATH, read from the root's own text: a
+     * member may write `license.workspace = true` where the root declares no such field, and Cargo
+     * itself errors on that. Emitting there would add an unresolved edge, so the analyzer checks the
+     * same fact the gate would check, from the only place it exists.
+     */
+    const pendingWorkspace: { source: string; tableName: string; inherited: string | null; line: number }[] = []
+
+    /** Is the pair's value the boolean `true`? */
+    const isBooleanTrue = (pair: Node): boolean => {
+      const v = valueOf(pair)
+      return v !== null && v.type === "boolean" && String(v.text).trim() === "true"
+    }
+    /**
+     * Does this pair CONTAIN a `workspace = true` member — the `foo = { workspace = true }` spelling?
+     * The site's own key is the OUTER key, which is why this is a containment test and not a leaf test.
+     */
+    const containsWorkspaceTrue = (pair: Node): boolean => {
+      const v = valueOf(pair)
+      if (!v || v.type !== "inline_table") return false
+      for (const inner of (v.namedChildren ?? []) as Node[]) {
+        if (inner.type !== "pair") continue
+        const ik = keyOf(inner)
+        if (!ik) continue
+        if (segmentsOf(ik)[0] !== "workspace") continue
+        if (isBooleanTrue(inner)) return true
+      }
+      return false
+    }
+    /**
+     * The `workspace.<section>.<field>` path this site inherits, or null when the shape is not one of
+     * the measured families. Section-aware, because the target is NOT the site's own path with a prefix:
+     * `[target.'cfg(windows)'.dependencies.windows-sys] workspace = true` inherits
+     * `workspace.dependencies.windows-sys`, not `workspace.target.'cfg(windows)'...`.
+     */
+    const inheritedPathOf = (pathSegs: string[], keySegs: string[], tableForm: boolean): string | null => {
+      const DEP = new Set(["dependencies", "dev-dependencies", "build-dependencies"])
+      const depIndex = pathSegs.findIndex((s) => DEP.has(s))
+      const last = keySegs[keySegs.length - 1]
+      if (last !== "workspace") return null
+      if (depIndex >= 0) {
+        // The dependency's name: the table's last segment when the site IS the table
+        // (`[...dependencies.windows-sys] workspace = true`), otherwise the key segment before
+        // `workspace` (`serde.workspace = true`, `serde = { workspace = true }`).
+        const name = tableForm ? pathSegs[pathSegs.length - 1] : keySegs.length >= 2 ? keySegs[keySegs.length - 2] : ""
+        return name.length > 0 ? `workspace.dependencies.${name}` : null
+      }
+      if (pathSegs.length === 1 && pathSegs[0] === "package" && keySegs.length >= 2) {
+        return `workspace.package.${keySegs.slice(0, -1).join(".")}`
+      }
+      if (pathSegs.length === 1 && pathSegs[0] === "lints") return "workspace.lints" // no single target — see above
+      return null
+    }
+
+    /**
      * A STRING MEMBER of a dependency's inline table, by its FINAL key segment — or null.
      *
      * The DEPENDENCY is the outer key and `path` is the inner one, so a probe that
@@ -1071,6 +1219,38 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
               })
             }
           }
+          // WORKSPACE INHERITANCE, both spellings that hang off a KEY: `version.workspace = true`
+          // (the pair's own leaf is `workspace`) and `serde = { workspace = true }` (the pair's VALUE
+          // holds it). The third spelling — `[target.'cfg(windows)'.dependencies.windows-sys]` with
+          // `workspace = true` as a child — arrives through the same leaf test, with tableForm set
+          // because the pair IS the table's only key and the dependency is the TABLE.
+          {
+            const keyLeafIsWorkspace = segs[segs.length - 1] === "workspace" && isBooleanTrue(child)
+            const valueHoldsWorkspace = containsWorkspaceTrue(child)
+            if (keyLeafIsWorkspace || valueHoldsWorkspace) {
+              // The dependency's name comes from the TABLE when the site's whole key is `workspace`
+              // (`[target.'cfg(unix)'.dependencies.windows-sys] workspace = true`), and from the KEY
+              // otherwise (`serde.workspace = true`, `serde = { workspace = true }`).
+              //
+              // THE INLINE FORM NEEDS THE `workspace` SEGMENT SYNTHESISED, and the first version of
+              // this missed every one of them: `serde = { workspace = true }` has key segments
+              // `["serde"]`, so the "does the key end in workspace" test that drives the whole rule
+              // rejected all 503 sites while the other 680 emitted. The gate caught it as an edge
+              // COUNT that disagreed with the measurement, not as a wrong edge — which is exactly why
+              // the count is checked against a pre-measured population.
+              const tableForm = keyLeafIsWorkspace && segs.length === 1
+              const keySegs = valueHoldsWorkspace ? [...segs, "workspace"] : segs
+              const inherited = inheritedPathOf(segments, keySegs, tableForm)
+              if (inherited !== null) {
+                pendingWorkspace.push({
+                  source: `${name}.${joinPath(segs)}`,
+                  tableName: name,
+                  inherited,
+                  line: ck.startPosition.row + 1,
+                })
+              }
+            }
+          }
         }
       } else if (node.type === "pair") {
         // A key before any header belongs to the implicit root table.
@@ -1230,6 +1410,49 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // fallback in `dependencyFileClaim`), and each claim is VERIFIED by the project's own admitted
     // list — the row reads `extOK 321`, `unresolved 10` over the same whole population.
     let importEdges = 0
+    // ---- `references`: Cargo WORKSPACE INHERITANCE, emitted AFTER the walk ---------------------
+    //
+    // The edge says: this key's value is declared by the workspace manifest, at
+    // `<rootModule>.workspace.<section>.<field>`. It is emitted only when the root really declares
+    // that path — read from the root's own text, the same fact the gate would resolve against — so
+    // the emission cannot manufacture an unresolved edge. MEASURED, whole population: 1,180 sites
+    // emit and every one resolves to the root's declaration; 84 `lints` sites are skipped because the
+    // inherited table is declared only as sub-tables and no single declaration exists to name; 5 more
+    // are skipped because the root does not declare the path (Cargo errors on those too).
+    let workspaceRefs = 0
+    let workspaceSkippedLints = 0
+    let workspaceSkippedNoRoot = 0
+    let workspaceSkippedNoDecl = 0
+    if (pendingWorkspace.length > 0) {
+      const wsRoot = findWorkspaceRoot(filePath, projectRoot)
+      if (wsRoot === null) workspaceSkippedNoRoot = pendingWorkspace.length
+      else {
+        let declared: Set<string> | null = null
+        for (const site of pendingWorkspace) {
+          if (site.inherited === null || site.inherited === "workspace.lints") { workspaceSkippedLints++; continue }
+          if (declared === null) {
+            try { declared = workspaceDeclaredPaths(readFileSync(wsRoot.abs, "utf8")) } catch { declared = new Set<string>() }
+          }
+          if (!declared.has(site.inherited)) { workspaceSkippedNoDecl++; continue }
+          workspaceRefs++
+          relationships.push({
+            source: qualified(site.source),
+            target: `${wsRoot.moduleName}.${site.inherited}`,
+            type: ASTEngine.RelationshipType.References,
+            confidence: 1.0,
+            line_number: site.line,
+            metadata: {
+              tomlSpecific: true,
+              isWorkspaceInheritance: true,
+              inheritedFrom: wsRoot.moduleName,
+              inheritedPath: site.inherited,
+              evidenceClass: "structural",
+            },
+          })
+        }
+      }
+    }
+    if (workspaceRefs > 0) patterns.push(`workspace-inheritance-refs x${workspaceRefs}`)
     for (const { source, pathValue, section, line, base } of pendingImports) {
       importEdges++
       // THE FILE CLAIM, or nothing. A `path` dependency names a directory, and the statement the
@@ -1300,6 +1523,16 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // majority; a non-zero value names the count of sections in this file
           // whose `contains` source was corrected.
           reOwnedSections,
+          // WORKSPACE-INHERITANCE ACCOUNTING — the four numbers behind TOML-G1, so a reader (and the
+          // lane's own instrument) can sum them over the population instead of inferring the residual
+          // from a difference. `refs` are the `references` edges this file emitted; the three skips are
+          // the sites it deliberately did not, each with its own reason: `lints` has no single target,
+          // `noDecl` means the root does not declare the inherited path (Cargo errors on those), and
+          // `noRoot` means no ancestor manifest declares `[workspace]` (or no project root was given).
+          workspaceInheritanceRefs: workspaceRefs,
+          workspaceInheritanceSkippedLints: workspaceSkippedLints,
+          workspaceInheritanceSkippedNoDecl: workspaceSkippedNoDecl,
+          workspaceInheritanceSkippedNoRoot: workspaceSkippedNoRoot,
         },
       },
     }
