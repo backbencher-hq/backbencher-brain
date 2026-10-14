@@ -141,10 +141,23 @@ function firingPerLane(): Map<string, Firing> {
   return out
 }
 
-/** The log's lane names are the board's, not `LANES_B`'s: `fsharp` -> FSHARP_B, `r` -> R_LANG. */
+/**
+ * The log's lane names are the board's, not `LANES_B`'s: `fsharp` -> FSHARP_B, `r` -> R_LANG.
+ *
+ * `objc` AND `vb` WERE MISSING, AND THE EFFECT WAS SILENCE RATHER THAN AN ERROR. The log carries
+ * `OBJECTIVE_C` and `VISUAL_BASIC` rows, but `lane.toUpperCase()` gives `OBJC` and `VB`, neither of
+ * which is a key in the map the log is keyed by — so `firingFor` returned null for both lanes and the
+ * gate's FIRE-CHECK rule simply had nothing to check. A lane with no row is not reported as missing;
+ * it is reported as having no silence, which is the same output a clean lane produces. Found by
+ * coverage-c, who could see `VISUAL_BASIC` in the log and no way for the gate to reach it.
+ *
+ * THE MAPPING IS READ OFF THE LOG, NOT GUESSED: `validation/m14/results/firing-laptop-b.current.log`
+ * contains exactly the labels below, one per lane row.
+ */
 const LOG_ALIASES: Record<string, string[]> = {
   fsharp: ["FSHARP_B"], r: ["R_LANG"], json: ["JSON_B"], css: ["CSS_B"], toml: ["TOML_B"],
   xml: ["XML_B"], markdown: ["MARKDOWN_B"], clean: ["CLEAN_B"],
+  objc: ["OBJECTIVE_C"], vb: ["VISUAL_BASIC"], csharp: ["CSHARP"],
 }
 function firingFor(lane: string, all: Map<string, Firing>): Firing | null {
   const names = [lane.toUpperCase(), ...(LOG_ALIASES[lane] ?? [])]
@@ -227,8 +240,31 @@ function hasCountToken(text: string): boolean {
 function pathTokensIn(text: string): string[] {
   const ARTIFACT_SUFFIXES = [".json", ".jsonl", ".md", ".txt", ".ts", ".mts", ".yaml", ".yml", ".log", ".csv"]
   return text.split(/\s+/)
-    .map((w) => w.replace(/[.,;)]+$/, ""))
+    .map(stripPathPunctuation)
     .filter((w) => w.includes("/") && ARTIFACT_SUFFIXES.some((e) => w.endsWith(e)))
+}
+/**
+ * STRIP THE PUNCTUATION A CITATION WEARS, ON BOTH SIDES AND IN BOTH DIRECTIONS.
+ *
+ * This was `w.replace(/[.,;)]+$/, "")` — TRAILING only, and `)` the only bracket it knew. That is
+ * correct for a path at the end of a sentence and WRONG for the two forms these blocks actually use:
+ *
+ *   (script/m14/spec/x.json            leading `(` survived -> resolve() fails -> the gate printed
+ *                                      "cites a file that does not exist" about a file that DOES exist,
+ *                                      i.e. a FALSE ACCUSATION against a lane
+ *   `script/m14/spec/x.json`           trailing backtick survived -> the suffix test failed -> the token
+ *                                      was dropped entirely -> the block read as UNCITED while its
+ *                                      citation named the artifact, i.e. a MEASURED block called prose
+ *
+ * Both directions of the same defect, and both were reported by lanes rather than found here. The
+ * suffix test cannot rescue either: a token ending in a BACKTICK does not end in `.json`. So the
+ * punctuation is removed before the test, symmetrically, and the file-existence check reuses this one
+ * function rather than repeating a narrower regex of its own.
+ */
+function stripPathPunctuation(w: string): string {
+  return w
+    .replace(/^[("'`[\]]+/, "")
+    .replace(/[.,;:)\]"'`]+$/, "")
 }
 /** The bare comparison form of a token: punctuation stripped, lower-cased. */
 const bareToken = (tok: string): string => tok.replace(/[(),;:'"`\]]/g, "").toLowerCase()
@@ -445,8 +481,14 @@ for (const lane of allLanes) {
         // text that is not part of a NAME.
         const hasCount = hasCountToken(cited)
         if (!hasCount) problems.push(`exclusion "${label}" (${cls}) cites NO COUNT — rule-book §6: a ruling without a count is prose. Cited: "${cited.slice(0, 90)}"`)
-        const tok = cited.split(/\s+/).find((wd: string) => wd.includes("/") && (wd.endsWith(".json") || wd.endsWith(".md") || wd.endsWith(".txt") || wd.endsWith(".ts") || wd.endsWith(".yaml")))
-        if (tok && !existsSync(resolve(ROOT, tok.replace(/[.,;)]+$/, "")))) problems.push(`exclusion "${label}" cites a file that does not exist: ${tok}`)
+        // THE FILE-EXISTENCE CHECK REUSES `pathTokensIn`, and that is a FIX rather than a tidy-up.
+        // It used to carry its own suffix list (`.json/.md/.txt/.ts/.yaml` — four shapes short of the
+        // one above) and its own trailing-only strip, so the two readers of the same citation
+        // disagreed about which tokens are paths AND about what the path is. A citation wrapped in
+        // backticks was dropped by the suffix test and a citation wrapped in `(` was reported as
+        // naming a file that does not exist. One function, one answer.
+        const tok = pathTokensIn(cited).find((p) => !existsSync(resolve(ROOT, p)))
+        if (tok) problems.push(`exclusion "${label}" cites a file that does not exist: ${tok}`)
       }
     }
   }
