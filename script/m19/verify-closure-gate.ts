@@ -15,7 +15,6 @@
 
 import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync } from "node:fs"
 import path from "node:path"
-import { optionalCorpusMissingMessage, resolveOptionalCorpus } from "../lib/optional-corpus.ts"
 
 let checks = 0, passed = 0, failed = 0
 function ck(label: string, cond: boolean, detail?: string) { checks++; if (cond) passed++; else { failed++; console.log("  FAIL: " + label + (detail ? " — " + detail : "")) } }
@@ -80,20 +79,8 @@ async function main() {
   ck("C1: zero hollow patterns across " + verifiers.length + " M19 verifiers", hollow === 0, "hollow=" + hollow)
 
   // ── 3. Scale corpus presence ───────────────────────────────────────────
-  // WAS: literal paths on the owner's other laptop. Neither clone exists on this machine,
-  // so both legs checked a path that could never be present. Resolved through
-  // script/lib/optional-corpus.ts now, and reported as a DECLARED BLOCK rather than a bare
-  // failure so "the clone is not here" reads differently from "the corpus is here and the
-  // measurement failed".
-  for (const [code, corpus, envVar] of [
-    ["S2", resolveOptionalCorpus("aspnetcore", "BB_ASPNET_REPO"), "BB_ASPNET_REPO"],
-    ["S3", resolveOptionalCorpus("intellij-community", "BB_GIANT_REPO"), "BB_GIANT_REPO"],
-  ] as const) {
-    ck(
-      "C1: " + code + " corpus path present",
-      corpus !== null,
-      corpus ?? optionalCorpusMissingMessage(code === "S2" ? "aspnetcore" : "intellij-community", envVar),
-    )
+  for (const [code, corpus] of [["S2", "$HOME/aspnetcore"], ["S3", "$HOME/intellij-community"]] as const) {
+    ck("C1: " + code + " corpus path present", existsSync(corpus), corpus)
   }
 
   // ── 4. Wiring ────────────────────────────────────────────────────────────

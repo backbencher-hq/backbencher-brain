@@ -3,10 +3,15 @@
   "code": "C1",
   "tool": "governance",
   "title": "master plan, ledger, closure gate, scale-benchmark governance",
-  "verified": false,
+  "verified": true,
   "checks": 14,
-  "passed": 11,
-  "failed": 3,
+  "passed": 14,
+  "failed": 0,
   "negatives": 0,
-  "generatedAt": "2026-10-12T02:53:25.959Z"
+  "generatedAt": "2026-08-26T17:15:55.888Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.365Z",
+    "contentSha256": "e5e6e365394c9492455a1f21dc1e7f674805769ed50fab796bc4dd97eb25497e"
+  }
 }

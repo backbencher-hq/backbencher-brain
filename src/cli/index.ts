@@ -171,8 +171,30 @@ async function cmdIndex(
     try {
       const { wipeProjectData } = await import("../ast/parallel-indexer")
       const raw = await BrainDatabase.getRawInstance(pid)
-      wipeProjectData(raw)
+      const wiped = wipeProjectData(raw)
       console.log(`wiped ${pid.slice(0, 8)} index in place (file kept)`)
+      // A wipe deletes ROWS, not pages: the file keeps every byte it had, so a
+      // rebuild then writes into an 8 GB file that is almost entirely holes
+      // (measured 2026-10-08: 8.08 GB db + 766 MB WAL after one full index). This
+      // is the safe place to give them back — the writes have stopped, and the
+      // file is about to be rewritten. Deleting the file is NOT the alternative:
+      // keeping it is what keeps a live MCP server's handle valid.
+      //
+      // The decision does not consult `freelist_count`: it lags the deletes until
+      // a checkpoint, and a checkpoint can be refused while a live MCP reader holds
+      // a snapshot — measured on the real 3.33 GB database, where the counter still
+      // read 0 after every row was gone and only later showed 1,358 MB free. What
+      // this path knows without asking is that it just deleted `wiped.rowsDeleted`
+      // rows from a file of this size.
+      const { reclaimSpace, formatSpace, shouldVacuumAfterWipe } = await import("../ast/index-space")
+      const dbBytes = statSync(BrainDatabase.getDbPath(pid)).size
+      const space = reclaimSpace(raw, BrainDatabase.getDbPath(pid), {
+        vacuum: shouldVacuumAfterWipe({ rowsDeleted: wiped.rowsDeleted, dbBytes }),
+        vacuumAboveRatio: 0,
+        vacuumAboveBytes: 0,
+        log: (message, meta) => console.log(`  ${message}${meta ? ` ${JSON.stringify(meta)}` : ""}`),
+      })
+      console.log(`  index space: ${formatSpace(space)}`)
     } catch (e: any) {
       console.error(`✗ wipe failed: ${e?.message}`)
     }
@@ -278,11 +300,61 @@ async function cmdIndex(
   const symbols = (db.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any).c
   const rels = (db.prepare("SELECT COUNT(*) c FROM brain_relationship").get() as any).c
   const emb = (db.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any).c
+  // Reclaim the run's WAL. Nothing in bb truncates it, so it is the sum of
+  // everything written since the file was created — the previous full index left
+  // 766 MB beside a 6.9 GB database, and bb_health reported it (correctly) as a
+  // cost on every later read. The writes have stopped here, which is what makes a
+  // TRUNCATE checkpoint cheap and final. A run now states its own footprint.
+  const { reclaimSpace: reclaimEndSpace, formatSpace: formatEndSpace } = await import("../ast/index-space")
+  const endSpace = reclaimEndSpace(db, BrainDatabase.getDbPath(pid), { vacuum: false })
+  console.log(`  index space: ${formatEndSpace(endSpace)}`)
+  // The index is complete; its VECTORS may not be. The background embedding
+  // drainer holds the event loop until its queue empties, so the command can sit
+  // silent for minutes AFTER the summary — measured 2026-10-08: a 427 s index
+  // followed by ~10 minutes of no output at all, which is indistinguishable from a
+  // hang (bb's own closing line invites reporting exactly that). Announce the wait,
+  // bound it, and report how it ended.
+  const { pendingEmbeddingCount, flushBackgroundEmbeddings } = await import("../ast/parallel-indexer")
+  const pendingAtEnd = pendingEmbeddingCount()
+  if (pendingAtEnd > 0) {
+    const waitMs = Number(process.env.BB_EMBEDDING_DRAIN_WAIT_MS || 300000)
+    const waitSecs = Math.round(waitMs / 1000)
+    console.log(
+      `  finishing ${pendingAtEnd.toLocaleString()} embedding(s) — the index and its relationships are already complete; these are vectors (waiting up to ${waitSecs}s)`,
+    )
+    const drain = await flushBackgroundEmbeddings({ timeoutMs: waitMs })
+    if (drain.resolved === "drained") {
+      console.log("  ✓ embedding queue drained")
+    } else {
+      console.log(
+        `  ⚠ ${drain.pendingItems.toLocaleString()} embedding(s) still queued after ${waitSecs}s — semantic search is partial for those symbols; run \`bb index --changed\` to finish them`,
+      )
+    }
+  }
   // A run that indexed nothing new is a success, but "✓ indexed 0 files" reads
   // like a failure to anyone who ran `bb index` expecting work to happen. Say
   // what actually happened instead: the project is already current.
   const parsedNothing = Number(stats.summary?.newlyParsed ?? 0) === 0 && !stats.cancelled
-  if (parsedNothing) {
+  // An INCOMPLETE index must not be reported as a finished one.
+  //
+  // A store batch can roll back (constraint violation, full disk) and be skipped. The
+  // indexer recovers what it can, and whatever it could not save is counted in
+  // `missingAfterRecovery`. Before this, such a run printed the same "✓ indexed N files"
+  // as a clean one, with a persisted status of "complete" — the user's only clue that
+  // files were missing was that search did not find them. Measured by injecting a single
+  // batch failure (script/perf/verify-store-failure-honesty.ts).
+  const missing = Number(stats.summary?.missingAfterRecovery ?? 0)
+  const storeFailures = Number(stats.summary?.storeFailures ?? 0)
+  if (missing > 0) {
+    console.log(
+      `⚠ indexed ${files} files — but ${missing} of the ${stats.totalFiles} discovered file(s) could NOT be stored ` +
+        `(${storeFailures} store batch(es) rolled back). The index is INCOMPLETE.`,
+    )
+    console.log(
+      `  This is a write failure, not a parse failure: check free disk space and that the database is writable, then re-run.`,
+    )
+    process.exitCode = 1
+  } else if (parsedNothing) {
     const unchanged = Number(stats.summary?.unchanged ?? 0)
     const skipped = Number(stats.summary?.skipped ?? 0)
     console.log(
@@ -290,6 +362,11 @@ async function cmdIndex(
     )
   } else {
     console.log(`✓ indexed ${files} files, ${symbols} symbols, ${rels} relationships, ${emb} embeddings in ${secs}s`)
+  }
+  if (missing === 0 && storeFailures > 0) {
+    // The rollbacks happened but recovery saved every file: the index is complete and
+    // the run is a success, yet the user should still know it was not uneventful.
+    console.log(`  note: ${storeFailures} store batch(es) rolled back and were recovered — the index is complete`)
   }
   console.log(`  stats: ${JSON.stringify({ totalFiles: stats.totalFiles, processed: stats.processedFiles, errors: stats.errorFiles })}`)
   // Embedding outcomes and the models present in the index.

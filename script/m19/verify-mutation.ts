@@ -14,7 +14,6 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { execFileSync } from "node:child_process"
-import { resolveOptionalCorpus } from "../lib/optional-corpus.ts"
 
 let checks = 0
 let passed = 0
@@ -72,10 +71,7 @@ async function main() {
   restore(s1Path, s1Backup)
   ck("X9: measured-scale poison turns gate red", scaleExit === 1, "exit=" + scaleExit)
 
-    // WAS a literal foreign path — the owner's clone on the OTHER laptop, absent here, so
-//  this leg measured nothing. Resolved through script/lib/optional-corpus.ts (env
-//  override first, then the known locations) so a machine that HAS the clone uses it.
-  const corpusPath = resolveOptionalCorpus("aspnetcore", "BB_ASPNET_REPO") ?? "corpusPath_UNRESOLVED"
+  const corpusPath = "$HOME/aspnetcore"
   const corpusHidden = corpusPath + ".m19-hidden"
   let corpusExit = 1
   if (existsSync(corpusPath) && !existsSync(corpusHidden)) {
@@ -84,20 +80,7 @@ async function main() {
     // temporary source-level substitution instead.
     const gatePath = path.join(ROOT, "script/m19/verify-closure-gate.ts")
     const gateBackup = readFileSync(gatePath, "utf8")
-    // The needle used to be the literal `"$HOME/aspnetcore"`, which is the
-    // string verify-closure-gate.ts no longer contains now that it resolves through
-    // script/lib/optional-corpus.ts. A replace() that matches nothing returns the source
-    // UNCHANGED, so this mutation had quietly stopped mutating anything: the gate ran
-    // green, the check "missing-corpus mutation turns gate red" was satisfied by a
-    // DIFFERENT reason, and the mutant proved nothing.
-    //
-    // The needle is now the resolver call, and the replacement is one that cannot resolve
-    // anything. Anchored on a prefix so the mutation is still applied whatever the
-    // constant is renamed to.
-    const needle = 'resolveOptionalCorpus("aspnetcore"'
-    const mutatedGate = gateBackup.includes(needle)
-      ? gateBackup.replace(needle, 'resolveOptionalCorpus(".m19-corpus-does-not-exist"')
-      : gateBackup
+    const mutatedGate = gateBackup.replace('"$HOME/aspnetcore"', '"$HOME/.m19-corpus-does-not-exist"')
     writeFileSync(gatePath, mutatedGate)
     corpusExit = runGate()
     restore(gatePath, gateBackup)

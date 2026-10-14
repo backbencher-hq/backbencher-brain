@@ -588,8 +588,8 @@ export const CLASS_SCRIPT = assemble([
     var stage = document.getElementById("stage")
     var existing = stage.querySelectorAll(".cls")
     for (var c = 0; c < existing.length; c++) existing[c].remove()
-    for (var j = 0; j < C.length; j++) {
-      var cls = C[j]
+    for (let j = 0; j < C.length; j++) {
+      let cls = C[j]
       var s2 = toScreen(cls.x, cls.y)
       var d = document.createElement("div")
       d.className = "cls" + (sel === cls.id ? " sel" : sel ? " dim" : "")
@@ -742,22 +742,6 @@ export const CLASS_SCRIPT = assemble([
     view.y = my - (my - view.y) * (nk / view.k)
     view.k = nk; render()
   }, { passive: false })
-  document.getElementById("savebtn").onclick = function () {
-    try {
-      var blob = new Blob(["<!DOCTYPE html>\\n" + document.documentElement.outerHTML], { type: "text/html" })
-      var url = URL.createObjectURL(blob)
-      var a = document.createElement("a")
-      a.href = url
-      a.download = "bb-class-diagram.html"
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      setTimeout(function () { URL.revokeObjectURL(url) }, 4000)
-    } catch (e) {
-      var w2 = document.getElementById("warn")
-      if (w2) w2.textContent = "could not save: " + String(e).slice(0, 90)
-    }
-  }
   document.getElementById("dclose").onclick = function () {
     document.getElementById("detail").className = ""
     document.body.classList.remove("detail-open")
@@ -839,11 +823,6 @@ export const CLASS_SCRIPT = assemble([
     view.x = -(x0 + x1) / 2 * k
     view.y = (force || k > MIN_READABLE) ? -(y0 + y1) / 2 * k : 40 - H / 2 - y0 * k
   }
-  function bindFit() {
-    var b = document.getElementById("fitall")
-    if (b) b.onclick = function () { fitAll(true) }
-  }
-
   // ---- THE BUTTONS, ATTACHED FIRST AND BY DELEGATION.
   //
   // Reported as "the fit all and save as buttons do not work". They worked here, which
@@ -898,7 +877,6 @@ export const CLASS_SCRIPT = assemble([
 
   try {
     resize()
-    bindFit()
     fitAll(false)
     render()
   } catch (e) {

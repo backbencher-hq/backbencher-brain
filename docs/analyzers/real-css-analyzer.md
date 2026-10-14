@@ -3443,3 +3443,218 @@ other.
 ## Issue
 
 Closes M12.15 (GitHub issue #154).
+
+---
+
+# APPENDED — the incoming side (laptop B, M14)
+
+Everything before this line was written without the incoming instrument. This section records
+what `incoming-gate.ts` measured, how the number splits, and which part of it was a defect.
+Rulings live in `script/m14/spec/css-completeness.json` as CSS-D11..CSS-D14 with their
+commands and raw counts; this is the narrative, and it is APPEND-ONLY so nothing above is
+rewritten to agree with it.
+
+## Scope, stated before any number
+
+`incoming-gate.ts` walks the whole corpus (every `.css` file of every git checkout under
+`fixtures/repositories`), stride-samples it, and resolves every emitted edge against the
+**file's own project** — production's scope. Two populations are used below and they are 37x
+apart on ambiguity, because a stride sample truncates each project's symbol table:
+
+| command | files | edges | resolved | ambiguous | unresolved |
+|---|---|---|---|---|---|
+| `npx tsx script/m14/incoming-gate.ts css css 60` | 60 of 1,174 | 32,432 | 19,291 | 12,453 | 688 |
+| `npx tsx script/m14/incoming-gate.ts css css 0` | 1,174 of 1,174 | 485,882 | 24,412 | 456,587 | 4,883 |
+
+Both runs: 0 parse failures, **0 degraded (regex fallback)**, positive control PASS. The
+whole-corpus run is the honest unit; the 60-file line is what the mandated command reports.
+
+## The 12,453 at 60 files, and the 456,587 at population — one class, 99.96%
+
+`validation/m14/fixtures/css/ambiguity-classify.ts` classifies each ambiguous edge using the
+arbiter's **own** counting rule (`script/m14/incoming-rule.ts` `classifyEdge`/`tally`,
+imported, not copied) and asserts its totals against the gate's printed line at both scopes.
+
+| class | edges | what it is |
+|---|---|---|
+| `DUP-EMISSION` | 0 | two contributions to one key at the same file **and the same byte range** — one node published twice. Zero, and structurally so: the `ONE SYMBOL PER IDENTITY` merge above makes a duplicate impossible. |
+| `IN-FILE-MULTI` | 3 | the edge's own file declares the name 2+ times — **all 3 under two KINDS** (`progress` as a `type` rule and as a `function` keyframes). These 3 are the only edges the fleet's kind-counting metric can see: the gate's `amb(kind)` reads **3** beside `amb(decl)` **456,587**. |
+| `CROSS-FILE-TWIN` | 456,403 | the edge's own file declares the target **exactly once**; every other declaration answering that name is in **another file**. 7,856 distinct targets over 516 files. |
+| `CROSS-FILE-ONLY` | 181 | the edge's own file declares the name nowhere. |
+
+The big class is not a resolution bug, it is what a stylesheet collection is. 12,752 edges
+name `--pico-transition` and 9,460 name `--pico-color`: Pico ships 10-12 theme/variant builds,
+each of which really does declare the property. Bulma is the same for `--bulma-*`. The
+declaring files are **not one file copied**: over the same run, only 1,178 of 456,587 edges sit
+on a target whose declaring files are all byte-identical, with the mass at 10-12 distinct
+digests. And a CSS name is not an identity — `.nav` in two files is two real declarations that
+both apply, and the gate's question ("does this target name exactly ONE declaration")
+presupposes a 1:1 naming model that CSS does not have for selector or custom-property names.
+**That is true of the NAME, and it is exactly why an edge has to say WHICH file's declaration
+it means.** See CSS-D15 below.
+
+### SUPERSEDED: "irreducible by the language" (written 2026-10-09, corrected 2026-10-10)
+
+**What this section said, and why it was not simply wrong.** It priced *respelling targets to
+`qualifiedName`*: **4,058 of 456,587 edges (0.9%) resolved, 410,217 still ambiguous, 42,312
+with no such spelling**. That was a correct measurement of the lever it tested — and that lever
+**lacked the file dimension**. The `qualifiedName` a css symbol carried then was derived from
+its SCOPE (`<parent-selector>.<name>`) or was the bare name, so two files declaring `.btn`
+produced the SAME spelling. A project-unique name is not a FILE-unique name, and
+`CROSS-FILE-TWIN` — 456,403 of the 456,587 — is precisely the file dimension. So the old
+sentence, *"Ruling: irreducible by the language; no uniqueness is invented"*, was a true
+statement about CSS names being non-unique, applied to a graph whose edges never said which of
+the non-unique names they meant.
+
+**What was done instead — CSS-D15.** Every symbol publishes a project-unique
+`qualifiedName = <file-scope>::<name>`, where the scope is the file's path relative to its
+checkout root, extension removed and `.`/`:` sanitised; an edge of type
+`contains`/`references`/`uses`/`overrides` is respelled to that name **when the edge's own file
+publishes exactly one declaration of it**. The bare spelling is kept for a name this file does
+not declare (a genuine cross-file or external reference) and for `imports`, whose target is
+ANOTHER file's module — respelling that would point the import at the importing file. The
+symbol's `name`, which is what a reader searches for, is untouched.
+
+**Measured, same population, same command:**
+
+| scope | edges | resolved | ambiguous | unresolved | `ofWhich` (resolved by tie-break) |
+|---|---|---|---|---|---|
+| 1,174-file population, before | 485,882 | 24,412 | 456,587 | 4,883 | — |
+| 1,174-file population, after | 487,844 | **482,728 (99.0%)** | **233** | 4,883 | **0** |
+| 60-file stride, before | 32,432 | 19,291 | 12,453 | 688 | — |
+| 60-file stride, after | 32,630 | 31,942 | **0** | 688 | 0 |
+
+Residual **95.0% → 1.0%**; `extFAIL`, `bindFAIL` and `causeFAIL` all 0. **Losslessness is proved
+by an A/B rather than argued**: the pre-change analyzer taken from git (`773f966fa^`) and the
+current one, both run over the same 1,174 files, emit the SAME edge count with **delta 0 on
+every type** (487,744 for both arms on the revision that A/B ran on; the population has since
+measured 487,844, still delta 0 against its own before).
+
+**The guard instrument caught the last shared-rule change, and that sequence belongs here.**
+`pool-worker.ts filterNoiseRelationships` used to refuse any target over 200 characters TOTAL,
+so a file-scoped target could cross a budget the bare one fit — measured, 46 edges per 60 files,
+and 468 over the population were being DELETED on the way to the index. The analyzer therefore
+refused to qualify a target that would cross it (a visible residual beats a silent deletion),
+and `validation/m14/fixtures/css/qualified-target-compat.ts` pinned that budget with controls
+that fail. The budget then moved to the target's **LEAF** — where the intent always was, and
+`pool-worker.ts` credits this lane's measurement as the reason — and the guard instrument
+**FAILED, exactly as designed**. Retiring the now-pointless guard took the gate's `ofWhich`
+column from **1,883 to 0** with the residual unchanged: 1,883 edges moved from
+resolved-by-arbitrary-tie-break to resolved-to-exactly-one-declaration, and at 60 files the same
+step took ambiguity to **0**. A control that fires when someone else's fix invalidates its own
+assumption is worth more than the fix it guards.
+
+**The honest remainder, not folded into the win:** `references` 180 ambiguous + 4,803 unresolved
+(2.0%), `imports` 51 + 80 of 178 (73.6% — an `@import` target is another FILE, which a
+name-space fix cannot reach and which CSS-D15 deliberately leaves bare), `uses` 2 (0.1%),
+`contains` 0.0% and `overrides` 0.0%. Two in-file cases no spelling can settle: a name declared
+twice in the edge's own file (3 edges), where the edge does not say which site it means, and a
+name declared nowhere in it (181).
+
+## The 4,883 unresolved — and why no marker can verify one
+
+98.4% (4,803 edges, 562 distinct names) are dotless custom-property reads — `var(--fa-animation-duration)`,
+`var(--pico-form-label-font-weight)`, `var(--bulma-*)`. That is the CSS customization hook: a
+stylesheet reading a property it deliberately does not declare. 80 are `imports`: 46
+`@primer/primitives/...` npm specifiers, 17 Google-Fonts URLs, 9 bare, 8 dotted.
+
+They are genuinely external and the marker is still the wrong instrument, because
+`verifyExternalClaim` (`incoming-rule.ts:474`) computes the owner as everything before the
+**last dot**: a dotless name has no owner (`externalUnverified`), a URL's owner carries `:` and
+`/` (`externalUnverified`), and `verdict()` (`incoming-gate.ts:1159`) requires
+`externalUnverified === 0` for a PASS — so marking converts `unresolved` into a different
+non-passing column. A `cause` claim is worse: `baseBeyondRunScope` is REFUTED unless `base` is
+the target's own owner, and a dotless target has none, so it counts **against** the lane. The 8
+dotted imports would verify by owner lookup and are still not marked: a relative `@import`
+naming a file the project does not admit is a dangling internal reference, and the file claim
+that would be the honest instrument is refuted for them by construction.
+
+**The scope split, which is the sharper form of external-vs-in-corpus.** The gate prints two key
+spaces on one run: `TABLE 1` (per project) reads 4,883 unresolved and `TABLE 2` (pooled corpus)
+reads 4,742 — so **141 targets are declared in another repository** of the corpus and **4,742 are
+declared nowhere in the 1,174-file corpus at all**. The 141 are cross-project references rather
+than externals; the 4,742 are the external-or-dead mass, and no per-file analyzer can separate
+those two from inside one file.
+
+**Marking: refused, on the fleet's own two precedents.** php documents that 2,478 of its 2,483
+unresolved targets have no dot at all and that even a perfectly marked php lane lands in
+`externalUnverified` and FAILS (`docs/analyzers/real-php-analyzer.md:3279-3296`); fsharp rules
+that its 18,028 bare targets stay unclaimed and cannot be claimed, because a bare name has no
+owner and marking one reads `externalUnverified`, which blocks a pass anyway
+(`docs/analyzers/real-fsharp-analyzer.md:2422-2426`). bash marks only the narrow subset its
+language PROVES cannot be a project declaration — a command word containing `/` cannot be a shell
+function name, ten edges, zero refuted, pinned in both directions
+(`docs/analyzers/bash.md:140-150`). CSS has no such per-file fact for a custom property: any
+stylesheet may declare any custom property, so "the project does not declare this" is a
+project-level claim a per-file analyzer cannot support and `verifyExternalClaim` cannot refute —
+an unfalsifiable marker is worse than a stated gap.
+
+## The one real defect in this column, fixed
+
+`contains` + `isSelectorChain` edges are emitted only where both chain terms resolve, and
+`resolves()` accepted a term through its dotted **leaf** or a `.`/`:` **boundary tail** without
+asking what KIND of selector the published name is:
+
+```
+$ npx tsx validation/m14/fixtures/css/single-file-dump.ts <corpus>/geb/doc/site/public/css/semantic.min.css .button
+contains ".button" -> ".button"   [cssSpecific+isSelectorChain]
+names.has(".button") = false
+names.has("button")  = true      <- button{overflow:visible}, a TYPE rule
+```
+
+A CLASS term was satisfied by a TYPE rule, and the edge named two things that are not
+declarations of that stylesheet. The fix is a kind test (`chainTermKind`): a suffix match is
+accepted only from a published name of the same selector kind; the exact-name test is
+untouched. Measured effect over the whole corpus: **29 chain edges withheld — 14 that had been
+`unresolved`, 10 ambiguous, and 5 the gate had called RESOLVED** (a wrong target that happens to
+be unique looks exactly like a right one). `contains` unresolved 14 → 0;
+`contains`+`isSelectorChain` 5,941 → 5,912. Fixture
+`chain-term-kind-must-match.{css,expectation.json}` was written from the rule before the change
+and failed on exactly its two forbid rows; after it, all 21 css fixtures pass. The suffix
+sub-tests are now **measurably unreachable**: over 1,174 files, 5,912 chain edges, 11,824 ends,
+every one the exact name (leaf-only 0, boundary-only 0, kind-inconsistent 0).
+
+Residual, reported and not fixed: 136 chain edges are self-edges (`ul -> ul`, `.media -> .media`)
+and every one has both ends as exact published names — a repeated term in a real descendant
+selector, not a fabricated pair.
+
+## The seven silent types, on the whole corpus
+
+`bun script/m14/firing-check.mjs CSS_B` reads 7 silent types at 120 files and still reads them
+with `NFILES=400` — **238/238 pico files, `contains:120206 references:127456 uses:2284`**. A
+sample cannot certify absence, so each construct was counted on the tree over all 1,174
+admitted files by `construct-and-chain-census.ts`, which carries an in-line positive control and
+exits 3 if it cannot see a planted construct.
+
+| type | verdict | measurement |
+|---|---|---|
+| `imports` | EMITTED | 127 edges / 34 files; the tree has **127 `import_statement` nodes** — 1:1. The silence is pico's: 0 of its 238 files contain `@import`. |
+| `overrides` | EMITTED | 149 edges / 15 files |
+| `calls` | RULED | 0 `@function` at-rules; the 341,686 `call_expression` nodes over 90 distinct names are all CSS built-ins (`var`, `calc`, `rgba`, `url`), which declare nothing |
+| `extends` | RULED | 0 `@extend` at-rules (control proves the probe can see one) |
+| `exports` | RULED | 0 `composes` declarations of any kind, 0 `:export` rule_sets |
+| `implements` | RULED | 0 of the corpus's 64 distinct node types is a supertype clause |
+| `instantiates` | RULED | 0 of them is an object-creation production |
+
+Two probe defects were found by that control and corrected rather than worked around:
+`@keyframes` arrives as a dedicated `keyframes_statement` whose keyword is an **anonymous**
+child, so a counter reading `at_keyword` only inside `at_rule` reported 0 across the corpus
+while 2,667 keyframe `uses` edges existed; and the ambiguity classifier's "same node range" test
+read `s.range`, which production does not publish (it publishes flat `startIndex`/`endIndex`),
+so three same-name/different-kind symbols read as a double emission.
+
+## What these numbers are not
+
+The census counts **analyzer** output; the gate counts production's `parseFile`, which runs
+`filterNoiseRelationships` — measured, that filter drops **3,505 of 238,585** `contains` edges
+corpus-wide (114 of 248 on `semantic.min.css`), and it is the only difference between the two
+instruments' columns. The gate's verdict is still **FAIL**: `bad` counts `ambiguousByDecl`, and
+no claim mechanism can touch an edge whose target names a declaration. This lane's incoming side
+is therefore RULED, not passing — and the 14 class-selector edges that left `unresolved` did so
+because they were a defect, not because they were excused.
+
+New instruments: `validation/m14/fixtures/css/ambiguity-classify.ts` (the class split, asserted
+against the gate's line), `single-file-dump.ts` (one edge's provenance, plus the
+analyzer-vs-production delta), `construct-and-chain-census.ts` (the whole-corpus construct and
+chain census with its positive control), and the fixture pair
+`chain-term-kind-must-match.{css,expectation.json}`.

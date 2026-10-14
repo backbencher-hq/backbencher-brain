@@ -1,0 +1,482 @@
+{
+  "language": "graphql",
+  "grammar": "tree-sitter-graphql.wasm (vendored and patched; PascalCase node types by contract \u2014 see grammars/tree-sitter-graphql/README.md)",
+  "_authority": "This file was WRITTEN by the graphql lane on 2026-10-09 because it did not exist: the board read `no spec`, which is not the same as zero gaps, and nothing could tell a reader what this lane admits to. Every number below is either (a) measured by `validation/m14/fixtures/graphql/census-graphql-grammar.mts` \u2014 a production-path walk of the whole admitted corpus, its full output committed beside this file \u2014 or (b) attributable to a named programme run. NOTHING here is a classification by the F8 census (`script/m12/bash-node-types-compare.ts`'s counterpart for this lane has not been run): the `handled_verified` / `internal_silent` split below rests on a LITERAL SCAN of the analyzer's PascalCase comparisons plus the observed node-type vocabulary, which is a weaker instrument than the census and is labelled as such on both buckets. Where this file does not know something it says `UNMEASURED`.",
+  "_measured": {
+    "date": "2026-10-09",
+    "corpus": "gql-gqlgen \u2014 143 tracked .graphql/.gql files, all parsed, 0 failures",
+    "instrument": "bun validation/m14/fixtures/graphql/census-graphql-grammar.mts (output: validation/m14/fixtures/graphql/census-graphql-grammar.txt)",
+    "firing_instrument": "bun script/m14/firing-check.mjs GRAPHQL \u2014 6 types fired, 120/120 parsed (even stride)",
+    "distinct_node_types_observed": 72,
+    "edges_emitted_whole_corpus": {
+      "contains": 1580,
+      "references": 1877,
+      "exports": 795,
+      "uses": 527,
+      "overrides": 190,
+      "implements": 113,
+      "calls": 0,
+      "extends": 0,
+      "imports": 0,
+      "instantiates": 0
+    },
+    "symbol_kinds_emitted": {
+      "property": 1517,
+      "class": 554,
+      "function": 101,
+      "enum_member": 63,
+      "interface": 54,
+      "type": 54,
+      "enum": 24,
+      "namespace": 8,
+      "method": 8,
+      "variable": 4
+    }
+  },
+  "handled_verified": {
+    "_description": "Node types the analyzer CONSULTS at a type position (a PascalCase literal compared against the node's kind, extracted by literal scan) AND that the pinned grammar produces on this corpus. A type here means the analyzer DECIDES on it, not that its behaviour is pinned by a fixture \u2014 this lane has NO committed fixtures yet, which is itself a gap entry (GQ-G5). Types the analyzer consults but that this corpus does not exercise are listed separately below rather than counted as verified.",
+    "types": [
+      "Alias",
+      "Argument",
+      "Arguments",
+      "ArgumentsDefinition",
+      "DefaultValue",
+      "Definition",
+      "Description",
+      "Directive",
+      "DirectiveDefinition",
+      "DirectiveLocation",
+      "DirectiveLocations",
+      "Directives",
+      "Document",
+      "EnumTypeDefinition",
+      "EnumValue",
+      "EnumValueDefinition",
+      "ExecutableDefinition",
+      "ExecutableDirectiveLocation",
+      "Field",
+      "FieldDefinition",
+      "FieldsDefinition",
+      "FragmentDefinition",
+      "FragmentName",
+      "FragmentSpread",
+      "ImplementsInterfaces",
+      "InputFieldsDefinition",
+      "InputObjectTypeDefinition",
+      "InputValueDefinition",
+      "InterfaceTypeDefinition",
+      "ListType",
+      "Name",
+      "NamedType",
+      "NonNullType",
+      "ObjectTypeDefinition",
+      "ObjectTypeExtension",
+      "OperationDefinition",
+      "OperationType",
+      "OperationTypeDefinition",
+      "ScalarTypeDefinition",
+      "SchemaDefinition",
+      "SchemaExtension",
+      "StringValue",
+      "Type",
+      "TypeCondition",
+      "TypeDefinition",
+      "TypeExtension",
+      "TypeSystemDefinition",
+      "TypeSystemDirectiveLocation",
+      "TypeSystemExtension",
+      "UnionMemberTypes",
+      "UnionTypeDefinition",
+      "Value",
+      "Variable",
+      "VariableDefinition",
+      "VariableDefinitions"
+    ],
+    "consulted_but_not_observed_in_this_corpus": [
+      "Extension",
+      "GraphQL",
+      "InlineFragment",
+      "Query",
+      "SourceFile"
+    ],
+    "consulted_but_not_observed_note": "Five literals the analyzer compares against that the 143-file corpus never produced. `SourceFile`/`GraphQL`/`Query` are the vendored grammar's alternate root and entry names (the corpus's root is `source_file`, snake_case, plus `Document`), and `InlineFragment`/`Extension` are shapes the corpus does not contain \u2014 an inline fragment and a bare extension node. UNMEASURED: whether these are dead branches (the F8 class) or shapes another corpus would exercise; the F8 census is the instrument that decides it and has not been run for this lane."
+  },
+  "internal_silent": {
+    "_description": "Node types the pinned grammar PRODUCES on this corpus that the analyzer's literal scan never consults. This bucket is a WORKING LIST, not a ruling: the programme's standard is that a type here is structural plumbing (punctuation, comments, wrappers) and correctly emits nothing, and that a type which is NOT plumbing is a gap. Each entry below is marked by what it looks like, and NONE has been verified by a fixture yet \u2014 GQ-G4 tracks that verification.",
+    "structural_candidates": [
+      "comma",
+      "comment"
+    ],
+    "wrapper_candidates": [
+      "Definition",
+      "Document",
+      "Name",
+      "Selection",
+      "SelectionSet",
+      "Type",
+      "Value"
+    ],
+    "extension_kinds_not_seen_by_the_literal_scan": [
+      "EnumTypeExtension",
+      "InputObjectTypeExtension",
+      "InterfaceTypeExtension",
+      "ObjectTypeExtension",
+      "ScalarTypeExtension",
+      "UnionTypeExtension",
+      "EnumValuesDefinition"
+    ],
+    "extension_kinds_note": "The analyzer handles extensions through an `EXTENSION_TO_DEFINITION` map and a `type.endsWith(\"Extension\")` test, so these kinds ARE reached \u2014 the literal scan above cannot see a dispatch that is not a literal comparison. UNMEASURED: the map is the authority and has not been read against these seven names; recorded here so the next turn checks it rather than re-deriving it.",
+    "value_and_selection_nodes": [
+      "BooleanValue",
+      "IntValue",
+      "ListValue",
+      "ObjectValue",
+      "ObjectField",
+      "ERROR"
+    ],
+    "value_and_selection_note": "Literal values inside arguments/`DefaultValue`. `ERROR` is the universal tree-sitter recovery node (every parser produces it; the wasm ABI's node-type table does not list it) and one file in this corpus has one. UNMEASURED whether any of these should produce a relationship; they are listed so the question is asked."
+  },
+  "gap": {
+    "_description": "Confirmed or suspected unemitted semantics, as a MACHINE-READABLE ARRAY because a prose-only gap field is what produced a wrong '57 gaps' count in this programme. The board counts this array. FOUR entries are the four silent relationship types the firing instrument reports; each is `severity: UNMEASURED` because this lane has not yet counted the construct on the corpus \u2014 the honest state is 'nobody has measured the denominator', and the next turn replaces it with sites/files or an implementation. GQ-G5 records that the lane has no fixtures at all, which is why nothing in this file can be called pinned.",
+    "gaps": [
+      {
+        "id": "GQ-G1",
+        "severity": "UNMEASURED",
+        "relationship_type": "calls",
+        "missing": "The analyzer emits no `calls` edge. Whether GraphQL HAS a call-shaped construct is the question the denominator must answer, and three candidate shapes exist that must each be counted or refuted on the tree: a field SELECTION (`user { name }` \u2014 the closest thing to an invocation), a directive APPLICATION (`@deprecated`), and an executable OPERATION entry point (`query Foo`).",
+        "next_step": "Count each candidate shape on the 143-file corpus and the whole `.graphql` corpus, then either emit (a field selection as `calls` would duplicate the `references` edge already emitted \u2014 that duplication is the thing to measure before implementing) or rule with the count.",
+        "provenance": "firing instrument 2026-10-09: `calls` SILENT, and the whole-corpus census emits 0."
+      },
+      {
+        "id": "GQ-G2",
+        "severity": "UNMEASURED",
+        "relationship_type": "extends",
+        "missing": "GraphQL HAS inheritance-like constructs the analyzer models differently: `extend type X` (a type EXTENSION, which the analyzer folds into the extended type as members with `metadata.inExtension`), interface IMPLEMENTATION (emitted as `implements`), and union membership (emitted as `uses`). Whether any of them is an `extends` edge in the ontology's sense \u2014 a type declaring another type as its supertype \u2014 is unmeasured.",
+        "next_step": "Count `TypeExtension`/`TypeSystemExtension` nodes (69 files / 88 nodes and 68 files / 83 nodes observed) and decide whether an extension is an `extends` edge or, as the analyzer currently assumes, membership folded into the type.",
+        "provenance": "firing instrument 2026-10-09: `extends` SILENT."
+      },
+      {
+        "id": "GQ-G3",
+        "severity": "MEASURED",
+        "relationship_type": "imports",
+        "missing": "CORRECTED: `imports` is NOT absent from the language. The firing instrument reads 0 because the gql-gqlgen corpus contains no import form, but on the GATE's wider population (1,606 tracked .graphql files in 22 repos) the analyzer emits 6 `imports` edges, all of them .graphql paths (`c.graphql`, `b.graphql`, `./10.model.graphql`), and all 6 are unresolved at sample scope. So the construct exists and is EMITTED; the silent reading is a corpus artefact, and the remaining question is only whether those 6 paths should resolve (are the target files in the same project?).",
+        "next_step": "Check whether each of the 6 import targets names a file inside its own project; if yes the edge is an in-corpus import the gate can resolve, if no it is a path-addressed module outside the run's key space.",
+        "provenance": "firing instrument 2026-10-09: `imports` SILENT."
+      },
+      {
+        "id": "GQ-G4",
+        "severity": "UNMEASURED",
+        "relationship_type": "instantiates",
+        "missing": "GraphQL declares types; it does not construct instances. No constructor syntax exists in the grammar.",
+        "next_step": "Confirm against the grammar's own node-type table (no constructor node type) and the corpus (0 candidate nodes), then rule INAPPLICABLE with both counts rather than prose.",
+        "provenance": "firing instrument 2026-10-09: `instantiates` SILENT."
+      },
+      {
+        "id": "GQ-G5",
+        "severity": "OPEN",
+        "relationship_type": "(fixtures)",
+        "missing": "THIS LANE HAS NO COMMITTED FIXTURES. Every claim in this file is therefore measured but unpinned: `validation/m14/fixtures/graphql/` contains the census instrument and its output, and no fixture/expectation pair exists. A regression in this analyzer would be caught by the firing instrument's counts changing, not by an assertion about which edge is wrong.",
+        "next_step": "Write fixtures for the four firing types with the shapes the census says are commonest \u2014 an object type with fields (`contains`), an interface implementation (`implements`), a field type reference (`uses`), an enum value reference (`references`) \u2014 each in both directions, before any behaviour is changed."
+      },
+      {
+        "id": "GQ-G6",
+        "severity": "MEASURED",
+        "relationship_type": "(incoming)",
+        "missing": "SPLIT, sample scope: of 2,317 unresolved, **2,188 (94.4%) are licensed by the GraphQL specification** (built-in scalars 2,108, spec directives 40, introspection types 40) and 129 are the rest (110 `uses` type/field names, 8 project-undefined directives, 6 import paths, 5 executable type names). The IN-CORPUS column is UNMEASURED until the whole-project key space is built. Separately, the 455 ambiguous are exactly the 455 edges targeting a non-unique key (421 duplicate keys).",
+        "next_step": "Build the project key space (`--repo-wide`) to measure the in-corpus column, then implement the boolean `isExternal` marker on the three spec-builtin classes and re-run both scopes.",
+        "provenance": "programme run 2026-10-09 (supervisor), not yet re-run by this lane."
+      }
+    ]
+  },
+  "design_decision": {
+    "description": "What this analyzer has DECIDED, as the file itself states it. These are quoted from the analyzer's own header contract and marked UNVERIFIED-BY-ME: the next turns confirm each against the tree before any of them is called a ruling of this spec.",
+    "decisions": [
+      {
+        "id": "GQ1",
+        "status": "UNVERIFIED BY THIS SPEC",
+        "question": "What is an `extend type X` \u2014 a second symbol, or members of the extended type?",
+        "resolution": "The analyzer's header states: an extension's members are emitted with `ownerName` = the extended type and `metadata.inExtension = true`; whether the extension also produces a symbol depends on whether the same file DECLARES the type (a pre-pass decides), because a second symbol would be a duplicate identity while a file with only the extension needs one for the `contains` edge to have a source."
+      },
+      {
+        "id": "GQ2",
+        "status": "UNVERIFIED BY THIS SPEC",
+        "question": "How is a field selection targeted, given that an executable document does not carry the parent type?",
+        "resolution": "The analyzer's header states: a selection is qualified `<Type>.<field>` only when the document itself says what type the selection is on (a fragment or inline fragment type condition); otherwise the target is the bare field name and `metadata.selectionPath` carries the full path. This is the one decision that directly shapes the 455 ambiguous column, because a bare field name is declared once per type that has it."
+      },
+      {
+        "id": "GQ3",
+        "status": "UNVERIFIED BY THIS SPEC",
+        "question": "Does `implements` flatten the left-recursive `ImplementsInterfaces` tree?",
+        "resolution": "The analyzer's header states: `ImplementsInterfaces` is left-recursive, so `A & B & C` nests as `I > I > I`, and every `NamedType` in the subtree is collected \u2014 correct for the nested and the flattened shape alike. The census observes 113 `implements` edges in 21 files, so the shape occurs and is measurable."
+      }
+    ]
+  },
+  "label_coverage": {
+    "_description": "UNMEASURED. This key exists because the fleet's spec shape has it and a missing key reads as a claim of nothing to declare. Each of the six firing types needs an explicit label contract (what its source and target ARE) before it can be counted as covered; the next turns measure them per type rather than assert them here.",
+    "types": {
+      "contains": "UNMEASURED",
+      "references": "UNMEASURED",
+      "exports": "UNMEASURED",
+      "uses": "UNMEASURED",
+      "overrides": "UNMEASURED",
+      "implements": "UNMEASURED"
+    }
+  },
+  "_incoming_side": {
+    "_description": "The second acceptance criterion, MEASURED this time rather than quoted. `npx tsx script/m14/incoming-gate.ts graphql graphql 60` reproduces the programme run exactly: `FAIL - 455 ambiguous + 2,317 unresolved of 11,158 edges` (capture: validation/m14/fixtures/graphql/incoming-graphql-60.json), and the lane's census (`validation/m14/fixtures/graphql/probe-graphql-incoming-split.mts`, which imports the gate's own rule) AGREES with it edge for edge: 8386 resolved / 455 ambiguous / 2,317 unresolved. No edge carries an external marker today. THIS BLOCK IS SAMPLE-SCOPE AND ITS SHARE IS A LOWER BOUND: the whole-population measurement is in `whole_population_2026_10_11` below, where the specification's share of the residual is 44.7% rather than 94.4%, because a 60-file stride key space holds almost none of the project and every unanswerable name then looks external.",
+    "whole_population_2026_10_11": {
+      "_how": "The residual, attributed over the WHOLE admitted population (1,911 .graphql/.gql files, 22 repos) with the gate's own rule imported. Instruments: validation/m14/fixtures/graphql/probe-graphql-residual-causes.mts (cause by type x relationshipRole x marker set, evidence per target, own-file determinacy, §5e ceiling) and aggregate-residual-causes.mts (the same rows aggregated, with its own closure check). The probe REPRODUCES incoming-gate.ts's TABLE 1 on all 14 columns x 10 types; its first attempt did not, and the two cells that disagreed (imports.unresolved 170 vs 14, imports.extOK 0 vs 156) were the probe passing the repo NAME as context.projectRoot where the gate passes the ABSOLUTE repo root.",
+      "runs": [
+        "A  incoming-gate.ts graphql graphql,gql 0   revision 1f5951a0a   analyzer sha256 3d3933fc7622cc8c",
+        "B2 probe-graphql-residual-causes.mts --compare <A>   revision 9677e0c5f   same analyzer digest",
+        "Both are labelled UNGUARDED nice -n 10 draws: the shared .bb-heavy-v3.lock was held by another lane for the whole window."
+      ],
+      "verdict": "FAIL — 31,012 ambiguous + 53,063 unresolved of 205,327 edges (residual 84,075 = 40.95%)",
+      "cause_by_evidence": {
+        "_closure": "first-match classes; they sum to the residual exactly (84,075) at both type and lane level",
+        "BARE-NAME-COLLIDING (>=2 declarations answer in the project)": 28266,
+        "spec:built-in scalar (String ID Boolean Int Float)": 25255,
+        "spec:__-reserved (introspection namespace, 23 names)": 11112,
+        "BARE-NAME-ABSENT (nothing in the project declares it)": 10396,
+        "DOTTED-OWNER-ABSENT (the owner type is declared nowhere)": 6149,
+        "DOTTED-MEMBER-COLLIDING (the owner IS declared)": 1031,
+        "spec:__-reserved meta-field (Type.__typename)": 755,
+        "DOTTED-OWNER-DECLARED-MEMBER-ABSENT": 654,
+        "spec:built-in directive / draft directive": 446,
+        "PATH-SHAPED": 11
+      },
+      "specification_vocabulary_total": {
+        "edges": 37568,
+        "share_of_lane_residual": "44.7%",
+        "distinct_names": 35,
+        "largest_single_name": "String — 13,644 edges, all of them `references`"
+      },
+      "ambiguous_half_by_own_file_determinacy": {
+        "_why": "classifyEdge is given a name-keyed count and no file; production's resolveTargetStmt orders by COALESCE(s.is_declaration,0), (s.file_id = ?) DESC, ... LIMIT 1.",
+        "own_file_declares_the_name_exactly_once": 20121,
+        "own_file_declares_it_more_than_once": 705,
+        "own_file_declares_it_not_at_all": 10186,
+        "_reading": "The first row is determinate in production and its amb(decl) is a MODEL artifact. The third is the genuine class (§5x 'twin exists'): only foreign declarations answer and the store's s.id tie-break decides which."
+      },
+      "respell_ceiling_5e": {
+        "_why": "§5w: a lane must MEASURE the fleet's favourite fix on its own population before writing it (php 100%, bash 59.5%, julia 0.6%).",
+        "would_become_exactly_one": 160,
+        "of_ambiguous_edges": 31012,
+        "share": "0.52%",
+        "would_still_collide": 563,
+        "no_better_spelling_exists": 18521,
+        "monotonicity_violations": 0,
+        "ruling": "NOT PAID. 18,521 have no better spelling at all, because the lane publishes no file-scoped qualifiedName and pool-worker derives `scope ? scope.name : name`, so a top-level type — what references, exports and implements name — is spelled by its bare name and nothing else. The monotonicity result (0 violations) says the respell would be SAFE; it does not say it is worth buying."
+      },
+      "no_legal_claim_kind": {
+        "_how": "probe-graphql-spec-vocabulary-disposition.mts attaches every claim kind the arbiter knows, in turn, to the largest classes and reads the outcome from classifyEdge (imported). A disposition is legal only if the project can REFUTE it when false.",
+        "arms_claim_never_read_the_edge_just_resolves": 28,
+        "arms_illegal_refutes_on_a_target_that_names_nothing": 25,
+        "arms_falsifiable_dotted_owner_claims_only": 11,
+        "arms_unverifiable_extQ_blocks_a_pass": 8,
+        "mechanism": "For a BARE target the owner claim is read only where decls === 0, so a project that DOES declare the name turns the edge into a `resolved` and the claim is never consulted — it cannot be refuted. That is §5l's laundering vector, which julia-lane refused 10.7 free points to. Dotted classes are worse, not better: an owner claim on `JiraIssueField.__typename` IS falsifiable, and that is why it is unusable — 654 of the dotted `uses` residual has an owner the project DOES declare, and a per-file analyzer cannot tell an owner in a sibling file from one that lives nowhere, so attaching it takes extFAIL off the zero it must stay at.",
+        "falsifier": "a `claimBasis` claim kind whose closed list lives in the ARBITER rather than the analyzer (§5k's rule: checkable by a mechanism the claimant does not control). It would make the 37,568 specification-vocabulary edges falsifiable and close them in one change."
+      },
+      "unsettled": {
+        "store_probe": "NOT RUN this turn. The determinacy ruling rests on resolveTargetStmt's own ORDER BY and the gate's exact intent test, not on brain_relationship.target_symbol_id. hcl-lane's store-binding-truth.mts is the falsifier.",
+        "population_holes": "45 of 1,911 files hold CONTENT and returned NO symbols AND NO relationships (engine.ts:1991 timeout) — they contribute nothing, so every count describes evidence that is MISSING rather than evidence that is wrong.",
+        "extFAIL_bindFAIL_causeFAIL": 0
+      },
+      "source_side_fix": {
+        "_why": "incoming-gate.ts classifies TARGETS, so a relationship whose SOURCE names nothing is invisible to every residual column. parallel-indexer.ts:4391 rewrites source_external to the IMPORTING FILE's project-relative path when `!sourceSymbol && metadata.fileLevel === true`.",
+        "defect": "the `imports` edges (170) did not set that flag while their source is `lastPathSegment(filePath)` — a bare basename no declaration can answer, because a GraphQL name cannot contain a dot. The analyzer's own `exports` edges (13,991) already set it.",
+        "before": { "imports_edges": 170, "sources_answering_no_declaration": 170, "sources_the_store_can_name_an_importer_for": 0 },
+        "after": { "imports_edges": 170, "sources_answering_no_declaration": 170, "sources_the_store_can_name_an_importer_for": 170 },
+        "invariance": "fileLevel is not one of externalClaimOf's keys, so it cannot move a resolution. PROVEN in the same run: the AFTER probe reproduced incoming-gate.ts's TABLE 1 on all 14 columns x 10 types against the BEFORE reference (140 cells), and run-fixtures.ts reads {\"graphql\":{\"pass\":5,\"fail\":0}} with no regressions, npm run typecheck clean.",
+        "source_side_now": "src-unres 0 for all six non-file sources (uses 50,759, contains 60,112, references 67,328, overrides 9,790, implements 3,177). The source side's bare-name AMBIGUITY (uses 15,606, contains 12,588) is the same collision class measured on the target side and is NOT claimed as 0: what is measured is that no source names nothing, not that every source names one thing.",
+        "supersedes": "the lane document's 'Sources are checked too ... 0 unresolved sources across all 19,054 relationships' is a 47-FILE run whose committed artifact records 22,022 relationships — the sentence and its own artifact already disagreed on the population."
+      }
+    },
+    "split_at_sample_scope": {
+      "_how": "The 2,317 unresolved, classified by EVIDENCE rather than by convenience. `--repo-wide` (the whole-project key space) is NOT yet in this measurement: load on the shared laptop was 15-19 during the run and the project key space parses every file of every sampled repository. The split below is therefore the SAMPLE-scope split, and the IN-CORPUS column is UNMEASURED rather than empty, because a declaration outside the 60 parsed files is invisible to this scope by construction.",
+      "external_licensed_by_the_specification": {
+        "edges": 2188,
+        "share_of_unresolved": "94.4%",
+        "classes": {
+          "spec scalars (references)": {
+            "edges": 2106,
+            "names": 5,
+            "examples": [
+              "String",
+              "ID",
+              "Int",
+              "Float",
+              "Boolean"
+            ]
+          },
+          "spec directives (uses)": {
+            "edges": 40,
+            "names": 3,
+            "examples": [
+              "@deprecated",
+              "@specifiedBy",
+              "@oneOf"
+            ]
+          },
+          "introspection types (uses)": {
+            "edges": 40,
+            "names": 18,
+            "examples": [
+              "__Type",
+              "__Type.kind",
+              "__Type.name",
+              "__schema",
+              "__Type.fields"
+            ]
+          },
+          "spec scalar (uses)": {
+            "edges": 2,
+            "names": 1,
+            "examples": [
+              "String"
+            ]
+          }
+        },
+        "language_fact": "The GraphQL specification predeclares the five built-in scalars, its introspection types and its executable/type-system directives; no project file declares them and the spec forbids redefining the built-in scalars. That is the evidence a marker is allowed to rest on, and the arbiter refutes the claim if a project declares the name itself.",
+        "marker_state": "NOT YET IMPLEMENTED (next item). `isExternal` must be the BOOLEAN `true` \u2014 a string is inert and two lanes lost 88 and 185 edges to exactly that."
+      },
+      "in_corpus": {
+        "edges": "UNMEASURED at sample scope",
+        "why": "A target declared by a file outside the 60-file stride is indistinguishable from an absent one here. The bash lane's equivalent measurement moved 266 of 845 edges into this column once the project key space was built; the same run is the next item for this lane."
+      },
+      "the_rest": {
+        "edges": 129,
+        "classes": {
+          "uses: a type name no file in the project declares": {
+            "edges": 110,
+            "names": 62,
+            "examples": [
+              "name",
+              "ofType",
+              "kind",
+              "description",
+              "args",
+              "user"
+            ],
+            "reading": "Most of these are FIELDS of introspection types reached without their owner (`name`, `kind`, `ofType`, `description`, `args` are all `__Type`/`__Field` fields) \u2014 a class the lane can either qualify at emission or rule, and the count is the price of each."
+          },
+          "uses: a directive with no definition in the project": {
+            "edges": 8,
+            "names": 4,
+            "examples": [
+              "@withAdditionalProperties",
+              "@shareable",
+              "@md",
+              "@mock"
+            ],
+            "reading": "Federation and custom directives whose definitions live in a schema this project does not carry. Not spec built-ins, so no language fact licenses them as external."
+          },
+          "imports: a .graphql path": {
+            "edges": 6,
+            "names": 5,
+            "examples": [
+              "c.graphql",
+              "b.graphql",
+              "./10.model.graphql"
+            ]
+          },
+          "references: a type name no file declares": {
+            "edges": 5,
+            "names": 5,
+            "examples": [
+              "RecursiveInput",
+              "SearchFilter",
+              "D",
+              "Model10",
+              "User"
+            ]
+          }
+        }
+      }
+    },
+    "ambiguity_characterised": {
+      "edges": 455,
+      "finding": "The ambiguity is fully explained by key non-uniqueness, measured rather than assumed: 421 published keys are declared more than once in their project and **exactly 455 edges target a non-unique key** \u2014 the two numbers are the same column. Top names from the gate's worklist: `Error.message` 26, `Error` 19, `Query` 17, `PageInfo` 12, `schema.query` 9, `@key` 8.",
+      "ruling_candidate": "Irreducible by emission alone: `Query` and `Error` are declared in several schema files of a project, and a bare `Query` target genuinely does not name one. The lever, if one is taken, is target QUALIFICATION (`Type.field`), which the analyzer already does where the document names the type; the 455 names are the ones where it does not."
+    },
+    "key_uniqueness": {
+      "keys_containing_hash": 0,
+      "keys_declared_more_than_once_sample_scope": 421,
+      "edges_targeting_a_non_unique_key": 455,
+      "note": "Recorded because this programme's `#`-suffixed keys made nine lanes' claims unverifiable before the separator moved, and the supervisor asked this lane to check before trusting any name-based count. This lane publishes ZERO keys containing `#` \u2014 the separator worry does not apply here \u2014 and the duplicate-key count is the ambiguity column above."
+    },
+    "next_step": "Run the same census with `--repo-wide` when load allows, to move edges from `unresolved` into the sample-budget column and to give the IN-CORPUS column a real number; then implement the boolean `isExternal` marker on the three spec-builtin classes (2,188 edges) and re-run the gate at both scopes."
+  },
+"coverage": {
+  "implemented": [
+    "contains",
+    "exports",
+    "implements",
+    "imports",
+    "overrides",
+    "references",
+    "uses"
+  ],
+  "excluded": [
+    {
+      "label": "calls",
+      "evidence": "grammar-absence",
+      "from": "0 construct sites, measured in BOTH spaces the arbiter requires and verified by it: 0 of the 10 call-shaped node types is among the 75 named types the wired grammar produced over 2,338,690 nodes on 1,911 admitted files, and 0 of the 22 keyword-shaped KEYS this corpus writes (21 `apply:`, 1 `execute:`, every one an ordinary field or argument NAME whose value is a type or an enum) applies anything. Nearest real form, named and NOT relabelled: 1,150 argument-bearing `Field` and 2,962 argument-bearing `Directive` nodes, all published as `uses`. Instrument: validation/m14/fixtures/graphql/rulebook-space-probe.json, read by validation/m14/fixtures/graphql/ruling-attestation.json."
+    },
+    {
+      "label": "instantiates",
+      "evidence": "grammar-absence",
+      "from": "0 construct sites, measured in both spaces: 0 of the 8 construction-shaped node types is among the 75 named types, and the key space (50,284 bindings over 7 key-bearing node types) fired 340 keyword-shaped keys (`create` 337, `new` 3) with 0 of them constructing an instance of a DECLARED type. The value-shape test alone read 304 on `create: [{node: …}]` — an input VALUE whose key names no declared type — which is exactly why the rule requires both halves and why the second half is applied over the whole population rather than per file. Excluded population named: 3,715 `ObjectValue` nodes are argument values. Instrument: validation/m14/fixtures/graphql/rulebook-space-probe.json, read by validation/m14/fixtures/graphql/ruling-attestation.json."
+    }
+  ],
+  "corpusUnexercised": [
+    {
+      "label": "extends",
+      "evidence": "zero-sites",
+      "from": "0 occurrences meet the BRANCH, which is a fact about this corpus rather than about the grammar: GraphQL writes `A implements B` and `A extends B` with the same rule, and the analyzer labels the clause `extends` only when the supertype is a Class or a Type IN THE SAME DOCUMENT — so the construct is expressible (`implements` fires 1,710 edges here) and the SITE COUNT is what is zero. Measured: 0 of 3,330 `implements` clauses resolve to an inheritance-shaped supertype declared in their own document; 3,225 name an interface and 105 name a supertype in another file. Instrument B in script/m14/graphql-ruled.ts, which carries `publishedCount: 0` / `publishedFiles: 0`; census: script/m14/tmp/graphql/out/ontology-census.json (extends_condition_met 0)."
+    }
+  ],
+  "_retracted_exclusions": {
+    "imports": {
+      "was": {
+        "label": "imports",
+        "evidence": "grammar-absence",
+        "from": "whole-corpus firing over ALL 143 admitted .graphql/.gql files (gql-gqlgen, `[corpus=gql-gqlgen WHOLE]`, 143/143 parsed, 0 degraded, instrument self-test PASS): imports 0 edges. SDL composes documents by concatenation, not by an import directive; six other types fire on the same run."
+      },
+      "why_it_was_wrong": "The exclusion was measured on a 143-file sub-corpus (gql-gqlgen only) and generalised to the whole lane. The `#import \"<file>\"` convention is real: 170 directives across 131 files of the 1,911-file population, 156 of them naming a file that EXISTS on disk (91.76%) when resolved against the importing file's own directory. A grammar cannot see a CONVENTION — the blind spot the ruled table's own docblock records for `calls` — so the type was ruled absent while the corpus carried it. The analyzer now emits `imports`, and it is implemented above.",
+      "when": "2026-10-12"
+    },
+    "population": {
+      "was": "ALL 143 admitted .graphql/.gql files (gql-gqlgen, `[corpus=gql-gqlgen WHOLE]`)",
+      "now": "1,911 admitted files across 22 repositories",
+      "why_it_was_wrong": "143 is one repository's file count, not this lane's population. The arbiter admits 1,911 files and names the 4 it excludes over the 1 MB cap, so every 'whole-corpus' zero measured on 143 files was a zero about gql-gqlgen. Kept rather than deleted because the reading is what made three of the four exclusions look settled."
+    }
+  },
+  "_implemented_measured": {
+    "_unit": "edges published through the production path over the WHOLE 1,911-file graphql population — no stride, no sample. Instrument: the whole-population incoming/residual walk (TOTAL 205,327 edges), and independently the arbiter's own EMITTED tally from script/m14/ontology-coverage-gate.ts, run with --fresh, which counts each type from production parseFile. The per-type totals below sum to that TOTAL exactly.",
+    "contains": {
+      "edges": 60112
+    },
+    "exports": {
+      "edges": 13991
+    },
+    "implements": {
+      "edges": 3177
+    },
+    "imports": {
+      "edges": 170
+    },
+    "overrides": {
+      "edges": 9790
+    },
+    "references": {
+      "edges": 67328
+    },
+    "uses": {
+      "edges": 50759
+    },
+    "_sum": 205327
+  },
+  "_from": "MEASURED whole-corpus, not sampled: 1,911 admitted files, SEVEN types firing and THREE ruled — and the three rulings are no longer prose. `calls` and `instantiates` are attested in BOTH spaces the arbiter requires (validation/m14/fixtures/graphql/ruling-attestation.json, whose pointers the gate verifies against validation/m14/fixtures/graphql/rulebook-space-probe.json), and `extends` is declared zero-sites rather than grammar-absence because the construct IS expressible here. HANDOFF §4 recorded `graphql 6/10 from=firing-log` with `calls extends imports instantiates` open as GAPS; `imports` was not a gap at all — it was a 143-file measurement generalised to a 1,911-file population — and it is implemented above, with the retraction and the population correction both recorded rather than overwritten."
+}
+}

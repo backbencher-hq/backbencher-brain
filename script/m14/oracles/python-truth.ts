@@ -18,13 +18,13 @@
  * shared constant, and no shared traversal: every edge below is derived from the TREE,
  * by walking it in a way the analyzer does not.
  *
- * SCOPE, STATED RATHER than implied. This derives the STRUCTURAL SPINE — `contains`,
- * `extends`, `overrides`, `calls` — because those are the edges whose truth is a
- * property of the parse and not of a policy choice. `uses`/`references` (identifier
- * mentions), `imports` and `exports` are deliberately NOT derived yet: each needs a
- * stated policy about what counts as a mention, and a policy this file and the analyzer
- * agree on by construction is a mirror wearing a lab coat. They come after the spine is
- * green, one at a time, each with its policy written down first.
+ * SCOPE, STATED RATHER than implied. This derives ALL TEN labels the lane emits —
+ * `contains`, `extends`, `implements`, `overrides`, `calls`, `instantiates`, `uses`,
+ * `references`, `imports`, `exports` — because a label the analyzer publishes and this file
+ * is silent on is a label the differential compares against NOTHING. That was the state of
+ * `uses`/`references` (identifier mentions), `imports` and `exports` until each got its own
+ * stated policy written down below: the rule is never "that is what the analyzer does", it
+ * is what the language says, and the policy is written next to the code that applies it.
  *
  * Every policy this file DOES apply is written next to the code that applies it, and
  * each is justified from the language or from Python's semantics — never from "that is
@@ -73,7 +73,7 @@ export const PYTHON_ORACLE_LABELS: ReadonlyArray<string> = (() => {
   // that set is complete by walking the module's own call sites — so a new derivation
   // without a label here fails a lane-owned check rather than drifting silently.
   const declared = [
-    "contains", "extends", "overrides", "calls", "instantiates",
+    "contains", "extends", "implements", "overrides", "calls", "instantiates",
     "uses", "references", "imports", "exports",
   ]
   for (const d of declared) seen.add(d)
@@ -253,7 +253,17 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
   // `classNames` is what the `instantiates` policy below reads, and it is read from the
   // TREE's own class declarations rather than from the analyzer's symbol list, because
   // the whole point of this file is that the two derive the answer separately.
-  interface Klass { name: string; line: number; bases: string[]; qualifiedBases: Set<string>; methods: Map<string, number> }
+  interface Klass {
+    name: string
+    line: number
+    bases: string[]
+    qualifiedBases: Set<string>
+    /** The base list AS WRITTEN — leaf plus the dotted spelling, when there was one. */
+    baseRefs: Array<{ leaf: string; dotted: string | null }>
+    /** `metaclass=ABCMeta` / `metaclass=abc.ABCMeta` / a base leaf of `ABCMeta`. */
+    namesAbcMeta: boolean
+    methods: Map<string, number>
+  }
   const classes: Klass[] = []
   const classNames = new Set<string>()
   const stack: Array<{ kind: "module" } | { kind: "class"; cls: Klass } | { kind: "func"; name: string; line: number }> = [
@@ -276,10 +286,30 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         // collision before the analyzer's was fixed.
         const bases: string[] = []
         const qualifiedBases = new Set<string>()
+        // The base list AS WRITTEN. `bases` (the leaves) is what the MRO/`overrides` walk
+        // reads; `baseRefs` keeps the leaf beside the dotted spelling so the `implements`
+        // tier below can separate a marker this FILE imported (`abc.ABC`, bare `ABC` bound
+        // by `from abc import ABC`) from a class this file declares.
+        const baseRefs: Array<{ leaf: string; dotted: string | null }> = []
+        let namesAbcMeta = false
         if (supNode) {
           for (let i = 0; i < supNode.namedChildCount; i++) {
             const b = supNode.namedChild(i)
-            if (b && b.type === "identifier") bases.push(b.text)
+            // A KEYWORD ARGUMENT IN A BASE LIST IS NOT A BASE. `class C(metaclass=abc.ABCMeta)`
+            // names a metaclass and `class X(TypedDict, total=False)` a flag; neither is a
+            // supertype, and publishing either as one is the R7 defect the lane already fixed
+            // once (`extends X -> total`). It is read here ONLY for the one thing it can
+            // declare: the ABCMeta metaclass is the header that makes a class an interface
+            // with no import proof at all.
+            if (b && b.type === "keyword_argument") {
+              const kn = b.childForFieldName("name")
+              const kv = b.childForFieldName("value")
+              if (kn && kn.text === "metaclass" && kv &&
+                  ((kv.type === "identifier" && kv.text === "ABCMeta") ||
+                   (kv.type === "attribute" && kv.text === "abc.ABCMeta"))) namesAbcMeta = true
+              continue
+            }
+            if (b && b.type === "identifier") { bases.push(b.text); baseRefs.push({ leaf: b.text, dotted: null }) }
             else if (b && b.type === "attribute") {
               // A QUALIFIED base is external, full stop. `class
               // HTTPRedirectHandler(urllib.request.HTTPRedirectHandler)` does NOT
@@ -289,20 +319,28 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
               // that bare-name base resolution is hazardous. So the dotted spelling is
               // kept and the local-match step below compares the WHOLE spelling.
               const a = b.childForFieldName("attribute")
-              if (a) { bases.push(a.text); qualifiedBases.add(a.text) }
+              if (a) { bases.push(a.text); qualifiedBases.add(a.text); baseRefs.push({ leaf: a.text, dotted: b.text }) }
             } else if (b && b.type === "subscript") {
               // `class C(Generic[T], X)` — the base is the subscript's VALUE. Python's
               // MRO runs through `Generic[T]` exactly as it does through `Generic`, so
-              // dropping it loses a base from the inheritance chain.
+              // dropping it loses a base from the inheritance chain. The dotted spelling is
+              // the subscript's HEAD (`typing.Protocol[T]` -> `typing.Protocol`), because a
+              // parameterised base is still the marker it parameterises.
               const v = b.childForFieldName("value")
               if (v) {
-                if (v.type === "identifier") bases.push(v.text)
-                else if (v.type === "attribute") { const a = v.childForFieldName("attribute"); if (a) { bases.push(a.text); qualifiedBases.add(a.text) } }
+                if (v.type === "identifier") { bases.push(v.text); baseRefs.push({ leaf: v.text, dotted: null }) }
+                else if (v.type === "attribute") {
+                  const a = v.childForFieldName("attribute")
+                  if (a) { bases.push(a.text); qualifiedBases.add(a.text); baseRefs.push({ leaf: a.text, dotted: v.text }) }
+                }
               }
             }
           }
         }
-        const cls: Klass = { name, line: k.startPosition.row + 1, bases, qualifiedBases, methods: new Map() }
+        // A base LEAF of `ABCMeta` is the same declaration as the metaclass keyword (the
+        // analyzer reads it that way, and it is the `class C(ABCMeta)` shape).
+        for (const r of baseRefs) if (r.leaf === "ABCMeta") namesAbcMeta = true
+        const cls: Klass = { name, line: k.startPosition.row + 1, bases, qualifiedBases, baseRefs, namesAbcMeta, methods: new Map() }
         classes.push(cls)
         if (name) classNames.add(name)
         // A class is contained by whatever encloses it. Python has no module
@@ -338,21 +376,247 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
   }
   walkSkeleton(rootNode)
 
-  // `extends` — every base in the superclass list, left to right. Python's MRO is
-  // left-to-right and ALL of them are real bases; emitting only the first would lose a
-  // diamond, which is the single most common shape in the corpora this is measured on.
+  // `extends` / `implements` — every base in the superclass list, left to right, with the
+  // MOST SPECIFIC TRUE LABEL. Python's MRO is left-to-right and ALL of them are real bases;
+  // emitting only the first would lose a diamond, which is the single most common shape in
+  // the corpora this is measured on.
+  //
+  // WHY THERE ARE TWO LABELS AND NOT ONE. python has no `interface` keyword and no
+  // `implements` clause, so the construct cannot arrive as its own grammar node — measured
+  // over 5,984 files, the grammar produces 117 node types and none of the 17 conformance
+  // names. It arrives INSIDE the base list, which is where every other OO language puts
+  // `extends`, and the base list therefore carries two facts: `class C(Base)` where Base is
+  // a class, and `class C(Mapping)` where Mapping is the standard library's interface
+  // (`collections.abc`), `abc.ABC`, or `typing.Protocol`. The lane ruled (PY-34, 2026-10-09)
+  // that a proven interface base publishes ONE edge — the most specific true label,
+  // `implements` — with the inheritance fact carried in `metadata.superTypes`, which the
+  // store copies into `brain_symbol.super_types` for the ancestor walk. This oracle derives
+  // that same verdict, but independently: it reads the FILE's own import bindings off the
+  // tree rather than importing the analyzer's pre-pass, which is the only property that
+  // makes the comparison an audit instead of a mirror.
+  //
+  // THE PROOF IS THE FILE'S IMPORT, NEVER THE SPELLING. `ABC` and `Protocol` are legal class
+  // names a user may define — 27 base occurrences of `Protocol` in this corpus are exactly
+  // that, 24 of them inside CPython's own `typing.py` which DEFINES the class it names. So
+  // every proof below is an import in this file, a dotted spelling whose root this file
+  // imported, or a class this file itself declares abstract by its HEADER.
+  const iface = (() => {
+    const importRoots = new Set<string>()
+    const abcNames = new Set<string>()
+    const protocolNames = new Set<string>()
+    const collectionsAbcNames = new Set<string>()
+    const markerLines = new Map<string, number>()
+    const stack: any[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()
+      if (!n) continue
+      if (n.type === "import_statement") {
+        // `import abc` binds the ROOT — and only an unaliased `import a.b` was ever
+        // spellable as a dotted base, which is why the dotted proof below keys on the root.
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "dotted_name") importRoots.add(c.text.split(".")[0])
+        }
+      } else if (n.type === "import_from_statement") {
+        const modNode = n.childForFieldName("module_name")
+        const mod = modNode ? modNode.text : ""
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          // The module node is a named child TOO, and comparing wrapper identity to skip it
+          // never holds (web-tree-sitter hands back a fresh wrapper per access), so the skip
+          // is by BYTE RANGE: `from abc import ABC` must not read `abc` as a bound name.
+          if (modNode && c.startIndex === modNode.startIndex && c.endIndex === modNode.endIndex) continue
+          let imported = ""
+          let bound = ""
+          if (c.type === "identifier") { imported = c.text; bound = c.text }
+          else if (c.type === "dotted_name") { imported = c.text; bound = c.text.slice(c.text.lastIndexOf(".") + 1) }
+          else if (c.type === "aliased_import") {
+            const nm = c.childForFieldName("name")
+            const al = c.childForFieldName("alias")
+            imported = nm ? nm.text : ""
+            bound = al ? al.text : (imported ? imported.slice(imported.lastIndexOf(".") + 1) : "")
+          }
+          if (!imported || !bound) continue
+          const leaf = imported.slice(imported.lastIndexOf(".") + 1)
+          const theLine = n.startPosition.row + 1
+          if (mod === "abc") {
+            if (leaf === "ABC" || leaf === "ABCMeta") { abcNames.add(bound); markerLines.set(bound, theLine) }
+          } else if (mod === "typing" || mod === "typing_extensions") {
+            // typing_extensions is the backport and is what a library still supporting 3.7
+            // imports (pydantic writes `from typing_extensions import Protocol` in 21 of its
+            // base lists). ONLY `Protocol` is carried out of typing: `Generic` is a
+            // type-parameter marker, not an interface, at 291 base occurrences in this corpus.
+            if (leaf === "Protocol") { protocolNames.add(bound); markerLines.set(bound, theLine) }
+          } else if (mod === "collections.abc") {
+            collectionsAbcNames.add(bound); markerLines.set(bound, theLine)
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) stack.push(n.namedChild(i))
+    }
+    return { importRoots, abcNames, protocolNames, collectionsAbcNames, markerLines }
+  })()
+
+  /** The interface kind a base PROVES by this file's bindings, or null. */
+  const markerKindFor = (base: { leaf: string; dotted: string | null }, atLine: number): string | null => {
+    if (base.dotted) {
+      // A DOTTED base is self-proving once its ROOT is imported here: `import abc` makes
+      // `abc.ABC` unspellable as a user class, so no positional test is needed.
+      const root = base.dotted.split(".")[0]
+      if (!iface.importRoots.has(root)) return null
+      if (base.dotted === "abc.ABC" || base.dotted === "abc.ABCMeta") return "abc"
+      if (base.dotted === "typing.Protocol" || base.dotted === "typing_extensions.Protocol") return "typing"
+      if (root === "collections" && base.dotted.startsWith("collections.abc.")) return "collections.abc"
+      return null
+    }
+    // A BARE base is POSITIONAL: the name must be bound to the marker by an import at or
+    // above the class's own line, and no class declaration may have rebound it in between,
+    // because python evaluates the base expression against the module globals as they stand
+    // on that line. `python/interface-implements` pins both halves — `AboveTheRebind(ABC)`
+    // before a local `class ABC` IS the stdlib class, `BelowTheRebind(ABC)` after it is not.
+    const boundLine = iface.markerLines.get(base.leaf)
+    if (boundLine === undefined || boundLine > atLine) return null
+    if (classes.some((x) => x.name === base.leaf && x.line < atLine)) return null
+    if (iface.abcNames.has(base.leaf)) return "abc"
+    if (iface.protocolNames.has(base.leaf)) return "typing"
+    if (iface.collectionsAbcNames.has(base.leaf)) return "collections.abc"
+    return null
+  }
+
+  /**
+   * Does this class DECLARE an interface by its own HEADER — and by nothing else?
+   *
+   * The header shapes that declare one: a proven stdlib marker base, a base that is itself
+   * an in-file interface (the transitivity python actually has, and the reason
+   * `class Service(Repository)` is an implementation when `Repository(ABC)` is), or
+   * `metaclass=ABCMeta`. An `@abstractmethod` is NOT one, and that is measured on the
+   * interpreter rather than ruled: `__abstractmethods__` is computed by `ABCMeta.__new__`,
+   * so an `@abstractmethod` on a class whose metaclass is `type` is a marker the interpreter
+   * does nothing with — `python/interface-declaration-needs-abc-meta` pins `SubNoopAbstract`
+   * and `SubPlain` as forbid rows for exactly that reading.
+   *
+   * Recursion is guarded by a visited set AND by declaration order (a base is declared
+   * before the class that inherits it, or it is not the base), so a cyclic or forward
+   * reference cannot loop or claim an interface that does not exist yet.
+   */
+  const declaresInterface = (name: string, seen: Set<string>): boolean => {
+    if (seen.has(name)) return false
+    seen.add(name)
+    const decl = classes.find((c) => c.name === name)
+    if (!decl) return false
+    if (decl.namesAbcMeta) return true
+    for (const b of decl.baseRefs) {
+      if (markerKindFor(b, decl.line)) return true
+      const inFile = classes.find((c) => c.name === b.leaf && c.line < decl.line)
+      if (inFile && declaresInterface(b.leaf, seen)) return true
+    }
+    return false
+  }
+
   for (const c of classes) {
-    // A SAME-NAME BASE IS NOT AN EXTENDS EDGE. `class _X(_X)` — the real
-    // `IpythonMagic.py` PGO-shadowing idiom — REBINDS the name: the inner `_X` is a
-    // different class from the outer one, so publishing `extends _X -> _X` would assert a
-    // self-loop the source does not contain and that would resolve to the class itself.
+    // A SAME-NAME BASE IS NOT AN EDGE. `class _X(_X)` — the real `IpythonMagic.py`
+    // PGO-shadowing idiom — REBINDS the name: the inner `_X` is a different class from the
+    // outer one, so publishing `_X -> _X` would assert a self-loop the source does not
+    // contain and that would resolve to the class itself.
     //
     // This is the lane's declared boundary (#299) rather than a bug, and the leaf text is
     // still recorded in the class's baseClasses metadata, so the information is not lost —
     // it is just not asserted as a relationship. The oracle derived these 13 edges and the
     // analyzer does not, so mirroring the rule here is what makes the differential able to
     // see anything else in the column.
-    for (const b of c.bases) if (b !== c.name) add("extends", c.name, b, c.line)
+    for (const ref of c.baseRefs) {
+      if (ref.leaf === c.name) continue
+      const provenInterface = markerKindFor(ref, c.line) !== null ||
+        classes.some((d) => d.name === ref.leaf && d.line < c.line && declaresInterface(ref.leaf, new Set()))
+      add(provenInterface ? "implements" : "extends", c.name, ref.leaf, c.line)
+    }
+  }
+
+  // `implements` TIER 3 — `SomeABC.register(SomeConcrete)`: conformance with NO inheritance.
+  //
+  // This is the one form in which python states conformance OUTRIGHT, and it is the reason
+  // `implements` is a gap the base list alone does not close: `Sequence.register(RowLike)`
+  // makes `issubclass(RowLike, Sequence)` true while `RowLike` appears in no base list at all
+  // (`validation/m14/fixtures/python/implements-interface-bases.py:161-165`).
+  //
+  // THE SPELLING `.register(` IS A HOMONYM AND MUST NOT BE THE RULE. Measured over 5,984
+  // corpus files: 493 `X.register(Y)` calls and only ONE whose receiver is provably an
+  // abstract base — `site.register` alone is 241, and `selector.register`,
+  // `SyncManager.register`, `self.register` and Flask's `blueprint.register` follow. A rule
+  // keyed on the spelling would fabricate ~492 edges, so the RECEIVER must be proven, by the
+  // same evidence the base-list tiers use: this file's own import of the registry, or a class
+  // this file itself declares abstract. The fixture pins the negative half beside the positive
+  // (`_registry.register(RowLike)` publishes nothing).
+  //
+  // The ARGUMENT is read as a leaf name, so the claim is weaker than a base-list one and the
+  // analyzer publishes it at confidence 0.9 rather than 1.0 — here it is still an edge, because
+  // this file's job is to derive edges, and the tier is what a differential must be able to
+  // find rather than what it should approve.
+  {
+    const localAbstract = new Set<string>()
+    for (const c of classes) if (declaresInterface(c.name, new Set())) localAbstract.add(c.name)
+    const leafOfExpr = (node: any): string => {
+      if (!node) return ""
+      if (node.type === "identifier") return node.text
+      if (node.type === "attribute") { const a = node.childForFieldName("attribute"); return a ? a.text : "" }
+      if (node.type === "subscript") { const v = node.childForFieldName("value"); return leafOfExpr(v) }
+      return ""
+    }
+    const dottedOfExpr = (node: any): string | null => {
+      if (!node) return null
+      if (node.type === "identifier") return null
+      if (node.type === "attribute") {
+        const obj = node.childForFieldName("object")
+        const attr = node.childForFieldName("attribute")
+        if (!obj || !attr) return null
+        const head = obj.type === "identifier" ? obj.text : dottedOfExpr(obj)
+        return head ? `${head}.${attr.text}` : attr.text
+      }
+      return null
+    }
+    // The dotted registries the analyzer accepts, kept as an explicit list rather than a
+    // prefix rule: `abc.Foo` is not a registry just because the root is `abc`.
+    const ABC_REGISTRIES = new Set([
+      "abc.Sequence", "abc.Iterable", "abc.Container", "abc.Hashable", "abc.Sized", "abc.Mapping", "abc.Set",
+    ])
+    const CAB_REGISTRIES = new Set([
+      "collections.abc.Sequence", "collections.abc.Iterable", "collections.abc.Mapping",
+      "collections.abc.Set", "collections.abc.Hashable",
+    ])
+    const walkRegistrations = (n: any): void => {
+      if (n.type === "call") {
+        const fn = n.childForFieldName("function")
+        if (fn && fn.type === "attribute") {
+          const attr = fn.childForFieldName("attribute")
+          if (attr && attr.text === "register") {
+            const recv = fn.childForFieldName("object")
+            const recvDotted = dottedOfExpr(recv)
+            const recvLeaf = leafOfExpr(recv)
+            let proven = false
+            if (recvDotted && iface.importRoots.has(recvDotted.split(".")[0])) {
+              proven = ABC_REGISTRIES.has(recvDotted) || CAB_REGISTRIES.has(recvDotted)
+            } else if (recvLeaf) {
+              proven = iface.collectionsAbcNames.has(recvLeaf) || localAbstract.has(recvLeaf)
+            }
+            if (proven) {
+              const args = n.childForFieldName("arguments")
+              const first = args ? args.namedChild(0) : null
+              const registered = leafOfExpr(first)
+              const registry = recvLeaf || recvDotted || ""
+              if (registered && registered !== "unknown" && registry) {
+                add("implements", registered, registry, n.startPosition.row + 1)
+              }
+            }
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walkRegistrations(c)
+      }
+    }
+    walkRegistrations(rootNode)
   }
 
   // `overrides` — a method whose NAME also exists on a base. Derived from the skeleton,
@@ -646,11 +910,27 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       return moduleName ?? ""
     }
     const collectTypeNodes = (n: any, out: any[]): void => {
+      // PY-D17 (round 9), mirrored: a clause the parser flagged names no type. WITHOUT THIS the
+      // oracle derived the same fabricated `references f -> o` the analyzer did, so the
+      // differential reported agreement — two derivations of one unstated assumption, which is
+      // exactly the trap PY-D11 taught and the reason this fix is a PAIRED change.
+      if (n.hasError === true) return
       if (n.type === "identifier") {
         if (!PRIMITIVES.has(n.text) && !out.some((x) => x.text === n.text)) out.push(n)
         return
       }
       if (n.type === "none" || n.type === "string" || n.type === "concatenated_string") return
+      // ROUND 6 — mirrored from the analyzer, in lockstep and on purpose. A keyword argument's NAME
+      // is a parameter label, not a type: `Annotated[str, Field(min_length=1, strict=True)]` used to
+      // make this oracle AND the analyzer publish `-> min_length` / `-> strict`. The two mirrored each
+      // other, which is why the differential read green while both were wrong — the mirror is the
+      // reason the fix has to land in BOTH files in the same change. The VALUE is still walked
+      // (`TypeVar("T", bound=Base)` keeps `Base`).
+      if (n.type === "keyword_argument") {
+        const v = typeof n.childForFieldName === "function" ? n.childForFieldName("value") : null
+        if (v) collectTypeNodes(v, out)
+        return
+      }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
         if (c) collectTypeNodes(c, out)
@@ -744,6 +1024,14 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       return
     }
     if (n.type === "call") {
+      // PY-D17 (round 9), mirrored: no call is derived from a region the parser flagged — neither
+      // from a call whose own subtree contains an error nor from one the parser swallowed into an
+      // ERROR node. A one-sided change here would make the differential read the analyzer's fix as
+      // MISSING rather than as agreement, which is what makes this a PAIRED edit.
+      if (n.hasError === true) return
+      let tainted = false
+      for (let anc = n.parent; anc; anc = anc.parent) { if (anc.type === "ERROR" || anc.isMissing === true) { tainted = true; break } }
+      if (tainted) return
       const fn = n.childForFieldName("function")
       if (fn && scope) {
         for (const leaf of calleeNames(fn)) {
@@ -806,6 +1094,55 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
   // the sense a method is, and the analyzer publishes them. The first version of this
   // file walked only function bodies for attributes, so 312 class-constant `contains`
   // edges looked unexplained.
+  /**
+   * The NAMES a binding TARGET binds, read from the container shapes this grammar produces.
+   *
+   * The shapes are not decorative: `a, b = …` is a `pattern_list`, `(a, b)` is a `tuple_pattern`,
+   * `[a, b]` is a `list_pattern`, and `a, *rest` puts the splat in a FOURTH node type,
+   * `list_splat_pattern` — measured in round 11 (`.tmp-py/round11-shapes.mts`) after the analyzer
+   * descended `pattern_list` but not the splat inside it and silently dropped `rest`. A derivation
+   * that read only the first container would disagree with the analyzer about `for a, *b in rows:`
+   * in exactly the direction that reports a phantom missing member, so the list here is the same
+   * list, for the same measured reason.
+   *
+   * `as_pattern_target` is included because the `with`/`except` target arrives nested inside an
+   * `as_pattern` (`with open(p) as fh:` is `with_item value -> as_pattern -> as_pattern_target`),
+   * and `list`/`tuple` because an error-tolerant parse can hand back either spelling.
+   */
+  const targetNameNodes = (target: any): any[] => {
+    const out: any[] = []
+    const stack: any[] = [target]
+    while (stack.length > 0) {
+      const t = stack.pop()
+      if (!t) continue
+      if (t.type === "identifier") { out.push(t); continue }
+      if (t.type === "tuple_pattern" || t.type === "list_pattern" || t.type === "pattern_list" ||
+          t.type === "as_pattern_target" || t.type === "list_splat_pattern" ||
+          t.type === "list" || t.type === "tuple") {
+        for (let i = 0; i < t.namedChildCount; i++) stack.push(t.namedChild(i))
+      }
+    }
+    return out
+  }
+
+  /** The `as` clause of a `with_item` / `except_clause`, from the shape the grammar really gives. */
+  const asBindingTarget = (n: any): any => {
+    const pat = n.childForFieldName("value")
+    if (pat && pat.type === "as_pattern") {
+      for (let i = 0; i < pat.namedChildCount; i++) if (pat.namedChild(i).type === "as_pattern_target") return pat.namedChild(i)
+      return pat.namedChild(1)
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (!c) continue
+      if (c.type === "as_pattern") {
+        for (let j = 0; j < c.namedChildCount; j++) if (c.namedChild(j).type === "as_pattern_target") return c.namedChild(j)
+        return c.namedChild(1)
+      }
+    }
+    return null
+  }
+
   const walkClassBody = (n: any, cls: string): void => {
     // A method body is NOT the class body. `x = 1` inside a method is a LOCAL, and
     // Python does not give it a class-level name — the first version of this walk
@@ -834,6 +1171,21 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     // this walk recognised only `=` — so `Cdef -> __doc__` came out at L45 here and L45 AND L86
     // there. The instance-attribute rule above had already made this correction; this is the
     // class-body rule, which is a different clause of the same sentence.
+    // A MULTI-TARGET ASSIGNMENT DECLARES EVERY NAME IN ITS PATTERN (PY-D21, round 11). `SUCCESS,
+    // FAILURE, ERROR = range(3)` in a class body is THREE class attributes, and the analyzer
+    // publishes three Properties — one per name — while this derivation read `left` as an
+    // identifier and required `type === "identifier"`, so every such member was an edge it could
+    // not account for. MEASURED (CPython over the verdict's population): 5 class-body multi-target
+    // declarations in the whole corpus — `cython/Cython/Tests/xmlrunner.py:62` (3 names),
+    // `cython/tests/run/test_grammar.py:389` (2), `gql-graphql-core/…/visitor.py:121` (4),
+    // `sqlalchemy/test/dialect/mysql/test_types.py:646` (4),
+    // `wagtail/…/0015_fill_filter_spec_field.py:13` (2) — and they are exactly the population the
+    // differential reported as unexplained `contains` rows on the cython rotation that exposed this.
+    //
+    // EACH NAME CARRIES ITS OWN NODE'S LINE, which is what the analyzer's PY-D21 path does: measured
+    // with `.tmp-py/probe-multiline-pattern-lines.mts` on `(alpha,\n beta) = PAIRS`, the analyzer
+    // publishes `alpha` at L6 and `beta` at L7. A statement-line rule would put both at L6 and make
+    // the second name a phantom MISSING row — the mirror image of the defect this rule fixes.
     if (n.type === "assignment" || n.type === "augmented_assignment" || n.type === "expression_statement") {
       const left = n.childForFieldName("left")
       // An ANNOTATED declaration (`name: bytes`) is a member too, and in a TypedDict it
@@ -846,12 +1198,49 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         : n.type === "expression_statement" && n.namedChildCount > 0 && n.namedChild(0).type === "type"
           ? n.namedChild(0).childForFieldName("name") ?? (n.namedChild(0).namedChildCount > 0 ? n.namedChild(0).namedChild(0) : null)
           : null
-      if (nameNode && nameNode.type === "identifier") {
+      if (left && left.type !== "identifier") {
+        // The PATTERN case, disjoint from the identifier case above by construction: when `left`
+        // exists and is not an identifier it is one of the container shapes `targetNameNodes`
+        // knows, and each name in it is this class's member at its own line.
+        for (const member of targetNameNodes(left)) {
+          add("contains", cls, member.text, member.startPosition.row + 1)
+        }
+      } else if (nameNode && nameNode.type === "identifier") {
         // PER-SITE, not per-name. `if c: X = A else: X = B` is two assignments in the
         // source and the analyzer publishes two per-site members, which is what lets a
         // `contains` edge resolve by name AND line. Deduplicating by name is right for an
         // INSTANCE attribute (`self.x` in three methods is one attribute) and wrong here.
         add("contains", cls, nameNode.text, n.startPosition.row + 1)
+      }
+    }
+    // A BINDER STATEMENT IN A CLASS BODY DECLARES A MEMBER. Python's class body is a NAMESPACE,
+    // so `for i in range(0):`, `with open(p) as fh:` and `try: … except E as err:` written directly
+    // in one bind their names in the CLASS namespace exactly as `x = 1` does — the same statement
+    // at module scope binds a module name, and this oracle already derives THAT side (nothing, by
+    // the scripting-family contract: a module declares no owner). The class side is a member and
+    // the analyzer publishes it (PY-D23, round 12), so leaving it underived made every such member
+    // look like an edge the analyzer had invented.
+    //
+    // WHY THIS IS THE LANGUAGE'S RULE AND NOT A MIRROR OF THE ANALYZER: `cython/tests/run/
+    // py_classbody.py` states it in its own doctest — `ForLoopInPyClass.k` is `0` and `.m` is `1`,
+    // read off the class after three `for` loops in its body — and then records that `.i` raises
+    // `AttributeError` because THAT loop's `range(0)` never executes. A member bound lexically by
+    // a statement that never runs is still the statement's effect, which is precisely how the
+    // analyzer treats `if False: X = 1` too; the line is the TARGET's own, because `contains`
+    // resolves by name AND line and the analyzer publishes the symbol at the target node.
+    if (n.type === "for_statement" || n.type === "with_item" || n.type === "except_clause") {
+      const target = n.type === "for_statement"
+        ? n.childForFieldName("left") ?? n.namedChild(0)
+        : asBindingTarget(n)
+      // EVERY name carries the TARGET node's own line, not each identifier's: the analyzer
+      // publishes one symbol per name with the range of the node it read the target FROM, so a
+      // multi-line pattern (`for (a,\n     b) in rows:`) puts both members on the pattern's first
+      // line. Reading each identifier's line here instead would disagree on exactly that shape —
+      // one phantom missing member and one unexplained edge, from a difference in addressing
+      // rather than in meaning.
+      if (target) {
+        const targetLine = target.startPosition.row + 1
+        for (const nameNode of targetNameNodes(target)) add("contains", cls, nameNode.text, targetLine)
       }
     }
     // A CALL AT CLASS SCOPE is a call made by the class, and the lane scopes it to the

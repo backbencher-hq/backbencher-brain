@@ -1,5 +1,12 @@
 import type { Node } from "web-tree-sitter"
+import { statSync } from "node:fs"
+import * as path from "node:path"
 import { ASTEngine } from "./engine"
+import { fileClaimForTarget } from "./file-claim"
+// The separator a BINDING's target carries, imported from the FAMILY constant rather than
+// re-spelled here: the analyzer writes it, the arbiter checks it, and two copies of a spelling
+// would be two rules (`src/ast/types.ts:190`).
+import { BINDING_SEP } from "./types"
 import {
   PHP_INTERNAL_FUNCTIONS,
   PHP_INTERNAL_CLASSES,
@@ -546,6 +553,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
+    /** The project this file belongs to, when the caller said — the scope an include path is
+     *  resolved and claimed against, and the only thing that makes a file claim computable. */
+    const projectRoot = typeof context?.projectRoot === "string" && context.projectRoot.length > 0 ? context.projectRoot : null
     // Per-file resolution state: `new parent()` maps to the base declared in
     // THIS file. Cross-file inheritance is not resolved (honest no-edge).
     this.baseByClass = new Map()
@@ -588,6 +598,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       ns: string | undefined
       inFunction: string | undefined
       scope: PhpValueScope
+      /** Set by the RECOVERY-ESCAPE (see `pushRecoveredBodyDeclarations`): this callable was
+       *  recovered from a body the parser could not close, so its owner is the class (or the
+       *  namespace) rather than the method it was nested inside. */
+      recoveredFromBody?: boolean
     }
     // PHP2 file scope: prescanned top-level bindings (uniform — valid code
     // declares before use; hoisted functions resolve regardless of order).
@@ -606,7 +620,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const stack: Frame[] = [{ node: rootNode, owner: undefined, ownerKind: undefined, ns: undefined, inFunction: undefined, scope: fileScope }]
 
     while (stack.length > 0) {
-      const { node, owner, ownerKind, ns, inFunction, scope } = stack.pop()!
+      const { node, owner, ownerKind, ns, inFunction, scope, recoveredFromBody } = stack.pop()!
       const type = node.type
 
       if (type === "namespace_definition") {
@@ -644,8 +658,23 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const baseNode = baseClause?.namedChild(0) ?? null
         const rawBase = baseClause?.namedChild(0)?.text
         const baseName = baseClause ? this.heritageTarget(rawBase ?? "", className) : undefined
-        const baseUnresolvable =
-          !!rawBase && rawBase !== baseName && baseName === className
+        // PHPD43 (final review): the self-reference test is `baseName === className`, NOT
+        // `rawBase !== baseName && baseName === className`.
+        //
+        // The old form only caught the QUALIFIED route to a self-reference (`extends \\Foo` inside
+        // `Foo`: qualification stripped, leaf is the class's own name) and let the BARE route through
+        // (`extends Foo` inside `Foo`), where `rawBase === baseName` made the guard false and the
+        // analyzer published `extends Foo -> Foo`. Both spellings name the declaration itself — in a
+        // namespace, an unqualified name resolves to the current namespace FIRST, so there is no
+        // second class it could mean — and PHP fatals on both ("cannot extend itself"). The graph
+        // answered each with a confident self-loop.
+        //
+        // The separable case is unaffected, and that is the whole reason this is a ONE-condition rule
+        // rather than "drop heritage when the leaf repeats": `class Forms\\Setup\\FeaturesForm extends
+        // \\Forms\\User\\FeaturesForm` resolves to `Forms\\User\\FeaturesForm`, which is NOT the
+        // declaration's own name, so it survives with its qualification. What is dropped is exactly
+        // what cannot be told apart from the declaration itself.
+        const baseUnresolvable = !!baseName && baseName === className
         const interfaces: string[] = []
         const ifaceClause = this.findChildByType(node, "class_interface_clause")
         if (ifaceClause) {
@@ -653,7 +682,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             const iface = ifaceClause.namedChild(i)
             if (!iface) continue
             const ifaceName = this.heritageTarget(iface.text, className)
-            if (ifaceName === className && iface.text !== ifaceName) continue // unresolvable same-name interface
+            // PHPD43: a clause that resolves to the class's OWN name is not an interface it implements,
+            // in EITHER spelling. See `baseUnresolvable` above for why the bare route is included and
+            // why the separable same-leaf case survives.
+            if (ifaceName === className) continue
             interfaces.push(ifaceName)
             relationships.push({
               source: className,
@@ -667,6 +699,41 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
 
         const modifiers = this.extractModifiers(node)
+        // M60 php round — THE PROJECT-WIDE HIERARCHY, PUBLISHED ON THE SYMBOL.
+        //
+        // php published heritage as EDGES and never on the symbol, and the store seam that
+        // persists a hierarchy reads `metadata.superTypes` (parallel-indexer.ts:3590 ->
+        // `brain_symbol.super_types`). So that column was NULL on every php row and
+        // `retargetCrossFileOverrides` — which opens `if (supertypes.size === 0) return out` —
+        // had nothing to walk: php's inheritance was, to a store consumer, ABSENT rather than
+        // thin. That is the blocker behind the ambiguity census's one SOUND lever
+        // (`owner+inherited`, 24,223 endpoints): no implementation of it can resolve a member
+        // through a class's ancestors while the store cannot say what those ancestors ARE.
+        //
+        // The list MIRRORS the heritage edges this declaration emits — same spellings, same
+        // omissions — so it is assembled from `baseUnresolvable`/`baseName`/`interfaces` rather
+        // than re-read from the node. Both halves matter and both are already decided above:
+        //   * a base `heritageTarget` could not separate from the class's own name emits NO
+        //     extends edge, so it must not appear here either — a self-loop is always fabrication,
+        //     and writing one into the column that exists to be WALKED is worse than omitting it;
+        //   * a same-leaf QUALIFIED base keeps its qualification on the edge, so the payload
+        //     carries the same string: a consumer holding this column cannot re-leaf it.
+        //
+        // OMITTED when the list is empty rather than published as `[]`. The store's own test is
+        // `Array.isArray(...) && length > 0`, so the two are one fact downstream; omitting it is
+        // therefore a spelling choice, and the fixture pins it so the spelling cannot drift
+        // without a decision.
+        //
+        // What this unblocks is the WALK, not its soundness: the existing consumer keys its map
+        // on the symbol's bare `name`, so two classes called `Child` in different namespaces still
+        // merge their parents — the leaf collision the `overrides` oracle bounded itself around.
+        // Fixing THAT is a consumer decision and is not claimed here.
+        //
+        // TRAITS ARE ABSENT, deliberately. `use SomeTrait` is not a heritage clause: this column
+        // is walked as a nearest-declaring-ANCESTOR chain, and a trait is a flattened mixin rather
+        // than an ancestor, so admitting it would change what "nearest" means for every class that
+        // mixes one in. A declared boundary, not an oversight.
+        const superTypes = [...(baseUnresolvable || !baseName ? [] : [baseName]), ...interfaces]
         symbols.push({
           name: className,
           kind: ASTEngine.SymbolKind.Class,
@@ -703,6 +770,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             namespace: ns,
             baseClass: baseUnresolvable ? undefined : baseName,
             interfaces,
+            // The hierarchy the store persists — see `superTypes` above for the mirror rule, the
+            // self-loop omission and the trait boundary.
+            ...(superTypes.length ? { superTypes } : {}),
             isFinal: modifiers.includes("final"),
             isAnonymous: false,
           },
@@ -774,7 +844,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             // single-segment, e.g. `interface Foo extends \Foo`) is
             // unresolvable in the leaf graph: skip it (no self-loop).
             const parentName = this.heritageTarget(parent.text, ifaceName)
-            if (parentName === ifaceName && parent.text !== parentName) continue
+            // PHPD43: `interface Foo extends Foo` (either spelling) is not an extends edge; see
+            // `baseUnresolvable` in the class branch for the two routes and the surviving control.
+            if (parentName === ifaceName) continue
             extended.push(parentName)
             relationships.push({
               source: ifaceName,
@@ -795,7 +867,17 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // the derivation and the csharp/typescript precedent.
           ownerName: owner ?? ns,
           ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
-          metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${ifaceName}` : ifaceName, namespace: ns, extendedInterfaces: extended },
+          // An interface's parents are `extends` edges, so they are its heritage too — same
+          // mirror rule as the class branch (see `superTypes` there): the list is the one the
+          // edges above were emitted from, unresolvable same-leaf parents already skipped, and
+          // the key is omitted rather than published empty so the store sees "no supertypes".
+          metadata: {
+            phpSpecific: true,
+            fqn: ns ? `${ns}\\${ifaceName}` : ifaceName,
+            namespace: ns,
+            extendedInterfaces: extended,
+            ...(extended.length ? { superTypes: extended } : {}),
+          },
         })
         const body = this.findChildByType(node, "declaration_list")
         if (body) this.pushMembers(body, stack, ifaceName, ASTEngine.SymbolKind.Interface, ns, scope)
@@ -832,13 +914,27 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Labeled`). Probe-verified: enum_declaration carries the clause; the
         // pre-M37.13 code never read it, silently dropping enum implements.
         const ifaceClause = this.findChildByType(node, "class_interface_clause")
+        // One derivation, two consumers: the implements EDGES below and the heritage payload on
+        // the symbol. The metadata used to recompute `heritageTarget` for every child a second
+        // time, which is exactly how a payload and its edges drift apart.
+        const implementedInterfaces: string[] = []
         if (ifaceClause) {
           for (let i = 0; i < ifaceClause.namedChildCount; i++) {
             const iface = ifaceClause.namedChild(i)
             if (!iface) continue
+            const ifaceName = this.heritageTarget(iface.text, enumName)
+            // PHPD43 (final review): the guard the class and interface branches have had since PHPD10
+            // and this branch NEVER did. `enum Foo implements \\Foo` published `implements Foo -> Foo`
+            // and mirrored the same string into `metadata.superTypes` — a self-loop written into the
+            // column that exists to be WALKED. The asymmetry survived every gate in the lane because
+            // the differential's oracle already skips this shape for enums (`heritageOrSkip(c.text,
+            // enumCls)`), so the two sides disagreed only on an input the pinned 60-file draws happen
+            // never to contain. `validation/m14/fixtures/php/enum-self-heritage.php` is that input.
+            if (ifaceName === enumName) continue
+            implementedInterfaces.push(ifaceName)
             relationships.push({
               source: enumName,
-              target: this.heritageTarget(iface.text, enumName),
+              target: ifaceName,
               type: ASTEngine.RelationshipType.Implements,
               confidence: 1.0,
               line_number: this.nodeLine(iface),
@@ -854,7 +950,22 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // M60 NAMESPACE CONTAINMENT — see the class_declaration branch.
           ownerName: owner ?? ns,
           ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
-          metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${enumName}` : enumName, namespace: ns, implementedInterfaces: ifaceClause ? Array.from({ length: ifaceClause.namedChildCount }, (_, i) => this.heritageTarget(ifaceClause.namedChild(i)?.text ?? "", enumName)).filter(Boolean) : [] },
+          // Same mirror rule as the class and interface branches — the enum's implements edges are
+          // its heritage. NOTE the asymmetry this makes visible rather than creates: the class and
+          // interface branches SKIP a same-leaf parent that qualification cannot separate from the
+          // declaration's own name, and this branch has never had that guard, so an
+          // `enum Foo implements \Foo` would emit a self-implements edge and the payload mirrors
+          // it. NOT fixed here, and the reason is scope rather than doubt: removing an edge is a
+          // differential-visible change (the oracle's side would have to move with it) and needs
+          // its own before/after count over the population, so it is recorded in the lane docs as
+          // an open, unpriced shape instead of being folded into an additive payload change.
+          metadata: {
+            phpSpecific: true,
+            fqn: ns ? `${ns}\\${enumName}` : enumName,
+            namespace: ns,
+            implementedInterfaces,
+            ...(implementedInterfaces.length ? { superTypes: implementedInterfaces } : {}),
+          },
         })
         const list = this.findChildByType(node, "enum_declaration_list")
         if (list) {
@@ -888,9 +999,20 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const fnName = nameNode.text
         const parameters = this.extractParameters(node)
         const returnType = this.extractReturnType(node)
+        // RECOVERY-ESCAPE, half 2 of 2 (half 1 is the skip in `walkBody`, and the measurements
+        // are in `pushRecoveredBodyDeclarations`). A `function_definition` the escape recovered
+        // from a CLASS member's damaged body is written where a class member is written — the
+        // source spells it in the class body between members — so it publishes as a METHOD of
+        // that class rather than as a global function. Publishing it as a function would
+        // describe the damaged tree; php/error-recovery's contract ('the declarations AROUND it
+        // still publish, INCLUDING THE ONES AFTER IT') describes the SOURCE. The kind is the
+        // whole of the difference: ownership (`ownerName`) and the containment edge that follows
+        // are the same either way, which is why the alternative reading is pinned by the
+        // fixture's `forbidSymbols` rows rather than left to this comment.
+        const escapedMember = recoveredFromBody === true && this.isClassLikeOwnerKind(ownerKind)
         symbols.push({
           name: fnName,
-          kind: ASTEngine.SymbolKind.Function,
+          kind: escapedMember ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
           range: this.nodeToRange(node),
           visibility: "public",
           parameters,
@@ -904,11 +1026,14 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // nothing at all.
           ownerName: owner ?? ns,
           ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
-          metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${fnName}` : fnName, namespace: ns },
+          metadata: escapedMember
+            ? { phpSpecific: true, isMethod: true, isMagicMethod: fnName.startsWith("__"), recoveredFromBody: true }
+            : { phpSpecific: true, fqn: ns ? `${ns}\\${fnName}` : fnName, namespace: ns },
         })
         const body = node.childForFieldName("body")
         if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, fnName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
         this.walkCallableHeader(node, symbols, relationships, imports, owner, ns, fnName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
+        if (body) this.pushRecoveredBodyDeclarations(body, stack, owner, ownerKind, ns, scope)
         this.pushNonBodyChildren(node, stack, owner, ownerKind, ns, scope, true)
         continue
       }
@@ -965,6 +1090,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const body = node.childForFieldName("body")
         if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, methodName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
         this.walkCallableHeader(node, symbols, relationships, imports, owner, ns, methodName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
+        // RECOVERY-ESCAPE — the members the parser could not close this body over. See
+        // `pushRecoveredBodyDeclarations`.
+        if (body) this.pushRecoveredBodyDeclarations(body, stack, owner, ownerKind, ns, scope)
         this.pushNonBodyChildren(node, stack, owner, ownerKind, ns, scope, true)
         continue
       }
@@ -1206,6 +1334,12 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // --- Nested named functions: the declarations the symbol walk cannot reach ---
+    this.publishNestedNamedFunctions(rootNode, symbols)
+
+    // --- Member IDENTITY: `Owner.member` on every class-like member ---
+    this.publishMemberIdentity(symbols)
+
     // --- Override relationships (implicit PHP overrides) ---
     this.resolveOverrides(symbols, relationships, context)
 
@@ -1228,11 +1362,163 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // --- OWNER-QUALIFIED MEMBER TARGETS: the provable half of the ambiguity ---
+    //
+    // AFTER every emission, deliberately: the member edges are pushed during the walk and the
+    // declaration they are checked against may be written LATER in the class, so a pass that ran
+    // at emission time would prove only the forward half.
+    const ownerQualified = this.qualifyProvenMemberTargets(symbols, relationships)
+    if (ownerQualified > 0) patterns.add(`owner-qualified x${ownerQualified}`)
+
+    // THE FILE CLAIM FOR AN INCLUDE PATH, in the same post-emission position and for the same
+    // reason: every edge exists by now. See `claimResolvableIncludes`.
+    const includeClaims = this.claimResolvableIncludes(relationships, filePath, projectRoot)
+    if (includeClaims > 0) patterns.add(`include-file-claims x${includeClaims}`)
+
     if (symbols.some((s) => s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Interface)) {
       patterns.add("Object-Oriented Programming")
     }
 
     return this.result(symbols, relationships, imports, exports, errors, content, rootNode, detectedFrameworks, patterns)
+  }
+
+  /**
+   * PUBLISH a named function declared inside a CALLABLE — the declaration the symbol walk
+   * structurally cannot reach.
+   *
+   * ## The measured population
+   *
+   * Over all 5,094 admitted php files (tree walk, 2026-10-07): **25** `function_definition` nodes
+   * whose path to the program root passes through a callable, in **4** files. Twenty-two are the
+   * recovery casualties of `markdown.php` — already published by the recovery escape, one layer up
+   * — and the remaining **three** are the Slim test-helper idiom:
+   *
+   *   slim/tests/AppTest.php:1563                  `function handle(...)` inside `testInvokeFunctionName`
+   *   slim/tests/CallableResolverTest.php:30       `function testAdvancedCallable(...)` inside `setUpBeforeClass`
+   *   slim/tests/MiddlewareDispatcherTest.php:32   `function testProcessRequest(...)` inside `setUpBeforeClass`
+   *
+   * Both halves of that measurement matter. The 251 helpers phpunit guards with
+   * `if (!function_exists('assertSame')) { function assertSame(...) {...} }` are NOT nested — a
+   * top-level `if` is not a scope — and the ordinary walk publishes all 251 of them (measured; the
+   * first version of this probe asked only "is the parent a `compound_statement`?" and reported 250
+   * false positives in that one file). What the walk cannot reach is a declaration inside a
+   * CALLABLE: those bodies belong to `walkBody`, whose job is call/read edges and scope frames, and
+   * which never publishes symbols.
+   *
+   * ## Why publication is right, and what it is not
+   *
+   * A named function declared in a body enters PHP's GLOBAL function table when the enclosing code
+   * runs, which is why `collectPhpFileScope` already registers it as a file-scope function VALUE for
+   * resolution ("Global effects, visible everywhere regardless of nesting"). Resolution without
+   * publication is precisely the divergence the orphan-endpoint round fixed, and here it costs more
+   * than a missing symbol: `walkBody` keeps emitting edges SOURCED AT the nested name
+   * (`references testProcessRequest -> ServerRequestInterface`, two of them in the Slim file), so the
+   * store carried edges from a declaration it did not hold. Family check, measured against the
+   * pinned grammars: javascript and typescript publish a nested `function innerHelper() {}`; python
+   * and ruby do not — and PHP's semantics are the javascript ones, not the python ones (a Python
+   * `def` in a `def` is a local binding; a PHP `function` in a method is global).
+   *
+   * The KIND is `function` with the file's NAMESPACE as owner, exactly as a top-level function is
+   * published — not `method` of the enclosing class. "Publication must describe the source" (the
+   * recovery round's rule) is what rejects that alternative: the source writes a function, not a
+   * member, and a method symbol would describe the shape of the tree instead.
+   *
+   * ## The two guards, both measured
+   *
+   * 1. A DAMAGED BODY IS LEFT TO THE RECOVERY ESCAPE. A `function_definition` whose body parent
+   *    `hasError` is skipped: those 22 markdown declarations are not nested functions at all, they
+   *    are class members the parser could not close the body over, and the escape publishes them as
+   *    MEMBERS (this is the difference the fixture `php/recovery-swallowed-members` pins with
+   *    `forbidSymbols`). The probe that produced the 25/4 census used exactly this predicate and
+   *    separated the two populations cleanly: `damagedBody=true` for all 22, `false` for all 3.
+   * 2. ALREADY-PUBLISHED NODES ARE SKIPPED BY RANGE, so the escape and this pass cannot both
+   *    publish one declaration.
+   *
+   * ## What this deliberately does NOT do
+   *
+   * It does not re-walk the nested body. That body has ALREADY been walked by the enclosing
+   * callable's `walkBody`, which is why this pass publishes a symbol and emits no edge of its own —
+   * the alternative would emit every call and read inside the nested function twice, a duplicate no
+   * "at least one" fixture row can see. Known and NOT changed here, because it is an attribution
+   * decision rather than a coverage gap: call/read edges inside a nested function's body are
+   * attributed to the ENCLOSING callable (`calls registerHelper -> decorate`, line 82 of the fixture,
+   * where the call really belongs to `nestedHelper`). The fixture records the current behaviour and
+   * does not pin it as correct.
+   */
+  private publishNestedNamedFunctions(rootNode: Node, symbols: ASTEngine.UniversalSymbol[]): void {
+    const published = new Set<string>()
+    for (const s of symbols) {
+      if (s.kind !== ASTEngine.SymbolKind.Function && s.kind !== ASTEngine.SymbolKind.Method) continue
+      published.add(this.rangeKey(s.name, s.range))
+    }
+    const segments = this.namespaceSegments(rootNode)
+    const stack: Array<{ n: Node; ns: string | undefined; encl: string | null }> = [
+      { n: rootNode, ns: undefined, encl: null },
+    ]
+    while (stack.length > 0) {
+      const { n, ns, encl } = stack.pop()!
+      const t = n.type
+      // Namespace in force: the braced form applies to its own subtree, the semicolon form to the
+      // segment its siblings belong to — the same two rules the main walk encodes.
+      let childNs = ns
+      if (t === "namespace_definition") {
+        const nm = this.findChildByType(n, "namespace_name")?.text
+        if (nm && !this.findChildByType(n, "compound_statement")) childNs = nm
+      }
+      if (t === "program") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const child = n.namedChild(i)
+          if (!child) continue
+          const segNs = child.type === "namespace_definition" ? undefined : segments.get(child.startIndex)
+          stack.push({ n: child, ns: segNs ?? ns, encl: null })
+        }
+        continue
+      }
+      let childEncl = encl
+      if (t === "function_definition" || t === "method_declaration") {
+        const nameNode = n.childForFieldName("name")
+        if (t === "function_definition" && encl !== null) {
+          const body = n.childForFieldName("body")
+          const damaged = body ? (body as any).hasError === true : false
+          const name = nameNode?.text
+          if (name && !damaged && !published.has(this.rangeKey(name, this.nodeToRange(n)))) {
+            published.add(this.rangeKey(name, this.nodeToRange(n)))
+            symbols.push({
+              name,
+              kind: ASTEngine.SymbolKind.Function,
+              range: this.nodeToRange(n),
+              visibility: "public",
+              parameters: this.extractParameters(n),
+              returnType: this.extractReturnType(n),
+              complexity: this.calculateNodeComplexity(n),
+              ownerName: childNs,
+              ownerKind: childNs ? ASTEngine.SymbolKind.Namespace : undefined,
+              metadata: {
+                phpSpecific: true,
+                fqn: childNs ? `${childNs}\\${name}` : name,
+                namespace: childNs,
+                nestedIn: encl,
+              },
+            })
+          }
+        }
+        childEncl = nameNode?.text ?? encl
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push({ n: c, ns: childNs, encl: childEncl })
+      }
+    }
+  }
+
+  /**
+   * Identity of a declaration for the already-published guard. `startIndex` when the range carries
+   * it (every range this lane builds does, via `nodeToRange`) — a node offset is exact, where a
+   * line/column pair is only as exact as the positions the tree reports.
+   */
+  private rangeKey(name: string, range: ASTEngine.UniversalSymbol["range"] | undefined): string {
+    const at = range?.startIndex ?? `${range?.startLine ?? ""}:${range?.startColumn ?? ""}`
+    return `${name}\u0000${at}`
   }
 
   /**
@@ -1260,8 +1546,25 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    *
    * ## What counts, and the three tests that decide it
    *
-   *   1. the callee is EXACTLY the bare name `define` — a `Foo\define` or a variable
-   *      callee is a different function and is not a publication;
+   *   1. the callee RESOLVES TO THE GLOBAL `define`. Two spellings do, and only two:
+   *      the bare name `define` (which reaches the global function through PHP's
+   *      unqualified-name fallback) and the FULLY QUALIFIED `\define` (which reaches it
+   *      unconditionally — "Fully qualified names always resolve to the name without
+   *      leading namespace separator"). A QUALIFIED `Foo\define` resolves against the
+   *      current namespace, a RELATIVE `namespace\define` resolves to the current
+   *      namespace and does NOT fall back (the fallback is a rule for unqualified names),
+   *      and a variable callee resolves to nothing: none of the three is a publication.
+   *      The `\define` shape is not a hypothesis — a whole-population define-audit
+   *      (`validation/m14/fixtures/php/exports-probe.mts`) found 58 tree-implied
+   *      file-scope publications against 57 emitted edges, and the missing one was
+   *      phpunit's `tests/end-to-end/generic/_files/auto_prepend_file.php`, a file whose
+   *      entire purpose is publishing a constant that later scripts read (PHP's
+   *      `auto_prepend_file`), refused for its SPELLING alone. The two refused
+   *      define-family shapes are priced there as well: `namespace\define` at 0
+   *      occurrences, and the aliased `use function define as pub` — which does publish —
+   *      at 0 occurrences over 5,094 admitted files, so it is recorded and not
+   *      half-implemented. The audit also measured 0 files that declare their OWN
+   *      `define`, which is the only way the bare-name test could have been unsound;
    *   2. the first argument's VALUE node is a `string` / `encapsed_string`, read
    *      THROUGH the `argument` wrapper. `define($n, …)` publishes a name nobody can
    *      write down, so there is nothing for an edge to point at (measured: 1 in the
@@ -1331,7 +1634,14 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       const n = stack.pop()!
       if (n.type === "function_call_expression") {
         const fn = n.childForFieldName("function")
-        if (fn && fn.text === "define" && isFileLevel(n)) {
+        // Rule 1 as a RESOLUTION test, not a spelling test. See the header: `\define` is
+        // a fully qualified name and therefore the global function in every program,
+        // while `Foo\define` / `namespace\define` are a different function or nothing at
+        // all. `calleeShape` is recorded because the two accepted spellings are not
+        // interchangeable to a consumer that has to explain the edge, and because it is
+        // the field a revert mutant filters on (script/m14/php-mutants.ts).
+        const calleeShape = fn?.text === "define" ? "bare" : fn?.text === "\\define" ? "absolute-fq" : null
+        if (fn && calleeShape && isFileLevel(n)) {
           const args = this.findChildByType(n, "arguments")
           const wrapper = args?.namedChild(0)
           // THROUGH the `argument` wrapper — see the header: testing the wrapper's own
@@ -1369,6 +1679,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
                   fileLevel: true,
                   relationshipType: "define_call",
                   file: filePath,
+                  calleeShape,
                   // The name is GLOBAL even inside a namespace, which is why the symbol
                   // carries no ownerName. Recorded so a consumer does not re-derive it
                   // from the file's namespace and get it wrong.
@@ -1563,30 +1874,16 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (first && first.startIndex === n.startIndex && first.endIndex === n.endIndex) {
           const base = this.variableBareName(n)
           if (base && base !== "this") {
-            relationships.push({
-              source: inFunction || "global",
-              target: base,
-              type: ASTEngine.RelationshipType.Uses,
-              confidence: 0.9,
-              line_number: this.nodeLine(n),
-              metadata: { phpSpecific: true, isSubscriptBase: true },
-            })
+            this.pushPhpBindingRead(relationships, { source: inFunction || "global", base, line: this.nodeLine(n), arm: "isSubscriptBase" })
           }
         }
       } else if (type === "variable_name" && parent && parent.type === "anonymous_function_use_clause") {
         // PHP-C (first review): closure captures (`use ($factor)`) copy
-        // outer values — every name in the clause is a genuine read.
-        // Arrow-fn implicit captures need inventory (review 2).
+        // outer values — every name in the clause is a genuine read, and an
+        // OUTER frame's binding, so it is spelled as one.
         const base = this.variableBareName(n)
         if (base && base !== "this") {
-          relationships.push({
-            source: inFunction || "global",
-            target: base,
-            type: ASTEngine.RelationshipType.Uses,
-            confidence: 0.9,
-            line_number: this.nodeLine(n),
-            metadata: { phpSpecific: true, isClosureCapture: true },
-          })
+          this.pushPhpBindingRead(relationships, { source: inFunction || "global", base, line: this.nodeLine(n), arm: "isClosureCapture" })
         }
       } else if (type === "variable_name" && this.isInsideInterpolation(n)) {
         // PHP-F (first review): string interpolation reads (`"hello $name"`,
@@ -1594,28 +1891,15 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // is evaluated (dart DT-F blanket parity). `$this` is implicit.
         const base = this.variableBareName(n)
         if (base && base !== "this") {
-          relationships.push({
-            source: inFunction || "global",
-            target: base,
-            type: ASTEngine.RelationshipType.Uses,
-            confidence: 0.9,
-            line_number: this.nodeLine(n),
-            metadata: { phpSpecific: true, isInterpolationRead: true },
-          })
+          this.pushPhpBindingRead(relationships, { source: inFunction || "global", base, line: this.nodeLine(n), arm: "isInterpolationRead" })
         }
       } else if (type === "name" && parent && parent.type === "dynamic_variable_name") {
         // PHP-F: `"${o}"` parses the variable as a bare name inside a
-        // dynamic_variable_name — unambiguously a read there.
+        // dynamic_variable_name — unambiguously a read there, and a variable
+        // read is a binding in either spelling.
         const base = n.text
         if (base && base !== "this") {
-          relationships.push({
-            source: inFunction || "global",
-            target: base,
-            type: ASTEngine.RelationshipType.Uses,
-            confidence: 0.9,
-            line_number: this.nodeLine(n),
-            metadata: { phpSpecific: true, isInterpolationRead: true },
-          })
+          this.pushPhpBindingRead(relationships, { source: inFunction || "global", base, line: this.nodeLine(n), arm: "isInterpolationRead" })
         }
       }
 
@@ -1648,7 +1932,19 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)
-        if (child) stack.push({ n: child, parent: n, scope: childScope })
+        if (!child) continue
+        // RECOVERY-ESCAPE, half 1 of 2 (half 2 is `pushRecoveredBodyDeclarations`, called by the
+        // `function_definition`/`method_declaration` branches; the measurements that justify the
+        // rule are in its header). A callable sitting DIRECTLY in a body the parser could not
+        // close is not a nested function — it is the next member of the class, recovered into
+        // the wrong parent. The escape publishes it and walks its subtree as the declaration it
+        // is, so descending into it HERE as well would emit every call and read inside it TWICE:
+        // once attributed to the damaged method and once to the member itself. The skip is
+        // restricted to the ENTRY node's own children (`n === node`), so a declaration nested
+        // inside a deeper statement of the same damaged body keeps the old, single walk — that
+        // shape is not published by the escape and skipping it here would LOSE its edges.
+        if (n === node && this.recoveryMisnestedCallable(node, child)) continue
+        stack.push({ n: child, parent: n, scope: childScope })
       }
     }
   }
@@ -2000,6 +2296,301 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * belong to no value rule — but defaults, const initializers and
    * attribute arguments genuinely read (consts/globals via file frame).
    */
+  /** Class-like owners: a recovered declaration under one of these publishes as a MEMBER. */
+  /**
+   * M60 php round — MEMBER IDENTITY: a class-like member's `qualifiedName` is `Owner.member`.
+   *
+   * ## Why this is not cosmetic
+   *
+   * The store resolves a relationship target by `qualified_name` EXACT match before anything else
+   * (`src/ast/parallel-indexer.ts` strategy 1: `WHERE target_external = _res_qname.qualified_name`),
+   * and that index is built `SELECT qualified_name, MIN(id) ... GROUP BY qualified_name` — a
+   * deterministic winner for a DUPLICATE qualified name, which is the right rule when a qualified
+   * name really identifies one thing. php published NEITHER `qualifiedName` nor `metadata.fqn` for a
+   * member, so the store's `qualified_name` was the BARE member name and that index degenerated into
+   * a name index whose tie-break is `MIN(id)` — the alphabetically first file. MEASURED on four
+   * fixture files, before this change:
+   *
+   * ```
+   *   goDirect          -> persist   landed on AlphaStore::persist    (written in GammaStore)
+   *   goInherited       -> persist   landed on AlphaStore::persist    (written in a BetaStore subclass)
+   *   goPlain           -> persist   landed on AlphaStore::persist    (a LOCAL VARIABLE's class — unknowable)
+   *   goTwoAncestors    -> dup       landed on DupIface::dup          (two ancestors declare it)
+   * ```
+   *
+   * Every one of those is a WRONG answer published as a resolved edge, and the failure is silent in
+   * the expensive direction: a reverse walk from `AlphaStore::persist` reports callers in files that
+   * never mentioned it. The lane's ambiguity census could not see it either, because the census
+   * measures the ANALYZER's endpoint resolvability against the analyzer's own symbol set and never
+   * asks what the store then bound it to — 48.3% of endpoints are "ambiguous" there while the store
+   * was quietly resolving a large share of them to an arbitrary declaration.
+   *
+   * Publishing the owner-qualified spelling restores the index's contract. Three consequences, all
+   * of them wanted:
+   *
+   *   1. a BARE member target no longer matches a member's qualified name, so an ambiguous member
+   *      read is left UNRESOLVED (NULL, the honest state) instead of being attached to whichever
+   *      declaration sorts first;
+   *   2. the member reads the analyzer CAN prove — the ones carrying `metadata.owner` — are resolved
+   *      by owner and ancestor walk (`src/ast/member-owner-resolution.ts`), which is a rule rather
+   *      than a tie-break;
+   *   3. `overrides` targets are ALREADY spelled `Owner.member`, so they now match this index
+   *      exactly, and `retargetCrossFileOverrides` — whose `methodsByOwner` is built from
+   *      `qualified_name` ending in `.${name}` and therefore found NOTHING for php, however
+   *      populated `super_types` was — becomes able to do its job for this language at all.
+   *
+   * Deliberately NOT set on symbols whose owner is a NAMESPACE: a top-level function's `fqn` is
+   * already `${ns}\\${name}` (PHP's own spelling, backslash-qualified), and a dotted alias would be a
+   * second identity for one declaration. `metadata.fqn` is left alone for the same reason — this
+   * publishes the one field the store's resolver reads.
+   */
+  private publishMemberIdentity(symbols: ASTEngine.UniversalSymbol[]): void {
+    for (const s of symbols) {
+      if (!s.ownerName || !this.isClassLikeOwnerKind(s.ownerKind)) continue
+      s.qualifiedName = `${s.ownerName}.${s.name}`
+    }
+  }
+
+  /**
+   * RE-SPELL a member-position target `Owner.member` — but ONLY where the FILE ITSELF proves it.
+   *
+   * ## Why this is a proof and not a preference
+   *
+   * The lane's own census priced the ambiguity levers and this is the one the tree can settle: an
+   * edge that already carries `metadata.owner` (the receiver was `$this->`, `self::`, `static::`,
+   * `parent::`, or a NAMED class — the analyzer derived the class, it did not guess it) AND a
+   * class-like member named exactly `<owner>.<target>` is published by THIS file means the
+   * qualified name resolves to that very symbol. The qualified name's declarations are a SUBSET of
+   * the bare name's, so ambiguity can only fall and resolution can only rise — measured, not
+   * asserted: the whole-population probe reports no case where the qualified target added a
+   * declaration.
+   *
+   * The lane's doc calls the alternative — preferring same-FILE or same-NAMESPACE candidates —
+   * "a rule nobody chose", and refuses it. This refuses it too: nothing here picks between rivals,
+   * because there is exactly one declaration the target could mean once it is spelled out.
+   *
+   * ## What it is worth, measured (whole admitted population, 5,094 files)
+   *
+   *   28,901 edges are provable this way. 12,849 of them name a target with MORE THAN ONE
+   *   declaration today — `schema` 25 ways, `config` 17 — and become exactly-one: those move from
+   *   `amb(decl)` to `resolved`, with `unresolved` untouched. The other 11,785 are already unique
+   *   by name; they stay resolved and stop being a name lookup that production answers with
+   *   `ORDER BY is_declaration, file_id, language, s.id LIMIT 1`, whose lexicographic id tie-break
+   *   the indexer's own control arm measures as the WRONG symbol in 37,318 of 49,729 cases. The
+   *   remaining 4,267 stay ambiguous even qualified, because two classes of the same leaf name in
+   *   one project declare the member — a real name collision, not a spelling defect.
+   *
+   * Tool: validation/m14/fixtures/php/tools/owner-qualification-probe.mts.
+   *
+   * NOT DONE, deliberately: the store-side stage that resolves a read through the class's
+   * ANCESTORS (census: 24,223). It needs another file's declaration, so proving it here is
+   * impossible; it belongs to `src/ast/member-owner-resolution.ts`, outside this lane's paths.
+   */
+  private qualifyProvenMemberTargets(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): number {
+    const members = new Set<string>()
+    for (const s of symbols) {
+      if (!s.ownerName || !this.isClassLikeOwnerKind(s.ownerKind)) continue
+      members.add(`${s.ownerName}.${s.name}`)
+    }
+    if (members.size === 0) return 0
+    let n = 0
+    for (const r of relationships) {
+      if (r.type !== ASTEngine.RelationshipType.Uses && r.type !== ASTEngine.RelationshipType.Calls) continue
+      const md = r.metadata as Record<string, unknown> | undefined
+      // NARROW `md` ITSELF, not just its `owner` field: reading the owner through optional chaining
+      // leaves `md` possibly-undefined at the write below, which is where the repo's strict typecheck
+      // caught this (`TS18048`). The behaviour is identical — an edge with no metadata has no owner,
+      // so it was skipped either way — and a non-null assertion here would have hidden the question
+      // rather than answered it.
+      if (!md) continue
+      const owner = md.owner
+      if (typeof owner !== "string" || owner.length === 0) continue
+      const tgt = String(r.target ?? "")
+      if (tgt.length === 0 || tgt.startsWith(`${owner}.`)) continue
+      const key = `${owner}.${tgt}`
+      if (!members.has(key)) continue
+      r.target = key
+      md.resolvedBy = "owner-member-identity"
+      n++
+    }
+    return n
+  }
+
+  /**
+   * THE FILE CLAIM FOR AN INCLUDE PATH — `importProjectFile`, emitted only where the project's own
+   * admitted list can confirm the target.
+   *
+   * ## The defect this closes, measured
+   *
+   * `include`/`require` emits the path AS WRITTEN, and in this corpus **188 of 208** such paths carry
+   * a PHP magic constant: `require __DIR__ . '/../vendor/autoload.php'` becomes the target
+   * `__DIR__/../vendor/autoload.php`. `__DIR__` is the directory of THE FILE BEING ANALYZED and
+   * `__FILE__` is that file — both are known here, in pure String, with no filesystem — but kept
+   * literal they are strings that can never match anything: **0 of the 188 verified** against the
+   * project's admitted list. Resolving them, in pure String, moves **145** of them onto files the
+   * project really carries. Whole-population instrument:
+   * `validation/m14/fixtures/php/tools/magic-constant-include-probe.mts`.
+   *
+   * ## Why `.php` and why `statSync`, in that order
+   *
+   * The arbiter's facts are the lane's ADMITTED file list, which holds `.php` paths only, so a claim
+   * about any other file can never verify — restricting the candidate is required by the key space
+   * rather than chosen for convenience, and it is what removes the single disagreement the cross-tab
+   * found (a `.inc` include that exists on disk and is not admitted). The `statSync` guard then
+   * removes the 42 candidates that do not exist at all (untracked `vendor/`, a sibling checkout).
+   * Measured over the whole population after both guards: **verify 145, REFUTE 0** — and a miss
+   * REFUTES, which is why the guard is not optional.
+   *
+   * ## What it does NOT do
+   *
+   * The TARGET stays the path as written. The claim names the file the project can confirm
+   * (`metadata.importProjectFile`), which is a statement ABOUT the target rather than a rewrite of
+   * it, and resolving `__DIR__` into the target would invent a spelling no document contains.
+   */
+  private claimResolvableIncludes(
+    relationships: ASTEngine.UniversalRelationship[],
+    filePath: string,
+    projectRoot: string | null,
+  ): number {
+    if (projectRoot === null || projectRoot.length === 0) return 0
+    // THE REPLACEMENT VALUES MUST STAY PROJECT-RELATIVE, and that is a fact about the guard worth
+    // stating where it bites: the substitution happens INSIDE `fileClaimForTarget` and BEFORE its
+    // shape check, so an ABSOLUTE `__DIR__` makes the whole target absolute and the guard refuses it
+    // as a path — which is exactly what happened the first time this pass was put on the guard, and
+    // it cost 145 claims (extOK 6,443 -> 6,298) before the values below were made relative. A file at
+    // the project root has an empty directory, and `.` is the spelling that keeps the target relative.
+    const root = path.resolve(projectRoot)
+    const fileRel = path.relative(root, filePath).split(path.sep).join("/")
+    const slash = fileRel.lastIndexOf("/")
+    const dirRel = slash < 0 ? "." : fileRel.slice(0, slash)
+    let n = 0
+    for (const r of relationships) {
+      if (r.type !== ASTEngine.RelationshipType.Imports) continue
+      const md = r.metadata as Record<string, unknown> | undefined
+      if (md?.relationshipType !== "include_path") continue
+      const written = String(r.target ?? "")
+      if (written.length === 0) continue
+      // ON THE SHARED GUARD since 2026-10-11. The admitting is the guard's — shape, project
+      // boundary, admitted extension (`.php`, which is exactly the lane's admitted list), and
+      // `statSync` — while the MAGIC CONSTANTS stay this lane's, because they are the one thing only
+      // the analyzer knows: `__DIR__` is this file's directory and `__FILE__` is this file, both in
+      // pure String. `dirname(__FILE__)` is passed as its own key so the substitution happens before
+      // the bare `__FILE__` (the guard substitutes longest-key-first for exactly this reason).
+      const claim = fileClaimForTarget({
+        projectRoot,
+        filePath,
+        written,
+        admittedExtensions: ["php"],
+        magicConstants: { "dirname(__FILE__)": dirRel, "__DIR__": dirRel, "__FILE__": fileRel },
+      })
+      if (claim === null) continue
+      md!.importProjectFile = claim
+      n++
+    }
+    return n
+  }
+
+  private isClassLikeOwnerKind(kind: ASTEngine.SymbolKind | undefined): boolean {
+    return kind === ASTEngine.SymbolKind.Class || kind === ASTEngine.SymbolKind.Interface ||
+      kind === ASTEngine.SymbolKind.Trait || kind === ASTEngine.SymbolKind.Enum
+  }
+
+  /**
+   * RECOVERY MIS-NESTING — the ONE predicate the recovery-escape rests on, asked by both halves
+   * of it so they cannot drift apart: `walkBody` skips this child when the escape will publish
+   * it, and `pushRecoveredBodyDeclarations` publishes exactly what `walkBody` skips. A predicate
+   * answered differently by the two halves is either a lost subtree (skipped, never published)
+   * or a doubled one (published, still walked).
+   *
+   * True when `child` is a DIRECT child of `body` that is a NAMED callable declaration and
+   * `body` is a `compound_statement` the parser errored inside.
+   *
+   * WHY THE PARENT MUST BE DAMAGED, and why this is not a general "nested functions are
+   * members" rule: in a body the parser read correctly, a nested `function` really is a nested
+   * function — PHP hoists it as a GLOBAL when the enclosing code runs, this lane already models
+   * that for resolution (`collectPhpFileScope` registers it as a file-scope function value), and
+   * publishing such a declaration as a class member would be a fabrication. The rule fires only
+   * where the tree is known to be wrong about structure, which is the case the lane's own
+   * `php/error-recovery` contract already speaks to: "the declarations AROUND it still publish,
+   * INCLUDING THE ONES AFTER IT — degradation is PARTIAL, not total".
+   *
+   * WHY THE NAME IS REQUIRED: the escape publishes by pushing a frame, and a frame for a
+   * nameless callable would publish nothing while the skip above had already stopped the only
+   * other walk over its subtree — a silent LOSS of every call and read inside it, which is the
+   * failure mode this whole lane treats as worse than a missing symbol.
+   *
+   * MEASURED, on the shape that produced it: `FSharp.Formatting/csharp/MarkdownSharpTests/source/
+   * php/markdown.php:910` writes PHP-8-REMOVED curly-brace offset syntax
+   * (`$level = $matches[2]{0} == '=' ? 1 : 2;`), the grammar errors there, and the enclosing
+   * method's body is left open — `method_declaration _doHeaders_callback_setext 905-1575 >
+   * compound_statement 905-1575 > the next twenty members`. Twenty declarations in one file, and
+   * the corpus's ENTIRE residue in the lane's `DECLARED_IN_TREE_NOT_PUBLISHED` bucket: 19 `calls`
+   * edges naming methods this file declares and the store never received. Bisected rather than
+   * guessed: replacing that one expression with `$matches[2][0]` moves 11 of 12 members back to
+   * direct children of the declaration_list (nested 9 -> 0), while the file's OTHER legacy offset
+   * (`switch ($token{0})` at 1560) does not — the two damage sites have different effects, only
+   * the first swallows, and a rule keyed on "the file has errors" rather than on this shape would
+   * have fired on both.
+   *
+   * WHY THIS PREDICATE AND NOT THE ESCAPE'S WHOLE TYPE SET: the skip it answers for may only
+   * cover a declaration whose subtree the escape then WALKS. A callable's subtree is walked by
+   * its own frame (params, body), so skipping it here loses nothing. A `const_declaration` or
+   * `property_declaration` is different: their branches publish symbols from the declaration and
+   * never walk the initialiser, so the VALUE's reads live only in this walk — skipping them here
+   * would silently drop them. Those two are therefore published WITHOUT being skipped
+   * (`pushRecoveredBodyDeclarations`), which adds symbols and leaves every edge exactly where it
+   * already was. One predicate for the paired halves, one list for the publish-only half.
+   */
+  private recoveryMisnestedCallable(body: Node, child: Node): boolean {
+    if (child.type !== "function_definition" && child.type !== "method_declaration") return false
+    if (body.type !== "compound_statement" || !body.hasError) return false
+    return child.childForFieldName("name") !== null
+  }
+
+  /**
+   * RECOVERY-ESCAPE, half 2 of 2 — publish the declarations recovery nested into the wrong
+   * parent. See `recoveryMisnestedCallable` for the predicate, the measurements and the scope,
+   * and the skip in `walkBody` for the other half.
+   *
+   * Frames are pushed with the CURRENT owner, so a swallowed declaration inside a class member's
+   * body becomes a member of that class (the source writes it in the class body), and one inside
+   * a top-level function's body becomes a top-level function under the namespace in force — the
+   * same reading at both levels, which is what makes this one rule and not two. `inFunction` is
+   * cleared so the declaration's own body attributes its edges to ITS name rather than to the
+   * damaged method it was nested in; that attribution is the reason the escape consumes the
+   * subtree in `walkBody` instead of leaving it to two walks.
+   *
+   * Returns the number of declarations escaped, so a caller could report it. It is NOT wired to a
+   * pattern or a metadata counter: an aggregate nobody reads is the shape this lane keeps
+   * finding, and the per-file evidence lives in `validation/m14/fixtures/php/
+   * recovery-swallowed-members.*` plus the corpus audit instead.
+   */
+  private pushRecoveredBodyDeclarations(
+    body: Node,
+    stack: { node: Node; owner: string | undefined; ownerKind: ASTEngine.SymbolKind | undefined; ns: string | undefined; inFunction: string | undefined; scope: PhpValueScope; recoveredFromBody?: boolean }[],
+    owner: string | undefined,
+    ownerKind: ASTEngine.SymbolKind | undefined,
+    ns: string | undefined,
+    scope: PhpValueScope,
+  ): number {
+    if (!body.hasError) return 0
+    let pushed = 0
+    for (let i = body.namedChildCount - 1; i >= 0; i--) {
+      const child = body.namedChild(i)
+      if (!child) continue
+      // Publish-only declarations: no skip in `walkBody`, because their branches do not walk the
+      // initialiser and this walk is the only reader of the value (see the predicate's header).
+      const publishOnly = child.type === "const_declaration" || child.type === "property_declaration"
+      if (!publishOnly && !this.recoveryMisnestedCallable(body, child)) continue
+      stack.push({ node: child, owner, ownerKind, ns, inFunction: undefined, scope, recoveredFromBody: true })
+      pushed++
+    }
+    return pushed
+  }
+
   private pushNonBodyChildren(
     node: Node,
     stack: { node: Node; owner: string | undefined; ownerKind: ASTEngine.SymbolKind | undefined; ns: string | undefined; inFunction: string | undefined; scope: PhpValueScope }[],
@@ -2492,6 +3083,60 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * A `$variable` VALUE READ IS A BINDING, NOT A DECLARATION REFERENCE — and the SPELLING is what
+   * says so.
+   *
+   * The family contract publishes no locals, parameters, superglobals or closure captures as
+   * symbols (`src/ast/types.ts:148-190`), so an edge that reads one has no declaration to point at.
+   * It still has to say WHICH binding it read, and the string it writes is what the store resolves:
+   * `parallel-indexer.ts:resolveRelationships` matches the target against `qualified_name` and then
+   * against a bare `name` admitted only while that name is declared exactly once in the project —
+   * and **it never reads the edge's metadata**. A bare local name is therefore indistinguishable
+   * from a declaration's name, and where the local's name collides with a unique declaration the
+   * read is bound to that declaration.
+   *
+   * MEASURED, whole admitted population, before this change: `uses` on `metadata.isLocalRead` alone
+   * read **resolved 10,484 · amb 48,219 · unresolved 45,497** (105,079 edges, and 10,484 false
+   * links), and the declarations those "resolved" reads bound to were **property 7,714 · method
+   * 2,713 · class 34 · interface 3 · function 20** — never a local, because a local is never
+   * published. The phantom is reproduced in-repo against the gate's OWN rule:
+   * `validation/m14/fixtures/php/local-read-phantom.mts` — `uses run -> counter` classifies
+   * `resolved (decls=1, kinds=property)` and binds to `Telemetry::$counter` in a file `reads.php`
+   * never names. The counterfactual is the argument: strip the separator and the store's own rule
+   * re-creates the false link.
+   *
+   * DART TOOK THIS ROUTE FOR THE IDENTICAL DEFECT (`validation/m14/fixtures/dart/local-read-phantom.ts`),
+   * and the gate has had the bucket all along — `bindOK`/`bind?`/`bindFAIL`, which read 0 for php
+   * before this change because nothing ever MARKED a binding, so nothing could be wrong.
+   *
+   * WHY IT CANNOT LAUNDER A GAP: `verifyBindingClaim` REFUTES a binding claim whose target could
+   * name a declaration, and the gate voids the claim's evidence for the whole population if any
+   * published key carries the separator (measured here: 0 keys, 350,368 edges — stated before and
+   * after, per HANDOFF §6.11).
+   */
+  private pushPhpBindingRead(
+    relationships: ASTEngine.UniversalRelationship[],
+    read: { source: string; base: string; /**
+     * `nodeLine` is typed `number | undefined` and EVERY call site below passed it straight into
+     * `line_number` before this helper existed, so the helpers' parameter must accept the same
+     * type or the change is not behaviour-preserving — the first version typed it `number` and the
+     * repo typecheck went RED on all seven sites (TS2322). The key stays PRESENT with an undefined
+     * value, exactly as the code it replaces emitted it; a conditional spread would have dropped
+     * the key and quietly changed the output shape.
+     */
+    line: number | undefined; arm: string },
+  ): void {
+    relationships.push({
+      source: read.source,
+      target: `${read.source}${BINDING_SEP}${read.base}`,
+      type: ASTEngine.RelationshipType.Uses,
+      confidence: 0.9,
+      line_number: read.line,
+      metadata: { phpSpecific: true, localBinding: true, [read.arm]: true },
+    })
+  }
+
+  /**
    * PHP2: bare `$var` value reads. Lookup order encodes PHP scoping:
    * frame chain (params/locals/use/catch/loop), then file functions, then
    * superglobals. `$this` never reads. Skips: declaration/write/label
@@ -2530,33 +3175,16 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (this.isInsideInterpolation(n)) return
     // Call-callee variables read the callable (`$fn(n)`); every other
     // variable position reads the value when bound.
+    //
+    // ALL THREE ARMS ARE BINDINGS and are spelled as such: a frame binding, a name that is also a
+    // top-level function's, and a superglobal are each a VARIABLE, and none of them is a published
+    // symbol. `pushPhpBindingRead` carries the measurement and the counterfactual.
     if (phpScopeHas(scope, base)) {
-      relationships.push({
-        source,
-        target: base,
-        type: ASTEngine.RelationshipType.Uses,
-        confidence: 0.9,
-        line_number: this.nodeLine(n),
-        metadata: { phpSpecific: true, isLocalRead: true },
-      })
+      this.pushPhpBindingRead(relationships, { source, base, line: this.nodeLine(n), arm: "isLocalRead" })
     } else if (scopeCtx.funcValues.has(base)) {
-      relationships.push({
-        source,
-        target: base,
-        type: ASTEngine.RelationshipType.Uses,
-        confidence: 0.9,
-        line_number: this.nodeLine(n),
-        metadata: { phpSpecific: true, isGlobalRead: true },
-      });
+      this.pushPhpBindingRead(relationships, { source, base, line: this.nodeLine(n), arm: "isGlobalRead" })
     } else if (PHP_SUPERGLOBALS.has(base)) {
-      relationships.push({
-        source,
-        target: base,
-        type: ASTEngine.RelationshipType.Uses,
-        confidence: 0.9,
-        line_number: this.nodeLine(n),
-        metadata: { phpSpecific: true, isGlobalRead: true },
-      });
+      this.pushPhpBindingRead(relationships, { source, base, line: this.nodeLine(n), arm: "isGlobalRead" })
     }
   }
 
@@ -3071,6 +3699,15 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * construction, so a consumer that ignores the key sees exactly the graph it saw before,
    * and a consumer that reads it can stop scoring externals as failures.
    *
+   * THE CLAIM'S SPELLING IS PART OF THE INTERFACE, and getting it wrong is what made this
+   * labelling invisible for its whole life: `metadata.external` is written as the BOOLEAN
+   * `true` (the kind moves to `externalKind`), because the incoming gate's `EXTERNAL_KEYS`
+   * test is `md[key] === true` or a non-empty array (`script/m14/incoming-rule.ts:249-258`)
+   * and a string kind fails it. Measured on the gate's own `php php 60` sample (3,257
+   * edges): 88 unresolved edges carried the label as a string, 0 as `true`. The lua lane
+   * already writes the boolean (`real-lua-analyzer.ts:2023`), so this is the family
+   * spelling, not a local preference.
+   *
    * `calls` is the deliberate exception, and it is not this method: a call to a builtin is
    * filtered at emission by `PHP_BUILTINS` (`processFunctionCall`), which is the lane's
    * existing design and the reason the differential oracle reads that same export. Suppressing
@@ -3122,7 +3759,20 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       const md = ((r as { metadata?: Record<string, unknown> }).metadata ??= {})
-      md.external = kind
+      // THE VALUE IS A BOOLEAN, and that is an interface contract rather than a style
+      // choice. The incoming gate reads a claim with `md[key] === true` (or a NON-EMPTY
+      // ARRAY) over `EXTERNAL_KEYS` — `script/m14/incoming-rule.ts:249-258` — and this lane
+      // was writing the KIND (`"php-internal-class"`, …) into `metadata.external`, so every
+      // php-src label it has ever emitted was INVISIBLE to the arbiter and read as an edge
+      // with no claim at all. Measured 2026-10-09 on the gate's own 60-file stride sample
+      // (`php php 60`, 3,257 edges): 88 unresolved edges carried `metadata.external` as a
+      // STRING and 0 carried it as `true`. The family already spells the claim this way
+      // (`real-lua-analyzer.ts:2023` writes `metadata.external = true`), and the gate's
+      // contract is stated in the same terms, so the boolean is the spelling that is read.
+      // `externalKind` keeps the classification the string carried — nothing is lost — and
+      // `metadata.externalLabelling.byKind` still counts it for the corpus walk.
+      md.external = true
+      md.externalKind = kind
       labelled++
       byKind[kind] = (byKind[kind] ?? 0) + 1
     }

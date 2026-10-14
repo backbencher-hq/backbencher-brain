@@ -1,5 +1,6 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { fileClaimForTarget } from "./file-claim"
 
 /**
  * XML analyzer backed exclusively by the vendored tree-sitter-xml AST.
@@ -412,7 +413,12 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private xsdDerivationElement = false
   private derivationKind: "extension" | "restriction" = "extension"
 
-  public analyze(rootNode: Node, content: string, _filePath: string): ASTEngine.ParseResult {
+  public analyze(
+    rootNode: Node,
+    content: string,
+    filePath: string,
+    context?: ASTEngine.AnalyzeContext,
+  ): ASTEngine.ParseResult {
     this.bareNameReference = false
     this.bareNameDeclarationElement = false
     this.xsltCallElement = false
@@ -1397,10 +1403,17 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!attributeName) continue
           const value = valueNode ? this.unquote(valueNode.text).trim() : undefined
           if (attributeName === "href" && value) {
+            // A REMOTE href names a file outside this project, and that is the claim the gate can
+            // verify least ambiguously: the key space cannot answer a URI, and `verifyExternalClaim`
+            // returns `externalUnverified` for a path-like target rather than refuting it. A
+            // `file`-class href is NOT marked — see the note on the count census; a file claim
+            // REFUTES when no candidate is an admitted file, and `extFAIL` must stay 0.
+            const targetClass = this.importTargetClass(value)
             addRelationship(label, value, ASTEngine.RelationshipType.Imports, {
               role: "processing_instruction_href",
               attributeName,
-              resolvable: this.importTargetClass(value),
+              resolvable: targetClass,
+              ...(targetClass === "external" ? { isExternalTarget: true } : {}),
             }, valueNode)
             imports.push({
               module: value,
@@ -1742,6 +1755,16 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (resolvableInDocument) {
         ensureTargetSymbol(qname.local, undefined, ASTEngine.SymbolKind.Type, candidate.nameNode, { isReferencedDeclaration: true })
       }
+      // THE EXTERNAL CLAIM, earned by the analyzer's OWN class. `builtin` names an XML/XSD
+      // built-in and `external` names a declaration in a namespace this document imports — in
+      // both cases the declaration is not in this population, which is precisely what
+      // `isExternalTarget` claims and what the incoming gate VERIFIES against its key space
+      // (`script/m14/incoming-rule.ts` `verifyExternalClaim`). The direction of error is why
+      // this key is safe here while a FILE claim would not be: a target that is not
+      // identifier-shaped (the DTD names `attribute-name`, `element-name`) comes back
+      // `externalUnverified`, never `externalRefuted`, because the rule checks `pathLikeTarget`
+      // FIRST. This can add a classification; it cannot manufacture an `extFAIL`.
+      const claimsExternalTarget = isBuiltin || (!resolvableInDocument && !unresolvedBareReference)
       addRelationship(candidate.ownerName, qname.local, ASTEngine.RelationshipType.References, {
         role: "attribute_qname_reference",
         attributeName: candidate.attributeName,
@@ -1749,6 +1772,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         prefix: qname.prefix,
         namespaceUri: candidate.binding,
         resolvable: isBuiltin ? "builtin" : resolvableInDocument ? "in-document" : unresolvedBareReference ? "unresolved" : "external",
+        ...(claimsExternalTarget ? { isExternalTarget: true } : {}),
         // X13: the name is also a built-in, and this file cannot say whether the
         // document means the built-in or a same-named type an `xs:include` brought
         // in. Recorded so a consumer can see the ambiguity instead of inheriting
@@ -1925,6 +1949,13 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (resolvableInDocument) {
         ensureTargetSymbol(qname.local, undefined, ASTEngine.SymbolKind.Type, cand.nameNode, { isReferencedDeclaration: true })
       }
+      // THE SAME CLAIM AS THE REFERENCE PASS, for the same reason and with the same refusal.
+      // A derivation base in the `builtin` class (`xs:string`) or the `external` class (declared in
+      // a namespace this document imports) is not a declaration of this population, which is what
+      // `isExternalTarget` claims and what the gate VERIFIES against its key space. A base whose
+      // class is `unresolved` is deliberately NOT marked: the analyzer has measured that this file
+      // does not declare it, not that the population does not.
+      const claimsExternalTarget = isBuiltin || (!resolvableInDocument && !unresolvedBare)
       addRelationship(cand.ownerName, qname.local, ASTEngine.RelationshipType.Extends, {
         role: "xsd_derivation_base",
         attributeName: "base",
@@ -1937,6 +1968,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // both cases and this is what tells a consumer which way.
         derivation: cand.kind,
         resolvable: isBuiltin ? "builtin" : resolvableInDocument ? "in-document" : unresolvedBare ? "unresolved" : "external",
+        ...(claimsExternalTarget ? { isExternalTarget: true } : {}),
         ...(unresolvedBare && RealXmlAnalyzer.XSD_BUILTIN_TYPE_NAMES.has(qname.local) ? { ambiguousWithBuiltin: true } : {}),
         ...(imported ? { importedFrom: imported.path, importedBy: imported.element } : {}),
       }, cand.valueNode)
@@ -1973,6 +2005,12 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         entityName: cand.name,
         resolvable: declared ? "in-document" : builtin ? "builtin" : "unresolved",
         ...(declared || builtin ? {} : { danglingEntityReference: true }),
+        // `builtin` IS the external claim here: the five predefined entities are not declarations
+        // of this population (or of any document), and a bare identifier is verified by
+        // `verifyExternalClaim` exactly when the key space does not declare it. `unresolved`
+        // (a dangling entity reference) is deliberately NOT marked — the analyzer has not
+        // measured that it is outside the population, only that this file does not declare it.
+        ...(builtin && !declared ? { isExternalTarget: true } : {}),
       }, cand.textNode)
     }
 
@@ -2041,6 +2079,8 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const droppedSymbols = symbols.length - keptSymbols.length
       const droppedRelationships = relationships.length - keptRelationships.length
       if (droppedSymbols > 0 || droppedRelationships > 0) {
+        this.qualifySameFileTier(keptSymbols, keptRelationships)
+        this.attachFileClaims(keptRelationships, filePath, context)
         return {
           language: "xml",
           symbols: keptSymbols,
@@ -2063,6 +2103,8 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    this.qualifySameFileTier(symbols, relationships)
+    this.attachFileClaims(relationships, filePath, context)
     return {
       language: "xml",
       symbols,
@@ -2123,10 +2165,16 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       range: this.nodeToRange(literal),
       metadata: { isDtdExternalId: true, role, systemId: true },
     })
+    const targetClass = this.importTargetClass(path)
     addRelationship(owner, path, ASTEngine.RelationshipType.Imports, {
       role,
       externalIdKind: "system",
-      resolvable: this.importTargetClass(path),
+      resolvable: targetClass,
+      // A DOCTYPE whose SYSTEM identifier is a URI names a DTD outside this project — the largest
+      // single group of this lane's unresolved edges is exactly this shape
+      // (`http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd`). Path-like, so the owner check
+      // returns externalUnverified and can never refute; a relative `file` path is left unmarked.
+      ...(targetClass === "external" ? { isExternalTarget: true } : {}),
     }, literal)
   }
 
@@ -3080,6 +3128,94 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return out
+  }
+
+  /**
+   * THE SAME-FILE TIER — a BOUNDED fix for 366 edges of this lane's ~9,131 residual, and not a fix for
+   * the lane. Sized from a POPULATION-scope run of the lane's own `ambiguity-split.mts`
+   * (`validation/m14/fixtures/xml/measurements/ambiguity-split-population.txt`): the same-file bucket (B1)
+   * totals 1,798 across every type — references 189 · extends 173 · calls 4 · overrides 0, plus 1,432
+   * `contains` which production ALREADY binds through `containsLike` and which is therefore not part of
+   * the residual. So the tier reaches 366, and the commit that lands it says exactly that, because the
+   * next reader would otherwise inherit a 600-file draw's 279 as the lane's shape — which is how the
+   * assignment that produced this file's measurement was written in the first place.
+   *
+   * THE RULE, and why it cannot be wrong: the lane ALREADY computes a two-part identity
+   * (`qualifiedName = ownerName + "." + name`, `:780` and `:934`) and then hands the graph the BARE name,
+   * because `addRelationship` takes two strings. `src/ast/parallel-indexer.ts:3435-3437` already looks up
+   * `name === target` and then `qualifiedName === target`. So emitting the qualified form is readable to
+   * the store WITHOUT changing the store. An edge is qualified only when the file declares its target
+   * under EXACTLY ONE owner — `set.size === 1` — so there is no choice to make and no preference to
+   * invent, which is the difference between a tier and a guess. Zero owners leaves it bare (nothing to
+   * name) and two or more leaves it bare (still ambiguous, and the tier does not pretend otherwise).
+   *
+   * The BARE name is preserved as `metadata.bareTarget`, so nothing is lost and a consumer that matched
+   * the old spelling can still see it.
+   */
+  /**
+   * THE FILE CLAIM — the ~466-edge lever, taken through infrastructure that ALREADY EXISTS.
+   *
+   * The lane's own note above the DOCTYPE emission says a file claim "REFUTES when no candidate is an
+   * admitted file, and `extFAIL` must stay 0" — and that is true of an UNGUARDED claim. It is not true of
+   * `fileClaimForTarget` (`src/ast/file-claim.ts:137`), whose whole contract is the opposite: it returns
+   * the project-relative path ONLY when a candidate is CONFIRMED, and null otherwise, "because an
+   * unconfirmed claim is what REFUTES". Two lanes already use it in production — `real-clean-analyzer.ts`
+   * and `real-graphql-analyzer.ts` — and `resolveImportTargets` (`src/ast/import-resolution.ts:382`) is
+   * wired into the indexer at `parallel-indexer.ts:5015` and `:5561`. So this is a USE of a channel rather
+   * than a file model to build.
+   *
+   * WHAT IT DOES TO THE COLUMNS: the arbiter's `projectFile` branch is the one claim it can CHECK against
+   * the project's own file list (`verifyFileClaim`), so a confirmed claim moves an edge out of
+   * `unresolved` and into `extOK` — a claim the project VERIFIES, which is what clause 1 asks for and is
+   * a RESOLUTION in the owner's standard rather than a ruling. An edge whose path cannot be confirmed is
+   * left exactly as it was: no claim, no refutation, extFAIL stays zero.
+   */
+  private attachFileClaims(
+    relationships: ASTEngine.UniversalRelationship[],
+    filePath: string,
+    context: ASTEngine.AnalyzeContext | undefined,
+  ): void {
+    const projectRoot = typeof context?.projectRoot === "string" && context.projectRoot.length > 0 ? context.projectRoot : null
+    if (projectRoot === null) return
+    for (const rel of relationships) {
+      if (String(rel.type ?? "") !== ASTEngine.RelationshipType.Imports) continue
+      const md = (rel.metadata ?? {}) as Record<string, unknown>
+      if (typeof md.importProjectFile === "string") continue
+      const written = String(rel.target ?? "")
+      if (written.length === 0) continue
+      const claim = fileClaimForTarget({
+        projectRoot,
+        filePath,
+        written,
+        admittedExtensions: ["xml", "xsd", "dtd", "svg", "xsl", "xslt", "rng"],
+      })
+      if (claim === null) continue
+      md.importProjectFile = claim
+      rel.metadata = md as ASTEngine.UniversalRelationship["metadata"]
+    }
+  }
+
+  private qualifySameFileTier(symbols: ASTEngine.UniversalSymbol[], relationships: ASTEngine.UniversalRelationship[]): void {
+    const byName = new Map<string, Set<string>>()
+    for (const sym of symbols) {
+      const n = String(sym.name ?? "")
+      const q = String((sym as { qualifiedName?: string }).qualifiedName ?? "")
+      if (n.length === 0 || q.length === 0 || q === n) continue
+      let set = byName.get(n)
+      if (!set) byName.set(n, (set = new Set()))
+      set.add(q)
+    }
+    const TIER_TYPES = new Set(["references", "extends", "calls", "uses", "overrides"])
+    for (const rel of relationships) {
+      if (!TIER_TYPES.has(String(rel.type ?? ""))) continue
+      const target = String(rel.target ?? "")
+      const qs = byName.get(target)
+      if (qs === undefined || qs.size !== 1) continue
+      const md = (rel.metadata ?? {}) as Record<string, unknown>
+      md.bareTarget = target
+      rel.metadata = md as ASTEngine.UniversalRelationship["metadata"]
+      rel.target = [...qs][0]!
+    }
   }
 
   private unquote(text: string): string {

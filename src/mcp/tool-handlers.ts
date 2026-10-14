@@ -19,7 +19,7 @@ import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
 import { getAnalysisHistory, executeAnalysis } from "../intelligence/analysis/run-history"
 import { generateDocumentation, formatDocumentation, type DocRequest } from "../intelligence/documentation/doc-engine"
-import { visualizeProject, formatVisualization, type VisualizationRequest, type VisualizationScope } from "../intelligence/visualization/visualization-engine"
+import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationScope } from "../intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../intelligence/migration/migration-engine"
 import { graphTraversal } from "../intelligence/graph/graph-engine"
 // M28.T1 (issue #624): the agent door reuses the EXACT components the IDE
@@ -1487,12 +1487,19 @@ const handlers: Record<string, ToolHandler> = {
     if (scope !== "project" && !args.target) return textResult(`bb_visualize scope=${scope} requires a target`, true)
     const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", view: ["graph", "codemap", "class"].includes(String(args.view)) ? args.view : "graph", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), relationshipTypes: Array.isArray(args.relationshipTypes) ? args.relationshipTypes.map(String) : undefined, languages: Array.isArray(args.languages) ? args.languages.map(String) : undefined }
     const result = await visualizeProject(projectId, request)
+    const htmlResults = request.format === "html"
+      ? [
+          result,
+          await visualizeProject(projectId, { ...request, view: "codemap" }),
+          await visualizeProject(projectId, { ...request, view: "class" }),
+        ]
+      : [result]
     // M35.S3: per-node stale flags (node file changed since index); links
     // inherit worst-of-endpoints — a link is stale if EITHER endpoint's file
     // is stale (the edge crosses changed code on either side). Truncation
     // metadata is untouched so truncated AND stale are both visible.
     const vizRaw = await BrainDatabase.getRawInstance(projectId as any)
-    const vizFiles = [...new Set((result.nodes as any[]).map((n) => n.filePath).filter((p: unknown): p is string => typeof p === "string" && p.length > 0 && p !== "unknown"))]
+    const vizFiles = [...new Set(htmlResults.flatMap((viewResult) => (viewResult.nodes as any[]).map((n) => n.filePath)).filter((p: unknown): p is string => typeof p === "string" && p.length > 0 && p !== "unknown"))]
     const vizRelToId = new Map<string, string>()
     if (vizFiles.length) {
       for (const r of vizRaw.prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${vizFiles.map(() => "?").join(",")})`).all(projectId, ...vizFiles) as Array<{ id: string; relative_path: string }>) {
@@ -1508,18 +1515,27 @@ const handlers: Record<string, ToolHandler> = {
       stale: vizRows.filter((r) => vizStatuses.get(r.fileId ?? "") === "stale").length,
       missing: vizRows.filter((r) => vizStatuses.get(r.fileId ?? "") !== "fresh" && vizStatuses.get(r.fileId ?? "") !== "stale").length,
     }
-    for (const n of result.nodes as any[]) n.stale = vizStatus(n.filePath) === "stale"
-    const nodeById = new Map((result.nodes as any[]).map((n) => [n.id, n]))
-    for (const l of result.links as any[]) {
-      const s = nodeById.get(l.source)
-      const t = nodeById.get(l.target)
-      l.stale = (!!s && vizStatus(s.filePath) === "stale") || (!!t && vizStatus(t.filePath) === "stale")
+    for (const viewResult of htmlResults) {
+      for (const n of viewResult.nodes as any[]) n.stale = vizStatus(n.filePath) === "stale"
+      const nodeById = new Map((viewResult.nodes as any[]).map((n) => [n.id, n]))
+      for (const l of viewResult.links as any[]) {
+        const s = nodeById.get(l.source)
+        const t = nodeById.get(l.target)
+        l.stale = (!!s && vizStatus(s.filePath) === "stale") || (!!t && vizStatus(t.filePath) === "stale")
+      }
     }
     const vizEnvelopeSource = { ...vizSummary, staleRatio: vizRows.length ? (vizSummary.stale + vizSummary.missing) / vizRows.length : 0, freshnessMode: "complete" as const }
     if (request.format === "json") {
       const parsed = JSON.parse(formatVisualization(result))
       parsed.freshness = buildStalenessEnvelope(vizEnvelopeSource, { kind: "dir" })
       return textResult(JSON.stringify(parsed, null, 2))
+    }
+    if (request.format === "html") {
+      return textResult(renderVisualizationStudio({
+        graph: formatVisualization(htmlResults[0]!),
+        codemap: formatVisualization(htmlResults[1]!),
+        class: formatVisualization(htmlResults[2]!),
+      }))
     }
     const vizOut = formatVisualization(result)
     const vizFooter = vizSummary.stale + vizSummary.missing > 0 ? `\n\n${vizSummary.stale} stale, ${vizSummary.missing} missing of ${vizRows.length} graph files — ${FRESHNESS_REMEDIATION.dir}` : ""

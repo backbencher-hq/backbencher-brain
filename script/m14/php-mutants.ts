@@ -6,19 +6,37 @@
  * `script/m14/mutate-analyzer.ts` is shared machinery (workstream §8), and a per-language
  * registry beside it is the established shape — `json-mutants.ts`, `css-mutants.ts`,
  * `nim-mutants.ts`, `protobuf-mutants.ts`, `clean-mutants.ts` all sit in that directory.
- * PHP's existing mutants live INSIDE the shared array, which is why they run; the wiring
- * needed for this file is therefore reported rather than applied:
+ * PHP's older mutants live INSIDE the shared array; this file's are spread into it the same
+ * way, by two lines in `mutate-analyzer.ts`:
  *
  *   import { PHP_MUTANTS } from "./php-mutants"
  *   ...
- *   export const MUTANTS: Mutant[] = [ ...PHP_MUTANTS, ... ]   // or: ...PHP_MUTANTS spread into the array
+ *   export const MUTANTS: Mutant[] = [ ..., ...PHP_MUTANTS, ... ]
  *
  * A registry nothing imports is not a mutant that was caught, it is a file that typechecks.
- * `script/m60/scss-mutants.ts` records that failure mode in its own header, so this lane did
- * NOT stop at writing the file: `validation/m14/fixtures/php/mutant-check.mts` imports these
- * transforms, evaluates every `validation/m14/fixtures/php/*.expectation.json` against the
- * mutated result with the SAME `matchConstraints` the real fixture gate uses, and exits
- * non-zero if any mutant survives. Run it; do not infer the pin from this header.
+ * That was MEASURED here rather than reasoned about, because the first version of this header
+ * argued the wiring was unnecessary and was wrong: `npx tsx script/m14/verify-orphaned-mutants.ts`
+ * read `script/m14/php-mutants.ts  PHP_MUTANTS  6  ORPHANED` and failed the gate with "3 mutant
+ * file(s) export a registry that mutate-analyzer.ts does not spread … Those mutants have never
+ * run", the three being php, go and ts-deriv. The import and the spread are now in place and the
+ * same gate reads `WIRED`. The gate is the authority on that claim; re-run it, do not trust this
+ * sentence.
+ *
+ * Two layers, because the mutants below can only reach ONE of them:
+ *
+ *   - `validation/m14/fixtures/php/mutant-check.mts` injects these transforms for real,
+ *     evaluates every `validation/m14/fixtures/php/*.expectation.json` against the mutated
+ *     result with the SAME `matchConstraints` the production gate uses, and exits non-zero if
+ *     any mutant survives. It is the layer that reports WHICH fixture killed which mutant.
+ *   - the shared registry runs them through `run-fixtures.ts` so the F4 gate can fail for this
+ *     lane at all.
+ *
+ * NEITHER reaches the projection. `run-fixtures.ts:728` calls `analyzer.analyze()` directly, so
+ * a rule applied in `keepSymbol` (`src/ast/pool-worker.ts:494`) is invisible to both — which is
+ * why `php/drop-keyword-named-members` below is a RESULT-level revert of a PROJECTION-level
+ * defect, and why the projection itself is pinned separately by
+ * `validation/m14/fixtures/php/orphan-endpoint-gate.mts` (it imports `parseFile`, the production
+ * path, and fails on a `contains` target its own file did not publish).
  *
  * ## What each mutant reproduces
  *
@@ -78,6 +96,19 @@ export const PHP_MUTANTS: Mutant[] = [
           metadata: { isContained: true, mutant: true },
         },
       ],
+    }),
+  },
+  {
+    id: "php/drop-absolute-fq-define-publication",
+    language: "php",
+    defectClass: "relationship-loss",
+    description:
+      "reverts the callee-resolution fix: drops every `exports` edge whose callee was the FULLY QUALIFIED `\\define`, which is exactly what the bare-name-only rule did before 2026-10-08. Written GENERICALLY off the edge's own `metadata.calleeShape` rather than a hardcoded target name, for the reason recorded above the owner mutants — a name-hardcoded filter silently stops matching and then reports a survive as a pass. Caught by php/define-exports' `expectRelationships` on `AUTO_PREPEND_STYLE`; the population it costs is 1 edge, and it is a publication PHP guarantees unconditionally (`\\define` is fully qualified, so there is no namespace lookup and no fallback for the rule to be wrong about), in phpunit's `tests/end-to-end/generic/_files/auto_prepend_file.php` — a file whose whole purpose is that the constant is globally visible.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "exports" && x.metadata?.calleeShape === "absolute-fq"),
+      ),
     }),
   },
 ]
@@ -186,4 +217,528 @@ export const PHP_RECEIVER_OWNER_MUTANTS: Mutant[] = [
   },
 ]
 
+/**
+ * The PROJECTION mutants — the defect class neither fixture harness can reach.
+ *
+ * `php/drop-keyword-named-members` is a FAITHFUL revert of a live defect, not a hypothetical.
+ * `src/ast/pool-worker.ts` `keepSymbol` refused php symbols BY NAME —
+ * `RESERVED = { php: new Set(["self", "parent"]) }` — with no reference to the kind or the
+ * owner, while the analyzer went on emitting the `contains` edges that name those members.
+ * `self` and `parent` are SEMI-RESERVED in php 7+: illegal as a top-level declaration name
+ * (`class parent {}` is a parse error) and perfectly legal as a method, a property or a class
+ * constant. So the rule deleted legal members and left an edge whose endpoint was in no store
+ * row. Measured over the whole admitted population (5,094 files, 350,342 edges): exactly ONE
+ * such edge existed, `contains Node -> parent` at
+ * `phpmyadmin/src/Navigation/Nodes/Node.php:54` (`public Node|null $parent = null;`), and it
+ * was the only edge in the lane naming a declaration the store did not hold. The fix exempts
+ * php symbols whose KIND is a member kind AND that carry an `ownerName`; classes, functions and
+ * namespaces named `parent`/`self` are still refused, which is the half that cannot be written
+ * as valid php and therefore has to be pinned from this side.
+ *
+ * WHY THE REVERT IS RESULT-LEVEL. The defect is in the PROJECTION, and the projection is not
+ * on the fixture path (`run-fixtures.ts:728` calls `analyze()` directly), so a mutant cannot
+ * reproduce it where it lived. This one reproduces its EFFECT: the name-only drop, applied to
+ * the symbol table, leaving every relationship intact. Caught by the five `expectSymbols` rows
+ * of `php/keyword-member-names` — which also fail on the unfixed tree's own behaviour, measured
+ * BEFORE the fix as "0 of 5 member declarations published, 5 orphaned contains targets".
+ *
+ * `php/publish-ownerless-reserved-names` is the OPPOSITE direction, and it is the one a
+ * careless fix produces: exempt `parent`/`self` by name and let an ownerless one through. The
+ * two are not redundant — the first loses a legal member, the second admits an illegal
+ * declaration — and the same fixture pins both, via `forbidSymbols` rows that say a symbol
+ * named `parent`/`self` with NO owner must not be published at all. The exempted form is
+ * exactly `(member kind, owner present)`, and each half of that conjunction needs a row that
+ * fails when it is dropped.
+ */
+const KEYWORD_MEMBER_NAMES = new Set(["self", "parent"])
+
+export const PHP_PROJECTION_MUTANTS: Mutant[] = [
+  {
+    id: "php/drop-keyword-named-members",
+    language: "php",
+    defectClass: "symbol-loss",
+    description:
+      "re-instates the name-only symbol drop (`self`/`parent` refused without reference to kind or owner) at the result level, exactly as `keepSymbol` did before the fix. Relationships are left untouched, which is the defect's whole danger: the analyzer keeps emitting `contains Holder -> parent` while the member it names is gone, so the lane's only orphan endpoint is a store-vs-analyzer divergence rather than a missing edge — a shape no per-edge gate on any other type can see. Caught by php/keyword-member-names, whose five expectSymbols rows are the property, constant and method forms of both names.",
+    transform: r => ({
+      ...r,
+      symbols: (r?.symbols ?? []).filter((s: any) => !KEYWORD_MEMBER_NAMES.has(String(s?.name))),
+    }),
+  },
+  {
+    id: "php/publish-ownerless-reserved-names",
+    language: "php",
+    defectClass: "fabricated-symbol",
+    description:
+      "the over-broad fix: a `parent`/`self` declaration with no owner (the class, interface, trait, enum, namespace or top-level function the language really does reserve) is published. It is the direction that looks like an improvement — the projection stops deleting anything — and it is wrong for a reason the symbol table would hide: a bare `parent` joins every `parent::` and `$this->parent` edge at once, so a keyword illegally in a type position becomes a resolution candidate for a member. Caught by php/keyword-member-names' two forbidSymbols rows, which name a `parent`/`self` symbol whose ownerName is absent.",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r?.symbols ?? []),
+        { name: "parent", kind: "class", metadata: { mutant: true } },
+        { name: "self", kind: "function", metadata: { mutant: true } },
+      ],
+    }),
+  },
+]
+
+// TWO pushes, and the reason this is spelled out rather than folded into the array literal: the
+// projection group was added by REPLACING the receiver-owner push line, which silently made the
+// three receiver-owner mutants unreachable — they are still exported, still counted by
+// `verify-orphaned-mutants.ts` (it reads the FIRST `export const *_MUTANTS` and PHP_MUTANTS is
+// still spread, so the gate stays green), and they stopped RUNNING. Measured, not argued: with
+// the push missing, `BB_MUTANT_ONLY=php/ bun script/m14/mutate-analyzer.ts` printed no line for
+// any of the three. A registry that is exported and counted but not reached is the exact failure
+// `verify-orphaned-mutants.ts` was written for, one level down, and no gate in this repo can see
+// it — so the count below is asserted at runtime instead, by
+// `validation/m14/fixtures/php/mutant-check.mts`, which fails if `PHP_MUTANTS.length` disagrees
+// with the number of `id:` rows this file declares.
+/**
+ * The RECOVERY-ESCAPE mutants — the fix that publishes the members `markdown.php`'s mis-nested
+ * class body hid (see `php/recovery-swallowed-members`, and TIER 0.2 of the lane's status).
+ *
+ * Three directions, because the change has three ways to be wrong and they fail differently:
+ * the first is the state before the fix (a member written below a damaged statement is invisible),
+ * the second is the reading the fixture REJECTS (a recovered member published as a global
+ * function), and the third is the one a reader is most likely to ship by writing only HALF of the
+ * fix — publishing the recovered declarations without stopping the damaged body's walk from
+ * reaching them, so every call inside them is emitted twice under two different sources.
+ *
+ * The third is the reason the fix is two paired changes rather than one, and it is not
+ * hypothetical: `walkBody` reaches a nested declaration's subtree today, so the moment the escape
+ * publishes that declaration AS a symbol its body has two walkers. A gate that matches 'at least
+ * one' edge of a kind cannot see a duplicate, which is why the fixture pins this with
+ * `expectRelationshipCount` (`equals: 1` on a call that must exist exactly once, `equals: 0` on
+ * the attribution the damaged method must NOT carry) rather than with a forbid row.
+ */
+export const PHP_RECOVERY_MUTANTS: Mutant[] = [
+  {
+    id: "php/drop-recovered-members",
+    language: "php",
+    defectClass: "symbol-loss",
+    description:
+      "the PRE-FIX state, reproduced faithfully: every declaration the recovery-escape published is removed again, and so are the `contains` edges that only exist because it published them. That is what the analyzer did on `FSharp.Formatting/.../php/markdown.php` — 20 real class members (doLists, processListItems, makeCodeSpan, prepareItalicsAndBold, formParagraphs, encodeAttribute, encodeAmpsAndAngles, encodeEmailAddress, handleSpanToken, …) were invisible because recovery nested them inside the method before them, while the corpus kept emitting 19 `calls` edges naming them. Caught by php/recovery-swallowed-members, whose four member rows sit BELOW the damaged statement on purpose: a fix that recovered the first declaration and stopped would pass every row above and fail `callsSwallowed`.",
+    transform: r => {
+      const recovered = (r?.symbols ?? []).filter((s: any) => s.metadata?.recoveredFromBody === true)
+      if (!recovered.length) return r
+      const names = new Set(recovered.map((s: any) => String(s.name)))
+      return {
+        ...r,
+        symbols: (r?.symbols ?? []).filter((s: any) => s.metadata?.recoveredFromBody !== true),
+        relationships: (r?.relationships ?? []).filter(
+          (x: any) => !(String(x.type) === "contains" && names.has(String(x.target))),
+        ),
+      }
+    },
+  },
+  {
+    id: "php/publish-recovered-members-as-global-functions",
+    language: "php",
+    defectClass: "mislabelled-relationship",
+    description:
+      "the reading the fixture REJECTS: a recovered declaration is published as a GLOBAL FUNCTION (kind `function`, no owner) and its containment edge is dropped, because a function owned by a class is not a shape this lane publishes. It is tempting for a reason worth stating — a `function` inside a body really does become a global in PHP when the enclosing code runs, and `collectPhpFileScope` already registers nested named functions as file-scope function values — but publication must describe the SOURCE, and the source writes these functions in the class body between members. Caught by php/recovery-swallowed-members' three `forbidSymbols` rows (`ownerName: null`, the top-level absent-or-null convention) and, independently, by its `expectSymbols` `kind: method` rows — two channels, because a mutant that cleared the owner but kept the kind would otherwise survive.",
+    transform: r => {
+      const recovered = (r?.symbols ?? []).filter((s: any) => s.metadata?.recoveredFromBody === true)
+      if (!recovered.length) return r
+      const names = new Set(recovered.map((s: any) => String(s.name)))
+      return {
+        ...r,
+        symbols: (r?.symbols ?? []).map((s: any) => {
+          if (s.metadata?.recoveredFromBody !== true) return s
+          const { isMethod: _dropped, ...rest } = s.metadata ?? {}
+          return { ...s, kind: "function", ownerName: undefined, ownerKind: undefined, metadata: { ...rest, mutant: true } }
+        }),
+        relationships: (r?.relationships ?? []).filter(
+          (x: any) => !(String(x.type) === "contains" && names.has(String(x.target))),
+        ),
+      }
+    },
+  },
+  {
+    id: "php/re-walk-recovered-subtrees",
+    language: "php",
+    defectClass: "double-emission",
+    description:
+      "HALF THE FIX, the failure the paired skip exists to prevent: the recovered declarations are published, and the damaged method's body walk still reaches their subtrees, so every call and read inside them is emitted TWICE — once under the member that contains it and once under the method recovery nested it in. Reproduced from the result's own line ranges: for each recovered declaration, every call/read whose line falls inside it is re-emitted under the smallest enclosing callable, which on this fixture is `damaged`. This is the mutant that says the two halves are one change: `php/drop-recovered-members` would still be caught if the skip alone were removed, and `php/publish-recovered-members-as-global-functions` would be caught if only the kind were wrong — NEITHER notices a duplicated edge, because a fixture's `expectRelationships` matches at least one. Caught by php/recovery-swallowed-members' `expectRelationshipCount`: `calls swallowedB -> swallowedA` must be EXACTLY one and `calls damaged -> swallowedB` exactly ZERO.",
+    transform: r => {
+      const syms = (r?.symbols ?? []) as any[]
+      const recovered = syms.filter((s: any) => s.metadata?.recoveredFromBody === true)
+      if (!recovered.length) return r
+      const line = (s: any): number => Number(s?.startLine ?? s?.range?.startLine ?? -1)
+      const endLine = (s: any): number => Number(s?.endLine ?? s?.range?.endLine ?? -1)
+      const extra: any[] = []
+      for (const s of recovered) {
+        const container = syms
+          .filter((m: any) => (m.kind === "method" || m.kind === "function") && m !== s && line(m) <= line(s) && endLine(m) >= endLine(s))
+          .sort((a: any, b: any) => endLine(a) - line(a) - (endLine(b) - line(b)))[0]
+        if (!container) continue
+        for (const x of (r?.relationships ?? []) as any[]) {
+          if (!["calls", "uses", "instantiates", "references"].includes(String(x.type))) continue
+          const ln = Number(x.line_number ?? -1)
+          if (!(ln >= line(s) && ln <= endLine(s))) continue
+          extra.push({ ...x, source: String(container.name), metadata: { ...(x.metadata ?? {}), mutant: true } })
+        }
+      }
+      if (!extra.length) return r
+      return { ...r, relationships: [...(r?.relationships ?? []), ...extra] }
+    },
+  },
+]
+
+/**
+ * The NESTED NAMED FUNCTION round — `publishNestedNamedFunctions`.
+ *
+ * Four mutants, one per way the rule can be wrong, and every one of them is a reading that was
+ * actually available rather than a hypothetical:
+ *
+ *   drop      the pre-fix state itself (the symbol pass simply does not run);
+ *   as-method the rejected READING the source vetoes: a function written in a method's body
+ *             published as a member of that method's class;
+ *   bare      the second rejected reading: the same declaration published with NO owner, which in
+ *             a namespaced file breaks the ownership rule every other function in the same file
+ *             follows;
+ *   damaged   removing the damage guard, so the class members a broken body swallowed are ALSO
+ *             published as nested globals — the reading that would make `markdown.php`'s 22
+ *             recovered members both members and globals.
+ *
+ * Each transform is written off the RESULT's own metadata (`metadata.nestedIn`, the callable the
+ * declaration sits in; `metadata.recoveredFromBody`, the escape's marker) rather than off names,
+ * so a mutant cannot silently stop matching when the fixture is edited — the failure mode that
+ * left swift/drop-container-subscript-uses surviving for months.
+ */
+const PHP_NESTED_FUNCTION_MUTANTS: Mutant[] = [
+  {
+    id: "php/drop-nested-function-symbols",
+    language: "php",
+    defectClass: "symbol-loss",
+    description:
+      "THE PRE-FIX STATE, faithfully: every nested named function disappears from the store and so do the `contains` edges that give it an owner. Not a hypothetical — it is what all 5,094 admitted files produced before this round, where the only trace of the declaration was an edge SOURCED AT its name (Slim's two `references testProcessRequest -> ...`) or calling it (`calls useHelper -> nestedHelper`). Written off `metadata.nestedIn`, the marker the pass itself sets, so the revert stays faithful to whatever the fixture looks like. Caught by php/nested-named-functions' `expectSymbols`, `expectSymbolCount` and the two `contains` rows.",
+    transform: r => {
+      const nested = (r?.symbols ?? []).filter((s: any) => s.metadata?.nestedIn)
+      if (!nested.length) return r
+      const keys = new Set(nested.map((s: any) => `${String(s.name)}\u0000${String(s.ownerName ?? "")}`))
+      return {
+        ...r,
+        symbols: (r?.symbols ?? []).filter((s: any) => !s.metadata?.nestedIn),
+        relationships: (r?.relationships ?? []).filter(
+          (x: any) => !(String(x.type) === "contains" && keys.has(`${String(x.target)}\u0000${String(x.source ?? "")}`)),
+        ),
+      }
+    },
+  },
+  {
+    id: "php/publish-nested-functions-as-methods",
+    language: "php",
+    defectClass: "fabricated-symbol",
+    description:
+      "THE REJECTED READING the source vetoes: a nested function published as a METHOD of the class whose method declared it. Reproduced generically off the result — the enclosing class is found by looking up the callable the symbol names in `metadata.nestedIn` in the symbol table and taking ITS owner, which is exactly how a reader would resolve it, so no class name is hardcoded. The symbol becomes a member that the source does not declare, and the store gains a `contains NestedHost -> nestedHelper` edge a consumer would use to resolve an inherited call. Caught by php/nested-named-functions' `forbidSymbols` row (ownerName NestedHost) and by its `expectSymbols` row (ownerName must be the namespace).",
+    transform: r => {
+      const syms = (r?.symbols ?? []) as any[]
+      const ownerOfCallable = new Map<string, string>()
+      for (const s of syms) {
+        if (s.kind !== "method" && s.kind !== "function") continue
+        if (s.ownerName) ownerOfCallable.set(String(s.name), String(s.ownerName))
+      }
+      let changed = false
+      const symbols = syms.map((s: any) => {
+        const encl = s.metadata?.nestedIn
+        if (!encl) return s
+        const cls = ownerOfCallable.get(String(encl))
+        if (!cls) return s
+        changed = true
+        return { ...s, kind: "method", ownerName: cls, ownerKind: "class", metadata: { ...(s.metadata ?? {}), mutant: true } }
+      })
+      if (!changed) return r
+      // the containment edge follows the owner, and the namespace's edge goes away
+      const pairs = new Set(symbols.filter((s: any) => s.metadata?.nestedIn).map((s: any) => `${String(s.ownerName)}\u0000${String(s.name)}`))
+      const relationships = (r?.relationships ?? []).filter(
+        (x: any) => !(String(x.type) === "contains" && [...pairs].some((p) => p.endsWith(`\u0000${String(x.target)}`))),
+      )
+      for (const p of pairs) {
+        const [owner, name] = p.split("\u0000")
+        relationships.push({ source: owner, target: name, type: "contains", confidence: 1.0, metadata: { mutant: true } } as any)
+      }
+      return { ...r, symbols, relationships }
+    },
+  },
+  {
+    id: "php/publish-nested-functions-as-bare-globals",
+    language: "php",
+    defectClass: "fabricated-symbol",
+    description:
+      "THE SECOND REJECTED READING: the nested function is published, its `contains` edge is kept, but it carries NO owner. In a namespaced file every top-level function is owned by its namespace, so this makes two function symbols in ONE file follow two ownership rules — and PHP's global-table name for the declaration is `Fixture\\NestedFunctions\\innerValue`, not `innerValue`, so an ownerless symbol is a name no caller can spell. It is also the state a reader would land on by treating \"nested\" as \"file-level but unattached\". Caught by the fixture's `forbidSymbols` row with `ownerName: null` and by its `expectSymbols` ownerName.",
+    transform: r => {
+      const nested = (r?.symbols ?? []).filter((s: any) => s.metadata?.nestedIn && s.ownerName)
+      if (!nested.length) return r
+      const keys = new Set(nested.map((s: any) => `${String(s.name)}\u0000${String(s.ownerName)}`))
+      return {
+        ...r,
+        symbols: (r?.symbols ?? []).map((s: any) =>
+          s.metadata?.nestedIn ? { ...s, ownerName: undefined, ownerKind: undefined, metadata: { ...(s.metadata ?? {}), mutant: true } } : s,
+        ),
+        relationships: (r?.relationships ?? []).filter(
+          (x: any) => !(String(x.type) === "contains" && keys.has(`${String(x.target)}\u0000${String(x.source ?? "")}`)),
+        ),
+      }
+    },
+  },
+  {
+    id: "php/publish-damaged-body-declarations-as-nested-functions",
+    language: "php",
+    defectClass: "double-emission",
+    description:
+      "THE DAMAGE GUARD REMOVED. The pass skips a declaration whose body parent `hasError`, because those 22 markdown.php declarations are class members the parser could not close the body over — MEMBERS, published as members by the recovery escape. Remove the guard and they are published a SECOND time as namespace-owned globals, which is the reading that would make one declaration both a member and a global. Reproduced off the escape's own marker: every symbol with `metadata.recoveredFromBody` gains a namespace-owned twin in the same file, plus the containment edge that follows. Caught by php/recovery-swallowed-members — its `expectSymbolCount` (`swallowedA` exactly 1) and its `forbidSymbols` rows were authored for the escape and catch the duplicate without being touched.",
+    transform: r => {
+      const syms = (r?.symbols ?? []) as any[]
+      const recovered = syms.filter((s: any) => s.metadata?.recoveredFromBody === true && s.ownerName)
+      if (!recovered.length) return r
+      const ns = syms.find((s: any) => s.kind === "namespace")?.name
+      const extra: any[] = []
+      for (const s of recovered) {
+        const owner = ns ?? undefined
+        extra.push({ ...s, kind: "function", ownerName: owner, ownerKind: owner ? "namespace" : undefined, metadata: { ...(s.metadata ?? {}), mutant: true, nestedIn: String(s.ownerName) } })
+      }
+      const relationships = [...(r?.relationships ?? [])]
+      for (const s of extra) {
+        if (!s.ownerName) continue
+        relationships.push({ source: s.ownerName, target: s.name, type: "contains", confidence: 1.0, metadata: { mutant: true } } as any)
+      }
+      return { ...r, symbols: [...syms, ...extra], relationships }
+    },
+  },
+]
+
+/**
+ * The heritage payload (`metadata.superTypes`), and the THREE ways it fails.
+ *
+ * The payload exists because the store seam that persists a project-wide hierarchy reads
+ * `symbol.metadata.superTypes` (`src/ast/parallel-indexer.ts:3590` -> `brain_symbol.super_types`) and
+ * php never published it: the column was NULL on every row, so `retargetCrossFileOverrides`
+ * returned before its first query and php's inheritance was, to a store consumer, ABSENT rather
+ * than thin. Each mutant below is one direction of that failure, and the directions are not
+ * interchangeable — which is why there are three rather than one:
+ *
+ *   1. the payload VANISHES. Every other label in the graph is untouched, so nothing else notices;
+ *   2. the payload keeps the BASE and drops the INTERFACES. This is the one that arrives by
+ *      accident, because `metadata.baseClass` already existed and mirroring it costs nothing — the
+ *      result is a column that looks populated and is half the hierarchy, which is worse than NULL
+ *      for a consumer that trusts it (a member reached through an interface is not inherited from
+ *      the base). Reverted by reading the result's OWN `extends` edges, so it cannot go vacuous if
+ *      the rule or a fixture is renamed;
+ *   3. the payload names a heritage the declaration does NOT have — the naive re-derivation from
+ *      the node text. It is the direction that fabricates rather than loses: the PHPD10 shape
+ *      `class InvalidArgumentException extends \InvalidArgumentException` resolves to the class's
+ *      OWN name, and a payload that re-read the node would write a SELF-LOOP into the column that
+ *      exists to be walked.
+ */
+/** The kinds the heritage payload can appear on — the four declaration shapes php publishes a
+ *  heritage for. `trait` is in the set because the analyzer's own `isClassLikeOwnerKind` treats it
+ *  as one; it carries no heritage in PHP, so including it only means mutant 3 has a shape it can
+ *  name itself on, which is the direction it exists to reproduce. */
+const CLASS_LIKE_KINDS = new Set(["class", "interface", "trait", "enum"])
+
+const PHP_HERITAGE_MUTANTS: Mutant[] = [
+  {
+    id: "php/heritage-payload-dropped",
+    language: "php",
+    defectClass: "lost-metadata",
+    description:
+      "strips `metadata.superTypes` from every symbol — the state of this lane before the change, reproduced faithfully rather than described. Same symbols, same names, same kinds, same heritage EDGES; one metadata key gone. Nothing else in the ontology moves, so the graph looks exactly as healthy as it did: this is precisely why the column stayed NULL for php without any gate going red, and why the defect needed a fixture of its own. Caught by php/heritage-published's six `meta.superTypes` rows.",
+    transform: r => ({
+      ...r,
+      symbols: (r?.symbols ?? []).map((s: any) => {
+        if (!s?.metadata || typeof s.metadata !== "object") return s
+        if (!("superTypes" in s.metadata)) return s
+        const { superTypes: _dropped, ...rest } = s.metadata
+        return { ...s, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "php/heritage-payload-base-only",
+    language: "php",
+    defectClass: "lost-metadata",
+    description:
+      "keeps the base and drops the interfaces — the accidental half-payload, and the reason the fixture asserts the set on a class that has BOTH rather than a class per shape. Reverted by reading the result's OWN `extends` edges, never a name list: an entry survives only if this declaration emits an `extends` edge to it, which is exactly the base-only rule (an interface's parents ARE extends edges, so an interface keeps its list and the discrimination stays honest). Caught by php/heritage-published — `WithBaseAndInterfaces` loses `Second` and `Labeled`, `WithInterfaceOnly` and `Suit` lose everything and go back to absent.",
+    transform: r => {
+      const extendsTargets = new Map<string, Set<string>>()
+      for (const x of (r?.relationships ?? []) as any[]) {
+        if (String(x?.type) !== "extends") continue
+        const src = String(x?.source ?? "")
+        let set = extendsTargets.get(src)
+        if (!set) { set = new Set(); extendsTargets.set(src, set) }
+        set.add(String(x?.target ?? ""))
+      }
+      return {
+        ...r,
+        symbols: (r?.symbols ?? []).map((s: any) => {
+          const list = s?.metadata?.superTypes
+          if (!Array.isArray(list) || list.length === 0) return s
+          const keep = list.filter((n: any) => extendsTargets.get(String(s.name))?.has(String(n)))
+          const { superTypes: _dropped, ...rest } = s.metadata
+          return { ...s, metadata: keep.length ? { ...rest, superTypes: keep } : rest }
+        }),
+      }
+    },
+  },
+  {
+    id: "php/heritage-payload-names-itself",
+    language: "php",
+    defectClass: "fabricated-relationship",
+    description:
+      "adds each class-like declaration's OWN name to its heritage — what a payload re-derived from the node text produces, and the one direction here that FABRICATES instead of losing. Every declaration with no heritage gains one that points at itself, so the store column reads populated for exactly the shapes the analyzer declined to publish. It is not hypothetical: the PHPD10 gate exists because `class InvalidArgumentException extends \\InvalidArgumentException` resolves to the class's own name, and the class branch emits no edge for it — a payload that re-read the raw base text would put that self-loop in the column a consumer walks. Caught by php/heritage-published's three `meta.superTypes: null` rows (`NoHeritage`, `PlainIface`, `InvalidArgumentException`), which is what those rows are FOR: without them the omission side of the rule would be unfalsifiable.",
+    transform: r => ({
+      ...r,
+      symbols: (r?.symbols ?? []).map((s: any) => {
+        if (!s || typeof s.name !== "string" || !s.name) return s
+        if (!CLASS_LIKE_KINDS.has(String(s.kind))) return s
+        const md = { ...(s.metadata ?? {}) }
+        const list = Array.isArray(md.superTypes) ? md.superTypes : []
+        if (list.includes(s.name)) return s
+        md.superTypes = [...list, s.name]
+        return { ...s, metadata: md }
+      }),
+    }),
+  },
+]
+
 PHP_MUTANTS.push(...PHP_RECEIVER_OWNER_MUTANTS)
+PHP_MUTANTS.push(...PHP_PROJECTION_MUTANTS)
+PHP_MUTANTS.push(...PHP_RECOVERY_MUTANTS)
+PHP_MUTANTS.push(...PHP_NESTED_FUNCTION_MUTANTS)
+/**
+ * MEMBER IDENTITY (`Owner.member` on every class-like member), and the two directions it fails.
+ *
+ * The property is not cosmetic: the store's FIRST target-resolution strategy is an EXACT
+ * `qualified_name` match, and its index takes `MIN(id)` per qualified name — the right rule when a
+ * qualified name identifies one thing, and a NAME index when it does not. While php published no
+ * qualified name for a member, a bare member target was attached to the alphabetically first
+ * declaration of that name ANYWHERE in the project, silently, and the lane's ambiguity census could
+ * not see it (the census measures the analyzer's endpoints against the analyzer's symbols and never
+ * asks what the store then bound the row to). Both mutants below reproduce a state this code was
+ * actually in, or one keystroke away from:
+ *
+ *   1. the field is ABSENT for every member — the pre-fix state exactly. The store's index is a name
+ *      index again, so member targets are resolved by `MIN(id)`;
+ *   2. the field is set where it must NOT be: a NAMESPACE-owned declaration. Its identity is already
+ *      php's own `Namespace\name` in `metadata.fqn`, and minting a second, dotted spelling for the
+ *      same declaration is the aliasing this rule exists to remove — the store would then have two
+ *      qualified names for one symbol, and a target spelled the other way matches NEITHER.
+ *
+ * They are separate because a reverting diff (the first) and an over-reaching rule (the second) look
+ * nothing alike in review, and only one of them was ever the code.
+ */
+const PHP_MEMBER_IDENTITY_MUTANTS: Mutant[] = [
+  {
+    id: "php/member-identity-dropped",
+    language: "php",
+    defectClass: "lost-identity",
+    description:
+      "drops `qualifiedName` from every member whose owner is class-like — the exact pre-fix state. Caught by php/member-identity's `expectSymbols` rows (four `persist` declarations under four owners plus a constant, a property and an enum member) AND by its `forbidSymbols` rows, which state the absence directly: the mutant deletes the field rather than corrupting it, so an assertion phrased only as `qualifiedName: 'AlphaStore.persist'` would pass on a symbol that has no field at all only by failing — the absence rows are what make the intent explicit. NOT caught by any store gate: those read the store's own behaviour, and the store merely gets worse.",
+    transform: r => ({
+      ...r,
+      symbols: (r?.symbols ?? []).map((s: any) => {
+        if (!s || !s.ownerName || !CLASS_LIKE_KINDS.has(String(s.ownerKind))) return s
+        const { qualifiedName: _dropped, ...rest } = s
+        return rest
+      }),
+    }),
+  },
+  {
+    id: "php/member-identity-on-namespace-scope",
+    language: "php",
+    defectClass: "fabricated-identity",
+    description:
+      "extends the rule one level too far: a declaration whose owner is a NAMESPACE also gets `Namespace.name`, so one declaration carries two qualified spellings. This is the direction that arrives by simplifying the guard (`if (!s.ownerName) continue`), and it is worse than the drop in one respect — a target spelled the OTHER way matches neither form, so the symbol becomes reachable by no name at all. Caught by php/member-identity's `forbidSymbols` row `{name: 'helperFn', qualifiedNameEndsWith: 'helperFn'}`, which is written as a suffix because the fabricated spelling is the thing being forbidden, and by that fixture's `qualifiedName: null` pin on the same function.",
+    transform: r => ({
+      ...r,
+      symbols: (r?.symbols ?? []).map((s: any) => {
+        if (!s || s.qualifiedName || !s.ownerName) return s
+        if (CLASS_LIKE_KINDS.has(String(s.ownerKind))) return s
+        return { ...s, qualifiedName: `${s.ownerName}.${s.name}` }
+      }),
+    }),
+  },
+]
+
+/**
+ * SELF-HERITAGE, PHPD43 (final review).
+ *
+ * Both directions of the rule `a heritage clause that resolves to the declaration's OWN name is not a
+ * heritage clause`, because that rule has a failure mode on each side and they are caught by different
+ * rows of the same fixture:
+ *
+ *   - the FABRICATION direction is the pre-fix state, and it is the reason the fixture exists;
+ *   - the OVER-REACH direction is the plausible simplification a later author makes ("drop heritage
+ *     when the leaf repeats"), which passes every negative row in the fixture and fails its
+ *     SEPARABLE control. A gate made only of negatives would call it a fix.
+ *
+ * Both are RESULT-level transforms like everything in this file, so neither reverts the analyzer's
+ * source: the first re-manufactures the shape a self-referencing clause used to produce (a declaration
+ * whose parent is itself) on every class-like declaration with no heritage, and the second deletes
+ * heritage whose TARGET's leaf equals the declaration's name — which is the separable case, the one
+ * the rule must KEEP.
+ */
+const PHP_SELF_HERITAGE_MUTANTS: Mutant[] = [
+  {
+    id: "php/self-heritage-emitted",
+    language: "php",
+    defectClass: "fabricated-relationship",
+    description:
+      "re-manufactures a declaration whose parent is ITSELF: every class-like symbol with no heritage gets `superTypes: [own name]` and an edge naming itself (an interface `extends` itself, a class or enum `implements` itself). This is the shape `enum Foo implements \\Foo` produced before PHPD43 — an edge and a column entry that assert a parent which cannot exist — and it is fabricated on the RESULT so it does not depend on a source shape being present. Caught by php/enum-self-heritage on both halves at once (its four `meta.superTypes: null` rows and its four self-edge forbid rows, plus the two stronger rows that forbid ANY `implements` targeting the enum and ANY `extends` targeting the interface), and independently by php/heritage-published's `NoHeritage` / `PlainIface` absence rows — so a future author who deleted the self-heritage fixture for being narrow would still lose this mutant.",
+    transform: r => {
+      const heritageOf = (s: any): unknown => s?.metadata?.superTypes
+      const symbols = (r?.symbols ?? []).map((s: any) => {
+        if (!CLASS_LIKE_KINDS.has(String(s?.kind))) return s
+        const list = heritageOf(s)
+        if (Array.isArray(list) && list.length > 0) return s
+        return { ...s, metadata: { ...(s?.metadata ?? {}), superTypes: [String(s.name)] } }
+      })
+      const relationships = [...((r?.relationships ?? []) as any[])]
+      for (const s of (r?.symbols ?? []) as any[]) {
+        if (!CLASS_LIKE_KINDS.has(String(s?.kind))) continue
+        const list = heritageOf(s)
+        if (Array.isArray(list) && list.length > 0) continue
+        relationships.push({
+          source: String(s.name),
+          target: String(s.name),
+          type: String(s.kind) === "interface" ? "extends" : "implements",
+          confidence: 1,
+          line_number: s?.range?.startLine ?? 1,
+          metadata: { phpSpecific: true },
+        })
+      }
+      return { ...r, symbols, relationships }
+    },
+  },
+  {
+    id: "php/self-heritage-over-reach",
+    language: "php",
+    defectClass: "lost-relationship",
+    description:
+      "widens the rule from \"the target IS the declaration\" to \"the target's LEAF repeats the declaration\" — the simplification that reads as tidier and is WRONG, because `class Forms\\Setup\\FeaturesForm extends \\Forms\\User\\FeaturesForm` is a real base in another namespace and the qualification is the disambiguation. Drops both the `superTypes` entry and the edge whose target leaf equals its source's name. Caught by THREE fixtures, and the third was not predicted when this mutant was written: php/enum-self-heritage's SEPARABLE control (`Separable` must keep `Fixture\\EnumSelf\\Separable` and its `implements` edge), php/heritage-published's `FeaturesForm` row, and php/same-leaf-inheritance — whose whole subject is the separable shape, which is why it fires. The two named controls exist precisely because a fixture of only negatives cannot tell this mutant from the fix.",
+    transform: r => {
+      const dropped = new Set<string>()
+      const symbols = (r?.symbols ?? []).map((s: any) => {
+        if (!CLASS_LIKE_KINDS.has(String(s?.kind))) return s
+        const list = s?.metadata?.superTypes
+        if (!Array.isArray(list) || list.length === 0) return s
+        const keep = list.filter((n: any) => String(n).split("\\").pop() !== String(s.name))
+        if (keep.length === list.length) return s
+        dropped.add(String(s.name))
+        const { superTypes: _dropped, ...rest } = s.metadata
+        return { ...s, metadata: keep.length ? { ...rest, superTypes: keep } : rest }
+      })
+      const relationships = ((r?.relationships ?? []) as any[]).filter((x: any) => {
+        const t = String(x?.type)
+        if (t !== "implements" && t !== "extends") return true
+        if (!dropped.has(String(x?.source))) return true
+        return String(x?.target ?? "").split("\\").pop() !== String(x?.source)
+      })
+      return { ...r, symbols, relationships }
+    },
+  },
+]
+
+PHP_MUTANTS.push(...PHP_HERITAGE_MUTANTS)
+PHP_MUTANTS.push(...PHP_MEMBER_IDENTITY_MUTANTS)
+PHP_MUTANTS.push(...PHP_SELF_HERITAGE_MUTANTS)

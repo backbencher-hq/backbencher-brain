@@ -29,47 +29,48 @@
  *
  * The other six types (`uses`, `contains`, `references`, `exports`, `implements`,
  * `overrides`) are EMITTED and the gate counts them from production `parseFile`, so they
- * take no row here. Per-type verdicts, the six questions and the declared limitations are
- * in `docs/analyzers/real-graphql-analyzer.md`.
+ * take no row here. `imports` joined them when the `#import` convention was implemented.
+ * Per-type verdicts, the six questions and the declared limitations are in
+ * `docs/analyzers/real-graphql-analyzer.md`.
  *
- * ## A MEASUREMENT DEFECT THAT AFFECTS EVERY `A` AND `B` ROW IN THIS FILE — read this first
+ * ## THE MEASUREMENT DEFECT THAT USED TO AFFECT EVERY `A` AND `B` ROW IN THIS FILE — FIXED
  *
- * `script/m14/ontology-coverage-gate.ts:322` resolves its grammar as
- * `(LANGS as any)[LANG]?.wasm ?? "tree-sitter-bash.wasm"`, and `graphql` is NOT an entry in
- * `LANGS` in `script/m14/differential.ts:740` — the LANGS map in `script/m14/run-fixtures.ts`
- * has graphql, the one in differential.ts does not, and they are separate maps. So when the
- * arbiter is run as `... ontology-coverage-gate.ts graphql`, BOTH of its instruments parse
- * every corpus file with the BASH grammar.
+ * `script/m14/ontology-coverage-gate.ts` resolves its grammar as
+ * `(LANGS as any)[LANG]?.wasm ?? "tree-sitter-bash.wasm"`, and `graphql` was NOT an entry in
+ * `LANGS` in `script/m14/differential.ts` — the LANGS map in `script/m14/run-fixtures.ts` had it,
+ * the differential.ts one did not, and they are separate maps. So the arbiter used to parse every
+ * corpus file with the **BASH** grammar on BOTH instruments: instrument A collected bash's node
+ * types (so every name in `nodeTypesThatWouldMeanIt` below was absent for a reason that had
+ * nothing to do with GraphQL), and instrument B was handed a bash tree (so the `extends` probe
+ * counted 0 for the wrong language). Neither was a false EMITTED — both were VACUOUS PASSES,
+ * a green verdict that moved without the evidence moving.
  *
- * What that means per instrument, precisely:
+ * THE FIX LANDED as one additive entry in shared machinery:
  *
- *   - Instrument A (`grammarNodeTypes`) collects the node types the BASH grammar produces.
- *     Every name in this file's `nodeTypesThatWouldMeanIt` is absent from it, so the A rows
- *     report RULED-SOUND for a reason that has nothing to do with GraphQL.
- *   - Instrument B (`countOnTree`) is handed a bash tree. The `extends` probe below looks
- *     for `Definition`, `ObjectTypeDefinition`, `ImplementsInterfaces` and `Extension`
- *     nodes; a bash tree has none, so it reports 0x and RULED-SOUND for the wrong language.
- *
- * Neither is a false EMITTED. Both are vacuous passes, which is the failure this project
- * exists to avoid: a green verdict that moved without the evidence moving. The fix is one
- * entry in shared machinery and is §8, not this lane's to apply:
- *
- *     // script/m14/differential.ts:740, in LANGS
+ *     // script/m14/differential.ts, in LANGS
  *     graphql: { wasm: "tree-sitter-graphql.wasm", analyzerFile: "real-graphql-analyzer", className: "RealGraphqlAnalyzer", ext: "graphql,graphqls,gql" },
  *
- * Until that lands, every number in this file is the LANE'S OWN, measured by
- * `script/m14/tmp/graphql/probe/extends-condition.mts` and the census in
- * `script/m14/tmp/graphql/out/`, and they are published here so the arbiter can compare
- * rather than trust: `publishedCount` / `publishedFiles` on the B row are the numbers the
- * gate is accountable to, read the way julia-ruled reads its own.
+ * THE SYMPTOM, kept so the next reader recognises a regression of it: a `--fresh` run of
+ * `ontology-coverage-gate.ts graphql` used to print, for the two `A` rows, "the grammar produced
+ * **57** distinct node types across the corpus" — the BASH grammar's inventory, the same number it
+ * printed for every lane, because there was no `graphql` entry to find. An `A` row reading "57 node
+ * types, none of them a call" was a statement about bash.
  *
- * THE SYMPTOM, so the next reader recognises it: a correct `--fresh` run of
- * `ontology-coverage-gate.ts graphql` prints, for the two `A` rows, "the grammar produced
- * **57** distinct node types across the corpus". The graphql grammar produces **75**
- * named node types over the same files — 128 including anonymous tokens. 57 is
- * the BASH grammar's inventory — the same run prints it for every lane, because the value is
- * `(LANGS as any)[LANG]?.wasm ?? "tree-sitter-bash.wasm"` with no `graphql` entry to find.
- * So an `A` row reading "57 node types, none of them a call" is a statement about bash.
+ * THE AFTER, measured by the lane's own probe on the wired grammar (1,911 admitted files, 2,338,690
+ * nodes, 0 parse failures — `validation/m14/fixtures/graphql/rulebook-space-probe.mts`): **75 named
+ * node types + 53 anonymous tokens = 128 distinct**, the same inventory this file publishes from a
+ * separately written census. Two independent instruments, one number, on the right language.
+ *
+ * WHAT THE FIX DID **NOT** SETTLE, and this is the other half of the vacuous-pass problem: a
+ * vocabulary-based `A` ruling in a KEY-BEARING language is still not checkable until the lane
+ * declares the space its probe enumerated — HCL's `inherits = ["_common"]` hid 44 sites behind
+ * exactly that blind spot. GraphQL IS key-bearing in the arbiter's own structural sense (a
+ * `FieldDefinition` is `Name`, `:`, `Type`; the corpus writes **50,284 bindings over 7 key-bearing
+ * node types**), so this lane now carries
+ * `validation/m14/fixtures/graphql/ruling-attestation.json`, whose pointers the gate verifies
+ * against `rulebook-space-probe.json` and which states the construct-site rule that reads 0 for
+ * both types — with the raw keyword calibration (22 + 340 keyword-shaped KEYS) beside it, so the 0
+ * is a measurement rather than an inert counter.
  *
  * ## WHAT INSTRUMENT A CAN AND CANNOT SEE IN THIS LANGUAGE
  *
@@ -168,12 +169,25 @@ export const GRAPHQL_RULED: Ruled[] = [
     // `emitHeritage` (Extends when Class or Type).
     countOnTree: (root, fileLabel, hits) => {
       const WRAPPERS = new Set(["Document", "Definition", "ExecutableDefinition", "TypeSystemDefinition", "TypeSystemExtension", "TypeDefinition", "TypeExtension"])
+      // FIXED 2026-10-12 — this looped FOREVER on this corpus, and the bug is a one-character-class
+      // mistake with an expensive signature: it read `n.namedChildren` (the node it was CALLED with)
+      // instead of `cur.namedChildren` (the node it had descended to). When `n` is a wrapper with
+      // exactly one named child that is ALSO a wrapper — which is what a `Definition` is in this
+      // grammar, `Definition -> TypeSystemDefinition -> ObjectTypeDefinition` — `kids` was recomputed
+      // from the same `n` on every iteration and `cur = kids[0]` never advanced, so the `for (;;)`
+      // never returned and never threw. It burned a core at 98% CPU inside a SYNCHRONOUS WASM phase
+      // that no timeout can interrupt, which is why the arbiter's own walk finished (all 1,911 files
+      // settled, checkpoint written at 08:13:56) and then the process sat in instrument B for 107
+      // minutes producing nothing. `seen` is belt-and-braces: a cyclic child relationship would now
+      // return the deepest wrapper instead of wedging the gate.
       const unwrap = (n: any): any => {
         let cur = n
+        const seen = new Set<any>()
         for (;;) {
           if (!WRAPPERS.has(cur.type)) return cur
-          const kids = (n.namedChildren ?? []).filter((c: any) => c)
-          if (kids.length !== 1) return cur
+          const kids = (cur.namedChildren ?? []).filter((c: any) => c)
+          if (kids.length !== 1 || seen.has(cur)) return cur
+          seen.add(cur)
           cur = kids[0]
         }
       }
@@ -217,36 +231,46 @@ export const GRAPHQL_RULED: Ruled[] = [
         clauses.push({ node: def, name: nm })
       }
       if (kindOfNameHere.size === 0) return
+      // AN EXPLICIT STACK, NOT RECURSION, for the reason the arbiter's own header records: it replaced
+      // a recursive `walkPreorder` after `Maximum call stack size exceeded` killed a 33,692-file dart
+      // walk, and it names "two `countOnTree` helpers a few lines below" as carrying the same recursion.
+      // This was one of them. A JS stack is bounded by nesting depth; an array is not, and a document
+      // that nests 200 list brackets is IN this corpus (`err/6000_stackoverflow1.graphql`, a fixture
+      // kept to test exactly that).
       for (const { node, name } of clauses) {
-        const visit = (n: any) => {
-          if (n.type !== "ImplementsInterfaces") {
-            for (const c of n.namedChildren ?? []) if (c) visit(c)
-            return
-          }
-          const collect = (m: any) => {
-            if (m.type === "NamedType") {
-              const nm = nameOf(m)
-              const kinds = nm ? kindOfNameHere.get(nm) : undefined
-              // supertypeKindOf(): undefined unless exactly one kind, and only
-              // Interface/Class/Type are classifiable. emitHeritage(): Extends for
-              // Class or Type.
-              if (kinds && kinds.size === 1) {
-                const only = [...kinds][0]
-                if (only === "Class" || only === "Type") {
-                  hits.push(`${fileLabel}: ${name} implements ${nm} (${only}) line ${n.startPosition.row + 1}`)
+        const stack: any[] = [node]
+        while (stack.length > 0) {
+          const m = stack.pop()
+          if (!m) continue
+          if (m.type === "ImplementsInterfaces") {
+            // The clause's own subtree is collected depth-first — the same order `collect` had.
+            const inner: any[] = [m]
+            while (inner.length > 0) {
+              const t = inner.pop()
+              if (!t) continue
+              if (t.type === "NamedType") {
+                const nm = nameOf(t)
+                const kinds = nm ? kindOfNameHere.get(nm) : undefined
+                // supertypeKindOf(): undefined unless exactly one kind, and only Interface/Class/Type
+                // are classifiable. emitHeritage(): Extends for Class or Type.
+                if (kinds && kinds.size === 1) {
+                  const only = [...kinds][0]
+                  if (only === "Class" || only === "Type") {
+                    hits.push(`${fileLabel}: ${name} implements ${nm} (${only}) line ${m.startPosition.row + 1}`)
+                  }
                 }
+                continue
               }
-              return
+              for (let i = (t.namedChildren ?? []).length - 1; i >= 0; i--) inner.push(t.namedChildren[i])
             }
-            for (const c of m.namedChildren ?? []) if (c) collect(c)
+            continue
           }
-          collect(n)
+          for (let i = (m.namedChildren ?? []).length - 1; i >= 0; i--) stack.push(m.namedChildren[i])
         }
-        visit(node)
       }
     },
     describe:
-      "an `implements` clause whose supertype THIS DOCUMENT declares — with a unique kind — as an object type, input object type, union or scalar. GraphQL has no `extends` clause at all (`A:supertype_clause_node: 0` over 882,672 nodes / 75 named node types), so this is the only shape that could carry the edge; 3,330 `implements` clauses exist on the corpus and 0 of them resolve to an inheritance-shaped supertype in the same document.",
+      "an `implements` clause whose supertype THIS DOCUMENT declares — with a unique kind — as an object type, input object type, union or scalar. GraphQL has no `extends` clause at all (`A:supertype_clause_node: 0` over 882,672 nodes / 75 named node types), so this is the only shape that could carry the edge; 3,330 `implements` clauses exist on the corpus and 0 of them resolve to an inheritance-shaped supertype in the same document. NOTE 2026-10-12: this probe's `unwrap` looped forever on every `Definition` (it re-read the CALLER's children instead of the node it had descended to) and its `visit`/`collect` were recursive; both are fixed, and the fix is exercised by `validation/m14/fixtures/graphql/extends-probe-terminates.mts`, which drives THIS function over the whole 1,911-file population and fails if it does not terminate with the same 0 hits.",
   },
 
   // ─────────────────────────────────────────────────────────────── calls

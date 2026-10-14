@@ -127,11 +127,63 @@ type TypeRow = {
   targetsDistinct: number
   ambiguousTargets: number
   unresolvedTargets: number
+  /**
+   * EDGES WHOSE TARGET CANNOT BE A LOCAL BINDING (dependency member, Node
+   * builtin, runtime global, lib type). The fleet gate's rule
+   * (`script/m14/incoming-gate.ts:38`) is that such an edge is not a resolution
+   * claim: the lane states the reference cannot bind here. Counted separately so
+   * the statement is visible rather than subtracted silently.
+   */
+  markedExternal: number
+  /**
+   * Candidate DECLARATIONS per target: distinct declaring FILES, counting one
+   * file as one candidate. A name declared as both a type and its runtime
+   * binding in one file is ONE declaration (TypeScript declaration merging), and
+   * a `declare global { ... }` AUGMENTATION is not a competing declaration when
+   * the corpus also has a real one. Max over the type's targets, and `ambiguous`
+   * is `>= 2` — measured 2026-10-09: the kind-based rule counted `Observable`
+   * ambiguous against its own 94 augmentations (510 `instantiates` edges).
+   */
+  maxDeclaringFiles: number
+  /** `unresolvedTargets` with the marker IGNORED — the raw number, kept so the
+   *  exemption can never hide how many edges the marker covers. */
+  unresolvedRaw: number
   selfLoops: number
 }
 
+/**
+ * The keys the fleet gate reads as a declared-external marker, verbatim from
+ * `script/m14/incoming-gate.ts:105` — one vocabulary fleet-wide, because a lane
+ * that invents its own key is a lane the gate cannot hear.
+ */
+const EXTERNAL_KEYS = [
+  "zigExternalRef",
+  "nimStdlibModule",
+  "isExternal",
+  "isExternalTarget",
+  "external",
+  "externalRef",
+  "isStdlib",
+  "stdlibModule",
+  "moduleNamingEdges",
+  "markAsExternal",
+]
+
+/** Marker present at the edge's top level or in its metadata; arrays count when non-empty. */
+function hasExternalMarker(rel: any): boolean {
+  const md = rel?.metadata && typeof rel.metadata === "object" ? rel.metadata : {}
+  for (const key of EXTERNAL_KEYS) {
+    for (const holder of [rel, md]) {
+      const v = holder?.[key]
+      if (v === true) return true
+      if (Array.isArray(v) && v.length > 0) return true
+    }
+  }
+  return false
+}
+
 function blank(): TypeRow {
-  return { fired: false, edges: 0, targetsDistinct: 0, ambiguousTargets: 0, unresolvedTargets: 0, selfLoops: 0 }
+  return { fired: false, edges: 0, targetsDistinct: 0, ambiguousTargets: 0, unresolvedTargets: 0, markedExternal: 0, maxDeclaringFiles: 0, unresolvedRaw: 0, selfLoops: 0 }
 }
 
 async function main(): Promise<void> {
@@ -146,7 +198,25 @@ async function main(): Promise<void> {
   // Index every file given. The incoming question is only meaningful against a
   // known universe: a target absent from this set is either external or
   // unpublished, and those are DIFFERENT answers, reported separately.
-  const published = new Map<string, string[]>() // name -> kinds
+  const published = new Map<string, string[]>() // name -> kinds (for reporting)
+  /** name -> distinct declaring files, non-augmentation declarations only */
+  const sites = new Map<string, Set<string>>()
+  /** name -> distinct declaring files among `declare global` AUGMENTATIONS only */
+  const augSites = new Map<string, Set<string>>()
+  /**
+   * Candidate declarations for a target: distinct declaring files. Augmentations
+   * are consulted only when no non-augmentation declaration exists anywhere in
+   * the corpus, because an augmentation extends a declaration rather than
+   * competing with it — and when a name is declared ONLY by augmentations (rxjs's
+   * `Observable`, whose polyfill block and 93 operator augmentations are all
+   * `declare global`), the distinct FILES still answer how many places a reverse
+   * walk could land on.
+   */
+  const candidatesFor = (name: string): number => {
+    const real = sites.get(name)
+    if (real && real.size > 0) return real.size
+    return augSites.get(name)?.size ?? 0
+  }
   const declaredNames: string[] = []
   const rels: any[] = []
   let symbols = 0
@@ -186,6 +256,18 @@ async function main(): Promise<void> {
           if (!qa.includes(kind)) qa.push(kind)
         } else published.set(q, [kind])
       }
+      // Candidate declarations: one per FILE, because TypeScript declaration
+      // merging means a type plus its runtime binding in one file is ONE
+      // declaration. `isAugmentation` (a `declare global` block) goes to its own
+      // map, consulted only when the corpus has no non-augmentation declaration
+      // of that name at all.
+      const aug = (s as { metadata?: { isAugmentation?: boolean } })?.metadata?.isAugmentation === true
+      const holder = aug ? augSites : sites
+      for (const key of q.length > 0 && q !== name ? [name, q] : [name]) {
+        const set = holder.get(key) ?? new Set<string>()
+        set.add(f)
+        holder.set(key, set)
+      }
     }
     for (const rel of Array.isArray(r.relationships) ? r.relationships : []) rels.push({ rel, file: f })
   }
@@ -213,14 +295,28 @@ async function main(): Promise<void> {
     }
 
     // AMBIGUITY is the number this file exists to produce. A target naming 3
-    // published symbols is not 3 incoming edges; it is ONE edge the reverse walk
-    // will attribute to whichever of the 3 its rule picks.
-    const hits = published.get(tgt)
-    if (!hits || hits.length === 0) {
+    // candidate declarations is not 3 incoming edges; it is ONE edge the reverse
+    // walk will attribute to whichever of the 3 its rule picks. A CANDIDATE is a
+    // declaring file: a type plus its runtime binding in one file is one
+    // declaration (declaration merging), and augmentations are not candidates at
+    // all when a non-augmentation declaration exists.
+    const cands = candidatesFor(tgt)
+    const rawUnresolved = cands === 0
+    if (rawUnresolved) row.unresolvedRaw++
+    // A marked edge's target is external BY DECLARATION (a dependency, a Node
+    // builtin, a runtime global, a lib type — the analyzer's own proof, recorded
+    // on the row). It is reported as such and is not counted against resolution;
+    // the raw count above keeps the size of that set auditable.
+    if (hasExternalMarker(rel)) {
+      row.markedExternal++
+      continue
+    }
+    if (rawUnresolved) {
       row.unresolvedTargets++
       continue
     }
-    if (hits.length > 1) row.ambiguousTargets++
+    if (cands > 1) row.ambiguousTargets++
+    if (cands > row.maxDeclaringFiles) row.maxDeclaringFiles = cands
 
     let set = named.get(tgt)
     if (!set) {
@@ -243,12 +339,13 @@ async function main(): Promise<void> {
       if (label !== t) continue
       const tgt = String(rel?.target ?? rel?.to ?? rel?.toSymbol ?? "")
       if (tgt.length === 0) continue
-      const hits = published.get(tgt)
-      if (!hits || hits.length === 0) {
+      if (hasExternalMarker(rel)) continue
+      const cands = candidatesFor(tgt)
+      if (cands === 0) {
         unres++
         continue
       }
-      if (hits.length > 1) amb++
+      if (cands > 1) amb++
       targets.add(tgt)
     }
     perType[t].targetsDistinct = targets.size
@@ -286,16 +383,21 @@ async function main(): Promise<void> {
     if (parseFailures.length) for (const f of parseFailures.slice(0, 5)) console.log(`  ${f}`)
     console.log("")
     console.log(
-      pad("type", 16) + pad("fired", 7) + pad("edges", 9) + pad("distinct", 10) + pad("ambiguous", 11) + "unresolved",
+      pad("type", 16) + pad("fired", 7) + pad("edges", 9) + pad("distinct", 10) + pad("ambiguous", 11) + pad("unresolved", 12) + pad("external", 10) + "unres(raw)",
     )
-    console.log("-".repeat(74))
+    console.log("-".repeat(92))
     for (const t of TYPES) {
       const r = perType[t]
       console.log(
-        pad(t, 16) + pad(r.fired ? "yes" : "NO", 7) + pad(String(r.edges), 9) + pad(String(r.targetsDistinct), 10) + pad(String(r.ambiguousTargets), 11) + String(r.unresolvedTargets),
+        pad(t, 16) + pad(r.fired ? "yes" : "NO", 7) + pad(String(r.edges), 9) + pad(String(r.targetsDistinct), 10) + pad(String(r.ambiguousTargets), 11) + pad(String(r.unresolvedTargets), 12) + pad(String(r.markedExternal), 10) + String(r.unresolvedRaw),
       )
     }
-    console.log("-".repeat(74))
+    console.log("-".repeat(92))
+    console.log("")
+    console.log("`external` = unpublished target carrying a declared-external marker (dependency,")
+    console.log("Node builtin, runtime global). It is a STATEMENT, not a resolution, and is not")
+    console.log("counted against `unresolved`. `unres(raw)` is the same column with the marker")
+    console.log("ignored, kept so the exemption can never hide its own size. Rule: incoming-gate.ts:38.")
     console.log("")
     console.log(`distinct declarations named by at least one edge : ${totalDistinct}`)
     console.log(`declarations nothing names (orphans)             : ${orphans} of ${declaredNames.length}`)

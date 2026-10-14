@@ -7,7 +7,6 @@ import { readFileSync, existsSync, mkdirSync, readdirSync, statSync } from "node
 import { writeFileSync } from "node:fs"
 import path from "node:path"
 import { execSync } from "node:child_process"
-import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 
@@ -60,8 +59,7 @@ const masterPlanPath = path.join(ROOT, "docs/m15/M15-MASTER-PLAN.md")
 
 // Map repos to their primary languages (from repo names and known content)
 const repoLangs: Record<string, string[]> = {}
-// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
-const testReposDir = resolveCorpusRoot(process.cwd()) ?? "testReposDir_UNRESOLVED"
+const testReposDir = "$HOME/fixtures/repositories"
 const homeRepos = ["TypeScript", "vscode", "openclaw", "paperclip", "ProxiCall"]
 
 // fixtures repositories
@@ -79,13 +77,7 @@ const testRepoMap: Record<string, string> = {
   "elixir": "elixir",
   "Exposed": "kotlin",
   "fsharp": "fsharp",
-  // The corpus directory is go_tools (underscore), not go-tools. Every gate that
-  //  asked for the hyphen form was reading a directory that has never existed on any
-  //  machine, so the corpus leg passed VACUOUSLY — no error, no finding, nothing
-  //  measured. script/m13/verify-analyze-e2e-corpus.ts reported exactly this once the
-  //  corpus root was fixed: "corpus go-tools/go/analysis/passes (Go): present … missing".
-  //  Verified against the corpus on disk, which lists go_tools.
-  "go_tools": "go",
+  "go-tools": "go",
   "grails-core": "groovy",
   "graphql-js": "javascript",
   "luarocks": "lua",
@@ -98,7 +90,7 @@ const testRepoMap: Record<string, string> = {
   "scala3": "scala",
   "svelte": "svelte",
   "swift-nio": "swift",
-  "terraform": "hcl",
+  "terraform": "terraform",
   "tree-sitter-clean": "clean",
   "vue-core": "vue",
   "zig": "zig",

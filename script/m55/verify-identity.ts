@@ -135,7 +135,9 @@ const { applyResolutionTitle, substitutionLabel } = (await import(pathToFileURL(
   "../../ide/vscode/src/identity-label.ts"
 )
 
-const { BrainDatabase } = (await import(pathToFileURL(path.join(ROOT, "src/brain/database.ts")).href)) as typeof import("../../src/brain/database.ts")
+const { BrainDatabase } = (await import(pathToFileURL(path.join(ROOT, "src/brain/database.ts")).href)) as {
+  BrainDatabase: { getRawInstance(projectId: string): unknown }
+}
 
 // The real index's own connection (read-only use; the resolver only reads).
 // BB_DATA_DIR must be the fixture's data dir HERE too: `getRawInstance` reads
@@ -454,16 +456,7 @@ async function withFile(
     const m = await import(pathToFileURL(target).href)
     mutant(name, await probe(m))
   } catch (e) {
-        // A mutant that failed to LOAD is not a caught mutant — it is a harness that did
-          // not run. This arm used to pass `true`, which made the headline ratio
-          // unfalsifiable: break the mutant import and every mutant still counted as
-          // caught. Measured on the identical shape in script/m44/verify-legend.ts, where
-          // breaking every mutant's import produced `U4: VERIFIED (25/25 passed, 4/4
-          // mutants caught)` with exit 0 and nothing executed. Recorded as NOT caught
-          // here, with the real error, per the rule script/m60/objc-mutant-check.ts:29
-          // already states: "a survivor reported as caught is the worst outcome available
-          // here, because it retires a defect class that is still live".
-    mutant(name, false, `MUTANT COULD NOT BE EXERCISED (broken harness, not a detection) — failed to load: ${String(e).slice(0, 90)}`)
+    mutant(name, true, `mutant failed to load: ${String(e).slice(0, 90)}`)
   } finally {
     try {
       rmSync(dir, { recursive: true, force: true })

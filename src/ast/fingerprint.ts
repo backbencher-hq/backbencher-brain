@@ -83,7 +83,7 @@ const cliSkipPatterns: RegExp[] = Array.from(
 async function loadIgnores(root: string, ownPath: string, parentIg: any): Promise<any> {
   try {
     const ignore = (await import("ignore")).default
-    const ig = ignore().add(parentIg)
+    const ig = ignore({ ignorecase: false }).add(parentIg)
     const entries = await readdir(ownPath, { withFileTypes: true })
     for (const name of [".gitignore", ".bbignore"]) {
       const f = entries.find((e) => e.isFile() && e.name === name)
@@ -213,7 +213,7 @@ export interface CheckoutFingerprint {
 /** Compute the stable codebase fingerprint for a checkout WITHOUT touching any DB. */
 export async function computeCheckoutFingerprint(root: string): Promise<CheckoutFingerprint> {
   const { default: ignore } = await import("ignore")
-  const ig = ignore().add(DEFAULT_IGNORE_PATTERNS)
+  const ig = ignore({ ignorecase: false }).add(DEFAULT_IGNORE_PATTERNS)
   const rel: string[] = []
   await walk(root, root, ig, 0, rel)
   const sorted = Array.from(new Set(rel)).sort()

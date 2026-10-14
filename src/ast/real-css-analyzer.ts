@@ -1,7 +1,11 @@
 import type { Node } from "web-tree-sitter"
+import { existsSync } from "node:fs"
+import * as path from "node:path"
 import { ASTEngine } from "./engine"
 
 interface CssContext {
+  /** what a bounded descent skipped — absent unless some node exceeded `RECOVERY_CHILD_CAP` */
+  recoveryCap?: { cap: number; errorNodes: number; errorChildren: number; visited: number; skipped: number }
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
   imports: ASTEngine.ImportInfo[]
@@ -110,6 +114,8 @@ interface CssContext {
   fileSelectorComplexity?: number
   fileNestingDepth?: number
   fileMaxSelectorComplexity?: number
+  /** CSS-D16: `var(--x)` reads marked `isExternalTarget` because this file declares no `--x`. */
+  externalCustomPropertyReads?: number
 }
 
 interface StackFrame {
@@ -311,6 +317,130 @@ function lastPathSegment(p: string): string {
   return cut >= 0 ? p.slice(cut + 1) : p
 }
 
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// THE FILE SCOPE — the missing dimension in a CSS declaration's identity (CSS-D15).
+//
+// WHY THIS EXISTS, measured rather than argued. `incoming-gate.ts css css 0` reads 485,882
+// edges with 456,587 AMBIGUOUS — 94% of the lane — and the lane's own classifier
+// (`validation/m14/fixtures/css/ambiguity-classify.ts`, whose counting rule is imported from
+// the arbiter and which asserts its totals against the gate's own printed line) splits that
+// number into classes. 456,403 of the 456,587 — 99.96% — are `CROSS-FILE-TWIN`: the edge's
+// OWN FILE declares the target name EXACTLY ONCE, and every other declaration answering that
+// name is in another file. A small project is a collection of stylesheets that repeat the
+// same names (`.nav`, `--pico-color`, `fade`), so a bare-name target names N declarations and
+// resolves to NONE of them:
+//
+//   `parallel-indexer.ts` strategy 2 binds a bare name only under `HAVING COUNT(*) = 1`, and
+//   strategy 3 binds a DOTTED target to `MIN(id)` of the suffix matches — for a name like
+//   `--pico-color` with no dot, neither applies and `target_symbol_id` stays NULL; for `.btn`
+//   strategy 3 applies and binds the edge to an ARBITRARY file's declaration.
+//
+// WHAT IS PUBLISHED. Every symbol gains a project-unique `qualifiedName` of the shape
+// `<file-scope>::<name>`, and the edges whose declaration is in the edge's OWN file are
+// respelled to that qualified name. Nothing else changes: the symbol's `name` — what a reader
+// searches for and what every consumer already keys on — is untouched.
+//
+// WHY `::` AND WHY THE PREFIX IS DOTLESS, which is not decoration. `script/m14/differential.ts`
+// matches a truth row to an analyzer edge on `label + normTarget(target)`, and `normTarget`
+// takes the LAST `.`/`::`-delimited segment — the qualifier is deliberately discarded. So the
+// css differential (which is green today: 0 MISSING / 0 unexplained on both pinned repos) stays
+// green exactly when `normTarget("<scope>::<name>") === normTarget("<name>")`. That holds for
+// every target shape this lane emits — `.btn`, `.card .title`, `#id`, `nav`, `--pico-color`,
+// `fade`, `theme.css` — as long as the prefix itself contains NO `.` and no `::`, which is why
+// the scope is the extension-less, dot-sanitised path and the occurrence discriminator rides
+// the prefix (`<scope>#2::<name>`) rather than the name. The compatibility is asserted, with a
+// control that fails, by `validation/m14/fixtures/css/qualified-target-compat.ts`.
+//
+// THE FAILURE MODE THIS DOES NOT FIX, stated rather than implied: a name declared 2+ times in
+// the edge's own file (the gate's `IN-FILE-MULTI`, 3 edges over the whole population) cannot be
+// resolved by any file-scoped spelling, because the edge itself does not say which of the two
+// sites it means. Those targets stay bare and stay ambiguous — a visible residual rather than a
+// guess — and a name declared NOWHERE in the edge's file (`CROSS-FILE-ONLY`, 181) is a genuine
+// cross-file or external reference and also stays bare.
+// ─────────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * THE WORKER BUDGET THAT USED TO CONSTRAIN THIS LANE, and why the guard it forced is RETIRED.
+ *
+ * Until 2026-10-10 `src/ast/pool-worker.ts` `filterNoiseRelationships` dropped any target longer
+ * than 200 characters, and it runs on the analyzer's output on the way to the index. A
+ * file-scoped target is longer than the bare one it replaces, so a selector that fit the budget
+ * bare could cross it qualified — measured on the 60-file stride: 46 `contains` edges crossed
+ * the budget and were DELETED (bare <= 200, qualified > 200; 318 more were already over it bare;
+ * 0 for any other reason). This lane therefore refused to qualify a target that would cross it,
+ * which kept the change lossless at the price of a visible residual.
+ *
+ * THAT TRADE IS NO LONGER NEEDED. The budget now applies to the target's LEAF, where the intent
+ * always was — a code SNIPPET is long in its leaf, a qualified name is long in its SCOPE — and
+ * `pool-worker.ts` records this lane's measurement as the reason. The leaf of a
+ * `<scope>::<name>` target is the bare name's own leaf, unchanged by the prefix, so qualification
+ * cannot move a target across that line at all. The guard is retired rather than kept "for
+ * safety": while it stood it held edges on the BARE spelling, which is exactly the ambiguity
+ * CSS-D15 exists to remove, and the gate's `ofWhich` column (resolved, but bound among a
+ * collision) is where that cost was visible.
+ *
+ * `validation/m14/fixtures/css/qualified-target-compat.ts` still asserts, against the shared
+ * function itself and with a control that fails, that a qualified target survives the worker's
+ * filter — which is what caught the budget moving in the first place.
+ */
+
+/** The checkout root above `filePath`, memoised per directory; null when there is no `.git`. */
+const CSS_PROJECT_ROOT_CACHE = new Map<string, string | null>()
+function cssProjectRootOf(filePath: string): string | null {
+  const start = path.dirname(path.resolve(filePath))
+  const seen: string[] = []
+  let dir = start
+  for (let i = 0; i < 64; i++) {
+    const cached = CSS_PROJECT_ROOT_CACHE.get(dir)
+    if (cached !== undefined) {
+      for (const d of seen) CSS_PROJECT_ROOT_CACHE.set(d, cached)
+      return cached
+    }
+    seen.push(dir)
+    if (existsSync(path.join(dir, ".git"))) {
+      if (CSS_PROJECT_ROOT_CACHE.size > 20000) CSS_PROJECT_ROOT_CACHE.clear()
+      for (const d of seen) CSS_PROJECT_ROOT_CACHE.set(d, dir)
+      return dir
+    }
+    const parent = path.dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  if (CSS_PROJECT_ROOT_CACHE.size > 20000) CSS_PROJECT_ROOT_CACHE.clear()
+  for (const d of seen) CSS_PROJECT_ROOT_CACHE.set(d, null)
+  return null
+}
+
+/**
+ * The project-unique scope prefix for a stylesheet: its path relative to the checkout root,
+ * extension removed, every `.` and `:` replaced by `_` so the prefix cannot shift the LAST
+ * segment `normTarget`/`extractLeaf` take.
+ *
+ * `a/b/theme.css` in the checkout at `a` -> `b/theme`. Two files differ in the prefix exactly
+ * when they differ in the project, which is the property the gate's key space needs; a
+ * basename alone would collide (`index.css` is everywhere) and bind an edge to an arbitrary
+ * directory's file. The one collision this sanitisation admits — two paths differing ONLY in
+ * the placement of `.` vs `_` (`v1.2/main.css` beside `v1_2/main.css`) — makes the key space
+ * count two declarations, i.e. it falls back to today's ambiguous reading, never to a wrong
+ * binding.
+ *
+ * Returns `""` for an empty path; the caller then publishes no scope and the lane behaves
+ * exactly as it did before this change.
+ */
+export function cssFileScopeOf(filePath: string): string {
+  if (!filePath || filePath.length === 0) return ""
+  const abs = path.resolve(filePath)
+  const root = cssProjectRootOf(abs)
+  let rel = root === null ? abs : path.relative(root, abs)
+  if (rel.length === 0) rel = abs
+  const dot = rel.lastIndexOf(".")
+  const slash = Math.max(rel.lastIndexOf("/"), rel.lastIndexOf("\\"))
+  const withoutExt = dot > slash ? rel.slice(0, dot) : rel
+  let out = ""
+  for (const ch of withoutExt.split(path.sep).join("/")) out += ch === "." || ch === ":" ? "_" : ch
+  return out
+}
+
 /**
  * The first whitespace-delimited token of `text`, or `""`.
  *
@@ -486,6 +616,28 @@ function isFoundationClass(cls: string): boolean {
  * widening one of those would assert that two declarations of a thing share a location,
  * which is a different claim and is not made.
  */
+/**
+ * THE WALK'S DESCENT IS BOUNDED ON A PATHOLOGICAL SHAPE, AND THE BOUND IS DISCLOSED.
+ *
+ * The SCSS grammar hands `bulma/.../fontawesome-free-6.5.2-web/scss/_variables.scss` ONE error node
+ * with 43,808 named children. This walk descends into broken regions on purpose (refusing to once
+ * made every rule inside a broken region invisible), so it expands all of them — and a CPU profile
+ * of the capped SCSS lane shows what that costs: **63.6 s of 69.9 s is `tree-sitter.wasm
+ * ts_node__child`**, i.e. node ACCESS, and the SCSS lane's own cap does not touch it because this
+ * walk is where the remainder lives.
+ *
+ * The bound below is on the NODE'S SHAPE (child count), not on a predicate: the SCSS lane tried the
+ * predicate form first, inside an `isErrorNode(child)` branch, and it NEVER BOUND — instrumenting
+ * `namedChild(i)` for i > 2000 showed the calls arriving through the ordinary recursion. A bound
+ * that depends on a predicate can miss the shape it was written for; a child count cannot.
+ *
+ * Nothing else changes: a file whose nodes are ordinary is untouched (`skipped` stays 0 and nothing
+ * is recorded), and what is skipped is COUNTED and attached to the file's stylesheet symbol
+ * (`metadata.cssRecoveryCap`), because a walk that does not say how much it skipped is the same
+ * defect as a table that hides its own closure.
+ */
+const RECOVERY_CHILD_CAP = 10000
+
 const STRUCTURAL_SCOPE_AT_RULES = new Set(["@layer", "@container", "@scope"])
 
 export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -500,6 +652,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // would put a placeholder literal in a name-bearing field, which is the M60 R7 rule
     // this file already states about the `imports` source and would contradict.
     this.hasRealModuleName = lastSegment.length > 0
+    // CSS-D15: the file's own identity inside its project, computed once per file and used
+    // for every symbol this run publishes. See the FILE SCOPE note above `cssFileScopeOf`.
+    this.fileScope = cssFileScopeOf(filePath)
+    this.fileDir = filePath.length > 0 ? path.dirname(filePath) : ""
 
     const ctx: CssContext = {
       symbols: [],
@@ -712,7 +868,19 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
       }
 
-      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+      // BOUNDED, COUNTED, DISCLOSED — see RECOVERY_CHILD_CAP. The first `RECOVERY_CHILD_CAP` children
+      // are expanded by exactly the same code that expanded all of them; the rest are counted and
+      // reported on this file's stylesheet symbol.
+      const wide = node.namedChildCount > RECOVERY_CHILD_CAP
+      const first = wide ? RECOVERY_CHILD_CAP : node.namedChildCount
+      if (wide) {
+        const tally = (ctx.recoveryCap ??= { cap: RECOVERY_CHILD_CAP, errorNodes: 0, errorChildren: 0, visited: 0, skipped: 0 })
+        tally.errorNodes++
+        tally.errorChildren += node.namedChildCount
+        tally.visited += RECOVERY_CHILD_CAP
+        tally.skipped += node.namedChildCount - RECOVERY_CHILD_CAP
+      }
+      for (let i = first - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (child) {
           stack.push({
@@ -727,6 +895,17 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
       }
+    }
+
+    // THE DISCLOSURE, ON THE FILE'S OWN STYLESHEET SYMBOL. Absent unless a node exceeded the cap, so
+    // an ordinary file records nothing; a file the cap bound on says exactly how much it skipped,
+    // where any reader of the graph can count it. Analyzer-internal tallies do not survive
+    // `parseFile`; a symbol's metadata does.
+    // RELATIONSHIP metadata, not symbol metadata: `parseFile` strips the latter completely
+    // (measured on this lane's pathological file — every symbol arrives with NO metadata keys),
+    // while relationship metadata is what the fleet's markers already ride through it.
+    if (ctx.recoveryCap && ctx.relationships.length > 0) {
+      ctx.relationships[0].metadata = { ...(ctx.relationships[0].metadata ?? {}), cssRecoveryCap: ctx.recoveryCap }
     }
 
     // The deferred selector-chain edges are resolved HERE, once every symbol the
@@ -746,6 +925,36 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         names.add(sym.name)
         if (sym.scope) names.add(`${sym.scope}.${sym.name}`)
       }
+      // THE KIND TEST, and it is what makes the two SUFFIX sub-tests below sound.
+      //
+      // A chain term is a SINGLE simple selector and its spelling says which kind it is:
+      // `.x` is a class, `#x` an id, `:x` a pseudo, `*` universal, and a bare name is a
+      // tag or attribute name. The published name a suffix test matches is a WHOLE
+      // selector, so its spelling says which kind IT is. Accepting a suffix match across
+      // two different kinds lets a term be satisfied by a selector that matches different
+      // elements — measured on the corpus before this test existed:
+      //
+      //   validation/m14/fixtures/css/single-file-dump.ts geb/doc/site/public/css/semantic.min.css
+      //   contains ".button" -> ".button"   [cssSpecific+isSelectorChain]
+      //   names.has(".button") = false
+      //   names.has("button")  = true
+      //
+      // The file declares `button{overflow:visible}` and no bare `.button` rule anywhere, so
+      // the dotted-LEAF test (`leafOf(".button")` = `button`) emitted a `contains` edge
+      // between two things that are not declarations of that stylesheet — a self-edge on
+      // top of it. Fixture: `validation/m14/fixtures/css/chain-term-kind-must-match.css`.
+      const chainTermKind = (n: string): string => {
+        if (n.length === 0) return ""
+        const c = n.charAt(0)
+        if (c === ".") return "class"
+        if (c === "#") return "id"
+        if (c === ":") return "pseudo"
+        if (c === "*") return "universal"
+        // A tag name and an ATTRIBUTE NAME are both pushed bare (D7: the attribute form
+        // pushes `href`, not `[href^=x]`), so one kind covers both and this test cannot
+        // separate them. Named rather than folded into `type` so the limit is visible.
+        return "bare"
+      }
       const leafOf = (n: string): string => {
         const segs = stripOccurrenceSuffix(n).split(":").filter((x) => x.length > 0)
         const last = segs[segs.length - 1] ?? ""
@@ -754,7 +963,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       // A SCOPED name resolves through its SUFFIX: svelte writes the rule as
       // `.a.svelte-xyz` and publishes `a`, so `.a.svelte-xyz` is a real endpoint
-      // even though it is not itself a symbol.
+      // even though it is not itself a symbol. THE SUFFIX MUST BE THE SAME KIND as the
+      // term (`chainTermKind`), because the published name is a whole selector: the test
+      // asks "is this term published under a longer spelling", never "does the project
+      // declare a selector whose LAST SEGMENT happens to be this word".
       //
       // This was the lane's only super-linear path, and it was invisible to every
       // correctness gate because it is invisible to SMALL inputs. Measured with
@@ -786,16 +998,22 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // have a published name after it" — so walk n's own boundaries and do one
       // hash lookup each. Selector names are short, so this is linear in practice
       // and the semantics are identical.
+      //
+      // EACH SUFFIX SUB-TEST ALSO ASKS THE KIND QUESTION (`chainTermKind`), which is the
+      // one thing the O(1) rewrite above did not carry over: the predicate used to accept
+      // a published name of ANY kind as a suffix of the term. The exact test is untouched
+      // — a published name that IS this term is this term, whatever it is.
       const resolves = (n: string): boolean => {
         if (!n) return false
         if (names.has(n)) return true
+        const kind = chainTermKind(n)
         const l = leafOf(n)
-        if (names.has(l)) return true
+        if (l !== n && chainTermKind(l) === kind && names.has(l)) return true
         for (let i = 0; i < n.length; i++) {
           const c = n[i]
           if (c !== ":" && c !== ".") continue
           const tail = n.slice(i + 1)
-          if (tail.length > 0 && names.has(tail)) return true
+          if (tail.length > 0 && chainTermKind(tail) === kind && names.has(tail)) return true
         }
         return false
       }
@@ -1035,6 +1253,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       rel.metadata = { evidenceClass: evidenceClassFor(rel.type), ...md }
     }
 
+    // CSS-D15, last: every symbol gets its project-unique `qualifiedName`, and the edges whose
+    // declaration is in THIS file are respelled to it. Runs after the walk and after the
+    // evidence tiers, so it sees the final symbol list and cannot be raced by a later push.
+    this.publishFileScopedIdentities(ctx)
+
     return {
       language: "css",
       symbols: ctx.symbols,
@@ -1080,6 +1303,127 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         analysisVersion: "8.0.0-infallible-brain-math-strict",
       },
     }
+  }
+
+  /**
+   * CSS-D15 — publish a project-unique identity per declaration, and respell the edges whose
+   * declaration is in the edge's own file. See the FILE SCOPE note above `cssFileScopeOf` for
+   * the measurement this answers and why the spelling is `<dotless-scope>::<name>`.
+   *
+   * TWO RULES, and both are deliberate:
+   *
+   *  1. A target is respelled ONLY when this file publishes exactly one symbol with that name.
+   *     Then the edge's own file is the whole answer and the spelling is exact. The fallback is
+   *     the bare name, which is what the lane emitted before this change — so this pass can only
+   *     ADD resolution, never remove it (the `json` lane's rule for the same fix).
+   *
+   *  2. Where this file publishes the name 2+ times (the gate's `IN-FILE-MULTI`) the edge does
+   *     not say which site it means, so the target is left BARE and stays visibly ambiguous. The
+   *     occurrence discriminator exists only to keep those two symbols' `qualifiedName`s
+   *     distinct, so a direct reference to one of them is still resolvable.
+   *
+   * NO TARGET IS REWRITTEN ON AN IMPORT: an `imports` edge names ANOTHER file's module, and this
+   * file's module symbol happens to share its spelling with that file's basename — respelling it
+   * would point the import at the importing file itself.
+   */
+  private publishFileScopedIdentities(ctx: CssContext): void {
+    /** Declarations this file published, in publication order, keyed by their bare name. */
+    const byName = new Map<string, { sym: ASTEngine.UniversalSymbol; qname: string }[]>()
+    for (const sym of ctx.symbols) {
+      const name = String(sym.name ?? "")
+      if (name.length === 0) continue
+      const existing = byName.get(name)
+      const occurrence = existing === undefined ? 0 : existing.length
+      // The discriminator rides the PREFIX, never the name: `normTarget` and `extractLeaf`
+      // both take the last `.`/`:`-delimited segment, so a suffix on the name would change the
+      // leaf the differential matches on.
+      const prefix = this.fileScope
+      const qname = occurrence === 0
+        ? (prefix === "" ? name : `${prefix}::${name}`)
+        : `${prefix}#${occurrence + 1}::${name}`
+      sym.qualifiedName = qname
+      if (existing === undefined) byName.set(name, [{ sym, qname }])
+      else existing.push({ sym, qname })
+    }
+    if (this.fileScope === "") return
+
+    const REWRITABLE = new Set<string>([
+      ASTEngine.RelationshipType.Contains,
+      ASTEngine.RelationshipType.References,
+      ASTEngine.RelationshipType.Uses,
+      ASTEngine.RelationshipType.Overrides,
+    ])
+    for (const rel of ctx.relationships) {
+      const type = String(rel.type ?? "")
+      if (!REWRITABLE.has(type)) continue
+      const target = String(rel.target ?? "")
+      if (target.length === 0) continue
+      const candidates = byName.get(target)
+      if (candidates === undefined || candidates.length === 0) continue
+      let pick = candidates[0]
+      if (candidates.length > 1) {
+        // Rule 2a — AN ANIMATION NAME RESOLVES AGAINST `@keyframes` ONLY, and that is the
+        // language's own rule, not a preference: `animation: progress` matches keyframes at-rules
+        // by name, so an element rule that happens to be called `progress` is not a candidate the
+        // edge could mean. Two declarations of one name in one file therefore have a DECIDABLE
+        // answer here, and the gate's worklist measured exactly this pair (`progress`, two
+        // declarations, `[function|type]`) among the two ambiguous `uses` edges. Picked by the
+        // symbol's own `isKeyframes` flag rather than by kind, because kind is what this ontology
+        // calls it and `isKeyframes` is what the declaration IS.
+        const md = (rel.metadata ?? {}) as Record<string, unknown>
+        if (md.isAnimationRef === true) {
+          const keyframes = candidates.filter((c) => (c.sym.metadata as Record<string, unknown> | undefined)?.isKeyframes === true)
+          if (keyframes.length !== 1) continue
+          pick = keyframes[0]
+        } else {
+          // Rule 2b: only a line that lands inside exactly ONE of the same-named declarations
+          // identifies which one the edge means. Otherwise the bare name stands.
+          const line = typeof rel.line_number === "number" ? rel.line_number : null
+          if (line === null) continue
+          const covering = candidates.filter((c) => {
+            const r = c.sym.range
+            return r !== undefined && line >= r.startLine && line <= r.endLine
+          })
+          if (covering.length !== 1) continue
+          pick = covering[0]
+        }
+      }
+      rel.target = pick.qname
+    }
+
+    // ── CSS-D16: the external marker on a read this file cannot see ──────────────────────────
+    //
+    // A `var(--x)` read whose property THIS FILE does not declare is a reference to something
+    // the file cannot see: a theme stylesheet, another file's `:root`, or a property the page
+    // never defines at all. The fleet's marker for that shape is `isExternalTarget`, and the
+    // arbiter verifies it in the PROJECT's scope — widened on 2026-10-10 to accept "a spelling
+    // a published name may carry", which is what `--x` is (it was previously refused by a
+    // JS-identifier test that returned the same verdict for a true and a false claim).
+    //
+    // ATTACHED ONLY WHERE THIS FILE PUBLISHES NO SUCH PROPERTY. Where the project declares it,
+    // the edge resolves or is ambiguous and `classifyEdge` never consults the claim — but the
+    // metadata would still carry a statement that is false of the file that wrote it. The
+    // unqualified dotless reads here are exactly the ones the rewrite above declined to
+    // qualify (no local declaration), which is the class the marker describes.
+    //
+    // DOTTED custom-property names are deliberately NOT marked: `verifyExternalClaim` sends a
+    // dotted target down its OWNER branch, where an owner the key space publishes REFUTES the
+    // claim — so marking those could turn an unattributed edge into an extFAIL, which must
+    // stay 0. Measured basis for the dotless class: 5,641 reads over the 1,174-file population,
+    // of which 658 resolve in their project, 180 are ambiguous and 4,803 were unresolved.
+    let marked = 0
+    for (const rel of ctx.relationships) {
+      if (String(rel.type ?? "") !== ASTEngine.RelationshipType.References) continue
+      const target = String(rel.target ?? "")
+      if (!target.startsWith("--") || target.includes(".")) continue
+      if (byName.has(target)) continue
+      rel.metadata = { ...(rel.metadata ?? {}), isExternalTarget: true }
+      marked++
+    }
+    // Published rather than kept private so a fixture can pin the count without re-deriving the
+    // rule; `parseFile` rebuilds file metadata as a fresh literal, so this is for the analyzer
+    // seam only and is not claimed to reach the index.
+    ctx.externalCustomPropertyReads = marked
   }
 
   /**
@@ -1236,6 +1580,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** Whether `importerName` is a real basename rather than the fallback literal. */
   private hasRealModuleName = false
+
+  /** The project-unique scope prefix for the file being analyzed; set per `analyze` run. */
+  private fileScope = ""
+
+  /** The directory of the file being analyzed, for resolving a RELATIVE import specifier. */
+  private fileDir = ""
 
   private determineSelectorKind(
     hasId: boolean,
@@ -1911,7 +2261,26 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // silently unaccused, and never a claim that accuses a correct edge.
     const asWritten = selectorsNode.text.trim()
     const composedName = collapseWhitespace(asWritten) !== selectorText
-    const nameLine = composedName ? {} : { line_number: selectorLine }
+    // ── THE COMPOSED-NAME REFUSAL IS LIFTED, AND IT WAS MEASURED, NOT ARGUED ────────────────────
+    //
+    // This used to be `composedName ? {} : { line_number: selectorLine }`: a name the selector text
+    // does not write got NO line, "never checkable rather than silently unaccused". The concern is
+    // real for a consumer that asks whether the NAME is written on that line — but it is not
+    // `contains`, whose edge line IS the target symbol's own start line (`LINE_IS_TARGET_LINE`, and
+    // the gate reads 162,087 of 236,991 css `contains` edges as `intended` = own file AND own
+    // line). And the resolver's own disambiguation rule (Rule 2b, below) picks among same-named
+    // candidates BY THE EDGE'S LINE and declines when there is none.
+    //
+    // MEASURED on the six files that exposed it (12 rules, every one of them composed):
+    // `selectorLine === the symbol's own start line` in **12 of 12** cases — `.callout div` at 430,
+    // `div` at 584, `img` at 136, `.logo a img` at 366, `ul` at 250, `footer .footer-social ul` at
+    // 398, `a` at 284, `.children a, .no-children a` at 804, `.no-children a` at 301, `a` at 689,
+    // `svg` at 71, `.workspace-switcher__error-state svg` at 79. The selectors node starts where the
+    // rule starts, so the refused line was never a wrong line — it was the RIGHT one, withheld.
+    // Withholding it cost 13 scss `contains` edges their identity: each target is declared exactly
+    // twice in one file and with no line Rule 2b cannot choose. `isSynthesizedName`/`asWrittenSelector`
+    // still ride the metadata, so the provenance the comment protected is untouched.
+    const nameLine = { line_number: selectorLine }
     const nameProvenance = composedName ? { isSynthesizedName: true, asWrittenSelector: asWritten } : {}
     if (media) {
       ctx.relationships.push({
@@ -2096,15 +2465,57 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    *
    * ## What this does NOT claim
    *
-   * A basename held by more than one stylesheet in the same repo — 12 edges over 2 names in
-   * this window — is published under the basename and stays AMBIGUOUS, because the store
-   * binds by name (`WHERE project_id = ? AND name = ?`) and a disambiguator invented here
-   * would be a second, invented naming convention. That is a finding about the published-name
-   * contract, counted in `css-import-specifier-names.json` as `relative-ambiguous-basename`.
+   * A basename held by more than one stylesheet in the same repo USED to be published under the
+   * bare basename and stay ambiguous, on the ground that any disambiguator would be an invented
+   * naming convention. That is now falsified and fixed: a relative specifier whose sibling exists
+   * on disk targets the SIBLING's own published module name (`siblingImportTarget` above), which
+   * is the file's existing identity rather than a new convention. Measured over the whole
+   * `css,less` population: 51 ambiguous edges resolved, 0 currently-resolving edges put at risk.
    */
+  /**
+   * CSS-D18-FALSIFIER. A RELATIVE specifier names the file BESIDE the importing stylesheet, and
+   * when that file exists on disk the target is that sibling's OWN project-unique module name —
+   * `<its file scope>::<its basename>` — which is not an invented convention but the identity
+   * `publishFileScopedIdentities` already publishes for every file in this lane.
+   *
+   * WHY THIS REPLACES THE LANE'S EARLIER RULING. The paragraph below used to say that a basename
+   * held by more than one stylesheet in a repo "stays AMBIGUOUS, because ... a disambiguator
+   * invented here would be a second, invented naming convention". The falsifier was measured
+   * (`validation/m14/fixtures/css/imports-sibling-falsifier.ts`, whole `css,less` population):
+   * of 106 basename-specifier imports, the 51 whose basename TWO OR MORE admitted files publish
+   * have an ADMITTED SIBLING in **51 of 51** cases, and of the 55 unique-basename ones the 32
+   * with no admitted sibling **do not exist on disk at all** (dangling imports). So an
+   * existence-gated resolution fixes every ambiguous edge and puts NONE of the currently
+   * resolving ones at risk — the risk is measured at ZERO, not assumed.
+   *
+   * `existsSync` is a filesystem read in an analyzer, and that is stated rather than hidden: it
+   * makes the target depend on which sibling is on disk, and a sibling that exists but is NOT
+   * admitted would name a declaration the population does not contain (an unresolved edge where
+   * the bare basename used to resolve). MEASURED on this population: 0 such cases in either
+   * bucket. The alternative — naming a same-basename file in another directory — is what the
+   * bare spelling already does, and it is right only by luck.
+   */
+  private siblingImportTarget(specifier: string): string | null {
+    if (this.fileDir === "" || specifier.length === 0) return null
+    // An absolute path is not a sibling, and a scheme/@/~ spelling was returned before this is
+    // reached. Everything else — `_variables.less`, `./x.css`, `../a/b.css`, `vendor/x.css` — is
+    // resolved against the importing file's own directory, and the EXISTENCE CHECK is the
+    // discriminator rather than the spelling's shape.
+    if (specifier.startsWith("/")) return null
+    const sibling = path.resolve(this.fileDir, specifier)
+    if (!existsSync(sibling)) return null
+    const base = lastPathSegment(sibling)
+    if (base.length === 0) return null
+    const scope = cssFileScopeOf(sibling)
+    if (scope === "") return null
+    return `${scope}::${base}`
+  }
+
   private importTargetName(specifier: string): string {
     if (specifier.startsWith("http:") || specifier.startsWith("https:") || specifier.startsWith("//")) return specifier
     if (specifier.startsWith("@") || specifier.startsWith("~")) return specifier
+    const sibling = this.siblingImportTarget(specifier)
+    if (sibling !== null) return sibling
     const slash = specifier.lastIndexOf("/")
     if (slash < 0) return specifier
     const segment = specifier.slice(slash + 1)

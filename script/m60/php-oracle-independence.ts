@@ -47,9 +47,14 @@
  *      bun script/m60/php-oracle-independence.ts --json
  */
 import { readFileSync } from "node:fs"
+import { fileURLToPath } from "node:url"
 import * as path from "node:path"
 
-const ROOT = "$HOME/backbencher-brain"
+// The checkout this script lives in, not a literal path — see `php-line-contract.ts`. A gate
+// that cannot start on the machine it is committed to is not a gate, and the hardcoded
+// `$HOME/backbencher-brain` made this one load-bearing on a directory that does not
+// exist in a lane worktree (`…/mcp/backbencher-brain`).
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const DIFF = path.join(ROOT, "script/m14/differential.ts")
 const AS_JSON = process.argv.includes("--json")
 

@@ -4,10 +4,38 @@
 - **Symbols**: ATX headings h1–h6 (`type`), setext headings (`type`), pipe
   tables (`class`, one per SITE), fenced code blocks (`function`, one per SITE,
   named `code_block.<lang>`), YAML front matter (`namespace`).
-- **Relationships**: `contains` (heading → nested heading; heading or document →
-  table / code fence; table → header column) and `uses` (owning section or
-  document → every link destination, image source, URI autolink, email autolink,
-  and *resolved* reference link).
+- **Relationships**: FOUR types are emitted, and the lane's declared coverage is
+  4 of 4 applicable relationship types — `script/m14/spec/markdown-completeness.json`
+  → `coverage`, with the other six excluded by a measured grammar inventory (108 node
+  types across both pinned grammars, 0 of them a call/export/extends/implements/
+  overrides/instantiates node):
+  - `contains` — heading → nested heading; heading or document → table / code fence;
+    table → header column.
+  - `uses` — owning section or document → every link destination, image source, URI
+    autolink, email autolink, and *resolved* reference link.
+  - `references` — a link whose destination is a bare `#fragment`, resolved to the
+    heading it names (MD-D6).
+  - `imports` — a `{% include %}`, `{% include-markdown %}` or
+    `{% include_relative %}` directive whose argument names a file (MD-G3), at
+    confidence 1.0.
+  Measured on 2026-10-09 over the WHOLE redwood firing corpus (2,105 `.md` files,
+  production `parseFile`, 2,105/2,105 parsed, 0 degraded):
+  `contains` 58,921 · `uses` 23,081 · `references` 1,497 · `imports` **0**.
+  *(The first run of this census read 2,101 files / `contains` 58,914: it copied
+  `firing-check.mjs`'s walk admission verbatim, and that admission pruned every
+  directory whose name contains `.git` — `.github` included — so one wrong rule
+  produced two agreeing numbers. Corrected in `28d79cb99` across five instruments;
+  re-measured on the corrected admission, the 4 recovered `.github` READMEs add 7
+  `contains` edges and move no ruling. The draw in
+  `validation/m14/results/firing-laptop-b.current.log` was strided over the OLD
+  population, so its counts `contains:3479 references:89 uses:1349` are recorded
+  beside the corrected re-run's `contains:3731 references:73 uses:1312` in the spec's
+  `coverage._measured.firingLog` — the same three types fire on both.)*
+  That last zero is a fact about the corpus, not about the draw: `imports` is emitted,
+  and its 105 corpus edges over 74 files live in traefik (57), bulma (35), vega (12)
+  and scala3 (1) — none in redwood, which is why the 120-file firing log reads it
+  SILENT. Artifacts: `validation/m14/fixtures/markdown/firing-corpus-census.json` and
+  `validation/m14/fixtures/markdown/imports-reverification.json`.
 - **Payloads**: a 1-based `line_number` on **every** relationship, an
   `evidenceClass` on every relationship, and per-symbol `nodeType`,
   `headingLevel`, `isMarkdownHeading` / `isMarkdownTable` /
@@ -187,15 +215,32 @@ why the M60 complexity gate refuses to score a row with no `loadRule` and no
 `corpusManifest` (#871, #909).
 
 ## Known limitations
-- Grammar surface is enumerated in `script/m14/spec/markdown-completeness.json`:
-  72 public named types across both grammars, **29 handled_verified / 41
-  internal_silent / 2 gap**, plus 6 design decisions. Every silent class carries a
-  measured site count over the pinned corpus rather than a shrug.
-- `MD-G1` **open**: an *indented* (4-space) code block publishes nothing while a
-  fenced one publishes `code_block.<lang>`. 2 sites in 2 of 738 files — a small
-  count, but an asymmetry inside one construct.
-- `MD-G2` **open**: Pandoc/MyST `+++` front matter publishes nothing. 0 corpus
-  sites, so it is owed a real MyST corpus rather than an invented fixture.
+- Grammar surface is enumerated in `script/m14/spec/markdown-completeness.json` and
+  measured by `validation/m14/fixtures/markdown/spec-surface-check.ts`: the two pinned
+  grammars produce **70** distinct named types (block 51 + inline 26 − 7 shared), and
+  the spec classifies **30 handled_verified / 42 internal_silent / 0 gap** = 72 rows,
+  the extra 2 being `ERROR` and `MISSING`, which tree-sitter synthesises into every
+  tree and no grammar's symbol table produces. 0 of the 70 are unclassified and no name
+  sits in two buckets, so the classification is complete over the union — and the check
+  carries a control that drops one member and duplicates another, because a
+  classification check that has only ever said "complete" is not evidence. Every silent
+  class carries a measured site count over the pinned corpus rather than a shrug.
+  *(This paragraph read "72 public named types … 29 handled_verified / 41
+  internal_silent / 2 gap, plus 6 design decisions" until 2026-10-09; the
+  design-decision count is 12.)*
+- `MD-G1` **closed 2026-09-28** (recorded in the spec's `closed_gaps`): an *indented*
+  (4-space) code block used to publish nothing while the fenced form beside it published
+  `code_block.<lang>`. The gap's own count was **100× off** — 217 `indented_code_block`
+  nodes over 1,138 pinned corpus files, not 2, most of them wrapped continuation lines
+  of nested list items that CommonMark genuinely reads as code. Both forms now publish
+  per-site `code_block`, and `markdown/indented-code-block` pins three properties plus a
+  control (an indented line that is a nested list item must publish NOTHING, so the
+  fixture cannot be satisfied by treating any indentation as code). It passes.
+- `MD-G2` **closed as `internal_silent`, grammar-forced**: the bare Pandoc `+++` form
+  parses to a `paragraph` and the MyST `<!--[metadata]>` + `+++` form to an `html_block`;
+  `plus_metadata` is declared by the pinned grammar but instantiated by nothing over
+  5,501 markdown files, so an analyzer branch for it would be dead code. The forward
+  obligation is the grammar pin's `typeSetDigest`/`fieldSetDigest` drift gate.
 - **Footnotes** (`[^1]`) and **wiki links** (`[[Page]]`) publish nothing. Neither
   is a CommonMark construct and `footnote_reference` is absent from both pinned
   grammars — measured, not assumed. 54 such sites on the pinned corpus.
@@ -228,10 +273,16 @@ why the M60 complexity gate refuses to score a row with no `loadRule` and no
   `uses` edges while `brain_import` is empty for `.md`.
 
 ## Verification
-- **Fixtures**: 4 (`validation/m14/fixtures/markdown/`) — `code-block-site-identity`,
-  `reference-links`, `heading-identity`, `payload-lines-evidence`. Each authored
-  from the contract rather than transcribed from analyzer output, which is the
-  only reason they were able to disagree with it.
+- **Fixtures**: 11 (`validation/m14/fixtures/markdown/`), **11 pass / 0 fail** —
+  `code-block-site-identity`, `heading-identity`, `heading-parent-name-collision`,
+  `indented-code-block`, `internal-anchor-links`, `link-target-external`,
+  `payload-lines-evidence`, `reference-links`, `setext-heading-inline`,
+  `table-structure`, `template-include-imports`. Measured on 2026-10-09:
+  `npx tsx script/m14/run-fixtures.ts --lang markdown` →
+  `summary: {"markdown":{"pass":11,"fail":0}}`, `fixture baseline gate: no regressions`.
+  Each authored from the contract rather than transcribed from analyzer output, which is
+  the only reason they were able to disagree with it. *(This line read "4" until
+  2026-10-09.)*
 - **Differential**: an independent CommonMark oracle at **0 MISSING / 0
   unexplained** on BOTH pinned corpora — `scala3@18df09c0` (738 tracked `.md`)
   and `kubernetes` (595), the second chosen for a different dialect rather than a

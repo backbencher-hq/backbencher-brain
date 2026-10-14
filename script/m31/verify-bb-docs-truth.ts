@@ -44,22 +44,9 @@ function negative(label: string, ok: boolean, detail = "") {
 type Claim = { file: string; kind: string; claim: string; cls: "executed" | "structural" | "unverifiable"; ok: boolean; detail?: string }
 
 async function main() {
-  // The registry's own descriptor type, reached through a type-only dynamic import.
-  // `import(expr).T` requires a string LITERAL, so a path.join() specifier cannot
-  // carry it; this form is the equivalent that works with one, and it keeps the
-  // gate tracking the REAL shape rather than a hand-written copy that can drift.
-  type ToolDescriptor = import("../../src/mcp/tool-registry.ts").ToolDescriptor
   const { PUBLIC_TOOL_DESCRIPTORS, TOOL_DESCRIPTORS } = await import(path.join(ROOT, "src/mcp/tool-registry"))
   const { validateToolArguments } = await import(path.join(ROOT, "src/mcp/tool-validation"))
-  // The key/value types must be stated. `[d.name, d]` infers as
-  // `(string | ToolDescriptor)[]` — an ARRAY, not a tuple — so `new Map(array)`
-  // cannot tell the key from the value and the value came out `unknown`. Every
-  // read of `d.inputSchema` / `d.name` below then reported a phantom diagnostic.
-  // Measured: this file reported 36 errors with a bare `new Map(...)` and 0 with
-  // the annotation. Nothing about the gate's behaviour changed — the compiler now
-  // knows the type it was always looking at. (`as const` on the tuple alone was
-  // tried and did NOT do it; the parameter annotation is what carries.)
-  const descriptors = new Map<string, ToolDescriptor>(TOOL_DESCRIPTORS.map((d) => [d.name, d]))
+  const descriptors = new Map(TOOL_DESCRIPTORS.map((d) => [d.name as string, d]))
   const publicNames = new Set(PUBLIC_TOOL_DESCRIPTORS.map((d) => d.name))
   const ajv = new Ajv({ strict: false })
 

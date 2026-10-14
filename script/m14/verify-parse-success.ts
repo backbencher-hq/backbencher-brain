@@ -61,7 +61,6 @@
  * Evidence: validation/m14/results/M14.0.F10.json
  * Baseline: validation/m14/parse-success-baseline.json
  */
-import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { createHash } from "node:crypto"
@@ -72,21 +71,9 @@ import * as WTS from "web-tree-sitter"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { LANGS, LANG_REPOS, SECOND_CORPUS } from "./differential"
 import { emitEvidence, type EvidenceInput } from "./evidence-harness"
-import { fileURLToPath } from "node:url"
 
-// `__dirname` does not exist in an ES module, and package.json declares
-  // "type": "module". Using it here threw `ReferenceError: __dirname is not defined in
-  // ES module scope` at load — the gate printed a stack trace and exited, having run
-  // no check at all. It was in `npm run verify`, so the leg contributed nothing.
-  // The repo already has the idiom (script/m14/html-ontology-census.ts and others use
-  // fileURLToPath(import.meta.url)); this now matches it.
-const HERE = path.dirname(fileURLToPath(import.meta.url))
-const ROOT = path.resolve(HERE, "..", "..")
-// Was: a literal foreign corpus root — see script/lib/corpus-root.ts. That path is
-// the OTHER laptop's home directory; on this machine the gate was measuring a
-// directory that does not exist. Measured on m13/verify-ask-e2e-corpus: 4/8 checks
-// passed before, 19/20 after, from the root alone.
-const CORPUS_ROOT = resolveCorpusRoot(process.cwd()) ?? "CORPUS_ROOT_UNRESOLVED"
+const ROOT = path.resolve(__dirname, "..", "..")
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const EVIDENCE_PATH = path.join(ROOT, "validation/m14/results/M14.0.F10.json")
 
 /** Rate comparison epsilon: percentages are floats and a pinned rate must not fail on noise. */

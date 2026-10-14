@@ -26,6 +26,21 @@
  *      The `$` suffixes are LITERAL in the source (`static core$_.int binarySearch$1(`),
  *      so the oracle publishes names exactly as written.
  *
+ * ## The spelling of every row below moved on 2026-10-09, and the reason is the point
+ *
+ * The expected rows used to be `Owner -> member` (`W -> _n`, `E -> operator ==`). On 2026-10-08 the
+ * analyzer moved `contains` targets to the member's PUBLISHED spelling (`Owner.member`), because a
+ * bare member name shared across a project is ambiguous BY CONSTRUCTION — priced first (267,878 rows
+ * predicted to resolve) and confirmed after (riverpod 530,368 -> 72,183 ambiguous; the type went
+ * 169,829 -> 628,181 resolved). The analyzer moved; the ORACLE did not.
+ *
+ * The cost of that asymmetry is the reason this note exists: `verify-dart-contains` reported 18
+ * disagreements, so this lane's LARGEST relationship type had no working independent check at all for
+ * a round — and the failures looked like analyzer regressions while the truth side was the wrong one.
+ * Both halves are now the published spelling (`oracles/dart-contains.ts` header carries the same
+ * measurement), and the rows are updated here rather than relaxed: every case still asserts BOTH
+ * sides against an explicit contract, and the negative cases still refuse an invented member.
+ *
  * READ-ONLY. Writes nothing.
  */
 
@@ -104,12 +119,12 @@ async function main(): Promise<void> {
   static int f(String b) => 2;
 }
 `)
-  check("static final field (static_final_declaration_list) is derived", has(fields, "Arrays -> _id_asList"))
-  check("second static final field is derived", has(fields, "Arrays -> _asList"))
-  check("plain field (initialized_identifier_list) is derived", has(fields, "Arrays -> plain"))
-  check("final field with no initialiser is derived", has(fields, "Arrays -> label"))
-  check("method is derived", has(fields, "Arrays -> f"))
-  check("a repeated method name is NOT suffixed with $1", !has(fields, "Arrays -> f$1"),
+  check("static final field (static_final_declaration_list) is derived", has(fields, "Arrays -> Arrays._id_asList"))
+  check("second static final field is derived", has(fields, "Arrays -> Arrays._asList"))
+  check("plain field (initialized_identifier_list) is derived", has(fields, "Arrays -> Arrays.plain"))
+  check("final field with no initialiser is derived", has(fields, "Arrays -> Arrays.label"))
+  check("method is derived", has(fields, "Arrays -> Arrays.f"))
+  check("a repeated method name is NOT suffixed with $1", !has(fields, "Arrays -> Arrays.f$1"),
     `rows=${fields.join(" | ")}`)
 
   // ── 2. Dart 3 extension type ────────────────────────────────────────────
@@ -118,16 +133,16 @@ async function main(): Promise<void> {
   void close() {}
 }
 `)
-  check("extension type IS a container (its own declaration node)", has(extType, "$Exec -> close"),
+  check("extension type IS a container (its own declaration node)", has(extType, "$Exec -> $Exec.close"),
     `rows=${extType.join(" | ")}`)
-  check("extension type fields are derived", has(extType, "$Exec -> _class"))
+  check("extension type fields are derived", has(extType, "$Exec -> $Exec._class"))
 
   // ── 3. extension uses extension_body, not class_body ─────────────────────
   const ext = await derive(`extension NumX on int {
   int twice() => this * 2;
 }
 `)
-  check("plain extension members are derived (extension_body)", has(ext, "NumX -> twice"),
+  check("plain extension members are derived (extension_body)", has(ext, "NumX -> NumX.twice"),
     `rows=${ext.join(" | ")}`)
 
   // ── 4. enhanced enum ─────────────────────────────────────────────────────
@@ -138,10 +153,10 @@ async function main(): Promise<void> {
   int get doubled => code * 2;
 }
 `)
-  check("enum constants are derived", has(enums, "Suit -> hearts"))
-  check("enhanced-enum FIELD is derived", has(enums, "Suit -> code"))
-  check("enhanced-enum CONSTRUCTOR is derived", has(enums, "Suit -> constructor"))
-  check("enhanced-enum METHOD is derived", has(enums, "Suit -> doubled"))
+  check("enum constants are derived", has(enums, "Suit -> Suit.hearts"))
+  check("enhanced-enum FIELD is derived", has(enums, "Suit -> Suit.code"))
+  check("enhanced-enum CONSTRUCTOR is derived", has(enums, "Suit -> Suit.constructor"))
+  check("enhanced-enum METHOD is derived", has(enums, "Suit -> Suit.doubled"))
 
   // ── the constructor mirror ───────────────────────────────────────────────
   const ctor = await derive(`class C {
@@ -151,9 +166,9 @@ async function main(): Promise<void> {
   int v = 0;
 }
 `)
-  check("an ordinary constructor is published as `constructor`", has(ctor, "C -> constructor"))
-  check("a factory constructor is also `constructor`", has(ctor, "C -> constructor"))
-  check("constructors are NOT suffixed per overload", !has(ctor, "C -> constructor$1"))
+  check("an ordinary constructor is published as `constructor`", has(ctor, "C -> C.constructor"))
+  check("a factory constructor is also `constructor`", has(ctor, "C -> C.constructor"))
+  check("constructors are NOT suffixed per overload", !has(ctor, "C -> C.constructor$1"))
 
   // ── mixin ────────────────────────────────────────────────────────────────
   const mixin = await derive(`mixin Logged {
@@ -161,7 +176,7 @@ async function main(): Promise<void> {
   int id = 1;
 }
 `)
-  check("mixin members are derived", has(mixin, "Logged -> log") && has(mixin, "Logged -> id"),
+  check("mixin members are derived", has(mixin, "Logged -> Logged.log") && has(mixin, "Logged -> Logged.id"),
     `rows=${mixin.join(" | ")}`)
 
   // ── a class with no members emits nothing ────────────────────────────────
@@ -185,16 +200,16 @@ async function main(): Promise<void> {
 
   // 1. A `const` CONSTRUCTOR is spelled `constant_constructor_signature`, and it is
   //    most of a Flutter widget class. Measured 2,548 rows on ProxiCall/lib.
-  await checkBoth("const constructor is a member (constant_constructor_signature)", `class A { const A({int? x}); }`, ["A -> constructor"])
-  await checkBoth("const constructor WITH an initializer", `class B { final int v; const B({this.v = 0}); }`, ["B -> constructor", "B -> v"])
+  await checkBoth("const constructor is a member (constant_constructor_signature)", `class A { const A({int? x}); }`, ["A -> A.constructor"])
+  await checkBoth("const constructor WITH an initializer", `class B { final int v; const B({this.v = 0}); }`, ["B -> B.constructor", "B -> B.v"])
   // ...and the plain spelling still works, so the family test did not replace it.
-  await checkBoth("plain constructor is still a member", `class C { C({int? x}); }`, ["C -> constructor"])
+  await checkBoth("plain constructor is still a member", `class C { C({int? x}); }`, ["C -> C.constructor"])
 
   // ...and a NAMED constructor. This is the case that was MISSING when a mutation
   // narrowing the `declaration` path's family test survived: that path's check was
   // duplicated, so the second copy caught the const spelling and the battery could
   // not tell which rule was load-bearing. The duplicate is gone.
-  await checkBoth("a NAMED const constructor (declaration > constant_constructor_signature)", `class K { const K.zero() : this(0); const K(int x); }`, ["K -> constructor"])
+  await checkBoth("a NAMED const constructor (declaration > constant_constructor_signature)", `class K { const K.zero() : this(0); const K(int x); }`, ["K -> K.constructor"])
 
   // A FACTORY is the one constructor that arrives under `method_signature`, and the
   // existing oracle-only check for it passed FOR THE WRONG REASON: it sat in a class
@@ -204,7 +219,7 @@ async function main(): Promise<void> {
   // factory is the only constructor in the class, so the assertion can only be
   // satisfied by the `method_signature` path — and narrowing that path's family test
   // is caught, which it was not before this case existed.
-  await checkBoth("a FACTORY is a member (method_signature > factory_constructor_signature, sole constructor)", `class OnlyFactory { factory OnlyFactory.make() => throw 0; }`, ["OnlyFactory -> constructor"])
+  await checkBoth("a FACTORY is a member (method_signature > factory_constructor_signature, sole constructor)", `class OnlyFactory { factory OnlyFactory.make() => throw 0; }`, ["OnlyFactory -> OnlyFactory.constructor"])
 
   // 2. A `declaration` does NOT only hold fields. THE GRAMMAR'S WORD FOR THE
   //    CONTAINER DOES NOT TELL YOU WHAT THE MEMBER INSIDE IT IS.
@@ -221,32 +236,32 @@ async function main(): Promise<void> {
   //    and ABSTRACT members — a body-less declaration has no `method_signature` to
   //    hang the body off, so the grammar wraps it directly. Measured: 6,640 rows
   //    were being missed on the corpus, 94% of every remaining divergence.
-  await checkBoth("an EXTERNAL method is a member (declaration > function_signature)", `class X { external int f(); }`, ["X -> f"])
-  await checkBoth("an ABSTRACT method is a member (declaration > function_signature)", `abstract class Y { void f(); int get g; set s(int v); }`, ["Y -> f", "Y -> g", "Y -> s"])
+  await checkBoth("an EXTERNAL method is a member (declaration > function_signature)", `class X { external int f(); }`, ["X -> X.f"])
+  await checkBoth("an ABSTRACT method is a member (declaration > function_signature)", `abstract class Y { void f(); int get g; set s(int v); }`, ["Y -> Y.f", "Y -> Y.g", "Y -> Y.s"])
   // ...and the shapes that are NOT wrapped, so the branch above is not load-bearing
   // for them and a battery cannot quietly rely on it
-  await checkBoth("an ordinary method is a member (method_signature, NOT a declaration)", `class R { void go() {} }`, ["R -> go"])
-  await checkBoth("an ordinary getter is a member (method_signature, NOT a declaration)", `class W { int _n = 0; int get doubled => _n * 2; }`, ["W -> _n", "W -> doubled"])
-  await checkBoth("an ordinary setter is a member (method_signature, NOT a declaration)", `class S { int _v = 0; set v(int x) => _v = x; }`, ["S -> _v", "S -> v"])
+  await checkBoth("an ordinary method is a member (method_signature, NOT a declaration)", `class R { void go() {} }`, ["R -> R.go"])
+  await checkBoth("an ordinary getter is a member (method_signature, NOT a declaration)", `class W { int _n = 0; int get doubled => _n * 2; }`, ["W -> W._n", "W -> W.doubled"])
+  await checkBoth("an ordinary setter is a member (method_signature, NOT a declaration)", `class S { int _v = 0; set v(int x) => _v = x; }`, ["S -> S._v", "S -> S.v"])
   // the localization shape: thousands of plain getters, all of which were invisible
-  await checkBoth("a plain getter is a member (the AppLocalizations shape)", `class AppLocalizations { String get applicationFailedToStartMessage => 'x'; }`, ["AppLocalizations -> applicationFailedToStartMessage"])
+  await checkBoth("a plain getter is a member (the AppLocalizations shape)", `class AppLocalizations { String get applicationFailedToStartMessage => 'x'; }`, ["AppLocalizations -> AppLocalizations.applicationFailedToStartMessage"])
 
   // 3. An OPERATOR member is published as `operator <token>` — a lane contract, the
   //    same shape kotlin's phantom members use, and load-bearing: `operator_signature`
   //    has no name field and NO NAMED CHILDREN, so the member's identity is an
   //    anonymous token and the bare token is not a legal identifier.
-  await checkBoth("`==` is published as `operator ==`, never as `==`", `class E { bool operator ==(Object o) => true; }`, ["E -> operator =="])
-  await checkBoth("`[]` is published as `operator []`", `class F { int operator [](int i) => i; }`, ["F -> operator []"])
-  await checkBoth("`call` is published as `operator call`", `class G { int call(int i) => i; }`, ["G -> call"])
+  await checkBoth("`==` is published as `operator ==`, never as `==`", `class E { bool operator ==(Object o) => true; }`, ["E -> E.operator =="])
+  await checkBoth("`[]` is published as `operator []`", `class F { int operator [](int i) => i; }`, ["F -> F.operator []"])
+  await checkBoth("`call` is published as `operator call`", `class G { int call(int i) => i; }`, ["G -> G.call"])
   // a SCOPED return type shifts every child, which is why the token is located by
   // scanning for the `operator` keyword rather than by a hardcoded child index
-  await checkBoth("a SCOPED return type does not shift the operator token", `class H { ns.bool operator >(int o) => true; }`, ["H -> operator >"])
-  await checkBoth("operators are not suffixed per overload", `class I { int operator -(I o) => 0; int operator -(int o) => 0; }`, ["I -> operator -"])
+  await checkBoth("a SCOPED return type does not shift the operator token", `class H { ns.bool operator >(int o) => true; }`, ["H -> H.operator >"])
+  await checkBoth("operators are not suffixed per overload", `class I { int operator -(I o) => 0; int operator -(int o) => 0; }`, ["I -> I.operator -"])
 
   // 4. And the negative direction: `contains` must not INVENT a member. A local
   //    function, a parameter, and a doc comment's words are not declarations.
-  await checkBoth("a LOCAL function is not a member", `class J { void m() { void inner() {} inner(); } }`, ["J -> m"])
-  await checkBoth("a parameter is not a member", `class K { void m(int alpha) {} }`, ["K -> m"])
+  await checkBoth("a LOCAL function is not a member", `class J { void m() { void inner() {} inner(); } }`, ["J -> J.m"])
+  await checkBoth("a parameter is not a member", `class K { void m(int alpha) {} }`, ["K -> K.m"])
 
   console.log("")
   if (failures === 0) {

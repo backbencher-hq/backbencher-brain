@@ -8,7 +8,6 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { execFileSync } from "node:child_process"
-import { parseM22Ledger, findIssueByCode } from "./ledger-shape.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m22/results")
@@ -67,8 +66,8 @@ async function run() {
   }
   writeFileSync(path.join(RESULTS, "C1.json"), JSON.stringify(result, null, 2) + "\n")
   try {
-    const led = parseM22Ledger(readFileSync(path.join(ROOT, "validation/m22/ledger.json"), "utf8"))
-    const e = findIssueByCode(led, "C1")
+    const led = JSON.parse(readFileSync(path.join(ROOT, "validation/m22/ledger.json"), "utf8"))
+    const e = Object.values(led.issues).find((i: any) => i.code === "C1")
     if (e) { e.status = finalStatus; e.passed = passed; e.failed = checks - passed; e.commit = commit; e.evidenceFile = "C1.json" }
     writeFileSync(path.join(ROOT, "validation/m22/ledger.json"), JSON.stringify(led, null, 2) + "\n")
   } catch (e2: any) { console.log(`C1: ledger self-update failed: ${e2?.message}`) }

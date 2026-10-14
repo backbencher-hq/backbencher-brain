@@ -131,6 +131,23 @@ const BUILTIN_ROOTS = new Set(["count", "each", "self", "path", "terraform"])
 const FUNCTION_DECL_BLOCKS = new Set(["function"])
 
 /**
+ * DOCKER-BAKE TARGET INHERITANCE, and the ONLY construct in this corpus that expresses `extends`.
+ *
+ * A `target "child" { inherits = ["parent", …] }` block names OTHER DECLARATIONS as its parents:
+ * docker-bake merges each parent's attributes into the child. The container grammar has no
+ * inheritance production, which is why this hid for so long — it is spelled as an ATTRIBUTE KEY,
+ * and a node-type inventory cannot see it.
+ *
+ * Measured (instrument validation/m14/fixtures/hcl/tools/construct-census.mts, artefact
+ * validation/m14/fixtures/hcl/construct-census.current.json): 44 `inherits` sites in 8 docker-bake
+ * files naming 53 parents, and all 53 resolve to a `target` block declared in the same file, 0
+ * unresolved. The construct exists, occurs and resolves, so it is an EMISSION and not a ruling —
+ * the gap this lane recorded as HCL-G1.
+ */
+const TARGET_BLOCK = "target"
+const INHERITS_ATTRIBUTE = "inherits"
+
+/**
  * Terraform's dedicated override blocks, and what each one overrides.
  *
  * `override_resource` / `override_data` / `override_module` each carry a
@@ -243,6 +260,16 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
     // sites are dropped, which is the pre-existing behaviour for a global.
     const functionDecls = new Map<string, string>()
     const pendingCalls: { callee: string; line: number; owner: string }[] = []
+    // `target "<name>"` declarations, by label, so an `inherits` value can be resolved to the
+    // address the index will actually hold (`target.<name>`). FIRST-wins for the same reason
+    // `functionDecls` is: a repeated target label is an error in docker-bake, so the first
+    // declaration is the one a reference can mean.
+    const targetDecls = new Map<string, string>()
+    // `inherits` sites, resolved AFTER the DFS because a child may inherit from a target declared
+    // BELOW it — docker-bake.hcl's own `binary-cross` inherits `_platforms`, declared lower in the
+    // file. An unresolved parent is dropped rather than published: a dangling `extends` is worse
+    // than a missing one, the same rule `calls` follows for a global callee.
+    const pendingInherits: { parent: string; line: number; owner: string }[] = []
 
     const stack: {
       node: Node
@@ -252,6 +279,9 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
       iterators: Set<string>
       shadowed: Map<string, number>
       overrideKind: string | null
+      /** The TYPE of the block this node sits inside, so an attribute can be read in its dialect
+       *  context: `inherits` means inheritance inside a docker-bake `target` and nothing elsewhere. */
+      enclosingBlockType: string
     }[] = [
       {
         node: rootNode,
@@ -261,6 +291,7 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
         iterators: new Set(),
         shadowed: new Map(),
         overrideKind: null,
+        enclosingBlockType: "",
       },
     ]
 
@@ -272,15 +303,16 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
       iterators: Set<string>,
       shadowed: Map<string, number>,
       overrideKind: string | null,
+      enclosingBlockType: string,
     ) => {
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) stack.push({ node: child, blockPath, blockKind, taken, iterators, shadowed, overrideKind })
+        if (child) stack.push({ node: child, blockPath, blockKind, taken, iterators, shadowed, overrideKind, enclosingBlockType })
       }
     }
 
     while (stack.length > 0) {
-      const { node, blockPath, blockKind, taken, iterators, shadowed, overrideKind } = stack.pop()!
+      const { node, blockPath, blockKind, taken, iterators, shadowed, overrideKind, enclosingBlockType } = stack.pop()!
       const type = node.type
 
       if (type === "block") {
@@ -310,7 +342,7 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Malformed block: no type identifier. Descend so nested valid
           // nodes are still reachable; syntax errors are reported by the engine.
           // The sibling scope is preserved: a typeless block is still a level.
-          pushChildren(node, blockPath, blockKind, taken, iterators, shadowed, overrideKind)
+          pushChildren(node, blockPath, blockKind, taken, iterators, shadowed, overrideKind, enclosingBlockType)
           continue
         }
 
@@ -341,6 +373,12 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
         const isFunctionDecl = FUNCTION_DECL_BLOCKS.has(blockType)
         if (isFunctionDecl && labels.length > 0 && !functionDecls.has(labels[0])) {
           functionDecls.set(labels[0], name)
+        }
+
+        // A `target "<name>"` declaration is addressable as `target.<name>`, and that address —
+        // not the bare label an `inherits` list writes — is what an `extends` edge must bind to.
+        if (blockType === TARGET_BLOCK && labels.length > 0 && !targetDecls.has(labels[0])) {
+          targetDecls.set(labels[0], address)
         }
 
         symbols.push({
@@ -420,7 +458,7 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
 
-        pushChildren(node, [...blockPath, name], kind, new Map(), childIterators, childShadowed, OVERRIDE_BLOCK_KIND[blockType] ?? null)
+        pushChildren(node, [...blockPath, name], kind, new Map(), childIterators, childShadowed, OVERRIDE_BLOCK_KIND[blockType] ?? null, blockType)
         continue
       }
 
@@ -440,6 +478,16 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
           const qualified = [...blockPath, name].join(".") || name
           const expr = this.findChild(node, (n) => n.type === "expression")
           const valueNode = expr ? expr.namedChild(0) : undefined
+
+          // DOCKER-BAKE TARGET INHERITANCE -> `extends`. `inherits = ["a", "b"]` inside a `target`
+          // block names OTHER DECLARATIONS as parents, so each name becomes an edge to that
+          // declaration's address — published after the DFS, because docker-bake.hcl's own
+          // `binary-cross` inherits `_platforms`, which is declared BELOW it in the file.
+          if (enclosingBlockType === TARGET_BLOCK && key === INHERITS_ATTRIBUTE) {
+            for (const parent of this.readStringList(expr)) {
+              pendingInherits.push({ parent, line: keyNode!.startPosition.row + 1, owner: ownerPath })
+            }
+          }
 
           symbols.push({
             name,
@@ -514,7 +562,24 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
       // replacing the map here would drop the root-name reservation (and with
       // it the `moved.tf`-holding-`moved {}` disambiguation) at the top level.
       // Only entering a `block` starts a new level.
-      pushChildren(node, blockPath, blockKind, taken, iterators, shadowed, overrideKind)
+      pushChildren(node, blockPath, blockKind, taken, iterators, shadowed, overrideKind, enclosingBlockType)
+    }
+
+    // `extends` — docker-bake target inheritance, resolved after the DFS for the same reason
+    // `calls` is: a parent may be declared BELOW its child (docker-bake.hcl's `binary-cross`
+    // inherits `_platforms`, declared lower in the file). Only a parent THIS FILE declares becomes
+    // an edge — an `inherits` value naming a target no file declares would dangle, and a dangling
+    // `extends` is worse than a missing one.
+    for (const site of pendingInherits) {
+      const declared = targetDecls.get(site.parent)
+      if (!declared) continue
+      addRelationship(site.owner, declared, ASTEngine.RelationshipType.Extends, site.line, {
+        hclSite: "inherits",
+        // The spelling AT the inheritance site, kept because the target is the parent
+        // DECLARATION's address (`target._common`) rather than the bare label `_common`.
+        hclInheritedTarget: site.parent,
+        evidenceClass: "structural",
+      })
     }
 
     // `calls` — resolved here, after the DFS, because a call may precede its
@@ -792,6 +857,23 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
     const literal = this.findChild(node, (n) => n.type === "template_literal")
     if (literal) return literal.text
     return node.text
+  }
+
+  /**
+   * The string LITERALS of a value, in source order: `["_common"]` yields one, `["binary",
+   * "_platforms"]` yields two, and a bare `"x"` yields one. Only `string_lit` counts — an
+   * interpolated `quoted_template` names a COMPUTED value, not a declaration, and resolving it
+   * would be a guess dressed as an edge.
+   */
+  private readStringList(expr: Node | null | undefined): string[] {
+    if (!expr) return []
+    const out: string[] = []
+    const visit = (n: any): void => {
+      if (n.type === "string_lit") { out.push(this.readStringLit(n)); return }
+      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) visit(c) }
+    }
+    visit(expr)
+    return out
   }
 
   /** Find a module block's `source` attribute value (unquoted via grammar field). */

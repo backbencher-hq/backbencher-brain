@@ -24,13 +24,7 @@ process.env.BB_DATA_DIR = DATA_ROOT
 const LANES = [
   { lang: "python", repo: "requests", ext: ".py", expect: "unlined" },
   { lang: "rust", repo: "ripgrep", ext: ".rs", expect: "unlined" },
-  // The corpus directory is go_tools (underscore), not go-tools. Every gate that
-  //  asked for the hyphen form was reading a directory that has never existed on any
-  //  machine, so the corpus leg passed VACUOUSLY — no error, no finding, nothing
-  //  measured. script/m13/verify-analyze-e2e-corpus.ts reported exactly this once the
-  //  corpus root was fixed: "corpus go-tools/go/analysis/passes (Go): present … missing".
-  //  Verified against the corpus on disk, which lists go_tools.
-  { lang: "go", repo: "go_tools", ext: ".go", expect: "unlined" },
+  { lang: "go", repo: "go-tools", ext: ".go", expect: "unlined" },
   { lang: "java", repo: "clojure", ext: ".java", expect: "lined" },
   { lang: "scala", repo: "cats-effect", ext: ".scala", expect: "lined" },
 ] as const

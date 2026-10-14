@@ -25,8 +25,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "d2bad8b7d3cadb6927319fa0b751de6c88b022e4",
-  "committedAt": "2026-10-08T17:09:01-04:00",
+  "commit": "b5819c5ec9ed4576e7370884589a57d12b9a80f5",
+  "committedAt": "2026-10-10T18:34:56-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -960,15 +960,15 @@
         "oracleFieldCount": 46,
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 386,
-        "referencedFieldLiterals": 24,
-        "referencedTypeLiterals": 103,
+        "referencedFieldLiterals": 25,
+        "referencedTypeLiterals": 109,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [
           {
             "justification": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code.",
-            "line": 5833,
+            "line": 6447,
             "literal": "default_export_expression"
           }
         ],
@@ -1115,8 +1115,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-10-08T21:13:31.562Z",
-  "regeneratedAtCommit": "d2bad8b7d3cadb6927319fa0b751de6c88b022e4",
+  "regeneratedAt": "2026-10-10T22:36:21.332Z",
+  "regeneratedAtCommit": "b5819c5ec9ed4576e7370884589a57d12b9a80f5",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"

@@ -328,6 +328,62 @@ function objectStrings(obj: any): string[] {
  * script block, else the file stem. `fileStem` is supplied by the caller because
  * the oracle must not re-derive path handling the harness already owns.
  */
+/**
+ * F32. The literal behind a LOCAL top-level constant, e.g. element-plus's
+ * `const COMPONENT_NAME = 'ElInput'`.
+ *
+ * Derived here from the language rather than from `RealVueAnalyzer`'s source, which is
+ * the oracle's whole justification: a name bound by a constant in THIS file is a name
+ * written in this file. Two refusals keep it on the analyzer's side of the line. A name
+ * bound by an IMPORT clause is not looked up at all (the value lives in another module,
+ * which is F17's ruling and the analyzer's own first test), and an unresolved identifier
+ * returns undefined so the caller keeps the stem — the same answer the analyzer gives for
+ * an unreadable declaration.
+ *
+ * Measured before this change: 253 of the 724 unresolved component-usage `instantiates`
+ * edges on the 1,162-file draw named a component whose own name is assigned as a string
+ * literal in the DECLARING file (`ElInput` 59, `ElSelect` 42, `ElSwitch` 33, 25 names).
+ */
+function localConstLiteral(root: any, name: string): string | undefined {
+  for (let i = 0; i < root.namedChildCount; i++) {
+    const stmt = root.namedChild(i)
+    if (!stmt) continue
+    if (stmt.type !== "lexical_declaration" && stmt.type !== "variable_declaration") continue
+    for (let j = 0; j < stmt.namedChildCount; j++) {
+      const d = stmt.namedChild(j)
+      if (!d || d.type !== "variable_declarator") continue
+      if (d.childForFieldName("name")?.text !== name) continue
+      const v = d.childForFieldName("value")
+      if (v && v.type === "string") return unquote(v.text)
+    }
+  }
+  return undefined
+}
+
+/** Is `name` bound by an import clause of this program? */
+function isImportedName(root: any, name: string): boolean {
+  for (let i = 0; i < root.namedChildCount; i++) {
+    const stmt = root.namedChild(i)
+    if (!stmt || stmt.type !== "import_statement") continue
+    const clause = directChild(stmt, "import_clause")
+    const stack: any[] = clause ? [clause] : []
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "identifier" && n.text === name) return true
+      if (n.type === "import_specifier") {
+        const alias = n.childForFieldName("alias")?.text
+        const imported = n.childForFieldName("name")?.text
+        if ((alias ?? imported) === name) return true
+      }
+      for (let k = 0; k < n.namedChildCount; k++) {
+        const c = n.namedChild(k)
+        if (c) stack.push(c)
+      }
+    }
+  }
+  return false
+}
+
 export function vueComponentName(scriptRoots: any[], fileStem: string): string {
   for (const root of scriptRoots) {
     let found = ""
@@ -339,6 +395,13 @@ export function vueComponentName(scriptRoots: any[], fileStem: string): string {
         if (k === "name") {
           const v = directChild(n, "string")
           if (v) found = unquote(v.text)
+          else {
+            const id = directChild(n, "identifier")
+            if (id && !isImportedName(root, id.text)) {
+              const lit = localConstLiteral(root, id.text)
+              if (lit) found = lit
+            }
+          }
         }
       }
       for (let i = 0; i < n.namedChildCount; i++) {

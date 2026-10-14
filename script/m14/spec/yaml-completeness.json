@@ -119,10 +119,10 @@
       "&",
       "end"
     ],
-    "anonymousTypesNote": "102 anonymous / hidden token types the wired 0.7.1 wasm produces, listed as data rather than as classification rows. None can be a symbol: an anonymous node is a token the grammar never names, and the analyzer reads tokens through their parent's fields (`key`/`value` \u2014 the grammar's entire field surface, 2 fields) rather than by visiting tokens directly."
+    "anonymousTypesNote": "102 anonymous / hidden token types the wired 0.7.1 wasm produces, listed as data rather than as classification rows. None can be a symbol: an anonymous node is a token the grammar never names, and the analyzer reads tokens through their parent's fields (`key`/`value` — the grammar's entire field surface, 2 fields) rather than by visiting tokens directly."
   },
   "measured": {
-    "_description": "Every count here was produced by script/m14/tmp/yaml-f8-census.ts over 1,274 files drawn from EIGHT pinned repositories, walking every named AND anonymous child. The probe is committed so the next reader re-runs it and gets these numbers; nothing in this section is carried over from a previous wave.",
+    "_description": "Every count here was produced by script/m14/tmp/yaml-f8-census.ts over 1,274 files drawn from EIGHT pinned repositories, walking every named AND anonymous child. The probe is committed so the next reader re-runs it and gets these numbers; nothing in this section is carried over from a previous wave. WHOLE-CORPUS CENSUS 2026-10-09 (lane takeover). `bun validation/m14/fixtures/yaml/lane-census.ts <corpus> [maxFiles] [--pools]` walks the WHOLE corpus through the production path (`getParser -> parse -> analyze`, no `projectRoot`, so it matches `firing-check.mjs`) and counts, per relationship type, the EDGES, the FILES, and the CONSTRUCT SITES read from the tree independently of the analyzer. ANSIBLE, 2,076 files (`.yml` + `.yaml`), 2,076 parsed, 0 failures: contains 83,330 edges / 2,042 files; imports 891 / 307; references 93 / 39; uses 22 / 9; extends 8 / 4; overrides 1 / 1; and **calls 0, exports 0, implements 0, instantiates 0**. THE SITE COUNTS ARE THE POINT, because a sample cannot certify absence and this lane has now been burned twice by assuming it could. `calls` = 0 sites in 2,076 files: a `calls` edge requires a `uses:` key at `jobs.<id>.uses` in a file whose SHAPE matches the analyzer's own \"GitHub Actions\" signature (`jobs` a mapping AND `on` present), and ansible contains no such file — measured two ways (this census, and a direct search for `.github/workflows` and for a job-level `uses:`). `exports` = 0 sites, and its rule is the analyzer's own `schemaPublicationRole`: the parent path is `definitions`/`$defs` and nothing deeper, or `components.<one of the ten OPENAPI_COMPONENT_CONTAINERS>` AND the document declares `openapi`/`swagger` at top level — ansible has no OpenAPI document. `implements` and `instantiates` = 0 sites AND no node type that could express them: the corpus's ENTIRE node-type inventory is 42 distinct types and NONE contains `implement`, `instantiat`, `new_`, `override`, `inherit` or `export`. That is a statement about the LANGUAGE, not about the corpus. The site rules are validated by exactness on the 33 committed fixtures, where every one of them equals the emitted edge count: calls 2/2, extends 5/5, exports 5/5, overrides 3/3, uses 0/0. A NOTE ON THE TWO INSTRUMENTS' POPULATIONS: `firing-check.mjs` admits `.yml` AND `.yaml`, while `script/m14/incoming-gate.ts yaml yaml 0 --repo=ansible` admits `.yaml` only and therefore measured 13 files of this repository's 2,082 (13 `.yaml`, 2,069 `.yml`). Any comparison between the two instruments' yaml numbers has to say which population it is about. POPULATION STATEMENT, so the two instruments can be reconciled later: every census number in this file was produced from the directory `$HOME/fixtures/repositories/ansible`, admitting BOTH `.yml` and `.yaml` under a 1 MB cap. Measured: 2,069 `.yml` + 13 `.yaml` = 2,082 files on disk, of which 2,076 were admitted (6 over the 1 MB cap) and 2,076 parsed, 0 failures. `firing-check.mjs` uses the same two extensions, so its numbers and this census's are about the same population. `script/m14/incoming-gate.ts`, by contrast, admits `.yaml` ONLY, so its `0 --repo=ansible` run is 13 files — 0.6% of this repository. Any yaml figure in this programme must name its extension set as well as its corpus, because on a `.yml`-dominated repository those two populations differ by a factor of 160.",
     "at": "2026-09-27",
     "repositories": [
       "grails-core@a83f87480e0c0138caa5a7191a053b1e59a64066",
@@ -147,7 +147,7 @@
     "crashes": 0
   },
   "handled_verified": {
-    "_description": "Analyzer-referenced node types, each with the count that proves it was reached in real code rather than recognised by name. A type counts as HANDLED when the analyzer names it in a node-type position AND it was observed in the eight-repo corpus. Handled does NOT mean \"emits a symbol\": the analyzer can handle a construct by consciously emitting nothing for it, and `flow_node` and `block_node` do exactly that (they are grammar wrappers whose only role is to carry an anchor, a tag, or the real value, and the analyzer reads through them). The distinction that matters is handled vs unexamined: nothing in this list is merely unaccounted for. The 8 DIRECTIVE types join the list as of 2026-09-27 (`yaml_version`, `tag_handle`, `tag_prefix`, `directive_name`, `directive_parameter`, `yaml_directive`, `tag_directive`, `reserved_directive`): the analyzer reads %YAML and %TAG directives into `metadata.yamlVersion` / `metadata.reservedDirectives`, resolves a `!handle!name` tag through the %TAG prefix it declares, and reports a reserved directive it does not implement rather than ignoring it. `comment` and `tag` also move here from the gap table, which is kept below as the record of what was open and when it closed. ERROR and MISSING are classified here deliberately: the completeness gate force-appends both to the wasm's named-type list so that a lane cannot leave them unclassified, and the lane DOES handle them \u2014 a grammar-error subtree is re-rooted under a `#damaged@<line>` scope with stable per-child identity, pinned by fixture `error-recovery-identity` and mutant `yaml/recovery-scope-renamed`. An ERROR is the grammar reporting that it could not lex; publishing it as a scope is how a configuration language stays navigable when a file is wrong.",
+    "_description": "Analyzer-referenced node types, each with the count that proves it was reached in real code rather than recognised by name. A type counts as HANDLED when the analyzer names it in a node-type position AND it was observed in the eight-repo corpus. Handled does NOT mean \"emits a symbol\": the analyzer can handle a construct by consciously emitting nothing for it, and `flow_node` and `block_node` do exactly that (they are grammar wrappers whose only role is to carry an anchor, a tag, or the real value, and the analyzer reads through them). The distinction that matters is handled vs unexamined: nothing in this list is merely unaccounted for. The 8 DIRECTIVE types join the list as of 2026-09-27 (`yaml_version`, `tag_handle`, `tag_prefix`, `directive_name`, `directive_parameter`, `yaml_directive`, `tag_directive`, `reserved_directive`): the analyzer reads %YAML and %TAG directives into `metadata.yamlVersion` / `metadata.reservedDirectives`, resolves a `!handle!name` tag through the %TAG prefix it declares, and reports a reserved directive it does not implement rather than ignoring it. `comment` and `tag` also move here from the gap table, which is kept below as the record of what was open and when it closed. ERROR and MISSING are classified here deliberately: the completeness gate force-appends both to the wasm's named-type list so that a lane cannot leave them unclassified, and the lane DOES handle them — a grammar-error subtree is re-rooted under a `#damaged@<line>` scope with stable per-child identity, pinned by fixture `error-recovery-identity` and mutant `yaml/recovery-scope-renamed`. An ERROR is the grammar reporting that it could not lex; publishing it as a scope is how a configuration language stays navigable when a file is wrong.",
     "types": [
       "alias",
       "alias_name",
@@ -198,13 +198,13 @@
     },
     "wrapper_handling": {
       "_description": "`block_node` and `flow_node` are the two nodes that make a value addressable without a field, and they are the reason the analyzer can stay field-driven. Neither emits a symbol; both are read through by `valueType` and by `scalarText`.",
-      "block_node": "wrapper \u2014 no symbol, read through",
-      "flow_node": "wrapper \u2014 no symbol, read through"
+      "block_node": "wrapper — no symbol, read through",
+      "flow_node": "wrapper — no symbol, read through"
     },
     "core_schema_note": "`plain_scalar` is a DISPATCH node, not a type. Under the wired build (see design_decision YAML-D6) a plain scalar's resolved type is decided by which of boolean_scalar/integer_scalar/float_scalar/null_scalar/string_scalar the grammar attached. Every one of those five is listed above and every one is observed in the corpus, so the dispatch is evidenced at both ends rather than assumed."
   },
   "internal_silent": {
-    "_description": "Named grammar types the analyzer deliberately does NOT turn into a declaration, each with a reason. This list is NAMED TYPES ONLY, and that is a contract with the completeness inventory rather than a style choice: the gate enumerates the wasm's NAMED node types and reports any row here that the wasm does not produce as GRAMMAR DRIFT. The first draft of this spec also listed 104 anonymous and `_`-prefixed token types here, and the gate correctly reported all 104 as rows the grammar no longer produces \u2014 an anonymous token can never appear in a named-type enumeration, so the finding was about the spec's shape, not the grammar. They are recorded as vocabulary in `vocabulary.anonymousTypes` where a count belongs, and no anonymous type is ever a declaration candidate in any case. `escape_sequence` and `timestamp_scalar` live here rather than only in the gap table because the gate classifies a gap row through its `node_type` field and these are defect-style records that carry none \u2014 so leaving the types out of every bucket would have reported 11 real node types as unclassified.",
+    "_description": "Named grammar types the analyzer deliberately does NOT turn into a declaration, each with a reason. This list is NAMED TYPES ONLY, and that is a contract with the completeness inventory rather than a style choice: the gate enumerates the wasm's NAMED node types and reports any row here that the wasm does not produce as GRAMMAR DRIFT. The first draft of this spec also listed 104 anonymous and `_`-prefixed token types here, and the gate correctly reported all 104 as rows the grammar no longer produces — an anonymous token can never appear in a named-type enumeration, so the finding was about the spec's shape, not the grammar. They are recorded as vocabulary in `vocabulary.anonymousTypes` where a count belongs, and no anonymous type is ever a declaration candidate in any case. `escape_sequence` and `timestamp_scalar` live here rather than only in the gap table because the gate classifies a gap row through its `node_type` field and these are defect-style records that carry none — so leaving the types out of every bucket would have reported 11 real node types as unclassified.",
     "named_vs_anonymous": {
       "anonymousTokens": 15,
       "anonymousTokensObserved": 15,
@@ -229,7 +229,7 @@
     }
   },
   "gap": {
-    "_description": "Every named grammar type is accounted for in exactly one of three places: handled_verified (emitted and measured), internal_silent (deliberately not a declaration, with the reason), or a gap row here. A type that is none of the three is a blind spot. As of 2026-09-27 the two gaps this spec opened are CLOSED (YAML-G1 comments, YAML-G3 tags) and the two that remain are RULED internal_silent with a mechanism (YAML-G2 escape_sequence, YAML-G4 timestamp_scalar), so the open-gap count is 0 \u2014 which is a statement about the four rows in this file, not a claim that the lane is complete.",
+    "_description": "Every named grammar type is accounted for in exactly one of three places: handled_verified (emitted and measured), internal_silent (deliberately not a declaration, with the reason), or a gap row here. A type that is none of the three is a blind spot. As of 2026-09-27 the two gaps this spec opened are CLOSED (YAML-G1 comments, YAML-G3 tags) and the two that remain are RULED internal_silent with a mechanism (YAML-G2 escape_sequence, YAML-G4 timestamp_scalar), so the open-gap count is 0 — which is a statement about the four rows in this file, not a claim that the lane is complete. LANE TAKEOVER 2026-10-09: the four rows below are unchanged in substance and are refreshed with whole-corpus counts rather than a sample. The open-gap count remains 0 for the four GRAMMAR constructs this file tracks, and the lane's remaining silences are now measured as LANGUAGE absences rather than assumed (see `measured._description`): `implements` and `instantiates` have no construct in the corpus or in the grammar's 42-type inventory.",
     "gaps": [
       {
         "id": "YAML-G1",
@@ -257,7 +257,7 @@
         "occurrences": 7,
         "repositories": 2,
         "why": "The corpus understates this badly and the spec has to say so. 7 occurrences in 1,274 files, and a tag census across all eight repos shows every one of them is a cipher marker (!vault, !unsafe) or a JMESPath fragment, never a type annotation. The construct is far more load-bearing than its corpus count suggests: a YAML tag IS the language's only type annotation, and `!!str 7` is currently classified valueType=integer because the analyzer reads straight through the tag to the scalar underneath. Separately, `!include other.yml` produces zero symbols and zero relationships, which makes a real cross-file import invisible.",
-        "ruling": "CLOSED 2026-09-27, and M60 R9 (the declared-type reference graph) now MEASURES the closure rather than merely permitting it. A YAML tag is the language's only declared-type position: the capability was absent until this round \u2014 `tag` was in no handled set, so `!!str 7` reported valueType=integer and the tag was read straight through. Four forms are emitted as a closed `declared_type` edge: `!!local`, `!custom`, `!<verbatim>`, and `!handle!name` resolved through a %TAG directive. Pinned by fixtures `tag-declared-type` and `tag-declared-type-negative`, plus `directive-tag-handle` for the directive form. The capability row is measured by script/m60/declared-type-refs-census.ts, which reads `present-declared_type` for yaml (declared=2 typeRefs=2 control=y) after a yaml snippet was added to its table; the lane's reading is recorded in validation/m60/declared-type-register.json. The 7 corpus occurrences still badly understate the construct, as recorded above \u2014 that part of the finding was true and remains true.",
+        "ruling": "CLOSED 2026-09-27, and M60 R9 (the declared-type reference graph) now MEASURES the closure rather than merely permitting it. A YAML tag is the language's only declared-type position: the capability was absent until this round — `tag` was in no handled set, so `!!str 7` reported valueType=integer and the tag was read straight through. Four forms are emitted as a closed `declared_type` edge: `!!local`, `!custom`, `!<verbatim>`, and `!handle!name` resolved through a %TAG directive. Pinned by fixtures `tag-declared-type` and `tag-declared-type-negative`, plus `directive-tag-handle` for the directive form. The capability row is measured by script/m60/declared-type-refs-census.ts, which reads `present-declared_type` for yaml (declared=2 typeRefs=2 control=y) after a yaml snippet was added to its table; the lane's reading is recorded in validation/m60/declared-type-register.json. The 7 corpus occurrences still badly understate the construct, as recorded above — that part of the finding was true and remains true.",
         "fixture": "validation/m14/fixtures/yaml/tag-declared-type*, tag-file-include*",
         "closedAt": "2026-09-27",
         "closedBy": "the yaml analyzer rewrite (M14 #286)"
@@ -274,7 +274,7 @@
     ]
   },
   "design_decision": {
-    "description": "Constructs YAML has no grammar node for, or has no axis for at all. Each is RULED with its reason rather than left as an absence, because 'the language cannot express it' and 'the analyzer forgot it' look identical in an output diff and are not the same finding.",
+    "description": "Constructs YAML has no grammar node for, or has no axis for at all. Each is RULED with its reason rather than left as an absence, because 'the language cannot express it' and 'the analyzer forgot it' look identical in an output diff and are not the same finding. YAML-D13..YAML-D16 (2026-10-09 takeover): the project-scoped document identity and why it is safe (D13), the reconciled `calls` silence (D14), the refuted `rpm_key.yaml` external claim and why it is PRE-EXISTING rather than a regression (D15), and the two instruments' differing yaml populations (D16).",
     "decisions": [
       {
         "id": "YAML-D1",
@@ -330,14 +330,15 @@
         "instrument": "B:parse-tree-count",
         "probe": "Counted on the parse tree: every mapping pair whose ancestor key chain is exactly `jobs.<jobId>.uses`. The role is the chain, not the value; a value-shape probe would return a different and wrong number.",
         "measured": "196 occurrences in 92 of the 16371 admitted yaml files, whole corpus, no sampling.",
-        "overturn": "Any corpus file with a `uses:` key under `jobs.<job>` whose value does not name a reusable workflow \u2014 which would mean the chain is not sufficient evidence and the edge would need a second condition.",
-        "why": "The old ruling made the same mistake the workstream document records for the gate first version: it treated the absence of a node type as the absence of the construct. Invocation in a configuration language is a value in a reserved position, and a grammar inventory cannot see it. Confidence is 1.0 because the role is a parse fact \u2014 GitHub Actions admits nothing else at `jobs.<id>.uses` \u2014 while `resolved` is false because the target workflow is another file and this analyzer is per-file. The edge is withheld, not downgraded, when the document does not claim to be a workflow."
+        "overturn": "Any corpus file with a `uses:` key under `jobs.<job>` whose value does not name a reusable workflow — which would mean the chain is not sufficient evidence and the edge would need a second condition.",
+        "why": "The old ruling made the same mistake the workstream document records for the gate first version: it treated the absence of a node type as the absence of the construct. Invocation in a configuration language is a value in a reserved position, and a grammar inventory cannot see it. Confidence is 1.0 because the role is a parse fact — GitHub Actions admits nothing else at `jobs.<id>.uses` — while `resolved` is false because the target workflow is another file and this analyzer is per-file. The edge is withheld, not downgraded, when the document does not claim to be a workflow."
       },
       {
         "id": "YAML-D10",
         "status": "RULED",
         "subject": "implements",
-        "decision": "RULED \u2014 YAML has no construct that expresses interface satisfaction.",
+        "decision": "RULED — YAML has no construct that expresses interface satisfaction.",
+        "resolution": "NOT EMITTED, and the ruling is a GRAMMAR INVENTORY plus a KEY-SPACE probe rather than prose (this `resolution` key is what script/m14/ontology-coverage-gate.ts's `rulingFor` reads; until 2026-10-10 this decision carried only `decision`/`why`, so the arbiter found NO ruling source for implements and REFUSED to report the lane at all). YAML has no construct that expresses interface satisfaction: the wired grammar declares 36 named types (301 node-type ids) and NONE is a declaration of any kind — 0 of `class_declaration` / `interface_declaration` / `declaration` / `type_declaration` / `extends_clause` / `implements_clause` / `base_class_clause` is produced. The key space, which a node-type inventory cannot see, was probed at 18,368 distinct attribute keys over 296,009 sites; the 329 conformance-keyword sites (`implements`/`interface`/`protocol`/`trait`/`impl`/`conforms`/`satisfies`) are counted and excluded as DATA — a keyword key is a site only when the document also declares a type the relation names, and yaml has no type-declaration construct. Attested over node-types + block-types + attribute-keys by validation/m14/fixtures/yaml/ruling-attestation.json against artefact validation/m14/fixtures/yaml/ontology-census.json (0 construct sites).",
         "instrument": "A:grammar-inventory",
         "nodeTypesThatWouldMeanIt": [
           "class_declaration",
@@ -349,7 +350,7 @@
           "base_class_clause"
         ],
         "probe": "Enumerated every node type the wired tree-sitter-yaml grammar produces across all 16371 admitted files: 47 distinct types, against 36 declared in grammars/tree-sitter-yaml/src/node-types.json. None of the 47 is a declaration of any kind; the named nodes are containers (flow_node, block_mapping, block_mapping_pair, block_sequence, flow_sequence), scalars (plain/string/double_quote/single_quote/integer/float/boolean/null/block/timestamp), anchor, alias, tag, document, stream and the punctuation tokens.",
-        "measured": "0 declaration nodes. Two positive probes were run and REJECTED as false positives rather than reported as support: (a) 111 occurrences of `extends:`/`inherits:` keys in 92 files \u2014 these are yamllint and Azure-pipeline CONFIG keys meaning \"inherit this configuration\", not type conformance, and the probe matches the spelling rather than the role; (b) 15 distinct tag texts (55x `!include`, 31x `!unsafe`, 26x `!vault`, 12x `!reset`, 12x `!override`, 2x `!Sub`, 2x `!GetAtt`, 1x `!ENV`, and 6 `!!` core-schema tags) \u2014 a tag names the TYPE OF A VALUE and carries no declaration of conformance.",
+        "measured": "0 declaration nodes. Two positive probes were run and REJECTED as false positives rather than reported as support: (a) 111 occurrences of `extends:`/`inherits:` keys in 92 files — these are yamllint and Azure-pipeline CONFIG keys meaning \"inherit this configuration\", not type conformance, and the probe matches the spelling rather than the role; (b) 15 distinct tag texts (55x `!include`, 31x `!unsafe`, 26x `!vault`, 12x `!reset`, 12x `!override`, 2x `!Sub`, 2x `!GetAtt`, 1x `!ENV`, and 6 `!!` core-schema tags) — a tag names the TYPE OF A VALUE and carries no declaration of conformance.",
         "overturn": "A corpus file containing a custom tag that names an interface, or any `!<...>` construct whose semantics is \"this value satisfies that type\" as distinct from \"this value IS that type\". The `!!python/object:` family would be such a construct if it appeared: the corpus contains `!!python/name:` (4 occurrences) and `!!ruby/object:RI::ClassDescription` (1), both of which NAME a type, and neither of which constructs an instance of it.",
         "why": "Interface satisfaction needs two declarations and a relation between them. YAML has one construct that binds a name to a value, and `!!python/name:module.attr` names a type without declaring conformance to anything, so there is nothing for an `implements` edge to join. The 111 `extends:` config keys are the trap here and are named explicitly so the next lane does not read them as support."
       },
@@ -357,7 +358,8 @@
         "id": "YAML-D11",
         "status": "RULED",
         "subject": "instantiates",
-        "decision": "RULED \u2014 YAML has no construct that expresses construction of a value.",
+        "decision": "RULED — YAML has no construct that expresses construction of a value.",
+        "resolution": "NOT EMITTED (`instantiates`), and the ruling is a GRAMMAR INVENTORY plus a KEY-SPACE probe rather than prose (this `resolution` key is what script/m14/ontology-coverage-gate.ts's `rulingFor` reads, and it must spell the type name literally; see the note on YAML-D10). YAML has no construct that expresses construction of a value: 0 of `new_expression` / `object_creation` / `constructor_call` / `class_instance` / `instance` is among the wired grammar's 36 named types, and the inventory contains no construction form of any kind. The key space was probed at 18,368 distinct attribute keys over 296,009 sites; the 14 construction-keyword sites (`new`/`instantiate`/`newinstance`/`create`/`construct`/`clone`) are config DATA (`create: true` in a manifest, `create: x.yml` in a task), not construction. Attested over node-types + block-types + attribute-keys by validation/m14/fixtures/yaml/ruling-attestation.json against artefact validation/m14/fixtures/yaml/ontology-census.json (0 construct sites).",
         "instrument": "A:grammar-inventory",
         "nodeTypesThatWouldMeanIt": [
           "new_expression",
@@ -368,7 +370,7 @@
         ],
         "probe": "The same 47-type grammar inventory as YAML-D10, plus the tag inventory: 15 distinct tag texts over the whole corpus, listed in YAML-D10. None constructs an object.",
         "measured": "0 construction nodes. 0 tags with construction semantics.",
-        "overturn": "A corpus file using a tag whose semantics is \"build an instance of this class\" \u2014 `!!python/object:module.Class` is the canonical example and would be a real counterexample, since PyYAML turns it into an instance. It does not occur: the corpus carries `!!python/name:` four times, which names a Python attribute and resolves to the object it denotes rather than constructing one.",
+        "overturn": "A corpus file using a tag whose semantics is \"build an instance of this class\" — `!!python/object:module.Class` is the canonical example and would be a real counterexample, since PyYAML turns it into an instance. It does not occur: the corpus carries `!!python/name:` four times, which names a Python attribute and resolves to the object it denotes rather than constructing one.",
         "why": "A `$ref` into `components.schemas` is a reference to a definition, not a construction of a value, and the analyzer already emits it as `references`. Reading a schema reference as instantiation would put a `instantiates` edge in `bb_graph` that `bb_migrate` would then read as a type to rewrite."
       },
       {
@@ -377,11 +379,83 @@
         "subject": "overrides",
         "decision": "EMITTED, and the `overrides` half of the old YAML-D2 is withdrawn. A duplicate mapping key is a replacement, and the analyzer already gives the two entries distinct identities (`root.child` and `root.child#2`, see YAML-D8), which is what makes an edge between them possible at all.",
         "instrument": "B:parse-tree-count",
-        "probe": "Counted on the parse tree: for each mapping pair, compare its key against every EARLIER sibling pair in the SAME mapping. A parent-type test for a pair never fires \u2014 a pair's parent is `block_mapping`/`flow_mapping`, never another pair \u2014 so an earlier version of this probe counted 0 and the construct looked absent.",
+        "probe": "Counted on the parse tree: for each mapping pair, compare its key against every EARLIER sibling pair in the SAME mapping. A parent-type test for a pair never fires — a pair's parent is `block_mapping`/`flow_mapping`, never another pair — so an earlier version of this probe counted 0 and the construct looked absent.",
         "measured": "20 duplicate-key pairs in 17 of the 16371 admitted yaml files, whole corpus.",
-        "overturn": "A corpus file where two occurrences of one key sit in DIFFERENT documents of a multi-document stream. Documents are independent namespaces rather than layered ones, so that would not be an override either \u2014 which is why the probe is scoped to one mapping.",
+        "overturn": "A corpus file where two occurrences of one key sit in DIFFERENT documents of a multi-document stream. Documents are independent namespaces rather than layered ones, so that would not be an override either — which is why the probe is scoped to one mapping.",
         "why": "The two entries are a parse fact. That the later REPLACES the earlier is loader behaviour and not a grammar guarantee: YAML 1.2 leaves duplicate mapping keys undefined, mainstream loaders take the last value, and GitHub Actions rejects such a file outright. The edge therefore carries confidence 0.8 with a reason code and evidenceClass `inferred`, while `resolved` is true because both endpoints are symbols of this file. The chain is last-wins rather than all-to-first, and a mutant pins that distinction."
+      },
+      {
+        "id": "YAML-D13",
+        "status": "RULED",
+        "subject": "document identity / AnalyzeContext.projectRoot",
+        "decision": "EMITTED, and TAKEN OVER as unowned work. A document's identity was its filesystem BASENAME, and a basename is not unique in a project: `hostports0.yaml` occurs 156 times in one repository and `Chart.yaml` 243 times, so every member of those documents was a name with 156 declarations and the `contains` edge asserting containment could be walked in NEITHER direction. The identity is now scoped by the file's PROJECT-RELATIVE DIRECTORY CHAIN, dot-joined so no second path convention enters the key space, with the BASENAME LAST so the store's leaf matching is unchanged. It rides on `AnalyzeContext.projectRoot`, ADDITIVE AND OPTIONAL — absent means \"this caller does not know which project the file is in\", which is every pre-existing caller's behaviour.",
+        "why_it_is_safe_for_other_lanes": "MEASURED, not asserted: of the 60-odd analyzers only `real-yaml-analyzer.ts` (committed with this work) and the json lane's own uncommitted copy read `context.projectRoot`; `real-dart-analyzer`'s and `real-typescript-analyzer`'s `projectRoot` are unrelated local fields, and every other analyzer does not mention the name at all. `pool-worker.ts` only ADDS a key to a context object it already returned. So the change cannot alter any other lane's behaviour. The full fixture suite after the takeover reports yaml 33/0, sql 17/0, json 17/0, fsharp 15/0, and its only two regressions are zig and dart, whose analyzers and fixtures are concurrently dirty from their own lanes and which cannot read the field.",
+        "instrument": "A:incoming-gate + B:corpus-census",
+        "probe": "`npx tsx script/m14/incoming-gate.ts yaml yaml 60` reads 1,512 edges, 1,510 resolved, **0 ambiguous, 0 unresolved**, 2 verified external, 0 refuted, control fired — a PASS, and the only lane of 23 that passes. Corpus-scale magnitude of the defect it removes, measured without a project root: ansible 2,076 files, 83,330 `contains` edges of which **17,215 (20.7%) are ambiguous by declaration count**."
+      },
+      {
+        "id": "YAML-D14",
+        "status": "RULED",
+        "subject": "calls",
+        "decision": "FIRES ON THE FIXTURES, NOT ON THIS CORPUS, and the reconciliation is a SAMPLING statement rather than a defect. `firing-check.mjs` reported `calls` silent while `yaml/workflow-call-role` pins a `calls` edge; both are correct about their own population. A `calls` edge requires a `uses:` key at `jobs.<id>.uses` in a file whose shape matches the analyzer's \"GitHub Actions\" signature, and the ansible corpus contains no GitHub workflow at all.",
+        "instrument": "B:corpus-census",
+        "probe": "`bun validation/m14/fixtures/yaml/lane-census.ts $HOME/fixtures/repositories/ansible 0` -> `calls 0 edges, 0 sites in 2,076 files`, where the site counter reproduces the analyzer's own discriminator (job-level path AND workflow shape) rather than guessing. Cross-checked by searching the corpus for `.github/workflows` and for a job-level `uses:` — both empty. On the 33 committed fixtures the same counter reads calls 2 sites / 2 edges.",
+        "fixture_note": "The fixture is NOT wrong and was not changed for this: it holds a construct the corpus draw does not, which is exactly what a fixture is for. What WAS wrong was its `meta.isExternal` key, corrected separately."
+      },
+      {
+        "id": "YAML-D15",
+        "status": "RULED",
+        "subject": "imports / external claim refuted",
+        "decision": "PRE-EXISTING, MEASURED, AND DELIBERATELY NOT PAPERED OVER. At whole-repository scope the gate refutes exactly ONE external claim: an `imports` edge whose target is `rpm_key.yaml`, marked `isExternal: true`, while the project publishes a document named `rpm_key`. The rule's `targetOwner` splits a target at its LAST dot, so a bare FILENAME reads as `<stem>.<ext>` and the stem is looked up and found — the refutation is the rule correctly applying its own contract to a target shape it was not designed for. The analyzer cannot fix it from where it stands: with no `projectRoot` there are no candidate paths, so the file claim is unavailable; and DROPPING the marker would move the edge from `externalRefuted` to `unresolved`, which the verdict counts as equally bad. The only improvement available is a VERIFIED file claim, which needs the root.",
+        "why_it_is_not_a_regression": "The pre-takeover analyzer hardcoded `isExternal: true` at six sites including tag includes (verified in the diff of commit 37a887590's parent), so this edge carried the same false claim before the takeover. The new code strictly improves the case where the root IS known, by turning the marker into a file claim the project can check; in a population that passes no root the behaviour is unchanged.",
+        "instrument": "A:incoming-gate",
+        "probe": "`npx tsx script/m14/incoming-gate.ts yaml yaml 0 --repo=ansible` -> `VERDICT: FAIL — 0 ambiguous + 0 unresolved of 656 edges … 1 external claim(s) REFUTED`; the refuted name is listed as `imports  rpm_key.yaml`. The SAME gate at 60-file scope PASSES with 0 refuted, which is the sample-vs-population asymmetry this programme keeps measuring."
+      },
+      {
+        "id": "YAML-D16",
+        "status": "RULED",
+        "subject": "(instrument populations)",
+        "decision": "THE TWO INSTRUMENTS DISAGREE ABOUT WHAT \"THE YAML CORPUS\" IS, and neither is wrong. `firing-check.mjs` admits `.yml` AND `.yaml`; `incoming-gate.ts` admits `.yaml` only. On ansible that is 2,082 files against 13, because the repository is 2,069 `.yml` and 13 `.yaml`.",
+        "instrument": "A+B",
+        "probe": "`find $HOME/fixtures/repositories/ansible -name '*.yaml' | wc -l` -> 13; `-name '*.yml'` -> 2,069. The gate prints its own population, which is how this was caught: `population: 13 parsed of 13 sampled (corpus has 13 .yaml files across 1 repos; stride sample)`. Any yaml number quoted in this programme must say which population it is about."
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "contains",
+      "uses",
+      "references",
+      "imports",
+      "extends",
+      "overrides",
+      "calls",
+      "exports"
+    ],
+    "excluded": [
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "YAML-D10: 'RULED — YAML has no construct that expresses interface satisfaction'; instrument A: 47 distinct node types, 0 declaration nodes"
+      },
+      {
+        "label": "instantiates",
+        "evidence": "grammar-absence",
+        "from": "YAML-D11: 'RULED — YAML has no construct that expresses construction of a value'; instrument A: 0 construction nodes, 0 tags with construction semantics"
+      }
+    ],
+    "corpusUnexercised": [],
+    "_from": "8 implemented + 0 unexercised + 0 gaps = 8 applicable = 10 - 2 grammar-absence exclusions. UPDATED 2026-10-10: `calls` and `exports` moved from `corpusUnexercised` to `implemented` on a whole-population measurement -- see `_corpusUnexercised_retraction`, which keeps the two struck readings. The `6/8` the board read until this revision was an ansible-only sample counted as a corpus statement.",
+    "_corpusUnexercised_retraction": {
+      "_why": "This block listed `calls` and `exports` as `corpusUnexercised` until 2026-10-10, on the strength of ONE repository's census (`lane-census.ts` over ansible's 2,076 files: 'calls 0 edges, 0 sites in 2,076 files', 'exports 0 sites'). That is the exact defect `measured._description` warns about in this lane's own words -- 'a sample cannot certify absence and this lane has now been burned twice by assuming it could' -- and the WHOLE ADMITTED POPULATION contradicts it: `calls` 327 edges and `exports` 4,080 edges, both with 0 ambiguous(decl) and 0 unresolved (validation/m14/fixtures/yaml/census-yaml-whole-corpus-after.txt, 18,364 .yaml/.yml files, 189 repos). The two entries are kept below, RETRACTED, rather than deleted: a declaration that loses a row silently cannot be trusted to have lost only the false ones.",
+      "calls": {
+        "retracted": "lane-census.ts over ansible (2,076 files) -> 0 edges, 0 sites; the entry also cited YAML-D14 for the same reading",
+        "falsifiedBy": "whole admitted population: 327 edges, amb 0, unresolved 0, extOK 327 -- the job-level `uses:` reusable-workflow call (`jobs.<id>.uses: ./.github/workflows/x.yml`), measured on 189 repos"
+      },
+      "exports": {
+        "retracted": "YAML-D5's prose: 'the tag half is `!include`, and the same entry records ZERO `!include` in any of the eight corpora, so the tag half rests on fixtures'",
+        "falsifiedBy": "whole admitted population: 4,080 edges, 4,080 resolved with BOTH ends in the edge's own file, emitted from the `openapi:`/`swagger:` shape gate (`yaml_schema_publication`); the largest single source is one repository's OpenAPI set"
+      }
+    }
   }
 }

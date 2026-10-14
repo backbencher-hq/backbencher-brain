@@ -464,19 +464,27 @@ export function parseClaimTable(text: string): ClaimTable | null {
   if (headers.length === 0) return null
   const chosen = headers[0]
   const rows: TableRow[] = []
-  let started = false
+  // M14 JS lane, §10 (2026-10-10) — `started` used to SKIP A ROW.
+  //
+  // The loop begins AT the header row and walked forward, skipping the header
+  // (`i === chosen.at`) and the `---` rule. It then did `if (!started) { started = true;
+  // continue }` — which discarded the FIRST BODY ROW of every claim table in the
+  // fleet, silently: no count check exists, so a table with one row and a table with
+  // nine parsed the same. The flag was reaching for "has the table begun yet", a
+  // question that cannot arise here because the iteration starts inside the table.
+  //
+  // What it cost, measured: this lane's lost row is `calls` — the largest type by
+  // volume — and the gate reported `UNDOCUMENTED [javascript] calls (relationship)`
+  // on a doc line that plainly reads `| calls | **EMITTED** |`. A gate that under-
+  // reports is worse than a missing gate, because its green is trusted.
+  //
+  // The rule now is the table's own: the header ends it, so the first non-`|` line
+  // after the header is the end. No row is skipped, and none is invented.
   for (let i = chosen.at; i < lines.length; i++) {
-    if (!/^\s*\|/.test(lines[i])) {
-      if (started) break
-      continue
-    }
+    if (!/^\s*\|/.test(lines[i])) break
     const cs = cells(lines[i])
     if (i === chosen.at) continue
     if (isRuleRow(cs)) continue
-    if (!started) {
-      started = true
-      continue
-    }
     if (cs.length < 2) continue
     const cell = cs[1]
     rows.push({

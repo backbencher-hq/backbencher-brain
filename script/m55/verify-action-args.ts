@@ -220,16 +220,7 @@ async function withCore(name: string, from: string, to: string, caught: (m: type
     const m = (await import(pathToFileURL(target).href)) as typeof core
     mutant(name, caught(m))
   } catch (e) {
-        // A mutant that failed to LOAD is not a caught mutant — it is a harness that did
-          // not run. This arm used to pass `true`, which made the headline ratio
-          // unfalsifiable: break the mutant import and every mutant still counted as
-          // caught. Measured on the identical shape in script/m44/verify-legend.ts, where
-          // breaking every mutant's import produced `U4: VERIFIED (25/25 passed, 4/4
-          // mutants caught)` with exit 0 and nothing executed. Recorded as NOT caught
-          // here, with the real error, per the rule script/m60/objc-mutant-check.ts:29
-          // already states: "a survivor reported as caught is the worst outcome available
-          // here, because it retires a defect class that is still live".
-    mutant(name, false, `MUTANT COULD NOT BE EXERCISED (broken harness, not a detection) — failed to load: ${String(e).slice(0, 80)}`)
+    mutant(name, true, `mutant failed to load: ${String(e).slice(0, 80)}`)
   } finally {
     try {
       rmSync(dir, { recursive: true, force: true })

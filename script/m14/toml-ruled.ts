@@ -63,7 +63,7 @@
  * 169 reference-shaped keys in 6 files. Every one of them belongs to a TOOL, not
  * to TOML, and each is named with its file and line in the census output.
  *
- * ## WHY `references` IS INSTRUMENT B AND THE GATE WILL FALSIFY IT
+ * ## WHY `references` IS INSTRUMENT B — AND WHAT THE ROW NOW READS
  *
  * This is the entry the table exists to be honest about. A `references` edge is
  * "this key names that key", and in this corpus the construct is real, resolvable
@@ -72,18 +72,37 @@
  * 167 occurrences in 5 files, 167 of them resolving to a key the same file
  * declares.
  *
- * The probe below counts exactly that, so `npx tsx script/m14/ontology-coverage-gate.ts toml`
- * prints `FALSIFIED` on this row, and it should. The lane's answer to that row is
- * in `docs/analyzers/real-toml-analyzer.md`, with the three measurements that
- * decide it: the construct is Gradle's and Cargo's rather than TOML's; the
- * sibling Cargo construct resolves in the same file on 81 of 1,269 occurrences
- * (6.4%) and is repo-ambiguous on the other 992, where 75.5% of this lane's edge
- * target names are published by 2 or more files of their own repository; and
- * emitting the type without an oracle in `deriveTomlEdges` would create this
- * lane's FIRST DERIVATION finding.
+ * The probe below counts exactly that, so this row was the lane's only FALSIFIED
+ * verdict, and the lane recorded that it SHOULD stay falsified rather than pick
+ * the instrument that reads zero. That reasoning was sound and the outcome has
+ * now overtaken it:
  *
- * A FALSIFIED row that is reported is worth more than a RULED-SOUND row that was
- * obtained by choosing the instrument that reads zero.
+ *   - `fd41b19d6` emitted the type (the analyzer has produced 167 `references`
+ *     edges on this corpus since), and
+ *   - M60 (#919) added the ORACLE, so the type is derived rather than merely
+ *     stored — `deriveTomlEdges` derives it by an independent route and the
+ *     differential reports 100% covered / 0 unexplained, and toml's DERIVATION
+ *     finding is 0.
+ *
+ * So `npx tsx script/m14/ontology-coverage-gate.ts toml` now reads EMITTED for this
+ * row and exits 0. A reader who trusts this header over the gate's output will be
+ * wrong, so the header is corrected here rather than left to rot.
+ *
+ * ONE THING THE FALSIFICATION WAS RIGHT ABOUT, AND IT COST THE EDGE ITS REACH.
+ * The adjudication's three grounds held, and ground (3) — "emitting the type
+ * without an oracle would create this lane's FIRST DERIVATION finding" — was the
+ * only one that bound. The other two are recorded in
+ * `docs/analyzers/real-toml-analyzer.md` and still stand. But the emitted edges
+ * were anchored at `libraries.<lib>.version.ref`, a name no symbol is ever
+ * published for, so all 167 bound to ZERO symbols on their SOURCE side against
+ * 167 of 167 binding on their target: an edge no incoming query could reach,
+ * emitted while every gate that compared SPELLINGS reported the lane clean. Fixed
+ * in M60 (#919) by anchoring at the owning key; the specificity the phantom name
+ * carried now travels in `metadata.aliasKeyPath`.
+ *
+ * The general lesson, and the reason the header led with instrument B: a gate that
+ * compares two spellings of an edge agrees with a phantom, because both sides
+ * invent the same name.
  */
 type Type = "calls" | "uses" | "contains" | "imports" | "references" | "exports" | "extends" | "implements" | "overrides" | "instantiates"
 

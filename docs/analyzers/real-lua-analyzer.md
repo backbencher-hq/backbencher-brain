@@ -1093,6 +1093,102 @@ determined by a line-bounded visibility test. The published NAME cannot express 
 resolution that `startLine`/`endLine`/`scope` already determine; what remains is the
 walker's bare-name rule, which is shared machinery.
 
+## 7b. LUA-55 — the `imports` residual is ONE shape, and the fix is a FILE claim, not an exclusion
+
+**The largest named FIXABLE cause on this lane's incoming side, fixed with a before/after over the same
+population.** Two whole-population gate runs, one change between them, both labelled:
+
+    BEFORE  HEAD bad316c7d · analyzer bc9de4bc3fd0bd0b · 3,250 files · 0 failed · 0 degraded
+    AFTER   HEAD beb03387f · analyzer d35f6e6f6d1f3339 · worktree change = the file claim ONLY
+
+    imports  imports       6601     76        0         880        120        5645        0       0       0        0        0       0         0        0
+    imports  imports       6601     76        0         880        120        1796        3849    0       0        0        0       0         0        0
+    of those 4930 verified: 1081 by owner lookup in the key space, 3849 against the project's own pubspec files + file list
+
+and the classifier (`script/m14/incoming-rule.ts`), `pool-worker.ts` and `engine.ts` are
+**byte-identical** at both revisions, which is what makes the pair comparable rather than merely
+sequential — the tree moved under this session (another lane committed twice), and the comparability
+argument is digest-by-digest in `validation/m14/fixtures/lua/measurements/imports-file-claim.md` §0.
+
+**What the edges share.** The gate's own marker-set table puts ALL 5,645 on ONE signature,
+`luaSpecific+relationshipType`, and the shape split of the class is **dotted 5,485 · bare 97 · hyphen
+33 · slash 28 · Upper 2** — so this is one cause and not five. It is the programme's most repeated
+cause, *a module path is not a declaration*, of which this lane carries 5,645 of the 14,890 the cause
+list can name across seven lanes.
+
+**The mechanism, and the two it is NOT.** `require("a.b.c")` now carries
+`metadata.importProjectFile` — the project-relative path of the `.lua` file the module names — whenever
+the shared guard confirms one on disk. It is **not** the `metadata.moduleTarget` exclusion R6 proposed
+(an exclusion says *do not look* and cannot be refuted), and it is **not** the `isExternal` marker this
+lane priced and refused on 2026-10-09 (**1,560 of 5,485 REFUTED**: `imports lapis.application` has owner
+`lapis`, and the project declares `lapis`). The candidate arithmetic is this lane's — dots become
+directory separators, `X.lua` before `X/init.lua`, and four bases: the project root (`./?.lua`), the
+requiring file's own directory (busted), the prefix ending at the file's first `lua/` segment (Neovim
+runtimepath / OpenResty), and `<fileDir>/lua/` — while the admitted-extension clause, the
+inside-the-project clause, the size cap and the `statSync` stay inside the shared guard.
+
+**Priced before it was emitted**, and the price includes the refutation column: a labelled stride sample
+of 358 of 3,250 files reads **544 VERIFY / 0 would-refute / 196 residue** of 740 sampled-unresolved,
+with **candidate multiplicity `1=544`** (every claimed edge has exactly ONE admitted candidate, so the
+base ORDER never decided an outcome) and **0 disagreements** between the probe and the landed guard over
+740 edges. And the refutation column is **0 over the whole population by construction**: the guard binds
+on `statSync`, the arbiter refutes on `git ls-files`, so the two can disagree only on a `.lua` file
+present on disk and NOT tracked — measured **0 of 3,250**.
+
+**The arbiter is one of the control's arms**, not an afterthought:
+`tools/require-file-claim-control.ts` runs 10 arms and asserts each positive claim through
+`verifyFileClaim` itself, plus four arms that must write NO claim (absent module, no `projectRoot`,
+escaping target, a directory that is not a module file). **ALL ARMS PASS.** And the change is ADDITIVE,
+measured rather than asserted: `tools/claim-preservation-dump.ts` over 181 files / 14,585 edges reports
+**MOVED 0 · CLAIMED added 276 · removed 0 · changed 0**. Fixtures both arms:
+`summary: {"lua":{"pass":13,"fail":0}}`.
+
+**What it does not close**, stated because a fix that reports only its own effect is not a measurement:
+the residue is real and counted (3,849 of the 5,645 moved to an `extOK` claim verified against the project's own file list and **1,796 remain unresolved**, on the same marker signature `luaSpecific+relationshipType` — the LuaRocks toolchain and the rocks this corpus does not vendor (`luarocks.util`, `luarocks.fs`, `luarocks.core.cfg`, `tap`, `argparse`, `compat53.module`, `pl.file`); the claim does not touch them, `extFAIL` stays 0, and `unresolved` is the TRUE reading for them.), and the claim asserts ONE thing — *the project
+carries a `.lua` file this module name names* — and nothing about symbols, so it never raises
+`resolved`.
+
+### The lane's largest cause, RULED and now BOUNDED from the gate's own two tables
+
+The largest not-resolved class is `uses` on `luaSpecific+relationshipType` — **44,797** (41,424 amb +
+3,373 unres), 33.2% of the residual — and it is ruled, not fixed, by `BD-ambiguity-full`: the ambiguity
+is INSTRUMENT SCOPE over a bare-name key space, with **B3_indistinct 193 (0.12%)** the only
+inexpressible class. This session adds a bound that needs no corpus run, from an inclusion the gate's
+own classifier guarantees (`sameFileUnproven` is returned only when a declaration of the target exists
+in the edge's own file, so it cannot be an `unresolved` edge):
+
+    |ambiguous ∩ ownFileAnswered| ≥ (sameFileUnproven + intended) − resolved
+
+    calls ≥ 3,282 (10.8%) · uses ≥ 29,986 (72.4%) · imports ≥ 601 (68.3%) · references ≥ 5,608 (24.2%)
+    exports ≥ 830 (26.4%) · extends ≥ 63 (91.3%) · overrides ≥ 65 (100%) · instantiates ≥ 72 (100%)
+
+**What it does not say**: *the own file answers* is not *the own file answers UNIQUELY*, and the
+resolver's own-file preference needs uniqueness — which is exactly the lexical instrument's B1/B2/B3
+split. The bound therefore SUPPORTS the ruling and does not replace it. The full table, the instrument
+finding it produced, and the falsifiers are in
+`validation/m14/fixtures/lua/measurements/imports-file-claim.md` §§8–10.
+
+### The next candidate fix that LOOKS priced and is not — read this before starting it
+
+`calls` is 12,519 unresolved (marker `luaSpecific`) and the 2026-10-09 split's mark simulation records
+**M2 — "a bare identifier target the project declares nowhere, restricted to `calls`" — as
+marked 12,517 · externalVerified 12,517 · externalUnverified 0 · REFUTED 0**. On those numbers an
+external claim on the class looks free, and it is the single largest remaining fixable-looking bucket on
+this lane.
+
+**It is not a price, and the reason is the one the handoff names as the gate's only real laundering
+vector (§5k/§5l).** M2's rule was evaluated against the PROJECT key space — that is what the simulation
+had — so its applicability condition IS the arbiter's refutation condition, and it verifies by
+construction. A per-FILE analyzer does not own that key space: the implementable rule is "a bare name
+this FILE does not declare", which the project can and does refute (another file declares it). The price
+of the implementable rule has never been taken, and the number above is not it.
+
+What a real price needs, in this order: the analyzer-side declared-name set per file, the project key
+space, the refutation count of the file-scoped rule, and the cross-tab between them. The lane's existing
+`stdlib-external` fixture and the `markStdlibExternal` rule are the wrong vehicle — that rule marks a
+member read whose RECEIVER is one of the eight documented Lua 5.4 tables, deliberately not a bare name —
+so this would be a new claim kind on `calls`, not an extension of that one.
+
 ## 8. Declared limitations
 
 Lua is Turing-complete and dynamically typed. For a language in that class a blank
@@ -1253,18 +1349,34 @@ hold two edges of one kind between one pair of symbols. It decides the 37 suppre
 duplicates. The analyzer's dedup is unconditional and the option that used to pretend
 otherwise is gone (LUA-53). The decision is a schema owner's.
 
-**R6 — the incoming gate has no bucket for "this type's target is a MODULE".** `imports`
-is **6,601 of 219,981 edges** at whole-corpus scale and **242 of 265** on the gate's
-120-file sample, so it is the single largest `unresolved` class and it can never be closed
-by the analyzer: the target is `require "kong.tools.table"`, a module identifier, and a
-`require` of a sibling file and a `require` of a luarocks rock are the same syntax in the
-file being parsed. `script/m60/incoming-gate.ts` counts an unmarked non-resolving target
-as `unresolved`, so these are charged to the lane forever. **Fix:** one declared
-exception beside `EXTERNAL_KEYS` (incoming-gate.ts:105) — a relationship whose
-`metadata.moduleTarget === true` is a module path and is excluded from `unresolved`, the
-same way `external` is. This lane does not set that key, because doing so would assert the
-3,060-vs-2,425 split it cannot see from one file. The count and the split are measured in
-`validation/m60/lua/external-marking.json`.
+**R6 — SUPERSEDED 2026-10-11. The gate HAS a bucket for "this type's target is a MODULE", and this
+lane now uses it.** The bucket is not the `metadata.moduleTarget` exclusion proposed here; that
+proposal is **WITHDRAWN by its own author**, because an exclusion says *do not look* while the thing
+this class needs is a statement the project can **check**.
+
+What exists instead, landed by the Lead in `57aa3be79` and shared by eight lanes:
+`metadata.importProjectFile` (`FILE_CLAIM_KEY`, `src/ast/file-claim.ts`). A relationship whose target
+names no declaration may state that the project carries the **FILE** the target names; the arbiter
+(`verifyFileClaim`, `script/m14/incoming-rule.ts`) looks the candidate up in the project's own
+admitted list and **REFUTES** it when it is not there. Three properties make it the right shape and
+none of them was available to the `moduleTarget` proposal:
+
+* it is **refutable** — a wrong claim costs an edge rather than excusing one, which is why the
+  programme prices a claim before emitting it;
+* it is read **only where the target names nothing** (`classifyEdge` consults it inside
+  `if (decls === 0)`), so it can never raise `resolved` and never touches an edge the key space
+  already answers — and, unlike the binding and `remoteRef` claims, it is **not** refuted by a
+  target that does resolve, because it is never read there at all;
+* the admitted-extension clause lives **inside the guard**, so this lane cannot relax it by editing
+  its own spelling of it.
+
+`require "kong.tools.table"` is still a module identifier that no symbol can carry, and the
+3,060-vs-2,425 split is still invisible from one file — the claim does not pretend otherwise. What it
+adds is the one fact about that pair a single file CAN be wrong about in a checkable way: whether
+`kong/tools/table.lua` is in the project. The count, the price, and the split are now measured in
+`validation/m14/fixtures/lua/measurements/` and in "LUA-55" below; the earlier pointer to
+`validation/m60/lua/external-marking.json` records the *external-marker* split, which is a different
+question and is NOT the mechanism this lane adopted.
 
 **R7 — `validation/m60/results/lua-truth-oracle-kong.json` disagrees with its own command.**
 The committed artifact records `truthEdges 61125 / observedEdges 107827`; a fresh run on
@@ -1367,3 +1479,155 @@ from the declaration node. Function-local variables are emitted as scoped
 variables; parameters, anonymous function expressions, field/index mutations and
 local reassignments are not declarations. No synthetic Love2D hooks, anonymous
 coroutine symbols, or anonymous table classes are generated.
+## Incoming pass (append-only record, 2026-10-09) — the claims, the split, the gaps, the silent types, the ambiguity
+
+Appended rather than woven in: every number above was measured at another commit, and rewriting
+them would destroy the comparison. Instrument for everything below:
+`validation/m14/fixtures/lua/incoming-split.mts` (it IMPORTS `classifyEdge`/`externalClaimOf`/
+`tally` from `script/m14/incoming-rule.ts` rather than copying them, so its columns cannot drift
+from the gate's, and every run re-measures the gate exactly — `COMPARE … AGREE`).
+
+### 1. The external claims are VERIFIED, not unverifiable
+
+`incoming-gate --json lua lua 60`: `1802 resolved · 1305 ambiguous · 2222 unresolved of 5415 ·
+markedExternal 86 · externalVerified 86 · externalUnverified 0 · externalRefuted 0`. The one marker
+key is `external` (lua54-stdlib, `markStdlibExternal`), every marked target is a BARE IDENTIFIER
+(`format`, `concat`, `open`) and has no arbiter owner, so the arbiter checks the target itself: 86
+verified, 10 of the 96 marked edges the project answers (mark inert), and **0 refutable by
+construction** — a bare-identifier claim is consulted only where the project answers the target
+nothing. A corpus-wide arm (3,250 files) reads 3,525 marked edges with 1,081 verified, 0
+unverifiable, 0 refuted.
+
+The module-path class stays UNMARKED and now has its refutation count: marking every unresolved
+edge refutes 11 claims, 9 of them `imports` whose owner segment is in-project (`kong.deprecation`
+owner `kong`, `cjson.safe` owner `cjson`, `cmp.types` owner `cmp`).
+
+### 2. The 2,222 unresolved, split
+
+| bucket | edges | what it is |
+|---|---|---|
+| declared in the SAME project | 1,112 (50.0%) | 297 would read `resolved`, 815 `ambiguous` at a complete key space — SAMPLE REACH, not a defect |
+| declared in the corpus, another project | 417 (18.8%) | production is project-scoped: not resolvable for this edge, not a defect |
+| declared nowhere | 693 (31.2%) | 232 bare calls (`uint8`,`string` — `_ENV` host globals), 222 receiver-carrying field references, 125 module paths, 40 uses, 38 `Upper` constants, 10 HTTP headers, tail <10 |
+
+Whole-corpus scope, so no column is read alone: 219,981 edges = 42,442 resolved · **140,782
+ambiguous (64.0%)** · 35,676 unresolved. The sample inflates unresolved and deflates ambiguity.
+
+### 3. The `gap` field, which this spec did not have
+
+`script/m14/spec/lua-completeness.json` carried NO `gap` field — unstated, which the board cannot
+distinguish from "no gaps". It now carries `_description` + six measured entries (LUA-G1..G6):
+`implements` ruled by the grammar; the role-resolved supertype-as-argument class (7 sites in 5
+files over 13 factories); the 45 `setmetatable(self, …)` + 374 expression-base sites; module paths
+(6,601 edges, 2,425 in-corpus files vs 3,060 absent, 9 refutations if marked); the missing callee
+shape on `calls` (5,631 host-global targets, fix named: publish what `callee()` already computes);
+and the sample-reach half of the unresolved column.
+
+### 4. The three "silent" types
+
+The default stride (`firing-check.mjs LUA`, 120 of the lane's 400 kong files) reads `7 types fired —
+implements overrides instantiates SILENT`. Whole-population: `NFILES=4000 bun
+script/m14/firing-check.mjs LUA` reads **9 types fired, SILENT: implements**, with `instantiates:8
+overrides:3`. Whole-corpus census type table (3,250 files, 219,981 edges): `overrides 67`,
+`instantiates 122` — matching §3.1's 67-in-38-files and 122-in-65-files — and `implements` absent.
+Two of the three were stride artifacts; the third is ruled by the grammar. No analyzer change.
+
+### 5. The 1,305 ambiguous
+
+684 multiFile (52.4%) · 312 oneFileDiffOwner (23.9%) · 303 oneFileSameOwnerSameKind (23.2%) · 6
+oneFileSameOwnerDiffKind (0.5%), across 566 distinct names. The kinds and markers agree: these are
+bare local/field names (`variable` 1,007 of the kind signatures), and `oneFileSameOwnerSameKind` IS
+the `lua_redefinition` construct the `overrides` type publishes. Ruled irreducible at edge identity
+(spec BD-ambiguity); the option that would move part of the multiFile bucket — targeting the
+qualified path, as `json` does — is a change to what an edge NAMES, not a resolution repair, and it
+would replace LUA-15's container+own-name identity.
+
+### 6. One red fixture fixed, two remain red (pre-existing)
+
+`lua/stdlib-external` was FAILING on its three positive rows because the expectation pinned
+`"meta.external": "true"` — a STRING — while the analyzer publishes the BOOLEAN `true`, and the
+runner compares with `!==`. A string marker is inert for the arbiter too (`EXTERNAL_KEYS` is read
+with `=== true`), so the fixture was pinning the exact spelling the fleet warns about. Corrected to
+`true`: **lua/stdlib-external now PASSES** (11 of 13 fixtures).
+
+Still failing, and NOT touched by this pass — both are recorded `ok: false` in
+`validation/m14/results/M14.0.F3.json`, i.e. red in the baseline before today:
+`lua/export-edges` and `lua/export-shapes`, both with `export invariant violated: export(s) […]
+do not resolve to a top-level symbol (membership rides Contains)`. That is a real contract question
+about `exports` (whether an exported name must be answered by a symbol or may ride its `contains`
+edge), it is the same class as the 52 unresolved `exports` edges in the sample arm, and it needs
+its own ruling rather than a spelling fix.
+
+### 7. The 140,782 ambiguous at the GATE'S key space — §5's proportions are a 60-FILE artifact
+
+The residual is 80.2% and the ambiguous column is the whole of it: **140,782 of 219,981 edges**
+(`residual-gate.ts --lane lua`, whole admitted population, production scope; artifact
+`measurements/residual-gate-lua.txt`; `extFAIL`/`bindFAIL`/`causeFAIL` all 0). §5 above answered the
+ambiguity question at 1,305 edges over a 60-file key space. This is the same question at the size
+the gate measures.
+
+**THE BUCKET ORDER SURVIVES; THE PROPORTIONS DO NOT.** The same four-way collision split, run at the
+gate's own key space (`incoming-split.mts --nf 4000 --all` — the corpus is 3,250 files, so the
+sample arm IS the full arm and the log prints both as identical; artifact
+`measurements/incoming-split-lua-full.json`):
+
+| bucket | §5, at 60 files | whole population (3,250 files) |
+|---|---|---|
+| multiFile | 684 (52.4%) | **131,914 (93.7%)** |
+| oneFileDiffOwner | 312 (23.9%) | 3,778 (2.7%) |
+| oneFileSameOwnerSameKind | 303 (23.2%) | 4,551 (3.2%) |
+| oneFileSameOwnerDiffKind | 6 (0.5%) | 539 (0.4%) |
+| distinct names | 566 | 15,326 |
+
+A target's declarations can only span the files the key space contains, so a 60-file sample cannot
+see the cross-file collisions the gate counts. **multiFile was never 52.4% of this lane's ambiguity;
+it is 93.7% of it**, and a reader who took 52.4% as the size of the cross-file problem would have
+sized the work at half of what it is.
+
+**CAUSE #1, NAMED AND COUNTED: bare-name targets resolved against a global key space.** The gate's
+marker-set table splits the 140,782 by metadata signature, and the largest single class mapping to
+one type and one mechanism is `(no marker)` = **41,592 edges (29.5%)** — which is exactly the
+`contains` count, because `addContainsRelationships` publishes `owner -> symbol.name` with `{}`
+metadata, leaving the target a bare declaration name and the edge carrying nothing else. The full
+table: `luaSpecific+relationshipType` 46,935 (33.3%) · `(no marker)` 41,592 (29.5%) ·
+`luaSpecific` 29,121 (20.7%) · `luaSpecific+receiver+relationshipType` 21,129 (15.0%) · the four
+`external…` signatures 1,940 (1.4%) · the two `overrides…` signatures 65.
+
+**RULED LEGITIMATE — and the evidence is this lane's own lexical instrument, not an argument.**
+`ambiguity-split.ts` over 3,250 files / 83,906 symbols / 219,981 edges / **0 parse failures, 0
+fallback files** (`validation/m60/lua/ambiguity-split.json`) decomposes ITS OWN multiSymbol
+population of 163,583 edges:
+
+| class | edges | share |
+|---|---|---|
+| B1_lineSettled — Lua's ORDER rule names exactly ONE declaration at the edge's line, in its own file | 94,398 | 57.7% |
+| B2b_fileAbsent — the target is absent from the edge's own file; the collision is entirely in others | 63,881 | 39.0% |
+| B2c_noneVisible — the edge precedes every local declaration of that name | 5,111 | 3.1% |
+| **B3_indistinct — the class the published NAME genuinely cannot separate** | **193** | **0.12%** |
+
+`contains` alone: multiSymbol 43,854 → B1 43,739 (99.7%), **B2b 0**, B2c 0, **B3 115**. There is not
+one `contains` edge in the corpus whose target is absent from its own file, and 99.7% are settled to
+exactly one declaration by the ordinary rule at the line the edge already carries. So the edge is
+TRUE and its target IS one declaration given `(file, line)`; what cannot use either is the arbiter's
+bare-name lookup over a global key space. That is **instrument scope** — the same shape as LUA-G6 on
+the unresolved column — and no analyzer change reaches it without replacing LUA-15's
+container+own-name identity, which BD-ambiguity declined and this measurement does not reopen.
+
+**THE TWO DEFINITIONS ARE NEVER ADDED.** The gate's `ambiguousByDecl` is 140,782 (its rule, its key
+space); the lexical instrument's `multiSymbol` is 163,583 (bare name PLUS `qualifiedName`, deduped on
+file/qualifiedName/kind/line). Every number here is quoted with its instrument, and 140,782 + 193 is
+not a sum of anything.
+
+**FALSIFIER, stated so this ruling can fail:** it holds only while the name-inexpressible class stays
+small. If a later run shows B3_indistinct growing materially, or shows `contains` with a non-zero
+B2b_fileAbsent, this ruling is refuted and the identity change becomes the work.
+
+**NOT RUN, reported as such:** the first attempt at the collision split was killed by the lock, not
+by the measurement — `flock -w 600 9` timed out (exit 9) while another lane held `.bb-heavy.lock`, so
+the run never started. The re-run waited `-w 3600` and completed.
+
+**NEXT CAUSE, from the same tables, for a later pass:** `calls` is the type whose ambiguity is
+mostly NOT lexical — multiSymbol 41,851 → B1 11,473, **B2b 29,274 (70%)**, B2c 1,104, B3 0 — and its
+marker signature is `luaSpecific` alone, i.e. it carries no receiver. LUA-G5 already names the fix
+the analyzer computes and throws away (`callee()`'s shape, `:2177`), and that is where the B2b mass
+for `calls` should be attacked.

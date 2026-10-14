@@ -9,23 +9,10 @@
   "failures": [],
   "mutantsCaught": 4,
   "mutantsTotal": 4,
-  "currentCommit": "428658b04fa05de756ca8afff490a20dea94eec9",
-  "sourceFingerprint": "dbb653abba29d87495dd5bace4a80cb81e33d61b8340e52e38fd9c7fb053791c",
-  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
-  "sourceFingerprintCovers": [
-    "script/m44/verify-legend.ts",
-    "docs/m44/LEGEND.md",
-    "ide/vscode/src/hub-panel.ts",
-    "src/brain/database.ts",
-    "src/lsp/freshness.ts",
-    "src/lsp/graph_request.ts",
-    "src/util/project-id.ts",
-    "script/m26/graph-core.ts",
-    "script/m26/webview-harness.ts"
-  ],
+  "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
   "verifierCommand": "npx tsx script/m44/verify-legend.ts",
   "evidenceFile": "U4.json",
-  "generatedAt": "2026-10-11T02:55:46.177Z",
+  "generatedAt": "2026-10-05T14:42:27.581Z",
   "fixture": {
     "root": "Widget (file-1:Widget)",
     "duplicated": "make -> Widget carries calls + instantiates (3 caller rows, 2 caller groups)"
@@ -44,7 +31,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-11T02:55:46.179Z",
-    "contentSha256": "8777ca1d1034daa5ea579fb29df309987d0301364e19db17bd69ffdd70336cc2"
+    "sealedAt": "2026-10-05T14:42:27.583Z",
+    "contentSha256": "d6335f7deb4bd8572d7aaaf53c7fd951c0312b598c247820f1a802a47004649b"
   }
 }

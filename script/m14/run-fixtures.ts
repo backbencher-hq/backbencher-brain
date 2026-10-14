@@ -267,6 +267,13 @@ const CONSTRAINT_KEY_ALLOWLIST = new Set([
   "name", "kind", "ownerName", "scope", "owner", "ownerKind", "range", "startLine", "endLine",
   "startColumn", "endColumn", "genericParameters", "parameters", "returnType", "type",
   "visibility", "isAsync", "isAbstract", "isExported", "isDeclaration", "isRecordField",
+  // php member IDENTITY (M60 php wave, 2026-10-08). A real top-level field on `UniversalSymbol`
+  // (`ASTEngine` declares the index signature; php's `publishMemberIdentity` sets it), and the row
+  // is live rather than inert: `matchConstraints` reaches the generic `actual[k] !== v` branch, so
+  // `qualifiedName: null` states the ABSENT form too. It is allowlisted because the check it feeds
+  // exists to catch keys that can never match, and this one can — leaving it off the list reported
+  // a working row as an inert assertion.
+  "qualifiedName",
   "docstring", "decorators", "complexity", "linesOfCode", "id", "line",
   // SOL-16: NatSpec payload. `comments` is the per-comment array the TypeScript lane
   // populates for the same job, so the key is allowlisted for cross-lane parity
@@ -555,7 +562,6 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     }
   }
 
-  const exts = cfg.ext.split(",")
   // `.expectation.json` files are excluded because for a lane whose extension IS
   // `json` an expectation file ends in `.json` too, so it was picked up as a FIXTURE
   // and then reported as a missing expectation of its own. Every existing lane dodged
@@ -563,7 +569,38 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
   // extensions never collided. json is the first lane where they do, and the failure
   // mode is six phantom "missing expectation file" rows that look like a lane problem
   // and are a runner problem.
-  const sources = fs.readdirSync(dir).filter(f => exts.some(e => f.endsWith("." + e)) && !f.endsWith(".expectation.json"))
+  //
+  // MATCHED CASE-INSENSITIVELY, because a file extension is case-insensitive on every filesystem
+  // this runs on and one lane spells its sources in capitals. Measured by `r-lane`: `LANGS.r.ext`
+  // is `"r"` while all 22 of its fixtures are `*.R`, so this filter discovered ZERO sources and the
+  // lane reported `{"r":{"pass":0,"fail":0}}` + "all fixtures pass" — a VACUOUS PASS, which is
+  // worse than a failure because it reads as green. The lane's own runner
+  // (`validation/m14/fixtures/r/run-r-fixtures.ts`) was the only instrument that noticed: 22
+  // passed, 0 failed. Changing the table's `ext` to `"r,R"` would have fixed this one lane and left
+  // the next capitalised extension to rediscover the same silence.
+  const exts = cfg.ext.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)
+  const matchesExt = (f: string): boolean => {
+    const low = f.toLowerCase()
+    return exts.some((e) => low.endsWith("." + e))
+  }
+  const sources = fs.readdirSync(dir).filter(f => matchesExt(f) && !f.endsWith(".expectation.json"))
+
+  // A LANE WITH EXPECTATIONS BUT NO SOURCES IS AN ERROR, NOT A PASS. The paragraph above earned
+  // this guard: zero discovered sources used to flow through as a clean run, so a runner/lane
+  // mismatch was indistinguishable from a lane whose fixtures all pass. If the directory holds
+  // expectation files and the filter found no source, say so and fail.
+  if (sources.length === 0) {
+    let expectations = 0
+    try { expectations = fs.readdirSync(dir).filter((f) => f.endsWith(".expectation.json")).length } catch { /* unreadable */ }
+    if (expectations > 0) {
+      console.error(
+        `\nFIXTURE DISCOVERY IS EMPTY — ${expectations} expectation file(s) in fixtures/${runLangLang} ` +
+        `but 0 source(s) matched ext="${cfg.ext}". That is a RUNNER/lane mismatch, not a lane with no ` +
+        `fixtures: report it, and do not read the summary as a pass.`,
+      )
+      process.exitCode = 1
+    }
+  }
 
   // SUB-DIRECTORY FIXTURES are a MULTI-FILE PROJECT. A lane whose analyzer reads
   // `AnalyzeContext.projectIndex` cannot be tested by single-file fixtures at all: the
@@ -597,10 +634,19 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // index came back EMPTY for python — no types, no members, no bases — which is a
       // subtler failure than an error, because an empty index feeds every consumer a
       // confident "nothing is declared anywhere".
+      // FS-P16: fsharp joins python here for the same reason and with a louder measurement —
+      // the F# spec is what resolves an abstract-member clause to `interface` and what reads a
+      // clause's name out of an UNNAMED `type_name` child. Built with Solidity's spec an F#
+      // sub-directory fixture gets an index of the right shape holding nothing, which reads as
+      // "nothing is declared anywhere" rather than as "the wrong spec ran".
       const spec =
         runLangLang === "python"
           ? mod.PYTHON_DECLARATION_SPEC
-          : undefined
+          : runLangLang === "fsharp"
+            ? mod.FSHARP_DECLARATION_SPEC
+            : runLangLang === "scss"
+              ? mod.SCSS_DECLARATION_SPEC
+              : undefined
       const built = await mod.buildProjectIndexFromDisk(
         path.join(ROOT, "wasm", `tree-sitter-${runLangLang}.wasm`),
         subDirs.get(sub)!.map((f) => path.join(dir, sub, f)),
@@ -1511,14 +1557,34 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     const lang = result.language ?? runLangLang
     const isJsFamily = lang === "javascript" || lang === "typescript" || lang === "vue" || lang === "svelte"
     const hasReExport = (result.imports ?? []).some((i: any) => i.metadata?.reExport)
-    const viaCommonJs = (result.exports ?? []).some((e: any) => e.metadata?.viaCommonJs)
+    // THE ROLE, NOT THE LANGUAGE LIST — and the difference is who declares it.
+    //
+    // This test was `(e) => e.metadata?.viaCommonJs`, which admitted the JS family's module
+    // properties while the comment beside it describes a ROLE: "CJS assignments (`exports.x`,
+    // `module.exports.y`, `module.exports = {...}`) create live module properties importable
+    // by name without a corresponding symbol. Both are bindings." Lua's chunk `return { … }`
+    // is that same binding — a consumer writes `require("m").http` — and the lua lane
+    // DECLARES it on its own export entries (`luaSpecific`), exactly as the CJS lane declares
+    // `viaCommonJs`. So the admission is now "the lane states that its module surface is the
+    // properties of a value an importer binds", not "the file extension is one of four".
+    // A lane that does not declare it keeps the member clause in full.
+    //
+    // Ruling: docs/analyzers/EXPORTS-CONTAINS-RULING.md (accepted 2026-10-09).
+    // MEASURED: `--lang lua` was {"pass":11,"fail":2} — export-edges/export-shapes refused
+    // the returned-table keys — and is 13/0 after; `--lang javascript` stays 74/0, which is
+    // the ruling's own evidence base; the member clause still fires on a planted member name
+    // in a lane that does not declare the role (validation/m14/census/exports-ruling/
+    // invariant-guard-proof.ts).
+    const viaModuleValueSurface = (result.exports ?? []).some(
+      (e: any) => e.metadata?.viaCommonJs || e.metadata?.luaSpecific,
+    )
     const exportedNamesSet = new Set(exportNames)
     const symbolNames = new Set(symbols.map((s: any) => s.name))
     const isJsModuleBinding = (n: string) =>
       n === "default" ||
       n.includes(".") ||
       hasReExport ||
-      viaCommonJs ||
+      viaModuleValueSurface ||
       // aliased re-export of a local: some local symbol exists that is NOT
       // itself in the export list under its own name (alpha as beta)
       (isJsFamily && [...symbolNames].some((sn) => !exportedNamesSet.has(sn) && topLevelNames.has(sn)))

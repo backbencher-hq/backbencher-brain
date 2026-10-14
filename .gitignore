@@ -296,3 +296,64 @@ ide/zed/bb-lsp/target/
 # run-fixtures treats a subdirectory of fixtures/<lang>/ as a fixture group, so writing
 # them under fixtures/dart/generated/ turned 14 derived files into 14 phantom
 # "missing expectation file" failures.
+
+# fsharp lane: the walk's raw row dumps (~248 MB over 7 passes) stay OUT of git —
+# same programme rule 7 as the java-ontology-census note above. They are generated
+# measurement state, not source, and `git` stores a gzip blob as-is, so committing
+# them costs every clone forever.
+#
+# What IS committed instead: the probe scripts that produce and price them (the
+# method), the run logs, the small explain/idx artifacts, and
+# .tmp-probe/fs-verdict-state/MANIFEST.md — which carries every dump's byte count,
+# line count and sha256, plus the env vars that regenerate it.
+#
+# UNRESOLVED: three of the seven ARE cited by name from tracked source
+# (rows.ndjson and rows-pass4.ndjson by script/m14/fsharp-mutants.ts;
+# rows-pass5-meta.ndjson by script/m14/fsharp-mutants.ts and
+# src/ast/real-fsharp-analyzer.ts), so a number that shipped in a commit message
+# cannot be re-derived from a fresh clone. Gzipped they are 11.6 MB, not 141 MB.
+# Add with `git add -f` if the programme chooses to pin cited evidence; this rule
+# exists so that choice is deliberate rather than a `git add -A` accident.
+.tmp-probe/fs-verdict-state/*.ndjson
+
+# Scratch project + data dir for script/m12/verify-language-coverage.ts (self-cleaning,
+# but a --keep run leaves ~50 MB of fixture copies and a brain DB behind).
+.langcov/
+
+# Scratch projects for script/perf/verify-discovery-overrides.ts. Contains a synthetic
+# `.git` FILE to model a submodule boundary, which must never be committed.
+.discovery-scratch/
+.store-honesty/
+
+# ── LANE SCRATCH (2026-10-11) ───────────────────────────────────────────────────────────────
+# The working tree had 463 untracked entries, ~230 of them per-lane scratch, and the volume was
+# hiding the real artifacts. These are WORKSPACE-LOCAL, regenerable, and belong to no lane's
+# evidence: every number a lane quotes is committed under validation/ or docs/, not here.
+# `.tmp-probe/` is PARTLY TRACKED already — ignoring it does not untrack what is committed, it
+# only stops new scratch from appearing in `git status`.
+.tmp-*/
+.tmp-*
+.bb-heavy*.lock
+.bb-verify/
+.selfcheck/
+.tmp-tsc.log
+--out
+
+# SCRATCH INSTRUMENT (r-lane, strategy counter). Created for ONE run and deleted immediately after.
+# Listed here BEFORE creation so it cannot be committed by accident.
+src/ast/__stratcount-indexer.ts
+
+# SCRATCH INSTRUMENT (r-lane): the amb(decl) B-split. Ignored BEFORE creation; deleted after the run.
+validation/m14/fixtures/julia/__ambkind-split.ts
+# Any r-lane scratch instrument in julias fixture dir (the __ prefix is the convention).
+validation/m14/fixtures/julia/__*.ts
+# Any r-lane scratch instrument in src/ast (the __ prefix is the convention).
+src/ast/__*.ts
+
+# AND A SCRATCH FILE BESIDE ITS REAL SUBJECT IS THE ONE MOST LIKELY TO BE SWEPT OR COMMITTED BY ACCIDENT:
+# `src/ast/real-scss-analyzer-prefix-scratch.ts` sat UNTRACKED in `src/ast/` while its lane ran an acceptance,
+# and only the `__*.ts` rule above existed. A scratch beside the file it modifies is visible to `git status` AND
+# to any peer staging `src/ast/` — so the pattern must cover the SUFFIX, not a prefix convention alone.
+# Found by the Lead, 2026-10-13, while checking whether a lane's live scratch could be swept.
+*-scratch.ts
+*-scratch.mts

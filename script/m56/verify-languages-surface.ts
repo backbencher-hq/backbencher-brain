@@ -101,7 +101,16 @@ const dedicatedCount = registryNames.length - genericNames.length
 
 // The snapshot. An engine change must be reflected here deliberately: this is
 // the line that turns "the site drifted" into "someone changed the contract".
-const EXPECTED = { languages: 50, dedicatedParsers: 49, families: 47, analyzers: 48 }
+// The snapshot. An engine change must be reflected here deliberately: this is the line
+// that turns "the site drifted" into "someone changed the contract".
+//
+// 51/51 after `sass` and `terraform` became reachable: both were declared in
+// SUPPORTED_LANGUAGES with an analyzer and a grammar arm while no extension could select
+// them, so the registry advertised two lanes the router could not enter. `.sass` now routes
+// to `sass` and `.tf/.tfvars/.tofu` to `terraform` (see src/ast/language-detection.ts), and
+// the website dataset gained the Solidity family that had been carried as a KNOWN_UNCLAIMED
+// exception — so families 47 -> 48, languages 50 -> 51, dedicated 49 -> 51.
+const EXPECTED = { languages: 51, dedicatedParsers: 51, families: 48, analyzers: 48 }
 
 check(
   `L1: the registry declares ${EXPECTED.languages} languages with ${EXPECTED.dedicatedParsers} dedicated grammars`,
@@ -234,10 +243,14 @@ check("L1: every family is backed by a real analyzer module", analyzerGaps.lengt
 
 const claimed = fams.map((f) => moduleFor(f)).filter(Boolean) as string[]
 const unclaimed = analyzerTokens.filter((m) => !claimed.includes(m))
-// solidity has a hand-written analyzer but is not in SUPPORTED_LANGUAGES, so the
-// engine cannot route a .sol file to it. Naming it here keeps the gap visible
-// instead of letting it look like an oversight.
-const KNOWN_UNCLAIMED = ["solidity"]
+// EMPTY, and that is the point: this exception existed because solidity had a hand-written
+// analyzer that SUPPORTED_LANGUAGES did not declare, so no `.sol` file could reach it. It
+// has been in the registry for some time (`engine.ts` `solidity: "tree-sitter-solidity"`,
+// `.sol` routed in language-detection.ts) and the comment justifying the exception had gone
+// stale — the website dataset now carries a Solidity family like every other analyzer, so
+// the exception is gone rather than left to rot. An analyzer with no family fails the check
+// below by name.
+const KNOWN_UNCLAIMED: string[] = []
 check(
   `L1: the analyzer inventory is accounted for (${analyzerTokens.length} modules)`,
   analyzerTokens.length === EXPECTED.analyzers,

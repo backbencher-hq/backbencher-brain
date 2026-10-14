@@ -254,6 +254,10 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
      * them in the spelling people actually write.
      */
     const deferred: { name: string; key: string; line: number }[] = []
+    /** Every declaration line of a variable name, for the `overrides` block after the walk. */
+    const declaredAtLines = new Map<string, number[]>()
+    /** Every `override VAR = v` site, with the line the directive sits on. */
+    const overrideSites: { name: string; line: number }[] = []
 
     while (stack.length > 0) {
       const frame = stack.pop()!
@@ -280,6 +284,10 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
             patterns.push("Make variables")
             addRel(module, ASTEngine.RelationshipType.Contains, name, line, { role: "declaration", evidenceClass: "declared_in_file" })
+            // EVERY declaration line of this name, because `override VAR = v` is a
+            // REDEFINITION only when the file (or the project) already holds a base — see the
+            // `overrides` block after the walk, which is the only consumer.
+            declaredAtLines.set(name, [...(declaredAtLines.get(name) ?? []), line])
             childOwner = name
           }
           break
@@ -623,6 +631,9 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
               : type === "override_directive" ? "isOverride"
               : "isUndefine"
             deferred.push({ name, key, line: node.startPosition.row + 1 })
+            // `override VAR = v` — recorded as a SITE, not yet as an edge: whether it is a
+            // redefinition depends on a base declaration the walk has not finished collecting.
+            if (type === "override_directive") overrideSites.push({ name, line: node.startPosition.row + 1 })
             const s = symbols.find((x) => x.name === name)
             if (s) (s.metadata as Record<string, unknown>)[key] = true
           }
@@ -674,6 +685,43 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const d of deferred) {
         const s = symbols.find((x) => x.name === d.name)
         if (s) (s.metadata as Record<string, unknown>)[d.key] = true
+      }
+
+      // ---- `overrides`: the ONE construct among the four silent kinds that exists ----------
+      //
+      // The lane's ruling said `overrides` is "deliberately NOT emitted, because what an
+      // `override` overrides is a command-line or environment binding, which is not a symbol in
+      // the graph, so the edge would dangle by construction". RE-MEASURED over the whole
+      // ROUTER-admitted population (697 make files across 65 repos — every path
+      // `detectLanguageFromPath` sends to `make`, NOT the 129 `.mk`-shaped files the incoming
+      // gate can admit): 5 `override_directive` SITES in 4 files, of which 3 sites in 2 files
+      // carry a base declaration in the same file and are emitted, and 2 do not:
+      //
+      //   otp/make/target.mk:48  override TARGET := $(OVERRIDE_TARGET)   TARGET declared at line 29   EDGE
+      //   otp/make/target.mk:60  override TARGET := $(shell … config.sub …)   same base               EDGE
+      //   redis/deps/xxhash/Makefile:66  override DISPATCH := 0          DISPATCH declared at 61      EDGE
+      //   boundary/Makefile:91   override LINT_DIFF_BRANCH = main        the only declaration — base is the command line   refused
+      //   tree-sitter-clean/Makefile:24  override CFLAGS += …            the only declaration — base is the environment    refused
+      //
+      // (`validation/m14/fixtures/make/tools/construct-census.mts` -> `construct-census.current.json`,
+      // run `bun`; the earlier version of this comment cited `mk-override-probe.mts` and
+      // `…-base.mts`, NEITHER OF WHICH WAS EVER COMMITTED — a citation to a missing file reads like
+      // evidence and was itself the defect.) So the edge is emitted where the base IS a declaration
+      // this file holds, and NOT where it is not — which is the same distinction the json lane
+      // ruled on for a re-declared key ("a parser that keeps the last one has performed a
+      // redefinition", 21 named duplicates across 11 files), and it keeps the lane's own reason
+      // intact for the two sites it was true of.
+      // BOTH lines ride the edge, so a reader can see which binding is replaced and where.
+      for (const site of overrideSites) {
+        const base = (declaredAtLines.get(site.name) ?? []).filter((l) => l !== site.line)
+        if (base.length === 0) continue
+        addRel(module, ASTEngine.RelationshipType.Overrides, site.name, site.line, {
+          role: "redefinition",
+          via: "override_directive",
+          overrideLine: site.line,
+          baseLine: Math.min(...base),
+          evidenceClass: "redefinition",
+        })
       }
 
 

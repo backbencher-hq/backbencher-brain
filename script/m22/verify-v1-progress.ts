@@ -16,7 +16,6 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
-import { parseM22Ledger, findIssueByCode } from "./ledger-shape.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m22/results")
@@ -96,8 +95,8 @@ async function run() {
   writeFileSync(path.join(RESULTS, "V1.json"), JSON.stringify(result, null, 2) + "\n")
   // self-update the ledger entry so the governance gate converges
   try {
-    const led = parseM22Ledger(readFileSync(path.join(ROOT, "validation/m22/ledger.json"), "utf8"))
-    const e = findIssueByCode(led, "V1")
+    const led = JSON.parse(readFileSync(path.join(ROOT, "validation/m22/ledger.json"), "utf8"))
+    const e = Object.values(led.issues).find((i: any) => i.code === "V1")
     if (e) { e.status = finalStatus; e.passed = passed; e.failed = checks - passed; e.commit = commit; e.evidenceFile = "V1.json" }
     writeFileSync(path.join(ROOT, "validation/m22/ledger.json"), JSON.stringify(led, null, 2) + "\n")
   } catch (e: any) { console.log(`V1: ledger self-update failed: ${e?.message}`) }

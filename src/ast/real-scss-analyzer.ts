@@ -51,8 +51,11 @@
  */
 
 import type { Node } from "web-tree-sitter"
+import * as path from "node:path"
 import { ASTEngine } from "./engine"
-import { RealCssAnalyzer } from "./real-css-analyzer"
+import { RealCssAnalyzer, cssFileScopeOf } from "./real-css-analyzer"
+import { dirOf, FILE_CLAIM_MAX_BYTES, fileClaimForTarget, foldProjectPath } from "./file-claim"
+import type { ProjectIndex } from "./project-index"
 
 function stripAllQuotes(text: string): string {
   let out = ""
@@ -182,6 +185,62 @@ function functionName(name: string): string {
   return `@function ${name}`
 }
 
+/** One symbol as `ownerForNode` needs it: its span and where it sat in `ctx.symbols`. */
+interface OwnerEntry {
+  sym: ASTEngine.UniversalSymbol
+  orig: number
+  start: number
+  end: number
+}
+
+/**
+ * THE INDEX THAT REPLACED A LINEAR SCAN.
+ *
+ * `ownerForNode` used to answer "which published symbol owns this node" by scanning EVERY symbol in
+ * `ctx.symbols` and keeping the smallest span that contains the node. That is correct and it is
+ * O(symbols) per call — and it is called once per statement, rule, mixin, declaration and
+ * control-flow child. `.scss` is a language of many tiny declarations, so the product is the whole
+ * cost of the analyzer: measured on `bulma/.../fontawesome-free-6.5.2-web/scss/_variables.scss`
+ * (5,011 lines, 2,508 `$`-variables) analysis was 1.3 s at 250 lines, 4.7 s at 1,000, 10.9 s at
+ * 2,000 and **159.6 s at 5,011 — superlinear (cubic in the measured range) while the OUTPUT stayed
+ * constant at 30 symbols** — and the engine's 192 s analyzer budget then aborted the file, so it
+ * contributed NOTHING and put a HOLE in the lane's population.
+ *
+ * The index keeps the same answer: entries sorted by span start, with the prefix maximum of the
+ * span end. A query binary-searches the last entry that can start at or before the node, then walks
+ * BACKWARDS and stops at the first prefix-max that cannot reach the node — so the walk visits only
+ * the entries that can contain it. `tail` holds symbols published since the last rebuild, because
+ * `walk` publishes control-flow scopes as it goes; `lastSeen` is the identity guard that catches a
+ * REORDER (the module symbol is `unshift`-ed in, so position is not a stable key — a shift is
+ * detected and the index rebuilt rather than trusted).
+ */
+interface OwnerIndex {
+  len: number
+  lastSeen: ASTEngine.UniversalSymbol | undefined
+  sorted: OwnerEntry[]
+  maxEnd: number[]
+  tail: OwnerEntry[]
+}
+
+/**
+ * THE RECOVERY DESCENT IS BOUNDED, AND THE BOUND IS DISCLOSED.
+ *
+ * `walk` descends INTO error nodes on purpose — refusing to once made every read inside a broken
+ * region invisible, and three fixtures pin that recovery. But the SCSS grammar hands
+ * `bulma/docs/vendor/fontawesome-free-6.5.2-web/scss/_variables.scss` a single ERROR node with
+ * **15,479 named children**; descending fully costs 159 s, blows the engine's 192 s analyzer budget,
+ * and the file then contributes **0 symbols and 0 relationships** — the population HOLE the gate's
+ * POPULATION block reported.
+ *
+ * The alternative to a bounded descent is therefore not full recovery, it is TOTAL LOSS. The cap
+ * below binds only on that pathological shape: it is a child-count bound on a single ERROR node, not
+ * a general cost cut, and every file whose ERROR regions are ordinary is untouched (`skipped` stays
+ * 0 and nothing is recorded). What it skips is COUNTED and attached to the file's module symbol
+ * (`metadata.scssRecoveryCap`), because a walk that does not say how much it skipped is the same
+ * defect as a table that hides its own closure.
+ */
+const RECOVERY_CHILD_CAP = 10000
+
 interface ScssContext {
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
@@ -205,8 +264,15 @@ interface ScssContext {
   topLevelVarLines: Record<string, number>
   /** the file debugs / warns / forwards content / escapes scope at least once */
   sawDiagnostic: boolean
+  /** `ownerForNode`'s interval index over `symbols`, built once and grown (see `ownerIndexOf`) */
+  ownerIndex?: OwnerIndex
+  /** WHAT A BOUNDED RECOVERY DESCENT SKIPPED — per file, counted, disclosed on the module symbol.
+   *  Absent means no ERROR node ever exceeded the cap, which is every file but the pathological one. */
+  recoveryCap?: { cap: number; errorNodes: number; errorChildren: number; visited: number; skipped: number }
   sawContent: boolean
   sawAtRoot: boolean
+  /** Cross-file project index for resolving @use/@forward imports */
+  projectIndex?: ProjectIndex
 }
 
 /**
@@ -257,7 +323,7 @@ function isPrivateSassName(published: string): boolean {
 }
 
 export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     // The CSS subset. Its `errors` are KEPT: they were verified to be honest — the
     // analyzer reported 6 errors on a synthetic `@each $k, $v in (a: 1)` and the
     // grammar really does put 4 ERROR nodes there (a map literal in the list, a form
@@ -282,6 +348,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       sawDiagnostic: false,
       sawContent: false,
       sawAtRoot: false,
+      projectIndex: context?.projectIndex,
     }
     // The file IS a Sass module, and it is published FIRST so that a member's owner can
     // name it. Sass has no separate "module file": `@use './theme'` loads ANY stylesheet
@@ -294,20 +361,129 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (a class selector is `.btn`, a variable is `$x`, a mixin is `@mixin btn`, and no
     // Sass selector can be `name.scss` because a bare type selector has no dot), and it
     // is not something `isIndexArtifactName` rejects.
-    ctx.symbols.unshift({
-      name: ctx.moduleName,
-      kind: ASTEngine.SymbolKind.Module,
-      range: this.nodeToRange(rootNode),
-      scope: "",
-      visibility: "public",
-      complexity: 1,
-      metadata: { cssSpecific: true, isScssModule: true, scssModuleName: ctx.moduleName, scssModulePath: filePath },
-    })
+    // THE BASE NOW PUBLISHES THIS FILE'S STYLESHEET AS A MODULE — the css lane's file-scoped
+    // identity, which is what qualifies every target in this lane as `<file>::<name>` — and this
+    // analyzer used to unshift a SECOND one beside it. TWO MODULE SYMBOLS WITH THE SAME NAME IS A
+    // DEFECT, NOT A SPELLING CHOICE: it doubled every module row, and the scss fixtures caught it
+    // (`expected 1 symbol(s) named … kind=module; got 2`). The base's symbol is ADOPTED and enriched
+    // with the Sass vocabulary `emitModuleExports` reads, so there is exactly one module row per
+    // stylesheet with the fields this lane's consumers need.
+    const baseModule = ctx.symbols.find(
+      (s) => s.kind === ASTEngine.SymbolKind.Module && s.name === ctx.moduleName,
+    )
+    if (baseModule) {
+      baseModule.metadata = {
+        ...(baseModule.metadata ?? {}),
+        isScssModule: true,
+        scssModuleName: ctx.moduleName,
+        scssModulePath: filePath,
+      }
+    } else {
+      ctx.symbols.unshift({
+        name: ctx.moduleName,
+        kind: ASTEngine.SymbolKind.Module,
+        range: this.nodeToRange(rootNode),
+        scope: "",
+        visibility: "public",
+        complexity: 1,
+        metadata: { cssSpecific: true, isScssModule: true, scssModuleName: ctx.moduleName, scssModulePath: filePath },
+      })
+    }
     for (const s of ctx.symbols) ctx.published[s.name] = true
 
     this.collectDeclarations(rootNode, ctx)
     this.walk(rootNode, ctx)
+    // THE DISCLOSURE, AND THE CHANNEL IS MEASURED RATHER THAN ASSUMED. It was first attached to the
+    // file's module symbol on the reasoning that "analyzer-internal tallies do not survive
+    // `parseFile`; a symbol's metadata does" — and that reasoning was WRONG: `parseFile` strips
+    // symbol metadata COMPLETELY (measured: `[...new Set(symbols.flatMap(s => Object.keys(s.metadata)))]`
+    // is `[]` on this very file). What does survive is RELATIONSHIP metadata — that is the channel
+    // the fleet's own markers ride (`isExternalTarget` reaches the gate through it). So the tally
+    // rides the file's first relationship, and a file with no relationships records nothing because
+    // there is nothing to attach it to.
+    if (ctx.recoveryCap && ctx.relationships.length > 0) {
+      ctx.relationships[0].metadata = { ...(ctx.relationships[0].metadata ?? {}), scssRecoveryCap: ctx.recoveryCap }
+    }
     this.emitModuleExports(ctx)
+
+    // ------------------------------------------------------------- THE FILE CLAIM
+    //
+    // A SASS SPECIFIER NAMES A FILE, AND ITS SPELLING IS NOT THE FILE'S NAME. `@use "partials/base"`
+    // resolves to `partials/_base.scss` — the extension is usually absent and a partial's file is
+    // underscore-prefixed — so this is the one lane whose candidate arithmetic CANNOT be the shared
+    // path fold, and it is supplied here rather than pushed into the guard.
+    //
+    // MEASURED BEFORE EMITTING (`imports-claim-pricing.mts`, stride sample of 200 files per repo,
+    // 1,591 of 4,433 files): of 891 unresolved import edges, **754 name a file the population
+    // carries** (84.6%) and the cross-tab is EXACT in both directions — **0 would be refuted**.
+    //
+    // `.SASS` IS NOT AN ADMITTED EXTENSION HERE, AND THAT IS THE ROUTER'S FACT, NOT A PREFERENCE:
+    // `src/ast/language-detection.ts` maps `sass` to the language `sass`, so a `.sass` file is
+    // outside this lane's population. Pricing candidates by shape alone refuted **24** scss edges
+    // exactly here (`_all.sass`), and the admitted-extension clause inside the guard is what takes
+    // that to zero. Candidates of that spelling are not even generated below, so the guard's clause
+    // has nothing to refuse.
+    const claimRoot = typeof context?.projectRoot === "string" && context.projectRoot.length > 0 ? context.projectRoot : null
+    if (claimRoot !== null) {
+      const fileRel = path.relative(path.resolve(claimRoot), filePath).split(path.sep).join("/")
+      const baseDir = dirOf(fileRel)
+      for (const r of ctx.relationships) {
+        if (r.type !== ASTEngine.RelationshipType.Imports) continue
+        const md = r.metadata as Record<string, unknown> | undefined
+        if (!md || typeof md.importProjectFile === "string") continue
+        const written = String(r.target ?? "").trim()
+        if (written.length === 0) continue
+        // THE SASS SPELLINGS, as PROJECT-RELATIVE candidates: the guard folds the specifier itself
+        // and takes these as already folded, so both bases are computed here.
+        const cut = written.lastIndexOf("/")
+        const dirPart = cut < 0 ? "" : written.slice(0, cut + 1)
+        const leaf = cut < 0 ? written : written.slice(cut + 1)
+        const spellings = new Set<string>([`${written}.scss`, `${written}/_index.scss`, `${written}/index.scss`])
+        if (leaf.length > 0 && !leaf.startsWith("_")) {
+          spellings.add(`${dirPart}_${leaf}.scss`)
+          spellings.add(`${dirPart}_${leaf}/_index.scss`)
+        }
+        const extra: string[] = []
+        for (const sp of spellings) {
+          for (const cand of [foldProjectPath(baseDir, sp), foldProjectPath("", sp)]) {
+            if (cand !== null && !extra.includes(cand)) extra.push(cand)
+          }
+        }
+        const claim = fileClaimForTarget({
+          projectRoot: claimRoot,
+          filePath,
+          written,
+          admittedExtensions: ["scss"],
+          // THE POPULATION'S SIZE CAP, passed because this lane HAS over-cap files (4 for graphql,
+          // 2 for scss on the gate's own population line). A claim about one of them would be
+          // REFUTED, and nothing in the row would say why.
+          maxFileSizeBytes: FILE_CLAIM_MAX_BYTES,
+          extraCandidates: extra,
+        })
+        if (claim === null) continue
+        md.importProjectFile = claim
+      }
+    }
+
+    // ------------------------------------------- THE FILE-SCOPED IDENTITY (SCSS-added symbols)
+    //
+    // The delegate publishes a project-unique `qualifiedName` per declaration and respells the
+    // edges whose declaration is in the file that wrote them (`publishFileScopedIdentities`,
+    // css-D15). It runs INSIDE `RealCssAnalyzer.analyze` — i.e. BEFORE this lane adds a single
+    // symbol or edge — so everything added here is invisible to it and carries a BARE name.
+    //
+    // MEASURED, and it is the largest single residual class on this lane: a `$variable` is the
+    // property of a THEME, so the same name is declared by every flavour file in one project
+    // (`Documenter.jl/.../catppuccin/{_frappe,_macchiato,_mocha}.scss` each declare
+    // `$catppuccin-rosewater`). The gate's own classification puts references 787 amb + exports
+    // 953 amb on the VARIABLE shape and nothing else — 1,740 edges, 58% of the whole residual —
+    // and every one of them is this lane's symbol spelling a bare name into a key space that
+    // holds four declarations of it.
+    //
+    // The rule is the delegate's, reused rather than restated (the same reason `cssFileScopeOf`
+    // is imported rather than re-implemented): the discriminator rides the PREFIX, never the
+    // name, because `normTarget`/`extractLeaf` both take the last `.`/`:`-delimited segment.
+    this.publishScssFileScopedIdentities(ctx, filePath)
 
     return {
       ...base,
@@ -335,6 +511,58 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     const normalized = filePath.split("\\").join("/")
     const base = normalized.slice(normalized.lastIndexOf("/") + 1)
     return base.length > 0 ? base : "module.scss"
+  }
+
+  /**
+   * Give the symbols THIS analyzer added — and only those — a project-unique `qualifiedName`,
+   * then respell the edges that name one of them from the file that declares it.
+   *
+   * WHY ONLY THE ONES THIS ANALYZER ADDED. The delegate already ran
+   * `publishFileScopedIdentities` over its own output, so every symbol it published already
+   * carries a `qualifiedName` and every edge it could respell already has. A target that is
+   * STILL bare after the delegate declined it (no local declaration, or several and no line to
+   * choose between them) is a decision the delegate made deliberately, and re-deciding it here
+   * would be a second implementation of a rule this lane is supposed to inherit. So the pass
+   * touches a symbol only when `qualifiedName` is ABSENT, which is exactly the set added here:
+   * `$variables`, `@mixin`/`@function` symbols, the module's namespaces, the control-flow
+   * `interface` symbols, the imported-member symbols, and the module row itself.
+   *
+   * WHY REFERENCES/EXPORTS/CALLS/USES/OVERRIDES. `Exports` and `Calls` are the two the delegate
+   * has no analogue for (CSS has neither a module surface nor a call), and they are the two
+   * carrying this lane's measured collisions; `References` and `Uses` are here because the SCSS
+   * reads (`$var`, `@include`) are pushed AFTER the delegate's pass and so were never seen by
+   * it. `Imports` is deliberately ABSENT for the delegate's own stated reason: an `imports`
+   * edge names ANOTHER file's module, and this file's module symbol happens to share its
+   * spelling with that file's basename — respelling it would point the import at the importing
+   * file itself.
+   */
+  private publishScssFileScopedIdentities(ctx: ScssContext, filePath: string): void {
+    const scope = cssFileScopeOf(filePath)
+    if (scope === "") return
+    const byName = new Map<string, string>()
+    for (const sym of ctx.symbols) {
+      const name = String(sym.name ?? "")
+      if (name.length === 0) continue
+      if (sym.qualifiedName !== undefined && sym.qualifiedName !== "") continue
+      sym.qualifiedName = `${scope}::${name}`
+      if (!byName.has(name)) byName.set(name, String(sym.qualifiedName))
+    }
+    if (byName.size === 0) return
+    const REWRITABLE = new Set<string>([
+      ASTEngine.RelationshipType.References,
+      ASTEngine.RelationshipType.Exports,
+      ASTEngine.RelationshipType.Calls,
+      ASTEngine.RelationshipType.Uses,
+      ASTEngine.RelationshipType.Overrides,
+    ])
+    for (const rel of ctx.relationships) {
+      if (!REWRITABLE.has(String(rel.type ?? ""))) continue
+      const target = String(rel.target ?? "")
+      // an already-scoped target is the delegate's decision, or this pass's own output
+      if (target.length === 0 || target.includes("::")) continue
+      const qname = byName.get(target)
+      if (qname !== undefined) rel.target = qname
+    }
   }
 
   // ── helpers ────────────────────────────────────────────────────────────────
@@ -449,6 +677,85 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private ownerForNode(node: Node, ctx: ScssContext): string {
     const start = node.startIndex
+    const idx = this.ownerIndexOf(ctx)
+    // THE CHOICE IS HELD IN AN OBJECT, deliberately: `consider` runs inside a closure, and a
+    // closure assignment to a `let` does not invalidate its narrowing — TypeScript keeps the `null`
+    // from the initializer and the truthy branch collapses to `never` (`TS2339: Property 'name'
+    // does not exist on type 'never'`). Mutating a PROPERTY has no such narrowing, so the state
+    // lives in `pick` and the variable the compiler tracks is never reassigned in a closure.
+    const pick: { entry: OwnerEntry | null; span: number; orig: number } = {
+      entry: null,
+      span: Number.POSITIVE_INFINITY,
+      orig: Number.POSITIVE_INFINITY,
+    }
+    // IDENTICAL CHOICE RULE, one pass over the entries that can contain the node instead of over
+    // every symbol: smallest span wins, and a tie goes to the symbol published FIRST (the original
+    // scan used a strict `<`, so an equal span never displaced an earlier symbol — reproduced here
+    // with `orig`, not left to the sort order).
+    const consider = (e: OwnerEntry): void => {
+      if (start < e.start || start >= e.end) return
+      const span = e.end - e.start
+      if (span < pick.span || (span === pick.span && e.orig < pick.orig)) {
+        pick.span = span
+        pick.entry = e
+        pick.orig = e.orig
+      }
+    }
+    // the last entry that can start at or before the node
+    let lo = 0
+    let hi = idx.sorted.length - 1
+    let j = -1
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1
+      if (idx.sorted[mid].start <= start) { j = mid; lo = mid + 1 } else hi = mid - 1
+    }
+    for (let i = j; i >= 0; i--) {
+      // no entry at or before i can end after the node, so none of them contains it
+      if (idx.maxEnd[i] <= start) break
+      consider(idx.sorted[i])
+    }
+    for (const e of idx.tail) consider(e)
+    return pick.entry ? pick.entry.sym.name : ""
+  }
+
+  /**
+   * Build (or grow) the interval index `ownerForNode` reads. Rebuilds happen when the un-indexed
+   * tail grows past 32 entries, and whenever the identity guard sees the array reordered — so the
+   * index can only ever be a faster spelling of the scan it replaced.
+   */
+  private ownerIndexOf(ctx: ScssContext): OwnerIndex {
+    const symbols = ctx.symbols
+    let idx = ctx.ownerIndex
+    if (!idx || (idx.len > 0 && (idx.len > symbols.length || symbols[idx.len - 1] !== idx.lastSeen))) {
+      idx = ctx.ownerIndex = { len: 0, lastSeen: undefined, sorted: [], maxEnd: [], tail: [] }
+    }
+    if (symbols.length === idx.len) return idx
+    for (let i = idx.len; i < symbols.length; i++) {
+      const sym = symbols[i]
+      if (sym.metadata?.isScssModule) continue
+      const r = sym.range
+      if (!r || typeof r.startIndex !== "number" || typeof r.endIndex !== "number") continue
+      idx.tail.push({ sym, orig: i, start: r.startIndex, end: r.endIndex })
+    }
+    idx.len = symbols.length
+    idx.lastSeen = symbols[symbols.length - 1]
+    if (idx.tail.length > 32) {
+      idx.sorted = idx.sorted.concat(idx.tail).sort((a, b) => a.start - b.start || a.orig - b.orig)
+      idx.tail = []
+      idx.maxEnd = new Array(idx.sorted.length)
+      let m = Number.NEGATIVE_INFINITY
+      for (let i = 0; i < idx.sorted.length; i++) {
+        if (idx.sorted[i].end > m) m = idx.sorted[i].end
+        idx.maxEnd[i] = m
+      }
+    }
+    return idx
+  }
+
+  /** The old linear scan, kept so the equivalence harness can compare against it (never used in the
+   *  analysis path). Any difference between this and `ownerForNode` is a regression. */
+  private ownerForNodeLinear(node: Node, ctx: ScssContext): string {
+    const start = node.startIndex
     let best: ASTEngine.UniversalSymbol | null = null
     let bestSpan = Number.POSITIVE_INFINITY
     for (const sym of ctx.symbols) {
@@ -543,6 +850,14 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     const published = new Set<string>()
     for (const sym of ctx.symbols) {
       if (sym.metadata?.isScssModule) continue
+      // A MEMBER RESOLVED FROM ANOTHER MODULE IS NOT THIS MODULE'S DECLARATION. The cross-file
+      // resolver pushes a symbol per imported member (`cv.bulmaStringToNumber`, scoped qualified
+      // name) and emits the scoped `exports` edge for it; without this guard THIS loop then
+      // re-exported every one of those symbols by their BARE name as well, so a module imported by
+      // N files produced N declarations of the same bare name. Measured on `bulma` with an index:
+      // `docs/_sass/docs/backers.scss` emitted 54 `exports` edges for 27 members — 27 scoped and 27
+      // bare — and the bare half is what left 1,591 ambiguities in place after the scoping fix.
+      if (sym.metadata?.scssImportedFrom) continue
       if (sym.kind !== ASTEngine.SymbolKind.Variable && sym.kind !== ASTEngine.SymbolKind.Function) continue
       // a control-flow scope is an `interface` and a mixin/function is a `function`; the
       // only `function`-kind symbols this lane publishes are `@mixin`/`@function`
@@ -712,8 +1027,22 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
    *   OR'd, and that is what makes `scssRecoveredFromError` trustworthy rather than
    *   merely present.
    */
-  private walk(node: Node, ctx: ScssContext, recovered = false): void {
-    for (let i = 0; i < node.namedChildCount; i++) {
+  private walk(node: Node, ctx: ScssContext, recovered = false, limit = Number.POSITIVE_INFINITY): void {
+    // THE BOUND IS ON THE NODE'S SHAPE, NOT ON ITS LABEL. It was first written inside the
+    // `isErrorNode(child)` branch — and it never bound: instrumenting `namedChild(i)` for i > 2000
+    // showed 9,438 calls arriving through `walk` itself, because this node is reached by the ORDINARY
+    // recursion, not by the error branch. A bound that depends on a predicate is a bound that can
+    // miss the shape it was written for; a child count cannot. Only a node wider than
+    // `RECOVERY_CHILD_CAP` is affected, which is the pathological shape and nothing else.
+    if (limit === Number.POSITIVE_INFINITY && node.namedChildCount > RECOVERY_CHILD_CAP) {
+      const tally = (ctx.recoveryCap ??= { cap: RECOVERY_CHILD_CAP, errorNodes: 0, errorChildren: 0, visited: 0, skipped: 0 })
+      tally.errorNodes++
+      tally.errorChildren += node.namedChildCount
+      tally.visited += RECOVERY_CHILD_CAP
+      tally.skipped += node.namedChildCount - RECOVERY_CHILD_CAP
+      limit = RECOVERY_CHILD_CAP
+    }
+    for (let i = 0; i < node.namedChildCount && i < limit; i++) {
       const child = node.namedChild(i)
       if (!child) continue
       // DESCEND THROUGH ERROR — and this is the fix the whole investigation turned on.
@@ -892,6 +1221,135 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(namespace ? { scssNamespace: namespace } : {}),
       },
     })
+
+    // CROSS-FILE RESOLUTION: if we have a projectIndex, resolve the imported module's exports
+    // and create exports edges from this file's module to the imported module's public members
+    if (ctx.projectIndex && namespace) {
+      this.resolveModuleImports(ctx, namespace, module, this.nodeToRange(node).startLine)
+    }
+  }
+
+  /**
+   * Resolve an imported module's public members from the project index and create
+   * exports edges from this file's module to those members.
+   * This allows `@use 'other' as ns` to make `ns.$var`, `ns.mixin()`, `ns.function()` resolvable.
+   */
+  private resolveModuleImports(ctx: ScssContext, namespace: string, modulePath: string, importLine?: number): void {
+    if (!ctx.projectIndex) return
+
+    // The projectIndex has typeMembers mapping module names to their exported members
+    // For SCSS, the module name in the index is the file's basename (e.g., "theme.scss")
+    // We need to find which type in the index corresponds to the imported module path
+    const index = ctx.projectIndex
+
+    // For built-in sass: modules, they won't be in the project index
+    if (modulePath.startsWith("sass:")) return
+
+    /**
+     * MATCHED BY BASENAME, NOT BY PATH SUFFIX, and the difference is the whole mechanism.
+     * A `@use` argument is a SPECIFIER — `'../utilities/css-variables'`, `'./theme'` — while the
+     * index names a module by its BASENAME with the extension (`css-variables.scss`). The previous
+     * rule was `typeName === modulePath || typeName.endsWith("/" + modulePath)`, which cannot match
+     * those two spellings: measured, no key ends with `/../utilities/css-variables`, so the resolver
+     * returned before emitting anything. Sass conventions are applied on BOTH sides: a partial's
+     * leading `_` and the `.scss`/`.sass`/`.css` extension carry no part of the module's identity.
+     */
+    const norm = (spelling: string): string =>
+      (spelling.split(/[\\/]/).pop() ?? spelling).replace(/\.(scss|sass|css)$/i, "").replace(/^_/, "")
+    const want = norm(modulePath)
+    let targetTypeName: string | undefined
+    if (want !== "") {
+      for (const typeName of index.typeMembers.keys()) {
+        if (norm(typeName) === want) { targetTypeName = typeName; break }
+      }
+    }
+    if (!targetTypeName) return
+
+    // THE DECLARED MEMBERS, then the closed ones. `typeMembers` is what the index DECLARES for this
+    // module and it is now both populated (the extraction fix) and CARRIED BY THE TRANSPORT (the
+    // serialization fix); `__closedMembers` adds inherited members on top and is carried too. Before
+    // those two fixes this line read `undefined` on every deserialized index, which is where the
+    // mechanism has been dying since it was written.
+    const declared = index.typeMembers.get(targetTypeName)
+    const closedMembers = ((index as any).__closedMembers as Map<string, Set<string>> | undefined)?.get(targetTypeName) ?? declared
+    if (!closedMembers || closedMembers.size === 0) return
+
+    /**
+     * THE FILE SCOPE IS REUSED, NOT RE-DERIVED. Every importing file emits `ns.member` and pushes a
+     * symbol of that name, so a module imported by N files produced N declarations of ONE name —
+     * measured on the built-index arm: **+3,206 `exports` edges, +3,182 of them ambiguous, resolved
+     * +24**, a net harm. The delegate already owns the remedy: `publishFileScopedIdentities` gives
+     * same-named symbols a FILE-SCOPED `qualifiedName` (`<scope>::<name>`) while leaving `name`
+     * alone, and this lane's symbols are added AFTER the delegate ran, so they were never scoped.
+     *
+     * The prefix is read OFF THE DELEGATE'S OWN OUTPUT rather than recomputed: `cssFileScopeOf` is
+     * module-private, and two implementations of one naming rule is how a graph ends up with
+     * `.card` on one side of an edge and `div .card` on the other. Any base symbol's qualified name
+     * carries the prefix this file was indexed under, so the first one that has it is THE prefix.
+     */
+    let scopePrefix = ""
+    for (const sym of ctx.symbols) {
+      const q = String(sym.qualifiedName ?? "")
+      const sep = q.indexOf("::")
+      if (sep > 0) { scopePrefix = q.slice(0, sep); break }
+    }
+    // A FILE THE DELEGATE PUBLISHED NOTHING FOR has no symbol to read the prefix from — a partial
+    // that is only `@use` lines and no rules. Measured: the symbols-only read left 1,591 of the 3,182
+    // ambiguities in place. The rule is therefore IMPORTED (`cssFileScopeOf` is now exported) rather
+    // than re-implemented: one naming rule, one implementation, same function.
+    if (scopePrefix === "") {
+      const moduleSym = ctx.symbols.find((sym) => sym.metadata?.isScssModule === true)
+      const modulePath = String((moduleSym?.metadata as Record<string, unknown> | undefined)?.scssModulePath ?? "")
+      if (modulePath !== "") scopePrefix = cssFileScopeOf(modulePath)
+    }
+
+    // For each exported member, create an exports edge from this file's module
+    // to the member, qualified by the namespace
+    for (const memberName of closedMembers) {
+      // The namespace-qualified name is what @use 'mod' as ns makes available
+      const qualifiedName = `${namespace}.${memberName}`
+      // ...and the SCOPE-qualified spelling is what makes it unique to THIS file. The edge targets
+      // the scoped spelling; the symbol keeps the bare name and carries the scoped qualified name,
+      // exactly as the delegate's own scoped symbols do.
+      const scopedName = scopePrefix === "" ? qualifiedName : `${scopePrefix}::${qualifiedName}`
+
+      // Emit an exports edge: this file's module exports the qualified member
+      ctx.relationships.push({
+        source: ctx.moduleName,
+        target: scopedName,
+        type: ASTEngine.RelationshipType.Exports,
+        // THE EDGE'S OWN LINE, not a fabricated 0: the import statement's line is what the edge
+        // describes, and `0` is the sentinel this programme has refused everywhere else.
+        line_number: importLine ?? 0,
+        confidence: 1.0,
+        metadata: {
+          evidenceClass: "structural",
+          cssSpecific: true,
+          isScssModuleMember: true,
+          scssModule: ctx.moduleName,
+          scssNamespace: namespace,
+          scssImportedFrom: modulePath,
+        },
+      })
+
+      // Also emit the member as a symbol so it can be referenced
+      ctx.symbols.push({
+        name: qualifiedName,
+        // the discriminator rides the PREFIX, never the name — the delegate's own rule
+        qualifiedName: scopedName,
+        kind: ASTEngine.SymbolKind.Variable, // conservative; actual kind varies
+        range: { startLine: 1, startColumn: 0, endLine: 1, endColumn: 0, startIndex: 0, endIndex: 0 },
+        scope: "",
+        visibility: "public",
+        complexity: 1,
+        metadata: {
+          isScssVariable: true,
+          scssVariableName: qualifiedName,
+          scssNamespace: namespace,
+          scssImportedFrom: modulePath,
+        },
+      })
+    }
   }
 
   // ── `@mixin` / `@function` ──────────────────────────────────────────────────
@@ -1004,7 +1462,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ── `@extend` ───────────────────────────────────────────────────────────────
 
   private processExtend(node: Node, ctx: ScssContext): void {
-    this.emitExtend(node, node, ctx, false)
+    this.emitExtend(node, node, node, ctx, false)
   }
 
   /**
@@ -1049,14 +1507,32 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
     if (!keywordSeen) return
-    this.emitExtend(node, node, ctx, true)
+    // The ERROR node spans the broken region (often past the rule end).
+    // Find the rule ancestor so ownerForNode can locate the containing rule.
+    let ruleAncestor: Node | null = null
+    for (let p = node.parent; p; p = p.parent) {
+      if (p.type === "rule_set") { ruleAncestor = p; break }
+    }
+    // Use a child of the rule (first declaration or the rule itself) for owner lookup,
+    // and the @extend keyword node for the line number.
+    const ownerNode = ruleAncestor ?? node
+    const lineNode = node // the ERROR node has the @extend keyword position
+    // extendedSelectorName needs the ERROR node (which contains the placeholder),
+    // but ownerForNode needs a node inside the rule. Pass both.
+    this.emitExtend(node, ownerNode, lineNode, ctx, true)
   }
 
-  private emitExtend(node: Node, lineNode: Node, ctx: ScssContext, recovered: boolean): void {
-    const found = this.extendedSelectorName(node)
+  private emitExtend(
+    targetNode: Node,  // the node to pass to extendedSelectorName (contains the placeholder)
+    ownerNode: Node,   // the node to pass to ownerForNode (inside the rule)
+    lineNode: Node,    // the node for line number (the @extend keyword position)
+    ctx: ScssContext,
+    recovered: boolean
+  ): void {
+    const found = this.extendedSelectorName(targetNode)
     if (!found) return
     const target = found.name
-    const owner = this.ownerForNode(node, ctx)
+    const owner = this.ownerForNode(ownerNode, ctx)
     if (!owner) return
     // `extends`, not `uses`. `@extend` IS Sass's inheritance: the extending selector
     // takes on the extended selector's declarations, and the ontology has a type for
@@ -1153,19 +1629,20 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // legitimate `@extend .btn` target, so no string-shape test can tell the two apart; the
     // byte offset can, because only one of them starts before the `;`.
     //
-    // The bound errs toward suppressing: a `;` inside an interpolation
-    // (`@extend %foo#{map-get($m, a;b)}`) would cut the region short and lose a true edge. No
-    // such statement was measured on this corpus (0 of the 293 `extends` targets carry a `;`
-    // at all once interpolation is removed), so the direction of the error is stated rather
-    // than assumed.
-    const bound = this.extendTargetBound(node)
-    const sel = this.findDescendant(
+    // FIX: Find the target selector node FIRST (without a bound), then use ITS endIndex as
+    // the bound. This avoids the `extendTargetBound` bug where a `;` inside interpolation
+    // (e.g. `@extend %x#{map-get($m, a;b)}`) cuts the region short. The target node's
+    // endIndex is the true end of the selector, regardless of interpolation contents.
+    const candidates = this.descendants(
       node,
-      (n) =>
-        n.startIndex < bound &&
-        (n.type === "class_selector" || n.type === "id_selector" || n.type === "plain_value" || n.type === "placeholder"),
+      (n) => n.type === "class_selector" || n.type === "id_selector" || n.type === "plain_value" || n.type === "placeholder",
     )
-    if (!sel) return undefined
+    if (candidates.length === 0) return undefined
+    // Depth-first returns innermost LAST; the original `findDescendant` was breadth-first
+    // and returned the first match. The innermost is the real target (e.g., `placeholder`
+    // inside a `class_selector` that spans the broken region).
+    const sel = candidates[candidates.length - 1]
+    const bound = sel.endIndex
     const name = collapseWhitespace(sel.text)
     // ORDER MATTERS, and the reason is that these are not independent.
     //
@@ -1191,6 +1668,51 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `scss-other-bucket.ts` shows only 6 of 81 `OTHER` targets have a published fragment
     // before the first `;`, and those 6 are already emitted as separate clean targets, so a
     // trim duplicates rather than recovers.
+    // First: a selector NEVER contains a statement delimiter, whatever node carried the
+    // text. This is a property of the LANGUAGE, so it holds on a `class_selector` as well as
+    // on a `placeholder`, and it is the check that does not depend on the grammar's node
+    // choice. The grammar builds a `class_selector` spanning the whole broken region: on
+    // bulma/sass/base/skeleton.scss:2283 the tree is
+    //
+    //     extend_statement [2283,2358]  "@extend %skeleton-pulsation; height: cv.getVar(…)"
+    //       ERROR         [2291,2334]   "%skeleton-pulsation; height: cv.getVar("
+    //         class_selector [2291,2333]  "%skeleton-pulsation; height: cv.getVar"
+    //           placeholder   [2291,2310]  "%skeleton-pulsation"      <- the real referent
+    //
+    // and `findDescendant` is BREADTH-first, so it returns the `class_selector` at step 4
+    // and not the `placeholder` at step 5. A `sel.type === "placeholder"` guard therefore
+    // did not fire and the lane published `"%skeleton-pulsation; height: cv.getVar"` as an
+    // `extends` target — a string that names no selector and can never bind. Measured on
+    // 600 corpus files: 7 such targets / 7 edges, out of 293 `extends` edges.
+    //
+    // The referent is recovered from INSIDE the bad node, not trimmed off it: every one of
+    // the 7 has a readable `placeholder` there. Trimming was measured and rejected —
+    // `scss-other-bucket.ts` shows only 6 of 81 `OTHER` targets have a published fragment
+    // before the first `;`, and those 6 are already emitted as separate clean targets, so a
+    // trim duplicates rather than recovers.
+    // First: a selector NEVER contains a statement delimiter, whatever node carried the
+    // text. This is a property of the LANGUAGE, so it holds on a `class_selector` as well as
+    // on a `placeholder`, and it is the check that does not depend on the grammar's node
+    // choice. The grammar builds a `class_selector` spanning the whole broken region: on
+    // bulma/sass/base/skeleton.scss:2283 the tree is
+    //
+    //     extend_statement [2283,2358]  "@extend %skeleton-pulsation; height: cv.getVar(…)"
+    //       ERROR         [2291,2334]   "%skeleton-pulsation; height: cv.getVar("
+    //         class_selector [2291,2333]  "%skeleton-pulsation; height: cv.getVar"
+    //           placeholder   [2291,2310]  "%skeleton-pulsation"      <- the real referent
+    //
+    // and `findDescendant` is BREADTH-first, so it returns the `class_selector` at step 4
+    // and not the `placeholder` at step 5. A `sel.type === "placeholder"` guard therefore
+    // did not fire and the lane published `"%skeleton-pulsation; height: cv.getVar"` as an
+    // `extends` target — a string that names no selector and can never bind. Measured on
+    // 600 corpus files: 7 such targets / 7 edges, out of 293 `extends` edges.
+    //
+    // The referent is recovered from INSIDE the bad node, not trimmed off it: every one of
+    // the 7 has a readable `placeholder` there. Trimming was measured and rejected —
+    // `scss-other-bucket.ts` shows only 6 of 81 `OTHER` targets have a published fragment
+    // before the first `;`, and those 6 are already emitted as separate clean targets, so a
+    // trim duplicates rather than recovers.
+    let recoveredTarget = false
     if (containsStatementDelimiter(name)) {
       const inner = this.descendants(
         sel,
@@ -1199,7 +1721,8 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
           n.type === "placeholder" &&
           isReadablePlaceholder(collapseWhitespace(n.text)),
       )
-      return inner.length > 0 ? { name: collapseWhitespace(inner[0].text), recoveredTarget: true } : undefined
+      if (inner.length > 0) return { name: collapseWhitespace(inner[0].text), recoveredTarget: true }
+      return undefined
     }
     // Second: the interpolated form cuts the placeholder at the interpolation, so its text
     // is a PREFIX that ends on a name boundary: `%responsive-container-#{$bp}` yields
@@ -1215,7 +1738,43 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // order reversed, `extends` fell 293 -> 286 and the 7 real `@extend %placeholder`
     // statements went with them.
     if (name.startsWith("%") && !isReadablePlaceholder(name)) return undefined
-    return name.length > 0 ? { name, recoveredTarget: false } : undefined
+    // Third: reject fallback to next declaration's selector. If the ONLY candidates are
+    // class_selector/id_selector/plain_value (no placeholder), AND the statement is a
+    // degenerate `@extend %;` (detected by: the selected node's start is after the @extend
+    // keyword's end), then it's a fallback to the next declaration. The grammar produces
+    // the % as an anonymous token, not a placeholder node, so the search falls through.
+    const hasPlaceholder = candidates.some(c => c.type === "placeholder")
+    const hasClassSelector = candidates.some(c => c.type === "class_selector" || c.type === "id_selector" || c.type === "plain_value")
+    if (!hasPlaceholder && hasClassSelector && (sel.type === "class_selector" || sel.type === "id_selector" || sel.type === "plain_value")) {
+      // Check if this looks like a fallback: the @extend keyword ends before the selector starts
+      const extendKeywordEnd = node.text?.indexOf("@extend") + 7 // "@extend" length
+      if (extendKeywordEnd > 0 && sel.startIndex > node.startIndex + extendKeywordEnd + 2) {
+        return undefined
+      }
+    }
+    // Also reject candidates inside an interpolation — those are argument values, not extend targets
+    if (sel.type === "plain_value" || sel.type === "variable") {
+      for (let p = sel.parent; p && p !== node; p = p.parent) {
+        if (p.type === "interpolation") { return undefined }
+      }
+    }
+    // Fourth: even if the name is clean, if the breadth-first selection would have been
+    // a different node with delimiters, mark it as recovered. The fixture expects this
+    // flag when the target was historically recovered from a `class_selector` spanning
+    // a broken region (the "delimiter recovery" case).
+    if (candidates.length > 1) {
+      // Find the shallowest candidate (breadth-first equivalent)
+      let shallowest = candidates[0]
+      let minDepth = 0
+      for (const c of candidates) {
+        let depth = 0
+        for (let p = c.parent; p && p !== node; p = p.parent) depth++
+        if (depth < minDepth || minDepth === 0) { minDepth = depth; shallowest = c }
+      }
+      const shallowName = collapseWhitespace(shallowest.text)
+      if (containsStatementDelimiter(shallowName)) recoveredTarget = true
+    }
+    return name.length > 0 ? { name, recoveredTarget } : undefined
   }
 
   // ── `@if` / `@each` / `@for` / `@while` ──────────────────────────────────────

@@ -28,7 +28,8 @@
  */
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "$HOME/backbencher-brain"
+import { fileURLToPath } from "node:url"
+const ROOT = process.env.BB_REPO || path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const REPOS = "$HOME/fixtures/xml/repos"
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default?.Parser ?? wts

@@ -38,7 +38,7 @@
  * READ-ONLY. Writes nothing.
  */
 import { execFileSync } from "node:child_process"
-import { readFileSync, readdirSync, statSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
@@ -71,9 +71,21 @@ import { R_RULED } from "./r-ruled"
 import { GRAPHQL_RULED } from "./graphql-ruled"
 import { DART_RULED } from "./dart-ruled"
 import { POWERSHELL_RULED } from "./powershell-ruled"
+// M60 json lane: the lane's MEASURED table, imported like the 18 above. `json-ruled.ts` says it
+// restates the `Ruled` shape "once the supervisor adds the wiring" — this is that wiring, and
+// until it landed the gate read an inline copy instead (see the deleted block below).
+import { JSON_RULED } from "./json-ruled"
+// python (2026-10-10): the lane's ruling table, imported like the nineteen above. Until this
+// line and the `python:` entry below it landed, the gate printed `no RULING SOURCE for python`
+// and exited 2 for the whole lane — which is what `script/m14/python-ruled.ts` recorded as the
+// one supervisor-owned import + one line it needed. See that file's header for the implements
+// reversal the table now carries.
+import { PYTHON_RULED } from "./python-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
-const LANG = process.argv[2] ?? "bash"
+/** The lane is the first NON-FLAG argument: `--self-test` / `--coverage` must not be read as a lane
+ *  name, or `gate --self-test` would look for a language called `--self-test` and exit 2. */
+const LANG = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? "bash"
 const ALL_TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"] as const
 /**
  * EXPORTED so lane ruling tables can import it instead of restating the shape.
@@ -119,6 +131,14 @@ export type Ruled = {
   /** A: node types that would express the construct. B: unused. */
   nodeTypesThatWouldMeanIt?: string[]
   /**
+   * WHICH SPACES this probe enumerated, when the lane can state it. Optional only so the twelve
+   * tables written before the spaces check existed keep compiling; a MISSING declaration in a
+   * language whose corpus writes key/value bindings is now RULED-UNJUSTIFIED, not RULED-SOUND
+   * (see the space-attestation block below — measured on HCL, where a node-type inventory
+   * certified `extends` while 44 `inherits` attribute-key sites sat in the same corpus).
+   */
+  spacesProbed?: ProbeSpace[]
+  /**
    * B only: the count and file count this ruling PUBLISHES, over the corpus the gate
    * discovers. These are the numbers a ruling is accountable to, so they live in the type
    * rather than repeated in prose where they can go stale. julia-ruled's probe reads them
@@ -130,6 +150,299 @@ export type Ruled = {
   /** B: count occurrences on the tree. A: unused. */
   countOnTree?: (root: any, fileLabel: string, hits: string[]) => void
   describe: string
+}
+
+/**
+ * Preorder walk with an EXPLICIT STACK, in the same order as the recursive form it replaces
+ * (children are pushed in reverse so `pop()` yields them left to right).
+ *
+ * WHY NOT RECURSION. Measured 2026-10-07: the recursive walk died with `Maximum call stack
+ * size exceeded` on `dart-sdk/tests/language/syntax/deep_nesting_statement_test.dart` — a file
+ * dart's own suite keeps in order to exercise deep nesting — and it died AFTER the
+ * 33,692-file walk had completed, so the gate walked the whole corpus and then printed no
+ * table at all. The same recursion sat in two `countOnTree` helpers a few lines below, where
+ * it would have killed Instrument B on a bash or json walk for the same reason. A JS call
+ * stack is bounded by nesting depth; an array is not.
+ *
+ * The visit ORDER is preserved deliberately: the bash probe counts the SECOND declaration of a
+ * name, so pushing children in reverse is what keeps "second" meaning the same occurrence it
+ * meant before. The change cannot move a count.
+ */
+function walkPreorder(root: any, visit: (n: any) => void): void {
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()
+    if (!n) continue
+    visit(n)
+    for (let i = n.childCount - 1; i >= 0; i--) stack.push(n.child(i))
+  }
+}
+
+// ---------------------------------------------------------------- the SPACE attestation
+/**
+ * A ruling that certifies ABSENCE is only as strong as the SPACES its probe enumerated, and until
+ * 2026-10-09 this gate accepted `instrument: "A:grammar-inventory"` as covering the whole question.
+ * It does not, and the failure was measured rather than imagined:
+ *
+ *   `ontology-coverage-gate.ts hcl` printed `extends RULED-SOUND; the construct occurs 0x on the
+ *   parse tree` for a lane whose own whole-corpus census had just measured **44 `inherits` sites in
+ *   8 files, 53 named parents, 53/53 resolving to a `target` declared in the same file**. Docker-bake
+ *   spells inheritance as an ATTRIBUTE KEY (`inherits = ["_common"]`), and no node-type inventory
+ *   can see a construct spelled that way. The false RULED-SOUND is the flattering direction: it
+ *   certifies a ruling that shrinks a denominator.
+ *
+ * So a ruling now declares WHICH SPACES it probed, and the gate cross-checks that declaration
+ * against the corpus it walks:
+ *
+ *   * the walk counts key/value BINDINGS structurally — a node with `=` or `:` between two named
+ *     children, which is HCL's `attribute`, TOML's and JSON's `pair`, YAML's block_mapping_pair,
+ *     CSS's `declaration` — so "this language has attribute syntax" is an OBSERVATION, not an
+ *     assumption about a grammar's name;
+ *   * a vocabulary-based ruling (instrument A, or a spec-text ruling with no table entry) in such a
+ *     language is RULED-UNJUSTIFIED unless its spaces include `attribute-keys`. An instrument-B
+ *     ruling is exempt: it counts a shape on the TREE, which is not a vocabulary blind spot;
+ *   * spaces may be declared per entry (`Ruled.spacesProbed`) or in
+ *     `validation/m14/fixtures/<lang>/ruling-attestation.json`, and an attestation must cite an
+ *     artefact that EXISTS whose pointers actually hold the declared counts.
+ *
+ * The control runs on every invocation (see SPACE_CHECK_SELF_TEST below): it FIRES the check on a
+ * node-type-only ruling, PASSES a ruling that declares both spaces, and FAILS the run (exit 3) if
+ * either arm stops behaving. A guard that cannot fail is not a guard.
+ */
+export type ProbeSpace = "node-types" | "block-types" | "attribute-keys" | "corpus-count"
+type RulingStatus = "EMITTED" | "RULED-SOUND" | "FALSIFIED" | "RULED-UNJUSTIFIED" | "RULED-UNKNOWN"
+/** What the EMITTED column is actually a claim about. `complete` is true only when EVERY offered file
+ *  was parsed by the analyzer in THIS run: a file the checkpoint settled from an earlier walk
+ *  contributes no edges (the checkpoint stores per-file OUTCOMES, not per-file relationship types),
+ *  and a degraded or abandoned file was never analyzed at all. */
+type EmittedPopulation = { measured: number; settled: number; degraded: number; abandoned: number; total: number; complete: boolean }
+type SpaceAttestation = {
+  lane?: string
+  instrument?: string
+  artefact?: string
+  spacesProbed?: ProbeSpace[]
+  spaceEvidence?: Record<string, { pointer?: string[]; observed?: number }>
+  rulings?: Record<string, { spaces?: ProbeSpace[]; constructSites?: number; pointer?: string[]; note?: string }>
+}
+type KeyEvidence = { nodes: number; topTypes: string[]; sample: string }
+
+function pointerGet(doc: any, ptr: string[]): unknown {
+  let cur: any = doc
+  for (const k of ptr) {
+    if (cur === null || typeof cur !== "object") return undefined
+    cur = Array.isArray(cur) ? cur[Number(k)] : cur[k]
+  }
+  return cur
+}
+
+/** The half of an attestation that can be checked without trusting its author: does the artefact it
+ *  names exist, and does each declared pointer hold the number the attestation declares? */
+function verifyAttestation(att: SpaceAttestation): { problems: string[]; verified: string[] } {
+  const problems: string[] = [], verified: string[] = []
+  let artefact: any = null
+  if (typeof att.artefact === "string" && att.artefact !== "") {
+    const ap = path.resolve(process.cwd(), att.artefact)
+    if (!existsSync(ap)) problems.push(`names artefact ${att.artefact}, which does not exist`)
+    else { try { artefact = JSON.parse(readFileSync(ap, "utf8")) } catch { problems.push(`artefact ${att.artefact} is not parseable JSON`) } }
+  } else if ((att.spacesProbed ?? []).includes("attribute-keys")) {
+    problems.push("declares the attribute-keys space but cites no artefact")
+  }
+  if (artefact !== null) {
+    for (const [space, ev] of Object.entries(att.spaceEvidence ?? {})) {
+      if (!Array.isArray(ev?.pointer)) continue
+      const got = pointerGet(artefact, ev.pointer)
+      if (got === undefined) problems.push(`spaceEvidence.${space}: pointer ${ev.pointer.join(".")} is not in ${att.artefact}`)
+      else if (ev.observed !== undefined && got !== ev.observed) problems.push(`spaceEvidence.${space}: declares ${ev.observed}, ${att.artefact} holds ${String(got)} at ${ev.pointer.join(".")}`)
+      else verified.push(`${space}=${String(got)}`)
+    }
+    for (const [t, r] of Object.entries(att.rulings ?? {})) {
+      if (!Array.isArray(r?.pointer)) continue
+      const got = pointerGet(artefact, r.pointer)
+      if (got === undefined) problems.push(`rulings.${t}: pointer ${r.pointer.join(".")} is not in ${att.artefact}`)
+      else if (r.constructSites !== undefined && got !== r.constructSites) problems.push(`rulings.${t}: declares ${r.constructSites} construct site(s), ${att.artefact} holds ${String(got)} at ${r.pointer.join(".")}`)
+      else verified.push(`${t}.constructSites=${String(got)}`)
+    }
+  }
+  return { problems, verified }
+}
+
+function readAttestation(lang: string): { att: SpaceAttestation | null; rel: string; problems: string[]; verified: string[] } {
+  const rel = `validation/m14/fixtures/${lang}/ruling-attestation.json`
+  const abs = path.resolve(process.cwd(), rel)
+  if (!existsSync(abs)) return { att: null, rel, problems: [], verified: [] }
+  let att: SpaceAttestation
+  try { att = JSON.parse(readFileSync(abs, "utf8")) } catch (e) { return { att: null, rel, problems: [`${rel} is not parseable JSON: ${String(e).slice(0, 60)}`], verified: [] } }
+  return { att, rel, ...verifyAttestation(att) }
+}
+
+/** The verdict for ONE un-emitted type. Pure except for the filesystem reads inside
+ *  `verifyAttestation`, which happen before this is called, so the self-test can drive it. */
+function verdictInner(args: {
+  type: Type
+  ruled: Ruled | undefined
+  ruling: { reason: string; src: string } | null
+  keyEvidence: KeyEvidence
+  nodeTypeCount: number
+  population: EmittedPopulation
+  att: SpaceAttestation | null
+  attRel: string
+  attProblems: string[]
+  attVerified: string[]
+}): { status: RulingStatus; detail: string } {
+  const { type, ruled, ruling, keyEvidence, nodeTypeCount, att, attRel, attProblems, attVerified } = args
+  if (!ruling) {
+    return { status: "RULED-UNJUSTIFIED", detail: `NOT EMITTED and its construct is absent, but NO written ruling was found in the spec` }
+  }
+  const entry = att?.rulings?.[type]
+  const spaces: ProbeSpace[] = entry?.spaces ?? ruled?.spacesProbed ?? (entry ? att?.spacesProbed ?? [] : [])
+  const vocabularyBased = ruled === undefined || ruled.instrument === "A:grammar-inventory"
+  // THE KEY-SPACE CHECK — the defect this block exists for. A vocabulary-based ruling cannot see a
+  // construct spelled as an attribute key, and this corpus writes them, so the space must be
+  // declared AND, where an attestation exists, verified.
+  if (vocabularyBased && keyEvidence.nodes > 0 && !spaces.includes("attribute-keys")) {
+    return {
+      status: "RULED-UNJUSTIFIED",
+      detail: `NOT EMITTED, and the probe does not cover the space this language USES: the corpus writes ` +
+        `${keyEvidence.nodes.toLocaleString()} key/value bindings (top node types ${keyEvidence.topTypes.join(", ") || "?"}, e.g. \`${keyEvidence.sample}\`), ` +
+        `so a construct spelled as an attribute key cannot appear in a node-type inventory — that is exactly how HCL's ` +
+        `\`inherits\` hid 44 sites. Declare the probed spaces (\`spacesProbed\` in the lane's Ruled table, or ${attRel} with an ` +
+        `artefact that EXISTS and verifies). Written ruling: ${ruling.src}`,
+    }
+  }
+  if (entry) {
+    if (attProblems.length > 0) {
+      return {
+        status: "RULED-UNJUSTIFIED",
+        detail: `NOT EMITTED; ${attRel} attests the attribute-keys space but does not verify (${attProblems.join("; ")}). ` +
+          `A declaration that cannot be checked is prose, and prose does not shrink a denominator. Written ruling: ${ruling.src}`,
+      }
+    }
+    const sites = entry.constructSites
+    if (sites === undefined) {
+      return {
+        status: "RULED-UNJUSTIFIED",
+        detail: `NOT EMITTED; ${attRel} attests the spaces but states no construct count for \`${type}\` — rule-book §6: a ruling without a count is prose. Written ruling: ${ruling.src}`,
+      }
+    }
+    const note = entry.note ? ` ${entry.note}` : ""
+    if (sites > 0) {
+      return {
+        status: "FALSIFIED",
+        detail: `NOT EMITTED, but the attested probe found ${sites.toLocaleString()} site(s) of the construct in the space that was ` +
+          `missing from the inventory — the type is DERIVABLE, so no ruling can certify it absent: it must be emitted, or measured into a ` +
+          `class that stays in the denominator.${note} Artefact: ${att?.artefact ?? "?"}`,
+      }
+    }
+    return {
+      status: "RULED-SOUND",
+      detail: `NOT EMITTED; attested over ${spaces.join(", ")} — ${att?.artefact ?? "no artefact"} verifies ` +
+        `${attVerified.join(", ") || "the declared spaces"}, and \`${type}\` has 0 construct sites there.${note} Written ruling: ${ruling.src}`,
+    }
+  }
+  const basis = ruled?.instrument === "A:grammar-inventory"
+    ? `the grammar produced ${nodeTypeCount} distinct node types across the corpus and none of the ${(ruled.nodeTypesThatWouldMeanIt ?? []).length} probed names is among them`
+    : ruled?.instrument === "B:parse-tree-count"
+      ? `the tree probe counted 0 occurrences on the tree (instrument B)`
+      : `no Instrument-A/B entry exists for this lane, so the written ruling is certified on its text alone; this corpus writes 0 key/value bindings, so the attribute-key blind spot is not available here`
+  return { status: "RULED-SOUND", detail: `NOT EMITTED; ${basis}. Written ruling: ${ruling.src}` }
+}
+
+/**
+ * THE POPULATION GATE — a PARTIAL walk can no longer produce RULED-SOUND.
+ *
+ * Measured 2026-10-09 on hcl, on the same walk that had just been fixed for the key-space blind
+ * spot: with a history-trusted checkpoint the gate re-measured 5 of 4,047 files and settled the
+ * other 4,042 from an earlier run, which contributes NO edges — the checkpoint records per-file
+ * OUTCOMES, not per-file relationship types. `calls` and `overrides` therefore printed
+ * `RULED-SOUND; the construct occurs 0x on the parse tree` while a fresh walk of the same corpus
+ * carried 4 and 68 edges. A false RULED-SOUND is the flattering direction, and this one arrives
+ * through the DEFAULT invocation, so a reader who does not pass `--fresh` gets a wrong verdict with
+ * no signal in the row.
+ *
+ * The fix is a REFUSAL, not a guess: when any offered file was settled by an earlier walk, degraded
+ * (regex fallback, not the analyzer) or abandoned, absence is not established and the row reads
+ * RULED-UNKNOWN. It is not a failure — it is a row that has not been measured yet — but it can never
+ * be read as a certification. FALSIFIED and RULED-UNJUSTIFIED pass through untouched: both are
+ * findings about the ruling itself and neither depends on the EMITTED column.
+ */
+function verdictFor(args: Parameters<typeof verdictInner>[0]): { status: RulingStatus; detail: string } {
+  const v = verdictInner(args)
+  if (v.status !== "RULED-SOUND" || args.population.complete) return v
+  const p = args.population
+  return {
+    status: "RULED-UNKNOWN",
+    detail: `NOT CERTIFIED: no edge of this type was observed, but the EMITTED column covers only ${p.measured.toLocaleString()} of ` +
+      `${p.total.toLocaleString()} offered files (${p.settled.toLocaleString()} settled by an earlier walk contribute NO edges, ` +
+      `${p.degraded} degraded by the regex fallback, ${p.abandoned} abandoned), so absence is NOT established. The written ruling is ` +
+      `unchanged (${args.ruling?.src ?? "none"}); re-run with --fresh to certify it.`,
+  }
+}
+
+// ---------------------------------------------------------------- the space check's own control
+/**
+ * Rule-book §7: a guard with no live hits must be shown firing on a planted case. This control runs
+ * on EVERY invocation (cheap: in-memory arms plus one real file read) and the process exits 3 if any
+ * arm stops behaving. The artefact it verifies against is
+ * `validation/m14/fixtures/hcl/ruling-space-control.json`, a committed fixture, so the control does
+ * not depend on any lane's census being present.
+ */
+const SPACE_CONTROL_ARTEFACT = "validation/m14/fixtures/hcl/ruling-space-control.json"
+const KEYED: KeyEvidence = { nodes: 118304, topTypes: ["attribute=118000", "object_elem=304"], sample: `attribute inherits = ["_common"]` }
+const UNKEYED: KeyEvidence = { nodes: 0, topTypes: [], sample: "" }
+function spaceCheckSelfTest(verbose: boolean): { passed: number; failures: string[] } {
+  const ruledA: Ruled = { type: "extends", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["class_declaration"], describe: "a type declaration another type could extend" }
+  const ruledB: Ruled = { type: "extends", instrument: "B:parse-tree-count", describe: "a second declaration of the same name" }
+  const ruling = { reason: "self-test", src: "self-test" }
+  const goodAtt: SpaceAttestation = {
+    artefact: SPACE_CONTROL_ARTEFACT,
+    spacesProbed: ["node-types", "block-types", "attribute-keys"],
+    spaceEvidence: { nodeTypes: { pointer: ["nodeTypes"], observed: 64 }, attributeKeys: { pointer: ["attributeKeys"], observed: 5311 } },
+    rulings: { extends: { spaces: ["node-types", "block-types", "attribute-keys"], constructSites: 0, pointer: ["sites", "extends"] } },
+  }
+  const presentAtt: SpaceAttestation = { ...goodAtt, rulings: { extends: { spaces: ["node-types", "block-types", "attribute-keys"], constructSites: 44, pointer: ["sites", "extendsPresent"] } } }
+  const missingArtefactAtt: SpaceAttestation = { artefact: "validation/m14/fixtures/hcl/this-file-does-not-exist.json", spacesProbed: ["attribute-keys"], rulings: { extends: { spaces: ["attribute-keys"], constructSites: 0 } } }
+  const contradictedAtt: SpaceAttestation = { ...goodAtt, rulings: { extends: { spaces: ["node-types", "attribute-keys"], constructSites: 99, pointer: ["sites", "extends"] } } }
+  const countlessAtt: SpaceAttestation = { artefact: SPACE_CONTROL_ARTEFACT, spacesProbed: ["attribute-keys"], rulings: { extends: { spaces: ["attribute-keys"] } } }
+  const arm = (name: string, want: RulingStatus, ruled: Ruled | undefined, keyEvidence: KeyEvidence, att: SpaceAttestation | null, population?: EmittedPopulation) => {
+    const pop = population ?? { measured: 4047, settled: 0, degraded: 0, abandoned: 0, total: 4047, complete: true }
+    const v = verdictFor({ type: "extends", ruled, ruling, keyEvidence, nodeTypeCount: 64, population: pop, att, attRel: "self-test", attProblems: att ? verifyAttestation(att).problems : [], attVerified: att ? verifyAttestation(att).verified : [] })
+    return { name, want, got: v.status, detail: v.detail }
+  }
+  const partial: EmittedPopulation = { measured: 5, settled: 4042, degraded: 0, abandoned: 0, total: 4047, complete: false }
+  const arms = [
+    arm("A node-type-only ruling in a key-bearing language", "RULED-UNJUSTIFIED", ruledA, KEYED, null),
+    arm("B the same ruling, spaces attested and verified, 0 sites", "RULED-SOUND", ruledA, KEYED, goodAtt),
+    arm("C the same ruling where the attested probe found 44 sites", "FALSIFIED", ruledA, KEYED, presentAtt),
+    arm("D a node-type-only ruling where the corpus writes NO key bindings", "RULED-SOUND", ruledA, UNKEYED, null),
+    arm("E an attestation naming an artefact that does not exist", "RULED-UNJUSTIFIED", ruledA, KEYED, missingArtefactAtt),
+    arm("F an attestation whose declared count contradicts its artefact", "RULED-UNJUSTIFIED", ruledA, KEYED, contradictedAtt),
+    arm("G an attestation that states no construct count", "RULED-UNJUSTIFIED", ruledA, KEYED, countlessAtt),
+    arm("H an instrument-B tree count is not a vocabulary probe", "RULED-SOUND", ruledB, KEYED, null),
+    arm("I an attested ruling on a PARTIAL walk (5 of 4,047 files) refuses to certify", "RULED-UNKNOWN", ruledA, KEYED, goodAtt, partial),
+    arm("J the same ruling on a COMPLETE walk still certifies", "RULED-SOUND", ruledA, KEYED, goodAtt),
+    arm("K a partial walk does not soften a key-space UNJUSTIFIED", "RULED-UNJUSTIFIED", ruledA, KEYED, null, partial),
+  ]
+  const failures: string[] = []
+  for (const a of arms) {
+    const ok = a.got === a.want
+    if (!ok) failures.push(`${a.name}: expected ${a.want}, got ${a.got}`)
+    if (verbose || !ok) console.log(`  ${ok ? "PASS" : "FAIL"} ${a.name} -> ${a.got}`)
+  }
+  return { passed: arms.length - failures.length, failures }
+}
+
+const SELF_TEST_VERBOSE = process.argv.includes("--self-test")
+{
+  const control = spaceCheckSelfTest(SELF_TEST_VERBOSE)
+  const ok = control.failures.length === 0
+  console.log(`ruling space+population self-test: ${ok ? "PASS" : "FAIL"} — ${control.passed}/${control.passed + control.failures.length} arms ` +
+    `(fires on a node-type-only ruling in a key-bearing language; passes an attested one; a ruling contradicted by its own artefact fails; a PARTIAL walk refuses to certify)`)
+  if (!ok) {
+    console.error("SPACE CONTROL FAILED — this gate refuses to print a RULED-SOUND its space check cannot certify.")
+    for (const f of control.failures) console.error(`  - ${f}`)
+    process.exit(3)
+  }
+  if (SELF_TEST_VERBOSE) process.exit(0)
 }
 
 const BASH_RULED: Ruled[] = [
@@ -158,7 +471,7 @@ const BASH_RULED: Ruled[] = [
     // grammar inventory is silent by construction and the count must be semantic.
     countOnTree: (root, fileLabel, hits) => {
       const seen = new Map<string, number>()
-      const visit = (n: any) => {
+      walkPreorder(root, (n: any) => {
         if (n.type === "function_definition") {
           const named = n.namedChildren?.find((c: any) => c.type === "word")
           const name = named?.text
@@ -168,75 +481,54 @@ const BASH_RULED: Ruled[] = [
             if (c === 2) hits.push(`${fileLabel}: ${name} (redefined)`)
           }
         }
-        for (let i = 0; i < n.childCount; i++) visit(n.child(i))
-      }
-      visit(root)
+      })
     },
     describe: "a SECOND declaration of a name already declared in the same file — it replaces the prior one",
   },
 ]
 
 /**
- * json's seven non-emitted types, each with the construct it would need.
+ * WHERE A LANE'S RULINGS COME FROM, and why json is not inline here.
  *
- * The bash table above is unchanged and still bash's. The two lanes disagree in the
- * most informative way available: bash emits 7 of 10 and rules 3 on a grammar
- * inventory of 164 node types, while json emits 3 of 10 and rules 7 on an inventory of
- * 26 — and the difference between the two is exactly what each language has. Same
- * ontology, same gate, opposite verdicts, and neither is arbitrary.
+ * Every other lane's table is imported from its own `<lang>-ruled.ts` — the lane that MEASURED it
+ * writes it, because a ruling table encodes that lane's corpus probe and its counts, and a central
+ * copy goes stale the moment the lane learns something. json was the exception: the gate carried
+ * an inline five-entry table (ruling `calls`, `implements`, `instantiates`, `overrides`, `imports`
+ * on grammar inventories) while `script/m14/json-ruled.ts` carried the lane's real one, which rules
+ * `instantiates` and nothing else. Two consequences, both measured:
+ *
+ *  1. **The citation was false.** `rulingFor()` labels every ruling `script/m14/<lang>-ruled.ts
+ *     (RULED_BY_LANG.<lang>)`, so the table above printed a verdict citing a file the gate had
+ *     never read. `json-ruled.ts` anticipated exactly this — it restates the `Ruled` shape
+ *     "once the supervisor adds the wiring".
+ *  2. **The stale entries were armed against a regression.** For a type that stops being
+ *     emitted, the gate falsifies a grammar-inventory ruling only if the grammar actually produces
+ *     one of that ruling's declared node types. json's grammar has no `implements_clause`, so had
+ *     `implements` regressed the gate would have printed RULED-SOUND and exited 0 — while the
+ *     corpus carried 113 `implements` edges, all in
+ *     `dart-sdk/third_party/pkg/language_server_protocol/lsp_meta_model.json`. That is the exact
+ *     failure `json-ruled.ts` records having already happened once ("the gate reported RULED-SOUND
+ *     on this type against a grammar that had never heard of a keyword, and the corpus carried 113
+ *     edges' worth of the construct the whole time"). The lane fixed the emission and left the trap
+ *     armed. With the lane's own table the same regression reads RULED-UNJUSTIFIED and turns the
+ *     gate red, which is the correct outcome.
+ *
+ * The deleted table's fifth entry, `imports`, was NOT one of the four unsound ones and is recorded
+ * separately because the distinction matters. It was instrument B with a live `countOnTree` probe
+ * and a real corpus measurement — sound, falsifiable evidence, ruling that a file-to-file `$ref`
+ * occurred 0 times over a 3,334-file corpus. It is gone because its PREMISE was overtaken, not
+ * because its reasoning was bad: the analyzer now implements manifest dependencies as `imports`
+ * (82 edges, measured below, in `package.json` files), which is the same turn the inline comment
+ * beside `exports` already recorded — "a grammar cannot see a CONVENTION, and a Node manifest's
+ * `exports`/`main`/`bin` are conventions written as ordinary object keys". Re-admitting it would
+ * re-arm a ruling whose subject the analyzer now emits.
+ *
+ * Whole-corpus measurement on the wired gate, 14,012 of 14,016 admitted files (4 degraded by the
+ * regex fallback and excluded from EMITTED, named by the gate):
+ *
+ *   emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0
  */
-const JSON_RULED: Ruled[] = [
-  { type: "implements", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["implements_clause", "extends_clause", "superclass"], describe: "a supertype clause" },
-  { type: "instantiates", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["new_expression", "object_creation_expression", "constructor_invocation"], describe: "a constructor call" },
-  { type: "overrides", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["redefinition", "override_specifier"], describe: "a second declaration replacing a prior one" },
-  // `exports` WAS here and was removed: it was ruled on a grammar inventory ("no
-  // export_statement node") and that is the same unsound reasoning that produced the
-  // wrong `imports` ruling. A grammar cannot see a CONVENTION, and a Node manifest's
-  // `exports`/`main`/`bin` are conventions written as ordinary object keys. The audit
-  // found 1 of 36 manifests carrying `exports`, so the mass is small and the
-  // principle is not: it is emitted now, and the gate re-measures rather than
-  // trusting this note.
-  // `calls` stays ruled: json has no functions to call, and no convention supplies
-  // one. It is listed so the gate reports on all ten types.
-  { type: "calls", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["function_definition", "method_definition", "call_expression"], describe: "a function definition or call" },
-  {
-    // `imports` is the one that is NOT settled by the grammar, and it is worth
-    // stating why. The grammar has no import node, but that is the wrong question:
-    // an EXTERNAL $ref to another file on disk is a file dependency whatever the
-    // grammar calls it, and the grammar cannot see it because it is a STRING.
-    // So this was measured instead: across the whole 3,334-file corpus, 0 of the
-    // external $refs point at another file — 38 name a URL (a JSON-Schema draft
-    // identifier, i.e. a vocabulary reference) and 12 name something else. There is
-    // no file-to-file $ref to import, so the type has nothing to carry.
-    type: "imports",
-    instrument: "B:parse-tree-count",
-    countOnTree: (root, fileLabel, hits) => {
-      // ONLY the value of a `$ref` key. The first version scanned every `string` in
-      // the document, and it reported the construct 2,651 times across 103 files — of
-      // which the examples were `MANIFEST.json: FILES.json`, a filename sitting in a
-      // `files` array. That is not a $ref, it is a list of files a collection ships,
-      // and the gate correctly refused to accept my measurement: it said the ruling
-      // was falsified by evidence I had manufactured. A probe that matches a SHAPE
-      // rather than a ROLE produces a number, and the number is worth nothing.
-      const visit = (n: any) => {
-        if (n.type === "pair") {
-          const k = n.childForFieldName?.("key")
-          const keyText = String(k?.namedChildren?.find((c: any) => c.type === "string_content")?.text ?? "")
-          if (keyText === "$ref") {
-            const v = n.childForFieldName?.("value")
-            const inner = String(v?.text ?? "").replace(/^["']|["']$/g, "")
-            if (!/^https?:\/\//.test(inner) && /\.(json|jsonc|json5|ya?ml|avsc|avdl|proto)(#[^"']*)?$/.test(inner)) {
-              hits.push(`${fileLabel}: ${inner.slice(0, 60)}`)
-            }
-          }
-        }
-        for (let i = 0; i < n.childCount; i++) visit(n.child(i))
-      }
-      visit(root)
-    },
-    describe: "a $ref naming another FILE on disk — a file-to-file dependency",
-  },
-]
+
 
 // Resolved to the UNION — see the note at the imports above. A registry conflict is
 // always "both sides added a lane"; taking one side deletes the other's ruling table
@@ -267,11 +559,30 @@ clean: CLEAN_RULED,
   graphql: GRAPHQL_RULED,
   dart: DART_RULED,
   powershell: POWERSHELL_RULED,
+  python: PYTHON_RULED,
 }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
 // ---------------------------------------------------------------- corpus
+//
+// THE EXCLUSIONS ARE PART OF THE POPULATION CLAIM, so they are counted here and printed
+// below rather than skipped silently. Two were, until this was measured:
+//
+//   * a path `git ls-files` lists but the working tree does not have — 2 of the 33,755
+//     tracked .dart files in this corpus (`pb-reference/examples/{add,list}_people.dart`);
+//   * a file over the SIZE CAP. The cap used to be 512 KB, which admitted 33,692 .dart
+//     files and excluded 61 with no line in the output saying so. 46 of those 61 sit
+//     between 512 KB and 1 MB, which is exactly the range the ENGINE still parses as a
+//     full AST (`pool-worker.ts` FULL_AST_LIMIT = 1 MB), so those 46 were analyzable and
+//     unmeasured — a coverage number that counted them out of its own denominator.
+//     The cap is now the engine's own limit, and what remains excluded is stated: above
+//     1 MB the engine itself degrades to structural extraction, and above 5 MB it returns
+//     an empty fallback with zero symbols, so those files could not be measured as
+//     analyzers whatever this gate did.
+const SIZE_CAP = 1024 * 1024
 const files: { repo: string; dir: string; rel: string; abs: string; text: string }[] = []
+const excluded = { tracked: 0, absent: 0, overCap: 0, wrongLanguage: 0 }
+let overCapLargest = 0
 for (const e of readdirSync(CR)) {
   const dir = path.join(CR, e)
   try { if (!statSync(dir).isDirectory()) continue; execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" }) } catch { continue }
@@ -279,14 +590,40 @@ for (const e of readdirSync(CR)) {
   try { tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }).split("\0").filter(Boolean) } catch { continue }
   for (const rel of tracked) {
     const abs = path.join(dir, rel)
+    excluded.tracked++
     let text: string
-    try { if (statSync(abs).size > 512 * 1024) continue; text = readFileSync(abs, "utf8") } catch { continue }
+    let size: number
+    try {
+      size = statSync(abs).size
+      if (size > SIZE_CAP) {
+        // COUNTED IN THIS LANE'S TERMS, by name: the file is never read, so a content-based
+        // detection is impossible and reporting every language's bundles as this lane's
+        // exclusions would be a number about the corpus wearing this lane's label.
+        if (detectLanguageFromPath(abs) === LANG) { excluded.overCap++; overCapLargest = Math.max(overCapLargest, size) }
+        continue
+      }
+      text = readFileSync(abs, "utf8")
+    } catch {
+      // `continue` here is a file git tracks and this process cannot read. Counted the same
+      // way, and for the same reason.
+      if (detectLanguageFromPath(abs) === LANG) excluded.absent++
+      continue
+    }
     if (detectLanguageFromPath(abs, text) !== LANG) continue
     files.push({ repo: e, dir, rel, abs, text })
   }
 }
 console.log(`ontology coverage gate — ${LANG}`)
-console.log(`corpus: ${files.length} admitted files\n`)
+console.log(
+  `corpus: ${files.length} admitted files — and this lane EXCLUDED ` +
+  `${excluded.absent} tracked-but-unreadable/absent + ${excluded.overCap} over the ` +
+  `${(SIZE_CAP / 1024 / 1024).toFixed(0)} MB cap (largest ${(overCapLargest / 1024 / 1024).toFixed(1)} MB). ` +
+  `Above that cap the engine itself extracts structurally (FULL_AST_LIMIT), and above 5 MB it returns ` +
+  `an empty fallback with zero symbols, so those files are outside any analyzer claim — stated, not silent. ` +
+  `Excluded by path name, because a file over the cap is never read. ` +
+  `${excluded.tracked} tracked paths were walked.`,
+)
+console.log()
 
 // ---------------------------------------------------------------- what is emitted
 const observed = new Map<Type, { n: number; files: Set<string> }>()
@@ -302,25 +639,56 @@ const observed = new Map<Type, { n: number; files: Set<string> }>()
 // again.
 //
 // So the walk checkpoints. `--fresh` starts over; without it a second run resumes where
-// the last one died, and a file that hangs is recorded as bad and never retried.
+// the last one died, a file that kills the process is retried once in a fresh process and
+// then recorded as abandoned, and every outcome is recorded in a form that distinguishes
+// a real parse from a swallowed crash (see `resumable-walk.ts`).
 const { resumableWalk, resetCheckpoint } = await import("./resumable-walk")
 const CHECKPOINT = `validation/m14/measurements/walk-${LANG}.txt`
 if (process.argv.includes("--fresh")) resetCheckpoint(CHECKPOINT)
 
+// A file whose parse CRASHED does not reject out of `parseFile`: `pool-worker.ts` catches
+// the error, writes `[BB-PARSE-ERR]`, and returns `extractFallback(...)` — a REGEX
+// extraction marked `fallback: true`. Measured 2026-10-07: `ontology-coverage-gate dart`
+// hit `memory access out of bounds` on `dart-sdk/tests/corelib/map_values3_test.dart`,
+// and the file went into the checkpoint as WALKED. Counting those relationships as
+// EMITTED evidence is how a regex edge becomes proof that an analyzer fires, so fallback
+// results are collected in their OWN map and reported as their own population. Files over
+// the 1 MB structural limit land there too, and that is correct — the analyzer did not
+// read those either.
+const observedViaFallback = new Map<Type, { n: number; files: Set<string> }>()
 const walkStats = await resumableWalk(CHECKPOINT, files.length, {
   id: (i) => files[i].abs,
   concurrency: 8,
   run: async (i) => {
     const f = files[i]
     const r: any = await parseFile(f.abs, f.dir)
+    // TWO distinct crash paths reach here and only ONE of them says `fallback`:
+    //   - a WASM trap  -> `pool-worker`'s catch -> `extractFallback`, which sets `fallback: true`
+    //   - the analyzer timing out or blowing the JS stack -> `engine.ts` returns
+    //     `metadata.analysisVersion: "2.0-basic-fallback"` with 0 symbols, 0 relationships,
+    //     and no top-level `fallback` field at all.
+    // Measured on the dart corpus: `deep_nesting_expression_test.dart` and
+    // `deep_nesting_statement_test.dart` return the SECOND shape ("Maximum call stack size
+    // exceeded"). Counting them as measured is not a rounding error — it lets a type read as
+    // NOT EMITTED because the one file exercising it was never analyzed, which is a false
+    // RULED-SOUND. The version string is this codebase's own signature for that path;
+    // `real-sql-analyzer.ts` (a 392 KB schema crossing the same 120 s timeout) and
+    // `real-html-analyzer.ts` both name it, so this is the established idiom rather than a
+    // new convention.
+    const degraded = r?.fallback === true || r?.metadata?.analysisVersion === "2.0-basic-fallback"
+    const sink = degraded ? observedViaFallback : observed
     for (const x of r.relationships ?? []) {
       const t = String(x.type ?? x.relationshipType ?? "").toLowerCase() as Type
       if (!ALL_TYPES.includes(t)) continue
-      const row = observed.get(t) ?? { n: 0, files: new Set<string>() }
+      const row = sink.get(t) ?? { n: 0, files: new Set<string>() }
       row.n++
       if (row.files.size < 4) row.files.add(`${f.repo}/${f.rel}`)
-      observed.set(t, row)
+      sink.set(t, row)
     }
+    if (degraded) {
+      return { degraded: true, reason: `fallback:true (regex extraction) for ${f.repo}/${f.rel}` }
+    }
+    return undefined
   },
 })
 
@@ -334,14 +702,36 @@ const parser = new WSP()
 parser.setLanguage(await WSL.load(readFileSync(path.join(process.cwd(), "wasm", wasmPath))))
 
 // Instrument A: the grammar's own vocabulary, observed across the whole corpus.
+//
+// AND, in the same pass, the KEY SPACE — the space a node-type inventory cannot enumerate. A node
+// with `=` or `:` between two named children is a key/value BINDING whatever its grammar calls it:
+// HCL's `attribute`, TOML's and JSON's `pair`, YAML's block_mapping_pair, CSS's `declaration`. This
+// is observed structurally rather than assumed from a language's name, which is what lets the space
+// check fire on a real corpus instead of on a list somebody maintains.
 const grammarNodeTypes = new Map<string, number>()
+const keySpaces = { bindings: 0, byType: new Map<string, number>(), samples: [] as string[] }
 for (const f of files) {
   const t = parser.parse(f.text)
   if (!t) continue
-  const v = (n: any) => { grammarNodeTypes.set(n.type, (grammarNodeTypes.get(n.type) ?? 0) + 1); for (let i = 0; i < n.childCount; i++) v(n.child(i)) }
-  v(t.rootNode)
+  walkPreorder(t.rootNode, (n: any) => {
+    grammarNodeTypes.set(n.type, (grammarNodeTypes.get(n.type) ?? 0) + 1)
+    if (n.childCount >= 3) {
+      const sep = n.child(1)?.type
+      if (sep === "=" || sep === ":") {
+        keySpaces.bindings++
+        keySpaces.byType.set(n.type, (keySpaces.byType.get(n.type) ?? 0) + 1)
+        if (keySpaces.samples.length < 6) keySpaces.samples.push(`${n.type} \`${String(n.text).slice(0, 48).split("\n").join(" ")}\``)
+      }
+    }
+  })
   t.delete?.()
 }
+const keyEvidence: KeyEvidence = {
+  nodes: keySpaces.bindings,
+  topTypes: [...keySpaces.byType.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([t, n]) => `${t}=${n.toLocaleString()}`),
+  sample: keySpaces.samples[0] ?? "",
+}
+const attestation = readAttestation(LANG)
 
 // Instrument B: semantic counts on the tree, where strings and heredocs cannot lie.
 const treeHits = new Map<Type, { occurrences: number; files: number; examples: string[] }>()
@@ -399,7 +789,7 @@ function rulingFor(t: Type): { reason: string; src: string } | null {
 }
 
 // ---------------------------------------------------------------- verdict
-type Row = { type: Type; status: "EMITTED" | "RULED-SOUND" | "FALSIFIED" | "RULED-UNJUSTIFIED"; detail: string }
+type Row = { type: Type; status: RulingStatus; detail: string }
 
 // `--coverage` reports which lanes this gate can actually rule for, and does NOT
 // parse a corpus. The gate's own header records why this matters: it exists
@@ -458,27 +848,62 @@ if (RULED_BY_LANG[LANG] === undefined) {
 // SAME edge counts as a complete one over the files it did see — the counts do not know
 // they are smaller — so without this line a 99% walk reports identically to a 100% one and
 // the reader cannot tell. Stated before the table, not in a footnote.
-const walkedPct = walkStats.total === 0 ? 0 : ((walkStats.walked + walkStats.alreadyDone) / walkStats.total) * 100
+// TWO different coverage numbers, and conflating them is the defect this line used to have.
+//
+// The edge counts below come from exactly ONE source: the `run` callback above, which is
+// called only for files THIS run walked. A file settled by an earlier run is SKIPPED by the
+// walk and therefore contributes NO edges — so `alreadyDone` is coverage of the CHECKPOINT,
+// not coverage of the TABLE. The first version of this line added the two together and
+// printed "every edge count below is over 100.0% of the corpus" for a run whose table had
+// seen 10 files: a correct-looking number about the wrong population, which is the one
+// defect this programme keeps paying for.
+//   table coverage = walked                     (files whose edges fed `observed`)
+//   walk coverage  = walked + alreadyDone        (files that need no further walking)
+const tablePct = walkStats.total === 0 ? 0 : (walkStats.walked / walkStats.total) * 100
+const walkPct = walkStats.total === 0 ? 0 : ((walkStats.walked + walkStats.alreadyDone) / walkStats.total) * 100
 console.log(
-  `walk: ${walkStats.walked + walkStats.alreadyDone}/${walkStats.total} files ` +
-    `(${walkedPct.toFixed(1)}%)  newly walked ${walkStats.walked}, resumed ${walkStats.alreadyDone}` +
+  `walk: ${walkStats.walked}/${walkStats.total} files measured in THIS run ` +
+    `(${tablePct.toFixed(1)}% — the files every edge count in the table below is computed from)`,
+)
+console.log(
+  `walk: ${walkStats.walked + walkStats.alreadyDone}/${walkStats.total} files settled in TOTAL ` +
+    `(${walkPct.toFixed(1)}%)  newly walked ${walkStats.walked}, resumed ${walkStats.alreadyDone}` +
     (walkStats.skippedBad > 0 ? `  SKIPPED-BAD ${walkStats.skippedBad}` : ``) +
     (walkStats.partial ? `  PARTIAL` : ``),
 )
+if (walkStats.walked < walkStats.total) {
+  console.log(
+    `      >>> THE TABLE BELOW IS ABOUT ${walkStats.walked} OF ${walkStats.total} FILES. ` +
+      `${walkStats.alreadyDone} file(s) were settled by an earlier run and contribute NO edges this run, ` +
+      `so a type they would have shown cannot be seen to fire. Run with --fresh for a whole-corpus table.`,
+  )
+}
 if (walkStats.partial) {
   console.log(
-    `      every edge count below is over ${walkedPct.toFixed(1)}% of the corpus. ` +
-      `${walkStats.skippedBad} file(s) hang or cannot be parsed and are excluded; re-run to resume, ` +
-      `--fresh to start over. Checkpoint: ${walkStats.checkpoint}`,
+    `      DEGRADED ${walkStats.degraded + walkStats.alreadyDegraded} file(s) were measured by the regex ` +
+      `fallback rather than the analyzer and are excluded from EMITTED; ${walkStats.skippedBad} abandoned. ` +
+      `Checkpoint: ${walkStats.checkpoint}`,
   )
 }
 console.log()
 
 const rows: Row[] = []
+/** What the EMITTED column below is a claim about — computed once, printed, and attached to every
+ *  row that depends on it. `walked === total` is the only state in which ABSENCE is certifiable. */
+const emittedPopulation: EmittedPopulation = {
+  measured: walkStats.walked,
+  settled: walkStats.alreadyDone + walkStats.alreadyDegraded,
+  degraded: walkStats.degraded,
+  abandoned: walkStats.skippedBad,
+  total: walkStats.total,
+  complete: walkStats.walked === walkStats.total,
+}
+const populationTag = emittedPopulation.complete ? ""
+  : ` [edges over ${emittedPopulation.measured.toLocaleString()}/${emittedPopulation.total.toLocaleString()} files — a LOWER BOUND, ${emittedPopulation.settled.toLocaleString()} settled without contributing edges]`
 for (const t of ALL_TYPES) {
   const obs = observed.get(t)
   if (obs && obs.n > 0) {
-    rows.push({ type: t, status: "EMITTED", detail: `${obs.n.toLocaleString()} edges in ${obs.files.size}+ files, e.g. ${[...obs.files].slice(0, 2).join(", ")}` })
+    rows.push({ type: t, status: "EMITTED", detail: `${obs.n.toLocaleString()} edges in ${obs.files.size}+ files, e.g. ${[...obs.files].slice(0, 2).join(", ")}${populationTag}` })
     continue
   }
   const ruled = RULED.find((r) => r.type === t)
@@ -499,16 +924,57 @@ for (const t of ALL_TYPES) {
     }
   }
   const ruling = rulingFor(t)
-  if (!ruling) {
-    rows.push({ type: t, status: "RULED-UNJUSTIFIED", detail: `NOT EMITTED and its construct is absent, but NO written ruling was found in the spec` })
-    continue
-  }
-  const basis = ruled?.instrument === "A:grammar-inventory"
-    ? `the grammar produced ${grammarNodeTypes.size} distinct node types across the corpus and NONE expresses it`
-    : `the construct occurs 0x on the parse tree`
-  rows.push({ type: t, status: "RULED-SOUND", detail: `NOT EMITTED; ${basis}. Written ruling: ${ruling.src}` })
+  const v = verdictFor({
+    type: t, ruled, ruling, keyEvidence, nodeTypeCount: grammarNodeTypes.size, population: emittedPopulation,
+    att: attestation.att, attRel: attestation.rel, attProblems: attestation.problems, attVerified: attestation.verified,
+  })
+  // Every row the ruling path produces is a statement about a population, so a PARTIAL walk's tag
+  // rides on the row itself rather than living only in the header lines above it.
+  rows.push({ type: t, status: v.status, detail: v.status === "RULED-UNKNOWN" || emittedPopulation.complete ? v.detail : `${v.detail}${populationTag}` })
 }
 
+// ---------------------------------------------------------------- the population that was ACTUALLY measured
+// Printed BEFORE the table, because a table of ten relationship types is a statement
+// about a population, and this programme's recurring defect is a correct number about the
+// wrong population. `partial` is true if any file was degraded, any file was abandoned, or
+// the run did not reach every file it was offered.
+{
+  // The buckets PARTITION the offered population, so they can be added up and checked:
+  // walked + degraded + alreadyDone + alreadyDegraded + skippedBad === total.
+  const accounted = walkStats.walked + walkStats.degraded + walkStats.alreadyDone + walkStats.alreadyDegraded + walkStats.skippedBad
+  console.log(`walk: ${walkStats.total} offered = ${walkStats.walked} measured by the analyzer (this run) + ${walkStats.alreadyDone} measured by an earlier run + ${walkStats.degraded} DEGRADED (regex fallback, not the analyzer) + ${walkStats.alreadyDegraded} degraded earlier + ${walkStats.skippedBad} abandoned`)
+  console.log(`walk: partial=${walkStats.partial}  retried=${walkStats.retried}  unfinished-from-previous-run=${walkStats.unfinishedFromPreviousRun}  fresh=${walkStats.fresh}  history ${walkStats.untrustedHistory ? "UNTRUSTED (no format header — cannot tell a parse from a swallowed crash)" : "trusted"}`)
+  console.log(`walk: rss ${walkStats.rssMbStart}MB -> ${walkStats.rssMbEnd}MB (${walkStats.rssMbPerKFile >= 0 ? "+" : ""}${walkStats.rssMbPerKFile}MB per 1k files)  checkpoint ${walkStats.checkpoint}`)
+  if (accounted !== walkStats.total) {
+    console.log(`walk: >>> ${walkStats.total - accounted} file(s) were neither measured nor settled — this table is about ${accounted}/${walkStats.total} files.`)
+  }
+  if (observedViaFallback.size > 0) {
+    const rows = [...observedViaFallback.entries()].map(([t, r]) => `${t}=${r.n}`).join(" ")
+    console.log(`walk: >>> excluded from EMITTED — relationship rows produced by the regex fallback, not the analyzer: ${rows}`)
+  }
+  if (walkStats.partial) {
+    console.log(`walk: >>> THIS TABLE IS PARTIAL. Its EMITTED column is evidence about ${walkStats.walked + walkStats.alreadyDone} of ${walkStats.total} files.`)
+  }
+  // THE ROW-LEVEL POPULATION CLAIM. The lines above describe the walk; this one says what the
+  // ABSENCE verdicts below are allowed to assert, and every row that leans on it carries the tag.
+  console.log(`walk: emitted population ${emittedPopulation.measured.toLocaleString()}/${emittedPopulation.total.toLocaleString()} files measured by the analyzer THIS run ` +
+    `(${emittedPopulation.settled.toLocaleString()} settled by an earlier walk and contributing NO edges, ${emittedPopulation.degraded} degraded, ${emittedPopulation.abandoned} abandoned) — ` +
+    (emittedPopulation.complete
+      ? `COMPLETE, so absence is certifiable in this run`
+      : `PARTIAL, so absence is NOT certifiable: such rows read RULED-UNKNOWN rather than RULED-SOUND. Re-run with --fresh.`))
+  console.log("")
+}
+
+console.log(`key spaces: ${keyEvidence.nodes.toLocaleString()} key/value bindings observed over ${files.length} files` +
+  (keyEvidence.nodes > 0
+    ? ` (top node types ${keyEvidence.topTypes.join(", ") || "?"}; e.g. ${keyEvidence.sample}) — a VOCABULARY-based ruling in this language must declare the attribute-keys space, or it is RULED-UNJUSTIFIED`
+    : ` — no attribute-key syntax observed, so a vocabulary-based ruling cannot hide a construct that way`))
+console.log(attestation.att
+  ? `attestation ${LANG}: ${attestation.rel} — spaces ${(attestation.att.spacesProbed ?? []).join(", ") || "(none declared)"}; artefact ${attestation.att.artefact ?? "(none)"}` +
+    (attestation.verified.length ? `; VERIFIED ${attestation.verified.join(", ")}` : "") +
+    (attestation.problems.length ? `; PROBLEMS ${attestation.problems.join("; ")}` : "")
+  : `attestation ${LANG}: none — declare \`spacesProbed\` in the lane's Ruled table, or provide ${attestation.rel} with an artefact that exists`)
+console.log("")
 const w = (s: string, n: number) => (s + " ".repeat(n)).slice(0, n)
 console.log(`${w("type", 14)}${w("status", 18)}detail`)
 console.log("-".repeat(120))
@@ -516,11 +982,18 @@ for (const r of rows) console.log(`${w(r.type, 14)}${w(r.status, 18)}${r.detail}
 
 const falsified = rows.filter((r) => r.status === "FALSIFIED")
 const unjustified = rows.filter((r) => r.status === "RULED-UNJUSTIFIED")
+const unknown = rows.filter((r) => r.status === "RULED-UNKNOWN")
 const emitted = rows.filter((r) => r.status === "EMITTED")
 console.log("-".repeat(120))
-console.log(`emitted ${emitted.length}/10   ruled-sound ${rows.filter((r) => r.status === "RULED-SOUND").length}   FALSIFIED ${falsified.length}   ruled-without-justification ${unjustified.length}`)
+console.log(`emitted ${emitted.length}/10   ruled-sound ${rows.filter((r) => r.status === "RULED-SOUND").length}   FALSIFIED ${falsified.length}   ruled-without-justification ${unjustified.length}   ruled-unknown ${unknown.length}`)
+if (unknown.length) {
+  // NOT a failure: an unmeasured row is work to do, not a defective ruling. It must never be read
+  // as a certification, which is exactly why it is not RULED-SOUND.
+  console.log(`\n>>> ${unknown.length} row(s) are RULED-UNKNOWN, not certified: ${unknown.map((r) => r.type).join(", ")}.`)
+  console.log(`>>> The EMITTED column covered ${emittedPopulation.measured.toLocaleString()}/${emittedPopulation.total.toLocaleString()} files in this run; re-run with --fresh to turn these into verdicts.`)
+}
 if (falsified.length) {
-  console.log(`\n>>> THIS GATE FAILS. ${falsified.map((r) => r.type).join(", ")} ${falsified.length === 1 ? "is" : "are"} claimed inapplicable but ${falsified.length === 1 ? "is" : "are"} demonstrably derivable from real code.`)
+  console.log(`\n>>> THIS GATE FAILS. ${falsified.map((r) => r.type).join(", ")} ${falsified.length === 1 ? "is" : "are"} claimed absent but ${falsified.length === 1 ? "is" : "are"} demonstrably derivable from real code.`)
   console.log(`>>> A differential cannot find this class of defect, because the oracle omits the same type.`)
 }
 process.exitCode = falsified.length + unjustified.length === 0 ? 0 : 1

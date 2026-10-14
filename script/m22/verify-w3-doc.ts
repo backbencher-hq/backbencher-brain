@@ -6,7 +6,6 @@
 
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
-import { parseM22Ledger, findIssueByCode } from "./ledger-shape.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m22/results")
@@ -20,17 +19,8 @@ function negative(label: string, ok: boolean, detail = "") { negatives++; check(
 async function run() {
   const doc = readFileSync(path.join(ROOT, "docs/TROUBLESHOOTING.md"), "utf8")
 
-  // Every reported symptom must appear somewhere in the doc. Each row is a GROUP of
-  // alternative spellings, not a pair: the consumer below does `group.some(k =>
-  // doc.includes(k))` and `group.join(" / ")`, so the gate has always treated a row
-  // as a keyword list.
-  //
-  // The annotation used to say `Array<[string, string]>` — a 2-tuple — which is not
-  // what these are. It happened not to bite because four rows carry 1 or 3 strings
-  // and TypeScript reports the arity mismatch, so the four rows below were four
-  // standing diagnostics rather than a silent misreading. Corrected to the shape the
-  // code actually uses, which also documents the intent.
-  const symptoms: string[][] = [
+  // every reported symptom must appear with a cause (## section) and a fix command
+  const symptoms: Array<[string, string]> = [
     ["slow", "hours"],
     ["single worker", "one worker"],
     ["worker err", "ast engine error"],
@@ -96,8 +86,8 @@ async function run() {
   }
   writeFileSync(path.join(RESULTS, "W3.json"), JSON.stringify(result, null, 2) + "\n")
   try {
-    const led = parseM22Ledger(readFileSync(path.join(ROOT, "validation/m22/ledger.json"), "utf8"))
-    const e = findIssueByCode(led, "W3")
+    const led = JSON.parse(readFileSync(path.join(ROOT, "validation/m22/ledger.json"), "utf8"))
+    const e = Object.values(led.issues).find((i: any) => i.code === "W3")
     if (e) { e.status = finalStatus; e.passed = passed; e.failed = checks - passed; e.commit = commit; e.evidenceFile = "W3.json" }
     writeFileSync(path.join(ROOT, "validation/m22/ledger.json"), JSON.stringify(led, null, 2) + "\n")
   } catch (e: any) { console.log(`W3: ledger self-update failed: ${e?.message}`) }

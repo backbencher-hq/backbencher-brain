@@ -16,7 +16,9 @@
 
 import type { Node } from "web-tree-sitter"
 import * as path from "path"
+import { existsSync, readFileSync, readdirSync } from "fs"
 import { ASTEngine } from "./engine"
+import { BINDING_SEP } from "./types"
 
 // ============================================================================
 // PURE-STRING HELPERS (regex-free normalization)
@@ -70,6 +72,77 @@ function isDottedIdentifier(s: string): boolean {
   return !prevDot
 }
 
+/**
+ * `[A-Za-z_$][A-Za-z0-9_$]*` by char code — the SINGLE-segment sibling of `isDottedIdentifier`,
+ * and the replacement for the four `/^[A-Za-z_$][A-Za-z0-9_$]*$/` tests that were this lane's
+ * share of the fleet's no-regex gate.
+ *
+ * This is a predicate about a STRING THE SOURCE WROTE (a field type or parameter type read off
+ * the tree), not a claim about a node type the grammar may or may not emit, so a character walk
+ * is the same test and not a dead branch: the class is ASCII, both ends are anchored, and there
+ * is no quantifier subtlety. Char codes rather than `includes` so the class cannot drift from
+ * `isDottedIdentifier`'s by a locale-aware comparison.
+ */
+function isPlainIdentifier(s: string): boolean {
+  if (s.length === 0) return false
+  const start = s.charCodeAt(0)
+  if (!((start >= 97 && start <= 122) || (start >= 65 && start <= 90) || start === 95 || start === 36)) return false
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (!((c >= 97 && c <= 122) || (c >= 65 && c <= 90) || (c >= 48 && c <= 57) || c === 95 || c === 36)) return false
+  }
+  return true
+}
+
+/**
+ * Drop every trailing `?` — Dart's nullable-type suffix (`String?`, `List<int>?`), the four
+ * `.replace(/\?+$/, "")` sites. A backward walk is the same rule as `\?+$`: all of them, only
+ * at the end, and the string is returned unchanged when there are none (which is the common
+ * case, so the common path allocates nothing).
+ */
+function stripNullableSuffix(text: string): string {
+  let end = text.length
+  while (end > 0 && text.charCodeAt(end - 1) === 63 /* ? */) end--
+  return end === text.length ? text : text.slice(0, end)
+}
+
+/**
+ * THE TYPE NAME A SPELLED HEAD NAMES, with its type arguments removed.
+ *
+ * `GenericClass<int>` -> `GenericClass`, `Map<String, List<int>>` -> `Map`. The arguments are
+ * part of the TYPE, not of its NAME: `GenericClass<int>.new` and `GenericClass<String>.new` name
+ * the same constructor of the same declaration, and every lookup this pass makes — the visibility
+ * of the type, the named-constructor set, `qualifiedTarget` and the `baseBeyondRunScope` claim —
+ * is a question about the NAME. Passing the arguments through made each of them a different
+ * question: `visibleTypes.has("GenericClass<int>")` is false, `namedCtors.has("GenericClass<int>.new")`
+ * is false, and the claim `GenericClass<int>` is not identifier-shaped — which is how three
+ * const-pattern rows in dart-sdk came to be REFUTED by the gate (`causeFAIL` 3).
+ *
+ * CONSERVATIVE ON PURPOSE, because the head arrives as raw source text: the `<` must open a run
+ * that balances and CLOSES AT THE END of the segment (`Map<String, List<int>>` yes, `a < b` no),
+ * and what precedes it must be a plain identifier. Anything else is returned unchanged, so a head
+ * this rule does not understand is passed through rather than truncated — a wrong name is worse
+ * than an unnormalized one.
+ */
+function typeNameWithoutArguments(text: string): string {
+  const lt = text.indexOf("<")
+  if (lt <= 0) return text
+  if (text.charCodeAt(text.length - 1) !== 62 /* > */) return text
+  let depth = 0
+  for (let i = lt; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    if (c === 60 /* < */) depth++
+    else if (c === 62 /* > */) {
+      depth--
+      // a run that closes before the end means the tail is not all arguments
+      if (depth === 0 && i !== text.length - 1) return text
+    }
+  }
+  if (depth !== 0) return text
+  const head = text.slice(0, lt)
+  return isPlainIdentifier(head) ? head : text
+}
+
 function unquote(text: string): string {
   if (text.length >= 2) {
     const first = text[0]
@@ -107,6 +180,41 @@ function isCapitalized(text: string): boolean {
  * about what it is now; the audit is not being taught to skip anything.
  */
 const IMPLICIT_DYNAMIC_TYPE = "dynamic"
+
+/**
+ * THE NAME AN UNNAMED EXTENSION IS PUBLISHED UNDER.
+ *
+ * `extension on String { ... }` is legal Dart: an extension with no name of its own. Until this
+ * round the analyzer gave it the TARGET TYPE — `name = node.childForFieldName("name")?.text ||
+ * targetType` — and that is a NAME-KEYED lie: the project then publishes a declaration called
+ * `String` that is not `String`, so every consumer that decides BY NAME reads the wrong answer.
+ *
+ * MEASURED, whole project, through the pool (`validation/m14/fixtures/dart/unnamed-extension-price.ts`):
+ *
+ *   riverpod   41 unnamed extensions, 19 sharing a name with a REAL declaration of the same project
+ *              (`ProviderBase` x5, `RiverpodAnalysisResult` x2, `_DataRecord`, `Node`,
+ *              `ProviderListenableOrFamily`, `_ProviderOverride`, `_FamilyOverride`, and `Object`
+ *              from `packages/riverpod/test/feature/offline_test.dart` — whose six members also
+ *              published the AMBIGUOUS targets `Mutation.constructor`/`label`/`key`/`call`/`run`).
+ *   proxicall   1 (`BusinessDiscoveryCubit`).   dart-http   2, neither colliding.
+ *
+ * The `Object` row is the expensive one, and it is why this is a defect rather than untidiness:
+ * with an index the analyzer retargets `Object.hashCode` / `Object.operator ==` / `Object.toString`
+ * to the dart:core interface and marks the claim `isExternalBase`; the arbiter verifies an external
+ * claim by looking the OWNER up, found the ANONYMOUS EXTENSION, and REFUSED 31 claims that are
+ * true. The gate counts a refused claim against the lane, so the lie was published as the lane's
+ * own defect (`/tmp/dartgate/gate-riverpod-index.log`: `extFAIL 31`).
+ *
+ * So an unnamed extension publishes a SYNTHESIZED name that is no declaration's, in the family's
+ * spelling for a declaration the source never named (`anonymous_Comparator`, real-java-analyzer.ts;
+ * `anonymous_impl`, real-rust-analyzer.ts): `unnamed_extension_<target>`, or the bare
+ * `unnamed_extension` when the `on` type is not an identifier (java's `anonymous_class` fallback).
+ * The prefix is load-bearing in one more place — `isIndexArtifactName` (src/ast/
+ * analysis-exclusions.ts) drops `^(anonymous|anon|unnamed)[_-]`, so the synthesized symbol never
+ * reaches the index by construction, which is the honest state for a declaration that has no name
+ * to jump to. `metadata.targetType` still carries the subject, so nothing about it is lost.
+ */
+const DART_UNNAMED_EXTENSION = "unnamed_extension"
 
 /**
  * Positions where a `type_identifier` is a type mention the analyzer has ALREADY
@@ -292,6 +400,231 @@ function dartCompanionFor(projectIndex: any): Map<string, Set<string>> | undefin
   return out
 }
 
+// ============================================================================
+// LIBRARY IDENTITY — a Dart library IS its URI, so an import edge can name a FILE
+// ============================================================================
+/**
+ * `processImportExport` writes the SPECIFIER into every import/export target
+ * (`package:flutter/material.dart:*`, `../x.dart:*`, `order_domain.dart:*`). None of those is a
+ * symbol name, so no resolver can bind them — and that is not a defect of the resolver's rule:
+ * a specifier is a PATH, and the rule resolves NAMES. Measured on the admitted population
+ * (`validation/m14/fixtures/dart/import-target-paths.ts`: comment-aware text scan, 33,738
+ * files, 110,957 directives):
+ *
+ *   · 86,196 directives (77.7%) name a file IN THE SAME CHECKOUT — resolvable, and today none
+ *     are, because the edge names the specifier instead of the file the specifier names.
+ *   · 44,296 of those name a target whose bare file STEM is not unique in its checkout, so the
+ *     library NAME cannot address them. A project-relative PATH is unique by construction:
+ *     one file, one path.
+ *   · The other 24,761 name something no file in that checkout answers to — a dependency in the
+ *     pub cache, a `dart:` library outside the SDK checkout, a generated or deleted file. Those
+ *     are NOT resolved here and must not be: an unresolvable import may be a genuine external
+ *     dependency or a broken edge, and telling those apart is the gate's external-claim question.
+ *
+ * So what is published for a library is its PROJECT-RELATIVE PATH (posix separators) — which is
+ * what a Dart library really is: the language identifies a library by its URI, and inside a
+ * checkout that URI is its path. BOTH sides read that string from ONE function, so the published
+ * module and the edges that point at it cannot drift apart — the discipline this file already
+ * applies to `libraryName` (`M60 D1`).
+ *
+ * WHERE THE PROJECT STARTS is derived, not passed: the directory containing `.git`, found by
+ * walking UP from the file. No caller hands `analyze()` a project root — fixtures, the incoming
+ * gate and production all enter through the same call, and the file's own path is the only thing
+ * common to all three. Where there is no checkout above the file, the analyzer keeps the old
+ * specifier targets rather than publishing a path whose origin no other file in the run shares.
+ *
+ * `package:` resolution reads the checkout's own `pubspec.yaml` files — the project's statement
+ * of which packages it contains. It is cached per project root, and a package the checkout does
+ * not declare (a pub dependency) is refused: the half of the answer that only the project can give.
+ */
+type DartLibrarySite = {
+  /** the library's declared name (the file stem when it declares none) — the edge SOURCE */
+  moduleName: string
+  filePath: string
+  /** the checkout root above the file, or null when the file is not inside one */
+  projectRoot: string | null
+  /** the project-relative path that names this library, or null when there is no root */
+  moduleIdentity: string | null
+}
+
+type DartProjectFacts = {
+  /** package name -> project-relative directory holding its pubspec.yaml ("" = the root) */
+  packageRoots: Map<string, string>
+  /** does this checkout carry an SDK (`sdk/lib`)? */
+  sdkLib: boolean
+  /** memoised `dart:<lib>` probe -> the relative SDK file, or null when the checkout has none */
+  dartLibs: Map<string, string | null>
+}
+
+const DART_PROJECT_ROOT_CACHE = new Map<string, string | null>()
+const DART_PROJECT_FACTS_CACHE = new Map<string, DartProjectFacts>()
+/** Directory names a package/pubspec walk never enters. Not a guess: `.git` alone is the repo's
+ *  own object store, and the rest are build outputs that no project declares packages in. */
+const DART_WALK_SKIP = new Set([
+  ".git", ".hg", ".svn", "node_modules", ".dart_tool", ".symlinks", "build", "coverage", ".pub-cache", "out",
+])
+
+/** The checkout root above `filePath`, memoised per directory; null when there is no `.git`. */
+function dartProjectRootOf(filePath: string): string | null {
+  const start = path.dirname(path.resolve(filePath))
+  const seen: string[] = []
+  let dir = start
+  for (let i = 0; i < 64; i++) {
+    const cached = DART_PROJECT_ROOT_CACHE.get(dir)
+    if (cached !== undefined) {
+      for (const d of seen) DART_PROJECT_ROOT_CACHE.set(d, cached)
+      return cached
+    }
+    seen.push(dir)
+    if (existsSync(path.join(dir, ".git"))) {
+      if (DART_PROJECT_ROOT_CACHE.size > 20000) DART_PROJECT_ROOT_CACHE.clear()
+      for (const d of seen) DART_PROJECT_ROOT_CACHE.set(d, dir)
+      return dir
+    }
+    const parent = path.dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  if (DART_PROJECT_ROOT_CACHE.size > 20000) DART_PROJECT_ROOT_CACHE.clear()
+  for (const d of seen) DART_PROJECT_ROOT_CACHE.set(d, null)
+  return null
+}
+
+/** `[a-z][a-z0-9_]*` by char code — the pub and `dart:` library name shape. No regex: this
+ *  lane parses with char scans so a pattern cannot quietly disagree with the grammar. */
+function isDartLibraryName(text: string): boolean {
+  if (text.length === 0) return false
+  const first = text.charCodeAt(0)
+  if (first < 97 || first > 122) return false
+  for (let i = 1; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    const ok = (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+    if (!ok) return false
+  }
+  return true
+}
+
+/** The `name:` of a pubspec, read by scanning lines from column 0 (a dependency's name is
+ *  indented, so a top-level match is the package's own name and not a dependency's). */
+function dartPubspecName(file: string): string | null {
+  let text: string
+  try { text = readFileSync(file, "utf8") } catch { return null }
+  let lineStart = 0
+  for (let i = 0; i <= text.length; i++) {
+    if (i < text.length && text.charCodeAt(i) !== 10) continue
+    const line = text.slice(lineStart, i)
+    lineStart = i + 1
+    if (!line.startsWith("name:")) continue
+    let v = 5
+    while (v < line.length && (line.charCodeAt(v) === 32 || line.charCodeAt(v) === 9)) v++
+    let end = v
+    while (end < line.length) {
+      const c = line.charCodeAt(end)
+      if (c === 32 || c === 9 || c === 13 || c === 35) break
+      end++
+    }
+    const value = line.slice(v, end)
+    return isDartLibraryName(value) ? value : null
+  }
+  return null
+}
+
+/**
+ * The project's own package map and SDK presence, built once per project root.
+ *
+ * The WALK COST is paid once per process per project (a repo's directory tree), not per file:
+ * a `package:` specifier cannot be turned into a path without knowing which directory declares
+ * the package, and only a directory walk can answer that for a package that is not on the
+ * importing file's own ancestor path (measured: 23,375 of the in-repo `package:` directives
+ * name a SIBLING package, more than half). Secrets are not read: only files literally named
+ * `pubspec.yaml` are opened, and only their `name:` line is used.
+ */
+function dartProjectFacts(projectRoot: string): DartProjectFacts {
+  const hit = DART_PROJECT_FACTS_CACHE.get(projectRoot)
+  if (hit) return hit
+  const facts: DartProjectFacts = {
+    packageRoots: new Map(),
+    sdkLib: existsSync(path.join(projectRoot, "sdk", "lib")),
+    dartLibs: new Map(),
+  }
+  const stack: string[] = [projectRoot]
+  while (stack.length > 0) {
+    const dir = stack.pop()!
+    let entries: import("fs").Dirent[]
+    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { continue }
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        if (DART_WALK_SKIP.has(entry.name)) continue
+        stack.push(path.join(dir, entry.name))
+        continue
+      }
+      if (entry.name !== "pubspec.yaml" || !entry.isFile()) continue
+      const name = dartPubspecName(path.join(dir, entry.name))
+      if (name === null || facts.packageRoots.has(name)) continue
+      const rel = path.relative(projectRoot, dir)
+      facts.packageRoots.set(name, rel.split(path.sep).join("/"))
+    }
+  }
+  if (DART_PROJECT_FACTS_CACHE.size >= 64) DART_PROJECT_FACTS_CACHE.clear()
+  DART_PROJECT_FACTS_CACHE.set(projectRoot, facts)
+  return facts
+}
+
+/** `lib/src/x.dart` — the project-relative path of an absolute file, posix separators. */
+function dartRepoRelPath(projectRoot: string, absPath: string): string | null {
+  const rel = path.relative(projectRoot, path.resolve(absPath))
+  if (rel.length === 0 || path.isAbsolute(rel)) return null
+  if (rel === ".." || rel.startsWith(`..${path.sep}`)) return null
+  return rel.split(path.sep).join("/")
+}
+
+/** Join a project-relative base and a `lib/...` tail, refusing anything that climbs out. */
+function dartJoinInside(baseRel: string, tail: string): string | null {
+  const base = baseRel.length === 0 ? "" : `${baseRel}/`
+  const norm = path.posix.normalize(`${base}${tail}`)
+  if (norm.length === 0 || norm === "." || norm === ".." || norm.startsWith("../")) return null
+  return norm
+}
+
+/**
+ * The file a directive names, as a project-relative path, or null when this checkout cannot
+ * answer. Refusing is a first-class result: every branch below is a rule the corpus can audit.
+ */
+function dartImportTargetPath(projectRoot: string, filePath: string, uri: string): string | null {
+  if (uri.length === 0) return null
+  if (uri.startsWith("package:")) {
+    const rest = uri.slice(8)
+    const slash = rest.indexOf("/")
+    if (slash <= 0 || slash === rest.length - 1) return null
+    const pkg = rest.slice(0, slash)
+    const sub = rest.slice(slash + 1)
+    if (!isDartLibraryName(pkg)) return null
+    const packageRoot = dartProjectFacts(projectRoot).packageRoots.get(pkg)
+    // A package this checkout does not declare is a pub dependency: outside the population.
+    if (packageRoot === undefined) return null
+    return dartJoinInside(packageRoot, `lib/${sub}`)
+  }
+  if (uri.startsWith("dart:")) {
+    const lib = uri.slice(5)
+    if (!isDartLibraryName(lib)) return null
+    const facts = dartProjectFacts(projectRoot)
+    // Without an SDK in this checkout there is nothing to point at: a `dart:` library is part
+    // of the SDK, and the SDK is present exactly when `sdk/lib` is.
+    if (!facts.sdkLib) return null
+    const cached = facts.dartLibs.get(lib)
+    if (cached !== undefined) return cached
+    const rel = `sdk/lib/${lib}/${lib}.dart`
+    const found = existsSync(path.join(projectRoot, rel)) ? rel : null
+    facts.dartLibs.set(lib, found)
+    return found
+  }
+  // Another scheme (`http:`, `file:`, …) names something no path in this checkout is.
+  if (uri.indexOf(":") >= 0) return null
+  // A relative or bare specifier is resolved against the importing file's own directory.
+  const abs = path.resolve(path.dirname(path.resolve(filePath)), uri)
+  return dartRepoRelPath(projectRoot, abs)
+}
+
 export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -332,6 +665,15 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     //                              is correct — an annotation is not a library name.
     const library = this.libraryName(rootNode, filePath)
     const moduleName = library.name
+    // A library's own URI, read once and used by BOTH sides: the module node published below,
+    // and the import/export/part edges that name a file (see LIBRARY IDENTITY above).
+    const projectRoot = dartProjectRootOf(filePath)
+    const librarySite: DartLibrarySite = {
+      moduleName,
+      filePath,
+      projectRoot,
+      moduleIdentity: projectRoot === null ? null : dartRepoRelPath(projectRoot, filePath),
+    }
 
     // ...and the node. Published for EVERY file, not only for files that import
     // something: a Dart file IS a library whether or not it has directives, and a
@@ -357,6 +699,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols.push({
       name: moduleName,
       kind: ASTEngine.SymbolKind.Module,
+      // THE LIBRARY'S URI. Strategy 1 of the shared resolver matches `qualified_name` exactly,
+      // so publishing the path here is what lets an import edge name this file. Unset when the
+      // file is not inside a checkout: then the engine's own synthesis (`<scope>.<name>`) is
+      // what it always was, and the edges keep their specifier targets (see LIBRARY IDENTITY).
+      ...(librarySite.moduleIdentity === null ? {} : { qualifiedName: librarySite.moduleIdentity }),
       range: library.directive
         ? this.nodeToRange(library.directive)
         : { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1, startIndex: 0, endIndex: 0 },
@@ -499,9 +846,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         case "extension_declaration": {
           const targetType = this.extensionTargetType(node)
-          // Unnamed extensions (`extension on String {...}`) take the target
-          // type as their name so their members keep an owner scope.
-          const name = node.childForFieldName("name")?.text || targetType
+          // AN UNNAMED EXTENSION IS PUBLISHED UNDER ITS OWN SYNTHESIZED NAME, never under
+          // its target type's — see `DART_UNNAMED_EXTENSION` for the measurement that forced
+          // it. The SAME spelling has to reach the scope push below, because the push is what
+          // gives the members their owner: one rule, two sites, one helper.
+          const name = this.extensionPublishedName(node)
           if (name) {
             const comments = this.collectComments(node)
             patterns["Extensions"] = true
@@ -759,7 +1108,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "library_export":
         case "part_directive":
         case "part_of_directive": {
-          this.processImportExport(node, imports, exports, frameworks, relationships, moduleName)
+          this.processImportExport(node, imports, exports, frameworks, relationships, librarySite)
           break
         }
       }
@@ -1205,8 +1554,50 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     exports: ASTEngine.ExportInfo[],
     frameworks: Record<string, boolean>,
     relationships: ASTEngine.UniversalRelationship[],
-    moduleName: string,
+    site: DartLibrarySite,
   ): void {
+    // THE TARGET IS THE FILE THE SPECIFIER NAMES, when this checkout can say which file that
+    // is (`dartImportTargetPath`): that file's library node publishes the same project-relative
+    // path as its `qualifiedName`, so the edge resolves by exact match. The `:${"*"}` form is kept
+    // where the checkout cannot answer (a dependency, a `dart:` library this checkout does not
+    // carry, a path outside the root), because a specifier that names something the population
+    // does not contain must stay visibly unresolved rather than be pointed at a wrong file.
+    const targetOf = (uri: string): string | null =>
+      site.projectRoot === null ? null : dartImportTargetPath(site.projectRoot, site.filePath, uri)
+    // OUTSIDE THE PROJECT vs ABSENT FROM IT — two different facts, and only one is a CLAIM.
+    //
+    //   OUTSIDE (marked `importOutsideProject`): the checkout cannot contain the target at all
+    //     — a package its own pubspec files do not declare, a `dart:` library in a checkout
+    //     that carries no SDK, a scheme (`http:`, `file:`) that is not a path in any project.
+    //     The marker asserts "this is not in this project", and the incoming gate verifies
+    //     that assertion against the project's own pubspec files and admitted file list —
+    //     never against this analyzer's opinion, or the claim would be its own evidence.
+    //
+    //   ABSENT (unmarked): the checkout DOES declare it and the file is not there — generated
+    //     and deleted files, a `part` whose library is gone. That is a DANGLING INTERNAL
+    //     reference: it stays unresolved and visible. Marking it external would launder a
+    //     real defect into a clean row, which is the one thing a marker must never do.
+    const outsideProject = (uri: string): boolean => {
+      if (site.projectRoot === null) return false
+      if (uri.startsWith("package:")) {
+        const rest = uri.slice(8)
+        const slash = rest.indexOf("/")
+        if (slash <= 0) return false
+        const pkg = rest.slice(0, slash)
+        if (!isDartLibraryName(pkg)) return false
+        return dartProjectFacts(site.projectRoot).packageRoots.get(pkg) === undefined
+      }
+      if (uri.startsWith("dart:")) {
+        const lib = uri.slice(5)
+        if (!isDartLibraryName(lib)) return false
+        // No SDK in this checkout means no `dart:` library is in it. When the SDK IS here the
+        // question is per-library, and a missing one is ABSENT rather than outside.
+        return !dartProjectFacts(site.projectRoot).sdkLib
+      }
+      return uri.indexOf(":") >= 0
+    }
+    const claimMeta = (uri: string, resolved: string | null): Record<string, boolean> =>
+      resolved === null && outsideProject(uri) ? { importOutsideProject: true } : {}
     // `part 'x.dart'` (library lists a part) and `part of 'lib.dart'`
     // (part file names its library) are both library-coupling directives —
     // each produces an imports edge so the part graph is visible (ProxiCall
@@ -1215,14 +1606,19 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       const uriNode = this.findDescendantByType(node, "string_literal") || this.findDescendantByType(node, "uri")
       const uri = uriNode ? unquote(uriNode.text) : ""
       if (uri) {
+        const resolved = targetOf(uri)
         imports.push({ module: uri, source: uri, imported: ["*"], isPart: true, range: this.nodeToRange(node) })
         relationships.push({
-          source: moduleName,
-          target: `${uri}:*`,
+          source: site.moduleName,
+          target: resolved ?? `${uri}:*`,
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
           line_number: this.nodeLine(uriNode),
-          metadata: { isPart: true, isPartOf: node.type === "part_of_directive" },
+          metadata: {
+            isPart: true,
+            isPartOf: node.type === "part_of_directive",
+            ...claimMeta(uri, resolved),
+          },
         })
       }
       return
@@ -1244,23 +1640,25 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // export list; the bare uri does not. Dropping the uri push leaves the
       // Exports relationship intact.
       // exports.push({ name: uri, isDefault: false, range: this.nodeToRange(node) })
+      const resolved = targetOf(uri)
       relationships.push({
-        source: moduleName,
-        target: uri,
+        source: site.moduleName,
+        target: resolved ?? uri,
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
         line_number: this.nodeLine(uriNode),
-        metadata: {},
+        metadata: { ...claimMeta(uri, resolved) },
       })
     } else {
+      const resolved = targetOf(uri)
       imports.push({ module: uri, source: uri, imported: ["*"], isTypeOnly: false, range: this.nodeToRange(node) })
       relationships.push({
-        source: moduleName,
-        target: `${uri}:*`,
+        source: site.moduleName,
+        target: resolved ?? `${uri}:*`,
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1.0,
         line_number: this.nodeLine(uriNode),
-        metadata: {},
+        metadata: { ...claimMeta(uri, resolved) },
       })
     }
   }
@@ -1276,9 +1674,34 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): void {
     for (const symbol of symbols) {
       if (symbol.ownerName) {
+        // THE TARGET IS THE MEMBER'S PUBLISHED SPELLING, not its bare name.
+        //
+        // This was the lane's LAST type emitting two bare names (`Owner -> member`), and it is
+        // its largest one: `contains 700,265 edges / 169,829 resolved / 530,368 ambiguous` in
+        // the whole-corpus gate run — 75.7% of the type unwalkable, and not because any member
+        // is wrong. A Dart project repeats member names constantly (`value`, `build`, `name`,
+        // `props`), and a bare name two classes declare is ambiguous BY CONSTRUCTION: the shared
+        // resolver (strategy 2) accepts a bare name only under `HAVING COUNT(*) = 1`.
+        //
+        // PRICED BEFORE BUILT, on whole checkouts so each project's key space is complete
+        // (`validation/m14/fixtures/dart/contains-target-price.ts`, dart-http + riverpod +
+        // proxicall, 292,017 contains edges):
+        //
+        //     ambiguous -> resolved   267,878   (91.7%)
+        //     ambiguous -> ambiguous   14,564   every one of them an OWNER-name collision
+        //     resolved  -> resolved     9,575
+        //     resolved  -> ambiguous        0   no edge moves backwards
+        //
+        // The spelling is `${scope}.${name}` because that is exactly what `pool-worker.ts`
+        // synthesises into the published `qualifiedName` for a symbol (`s.qualifiedName ||
+        // s.metadata?.fqn || (s.scope ? `${s.scope}.${s.name}` : s.name)`), so the edge and the
+        // node it names are one string from one rule — the discipline `libraryName` follows. A
+        // member with no scope keeps its bare name, which is today's behaviour rather than a
+        // guess at a spelling nothing publishes.
+        const qualified = symbol.scope ? `${symbol.scope}.${symbol.name}` : symbol.name
         relationships.push({
           source: symbol.ownerName,
-          target: symbol.name,
+          target: qualified,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           // The member's OWN NAME line — the name node when the producers could
@@ -1316,14 +1739,52 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // resolveOverrides): in-file BFS over ALL heritage (extends + implements
     // + with), cross-file companion when provided, then a deterministic
     // first-heritage-parent fallback for cross-file framework bases.
+    // A CONSTRUCTOR IS NOT AN OVERRIDABLE MEMBER, and leaving it in this surface published a
+    // fabricated edge. Every constructor symbol the analyzer emits is named `constructor` (the
+    // language's own spelling), so a subclass member that happens to carry that name matched the
+    // base's constructor BY NAME alone:
+    //
+    //   sealed class RecordedUse {
+    //     RecordedUse();
+    //   }
+    //   class RecordedInstanceCreation extends RecordedUse {
+    //     final ConstructorEntity constructor;
+    //
+    // claimed `RecordedInstanceCreation.constructor -> RecordedUse.constructor` at 0.95, and
+    // `RecordedConstructorTearOff.constructor` claimed the same base member. Constructors are not
+    // inherited and cannot be overridden in Dart, and this is also the rule the ORACLE already
+    // holds: its member surface (`memberNamesOf` in script/m14/oracles/dart-overrides.ts) handles
+    // `method_signature` and `declaration` nodes only, so a constructor contributes no name there
+    // and the two implementations disagreed on exactly this one. MEASURED on dart-sdk with the
+    // exposure watchdog: these 2 rows (`pkg/compiler/lib/src/universe/recorded_use.dart`) were
+    // refuted while every instrument-side cause around them was eliminated.
     const byName = new Map<string, ASTEngine.UniversalSymbol[]>()
     for (const s of symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Constructor) continue
       const list = byName.get(s.name) ?? []
       list.push(s)
       byName.set(s.name, list)
     }
     const companionForPass2: Map<string, Set<string>> | undefined =
       overrideCompanion ?? dartCompanionFor(projectIndex)
+    // WHAT THIS RUN COULD SEE, as a fact about the RUN rather than about the project.
+    //
+    // A companion map IS the project's type inventory: it exists only when someone handed
+    // this run `projectIndex.typeMembers` (or an equivalent stand-in for the cross-repository
+    // index), so its PRESENCE is the difference between "I looked for this base in the
+    // project and it is not there" and "I could not look". MEASURED, and the reason this
+    // distinction is load-bearing rather than pedantic: the gate verifies an `isExternalBase`
+    // claim by looking the base's OWNER up in the PROJECT's key space, and production hands
+    // dart no index at all (`parallel-indexer.ts` PROJECT_INDEX_EXTENSIONS names only `.sol`).
+    // On that population the same claim is refuted 16,894 times and verified 10,731 times:
+    // 61% of the claims the arbiter examines are bases the analyzer could not have reached —
+    // another FILE of the same project or the Flutter framework are the same thing to it.
+    //
+    // So the claim is split by what it is about: a base this run cannot reach is a fact about
+    // the RUN (`baseBeyondRunScope`, its own column in the gate, never folded into `resolved`
+    // and never verified against the project), while `isExternalBase` is kept — unchanged — for
+    // the runs that really did look and really did not find it.
+    const seesProject = companionForPass2 !== undefined
 
   // DARTD16's cross-file pass is implemented, documented, and — until now —
   // unreachable: `overrideCompanion` is an OPTIONAL context field that no caller in
@@ -1369,6 +1830,25 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       const list = basesOf.get(r.source) ?? []
       if (!list.includes(r.target)) list.push(r.target)
       basesOf.set(r.source, list)
+    }
+    // THE REAL BASES, IN THE FILE'S OWN ORDER — for the fallback's base CHOICE and nothing else.
+    //
+    // `extends`, `implements`, and a `with` mixin (which this pass publishes as a `uses` edge
+    // carrying `isMixin: true`). A bare `uses` is ANY type the file mentions, so it must never
+    // become a fallback base: `class X extends Object { void f(List<int> x) {} }` mentions
+    // `List` in a parameter and does not inherit from it, and naming `List` would be the same
+    // fabricated-edge shape this map exists to remove. `basesOf` above is narrower still on
+    // purpose — a mixin affects what a base EXPOSES, and folding mixins into that closure is a
+    // separate question from which name a fallback may print.
+    const baseOrder = new Map<string, string[]>()
+    for (const r of relationships) {
+      const type = r.type ?? r.relationshipType ?? ""
+      const isBase = type === "extends" || type === "implements" ||
+        (type === "uses" && (r.metadata as any)?.isMixin === true)
+      if (!isBase || !r.source || !r.target) continue
+      const list = baseOrder.get(r.source) ?? []
+      if (!list.includes(r.target)) list.push(r.target)
+      baseOrder.set(r.source, list)
     }
 
     // Does this base EXPOSE the member — its own, or one it inherits?
@@ -1511,7 +1991,37 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           // (`Poly.sides -> Shape.sides`).
           const hasOverrideAnn = (s.decorators ?? []).some((d) => d.includes("@override"))
           if (hasOverrideAnn) {
-            const first = firstHeritage.get(s.ownerName) ?? null
+            const rawFirst = firstHeritage.get(s.ownerName) ?? null
+            // `Object` IS NOT A NAMEABLE FALLBACK BASE FOR A MEMBER `Object` DOES NOT DECLARE.
+            //
+            // `extends Object` is how a Dart file writes "no superclass": Dart's root class is
+            // implicit on every class, so naming it explicitly adds nothing — `Object` is `X` on
+            // the next line's class, and it declares exactly five members
+            // (`DART_OBJECT_INTERFACE_MEMBERS`). Naming `Object.<member>` for anything outside
+            // those five asserts a declaration where none exists, which is the same class of
+            // fabrication the Object-interface retarget below removes in the other direction.
+            //
+            // MEASURED, and this is the exact shape: `class LineStarts extends Object with
+            // ListMixin<int> { @override int get length => ...; }`. The member is the MIXIN's,
+            // `Object` has never had a `length`, and the first-heritage-parent fallback named
+            // `Object.length` anyway — 128 rows over dart-sdk, every one of them
+            // `isExternalBase`, which is the claim the gate refutes on the one project whose
+            // checkout publishes `sdk/lib/core/object.dart` (verdict clause: `128 external
+            // claim(s) REFUTED`). All 128 have a real base besides Object (46 name
+            // `AnalysisDriverUnitIndex` through `implements idl.AnalysisDriverUnitIndex`, 9
+            // `ListMixin`, 7 `SetMixin`, …), so the honest fallback is the next REAL base.
+            //
+            // So `Object` is skipped for such a member and the walk continues to the first
+            // `extends`/`implements`/`with` base. Two boundaries, both pinned:
+            //   * when the member IS one of Object's own, `Object` stays the base (its interface
+            //     is the one thing a per-file run can name with no evidence about the base —
+            //     `class Direct extends Object { @override String toString() }`);
+            //   * when Object is the ONLY base, there is nothing left to name and no edge is
+            //     published — an out-of-file base may be guessed, but a KNOWN-empty one may not
+            //     (the same reason a refuted fallback publishes nothing).
+            const first = rawFirst === DART_OBJECT_TYPE && !DART_OBJECT_INTERFACE_MEMBERS.has(s.name)
+              ? ((baseOrder.get(s.ownerName) ?? []).find((b) => b !== DART_OBJECT_TYPE) ?? null)
+              : rawFirst
             // A fallback may only fire where there is NO EVIDENCE AGAINST it. The
             // first heritage parent is the right guess when it lives in another
             // repository, because then nothing in this file can refute it. But if
@@ -1557,7 +2067,28 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!refuted) {
               target = first
               confidence = 0.8
-              metadata = { isOverride: true, relationshipType: "method_override", isExternalBase: true }
+              // The marker must not make a claim about the PROJECT that this run cannot
+              // check. With project knowledge the external claim is exactly right — the
+              // analyzer did look the base up and did not find it — and the arbiter (which
+              // has the whole project) can confirm it, which is what those 93 index-assisted
+              // refutations measure. Without it, the only true thing to say is about the RUN,
+              // and it is said in the gate's own bucket-3 column: `baseBeyondRunScope` carries
+              // the base the run could not reach, is deliberately NOT one of `EXTERNAL_KEYS`,
+              // and can never raise a resolution number.
+              //
+              // `Object` IS THE ONE EXCEPTION, and it is not a carve-out for convenience: the
+              // claim `baseBeyondRunScope` says the run could not REACH the base, and when the
+              // base the file itself names is `Object`, nothing was out of reach — `Object` is
+              // dart:core's root, declared by the language rather than by any file in the
+              // population. What `isExternalBase` then claims is that the PROJECT does not
+              // publish `Object`, which the arbiter checks by looking the owner up, and that
+              // check BITES: 31 riverpod claims were refused by it while a fake `Object`
+              // existed (the unnamed-extension defect, fixed 2026-10-09). Reporting it as a
+              // declared cause would move a checked claim into an unchecked column, which is
+              // the one direction bucket 3 must never be used in.
+              metadata = seesProject || first === DART_OBJECT_TYPE
+                ? { isOverride: true, relationshipType: "method_override", isExternalBase: true }
+                : { isOverride: true, relationshipType: "method_override", baseBeyondRunScope: String(first) }
               // THE OBJECT INTERFACE IS THE ONE OVERRIDE TARGET THAT NEEDS NO
               // EVIDENCE ABOUT THE BASE.
               //
@@ -1676,11 +2207,9 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (see `collectTypeMention`).
     //
     // Same-file types come from the symbol table the first pass just built.
-    // UNNAMED EXTENSIONS ARE EXCLUDED, and that exclusion is load-bearing:
-    // `extension on String {}` is published under the name of its TARGET type, so
-    // admitting it would make every mention of `String` in the file resolve to
-    // this file's extension — an edge to a symbol that is not the type the code
-    // names.
+    // UNNAMED EXTENSIONS ARE EXCLUDED, and this is the second half of the rule
+    // `DART_UNNAMED_EXTENSION` states: their published name is SYNTHESIZED, so nothing in
+    // source spells it, and admitting it would put a name no code writes into the resolver.
     const visibleTypes = new Set<string>()
     for (const s of symbols) {
       const kind = s.kind as ASTEngine.SymbolKind
@@ -1695,6 +2224,26 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // row can say which of the two resolved it. Production supplies no index for
     // `.dart`, so there the two are the same set and every row says false.
     const fileTypes = new Set(visibleTypes)
+    // LIBRARY SCOPE — the THIRD scope a bare name binds in, and the one that makes a bare
+    // target CORRECT rather than a receiver the run failed to type.
+    //
+    // Dart resolves an unqualified callee against the enclosing type's members FIRST and the
+    // library's top-level declarations second, so `configure()` inside a class whose chain does
+    // not declare `configure` does not name a member of any type: it names a library-scope
+    // declaration, whose own spelling IS the bare name in this family's key space (a Dart
+    // library is its URI, and a library-scope symbol carries no owner). Counting those rows in
+    // the receiver cut would file "already spelled as correctly as the family allows" under "no
+    // static name reaches this", which is the opposite conclusion a roadmap should draw.
+    //
+    // Type names are excluded because `Foo()` is a CONSTRUCTION and the instantiates arm owns
+    // it; the bare-callee arm never sees it.
+    const libraryScope = new Set<string>()
+    for (const s of symbols) {
+      if (s.ownerName) continue
+      if (fileTypes.has(s.name)) continue
+      if (s.kind === ASTEngine.SymbolKind.EnumMember) continue
+      if (s.name) libraryScope.add(s.name)
+    }
     for (const t of projectIndex?.typeKinds?.keys?.() ?? []) visibleTypes.add(String(t))
 
     // DT-A (first review): in-file named constructors (`Foo.named`) — the
@@ -1763,6 +2312,198 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
     }
+    // ── THE SOURCE'S OWN QUALIFIER, KEPT INSTEAD OF DROPPED ──────────────
+    //
+    // Measured 2026-10-08 on a 6-line probe file (`script/m14/tmp/dt-selector-shape.ts`
+    // prints the node shapes; the symbol table below is `pool-worker.parseFile`'s):
+    //
+    //   source            edge the analyzer emitted      symbol the file PUBLISHES
+    //   Color.red         uses  -> red                   enum_member  q=Color.red
+    //   C.create()        calls -> create                method       q=C.create
+    //   super.go()        calls -> go                    method       q=Base.go
+    //   this.count        uses  -> count                 property     q=Base.count
+    //   b.count           uses  -> count                 property     q=Base.count
+    //
+    // Every one of those targets is a bare member name, and the qualifier that would make it
+    // determinate is written in the SOURCE. `Color.red` in a project with four `red`s is an
+    // ambiguous edge; `Color.red` is exactly one declaration, because the member symbol's
+    // `ownerName` is what `pool-worker` turns into its `qualifiedName`. This is the same
+    // defect the fsharp lane measured and fixed (calls target-determinacy 19.1% -> 29.1%).
+    //
+    // VERIFY-THEN-WRITE, because qualification can also make an edge WORSE: a bare `count`
+    // that is unique in the project resolves, while `C.count` for a member C inherits names
+    // a declaration C does not have. So the target is written ONLY when the analyzer can
+    // point at the declaration it names — in this file's own symbol table, or in the project
+    // index's member table. Nothing here guesses an owner from a capital letter alone.
+    const fileQualified = new Set<string>()
+    for (const s of symbols) {
+      if (s.ownerName) fileQualified.add(`${s.ownerName}.${s.name}`)
+    }
+    /** type -> member, transitively closed, from the index — the same read the override pass
+     *  makes (`buildResolutionTables`' `typeMembers`), and absent for a per-file run. */
+    const indexDeclares = (typeName: string, member: string): boolean => {
+      const set = projectIndex?.typeMembers?.get?.(typeName)
+      if (set instanceof Set) return set.has(member)
+      if (Array.isArray(set)) return set.includes(member)
+      return false
+    }
+    /**
+     * The type that DECLARES `member`, starting at `from` and walking this file's superclass
+     * chain. Dart's own rule: a member is addressable through the type that inherits it, but
+     * the DECLARATION is what a qualified name names — `this.count` inside C is `Base.count`
+     * when C extends Base, and writing `C.count` there would name a symbol that does not
+     * exist (and, being a lookup miss, would be counted as a broken edge).
+     */
+    const declaringOwner = (member: string, from: string | null, memberNodesByOwner: Map<string, Set<string>>): string | null => {
+      const seen = new Set<string>()
+      let cur = from
+      while (cur && !seen.has(cur)) {
+        seen.add(cur)
+        if (memberNodesByOwner.get(cur)?.has(member)) return cur
+        cur = superByClass.get(cur) ?? null
+      }
+      return null
+    }
+    /** owner text -> the fields/locals it declares -> their DECLARED type, when that type is
+     *  a plain identifier. `final Base b;` makes `b.count` addressable as `Base.count`. */
+    const fieldTypeByField = new Map<string, string>()
+    for (const s of symbols) {
+      if (!s.ownerName) continue
+      const dt = String((s.metadata as any)?.dataType ?? "")
+      if (isPlainIdentifier(dt)) fieldTypeByField.set(`${s.ownerName}.${s.name}`, dt)
+    }
+    /**
+     * A QUALIFIED TARGET or null, AND WHY — the second half is the RECEIVER AVAILABILITY CUT.
+     *
+     * The cut is the decomposition the roadmap is written on: of the edges whose target stayed
+     * a bare member name, how many have a receiver whose type this run could not see (an
+     * index question), how many name a member whose declaring type is outside the run (a
+     * different index question), and how many have NO type name at the site at all (`dynamic`,
+     * an untyped parameter, a call result, an index expression) — which is bucket 3's true
+     * population, and the only one of the three that no amount of indexing can move.
+     *
+     * IT IS REPORTED HERE, INSIDE THE FUNCTION THAT DECIDES, rather than derived afterwards in
+     * a census. A second walker that re-asks "could this have been qualified" would be a second
+     * copy of this rule, and this repository's repeated finding is that two copies of one rule
+     * are two rules — the copy the CENSUS used would be the one that was wrong. The cause
+     * strings are the three null-returning branches below, in order:
+     *
+     *   receiverUnnamed            no owner text at the site (a call result, an index expression,
+     *                              a cascade, a bare callee in library scope). Not typeable here.
+     *   receiverTypeOutsideRun     a CAPITALIZED owner text names a type this run cannot see (an
+     *                              imported type, a prefix): the type's NAME is in the source, so
+     *                              the target can be spelled `Type.member` even though no member
+     *                              table here can confirm it.
+     *   receiverTypeUnknown       a lowercase owner text whose declared type this run did not
+     *                              resolve — a VALUE, not a type. No spelling at the site reaches
+     *                              a declaration; this is the receiver-typing gap.
+     *   receiverInFileNotSpelled   the declaring owner IS in this file, and the qualified
+     *                              spelling is not in this file's published symbol table — the
+     *                              one branch that is an analyzer gap rather than missing
+     *                              knowledge, and it is kept separate for exactly that reason.
+     *   receiverMemberOutsideRun   the type is visible here and does not declare the member, so
+     *                              the DECLARING type (a superclass, a mixin, a mixin's own base)
+     *                              is outside the run.
+     *   libraryScopeCallee         the bare name is a LIBRARY-scope declaration of this file —
+     *                              not a receiver problem at all. Set by the bare-callee arm only
+     *                              (see `libraryScope`), because a receiver-qualified member never
+     *                              falls back to library scope and so can never mean this.
+     */
+    const qualifiedTarget = (
+      ownerText: string | null,
+      member: string,
+    ): { target: string | null; cause: string | null; typeName?: string; claim?: string } => {
+      if (!ownerText || !member) return { target: null, cause: "receiverUnnamed" }
+      // TWO DIFFERENT DECLINES, and the first draft of this cut did not tell them apart — the dump
+      // did. Dart capitalizes type names and lowercases values, which is the one piece of evidence
+      // the source itself carries here:
+      //
+      //   `ExternalThing.frob()` — a CAPITALIZED head is a TYPE this run cannot see. The name is
+      //   written in the source, so the edge could publish `ExternalThing.frob` (a spelling that
+      //   is more specific than the bare member and that a project index can resolve) instead of
+      //   dropping it: this is a SPELLING loss.
+      //
+      //   `ext.frob()` — a lowercase head is a VALUE whose declared type this run did NOT resolve
+      //   (the type lives in the declaration of `ext`, which `headOwner` fell back past). Nothing
+      //   at the site names a type, so no spelling change reaches it: this is a RECEIVER-TYPING
+      //   gap, and reporting it as "the type is outside the run" — which the first draft did, by
+      //   using the head TEXT as the type — would have counted a typing gap as a spelling loss in
+      //   the very census written to decide which of the two to build.
+      if (!visibleTypes.has(ownerText)) {
+        if (!isCapitalized(ownerText)) return { target: null, cause: "receiverTypeUnknown" }
+        // THE RECEIVER-TYPE SPELLING, AND WHY ITS CLAIM IS THE HONEST HALF.
+        //
+        // The type's NAME is in the source or in the value's own declaration (`headOwner` resolves
+        // a local, a parameter or a field), so the target can name an owner instead of guessing
+        // that the bare LEAF is unique in the project: `ExternalThing.make` is strictly more
+        // specific than `make`, and it resolves exactly when the project declares
+        // `ExternalThing.make` — measured on the gate's own key space, 966 ambiguous riverpod calls
+        // resolve against 129 previously-resolved rows that stop being resolvable, which is the
+        // trade the census exists to price.
+        //
+        // What makes it SAFE is `baseBeyondRunScope`, whose contract was built for exactly this
+        // situation: the run was handed no project index, so it could not look the owner up. The
+        // claim CANNOT raise a resolution — the gate reads it only where the target names nothing
+        // — and it is checked against the edge's own target owner, so it cannot excuse an unrelated
+        // row. Rows whose spelling DOES resolve never have their claim read, so the spelling is
+        // never bought with an exemption.
+        return { target: `${ownerText}.${member}`, cause: null, typeName: ownerText, claim: ownerText }
+      }
+      const declared = declaringOwner(member, ownerText, membersByOwner)
+      if (declared) {
+        // the in-file spelling is verified against what the file PUBLISHES, not rebound
+        const spelling = `${declared}.${member}`
+        if (fileQualified.has(spelling)) return { target: spelling, cause: null }
+        return { target: null, cause: "receiverInFileNotSpelled" }
+      }
+      if (indexDeclares(ownerText, member)) return { target: `${ownerText}.${member}`, cause: null }
+      return { target: null, cause: "receiverMemberOutsideRun" }
+    }
+    /**
+     * THE CUT'S METADATA, built in ONE place so no site can record a cause without its type or a
+     * type without its cause — the same reason the cause is produced inside the rule that decides
+     * it. A row the analyzer qualified carries nothing here: the cut labels bare rows only.
+     */
+    const receiverCut = (q: { cause: string | null; typeName?: string; claim?: string }): Record<string, unknown> => {
+      // A SPELLED ROW CARRIES THE CLAIM, NOT A CUT CAUSE. The two are mutually exclusive by
+      // construction: the cut labels rows that stayed BARE, and a spelled row did not. Keeping the
+      // split here means no emission site can attach both and no site has to remember the rule.
+      if (q.claim !== undefined) return { baseBeyondRunScope: q.claim }
+      return q.cause ? { receiverCause: q.cause, ...(q.typeName ? { receiverType: q.typeName } : {}) } : {}
+    }
+
+    /**
+     * A declared type name this pass can POINT AT, or undefined. `Widget?` is the same
+     * declaration as `Widget` (the operand of `?` is the type), and a generic or record
+     * type is NOT reduced here — `List<int>` names a declaration whose members this pass
+     * would then have to resolve through arguments it has not read, so it declines.
+     */
+    const plainTypeName = (text: string | undefined | null): string | undefined => {
+      const leaf = stripNullableSuffix(String(text ?? ""))
+      return isPlainIdentifier(leaf) ? leaf : undefined
+    }
+
+    /**
+     * The type a READ/CALL head names, in the order Dart resolves an unqualified name:
+     * a LOCAL/PARAMETER binding shadows a field, which shadows nothing else this pass
+     * knows. `this` -> the enclosing type, `super` -> its base, a capitalized name -> the
+     * type it spells, a field -> the type the field is declared with. Anything else (a
+     * call result, an index expression, a prefix alias) has no owner this run can point
+     * at, and returns null so the target stays the bare leaf the source wrote.
+     */
+    const headOwner = (head: Node | null, enclosing: string | null, localTypes: Map<string, string>): string | null => {
+      const t = head?.type
+      if (t === "this") return enclosing
+      if (t === "super") return superByClass.get(enclosing ?? "") ?? null
+      const text = this.headNameText(head)
+      if (text === null) return null
+      const localType = localTypes.get(text)
+      if (localType) return localType
+      const fieldType = fieldTypeByField.get(`${enclosing ?? ""}.${text}`)
+      if (fieldType) return fieldType
+      return text
+    }
+
     // Current call source = enclosing function/method/constructor leaf name.
     const resolveCurrent = (n: Node, current: string | null): string | null => {
       // Local functions are NOT call contexts (family contract: locals fold
@@ -1820,8 +2561,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         return nm || owner
       }
       if (t === "extension_declaration" || t === "extension_type_declaration") {
-        const nm = n.childForFieldName?.("name")?.text || this.extensionTargetType(n)
-        return nm || owner
+        // THE SYNTHESIZED NAME, not the target type: an `instantiates`/`uses` row emitted
+        // inside an unnamed extension's body must name the same owner its `contains` row
+        // does, and `extensionPublishedName` is that one rule.
+        return this.extensionPublishedName(n) || owner
       }
       if (t === "mixin_declaration") {
         // mixin name is a direct identifier child (no name field)
@@ -1839,13 +2582,28 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       return owner
     }
 
-    const processNode = (
+    // VISITS ONE NODE and RETURNS what its children inherit — it does not descend.
+    //
+    // The descent used to be a self-call in the tail, and that is what the dart corpus
+    // broke: measured 2026-10-07, `deep_nesting_statement_test.dart` is a tree of depth
+    // **20,004** and `deep_nesting_expression_test.dart` **10,005** (probe:
+    // `validation/m14/fixtures/dart/deep-nesting-stack.ts`), and the recursion threw
+    // `RangeError: Maximum call stack size exceeded` with the frame at the old line 2434
+    // repeating 500 times — the entire stack, on one file. The engine caught it and
+    // returned `2.0-basic-fallback` with 0 symbols, so the dart SDK's own deep-nesting
+    // fixtures were 2 of the 8 files the whole-corpus coverage gate could not measure. A JS
+    // call stack is bounded by depth and this corpus contains 20,004.
+    //
+    // Nothing above the tail changed: no early `return`, and `prev`/`prevOwner` keep the
+    // meaning they had (the parent's values, captured before this node's own resolution).
+    const visitNode = (
       n: Node,
       current: string | null,
       owner: string | null,
       locals: Set<string>,
+      localTypes: Map<string, string>,
       insideCollected: boolean,
-    ): void => {
+    ): [string | null, string | null, Set<string>, Map<string, string>, boolean] => {
       const prev = current
       const prevOwner = owner
       const t = n.type
@@ -1856,6 +2614,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // declarators plus the formal parameters of the preceding signature
       // sibling (Dart puts the body AFTER the signature in the container).
       let childLocals = locals
+      let childLocalTypes = localTypes
       // Whether a STRICT ancestor's whole subtree has already been collected into
       // `locals`. See the block below for why that makes a re-walk redundant.
       let childInsideCollected = insideCollected
@@ -1886,9 +2645,16 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         // COPY `locals` before merging. Writing into `locals` in place would leak this
         // scope's bindings back into its parent's set.
         let bound: Set<string> | null = null
+        // DECLARED TYPES for those bindings, collected in the same place and merged the
+        // same way. A receiver whose type is written in the signature or the declaration
+        // (`void run(OrderRepository r)`, `final Base b = Base();`) is what makes a call
+        // target determinate; the NAME set alone cannot tell `r` from a local.
+        let boundTypes: Map<string, string> | null = null
         if (!insideCollected) {
           const own = this.collectDartLocals(n)
           if (own.size > 0) bound = own
+          const ownTypes = this.collectDartLocalTypes(n)
+          if (ownTypes.size > 0) boundTypes = ownTypes
         }
         // A signature SIBLING is not a descendant, so its parameters are NOT implied by
         // the ancestor's collection. This walk stays unconditional — it is over a
@@ -1900,10 +2666,19 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!bound) bound = new Set<string>()
             for (const nm of sigNames) bound.add(nm)
           }
+          const sigTypes = this.collectDartParameterTypes(sig)
+          if (sigTypes.size > 0) {
+            if (!boundTypes) boundTypes = new Map<string, string>()
+            for (const [nm, ty] of sigTypes) boundTypes.set(nm, ty)
+          }
         }
         if (bound) {
           childLocals = new Set(locals)
           for (const nm of bound) childLocals.add(nm)
+        }
+        if (boundTypes) {
+          childLocalTypes = new Map(localTypes)
+          for (const [nm, ty] of boundTypes) childLocalTypes.set(nm, ty)
         }
         if (!insideCollected) childInsideCollected = true
       }
@@ -1988,27 +2763,57 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: {},
               })
             } else {
+              // A bare callee inside a type body resolves to THAT type's member before it
+              // resolves to a file-scope function of the same name (Dart's member scope
+              // shadows the library scope), so the enclosing type is the owner — and it is
+              // only written when the declaration is verifiable.
+              //
+              // A CALLEE can be a BINDING, not a declaration. `$default(_that)` is a real
+              // invocation — freezed's generated `map`/`maybeMap` takes the mapping function
+              // as a formal parameter named `$default` and calls it — and the family contract
+              // publishes no locals. The label `isLocalRead` was added for exactly this and
+              // the `calls` branch consulted `locals` for nothing, so the class was present
+              // but UNCOUNTABLE: 138 `calls -> $default` rows and 50 `calls -> orElse` rows
+              // over 4,788 corpus files, indistinguishable in any report from a call to a
+              // method nobody declared.
+              //
+              // 2026-10-08 — the label was NOT enough, and the comment that used to sit here
+              // ("the target binds to nothing a consumer holds") was FALSE about the string it
+              // published. The store resolves a target by NAME and never reads the metadata:
+              // `resolveRelationships` Strategy 2 admits a bare name declared exactly once in
+              // the project, so `calls -> $default` binds to any single declaration of that
+              // name, in any file. The target now carries `BINDING_SEP` and the `localBinding`
+              // claim, so the spelling itself says "a binding" and cannot be a declaration's
+              // name (see `src/ast/types.ts` and `local-read-phantom.ts`).
+              const isBinding = locals.has(leaf)
+              const q0 = isBinding ? { target: null, cause: null } : qualifiedTarget(owner, leaf)
+              // THE LIBRARY-SCOPE REFINEMENT, applied only where Dart actually falls back to
+              // library scope. A receiver-qualified member (`ext.frob()`) never binds to a
+              // top-level `frob`, so the chain and selector arms keep their cause as written;
+              // an unqualified callee does fall back, and the fallback is what the fourth case
+              // names. Without this the cut would report a superclass outside the run for a
+              // top-level function declared in the very same file.
+              const q = q0.cause === "receiverMemberOutsideRun" && libraryScope.has(leaf)
+                ? { target: null, cause: "libraryScopeCallee" }
+                : q0
               relationships.push({
                 source: callSource,
-                target: leaf,
+                target: q.target ?? (isBinding ? `${callSource}${BINDING_SEP}${leaf}` : leaf),
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
                 line_number: this.nodeLine(leafNode),
-                // A CALLEE can be a binding, not a declaration, and the label has
-                // to say so. `$default(_that)` is a real invocation — freezed's
-                // generated `map`/`maybeMap` takes the mapping function as a formal
-                // parameter named `$default` and calls it — and the family contract
-                // publishes no locals, so the target binds to nothing a consumer
-                // holds. `uses` already carries `isLocalRead` for exactly this and
-                // the `calls` branch consulted `locals` for nothing, so the class was
-                // present but UNCOUNTABLE: 138 `calls -> $default` rows and 50
-                // `calls -> orElse` rows over 4,788 corpus files, indistinguishable
-                // in any report from a call to a method nobody declared.
-                //
-                // Metadata only. No row is added or removed and no confidence moves,
-                // so this cannot change a payload; it makes an existing population
-                // queryable, which is what M14 §4 asks of a heuristic edge.
-                metadata: locals.has(leaf) ? { isLocalRead: true } : {},
+                // Metadata only, for the marker half. No row is added or removed and no
+                // confidence moves, so this cannot change WHICH edges exist; it makes an
+                // existing population queryable, which is what M14 §4 asks of a heuristic
+                // edge.
+                metadata: {
+                  ...(isBinding ? { isLocalRead: true, localBinding: true } : {}),
+                  ...(q.target ? { qualifier: "enclosing" } : {}),
+                  // THE RECEIVER CUT, on the rows that stayed bare and only there — a row that
+                  // resolved already says how it resolved (`qualifier`), and a binding has no
+                  // receiver question to answer.
+                  ...(isBinding ? {} : receiverCut(q)),
+                },
               })
             }
           }
@@ -2048,16 +2853,39 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { isNamedConstructor: true },
             })
           } else {
+            // KEEP THE QUALIFIER THE SOURCE WROTE (see `qualifiedTarget`). For a one-link
+            // chain the owner is the head (`C.create()` -> C, `this.build()` -> this,
+            // `super.go()` -> super); for a longer chain it is the link immediately before
+            // the leaf, and a lowercase link (`a.b.c()`) does not name a type, so the
+            // lookup refuses it and the target stays the bare leaf.
+            const ownerCand = links.length > 1 ? before : headOwner(head, owner, localTypes)
+            const q = qualifiedTarget(ownerCand, method)
             relationships.push({
               source: callSource,
-              target: method,
+              target: q.target ?? method,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
               line_number: this.nodeLine(calleeNode),
               // Same reason as the bare-call arm above: a leaf that the enclosing
               // function binds is a binding, and the row is labelled so a consumer
               // can tell it from a call to a declared member.
-              metadata: locals.has(method) ? { isLocalRead: true } : {},
+              //
+              // 2026-10-08 — DELIBERATELY NOT re-spelled as a binding, and the reason is a
+              // finding rather than an omission. This arm runs for a chain of TWO or more
+              // links (`a.b.c()`), where the leaf is resolved against the RECEIVER, not
+              // against the enclosing function: the `locals` set consulted here is the
+              // enclosing function's, so `isLocalRead` on this arm answers a question about
+              // the WRONG SCOPE whenever `links.length > 1`. The target cannot be re-spelled
+              // to `#` for the same reason — for a chain the leaf may genuinely name a
+              // declaration reachable through the receiver, and `qualifiedTarget` is the rule
+              // that decides it. Named, not fixed: a one-link chain reaches the bare-call arm
+              // above and IS re-spelled; the multi-link case needs its own measurement of how
+              // often `locals.has(method)` is true where no receiver member exists.
+              metadata: {
+                ...(locals.has(method) ? { isLocalRead: true } : {}),
+                ...(q.target ? { qualifier: "chain" } : {}),
+                ...receiverCut(q),
+              },
             })
           }
         }
@@ -2089,13 +2917,21 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: { isNamedConstructor: true, isTearOff: true },
               })
             } else {
+              // `Color.red`, `M.off`, `C.total`, `this.count`, `b.count` — the source
+              // names the owner and the analyzer used to drop it (see `qualifiedTarget`).
+              const q = qualifiedTarget(headOwner(head, owner, localTypes), member)
               relationships.push({
                 source: callSource,
-                target: member,
+                target: q.target ?? member,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.9,
                 line_number: this.nodeLine(memberNode),
-                metadata: { isMemberRead: true },
+                metadata: q.target
+                  // THE CLAIM TRAVELS WITH THE SPELLING — see `apply-recv-spell.py` #4: this ternary
+                  // consulted only `q.target`, so the claim was dropped the moment there was a
+                  // target to spell.
+                  ? { isMemberRead: true, qualifier: "head", ...receiverCut(q) }
+                  : { isMemberRead: true, ...receiverCut(q) },
               })
             }
           }
@@ -2127,28 +2963,57 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "qualified" && n.parent?.type === "constant_pattern") {
         const segs = n.text.split(".")
         const member = segs[segs.length - 1]
-        const head = segs.length > 1 ? segs[segs.length - 2] : null
+        // THE HEAD IS SPELLED THE WAY THE SOURCE WROTE IT, ARGUMENTS AND ALL. This site reads
+        // the head off the NODE TEXT rather than through `headNameText`, so `GenericClass<int>.new`
+        // arrives as `GenericClass<int>` — and every test below is a question about the type's
+        // NAME, not its arguments: `isCapitalized`, the `namedCtors` lookup, `qualifiedTarget`
+        // and the `baseBeyondRunScope` claim the last of those writes. Left unnormalized, the
+        // claim went out as the non-identifier `GenericClass<int>` and the gate REFUTED three
+        // rows for it (`causeFAIL` 3, dart-sdk, arm9) — the type was declared in each of the
+        // three files, so the run held the very owner the claim said it could not reach.
+        // Normalizing here means the tests and the claim all see `GenericClass`, which is the
+        // name the declaration, the visibility set and the claim contract all speak.
+        const head = segs.length > 1 ? typeNameWithoutArguments(segs[segs.length - 2]) : null
         if (member && !this.isDartGlobalBuiltin(member) && member !== head) {
           // A named constructor is still a construction: `case Foo.named:` tests
           // the constructor `Foo.named`, so it instantiates Foo (DT-A), the same
           // way the selector branch above treats a `Foo.named` tear-off.
-          if (head !== null && isCapitalized(head) && namedCtors.has(`${head}.${member}`)) {
+          //
+          // `.new` IS THE UNNAMED CONSTRUCTOR'S OWN SPELLING, and it takes the same arm. This
+          // lane already states the rule: `isRealConstructor` decides "is this signature a
+          // constructor" with `lead === "new" || lead === owner`, because the unnamed
+          // constructor's name is `new` and a member may not be spelled that way. The parser
+          // shows the same text as a construction one shape over — `case const
+          // GenericClass<int>.new():`, the INVOCATION form — and that already publishes
+          // `instantiates -> GenericClass` through the calls pass. Left on the member-read arm,
+          // the tear-off spelling published `uses -> new`: a bare leaf no project declares and
+          // no source wrote, while the identical constructor one bracket away published its
+          // class. No visibility test is needed to read `X.new` as X's unnamed constructor:
+          // `new` is a keyword reserved from member names, so that spelling has no other
+          // reading. It carries its own flag rather than `isNamedConstructor` — that one would
+          // be false here, and a consumer counting named constructions should not count this.
+          if (head !== null && isCapitalized(head) && (namedCtors.has(`${head}.${member}`) || member === "new")) {
             relationships.push({
               source: callSource,
               target: head,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.95,
               line_number: this.nodeLine(n),
-              metadata: { isNamedConstructor: true, isConstantPattern: true },
+              metadata: member === "new"
+                ? { isConstructorReference: true, isConstantPattern: true }
+                : { isNamedConstructor: true, isConstantPattern: true },
             })
           } else {
+            const q = qualifiedTarget(head, member)
             relationships.push({
               source: callSource,
-              target: member,
+              target: q.target ?? member,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               line_number: this.nodeLine(n),
-              metadata: { isMemberRead: true, isConstantPattern: true },
+              metadata: q.target
+                ? { isMemberRead: true, isConstantPattern: true, qualifier: "pattern", ...receiverCut(q) }
+                : { isMemberRead: true, isConstantPattern: true, ...receiverCut(q) },
             })
           }
         }
@@ -2199,24 +3064,43 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         ) {
           const isDeclaredMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
           if (!locals.has(txt) && isDeclaredMember) {
+            // The enclosing type DECLARES this member (that gate is unchanged — an
+            // inherited bare read still emits no edge, which is a separate question from
+            // what the edge is CALLED), so the owner is known and the qualified name is
+            // checkable against what this file publishes.
+            const q = qualifiedTarget(owner, txt)
             relationships.push({
               source: callSource,
-              target: txt,
+              target: q.target ?? txt,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.6,
               line_number: this.nodeLine(n),
-              metadata: { isBareRead: true },
+              metadata: q.target
+                ? { isBareRead: true, qualifier: "enclosing", ...receiverCut(q) }
+                : { isBareRead: true, ...receiverCut(q) },
             })
           } else if (locals.has(txt)) {
             // DT2: bound locals/params read as values (OC-E parity).
             // Exact scope resolution — confidence 0.9, lane-compared.
+            //
+            // 2026-10-08 — the target is the BINDING's spelling, not the bare name. The
+            // analyzer has positively resolved `txt` to a binding here, and a binding is not a
+            // declaration: no symbol exists for it (DARTD8), so no lookup can ever be right,
+            // while the store's bare-name rule (Strategy 2, `cnt = 1`, metadata unread) binds
+            // the bare name to whatever single declaration happens to carry it. Measured: a
+            // function's own `counter` bound to an unrelated class's field named `counter`, in
+            // another file (validation/m14/fixtures/dart/local-read-phantom.ts). The
+            // separator makes the target unspeakable as a declaration, and the `localBinding`
+            // claim is what the arbiter checks (`verifyBindingClaim`).
             relationships.push({
               source: callSource,
-              target: txt,
+              target: `${callSource}${BINDING_SEP}${txt}`,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               line_number: this.nodeLine(n),
-              metadata: { isLocalRead: true },
+              // A read of a PARAMETER is a binding too: `locals` holds the function's bound
+              // names (parameters and `var`s alike), which is why both land here.
+              metadata: { isLocalRead: true, localBinding: true },
             })
           } else if (!isDeclaredMember && topLevelValues.has(txt)) {
             // DT2: file-scope values read as values. Members shadow
@@ -2429,16 +3313,56 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.collectTypeMention(n, callSource, relationships, visibleTypes, fileTypes)
       }
 
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const child = n.namedChild(i)
-        if (child) processNode(child, current, owner, childLocals, childInsideCollected)
-      }
-
-      current = prev
-      owner = prevOwner
+      // What this node's children inherit. `current`/`owner` are this node's resolved
+      // values and `childLocals`/`childInsideCollected` its merged sets — exactly the four
+      // arguments the recursive form passed down.
+      return [current, owner, childLocals, childLocalTypes, childInsideCollected]
     }
 
-    processNode(node, null, null, new Set<string>(), false)
+    /**
+     * The walk: a PREORDER descent over an explicit stack.
+     *
+     * Same traversal, same order, no call frames. The order is load-bearing rather than
+     * tidy, which is why children are pushed in reverse so `pop()` yields them
+     * left-to-right: the body reads `previousNamedSibling` and compares `current === prev`
+     * (the sibling-signature rule), so a different visit order would change what the
+     * analyzer reports on ordinary code, not just on this fixture.
+     */
+    const processNode = (
+      root: Node,
+      current: string | null,
+      owner: string | null,
+      locals: Set<string>,
+      localTypes: Map<string, string>,
+      insideCollected: boolean,
+    ): void => {
+      const work: Array<[Node, string | null, string | null, Set<string>, Map<string, string>, boolean]> = [
+        [root, current, owner, locals, localTypes, insideCollected],
+      ]
+      while (work.length > 0) {
+        const [n2, cur, own, loc, types, inside] = work.pop()!
+        const [cur2, own2, loc2, types2, inside2] = visitNode(n2, cur, own, loc, types, inside)
+        // MATERIALISE THE CHILD LIST ONCE, then iterate it. Indexing `n2.namedChild(i)` in
+        // a loop is a trap rather than a style choice, and it is the reason this file cost
+        // 7.6 minutes: `node --cpu-prof` on a 31,905-node slice put **92% of the run inside
+        // tree-sitter's own accessors** (`ts_node__child` 63.8%, `ts_node_child_with_descendant`
+        // 28.3%) and only 0.3% in this analyzer's JavaScript. web-tree-sitter 0.25 returns a
+        // FRESH wrapper on every property access, so the child list cached on a wrapper is
+        // built and discarded per iteration — the sql lane recorded the same mechanism at
+        // `real-sql-analyzer.ts` ("every property access returns a FRESH wrapper", verified:
+        // `namedChild(0) === namedChild(0)` is false, `.id` is equal).
+        //
+        // `namedChildren` builds that list ONCE for this node, which is the whole fix; the
+        // walk stays a preorder in child order because the array is pushed in reverse.
+        const kids: (Node | null)[] = n2.namedChildren ?? []
+        for (let i = kids.length - 1; i >= 0; i--) {
+          const child = kids[i]
+          if (child) work.push([child, cur2, own2, loc2, types2, inside2])
+        }
+      }
+    }
+
+    processNode(node, null, null, new Set<string>(), new Map<string, string>(), false)
   }
 
   // ============================================================================
@@ -2544,10 +3468,20 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // implementations of one rule share.
     const name = n.text
     if (!name || name === IMPLICIT_DYNAMIC_TYPE) return
-    // SELF-REFERENCE IS NOT A DEPENDENCY. An unnamed extension is published under
-    // its target type's name, so without this `extension on String` publishes
-    // `String references String`.
+    // SELF-REFERENCE IS NOT A DEPENDENCY.
     if (name === source) return
+    // THE SUBJECT OF AN UNNAMED EXTENSION IS NOT A MENTION ITS BODY MAKES.
+    //
+    // `extension on Z3 {}` is published as `unnamed_extension_Z3`, so the `on Z3` mention
+    // would read `unnamed_extension_Z3 references Z3` — an edge whose SOURCE is a name the
+    // store does not keep (`isIndexArtifactName` drops the synthesized prefix). The subject
+    // is already published as the extension's OWN identity (`metadata.targetType`), so the
+    // edge would add a source no index can resolve and nothing a reader cannot read off the
+    // declaration itself.
+    //
+    // A NAMED extension keeps its edge: `extension M on M2 {}` still reads `M -> M2`, pinned
+    // by `verify-dart-references.ts` ("a NAMED extension's target").
+    if (this.isUnnamedExtensionSubject(n)) return
     if (!visibleTypes.has(name)) return
     // A mention of a TYPE VARIABLE resolves to the variable, not to a type that
     // happens to share its spelling. Ancestor-walked rather than tracked in the
@@ -3017,6 +3951,127 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
    * member read (CGD15 parity: a local is not a member, #299 — a false edge is
    * worse than a missing one). O(subtree), no regex.
    */
+  /**
+   * THE DECLARED TYPE OF EVERY LOCAL A SUBTREE BINDS (`collectDartLocals`' twin).
+   *
+   * The NAME set answers "is this a local", which is what suppresses a false member read.
+   * It cannot answer "what IS this local", which is what makes a call target determinate:
+   * `r.getOrders()` with `void run(OrderRepository r)` names `OrderRepository.getOrders`, and
+   * without the type the edge can only say `getOrders` — the bare-name population the
+   * incoming gate counts as ambiguous whenever any other declaration in the PROJECT shares
+   * the name.
+   *
+   * Two shapes, and both are read off the GRAMMAR rather than guessed from text:
+   *
+   *   local_variable_declaration   the declared type is a direct child (`extractFieldType`,
+   *                                the same reader fields use — `Baz y = Baz();`). It is
+   *                                `undefined` for `var x = Widget();`, so the fallback below
+   *                                is not a convenience: it is the only reading available.
+   *   initialized_variable_definition
+   *                                no declared type, so the INITIALIZER names it when it is a
+   *                                construction (`Widget()`), which is a fact about the source
+   *                                and not an inference about the program.
+   *
+   * `Widget? w` is deliberately NOT reduced (`extractFieldType` does not know the nullable
+   * wrapper) and a generic type is refused by `plainTypeName` — a receiver typed `List<int>`
+   * resolves through a type argument this pass has not read, and naming the wrong declaration
+   * is worse than naming none.
+   */
+  private collectDartLocalTypes(root: Node): Map<string, string> {
+    const out = new Map<string, string>()
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      const t = n.type
+      // A TYPED for-in VARIABLE (`for (Element e in xs)`, `for (final Element e in xs)`,
+      // `await for (final Element e in stream)`) — the type is WRITTEN IN THE SOURCE and this
+      // pass was not reading it, so `e.poke()` published a bare `poke` with
+      // `receiverCause: receiverTypeUnknown` (measured: .tmp-probe/dartgate/typed-head-probe.mts
+      // case D). The shape is `for_loop_parts (final_builtin)? (type_identifier) name: (identifier)
+      // value: (identifier)` and the guard is what keeps this rule OFF the C-style loop, which
+      // has NO name/value fields at all (`for_loop_parts init: … condition: … update: …`) and
+      // OFF the pattern form (`for (final (int n, Element e) in xs)` → a `record_pattern`, no
+      // name field), whose bindings DARTGAP1 already re-scoped by measurement. `inferred_type`
+      // is the grammar's spelling of `var`/`final`-without-a-type, and it DECLINES here for the
+      // same reason `var x = make()` does: nothing in the source names the type.
+      if (t === "for_loop_parts") {
+        const nameNode = n.childForFieldName?.("name")
+        const iterable = n.childForFieldName?.("value")
+        const inferred = (n.namedChildren ?? []).some((c: any) => c?.type === "inferred_type")
+        if (nameNode && iterable && !inferred) {
+          const nameIdx = (n.namedChildren ?? []).findIndex(
+            (c: any) => c && c.startIndex === nameNode.startIndex && c.endIndex === nameNode.endIndex,
+          )
+          for (let i = 0; i < nameIdx; i++) {
+            const c = n.namedChild(i)
+            if (c && c.type === "type_identifier") {
+              // Type arguments are dropped exactly as `extractParameters` drops them (`List<int> e`
+              // records `List`), so this reader and the parameter reader agree by construction.
+              const plain = stripNullableSuffix(c.text)
+              if (isPlainIdentifier(plain)) out.set(nameNode.text, plain)
+              break
+            }
+          }
+        }
+      }
+      if (t === "local_variable_declaration" || t === "declaration" || t === "initialized_variable_definition") {
+        const name =
+          n.childForFieldName?.("name")?.text ??
+          this.findChildByType(n, "initialized_variable_definition")?.childForFieldName?.("name")?.text
+        if (name && !out.has(name)) {
+          const explicit = this.extractFieldType(n, n)
+          const typeName = explicit ? stripNullableSuffix(String(explicit)) : this.constructedTypeName(n)
+          if (typeName && isPlainIdentifier(typeName)) out.set(name, typeName)
+        }
+      }
+      for (const c of n.namedChildren ?? []) if (c) stack.push(c)
+    }
+    return out
+  }
+
+  /** The type a variable's INITIALIZER constructs: `var x = Widget()` -> `Widget`.
+   *  `new`/`const` expressions and a bare capitalized callee are all constructions in
+   *  Dart, and a lowercase callee is a function call whose RESULT type this pass has not
+   *  read — so it returns undefined rather than the callee's name. */
+  private constructedTypeName(n: Node): string | undefined {
+    const value = n.childForFieldName?.("value")
+    if (!value) return undefined
+    const head =
+      value.type === "constructor_invocation" || value.type === "new_expression" ||
+      value.type === "const_object_expression"
+        ? this.findChildByType(value, "type_identifier")
+        : value.type === "identifier" || value.type === "type_identifier"
+          ? value
+          : null
+    const text = head?.text
+    if (!text || !isCapitalized(text)) return undefined
+    return text
+  }
+
+  /**
+   * PARAMETER DECLARED TYPES, from the signature node the body follows.
+   *
+   * `extractParameters` is the reader the symbol payload already uses (and its fixture
+   * asserts), so a parameter is typed here exactly as it is typed on the symbol — one
+   * reader, two consumers. A parameter whose type is not a plain identifier contributes
+   * nothing, which is the conservative half of the rule.
+   */
+  private collectDartParameterTypes(sig: Node): Map<string, string> {
+    const out = new Map<string, string>()
+    let params: any[] = []
+    try {
+      params = (this.extractParameters(sig) as any[]) ?? []
+    } catch {
+      return out
+    }
+    for (const p of params) {
+      const name = String(p?.name ?? "")
+      const typeName = stripNullableSuffix(String(p?.type ?? ""))
+      if (name && isPlainIdentifier(typeName)) out.set(name, typeName)
+    }
+    return out
+  }
+
   private collectDartLocals(root: Node): Set<string> {
     const out = new Set<string>()
     const stack: Node[] = [root]
@@ -3447,7 +4502,19 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private extractParameters(node: Node): ASTEngine.Parameter[] {
     const out: ASTEngine.Parameter[] = []
-    const paramsNode = this.findChildByType(node, "formal_parameter_list")
+    // A `formal_parameter_list` IS ACCEPTED AS ITSELF, not only as a child of a signature.
+    //
+    // The traversal hands this reader a body's PREVIOUS NAMED SIBLING, and for an ANONYMOUS
+    // CLOSURE that sibling IS the list: tree-sitter-dart writes `function_expression
+    // parameters: (formal_parameter_list …) body: (function_expression_body …)`, so the body's
+    // previous named sibling is the list and nothing else is (probed:
+    // .tmp-probe/dartgate/lambda-shape.mts, cases B/C/J). Searching for a child list INSIDE the
+    // list found nothing, so every closure parameter stayed untyped while the identical method
+    // parameter published `Element.poke` — measured through the production path in
+    // .tmp-probe/dartgate/typed-head-probe.mts (case A `Element.poke`, cases B/C/J bare
+    // `poke`/`id` with `receiverCause: receiverTypeUnknown`). A local function is NOT affected:
+    // its body's sibling is a real `function_signature`, which this reader already handled.
+    const paramsNode = node.type === "formal_parameter_list" ? node : this.findChildByType(node, "formal_parameter_list")
     if (!paramsNode) return out
     const stack: Node[] = [paramsNode]
     while (stack.length > 0) {
@@ -3616,6 +4683,39 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     // `extension on String` (unnamed extension) — the first type identifier
     return undefined
+  }
+
+  /**
+   * THE NAME AN EXTENSION IS PUBLISHED UNDER — ONE rule at BOTH sites that need it (the symbol
+   * emitter and `resolveOwner`), because a member whose published scope and whose container's name
+   * disagree is a `contains` edge that names nothing.
+   *
+   * A named extension is published under its own name. An unnamed one has none, so it takes the
+   * family's synthesized spelling — see `DART_UNNAMED_EXTENSION` for why borrowing the target
+   * type's name was a defect rather than untidiness, and what it cost. The `undefined` fallback is
+   * `DART_UNNAMED_EXTENSION` itself, mirroring java's `anonymous_class` (real-java-analyzer.ts):
+   * a declaration that HAS members and no name still needs an owner string, and the alternative is
+   * leaking those members into whatever scope surrounded them.
+   */
+  private extensionPublishedName(node: Node): string | undefined {
+    const declared = node.childForFieldName?.("name")?.text
+    if (declared) return declared
+    const target = this.extensionTargetType(node)
+    return target ? `${DART_UNNAMED_EXTENSION}_${target}` : DART_UNNAMED_EXTENSION
+  }
+
+  /**
+   * Is this `type_identifier` the `on` SUBJECT of the UNNAMED extension that encloses it?
+   *
+   * The subject is part of the extension's own identity — `extensionPublishedName` derives the
+   * published name FROM it — so it is not a mention the body makes. Only an UNNAMED extension is
+   * covered: `extension M on M2 {}` publishes `M -> M2` and must keep doing so (pinned by
+   * `verify-dart-references.ts`).
+   */
+  private isUnnamedExtensionSubject(n: Node): boolean {
+    const parent = n.parent
+    if (!parent || parent.type !== "extension_declaration") return false
+    return parent.childForFieldName?.("name")?.text === undefined
   }
 
   private extractAnnotations(node: Node): string[] | undefined {

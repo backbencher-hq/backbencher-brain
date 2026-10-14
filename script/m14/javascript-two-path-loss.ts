@@ -15,7 +15,9 @@
  *
  *   ENGINE      rows `ASTEngine.parseFile` produces — what the harness compares.
  *   POOL        rows `pool-worker.parseFile` produces — what the product indexes.
- *   LOST        (source, target, type, line) present in ENGINE, absent in POOL.
+ *   LOST        (source, target, type, line) present in ENGINE, absent in POOL, asked of
+ *               the filter PER FILE with production's own three arguments
+ *               (`declaredNames` from the file's symbols, `boundNames` from its imports).
  *   NOISE-LEAF  of the LOST rows, how many carry a leaf that is in pool-worker's
  *               own `NOISE_TARGETS` — asked by CALLING `filterNoiseRelationships`,
  *               not by copying its list, because a copy is how an instrument ends
@@ -42,7 +44,7 @@ import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync, mkdirSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
-import { parseFile as poolParseFile, filterNoiseRelationships } from "../../src/ast/pool-worker"
+import { parseFile as poolParseFile, filterNoiseRelationships, importBindingNames } from "../../src/ast/pool-worker"
 import { ASTEngine } from "../../src/ast/engine"
 import { decodeSourceText } from "../../src/util/source-text"
 
@@ -86,11 +88,34 @@ console.log(`tracked ${tracked.length}   admitted ${admitted.length}   sample ${
 const key = (r: any): string =>
   `${String(r.source ?? "")}|${String(r.target ?? "")}|${String(r.type ?? r.relationshipType ?? "")}|${r.line_number ?? ""}`
 
-type Row = { type: Type; source: string; target: string; line?: number; declaredHere: boolean; survivesFilter: boolean }
+// M14 JS lane §1 (2026-10-10): `metadata` is CARRIED, not dropped. The in-process
+// filter call below ("ask pool-worker's OWN filter") used to receive rows stripped to
+// {type, source, target, line}, while the production path hands the filter the
+// analyzer's metadata — so the moment a filter rule reads metadata, this instrument's
+// `lost` column described a configuration production never runs. It did, and the two
+// disagreed: the production path recovered 439 `uses` rows the column could not see.
+// One copy of the row, metadata included, is what keeps the two paths comparable.
+type Row = {
+  type: Type
+  /** repo-relative file the row came from — a `lost` row that cannot be attributed to a
+   *  file cannot be judged, and the first version of this instrument recorded only the
+   *  line number, so the 16 survivors on the svelte sample were unreadable. */
+  file: string
+  source: string
+  target: string
+  line?: number
+  declaredHere: boolean
+  survivesFilter: boolean
+  metadata?: any
+}
 const engineRows: Row[] = []
 const poolRows: Row[] = []
 /** source -> declared symbol names, so the escape hatch can be attributed. */
 const declaredByFile = new Map<string, Set<string>>()
+/** source -> import-binding names, the filter's SECOND hatch. */
+const boundByFile = new Map<string, Set<string>>()
+/** source -> its engine rows, so the filter can be asked PER FILE, as production asks it. */
+const engineRowsByFile = new Map<string, Row[]>()
 
 let idx = 0
 async function worker(): Promise<void> {
@@ -107,22 +132,27 @@ async function worker(): Promise<void> {
       declared = new Set((engine?.symbols ?? []).map((s: any) => String(s?.name ?? "")).filter(Boolean))
     } catch { continue }
     declaredByFile.set(rel, declared)
+    boundByFile.set(rel, importBindingNames((engine as any)?.imports))
+    const fileRows: Row[] = []
+    engineRowsByFile.set(rel, fileRows)
     for (const r of engine?.relationships ?? []) {
       const t = String(r.type ?? r.relationshipType ?? "").toLowerCase() as Type
       if (!ALL_TYPES.includes(t)) continue
-      engineRows.push({
-        type: t, source: String(r.source ?? ""), target: String(r.target ?? ""),
+      const row: Row = {
+        type: t, file: rel, source: String(r.source ?? ""), target: String(r.target ?? ""),
         line: r.line_number, declaredHere: declared.has(String(r.target ?? "")),
-        survivesFilter: false,
-      })
+        survivesFilter: false, metadata: r.metadata,
+      }
+      engineRows.push(row)
+      fileRows.push(row)
     }
     for (const r of pool?.relationships ?? []) {
       const t = String(r.type ?? r.relationshipType ?? "").toLowerCase() as Type
       if (!ALL_TYPES.includes(t)) continue
       poolRows.push({
-        type: t, source: String(r.source ?? ""), target: String(r.target ?? ""),
+        type: t, file: rel, source: String(r.source ?? ""), target: String(r.target ?? ""),
         line: r.line_number, declaredHere: declared.has(String(r.target ?? "")),
-        survivesFilter: false,
+        survivesFilter: false, metadata: r.metadata,
       })
     }
   }
@@ -131,15 +161,35 @@ await Promise.all(Array.from({ length: 8 }, () => worker()))
 
 // Ask pool-worker's OWN filter which rows it would delete, rather than restating
 // NOISE_TARGETS here. `filterNoiseRelationships` is exported for exactly this.
-const survivors = filterNoiseRelationships(engineRows as any, "javascript")
-const survivorKeys = new Set(survivors.map((r: any) => key(r)))
+//
+// PER FILE, WITH THE SAME THREE ARGUMENTS PRODUCTION PASSES (JS lane §1, 2026-10-10).
+// The first version asked the filter ONCE over the union of every file's rows with only
+// the language argument — no `declaredNames`, no `boundNames`. Production
+// (`pool-worker.ts:1432`) passes BOTH, per file. So this instrument was again describing
+// a filter configuration production never runs, in the same direction as the metadata bug
+// above: it counted rows as lost that production keeps. The svelte sample proved it in
+// the artifact itself — the `imports` column read `2 lost` while the engine and pool
+// counts for that type were 2,882 and 2,882, i.e. production had lost NOTHING, and one of
+// the two "lost" rows was `packages/svelte/src/compiler/phases/1-parse/state/fragment.js`
+// `import text from './text.js'` — the exact import-binding case the hatch was added for.
+// A lost column that over-reports is worse than no column: it is this lane's own defect.
+const survivorKeysByFile = new Map<string, Set<string>>()
+for (const [rel, rows] of engineRowsByFile) {
+  const kept = filterNoiseRelationships(
+    rows as any,
+    "javascript",
+    declaredByFile.get(rel),
+    boundByFile.get(rel),
+  )
+  survivorKeysByFile.set(rel, new Set(kept.map((r: any) => key(r))))
+}
 const byKey = new Map<string, Row>()
 for (const r of engineRows) if (!byKey.has(key(r))) byKey.set(key(r), r)
 const lost: Row[] = []
-for (const [k, r] of byKey) if (!survivorKeys.has(k)) { r.survivesFilter = false; lost.push(r) }
+for (const [k, r] of byKey) if (!(survivorKeysByFile.get(r.file)?.has(k) ?? false)) { r.survivesFilter = false; lost.push(r) }
 
 const poolKeySet = new Set(poolRows.map((r: any) => key(r)))
-const gained = [...byKey.entries()].filter(([k]) => !poolKeySet.has(k) && survivorKeys.has(k)).map(([, r]) => r)
+const gained = [...byKey.entries()].filter(([k]) => !poolKeySet.has(k) && (survivorKeysByFile.get(byKey.get(k)!.file)?.has(k) ?? false)).map(([, r]) => r)
 
 type TypeRow = {
   n: number
@@ -164,7 +214,13 @@ for (const r of lost) {
     : r.target
   row.byTargetLeaf[leaf] = (row.byTargetLeaf[leaf] ?? 0) + 1
   // The escape hatch: would the filter keep this row if the FILE declared the name?
-  const keep = filterNoiseRelationships([{ ...r, target: leaf }] as any, "javascript", new Set([leaf]))
+  // METADATA IS STRIPPED FOR THIS SUB-CHECK on purpose: the question is about the
+  // DECLARATION hatch alone, and passing metadata would let the collision rule answer
+  // instead, collapsing two different admissions into one column. Stripping it also
+  // keeps this column's meaning identical to every figure the lane has recorded from
+  // it before the collision rule existed.
+  const stripped = { ...r, target: leaf, metadata: undefined }
+  const keep = filterNoiseRelationships([stripped] as any, "javascript", new Set([leaf]))
   if (keep.length > 0) row.declaredLost++
   else row.noiseLeafLost++
 }
@@ -191,7 +247,19 @@ mkdirSync(path.dirname(OUT), { recursive: true })
 writeFileSync(OUT, JSON.stringify({
   at: new Date().toISOString(), tag: TAG, corpus: CR, sampleFiles: sample.length,
   admittedFiles: admitted.length, totals: lostTotal, lostPercent: pct,
-  perType, note: "LOST = present through ASTEngine.parseFile, absent through pool-worker.parseFile. NOISE-LEAF = the filter drops it and would still drop it if the file declared the leaf; would-survive-if-declared = the filter's escape hatch would keep it, so the deletion is the hatch being unreachable for a name the file only READS or BINDS.",
-  examples: lost.slice(0, 25).map((r) => `${r.type} ${r.source} -> ${r.target} @${r.line ?? "?"}`),
+  perType,  note: "LOST = a row of the analyzer's OWN output that `filterNoiseRelationships` deletes when asked the way production asks it: per file, with that file's declared symbol names AND its import-binding names, and with the analyzer's metadata. All four of those were wrong at some point in this file's history (metadata dropped; declared+bound names omitted entirely) and each time the column described a filter configuration production never runs. NOISE-LEAF = the filter drops it and would still drop it if the file declared the leaf; would-survive-if-declared = the filter's declaration hatch would keep it, so the deletion is the hatch being unreachable for a name the file only READS or BINDS.",
+  // EVERY lost row, attributed — not a sample. A count nobody can attribute is the
+  // form the lane keeps getting burned by; the number here is small enough (<100 on
+  // both samples) to carry in full.
+  lostRows: lost.map((r) => ({
+    file: r.file, type: r.type, source: r.source, target: r.target, line: r.line ?? null,
+    // Recorded so the residual can be CLASSIFIED rather than re-described: each lost row
+    // either carries a structural marker the collision rule would admit (and then the
+    // number is a rule that is too narrow) or carries none (and then it is the leak shape
+    // the noise list exists for). Without this the ladder of rule steps was asserted
+    // instead of derived.
+    metadata: r.metadata ?? null,
+  })),
+  examples: lost.slice(0, 25).map((r) => `${r.type} ${r.source} -> ${r.target} @${r.line ?? "?"} [${r.file}]`),
 }, null, 2))
 console.log(`\nwrote ${OUT}`)

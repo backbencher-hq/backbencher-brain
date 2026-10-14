@@ -55,7 +55,6 @@ import { hover } from "../../src/lsp/hover.ts"
 import { classifyStoredLine, deriveCallSiteAddress, isExactAddress, ADDRESS_NOTES } from "../../src/intelligence/graph/line-address.ts"
 import { USAGE_SITE_FILTER_LABEL } from "../../src/lsp/relations.ts"
 import { MAX_USAGE_LINKS } from "../../src/lsp/rich_hover.ts"
-import type { ConnectedGroup, RichSite } from "../../src/lsp/rich_hover.ts"
 import { writeSealed } from "../lib/evidence.ts"
 import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
@@ -84,35 +83,8 @@ import {
   HUB_DECL_LINES, APP_DECL_LINES,
   type Fx, type KnownFacts, type RenderedFacts, type RenderedSectionHeader,
 } from "./hover-coverage-fixture.ts"
-// `manyRowsShape` and `hotCallerShape` were declared `| null`, but the ONLY place a
-// BudgetRow is built assigns both an object literal unconditionally (the single
-// `budget = {` below). Nothing in the file ever assigns null to either, so the
-// nullability was a hand-declared claim no code path makes.
-//
-// That is not a harmless annotation: line 1417 is a BUDGET GATE —
-//
-//   const worstP95 = Math.max(budget.p95, budget.manyRowsShape.p95, budget.hotCallerShape.p95)
-//
-// and it sits inside `check("R6/§3: warm hover p95 is under the declared 50 ms budget
-// on ALL THREE busy shapes")`. The declared `| null` says a shape may be absent; the
-// gate has no handling for absence, because as written it cannot be absent. If it
-// ever were, the gate would throw on `undefined.p95` instead of reporting that a
-// budget could not be measured — the same failure shape as the m15 `winner` crash.
-//
-// Note the outer `budget: BudgetRow | null` IS real and IS load-bearing: it is null
-// until the measurement block runs, and control-flow narrowing from the assignment
-// proves it non-null at every use. Only the two inner ones were fictional.
-interface BudgetRow {
-  p50: number
-  p95: number
-  p99: number
-  max: number
-  n: number
-  busyUsageLocations: number
-  distinctFiles: number
-  manyRowsShape: { p50: number; p95: number; storedRows: number; distinctFiles: number }
-  hotCallerShape: { p50: number; p95: number; storedRows: number; distinctFiles: number }
-}
+interface BudgetRow { p50: number; p95: number; p99: number; max: number; n: number; busyUsageLocations: number; distinctFiles: number; manyRowsShape: { p50: number; p95: number; storedRows: number; distinctFiles: number } | null
+  hotCallerShape: { p50: number; p95: number; storedRows: number; distinctFiles: number } | null }
 let budget: BudgetRow | null = null
 const dir = mkdtempSync(path.join(tmpdir(), "bb-hov-cov-"))
 const currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
@@ -881,14 +853,7 @@ const tierEntries = PINS.map((pin) => ({
     const target = twoTierCards[0]!
     const real = [...target.justified].filter((t) => t !== "unknown")
     const collapsed = real.filter((t) => t === "structural")
-    // `collapsed` narrowed to the single literal "structural" by the filter above, so
-    // `.includes(t)` with a general `t` was a type error. The question here is "is
-    // this tier NOT one of the collapsed ones" — a string question, so widen the
-    // haystack rather than narrowing the needle. Same fix as the V1c drift-gate
-    // above, and the same reason: a literal-typed array answers "what values are
-    // declared", not "does this parsed string match one".
-    const collapsedSet: readonly string[] = collapsed
-    const dropped = real.filter((t) => !collapsedSet.includes(t))
+    const dropped = real.filter((t) => !collapsed.includes(t))
     const caughtC = unjustifiedTiers([{ label: target.label, tiers: collapsed, justified: target.justified }])
     check(
       "D3/MUTANT (c): the D3 predicate reports a card that DROPPED a tier its own stored rows justify (the direction the planted mutation actually moves)",
@@ -979,21 +944,7 @@ console.log("\nV: drift gate + the containment law (negative tests)\n")
           .split(",")
           .map((s) => s.trim().replace(/^`|`$/g, ""))
           .filter((s) => s.length > 0)
-  // `declared` was `[...CANONICAL_RELATIONSHIP_KINDS]`, and that constant is
-  // `as const` (src/lsp/rich_hover.ts:135), so each element has a LITERAL type —
-  // "calls" | "extends" | ... . `Array.prototype.includes` on such an array only
-  // accepts one of those literals, so `declared.includes(k)` with the parsed `k: string`
-  // is a type error.
-  //
-  // Widening `declared` to `string[]` is the honest fix here and costs nothing:
-  // `listed` is `string[]` because it comes from splitting a regex match off a source
-  // comment, so it can hold any spelling. The comparison being asked is "is this
-  // parsed string one of the declared kinds", which is a question about strings, not
-  // about literal types. Note `CanonicalRelationshipKind` (the exported element type)
-  // is the right type for CONSUMING a kind, and the `as const` array is the right
-  // source for enumerating them; it is only this membership test that needs the
-  // widened view.
-  const declared: readonly string[] = CANONICAL_RELATIONSHIP_KINDS
+  const declared = [...CANONICAL_RELATIONSHIP_KINDS]
   const missingHere = declared.filter((k) => !listed.includes(k))
   const missingThere = listed.filter((k) => !declared.includes(k))
   check(
@@ -1012,32 +963,12 @@ console.log("\nV: drift gate + the containment law (negative tests)\n")
   // V2a: `contains` is never a usage site. The vocabulary owner decides, so the
   // test is over the owner's own output, not over a copy of its rule.
   const { containmentSitesOf, usageSitesOf, connectedGroups: cg, containmentSection: cs, usagesSection: us } =
-    // All five were cast to `any[]` / `readonly any[]`, which is worse than a stale
-    // snapshot: `any` means NOTHING in these five functions is checked. Every
-    // `s.callSite`, every `g.sites` below was unchecked, and a rename or a reordering
-    // in src/lsp/rich_hover.ts would break this gate at runtime with the compiler
-    // silent.
-    //
-    // It was not even a faithful copy: `connectedGroups` was declared to return
-    // `Array<{ verb: string; sites: any[] }>` when the product returns
-    // `ConnectedGroup[]` — the same two fields by coincidence, with `sites: any[]`
-    // erasing the element type that makes the check at line 985 mean anything.
-    //
-    // All five signatures now match src/lsp/rich_hover.ts and the return types
-    // anchor to exported names, so drift is a type error rather than a surprise.
     await import(path.join(ROOT, "src/lsp/rich_hover.ts")) as {
-      containmentSitesOf: (sites: readonly RichSite[]) => RichSite[]
-      usageSitesOf: (sites: readonly RichSite[]) => RichSite[]
-      connectedGroups: (sites: RichSite[]) => ConnectedGroup[]
-      containmentSection: (sites: RichSite[]) => string
-      usagesSection: (
-        sites: RichSite[],
-        total: number,
-        forSymbol: string,
-        forFile: string,
-        forLine: number,
-        forCharacter: number,
-      ) => string
+      containmentSitesOf: (s: readonly any[]) => any[]
+      usageSitesOf: (s: readonly any[]) => any[]
+      connectedGroups: (s: readonly any[]) => Array<{ verb: string; sites: any[] }>
+      containmentSection: (s: readonly any[]) => string
+      usagesSection: (s: readonly any[], t: number, sym: string, f: string, l: number, c: number) => string
     }
   // The hub symbol, whose stored rows are 4 outgoing `contains` plus 2 incoming
   // `instantiates` — so it exercises both halves at once.

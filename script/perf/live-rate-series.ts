@@ -38,20 +38,9 @@
 import fs from "fs"
 import os from "os"
 import path from "path"
-import { fileURLToPath } from "node:url"
 import { spawnSync } from "child_process"
 
-// fileURLToPath, not `new URL(import.meta.url).pathname`. The WHATWG URL
-// percent-encodes, so a repository path containing a space arrives as
-// "Default%20Project" — a directory that does not exist. This checkout lives at
-// $HOME/Documents/Default Project/ishaq/backbencher-brain, so REPO_ROOT
-// silently resolved to a nonexistent path.
-//
-// Caught by script/m62/verify-path-encoding.ts, which fails on this idiom in any
-// source file in the repository. See ide/vscode/publish-openvsx.mjs for the
-// original instance of this bug class and script/m62/fix-path-encoding.mts for the
-// sweep that removed the other 99.
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
+const REPO_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../..")
 
 interface Sample {
   tSec: number | null

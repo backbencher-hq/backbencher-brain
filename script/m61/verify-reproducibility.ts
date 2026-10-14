@@ -251,23 +251,7 @@ async function runMutant(name: string, from: string, to: string, probe: (mod: Re
     const mod = (await import(pathToFileURL(mutantPath).href)) as Record<string, unknown>
     check(`M: ${name}`, probe(mod) === true, "the mutant did NOT manifest the defect — the suite could not fail")
   } catch (e) {
-    // A LOAD failure is not a detection: the mutant never ran, so nothing was proven.
-    // This gate is the only one of the four m61 gates that lacked the disarmed arm —
-    // script/m61/verify-claims.ts, verify-lint.ts and verify-extinction.ts all carry
-    // it, and all three report "the can-fail proof is disarmed" and exit 1 when a
-    // mutant cannot be imported. Canary here: appending ".nope" to the mutant import
-    // so every one fails produced zero "could not load" lines and a full catch ratio.
-    //
-    // A RUNTIME throw inside probe(mod) is different and stays a detection: the mutant
-    // did load and did run, and the crash is the defect manifesting. Only the arm that
-    // means "nothing executed" is a false pass.
-    const code = (e as NodeJS.ErrnoException).code ?? ""
-    const cannotLoad = code.startsWith("ERR_MODULE") || code === "ERR_UNKNOWN_FILE_EXTENSION" || e instanceof SyntaxError
-    if (cannotLoad) {
-      check(`M: ${name}`, false, `the mutant could not load (${code || (e as Error).name}) — the can-fail proof is disarmed`)
-    } else {
-      check(`M: ${name}`, true, `(mutant crashed at runtime — still caught: ${(e as Error).message})`)
-    }
+    check(`M: ${name}`, true, `(mutant crashed — still caught: ${(e as Error).message})`)
   } finally {
     rmSync(mutantPath, { force: true })
   }

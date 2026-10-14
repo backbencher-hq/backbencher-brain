@@ -39,9 +39,10 @@
  * Usage: bun script/m60/verify-vue-no-regex.ts
  */
 import { readFileSync } from "node:fs"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
-const ROOT = "$HOME/backbencher-brain"
+const ROOT = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const ANALYZER = join(ROOT, "src/ast/real-vue-analyzer.ts")
 
 const failures: string[] = []

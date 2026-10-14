@@ -10,26 +10,18 @@
   "mutantsCaught": 11,
   "mutantsTotal": 11,
   "negatives": 0,
-  "currentCommit": "428658b04fa05de756ca8afff490a20dea94eec9",
-  "sourceFingerprint": "63e8ace22f27cd7726baf574220f60263b73c51ec1e9c5becb6259e30524a341",
-  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
-  "sourceFingerprintCovers": [
-    "script/m55/verify-status-panel.ts",
-    "ide/vscode/package.json",
-    "ide/vscode/src/extension.ts",
-    "ide/vscode/src/status-markup.ts"
-  ],
+  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
   "workingTreeRelevantChanges": [],
   "foundBy": "the V1 rig's own frame: validation/m55/frames/live-7/7-status.png (the visible content was the single line 'launch: compiled dist (bundled) — …')",
   "owner": "ide/vscode/src/status-markup.ts (pure markup) + ide/vscode/src/extension.ts (panel + reuse)",
   "modelOwner": "ide/vscode/src/status-model.ts (unchanged; gated by script/m25/verify-status-surface.ts)",
   "verifierCommand": "npx tsx script/m55/verify-status-panel.ts",
   "evidenceFile": "V1-status-panel.json",
-  "generatedAt": "2026-10-11T02:56:03.141Z",
+  "generatedAt": "2026-10-04T22:50:46.475Z",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-11T02:56:03.142Z",
-    "contentSha256": "f2515ac7e6c2a3459b40d08970d8590cb7ec570630dfcd4c7b5ceb1f6e85d1e7"
+    "sealedAt": "2026-10-04T22:50:46.477Z",
+    "contentSha256": "16e952a523b0d454c0e4edb11a281f3324b6af4a83268a9740297fc3599a0fe2"
   }
 }

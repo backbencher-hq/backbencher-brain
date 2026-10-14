@@ -55,7 +55,10 @@
   ],
   "fsharp": [
     "calls",
-    "references"
+    "contains",
+    "imports",
+    "references",
+    "uses"
   ],
   "go": [
     "calls"

@@ -20,7 +20,6 @@ import { BrainDatabase } from "../../src/brain/database"
 import { BrainTools } from "../../src/ast/tools"
 import { searchContent } from "../../src/intelligence/search/content-search"
 import { Harness } from "./harness"
-import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 const harness = new Harness({
   issue: "M13.20",
@@ -39,21 +38,13 @@ const harness = new Harness({
   ],
 })
 
-// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
-
-const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
+const REPO_ROOT = "$HOME/fixtures/repositories"
 // (repo, subPath, symbolHint, family)
 const SAMPLE: Array<[string, string, string, string]> = [
   ["rake", "lib/rake", "Application", "Ruby"],
   ["graphql-js", "src", "graphql", "TypeScript"],
   ["rebar3", "apps", "rebar", "Erlang"],
-  // The corpus directory is go_tools (underscore), not go-tools. Every gate that
-  //  asked for the hyphen form was reading a directory that has never existed on any
-  //  machine, so the corpus leg passed VACUOUSLY — no error, no finding, nothing
-  //  measured. script/m13/verify-analyze-e2e-corpus.ts reported exactly this once the
-  //  corpus root was fixed: "corpus go-tools/go/analysis/passes (Go): present … missing".
-  //  Verified against the corpus on disk, which lists go_tools.
-  ["go_tools", "go/analysis/passes", "unreachable", "Go"],
+  ["go-tools", "go/analysis/passes", "unreachable", "Go"],
 ]
 
 for (const [repo, subPath, hint, family] of SAMPLE) {

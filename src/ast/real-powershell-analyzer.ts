@@ -426,6 +426,65 @@ const externalReadingOf = (t: string): "cmdlet" | "qualified" | null => {
 }
 
 /**
+ * PS38 — CAN THE ARBITER CHECK A CLAIM ON THIS TARGET WITHOUT ASKING ABOUT A NAME THE TARGET
+ * DOES NOT NAME?
+ *
+ * `verifyExternalClaim` (script/m14/incoming-rule.ts) verifies an external claim one of two
+ * ways, and only one of them is a question this analyzer's own guard answered:
+ *
+ *   no dotted owner   the arbiter asks about the TARGET ITSELF when the spelling is a plain
+ *                     identifier, and answers UNVERIFIABLE when it is not (`Get-ChildItem`
+ *                     carries a hyphen, so it is the second case). Either way the thing looked
+ *                     up is a string the edge names, and the claim is consulted only where the
+ *                     key space answers the target NOTHING (`classifyEdge` reads the count
+ *                     first), so this arm can never be refuted BY CONSTRUCTION.
+ *   a dotted owner    the arbiter asks about the OWNER — everything before the LAST dot —
+ *                     which the edge does NOT name and `declaredInFile(target)` never guarded.
+ *                     A project that publishes an unrelated `Text` refutes the claim on
+ *                     `[Text.UTF8Encoding]::new()`, and it did: 82 such refutations measured
+ *                     over the 978-file corpus, ALL of them on a BARE owner (`Text`,
+ *                     `powershell` from `powershell.exe`, `3` from `#requires -Version 3.0`,
+ *                     `Test` from `[Test.User32]::GetPlacement`), and ZERO on a qualified one.
+ *
+ * So the readable key is published where the arbiter asks about the target itself or about an
+ * owner that is ITSELF QUALIFIED — a namespace path such as `System.IO`, which is the owner of
+ * `System.IO.Path::Combine`. This is a rule about WHICH QUESTION the checker will ask, not
+ * about which targets are external: `externalTarget`/`externalVia` keep publishing the reading
+ * on the withheld edges, and a withheld claim is one the arbiter was never able to check
+ * honestly. It is deliberately NOT "mark only what verifies" — 47 of the 49 withheld edges at
+ * `powershell ps1 60` WOULD have verified; they are given up with the 2 the project answers,
+ * because no per-file rule can tell `System.Version` (owner `System`) from `Text.UTF8Encoding`
+ * (owner `Text`) apart: the difference is what the PROJECT declares, and this analyzer reads
+ * one file.
+ *
+ * Zero regex, like every predicate in this file: the owner split is `lastIndexOf`, the
+ * "the arbiter will skip this owner" test is a char-code scan for `:` `/` and whitespace.
+ */
+const arbiterOwnerOf = (t: string): string | null => {
+  const dot = t.lastIndexOf(".")
+  if (dot <= 0) return null
+  return t.slice(0, dot)
+}
+const arbiterCanCheckOwner = (t: string): boolean => {
+  const owner = arbiterOwnerOf(t)
+  if (owner === null) return true
+  for (let i = 0; i < owner.length; i++) {
+    if (owner.charCodeAt(i) === 46 /* . */) return true
+  }
+  // A BARE OWNER IS LOOKED UP, so the claim would be checked against a name the edge does not
+  // carry — UNLESS the owner itself carries a byte the arbiter refuses to look up (`:` `/`
+  // whitespace), in which case the outcome is UNVERIFIABLE and the claim cannot be called
+  // false. The byte set mirrors `verifyExternalClaim`'s own `[:/\s]` test EXACTLY, which is
+  // why `\` is NOT in it: that regex does not reject a backslash, so an owner like `Foo\Bar`
+  // IS looked up and is not safe to publish against.
+  for (let i = 0; i < owner.length; i++) {
+    const c = owner.charCodeAt(i)
+    if (c === 58 /* : */ || c === 47 /* / */ || c === 32 || c === 9 || c === 10 || c === 13) return true
+  }
+  return false
+}
+
+/**
  * Is this declared type a PowerShell TYPE ACCELERATOR rather than a project
  * type?
  *
@@ -2833,9 +2892,87 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of symbols) declaredFolded.add(s.name.toLowerCase())
     const declaredInFile = (name: string): boolean => declaredFolded.has(name.toLowerCase())
 
+    // ---------------------------------------------------- variable reads, cause D
+    //
+    // A VARIABLE READ TARGETS THE VARIABLE, NOT A BARE NAME THAT COLLIDES PROJECT-WIDE.
+    //
+    // `uses` is this lane's largest type and its largest ambiguous marker sets are ALL variable
+    // reads — the gate's own table (1,181-file population): `isArgumentReference+isVariableReference`
+    // amb 13,682, `isAssignmentRead+isVariableReference` amb 5,696,
+    // `isReceiverReference+isVariableReference` amb 1,977. They were emitted as
+    // `addRel(scope, name, Uses, …)` — the target is the BARE name (`index` for `$index`) — and
+    // production binds a bare name only when it has exactly ONE declaration in the whole project,
+    // which a name like `index`, `before` or `path` never has.
+    //
+    // THE RULE, and it is the shape this programme's yaml lane used for `needs:`: where this file
+    // declares the name as a VARIABLE that is VISIBLE AT THE READ, target that declaration's
+    // qualified name (`Get-Targets.index`), which the arbiter resolves by exact key. It reaches an
+    // EXISTING declaration or it does not fire:
+    //
+    //   PRICED BEFORE IT WAS APPLIED, whole population, both directions:
+    //     CEILING  17,483 of the 39,100 ambiguous `uses` edges — 45 % of the type's ambiguity —
+    //              retargetable to a declaration that exists in their own file, is VISIBLE at the
+    //              read, and is unique project-wide
+    //     CONTROL  324 have MORE THAN ONE visible declaration of that name → REFUSED (never pick)
+    //     CONTROL  4,991 whose qualified name is not unique project-wide → the rule still fires and
+    //              the edge stays AMBIGUOUS: the arbiter sees two declarations and binds neither, so
+    //              the failure direction is "no gain", never "wrong declaration"
+    //     and 1,422 have no own-file variable declaration at all → the rule cannot fire
+    //   (validation/m14/fixtures/powershell/variable-reference-pricing.ts, both arms)
+    //
+    // VISIBILITY IS THE WHOLE SAFETY CLAUSE. The first version of the price matched ANY declaration
+    // of the name in the file and would have retargeted a file-scope read of `$before` to a
+    // function-local `before` — a mis-bind. A declaration is visible to a read when its declaring
+    // scope ENCLOSES the read's own scope path (`scope === source` or `source` starts with
+    // `scope.`), which is the same prefix rule the rest of this file uses.
+    //
+    // PowerShell identifiers are CASE-INSENSITIVE (`$Foo` and `$foo` are one binding), so the match
+    // folds case; the target keeps the DECLARATION's own spelling. The source's spelling is not
+    // lost — it moves to `referencedName`, where the rest of this lane keeps it.
+    {
+      const variablesByName = new Map<string, { qn: string; scope: string; name: string }[]>()
+      const qnOccurrences = new Map<string, number>()
+      for (const s of symbols) {
+        const scope = String((s as any).scope ?? "")
+        const qn = scope.length > 0 ? `${scope}.${s.name}` : String(s.name)
+        qnOccurrences.set(qn, (qnOccurrences.get(qn) ?? 0) + 1)
+        if (s.kind !== ASTEngine.SymbolKind.Variable) continue
+        const key = String(s.name).toLowerCase()
+        const list = variablesByName.get(key) ?? []
+        list.push({ qn, scope, name: String(s.name) })
+        variablesByName.set(key, list)
+      }
+      for (const rel of relationships) {
+        if (rel.type !== ASTEngine.RelationshipType.Uses) continue
+        if ((rel.metadata as any)?.isVariableReference !== true) continue
+        const target = String(rel.target ?? "")
+        // A bare identifier only: a dotted or scoped target is already an identity, and `$env:PATH`
+        // is not a variable this file declares.
+        if (target.length === 0 || /[.:$[\]()]/.test(target)) continue
+        const source = String(rel.source ?? "")
+        const visible = (variablesByName.get(target.toLowerCase()) ?? []).filter(
+          (c) => c.scope.length === 0 || source === c.scope || source.startsWith(`${c.scope}.`),
+        )
+        if (visible.length !== 1) continue // zero: nothing to bind. two or more: REFUSE.
+        const hit = visible[0]
+        if ((qnOccurrences.get(hit.qn) ?? 0) !== 1) continue
+        rel.target = hit.qn
+        const md = (rel.metadata ?? (rel.metadata = {})) as Record<string, unknown>
+        md.referencedName = target
+        md.boundToVariable = true
+      }
+    }
+
     for (const rel of relationships) {
       const target = rel.target
       if (target == null || target.length === 0) continue
+      // A BOUND VARIABLE IS DECLARED HERE BY CONSTRUCTION — the retarget pass above fires only on a
+      // declaration THIS FILE carries, visible at the read, and unique. Stated because the pass below
+      // is keyed on BARE NAMES (`declaredInFile` folds `symbol.name`), so a qualified target would
+      // read as undeclared and collect `noDeclarationInFile` on an edge whose whole point is that the
+      // declaration exists. Found by `externality-psb16`'s bare-word NEGATIVE row, which pins the
+      // ABSENCE of that key and is exactly the row a blanket rule fails.
+      if ((rel.metadata as any)?.boundToVariable === true) continue
       const type = rel.type
       if (declaredInFile(target)) continue
       // The two keys PARTITION the "no declaration here" population rather than overlapping:
@@ -2848,6 +2985,60 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (via) {
         rel.metadata.externalTarget = true
         rel.metadata.externalVia = via
+        // PS38 — THE ARBITER'S SPELLING OF THE SAME CLAIM, and the whole defect it repairs
+        // is one key name.
+        //
+        // `incoming-gate.ts` reads a claim from an EXPLICIT list of keys
+        // (`EXTERNAL_KEYS`, script/m14/incoming-rule.ts) and `externalTarget` is not in it.
+        // So every edge this pass marks — the cmdlets and the .NET/module spellings, the
+        // lane's whole cause-C reading — arrived at the arbiter as an UNMARKED edge, which
+        // is indistinguishable there from a broken one. Measured at `powershell ps1 60`:
+        // 5,877 unresolved of 9,911 edges, 0 external, and 1,938 of those 5,877 already
+        // carried this analyzer's own externality reading.
+        //
+        // `isExternalTarget` IS in that list and is the same claim word for word, so this is
+        // a RE-SPELLING and not a widening: the guard above (`declaredInFile(target)`) and
+        // the reading (`externalReadingOf`) are unchanged, `externalVia` still says which
+        // reading fired, and NOT ONE EDGE IS ADDED.
+        //
+        // BUT IT IS NOT PUBLISHED ON EVERY MARKED EDGE, AND THAT RESTRICTION IS THE SECOND
+        // HALF OF PS38. `verifyExternalClaim` checks a claim one of two ways: with no dotted
+        // owner it asks about the TARGET ITSELF (or cannot ask at all, for a spelling that is
+        // not an identifier), and with a dotted owner it asks about the OWNER — a string the
+        // edge does NOT name and this analyzer never guarded. That second question can be
+        // answered by a declaration of something else entirely. Measured over the whole
+        // 978-file corpus with the census beside this lane: 82 marked edges are REFUTED, and
+        // every one of the 82 has a BARE owner — `Text.UTF8Encoding` (owner `Text`, from
+        // `[Text.UTF8Encoding]::new()` in Grace/scripts/capture-artifact-size.ps1:115),
+        // `powershell.exe` (owner `powershell`), the `#requires -Version 3.0` literal (owner
+        // `3`), and `Test.User32::GetPlacement` (owner `Test`; the run creates that type with
+        // `Add-Type -Name User32 -Namespace Test`, ConsoleHost.Tests.ps1:1012, and an
+        // unrelated Pester file declares `class Test` at
+        // Scripting.Classes.BasicParsing.Tests.ps1:508). ZERO of the 82 has a qualified owner.
+        //
+        // So the readable key is published only where the arbiter's question is one this
+        // target's own spelling settles (`arbiterCanCheckOwner`, below): no dotted owner (the
+        // target itself is asked, or nothing is), or an owner that is ITSELF qualified — the
+        // namespace path of a .NET type, which is what `System.IO.Path::Combine`'s `System.IO`
+        // is. The claim is not withdrawn from the other edges: `externalTarget`/`externalVia`
+        // still publish the reading on them exactly as before PS38.
+        //
+        // MEASURED, `powershell ps1 60` (analyzer digest 52392fbdd74156f2; census
+        // `validation/m14/fixtures/powershell/incoming-split.mts --nf 60 --all`, which
+        // re-measures the gate's own numbers exactly):
+        //   published 1,889 = 178 verified + 1,711 unverifiable + 0 REFUTED
+        //   withheld     49 = 47 would-verify + 2 the project answers, left to the old key
+        // and corpus-wide (978 files, 160,306 edges): unresolved 75,964 → 50,558 with 26,773
+        // edges carrying the key — 2,296 verified, 23,110 unverifiable, 0 REFUTED — at a
+        // payload cost of +642,552 B (1.815% of the lane's relationship JSON).
+        //
+        // TWO KEYS RATHER THAN A RENAME, and the reason is not compatibility: the m60 mutant
+        // suite (`script/m60/powershell-mutants.ts`, `powershell/externality-*`) is written
+        // against `externalTarget` and is NOT in this lane's write scope, so dropping the old
+        // spelling would silently disarm four mutants whose whole job is to kill the
+        // shape-only rule this pass exists to avoid. Cost, measured on the shipped output:
+        // one 24-byte `,"isExternalTarget":true` per published edge.
+        if (arbiterCanCheckOwner(target)) rel.metadata.isExternalTarget = true
         continue
       }
       // A qualified spelling is not a bare-word name at all: `$env:PATH` and `Foo::Bar` are

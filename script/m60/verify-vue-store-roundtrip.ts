@@ -32,12 +32,13 @@
  */
 import { mkdtempSync, mkdirSync, readFileSync, statSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 import { ASTEngine } from "../../src/ast/engine"
 import { storeResults } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 
-const REPO = "$HOME/backbencher-brain"
+const REPO = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const FILES = [
   `${REPO}/validation/m14/fixtures/vue/with-defaults-propagation.vue`,
   `${REPO}/validation/m14/fixtures/vue/options-setup-method.vue`,

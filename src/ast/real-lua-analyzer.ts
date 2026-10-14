@@ -3,7 +3,14 @@
 // fallback or source-wide scanning is used.
 
 import type { Node } from "web-tree-sitter"
+import * as path from "node:path"
 import { ASTEngine } from "./engine"
+// THE SHARED FILE CLAIM — one guard for every lane whose edge names a FILE rather than a
+// declaration. Imported rather than re-implemented for the reason its own docstring gives: a
+// second copy of the guard would be a second rule, and the clause that took refutations from 392
+// to 0 across five lanes (the candidate must carry an extension the lane's OWN admitted list
+// holds) lives INSIDE it.
+import { fileClaimForTarget, foldProjectPath, dirOf, FILE_CLAIM_MAX_BYTES } from "./file-claim"
 
 interface LuaFrame {
   callable?: string
@@ -88,6 +95,70 @@ const LUA54_TABLES: ReadonlySet<string> = new Set([
   "string", "table", "math", "io", "os", "coroutine", "debug", "utf8",
 ])
 
+/**
+ * THE MODULE BASES a lua `require` is resolved against — the ONE part of this fix that is lua's
+ * and not the shared guard's.
+ *
+ * `require("a.b.c")` names a MODULE, and which FILE that is depends on `package.path`, which is a
+ * RUNTIME value the analyzer cannot read. So the analyzer does not try to read it: it states the
+ * four layouts this corpus actually writes and lets the guard confirm ONE candidate against the
+ * filesystem, exactly as yaml's `!include` states its two loader conventions. Every base below was
+ * measured live before this comment was written
+ * (`validation/m14/fixtures/lua/tools/imports-claim-pricing.mts --compare-guard`); the counts are in
+ * the lane's completeness spec and NOT copied here, because a number in a comment is a number that
+ * stops being true.
+ *
+ *   root          the project root — `package.path`'s own default begins `./?.lua`, and
+ *                 `lua main.lua` from the checkout root is the commonest way this corpus runs
+ *   fileDir       the requiring file's own directory — busted puts the spec directory on
+ *                 `package.path`, which is how `spec/*_spec.lua` writes `require("helpers")`
+ *   luaRoot       the path prefix ending at the file's FIRST `lua/` segment — Neovim's runtimepath
+ *                 and the OpenResty plugin layout, where `require("lazy.state")` is
+ *                 `<plugin>/lua/lazy/state.lua` and NOT `<plugin>/lazy/state.lua`
+ *   fileDir+lua   `<fileDir>/lua/` — a nested module root
+ *
+ * A base is dropped when it does not exist for this file (a file outside any `lua/` directory has
+ * no `luaRoot`), and the ORDER is a statement about `package.path`'s own spelling order rather than
+ * a preference. MEASURED, whole population: the order never decided an outcome, because every
+ * claimed edge had exactly ONE admitted candidate.
+ */
+function luaModuleBases(fileRel: string): { label: string; base: string }[] {
+  const dir = dirOf(fileRel)
+  const segs = fileRel.split("/")
+  const all: { label: string; base: string }[] = [{ label: "root", base: "" }, { label: "fileDir", base: dir }]
+  for (let i = 0; i < segs.length - 1; i++) {
+    if (segs[i] === "lua") { all.push({ label: "luaRoot", base: segs.slice(0, i + 1).join("/") + "/" }); break }
+  }
+  all.push({ label: "fileDir+lua", base: dir + "lua/" })
+  const seen = new Set<string>()
+  return all.filter((b) => {
+    if (seen.has(b.base)) return false
+    seen.add(b.base)
+    return true
+  })
+}
+
+/**
+ * EVERY FILE a lua module name can name, as project-relative POSIX paths in the order the bases
+ * above list them. `X.lua` before `X/init.lua` for one base, which is the order the default
+ * `package.path` itself writes (`./?.lua;./?/init.lua`).
+ *
+ * These are the EXTRA spellings handed to the guard; the guard folds the written target itself
+ * before them, so nothing here repeats its own two folds.
+ */
+function luaModuleFileCandidates(moduleName: string, fileRel: string): string[] {
+  const stem = moduleName.trim().split(".").join("/")
+  if (stem.length === 0) return []
+  const out: string[] = []
+  for (const { base } of luaModuleBases(fileRel)) {
+    for (const suffix of [".lua", "/init.lua"]) {
+      const folded = foldProjectPath(base, stem + suffix)
+      if (folded !== null && !out.includes(folded)) out.push(folded)
+    }
+  }
+  return out
+}
+
 interface LuaContext {
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
@@ -131,10 +202,43 @@ interface LuaContext {
    *  names a documented Lua 5.4 standard table, held back until every symbol this
    *  file declares is known. See `markStdlibExternal`. */
   stdlibCandidates: Array<{ rel: ASTEngine.UniversalRelationship; receiver: string }>
+  /**
+   * THE PROJECT ROOT and the file's own path, exactly as the caller gave them
+   * (`AnalyzeContext.projectRoot` / `analyze`'s `filePath`). Held so a `require` can state the ONE
+   * checkable fact about a module name — that the project carries the file it names.
+   *
+   * BOTH MUST BE ABSOLUTE, and the clause is deliberate rather than defensive: the guard derives the
+   * file's project-relative directory from the pair, and a RELATIVE root against an absolute file
+   * (or the reverse) would fold a `../..` chain into a path that may well exist — a WRONG candidate
+   * is worse than no claim, because a claim is checked before the count. With no usable pair the
+   * analyzer simply states no claim, which is the honest reading and the same direction toml and php
+   * take.
+   */
+  projectRoot?: string
+  filePath?: string
+  /**
+   * MEMO FOR THE FILE CLAIM, keyed by module name. One file may `require` the same module several
+   * times, and the guard's answer is a pure function of (root, file, name); re-statting the
+   * filesystem per edge would make a per-file analyzer's cost proportional to its import COUNT
+   * rather than to the modules it names.
+   */
+  moduleFileClaims?: Map<string, string | null>
 }
 
 export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  analyze(
+    rootNode: Node,
+    content: string,
+    filePath: string,
+    context?: ASTEngine.AnalyzeContext,
+  ): ASTEngine.ParseResult {
+    // THE ROOT IS READ FROM THE CONTEXT, and the context is read rather than required: a caller
+    // with no project root (the fixture runner, a one-off parse) gets exactly the analyzer it had
+    // before this field existed, byte for byte, minus one optional metadata key.
+    const projectRootRaw = String(context?.projectRoot ?? "")
+    const filePathRaw = String(filePath ?? "")
+    const rooted = projectRootRaw.length > 0 && filePathRaw.length > 0
+      && path.isAbsolute(projectRootRaw) && path.isAbsolute(filePathRaw)
     const ctx: LuaContext = {
       symbols: [],
       relationships: [],
@@ -153,6 +257,8 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       supertypeLinks: new Map(),
       factorySupertypeLines: new Map(),
       stdlibCandidates: [],
+      ...(rooted ? { projectRoot: projectRootRaw, filePath: filePathRaw } : {}),
+      moduleFileClaims: new Map<string, string | null>(),
     }
 
     this.collectErrors(rootNode, ctx)
@@ -916,7 +1022,12 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const source = frame.callable || "global"
     if (callName !== "pcall" && callName !== "xpcall") {
-      this.addRelationship(ctx, source, callName, ASTEngine.RelationshipType.Calls, { luaSpecific: true }, callee.nameNode)
+      // M60 LUA-56: THE CALLEE'S SHAPE TRAVELS WITH THE EDGE. See `callee()`: the branch that
+      // produced `callName` also decided whether that name was WRITTEN as a bare identifier or
+      // as the FIELD of a receiver this edge does not carry, and the fact was discarded until
+      // now. It is additive metadata — every consumer that ignores it sees the identical graph —
+      // and it is the fact that separates the two mechanisms LUA-G5 recorded as one class.
+      this.addRelationship(ctx, source, callName, ASTEngine.RelationshipType.Calls, { luaSpecific: true, ...callee.shapeMark }, callee.nameNode)
     }
 
     if (qualified === "coroutine.create" || qualified === "coroutine.wrap") {
@@ -1005,7 +1116,27 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       range: this.nodeToRange(node),
       metadata: { luaSpecific: true },
     })
-    this.addRelationship(ctx, frame.callable || "global", moduleName, ASTEngine.RelationshipType.Imports, { luaSpecific: true, relationshipType: "lua_require" }, node)
+    // THE FILE CLAIM, or nothing.
+    //
+    // The target of this edge is a MODULE NAME and the gate's key space holds DECLARATIONS, so the
+    // edge reads `unresolved` — 5,645 of this lane's `imports` edges, the largest single share of
+    // the programme's most repeated cause. "Names no symbol" is not the same as "says nothing
+    // checkable": the project can be asked whether it CARRIES THE FILE this module names, and the
+    // guard answers that from the filesystem, in the lane's own admitted extension.
+    //
+    // WHY THIS IS NOT THE `isExternal` MARKER THIS LANE ALREADY MEASURED AND REFUSED. An external
+    // owner claim on these targets was priced at 5,485 marked / 1,560 REFUTED (measured
+    // 2026-10-09, `incoming-split-lua-full.log`, mark M4): `imports lapis.application` has owner
+    // `lapis`, and the project declares `lapis`, so the claim is FALSE as stated. A file claim is a
+    // different, CHECKABLE statement about the same edge, and the guard writes it only where the
+    // file is really there — so it can never raise `resolved` and it can never excuse a gap the
+    // project can disprove.
+    const fileClaim = this.moduleFileClaim(moduleName, ctx)
+    this.addRelationship(ctx, frame.callable || "global", moduleName, ASTEngine.RelationshipType.Imports, {
+      luaSpecific: true,
+      relationshipType: "lua_require",
+      ...(fileClaim !== null ? { importProjectFile: fileClaim } : {}),
+    }, node)
     // A required module name is a real signal and is kept. The bare-identifier
     // rules (World of Warcraft's CreateFrame/UIParent, Wireshark's
     // Proto/DissectorTable) are NOT reproduced here: those are globals that any
@@ -1016,6 +1147,51 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (moduleName === "middleclass" || moduleName === "classic" || moduleName === "30log") ctx.patterns.add("Object-Oriented Programming (Libraries)")
     if (moduleName === "hs" || moduleName.startsWith("hs.")) ctx.frameworks.add("Hammerspoon")
     if (moduleName.startsWith("lovr")) ctx.frameworks.add("LÖVR (VR/AR)")
+  }
+
+  /**
+   * THE FILE CLAIM for one module name, or null when no candidate can be confirmed.
+   *
+   * WHAT IT ASSERTS, in the exact words of the guard's own contract: the project carries an admitted
+   * `.lua` file that this `require` names. It asserts NOTHING about symbols, so it can never raise
+   * `resolved`, and it is written ONLY where the guard confirmed a candidate on disk — a claim the
+   * project would refute is worse than no claim, because the gate checks a claim BEFORE the count.
+   *
+   * WHEN IT IS SILENT, and both silences are deliberate:
+   *   * NO ROOT, NO CLAIM. `analyze` without an absolute `projectRoot` (the fixture runner, a
+   *     one-off parse) states no claim at all rather than guessing a base. A caller that wants the
+   *     claim must hand the analyzer the project it is reading inside;
+   *   * NO CANDIDATE, NO CLAIM. `require("luarocks.fs")`, `require("tap")` and the rest of the
+   *     residue name files this corpus does not carry — those edges keep their target and stay
+   *     unresolved, which is TRUE, rather than being marked external to make a column smaller.
+   *
+   * The candidate arithmetic is `luaModuleFileCandidates`; the ADMITTED-EXTENSION clause, the
+   * inside-the-project clause, the size cap and the `statSync` are the shared guard's, so this lane
+   * cannot relax them by editing its own spelling of them.
+   */
+  private moduleFileClaim(moduleName: string, ctx: LuaContext): string | null {
+    const { projectRoot, filePath } = ctx
+    if (projectRoot === undefined || filePath === undefined) return null
+    const cached = ctx.moduleFileClaims?.get(moduleName)
+    if (cached !== undefined) return cached
+    const fileRel = path.relative(projectRoot, filePath).split(path.sep).join("/")
+    const claim = fileClaimForTarget({
+      projectRoot,
+      filePath,
+      // THE TARGET AS WRITTEN. The guard folds it itself before the extras below; the claim is a
+      // statement ABOUT this string and never a rewrite of it.
+      written: moduleName,
+      // THE LANE'S OWN ADMITTED LIST out of the router: lua admits `.lua` alone, so a candidate of
+      // any other extension can never verify while a miss still refutes — which is why this clause
+      // is the guard's and not this file's.
+      admittedExtensions: ["lua"],
+      extraCandidates: luaModuleFileCandidates(moduleName, fileRel),
+      // The indexer's own admission cap: a file above it is not in the population a claim is
+      // checked against, so a claim about it would be REFUTED rather than unverified.
+      maxFileSizeBytes: FILE_CLAIM_MAX_BYTES,
+    })
+    ctx.moduleFileClaims?.set(moduleName, claim)
+    return claim
   }
 
   // M60 LUA-06: this was ORDER-DEPENDENT, and therefore wrong. `declaredTables`
@@ -1961,8 +2137,17 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * declarations. One file cannot tell a sibling module from a luarocks rock, and
    * `classb-origin` measured both populations — 2,425 dotted targets whose module
    * file is in the corpus against 3,060 whose file is absent. Marking all 6,601
-   * would assert the second count for the first. The gate has no bucket for "this
-   * type's target is a module", so they are reported rather than swept.
+   * would assert the second count for the first.
+   *
+   * UPDATED 2026-10-11 (LUA-55), because the sentence that used to close this
+   * paragraph — "the gate has no bucket for 'this type's target is a module', so they
+   * are reported rather than swept" — stopped being true, and a comment that outlives
+   * its code is this lane's most expensive defect class (LUA-21, 41811754). The gate
+   * HAS a bucket now: `metadata.importProjectFile`, the shared file claim, and
+   * `addImport` writes it. The split above is unchanged and is still why an `isExternal`
+   * MARK is wrong here (1,560 of 5,485 REFUTED) — but the file claim is a different
+   * statement about the same edge, and it is checkable rather than asserted. See
+   * LUA-55 in docs/analyzers/real-lua-analyzer.md.
    */
   private markStdlibExternal(ctx: LuaContext): void {
     if (ctx.stdlibCandidates.length === 0) return
@@ -2174,11 +2359,38 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return undefined
   }
 
-  private callee(functionNode: Node): { name: string; nameNode: Node } | undefined {
-    if (functionNode.type === "identifier") return { name: functionNode.text, nameNode: functionNode }
+  // M60 LUA-56 — WHY THE SHAPE IS RETURNED WITH THE NAME. `calls` is this lane's largest
+  // remaining cause (42,889 not-resolved edges, 30,370 ambiguous + 12,519 unresolved, measured
+  // on the whole admitted population), and the class is TWO mechanisms wearing one label:
+  //
+  //   `foo()`      an IDENTIFIER callee — the name the language looks up through the file's
+  //                lexical scope and then `_ENV`. This is the only shape about which an
+  //                externality question can even be asked, because the target IS the name.
+  //   `M.foo()`    an INDEX callee — `callee()` publishes the FIELD (LUA-13), so the target is a
+  //   `M:foo()`    member name whose CONTAINER the edge does not carry. "declared nowhere in the
+  //   `M["foo"]()` project" is then a statement about a field, not about a global.
+  //
+  // The distinction is DECIDED BY THE BRANCH THAT PRODUCES THE NAME — the same node test that
+  // returns the name decides which form it is — so it is returned from here rather than
+  // re-derived at the call site, where a second copy of the node test could silently drift from
+  // this one. That is the "one spelling, two places" hazard this lane has paid for repeatedly.
+  //
+  // THE TWO KEYS ARE A PARTITION of the `calls` population (every edge carries exactly one), and
+  // they are marker KEYS rather than one value-carrying key on purpose: the gate's marker table
+  // and this lane's own cause reader both group by KEY ONLY ("a value would split one marker into
+  // a signature per symbol it names"), so a fact that must be separable there has to be a key.
+  //
+  // THE THIRD STATE IS DELIBERATE. The fallthrough below publishes a name taken from arbitrary
+  // node text — the payload-as-a-name defect LUA-22/LUA-29/LUA-30 closed for every form the
+  // pinned grammar can produce — and it carries NO shape key. An edge in that state is therefore
+  // visible as a hole (the lane's `calls-file-scope-pricing.mts` reports it as UNPUBLISHED, and a
+  // non-zero reading there means the grammar grew a callee form this whitelist has not seen)
+  // rather than being silently filed under one of the two shapes.
+  private callee(functionNode: Node): { name: string; nameNode: Node; shapeMark: Record<string, true> } | undefined {
+    if (functionNode.type === "identifier") return { name: functionNode.text, nameNode: functionNode, shapeMark: { calleeIdentifier: true } }
     if (functionNode.type === "dot_index_expression" || functionNode.type === "method_index_expression") {
       const last = functionNode.namedChildCount > 0 ? functionNode.namedChild(functionNode.namedChildCount - 1) : undefined
-      if (last?.text) return { name: last.text, nameNode: last }
+      if (last?.text) return { name: last.text, nameNode: last, shapeMark: { calleeIndexed: true } }
     }
     // M60 LUA-22: a call through a COMPUTED index has no name to record.
     // `dao[method or context .. "_by_" .. endpoint_key](...)` —
@@ -2223,7 +2435,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const field = functionNode.childForFieldName("field")
       if (field?.type !== "string") return undefined
       const literal = this.stringValue(field)
-      return literal ? { name: literal, nameNode: field } : undefined
+      return literal ? { name: literal, nameNode: field, shapeMark: { calleeIndexed: true } } : undefined
     }
     // M60 LUA-29: a call ON A CALL has no name either, and this fallthrough was
     // publishing one. `require("some.module")()` — the shape at
@@ -2250,7 +2462,9 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (functionNode.type === "function_call" || functionNode.type === "table_constructor" ||
         functionNode.type === "binary_expression" || functionNode.type === "parenthesized_expression" ||
         functionNode.type === "string" || functionNode.type === "number") return undefined
-    if (functionNode.text) return { name: functionNode.text, nameNode: functionNode }
+    // LUA-56: NO SHAPE KEY ON THIS PATH, and that is the disclosure rather than an omission —
+    // see the docstring above. This branch publishes a name it cannot characterise.
+    if (functionNode.text) return { name: functionNode.text, nameNode: functionNode, shapeMark: {} }
     return undefined
   }
 

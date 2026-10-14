@@ -17,7 +17,6 @@ import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainTools } from "../../src/ast/tools"
 import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
-import { parseM22Ledger, findIssueByCode } from "./ledger-shape.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m22/results")
@@ -82,8 +81,8 @@ async function run() {
   }
   writeFileSync(path.join(RESULTS, "E1.json"), JSON.stringify(result, null, 2) + "\n")
   try {
-    const led = parseM22Ledger(readFileSync(path.join(ROOT, "validation/m22/ledger.json"), "utf8"))
-    const e = findIssueByCode(led, "E1")
+    const led = JSON.parse(readFileSync(path.join(ROOT, "validation/m22/ledger.json"), "utf8"))
+    const e = Object.values(led.issues).find((i: any) => i.code === "E1")
     if (e) { e.status = finalStatus; e.passed = passed; e.failed = checks - passed; e.commit = commit; e.evidenceFile = "E1.json" }
     writeFileSync(path.join(ROOT, "validation/m22/ledger.json"), JSON.stringify(led, null, 2) + "\n")
   } catch (e2: any) { console.log(`E1: ledger self-update failed: ${e2?.message}`) }

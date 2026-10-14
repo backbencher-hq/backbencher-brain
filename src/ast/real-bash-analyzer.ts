@@ -1,5 +1,48 @@
 import type { Node } from "web-tree-sitter"
+import { existsSync } from "node:fs"
+import * as path from "node:path"
 import { ASTEngine } from "./engine"
+
+/**
+ * THE PROJECT-UNIQUE FILE SCOPE — what makes a same-file target nameable.
+ *
+ * The lane publishes the script as its module symbol (BD2), but only by BASENAME: two `util.sh`
+ * in one repository are one key, so a target spelled `<basename>::<name>` would still collide.
+ * The scope is therefore the repo-relative path, which is unique inside a project by
+ * construction — the same rule css-D15 uses.
+ *
+ * WHY THIS MATTERS FOR THE RESIDUAL: the lane's dominant column is AMBIGUITY (42,392 edges on the
+ * declared population), and 59.5% of it is the SAME-FILE-ONE class — an edge whose OWN file
+ * declares the name exactly once while other files declare it too. That declaration is not a
+ * guess: the file is holding it. What was missing was a spelling the store could bind, because a
+ * bare name answers to every declaration in the project.
+ */
+const BASH_REPO_ROOT = new Map<string, string>()
+function bashRepoRootOf(filePath: string): string {
+  const abs = path.resolve(filePath)
+  const dir = path.dirname(abs)
+  const cached = BASH_REPO_ROOT.get(dir)
+  if (cached !== undefined) return cached
+  let probe = dir
+  for (let i = 0; i < 64; i++) {
+    if (existsSync(path.join(probe, ".git"))) { BASH_REPO_ROOT.set(dir, probe); return probe }
+    const parent = path.dirname(probe)
+    if (parent === probe) break
+    probe = parent
+  }
+  BASH_REPO_ROOT.set(dir, "")
+  return ""
+}
+
+function bashFileScopeOf(filePath: string): string {
+  const root = bashRepoRootOf(filePath)
+  if (root === "") return ""
+  const rel = path.relative(root, path.resolve(filePath))
+  if (rel.startsWith("..") || rel === "") return ""
+  // `::` separates the scope from the name and `.` is what the differential splits on, so both
+  // are unspeakable in a scope: sanitised the way css-D15 sanitises its own file scopes.
+  return rel.split(path.sep).join("/").split(".").join("_").split(":").join("_")
+}
 
 /**
  * Bash analyzer.
@@ -96,6 +139,18 @@ const SHELL_RESERVED_WORDS = new Set([
 // are tracked as function parameters but are shell bookkeeping, not project
 // variables, so they never become Uses edges.
 const SPECIAL_VAR_PUNCTUATION = new Set(["@", "*", "?", "$", "#", "!", "_"])
+
+/**
+ * BD11 -- an `export` whose NAME is decided at run time.
+ *
+ * `export "_${ucname}_COMPLETE=bash_source"` is a real declaration site with no statically
+ * known name: the identifier the shell binds is assembled from a variable's value. It cannot
+ * become an edge (a target containing `$` is a name no symbol can have), so it is recorded as
+ * a pattern -- the same treatment BD4 gives a computed command word, and for the same reason:
+ * the read of the deciding variable IS emitted as `uses`, so the dependency is not lost, and
+ * the site is visible to a reader instead of vanishing between the two.
+ */
+const COMPUTED_EXPORT_NAME_PATTERN = "Computed Export Name"
 
 // Bash variables the shell itself defines. Referencing one is a fact about the
 // runtime, not a project declaration, so it is recorded as a read of a known
@@ -634,7 +689,7 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.extractAssignment(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners, declSites)
         }
       } else if (node.type === "declaration_command") {
-        this.extractDeclaration(node, symbols, enclosingFunction() || scriptName, functionParams, declaredSymbols, scopeOwners, addRel, declSites)
+        this.extractDeclaration(node, symbols, enclosingFunction() || scriptName, functionParams, declaredSymbols, scopeOwners, addRel, declSites, patterns)
       } else if (node.type === "command") {
         this.extractImplicitBinding(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners, declSites)
         this.extractCommand(node, symbols, imports, patterns, {
@@ -919,7 +974,20 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         // source runs, so telling a consumer they reach an external binary would be
         // a false claim about a false edge — the labels exist to make a real
         // ambiguity visible, not to dress wreckage up as a decision.
-        if (meta.commandInErrorRecovery === true) continue
+        //
+        // THE THREE FALSE EDGES STILL OWE A ROW, and this is the correction of 2026-10-10. The
+        // exclusion above is right about the LABEL and wrong about the SILENCE: the lane's own
+        // contract (see `resolveDeclaration`) is that an edge whose target its file declares more
+        // than once carries EITHER a binding field or the explicit decline, and a row carrying
+        // neither is the one shape a consumer cannot read — the whole-corpus closure probe
+        // (`probe-bash-ambiguity-closure-whole.mts`) is what surfaced it, as exactly 3 `STILL OPEN`
+        // edges out of 24,722 ambiguous ones. So the decline is published and the external label is
+        // still withheld: `ambiguousInFile` says "this edge could not be attributed", which is true
+        // of wreckage, while `commandNameIsExternal` would be a false claim about a false edge.
+        if (meta.commandInErrorRecovery === true) {
+          if ((declSites.get(String(rel.target ?? ""))?.length ?? 0) >= 2) meta.targetResolution = "ambiguousInFile"
+          continue
+        }
         const name = String(rel.target ?? "")
         if (!namesWithNonFunctionDecl.has(name)) continue // truly external: nothing local to confuse
         meta.targetResolution = "commandNameIsExternal"
@@ -973,6 +1041,80 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         scriptName,
       )
       if (resolved) Object.assign(meta, resolved)
+    }
+
+    // ---------------------------------------------- THE FILE-SCOPED IDENTITY (2026-10-11)
+    //
+    // THE DOMINANT COLUMN, AND WHY THIS IS A FIX RATHER THAN A CEILING. The lane's incoming gate
+    // reads 42,392 ambiguous of 148,816 edges on the declared population (53.4% residual), and the
+    // split by WHERE the name is declared says 59.5% of that ambiguity is SAME-FILE-ONE: the edge's
+    // own file declares the name exactly once while other files declare it too. `incoming-gate`
+    // counts declarations per BARE NAME across the project, so such an edge answers to every other
+    // file's declaration as well — but the declaration the file is holding is not a guess and not a
+    // heuristic: `bindingInEffect` above is the same scope-chain rule the lane already uses to
+    // publish `targetLine`, and it answers with the ONE declaration in effect at the edge.
+    //
+    // So the rule cannot be wrong where it fires: it respells a target ONLY when the file declares
+    // the name, ONLY when exactly one declaration is in effect at the edge's own line, and ONLY
+    // when that declaration's KIND is the kind the edge can denote (a command resolves to a
+    // function or to PATH, never to a variable — the lane's own ruling that produced
+    // `commandNameIsExternal`). Where any of the three fails, the target is left EXACTLY as it was;
+    // nothing is invented and no edge gains a spelling that could be wrong.
+    //
+    // The spelling is `<repo-relative path, sanitised>.<name>` — DOT, because that is the shape
+    // `pool-worker.ts:1175` publishes as `qualifiedName` and therefore the only shape a key space
+    // built through `parseFile` can answer. The name stays the LAST segment, so the differential's
+    // identity is unchanged: a shell identifier never contains a dot.
+    const fileScope = bashFileScopeOf(filePath)
+    if (fileScope !== "") {
+      const occurrences = new Map<string, number>()
+      for (const sym of symbols) {
+        const n = String(sym.name ?? "")
+        if (n.length > 0) occurrences.set(n, (occurrences.get(n) ?? 0) + 1)
+      }
+      const resplellable: Record<string, (kind: string) => boolean> = {
+        // command position: a function declared in this file answers it (bash resolves functions
+        // before PATH); a variable does NOT, which is what `commandNameIsExternal` records.
+        calls: (k) => k === "function",
+        uses: (k) => k === "variable" || k === "constant",
+        exports: (k) => k === "variable" || k === "constant" || k === "function",
+        overrides: (k) => k === "function",
+      }
+      // AND THE DECLARATION MUST BE A PUBLISHED SYMBOL, which is the correction the first after-run
+      // forced. `declSites` is the walk's working index; it is NOT the published symbol table, and
+      // the two differ. Respelling to a key nothing publishes turns an AMBIGUOUS edge into an
+      // UNRESOLVED one — measured before this gate existed: residual fell 78,444 -> 58,302 while
+      // `uses` unresolved ROSE 7,922 -> 17,895, a trade of one bad column for another. A respell may
+      // only name a qualification the store can answer, so the binding must also appear in the
+      // published symbols at the same LINE and KIND.
+      const published = new Set<string>()
+      for (const sym of symbols) {
+        const n = String(sym.name ?? "")
+        if (n.length === 0) continue
+        published.add(`${n}|${Number(sym.range?.startLine ?? 0)}|${String(sym.kind ?? "")}`)
+      }
+      for (const rel of relationships) {
+        const kindRule = resplellable[String(rel.type ?? "")]
+        if (kindRule === undefined) continue
+        const target = String(rel.target ?? "")
+        if (target.length === 0) continue
+        const r = this.bindingInEffect(declSites, target, String(rel.source ?? ""), rel.line_number, scriptName)
+        if (r === null || r === "ambiguous") continue
+        if (!kindRule(r.kind)) continue
+        const symbolKind = r.kind === "function" ? ASTEngine.SymbolKind.Function : r.kind === "constant" ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable
+        if (!published.has(`${target}|${r.line}|${symbolKind}`)) continue
+        // THE WORKER'S OWN DERIVED ALIAS, and nothing invented. `pool-worker.ts:1175` publishes
+        // `qualifiedName` as `s.qualifiedName || s.metadata?.fqn || (s.scope ? `${s.scope}.${s.name}`
+        // : s.name)` — so the key a target can actually answer to is `<OWNER>.<name>`, where the owner
+        // is the symbol's `scope`. My first two attempts spelled it `<file scope>.<name>`, which the
+        // key space does not hold: measured on `kubernetes/hack/lib/util.sh`, 168 respelled targets,
+        // 102 answered and 66 NOT — every one of the 66 a declaration inside a function, where the
+        // worker's alias carries the FUNCTION as the owner (`kube::util::wait_for_url.times`) and my
+        // file scope does not. The alias exists for every published symbol, so this reaches what the
+        // store can bind, and a name the worker keeps no alias for cannot be reached at all.
+        const owner = r.owner.length > 0 ? r.owner : scriptName
+        rel.target = `${owner}.${target}`
+      }
     }
 
     // --------------------------------------------------------------- metrics
@@ -1131,6 +1273,38 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): Record<string, unknown> | undefined {
     const cands = declSites.get(name)
     if (!cands || cands.length < 2) return undefined // not ambiguous: nothing to add
+    const r = this.bindingInEffect(declSites, name, useOwner, useLine, fileOwner)
+    if (r === null || r === "ambiguous") return { targetResolution: "ambiguousInFile" }
+    return {
+      targetLine: r.line,
+      targetKind: r.kind,
+      targetResolution: r.innermost ? "innermostScope" : "outerScope",
+    }
+  }
+
+  /**
+   * WHICH DECLARATION IS IN EFFECT WHERE THE EDGE POINTS — the lane's scope-chain rule, in ONE
+   * place, because two consumers now need it and two copies of a resolution rule are two rules.
+   *
+   *   `null`        the file declares this name NOWHERE — there is nothing to name
+   *   `"ambiguous"` the name is declared, but not exactly one of them is in effect here
+   *   the binding   the nearest declaration at-or-before the use, in the innermost scope that
+   *                 has one, with `innermost` saying which scope answered
+   *
+   * Bash's own rule drives the walk: a function or variable defined LATER in the file does not
+   * answer a use that precedes it, and a use inside a function is answered by that function's own
+   * scope before the script's. That is why the respell pass below can reach a declaration WITHOUT
+   * guessing — and why it must not respell an edge whose binding is `"ambiguous"` or `null`.
+   */
+  private bindingInEffect(
+    declSites: Map<string, { owner: string; line: number; kind: string }[]>,
+    name: string,
+    useOwner: string,
+    useLine: number,
+    fileOwner: string,
+  ): { line: number; kind: string; owner: string; innermost: boolean } | "ambiguous" | null {
+    const cands = declSites.get(name)
+    if (!cands || cands.length === 0) return null
     // Outward walk. `useOwner` is "" at file scope, and so is `fileOwner` for a
     // script, so the first iteration already covers the file-scope case and a
     // use inside a function gets its own scope before the file's.
@@ -1140,16 +1314,11 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (atOrBefore.length === 0) continue // this scope has nothing yet; look outward
       const nearest = Math.max(...atOrBefore.map((c) => c.line))
       const winners = atOrBefore.filter((c) => c.line === nearest)
-      if (winners.length !== 1) return { targetResolution: "ambiguousInFile" }
-      return {
-        targetLine: winners[0]!.line,
-        targetKind: winners[0]!.kind,
-        targetResolution: scope === useOwner ? "innermostScope" : "outerScope",
-      }
+      if (winners.length !== 1) return "ambiguous"
+      return { line: winners[0]!.line, kind: winners[0]!.kind, owner: scope, innermost: scope === useOwner }
     }
-    // The name IS declared several times in this file and none of it is in
-    // effect where this edge points. Say so; publish no line.
-    return { targetResolution: "ambiguousInFile" }
+    // The name IS declared in this file and none of it is in effect where this edge points.
+    return "ambiguous"
   }
 
   /**
@@ -2001,6 +2170,9 @@ private extractAssignment(
       metadata?: Record<string, unknown>,
     ) => void,
     declSites: Map<string, { owner: string; line: number; kind: string }[]>,
+    /** BD11: a declaration site the extractor could see and could NOT name is a pattern,
+     *  not a silent drop -- `export "_${ucname}_COMPLETE=..."` names its variable at run time. */
+    patterns: Set<string>,
   ) {
     const keyword = node.child(0)?.text ?? ""
     if (!DECLARATION_KEYWORDS.has(keyword)) return
@@ -2159,8 +2331,110 @@ private extractAssignment(
         } else {
           emit(child.text, this.nodeToRange(child), childLine)
         }
+      } else if (child.type === "string" || child.type === "concatenation") {
+        // BD11: `export "NAME=value"` is ONE node, and it is not an assignment.
+        //
+        // The grammar hands `export NAME=value` to this loop as a `variable_assignment` child
+        // holding a `variable_name`; it hands `export "NAME=value"` as a SINGLE `string` node
+        // with no `variable_assignment` and no `variable_name` anywhere beneath it, so neither
+        // branch above could ever see it. The form was therefore SILENT -- no symbol, no
+        // `exports` edge, no diagnostic -- while the unquoted form of the same statement
+        // worked.
+        //
+        // MEASURED, corpus-wide (`probe-bash-silent-types.mts --corpus`, 2,962 .sh/.bash files):
+        // 1,598 `exports` edges, and the site-by-site differ (`probe-bash-export-site-diff.mts`)
+        // matched 1,540 of 1,548 declaration sites with the 8 unmatched ALL computed names.
+        // This branch closes the latent shape gap; it does not move the corpus edge count,
+        // because no static quoted site occurs in this corpus -- so the FIXTURE pins it.
+        //
+        // A name assembled from an expansion (`export "_${ucname}_COMPLETE=bash_source"`, the
+        // shape of both sites in the pinned repository) is NOT a name: no symbol can answer to
+        // it, and `exports -> _${ucname}_COMPLETE` would be the fabricated target BD4 refuses
+        // for a computed command word. Those sites emit nothing and are recorded as a pattern,
+        // while the expansion's own `uses` edge still carries the dependency.
+        const name = this.staticNameOfDeclarationString(child)
+        if (name) {
+          if (hasFunctionFlag) {
+            this.markFunctionExported(symbols, name)
+            addRel(owner, name, ASTEngine.RelationshipType.Exports, 1.0, childLine, {
+              bashSpecific: true,
+              exportForm: "function",
+            })
+          } else {
+            emit(name, this.nodeToRange(child), childLine)
+          }
+        } else if (isExport) {
+          patterns.add(COMPUTED_EXPORT_NAME_PATTERN)
+        }
       }
     }
+  }
+
+  /**
+   * BD11 -- the statically-known name inside a declaration whose whole argument is ONE string
+   * node (`export "NAME=value"`, `export "NAME"`, `export 'NAME=value'`).
+   *
+   * The name is read from the node's LITERAL run: the characters up to the first `=` that are
+   * produced by `string_content`/`word`/`raw_string`, with the quotes removed. The moment an
+   * expansion appears before the `=`, the name is decided at RUN TIME and `null` is returned --
+   * there is no name to publish, and publishing the template would be a target no symbol can
+   * ever have.
+   *
+   * FAIL-CLOSED: an unrecognised child shape ends the literal run rather than contributing to
+   * it, so a grammar change makes this quieter instead of wrong. `isShellIdentifierName` is the
+   * same identifier test the rest of the declaration path uses, so a value that is not a shell
+   * name (`export "1=2"`, `export "a b=c"`) is refused here too rather than published.
+   */
+  private staticNameOfDeclarationString(node: Node): string | null {
+    // A TERMINAL argument carries its literal in its own text — a `raw_string`, an
+    // `ansi_c_string`, a bare `word`. Naming those node types here would add three literals to
+    // the lane's grammar census for no gain, and the shape test is the same for all of them.
+    if (node.namedChildCount === 0) return this.nameFromLiteralRun(this.stripQuotes(node.text))
+    let literal = ""
+    let computed = false
+    const scan = (n: Node): void => {
+      for (let i = 0; i < n.namedChildCount && !computed; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        switch (c.type) {
+          case "simple_expansion":
+          case "expansion":
+          case "command_substitution":
+          case "arithmetic_expansion":
+            // The NAME is decided at run time. There is nothing to publish.
+            computed = true
+            break
+          case "concatenation":
+          case "string":
+            // `export "A"=1` arrives as a concatenation of a quoted and an unquoted half; it is
+            // SCANNED rather than treated as computed, because its first half is the literal the
+            // name is read from.
+            scan(c)
+            break
+          default:
+            // Every other child of a declaration argument is literal TEXT — the `string_content`
+            // inside a `string`, a `word`, a `raw_string`, a quoted chunk. It is NOT trusted as a
+            // name on that basis: `isShellIdentifierName` refuses anything that is not a shell
+            // name, so a shape this walk does not recognise can only make the answer `null`,
+            // never a fabricated target.
+            literal += this.stripQuotes(c.text)
+            break
+        }
+        if (literal.includes("=")) return
+      }
+    }
+    scan(node)
+    if (computed) return null
+    return this.nameFromLiteralRun(literal)
+  }
+
+  /** The identifier before the first `=` in a literal run, or the whole run when it holds no
+   *  `=` (a quoted BARE name: `export "NAME"`). Anything that is not a shell identifier is
+   *  refused -- including the empty string. */
+  private nameFromLiteralRun(literal: string): string | null {
+    const eq = literal.indexOf("=")
+    const name = eq >= 0 ? literal.slice(0, eq) : literal
+    return isShellIdentifierName(name) ? name : null
   }
 
   private collectPositionalFromValue(
@@ -2432,6 +2706,7 @@ private extractAssignment(
       // attribution pass runs AFTER the walk and would otherwise have to re-derive
       // the shape from a node it no longer holds.
       commandInErrorRecovery: this.isInsideErrorNode(node) || undefined,
+      ...this.externalCommandEvidence(cmdName, isLocal),
       bashSpecific: true,
     })
   }
@@ -2548,6 +2823,46 @@ private extractAssignment(
    * that installs the trap, the target is the handler's command NAME, and the
    * signal rides along in metadata.
    */
+  /**
+   * THE INCOMING MARKER -- `isExternal`, and the evidence that is allowed to carry it.
+   *
+   * `script/m14/incoming-rule.ts` treats an external target as a DECLARED EXCEPTION rather than
+   * a defect, but only when the lane MARKS it, and the marker is a claim the corpus checks: an
+   * unmarked external target and a broken edge are otherwise indistinguishable. MEASURED before
+   * this method existed (`incoming-gate.ts bash sh 60`): 855 unresolved of 2,590 edges, of which
+   * 631 are `calls`, and ZERO edges carried any external marker -- the lane was asserting
+   * nothing about the half of its graph that leaves the repository.
+   *
+   * A FIRST, WIDER VERSION OF THIS RULE WAS MEASURED AND WITHDRAWN, and the measurement is the
+   * reason this one is narrow. It marked every call in a file that contains no `source`/`.` and
+   * no `eval`, on the argument that bash can then only resolve the name through PATH. On the
+   * gate's own population that marked 435 edges and an audit of the marked set
+   * (`probe-bash-incoming-split.mts`, whole-project declaration index) found **82 of them name
+   * a `function_definition` the same repository declares** -- 62 of them
+   * `kube::test::get_object_assert` in kubernetes. The argument is false for a LIBRARY file: a
+   * file that sources nothing may itself be sourced by another file that has already defined the
+   * name, so "this file cannot define it" does not mean "the project cannot supply it". A marker
+   * that is wrong 18.9% of the time is worse than no marker, because the number it removes stops
+   * meaning anything.
+   *
+   * So one shape remains, and it is a fact about the NAME rather than about the file:
+   *
+   *   PATH-INVOKED (`/bin/expr`, `./otp_build`)   the command word contains `/`, and a shell
+   *       function name cannot contain `/`. The shell is being handed a FILE to execute; the
+   *       target can never be a project declaration, whatever else the file does.
+   *
+   * WHAT IS NOT MARKED, and it is the honest half: an unqualified call to a name this file does
+   * not define. Whether the project declares it elsewhere is a fact about the CORPUS, which a
+   * single-file analyzer does not have, and the wider rule's 82 refuted claims are the price of
+   * pretending otherwise. Those edges stay in `unresolved` and are reported there -- the bash
+   * lane's residual is a measured number, not a laundered one.
+   */
+  private externalCommandEvidence(cmdName: string, isLocal: boolean): Record<string, unknown> {
+    if (isLocal) return {}
+    if (!cmdName.includes("/")) return {}
+    return { isExternal: true, externalEvidence: "pathInvokedCommand" }
+  }
+
   private handleTrap(
     node: Node,
     ctx: {
@@ -2619,6 +2934,7 @@ private extractAssignment(
         isExternalCommand: !isLocal,
         resolvedWithinFile: isLocal,
         signals: signals.length > 0 ? signals : ["EXIT"],
+        ...this.externalCommandEvidence(firstToken, isLocal),
         bashSpecific: true,
       })
       emittedAny = true

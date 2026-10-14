@@ -11,7 +11,10 @@
 //     nodes, never from source-text scanning.
 
 import type { Node } from "web-tree-sitter"
+import { statSync } from "node:fs"
+import { join } from "node:path"
 import { ASTEngine } from "./engine"
+import { applyDocumentScope, documentDirScope, projectRelativePath } from "./project-scoped-identity"
 
 interface JsonContext {
   /** The document node, so a manifest pass can read the root object without
@@ -21,6 +24,12 @@ interface JsonContext {
    *  written feature can have: it looks implemented. */
   rootNode: Node
   filePath: string
+  /** The project root this file was parsed against, when the caller knows it.
+   *
+   *  Absent means "this caller did not say which project the file is in", and the document
+   *  identity falls back to the filesystem basename — which is what it was before this field
+   *  existed, and therefore what every fixture that passes no root still asserts. */
+  projectRoot?: string
   content: string
   rootName: string
   symbols: ASTEngine.UniversalSymbol[]
@@ -75,6 +84,20 @@ interface JsonContext {
     line: number
     overridesLine: number
   }[]
+  /**
+   * THE IDENTITIES THIS DOCUMENT HAS ALREADY PUBLISHED — one symbol per qualified path.
+   *
+   * A key re-declared in the same object produces one `pair` per occurrence, so the walk created
+   * one IDENTICAL symbol per occurrence: measured in `duckdb/data/json/11152.json`, FOUR symbols
+   * named `fileSize` with the same qualifiedName, the same kind and the same line. The STORE keeps
+   * ONE row for that identity (its insert collapses them), so publishing four puts the analyzer's
+   * declaration count above the product's and makes every edge naming the identity read
+   * `amb(decl)` — which is the whole of this lane's `overrides` residual, 22 edges.
+   *
+   * First occurrence wins, the rule this analyzer already states for the duplicate-key contract and
+   * the rule the store's `MIN(id)` implements. It can only REMOVE a declaration, never add one.
+   */
+  emittedPaths: Set<string>
   /** True when the document uses LSP's `{"kind":"reference","name":X}` literal — a
    *  DISCRIMINATED UNION for "this is a named type", as against `{"kind":"or","items":[…]}`
    *  and `{"kind":"array","element":…}`. Measured over the whole admitted population, 2 of
@@ -139,10 +162,16 @@ function isPathReference(value: string): boolean {
 }
 
 export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
-    const rootName = this.documentName(filePath)
+  analyze(
+    rootNode: Node,
+    content: string,
+    filePath: string,
+    context?: ASTEngine.AnalyzeContext,
+  ): ASTEngine.ParseResult {
+    const rootName = this.documentName(filePath, context?.projectRoot)
     const ctx: JsonContext = {
       filePath,
+      projectRoot: typeof context?.projectRoot === "string" ? context.projectRoot : undefined,
       content,
       rootName,
       symbols: [],
@@ -159,6 +188,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       dependencySymbols: [],
       dependencyVersions: new Map(),
       overrideCandidates: [],
+      emittedPaths: new Set(),
       usesReferenceLiterals: false,
       usesClassDeclarations: false,
       typeDeclarations: new Map(),
@@ -255,8 +285,14 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           severity: "warning",
         })
       }
-      for (let i = node.namedChildCount - 1; i >= 0; i--) {
-        const child = node.namedChild(i)
+      // ONE READ, NOT ONE CALL PER INDEX. `namedChild(i)` is O(i) in this binding, so a loop
+      // over a node's children is O(k^2). MEASURED on the 20,000-child ERROR root the grammar
+      // recovers otp's `n_structure_open_array_object.json` into: the index loop 60.3 s, a
+      // single `namedChildren` read 90 ms, a cursor walk 84 ms — and `nextNamedSibling` is
+      // O(n) per step too (115.8 s for the same 20,000). Same nodes, same order, O(k).
+      const children = node.namedChildren ?? []
+      for (let i = children.length - 1; i >= 0; i--) {
+        const child = children[i]
         if (child) stack.push(child)
       }
     }
@@ -333,8 +369,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "object") {
         const schemaKeys = new Set<string>()
         let requiredNames: Set<string> | undefined
-        for (let i = 0; i < node.namedChildCount; i++) {
-          const pair = node.namedChild(i)
+        for (const pair of node.namedChildren ?? []) {
           if (pair?.type !== "pair") continue
           const key = this.keyText(pair)
           const value = pair.childForFieldName("value")
@@ -343,8 +378,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           schemaKeys.add(key)
           if (key === "required" && value?.type === "array") {
             const required = new Set<string>()
-            for (let j = 0; j < value.namedChildCount; j++) {
-              const item = value.namedChild(j)
+            for (const item of value.namedChildren ?? []) {
               if (item?.type === "string") required.add(this.stripQuotes(item.text))
             }
             if (required.size > 0) requiredNames = required
@@ -468,6 +502,12 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           depth: this.pathDepth(path, ctx.rootName),
         },
       }
+      // ONE SYMBOL PER IDENTITY. See `JsonContext.emittedPaths`: a re-declared key yields one
+      // identical symbol per occurrence, the store keeps one row for that identity, and the extra
+      // copies are what made every `overrides` edge read `amb(decl)`. Skipped BEFORE the side
+      // collections below, so the duplicate cannot be counted twice anywhere.
+      if (ctx.emittedPaths.has(path)) continue
+      ctx.emittedPaths.add(path)
       this.addSymbol(ctx, symbol)
 
       if (valueType === "null") ctx.hasNullValues = true
@@ -761,6 +801,37 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!refPath) continue
       const target = this.referenceTarget(ctx, refPath)
       const source = String(ref.metadata?.fullPath || ref.name)
+      // THE FILE CLAIM, and it exists because a path-shaped target is UNVERIFIABLE by the
+      // arbiter's owner lookup BY DESIGN: `verifyExternalClaim` cannot look up an owner holding
+      // `/`, so a `$ref` naming a sibling document could only ever be an `ext?` claim — which
+      // blocks a PASS and tells nobody anything. The arbiter has a claim kind for exactly this
+      // shape (`incoming-rule.ts` `FILE_CLAIM_KEY`): the target names a FILE, checked against the
+      // project's own admitted file list, which the gate builds from the UNSAMPLED corpus (so the
+      // claim is verified by evidence the analyzer never saw). Corpus measurement, whole admitted
+      // population: 82 file-naming `$ref`s, 81 of which name a file that is present (1 dangling,
+      // a vendored rekor schema) — so the claim is true 81 times and refuted once, and the one
+      // refutation is a real finding about vendored code rather than a false claim about it.
+      const fileCandidate = this.fileRefCandidate(ctx, refPath)
+      // THE FILE CLAIM IS MADE ONLY WHERE THE PROJECT CAN CONFIRM IT, and this is the fix for
+      // the lane's last two extFAIL edges. `importProjectFile` is a statement the arbiter CHECKS
+      // against the project's own admitted file list, and a miss is REFUTED — deliberately, and
+      // pinned by the gate's own control (`incoming-rule.ts` `verifyFileClaim`). The analyzer used
+      // to make that claim from path ARITHMETIC alone, so it asserted "this project has that file"
+      // for every sibling `$ref` in the corpus whether it did or not. Measured, docker: the
+      // vendored schema `vendor/github.com/sigstore/rekor/pkg/types/intoto/intoto_schema.json`
+      // points at `v0.0.1/intoto_v0_0_1_schema.json` and `v0.0.2/intoto_v0_0_2_schema.json` in one
+      // `oneOf`; the vendored copy carries v0.0.2 and not v0.0.1, and the two refs are
+      // STRUCTURALLY IDENTICAL — so no shape test can tell them apart and the only discriminator
+      // is existence. A claim the project refutes is a false statement the graph makes, so the
+      // claim is now conditional on the file being there, and a target that is not there says the
+      // true thing instead: it is outside this project's file set.
+      //
+      // The check is the filesystem the project lives on, and it can only ever REMOVE a claim
+      // (a file that does not exist cannot be claimed), so it cannot manufacture a refutation the
+      // blind claim would not have earned — an on-disk file that is untracked still claims, and
+      // still refutes, exactly as before.
+      const claimedFile =
+        fileCandidate !== null && this.projectCarriesFile(ctx, fileCandidate) ? fileCandidate : null
       // A file-naming `$ref` is BOTH a dependency and a reference. Emitting only
       // `references` was the omission; emitting only `imports` would lose the
       // pointer, so a `$ref` that names a file now carries both, which is what it is.
@@ -775,6 +846,14 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
             jsonSpecific: true,
             importForm: "json_schema_ref",
             resolvedPath: false,
+            // the dependency this edge asserts, in the spelling the project's own file list uses
+            // — or, where the project does not carry it, the external claim that says so. The
+            // fallback is not optional: an `imports` edge with no claim at all is UNRESOLVED and
+            // counts against the lane, and "the project does not carry this file" is a statement,
+            // not a gap. A path-shaped target carrying `isExternal` is UNVERIFIABLE by the
+            // arbiter's owner lookup by design (`verifyExternalClaim` refuses to read a stem as an
+            // owner — a rule the Lead fixed in `5a611de4b`), which is exactly right for it.
+            ...(claimedFile ? { importProjectFile: claimedFile } : { isExternal: true }),
             evidenceClass: "structural",
           },
         })
@@ -788,7 +867,20 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         metadata: {
           relationshipType: "json_reference",
           refPath,
-          isExternal: !refPath.startsWith("#/") || !ctx.symbolMap.has(target),
+          // THE EXTERNAL CLAIM, and it is a claim about the CORPUS, so it may only be made where
+          // the shape says the target is outside this document. A LOCAL POINTER never is: `#`
+          // (the root) and `#/a/b` (a location in this file) are answered by this file. Before
+          // this test, `#` was marked external by `!refPath.startsWith("#/")` — nine edges in one
+          // vendored meta-schema — and a URI/path-shaped target can never be verified by the
+          // gate's owner lookup, so those nine made the lane's verdict unreadable: the arbiter
+          // returns a branch that prints no amb/unres/edges totals (measured, 2026-10-09).
+          // A pointer that names a location this document does not publish is a BROKEN pointer,
+          // not an external one; `reasonCode` says exactly that and the confidence carries it.
+          // A `$ref` that names a FILE carries the file claim instead, on both labels, so the two
+          // rows for one dependency are adjudicated the same way — and where the project does not
+          // carry the file, BOTH labels carry the external claim, so one dependency is never
+          // adjudicated two ways.
+          ...(claimedFile ? { importProjectFile: claimedFile } : { isExternal: !this.isLocalPointer(refPath) }),
           // Honesty contract §4 point 1: anything below 1.0 carries a machine-readable code.
           // The 0.8 case is exactly one thing — the pointer names a location this document
           // does not declare — so the code says so, and the 1.0 case says the opposite.
@@ -897,19 +989,29 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (document.type !== "document") return
     const rootObject = document.namedChildren?.find((c: any) => c.type === "object")
     if (!rootObject) return
-    const emit = (name: string, line: number) => {
+    const emit = (name: string, line: number, parent?: string) => {
       if (name.length === 0) return
+      // THE TARGET IS THE ENTRY POINT'S OWN IDENTITY, not the bare key it is written under.
+      // `main` is a key of EVERY `package.json`, so the bare spelling named 2-4 declarations on
+      // a 400-file draw (22 of the lane's 37 `exports` edges ambiguous, 0 unresolved) — an
+      // ambiguous edge is ONE edge attributed to N documents, which is the same defect the
+      // document-identity scoping closed for `contains`. The key HAS a position in this
+      // document and the symbol table publishes that position (`<identity>.main`,
+      // `<identity>.exports.<subpath>`), so the target is spelled from the same segments the
+      // `contains` targets use — the parent is passed in because an `exports` sub-path hangs one
+      // level deeper than `main`/`bin`, and a flat `${rootName}.${name}` would have named
+      // `<identity>./package.json` for a key that lives at `<identity>.exports./package.json`.
+      const target = [ctx.rootName, ...(parent ? [parent] : []), name].join(".")
       ctx.relationships.push({
         source: ctx.rootName,
-        target: name,
+        target,
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1,
         line_number: line,
         metadata: { jsonSpecific: true, exportForm: "manifest_entry_point", evidenceClass: "structural" },
       })
     }
-    for (let i = 0; i < rootObject.namedChildCount; i++) {
-      const pair = rootObject.namedChild(i)
+    for (const pair of rootObject.namedChildren ?? []) {
       if (pair?.type !== "pair") continue
       const key = this.keyText(pair)
       const value = pair.childForFieldName("value")
@@ -920,21 +1022,19 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (key === "bin") {
         if (value.type === "string") emit("bin", line)
         else {
-          for (let k = 0; k < value.namedChildCount; k++) {
-            const binPair = value.namedChild(k)
+          for (const binPair of value.namedChildren ?? []) {
             if (binPair?.type !== "pair") continue
             const binName = this.keyText(binPair)
-            if (binName) emit(binName, binPair.startPosition.row + 1)
+            if (binName) emit(binName, binPair.startPosition.row + 1, "bin")
           }
         }
       } else if (key === "exports") {
         if (value.type === "string") emit("exports", line)
         else {
-          for (let k = 0; k < value.namedChildCount; k++) {
-            const sub = value.namedChild(k)
+          for (const sub of value.namedChildren ?? []) {
             if (sub?.type !== "pair") continue
             const subPath = this.keyText(sub)
-            if (subPath) emit(subPath, sub.startPosition.row + 1)
+            if (subPath) emit(subPath, sub.startPosition.row + 1, "exports")
           }
         }
       }
@@ -995,6 +1095,17 @@ const bracket = parent.lastIndexOf("[")
       const isSiblingFile = !isLocal && this.isFileNamingRef(refPath)
       if (!isLocal && !isSiblingFile) continue
       const target = isLocal ? this.referenceTarget(ctx, refPath) : refPath
+      // THE SIBLING-FILE FORM NEEDS THE FILE CLAIM, and it was the last of this lane's residual
+      // edges. A file-form `allOf` target (`dataTypeBase.json#`) names a FILE, so no symbol answers
+      // it and the arbiter read the edge UNRESOLVED — measured, 3 edges in openapi-spec, all
+      // `…/schemas/v1.2/*.json -> dataTypeBase.json#`, one marker set. `imports` and `references`
+      // solved the same shape with `importProjectFile` (checked against the project's own file
+      // list); this path never carried one, which is the defect. `projectCarriesFile` keeps the
+      // claim true: the file IS in the project here, so the claim VERIFIES, and where a project
+      // does not carry it the edge says `isExternal` instead of asserting something false.
+      const siblingFile = isSiblingFile ? this.fileRefCandidate(ctx, refPath) : null
+      const claimedSibling =
+        siblingFile !== null && this.projectCarriesFile(ctx, siblingFile) ? siblingFile : null
       ctx.relationships.push({
         source: composer,
         target,
@@ -1007,6 +1118,9 @@ const bracket = parent.lastIndexOf("[")
           compositionSite: parent,
           refForm: isLocal ? "intra_document" : "sibling_file",
           resolvedPath: isLocal,
+          ...(claimedSibling
+            ? { importProjectFile: claimedSibling }
+            : isSiblingFile ? { isExternal: true } : {}),
           note: "allOf is a superset-of relationship; anyOf/oneOf are alternatives and emit only `references`",
           reasonCode: "json_schema_all_of",
           evidenceClass: "structural",
@@ -1140,7 +1254,17 @@ const bracket = parent.lastIndexOf("[")
    * the parse tree, read at the same place the symbol is created.
    */
   private extractDuplicateKeyOverrides(ctx: JsonContext): void {
+    // ONE EDGE PER RE-DECLARED KEY. Three occurrences of a key produce two candidates each with the
+    // same owner and key, and the walk pushed one more candidate per occurrence: measured,
+    // `11152.json` emitted THREE identical `overrides` edges per key, same source, same target,
+    // same line. The store collapses them to one row by its relationship id, so the extra copies
+    // exist only in the model — where they inflate the type's edge count. The FIRST candidate wins,
+    // which is the earliest `overridesLine` and therefore the declaration the key first replaced.
+    const seen = new Set<string>()
     for (const c of ctx.overrideCandidates) {
+      const identity = `${c.ownerPath}\u0000${c.key}`
+      if (seen.has(identity)) continue
+      seen.add(identity)
       ctx.relationships.push({
         source: c.ownerPath,
         target: c.targetPath,
@@ -1170,8 +1294,7 @@ const bracket = parent.lastIndexOf("[")
     if (!scriptsObject) return
 
     const declared = new Map<string, Node>()
-    for (let i = 0; i < scriptsObject.namedChildCount; i++) {
-      const pair = scriptsObject.namedChild(i)
+    for (const pair of scriptsObject.namedChildren ?? []) {
       if (pair?.type !== "pair") continue
       const key = this.keyText(pair)
       if (key) declared.set(key, pair)
@@ -1269,8 +1392,7 @@ const bracket = parent.lastIndexOf("[")
 
   /** The object value of a named top-level key, or undefined. */
   private topLevelObjectValue(rootObject: any, name: string): any {
-    for (let i = 0; i < rootObject.namedChildCount; i++) {
-      const pair = rootObject.namedChild(i)
+    for (const pair of rootObject.namedChildren ?? []) {
       if (pair?.type !== "pair") continue
       if (this.keyText(pair) !== name) continue
       const value = pair.childForFieldName("value")
@@ -1296,6 +1418,34 @@ const bracket = parent.lastIndexOf("[")
    * dependency. Decided structurally — an extension and a path separator or a leading
    * `./` — with no regex, so the lane's zero-regex contract holds.
    */
+  /**
+   * DOES THE PROJECT CARRY THE FILE THIS EDGE DEPENDS ON? The precondition of the file claim.
+   *
+   * `candidate` is already project-relative and cannot escape the root (`fileRefCandidate` pops
+   * `..` and returns null when one would leave the project), so the join cannot address anything
+   * outside the project.
+   *
+   * ENOENT / ENOTDIR mean the project does not have it, and the claim is then NOT MADE — the
+   * arbiter would refute it, correctly, because the claim says the project has the file. ANY
+   * OTHER error means this check did not run rather than that the file is absent, and a claim is
+   * not dropped on a check that did not happen: those cases keep the claim, which is exactly the
+   * behaviour every measurement before this one recorded.
+   *
+   * This is a STAT, not a read. The lane's contract is that every decision comes from the TREE
+   * and that the file body is never scanned as text (`BD-regex`, enforced by
+   * `script/m12/json-contract-probe.ts`); asking the filesystem whether a path exists asserts
+   * nothing about that file's contents and adds no regular expression.
+   */
+  private projectCarriesFile(ctx: JsonContext, candidate: string): boolean {
+    const root = ctx.projectRoot
+    if (typeof root !== "string" || root.length === 0) return false
+    try {
+      return statSync(join(root, candidate)).isFile()
+    } catch (e: any) {
+      return !(e?.code === "ENOENT" || e?.code === "ENOTDIR")
+    }
+  }
+
   private isFileNamingRef(refPath: string): boolean {
     if (refPath.length === 0) return false
     if (refPath.startsWith("#/")) return false
@@ -1315,11 +1465,96 @@ const bracket = parent.lastIndexOf("[")
     return true
   }
 
+  /**
+   * A `$ref`'s TARGET, and a local pointer is a pointer INTO THIS DOCUMENT.
+   *
+   * The gate found the defect this fixes (`incoming-gate.ts json json 60`): nine `references`
+   * edges whose target was the literal string `#` and whose metadata said `isExternal: true`,
+   * all nine from one file — kubernetes' vendored draft-04 meta-schema
+   * (`.../gnostic-models/jsonschema/schema.json`), whose `definitions.schemaArray.items` is
+   * `{ "$ref": "#" }`. `#` is the JSON-Schema ROOT POINTER ("the schema itself"), so it is the
+   * most local reference a document can write, and BOTH rules below got it wrong for the same
+   * reason: they test `startsWith("#/")`, and a bare `#` is not that prefix.
+   *
+   *   the TARGET   fell through to the raw `#` — a string no symbol can be named, so the edge
+   *                named nothing. It now resolves to `ctx.rootName`, which IS the published
+   *                identity of the document root (the module symbol `analyze` pushes first), so
+   *                the pointer binds to the thing it points at.
+   *   the MARKER   (see the emission site) called it EXTERNAL, which is a claim about the corpus
+   *                that a pointer into the file's own document cannot support — the same
+   *                file-local-class-as-corpus-claim error the fsharp lane retired this week.
+   *
+   * Measured after: the gate reads 29 of 29 `references` resolved, `ext?` 0, `extFAIL` 0 — and
+   * the verdict, which had been returning a branch that prints NO totals, prints them again.
+   */
   private referenceTarget(ctx: JsonContext, refPath: string): string {
+    // the ROOT pointer: `#` names the document itself, whose published identity is rootName.
+    if (refPath === "#") return ctx.rootName
     if (!refPath.startsWith("#/")) return refPath
-    const fragment = refPath.slice(2).replaceAll("/", ".")
-    const local = `${ctx.rootName}.${fragment}`
+    // SEGMENT-WISE, because a JSON-Pointer segment can CONTAIN a `/` and this analyzer keeps that
+    // slash inside the key's own name. `#/paths/~1w-e-i-r-d___n-a-m-e/get` names the key
+    // `/w-e-i-r-d___n-a-m-e`, which is published as `…paths./w-e-i-r-d___n-a-m-e.get`; replacing
+    // every `/` in the fragment with `.` produced `paths.~1w-e-i-r-d___n-a-m-e.get` and matched
+    // nothing — measured on hasura's `example_oas5.json`, where all three of its unresolved
+    // local pointers are exactly this shape (RFC 6901 `~1` = `/`, `~0` = `~`).
+    const local = [ctx.rootName, ...refPath.slice(2).split("/").map((seg) => this.decodePointerSegment(seg))].join(".")
     return ctx.symbolMap.has(local) ? local : refPath
+  }
+
+  /** RFC 6901: within a pointer segment, `~1` is `/` and `~0` is `~`, decoded in that order. */
+  private decodePointerSegment(segment: string): string {
+    if (!segment.includes("~")) return segment
+    let out = ""
+    for (let i = 0; i < segment.length; i++) {
+      if (segment[i] === "~" && i + 1 < segment.length) {
+        const next = segment[i + 1]
+        if (next === "0") { out += "~"; i++; continue }
+        if (next === "1") { out += "/"; i++; continue }
+      }
+      out += segment[i]
+    }
+    return out
+  }
+
+  /**
+   * IS THIS `$ref` A LOCAL POINTER? A pointer into the file's own document — `#` (the root) or
+   * `#/a/b` (a location inside it) — is answered by the document and by nothing else, so it is
+   * neither an import nor an external target. Everything else (`./other.json`,
+   * `schemas/x.json#/defs/Y`, `https://…`) names something the document does not contain.
+   */
+  private isLocalPointer(refPath: string): boolean {
+    return refPath === "#" || refPath.startsWith("#/")
+  }
+
+  /**
+   * THE FILE A `$ref` NAMES, in the spelling the PROJECT's own file list uses — or `null`.
+   *
+   * `null` is the honest answer whenever the path cannot be derived soundly: no project root was
+   * supplied, the referring file does not sit under the root, the refPath is not a relative
+   * document path (a URL, an absolute path, a bare fragment), or folding `..` escapes the project
+   * (a sibling checkout is not an admitted file, and claiming one would be REFUTED by the gate).
+   * A wrong candidate is worse than none: the arbiter refutes a file claim it cannot find, and a
+   * refutation is counted against the lane exactly as an unresolved edge is.
+   */
+  private fileRefCandidate(ctx: JsonContext, refPath: string): string | null {
+    if (!this.isFileNamingRef(refPath)) return null
+    const self = projectRelativePath(ctx.filePath, ctx.projectRoot)
+    if (self === null) return null
+    const cut = self.lastIndexOf("/")
+    const dir = cut < 0 ? "" : self.slice(0, cut + 1)
+    const noFragment = refPath.split("#")[0]
+    if (noFragment.length === 0) return null
+    const out: string[] = []
+    for (const seg of (dir + noFragment).split("/")) {
+      if (seg.length === 0 || seg === ".") continue
+      if (seg === "..") {
+        if (out.length === 0) return null // escapes the project root — not an admitted file
+        out.pop()
+        continue
+      }
+      out.push(seg)
+    }
+    return out.length > 0 ? out.join("/") : null
   }
 
   private isReference(key: string, value: Node): boolean {
@@ -1339,8 +1574,7 @@ const bracket = parent.lastIndexOf("[")
   private hasValidation(ctx: JsonContext, key: string, value: Node): boolean {
     if (VALIDATION_KEYS.has(key)) return true
     if (value.type !== "object") return false
-    for (let i = 0; i < value.namedChildCount; i++) {
-      const pair = value.namedChild(i)
+    for (const pair of value.namedChildren ?? []) {
       if (pair?.type === "pair" && VALIDATION_KEYS.has(this.keyText(pair))) return true
     }
     return false
@@ -1349,8 +1583,7 @@ const bracket = parent.lastIndexOf("[")
   private isApiEndpoint(key: string, value: Node): boolean {
     if (key.length === 0 || key[0] !== "/") return false
     if (value.type !== "object") return false
-    for (let i = 0; i < value.namedChildCount; i++) {
-      const pair = value.namedChild(i)
+    for (const pair of value.namedChildren ?? []) {
       if (pair?.type === "pair" && API_METHOD_KEYS.has(this.keyText(pair))) return true
     }
     return false
@@ -1578,8 +1811,10 @@ const bracket = parent.lastIndexOf("[")
   }
 
   private pushArrayChildren(stack: PathFrame[], node: Node, parentPath: string, parentName: string, rootName: string): void {
-    for (let i = node.namedChildCount - 1; i >= 0; i--) {
-      const child = node.namedChild(i)
+    // `namedChildren` read ONCE — the index accessor is O(i) (see `collectErrors`).
+    const children = node.namedChildren ?? []
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i]
       if (!child) continue
       const itemPath = `${parentPath}[${i}]`
       // The frame's parentName is the ITEM's symbol name, so the keys inside an
@@ -1622,8 +1857,10 @@ const bracket = parent.lastIndexOf("[")
   }
 
   private pushNamedChildren(stack: PathFrame[], node: Node, parentPath: string, parentName: string = parentPath, duplicateKeys?: Map<string, number>): void {
-    for (let i = node.namedChildCount - 1; i >= 0; i--) {
-      const child = node.namedChild(i)
+    // `namedChildren` read ONCE — the loop this replaced was O(k^2) in the child count.
+    const children = node.namedChildren ?? []
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i]
       if (child) stack.push({ node: child, parentPath, parentName, duplicateKeys })
     }
   }
@@ -1678,8 +1915,8 @@ const bracket = parent.lastIndexOf("[")
    */
   private pushTopLevelValues(stack: PathFrame[], node: Node, parentPath: string, parentName: string): void {
     let valueCount = 0
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
+    const children = node.namedChildren ?? []
+    for (const child of children) {
       if (child && this.isValueNode(child)) valueCount++
     }
     if (valueCount <= 1) {
@@ -1689,8 +1926,8 @@ const bracket = parent.lastIndexOf("[")
       return
     }
     let position = 0
-    for (let i = node.namedChildCount - 1; i >= 0; i--) {
-      const child = node.namedChild(i)
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i]
       if (!child) continue
       if (!this.isValueNode(child)) continue
       const name = `${parentPath}[${position}]`
@@ -1699,7 +1936,35 @@ const bracket = parent.lastIndexOf("[")
     }
   }
 
-  private documentName(filePath: string): string {
+  /**
+   * A document's IDENTITY, and it is scoped to the file.
+   *
+   * ## The defect this fixes
+   *
+   * The identity was the filesystem BASENAME, and every `package.json` in a project publishes a
+   * module symbol named `package`. Measured over a 601-file stride of the json corpus
+   * (`validation/m14/measurements/json-ambiguity-split-601-after.json`): 90 colliding target names
+   * across 1,218 collision symbols, and the `package.*` family — `package.dependencies` alone
+   * carries 3 declarations — is the bucket that file scoping resolves on its own. So the `contains`
+   * edge asserting that `package` owns `dependencies` could not be walked in either direction:
+   * the shared resolver binds a bare name only under `HAVING COUNT(*) = 1`, and an exact-key match
+   * has to be unique too.
+   *
+   * ## The rule
+   *
+   * Scoping by the project-relative directory chain, dot-joined, basename last. Dot-joined because
+   * every downstream consumer already reads a dotted string as a path; basename last because the
+   * leaf of every member path is computed by slicing a fixed number of characters off the module
+   * prefix, so moving the basename would break that arithmetic. The full rule and its three
+   * properties are in `src/ast/project-scoped-identity.ts`, which is shared on purpose.
+   *
+   * ## What it does NOT do
+   *
+   * It does not make the BASENAME key unique — `package` is still published by every package.json,
+   * because the basename is the readable name a human uses. It makes the QUALIFIED PATH unique,
+   * and that path is what `contains` emits and what exact-match resolution binds.
+   */
+  private documentName(filePath: string, projectRoot?: string): string {
     const slash = filePath.lastIndexOf("/")
     const base = slash >= 0 ? filePath.slice(slash + 1) : filePath
     const lower = base.toLowerCase()
@@ -1714,9 +1979,20 @@ const bracket = parent.lastIndexOf("[")
     // `.json5` files are tracked corpus-wide) and wrong in the direction that makes
     // the module symbol disagree with the documented identity.
     for (const suffix of [".json", ".jsonc", ".json5"]) {
-      if (lower.endsWith(suffix)) return base.slice(0, base.length - suffix.length) || "document"
+      if (lower.endsWith(suffix)) return this.scoped(base.slice(0, base.length - suffix.length) || "document", filePath, projectRoot)
     }
-    return base || "document"
+    return this.scoped(base || "document", filePath, projectRoot)
+  }
+
+  /**
+   * Fold the project-relative directory chain onto the document's stem.
+   *
+   * One place, so the scope cannot be applied on one return path and missed on another — the
+   * early-return shape this replaced is exactly how a document keeps its basename on the branch
+   * that strips an extension and gets scoped on the branch that does not.
+   */
+  private scoped(stem: string, filePath: string, projectRoot?: string): string {
+    return applyDocumentScope(stem, documentDirScope(filePath, projectRoot))
   }
 
   private fileEndsWith(filePath: string, suffix: string): boolean {

@@ -665,6 +665,168 @@ analyzer, and 0/0 in both directions is what a fitted referee looks like.
 - Review: `reviews/yaml/master-review.md`, `reviews/yaml/research-and-plan.md`
 - Docs: this file
 
+## M60 INCOMING GATE, PASS 1 — the document identity scoped to its file (2026-10-09)
+
+> **SUPERSEDED 2026-10-10 (M14 Round 5).** This section's STATE is one round old and its headline
+> conclusion — *"a lane that emits file-path imports cannot PASS, whatever it does"* — is CLOSED.
+> The gate now supplies its project file facts to a `projectFile` claim exactly as it does to a
+> `projectFacts` claim (`script/m14/incoming-gate.ts:807-814`, dated 2026-10-10: *"until 2026-10-10
+> it did not get it: the lookup was gated on `projectFacts` alone"*), so the two `!include <path>`
+> edges this section called unverifiable now **VERIFY**. Measured: `incoming-gate.ts yaml yaml 60`
+> is a clean **PASS** — 1,512 edges, `2 verified + 0 unverifiable external`, separator tripwire 0.
+> The whole-population question this lane actually had to answer was `externalUnverified`, a
+> different column, and Round 5 moved it **1,903 → 343** after measuring **82 % of it as a FALSE
+> claim about a file the project HAS**; Rounds 6–10 moved it to **254**, and the last of those was
+> the same defect again in one more spelling — a **step-level** `uses: ./.github/workflows/x.yml`
+> (GitHub's step-level reusable-workflow call) asked for an `action.yml` inside a file, so a file the
+> project HAS was called external; see `yaml.md` ROUND 10. After that fix the lane's own enumerator
+> reports **zero** `extQ` edges that any file claim could verify (see `yaml.md`). The numbers in this section (78 → 0
+> ambiguous, +78, 1,432 → 1,510 resolved) remain correct for their population; only the conclusion
+> that the lane is walled off from a PASS is superseded. Current verdict, four-clause package and §7
+> check: [yaml.md](yaml.md).
+
+The incoming gate read this lane as **78 ambiguous + 0 unresolved of 1,512 edges** on a 60-file
+stride, and the cause was one function. A document's identity was its filesystem BASENAME, and a
+basename is not unique in a project: `hostports0.yaml` occurs **156 times** in one repository
+(Kubernetes' pod-security-admission testdata, once per API version and once per pass directory) and
+`Chart.yaml` **243 times** across the helm charts. Every member of every one of those documents was
+published under the same string — `hostports0.spec.containers[0]` had 156 declarations — so a
+`contains` edge asserting that containment could not be walked in either direction: the shared
+resolver resolves a bare name only under `HAVING COUNT(*) = 1`, and an exact-key match has to be
+unique too.
+
+### The rule
+
+A file-scoped symbol's identity must contain the FILE. The basename is the one part of a path that
+is not unique; the project-relative directory chain is the part that is, and it is stable across
+machines in a way the absolute path is not. The basename STAYS THE LAST SEGMENT — which is what keeps
+the leaf of every member path unchanged for the store's insert-time leaf matching — and the chain is
+DOT-joined, because everything downstream already treats a dotted string as a path and a slash would
+introduce a second convention into the same key space. With no root known the identity falls back to
+the basename, so every fixture that passes no root asserts exactly what it asserted before.
+
+### What had to change to make it possible
+
+An analyzer is handed a file, not a project, so the root had to reach it. `AnalyzeContext` gained
+`projectRoot` (additive and optional, like `projectIndex` before it); `pool-worker.ts` fills it from
+the `projectPath` already present in its `parse_batch` message; the in-process path in
+`parallel-indexer.ts` passes it too; and `script/m14/incoming-gate.ts` — which had been handing the
+analyzer `dirname(f)`, a project the gate does not measure — now hands it `repoOf(f)`, the same
+repository the verdict resolves against.
+
+### Price, measured before the change was written
+
+| instrument | before | after |
+|---|---|---|
+| `incoming-gate.ts yaml yaml 60` | 78 ambiguous + 0 unresolved of 1,512 (FAIL) | **0 ambiguous + 0 unresolved of 1,512; resolved 1,432 -> 1,510** |
+| verdict reason | the ambiguity | only the 2 file-path `imports` claims (below) |
+
+The +78 with **zero movement in `unresolved`** is the clause the fleet worklist asked to be checked
+rather than assumed: it is the evidence that nothing in this corpus spells a document by its
+basename, so scoping the identity cannot break an incoming reference. Measured twice — once with a
+scratch heuristic scoped by the last two directories (0 ambiguous, 0 unresolved, +78), then with the
+shipped rule deriving the full chain from the real project root (identical numbers) — because a
+heuristic that happens to clear one corpus is not the same as a rule.
+
+### The remaining blocker is NOT this lane's, and it is the interesting half
+
+Two `imports` edges remain — both `!include <path>` tag applications, e.g.
+`functions: !include "s1/functions/functions.yaml"` in Hasura's metadata testdata. Their target is a
+FILE PATH with an extension, and the gate's rule set has **no bucket that can accept one**:
+
+- an external claim is verified by looking up the target's OWNER, and `targetOwner` of
+  `s1/functions/functions.yaml` is `s1/functions/functions` — not identifier-shaped, so the claim is
+  UNVERIFIABLE (`script/m14/incoming-rule.ts:314-325`);
+- a declared cause (`baseBeyondRunScope`) is accepted only when the reason is itself an identifier
+  AND equals the target's owner, so a path is REFUTED rather than declared (`incoming-rule.ts:372-378`);
+- the project-facts claim verifies `package:` and `dart:` shapes only (`verifyImportClaim`).
+
+So a lane that emits file-path imports cannot PASS, whatever it does — the gate is missing the
+verification, not the lane missing a rule. The edge itself is real and load-bearing:
+`src/intelligence/analysis/dependencies.ts` reads `imports` edges for file-to-file dependencies
+precisely because `brain_import.resolved_symbol_id` is routinely null. Deleting the edge to buy a
+verdict would hide a dependency, and marking it external would be a claim the population cannot
+check — which is what the gate's third bucket exists to make visible rather than to swallow.
+
+The fix belongs in the shared rule: a path-shaped claim verified against `ProjectFacts.files` (which
+the gate already builds per repository). It is priced here and left unbuilt because it is a
+fleet-level change and every lane with a file-path import is behind the same wall.
+
+### Commands
+
+```
+npx tsx script/m14/incoming-gate.ts yaml yaml 60        # 0 ambiguous, 0 unresolved, 2 ext?
+npx tsx script/m14/run-fixtures.ts yaml                 # no regressions
+npx tsc --noEmit                                        # clean
+```
+
+### Recorded conflict
+
+`src/ast/real-css-analyzer.ts:2098-2104` declines exactly this class on the ground that "the store
+binds by name and a disambiguator invented here would be a second, invented naming convention". The
+ruling is not wrong about the store, but it is a claim about INCOMING references spelling basenames,
+and for this lane that is measurably false (0 unresolved after scoping). The convention is therefore
+proposed here as a fleet decision rather than assumed: if it is adopted, css/bash/html/javascript
+publish the same shape and their counted `relative-ambiguous-basename` classes become 0 for the same
+measured price; if it is rejected, this lane's change stands alone and the conflict is on the record.
+
+## ROUNDS 7–9 — four FALSE-EDGE classes this lane was emitting (2026-10-10)
+
+Found by asking the residual and the whole edge population, with the arbiter's own rule and a text
+oracle, how much of it was the lane's own over-emission. Each fix is one guard, each has a control that
+can fail, and the largest class was found by an instrument written to COUNT the question rather than by
+reading one file.
+
+| class | what was wrong | guard |
+|---|---|---|
+| an include-family tag read as naming a TYPE | `functions: !include "…/functions.yaml"` emitted a `references` edge to the literal string `include` (10 edges, all AMBIGUOUS). An include tag names a FILE and can never name a type | `tagTypeName()` is the single definition every `declared_type` site reads; the test is the tag's membership in the closed include set, NOT the presence of a readable path |
+| a QUOTED include path refused for a space | `tables: !include "s 3/tables/tables.yaml"` names a file the repository HAS; the whitespace refusal exists for ansible's UNQUOTED free-form convention (`file=x.yml`) and was applied to quoted literals too | `QUOTED_SCALAR_TYPES` relaxes the space refusal for `single_quote_scalar`/`double_quote_scalar` only — `key=`, templates, globs, URI schemes and `://` are still refused, and `projectCarriesFile` still gates the claim |
+| `include:` read as a file import at six SELECTOR positions | `include` is a generic config key: Azure `trigger.branches.include` (branch filter), semgrep `paths.include` (source globs), Dart `build_runner` `sources.include`/`generate_for.include`, ffigen `objc-interfaces`/`objc-protocols`/`enums` (Objective-C names), GitHub Actions `outputs.include`, Spring Boot `exposure.include`. MEASURED: 12 false edges in ONE Azure file, 26 globs, 34 ffigen names (all in `extOK` as VERIFIED claims), and 2 `resolved` | `isIncludeSelectorKey`: any ANCESTOR segment of the key's own path is a selector container, MINUS the document segment (a file named `paths.yaml` must keep its own top-level `include:`). `branches` additionally requires the document's `trigger:`/`pr:` claim. Position, never the value's shape — a filter glob and a real import glob have the same shape. Found by `include-key-position-census.ts`, which groups all 928 include edges by the key that emitted them |
+
+Whole-population effect: **edges 1,414,804 → 1,414,582 (−222 net) · residual 198 → 185 · `extQ` 335 →
+255 · `extOK` 10,743 → 10,616 · `extFAIL` 0**. 28 of the removed edges had been reading as VERIFIED (26)
+or RESOLVED (2) — the directions no residual column shows. The biggest remaining ambiguous class was then tested by
+a falsifier written before the ruling (`name-collision-falsifier.ts`), which reads the KIND off the
+REFERRING KEY and looks for that kind and name in the project's own text: **141 of 142 ruled, 1
+REFUTED** — `serviceAccountName: apiserver` in
+`staging/src/k8s.io/sample-apiserver/artifacts/example/deployment.yaml`, with `…/example/sa.yaml`
+declaring `kind: ServiceAccount` + `name: apiserver`. Resolving it needs a project-wide or
+same-directory resource index, which a per-file analyzer has no channel for; it is reported, not
+smoothed. Full record: [yaml.md](yaml.md)'s ROUND 7 section.
+
+## ROUNDS 14–15 — two more FALSE-EDGE classes at the `uses:` site (2026-10-11)
+
+Both were found by asking the same question the whole lane keeps asking — which emitted target names
+something the corpus can be asked about — and both were FIXES rather than rulings, because the referent
+was supportable in each case.
+
+| class | what was wrong | guard |
+|---|---|---|
+| a local `uses: ./D` naming a path the runner MATERIALIZES | the target was read as a path the repository does not contain, so it was marked external. It is not an external reference: a PRIOR STEP OF THE SAME JOB creates it — `actions/checkout@<sha>` with `with: {repository: R, path: D, ref: F}` — and `R@F` is a `remoteRef` the shared arbiter VERIFIES. MEASURED whole-corpus: 523 local `uses: ./…` sites, **10** matched to a prior same-job checkout, **9 convertible**, 1 refused honestly (waypoint's checkout pins no `ref:`) | `materializedActionSource`: earlier steps only (runner order), same job only (another job is another machine), only `actions/checkout@…`, only `./…`, and a materialized repository WINS over an in-repo `action.yml` because the checkout REPLACES that directory; a checkout with no `repository:` materializes the CALLING repo, and its subpath is claimed as the project's own file. `ext?` 253 → **244** |
+| `$/.github/actions/x` read as an EXTERNAL ACTION | the value is not `docker://` and does not begin `./`/`../`, so it fell to the last line of `actionUseClaim`, `return { remoteRef: true }` — a claim that `$` is a GitHub OWNER and `.github` the repository under it. `$` is not an owner, and the target is a path in the checked-out tree: `terragrunt/.github/actions/go-cache-{restore,save}/action.yml` are files that project carries. MEASURED whole-corpus: the `$/` spelling occurs in **18** `uses:` sites and nowhere else (all terragrunt: 15 `go-cache-restore`, 3 `go-cache-save`) | `rootAnchoredActionPath`: a leading `$/` is rewritten to `./` where the site is CAPTURED, so the target, the claim, the `addImport` external flag and the materialization check all agree, and the written text travels in `metadata.actionSpelling` for audit. Unconditional, so it can only ever convert an unsupportable remote claim into a local one — a `$/…` action with no manifest still falls back to the pre-existing `isExternal: true`. `ext?` 244 → **226** |
+
+Both are pinned by a control that can fail in both directions
+(`materialized-action-control.ts` 10 arms; `root-anchored-action-control.ts` 25 assertions, including
+the BOUNDARY — an ordinary external action keeps `remoteRef` with no spelling recorded, a target that
+only CONTAINS `$/` is untouched, `../` is untouched) and by one fixture each with its FORBID rows on
+the pre-fix target. The mutants that revert each rule are CAUGHT.
+
+## ROUND 18 — the dependency marker-name guard: a value that names no member any loader admits (2026-10-11)
+
+| class | what was wrong | guard |
+|---|---|---|
+| a kube-api-linter `dependenttags.rules[].dependsOn` value emitted as a `references` edge | the KEY is `dependsOn`, so the position rule fires honestly — but the VALUE (`k8s:optional`) is a kubebuilder MARKER, a Go-comment annotation `+k8s:optional` that no analyzer publishes in any lane, so the edge (target `k8s:optional`, `isExternal: true`) was structurally unverifiable: no symbol by that name can exist in the key space. Same class as `steps[].with.needs` (an action INPUT read as a job dependency) and the 31 `service_healthy` condition strings. MEASURED whole-corpus, every one of the **1,895** `yaml_depends_on` targets counted UNTRUNCATED (`.tmp-probe/yaml-depends-position-r16.txt`): **1,892 colon-free · 3 colon-bearing without a template marker, all `k8s:optional`, all under `dependenttags.rules[]` · 0 collateral** | `markerNamespaceTarget`: a colon-bearing, template-free value at a dependency position is refused at capture. VOCABULARY-FREE (no marker-namespace list — a colon is legal in no member name Compose/GitHub/Azure/CircleCI admit), `{{`-gated so template edges (`${{ parameters.dependsOn }}` ×17) stay RULED external claims, and measured equivalent to a lookup-first variant (`k8s:optional` is a KEY declaration in 0 of the 3 emitting files) — shape-first chosen for walk-order independence. `ext?` 226 → **223**, residual **184 unchanged** |
+
+Pinned by fixture `yaml/dependency-marker-name` (forbids the marker edge; three expect rows are the
+BOUNDARY — template value, compose sibling service, workflow `needs`) and by
+`dependency-marker-name-control.ts` (3 REAL corpus files + 5 crafted arms through the production
+path, 22 assertions, exit 0, including the symbol-still-published arm — the guard drops the edge, not
+the declaration — and the predicate falsifier). Two mutants, both CAUGHT:
+`yaml/dependency-marker-guard-removed` (a disclosed-divergence revert in the
+`volumeSourceScannedAsNames` tradition — the result carries no scalar values, so the mutant
+re-attaches the MEASURED target to the structural site) and
+`yaml/dependency-marker-guard-overfires` (the `{{` exclusion deleted).
+
 ## Issue
 
 M14.7 / M60 / M49 #286. Closes the YAML analyzer wave: 24 measured defect classes, grammar

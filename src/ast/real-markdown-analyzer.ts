@@ -1,5 +1,65 @@
 import type { Node } from "web-tree-sitter"
+import { existsSync } from "node:fs"
+import * as path from "node:path"
 import { ASTEngine } from "./engine"
+
+/**
+ * THE FILE MODEL — the identity a CROSS-FILE link needs, and the reason it exists.
+ *
+ * The lane's own note above `linkTargetMetadata` records the gap in its own words: a
+ * `repoRelativePath` link "is a link to a sibling file in the SAME repository ... the analyzer
+ * simply has no document-target model", and the spelling was deliberately left as written
+ * because "a consumer that wants a file target needs a file model, not a [spelling change]".
+ * This is that model, and it is ADDITIVE: each file publishes its own repo-relative path as a
+ * document symbol, and a relative link THAT RESOLVES TO A FILE ON DISK targets that path.
+ * The destination as written is preserved in metadata (`linkDestination`), so the old
+ * objection — that the raw spelling is the fact — is answered rather than overridden.
+ *
+ * The resolution rule is the LANGUAGE'S, not a preference: in CommonMark a relative link is
+ * resolved against the containing document's own location. The `.git` walk mirrors the one the
+ * css lane added for its file scopes; with no repository root there is no repo-relative path to
+ * publish, and every target stays exactly as written.
+ */
+const MD_REPO_ROOT = new Map<string, string>()
+function markdownRepoRootOf(filePath: string): string {
+  const abs = path.resolve(filePath)
+  const dir = path.dirname(abs)
+  const cached = MD_REPO_ROOT.get(dir)
+  if (cached !== undefined) return cached
+  let probe = dir
+  for (let i = 0; i < 64; i++) {
+    if (existsSync(path.join(probe, ".git"))) { MD_REPO_ROOT.set(dir, probe); return probe }
+    const parent = path.dirname(probe)
+    if (parent === probe) break
+    probe = parent
+  }
+  MD_REPO_ROOT.set(dir, "")
+  return ""
+}
+
+/** The posix repo-relative spelling of a file, or "" when it has no repository root. */
+function markdownRepoRelativeOf(filePath: string): string {
+  const root = markdownRepoRootOf(filePath)
+  if (root === "") return ""
+  const rel = path.relative(root, path.resolve(filePath))
+  if (rel.startsWith("..") || rel === "") return ""
+  return rel.split(path.sep).join("/")
+}
+
+/** A relative link destination resolved against the containing document, or null when it
+ *  names no file on disk or lands outside the repository. Fragment and query are stripped
+ *  because a document symbol is named by its path; the raw destination is kept on the edge. */
+function markdownResolveRelativeLink(dest: string, filePath: string): string | null {
+  const root = markdownRepoRootOf(filePath)
+  if (root === "") return null
+  const bare = dest.split("#")[0]!.split("?")[0]!
+  if (bare.length === 0) return null
+  const abs = path.resolve(path.dirname(path.resolve(filePath)), bare)
+  if (!existsSync(abs)) return null
+  const rel = path.relative(root, abs)
+  if (rel.startsWith("..") || rel === "") return null
+  return rel.split(path.sep).join("/")
+}
 
 /**
  * Pure-AST Markdown analyzer (tree-sitter-markdown block grammar +
@@ -32,12 +92,17 @@ import { ASTEngine } from "./engine"
  *     1,107 of 1,107) — see `addRel`'s call site for why it is not `uses`.
  */
 export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
+  /** The file being analyzed, for the file model: `walkInlineTree` has no path parameter and
+   *  a relative link's resolution needs one. Set once per `analyze` run. */
+  private currentFilePath = ""
+
   public analyze(
     rootNode: Node,
     content: string,
     filePath: string,
     context?: ASTEngine.AnalyzeContext,
   ): ASTEngine.ParseResult {
+    this.currentFilePath = filePath
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -611,6 +676,29 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     this.classifyEvidenceTier(relationships)
 
+    // ---- THE DOCUMENT SYMBOL — the file model's other half -------------------------------
+    //
+    // One symbol per document, named by its REPO-RELATIVE PATH, so a cross-file link has an
+    // identity to name. Nothing else in this lane publishes one: the root owner of every
+    // top-level edge is the literal `DOC` = `"document"`, a placeholder with no file identity,
+    // which is exactly why a `repoRelativePath` link could not resolve. ADDITIVE by design —
+    // no existing name, edge or owner changes, so every fixture and ground-truth fact this lane
+    // has committed stays byte-for-byte what it was.
+    const selfRepoRel = markdownRepoRelativeOf(filePath)
+    if (selfRepoRel.length > 0) {
+      const lineCount = content.split("\n").length
+      symbols.push({
+        name: selfRepoRel,
+        kind: ASTEngine.SymbolKind.Module,
+        id: selfRepoRel,
+        qualifiedName: selfRepoRel,
+        range: { startLine: 1, startColumn: 0, endLine: lineCount, endColumn: 0 },
+        visibility: "public",
+        scope: "",
+        metadata: { nodeType: "document", isMarkdownDocument: true },
+      })
+    }
+
     return {
       language: "markdown",
       symbols,
@@ -1098,8 +1186,17 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
               addRel(
                 source,
                 ASTEngine.RelationshipType.Uses,
-                target,
-                { role: "markdown_link", linkText: target, ...this.linkTargetMetadata(target) },
+                // THE FILE MODEL'S TARGET. A relative destination is resolved against the
+                // containing document — CommonMark's own rule — and when it names a file on
+                // disk the edge targets that file's published document symbol instead of a
+                // string that names nothing. The destination AS WRITTEN stays on the edge as
+                // `linkDestination`, which is the half the lane's earlier ruling was protecting;
+                // nothing is fabricated and nothing is lost. A destination that resolves to no
+                // file, or to one outside the repository, is left exactly as written.
+                this.linkKindOf(target).targetKind === "repoRelativePath"
+                  ? (markdownResolveRelativeLink(target, this.currentFilePath) ?? target)
+                  : target,
+                { role: "markdown_link", linkText: target, linkDestination: target, ...this.linkKindOf(target) },
                 fileLine(inn),
               )
             }
@@ -1352,6 +1449,12 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
    * 0 regex literals is a pinned property of this analyzer and
    * `script/m12/verify-regex-census.ts` is the gate that decides it.
    */
+  /** `linkTargetMetadata` for an edge site that needs the classification before the metadata
+   *  literal is built. One call, one rule: this delegates rather than duplicating it. */
+  private linkKindOf(dest: string): Record<string, unknown> {
+    return this.linkTargetMetadata(dest)
+  }
+
   private linkTargetMetadata(dest: string): Record<string, unknown> {
     const scheme = this.uriSchemeOf(dest)
     if (scheme !== null) return { isExternal: true, externalScheme: scheme, targetKind: "externalUri" }

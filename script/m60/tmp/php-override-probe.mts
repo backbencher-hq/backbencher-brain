@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
 import * as path from "node:path"
-const ROOT = "$HOME/backbencher-brain"
+import { fileURLToPath } from "node:url"
+const ROOT = process.env.BB_REPO || path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 for (const f of process.argv.slice(2)) {
   const src = readFileSync(f, "utf8")

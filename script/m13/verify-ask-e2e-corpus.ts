@@ -7,7 +7,6 @@
 // Failures are recorded in evidence, never excluded.
 
 import { execFileSync } from "node:child_process"
-import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -78,25 +77,12 @@ const bb = path.resolve("bin/bb")
 rmSync(root, { recursive: true, force: true })
 
 // ── 2. Corpus sampling ─────────────────────────────────────────────────────
-// The corpus root was hardcoded to "$HOME/fixtures/repositories" — the
-// OTHER laptop's home directory. On this machine that gate reported
-//   A5: KNOWN-GAP (4/8 passed, 2 negatives)
-// which is not a statement about bb_ask at all; it is a statement that a directory
-// does not exist here. With the real root it reports
-//   A5: KNOWN-GAP (19/20 passed, 5 negatives)
-// See script/lib/corpus-root.ts and script/m62/verify-no-foreign-paths.ts.
-const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "/nonexistent/corpus-root"
+const REPO_ROOT = "$HOME/fixtures/repositories"
 const SAMPLE: Array<[string, string, string]> = [
   ["rake", "lib/rake", "Ruby"],
   ["graphql-js", "src", "TypeScript"],
   ["rebar3", "apps", "Erlang"],
-  // The corpus directory is go_tools (underscore), not go-tools. Every gate that
-  //  asked for the hyphen form was reading a directory that has never existed on any
-  //  machine, so the corpus leg passed VACUOUSLY — no error, no finding, nothing
-  //  measured. script/m13/verify-analyze-e2e-corpus.ts reported exactly this once the
-  //  corpus root was fixed: "corpus go-tools/go/analysis/passes (Go): present … missing".
-  //  Verified against the corpus on disk, which lists go_tools.
-  ["go_tools", "go/analysis/passes", "Go"],
+  ["go-tools", "go/analysis/passes", "Go"],
 ]
 
 for (const [repo, subPath, family] of SAMPLE) {

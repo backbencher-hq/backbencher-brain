@@ -12,11 +12,11 @@ For each `src/ast/real-<lang>-analyzer.ts` and `docs/analyzers/real-<lang>-analy
 | analyzers with a canonical doc | 47 | — |
 | FALSE_NEGATIVE — doc says "not emitted", analyzer emits it | 7 | **yes** |
 | FALSE_POSITIVE — doc says "emitted", nothing emits it | 0 | **yes** |
-| UNDOCUMENTED — live channel, no checkable claim | 34 | no (measured here) |
+| UNDOCUMENTED — live channel, no checkable claim | 10 | no (measured here) |
 | MISSING_DOC — no canonical doc | 1 | no (owned by verify-analyzer-docs.ts) |
 | NO_CLAIM_TABLE — no ontology table to compare | 18 | no |
 | NON_ENGINE_KIND — row is not a RelationshipType alias | 13 | no |
-| MIXED_ROW — engine and non-kind names share one cell | 0 | no |
+| MIXED_ROW — engine and non-kind names share one cell | 1 | no |
 | COMPOUND_ROW — verdict from a multi-name row | 0 | no |
 
 The import-site: ImportInfo[] channel is live in **47 of 48** analyzers.
@@ -44,40 +44,16 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 
 | Analyzer | Live channel | Ontology table at |
 | --- | --- | --- |
-| bash | `calls (relationship)` | line 142 |
-| c | `contains (relationship)` | line 409 |
 | c | `instantiates (relationship)` | line 409 |
 | c | `overrides (relationship)` | line 409 |
-| clojure | `calls (relationship)` | line 96 |
-| csharp | `calls (relationship)` | line 51 |
-| css | `contains (relationship)` | line 770 |
-| dart | `calls (relationship)` | line 58 |
-| elixir | `contains (relationship)` | line 42 |
 | elixir | `imports (import-site: ImportInfo[])` | line 42 |
-| erlang | `contains (relationship)` | line 55 |
 | erlang | `exports (relationship)` | line 55 |
 | erlang | `imports (relationship)` | line 55 |
 | erlang | `imports (import-site: ImportInfo[])` | line 55 |
 | erlang | `exports (export-site: ExportInfo[])` | line 55 |
-| fsharp | `calls (relationship)` | line 53 |
-| go | `contains (relationship)` | line 724 |
-| groovy | `calls (relationship)` | line 134 |
-| haskell | `contains (relationship)` | line 56 |
-| java | `calls (relationship)` | line 57 |
-| javascript | `calls (relationship)` | line 46 |
-| julia | `calls (relationship)` | line 737 |
-| kotlin | `calls (relationship)` | line 46 |
-| objective-c | `contains (relationship)` | line 61 |
 | objective-c | `overrides (relationship)` | line 61 |
-| powershell | `calls (relationship)` | line 213 |
-| python | `calls (relationship)` | line 39 |
 | python | `implements (relationship)` | line 39 |
-| rust | `contains (relationship)` | line 36 |
 | rust | `references (relationship)` | line 36 |
-| scala | `calls (relationship)` | line 44 |
-| swift | `contains (relationship)` | line 48 |
-| typescript | `calls (relationship)` | line 81 |
-| xml | `contains (relationship)` | line 381 |
 
 ## MISSING_DOC
 
@@ -103,6 +79,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | fsharp | depends | NON_ENGINE_KIND — row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim | 63 |
 | java | depends | NON_ENGINE_KIND — row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim | 69 |
 | java | fieldaccess | NON_ENGINE_KIND — row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim | 70 |
+| nim | all ten / one row each | MIXED_ROW — row mixes engine kinds with names that are not RelationshipType aliases, so one shared cell cannot be attributed per kind; excluded from comparison | 614 |
 | python | depends | NON_ENGINE_KIND — row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim | 50 |
 | scala | depends | NON_ENGINE_KIND — row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim | 56 |
 | scala | fieldaccess | NON_ENGINE_KIND — row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim | 57 |
@@ -115,51 +92,51 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 
 | Analyzer | Relationship kinds in code | Payload channels live | Claim table |
 | --- | --- | --- | --- |
-| bash | `calls contains exports overrides references uses imports` | import-site: ImportInfo[] | line 142, 9 rows |
-| c | `calls contains exports instantiates overrides references uses imports` | import-site: ImportInfo[] | line 409, 5 rows |
-| clean | `calls contains exports implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 430, 9 rows |
-| clojure | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 96, 10 rows |
+| bash | `calls contains exports overrides references uses imports` | import-site: ImportInfo[] | line 142, 10 rows |
+| c | `calls contains exports instantiates overrides references uses imports` | import-site: ImportInfo[] | line 409, 6 rows |
+| clean | `calls contains exports implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 430, 10 rows |
+| clojure | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 96, 11 rows |
 | cpp | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
-| csharp | `calls contains exports extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 51, 11 rows |
-| css | `contains overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 770, 9 rows |
-| dart | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 58, 9 rows |
-| elixir | `calls contains exports implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 42, 7 rows |
-| erlang | `calls contains exports implements instantiates references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 55, 5 rows |
-| fsharp | `calls contains extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 53, 10 rows |
-| go | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 724, 9 rows |
+| csharp | `calls contains exports extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 51, 12 rows |
+| css | `contains overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 770, 10 rows |
+| dart | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 58, 10 rows |
+| elixir | `calls contains exports implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 42, 8 rows |
+| erlang | `calls contains exports implements instantiates references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 55, 6 rows |
+| fsharp | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 53, 11 rows |
+| go | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 724, 10 rows |
 | graphql | `contains exports extends implements overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
-| groovy | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 134, 9 rows |
-| haskell | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 56, 9 rows |
-| hcl | `calls contains exports overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
+| groovy | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 134, 10 rows |
+| haskell | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 56, 10 rows |
+| hcl | `calls contains exports extends overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | html | `contains references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
-| java | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 57, 11 rows |
-| javascript | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 46, 9 rows |
+| java | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 57, 12 rows |
+| javascript | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 46, 10 rows |
 | json | `calls contains exports extends implements overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
-| julia | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 737, 9 rows |
-| kotlin | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 46, 9 rows |
-| lua | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 100, 9 rows |
-| makefile | `calls contains exports references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
+| julia | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 737, 10 rows |
+| kotlin | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 46, 10 rows |
+| lua | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 100, 10 rows |
+| makefile | `calls contains exports overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | markdown | `contains references uses imports` | import-site: ImportInfo[] | absent |
-| nim | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 612, 10 rows |
-| objective-c | `calls contains exports extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 61, 9 rows |
+| nim | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 612, 11 rows |
+| objective-c | `calls contains exports extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 61, 10 rows |
 | perl | `calls contains extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | php | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
-| powershell | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 213, 9 rows |
-| protobuf | `contains exports overrides uses imports` | import-site: ImportInfo[] | line 360, 9 rows |
-| python | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 39, 9 rows |
+| powershell | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 213, 10 rows |
+| protobuf | `contains exports overrides uses imports` | import-site: ImportInfo[] | line 360, 10 rows |
+| python | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 39, 10 rows |
 | r | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | ruby | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
-| rust | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 36, 8 rows |
-| scala | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 44, 11 rows |
-| scss | `calls exports extends overrides references` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
+| rust | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 36, 9 rows |
+| scala | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 44, 12 rows |
+| scss | `calls exports extends overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | solidity | `calls contains exports extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | sql | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | svelte | `calls contains instantiates uses` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
-| swift | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 48, 9 rows |
-| toml | `contains references` | — | absent |
-| typescript | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 81, 13 rows |
+| swift | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 48, 10 rows |
+| toml | `contains references imports` | — | absent |
+| typescript | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 81, 14 rows |
 | vb | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[] | absent |
 | vue | `contains exports extends instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
-| xml | `calls contains extends overrides references imports` | import-site: ImportInfo[] | line 381, 10 rows |
+| xml | `calls contains extends overrides references imports` | import-site: ImportInfo[] | line 381, 11 rows |
 | yaml | `calls contains exports extends overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
-| zig | `calls contains exports instantiates references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 284, 9 rows |
+| zig | `calls contains exports instantiates references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 284, 10 rows |

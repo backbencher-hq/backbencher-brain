@@ -351,7 +351,7 @@ function javaTypeBaseName(node: Node | null | undefined): string {
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
-import { findDeclaringParent, localEdgeLabel } from "./override-context"
+import { findDeclaringParent, localEdgeLabel, localEdgeName } from "./override-context"
 
 export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
@@ -564,6 +564,14 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         let moduleName = this.childText(node, "scoped_identifier") || this.childText(node, "identifier")
         if (moduleName) {
+        // THE LOCALITY LOOKUP, and it is a LOOKUP rather than the package-prefix heuristic that
+        // scored precision 0.84 on this lane (four rules were scored against the path truth before
+        // any of this was written). A HIT means the project declares this FQN, so the edge targets the
+        // DECLARATION and carries the module; a MISS leaves the target BYTE-FOR-BYTE as it was — which
+        // is what makes the external half unchanged BY CONSTRUCTION rather than by a test.
+        const importIndex = context?.projectIndex
+        const declaredInProject = importIndex !== undefined && importIndex.typeKinds.has(moduleName)
+        const importedLeaf = moduleName.includes(".") ? moduleName.slice(moduleName.lastIndexOf(".") + 1) : moduleName
           imports.push({
             module: moduleName,
             items: [],
@@ -597,7 +605,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // node was always read; the edge kind was never used.
           relationships.push({
             source: currentPackage || "root",
-            target: moduleName,
+            target: declaredInProject ? importedLeaf : moduleName,
             type: ASTEngine.RelationshipType.Imports,
             confidence: 1.0,
             // M59 (#825): the line the imported module is NAMED on. 1.0 and not
@@ -606,7 +614,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             // not a name matched from text. The `references` mention beside it keeps
             // 0.9, which is the tier the family uses for a name-resolved mention.
             ...this.lineField(this.findChildByType(node, "scoped_identifier") || this.findChildByType(node, "identifier"), node),
-            metadata: { relationshipType: "import_declaration", isJavaImport: true, isWildcard: isAsterisk, isStatic, isModuleDependency: true },
+            metadata: { relationshipType: "import_declaration", isJavaImport: true, isWildcard: isAsterisk, isStatic, isModuleDependency: true, ...(declaredInProject ? { module: moduleName } : {}) },
           })
           relationships.push({
             source: currentPackage || "root",
@@ -655,7 +663,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // a use site.
           relationships.push({
             source: currentPackage || "root",
-            target: moduleName,
+            // same LOCALITY LOOKUP as the import edge above — computed once per import declaration
+            target: declaredInProject ? importedLeaf : moduleName,
             type: ASTEngine.RelationshipType.Imports,
             confidence: 1.0,
             ...this.lineField(this.findChildByType(node, "scoped_identifier") || this.findChildByType(node, "identifier"), node),
@@ -665,6 +674,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               isWildcard: isAsterisk,
               isStatic,
               fileLevel: true,
+              ...(declaredInProject ? { module: moduleName } : {}),
             },
           })
         }
@@ -2646,7 +2656,13 @@ currentPackage,
         // type -> `handle.Criterion,…boolean)`, not a name). Neither single cut
         // is right in both directions; deleting balanced groups first is.
         const localSource = localEdgeLabel(task.fqn)
-        const localTarget = localEdgeLabel(targetFqn)
+          // THE TARGET IS THE MEMBER NAME, NOT `Owner.member`: the resolver binds against
+          // DECLARATIONS, and a declaration is named by its leaf. Measured: 100% of this lane's
+          // overrides targets are dotted, 100% have their leaf declared in the edge's own file, and
+          // 100% classify unresolved — a naming problem, not a mechanism problem. `localEdgeName`
+          // derives the leaf AFTER the paren deletion `localEdgeLabel` performs, so a dotted
+          // parameter list cannot be cut into a non-name (see its doc).
+        const localTarget = localEdgeName(targetFqn)
 
         relationships.push({
           source: localSource,

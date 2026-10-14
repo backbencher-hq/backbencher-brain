@@ -34,16 +34,8 @@
 
 import * as fs from "fs"
 import * as path from "path"
-import { fileURLToPath } from "node:url"
 
-// `__dirname` does not exist in an ES module, and package.json declares
-  // "type": "module". Using it here threw `ReferenceError: __dirname is not defined in
-  // ES module scope` at load — the gate printed a stack trace and exited, having run
-  // no check at all. It was in `npm run verify`, so the leg contributed nothing.
-  // The repo already has the idiom (script/m14/html-ontology-census.ts and others use
-  // fileURLToPath(import.meta.url)); this now matches it.
-const HERE = path.dirname(fileURLToPath(import.meta.url))
-const ROOT = path.resolve(HERE, "..", "..")
+const ROOT = path.resolve(__dirname, "..", "..")
 const SPEC_DIR = path.join(ROOT, "script", "m14", "spec")
 const FIXTURE_DIR = path.join(ROOT, "validation", "m14", "fixtures")
 const WASM_DIR = path.join(ROOT, "wasm")

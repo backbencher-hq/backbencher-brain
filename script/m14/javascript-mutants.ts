@@ -5,21 +5,69 @@
  * registry `script/m14/mutate-analyzer.ts` is edited concurrently by every lane;
  * a block written into it there can be overwritten without any error, and the
  * gate keeps printing numbers with this lane's mutants simply absent from them.
- * The shared file needs ONE import line from this lane and the master makes it —
- * reported, not taken. Everything else lives here, where this lane owns it.
+ * The definitions therefore live here, where this lane owns them, and the registry
+ * holds exactly TWO lines — an import and a spread. **Those two lines were missing
+ * until 2026-10-10** (Open findings §3): the mutants were correct, lane-owned and
+ * measured by `script/m14/javascript-mutant-runner.ts`, and no canonical run
+ * executed them. They are in now — filtered canonical run: 62 selected of 1,845,
+ * all 62 caught — and the lane's runner CHECKS for the spread line on every run, so
+ * a merge that removes it reports rather than silently un-registering six defect
+ * classes.
  *
  * WHAT EACH MUTANT IS: a revert of a defect class this lane MEASURED on real
  * JavaScript, and each names the fixture that catches it. A surviving mutant
  * fails the SUITE, not the mutant, because a suite that stays green whatever you
  * do to the code is decoration.
  *
- * All three are the R7 class — "an analyzer may not NAME something with a
+ * THREE OF THE SIX are the R7 class — "an analyzer may not NAME something with a
  * placeholder or an empty string" — reached from three different fields, because
  * the census that found them measured edge ENDPOINTS and the third was found only
  * after a second instrument was written to look at SYMBOL names. That is the
  * argument for measuring each name-bearing field rather than the one that is easy.
+ * The other three are a containment-attribution defect (JD3-CLOSURE), a
+ * lost-information defect (JSD40), and a wrong-name defect whose field is
+ * populated with something that IS a name-shaped string but is not a name at all
+ * (JSD2/§2: `calls` targets holding SOURCE TEXT). The file is not organised around
+ * R7 for that reason: the rule is "every defect class this lane measured on real
+ * JavaScript gets a revert here", and the classes are not all the same class.
  */
 import type { Mutant } from "./mutate-analyzer"
+
+/** Matching `)` for the `(` at `open`, by balance only — strings and comments are
+ * not modelled because a mutant is a defect injector, not a parser. Returns -1 when
+ * unbalanced. */
+function matchParen(source: string, open: number): number {
+  let depth = 0
+  for (let i = open; i < source.length; i++) {
+    if (source[i] === "(") depth++
+    else if (source[i] === ")") {
+      depth--
+      if (depth === 0) return i
+    }
+  }
+  return -1
+}
+
+/** A character that can continue a callee expression to the left of a `(` —
+ * identifier parts and member access, so `define()` is captured whole. */
+function isCalleeNameChar(c: number): boolean {
+  if (c === 0x24 || c === 0x5f || c === 0x2e) return true
+  if (c >= 0x41 && c <= 0x5a) return true
+  if (c >= 0x61 && c <= 0x7a) return true
+  return c >= 0x30 && c <= 0x39
+}
+
+/** The replaced guard's token test, restated so the revert is exactly as narrow as
+ * the guard it reverts. */
+function refusedByTokenGuard(span: string): boolean {
+  if (span.length > 100) return true
+  if (span.includes("\n") || span.includes("`") || span.includes("${")) return true
+  for (let i = 0; i < span.length; i++) {
+    const ch = span[i]
+    if (ch === "{" || ch === "}" || ch === ";" || ch === "=") return true
+  }
+  return false
+}
 
 export const JAVASCRIPT_MUTANTS: Mutant[] = [
   {
@@ -76,6 +124,50 @@ export const JAVASCRIPT_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "javascript/restore-source-text-call-target",
+    language: "javascript",
+    defectClass: "wrong-name",
+    description:
+      "PRE-FIX (§2): `extractCallRelationships`' callee guard tested TOKEN MEMBERSHIP — length > 100, newline, backtick, `${`, and `hasBraceEquals` — as a proxy for \"is this leaf a NAME\". A parenthesised, conditional or sequence callee contains none of those tokens, so the callee's own SOURCE TEXT was published in `target`, the field the graph reads as a symbol name: `(fn)`, `(0, helper.other)`, `(cond ? a : b)`, `(reset(), start())`, `define()`, `[\"text\"]`, `[]`. Measured through the analyzer's own output by script/m14/js-ontology/js-callee-shape-census.ts: 31 of 31,973 `calls` rows on svelte (0.097%) and 550 of 22,210 on the ts corpus (2.476%), against 0 such rows published by any fixture in this suite — the 75 fixtures passed with the defect live, which is why the class outlived the empty-endpoint guard next door. The fix is a NAME-SHAPE test (`isNameShapedCallTarget`), and the crucial part of it is the `#` clause: 123 of the svelte rows are `#private` call targets (`this.#tick()`), which an alphanumeric filter would have DELETED to remove the 31. Reverted here by re-publishing the parenthesised callee spans found in the source text, which is the pre-fix spelling at the pre-fix line; the old guard's own token test is applied to each span first, so a span the pre-fix guard would have refused (`(function () {})`, whose braces trip `hasBraceEquals`) is NOT injected. The transform layer receives the analyzer's RESULT and the source text but no parse tree, so the spans are located by a balanced-paren scan rather than by re-deriving the callee nodes; the scan is what makes this revert non-circular, since hardcoding the fixture's spellings would prove only that a string can be inserted. Caught by javascript/non-name-callee-refused, whose six pre-fix forbid rows fire under it while its four expect rows keep passing — measured by reverting the guard in a copy of the analyzer, where that fixture is the ONLY failure in the 76-fixture suite.",
+    caughtBy: "javascript/non-name-callee-refused",
+    transform: (r: any, source?: string) => {
+      const rels = (r.relationships ?? []) as any[]
+      if (!source || rels.length === 0) return r
+      // The actor the pre-fix row would carry: the file's own call rows name their
+      // source, and every call site in the fixture shares it.
+      const callRow = rels.find((x: any) => String(x.type ?? x.relationshipType) === "calls")
+      const from = String(callRow?.source ?? "(file)")
+      const spans: string[] = []
+      for (let i = 0; i < source.length; i++) {
+        if (source[i] !== "(") continue
+        const close = matchParen(source, i)
+        if (close < 0) continue
+        let j = close + 1
+        while (j < source.length && (source[j] === " " || source[j] === "\t")) j++
+        if (source[j] !== "(") { i = close; continue }
+        // The callee node's text, which is what the pre-fix guard published: the
+        // parenthesised span itself, or — for a call-expression callee — the span
+        // plus the identifier it is applied to (`define()`).
+        let start = i
+        while (start > 0 && isCalleeNameChar(source.charCodeAt(start - 1))) start--
+        const span = source.slice(start, close + 1)
+        // The pre-fix guard's OWN condition, so this mutant reverts the guard rather
+        // than widening it: a span with braces, `;` or `=` was refused then too.
+        if (!refusedByTokenGuard(span)) spans.push(span)
+        i = close
+      }
+      if (spans.length === 0) return r
+      const seen = new Set<string>()
+      const injected: any[] = []
+      for (const span of spans) {
+        if (seen.has(span)) continue
+        seen.add(span)
+        injected.push({ type: "calls", source: from, target: span, confidence: 0.9, metadata: { calleeExpression: span } })
+      }
+      return { ...r, relationships: [...rels, ...injected] }
+    },
+  },
+  {
     id: "javascript/class-scope-preempts-literal-owner",
     language: "javascript",
     defectClass: "wrong-name",
@@ -118,6 +210,64 @@ export const JAVASCRIPT_MUTANTS: Mutant[] = [
           return cls ? { ...x, source: cls } : x
         }),
       }
+    },
+  },
+  {
+    id: "javascript/restore-star-form-indistinct",
+    language: "javascript",
+    defectClass: "lost-information",
+    description:
+      "PRE-FIX (JSD46): the two clause-less re-export forms emitted BYTE-IDENTICAL records. `export * from './m'` REDISTRIBUTES every member of `./m`; `export * as ns from './m'` binds ONE name in this module and redistributes nothing — and both produced the `imports` edge `./m:*` at 0.6 with `{isReExport: true, unresolved: true}` and nothing else, so read back out of a real index both produced the same `brain_import` row (`imported_as` = NULL, `import_type` = 'named') and the namespace alias `ns` existed in no field anywhere. The cost is not the missing alias alone: a resolver reading a star edge as a redistribution invents, for a consumer of that file, every member of `./m` the language does not export from it — measured by the gate's B17, which reads an invented edge the moment the discriminator is gone (45 of 46), while the fixture suite fails exactly the new javascript/star-reexport. Reverted here by stripping `starForm`/`namespaceName` off every clause-less re-export edge, which is the pre-fix RECORD rather than a re-derivation from the tree: this layer receives the analyzer's result, and the field being removed is the one the fix added. Caught by javascript/star-reexport, whose two `meta.starForm` pins are what the revert breaks.",
+    caughtBy: "javascript/star-reexport",
+    transform: (r: any) => {
+      const rels = (r.relationships ?? []) as any[]
+      const isStarReexport = (x: any) =>
+        String(x?.type) === "imports" &&
+        x?.metadata?.isReExport === true &&
+        String(x?.target ?? "").endsWith(":*")
+      if (!rels.some((x) => isStarReexport(x) && (x.metadata?.starForm || x.metadata?.namespaceName))) return r
+      return {
+        ...r,
+        relationships: rels.map((x) => {
+          if (!isStarReexport(x)) return x
+          const { starForm, namespaceName, ...rest } = x.metadata ?? {}
+          return { ...x, metadata: rest }
+        }),
+      }
+    },
+  },
+  {
+    id: "javascript/restore-reexport-module-star",
+    language: "javascript",
+    defectClass: "lost-information",
+    description:
+      "PRE-FIX (JSD40, the re-export half): every re-export target was spelled `${modulePath}:*` at 0.6 with `metadata.unresolved: true`, INCLUDING the form that writes the members — so `export { alpha, beta } from \"./m\"` lost two written names while `import { alpha } from \"./m\"` produced `./m:alpha` at 1.0 with `declaredName`. Measured across the three corpora: 713 named re-export statements carrying 790 specifiers (svelte 106/271, the ts corpus 607/519, lodash 0), and on the same-files A/B the change is 271 member rows in and 106 `path:*` rows out, with the oracle moved in the same commit. Reverted here by collapsing every named re-export edge back to the module star at the same line, deduped per line so the mutant reproduces the pre-fix shape (one row per STATEMENT, not per specifier). Caught by javascript/barrel-named-clause and javascript/barrel-reexport (whose forbid rows name `./m:*` and `./mod:*` and whose expect rows name `./m:alpha` / `./mod:named`) and by javascript/reexport-forms, which pins the four forms that must NOT collapse — a mutant that collapsed every re-export indiscriminately fails that fixture's `export * as ns` and empty-clause rows too. The transform reads the row set rather than the tree for the same reason the pattern-binding mutant does: this layer receives the analyzer's RESULT, and the pre-fix spelling is recoverable from the row it replaced.",
+    transform: (r: any) => {
+      const rels = (r.relationships ?? []) as any[]
+      const isMemberReexport = (x: any) =>
+        String(x?.type) === "imports" &&
+        x?.metadata?.isReExport === true &&
+        x?.metadata?.declaredKind === "named"
+      if (!rels.some(isMemberReexport)) return r
+      const out: any[] = []
+      const seen = new Set<string>()
+      for (const x of rels) {
+        if (!isMemberReexport(x)) {
+          out.push(x)
+          continue
+        }
+        // `path:<member>` -> `path:*`; the LAST colon separates the member, and a
+        // fixture module path has none, so the collapse names the same module the
+        // pre-fix row did rather than a prefix of it.
+        const target = String(x.target ?? "")
+        const cut = target.lastIndexOf(":")
+        const star = cut > 0 ? `${target.slice(0, cut)}:*` : target
+        const key = `${star}#${x.line ?? x.line_number ?? ""}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        out.push({ ...x, target: star, confidence: 0.6, metadata: { isReExport: true, unresolved: true } })
+      }
+      return { ...r, relationships: out }
     },
   },
 ]

@@ -1,5 +1,15 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { FILE_CLAIM_MAX_BYTES, fileClaimForTarget } from "./file-claim"
+
+/**
+ * THE EXTENSIONS THIS LANE'S ADMITTED POPULATION CAN HOLD, read from
+ * `src/ast/language-detection.ts` (`zig: "zig"`) rather than assumed — the arbiter checks a file
+ * claim against exactly this list, so a claim about `.zon` (a package manifest, not a `.zig`
+ * source) could never verify while a miss still REFUTES.
+ */
+const ZIG_ADMITTED_EXTENSIONS: readonly string[] = ["zig"]
+
 
 /**
  * Z11 (deep review, 2026-09-28) — the KIND of a container-scope `const`, decided
@@ -382,12 +392,19 @@ function publishedSpelling(s: { name?: string | null; ownerName?: string | null 
 }
 
 export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
-  public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  public analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
+    /**
+     * THE PROJECT ROOT, read from the context the engine already supplies (the analyzer simply
+     * never took the fourth argument before). It is the base the file claim resolves against, and
+     * WITHOUT it no claim is made — an unresolved claim is worse than no claim, because the
+     * arbiter checks a claim BEFORE the count and a miss REFUTES.
+     */
+    const projectRoot = typeof context?.projectRoot === "string" ? context.projectRoot : undefined
 
     // Walk context: node + the nearest enclosing declaration context.
     // Context is null (file scope), a container symbol (struct/enum/union), or
@@ -1223,7 +1240,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // a sparser one. The `references` twin STAYS — it is the edge this lane's
     // declared-type/reference truth derives — so this ADDS a class rather than
     // reclassifying one. Both carry the path literal's line (M60.A7).
-    this.collectZigImportSites(rootNode, imports, relationships)
+    this.collectZigImportSites(rootNode, imports, relationships, projectRoot, filePath)
 
     // Z32: `instantiates` — the type ZIG.D.1 ruled out, on the premise that
     // generics are "monomorphized without a runtime type dispatch the analyzer can
@@ -1493,7 +1510,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: {
                 relationshipType: "zig_function_call",
                 callExpression: n.text.slice(0, 60),
-                ...(ext ? { zigExternalRef: true, zigImportAlias: ext.alias, zigImportModule: ext.module } : {}),
+                ...this.zigExternalMetadata(ext),
               },
             })
           }
@@ -1622,7 +1639,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: {
                 relationshipType: "zig_field_access",
                 fieldAccessExpression: n.text.slice(0, 60),
-                ...(ext ? { zigExternalRef: true, zigImportAlias: ext.alias, zigImportModule: ext.module } : {}),
+                ...this.zigExternalMetadata(ext),
               },
             })
           }
@@ -1736,6 +1753,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     imports: ASTEngine.ImportInfo[],
     relationships: ASTEngine.UniversalRelationship[],
+    projectRoot: string | undefined,
+    filePath: string,
   ): void {
     const stack: Node[] = [rootNode]
     const seenFacts = new Set<string>()
@@ -1779,6 +1798,38 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             const isUsingNamespace = n.parent?.type === "using_namespace_declaration"
             if (target && line > 0) {
               const k = `${line}|${target}`
+              /**
+               * THE FILE CLAIM — and this lane's price for it is unusual enough to state here.
+               *
+               * An `@import("…")` target is a FILE, so no symbol answers it; the store
+               * leaf-reduces it instead (`synthetic/main.zig` -> `zig`) and binds it to whatever
+               * symbol is named after the EXTENSION — measured on ghostty, 4,490 of 4,579
+               * file-shaped edges (98.1%) bound that way and only 89 to the target's own spelling.
+               * The claim does NOT fix that binding: it makes the assertion CHECKABLE, so the
+               * arbiter asks the file question instead of the name question and a mis-binding
+               * becomes visible rather than invisible. The resolver fix is a separate, shared-file
+               * item and is not this change.
+               *
+               * `admittedExtensions` is read from `src/ast/language-detection.ts` (`zig: "zig"`),
+               * NOT assumed: the arbiter's file list IS this lane's admitted population, so a claim
+               * about any other extension can never verify while a miss still REFUTES. That clause
+               * also refuses `InitOpts.c` / `std.json`-shaped MEMBER paths, which an
+               * extension-only test would mis-read as files.
+               */
+              const fileClaim = projectRoot === undefined
+                ? null
+                : fileClaimForTarget({
+                    projectRoot,
+                    filePath,
+                    written: target,
+                    admittedExtensions: ZIG_ADMITTED_EXTENSIONS,
+                    // THE SIZE CLAUSE IS THE GUARD'S NOW (`ba04c6b4c`), not this lane's: a file over
+                    // the indexer's own limit is never admitted, so a claim naming it cannot verify
+                    // while a miss still REFUTES. Measured before it existed: adopting the claim
+                    // without it took whole-population `extFAIL` 0 -> 17, all of them oversized
+                    // `.zig` files, and all 15 of the corpus's `@import("….zig")` cap cases.
+                    maxFileSizeBytes: FILE_CLAIM_MAX_BYTES,
+                  })
               if (!seenFacts.has(k)) {
                 seenFacts.add(k)
                 imports.push({
@@ -1796,7 +1847,12 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
                   type: ASTEngine.RelationshipType.Imports,
                   confidence: 0.9,
                   line_number: line,
-                  metadata: { relationshipType: "zig_import", isImport: true, zigImportDep: true },
+                  metadata: {
+                    relationshipType: "zig_import", isImport: true, zigImportDep: true,
+                    // THE FILE CLAIM, ONCE PER EDGE AND ON BOTH LABELS. See the block comment
+                    // above `collectZigImportSites`' call site for why it is on both.
+                    ...(fileClaim ? { importProjectFile: fileClaim } : {}),
+                  },
                 })
               }
               if (!seenRefEdges.has(k)) {
@@ -1807,7 +1863,10 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
                   type: ASTEngine.RelationshipType.References,
                   confidence: 1.0,
                   line_number: line,
-                  metadata: { relationshipType: "zig_import", isImport: true },
+                  metadata: {
+                    relationshipType: "zig_import", isImport: true,
+                    ...(fileClaim ? { importProjectFile: fileClaim } : {}),
+                  },
                 })
               }
             }
@@ -2439,6 +2498,63 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * THE EXTERNAL CLAIM'S METADATA, and the ONE place the `zigExternalRef` KEY is decided.
+   * Three emission sites (calls, field reads, declared-type references) all call this,
+   * because three copies of "may I claim this" is three rules.
+   *
+   * WHY THE CLAIM IS NOT ALWAYS ADMISSIBLE, measured rather than argued. The incoming
+   * arbiter reads `zigExternalRef` as an OWNER claim — "the target names a declaration
+   * whose OWNER the project does not publish" — and verifies it by looking the owner up
+   * (`script/m14/incoming-rule.ts`, `verifyExternalClaim`). For a target the receiver walk
+   * produced, the owner is everything before the LAST dot, and when the receiver path is
+   * exactly ONE segment long, that owner IS the alias:
+   *
+   *     `std.mem`            owner `std`      -> the file's own `const std = @import("std")`
+   *     `std.mem.Allocator`  owner `std.mem`  -> no declaration carries that name
+   *
+   * Z35 publishes that import binding as a `constant` named for the alias, so the owner of
+   * a one-segment path is ALWAYS a published declaration and the claim is ALWAYS refuted.
+   * MEASURED on the gate's own 60-file stride sample (565 marked edges, via
+   * `validation/m14/fixtures/zig/external-claim-audit.ts`), cross-tabulated by target depth
+   * because `owner === alias` is exactly the one-dot case:
+   *
+   *     1 dot:   extOK   1   extFAIL 259
+   *     2 dots:  extOK 223   extFAIL   0
+   *     3 dots:  extOK  60   extFAIL   0
+   *     4 dots:  extOK  21   extFAIL   0
+   *     5 dots:  extOK   1   extFAIL   0
+   *
+   * and all 259 were answered by a `constant` named for the alias, in the edge's own file.
+   * The key was asserting a claim the project can check and does refute — this lane's own
+   * defect, not a marker-spelling accident — and the fix is to stop asserting it where it
+   * cannot survive the lookup.
+   *
+   * WHAT IS NOT LOST. The QUALIFICATION stays: the target is still `std.mem`, not the bare
+   * leaf `mem`, which is the Z66 defect fix and is untouched by this. The receiver is still
+   * identified on the edge — `zigImportAlias`, `zigImportModule` and the post-pass's
+   * `targetScope: "file-external"` are all still written — so a consumer can still exclude
+   * the edge by a rule instead of by a guess. What is dropped is one key whose meaning the
+   * family defines as "the owner is not published", which is false here.
+   *
+   * THE RESIDUAL RISK, stated rather than hidden: a project that declares a symbol literally
+   * named `std.mem` (a quoted identifier, `@"std.mem"`) would refute a two-segment claim too.
+   * It is not zero, and it is what the arbiter's refutation is FOR — a deep-path claim that
+   * ever reads refuted is a defect this lane can see.
+   */
+  private zigExternalMetadata(
+    ext: { target: string; alias: string; module: string } | null,
+  ): Record<string, unknown> {
+    if (!ext) return {}
+    const receiver = { zigImportAlias: ext.alias, zigImportModule: ext.module }
+    const dot = ext.target.lastIndexOf(".")
+    // Admissible only where the claim's own owner is not the alias the walk started from.
+    // `lastIndexOf` cannot be -1 here (the target is always `${alias}.${segments}`); the
+    // guard keeps the predicate total rather than relying on that.
+    if (dot <= 0 || ext.target.slice(0, dot) === ext.alias) return receiver
+    return { zigExternalRef: true, ...receiver }
+  }
+
+  /**
    * Did `from` reach `decl` (a `variable_declaration`) THROUGH its type annotation?
    *
    * True for `var x: c.Foo = ...` and `var x: ?c.Bar = null`, false for the two
@@ -2553,7 +2669,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           ...(this.nodeLine(site) ? { line_number: this.nodeLine(site)! } : {}),
           metadata: {
             relationshipType: "declared_type",
-            ...(ext ? { zigExternalRef: true, zigImportAlias: ext.alias, zigImportModule: ext.module } : {}),
+            ...this.zigExternalMetadata(ext),
           },
         })
       }

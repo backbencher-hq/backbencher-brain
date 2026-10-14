@@ -1404,7 +1404,13 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         const line = this.overrideLine(rootNode, impl.type, impl.trait, m)
         ctx.relationships.push({
           source: `${impl.type}.${m}`,
-          target: `${impl.trait}.${m}`,
+          // THE TARGET IS THE MEMBER NAME, NOT `Owner.member`: the resolver binds against
+          // DECLARATIONS, and a declaration is named by its leaf. Measured: 100% of this lane's
+          // overrides targets are dotted, 100% have their leaf declared in the edge's own file, and
+          // 100% classify unresolved — a naming problem, not a mechanism problem. `localEdgeName`
+          // derives the leaf AFTER the paren deletion `localEdgeLabel` performs, so a dotted
+          // parameter list cannot be cut into a non-name (see its doc).
+          target: m,
           type: ASTEngine.RelationshipType.Overrides,
           confidence: local ? 1.0 : 0.85,
           ...(line ? { line_number: line } : {}),

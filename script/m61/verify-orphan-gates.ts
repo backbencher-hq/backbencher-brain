@@ -536,7 +536,11 @@ function main(): void {
       wiredIncludingClosureGateBodies: wired.size,
       orphans: orphans.length,
       declaredOrphans: Object.keys(declared).length,
-      newOrphans,
+      // The LIST, not the predicate. This read `newOrphans,` — the bare function — and
+      // JSON.stringify drops functions, so the record could report "43 undeclared" while
+      // being unable to name one of them: the failure that most needs review was the only
+      // one with no evidence attached. `unseen` is that call's result, computed at G1.
+      newOrphans: unseen,
       verifiersNamedBySource: namedBySource.size,
       unprotectedBySource: unprotected.length,
       declaredSourceNamed: Object.keys(declaredSourceNamed).length,

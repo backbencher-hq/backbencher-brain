@@ -2,6 +2,7 @@ import { BrainDatabase } from "../../brain/database"
 import { DependencyGraphVisualizer } from "../../ast/dependency-graph-visualizer"
 import { renderCodeMapDocument, assertCodeMapParses } from "../../ast/visualization/code-map-renderer"
 import { renderClassDocument, assertClassDiagramParses } from "../../ast/visualization/class-diagram-renderer"
+import { renderVisualizationStudio } from "../../ast/visualization/studio-renderer"
 
 export type VisualizationScope = "project" | "file" | "module" | "symbol" | "feature"
 export type VisualizationFormat = "text" | "json" | "html"
@@ -553,6 +554,7 @@ export function formatVisualization(result: VisualizationResult): string {
     if (result.view === "class") return renderClassDiagram(result)
     return DependencyGraphVisualizer.generateHTML({ nodes: result.nodes, links: result.links, excluded: result.excluded })
   }
+
   // The DEFAULT format is what every caller gets unless they think to ask for JSON,
   // so it must carry the same facts the JSON does. It used to be four lines and 153
   // characters that never mentioned the true symbol total, the declared relationship
@@ -598,3 +600,5 @@ export function formatVisualization(result: VisualizationResult): string {
   lines.push(`provenance: ${result.provenance.source} dangling-links-omitted=${result.provenance.omittedDanglingLinks}`)
   return lines.join("\n")
 }
+
+export { renderVisualizationStudio }

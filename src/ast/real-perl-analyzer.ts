@@ -1399,7 +1399,10 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // ground that an inferred override has no naming node; the inference is
         // about the BASE (a guess, kept honest at confidence 0.5 / `inferred`),
         // while the method being overridden is not in doubt and is written here.
-        addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.baseDeclaresMethod }, 0.95, undefined, nameLineOf(symbol))
+        // THE TARGET IS THE DECLARED MEMBER, NOT `Base.method` — see the cpp site for the measurement;
+        // this lane resolved 9 of 1,280 with the dotted spelling. The owner is CARRIED rather than
+        // dropped, so a reader can still tell which base declares it.
+        addRelationship(`${symbol.ownerName}.${method}`, method, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.baseDeclaresMethod, overriddenOwner: baseLeaf }, 0.95, undefined, nameLineOf(symbol))
       } else if (!context?.overrideCompanion?.has(base) && !context?.overrideCompanion?.has(baseLeaf)) {
         // PERL-MR14. The guard used to be `!context?.overrideCompanion` — it asked
         // whether a companion OBJECT was supplied, not whether it had an OPINION

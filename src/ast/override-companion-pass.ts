@@ -72,6 +72,47 @@ export interface OverrideCompanionPassOptions {
   reparse?: ReparseFile
   /** Restrict to one language. Perl only, deliberately — see the module note. */
   language?: string
+  /**
+   * THE ID-CARRYING JOIN (r-lane, 2026-10-12). The store's primary key is
+   * `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine ?? "?"}`, and `sourceId` is the
+   * SOURCE SYMBOL's id, found by scanning the file's storeable spans for the innermost holder of the
+   * edge's line. So the pass needs exactly three things it does not have, and THEY ARE PASSED IN rather
+   * than imported: this module must not import `parallel-indexer`, which imports this one.
+   *
+   * A KEY CAN ONLY BE UNIQUE IF IT IS `brain_relationship.id`. The tuple key that preceded this one
+   * multi-matched 292 of 1,301 times on the corpus — because it omitted `sourceId`, the component that
+   * distinguishes one source's override from another's at the same target and line. A row keyed by id
+   * cannot collide, so clause 4 (no unconfirmed row is ever touched) becomes a STRUCTURAL PROPERTY
+   * rather than a test.
+   *
+   * ALL THREE ARE OPTIONAL, AND THAT IS DELIBERATE: with them absent the pass behaves exactly as it does
+   * today and `confirmedIds` stays empty, so the write-back is skipped. The change is inert until the call
+   * site supplies them.
+   */
+  projectId?: string
+  /** The store's file id for a path — `${projectId}:${relativePath}` in `storeResults`. */
+  fileIdOf?: (filePath: string) => string
+  /**
+   * The store's span index for one file's symbols. INCLUDES ITS SORT — a caller-supplied one must too.
+   * IT TAKES THE NAME PREDICATE as its third argument rather than reading one from a module, because the
+   * predicate is PER-CALL MUTABLE STATE (it depends on the file's fallback path and language) and a
+   * module-level one would leak across files. The pass obtains it from `makeStoreableName` below.
+   */
+  buildSpans?: (
+    symbols: any[],
+    fileId: string,
+    isStoreable: (nm: string | undefined, startLine: number) => boolean,
+  ) => Array<{ id: string; name: string; start: number; end: number; kind: string }>
+  /** The store's `makeStoreableName` — ONE implementation, called here per file. */
+  makeStoreableName?: (
+    isFallbackResult: boolean,
+    fileLang: string | undefined,
+  ) => { denylist: Set<string>; isStoreable: (nm: string | undefined, startLine: number) => boolean }
+  /** The store's innermost-enclosing-span scan. */
+  enclosingSpanId?: (
+    spans: Array<{ id: string; name: string; start: number; end: number; kind: string }>,
+    line: number | null,
+  ) => string | null
 }
 
 export interface OverrideCompanionPassStats {
@@ -83,6 +124,58 @@ export interface OverrideCompanionPassStats {
   reapplied: number
   /** `overrides` edges at or above the confirmed threshold after the pass. */
   confirmed: number
+  /**
+   * THE IDENTITIES BEHIND `confirmed` (r-lane, 2026-10-12). Counts are not enough to persist the pass's
+   * work: the write-back must UPDATE the exact stored rows it confirmed, and re-deriving the match at the
+   * write-back site would be A SECOND COMPUTATION OF THE SAME PREDICATE, free to disagree with this one.
+   * One computation, one answer — so the identity list is built BESIDE the count, not instead of it.
+   *
+   * `target` and `line` are the pair the store can be joined on: the analyzer's `target` is what the row
+   * carries as `target_external`, and `line_number` is stored as-is. `confidence` is carried rather than
+   * assumed so the write-back stores the value the analyzer actually produced.
+   */
+  confirmedKeys: Array<{ target: string; line: number | null; confidence: number }>
+  /**
+   * THE STORE PRIMARY KEYS BEHIND `confirmed`. Empty when the id-carrying inputs were not supplied, which
+   * is what makes this change inert until the call site provides them. `confirmedIdsMissed` is the count
+   * of confirmations the id path could NOT serve — a confirmed edge whose enclosing symbol could not be
+   * found, or whose `line_number` is absent — and it is reported rather than silently dropped, because a
+   * confirmation with no id is a row the write-back cannot reach.
+   */
+  confirmedIds: Array<{ id: string; confidence: number }>
+  /** Confirmations for which no store id could be computed: no spans, or no enclosing symbol at the line. */
+  confirmedIdsMissed: number
+  /**
+   * CONFIRMED ROWS THAT PRODUCED AN ID ANOTHER CONFIRMED ROW HAD ALREADY PRODUCED (r-lane).
+   * The id is `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine ?? "?"}`, so two rows from
+   * one source with the same target and type and NO LINE collapse to one key — and `INSERT OR IGNORE` at
+   * the insert site would itself have dropped the second at write time. This counter is how that is SEEN
+   * rather than inferred: if the write-back reports N ids matching nothing, this says whether N rows
+   * collapsed onto ids other rows already claimed.
+   */
+  confirmedIdsDuplicates: number
+  /**
+   * CONFIRMED EDGES THE FIRST PARSE DID NOT EMIT — present only in the companion-assisted re-parse.
+   * A confirmed edge that is new in the re-parse has NO STORE ROW, because the store was written from the
+   * FIRST parse. This is the counter that tests the hypothesis behind the seven unmatched ids.
+   */
+  confirmedNewInReparse: number
+  /**
+   * THE IDENTITIES OF THE UNCONFIRMED (r-lane). Clause 4's second form asks whether these rows are STILL
+   * PRESENT AND STILL AT 0.5 after the write-back — the clause that catches a write-back which tidies a
+   * confirmed count by quietly moving the rest. Symmetric to `confirmedKeys`, and exposed for the same
+   * reason: the acceptance needs the identities, not the count.
+   */
+  stillGuessKeys: Array<{ target: string; line: number | null }>
+  /**
+   * THE STILL-GUESS ROWS' STORE IDS, BESIDE THEIR COUNT (r-lane). Clause 4's second form asks whether the
+   * UNCONFIRMED rows are still present and still at 0.5 — and the census merges every 0.5 row, so it can
+   * only answer that in aggregate. THE PRIMARY KEY CAN ANSWER IT PER ROW, which is the reason the tuple was
+   * replaced with an id in the first place. `stillGuessIdsMissed` is the same count for the rows whose id
+   * could not be computed.
+   */
+  stillGuessIds: Array<{ id: string; line: number | null }>
+  stillGuessIdsMissed: number
   /** `overrides` edges still below it: the base is outside the project. */
   stillGuess: number
   /** Errors from a re-analysis; the pass keeps the first-run result for these. */
@@ -104,11 +197,21 @@ export async function populateOverrideCompanion(
     refiles: 0,
     reapplied: 0,
     confirmed: 0,
+    confirmedKeys: [],
+    confirmedIds: [],
+    confirmedIdsMissed: 0,
+    confirmedIdsDuplicates: 0,
+    confirmedNewInReparse: 0,
+    stillGuessKeys: [],
+    stillGuessIds: [],
+    stillGuessIdsMissed: 0,
     stillGuess: 0,
     failed: 0,
   }
 
   const language = opts.language ?? "perl"
+  /** The FIRST parse's `overrides` keys per affected file, captured before the companion re-parse replaced them. */
+  const firstParseKeys = new WeakMap<object, Set<string>>()
   const results = opts.results
   const reparse = opts.reparse
   if (!reparse) return stats
@@ -145,6 +248,20 @@ export async function populateOverrideCompanion(
     // project and does not declare the method. Keeping the first run's guess
     // here would discard the whole point of the pass, so the replacement is
     // unconditional on success.
+    // ── WHAT THE FIRST PARSE EMITTED, CAPTURED BEFORE THE REPLACEMENT (r-lane) ────────────────────
+    // The check "was its file among the 516 reapplied" is VACUOUS: the confirmed ids are computed over
+    // `affected`, which IS the 516 re-analyzed files, so it is true by construction. The question the
+    // hypothesis actually asks is WHETHER THE FIRST PARSE EMITTED THE EDGE — and before the line below,
+    // `result.relationships` holds the first parse. Within one file the pair `(target, line)` identifies
+    // the edge, which is all this question needs.
+    if (Array.isArray(result.relationships)) {
+      const first = new Set<string>()
+      for (const r of result.relationships as any[]) {
+        if (r?.type !== OVERRIDES) continue
+        first.add(`${String(r?.target ?? "")}\u0000${r?.line_number ?? "?"}`)
+      }
+      firstParseKeys.set(result as unknown as object, first)
+    }
     result.symbols = again.symbols ?? result.symbols
     result.relationships = again.relationships
     result.imports = again.imports ?? result.imports
@@ -155,12 +272,82 @@ export async function populateOverrideCompanion(
     stats.reapplied++
   }
 
+  // ── THE STORE PRIMARY KEY, COMPUTED FROM THE PASS'S OWN RE-PARSE ─────────────────────────────────
+  // The store's id is `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine ?? "?"}`, and
+  // `sourceId` is the SOURCE SYMBOL's id found by scanning the file's storeable spans. The spans are
+  // built ONCE PER FILE and cached: building them per relationship would repeat the same work for every
+  // edge in a file, and the store's own construction includes a sort.
+  //
+  // RETURNS null WHEN IT CANNOT KNOW — no inputs supplied, no symbols, no enclosing symbol at the line.
+  // null is COUNTED (`confirmedIdsMissed`) rather than dropped: a confirmation with no id is a row the
+  // write-back cannot reach, and the acceptance needs that number.
+  //
+  // AND IT DOES NOT COMPUTE THE SPAN INDEX ITSELF. `buildSpans` and `enclosingSpanId` are the STORE'S
+  // functions, passed in — one implementation, two callers. Computing them here from copied rules would
+  // be the second computation the design forbids, and two copies are free to drift apart silently.
+  const spansByResult = new WeakMap<object, Array<{ id: string; name: string; start: number; end: number; kind: string }>>()
+  const relIdOf = (result: FileResult, rel: any): string | null => {
+    if (!opts.projectId || !opts.buildSpans || !opts.enclosingSpanId || !opts.fileIdOf) return null
+    try {
+      let spans = spansByResult.get(result as unknown as object)
+      if (!spans) {
+        if (!result.filePath) return null
+        // THE PREDICATE IS BUILT FOR **THIS** FILE, from that file's own fallback state and language,
+        // and handed to the builder. The store does the same thing with the same factory — one
+        // implementation, two callers — which is also why the denylist cannot leak between files.
+        const isStoreable = opts.makeStoreableName
+          ? opts.makeStoreableName(!!(result as any).fallback, (result as any).language).isStoreable
+          : () => true
+        spans = opts.buildSpans(result.symbols ?? [], opts.fileIdOf(result.filePath), isStoreable)
+        spansByResult.set(result as unknown as object, spans)
+      }
+      const line = (rel as any).line_number ?? null
+      const sourceId = opts.enclosingSpanId(spans, line)
+      if (!sourceId) return null
+      // EXACTLY THE STORE'S FORMULA, including `?? "?"` — a line-less edge keeps the previous identity.
+      return `${opts.projectId}:rel:${sourceId}:${String((rel as any).target ?? "")}:${String((rel as any).type ?? "")}:${line ?? "?"}`
+    } catch {
+      return null
+    }
+  }
+
   for (const result of affected) {
     for (const rel of result.relationships ?? []) {
       if ((rel as any).type !== OVERRIDES) continue
-      if (Number((rel as any).confidence ?? 0) >= CONFIDENCE_FLOOR) stats.confirmed++
-      else stats.stillGuess++
+      if (Number((rel as any).confidence ?? 0) >= CONFIDENCE_FLOOR) {
+        stats.confirmed++
+        // THE IDENTITY, BESIDE THE COUNT. The write-back persists these exact rows; recomputing the match
+        // there would be a second computation of this predicate and free to disagree with it.
+        stats.confirmedKeys.push({
+          target: String((rel as any).target ?? ""),
+          line: (rel as any).line_number ?? null,
+          confidence: Number((rel as any).confidence ?? 0),
+        })
+        // THE KEY, BESIDE THE COUNT AND BESIDE THE TUPLE. Only this one can be unique.
+        const key = relIdOf(result, rel)
+        if (key) stats.confirmedIds.push({ id: key, confidence: Number((rel as any).confidence ?? 0) })
+        else stats.confirmedIdsMissed++
+        // WAS THIS EDGE IN THE FIRST PARSE? If not, the store cannot have it.
+        const fp = firstParseKeys.get(result as unknown as object)
+        if (fp && !fp.has(`${String((rel as any).target ?? "")}\u0000${(rel as any).line_number ?? "?"}`)) {
+          stats.confirmedNewInReparse++
+        }
+      } else {
+        stats.stillGuess++
+        stats.stillGuessKeys.push({
+          target: String((rel as any).target ?? ""),
+          line: (rel as any).line_number ?? null,
+        })
+        // THE ID, BESIDE THE COUNT, by the same relIdOf the confirmed rows use.
+        const skey = relIdOf(result, rel)
+        if (skey) stats.stillGuessIds.push({ id: skey, line: (rel as any).line_number ?? null })
+        else stats.stillGuessIdsMissed++
+      }
     }
   }
+  // HOW MANY CONFIRMED ROWS COLLAPSED ONTO AN ID ANOTHER HAD ALREADY CLAIMED. Computed here rather than
+  // inferred from the store, because the collapse happens in THIS function's id construction.
+  stats.confirmedIdsDuplicates = stats.confirmedIds.length - new Set(stats.confirmedIds.map((x) => x.id)).size
+
   return stats
 }

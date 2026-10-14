@@ -29,7 +29,6 @@ import { checkEmbeddingCoverage } from "../../src/brain/brain-index-health"
 import { semanticVectorSearch } from "../../src/intelligence/search/semantic-search"
 import { quickAnswer } from "../../src/intelligence/search/quick-answer"
 import { SemanticEngine } from "../../src/brain/semantic/engine"
-import { resolveOptionalCorpus } from "../lib/optional-corpus.ts"
 
 let checks = 0, passed = 0, failed = 0
 function ck(label: string, cond: boolean, detail?: string) {
@@ -42,15 +41,7 @@ const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT_DIR, "validation/m19/results")
 if (!existsSync(RESULTS_DIR)) mkdirSync(RESULTS_DIR, { recursive: true })
 
-// WAS: a literal foreign path — the owner's clone on the OTHER laptop. This machine has
-//  no such checkout, so the gate measured nothing: one crashed, one reported 5/7 with the
-//  corpus legs silently absent, one reported 0/16. Three shapes for one condition.
-//
-//  Now resolved through script/lib/optional-corpus.ts: env override, then the known
-//  locations, and when none exists a DECLARED BLOCK naming every path searched — so
-//  "not available here" reads differently from "the measurement failed".
-
-const INTELIJ = resolveOptionalCorpus("intellij-community", "BB_GIANT_REPO") ?? "INTELIJ_UNRESOLVED"
+const INTELIJ = "$HOME/intellij-community"
 const MACHINE = { platform: process.platform, arch: process.arch, cpu: (cpus() || []).slice(0, 2).map((c) => c.model.trim()).join(" | "), ramGb: Math.round((totalmem() / 1024 ** 3) * 10) / 10 }
 
 async function main() {

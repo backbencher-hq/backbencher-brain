@@ -151,6 +151,34 @@ export function localEdgeLabel(fqn: string): string {
 }
 
 /**
+ * THE MEMBER NAME ALONE — the LEAF of `localEdgeLabel`, for an edge whose TARGET must match a
+ * DECLARATION.
+ *
+ * `localEdgeLabel` returns `Owner.member`, which is the right identity for a LOCAL EDGE KEY: it says
+ * which owner declares the member, which is what keeps two same-named members of different owners
+ * apart. It is the wrong spelling for a target the resolver must bind, and this was measured rather
+ * than reasoned: across javascript (1,012 edges), python (3,433) and java (4,728), **100% of
+ * `overrides` targets are dotted `Owner.member`, 100% of them have their LEAF declared in the edge's
+ * OWN FILE, and 100% classify as `unresolved`** in the gate's own columns — while `contains`, which
+ * spells bare names, resolves ~100% on the same runs. A naming problem, not a mechanism problem.
+ *
+ * NOT A NAIVE SPLIT: `localEdgeLabel` already DELETES every balanced parenthesised group, which is
+ * exactly the step that makes `handle.Criterion,StringBuilder,…boolean)` safe to cut — the dotted
+ * parameter lists its own doc records are gone by the time this runs. Cutting the raw FQN instead is
+ * the defect that doc chronicles.
+ *
+ * A SECOND SPELLING WAS PRICED AND REJECTED BY MEASUREMENT: `Owner::member`, aligning the separator
+ * with the qualified names the CSS delegate publishes. The owner-qualified key is present in the key
+ * space for **0 of 1,012 / 3,433 / 4,728** edges — the `::` convention is a CSS-delegate convention
+ * and does not exist for these lanes, so that spelling resolves nothing.
+ */
+export function localEdgeName(fqn: string): string {
+  const label = localEdgeLabel(fqn)
+  const dot = label.lastIndexOf(".")
+  return dot > 0 ? label.slice(dot + 1) : label
+}
+
+/**
  * Find the first ancestor (breadth-first, declaration order) that actually
  * declares `methodName`. Returns null when no ancestor declares it.
  */

@@ -25,38 +25,6 @@ async function run() {
   // Incremental breadcrumb: every check is persisted the moment it lands, so
   // a hang anywhere leaves its exact last-completed step on disk instead of a
   // silent timeout (a hung run taught us this the hard way).
-  /**
-   * Copy a LIVE SQLite database through the engine rather than through the
-   * filesystem. `VACUUM INTO` produces a complete, consistent copy of a WAL
-   * database without checkpointing the source and without ever capturing a torn
-   * file. Returns null when the source cannot be read as a database, which the
-   * caller treats as "no snapshot" — honest, rather than writing out a header.
-   */
-  const backupLiveDb = (dbPath) => {
-    let DatabaseCtor = null
-    try {
-      DatabaseCtor = require("better-sqlite3")
-    } catch {
-      return null
-    }
-    const dest = dbPath + ".e5snapshot"
-    try {
-      fs.rmSync(dest, { force: true })
-      const db = new DatabaseCtor(dbPath, { readonly: true })
-      try {
-        db.exec("VACUUM INTO '" + dest.replace(/'/g, "''") + "'")
-      } finally {
-        db.close()
-      }
-      const buf = fs.readFileSync(dest)
-      fs.rmSync(dest, { force: true })
-      return buf
-    } catch {
-      try { fs.rmSync(dest, { force: true }) } catch {}
-      return null
-    }
-  }
-
   const write = () => fs.writeFileSync(outPath, JSON.stringify(results, null, 2))
   const assert = (name, ok, detail) => {
     results.checks.push({ name, ok, detail })
@@ -481,22 +449,7 @@ async function run() {
         const crypto = require("crypto")
         return crypto.createHash("sha1").update(require("fs").realpathSync(wsDir)).digest("hex")
       })(), "brain.db")
-      // The snapshot MUST be taken through SQLite, not by reading the file.
-      //
-      // Every brain.db is WAL (src/storage/db.node.ts), so the committed rows live
-      // in the `-wal` sidecar until a checkpoint. `readFileSync(brainDbPath)` reads
-      // the MAIN file only, and while the indexer's connection is open nothing has
-      // checkpointed it. Measured here, immediately after indexing one file:
-      //
-      //   brain.db          4,096 bytes, zero tables
-      //   brain.db-wal  1,779,872 bytes, holding the row
-      //   readFileSync db   4,096 bytes, no brain_file table at all
-      //
-      // So the snapshot was a bare SQLite header, and the `finally` below wrote it
-      // back over a working index — destroying the editor's index for the rest of
-      // the session. Same defect class as the copyFileSync bug fixed in
-      // src/ast/project-registry.ts and script/m23/verify-p3-edge-cases.ts.
-      const dbSnapshot = fs.existsSync(brainDbPath) ? backupLiveDb(brainDbPath) : null
+      const dbSnapshot = fs.existsSync(brainDbPath) ? fs.readFileSync(brainDbPath) : null
       try {
         const fresh0 = await req("bb/staleness", { uri: mainUri })
         assert("E5 live: marker starts fresh after index", fresh0 && fresh0.stale === false, JSON.stringify(fresh0).slice(0, 160))
@@ -533,18 +486,7 @@ async function run() {
         fs.writeFileSync(mainPath, original)
         await new Promise((r) => setTimeout(r, 2500))
         if (dbSnapshot !== null) {
-          try {
-            fs.mkdirSync(path.dirname(brainDbPath), { recursive: true })
-            // The WAL sidecars MUST go, and they must go BEFORE the main file is
-            // written. The reindex that just ran left a `-wal` holding the real
-            // rows; writing the restored main file underneath it leaves that WAL
-            // to replay over the top on the next open, which re-applies the rows we
-            // are trying to remove. Order is load-bearing: sidecars out, main in.
-            for (const suffix of ["-wal", "-shm"]) {
-              try { fs.rmSync(brainDbPath + suffix, { force: true }) } catch {}
-            }
-            fs.writeFileSync(brainDbPath, dbSnapshot)
-          } catch {}
+          try { fs.mkdirSync(path.dirname(brainDbPath), { recursive: true }); fs.writeFileSync(brainDbPath, dbSnapshot) } catch {}
         }
       }
     }

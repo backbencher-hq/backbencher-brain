@@ -478,6 +478,24 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       uniqueRelationships.push(rel)
     }
 
+    // WHAT THE RESULT ACTUALLY CARRIES, counted AFTER the collapse above.
+    //
+    // `ambiguity.overridesEdgesEmitted` counts EMISSIONS: one per (class, base, member) triple.
+    // Two bases declaring the same member name for one class emit the same (source, target) edge
+    // twice, and the loop above keeps one — correctly, because that is one semantic fact. But the
+    // analyzer then published the EMISSION count under the name `overridesEdgesEmitted`, so its own
+    // report read 118 while the result carried 95, and a whole-corpus census counting the result
+    // could not reconcile them. MEASURED:
+    // validation/m14/fixtures/r/probe-overrides-edge-accounting.ts — 118 self-reported, 95 after
+    // this collapse, 95 through production `parseFile`; the 23 are 14 in
+    // R6/tests/testthat/test-clone.R, 8 in R6/tests/testthat/test-finalizer.R and 1 in
+    // R6/tests/testthat/test-portable-inheritance.R. A counter that contradicts the census is a
+    // defect in one of them, and the fix belongs here: the published key now counts what the RESULT
+    // carries, and the collapse is carried beside it rather than dropped.
+    const overridesInResult = uniqueRelationships.filter(
+      (r) => (r.type || (r as any).relationshipType) === ASTEngine.RelationshipType.Overrides,
+    ).length
+
     // Deduplicate imports by (module, range) so one namespace access is one row.
     const uniqueImports: ASTEngine.ImportInfo[] = []
     const importKeys = new Set<string>()
@@ -515,7 +533,14 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       memberWrites: ambiguity.memberWrites,
       memberReadsUnresolvedScope: ambiguity.memberReadsUnresolvedScope,
       memberReadsWithComputedIndex: ambiguity.memberReadsWithComputedIndex,
-      overridesEdgesEmitted: ambiguity.overridesEdgesEmitted,
+      // Counts what the RESULT carries, after the (type, source, target) collapse — not the
+      // emissions the pass made. See `overridesInResult` above; the two disagree by exactly the
+      // number of times two bases of one class declare the same member name.
+      overridesEdgesEmitted: overridesInResult,
+      /** The pass's raw emission count, before the collapse. */
+      overridesEmissionsBeforeDedup: ambiguity.overridesEdgesEmitted,
+      /** Emissions collapsed into an edge already present: 23 over the lane's corpus, not lost. */
+      overridesEmissionsCollapsedByDedup: ambiguity.overridesEdgesEmitted - overridesInResult,
       // Bases named by `inherit=`/`contains=`/`parent=` that no EARLIER declaration of
       // that name in the same file satisfies. Counted rather than dropped so a reader can
       // see how much of the inheritance graph this pass declines to assert.

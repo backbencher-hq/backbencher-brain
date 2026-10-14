@@ -74,7 +74,8 @@
       "document",
       "element",
       "elementdecl",
-      "prolog"
+      "prolog",
+      "ERROR"
     ],
     "reasons": {
       "AttDef": "a Property symbol plus a `contains` edge from the element it is declared for",
@@ -104,6 +105,9 @@
       "element": "the document's structural unit: a symbol plus a `contains` edge from its parent element",
       "elementdecl": "a Type symbol for a DTD element declaration; its contentspec is the content model",
       "prolog": "container: XMLDecl, doctypedecl and the misc PIs/comments under it are dispatched from here"
+    },
+    "_notes": {
+      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-xml-analyzer.ts:3010 (with the isError count at :819)), and `recovery-labelling.xml` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
     }
   },
   "pass_through_classified": {
@@ -189,8 +193,12 @@
       "XMLDecl",
       "children",
       "conditionalSect",
-      "content"
-    ]
+      "content",
+      "MISSING"
+    ],
+    "_notes": {
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-xml-analyzer.ts:819); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+    }
   },
   "gap": {
     "_rule": "an observed node type in NO bucket. xml's list is EMPTY by construction and that is the claim worth gating: the analyzer declares a vocabulary, the corpus census is measured against it, and `script/m12/xml-node-types-compare.ts` check B fails on the first unclassified type. The list is emitted from the gate's own result, so it cannot be quietly emptied.",
@@ -201,51 +209,6 @@
   "design_decision": {
     "_rule": "the relationship ontology and the refusals, each RULED on a measurement. A record with no node_type documents a resolved defect or a whole-concept refusal and classifies nothing.",
     "decisions": [
-      {
-        "concept": "contains",
-        "relationship": "contains",
-        "ruling": "structural containment read off the tree, and every contains TARGET is a published symbol in the same file",
-        "measured": "177,890 contains edges over the corpus; the target-resolves invariant is pinned by xml/dtd-declarations",
-        "node_type": ""
-      },
-      {
-        "concept": "references",
-        "relationship": "references",
-        "ruling": "a NAME, never a written value: the target is the LOCAL NAME and the prefix rides in metadata",
-        "measured": "11,117 resolvable QName references; 1,319 values refused because they resolve to nothing in the document",
-        "node_type": ""
-      },
-      {
-        "concept": "imports",
-        "relationship": "imports",
-        "ruling": "a FILE PATH, the one case where a value is the right target",
-        "measured": "630 distinct schemaLocation targets, 238 DOCTYPE external IDs, 78 entity/notation external IDs, 18 stylesheet hrefs — 0 of them emitted before the fix",
-        "node_type": ""
-      },
-      {
-        "concept": "declared name",
-        "ruling": "in a declaration vocabulary the DECLARED name is an attribute VALUE and the tag is kept as meta.tagName",
-        "measured": "26,578 in-vocabulary declarations: recall 0.045 -> 0.696, with the 29,196 out-of-vocabulary `name` attributes (DATA) left untouched",
-        "node_type": ""
-      },
-      {
-        "concept": "self edge",
-        "ruling": "refused for references and imports; ALLOWED for contains, because a DTD and an element it declares routinely share a name and those are two distinct declarations",
-        "measured": "3 self-references and 3 phantom symbols removed from a 20-symbol XSD; the contains case is pinned by xml/dtd-declarations and xml/conditional-section",
-        "node_type": ""
-      },
-      {
-        "concept": "PEReference",
-        "ruling": "a parameter entity reference IS a use and emits `references`, owned by the DOCTYPE in the internal subset and by the DECLARING ENTITY inside replacement text; the `% name 'value'` VALUE form names nothing and is refused, as is a reference whose semicolon is missing",
-        "measured": "0 PEReference nodes across the FULL 11,456-file admitted population — the 22 admitted files whose text carries `<!ENTITY %` are bare .dtd fragments this grammar cannot root, and the one admitted .xml carries its occurrences inside CDATA. The branch is live on fixtures (4 nodes in 2 files, all published) and pinned by xml/xsd-parameter-entity-refs and xml/pereference-semicolon-required; instrument validation/m14/fixtures/xml/pereference-shape-probe.mts",
-        "node_type": "PEReference"
-      },
-      {
-        "concept": "xmlns with an empty prefix",
-        "ruling": "declares nothing publishable",
-        "measured": "4 corpus occurrences published a symbol named the empty string; 0 now, pinned by the M12 probe",
-        "node_type": "Attribute"
-      },
       {
         "id": "XML-ONTOLOGY-USES",
         "concept": "uses — ontology ruling (B:parse-tree-count)",
@@ -300,6 +263,96 @@
         "ruling": "an expression or element that CREATES an instance of a declared construct.",
         "resolution": "an expression or element that CREATES an instance of a declared construct. Instrument A: 86 distinct node types over 2,787,237 nodes in the 2,500-file draw, none of the five candidates above present, and the inventory contains no construction form of any kind — the 86 are prolog, element, attribute, content, DOCTYPE and its declarations, entity/notation declarations, conditional sections, PI, CDSect/CDATA and the anonymous punctuation tokens. Measured from the other side as well, because instrument A alone would be the json lane's mistake: 0 elements whose local name is new / instantiate / newinstance / create, across the same draw. The nearest XML constructs are an XSD `element` DECLARATION (which declares a type; it does not create a value) and an XSLT `xsl:element` / `xsl:copy-of` instruction (which create an output node from a name attribute, and the name is already a `references` edge) — in both cases the document names something rather than instantiating a declared type, which is the distinction this ruling rests on. OVERTURN: any of the five node types above at a non-zero count, or any node type the grammar produces whose name contains `new` or `instantiat` at a non-zero count over the corpus.",
         "measured": "probe and count are in the resolution; instruments in validation/m14/fixtures/xml/ontology-census.mts and validation/m14/fixtures/xml/overrides-probe.mts, executed against the table by validation/m14/fixtures/xml/ruled-gate.ts"
+      },
+      {
+        "concept": "contains",
+        "relationship": "contains",
+        "ruling": "structural containment read off the tree, and every contains TARGET is a published symbol in the same file",
+        "measured": "177,890 contains edges over the corpus; the target-resolves invariant is pinned by xml/dtd-declarations",
+        "node_type": ""
+      },
+      {
+        "concept": "references",
+        "relationship": "references",
+        "ruling": "a NAME, never a written value: the target is the LOCAL NAME and the prefix rides in metadata",
+        "measured": "11,117 resolvable QName references; 1,319 values refused because they resolve to nothing in the document",
+        "node_type": ""
+      },
+      {
+        "concept": "imports",
+        "relationship": "imports",
+        "ruling": "a FILE PATH, the one case where a value is the right target",
+        "measured": "630 distinct schemaLocation targets, 238 DOCTYPE external IDs, 78 entity/notation external IDs, 18 stylesheet hrefs — 0 of them emitted before the fix",
+        "node_type": ""
+      },
+      {
+        "concept": "declared name",
+        "ruling": "in a declaration vocabulary the DECLARED name is an attribute VALUE and the tag is kept as meta.tagName",
+        "measured": "26,578 in-vocabulary declarations: recall 0.045 -> 0.696, with the 29,196 out-of-vocabulary `name` attributes (DATA) left untouched",
+        "node_type": ""
+      },
+      {
+        "concept": "self edge",
+        "ruling": "refused for references and imports; ALLOWED for contains, because a DTD and an element it declares routinely share a name and those are two distinct declarations",
+        "measured": "3 self-references and 3 phantom symbols removed from a 20-symbol XSD; the contains case is pinned by xml/dtd-declarations and xml/conditional-section",
+        "node_type": ""
+      },
+      {
+        "concept": "PEReference",
+        "ruling": "a parameter entity reference IS a use and emits `references`, owned by the DOCTYPE in the internal subset and by the DECLARING ENTITY inside replacement text; the `% name 'value'` VALUE form names nothing and is refused, as is a reference whose semicolon is missing",
+        "measured": "0 PEReference nodes across the FULL 11,456-file admitted population — the 22 admitted files whose text carries `<!ENTITY %` are bare .dtd fragments this grammar cannot root, and the one admitted .xml carries its occurrences inside CDATA. The branch is live on fixtures (4 nodes in 2 files, all published) and pinned by xml/xsd-parameter-entity-refs and xml/pereference-semicolon-required; instrument validation/m14/fixtures/xml/pereference-shape-probe.mts",
+        "node_type": "PEReference"
+      },
+      {
+        "concept": "xmlns with an empty prefix",
+        "ruling": "declares nothing publishable",
+        "measured": "4 corpus occurrences published a symbol named the empty string; 0 now, pinned by the M12 probe",
+        "node_type": "Attribute"
+      },
+      {
+        "concept": "contains",
+        "relationship": "contains",
+        "ruling": "structural containment read off the tree, and every contains TARGET is a published symbol in the same file",
+        "measured": "177,890 contains edges over the corpus; the target-resolves invariant is pinned by xml/dtd-declarations",
+        "node_type": ""
+      },
+      {
+        "concept": "references",
+        "relationship": "references",
+        "ruling": "a NAME, never a written value: the target is the LOCAL NAME and the prefix rides in metadata",
+        "measured": "11,117 resolvable QName references; 1,319 values refused because they resolve to nothing in the document",
+        "node_type": ""
+      },
+      {
+        "concept": "imports",
+        "relationship": "imports",
+        "ruling": "a FILE PATH, the one case where a value is the right target",
+        "measured": "630 distinct schemaLocation targets, 238 DOCTYPE external IDs, 78 entity/notation external IDs, 18 stylesheet hrefs — 0 of them emitted before the fix",
+        "node_type": ""
+      },
+      {
+        "concept": "declared name",
+        "ruling": "in a declaration vocabulary the DECLARED name is an attribute VALUE and the tag is kept as meta.tagName",
+        "measured": "26,578 in-vocabulary declarations: recall 0.045 -> 0.696, with the 29,196 out-of-vocabulary `name` attributes (DATA) left untouched",
+        "node_type": ""
+      },
+      {
+        "concept": "self edge",
+        "ruling": "refused for references and imports; ALLOWED for contains, because a DTD and an element it declares routinely share a name and those are two distinct declarations",
+        "measured": "3 self-references and 3 phantom symbols removed from a 20-symbol XSD; the contains case is pinned by xml/dtd-declarations and xml/conditional-section",
+        "node_type": ""
+      },
+      {
+        "concept": "PEReference",
+        "ruling": "a parameter entity reference IS a use and emits `references`, owned by the DOCTYPE in the internal subset and by the DECLARING ENTITY inside replacement text; the `% name 'value'` VALUE form names nothing and is refused, as is a reference whose semicolon is missing",
+        "measured": "0 PEReference nodes across the FULL 11,456-file admitted population — the 22 admitted files whose text carries `<!ENTITY %` are bare .dtd fragments this grammar cannot root, and the one admitted .xml carries its occurrences inside CDATA. The branch is live on fixtures (4 nodes in 2 files, all published) and pinned by xml/xsd-parameter-entity-refs and xml/pereference-semicolon-required; instrument validation/m14/fixtures/xml/pereference-shape-probe.mts",
+        "node_type": "PEReference"
+      },
+      {
+        "concept": "xmlns with an empty prefix",
+        "ruling": "declares nothing publishable",
+        "measured": "4 corpus occurrences published a symbol named the empty string; 0 now, pinned by the M12 probe",
+        "node_type": "Attribute"
       }
     ]
   },
@@ -403,5 +456,67 @@
     "measured": "4 independent cold-pool draws: 25/60/100/40 files, covered 100%, MISSING=0, unexplained=0 in every one"
   },
   "review": "reviews/xml/master-review.md",
-  "artifacts": "fixtures/xml/out/*.json, fixtures/xml/repositories/MANIFEST.json"
+  "artifacts": "fixtures/xml/out/*.json, fixtures/xml/repositories/MANIFEST.json",
+  "coverage": {
+    "_rule": "THE CONTRACT for this lane, in the shape script/m14/coverage-block-gate.ts asserts. `implemented` = a type the PRODUCTION path (parseFile) emits AND the corpus exercises, each with its whole-population count in `_implemented_measured`; `corpusUnexercised` = a type the analyzer emits that no file in this corpus exercises; `excluded` = a type carrying the class `grammar-absence` (which leaves the denominator) or `zero-sites` (which does not), each with a COUNT. Every type in none of those three lists is a GAP and STAYS in the denominator. There is no `unclassified` entry in this block and no `zero-sites` one. THE LINE THIS LANE DRAWS for `grammar-absence`, stated so a reader can contest it: a type is absent only when NEITHER the wired grammar's NODE TYPES NOR the corpus's ELEMENT/ATTRIBUTE NAME SPACES contain a construct whose operand names a declaration THE SAME DOCUMENT carries (or a specification builtin) — the same resolution bar this lane's own edge emission applies, where 1,319 unresolved `references` values are REFUSED rather than published. A construct that occurs with an in-document-resolving operand is NOT absent; it is a gap in this analyzer.",
+    "_from": "validation/m14/fixtures/xml/coverage-census.json — the whole admitted population: 11,552 git-tracked files <= 512 KiB, detectLanguageFromPath === 'xml', over every repository under the corpus root; 46 distinct NAMED node types over 3,349,291 nodes; per-type edges through parseFile; and the element-name and attribute-name key spaces. Re-run: npx tsx validation/m14/fixtures/xml/coverage-census.mts",
+    "implemented": [
+      "contains",
+      "references",
+      "imports",
+      "calls",
+      "extends",
+      "overrides"
+    ],
+    "_implemented_measured": {
+      "_unit": "edges published through parseFile over the whole 11,552-file admitted population of 2026-10-09 recorded in validation/m14/fixtures/xml/coverage-census.json; `files` is the count of distinct files the type appeared in. These are the whole-population numbers the 537-file firing stride cannot show: it reads `calls`, `extends` and `overrides` SILENT while the corpus exercises all three.",
+      "contains": {
+        "edges": 188224,
+        "files": 11335
+      },
+      "references": {
+        "edges": 11108,
+        "files": 406
+      },
+      "extends": {
+        "edges": 1429,
+        "files": 108
+      },
+      "imports": {
+        "edges": 468,
+        "files": 332
+      },
+      "calls": {
+        "edges": 402,
+        "files": 43
+      },
+      "overrides": {
+        "edges": 3,
+        "files": 3
+      }
+    },
+    "corpusUnexercised": [],
+    "_residual_note": "WHERE THE RESIDUAL NUMBER ON THE BOARD COMES FROM, recorded 2026-10-09 so that nobody reads it as a statement about this block's population. The board's `xml 93.9% residual - 28477 ambiguous + 332 unresolved of 30676 edges` is measured by script/m14/incoming-gate.ts with argv `xml xml 0`, whose admission is a path ending `.xml`: `population.corpusTotal = 2081` (live probe). THIS BLOCK's population is the 11,552 files admitted by detectLanguageFromPath === 'xml' (coverage-census.json corpus.discovered), because the router maps `.xml`, `.xsd`, `.xsl`, `.svg`, `.dtd` and `.rng` to xml (measured through src/ast/language-detection.ts). So the board's residual covers 18.0% of this lane's files, 16.1% of its `contains` edges (30,205 of 188,224), 3.0% of its `references` edges (335 of 11,108) and 29.1% of its `imports` edges (136 of 468). The instrument's own LANES_B table already records this defect class and its fix for yaml (`yaml,yml` - 'one language does not become a different population by being spelled .yml'); xml still reads `xml: \"xml\"`. Every before/after this lane publishes names its file population for that reason. Raw: validation/m14/fixtures/xml/residual-baseline.json.",
+    "_gaps_note": "`uses` IS A GAP, and it is the correction this block records. script/m14/xml-ruled.ts's XML-ONTOLOGY-USES probes only the two ELEMENT names xsl:use-attribute-sets and xsl:use-package in the XSLT namespace and measured 0, so an earlier version of this block excluded it on a construct that probe could not see. The construct is XSLT 1.0 §7.1.4's use-attribute-sets, written as an ATTRIBUTE: validation/m14/fixtures/xml/use-construct-census.mts counts 485 use-attribute-sets SITES over the same 11,552-file population — 488 operand tokens, of which 47 name an attribute-set THE SAME FILE declares (libxslt/tests/XSLTMark/attsets.xsl writes <xsl:copy use-attribute-sets=\"attset1 attset2\"> against its own <xsl:attribute-set name=\"attset1\">), and 19 of the 485 sites have a declared scope in scope as a source endpoint. XML therefore EXPRESSES a use and this corpus exercises it with BOTH ends in-document, while src/ast/real-xml-analyzer.ts contains 0 `RelationshipType.Uses` sites — the analyzer emits nothing. A node-type-only probe cannot see an attribute key, the same blind spot that gave HCL a wrong ruling for docker-bake's `inherits = [...]`. Because it is a gap and not a grammar-absence it STAYS in the denominator: applicable 7, not 6. Raw: validation/m14/fixtures/xml/use-construct-census.json",
+    "excluded": [
+      {
+        "label": "exports",
+        "evidence": "grammar-absence",
+        "from": "XML-ONTOLOGY-EXPORTS, re-measured over the whole 11,552-file admitted population in BOTH key spaces. NODE TYPES: 0 of 46 distinct NAMED node types is an export-declaration type (export_declaration, export_statement, export_list, module_export, export_spec, exported_item, public_declaration) and no observed node type name contains `export` (3,349,291 nodes; the 2,500-file ontology census counts 86 types including anonymous punctuation tokens and also returns none). ELEMENT NAMES: 620 elements across 8 files — 610 <exports> plus 1 <exportedmodules> in gtk-doc/Doxygen API descriptions of a C library, 5 <exportFormat> and 4 <pma_xml_export> in phpMyAdmin export configuration; every one is documentation or tool configuration, none declares a public surface of its own document. ATTRIBUTE NAMES: 132 across 77 files — 56 android:exported, a boolean visibility FLAG that names nothing, 68 inkscape:export-filename/-xdpi/-ydpi/-bgcolor on SVG, which name an output PNG for a raster export, 3 exportCode, 3 requiresExportPrivileges, 2 shortenArraysForExportThreshold. 0 of the 752 name-space candidates DECLARES what a document or module publishes. Raw: validation/m14/fixtures/xml/coverage-census.json, validation/m14/fixtures/xml/ontology-census.json. OVERTURN: any node type whose name contains `export`, or an element/attribute whose value names a declaration the same document carries as published.",
+        "quote": "a declaration that names what a document or module PUBLISHES."
+      },
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "XML-ONTOLOGY-IMPLEMENTS, re-measured over the whole 11,552-file admitted population in BOTH key spaces. NODE TYPES: 0 of 46 distinct NAMED node types is a conformance-clause type (implements_clause, extends_clause, superclass, interface_declaration, interface_implementation) and no observed node type name contains `implement`, `interface` or `conform`. ELEMENT NAMES: 275 elements across 11 files — 261 <interface> in Wayland protocol XML, which DECLARE a protocol interface and its requests (declaring an interface is not taking on another type's obligations), plus 4 <implementation>, 4 <interfaces>, 2 <interfacedefinition>, 2 <interfacename>, 2 <oointerface> in OSGi/gtk-doc descriptors. ATTRIBUTE NAMES: 5 across 4 files — 4 interface=, of which 2 sit on an OSGi <provide> naming a Java interface and 2 sit on a Wayland <arg> TYPING an argument (a name reference, which this analyzer already publishes as a `references` edge), and 1 implementation= on a Maven <transformer> naming a Java class. NEAREST MISS, carried rather than buried: those 2 OSGi SCR component descriptors are the one shape in the corpus whose documented semantics ARE provision of an interface, and they name Java types declared OUTSIDE the document, so no edge could resolve in-document; this class claims absence of a relation the DOCUMENT'S OWN declarations carry. Raw: validation/m14/fixtures/xml/coverage-census.json, validation/m14/fixtures/xml/ontology-census.json. OVERTURN: an in-document declaration of the interface in a document that also provides or implements it, or an element/attribute in a vocabulary namespace whose defined semantics are interface satisfaction.",
+        "quote": "a clause in which a declaration takes on the OBLIGATIONS of another type — an implements/extends clause, a superclass, an interface list."
+      },
+      {
+        "label": "instantiates",
+        "evidence": "grammar-absence",
+        "from": "XML-ONTOLOGY-INSTANTIATES, re-measured over the whole 11,552-file admitted population in BOTH key spaces. NODE TYPES: 0 of 46 distinct NAMED node types is a construction form (new_expression, object_creation_expression, constructor_invocation, instantiate_expression, class_instantiation) and no observed node type name contains `new`, `create`, `construct` or `instantiat`. ELEMENT NAMES: 44 elements across 26 files — 17 <systemCreated> (an Ericsson MIM timestamp element), 10 <Created> (an OData timestamp FIELD), 4 <newWizardShortcut>, 3 <newlineChar>, 2 <createArtifactRepository> and 2 <createDependencyReducedPom> (Maven boolean CONFIG switches), 1 <constructor-arg> (a Spring bean's argument, not the construction), 2 <constructors>/<constructorsynopsis> (gtk-doc markup). ATTRIBUTE NAMES: 46 across 2 files — 46 inkscape:tiled-clone-of, an SVG editor link between clones. 0 of the 90 name-space candidates creates an instance of a declared construct. DECLARED LIMITATION, not a claim of absence: the candidate set is the ruling's five construction node types plus the name families new/create/construct/instantiat/clone, so a dependency-injection vocabulary that names its class ONLY in an attribute value (Spring <bean class=...>, Android <activity>) is outside this probe's candidate set and is carried as unmeasured. Raw: validation/m14/fixtures/xml/coverage-census.json, validation/m14/fixtures/xml/ontology-census.json. OVERTURN: any node type whose name contains new/instantiat/create, or an element/attribute naming a declared type it constructs.",
+        "quote": "an expression or element that CREATES an instance of a declared construct."
+      }
+    ]
+  }
 }

@@ -15,8 +15,9 @@
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import { execSync } from "node:child_process"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 
-const ROOT = "$HOME/backbencher-brain"
+const ROOT = process.env.BB_REPO || path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const CORPUS_ROOT = "$HOME/fixtures/repositories"
 const FULL = process.argv.includes("--full")
 const AS_JSON = process.argv.includes("--json")

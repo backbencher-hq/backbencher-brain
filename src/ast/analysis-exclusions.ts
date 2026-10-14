@@ -106,7 +106,7 @@ export function isTestPath(relativePath: string): boolean {
  * the first place — see intelligence/patterns/orphans.ts.
  */
 export const NON_CODE_LANGUAGES = new Set([
-  "markdown", "yaml", "toml", "json", "xml", "css", "scss", "less",
+  "markdown", "yaml", "toml", "json", "xml", "css", "scss", "sass", "less",
   "html", "htm", "vue", "svelte",
   "ini", "cfg", "conf", "properties", "env", "csv", "tsv", "text", "plaintext",
   "rst", "tex", "bib", "org", "adoc", "asciidoc",

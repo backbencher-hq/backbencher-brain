@@ -5,7 +5,7 @@ const file = process.argv[2] || "validation/m11/fixtures/python/models.py"
 const p = await parseFile(file, process.cwd())
 console.log("=== SYMBOLS ===")
 for (const s of p.symbols ?? []) {
-  console.log(`${s.kind || s.type}\t${s.name}\tL${s.startLine ?? s.range?.startLine}\towner=${s.ownerName || s.scope || ""}\t${s.metadata?.isLambda ? "lambda" : ""}${s.metadata?.isClassVariable ? "classvar" : ""}${s.metadata?.isTypeAlias ? "typealias" : ""}`)
+  console.log(`${s.kind || s.type}\t${s.name}\tL${s.startLine}\towner=${s.ownerName || s.scope || ""}\t${s.metadata?.isLambda ? "lambda" : ""}${s.metadata?.isClassVariable ? "classvar" : ""}${s.metadata?.isTypeAlias ? "typealias" : ""}`)
 }
 console.log("=== RELATIONSHIPS ===")
 for (const r of p.relationships ?? []) {

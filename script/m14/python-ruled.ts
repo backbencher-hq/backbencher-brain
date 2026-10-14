@@ -2,6 +2,30 @@
  * PYTHON_RULED — the ruling table `script/m14/ontology-coverage-gate.ts` needs before it
  * will report this lane at all.
  *
+ * ## SUPERSEDED 2026-10-10 — `implements` IS emitted, and A's verdict was the wrong answer
+ *
+ * This file was authored while the lane believed python emitted zero `implements` edges, and
+ * the `PYTHON_RULED` entry below is that verdict. It was WRONG, and the way it was wrong is
+ * worth keeping: instrument A's "0 of 17 conformance node-type names" is a true measurement
+ * of the GRAMMAR and a false answer to "does python have the relation", because the relation
+ * does not arrive as its own node — it arrives INSIDE the base list (`class C(Mapping)`),
+ * which is where every other OO language puts `extends`. Instrument B was the right
+ * instrument and had already counted it: **71 interface-declaring base entries across 33
+ * files** (14 ABC + 57 Protocol over 16,377 base-list entries).
+ *
+ * The lane reversed the ruling on 2026-10-09 (PY-27 → PY-34): a proven interface base
+ * publishes ONE edge, the most specific true label (`implements`), with the inheritance fact
+ * carried in `metadata.superTypes` — the column the store copies into
+ * `brain_symbol.super_types` for the ancestor walk. MEASURED after the change
+ * (`script/m14/python-lane-census.mjs`, a 1,200-file derived draw over the whole box):
+ * **26 `implements` edges in 14 files, 80.8% with both endpoints resolved.**
+ *
+ * So the A entry below is retained only as the record of a corrected mistake, NOT as a live
+ * verdict: the type IS observed, and the gate's own decision order finds `EMITTED` from
+ * observation before it ever reaches a ruling. A reader must not take "RULED-SOUND" from the
+ * numbers below. The reversal and its full evidence are in
+ * `docs/analyzers/real-python-analyzer.md` §`implements`.
+ *
  * ## Why this file exists, and why it is not an edit to the gate
  *
  * The gate refuses to run for a language it has no ruling source for. Measured on this
@@ -92,12 +116,39 @@
 /** Mirrors `ontology-coverage-gate.ts`'s non-exported `Instrument`. */
 type Instrument = "A:grammar-inventory" | "B:parse-tree-count"
 
-/** Mirrors `ontology-coverage-gate.ts`'s non-exported `Ruled`, minus `type: Type`. */
+/**
+ * The gate's relationship-type vocabulary, restated as a literal union rather than `string`.
+ *
+ * `type: string` LOOKED assignable and was not: the gate's `Ruled.type` is the literal union of
+ * its ten ontology types, so `string` is not assignable to it — and NOTHING caught that until
+ * `python: PYTHON_RULED` was actually registered in `RULED_BY_LANG` (2026-10-10), because the
+ * error only exists at an assignment site and this lane's table had no consumer before then.
+ * The neighbouring `script/m14/zig-ruled.ts` declares the same union the same way.
+ */
+type Type = "calls" | "uses" | "contains" | "imports" | "references" | "exports" | "extends" | "implements" | "overrides" | "instantiates"
+
+/** Mirrors `ontology-coverage-gate.ts`'s `Ruled`. */
 export type Ruled = {
-  type: string
+  type: Type
   instrument: Instrument
   /** A: node types that would express the construct. B: unused. */
   nodeTypesThatWouldMeanIt?: string[]
+  /**
+   * WHICH SPACES this lane's probe enumerated. The arbiter refuses to treat a
+   * vocabulary-based ruling as RULED-SOUND in a language whose corpus writes key/value
+   * bindings unless the ruling declares the `attribute-keys` space, because a construct spelled
+   * as an attribute key or keyword argument cannot appear in a node-type inventory (measured on
+   * HCL, where `inherits = [...]` left 44 sites invisible to a node-type probe).
+   *
+   * python IS such a language — the arbiter counts 801,877 key/value bindings over its 11,488
+   * files — and this lane's probes DO enumerate that space: `implements-probe.ts` counts the
+   * `metaclass=ABCMeta` / `metaclass=abc.ABCMeta` KEYWORD ARGUMENT (a construct spelled as an
+   * attribute key, and the interface declaration that needs no import), and
+   * `python-construct-census.mts` counts the `.register(` METHOD-NAME spelling (493 calls, 1 with
+   * a provable receiver). So the declaration is a statement about what was measured, not a
+   * relaxation of the check.
+   */
+  spacesProbed?: ("node-types" | "block-types" | "attribute-keys" | "corpus-count")[]
   /** B: count occurrences on the tree. A: unused. */
   countOnTree?: (root: any, fileLabel: string, hits: string[]) => void
   /**
@@ -143,7 +194,10 @@ export const PYTHON_RULED: Ruled[] = [
     type: "implements",
     instrument: "A:grammar-inventory",
     nodeTypesThatWouldMeanIt: PYTHON_SUPERTYPE_NODE_TYPES,
+    spacesProbed: ["node-types", "attribute-keys"],
     describe:
+      "SUPERSEDED 2026-10-10 (PY-34) — python DOES emit `implements` and this verdict is " +
+      "stale; see the file header. It is kept as the record of a corrected mistake. " +
       "a CONFORMANCE CLAUSE — a supertype entry naming a type the class satisfies as a " +
       "contract, as distinct from one it inherits an implementation from. " +
       "MEASURED, instrument A (validation/m14/fixtures/python/implements-probe.ts, " +
@@ -299,14 +353,18 @@ export const PYTHON_RULED_INSTRUMENT_B: Ruled[] = [
     describe:
       "71 base-list entries across 33 files name an abc ABC/ABCMeta or a typing " +
       "Protocol, provably abc's or typing's rather than a local namesake (14 ABC + 57 " +
-      "Protocol over 16,377 base-list entries, 0.43%). Those are implements-SHAPED and " +
-      "the analyzer publishes all of them as `extends` without splitting on the base's " +
-      "kind. Registering THIS table makes the gate report FALSIFIED. The case FOR it: " +
-      "python's interface system is real, and `bb_graph` on an ABC shows no edge a " +
-      "reader would call conformance. The case AGAINST, which is why A is registered: " +
-      "`class C(Protocol)` puts Protocol in C's MRO and `issubclass(C, Protocol)` is " +
-      "True, so the edge is an inheritance edge and is already published; the split adds " +
-      "71 duplicates rather than 71 new facts, and the ONE genuinely distinct relation " +
-      "python has — `ABC.register(X)` — reads 0 occurrences in 0 files over 5,986 files.",
+      "Protocol over 16,377 base-list entries, 0.43%). Those ARE python's interface " +
+      "declarations, and since 2026-10-09 (PY-34) the analyzer publishes each as a RELABELLED " +
+      "edge — `implements`, the most specific true label — instead of `extends`. THIS is the " +
+      "instrument that was right, and on 2026-10-09 (PY-34) the lane " +
+      "ADOPTED its reading and reversed the instrument-A verdict above — so this table is no " +
+      "longer a falsifier the lane is accountable to; it is the measurement the ruling rests " +
+      "on. `the analyzer publishes all of them as extends` is no longer true: the 71 base " +
+      "entries became 71 RELABELLED edges (`implements`, the most specific true label), with " +
+      "the inheritance fact riding in `metadata.superTypes` so no consumer that WALKS the " +
+      "hierarchy loses a parent, and the additive reading (both labels for one base) was " +
+      "refused as 71 duplicates rather than 71 new facts. The ONE genuinely distinct " +
+      "relation python has — `ABC.register(X)` — still reads 0 occurrences in 0 files over " +
+      "5,986 files, which is why `implements` has exactly one source shape: the base list.",
   },
 ]

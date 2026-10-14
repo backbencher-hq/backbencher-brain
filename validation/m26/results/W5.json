@@ -3,21 +3,21 @@
   "code": "W5",
   "milestone": "M26",
   "status": "verified",
-  "checks": 30,
-  "passed": 30,
+  "checks": 29,
+  "passed": 29,
   "failed": 0,
   "mutantsCaught": 19,
   "mutantsTotal": 19,
-  "currentCommit": "4ab4019155f10f6395ab644c694bda960b68b992",
+  "currentCommit": "69bb9592a8b534f82ff03c6a32d445b59717a2c9",
   "verifierCommand": "npx tsx script/m26/verify-impact-mode.ts",
-  "sourceFingerprint": "698a492c3179bdd5f6dcd760e57ae5f1eceb79a9550811d0b7d98925f557a9db",
+  "sourceFingerprint": "9cc95e7d21ac37cc512a25a64cc8a801be5b7da76c11e72f2c3e3b99cd3675d1",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m26/verify-impact-mode.ts",
     "src/lsp/impact.ts"
   ],
   "evidenceFile": "W5.json",
-  "generatedAt": "2026-10-12T18:49:45.591Z",
+  "generatedAt": "2026-10-08T17:31:26.994Z",
   "differential": {
     "sampling": "all reverse-dependency edges of the fixture root (the fixture IS the sample, none skipped); L3 answers usage sites since M55.T3 (incoming, non-declaration) — no direction correction needed; containment delta verified separately",
     "l3TotalCount": 4,
@@ -32,7 +32,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T18:49:45.593Z",
-    "contentSha256": "12b199a28c5322658457945d374e189728e8bfd1d8a1cf01d503a591120a3b86"
+    "sealedAt": "2026-10-08T17:31:26.996Z",
+    "contentSha256": "19b7245b073089d2c93cf0f50ce066878143b4fb3c7b126d2481f4d92a39dc09"
   }
 }

@@ -4,7 +4,7 @@ const file = process.argv[2] || "$HOME/fixtures/repositories/luarocks/src/luaroc
 const result = await parseFile(file, process.cwd())
 console.log("=== SYMBOLS ===")
 for (const s of result.symbols ?? []) {
-  console.log(`${s.kind}\t${s.name}\tL${s.range?.startLine ?? s.startLine ?? ""}\tscope=${s.scope || ""}\towner=${s.ownerName || ""}\tmeta=${JSON.stringify(s.metadata || {})}`)
+  console.log(`${s.kind}\t${s.name}\tL${s.startLine ?? ""}\tscope=${s.scope || ""}\towner=${s.ownerName || ""}\tmeta=${JSON.stringify(s.metadata || {})}`)
 }
 console.log("=== RELATIONSHIPS ===")
 for (const r of result.relationships ?? []) {

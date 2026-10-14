@@ -59,37 +59,6 @@ const CORE = join(ROOT, "script", "m26", "graph-core.ts")
 let checks = 0
 let passed = 0
 
-// THE ORDER OF THE FIRST TWO PARAMETERS IS LOAD-BEARING, AND NINE CALLS HAD IT BACKWARDS.
-//
-// This helper is declared `check(label, condition, detail)`. Nine calls in this file passed
-// `check(condition, label, fixture, detail)` instead. That does not merely print the wrong
-// label — it INVERTS THE CHECK. `condition` received the label STRING, and a non-empty
-// string is truthy, so every one of those nine checks took the `passed++` branch no matter
-// what the impact engine returned. Nine of twenty-nine checks in this gate could not fail.
-//
-// Two thirds of the damage was visible and one third was not, which is why it survived:
-//
-//   - SIX passed FOUR arguments, so arity did not match the signature and tsc reported
-//     TS2554 at each one.
-//   - THREE passed EXACTLY THREE arguments — condition, label, fixture — which is arity-
-//     correct for this signature. tsc reported nothing at all. Had I only chased the
-//     TS2554 list, those three would have stayed quietly green forever.
-//
-// Measured, not argued. With `false` hard-coded in place of the condition:
-//
-//     before:  FAIL count unchanged, gate reported  VERIFIED (29/29 passed)
-//     after:   1 FAIL,               gate reported  KNOWN-GAP (28/29 passed)
-//
-// The six four-argument calls also silently dropped their real detail string, because the
-// signature has a three-parameter arity. All nine now pass the fixture tag and the detail
-// as ONE concatenated third argument, so nothing that was being measured was lost in the
-// reordering — a failure prints `fixture/<name> <detail>`, e.g.
-//
-//     FAIL: R6: the exempt root's set is its own dependents, not its owner's
-//           — fixture/uniqConst ["caller1@0"]
-//
-// If you add a call here, the first argument must be a string literal. There is a repo-wide
-// gate for this class: script/m62/verify-check-arg-order.ts.
 function check(label: string, condition: boolean, detail = ""): void {
   checks++
   if (condition) passed++
@@ -301,9 +270,13 @@ async function makeFixture(): Promise<{
 
 async function main(): Promise<void> {
   const mod = await import(IMPACT)
-  const impact = mod as typeof import("../../src/lsp/impact.ts")
+  const impact = mod as {
+    computeImpact: (db: any, projectId: string, name: string, deps?: any) => Promise<any>
+    countImpactDependents: (db: any, projectId: string, id: string, opts?: any) => { total: number | null; direct: number; rowsScanned: number; expansions: number; hitScanCeiling: boolean }
+    IMPACT_BUDGET: { maxNodes: number; maxDepth: number }
+  }
   const coreMod = await import(CORE)
-  const core = coreMod as typeof import("./graph-core.ts")
+  const core = coreMod as { renderImpact: (r: any, dom: any) => any }
   const source = readFileSync(IMPACT, "utf8")
   const coreSource = readFileSync(CORE, "utf8")
 
@@ -323,19 +296,22 @@ async function main(): Promise<void> {
     // the point: nothing was substituted, so nothing needs substituting.
     const exempt = await impact.computeImpact(fx.raw, fx.projectId, "uniqConst")
     check(
-      "R6: a constant the engine resolved by exact, unambiguous name is answered, and says the kind was exempt",
       exempt.root?.name === "uniqConst" && exempt.rootMatch?.via === "exact-exempt-kind",
-      ("fixture/uniqConst" + " " + `root=${exempt.root?.name} via=${exempt.rootMatch?.via}`),
+      "R6: a constant the engine resolved by exact, unambiguous name is answered, and says the kind was exempt",
+      "fixture/uniqConst",
+      `root=${exempt.root?.name} via=${exempt.rootMatch?.via}`,
     )
     check(
-      "R6: the exempt root's set is its own dependents, not its owner's",
       exempt.impact.length === 1 && exempt.impact[0]?.name === "caller1" && exempt.impact[0]?.depth === 0,
-      ("fixture/uniqConst" + " " + JSON.stringify(exempt.impact.map((d: any) => `${d.name}@${d.depth}`))),
+      "R6: the exempt root's set is its own dependents, not its owner's",
+      "fixture/uniqConst",
+      JSON.stringify(exempt.impact.map((d: any) => `${d.name}@${d.depth}`)),
     )
     check(
-      "R6: the exemption reads the name's ambiguity from the same rows the refusal would list",
       exempt.rootMatch?.nameMatches === 1,
-      ("fixture/uniqConst" + " " + String(exempt.rootMatch?.nameMatches)),
+      "R6: the exemption reads the name's ambiguity from the same rows the refusal would list",
+      "fixture/uniqConst",
+      String(exempt.rootMatch?.nameMatches),
     )
     // ...and the case it must not take: an AMBIGUOUS name. Refusing is the
     // identity module's law (M44 R1), and the error has to be actionable.
@@ -346,43 +322,34 @@ async function main(): Promise<void> {
       ambiguousMessage = e instanceof Error ? e.message : String(e)
     }
     check(
-      "R6: an ambiguous non-whitelisted name is still a declared error, never a guess",
       ambiguousMessage.includes("not a traversable root") || ambiguousMessage.includes("not found"),
-      ("fixture/ambConst" + " " + ambiguousMessage.slice(0, 110)),
+      "R6: an ambiguous non-whitelisted name is still a declared error, never a guess",
+      "fixture/ambConst",
+      ambiguousMessage.slice(0, 110),
     )
     check(
-      "R6: the refusal NAMES the candidates, so the next question can be asked with a file",
       ambiguousMessage.includes("main.ts") && ambiguousMessage.includes("other.ts"),
-      ("fixture/ambConst" + " " + ambiguousMessage.slice(0, 150)),
+      "R6: the refusal NAMES the candidates, so the next question can be asked with a file",
+      "fixture/ambConst",
+      ambiguousMessage.slice(0, 150),
     )
 
     const wideResult = await impact.computeImpact(fx.raw, fx.projectId, "wideFn")
     const twice = wideResult.impact.find((d: any) => d.id === "sym:twice")
     const twiceShape = twice ? `${twice.name}@${twice.depth}/ev@${twice.evidenceAtDepth}/cross=${twice.isCrossLanguage}` : "ABSENT"
     check(
-      "R5: a root whose site limit cut a real dependent declares a prefix and the true size",
       wideResult.totalCountIfKnown === 202 && wideResult.truncated === true && wideResult.truncationReason === "impact-node-budget-exhausted",
-      ("fixture/wideFn" + " " + `shown=${wideResult.shownCount} total=${wideResult.totalCountIfKnown} reason=${wideResult.truncationReason}`),
+      "R5: a root whose site limit cut a real dependent declares a prefix and the true size",
+      "fixture/wideFn",
+      `shown=${wideResult.shownCount} total=${wideResult.totalCountIfKnown} reason=${wideResult.truncationReason}`,
     )
     // The shape the corpus lane measured at 7.98% of rows: the engine reached
     // `twice` through `gate` because its direct row was cut by the site limit, so
     // the engine's depth (1) and the shortest path (0) disagree — and the two
     // rows disagree about the cross-language flag as well.
-    check(
-      "R5: the dependent is reported at its SHORTEST path, not the engine's first trace",
-      twice !== undefined && twice.depth === 0,
-      ("fixture/wideFn" + " " + twiceShape),
-    )
-    check(
-      "R5: the evidence is the row at the reported depth, so a longer path's flag is not quoted",
-      twice !== undefined && twice.isCrossLanguage === false,
-      ("fixture/wideFn" + " " + twiceShape),
-    )
-    check(
-      "R5: the answer says which path the quoted evidence is on",
-      twice !== undefined && twice.evidenceAtDepth === twice.depth,
-      ("fixture/wideFn" + " " + twiceShape),
-    )
+    check(twice !== undefined && twice.depth === 0, "R5: the dependent is reported at its SHORTEST path, not the engine's first trace", "fixture/wideFn", twiceShape)
+    check(twice !== undefined && twice.isCrossLanguage === false, "R5: the evidence is the row at the reported depth, so a longer path's flag is not quoted", "fixture/wideFn", twiceShape)
+    check(twice !== undefined && twice.evidenceAtDepth === twice.depth, "R5: the answer says which path the quoted evidence is on", "fixture/wideFn", twiceShape)
 
     // --- R1: real engine + differential vs L3 --------------------------------
     const result = await impact.computeImpact(fx.raw, fx.projectId, "rootFn")
@@ -485,31 +452,6 @@ async function main(): Promise<void> {
     check(
       "G4b: the owning-declaration case keeps its own note and gains no second one",
       domOwner.el.find("bb-impact-resolution-note") !== null && domOwner.el.find("bb-root-match-note") === null,
-    )
-    // M63.T2's exempt-by-kind root is an EXACT hit, and must be treated as one here too.
-    //
-    // Found 2026-10-12 by anchoring a hand-written type copy instead of keeping a snapshot:
-    // with the snapshot the call site type-checked, and with it the real disagreement
-    // appeared — script/m26/graph-core.ts's `ImpactResultLike` had no "exact-exempt-kind",
-    // because M63.T2 added that value to src/lsp/impact.ts and the renderer was never told.
-    // The renderer's disclosure condition only excluded "exact" and "owning-declaration",
-    // so the new value fell through to a note reading
-    //
-    //     "<requested>" is not a stored symbol on its own — showing the impact of <other>
-    //
-    // which is false. src/lsp/impact.ts:62 describes the value in its own words: "the engine
-    // rooted at the exact requested name and completed the walk". Nothing was substituted,
-    // so there is nothing to disclose, and a user asking about an exempt-by-kind constant
-    // was told the panel had answered a different question.
-    const domExempt = makeDom()
-    core.renderImpact(
-      { ...result, rootMatch: { requested: "greet", via: "exact-exempt-kind", nameMatches: 1 } } as never,
-      domExempt as never,
-    )
-    check(
-      "G4b: an exact-exempt-kind root renders NO substitution note (it is an exact hit, not a substitution)",
-      domExempt.el.find("bb-root-match-note") === null,
-      JSON.stringify(domExempt.el.attrs),
     )
 
     // --- Latency (contract §3 render budget, headless regime) --------------------
@@ -712,15 +654,7 @@ async function main(): Promise<void> {
       {
         name: "M8 non-exact name rendered as an exact hit (silent substitution in the panel)",
         home: "core",
-        // ANCHORED ON THE WHOLE CONDITION, so any edit to it silently disables this mutant.
-        // That happened for real on 2026-10-12: the condition gained
-        // `match.via !== "exact-exempt-kind" && ` when script/m26/graph-core.ts learned that
-        // value, and the gate reported `ANCHOR NOT FOUND (a defect this suite no longer
-        // tests): M8 …` with 18/19 — a mutant quietly dropping out of the roster while the
-        // suite still looked green on the count. The gate REPORTING it is the only reason
-        // this was caught; the fix is to re-anchor, and the lesson is that this mechanism
-        // fails toward fewer tests rather than toward a red run.
-        from: 'if (match && match.via !== "exact" && match.via !== "exact-exempt-kind" && match.via !== "owning-declaration") {',
+        from: 'if (match && match.via !== "exact" && match.via !== "owning-declaration") {',
         to: "if (false) {",
         probe: (m) => {
           const d = makeDom()

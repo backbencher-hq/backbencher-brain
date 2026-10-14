@@ -146,7 +146,7 @@ function pickFiles(dir, exts, want) {
     for (const e of ents) {
       if (out.length >= want) return
       const p = join(d, e.name)
-      if (e.isDirectory()) { if (!/node_modules|\.git/.test(e.name)) walk(p, depth + 1) }
+      if (e.isDirectory()) { if (e.name !== "node_modules" && e.name !== ".git") walk(p, depth + 1) }
       else if (exts.some((x) => e.name.endsWith(x))) {
         try {
           if (statSync(p).size >= 400_000) continue

@@ -1,5 +1,71 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import * as path from "node:path"
+import { dirOf, fileClaimForTarget } from "./file-claim"
+
+/**
+ * THE PROTOBUF DECLARATION SPEC for the project index — the fact this lane needs the indexer to hold
+ * so its import-scope rule can accept a candidate ONLY WHEN THE PROJECT DECLARES IT.
+ *
+ * ## Why it exists at all
+ *
+ * `resolveViaImports` builds the right candidate and a guard that assumes a directory mirrors a
+ * package discards it. That refusal is CORRECT given what it can see: a `.proto` directory need not
+ * mirror its package (consul's `private/pbcommon` declares `hashicorp.consul.internal.common`), so a
+ * rule that accepted the candidate unchecked would be a guess. The fix is not to soften the rule but
+ * to give it something to see, and this spec is that something.
+ *
+ * ## Measured, before it was written
+ *
+ * PRICE (`validation/m14/fixtures/protobuf/tools/index-spec-pricing.mts`, whole corpus, 847 `.proto`
+ * files across 21 repos):
+ *   * the SOLIDITY default — what an `PROJECT_INDEX_EXTENSIONS` entry would use today, because
+ *     `specByLang` has no protobuf entry — yields **0 names and 0 types** over the whole corpus. An
+ *     entry without a spec indexes the right SHAPE and holds nothing;
+ *   * this spec yields **8,048 names at ~18ms/file (~15–25s for the whole corpus)**, paid ONCE per
+ *     project run before workers dispatch.
+ *
+ * ## The two traps this spec exists to avoid, each of which cost a measurement run
+ *
+ * 1. **THE GRAMMAR PUTS NO DECLARATION NAME IN A `name` FIELD.** `message Foo { }` is a `message`
+ *    node whose FIRST NAMED CHILD is `message_name` (`enum`/`rpc`/`service` behave the same), and the
+ *    index's generic extractor reads `childForFieldName("name")` — undefined for every one of them.
+ *    A spec that lists only `typeNodes` therefore holds nothing at all.
+ * 2. **`package` IS A SIBLING OF THE DECLARATION, NOT AN ANCESTOR.** A file is
+ *    `source_file > (syntax, package, import…, message…)`, so walking parents upward never sees it.
+ *    The first resolver written here produced 6,377 BARE names and the walk's candidate read ABSENT
+ *    from the key space; reading the package from the ROOT's children is what makes the index speak
+ *    the spelling the walk builds.
+ *
+ * `memberNodes` and `baseNodes` are required by the builder and are EMPTY ON PURPOSE: a protobuf
+ * field is not a member of a TYPE the way a method is, and the language has no inheritance — which is
+ * why this lane's `extends`/`implements` columns are empty. Borrowing Solidity's arrays would
+ * fabricate structure the language does not have.
+ */
+
+export const PROTOBUF_DECLARATION_SPEC = {
+  typeNodes: { message: "class", enum: "enum", service: "interface" },
+  memberNodes: [] as string[],
+  baseNodes: [] as string[],
+  nameResolver: (n: Node): string => {
+    // `namedChildren` is `(Node | null)[]` in this grammar's typings, so every read goes through a
+    // null filter rather than a `!`: a null child here would be a parser artefact, not a declaration.
+    const children = (n.namedChildren ?? []).filter((c): c is Node => c !== null && c !== undefined)
+    const own = children.find((c) => String(c.type).endsWith("_name"))?.text
+      ?? n.childForFieldName("name")?.text ?? ""
+    if (own.length === 0) return ""
+    let root: Node = n
+    while (root.parent !== null && root.parent !== undefined) root = root.parent
+    const rootChildren = (root.namedChildren ?? []).filter((c): c is Node => c !== null && c !== undefined)
+    const packages: string[] = []
+    for (const c of rootChildren) {
+      if (String(c.type) !== "package") continue
+      const text = String(c.text ?? "").replace(/^\s*package\s+/, "").replace(/;\s*$/, "").trim()
+      if (text.length > 0) packages.push(text)
+    }
+    return packages.length > 0 ? `${packages.join(".")}.${own}` : own
+  },
+}
 
 /**
  * REAL PROTOBUF ANALYZER — pure tree-sitter AST extraction against the vendored,
@@ -96,7 +162,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     content: string,
     filePath: string,
-    _context?: ASTEngine.AnalyzeContext,
+    context?: ASTEngine.AnalyzeContext,
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & {
     metadata?: Partial<ASTEngine.FileMetadata>
   } {
@@ -250,6 +316,30 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       const cut = mod.lastIndexOf("/")
       importDirs.add(cut > 0 ? mod.slice(0, cut) : "")
     }
+
+    /**
+     * THE PROJECT'S OWN KEY SPACE, when production hands one over. `symbolNames` is documented as
+     * "every declared symbol name anywhere in the project", which is exactly the fact the guard
+     * below needs and the one fact this analyzer cannot derive from a single file.
+     *
+     * MEASURED (PROTO-D1). `consul/proto/private/pbconfigentry/config_entry.proto` declares
+     * `package hashicorp.consul.internal.configentry`, imports `private/pbcommon/common.proto`, and
+     * writes `common.EnterpriseMeta`. The declaration is
+     * `hashicorp.consul.internal.common.EnterpriseMeta` (`pbcommon/common.proto:171`) — and
+     * `resolveViaImports` builds that candidate and then discards it, because its guard asks whether
+     * the candidate's PACKAGE-derived directory (`hashicorp/consul/internal/common`) is one this file
+     * imports, and the imported directory is `private/pbcommon`. **Consul's proto layout does not
+     * mirror its package layout**, so the walk threw away the right answer.
+     *
+     * 43 edges on the lane's admitted population have this shape (2.1% of the `uses` residual), and
+     * `common.EnterpriseMeta` is read in consul and declared in consul — a reference the language's
+     * own rule resolves, left unresolved. The incoming clause says every edge resolves to exactly one
+     * declaration, so this is a defect and not a size question.
+     */
+    const projectNames: Set<string> | undefined =
+      (context as any)?.projectIndex?.symbolNames instanceof Set
+        ? (context as any).projectIndex.symbolNames
+        : undefined
     for (const d of fileDecls) {
       const t = typeOf(d)
       if (t === "package") pkg = firstOfType(d, "full_ident")?.text ?? ""
@@ -725,7 +815,39 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const base of chain) {
         const packageOf = base.length > 0 ? `${base}.${rootedAt}` : rootedAt
         const dir = packageOf.split(".").join("/")
-        if (!importDirs.has(dir)) continue
+        if (!importDirs.has(dir)) {
+          // PROTO-D1. THE PROJECT INDEX SPEAKS FOR THE PROJECT, AND NOTHING ELSE DOES.
+          //
+          // The directory guard above is right about what it knows: the candidate's package-derived
+          // directory is not one this file imports. It is wrong to conclude the candidate does not
+          // exist, because a proto directory need not mirror its package — that is exactly the consul
+          // case in `projectNames`' comment. So the walk gets ONE further arm, and the arm is
+          // EXACTLY "the project publishes this qualified name".
+          //
+          // **DO NOT SOFTEN THIS.** A basename match (`common.proto` for `…common`), a directory
+          // guess, or any arm that accepts a candidate the project does not declare REINSTATES THE
+          // GUESS this lane refused: it cannot check existence, so it can re-point an edge silently —
+          // julia's 1%-ceiling shape. The sizing is deliberately small and a small ceiling is no
+          // reason to buy it with a rule that can mis-bind.
+          //
+          // MEASURED AFTER THE SPEC EXISTED, and it replaces the 43 this comment used to quote:
+          // parsing every admitted file twice, with and without the index, changes **38 edges**
+          // (38 gained, 38 lost — the same rows re-pointed). The 43 was the SIZE OF THE SHAPE;
+          // 38 is what the arm actually reaches, and the gap is edges of that shape that already
+          // resolve another way or never reach here. Both numbers are real; they answer different
+          // questions, and this comment quotes the one a reader can check against the code. A candidate accepted here reaches a
+          // declaration that genuinely exists, which is why this is a fix rather than a ruling, and
+          // any other arm destroys that property.
+          //
+          // THE 7 NEGATIVE CONTROLS (`xds.data.orca.v3.OrcaLoadReport`, `sls.asfd.asfd.{JsonFormat,
+          // CustomType}`, `grpc.testing.duplicate.{EchoRequest,EchoResponse}`,
+          // `github.com.hashicorp.go.kms.wrapping.v2.types.BlobInfo`) are declared NOWHERE in the
+          // corpus and must NOT bind. If any of them starts binding, this arm is accepting
+          // candidates that do not exist and the change is refuted.
+          const candidate = `${packageOf}.${typeName}`
+          if (projectNames !== undefined && projectNames.has(candidate)) return candidate
+          continue
+        }
         for (const other of chain) {
           const otherPackage = other.length > 0 ? `${other}.${rootedAt}` : rootedAt
           const otherDir = otherPackage.split(".").join("/")
@@ -1485,6 +1607,78 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
     stack.length = 0
     pushAll(fileDecls, root)
     drain()
+
+    // ------------------------------------------------------------- THE FILE CLAIM
+    //
+    // AN `import "..."` TARGET IS A PATH, and the key space answers a path only when it happens to
+    // name a declared module — which is why this lane's whole import column reads unresolved. The
+    // claim says the one thing about it the PROJECT can check: that the path names a file the
+    // admitted population carries.
+    //
+    // MEASURED BEFORE EMITTING (validation/m14/fixtures/toml/tools/imports-claim-pricing.mts,
+    // whole population 847/847, no sampling): of the lane's 1,574 import edges, **304 name a file
+    // the population carries** and the cross-tab is EXACT in both directions — 0 would be refuted.
+    // A claim that misses is REFUTED and `extFAIL` must stay 0, which is why the guard checks the
+    // extension, the project boundary and the filesystem rather than assuming a path is a file.
+    //
+    // `exports` is deliberately NOT claimed here: public re-exports carry the same path spelling,
+    // and that column was not priced. An unmeasured claim is what this lane keeps refusing to write.
+    //
+    // IT RUNS AFTER THE **SECOND** `drain()` AND BOTH HALVES OF THAT ARE NOT COSMETIC. The walk is an
+    // explicit stack, so statements are visited — and their edges pushed — inside `drain()`; the
+    // method drains twice, and the import declarations belong to the second pass. Placed before the
+    // first, and then between the two, this pass measured ZERO claims and the lane's row did not move
+    // by a single edge: the before/after refusing to differ is what located the ordering.
+    const claimRoot = typeof context?.projectRoot === "string" && context.projectRoot.length > 0 ? context.projectRoot : null
+    if (claimRoot !== null) {
+      for (const r of relationships) {
+        if (r.type !== ASTEngine.RelationshipType.Imports) continue
+        const md = r.metadata as Record<string, unknown> | undefined
+        if (!md || typeof md.importProjectFile === "string") continue
+        const written = String(r.target ?? "")
+        // THE IMPORT ROOT IS SOMEWHERE ABOVE, AND THIS IS THE ARM THAT REACHES IT.
+        //
+        // MEASURED, and it is a refutation of this lane's own earlier ceiling: r-lane's
+        // `probe-imports-split` prices the claimable subset at **1,061 edges (67.4%)** — its three
+        // arms being ROOT-RELATIVE, FILE-RELATIVE and SUFFIX ("any admitted file whose path ends with
+        // `/<import>`") — while the first version of this pass closed **304** and called it the
+        // ceiling. The gap is exactly the SUFFIX arm: a protobuf import path is written relative to an
+        // IMPORT ROOT that may be any directory above the file, so a vendored
+        // `google/protobuf/timestamp.proto` lives under `vendor/` and neither the file's own directory
+        // nor the project root names it.
+        //
+        // A per-file analyzer cannot ENUMERATE the project to reproduce a suffix match, and it should
+        // not: the safe, checkable form of the same idea is to try each ANCESTOR DIRECTORY of this file
+        // as the import root, which is a bounded walk (the file's depth) and yields an EXACT admitted
+        // path rather than a guessed one. Every candidate still passes the guard's admitting (admitted
+        // extension, project boundary, `statSync`), so a wrong guess is refused rather than claimed.
+        // THE CANDIDATES MUST BE PROJECT-RELATIVE, and the first version of this arm was not: it
+        // walked the ABSOLUTE file path upward, and the guard takes `extraCandidates` as already
+        // project-relative (it stats `path.join(root, candidate)`), so every candidate was tested
+        // against a path that does not exist and the arm changed NOTHING — 304 before, 304 after.
+        // The walk is over the file's PROJECT-RELATIVE directory chain, which is the spelling the
+        // guard's own `dirOf` produces.
+        const extraCandidates: string[] = []
+        const target = written.trim()
+        if (target.length > 0 && !target.includes("://") && !target.startsWith("/")) {
+          const fileRel = path.relative(path.resolve(claimRoot), filePath).split(path.sep).join("/")
+          let rel = dirOf(fileRel).replace(/\/$/, "")
+          while (rel.length > 0) {
+            extraCandidates.push(`${rel}/${target}`)
+            rel = dirOf(rel).replace(/\/$/, "")
+          }
+        }
+        const claim = fileClaimForTarget({
+          projectRoot: claimRoot,
+          filePath,
+          written,
+          admittedExtensions: ["proto"],
+          extraCandidates,
+        })
+        if (claim === null) continue
+        md.importProjectFile = claim
+      }
+    }
 
     // ----------------------------------------------------------------- done
     return {

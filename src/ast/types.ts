@@ -145,6 +145,50 @@ export interface UniversalSymbol {
   [key: string]: any
 }
 
+/**
+ * THE BINDING SEPARATOR — the character a relationship target carries when it names a
+ * BINDING rather than a declaration.
+ *
+ * The family contract publishes no locals, parameters or lambda parameters as symbols (the
+ * csharp/python/go parity ruling, recorded for dart as DARTD8), so an edge that reads a local
+ * has no declaration to point at — but it still has to say WHICH binding it read, and the
+ * string it writes is what the store resolves. `parallel-indexer.ts:resolveRelationships`
+ * matches that string against `qualified_name` (Strategy 1) and then against a bare `name`
+ * admitted only while the name is declared exactly once in the project (Strategy 2), and it
+ * does not read the edge's metadata while doing it.
+ *
+ * A bare local name is therefore indistinguishable from a declaration's name, and wherever the
+ * local's name collides with a UNIQUE declaration the read is bound to that declaration. This
+ * is not a hypothesis: `validation/m14/fixtures/dart/local-read-phantom.ts` reproduces it
+ * in-repo — a function's own `counter` binds to an unrelated class's field of the same name,
+ * with `metadata.isLocalRead` set and the store's own rule (`classifyEdge`) reporting
+ * `resolved`. The analyzer's comment at the call site used to claim the opposite ("the family
+ * contract publishes no locals, so the target binds to nothing a consumer holds"); the claim
+ * was about the FAMILY's contract, and the defect is that the SPELLING did not carry it.
+ *
+ * `#` cannot appear in an identifier in any language of this family (`[A-Za-z_$]` and the
+ * alphanumerics that follow it, in every spelling) — TRUE, and not enough. The tripwire that
+ * makes this claim checkable is over PUBLISHED KEYS, not identifiers, and a published key is
+ * not always an identifier: a CSS ID selector is written `#sidebar`, a markdown label
+ * `code_block#2`, an HCL address `aws#2.region`, a TOML key `units#2.name`, a julia struct
+ * `layer::ScopeLayer\n # For provenance`. Measured across laptop B's 23 lanes, NINE of them
+ * publish keys containing `#`, and in each of those runs EVERY binding claim became
+ * unverifiable — the gate could not tell a binding spelling from a declaration's name
+ * (validation/m14/results/incoming-laptop-b.log). The lane cannot fix it by renaming: `#` is
+ * the language's own syntax in CSS and SCSS, so the separator is what has to move.
+ *
+ * U+0000 cannot appear in a published key, and that is structural rather than conventional:
+ * tree-sitter parses TEXT, keys are built from node text, and a NUL byte in source terminates
+ * the document rather than naming anything in it. It is also invisible to the leaf rules below
+ * (no consumer splits on NUL), which is the property that ruled out `.` and `:`.
+ *
+ * Deliberately NOT `.` and NOT `:`. Consumers take the LEAF of an unresolved target as "the
+ * name this edge is about" (`src/intelligence/patterns/orphans.ts`: after the last colon, then
+ * after the last dot), which would reduce a dotted or colon-joined spelling straight back to
+ * the bare local name and reopen the false name match this constant exists to close.
+ */
+export const BINDING_SEP = "\u0000"
+
 export interface UniversalRelationship {
   source?: string
   target?: string

@@ -786,14 +786,9 @@ const HOVER_MUTANTS: Array<{ name: string; from: string; to: string }> = [
     // branch) no longer exists and the mutant was silently skipping — found
     // by the T5 sweep. The defect is planted where the hover still owns the
     // answer: the CARD's tier line, which must render the owner's tier list.
-    // M63.T2: this mutant is OBSOLETE. M55.T5 moved the tier rendering from
-    // hover.ts to evidence_tier.ts (primaryTier function), and the comma-separated
-    // tier label display was removed entirely (now only CSS class evidenceClass).
-    // The mutant anchor no longer exists in hover.ts. Kept for historical record.
-    // TODO: replace with a meaningful mutant for the current tier rendering.
-    name: "content: wrong tier label (OBSOLETE - tier text display removed)",
-    from: 'evidenceClass: stale ? "stale" : primaryTier(tiers)',
-    to: 'evidenceClass: "indexed"',
+    name: "content: wrong tier label (structural rows mislabeled)",
+    from: 'lines.push(`evidence: ${data.evidenceTiers.join(", ")}`)',
+    to: 'lines.push(`evidence: indexed`)',
   },
   {
     name: "honesty: fabricate not-indexed entry",

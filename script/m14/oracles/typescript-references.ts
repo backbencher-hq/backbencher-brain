@@ -109,6 +109,34 @@ export interface TruthEdge {
 const named = (n: any): any[] => (n?.namedChildren ?? [])
 const field = (n: any, f: string): string | null => n?.childForFieldName?.(f)?.text ?? null
 
+/**
+ * Is this text identifier-SHAPED, by the language's own character rule?
+ *
+ * Replaces three copies of `/^[A-Za-z_$][A-Za-z0-9_$]*$/` this file carried until
+ * 2026-10-09 (`ts-no-regex-count.ts` read 3 `RegularExpressionLiteral` nodes here
+ * and 0 everywhere else in the lane's oracles). The fleet rule is not one regular
+ * expression in any analyzer, census or oracle (LAPTOP-B brief §2): a regex over
+ * source text matches inside comments and string literals, misses nested syntax,
+ * and breaks silently on the next grammar version, while a character scan cannot.
+ *
+ * Semantics are identical to the pattern it replaces, including `$` and `_` as
+ * identifier characters and the empty string as false, so no edge can move — and
+ * the audit re-run after the change is what holds that claim to account rather
+ * than this comment.
+ */
+function isIdentifierText(text: string): boolean {
+  if (text.length === 0) return false
+  const start = text.charCodeAt(0)
+  const wordChar = (c: number): boolean =>
+    (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95 || c === 36
+  if (!wordChar(start)) return false
+  for (let i = 1; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    if (!wordChar(c) && !(c >= 48 && c <= 57)) return false
+  }
+  return true
+}
+
 /** Nodes that DECLARE a name this file can resolve to. */
 const DECLARERS = new Set([
   "class_declaration",
@@ -318,7 +346,7 @@ export function declaredNames(root: any): Set<string> {
     if (DECLARERS.has(n.type)) {
       if (n.type !== "variable_declarator" || !insideFunctionBody(n)) {
         const nm = field(n, "name")
-        if (nm && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(nm)) out.add(nm)
+        if (nm && isIdentifierText(nm)) out.add(nm)
       }
     }
     for (const c of named(n)) visit(c)
@@ -327,9 +355,35 @@ export function declaredNames(root: any): Set<string> {
   return out
 }
 
-/** Names bound by a formal-parameter list, including destructuring and rest. */
+/**
+ * The parameter node of a function-like node, under EITHER field name.
+ *
+ * Measured against this repo's tree-sitter-typescript, `arrow_function`:
+ *
+ *   `name => name`      `parameter=identifier`              ← SINGULAR
+ *   `(x) => x`          `parameters=formal_parameters`
+ *   `({ p, q }) => p`   `parameters=formal_parameters`
+ *
+ * A lookup of `parameters` alone returns null for the first shape, so the
+ * parameter was never bound and a mention of it resolved to a file declaration
+ * of the same name. The analyzer's own shadow scan carried the identical blind
+ * spot; both sides are fixed from the same probe rather than from each other.
+ */
+function paramNodeOf(n: any): any {
+  return n?.childForFieldName?.("parameters") ?? n?.childForFieldName?.("parameter") ?? null
+}
+
+/**
+ * Names bound by a formal-parameter list, including destructuring and rest, and
+ * including the SINGLE-PARAMETER shape where the parameter node is the binding
+ * itself rather than a wrapper holding one.
+ */
 export function paramNames(fp: any): string[] {
   const out: string[] = []
+  if (!fp) return out
+  // `name => …` and `({ p, q }) => …` hand the parameter node over directly.
+  if (fp.type === "identifier") return [fp.text]
+  if (fp.type.endsWith("_pattern")) return patternNames(fp)
   for (const p of named(fp)) {
     if (p.type === "required_parameter" || p.type === "optional_parameter") {
       const nm = p.childForFieldName?.("pattern")
@@ -417,7 +471,7 @@ export function deriveTypeScriptReferencesTruth(root: any): TruthEdge[] {
       t === "construct_signature" ||
       t === "function_signature"
     if (pushes) {
-      const fp = n.childForFieldName?.("parameters")
+      const fp = paramNodeOf(n)
       const next = new Set(bound)
       if (fp) for (const b of paramNames(fp)) next.add(b)
       for (const c of named(n)) collect(c, sourceName, next)
@@ -446,7 +500,7 @@ export function deriveTypeScriptReferencesTruth(root: any): TruthEdge[] {
       // or interface, so `q = Ty` and `p: Ty` in a class body are mentions by the
       // CLASS, not by the field (measured: both attribute to `C`).
       const own = t === "variable_declarator" ? field(n, "name") : null
-      if (ty) collect(ty, own && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(own) ? own : sourceName, new Set(childBound))
+      if (ty) collect(ty, own && isIdentifierText(own) ? own : sourceName, new Set(childBound))
       if (value) collect(value, sourceName, new Set(childBound))
       // the name slot itself is a binding, never a mention
       return
@@ -543,7 +597,7 @@ export function deriveTypeScriptReferencesTruth(root: any): TruthEdge[] {
       })()
     const sourceable =
       name !== null &&
-      /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) &&
+      isIdentifierText(name) &&
       n.type !== "public_field_definition" &&
       n.type !== "property_signature" &&
       n.type !== "method_signature" &&
@@ -562,7 +616,7 @@ export function deriveTypeScriptReferencesTruth(root: any): TruthEdge[] {
       // same sites; the split is what the analyzer actually does, and it is
       // recorded here as a measured asymmetry rather than smoothed over.
       const value = n.childForFieldName("value")
-      const fnParams = value?.childForFieldName?.("parameters")
+      const fnParams = paramNodeOf(value)
       const bound = new Set<string>()
       if (fnParams) for (const b of paramNames(fnParams)) bound.add(b)
       if (fnParams) for (const tp of named(fnParams)) {
@@ -583,7 +637,7 @@ export function deriveTypeScriptReferencesTruth(root: any): TruthEdge[] {
     } else if (sourceable) {
       becameSource = name
       const bound = new Set<string>()
-      const fp = n.childForFieldName?.("parameters")
+      const fp = paramNodeOf(n)
       if (fp) for (const b of paramNames(fp)) bound.add(b)
       for (const c of named(n)) collect(c, name!, new Set(bound))
     } else if (owner && OWNED_BY_OWNER.has(n.type)) {

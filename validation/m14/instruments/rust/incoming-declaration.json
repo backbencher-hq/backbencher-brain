@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "lang": "rust",
+    "asked": "the fleet gate MEASURES rust and exits 1 on its fleet-wide bar; this declaration RATCHETS the same measurement per type, so a class can only move deliberately.",
+    "instrument": "script/m14/incoming-gate.ts (single measurement; no second instrument)",
+    "instrumentVersion": "row schema: edges/resolved/ambiguousByDecl/ambiguousByKind/unresolved/markedExternal + 25-name worklists",
+    "sample": 200,
+    "corpusTotal": 267,
+    "corpusRepos": 3,
+    "parsed": 200,
+    "qualifiedNameAliases": 0,
+    "metric": "ambiguous counted by DECLARATIONS (distinct-file declarations), not distinct kinds",
+    "analyzer": "src/ast/real-rust-analyzer.ts",
+    "analyzerDigest": "sha256:3202b93bf77f143f",
+    "generated": "2026-10-10",
+    "direction": "resolved/external are FLOORS (may not decrease). ambiguous/otherUnresolved/unclassed are CEILINGS (may not increase). The classes are siblings that partition the edges: edges = resolved + ambiguous + otherUnresolved + external + unclassed, and the last of those is checked to be 0 rather than assumed."
+  },
+  "rules": {
+    "resolved": "target matched exactly one declaration in the 200-file sample's declaration pool (name or qualifiedName alias). A floor, not a ceiling: resolution is the point of the lane.",
+    "external": "target matched no declaration and the edge carries the analyzer's provable external marker (isExternalTarget:true + a recorded externalReason). A floor: such an edge must keep being able to say so. Marking is NOT claimed complete — see otherUnresolved.",
+    "ambiguous": "target matched two or more declarations. Counted by DECLARATION (incoming-gate.ts) — a name declared in n files counts n. The pool is file-local, so a member name emitted unqualified by one file can collide with another file's declaration of the same word.",
+    "otherUnresolved": "target matched no declaration and carries no marker. This is the backlog. It is explicitly NOT asserted to be third-party: each name in it is either (a) a member path of a foreign type the analyzer cannot see, (b) a local declaration question the target spelling defeats, or (c) project code not present in the 200-file sampled pool.",
+    "unclassed": "edges with an empty target string. Ceiling 0, always: the instrument can only classify an edge it has a target for, and an empty target is a defect in the emitting type, not a class."
+  },
+  "notes": [
+    "A ceiling is a claim about what is known and accepted, never that the class is fine. Repaying a cluster means lowering its ceiling in the same commit that lowers the number.",
+    "This gate shares the instrument with the fleet gate on purpose: two instruments measuring the same population and disagreeing is the failure mode script/m14/verify-honesty.ts exists to catch. One measurement, two verdicts — the fleet's bar and Rust's declaration.",
+    "The worklist printed below each type is the instrument's own (up to 25 names per type, per run). A count that cannot be walked back to its names is not a measurement.",
+    "EXTERNAL IS 0 on all ten types, and that is a state, not a defect claim: this lane's analyzer emits no provable external marker, so by construction every unbound target in it is backlog (cli/unknown targets included) and the ceiling carries the whole weight. Marking is future work with a proof obligation the Java precedent shows how to meet: an edge may only join the external class if the analyzer can record WHY the target is outside the project (see real-java-analyzer.ts's isExternalTarget + externalReason), because an unmarked unresolved edge and a marked one are different claims.",
+    "qualifiedNameAliases 0: this lane publishes no qualified names, so the qualified-endpoint resolution rule (java's qualifiedNameAliases 3,040) has nothing to bind with here and every alias-shaped target stays unbound by rule rather than by accident."
+  ],
+  "types": {
+    "calls": {
+      "resolved": 8776,
+      "external": 0,
+      "ambiguous": 8922,
+      "otherUnresolved": 13061,
+      "unclassed": 0
+    },
+    "uses": {
+      "resolved": 2847,
+      "external": 0,
+      "ambiguous": 2894,
+      "otherUnresolved": 546,
+      "unclassed": 0
+    },
+    "contains": {
+      "resolved": 2700,
+      "external": 0,
+      "ambiguous": 3283,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "imports": {
+      "resolved": 121,
+      "external": 0,
+      "ambiguous": 74,
+      "otherUnresolved": 914,
+      "unclassed": 0
+    },
+    "references": {
+      "resolved": 1599,
+      "external": 0,
+      "ambiguous": 2993,
+      "otherUnresolved": 2324,
+      "unclassed": 0
+    },
+    "exports": {
+      "resolved": 1484,
+      "external": 0,
+      "ambiguous": 306,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "extends": {
+      "resolved": 1,
+      "external": 0,
+      "ambiguous": 1,
+      "otherUnresolved": 5,
+      "unclassed": 0
+    },
+    "implements": {
+      "resolved": 63,
+      "external": 0,
+      "ambiguous": 37,
+      "otherUnresolved": 312,
+      "unclassed": 0
+    },
+    "overrides": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 1180,
+      "unclassed": 0
+    },
+    "instantiates": {
+      "resolved": 114,
+      "external": 0,
+      "ambiguous": 874,
+      "otherUnresolved": 43,
+      "unclassed": 0
+    }
+  }
+}

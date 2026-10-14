@@ -60,40 +60,22 @@ mkdirSync(path.join(root, "src"), { recursive: true })
 writeFileSync(path.join(root, "src", "app.ts"), "export function healthy(): number { return 1 }\n")
 await indexProjectParallel(projectId, root, {})
 
-// WAS: `BrainDatabase.getRawInstanceSync ? … : undefined`.
-//
-// getRawInstanceSync DOES NOT EXIST. Not in src/brain/database.ts, not anywhere — `grep -rn
-// getRawInstanceSync src/` returns nothing, and the real accessor is
-// `export async function getRawInstance(projectId): Promise<CoreDatabase>`. So the ternary's
-// condition was permanently falsy, `raw` was permanently `undefined`, and `count` was
-// permanently -1. The `:sym${count}` suffix of this fingerprint was a constant.
-//
-// That is the same shape as the swallowed crashes fixed in the sibling m13 gates: the code
-// LOOKED like it was measuring the symbol count and was not. It did not produce a false pass
-// — the size+mtime half still varies on any write, and that is a stronger mutation signal
-// than a count — but the fingerprint advertised a measurement it never made, and a reader
-// comparing two fingerprints would see `:sym-1` in both and reasonably conclude the symbols
-// had not changed, which is not what was established.
-async function fingerprint(pid: string): Promise<string> {
+function fingerprint(pid: string): string {
   const dbDir = path.dirname(BrainDatabase.getDbPath(pid))
   const files = readdirSync(dbDir).sort()
   const parts = files.map((f) => {
     const p = path.join(dbDir, f)
     return `${f}:${statSync(p).size}:${statSync(p).mtimeMs}`
   })
-  // The real accessor is async, so this function is too. It was made async rather than
-  // dropping the count, because the count is the part that survives a mutation which keeps
-  // every file's size and mtime identical — rare, but exactly the case a fingerprint exists
-  // to catch.
-  const raw = await BrainDatabase.getRawInstance(pid)
-  const count = (raw.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as { c?: number } | undefined)?.c ?? -1
+  const raw = BrainDatabase.getRawInstanceSync ? BrainDatabase.getRawInstanceSync(pid) : undefined
+  const count = raw ? (raw.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any)?.c ?? -1 : -1
   return createHash("sha256").update(parts.join("|")).digest("hex").slice(0, 16) + `:sym${count}`
 }
 
-const before = await fingerprint(projectId)
+const before = fingerprint(projectId)
 {
   const report = await getUnifiedHealth(projectId, root, { refresh: false })
-  const after = await fingerprint(projectId)
+  const after = fingerprint(projectId)
   harness.negative("runtime: plain health call performs ZERO index mutation", after === before, `changed=${after !== before}`)
   harness.check("runtime: plain health call returns a report", typeof report === "object" && report !== null, "no report")
 }
@@ -101,17 +83,17 @@ const before = await fingerprint(projectId)
 {
   // Explicit refresh: mutate source, then refresh=true → fingerprint changes.
   writeFileSync(path.join(root, "src", "app.ts"), "export function healthy(): number { return 2 }\nexport function added(): number { return 3 }\n")
-  const beforeRefresh = await fingerprint(projectId)
+  const beforeRefresh = fingerprint(projectId)
   await getUnifiedHealth(projectId, root, { refresh: true, wait: true })
-  const afterRefresh = await fingerprint(projectId)
+  const afterRefresh = fingerprint(projectId)
   harness.negative("runtime: refresh=true explicitly mutates the index", afterRefresh !== beforeRefresh, `changed=${afterRefresh !== beforeRefresh}`)
 }
 
 {
   // Explicit force: fingerprint must change too (documented full reindex).
-  const beforeForce = await fingerprint(projectId)
+  const beforeForce = fingerprint(projectId)
   await getUnifiedHealth(projectId, root, { force: true, wait: true })
-  const afterForce = await fingerprint(projectId)
+  const afterForce = fingerprint(projectId)
   harness.check("runtime: force=true performs an explicit in-place reindex", afterForce !== beforeForce, `changed=${afterForce !== beforeForce}`)
 }
 

@@ -418,7 +418,63 @@ const jsonTopLevelValuesShareOneParentPath = (r: any) => ({
   })),
 })
 
+/**
+ * Reverts the document identity to the bare filesystem BASENAME — the state before the identity
+ * was scoped by the project-relative directory chain.
+ *
+ * The transform models the defect by DELETING the scope rather than by patching analyzer source,
+ * because that is the honest shape of it: a caller that supplies no project root still gets exactly
+ * this result, and the pre-fix analyzer got it for every caller. The scope is read off the module
+ * symbol the analyzer published (`packages.left.package`), so the transform needs no knowledge of
+ * the corpus, the project, or the fixture that named it — it reconstructs the unscoped identity
+ * from whatever scope is actually present, and is a NO-OP when there is no scope to remove.
+ *
+ * Every qualified path hangs off the module, so the scope is stripped from the module's own
+ * `name`/`qualifiedName`, from every symbol's `qualifiedName` and `ownerName`, and from both ends
+ * of every relationship. Removing it from only the module would model a defect that does not
+ * exist, since nothing downstream resolves a member without its owner's prefix.
+ *
+ * Caught by `validation/m14/fixtures/json/scoped-identity-gate.ts`, which fails 4 assertions when
+ * this transform is applied: the two same-named documents become indistinguishable, and the four
+ * `contains` targets they share (`name`, `version`, `dependencies`, `dependencies.lodash`) are
+ * named by the fixture rather than counted.
+ */
+const jsonDocumentIdentityNotProjectScoped = (r: any) => {
+  const moduleSymbol = (r.symbols ?? []).find((s: any) => s.kind === "module")
+  if (!moduleSymbol) return r
+  const scoped = String(moduleSymbol.name ?? "")
+  const cut = scoped.lastIndexOf(".")
+  if (cut < 0) return r // already unscoped — there is no scope to remove, so nothing to model
+  const stem = scoped.slice(cut + 1)
+  const unscoped = (v: unknown): string => {
+    const s = String(v ?? "")
+    return s.startsWith(scoped) ? stem + s.slice(scoped.length) : s
+  }
+  return {
+    ...r,
+    symbols: (r.symbols ?? []).map((s: any) => ({
+      ...s,
+      name: unscoped(s.name),
+      qualifiedName: unscoped(s.qualifiedName),
+      ownerName: typeof s.ownerName === "string" && s.ownerName.length > 0 ? unscoped(s.ownerName) : s.ownerName,
+    })),
+    relationships: (r.relationships ?? []).map((x: any) => ({
+      ...x,
+      source: unscoped(x.source),
+      target: unscoped(x.target),
+    })),
+  }
+}
+
 export const JSON_MUTANTS: Mutant[] = [
+  {
+    id: "json/document-identity-not-project-scoped",
+    language: "json",
+    defectClass: "unresolvable-identity",
+    description:
+      "A document's identity reverts to the bare filesystem basename, so every `package.json` in a project publishes a module symbol named `package` and every qualified path beneath it inherits the collision. Measured over a 601-file stride of the corpus (`validation/m14/measurements/json-ambiguity-split-601-after.json`): 90 colliding target names across 1,218 collision symbols, with `package.dependencies` alone carrying 3 declarations. The shared resolver binds a bare name only under `HAVING COUNT(*) = 1`, so the `contains` edge asserting that `package` owns `dependencies` cannot be walked in EITHER direction — this is cause A of the fleet's incoming problem and it is not reducible by emitting fewer edges, because an ambiguous edge is ONE edge attributed to N declarations. Caught by `validation/m14/fixtures/json/scoped-identity-gate.ts` (4 assertions), which the lane's own 17 fixtures cannot reach: `script/m14/run-fixtures.ts` builds `analyzeContext` without `projectRoot`, so no fixture on that runner can observe a scoped identity at all.",
+    transform: jsonDocumentIdentityNotProjectScoped,
+  },
   {
     id: "json/top-level-values-share-one-parent-path",
     language: "json",

@@ -103,24 +103,9 @@
       "./symbols"
     ]
   },
-  "currentCommit": "554f889a5617ddf2f72c4c8bd2abab3b701f0bde",
-  "sourceFingerprint": "3f311f28aa166814ee1ed47cae1a1644ef1cd522e10af50a99059567d596c4d2",
-  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
-  "sourceFingerprintCovers": [
-    "script/m55/verify-call-hierarchy.ts",
-    "src/brain/database.ts",
-    "src/lsp/call_hierarchy.ts",
-    "src/util/project-id.ts",
-    "script/m55/t2-fixture.ts"
-  ],
+  "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
   "workingTreeRelevantChanges": [
-    "script/m55/verify-call-hierarchy.ts",
-    "validation/m16/results/D1.json",
-    "validation/m16/results/D2.json",
-    "validation/m16/results/D3.json",
-    "validation/m23/results/P3-edge.json",
     "validation/m24/results/D1.json",
-    "validation/m24/results/G1.json",
     "validation/m24/results/L1.json",
     "validation/m24/results/L2.json",
     "validation/m24/results/L3.json",
@@ -129,40 +114,7 @@
     "validation/m24/results/P1.json",
     "validation/m24/results/P2.json",
     "validation/m24/results/V1.json",
-    "validation/m24/results/X1.json",
-    "validation/m24/results/manifest.json",
-    "validation/m25/results/D1-install.json",
-    "validation/m25/results/D1.json",
-    "validation/m25/results/E1.json",
-    "validation/m25/results/E2.json",
-    "validation/m25/results/E3-render-capture.txt",
-    "validation/m25/results/E3.json",
-    "validation/m25/results/E4-openvsx.json",
-    "validation/m25/results/E4.json",
-    "validation/m25/results/E5.json",
-    "validation/m25/results/E7-darwin.json",
-    "validation/m25/results/E7-linux.json",
-    "validation/m25/results/E7-windows.json",
-    "validation/m25/results/F-ANTIGRAVITY.json",
-    "validation/m25/results/F-CURSOR.json",
-    "validation/m25/results/F-WINDSURF.json",
-    "validation/m25/results/G1.json",
-    "validation/m25/results/V1.json",
-    "validation/m25/results/X1.json",
-    "validation/m25/results/manifest.json",
-    "validation/m44/results/U4.json",
-    "validation/m44/results/U5.json",
-    "validation/m55/results/P1.json",
-    "validation/m55/results/T1.json",
-    "validation/m55/results/T2.json",
-    "validation/m55/results/T4.json",
-    "validation/m55/results/T5.json",
-    "validation/m55/results/V1-action-args.json",
-    "validation/m55/results/V1-status-panel.json",
-    "validation/m61/results/V3.json",
-    "validation/m61/results/V4.json",
-    "validation/m61/results/V5.json",
-    "validation/m62/results/A1.json"
+    "validation/m55/results/T3.json"
   ],
   "volatileFields": [
     "generatedAt",
@@ -172,9 +124,9 @@
   ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-10-11T14:11:31.715Z",
+  "generatedAt": "2026-10-05T16:51:40.037Z",
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/backbencher-brain/validation/m55/fixtures/t2-workspace",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/merge-upstream/validation/m55/fixtures/t2-workspace",
     "files": [
       "src/store.ts",
       "src/loop.ts",
@@ -226,7 +178,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-11T14:11:31.717Z",
-    "contentSha256": "53369fda0142dfd71bdeebfbbe1cdaab32824cec64a7c441955d9d790e560e40"
+    "sealedAt": "2026-10-05T16:51:40.039Z",
+    "contentSha256": "3abca5f7290da0e19310f6012a802996ab01a150c0df54407d58aec38fa01656"
   }
 }

@@ -7,7 +7,6 @@
 // an unavailable fork is recorded with a reason, never silently skipped
 // (contract: silence is guilt; the E5/E6 waiver rule).
 import { spawnSync } from "node:child_process"
-import { resolveEditorCli, describeResolution } from "../lib/editor-cli.ts"
 
 /** The forks E6 verifies (research base: all VS Code forks, OpenVSX consumers). */
 export const FORKS = [
@@ -24,13 +23,7 @@ export type ForkAvailability =
 export function forkAvailability(fork: { name: string; cli: string; flag: string }): ForkAvailability {
   const probe = spawnSync("which", [fork.cli], { encoding: "utf8" })
   if (probe.status !== 0 || !probe.stdout.trim()) {
-    // Name every place that was looked at. This reason used to say only
-    // "not found on PATH", which is true but incomplete: the same defect that made
-    // four other gates look for `/usr/bin/code` and fail on a machine that HAS VS Code
-    // installed applies here. A reader told "not found on PATH" who has the app in
-    // /Applications has been sent to the wrong place — the CLI ships in the bundle, so
-    // the bundle is checked before declaring absence.
-    return { name: fork.name, available: false, reason: describeResolution(resolveEditorCli(fork.cli), fork.cli) }
+    return { name: fork.name, available: false, reason: `${fork.cli} CLI not found on PATH — install or record the waiver (E6 honest blocked state)` }
   }
   const version = spawnSync(fork.cli, [fork.flag], { encoding: "utf8", timeout: 30_000 })
   if (version.status !== 0) {

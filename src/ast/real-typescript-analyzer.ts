@@ -5751,9 +5751,28 @@ class TypeScriptAnalysisRunner {
         // specifier with neither is a runtime dependency.
         const itemTypeOnly = typeOnly || itemTypeOnlyFlag
 
+        // THE BARE ITEM NAME, FOR A LOCAL MODULE ONLY. THREE lanes emit `<module>:<item>` — this one,
+        // javascript and python — and a
+        // colon makes the target path-like to the gate's `pathLikeTarget` AND is refused by
+        // `_i13_pick`'s own predicate (`instr(target_external,':') = 0`, parallel-indexer.ts:4484)
+        // — two independent refusals, measured: `imports` resolved 0 with 0 ambiguous in every lane.
+        // The edge's target is the SYMBOL it refers to; the module is already in `metadata.module`.
+        //
+        // NOT JAVA, and the count was corrected here after being written wrong: `real-java-analyzer.ts`
+        // emits `target: moduleName` with no colon at all (`:600`, `:658`), and `grails-core` measures
+        // 0 colon edges across 1,942 java files — java's `imports` zero has a different cause and must
+        // not be priced with this change.
+        //
+        // LOCAL ONLY, and the restriction is the difference between a fix and a defect: measured on
+        // the recorded ceiling, 432 (ts) + 276 (js) + 5 (py) EXTERNAL items would resolve to a
+        // project-local symbol that merely SHARES THE NAME — a false binding, not a fix. A relative
+        // (`./`, `../`) or absolute specifier is local by the grammar of the source itself; anything
+        // else keeps its current spelling untouched, which is what makes the external half provably
+        // unmoved.
+        const bareLocalItem = (modulePath.startsWith(".") || modulePath.startsWith("/")) && itemName !== "" && itemName !== "*"
         relationships.push({
           source: this.moduleLeafName(),
-          target: `${modulePath}:${itemName}`,
+          target: bareLocalItem ? itemName : `${modulePath}:${itemName}`,
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
           // M59 (#825): the imported NAME's own line, not the `import` line.

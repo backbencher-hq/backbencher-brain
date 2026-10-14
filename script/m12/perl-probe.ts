@@ -4,7 +4,7 @@ const file = process.argv[2] || "$HOME/fixtures/repositories/mojo/lib/Mojoliciou
 const result = await parseFile(file, process.cwd())
 console.log("=== SYMBOLS ===")
 for (const s of result.symbols ?? []) {
-  console.log(`${s.kind}\t${s.name}\tL${s.range?.startLine}\towner=${s.ownerName || ""}\tvisibility=${s.visibility || ""}`)
+  console.log(`${s.kind}\t${s.name}\tL${s.startLine}\towner=${s.ownerName || ""}\tvisibility=${s.visibility || ""}`)
 }
 console.log("=== RELATIONSHIPS ===")
 for (const r of result.relationships ?? []) {

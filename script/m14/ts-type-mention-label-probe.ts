@@ -68,6 +68,8 @@ const surfaceOf = (r: any): string => {
 
 const surfaces = new Map<string, number>()
 const both: string[] = []
+const bothSameLine: string[] = []
+const bothDiffLine: string[] = []
 const unresUses = new Map<string, number>()
 const unresRefs = new Map<string, number>()
 let idx = 0
@@ -90,25 +92,45 @@ const worker = async (): Promise<void> => {
     for (const s of r?.symbols ?? []) if (s?.name) names.add(String(s.name))
     const usesKeys = new Set<string>()
     const refsKeys = new Set<string>()
+    // LINE-SCOPED keys. The pair key alone cannot tell ONE READ PUBLISHED TWICE
+    // from TWO DIFFERENT READS of the same name wearing one label each, and the
+    // first version of this probe reported the second shape as if it were the
+    // first: `Node|config` on node.ts is a parameter-property DECLARATION at :60
+    // under `references` and a member read at :105 under `uses` — same name,
+    // same file, two sites, no contract broken. A metric for "one read, one
+    // label" has to carry the site, or it counts the name, not the read.
+    const usesLineKeys = new Set<string>()
+    const refsLineKeys = new Set<string>()
     for (const x of r?.relationships ?? []) {
       const label = String(x?.type ?? "")
       const key = `${x?.source}|${x?.target}`
+      const ln = Number(x?.metadata?.line ?? x?.line ?? x?.line_number ?? 0)
+      const lineKey = `${key}|@${ln}`
       const surf = surfaceOf(x)
       surfaces.set(surf, (surfaces.get(surf) ?? 0) + 1)
       if (label === "uses") {
         usesKeys.add(key)
+        usesLineKeys.add(lineKey)
         totalUses++
         if (names.has(String(x?.target))) usesResolves++
         else unresUses.set(String(x?.target), (unresUses.get(String(x?.target)) ?? 0) + 1)
       }
       if (label === "references") {
         refsKeys.add(key)
+        refsLineKeys.add(lineKey)
         totalRefs++
         if (names.has(String(x?.target))) refsResolves++
         else unresRefs.set(String(x?.target), (unresRefs.get(String(x?.target)) ?? 0) + 1)
       }
     }
     for (const k of usesKeys) if (refsKeys.has(k) && both.length < 200) both.push(`${rel} :: ${k}`)
+    for (const k of usesLineKeys) if (refsLineKeys.has(k) && bothSameLine.length < 200) bothSameLine.push(`${rel} :: ${k}`)
+    for (const k of usesKeys) {
+      if (!refsKeys.has(k)) continue
+      let sameLine = false
+      for (const lk of usesLineKeys) if (lk.startsWith(`${k}|@`) && refsLineKeys.has(lk)) sameLine = true
+      if (!sameLine && bothDiffLine.length < 200) bothDiffLine.push(`${rel} :: ${k}`)
+    }
   }
 }
 await Promise.all(Array.from({ length: 8 }, () => worker()))
@@ -126,5 +148,9 @@ console.log(`  unresolved uses targets, top:       ${top(unresUses, 15)}`)
 console.log(`  unresolved references targets, top: ${top(unresRefs, 15)}`)
 console.log(`\n(source,target) pairs published under BOTH uses AND references: ${both.length}${both.length === 200 ? "+" : ""}`)
 for (const b of both.slice(0, 15)) console.log(`  ${b}`)
-const out: any = { at: new Date().toISOString(), corpus: REPO, revision: rev, files: admitted.length, parsed, surfaces: Object.fromEntries(surfaces), uses: { total: totalUses, resolves: usesResolves, topUnresolved: [...unresUses.entries()].sort((a, b) => b[1] - a[1]).slice(0, 60) }, references: { total: totalRefs, resolves: refsResolves, topUnresolved: [...unresRefs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 60) }, bothLabels: both }
+console.log(`\n  SAME (source,target,line) under BOTH labels = ONE READ, TWO LABELS: ${bothSameLine.length}${bothSameLine.length === 200 ? "+" : ""}`)
+for (const b of bothSameLine.slice(0, 15)) console.log(`    ${b}`)
+console.log(`  pairs whose two labels are at DIFFERENT lines (two reads, not a violation): ${bothDiffLine.length}${bothDiffLine.length === 200 ? "+" : ""}`)
+for (const b of bothDiffLine.slice(0, 15)) console.log(`    ${b}`)
+const out: any = { at: new Date().toISOString(), corpus: REPO, revision: rev, files: admitted.length, parsed, surfaces: Object.fromEntries(surfaces), uses: { total: totalUses, resolves: usesResolves, topUnresolved: [...unresUses.entries()].sort((a, b) => b[1] - a[1]).slice(0, 60) }, references: { total: totalRefs, resolves: refsResolves, topUnresolved: [...unresRefs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 60) }, bothLabels: both, bothLabelsSameLine: bothSameLine, bothLabelsDifferentLine: bothDiffLine }
 if (OUT) { fs.writeFileSync(OUT, JSON.stringify(out, null, 2)); console.log(`\nwrote ${OUT}`) }

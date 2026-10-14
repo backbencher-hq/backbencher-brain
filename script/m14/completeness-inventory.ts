@@ -178,13 +178,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     fixturesDir: "validation/m14/fixtures/go",
     docs: ["docs/analyzers/go.md", "docs/analyzers/real-go-analyzer.md"],
     differentialCheck: "differential-go",
-    // The corpus directory is go_tools (underscore), not go-tools. Every gate that
-    //  asked for the hyphen form was reading a directory that has never existed on any
-    //  machine, so the corpus leg passed VACUOUSLY — no error, no finding, nothing
-    //  measured. script/m13/verify-analyze-e2e-corpus.ts reported exactly this once the
-    //  corpus root was fixed: "corpus go-tools/go/analysis/passes (Go): present … missing".
-    //  Verified against the corpus on disk, which lists go_tools.
-    perfKey: "go_tools:go",
+    perfKey: "go-tools:go",
     requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "imports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "go/complexity-parity" },
@@ -242,7 +236,16 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-dart-analyzer.md"],
     differentialCheck: "differential-dart",
     perfKey: "proxicall:dart",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "overrides", "imports"],
+    // `references` and `exports` are ADDED 2026-10-12, and the omission was a contract-row defect
+    // rather than a policy. Dart publishes references 73,561 edges (44,181 ambiguous by declaration,
+    // 0 unresolved) and exports 2,030; the lane's own `coverage.implemented` already names BOTH; and
+    // its fixtures already pin both (14 `references` pins in type-references.expectation.json alone,
+    // measured). So section B's reverse check — "EMITTED but absent from requiredKinds" — was
+    // convicting a row that disagreed with the lane's coverage block AND with its own fixtures, and
+    // the 44,181 ambiguous `references` rows were outside every lever table this programme kept,
+    // including the receiver-cause pricing that sized the dart residual.
+    // swift's row (below) names `references`; the two rows are now consistent.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "overrides", "imports", "references", "exports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "dart/payload-and-complexity" },
       parameters: { key: "expectParameters", pin: "dart/payload-and-complexity" },
@@ -296,7 +299,16 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // PY-6, PY-7 and PY-8 all concern, and while it sat outside the required list the
     // gate had nothing to say about any of them. `exports` was worse: emitted, unpinned
     // by ANY fixture, and unrequired, so nothing in the repository could see it at all.
-    requiredKinds: ["calls", "extends", "instantiates", "uses", "contains", "imports", "references", "overrides", "exports"],
+    //
+    // ROUND 10 found the THIRD instance of the same omission with the same instrument:
+    // `implements` was emitted (333 edges over the 11,488-file population — the PY-D3/
+    // PY-26 wave's whole subject) while this row did not name it, so the inventory could
+    // report only "EMITTED but absent from requiredKinds". Named here for the same reason
+    // as the other two: a kind outside the required list cannot fail. The lane's
+    // implements fixtures (`interface-implements`, `interface-qualified-subscript-head`,
+    // and the store-heritage seam) already pin both directions, so the row is satisfiable
+    // rather than aspirational.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "imports", "references", "overrides", "exports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "python/payload-and-complexity" },
     },

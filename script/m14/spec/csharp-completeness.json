@@ -53,8 +53,12 @@
       "type_parameter_constraint",
       "constructor_constraint",
       "primary_constructor_base_type",
-      "bracketed_parameter_list"
-    ]
+      "bracketed_parameter_list",
+      "ERROR"
+    ],
+    "_notes": {
+      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-csharp-analyzer.ts:1066-1067), and `literal-callee-recovery.cs` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
+    }
   },
   "internal_silent": {
     "types": [
@@ -221,7 +225,8 @@
       "preproc_undef",
       "element_binding_expression",
       "implicit_parameter",
-      "interpolation_quote"
+      "interpolation_quote",
+      "MISSING"
     ],
     "adjudication": {
       "method": "script/m14/adjudicate-csharp-silent-verdicts.ts --list <paths> --limit 400",
@@ -229,7 +234,7 @@
       "sample": "400 roslyn files",
       "absent": {
         "count": 48,
-        "meaning": "never occurs in the sample \u2014 the verdict is untested, not verified",
+        "meaning": "never occurs in the sample — the verdict is untested, not verified",
         "types": [
           "string_literal_encoding",
           "verbatim_string_literal",
@@ -283,17 +288,20 @@
       },
       "trivial": {
         "count": 22,
-        "meaning": "occurs and its subtree contains nothing the analyzer publishes \u2014 confirmed by measurement"
+        "meaning": "occurs and its subtree contains nothing the analyzer publishes — confirmed by measurement"
       },
       "suspect": {
         "count": 94,
         "meaning": "occurs AND contains a publishable node; all inspected are structural containers whose contents are published by the nodes inside them (argument holds reads, if_statement holds calls, type_argument_list holds declared-type references, catch_declaration binds a variable). No probable defect found. Containment alone is not a defect, which is why this bucket is reported rather than acted on."
       },
-      "caveat": "This measures OCCURRENCE and CONTAINMENT, not correctness. It cannot prove a verdict right; it can only say which verdicts were never exercised, and that is the finding. A wider corpus would move types between the buckets \u2014 the 48 absent are the ones a larger sample would test first."
+      "caveat": "This measures OCCURRENCE and CONTAINMENT, not correctness. It cannot prove a verdict right; it can only say which verdicts were never exercised, and that is the finding. A wider corpus would move types between the buckets — the 48 absent are the ones a larger sample would test first."
+    },
+    "_notes": {
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-csharp-analyzer.ts:1066-1067); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
     }
   },
   "gap": {
-    "_description": "csharp differential oracle (deriveCSharpEdges) PINNED at powershell corpus floor 0 missing / 0 unexplained; completeness A-H 8/8 pass. Declared residual (300-file sweep): unsafe C# COM-interop vtable-dispatch calls parse as degenerate tree-sitter invocation_expression subtrees (pointer-slot indexes, `if(...)` statements), so those 4 calls surface as `uses` (confidence 0.7) rather than `calls` \u2014 bounded, logged, and outside the gated 60-file floor which is deterministic-unclean-free.",
+    "_description": "csharp differential oracle (deriveCSharpEdges) PINNED at powershell corpus floor 0 missing / 0 unexplained; completeness A-H 8/8 pass. Declared residual (300-file sweep): unsafe C# COM-interop vtable-dispatch calls parse as degenerate tree-sitter invocation_expression subtrees (pointer-slot indexes, `if(...)` statements), so those 4 calls surface as `uses` (confidence 0.7) rather than `calls` — bounded, logged, and outside the gated 60-file floor which is deterministic-unclean-free.",
     "gaps": []
   },
   "design_decision": {
@@ -310,7 +318,7 @@
         "node_type": "implicit_object_creation_expression (target-typed new in collection/array initializers)",
         "status": "FIXED",
         "question": "OO family closure #613 (fsharp corpus): how do target-typed new() sites inside collection/array member initializers resolve?",
-        "answer": "Through the member ELEMENT type (EnumSettingEntry[] x = [new()] -> EnumSettingEntry); direct field/property initializers use the declared type base; a new() nested in a call argument resolves to nothing. One shared resolver (csharpResolveTargetTypedNew + csharpMemberDeclaredTypeText) now serves the analyzer AND the differential oracle \u2014 the old divergent copies shared the self-map blind spot (member NAME read as the type) that F5 could not see. pinned: csd14-array-member-news fixture + csharp/array-member-new-selfmap mutant."
+        "answer": "Through the member ELEMENT type (EnumSettingEntry[] x = [new()] -> EnumSettingEntry); direct field/property initializers use the declared type base; a new() nested in a call argument resolves to nothing. One shared resolver (csharpResolveTargetTypedNew + csharpMemberDeclaredTypeText) now serves the analyzer AND the differential oracle — the old divergent copies shared the self-map blind spot (member NAME read as the type) that F5 could not see. pinned: csd14-array-member-news fixture + csharp/array-member-new-selfmap mutant."
       },
       {
         "id": "CS-R1",
@@ -337,7 +345,7 @@
         "id": "CS-B3",
         "node_type": "bare catch complexity",
         "status": "RULED",
-        "question": "C# review (2026-09-13): both catch forms parse as catch_clause containing an optional catch_declaration \u2014 counting the inner declaration counted typed catches but never bare `catch { }`.",
+        "question": "C# review (2026-09-13): both catch forms parse as catch_clause containing an optional catch_declaration — counting the inner declaration counted typed catches but never bare `catch { }`.",
         "resolution": "FIXED + GATED: count the clause (exactly once either way) in the file counter and the per-symbol counter (kept in sync per CSD2); matches swift catch_block. Fixture pins Errors/ErrorsTyped complexity 2; mutant bare-catch-complexity-loss CAUGHT."
       },
       {
@@ -358,15 +366,15 @@
         "id": "CS-C1",
         "node_type": "object-initializer designators",
         "status": "RULED",
-        "question": "C# second review (2026-09-13): `new Point { X = v }` parses initializers as assignment_expressions \u2014 X must designate (never read) while v reads. Probe-verified on a colliding member.",
+        "question": "C# second review (2026-09-13): `new Point { X = v }` parses initializers as assignment_expressions — X must designate (never read) while v reads. Probe-verified on a colliding member.",
         "resolution": "FIXED + GATED: the assignment-LHS write gate covers initializer designators (verified identical shape); values read normally. Fixture expects Build->G and forbids Build->X/Y; mutant reemit-initializer-designator-reads CAUGHT."
       },
       {
         "id": "CS-C2",
         "node_type": "type-context name positions",
         "status": "RULED",
-        "question": "C# second review (2026-09-13): this grammar spells ALL type names plain `identifier` (no type_identifier/field_identifier nodes exist \u2014 17 dead disjuncts removed, audit-proven), so type-parameter lists, where-clause and base-list subtrees and tuple types need explicit gates or member-name collisions fabricate reads.",
-        "resolution": "FIXED, partially unpinned: type_parameter_list direct names, where-clause and base-list subtrees, and tuple_type identifiers never read. Unpinnable on valid code by construction (a colliding member in those positions is either invalid code or genuinely ambiguous), so no fixture/mutant covers them \u2014 documented with the grammar evidence; lanes + F3 confirm zero valid-code impact."
+        "question": "C# second review (2026-09-13): this grammar spells ALL type names plain `identifier` (no type_identifier/field_identifier nodes exist — 17 dead disjuncts removed, audit-proven), so type-parameter lists, where-clause and base-list subtrees and tuple types need explicit gates or member-name collisions fabricate reads.",
+        "resolution": "FIXED, partially unpinned: type_parameter_list direct names, where-clause and base-list subtrees, and tuple_type identifiers never read. Unpinnable on valid code by construction (a colliding member in those positions is either invalid code or genuinely ambiguous), so no fixture/mutant covers them — documented with the grammar evidence; lanes + F3 confirm zero valid-code impact."
       },
       {
         "id": "CS-C3",
@@ -386,15 +394,15 @@
         "id": "CONV-CS-1",
         "node_type": "member_access_expression (chain roots) + bare identifier reads",
         "status": "FIXED",
-        "question": "CONV-CS-1 (#750, #739/#744 family): bare member reads emitted ZERO uses edges (`return x;`) and chain roots (`inner` in `inner.deeper.leaf`) were missing while deeper leaves emitted \u2014 the THIRD analyzer with the same read-attribution blind spot (java #739, javascript #744).",
-        "resolution": "FIXED + GATED at this wave's commit: the CS-R1 bare-identifier mechanism (identifier_usage edges via lexical-frame resolution) repairs both recorded shapes; probe-verified live (`uses Get->x`, `uses Read->inner/deeper/leaf`). The issue's own code is the fixture csharp/chain-root-reads (verbatim; root + bare reads pin meta.relationshipType=identifier_usage), and the drop-bare-uses mutant reproduces the pre-CS-R1 state and now fails on it \u2014 a live gate, not documentation."
+        "question": "CONV-CS-1 (#750, #739/#744 family): bare member reads emitted ZERO uses edges (`return x;`) and chain roots (`inner` in `inner.deeper.leaf`) were missing while deeper leaves emitted — the THIRD analyzer with the same read-attribution blind spot (java #739, javascript #744).",
+        "resolution": "FIXED + GATED at this wave's commit: the CS-R1 bare-identifier mechanism (identifier_usage edges via lexical-frame resolution) repairs both recorded shapes; probe-verified live (`uses Get->x`, `uses Read->inner/deeper/leaf`). The issue's own code is the fixture csharp/chain-root-reads (verbatim; root + bare reads pin meta.relationshipType=identifier_usage), and the drop-bare-uses mutant reproduces the pre-CS-R1 state and now fails on it — a live gate, not documentation."
       },
       {
         "id": "CONV-CS-2",
         "node_type": "using_directive / base_list / attribute (framework markers)",
         "status": "FIXED",
-        "question": "CONV-CS-2 (#751): csharp had NO framework detection at all \u2014 metadata.detectedFrameworks undefined (python emits [], java a string): the only language missing both the mechanism and the metadata key, so the family payload contract was not uniform.",
-        "resolution": "FIXED + GATED: detectCSharpFrameworks (grammar-level markers: using-directive roots incl. static/alias/global forms, base-list leaf names, attribute names) feeds the family-aligned payload \u2014 framework (fixed-priority primary), detectedFrameworks (ALWAYS an array, [] when none), frameworkPatterns, hasFrameworkIntelligence. Emitted order is the fixed CS_FRAMEWORK_ORDER so import order can never change the payload; string ops only (no new regex literals). Fixtures csharp/framework-detection (3 simultaneous families + exact payload pin + 5 forbidFrameworks over-match guards) and csharp/framework-none (the [] shell); mutants framework-detection-dropped + framework-overshoot CAUGHT."
+        "question": "CONV-CS-2 (#751): csharp had NO framework detection at all — metadata.detectedFrameworks undefined (python emits [], java a string): the only language missing both the mechanism and the metadata key, so the family payload contract was not uniform.",
+        "resolution": "FIXED + GATED: detectCSharpFrameworks (grammar-level markers: using-directive roots incl. static/alias/global forms, base-list leaf names, attribute names) feeds the family-aligned payload — framework (fixed-priority primary), detectedFrameworks (ALWAYS an array, [] when none), frameworkPatterns, hasFrameworkIntelligence. Emitted order is the fixed CS_FRAMEWORK_ORDER so import order can never change the payload; string ops only (no new regex literals). Fixtures csharp/framework-detection (3 simultaneous families + exact payload pin + 5 forbidFrameworks over-match guards) and csharp/framework-none (the [] shell); mutants framework-detection-dropped + framework-overshoot CAUGHT."
       }
     ]
   }

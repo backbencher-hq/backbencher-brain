@@ -14,7 +14,6 @@ import { execFileSync } from "node:child_process"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { getProjectId } from "../../src/cli/index"
-import { optionalCorpusMissingMessage, resolveOptionalCorpus } from "../lib/optional-corpus.ts"
 
 let checks = 0
 let passed = 0
@@ -74,43 +73,17 @@ async function main() {
 
   const bench = JSON.parse(readFileSync(path.join(ROOT_DIR, "validation/m18/benchmark/benchmark.json"), "utf8"))
   const anchors = (bench.corpora || []).map((c: any) => ({ tag: c.tag, path: c.source }))
-  // The three giants were literal paths on the owner's other laptop. None of them exists
-  // here, and this gate reported 0/16 with no explanation — it walked paths that were
-  // never there. Now resolved through script/lib/optional-corpus.ts (env override first,
-  // then the known locations), so a machine that HAS a clone uses it and a machine that
-  // does not says so.
   const giants = [
-    { tag: "aspnetcore", path: resolveOptionalCorpus("aspnetcore", "BB_ASPNET_REPO") },
-    { tag: "paperclip", path: resolveOptionalCorpus("paperclip", "BB_PAPERCLIP_REPO") },
-    { tag: "intellij-community", path: resolveOptionalCorpus("intellij-community", "BB_GIANT_REPO") },
+    { tag: "aspnetcore", path: "$HOME/aspnetcore" },
+    { tag: "paperclip", path: "$HOME/paperclip" },
+    { tag: "intellij-community", path: "$HOME/intellij-community" },
   ]
 
-  for (const a of anchors) {
-    ck("S1: anchor corpus " + a.tag + " reachable", existsSync(a.path), a.path)
-  }
-  for (const g of giants) {
-    // A DECLARED BLOCK, not a bare FAIL: "this clone is not on this machine" and "the
-    // clone is here and the measurement failed" must not read the same.
-    ck(
-      "S1: giant corpus " + g.tag + " reachable",
-      g.path !== null,
-      g.path ?? optionalCorpusMissingMessage(g.tag, g.tag === "aspnetcore" ? "BB_ASPNET_REPO" : g.tag === "paperclip" ? "BB_PAPERCLIP_REPO" : "BB_GIANT_REPO"),
-    )
-  }
-
-  // The checks above RECORD a missing corpus and do not stop; the loop after this walks
-  // every path. Same shape as the m15 `winner` defect and the m19 giant gates fixed
-  // earlier today: a non-aborting guard followed by unguarded use. Filter first.
-  const present = anchors.filter((a) => existsSync(a.path)).concat(
-    giants.filter((g): g is { tag: string; path: string } => g.path !== null).map((g) => ({ tag: g.tag, path: g.path })),
-  )
-  const absent = giants.filter((g) => g.path === null).map((g) => g.tag)
-  if (absent.length > 0) {
-    console.log("  S1: not measured on this machine (declared, not failed): " + absent.join(", "))
-  }
+  for (const a of anchors) ck("S1: anchor corpus " + a.tag + " reachable", existsSync(a.path), a.path)
+  for (const g of giants) ck("S1: giant corpus " + g.tag + " reachable", existsSync(g.path), g.path)
 
   const fileCounts: any[] = []
-  for (const c of present) {
+  for (const c of anchors.concat(giants)) {
     const n = countFiles(c.path)
     fileCounts.push({ tag: c.tag, kind: c.tag === "rake" || c.tag === "lodash" || c.tag === "element-plus" ? "anchor" : "giant", files: n, path: c.path })
     ck("S1: " + c.tag + " file count measured and non-empty", n !== null && n > 0, "files=" + n)

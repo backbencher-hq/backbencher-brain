@@ -19,7 +19,7 @@
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
-import { findDeclaringParent, localEdgeLabel } from "./override-context"
+import { findDeclaringParent, localEdgeLabel, localEdgeName } from "./override-context"
 
 interface Scope {
   node: Node
@@ -1610,7 +1610,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // type reached through a call) to a wrong-but-name-shaped label. 
         // localEdgeLabel is the shared rule both directions agree on.
         const localSource = localEdgeLabel(task.fqn)
-        const localTarget = localEdgeLabel(targetFqn)
+        const targetLabel = localEdgeLabel(targetFqn)
         // A symbol cannot override ITSELF. The guard is on the EMITTED labels
         // (so it covers every resolution tier) rather than on the declaring
         // FQN, because the collision that produces a self-edge here is a
@@ -1631,16 +1631,26 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // (`object Position extends Position`) is guarded by class identity in
         // real-scala-analyzer.ts: there the declARING name and the owner are
         // the same symbol's name, a different shape of the same impossibility.
-        if (localSource === localTarget) continue
+        if (localSource === targetLabel) continue
         relationships.push({
           source: localSource,
-          target: localTarget,
+          // THE TARGET IS THE DECLARED MEMBER, NOT `Owner.member` — this lane resolved 0 of 253 with
+          // the dotted spelling, and the label helper it was using is the one the four-lane fix now
+          // pairs with `localEdgeName`.
+          target: localEdgeName(targetFqn),
           type: ASTEngine.RelationshipType.Overrides,
           confidence,
           // M59 (#825): the overriding declaration's line — captured while the
           // node was in hand, not resolved later by name (namesakes collide).
           ...(task.line ? { line_number: task.line } : {}),
-          metadata: { relationshipType: "method_override", isGroovyOverride: true, reasonCode },
+          metadata: {
+            relationshipType: "method_override",
+            isGroovyOverride: true,
+            reasonCode,
+            // THE OWNER IS CARRIED, not dropped — see the cpp site's note on why the four-lane fix
+            // needed it and did not have it.
+            overriddenOwner: targetLabel.includes(".") ? targetLabel.slice(0, targetLabel.lastIndexOf(".")) : "",
+          },
         })
       }
     }

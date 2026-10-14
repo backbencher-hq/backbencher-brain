@@ -11,8 +11,9 @@
 import { readFileSync } from "node:fs"
 import { execSync } from "node:child_process"
 import * as path from "node:path"
+import { fileURLToPath } from "node:url"
 
-const ROOT = "$HOME/backbencher-brain"
+const ROOT = process.env.BB_REPO || path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const CORPORA = ["phpunit", "phpmyadmin"]
 const wts: any = await import("web-tree-sitter")
 const P: any = wts.Parser ?? wts.default ?? wts

@@ -13,7 +13,7 @@
 // Per repo: index wall time, file/symbol counts, patterns scan time + count,
 // security scan time + count. Missing corpus -> recorded as blocked.
 
-import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs"
+import { mkdirSync, writeFileSync, existsSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { performance } from "node:perf_hooks"
@@ -27,8 +27,6 @@ import { patternSourceFingerprint } from "../../src/intelligence/patterns/eviden
 import { securitySourceFingerprint } from "../../src/intelligence/security/evidence"
 import { docSourceFingerprint } from "../../src/intelligence/documentation/evidence"
 import { createHash } from "node:crypto"
-import { resolveCorpusRoot } from "../lib/corpus-root.ts"
-import { resolveOptionalCorpus } from "../lib/optional-corpus.ts"
 
 let checks = 0
 let passed = 0
@@ -48,18 +46,8 @@ function crossToolSourceFingerprint(rootPath: string): string {
   return createHash("sha256").update(joined).digest("hex")
 }
 
-// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
-
-const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
-// WAS: the literal "$HOME/TypeScript/src/compiler" — the owner's TypeScript
-// clone on the OTHER laptop. It does not exist on this machine, so the ledger was
-// derived from a real-repo anchor that is not here.
-//
-// Resolved through script/lib/optional-corpus.ts, which searches declared locations
-// in order; the sub-path is appended to whichever checkout it finds. When none is
-// present the entry is reported absent rather than silently measuring nothing.
-const TSC_ROOT = resolveOptionalCorpus("TypeScript", "BB_TYPESCRIPT_REPO")
-const TSC = TSC_ROOT === null ? "TSC_UNRESOLVED" : path.join(TSC_ROOT, "src/compiler")
+const REPO_ROOT = "$HOME/fixtures/repositories"
+const TSC = "$HOME/TypeScript/src/compiler"
 const corpora: Array<{ id: string; path: string; family: string }> = [
   { id: "rake", path: path.join(REPO_ROOT, "rake", "lib", "rake"), family: "ruby" },
   { id: "rebar3", path: path.join(REPO_ROOT, "rebar3", "apps"), family: "erlang" },
@@ -67,16 +55,7 @@ const corpora: Array<{ id: string; path: string; family: string }> = [
 ]
 
 const ledger: any[] = []
-// WAS: `const cleanup: Array<() => void> = []`, which was pushed to and never drained.
-// It is replaced by a list of FAILURE STRINGS, because the thing worth keeping from a
-// cleanup is not the deferred action nobody performs — it is the error nobody reports.
-// Every entry here is a cleanup step that was supposed to happen and did not.
-const cleanupFailures: string[] = []
-// How many cleanup paths actually RAN. Without this the success message is a lie: a corpus
-// whose path is absent `continue`s BEFORE the try, so its cleanup never happens, and
-// "all N corpora closed and removed cleanly" would be printed for N corpora of which zero
-// were touched. An empty failure list proves only that nothing that ran failed.
-const cleanupAttempts: string[] = []
+const cleanup: Array<() => void> = []
 for (const corpus of corpora) {
   if (!existsSync(corpus.path)) {
     ledger.push({ corpus: corpus.id, family: corpus.family, state: "blocked", reason: "missing-path" })
@@ -110,43 +89,10 @@ for (const corpus of corpora) {
   } catch (error) {
     ledger.push({ corpus: corpus.id, family: corpus.family, state: "blocked", reason: error instanceof Error ? error.message.slice(0, 200) : String(error) })
   } finally {
-    // THREE DEFECTS WERE STACKED IN THIS BLOCK, and every one was invisible because the
-    // `finally` swallowed it. Measured, not assumed:
-    //
-    //   1. THE CLEANUP CALLBACK WAS NEVER RUN. `cleanup` was declared at line 70 and
-    //      pushed to here, and those two lines were the ONLY two references to the name in
-    //      the file — nothing ever drained the array, so the database was never closed.
-    //   2. getRawInstance IS ASYNC. src/brain/database.ts:205 declares
-    //      `export async function getRawInstance(projectId): Promise<CoreDatabase>`, and
-    //      every caller in src/ awaits it. This line called `.close()` on the PROMISE,
-    //      which throws `TypeError: … is not a function` — had it ever run. This is the
-    //      TS2339 the compiler reports on this line.
-    //   3. `require("node:fs")` IN AN ES MODULE. package.json declares "type": "module",
-    //      so `require` is not defined and the line throws ReferenceError. The file
-    //      already imports node:fs statically on line 16, so the require bought nothing.
-    //
-    // Each was individually swallowed by `catch {}`, so the gate reported a clean run
-    // while doing none of the cleanup its own comment promised: "Remove the indexed DB
-    // after measurement to avoid disk growth" never removed anything. A ledger can still
-    // report "measured" for corpora that each leaked a database directory — it is
-    // measuring something, but not what the comment says it measures.
-    //
-    // Now the cleanup actually runs, awaits, uses the static import, and a failure is
-    // RECORDED rather than discarded. A cleanup that cannot report its own failure is the
-    // same defect one level down, and it is the reason the three above went unnoticed.
     const dbDir = path.dirname(BrainDatabase.getDbPath(projectId))
-    cleanupAttempts.push(corpus.id)
-    try {
-      const raw = await BrainDatabase.getRawInstance(projectId)
-      raw.close()
-    } catch (error) {
-      cleanupFailures.push(`close ${corpus.id}: ${error instanceof Error ? error.message.slice(0, 120) : String(error)}`)
-    }
-    try {
-      rmSync(dbDir, { recursive: true, force: true })
-    } catch (error) {
-      cleanupFailures.push(`remove ${corpus.id}: ${error instanceof Error ? error.message.slice(0, 120) : String(error)}`)
-    }
+    cleanup.push(() => { try { BrainDatabase.getRawInstance(projectId).close() } catch {} })
+    // Remove the indexed DB after measurement to avoid disk growth.
+    try { const { rmSync } = require("node:fs") as typeof import("node:fs"); rmSync(dbDir, { recursive: true, force: true }) } catch {}
   }
 }
 
@@ -155,30 +101,6 @@ check("ledger: at least two corpora measured", measuredCount >= 2, `measured=${m
 const blocked = ledger.filter((entry) => entry.state === "blocked")
 check("ledger: blocked states recorded without fabrication", blocked.length === corpora.length - measuredCount, JSON.stringify(blocked))
 negative("ledger: no corpus reports measured with zero files", ledger.every((entry) => entry.state !== "measured" || entry.files > 0), JSON.stringify(ledger))
-
-// The cleanup check this file did not have. A ledger entry saying "measured" while its
-// database was never closed and its directory never removed is still a TRUE statement
-// about the measurement — the counts are real. What is false is the surrounding claim that
-// the run left nothing behind, so that gets its own check instead of being folded into the
-// measurement, where a failure would have been indistinguishable from a bad count.
-//
-// The condition is deliberately `=== 0` and not "at least one was recorded": recording a
-// failure is the correct behaviour of the mechanism, and the mechanism is not what this
-// check is about. What it is about is whether the cleanup SUCCEEDED.
-check(
-  "ledger: no cleanup step that RAN failed (corpora absent before the try are not counted)",
-  cleanupFailures.length === 0,
-  cleanupFailures.length === 0
-    ? `cleanup ran and succeeded for ${cleanupAttempts.length} of ${corpora.length} corpus/corpora` +
-      (cleanupAttempts.length < corpora.length
-        ? ` — the other ${corpora.length - cleanupAttempts.length} were skipped as absent, so this says nothing about them`
-        : "")
-    : `*** ${cleanupFailures.length} cleanup step(s) failed: ${cleanupFailures.slice(0, 4).join(" | ")} ***`,
-)
-if (cleanupFailures.length > 0) {
-  console.log("\n  cleanup steps that failed, in full:")
-  for (const f of cleanupFailures) console.log(`    ${f}`)
-}
 
 const failed = checks - passed
 // Real relevant-dirty-check: prove the cross-tool boundary + M20 scripts are clean

@@ -39,11 +39,12 @@
  */
 import { execFileSync } from "node:child_process"
 import { readFileSync, statSync } from "node:fs"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 import { getParser } from "../../src/ast/engine"
 import { RealRustAnalyzer } from "../../src/ast/real-rust-analyzer"
 
-const MAIN_ROOT = "$HOME/backbencher-brain"
+const MAIN_ROOT = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const ARGS = process.argv.slice(2)
 const RUNS = Number(ARGS.find((a) => a.startsWith("--runs="))?.slice(7) ?? 3)

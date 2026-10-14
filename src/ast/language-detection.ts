@@ -1,5 +1,5 @@
 export type DetectedLanguage =
-  | "typescript" | "tsx" | "javascript" | "html" | "vue" | "svelte" | "css" | "scss" | "json" | "yaml" | "graphql"
+  | "typescript" | "tsx" | "javascript" | "html" | "vue" | "svelte" | "css" | "scss" | "sass" | "json" | "yaml" | "graphql"
   | "c" | "cpp" | "rust" | "go" | "zig" | "nim"
   | "java" | "kotlin" | "scala" | "groovy"
   | "python" | "ruby" | "php" | "lua" | "perl" | "elixir" | "erlang"
@@ -10,7 +10,7 @@ export type DetectedLanguage =
   // reusing the managed-OO ontology, and why `<:` is published as `extends` only.
   | "julia"
   | "csharp" | "vb" | "fsharp" | "r" | "sql"
-  | "bash" | "powershell" | "hcl" | "objective-c"
+  | "bash" | "powershell" | "hcl" | "terraform" | "objective-c"
   | "markdown" | "toml" | "xml" | "protobuf" | "make"
   // The Solidity lane routes `.sol` below (SOL-21). Its absence here meant the route
   // table could not satisfy its own value type, so `detectLanguageFromPath` returned a
@@ -18,17 +18,94 @@ export type DetectedLanguage =
   | "solidity"
 
 export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
-  ts: "typescript", tsx: "tsx", js: "javascript", cjs: "javascript", mjs: "javascript", jsx: "javascript",
-  html: "html", htm: "html", vue: "vue", svelte: "svelte", css: "css",
+  // `.mts` was missing from this table entirely, so 490 tracked files in this repository —
+  // much of the m12/m14 gate suite among them — were rejected by `detectLanguageFromPath`
+  // before a grammar could even be chosen, and the engine answered "Unsupported file type".
+  // `.mts` is a TypeScript ES module: same language, explicit module system.
+  //
+  // Measured before declaring, by script/m12/measure-extension-coverage.ts over every
+  // tracked `.mts` file in the tree:
+  //
+  //   490 files   490 parsed   8 error files   54 error nodes   0 threw
+  //   18,586 symbols   54,485 relationships   2,115 imports
+  //
+  // 98.4% parse clean, and the 8 imperfect files are gate fixtures rather than library code.
+  // The 18,586 symbols were invisible to the index — the difference between "bb indexes
+  // TypeScript" and the truth of what this repository is written in.
+  //
+  // `.cts` is deliberately NOT declared: the measured corpus is ZERO files, so there is
+  // nothing to support a claim about it (the same rule that kept `.jul` undeclared). Add it
+  // with its numbers once a corpus exists.
+  ts: "typescript", tsx: "tsx", mts: "typescript",
+  // `.cts` was MISSING while every sibling was present — `ts`, `tsx`, `mts` and `js`, `cjs`, `mjs`, `jsx`.
+  // It is TypeScript's CommonJS extension and the exact counterpart of `.mts`, which maps to `typescript`,
+  // so this is an omission and not a decision. MEASURED: 3,118 `.cts` files in the corpus, and one lane
+  // probed a stride that held 3 of them, which is how it read as a 3-file curiosity rather than a fleet gap.
+  // Same defect class as `.graphqls` (97 files) — an extension the corpus carries that NOTHING routes, so the
+  // file is read, answered with the fallback, and produces no symbols while APPEARING in the population.
+  cts: "typescript", js: "javascript", cjs: "javascript", mjs: "javascript", jsx: "javascript",
+  html: "html", htm: "html",
+  // THIRTEENTH ROUTER GAP, AND THE LARGEST FAMILY YET — found by hcl-lane's html population census on
+  // 2026-10-13, which counted these files IN THE CORPUS while every one of them was UNROUTED:
+  //     xhtml 30 · hbs 1,531 · twig 274 · pug 70 · erb 46   = 1,951 files, and `.hbs` alone is 1,531.
+  // These are HTML-TEMPLATE languages: the file IS HTML with embedded template syntax, so the html
+  // analyzer reads the structure it already reads. AND `detectLanguageFromPath` returned null for every
+  // one of them, which means ZERO ROWS — routing them cannot lose a row, only add.
+  // MEASURED, not remembered: xhtml/hbs/twig/pug/erb/mustache/ejs/liquid/njk/jinja/j2 ALL returned
+  // `*** UNROUTED ***` in a single check against this function.
+  // AND THE UNROUTED-EXTENSION GATE PASSED WHILE THIS WAS TRUE — so its `textBearingNewKeys 0` is a
+  // statement about the corpus IT walks, not about the corpus at large. Named, not hidden.
+  xhtml: "html", hbs: "html", twig: "html", pug: "html", erb: "html", mustache: "html",
+  ejs: "html", liquid: "html", njk: "html", jinja: "html", j2: "html",
+  vue: "vue", svelte: "svelte", css: "css",
   // scss is its own language, not a css dialect. It was mapped to "css" here while
   // the CSS grammar was the only wasm available, which is a decision made for lack of
   // an alternative and then left in place after the alternative existed — the shape of
-  // claim that outlives the reason for it. `sass` and `less` still map to "css" and
-  // are DECLARED: 0 files of each across 13 corpora, so this table can neither support
-  // nor refute a claim about them.
-  scss: "scss", sass: "css", less: "css",
-  json: "json", jsonc: "json", yml: "yaml", yaml: "yaml", graphql: "graphql", gql: "graphql",
+  // claim that outlives the reason for it.
+  //
+  // `sass` was in exactly that state and worse: it mapped to "css" while being DECLARED
+  // in SUPPORTED_LANGUAGES, so `sass` was a language no extension could ever select —
+  // the registry advertised a lane the router could not enter, and the coverage gate
+  // reported it as unreachable. It is routed to its own name now. The GRAMMAR is still
+  // the css one (there is no tree-sitter-sass here), and that grammar cannot represent
+  // indented syntax — the measured consequence is that a real .sass file parses with
+  // ERROR nodes. Naming the lane honestly is what makes that visible per-language
+  // instead of hiding it inside "css"; fixing the fidelity needs a sass grammar, which
+  // is a separate piece of work and is recorded in script/m60/routing-outlier-census.ts.
+  //
+  // `less` still maps to "css" deliberately: LESS is a CSS superset and it is NOT in
+  // SUPPORTED_LANGUAGES, so no unreachable language is declared by leaving it here.
+  scss: "scss", sass: "sass", less: "css",
+  json: "json", jsonc: "json",
+  // `.jsonl` ADDED — JSON LINES, one JSON document per line, which the `json` grammar reads with NO representational
+  // gap. Found by the fleet unrouted-extension census (script/m60/unrouted-extension-census.ts): 31 corpus files,
+  // 4,676 symbols and 4,651 relationships through the winning grammar, and the extension was simply missing.
+  // IT IS THE SAFEST ENTRY IN THAT CENSUS'S 154-ROW CANDIDATE SET, and chosen over the higher-priced `.jsonschema`
+  // (7,255 relationships from THREE files — about 2,400 per file, above any routed language's density here) because
+  // THIS ONE HAS NO REPRESENTATIONAL QUESTION TO ANSWER. The census measures that a grammar PRODUCES SYMBOLS, not
+  // that it is the RIGHT grammar — `.pyx` sits in the same list at 1,540 files with a Python grammar that cannot
+  // represent Cython, which is the failure mode `routing-outlier-census.ts` exists to catch.
+  // `.jsonlog` ADDED — a JSON-per-line log, the same shape as `.jsonl` and read by the `json` grammar
+  // with no representational gap. From the fleet census: 5 corpus files, 408 symbols, 403 relationships.
+  // THE THIRD `.json`-family extension taken and the FIRST LEFT: `.jsonschema` (3 files, 7,255 relationships
+  // — ~2,400 per file, ABOVE ANY ROUTED LANGUAGE'S DENSITY HERE) is NOT taken, because the census measures
+  // that a grammar PRODUCES SYMBOLS and not that it is the RIGHT grammar, and that density is a claim
+  // nobody has checked. `.jsonl` and `.jsonlog` answer a question; `.jsonschema` asks one.
+  jsonl: "json", jsonlog: "json", yml: "yaml", yaml: "yaml",
+  // `.graphqls` was missing while `graphql` and `gql` were present. It is the GraphQL SCHEMA extension —
+  // the same format, spelled for schema files — so this is an omission and not a decision. MEASURED
+  // THROUGH PRODUCTION DISCOVERY, not by walking the filesystem: the graphql lane's own instrument priced
+  // 97 corpus `.graphqls` files as `filesTheIndexerDidNotAdmit`, and a Lead measurement of the ADMITTED
+  // count returns 0 — so all 97 are read by nothing, answered with the fallback, and produce no symbols
+  // while APPEARING in the population. Same defect class as `.cts`.
+  graphql: "graphql", gql: "graphql", graphqls: "graphql",
   c: "c", h: "c", cpp: "cpp", cc: "cpp", cxx: "cpp", "c++": "cpp", hpp: "cpp", hxx: "cpp",
+  // FOUR ADDED 2026-10-12, from the A-lane router census: .ipp (11 corpus files, inline C++ implementation),
+  // .inl (3, the same convention spelled differently), .cu (3, CUDA — a C++ dialect the cpp grammar reads),
+  // and .pod (11, Perl's own documentation format, beside the .pl/.pm/.t the perl lane already routes).
+  // MEASURED TOGETHER: 28 corpus files routed to NOTHING. Same class as .cts, .graphqls, .sbt and .phpt.
+  // AND THE CHECK THAT WOULD HAVE CAUGHT THEM IS COMMITTED: script/m60/unrouted-extension-gate.ts.
+  ipp: "cpp", inl: "cpp", cu: "cpp", pod: "perl",
   rs: "rust", go: "go", zig: "zig",
   // `.jl` measured, not assumed: 941 tracked files in the Julia corpus, all of which the pinned
   // grammar parses (772 clean, 177 carrying tree-sitter ERROR nodes the patch inventory records).
@@ -51,7 +128,12 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   // what the evidence supports; rulings NIMD4/NIMD5 in
   // script/m14/spec/nim-completeness.json.
   nim: "nim", nims: "nim", nimble: "nim",
-  java: "java", kt: "kotlin", kts: "kotlin", scala: "scala", sc: "scala", groovy: "groovy",
+  java: "java", kt: "kotlin", kts: "kotlin", scala: "scala", sc: "scala",
+  // `.sbt` ADDED — the Scala Build Tool's own format, which IS Scala source (an sbt file is a Scala program
+  // against the sbt DSL). MEASURED by the scala lane: 163 corpus files, routed to NOTHING. Same defect class
+  // as `.cts` and `.graphqls` — the file is read, answered with the fallback, and produces no symbols while
+  // APPEARING in the population. `.ktm` is deliberately NOT added: the lane measured 0 files for it.
+  sbt: "scala", groovy: "groovy",
   // M49 W21 (#850): Gradle's Groovy DSL. `.gradle` had NO registry entry, so every
   // `build.gradle`/`settings.gradle` was rejected by detectLanguage before a grammar
   // was chosen — the largest real-world Groovy surface (454 files in grails-core alone)
@@ -76,13 +158,27 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   // tree and recovery keeps symbols flowing through the ERROR regions — which is what
   // made a 68.8 %-unparseable corpus read as a pass. Nothing now claims to have
   // analyzed them; if a Cython grammar is ever vendored, this is the line it changes.
-  rb: "ruby", php: "php", lua: "lua", pl: "perl", pm: "perl", t: "perl", perl: "perl",
+  rb: "ruby",
+  // `.phpt` ADDED — the PHP test-file format, PHP source with an expected-output section. MEASURED by the php
+  // lane: 1,314 corpus files, routed to NOTHING.
+  // `.inc` IS DELIBERATELY NOT ADDED (61 files): `.inc` is genuinely ambiguous across languages — PHP include,
+  // Pascal include, assembly include — and this table's own rule is that a format is declared on measurement,
+  // not on the extension's existence. 61 files do not justify guessing which language they are.
+  php: "php", phpt: "php", lua: "lua", pl: "perl", pm: "perl", t: "perl", perl: "perl",
   ex: "elixir", exs: "elixir", erl: "erlang", hrl: "erlang",
   hs: "haskell", lhs: "haskell", icl: "clean", dcl: "clean", clj: "clojure", cljs: "clojure", cljc: "clojure", edn: "clojure",
   swift: "swift", dart: "dart", cs: "csharp", csx: "csharp", vb: "vb", fs: "fsharp", fsi: "fsharp", fsx: "fsharp",
   r: "r", sql: "sql", sh: "bash", bash: "bash", zsh: "bash", ps1: "powershell", psm1: "powershell", psd1: "powershell",
   sol: "solidity",
-  tf: "hcl", tfvars: "hcl", tofu: "hcl", hcl: "hcl", m: "objective-c", mm: "objective-c",
+  // Terraform is HCL, and `.tf` files ARE Terraform — the same relationship `sass`
+  // had with `css` above, resolved the same way. `terraform` was declared in
+  // SUPPORTED_LANGUAGES with an analyzer and a grammar arm while every `.tf`/`.tfvars`/
+  // `.tofu` file routed to `hcl`, so the language was unreachable and the coverage gate
+  // failed on it. The grammar is unchanged (tree-sitter-hcl parses Terraform, measured
+  // clean: the gate's .tf fixture yields 8 symbols with no ERROR nodes); what changes is
+  // that the lane is named after the thing the files are, so `--language terraform`
+  // can find them. `.hcl` keeps its own name for the generic-HCL case.
+  tf: "terraform", tfvars: "terraform", tofu: "terraform", hcl: "hcl", m: "objective-c", mm: "objective-c",
   md: "markdown", markdown: "markdown", toml: "toml", proto: "protobuf",
   // M60 XML lane: `xml` was routed for `.xml`/`.xsd`/`.dtd` only, while the wired
   // grammar's OWN `tree-sitter.json` declares `file-types: [xml, svg, xsd, xslt,
@@ -224,8 +320,21 @@ function stripCommentsAndStrings(src: string): string {
  * measured is how a router starts disagreeing with the analyzers it feeds. The
  * bash lane's own census is the evidence for the bash entry; another lane's
  * evidence should add its own.
+ *
+ * `node` now has that evidence, and only `node`. Measured across every tracked
+ * file in this repository, there are exactly three extensionless files carrying a
+ * shebang: two `/bin/sh` (ide/zed/bb-lsp/bin/bb-lsp-server and
+ * script/git-hooks/pre-push, both already routed) and `bin/bb`, the shipped CLI
+ * launcher — `#!/usr/bin/env node`, 13 lines of real JavaScript with a top-level
+ * await, and until now invisible to the index. `python` and `ruby` have a
+ * measured corpus of ZERO files here, so they stay absent until a corpus exists,
+ * exactly as `.cts` stayed out of EXTENSION_LANGUAGE.
  */
 const SHEBANG_LANGUAGE: ReadonlyArray<readonly [string, DetectedLanguage]> = [
+  ["/usr/bin/env node", "javascript"],
+  ["/usr/bin/node", "javascript"],
+  ["/usr/local/bin/node", "javascript"],
+  ["/bin/node", "javascript"],
   ["/bin/bash", "bash"],
   ["/usr/bin/bash", "bash"],
   ["/usr/bin/env bash", "bash"],

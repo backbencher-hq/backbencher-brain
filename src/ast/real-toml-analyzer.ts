@@ -39,22 +39,101 @@
  * `metadata.inlineKeys`, so nothing is lost — it is a scoping decision, not a
  * deletion.
  *
- * **TOML'S RELATIONSHIP VOCABULARY IS `contains`, AND THAT IS THE WHOLE TRUTH.**
- * Unlike html there is no second type to emit, and inventing one would be worse
- * than a thin graph. A value like `path = "src/main.rs"` is a *string*, and
- * treating path-shaped strings as references would import ecosystem knowledge
- * (which keys are paths in which tool) into a format that has none: TOML defines
- * no include, no import and no reference mechanism at all. So there is no `uses`,
- * and `extends`/`implements`/`instantiates`/`overrides`/`exports` are absent for
- * the same reason they are absent from html — no construct produces them.
+ * **THE RELATIONSHIP VOCABULARY IS `contains`, `imports` AND `references` — MEASURED.** The
+ * early version of this header claimed `contains` alone was "the whole truth"; two later
+ * rulings overturned it, each on a corpus measurement rather than an argument, and the
+ * coverage block in `script/m14/spec/toml-completeness.json` is now the record of all ten
+ * types. `imports` is emitted for a Cargo path dependency (`[dependencies] foo = { path =
+ * "../foo" }`, 331 edges over the corpus, 317 of them naming a real manifest directory).
+ * `references` is emitted for a Gradle version-catalogue alias (`version.ref = "groovy"`
+ * inside an inline table, 167 edges over 5 files). The other six — `calls`, `uses`,
+ * `exports`, `extends`, `implements`, `instantiates`, `overrides` — are `grammar-absence`:
+ * 0 of the pinned grammar's 19 named node types can carry them, and the corpus corroborates
+ * with 0 occurrences or 0 referents. `exports` is the one that is NOT ruled out: 174
+ * publish-shaped key sites exist, so it stays in the denominator as an unimplemented gap.
+ * A value like `path = "src/main.rs"` is still a *string*: the analyzer never treats a
+ * path-shaped string as a reference from an arbitrary key, which is why `imports` is
+ * restricted to dependency sections and why the unresolved-path spelling is deliberate.
+ * OPEN, not folded into any number: the workspace-inheritance half of `references`
+ * (`x.workspace = true`, 1,269 sites in 138 documents) is unimplemented — TOML-G1.
  *
  * Pure-String throughout: `segmentsOf`, `joinPath`, `asciiLower` are index loops.
  * No regex, no source-text scraping — the analyzer reads AST nodes and never the
  * file's characters.
  */
 import * as path from "path"
+import { statSync } from "fs"
 import { ASTEngine } from "./engine"
+import { dirOf, fileClaimForTarget, projectRelativeOf } from "./file-claim"
+import { applyDocumentScope, documentDirScope } from "./project-scoped-identity"
 import type { Node } from "web-tree-sitter"
+
+/**
+ * THE MANIFESTS A PATH DEPENDENCY POINTS AT. A `path` dependency names a DIRECTORY in every tool
+ * that reads these formats (Cargo, Julia's Pkg, pyproject), and the directory is a real dependency
+ * because of the manifest inside it — so the FILE is what a project's own admitted list can confirm
+ * by EXACT match, and the directory is not (the gate's prefix arm would need an admitted file under
+ * it anyway, which is the same fact one step less precise).
+ */
+const DEPENDENCY_MANIFESTS = ["Cargo.toml", "Project.toml", "JuliaProject.toml", "pyproject.toml", "Package.toml"]
+
+/**
+ * THE FILE CLAIM for a path dependency, or null when no claim can be MADE.
+ *
+ * `imports` targets are paths as written, and the graph has to say something true about them. The
+ * gate can verify one statement — "this target names a file of the project" — against the
+ * project's own admitted file list (`FILE_CLAIM_KEY`, incoming-rule.ts), and it REFUTES a
+ * candidate that names nothing. So the claim is emitted only where the manifest is really there,
+ * which is the condition under which the gate will verify it; a target that names nothing stays
+ * UNCLAIMED and unresolved rather than carrying a statement the project would refute.
+ *
+ * MEASURED over the whole admitted population (`.tmp-toml/imports-claim-probe2.mts`, 331 `imports`
+ * edges): 318 candidates verify, 13 name nothing, and the filesystem test below agrees with the
+ * gate's admitted-list verdict on all 331 — zero claimed-but-refuted, zero unclaimed-but-verifiable.
+ * The 13 are cargo's own `cargo_add` fixtures, whose `path = "./dependency"` intentionally names a
+ * directory that does not exist because the test asserts that failure; they are ruled with a count
+ * rather than marked external to make the number smaller.
+ *
+ * Null is returned — never a guess — when there is no project root, when the value is not a plain
+ * relative path (a URL, an absolute path, a glob, whitespace), or when it escapes the project.
+ * A WRONG claim is worse than no claim: the gate counts a refutation against the lane exactly as it
+ * counts an unresolved edge, and a fabricated candidate would manufacture the refutation.
+ */
+function dependencyFileClaim(written: string, filePath: string, projectRoot: string | null): string | null {
+  // ON THE SHARED GUARD since 2026-10-11. The arithmetic stays TOML's own — a `path` dependency names
+  // a DIRECTORY, and the file the project can confirm is the manifest inside it — while the admitting
+  // (admitted extension, project boundary, `statSync`) is `fileClaimForTarget`.
+  //
+  // THE EXTENSION CLAUSE IS NEW HERE AND IT IS THE POINT OF THE SHARED GUARD: the arbiter's facts are
+  // the lane's admitted `.toml` files, so a candidate of any other extension can never verify while a
+  // miss still REFUTES. The old fallback returned `posix` when it was merely *a file* — the guard now
+  // requires that file to be one this lane's population can hold.
+  //
+  // BEHAVIOUR IS MEASURED, NOT ASSUMED: whole population, the lane's `imports` row must keep
+  // `extOK 318` and `extFAIL 0`. If the count moves, the extension clause dropped a claim the old
+  // arithmetic made, and that claim would have been about a file outside the admitted list.
+  if (projectRoot === null || projectRoot.length === 0) return null
+  const root = path.resolve(projectRoot)
+  const fileRel = path.relative(root, filePath).split(path.sep).join("/")
+  // THE WORKAROUND IS GONE, and the row must stay at 318 without it. `projectRelativeOf` answers `""`
+  // for a path that lands exactly on the project root (`path = ".."` in `docs/Project.toml`), where
+  // the manifest really is — the case `foldProjectPath` refuses, correctly, because the root is not a
+  // file. Before it existed this lane carried a local `path.resolve(...) === root` branch to recover
+  // the ten edges the fold lost; that branch is deleted here and the lane's own row is its control.
+  const posix = projectRelativeOf(dirOf(fileRel), written.trim())
+  const extraCandidates: string[] = []
+  if (posix !== null) {
+    for (const m of DEPENDENCY_MANIFESTS) extraCandidates.push(posix.length === 0 ? m : `${posix}/${m}`)
+    if (posix.length > 0) extraCandidates.push(posix)
+  }
+  return fileClaimForTarget({
+    projectRoot: root,
+    filePath,
+    written,
+    admittedExtensions: ["toml"],
+    extraCandidates,
+  })
+}
 
 /** TOML's bare-key alphabet is A-Za-z0-9_-; a quoted key is anything in quotes. */
 function isBareKeyChar(code: number): boolean {
@@ -421,13 +500,41 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     content: string,
     filePath: string,
-    _context?: ASTEngine.AnalyzeContext,
+    context?: ASTEngine.AnalyzeContext,
   ): ASTEngine.ParseResult {
     // The engine hands over the PATH, not a module name — every analyzer derives
     // its own. `Cargo.toml` must be the module `Cargo`: a module whose name ends
     // in its own extension collides with nothing but reads as a filename wherever
     // it appears, and `Cargo` is what a user would search for.
-    const moduleName = path.basename(filePath, path.extname(filePath)) || "document"
+    //
+    // ## WHY THE MODULE NAME IS PROJECT-SCOPED (measured, 2026-10-09)
+    //
+    // The basename is the one part of a path that is NOT unique in a project. A cargo
+    // workspace holds a `Cargo.toml` at the root and one under every member — every one of
+    // them publishes `package`, `package.name`, `dependencies.serde` — so a `contains` edge
+    // written `package -> package.name` names N declarations in its own project and cannot
+    // be walked in either direction. Measured through `script/m14/residual-gate.ts --lane
+    // toml` at HEAD: 25,530 edges, **18,971 ambiguous by declaration**, essentially all of it
+    // `contains` (25,033 of the edges), residual 75.6%.
+    //
+    // Production resolves an edge target only by EXACT `qualified_name` match in the project,
+    // or by a bare name whose project-wide count is exactly 1
+    // (`parallel-indexer.ts resolveRelationships`, strategies 1 and 2) — so the fix is the one
+    // json and dart already made: the file-scoped identity is the PROJECT-RELATIVE DIRECTORY
+    // CHAIN plus the stem, and every qualified path under the document carries it. The rule
+    // itself lives in `./project-scoped-identity` rather than here, so this lane cannot grow
+    // a second spelling of it.
+    //
+    // A root-level file has no directory chain, so its scope is "" and its name is unchanged —
+    // which is why the fixtures, which are handed no project root, spell exactly as before.
+    const stem = path.basename(filePath, path.extname(filePath)) || "document"
+    const moduleName = applyDocumentScope(stem, documentDirScope(filePath, context?.projectRoot))
+    /** The project this file belongs to, when the caller said — the scope a `path` dependency is
+     *  resolved against, and the only thing that makes a file claim computable at all. */
+    const projectRoot = typeof context?.projectRoot === "string" && context.projectRoot.length > 0 ? context.projectRoot : null
+    /** A symbol's identity as the RESOLVER sees it: file-scoped, unique in the project. The
+     *  module keeps its own name (it is already scoped), every member is prefixed by it. */
+    const qualified = (name: string): string => (name === moduleName ? moduleName : `${moduleName}.${name}`)
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const errors: ASTEngine.ParseError[] = []
@@ -513,6 +620,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // module every top-level key is parentless and the file has no identity.
     symbols.push({
       name: moduleName,
+      qualifiedName: moduleName,
       kind: ASTEngine.SymbolKind.Module,
       range: range(rootNode),
       scope: "",
@@ -592,6 +700,53 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const ambiguousFinalSegments = new Set<string>()
     const pendingAliases: { source: string; keyPath: string; alias: string; line: number }[] = []
 
+    /**
+     * Sections that DECLARE A DEPENDENCY on another unit.
+     *
+     * Not every `path = "..."` is a dependency. `[bin] name = "x"` and
+     * `[lib] path = "src/lib.rs"` name THIS crate's own source, and an edge to
+     * them would assert that the manifest needs something it already is. These
+     * six sections instead say "this manifest cannot be built without another
+     * unit, and here is where it lives".
+     *
+     * `workspace.dependencies` and `[patch.<registry>]` are included because both
+     * name a unit the workspace or the build genuinely takes from elsewhere;
+     * Julia's `[sources]` overrides where a declared dependency is loaded from.
+     */
+    const DEPENDENCY_SECTIONS = new Set([
+      "dependencies",
+      "dev-dependencies",
+      "build-dependencies",
+      "workspace.dependencies",
+      "sources",
+      "patch.crates-io",
+    ])
+    /** `foo = { path = "../foo" }` sites, emitted after the walk. */
+    const pendingImports: { source: string; pathValue: string; section: string; line: number }[] = []
+
+    /**
+     * The `path` a dependency declares, read off the inline table.
+     *
+     * The DEPENDENCY is the outer key and `path` is the inner one, so a probe that
+     * reads the outer key as `path` sees nothing at all — which is what the
+     * applicability audit's first version did, and it reported 0 on a population
+     * the corpus carries 331 times.
+     */
+    const pathDependencyOf = (pair: Node): string | null => {
+      const value = valueOf(pair)
+      if (!value || value.type !== "inline_table") return null
+      for (const inner of (value.namedChildren ?? []) as Node[]) {
+        if (inner.type !== "pair") continue
+        const ik = keyOf(inner)
+        if (!ik) continue
+        const isegs = segmentsOf(ik)
+        if (isegs[isegs.length - 1] !== "path") continue
+        const v = stringValueOf(valueOf(inner))
+        if (v && v.length > 0) return v
+      }
+      return null
+    }
+
     const emitKey = (pair: Node, path: string, owner: string): void => {
       const keyNode = keyOf(pair)
       if (!keyNode) return
@@ -608,6 +763,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const line = keyNode.startPosition.row + 1
       symbols.push({
         name,
+        qualifiedName: qualified(name),
         kind: ASTEngine.SymbolKind.Property,
         range: range(pair),
         scope: "",
@@ -624,8 +780,11 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
         },
       })
       relationships.push({
-        source: owner,
-        target: name,
+        // BOTH ENDS CARRY THE FILE-SCOPED IDENTITY. A document-relative target names N
+        // declarations the moment a project holds two manifests with the same shape, and
+        // the resolver can only bind an exact qualified-name match — see the header note.
+        source: qualified(owner),
+        target: qualified(name),
         type: ASTEngine.RelationshipType.Contains,
         confidence: 1.0,
         line_number: line,
@@ -692,6 +851,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
         const relIndex = relationships.length
         symbols.push({
           name,
+          qualifiedName: qualified(name),
           kind: ASTEngine.SymbolKind.Namespace,
           // The section's whole span, from its `[` to the line before the next
           // header — which is exactly the region its keys live in, so a key's
@@ -712,8 +872,8 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           },
         })
         relationships.push({
-          source: owner,
-          target: name,
+          source: qualified(owner),
+          target: qualified(name),
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           line_number: node.startPosition.row + 1,
@@ -739,6 +899,17 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           const segs = segmentsOf(ck)
           if (!namesSomething(segs)) continue
           emitKey(child, `${name}.${joinPath(segs)}`, name)
+          if (DEPENDENCY_SECTIONS.has(path)) {
+            const depPath = pathDependencyOf(child)
+            if (depPath !== null) {
+              pendingImports.push({
+                source: `${name}.${joinPath(segs)}`,
+                pathValue: depPath,
+                section: path,
+                line: ck.startPosition.row + 1,
+              })
+            }
+          }
         }
       } else if (node.type === "pair") {
         // A key before any header belongs to the implicit root table.
@@ -794,7 +965,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (implied.length > 0) meta.impliedParents = implied
       else delete meta.impliedParents
       const rel = relationships[rec.relIndex] as { source: string; metadata?: Record<string, unknown> }
-      rel.source = owner
+      rel.source = qualified(owner)
       const relMeta = rel.metadata ?? (rel.metadata = {})
       if (implied.length > 0) relMeta.hasImpliedParents = true
       else delete relMeta.hasImpliedParents
@@ -828,14 +999,24 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       aliasEdges++
       relationships.push({
-        source: `${source}.${keyPath}`,
-        target,
+        source: qualified(source),
+        target: qualified(target),
         type: ASTEngine.RelationshipType.References,
         confidence: 1.0,
         line_number: line,
         metadata: {
           tomlSpecific: true,
           isAliasReference: true,
+          // WHICH key inside the owning inline table made the reference. The edge
+          // is anchored at `source` because `source.keyPath` is NOT a node: the
+          // analyzer publishes the inline table's keys as `inlineKeys` metadata on
+          // the owning symbol and never as symbols of their own. Measured over the
+          // corpus, 167 of 167 emitted edges carried a source that bound to 0
+          // symbols in its own file, against 167 of 167 targets binding to exactly
+          // 1 — an edge reachable by no incoming query, since `traceCallers` JOINs
+          // `brain_symbol` on the source. The anchor was carrying the specificity
+          // the metadata now carries.
+          aliasKeyPath: keyPath,
           resolvedBy: "final-segment",
           evidenceClass: "structural",
         },
@@ -844,6 +1025,76 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (aliasEdges > 0) patterns.push(`alias-refs x${aliasEdges}`)
     if (aliasUnresolved > 0) patterns.push(`alias-unresolved x${aliasUnresolved}`)
     if (aliasAmbiguous > 0) patterns.push(`alias-ambiguous x${aliasAmbiguous}`)
+
+    // ---- `imports`: a path dependency, emitted AFTER the walk ---------------
+    //
+    // The target is the PATH AS WRITTEN, not a resolved symbol, and that is the
+    // honest form rather than a shortcut. Measured on the corpus: 331 dependency
+    // sites, 317 of which name a directory that really holds a `Cargo.toml` /
+    // `Project.toml` (the applicability audit measures that with the filesystem).
+    //
+    // The module identity is file-scoped NOW (see the header note), so `qualified_name`
+    // is no longer a within-document path that 744 `Cargo.toml` files collide on — but
+    // that does not make this target resolvable, and the reason changed rather than
+    // disappearing: the value is a DIRECTORY or a relative path (`../foo`), and the module
+    // symbol of the file it points at is `<dir scope>.<stem>` — which this analyzer cannot
+    // compute without reading the filesystem to learn that directory's own project-relative
+    // chain. Guessing it from the string would manufacture a binding that the resolver's
+    // exact-match strategy would then bind to whatever symbol happened to share the guess.
+    //
+    // So the edge names the path, matches no symbol, and the store keeps the NAME
+    // with a NULL id — which is precisely the shape `traceCallees`'s unresolved
+    // arm exists to read. Verified end to end against the real schema: the row
+    // comes back as `ext:../b/Cargo.toml`. That is an edge a consumer can read and
+    // traverse, where today the same dependency is not in the graph at all.
+    //
+    // THE CLAIM ON TOP OF THAT (2026-10-09). "Names no symbol" is not the same as "says nothing
+    // checkable": the gate can verify that the target names a FILE OF THE PROJECT, and a `path`
+    // dependency's directory is a real dependency precisely because of the manifest inside it. So
+    // each edge carries `importProjectFile` with that manifest's project-relative path when the
+    // file is really there — MEASURED over the whole admitted population: 318 of 331 verify, 13
+    // name nothing, and the filesystem test agrees with the gate's admitted-list verdict on all
+    // 331 (zero claimed-but-refuted, zero unclaimed-but-verifiable).
+    //
+    // WHY THE FILESYSTEM IS NOW READ, after a header note that said it deliberately was not: the
+    // claim has to be TRUE for the gate to verify it, and the only way to know is to ask whether
+    // the manifest is there. The earlier design could avoid the question because it claimed
+    // nothing at all — an honest option that left every `imports` edge unresolved, which is exactly
+    // the state this replaces. The check is one `statSync` per candidate on the ALREADY-COMPUTED
+    // absolute path, it never decides a symbol identity, and it is the same fact the applicability
+    // audit measures. The 13 that name nothing are cargo's own `cargo_add` fixtures, where
+    // `path = "./dependency"` is written to NOT exist because the test asserts that failure; they
+    // are ruled with a count in the completeness spec rather than marked external to shrink the
+    // number, and they stay unresolved on purpose.
+    let importEdges = 0
+    for (const { source, pathValue, section, line } of pendingImports) {
+      importEdges++
+      // THE FILE CLAIM, or nothing. A `path` dependency names a directory, and the statement the
+      // gate can CHECK is that this target names a file of the project (`FILE_CLAIM_KEY`). It is
+      // emitted only where the manifest is really there (see `dependencyFileClaim`), so the gate
+      // verifies it; a target naming nothing carries NO claim and stays an unresolved edge that
+      // this lane rules with a count, rather than a statement the project would refute.
+      const fileClaim = dependencyFileClaim(pathValue, filePath, projectRoot)
+      relationships.push({
+        source: qualified(source),
+        target: pathValue,
+        type: ASTEngine.RelationshipType.Imports,
+        confidence: 1.0,
+        line_number: line,
+        metadata: {
+          tomlSpecific: true,
+          isPathDependency: true,
+          dependencySection: section,
+          // Still declared, not resolved: the consuming tool turns this path into a
+          // module and nothing in the document does. The claim below is about the
+          // PATH, not about a symbol.
+          resolvedBy: null,
+          ...(fileClaim !== null ? { importProjectFile: fileClaim } : {}),
+          evidenceClass: "structural",
+        },
+      })
+    }
+    if (importEdges > 0) patterns.push(`path-deps x${importEdges}`)
 
     // Structural observations, published as `patterns` so a consumer can see the
     // document's SHAPE without re-parsing it. None of these is a defect claim.

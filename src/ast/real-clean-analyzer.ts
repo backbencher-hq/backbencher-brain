@@ -1,5 +1,6 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { fileClaimForTarget } from "./file-claim"
 
 // =============================================================================
 // Clean language analyzer — `tree-sitter-clean.wasm`, pinned v1.2.7.
@@ -488,7 +489,7 @@ const DECISION_NODE_TYPES = new Set([
 ])
 
 export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, fileContent: string, filePath: string): ASTEngine.ParseResult {
+  analyze(rootNode: Node, fileContent: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     const ctx: CleanContext = {
       symbols: [],
       relationships: [],
@@ -754,6 +755,43 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.emitContainsEdges(ctx)
     this.emitExports(ctx)
     this.classifyEvidenceTier(ctx)
+
+    // ------------------------------------------------------------- THE FILE CLAIM
+    //
+    // THIS IS THE LANE A SHARED RULE WOULD HAVE MIS-BOUND. A Clean import is `Module:item` — a MODULE
+    // and a member, not a path — so the shared path fold finds nothing and the module-to-file
+    // arithmetic has to come from here: `Cocoa.Foundation` -> `Cocoa/Foundation.icl` (or `.dcl`),
+    // with the `:item` suffix REMOVED, because a claim is about a file and the item is not part of
+    // one. The guard still does the admitting (extension, project boundary, `statSync`).
+    //
+    // MEASURED BEFORE EMITTING (`imports-claim-pricing.mts`; clean's population is 312 files, so it
+    // was measured WHOLE, not sampled): of 1,891 import edges, **429 name a module file the
+    // population carries** and the cross-tab is EXACT in both directions — **0 would be refuted**.
+    // The other 1,462 name the Clean STDLIB (`StdEnv:*` 52, `StdString:*` 23, `Data.Error:*` 22 …),
+    // which the corpus does not carry; that residue is a ruled class with its count, not a claim.
+    const claimRoot = typeof context?.projectRoot === "string" && context.projectRoot.length > 0 ? context.projectRoot : null
+    if (claimRoot !== null) {
+      for (const r of ctx.relationships) {
+        if (r.type !== ASTEngine.RelationshipType.Imports) continue
+        const md = r.metadata as Record<string, unknown> | undefined
+        if (!md || typeof md.importProjectFile === "string") continue
+        const moduleName = typeof md.module === "string" && md.module.length > 0
+          ? md.module
+          : String(r.target ?? "").split(":")[0]
+        if (moduleName.length === 0) continue
+        // `Module.Sub` -> `Module/Sub`; the corpus' Clean sources are laid out that way.
+        const modulePath = moduleName.split(".").join("/")
+        const claim = fileClaimForTarget({
+          projectRoot: claimRoot,
+          filePath,
+          written: String(r.target ?? ""),
+          admittedExtensions: ["icl", "dcl"],
+          extraCandidates: [`${modulePath}.icl`, `${modulePath}.dcl`],
+        })
+        if (claim === null) continue
+        md.importProjectFile = claim
+      }
+    }
 
     const patterns: string[] = []
     for (const p in ctx.patterns) patterns.push(p)

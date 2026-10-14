@@ -1127,11 +1127,31 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               // A named import keeps 1.0 — its local binding IS written in the
               // file, and the two importing fixtures pin exactly that.
               const isNamespaceItem = item.text === "*"
+              const jsItemName = item.text.split(" as ")[0]
+        // THE BARE ITEM NAME, FOR A LOCAL MODULE ONLY. THREE lanes emit `<module>:<item>` — this one,
+        // javascript and python — and a
+        // colon makes the target path-like to the gate's `pathLikeTarget` AND is refused by
+        // `_i13_pick`'s own predicate (`instr(target_external,':') = 0`, parallel-indexer.ts:4484)
+        // — two independent refusals, measured: `imports` resolved 0 with 0 ambiguous in every lane.
+        // The edge's target is the SYMBOL it refers to; the module is already in `metadata.module`.
+        //
+        // NOT JAVA, and the count was corrected here after being written wrong: `real-java-analyzer.ts`
+        // emits `target: moduleName` with no colon at all (`:600`, `:658`), and `grails-core` measures
+        // 0 colon edges across 1,942 java files — java's `imports` zero has a different cause and must
+        // not be priced with this change.
+        //
+        // LOCAL ONLY, and the restriction is the difference between a fix and a defect: measured on
+        // the recorded ceiling, 432 (ts) + 276 (js) + 5 (py) EXTERNAL items would resolve to a
+        // project-local symbol that merely SHARES THE NAME — a false binding, not a fix. A relative
+        // (`./`, `../`) or absolute specifier is local by the grammar of the source itself; anything
+        // else keeps its current spelling untouched, which is what makes the external half provably
+        // unmoved.
+              const bareLocalItem = !isNamespaceItem && jsItemName !== "" && (srcPath.startsWith(".") || srcPath.startsWith("/"))
               relationships.push({
                 source: moduleName,
-                // UNCHANGED, and deliberately so: the local binding, which is
-                // what the two importing fixtures pin.
-                target: `${srcPath}:${isNamespaceItem ? "*" : item.text.split(" as ")[0]}`,
+                // FOR A LOCAL MODULE the target is the ITEM (the symbol the edge refers to); for an
+                // external one it stays `<specifier>:<item>`, which is what the importing fixtures pin.
+                target: bareLocalItem ? jsItemName : `${srcPath}:${isNamespaceItem ? "*" : jsItemName}`,
                 type: ASTEngine.RelationshipType.Imports,
                 confidence: isNamespaceItem ? 0.6 : 1.0,
                 ...this.lineField(item.node),
@@ -1139,6 +1159,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // reach the right symbol for an aliased or default import. The
                 // edge target above is untouched.
                 metadata: {
+                  // THE MODULE, NOW THAT IT IS NO LONGER GLUED INTO THE TARGET. TypeScript's site
+                  // already carried `module`; this one did not, so a bare item name here would have
+                  // LOST the module half rather than moved it — and an item name with no module is
+                  // unresolvable by construction (which module's `readJson`?).
+                  module: srcPath,
                   declaredName: item.declared,
                   declaredKind: item.kind,
                   ...(isNamespaceItem ? { unresolved: true } : {}),
@@ -1565,7 +1590,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           overrideSeen.add(ovKey)
           relationships.push({
             source: `${s.ownerName}.${s.name}`,
-            target: `${base}.${s.name}`,
+          // THE TARGET IS THE MEMBER NAME, NOT `Owner.member`: the resolver binds against
+          // DECLARATIONS, and a declaration is named by its leaf. Measured: 100% of this lane's
+          // overrides targets are dotted, 100% have their leaf declared in the edge's own file, and
+          // 100% classify unresolved — a naming problem, not a mechanism problem. `localEdgeName`
+          // derives the leaf AFTER the paren deletion `localEdgeLabel` performs, so a dotted
+          // parameter list cannot be cut into a non-name (see its doc).
+            target: s.name,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.95,
             // The OVERRIDING member's own line, not the class's.
@@ -1646,7 +1677,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           overrideSeen.add(guessKey)
           relationships.push({
             source: `${s.ownerName}.${s.name}`,
-            target: `${base}.${s.name}`,
+          // THE TARGET IS THE MEMBER NAME, NOT `Owner.member`: the resolver binds against
+          // DECLARATIONS, and a declaration is named by its leaf. Measured: 100% of this lane's
+          // overrides targets are dotted, 100% have their leaf declared in the edge's own file, and
+          // 100% classify unresolved — a naming problem, not a mechanism problem. `localEdgeName`
+          // derives the leaf AFTER the paren deletion `localEdgeLabel` performs, so a dotted
+          // parameter list cannot be cut into a non-name (see its doc).
+            target: s.name,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.5,
             ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),

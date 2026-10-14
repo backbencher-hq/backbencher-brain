@@ -7,6 +7,21 @@
   },
   "mutants": [
     {
+      "id": "json/document-identity-not-project-scoped",
+      "language": "json",
+      "defectClass": "unresolvable-identity",
+      "description": "A document's identity reverts to the bare filesystem basename, so every `package.json` in a project publishes a module symbol named `package` and every qualified path beneath it inherits the collision. Measured over a 601-file stride of the corpus (`validation/m14/measurements/json-ambiguity-split-601-after.json`): 90 colliding target names across 1,218 collision symbols, with `package.dependencies` alone carrying 3 declarations. The shared resolver binds a bare name only under `HAVING COUNT(*) = 1`, so the `contains` edge asserting that `package` owns `dependencies` cannot be walked in EITHER direction — this is cause A of the fleet's incoming problem and it is not reducible by emitting fewer edges, because an ambiguous edge is ONE edge attributed to N declarations. Caught by `validation/m14/fixtures/json/scoped-identity-gate.ts` (4 assertions), which the lane's own 17 fixtures cannot reach: `script/m14/run-fixtures.ts` builds `analyzeContext` without `projectRoot`, so no fixture on that runner can observe a scoped identity at all.",
+      "cleanFail": 0,
+      "mutatedPass": 14,
+      "mutatedFail": 3,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/Dotted.name",
+        "json/Inherit.duckdb",
+        "json/Inherit.lsp"
+      ]
+    },
+    {
       "id": "json/top-level-values-share-one-parent-path",
       "language": "json",
       "defectClass": "wrong-symbol-identity",
@@ -289,7 +304,7 @@
       ]
     }
   ],
-  "total": 19,
-  "caught": 19,
+  "total": 20,
+  "caught": 20,
   "survivors": 0
 }

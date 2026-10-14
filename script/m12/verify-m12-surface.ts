@@ -29,6 +29,7 @@ import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 const FIXTURE_ROOT = join(ROOT, "validation/m12/fixtures")
 const MATRIX_FILE = join(ROOT, "docs/data/m12-surface-matrix.json")
+const CONTRACT_FILE = join(ROOT, "docs/data/public-tools.json")
 const OUT_FILE = join(ROOT, "validation/m12/results/mcp-cli-surface.json")
 const CLI = join(ROOT, "bin/bb")
 // Bun is the evidence-script runtime, but the compiled CLI/MCP contract is
@@ -54,7 +55,10 @@ const matrixLanguages = matrix.languages.map((entry) => entry.language).sort()
 check("published matrix declares 41 languages", matrix.advertisedLanguages === 41)
 check("published matrix capability list is complete", CAPABILITIES.every((capability) => matrix.capabilities.includes(capability)))
 check("published matrix matches fixture language set", JSON.stringify(matrixLanguages) === JSON.stringify(LANGUAGES), `matrix=${matrixLanguages.length} fixtures=${LANGUAGES.length}`)
-check("public registry has exactly ten tools", PUBLIC_TOOL_DESCRIPTORS.length === 10)
+// The count comes from the CONTRACT, never a literal: this said ten while the registry
+// had grown to sixteen, which failed at command 128 of 358 in `npm run verify`.
+const CONTRACT_TOOL_COUNT = (JSON.parse(readFileSync(CONTRACT_FILE, "utf8")) as { tools: unknown[] }).tools.length
+check(`public registry has exactly the ${CONTRACT_TOOL_COUNT} contracted tools`, PUBLIC_TOOL_DESCRIPTORS.length === CONTRACT_TOOL_COUNT, `registry=${PUBLIC_TOOL_DESCRIPTORS.length} contract=${CONTRACT_TOOL_COUNT}`)
 
 // Build the same positive corpus used by M12.44/M12.45.
 const corpus = mkdtempSync(join(tmpdir(), "bb-m12-surface-"))

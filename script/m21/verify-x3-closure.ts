@@ -101,34 +101,7 @@ function changedSince(from: string, head: string): string | undefined {
 function classifyBottlenecks(runs: Array<{ id: string; wallMs: number; [k: string]: any }>) {
   const phases = ["discoveryMs", "workerStartupMs", "parseMs", "dbFlushMs"] as const
   const labels = { discoveryMs: "discovery", workerStartupMs: "worker startup (fork probe)", parseMs: "parse", dbFlushMs: "DB flush" }
-  // The annotation here was `Record<string, {...}[]>`. That is a LIE about the
-  // value, and it lied in the direction that hid the element shape:
-  //
-  //   - initialised `= []`, built with `.push`, iterated with `for...of`,
-  //     `return`ed to callers that call `.find()` on it  — all ARRAY operations;
-  //   - annotated as a Record, so `for (const c of table)` reported TS2488
-  //     (a Record is not iterable without --downlevelIteration), and `.push`
-  //     reported TS2349 four times downstream. 7 diagnostics from one wrong word.
-  //
-  // Nothing was broken at RUNTIME: `[]` really is an array and every operation
-  // above works. But a type that misdescribes its own value cannot type-check the
-  // element either, which is why the annotation also had to grow the four fields
-  // `.push` actually stores and the two the cross-phase pass writes afterwards.
-  // Those were unchecked too — a typo in `medianFractionOfWall` would have shipped
-  // silently.
-  interface BottleneckRow {
-    phase: string
-    kind: string
-    verdict: "confirmed" | "disproven" | "unresolved"
-    perRun: Array<{ id: string; ms: number; fractionWall: number }>
-    medianFractionOfWall: number
-    rule: string
-    /** set by the cross-phase pass below when a phase claims more than its own wall time */
-    contradiction?: string
-    /** set alongside `contradiction`, explaining the arithmetic */
-    explanation?: string
-  }
-  const table: BottleneckRow[] = []
+  const table: Record<string, { phase: string; kind: string; verdict: "confirmed" | "disproven" | "unresolved" }[]> = []
   for (const phase of phases) {
     const byRun = runs.map((r) => {
       const ms = r[phase] ?? 0

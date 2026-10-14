@@ -17,6 +17,7 @@ import {
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
 import { isIndexArtifactName, isIndexArtifactNameStrict } from "./analysis-exclusions"
+import { decideWatchdog, WATCHDOG_MIN_STALL_MS, WATCHDOG_TICK_MS } from "./watchdog-policy"
 import { isTestFileCandidate } from "./test-classification"
 import { createStoreDiagnostics } from "./store-diagnostics"
 // M50.A2 (#764): dense-vector read accelerator (JSON stays the source of truth).
@@ -31,6 +32,8 @@ import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
 import { resolveImportTargets } from "./import-resolution"
 import { retargetCrossFileOverrides } from "./override-retarget"
+import { retargetJuliaMethodTableBindings } from "./julia-binding-collapse"
+import { claimOwnerCarryingTargets } from "./member-owner-resolution"
 import { ASTEngine } from "./engine"
 
 const log = Log.create({ service: "parallel-indexer" })
@@ -333,7 +336,12 @@ export const ParallelIndexerConfig = {
     /.*Sftp.*\.json$/,
     /\/gen\/.*\.(ts|js)$/,
     // === PERFORMANCE & WEB ASSET DIRECTORIES ===
-    /\/perf\//,
+    // `/perf/` used to be here and in the compiled-mode list. Removed: it hid real
+    // source in this repository (measured: 17 tracked files with a valid extension,
+    // including the worker-pool gate), and a benchmark tree is a handful of small
+    // files — hiding it is not worth hiding source by mistake. Projects that keep
+    // generated benchmark data there can exclude it in .bbignore, which now also
+    // works in reverse (`!path`) because the built-in rules became overridable.
     /\/Microbenchmarks\//,
     /\/wwwroot\//,
     /\/testassets\//,
@@ -437,6 +445,24 @@ export interface ParallelIndexingStats {
      * So `derivedPass` is not a consistency statement, and the count below is.
      */
     derivedPass?: "full" | "bounded" | "deferred" | "skipped-unchanged" | "partial"
+    /**
+     * Store batches that rolled back during this run, and the files they carried.
+     *
+     * A rollback means those files are NOT in the index. Before this field the only
+     * trace was a stderr line, and a run that lost batches still reported success and
+     * persisted `status: "complete"` — measured: injecting a single batch failure made
+     * the CLI print `✓ indexed 12 files` with no indication that anything was missing.
+     */
+    storeFailures?: number
+    storeFailureFiles?: number
+    /**
+     * Files this run discovered that are absent from `brain_file` AFTER the recovery
+     * pass. This is the state of the index, not a guess about it: the pass above
+     * re-processes what a rollback cost, and whatever it could not save is counted
+     * here. Non-zero means the index is incomplete, and every consumer that reports
+     * health, counts or "complete" has to be able to see that.
+     */
+    missingAfterRecovery?: number
     /** Relationships this project holds whose target could not be attached to a
      *  stored symbol: `target_symbol_id IS NULL AND target_external IS NOT NULL`.
      *  The row is present and counted, but it is not an edge — traversal reads it
@@ -962,13 +988,21 @@ async function discoverAndFilterFiles(
       await processFile(f)
     }
   } else {
-    const walk = async (dir: string, ig: ReturnType<typeof ignore>, depth = 0) => {
+    const walk = async (dir: string, ig: ReturnType<typeof ignore>, depth = 0, forceInclude = false) => {
       if (depth > 50) return
       try {
         const entries = await readdir(dir, { withFileTypes: true })
 
-        // Stop if we find a .git folder in a subdirectory (nested project boundary)
-        if (dir !== projectPath && entries.some((e) => e.isDirectory() && e.name === ".git")) {
+        // Stop if we find a nested project boundary in a subdirectory.
+        //
+        // `.git` is a DIRECTORY in a normal checkout but a FILE in a submodule and in a
+        // linked worktree. Testing only for the directory meant every submodule and every
+        // worktree was walked as if it were first-party source; the file form is what git
+        // actually writes in both cases.
+        if (
+          dir !== projectPath &&
+          entries.some((e) => (e.isDirectory() || e.isFile()) && e.name === ".git")
+        ) {
           return
         }
 
@@ -978,7 +1012,7 @@ async function discoverAndFilterFiles(
         if (gitignoreEntry) {
           try {
             const gitignoreContent = await readFile(path.join(dir, ".gitignore"), "utf8")
-            localIg = ignore().add(ig).add(gitignoreContent)
+            localIg = ignore({ ignorecase: false }).add(ig).add(gitignoreContent)
           } catch {
             // Ignore read errors
           }
@@ -1005,23 +1039,44 @@ async function discoverAndFilterFiles(
           if (entry.isDirectory() && [".git", ".svn", ".hg", ".cache", ".nyc_output", ".venv", ".next", ".nuxt", ".svelte-kit", ".turbo"].includes(entry.name)) continue
           const fullPath = path.join(dir, entry.name)
           const relativePath = path.relative(projectPath, fullPath)
+          const ignorePath = relativePath + (entry.isDirectory() ? "/" : "")
+
+          // ── an explicit `!pattern` is consulted FIRST ──────────────────────
+          // Every rule below this point is a DEFAULT, and a default a user cannot
+          // override is a bug. Measured in this repository before this change: the
+          // compiled-mode list hid 17 first-party files (`script/perf/**`, including
+          // the gate that verifies the worker pool) and `/bin/` hid the shipped
+          // `bin/bb` launcher, and NO ignore file could bring any of them back —
+          // `shouldSkip` ran before `.bbignore`/`.gitignore` and supported no negation.
+          //
+          // So the ignore verdict is read first, and an explicit un-ignore (or being
+          // inside a directory that was explicitly un-ignored) escapes the built-in
+          // skips for that subtree. Normal ignoring is unchanged: a file the ignore
+          // files ignore is still skipped below.
+          const verdict = localIg.test(ignorePath)
+          const forced = forceInclude || verdict.unignored
 
           // === COMPILED-MODE SAFE DIRECTORY FILTER (v2) ===
-          // This runs BEFORE shouldSkip and localIg checks.
-          // Uses simple string checks guaranteed to survive minification.
+          // Kept as plain string checks so they survive minification, but no longer
+          // unconditional: `forced` is the user's explicit override.
+          //
+          // `/perf/` was REMOVED here. It is a plausible default for someone else's
+          // benchmark tree, but in this repository it silently excluded real source
+          // (measured: 17 tracked files with a valid extension), and a benchmark
+          // directory is not something bb should decide to hide on the user's behalf
+          // when the cost of indexing it is a handful of small files.
           if (
-            relativePath.includes("/perf/") ||
-            relativePath.includes("/Microbenchmarks/") ||
-            relativePath.includes("/wwwroot/") ||
-            relativePath.includes("/coverage/") ||
-            relativePath.includes("/node_modules/") ||
-            relativePath.includes("/dist/") ||
-            relativePath.includes("/build/") ||
-            relativePath.includes("/.git/") ||
-            relativePath.includes("/obj/") ||
-            relativePath.includes("/obj/") ||
-            relativePath.includes("/bin/") ||
-            relativePath.includes("/testData/")
+            !forced &&
+            (relativePath.includes("/Microbenchmarks/") ||
+              relativePath.includes("/wwwroot/") ||
+              relativePath.includes("/coverage/") ||
+              relativePath.includes("/node_modules/") ||
+              relativePath.includes("/dist/") ||
+              relativePath.includes("/build/") ||
+              relativePath.includes("/.git/") ||
+              relativePath.includes("/obj/") ||
+              relativePath.includes("/bin/") ||
+              relativePath.includes("/testData/"))
           ) {
             continue
           }
@@ -1029,13 +1084,12 @@ async function discoverAndFilterFiles(
           // Skip patterns are project-relative: a skip dir must be INSIDE the
           // project. Matching the absolute path would also skip any project
           // rooted under a skipped directory (e.g. ~/.vscode/tmp fixtures).
-          if (shouldSkip("/" + relativePath)) continue
+          if (!forced && shouldSkip("/" + relativePath)) continue
 
-          if (localIg.ignores(relativePath + (entry.isDirectory() ? "/" : ""))) continue
-          if (localIg.ignores(relativePath + (entry.isDirectory() ? "/" : ""))) continue
+          if (verdict.ignored) continue
 
           if (entry.isDirectory()) {
-            promises.push(walk(fullPath, localIg, depth + 1))
+            promises.push(walk(fullPath, localIg, depth + 1, forced))
           } else if (entry.isFile()) {
             // Two gates, cheapest first: the PURE path-only check admits every
             // recognised extension with no I/O, and only an extensionless file
@@ -1053,10 +1107,27 @@ async function discoverAndFilterFiles(
       }
     }
 
-    const rootIg = ignore()
-    // User-controlled ignore list + performance/benchmark directories
+    // CASE-SENSITIVE, because these are GITIGNORE patterns and git is case-sensitive.
+    // The `ignore` package defaults to case-INsensitive, so `**/testData/**` was matching
+    // lowercase `testdata/` — which git does NOT do with the same pattern and the same file.
+    // MEASURED: 12,479 routed-extension files across 452 lowercase `testdata/` directories,
+    // confirmed three ways (the graphql lane's own count of 156, a filesystem census that
+    // counted exactly 156 `.graphql`, and the predicate itself returning IGNORED for a
+    // lowercase path — while `ignorecase: false` and git both KEEP it).
+    // Falsifier: the indexer's own admission count should rise by the files this was losing.
+    const rootIg = ignore({ ignorecase: false })
+    // Built-in ignore globs. These are DEFAULTS and are overridable: the user's
+    // .bbignore is added BELOW, and last-match-wins means an explicit `!pattern`
+    // there re-includes any of them. That ordering is the reason these can stay
+    // while the walk's other two rule layers had to be changed (they ran before the
+    // ignore files and supported no negation).
+    //
+    // `**/perf/**` was REMOVED from this list for the same measured reason it was
+    // removed from the walk: it hid real source in this repository (17 tracked files
+    // with a valid extension, the worker-pool gate among them) and a benchmark
+    // directory costs a handful of small files to index. A project that keeps
+    // generated benchmark data under perf/ can exclude it in .bbignore.
     rootIg.add([
-      "**/perf/**",
       "**/Microbenchmarks/**",
       "**/wwwroot/**",
       "**/testassets/**",
@@ -1204,7 +1275,11 @@ async function processInProcess(
         // Per-file timeout race — Bun may fire setTimeout even during CPU-bound WASM
         result = await Promise.race([
           parseFile
-            ? parseFile(file, projectPath)
+            // M60 yaml lane (2026-10-09): the IN-PROCESS path hands the analyzers the
+            // project root too, so a file-scoped identity (a document, a module) is scoped
+            // identically whether the file is parsed in a worker or in this process. The
+            // worker path carries it at `pool-worker.ts`'s `contextFor`.
+            ? parseFile(file, projectPath, { projectRoot: projectPath })
             : extractFallbackResult(file, projectPath),
           new Promise<any>((_, reject) =>
             setTimeout(() => reject(new Error("FILE_TIMEOUT")), FILE_TIMEOUT_MS)
@@ -1390,25 +1465,123 @@ export async function processWithWorkerPool(
   // startup watchdog is deterministically exercisable in fixtures.
   const workerStartupTimeoutMs = Number(process.env.BB_WORKER_STARTUP_TIMEOUT_MS || 30000)
 
+  // ── Event-loop stall detector: the watchdog must not blame the worker for the
+  // parent's block ─────────────────────────────────────────────────────────────
+  // `handleWorkerTimeout` is a WALL-CLOCK timer in the parent, and the parent is
+  // the only process that touches SQLite — synchronously. One long `flushDbBatch`
+  // therefore expires the timers of every in-flight batch at once, and the pool
+  // is killed as a unit: measured 99 kills in one run, in bursts of exactly 7
+  // (the whole pool), every 3-5 minutes, while the machine sat at load 4.1 and the
+  // same files parsed in 82-520 ms. A worker was never the slow part.
+  //
+  // The tick below measures how long the loop was ACTUALLY blocked, and
+  // `decideWatchdog` refuses to kill a worker for a window the parent spent
+  // blocked. See src/ast/watchdog-policy.ts for the measurements and the rule.
+  let lastStallMs = 0
+  let lastStallEndedAt = 0
+  let stalledTotalMs = 0
+  let watchdogDeferrals = 0
+  let workerKills = 0
+  let poolCompletionLogged = false
+  let stallTickAt = Date.now()
+  const stallTimer = setInterval(() => {
+    const tickNow = Date.now()
+    const lateness = tickNow - stallTickAt - WATCHDOG_TICK_MS
+    stallTickAt = tickNow
+    if (lateness >= WATCHDOG_MIN_STALL_MS) {
+      lastStallMs = lateness
+      lastStallEndedAt = tickNow
+      stalledTotalMs += lateness
+      log.warn("parent event loop was blocked", { ms: lateness, stalledTotalMs })
+    }
+  }, WATCHDOG_TICK_MS)
+  // Never hold the process open for a diagnostic.
+  stallTimer.unref?.()
+
   log.debug("starting worker pool", { numWorkers, files: files.length, batchSize })
 
   // Streaming DB batch
   let pendingDbBatch: FileResult[] = []
-  const dbPromises: Array<Promise<{ symbols: number; relationships: number; imports: number; failed?: boolean }>> = []
+  const dbPromises: Array<
+    Promise<{
+      symbols: number
+      relationships: number
+      imports: number
+      failed?: boolean
+      rolledBackBatches?: number
+      rolledBackFiles?: number
+    }>
+  > = []
 
+  // Stall-bounded flush (opt-in, measured — the DEFAULT is deliberately the cheap
+  // end, because correctness no longer depends on shortening the block; the
+  // deferral policy in watchdog-policy.ts already survives it).
+  //
+  // A `storeResults` call is ONE synchronous pass through better-sqlite3: it holds
+  // the parent's event loop for its whole duration. Measured, same graph both ways
+  // (relHash `2d44228f89e5bb77` at n800, `8b164c3b570db152` at n200):
+  //
+  //   tier  chunk  files  wallMs  parseMs  dbFlushMs  blocks>=1s  blockedMs
+  //   n200      4    196   30,790   24,048     20,165           0          0
+  //   n200     10    196   30,510   24,055     14,619           1      1,535
+  //   n200     20    196   30,214   24,060     13,555           8     10,782
+  //   n800      4    796   55,200   42,786    127,066           1      1,024
+  //   n800     20    796   52,782   41,058     32,406           7     10,294
+  //
+  // Chunking 20 files into 5 transactions costs 4x the store CPU at n800 and is
+  // 2.4 s SLOWER end to end, so it buys responsiveness, not speed. It is kept as a
+  // lever (`BB_DB_FLUSH_CHUNK=4`) for a deployment whose blocks would outlast the
+  // per-file timeout on a much larger database — there, the 4x store cost is
+  // cheaper than waiting out the deferrals.
+  const FLUSH_CHUNK_FILES = Number(process.env.BB_DB_FLUSH_CHUNK || 20)
   const flushDbBatch = async (
     batchToStore: FileResult[],
-  ): Promise<{ symbols: number; relationships: number; imports: number; failed?: boolean }> => {
+  ): Promise<{
+    symbols: number
+    relationships: number
+    imports: number
+    failed?: boolean
+    rolledBackBatches?: number
+    rolledBackFiles?: number
+  }> => {
     if (batchToStore.length === 0) return { symbols: 0, relationships: 0, imports: 0 }
     const flushStart = Date.now()
+    let symbols = 0
+    let relationships = 0
+    let imports = 0
+    let rolledBackBatches = 0
+    let rolledBackFiles = 0
     try {
-      const stats = await storeResults(projectId, projectPath, batchToStore, { skipResolution: true })
+      for (let i = 0; i < batchToStore.length; i += FLUSH_CHUNK_FILES) {
+        const chunk = batchToStore.slice(i, i + FLUSH_CHUNK_FILES)
+        const stats = await storeResults(projectId, projectPath, chunk, { skipResolution: true })
+        symbols += stats.symbols
+        relationships += stats.relationships
+        imports += stats.imports
+        rolledBackBatches += stats.rolledBackBatches ?? 0
+        rolledBackFiles += stats.rolledBackFiles ?? 0
+        // Yield between chunks: this is the line that keeps the loop responsive.
+        if (i + FLUSH_CHUNK_FILES < batchToStore.length) {
+          await new Promise((r) => setImmediate(r))
+        }
+      }
       if (telemetry) telemetry.dbFlushMs += Date.now() - flushStart
-      return stats
+      return { symbols, relationships, imports, rolledBackBatches, rolledBackFiles }
     } catch (e: any) {
       if (telemetry) telemetry.dbFlushMs += Date.now() - flushStart
-      log.error("storeResults failed", { error: e?.message, batchSize: batchToStore.length })
-      return { symbols: -1, relationships: -1, imports: -1, failed: true }
+      // Same contract as before chunking: a failed batch is reported as failed and
+      // the caller skips it. Chunks already committed before the failure are not
+      // subtracted back out — the counts here are the batch's, not a running total,
+      // and under-reporting a failed batch is the honest direction to err.
+      log.error("storeResults failed", { error: e?.message, batchSize: batchToStore.length, chunkFiles: FLUSH_CHUNK_FILES })
+      return {
+        symbols: -1,
+        relationships: -1,
+        imports: -1,
+        failed: true,
+        rolledBackBatches: 1,
+        rolledBackFiles: batchToStore.length,
+      }
     }
   }
 
@@ -1438,9 +1611,31 @@ export async function processWithWorkerPool(
     // .git boundaries, and duplicating that logic is a worse risk than an under-enriched
     // incremental run.
     //
-    // Opt-in per EXTENSION, and the only entry is one this repository has measured the
+    // Opt-in per EXTENSION, and the only entries are ones this repository has measured the
     // benefit of. A language with no entry pays nothing and behaves exactly as before.
-    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity" }
+    //
+    // `.fs` and NOT `.fsi`: an F# signature/definition pair states the same entity twice, and
+    // indexing the `.fsi` too would let a `.fs` file resolve a target to a surface declared only
+    // there — a real population (3,689 edges on the lane's corpus census), but one whose identity
+    // rule (which of the two a target means) is undecided, and an index is the wrong place to
+    // decide it by accident.
+    //
+    // FS-P16. APPLIED TWICE: this block was silently reverted once by a stale write from another
+    // session editing this file, and the symptom was invisible — the run simply produced the
+    // pre-index classes (0 `in-project-*` rows in the store) with no warning anywhere, because a
+    // missing index is a SUPPORTED state. The store-side check that catches it is written down in
+    // `docs/analyzers/real-fsharp-analyzer.md` pass 16: index a small F# project and count
+    // `in-project-*` in `brain_relationship.metadata`; 0 means the registration is gone.
+    // `.proto` ADDED 2026-10-11 (protobuf lane). The entry is INERT WITHOUT A SPEC: measured over the
+    // whole corpus (847 .proto files), the Solidity default yields 0 names and 0 types — an entry that
+    // indexes the right SHAPE and holds nothing, which is the dart situation one layer down.
+    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java" }
+    // `.groovy` IS DELIBERATELY ABSENT, and it was added and then removed in the same change: this
+    // table is only half the contract, and the other half is `specByLang` below. With `.groovy` here
+    // and no groovy spec there, the lookup fell through to `?? SOLIDITY_DECLARATION_SPEC` and
+    // indexed GROOVY declarations with the SOLIDITY spec — which is EXACTLY the defect this file's
+    // `.scss` comment records from this morning (`.scss` reached the table without its spec being
+    // reachable). A lane is wired when BOTH halves exist, not when its extension is listed.
     let projectIndexes: Record<string, unknown> | undefined
     try {
       const wanted = new Set<string>()
@@ -1459,6 +1654,32 @@ export async function processWithWorkerPool(
         const repoRoot = path.resolve(path.dirname(require("url").fileURLToPath(import.meta.url)), "..", "..")
         const wasmByLang: Record<string, string> = {
           solidity: path.join(repoRoot, "wasm", "tree-sitter-solidity.wasm"),
+          fsharp: path.join(repoRoot, "wasm", "tree-sitter-fsharp.wasm"),
+          protobuf: path.join(repoRoot, "wasm", "tree-sitter-protobuf.wasm"),
+          scss: path.join(repoRoot, "wasm", "tree-sitter-scss.wasm"),
+        }
+        // The SPEC is per language for the reason project-index.ts gives: the generic extractor
+        // reads `childForFieldName("name")`, which is true of Solidity and false of F# three ways
+        // (a clause's name is an UNNAMED `type_name` child, a member is named after the instance
+        // dot, an abstract member's name is its signature's first identifier). A language absent
+        // here keeps Solidity's spec, which is what every pre-existing entry did and is why this
+        // map is additive rather than a rewrite.
+        const specByLang: Record<string, unknown> = {
+          solidity: mod.SOLIDITY_DECLARATION_SPEC,
+          fsharp: mod.FSHARP_DECLARATION_SPEC,
+          // `.scss` was added to PROJECT_INDEX_EXTENSIONS without an entry here, so the lookup below
+          // fell through to `?? SOLIDITY_DECLARATION_SPEC` and indexed SCSS declarations with the
+          // SOLIDITY spec. The spec is now exported (see project-index.ts) and mapped by name.
+          scss: mod.SCSS_DECLARATION_SPEC,
+          // JAVA. `qualifyTypeWithFile` gives the index the fully-qualified type names a LOCALITY
+          // question needs (`java.util.List` vs `org.grails.Foo` are the same shape otherwise), which
+          // is the same reasoning `.scss` needed its spec for.
+          java: mod.JAVA_DECLARATION_SPEC,
+          // DYNAMIC, like `mod` above: the indexer does not otherwise import an analyzer, and a static
+          // import would pull the whole engine into its startup for a spec used once. The spec lives in
+          // the language's own analyzer because the grammar's declarations are named by a CHILD node
+          // (`message_name`, not a `name` field) and the `package` is a SIBLING of the declaration.
+          protobuf: (await import("./real-protobuf-analyzer")).PROTOBUF_DECLARATION_SPEC,
         }
         const { existsSync: wasmExists } = await import("fs")
         const byExt: Record<string, unknown> = {}
@@ -1468,7 +1689,7 @@ export async function processWithWorkerPool(
           if (wasm === undefined || !wasmExists(wasm)) continue
           const subset = files.filter((f) => f.toLowerCase().endsWith(ext))
           if (subset.length === 0) continue
-          const built = await mod.buildProjectIndexFromDisk(wasm, subset, mod.SOLIDITY_DECLARATION_SPEC)
+          const built = await mod.buildProjectIndexFromDisk(wasm, subset, specByLang[lang] ?? mod.SOLIDITY_DECLARATION_SPEC)
           byExt[ext] = mod.serializeProjectIndex(built)
           log.info("project index built", { ext, files: subset.length, types: built.typeKinds.size })
         }
@@ -1492,6 +1713,8 @@ export async function processWithWorkerPool(
         timeout: ReturnType<typeof setTimeout>
         currentFile?: string
         attempts?: number
+        /** Watchdog deferrals granted to this batch (see watchdog-policy.ts). */
+        deferrals?: number
       }
     >()
     let batchCounter = 0
@@ -1537,10 +1760,37 @@ export async function processWithWorkerPool(
         const batch = pendingBatches.get(batchId)
         if (!batch) return
 
+        // An expired timer is only evidence about the worker when the PARENT was
+        // able to observe it. If the event loop spent a large part of this
+        // batch's window blocked in a synchronous store, the worker is innocent:
+        // re-arm and let it finish. Measured failure this prevents: 99 kills in
+        // one run, in bursts of exactly 7 — the whole pool — every 3-5 minutes.
+        const decision = decideWatchdog({
+          now: Date.now(),
+          lastStallMs,
+          lastStallEndedAt,
+          timeoutMs,
+          deferrals: batch.deferrals ?? 0,
+        })
+        if (decision.action === "defer") {
+          batch.deferrals = (batch.deferrals ?? 0) + 1
+          watchdogDeferrals++
+          clearTimeout(batch.timeout)
+          batch.timeout = setTimeout(() => handleWorkerTimeout(worker, batchId), timeoutMs)
+          log.warn("watchdog deferred — the parent's event loop was blocked, the worker was not", {
+            batchId,
+            currentFile: batch.currentFile,
+            stallMs: lastStallMs,
+            deferrals: batch.deferrals,
+          })
+          return
+        }
+
         clearTimeout(batch.timeout)
         pendingBatches.delete(batchId)
 
-        log.warn("Worker timed out or crashed, killing process", { batchId, currentFile: batch.currentFile })
+        workerKills++
+        log.warn("Worker timed out or crashed, killing process", { batchId, currentFile: batch.currentFile, reason: decision.reason })
 
         try {
           worker.kill("SIGKILL")
@@ -1645,6 +1895,24 @@ export async function processWithWorkerPool(
       }
     }
 
+    // Which workers have signalled `ready`. A worker that dies BEFORE that is a
+    // startup failure, not a batch loss, and counting it is what makes the
+    // restart cap below a cap.
+    //
+    // The bug this closes: `clearStartupTimer(worker)` is the first statement of
+    // the `exit` handler, so a worker that died quickly could never trip the
+    // startup watchdog, and nothing on the exit path incremented
+    // `startupFailures`. A runtime that crashes before `ready` therefore forked a
+    // replacement forever — zero files parsed, no error reported, the run simply
+    // hung. Counted once per worker through countStartupFailure so the several
+    // paths that can observe the same death cannot double-count it.
+    const readyWorkers = new Set<ChildProcess>()
+    const countStartupFailure = (w: ChildProcess) => {
+      if ((w as any)._bbStartupCounted) return
+      ;(w as any)._bbStartupCounted = true
+      onStartupFailure()
+    }
+
     function createWorker(workerId: number) {
       // Worker pool: fork a child process that enters pool-worker IPC mode.
       const { workerPath, workerArgs } = resolvePoolWorkerFork()
@@ -1671,7 +1939,7 @@ export async function processWithWorkerPool(
           workerId,
           timeoutMs: workerStartupTimeoutMs,
         })
-        onStartupFailure()
+        countStartupFailure(worker)
         try { worker.kill("SIGKILL") } catch (e: any) {}
       }, workerStartupTimeoutMs)
       ;(worker as any)._bbStartupTimer = startupTimer
@@ -1706,10 +1974,39 @@ export async function processWithWorkerPool(
       worker.stderr?.on("data", relayWorker("worker"))
       worker.stdout?.on("data", relayWorker("worker-out"))
 
+      // A worker's IPC channel can fail ASYNCHRONOUSLY, and an unhandled 'error'
+      // event on a ChildProcess kills the PARENT — taking the whole index run with
+      // it, which is the failure class the dispatch guard's comment claims to have
+      // fixed. The try/catch around `worker.send()` cannot see this: it only
+      // catches a synchronous throw. Reproduced on Node v22.22.1 — a dispatch into
+      // a worker that died while the parent was blocked in a synchronous store
+      // returned `true`, and the write then failed with EPIPE as an unhandled
+      // 'error' (process exit 7); after the `exit` event the same send returns
+      // false AND emits ERR_IPC_CHANNEL_CLOSED (exit 1).
+      //
+      // So every worker carries an error handler for its whole life. The batch it
+      // held is requeued by the `exit` handler, which follows; this handler's job
+      // is to make the failure a worker loss instead of a run loss, and to retire
+      // the worker deterministically so that requeue actually happens.
+      worker.on("error", (err: Error) => {
+        log.warn("worker IPC error — retiring the worker so its batch is requeued", {
+          workerId,
+          error: String((err as any)?.message ?? err),
+        })
+        deadWorkers.add(worker)
+        clearStartupTimer(worker)
+        const deadIdx = idleWorkers.indexOf(worker)
+        if (deadIdx !== -1) idleWorkers.splice(deadIdx, 1)
+        if (!readyWorkers.has(worker)) countStartupFailure(worker)
+        try { worker.kill("SIGKILL") } catch {}
+        scheduleNext()
+      })
+
       worker.on("message", (msg: any) => {
         try {
           if (msg.type === "ready") {
             clearStartupTimer(worker)
+            readyWorkers.add(worker)
             idleWorkers.push(worker)
             scheduleNext()
           } else if (msg.type === "engine_fail") {
@@ -1788,6 +2085,17 @@ export async function processWithWorkerPool(
           const idx = idleWorkers.indexOf(worker)
           if (idx !== -1) idleWorkers.splice(idx, 1)
 
+          // A worker that dies before it ever signalled `ready` is a STARTUP
+          // failure. Without this the restart cap could never be reached (see
+          // readyWorkers): the counter only advanced from the startup watchdog,
+          // which clearStartupTimer above has just disarmed for exactly this
+          // worker, and from the warmup send. A runtime that crashes on boot
+          // therefore forked replacements forever with nothing parsed and nothing
+          // reported. Counted before the replacement decision below, so that
+          // decision sees the failure it is deciding about.
+          if (!readyWorkers.has(worker)) countStartupFailure(worker)
+          readyWorkers.delete(worker)
+
           pendingBatches.forEach((batch, batchId) => {
             if (batch.worker === worker) {
               log.warn("Worker died unexpectedly during batch", { batchId, code, signal })
@@ -1830,8 +2138,7 @@ export async function processWithWorkerPool(
       } catch (err: any) {
         log.warn("warmup send failed; treating the worker as dead", { workerId, error: String(err?.message ?? err) })
         deadWorkers.add(worker)
-        startupFailures++
-        if (telemetry) telemetry.workerStartupFailures = startupFailures
+        countStartupFailure(worker)
         try { worker.kill("SIGKILL") } catch {}
         if (fileQueue.length > 0) scheduleNext()
       }
@@ -1839,16 +2146,40 @@ export async function processWithWorkerPool(
 
     function scheduleNext() {
       if (fileQueue.length === 0 && pendingBatches.size === 0) {
+        clearInterval(stallTimer)
+        // The pool's own accounting, so a run can be read for what the watchdog
+        // did rather than only for how long it took: kills are work lost, and
+        // deferrals are kills that the stall detector prevented. Logged ONCE —
+        // scheduleNext reaches this branch on every pass.
+        if (!poolCompletionLogged) {
+          poolCompletionLogged = true
+          log.info("worker pool complete", {
+            files: files.length,
+            workers: numWorkers,
+            workerKills,
+            watchdogDeferrals,
+            parentStalledMs: stalledTotalMs,
+          })
+        }
         workers.forEach((w) => w.kill())
         if (pendingDbBatch.length > 0) {
           dbPromises.push(flushDbBatch(pendingDbBatch))
           pendingDbBatch = []
         }
         Promise.all(dbPromises).then((storedStats) => {
-          const finalStored: { symbols: number; relationships: number; imports: number; failed?: boolean } = {
+          const finalStored: {
+            symbols: number
+            relationships: number
+            imports: number
+            failed?: boolean
+            storeFailures?: number
+            storeFailureFiles?: number
+          } = {
             symbols: 0,
             relationships: 0,
             imports: 0,
+            storeFailures: 0,
+            storeFailureFiles: 0,
           }
           for (const s of storedStats) {
             // FIX: Handle failed batches - don't add negative values
@@ -1857,8 +2188,15 @@ export async function processWithWorkerPool(
                 symbols: s.symbols,
                 relationships: s.relationships,
               })
+              finalStored.storeFailures! += s.rolledBackBatches ?? 1
+              finalStored.storeFailureFiles! += s.rolledBackFiles ?? 0
               continue
             }
+            // Rolled-back batches inside an otherwise successful call: counted, not
+            // swallowed. These files are absent from the index, and the run has to be
+            // able to say so instead of reporting a clean "complete".
+            finalStored.storeFailures! += s.rolledBackBatches ?? 0
+            finalStored.storeFailureFiles! += s.rolledBackFiles ?? 0
             finalStored.symbols += s.symbols
             finalStored.relationships += s.relationships
             finalStored.imports += s.imports
@@ -1904,6 +2242,7 @@ export async function processWithWorkerPool(
           worker,
           timeout: setTimeout(() => handleWorkerTimeout(worker, batchId), timeoutMs),
           attempts: 1,
+          deferrals: 0,
         })
 
         // RESOLVED 2026-10-02 (branch consolidation): a UNION.
@@ -1976,6 +2315,20 @@ const backgroundEmbedJobs: BackgroundEmbedJob[] = []
 let backgroundEmbedActive = false
 let backgroundEmbedQueuedItems = 0
 let embeddingFlushWaiters: Array<() => void> = []
+
+/**
+ * How much background embedding work is still queued.
+ *
+ * The drainer keeps the event loop alive until its queue empties, so a command
+ * that has already printed its index summary can sit silent for as long as the
+ * provider takes — measured 2026-10-08: a 427 s index followed by ~10 minutes of
+ * no output at all, which reads exactly like a hang (and bb's own closing line
+ * invites reporting a perceived hang). Exported so a CLI can say what it is
+ * waiting for instead of leaving the user to guess.
+ */
+export function pendingEmbeddingCount(): number {
+  return backgroundEmbedQueuedItems
+}
 const EMBED_QUEUE_ITEM_CAP = Number(process.env.BB_EMBEDDING_QUEUE_LIMIT || 25000)
 
 // M21.E2: production counters for the embedding queue lifecycle. These are
@@ -2593,15 +2946,218 @@ async function drainBackgroundEmbeddings() {
   }
 }
 
+// ── HOISTED FOR THE ID-CARRYING JOIN (r-lane, 2026-10-12) ─────────────────────────────────────────
+// These two were inline inside `storeResults`. They are MUTATION-FREE — every use is a read
+// (`CONTAINER_TYPES_LOOKUP.has`, `CONTAINER_PRIORITY[…]`) — so hoisting them is a pure move and the
+// store's counts cannot change. They are hoisted because the companion pass needs the SAME span index
+// the store builds: "one computation, one answer" means one implementation with two callers, not two
+// implementations that agree. Hoisting the MUTABLE state is a different matter and is NOT done here
+// (see the denylist note at the span-index construction).
+const CONTAINER_TYPES_LOOKUP = new Set([
+  "class", "interface", "struct", "trait", "enum", "object", "actor",
+  "module", "namespace", "package", "impl", "type",
+])
+
+/** Container kinds sort first (class, interface, …) so FK references from methods to their containers
+ *  resolve. Read-only, hoisted with the set above. */
+const CONTAINER_PRIORITY: Record<string, number> = {
+  class: 0, interface: 0, struct: 0, trait: 0, enum: 0, object: 0,
+  module: 0, namespace: 0, package: 0, impl: 0, type: 0,
+  method: 1, function: 1, constructor: 1, field: 2, property: 2,
+  variable: 2,
+}
+
+/** The span index the store builds over a file's STOREABLE symbols. `start`/`end` are 1-based lines.
+ *  Hoisted so the companion pass can build the SAME index the store builds — one implementation, two
+ *  callers. The array is sorted by `start` ascending; the scans below rely on that. */
+export type StoreableSpan = { id: string; name: string; start: number; end: number; kind: string }
+
+/** The innermost storeable span whose extent covers `line`. A BACKWARD SCAN, not a predicate: the pass
+ *  re-parses the same file, gets the same symbols, and FINDS the same span. */
+export function enclosingSpanId(spans: StoreableSpan[], line: number | null): string | null {
+  if (!line || line < 1) return null
+  for (let i = spans.length - 1; i >= 0; i--) {
+    const sp = spans[i]
+    if (sp.start > line) continue
+    if (sp.end >= line) return sp.id
+  }
+  return null
+}
+
+/** The innermost STOREABLE span carrying this NAME whose extent covers `line`. Same-name candidates are
+ *  FIRST-WINS in the in-memory lookups, so the containment rule replaces them with the innermost. */
+export function enclosingSpanIdByName(spans: StoreableSpan[], name: string, line: number | null): string | null {
+  if (!name || !line || line < 1) return null
+  for (let i = spans.length - 1; i >= 0; i--) {
+    const sp = spans[i]
+    if (sp.name !== name) continue
+    if (sp.start > line) continue
+    if (sp.end >= line) return sp.id
+  }
+  return null
+}
+
+/** The nearest enclosing span that is NOT a container and is not the span itself. */
+export function enclosingNonContainerId(
+  spans: StoreableSpan[],
+  start: number,
+  end: number,
+  selfId: string,
+): string | null {
+  if (start < 1) return null
+  for (let i = spans.length - 1; i >= 0; i--) {
+    const sp = spans[i]
+    if (sp.id === selfId) continue
+    if (sp.start >= start) continue
+    if (sp.end < end) continue
+    if (CONTAINER_TYPES_LOOKUP.has(sp.kind)) continue
+    return sp.id
+  }
+  return null
+}
+
+/** Build the span index for one file's symbols. INCLUDES THE SORT: a caller that skips it changes every
+ *  scan result, and the sort is part of the construction rather than an optimisation.
+ *  `isStoreable` IS A PARAMETER ON PURPOSE — see the denylist note at the call site: the name filter is
+ *  per-call mutable state and must not be read from module scope. */
+export function buildStoreableSpans(
+  symbols: any[],
+  fileId: string,
+  isStoreable: (nm: string | undefined, startLine: number) => boolean,
+): StoreableSpan[] {
+  const out: StoreableSpan[] = []
+  for (const s of symbols ?? []) {
+    const sStart = s.startLine ?? s.range?.startLine ?? 0
+    const sEnd = s.endLine ?? s.range?.endLine ?? sStart
+    if (sStart < 1) continue
+    if (!isStoreable(s.name, sStart)) continue
+    out.push({
+      id: `${fileId}:${s.name}:${sStart}`,
+      name: String(s.name || ""),
+      start: sStart,
+      end: Math.max(sEnd, sStart),
+      kind: String(s.type || s.kind || "unknown"),
+    })
+  }
+  out.sort((a, b) => a.start - b.start)
+  return out
+}
+
+/** The JS-family languages whose scope names are noise, shared by the factory below and by every
+ *  caller that needs the same judgement. A pure constant — hoisting it cannot change behaviour. */
+const JS_FAMILY = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
+
+/**
+ * THE ONE DEFINITION OF "IS THIS NAME STOREABLE" (r-lane, 2026-10-12).
+ *
+ * IT BUILDS ITS OWN DENYLIST ON EVERY CALL, AND THAT IS THE WHOLE POINT. The denylist was per-call before
+ * this factory existed and it MUST STAY per-call: it is extended conditionally on whether the result came
+ * from the REGEX FALLBACK path and on the FILE'S LANGUAGE. Hoisting the SET to module scope — which is the
+ * obvious move and the one this lane nearly made — would make those extensions PERSIST FOR EVERY SUBSEQUENT
+ * FILE IN THE PROCESS:
+ *
+ *   * one fallback-parsed file would make `true`/`false`/`None`/`unknown` … unstoreable everywhere after it;
+ *   * ONE JAVASCRIPT FILE WOULD MAKE `module`, `default`, `exports`, `window` AND `document` UNSTOREABLE IN
+ *     EVERY SUBSEQUENT FILE OF EVERY OTHER LANGUAGE — and `module` and `default` are ordinary identifiers in
+ *     python, ruby, java and c#.
+ *
+ * The victim is a different file from the cause, and WHICH file is the victim depends on the walk order, so
+ * the same repository indexed twice could produce different symbols. There is no module-level set here for
+ * that to persist in — the leak is impossible by construction rather than avoided by care.
+ *
+ * AND IT IS THE SINGLE IMPLEMENTATION: `storeResults` calls it and the companion pass calls it. One
+ * implementation, two callers — not two copies that are free to drift apart silently.
+ */
+export function makeStoreableName(
+  isFallbackResult: boolean,
+  fileLang: string | undefined,
+): { denylist: Set<string>; isStoreable: (nm: string | undefined, startLine: number) => boolean } {
+  const denylist = new Set([
+    "this", "super", "self", "Self", "me", "My",
+    "root", "program", "source_file", "module_declaration",
+    "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
+  ])
+  if (isFallbackResult) {
+    denylist.add("true")
+    denylist.add("false")
+    denylist.add("null")
+    denylist.add("nil")
+    denylist.add("None")
+    denylist.add("True")
+    denylist.add("False")
+    denylist.add("undefined")
+    denylist.add("NaN")
+    denylist.add("Infinity")
+    // `unknown` moved here from the universal set: it is a REAL method name (Ruby's Logger has it,
+    // as do protobuf/graphql `Status.unknown` and schema `unknown` fields), and it is noise only on
+    // the regex fallback path — which is exactly what this block gates.
+    denylist.add("unknown")
+  }
+  if (JS_FAMILY.has(fileLang ?? "")) {
+    denylist.add("global")
+    denylist.add("Global")
+    denylist.add("window")
+    denylist.add("Window")
+    denylist.add("document")
+    denylist.add("module")
+    denylist.add("exports")
+    denylist.add("default")
+    denylist.add("globalThis")
+  }
+  const isStoreable = (nm: string | undefined, startLine: number): boolean => {
+    if (!nm || denylist.has(nm) || nm.length > 500) return false
+    if (startLine < 1) return false
+    return !(isFallbackResult ? isIndexArtifactNameStrict(nm) : isIndexArtifactName(nm))
+  }
+  return { denylist, isStoreable }
+}
+
 export async function storeResults(
   projectId: ProjectID,
   projectPath: string,
   results: FileResult[],
   options: { skipResolution?: boolean } = {},
-): Promise<{ symbols: number; relationships: number; imports: number }> {
+): Promise<{
+  symbols: number
+  relationships: number
+  imports: number
+  /** Batches that rolled back during this call — their files are NOT in the index. */
+  rolledBackBatches?: number
+  /** How many files those rolled-back batches carried (an upper bound on the loss). */
+  rolledBackFiles?: number
+}> {
   let totalSymbols = 0
   let totalRelationships = 0
   let totalImports = 0
+  // A rollback used to be swallowed: the batch was skipped, a line went to stderr, and
+  // the run went on to report success with a status of "complete". Measured consequence:
+  // a full disk (or any constraint failure) produced `✓ indexed N files` with N silently
+  // smaller and nothing in the persisted status to say so. The counters below are how
+  // that becomes a fact the run can report.
+  let rolledBackBatches = 0
+  let rolledBackFiles = 0
+  // Test hook, OFF by default and named after the existing worker hooks.
+  //
+  //   BB_TEST_FAIL_STORE_ONCE=1    the FIRST batch of the first storeResults call throws
+  //                                — the rollback that recovery can still rescue.
+  //   BB_TEST_FAIL_STORE_ALWAYS=1  EVERY batch throws — the full-disk case, where the
+  //                                recovery pass cannot save the run either.
+  //
+  // Both exercise the rollback path end to end without needing a full disk. Used by
+  // script/perf/verify-store-failure-honesty.ts.
+  const failOnce = process.env.BB_TEST_FAIL_STORE_ONCE === "1"
+  const failAlways = process.env.BB_TEST_FAIL_STORE_ALWAYS === "1"
+  // MODULE-level, not per-call: the recovery pass calls storeResults again, and a
+  // per-call flag made "fail once" fail once per call — so recovery re-injected and
+  // the run lost every file instead of exercising the path where recovery works.
+  const injectFailure = () => {
+    if (failAlways) return true
+    if (failOnce && !(globalThis as any).__bbInjectedStoreFailure) {
+      ;(globalThis as any).__bbInjectedStoreFailure = true
+      return true
+    }
+    return false
+  }
 
   const rawDb = await BrainDatabase.getRawInstance(projectId)
   // M54.P1 (#727): FK enforcement is ON at every open AND during the bulk
@@ -3068,50 +3624,13 @@ export async function storeResults(
          // identifiers in verified analyzer output (e.g. TypeScript/C# enum
          // members named `None`) and only the regex fallback path can pick
          // them up as noise (const None = ...), so they are gated on fallback.
-         const JS_FAMILY = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
-         const SYMBOL_NAME_DENYLIST = new Set([
-           "this", "super", "self", "Self", "me", "My",
-           "root", "program", "source_file", "module_declaration",
-           "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
-         ])
          const isFallbackResult = !!result.fallback
-         if (isFallbackResult) {
-           SYMBOL_NAME_DENYLIST.add("true")
-           SYMBOL_NAME_DENYLIST.add("false")
-           SYMBOL_NAME_DENYLIST.add("null")
-           SYMBOL_NAME_DENYLIST.add("nil")
-           SYMBOL_NAME_DENYLIST.add("None")
-           SYMBOL_NAME_DENYLIST.add("True")
-           SYMBOL_NAME_DENYLIST.add("False")
-           SYMBOL_NAME_DENYLIST.add("undefined")
-           SYMBOL_NAME_DENYLIST.add("NaN")
-           SYMBOL_NAME_DENYLIST.add("Infinity")
-           // `unknown` moved here from the universal set, and it is the one entry
-           // above that was not noise "everywhere" — it is noise from a REGEX
-           // FALLBACK, which is exactly what this block is for. The rationale
-           // three lines up already says it: language-literal words are legitimate
-           // identifiers in verified analyzer output, and only the fallback path
-           // picks them up as noise. `unknown` is a real method name — Ruby's
-           // Logger has five standard severities and `unknown` is one of them, so
-           // `ActiveSupport::Logger#unknown` (activesupport/lib/
-           // active_support/colorize_logging.rb:46) was parsed, stored, and then
-           // dropped here, and never reached the graph. Same for `Status.unknown`
-           // in protobuf/graphql lanes and an `unknown` field in a schema. It also
-           // matches the JS-family treatment right below: `undefined` is already
-           // gated rather than universal for precisely this reason.
-           SYMBOL_NAME_DENYLIST.add("unknown")
-         }
-         if (JS_FAMILY.has(fileLang)) {
-           SYMBOL_NAME_DENYLIST.add("global")
-           SYMBOL_NAME_DENYLIST.add("Global")
-           SYMBOL_NAME_DENYLIST.add("window")
-           SYMBOL_NAME_DENYLIST.add("Window")
-           SYMBOL_NAME_DENYLIST.add("document")
-           SYMBOL_NAME_DENYLIST.add("module")
-           SYMBOL_NAME_DENYLIST.add("exports")
-           SYMBOL_NAME_DENYLIST.add("default")
-           SYMBOL_NAME_DENYLIST.add("globalThis")
-         }
+         // ONE IMPLEMENTATION, TWO CALLERS: the same factory the companion pass calls. The denylist it
+         // returns is built for THIS call and cannot leak into the next file — see the factory's note.
+         const { denylist: SYMBOL_NAME_DENYLIST, isStoreable: storeableName } = makeStoreableName(
+           isFallbackResult,
+           fileLang,
+         )
          const nameToSymbol = new Map<string, any>()
          const containersByStart: { name: string; start: number; end: number }[] = []
          // M59/#855: intervals of the symbols this file will ACTUALLY STORE, so
@@ -3127,15 +3646,8 @@ export async function storeResults(
          // only, so defining it per relationship would allocate a closure per
          // edge for no reason.
          const enclosingStoreableId = (line: number | null): string | null => {
-           if (!line || line < 1) return null
-           // Sorted by start ascending: scanning backwards from the last span that
-           // begins at or before the line returns the INNERMOST holder first.
-           for (let i = storeableSpans.length - 1; i >= 0; i--) {
-             const sp = storeableSpans[i]
-             if (sp.start > line) continue
-             if (sp.end >= line) return sp.id
-           }
-           return null
+           // THIN WRAPPER over the module-level scan, so the pass can use the same implementation.
+           return enclosingSpanId(storeableSpans, line)
          }
          // #612 follow-up (the SOURCE half of the containment target rule): the
          // innermost STOREABLE span carrying this NAME whose extent covers
@@ -3152,14 +3664,8 @@ export async function storeResults(
          // place it, and the caller keeps the existing choice rather than inventing
          // one.
          const enclosingStoreableIdByName = (name: string, line: number | null): string | null => {
-           if (!name || !line || line < 1) return null
-           for (let i = storeableSpans.length - 1; i >= 0; i--) {
-             const sp = storeableSpans[i]
-             if (sp.name !== name) continue
-             if (sp.start > line) continue
-             if (sp.end >= line) return sp.id
-           }
-           return null
+           // THIN WRAPPER over the module-level scan.
+           return enclosingSpanIdByName(storeableSpans, name, line)
          }
          // M59 #879: the innermost storeable NON-container symbol enclosing a
          // span — the lexical owner a nested declaration executes under (a method
@@ -3169,16 +3675,8 @@ export async function storeResults(
          // itself and any span sharing its start line, and makes an owner cycle
          // arithmetically impossible.
          const enclosingNonContainerSpanId = (start: number, end: number, selfId: string): string | null => {
-           if (start < 1) return null
-           for (let i = storeableSpans.length - 1; i >= 0; i--) {
-             const sp = storeableSpans[i]
-             if (sp.id === selfId) continue
-             if (sp.start >= start) continue
-             if (sp.end < end) continue
-             if (CONTAINER_TYPES_LOOKUP.has(sp.kind)) continue
-             return sp.id
-           }
-           return null
+           // THIN WRAPPER over the module-level scan.
+           return enclosingNonContainerId(storeableSpans, start, end, selfId)
          }
          let firstContainerSymbol: any = undefined
  
@@ -3192,13 +3690,7 @@ export async function storeResults(
          // leaving every child pointing at a ghost. Consumers JOIN on
          // owner_symbol_id, so a phantom value was already invisible — omitting
          // it removes the lie without changing any read path.
-         const storeableName = (nm: string | undefined, startLine: number): boolean => {
-           if (!nm || SYMBOL_NAME_DENYLIST.has(nm) || nm.length > 500) return false
-           if (startLine < 1) return false
-           return !(isFallbackResult
-             ? isIndexArtifactNameStrict(nm)
-             : isIndexArtifactName(nm))
-         }
+         // `storeableName` comes from makeStoreableName above — ONE implementation.
  
          // M59/#879: hoisted to the FUNCTION scope. The owner fallback helper is
          // defined ABOVE this block and calls it, and a block-scoped name used
@@ -3206,10 +3698,7 @@ export async function storeResults(
          // ("CONTAINER_TYPES_LOOKUP is not defined") — the same silent-failure
          // shape this milestone keeps finding in its own instruments. Function
          // scope removes the ordering trap and the three call sites share one list.
-         const CONTAINER_TYPES_LOOKUP = new Set([
-           "class", "interface", "struct", "trait", "enum", "object", "actor",
-           "module", "namespace", "package", "impl", "type",
-         ])
+         // CONTAINER_TYPES_LOOKUP is hoisted to module scope (mutation-free).
 
          if (result.symbols) {
            const insertedSymbolIds = new Set<string>()
@@ -3217,12 +3706,7 @@ export async function storeResults(
            // scope objects, and root-level nodes that are always noise.
            // Sort symbols: container types first (class, interface, etc.) so FK
            // references from methods to their containers resolve successfully.
-           const CONTAINER_PRIORITY: Record<string, number> = {
-             class: 0, interface: 0, struct: 0, trait: 0, enum: 0, object: 0,
-             module: 0, namespace: 0, package: 0, impl: 0, type: 0,
-             method: 1, function: 1, constructor: 1, field: 2, property: 2,
-             variable: 2,
-           }
+           // CONTAINER_PRIORITY is hoisted to module scope (mutation-free).
            result.symbols.sort((a: any, b: any) => {
              const pa = CONTAINER_PRIORITY[a.type || a.kind] ?? 3
              const pb = CONTAINER_PRIORITY[b.type || b.kind] ?? 3
@@ -3263,22 +3747,10 @@ export async function storeResults(
            // M59/#855: build the storeable-interval index used by the
            // relationship-source fallback below. Sorted by start ascending, so a
            // backwards scan returns the INNERMOST enclosing span first.
-           for (const s of result.symbols) {
-             const sStart = s.startLine ?? s.range?.startLine ?? 0
-             const sEnd = s.endLine ?? s.range?.endLine ?? sStart
-             if (sStart < 1) continue
-             if (!storeableName(s.name, sStart)) continue
-             storeableSpans.push({
-               id: `${fileId}:${s.name}:${sStart}`,
-               // #612 source half reads this: the name lookup's FIRST-WINS order
-               // is what the containment rule replaces for same-name candidates.
-               name: String(s.name || ""),
-               start: sStart,
-               end: Math.max(sEnd, sStart),
-               kind: String(s.type || s.kind || "unknown"),
-             })
-           }
-           storeableSpans.sort((a, b) => a.start - b.start)
+           // THE BUILD IS HOISTED, INCLUDING ITS SORT. `storeableName` is passed IN as the predicate
+           // rather than read from module scope — see the note below: it is PER-CALL MUTABLE STATE and
+           // a module-level denylist would leak the fallback entries across files.
+           storeableSpans.push(...buildStoreableSpans(result.symbols, fileId, storeableName))
            // First container-kind symbol in sorted order (used for this/self resolution)
            const INTRA_CONTAINER_KINDS = new Set(["class", "interface", "struct", "trait", "enum", "object", "actor", "impl"])
            firstContainerSymbol = result.symbols.find((s: any) => INTRA_CONTAINER_KINDS.has(s.type || s.kind || "unknown"))
@@ -3611,8 +4083,37 @@ export async function storeResults(
             // not the language, decides.
             if (ownerSymbolId && symbol.kind !== ASTEngine.SymbolKind.Instance) {
                // Dedup: skip if the engine already generated a contains for this (owner, child) pair
+               //
+               // THE KEYS DID NOT AGREE, and only on the CHILD half — found by xml-lane (2026-10-10,
+               // `b92ea6fda`), repaired here with the fix it measured (`f0b9b15c9`). The set is built
+               // with BOTH ends leaf-reduced (`${srcLeaf} ${tgtLeaf}`, `:3652-3659`) while this lookup
+               // reduced only the owner and probed the child RAW. For any child name bearing a colon
+               // the keys differ by construction, the guard never fires, and a containment edge the
+               // analyzer already emitted is written a SECOND time. Proven exactly on one file:
+               // analyzer 294 + synthesized 217 = store 511, and replaying the indexer's own two
+               // regexes over the symbol table predicts 217, all colon-named.
+               //
+               // THE OWNER REGEX IS DELIBERATELY LEFT ALONE, and that is the whole of what a first,
+               // "symmetric" repair got wrong. Applying the BUILD-SITE regex
+               // (`/^.*:([^:]+):?\d*$/`) to an `ownerSymbolId` — which always ends `:<line>` —
+               // captures the LINE NUMBER as the leaf: `.*:` is greedy to the last colon and `\d*$`
+               // then matches empty, so `proj:…:xsl:stylesheet:1` yields `1`, not `stylesheet`. This
+               // site's `:\d+$` anchors the digit run into a REQUIRED suffix, so it captures the NAME.
+               // Measured on xml's own probe, same 300-file draw, `emitted` 4,375 in every arm:
+               //     HEAD (the defect)                  stored  7,649   ratio  1.748x
+               //     symmetric repair (both ends)       stored 55,734   ratio 12.74x   <- 7.3x WORSE
+               //     CHILD-ONLY, owner untouched        stored  4,369   ratio  0.999x   <- this
+               // and reproduced on a second repository (dbeaver, 300 files): emitted 23,742 = stored
+               // 23,742, exactly 1.0.
+               //
+               // SO `containsPairs` IS NOT A LEAF-KEYED SET in the way its build site suggests: the
+               // same regex yields a usable leaf from a NAME and a LINE NUMBER from an ID. No future
+               // repair may reuse one regex on both sides; a shape-appropriate leaf (strip `:<digits>`
+               // from ids, then take the last colon segment) or a key over resolved ids is what the
+               // guard actually needs if it is ever generalised.
                const ownerLeaf = ownerSymbolId.replace(/^.*:([^:]+):\d+$/, "$1")
-               const alreadyHasContains = containsPairs.has(`${ownerLeaf} ${symbol.name}`)
+               const childLeaf = String(symbol.name).replace(/^.*:([^:]+):?\d*$/, "$1")
+               const alreadyHasContains = containsPairs.has(`${ownerLeaf} ${childLeaf}`)
                if (!alreadyHasContains) {
                  const fileCount = (fileRelCounters.get(fileId) || 0) + 1
                  fileRelCounters.set(fileId, fileCount)
@@ -3781,6 +4282,32 @@ export async function storeResults(
          }
  
          if (result.imports) {
+           // ROUND 18 — ONE ROW PER ITEM, because the row id used to be one row per STATEMENT.
+           //
+           // The projection above is per ITEM by construction (`{name, path, alias?, type,
+           // isExternal, line}`, one entry per name the statement binds) and its own comment calls
+           // that granularity the thing that "directly determines audit precision". This loop then
+           // gave every one of those rows the SAME id — `${fileId}:import:${moduleName}:${impLine}`,
+           // module and line, both of which a multi-item statement shares — and wrote them with
+           // `INSERT OR REPLACE`, so all but the LAST item were replaced by the next one and the file's
+           // import surface could not be read as a set. Measured on the real projection over 2,000
+           // stride-sampled corpus files (`.tmp-py/probe-import-rows-sample.mts`, python 800 /
+           // typescript 600 / javascript 600, <=1MiB, every repo): **11,903 item rows projected,
+           // 8,903 distinct ids written — 3,000 rows lost, 785 files affected, +33.70%** and a largest
+           // single statement of 45 items. The `ast` arm cross-checks it (`python3
+           // .tmp-py/price-import-rows-ast.py --list .tmp-py/round18-sample.files.txt`) and the two agree
+           // per file on 796 of 800; the four that differ are ANALYZER drops, not this loop's, and each
+           // is named in `.tmp-py/round18-instrument-diff.log` (see `extractImport` in
+           // `real-python-analyzer.ts` for both).
+           //
+           // The suffix is an OCCURRENCE COUNTER inside one (module, line) group, not the item name: a
+           // statement may legally bind the same name twice (`from m import a, a`), and an id that can
+           // collide is the defect this is fixing. The first row of each group keeps its HISTORICAL id
+           // byte for byte, so nothing that already reads an id sees a new value and only the rows that
+           // were previously destroyed are new. Ids are per FILE and this loop runs per file, and the
+           // file's rows are deleted and rewritten together (`deleteFileImports`), so the counter is
+           // deterministic for a given source and no stale id survives a reindex.
+           const importIdSeq = new Map<string, number>()
            for (const imp of result.imports) {
              // ImportInfo canonical fields are module/importType — analyzers
              // never set name/path/type, so those reads silently produced
@@ -3788,6 +4315,42 @@ export async function storeResults(
              // language. Map the real shape (M14.1 fix).
              const moduleName = imp.module ?? imp.path ?? imp.localName ?? ""
              if (!moduleName) continue
+             // ROUND 17 — WHAT WAS IMPORTED IS NOT WHICH MODULE IT CAME FROM, and the column only ever
+             // held the module. `imp.name` is the field the worker's per-item rows carry
+             // (`{name, path, type, isExternal, line}`, one row per item — its own comment calls them
+             // "the analyzer's per-file granularity ... so fidelity here directly determines audit
+             // precision"), and it was NEVER READ here: the M14.1 fix mapped the ANALYZER shape
+             // (`module`/`items`) into this variable and the worker's `name` was dropped with it.
+             // Measured through the real pipeline on a four-file project: `from models import
+             // ProductVariant as PV` stored `imported_name = "models"` (the module) with the item
+             // nowhere in `brain_import`, and the same for typescript's `import { C } from "./a"`
+             // (stored `"./a"`) — while java's `import java.util.List` is right by accident, because
+             // there the imported name and the module ARE the same string.
+             //
+             // The correct value is the one M60's OWN verifier already asserts
+             // (`script/m14/verify-import-alias.ts` writes `String(i.name)` into `imported_name` and
+             // then looks up a row named `Cygdb`, the ITEM) — that check stayed green only because it
+             // RE-IMPLEMENTS this insert instead of exercising it, which is the gap that let this
+             // survive. `patterns.ts` is the production consumer: it searches the file for
+             // `usedName = imported_as || imported_name`, so with the module stored it searched for
+             // `models` and reported `ProductVariant` imports unused (or found the module by
+             // accident) — the mirror of the aliasing defect M60 fixed one column over.
+             //
+             // NARROW BY CONSTRUCTION, in three named cases where `name` is NOT the imported name:
+             //   `*`                 a star/namespace import asks for the MODULE itself (the rule the
+             //                       star-import axis and `exporter` lanes already state), so the
+             //                       module stays the imported name — this keeps `import os` at `os`
+             //                       instead of inventing `*`.
+             //   name === moduleName  nothing to distinguish (java, c includes): unchanged.
+             //   name === boundName   the row states one spelling for both roles — the projection used
+             //                       to do this for `X as Y` and no longer does (see pool-worker), so
+             //                       this arm now only catches a producer that still conflates them.
+             const boundName = imp.alias ?? imp.localName ?? null
+             const impName = typeof imp.name === "string" ? imp.name : ""
+             const importedName =
+               impName && impName !== "*" && impName !== moduleName && impName !== boundName
+                 ? impName
+                 : moduleName
              const importType =
                imp.importType ??
                (imp.isDefault || imp.isDefaultImport ? "default" : imp.isNamespace || imp.isNamespaceImport ? "namespace" : "named")
@@ -3803,7 +4366,7 @@ export async function storeResults(
              // undeclared dependency stays 0 (unknown ≠ external).
              const impMeta = (imp.metadata ?? {}) as Record<string, any>
              const impIsExternal =
-               imp.isExternal === true || impMeta.isExternal === true || impMeta.isSystemInclude === true ? 1 : 0
+               imp.isExternal === true || impMeta.isExternal === true ||               impMeta.isSystemInclude === true ? 1 : 0
              // M60/#910: the row's LINE was always 0 for every import that
              // arrived in the worker's BasicImport shape (`{name, path, type,
              // isExternal, line}`) — the worker carried the line, this read
@@ -3815,12 +4378,15 @@ export async function storeResults(
                (typeof imp.range?.startLine === "number" && imp.range.startLine > 0 ? imp.range.startLine : 0) ||
                (typeof (imp.range as any)?.start?.line === "number" && (imp.range as any).start.line > 0 ? (imp.range as any).start.line : 0) ||
                (typeof imp.line === "number" && imp.line > 0 ? imp.line : 0)
-             const importId = `${fileId}:import:${moduleName}:${impLine}`
+             const importIdBase = `${fileId}:import:${moduleName}:${impLine}`
+             const importIdSeqN = (importIdSeq.get(importIdBase) ?? 0) + 1
+             importIdSeq.set(importIdBase, importIdSeqN)
+             const importId = importIdSeqN === 1 ? importIdBase : `${importIdBase}:${importIdSeqN}`
              stmt.insertImport.run(
                importId,
                projectId,
                fileId,
-               moduleName,
+               importedName,
                // M60: the alias the analyzers already publish on ImportInfo.alias /
                // ImportInfo.localName, and which brain_import.imported_as has carried
                // in the DDL and the TS type since before either had a writer. Three
@@ -3876,6 +4442,31 @@ export async function storeResults(
                const byColon = noArity.split(":")
                const lastColon = byColon[byColon.length - 1]
                // Split by "." and take last (handles "a.b.c")
+               // A PATH IS NOT A MEMBER CHAIN. `a.b.c` is member access and its leaf is `c`, but
+               // `synthetic/main.zig` is a FILE PATH and splitting it on "." yields the EXTENSION:
+               // the leaf becomes `zig`, `resolveTargetStmt` matches `s.name = 'zig'` LIMIT 1, and the
+               // edge binds to whatever symbol is named after the extension.
+               //
+               // MEASURED (json-lane, c38defed6, ghostty, one run): of 4,579 bound file-shaped edges,
+               // 4,490 (98.1%) bound to a symbol named after the EXTENSION and only 89 to the target
+               // spelling — `references synthetic/main.zig -> name='zig' qname='Allocator.zig'`.
+               //
+               // THIRD APPEARANCE OF ONE DEFECT: hcl measured 30,194 of 33,297 bound references (90.7%)
+               // binding only after LEAF REDUCTION; the `contains` dedup (140be2f01) built its key set
+               // with both ends leaf-reduced while the lookup left the child raw, and the symmetric
+               // repair measured 7.3x worse. Leaf reduction applied to something that is NOT A NAME is
+               // the programme's central defect.
+               //
+               // THE FIX IS THE SEPARATOR TEST, deliberately narrow: a name carrying a path separator is
+               // a path and is returned whole; everything else keeps the member behaviour that is correct
+               // for `a.b.c`. `InitOpts.c` (a FIELD named `c`) still reduces to `c` — that reduction is
+               // right, and the extension-based classifier over-counted by calling it a file.
+               //
+               // EXPECTED EFFECT, to be read the right way: these edges move from MIS-BOUND to UNBOUND, so
+               // **`unresolved` will RISE** on lanes with path-shaped targets — and that is the fix
+               // working. A file reference should be bound by a file claim (`fileClaimForTarget`), not by
+               // a symbol named after its extension.
+               if (lastColon.includes("/") || lastColon.includes("\\")) return lastColon
                const byDot = lastColon.split(".")
                return byDot[byDot.length - 1]
              }
@@ -3985,10 +4576,105 @@ export async function storeResults(
              // that distinguishes the many same-named members a C-family file
              // declares. Every other relationship type keeps line_number as a
              // SITE (where the call/read happened) and must NOT be resolved by it.
-             const resolvedRow =
-               relType === "contains" && relLine !== null
+             // MEASUREMENT SWITCH, off by default: with BB_TEST_SKIP_EDGE_RESOLVE=1 the
+             // per-edge resolve is skipped entirely, so the store phase can be measured
+             // with and without it. It exists because the per-edge SELECT was believed
+             // to dominate the store ("C did not disappear, it moved into the store"),
+             // and a belief about where time goes is worth one experiment. Used by
+             // script/perf/probe-store-phases.ts; it leaves target_symbol_id NULL, so the
+             // graph is NOT correct in this mode and nothing but a measurement may use it.
+             // MEASUREMENT SWITCH, off by default: with BB_TEST_SKIP_EDGE_RESOLVE=1 the
+             // per-edge resolve is skipped entirely, so the store phase can be measured
+             // with and without it. It leaves target_symbol_id NULL, so the graph is NOT
+             // correct in this mode and nothing but a measurement may use it.
+             //
+             // Why it exists, and why it is only a switch: the per-edge SELECT was
+             // believed to dominate the store ("C did not disappear, it moved into the
+             // store"). Measured on n200 (62,085 relationships), it costs 2.7-9.8 s of a
+             // 24-44 s store phase — real, but not dominant. Attempting to REMOVE it by
+             // deferring to the resolution pass was tried and reverted twice, because the
+             // resolution fingerprint showed the final graph changing:
+             //   skip every non-contains edge   1,171 edges lost their target (dotted and
+             //                                  qualified names have no other resolver in
+             //                                  the pool path)
+             //   skip only _i13_pick's rows       249 edges bound differently, because the
+             //                                  pass's ranking is not this statement's
+             // So removing it safely needs a dotted/qualified resolver in the pass AND a
+             // reconciliation of those 249 bindings. Until then this switch measures the
+             // cost and the eager resolve stays.
+             const skipEdgeResolve =
+               process.env.BB_TEST_SKIP_EDGE_RESOLVE === "1" ||
+               // `skipResolution` means "a resolution pass will follow" — what the flag has
+               // always meant to its CALLERS (the worker pool stores every chunk with it;
+               // the in-process path clears it only on the final batch). It used to skip
+               // only the block after this loop, so the eager SELECT ran anyway.
+               //
+               // It can be skipped now because the pass covers every shape a non-`contains`
+               // edge can have: bare names by `_i13_pick`, dotted names by strategy 3 (added
+               // for exactly this), `<module>:<item>` by the import resolver. The pass reads
+               // the COMPLETE symbol set, so its answer does not depend on which worker
+               // finished first — which is what makes the graph reproducible at all.
+               //
+               // `contains` keeps its eager resolve: strategy checks in the pass exclude it
+               // and it has no other resolver.
+               // BB_TEST_FORCE_EDGE_RESOLVE=1 is the A/B arm: it restores the old behaviour
+               // so the store phase can be measured both ways in one session, on one machine,
+               // interleaved. It changes nothing about the final graph (the pass resolves these
+               // rows either way) — it only decides WHERE they are resolved.
+               // `contains` IS NO LONGER EXCLUDED. It was the ONE TYPE THAT RESOLVED AT INSERT
+               // TIME IN ALL THREE ARMS, so `resolveTargetStmt ... LIMIT 1` saw whatever the table
+               // held when the edge was inserted: arm A inserts sorted, arm B reversed, and the
+               // same edge met a DIFFERENT PARTIAL TABLE and took a different row. MEASURED
+               // (r-lane, `e17595f9b`): `contains` A_vs_B 117 bound->bound in DIFFERENT FILES,
+               // against A_vs_C 5 — ORDER, not eagerness, and 5 is the evidence because forcing the
+               // eager arm changes nothing for a type that is already always eager.
+               //
+               // THE `:4438` COMMENT THAT JUSTIFIED THE EXCLUSION OVERSTATES IT. Strategy 1
+               // (`:4741-4759`) is `WHERE target_external = _res_qname.qualified_name AND
+               // target_symbol_id IS NULL AND project_id = ?` — THERE IS NO TYPE FILTER. The pass
+               // skipped a contains row for exactly one reason: the eager select had already given
+               // it a `target_symbol_id`. Stop resolving eagerly and Strategy 1 binds it against the
+               // COMPLETE table, deterministically — `_res_qname` is built with `MIN(id)` and its
+               // own header says why: "Deterministic winner for duplicate qualified names so
+               // parallel indexing order can't change resolution results."
+               //
+               // The only contains exclusions in the pass are `:5590`/`:5632`, both inside
+               // `_i13_pick` — the BARE-NAME strategy, which requires `instr(target_external,'.') = 0
+               // AND instr(target_external,':') = 0`. A dotted target like `terraform.backend.s3`
+               // NEVER REACHES IT, so the exclusion the comment described was never load-bearing.
+               //
+               // WHY THE `exports` FIX DOES NOT TRANSFER: that symbol is published as
+               // `name="backend.s3"` / `qualifiedName="terraform.backend.s3"`, and `resolveTargetStmt`
+               // matches `s.name` — so the full target matches no row and the leaf `s3` matches
+               // OTHER FILES' `s3`. Strategy 1 matches `qualified_name`, WHICH IS THE FULL TARGET.
+               //
+               // RISK, STATED: `contains` now depends on the pass, and a miss UNBINDS rather than
+               // mis-binds. The falsifier's completeness clause (`bound A/B/C >= 9,790`) is what
+               // catches that — every other clause is a between-arms count, which a fix that merely
+               // unbound the rows would satisfy.
+               (process.env.BB_TEST_FORCE_EDGE_RESOLVE !== "1" &&
+                 options.skipResolution === true)
+             const resolvedRow = skipEdgeResolve
+               ? null
+               : relType === "contains" && relLine !== null
                  ? (resolveContainsTargetStmt.get(projectId, targetLeaf, fileId, relLine, fileLang) as any)
-                 : (resolveTargetStmt.get(projectId, targetLeaf, fileId, fileLang) as any)
+                 // KEY SELECTION, not key REDUCTION. `:4294` derives `targetLeaf` and this line
+                 // USED it, so the eager select asked for `main` while the deferred pass asked for
+                 // `aws_lambda_function.main`: `resolveTargetStmt` orders `(s.file_id = ?) DESC`
+                 // over `WHERE s.name = ?`, so THE KEY IS THE QUESTION ASKED OF `s.name`.
+                 // MEASURED (r-lane, 1c2aea5a4): `exports` differing rows are ZERO under file-order
+                 // reversal and 100 under eager-vs-deferred, bound->bound — A binds the declaration
+                 // in the edge's OWN file, C binds a bare `main` in ANOTHER file.
+                 // The same-file preference cannot save a leaf-keyed lookup unless that file
+                 // declares a symbol named exactly the key asked for; here it declares
+                 // `aws_lambda_function.main`, so ASKING THE FULL NAME MAKES THE PREFERENCE DO ITS JOB.
+                 // FULL NAME FIRST, LEAF ONLY AS A FALLBACK — never a replacement. Reversing the
+                 // order reinstates the defect for every colliding leaf. `get()` returns undefined
+                 // on no row, so `??` is the right operator. DO NOT FOLD `contains` IN: it is
+                 // excluded from the skip, always eager, and its 113-116 order rows are a different
+                 // mechanism with a different fix.
+                 : ((resolveTargetStmt.get(projectId, targetName, fileId, fileLang) ??
+                     resolveTargetStmt.get(projectId, targetLeaf, fileId, fileLang)) as any)
              const targetId = resolvedRow?.id || null
  
              // is_cross_file must be honest: 1 only when the resolved target
@@ -4192,11 +4878,20 @@ export async function storeResults(
        warn: (m: string, ctx: Record<string, unknown>) => log.warn(m, ctx),
      })
      try {
+       // Injected failure for the verification gate (see failOnce above): the batch
+       // rolls back exactly as a constraint violation or a full disk would.
+       if (injectFailure()) {
+         throw new Error(
+           `injected store failure (BB_TEST_FAIL_STORE_${failAlways ? "ALWAYS" : "ONCE"}=1)`,
+         )
+       }
        tx(batch)
        totalSymbols += batchSymbols
        totalRelationships += batchRelationships
        totalImports += batchImports
      } catch (error) {
+       rolledBackBatches++
+       rolledBackFiles += batch.length
        // #737: before skipping, re-run the batch file-by-file under capturing
        // wrappers to identify the exact violating row (previous behavior printed
        // only the driver message, leaving the rollback undiagnosable).
@@ -4320,6 +5015,23 @@ export async function storeResults(
              AND brain_relationship.target_external IS NOT NULL
              AND brain_relationship.project_id = '${projectId}'
              AND INSTR(brain_relationship.target_external, '.') > 0
+             -- A PATH IS NOT A MEMBER CHAIN, and this is the SECOND SITE of the same defect.
+             -- extractLeaf (above) carried it in TypeScript: synthetic/main.zig split on '.'
+             -- yields the EXTENSION zig, so a file reference binds to whatever symbol is named
+             -- after its extension. json-lane measured 4,490 of 4,579 bound file-shaped edges
+             -- (98.1%) bound to an extension-named symbol. The TypeScript separator test closed
+             -- that rung AND THIS SQL RUNG RE-OPENED IT one step later: the SUBSTR below fires
+             -- exactly where the repaired path now leaves NULL. Measured on the new store:
+             -- 83,335 edges bound by this expression, 702 of them PATH-SHAPED.
+             --
+             -- The fix was CORRECT AND INSUFFICIENT, and the acceptance arms said so:
+             --   ARM 1 FAILS  extension-named bindings 4,490 -> 4,490 (no movement)
+             --   ARM 4 FAILS  bound/unbound            4,579/10 -> 4,579/10
+             --   ARM 2 PASSES member paths still bind (not too wide)
+             --   ARM 3 PASSES 2,259 member chains still reduce to their leaf (not too narrow)
+             -- The guards mirror the TypeScript test exactly: a target carrying a path separator
+             -- is left for a FILE CLAIM, never reduced to its extension.
+             AND INSTR(brain_relationship.target_external, '/') = 0
          `)
  
          // Strategy 4 (M60, review JD2): the `<module>:<item>` import form.
@@ -4331,6 +5043,28 @@ export async function storeResults(
          {
            const imp4 = resolveImportTargets(rawDb as any, projectId)
            if (imp4.resolved > 0) log.debug("import-target resolution (M60 JD2, inline)", { scanned: imp4.scanned, resolved: imp4.resolved })
+         }
+
+         // The OWNER CHANNEL's claim over the rows that state their own receiver.
+         //
+         // Placed here, immediately before the cross-language pass and after every
+         // name-based strategy, for one reason: it RE-BINDS rows, so every pass below
+         // has to see the final target rather than the ranking's guess. A member read
+         // whose receiver the analyzer could name is a row a rule exists for, and the
+         // ranking's answer for it is chosen by `s.id` TEXT order, which is a tie-break
+         // and not a fact about PHP — see `claimOwnerCarryingTargets` for the full note,
+         // the measurement on php's whole population, and the trade it makes.
+         {
+           const ownerClaim = claimOwnerCarryingTargets(rawDb as any, projectId)
+           if (ownerClaim.withdrawn > 0) {
+             log.debug("member owner resolution (owner channel authoritative)", {
+               withdrawn: ownerClaim.withdrawn,
+               scanned: ownerClaim.scanned,
+               resolved: ownerClaim.resolved,
+               inheritedResolved: ownerClaim.inheritedResolved,
+               declined: ownerClaim.ownerAmbiguous + ownerClaim.ambiguousInChain + ownerClaim.notDeclared,
+             })
+           }
          }
 
          // Cross-language normalization (polyglot fixture finding, M26 addendum):
@@ -4396,6 +5130,27 @@ export async function storeResults(
          // low-confidence suspicion rather than silently deleting a real override.
          retargetCrossFileOverrides(rawDb as any, projectId)
 
+         // JULIA'S METHOD TABLE, the second landing site for the gate rule
+         // (`script/m14/incoming-gate.ts --binding-collapse`, measured there as 1,489 edges moving
+         // `amb -> resolved` with `unresolved` unchanged). The name strategies above bind a bare name
+         // only when its count in the project is exactly 1, so every edge naming a multi-method
+         // binding stays unbound — and the gate MODELS that rule, which is why the model and this pass
+         // have to move together or the measurement and the store diverge silently.
+         //
+         // It is a NO-OP FOR EVERY OTHER LANGUAGE BY CONSTRUCTION: the language guard is a join on
+         // `brain_file.language = 'julia'` inside the pass's own SQL, for the rows it may bind and for
+         // the declarations that may form a binding, so a project of another language matches nothing.
+         // It never re-points a row that already has a target and never rewrites a target's spelling.
+         const juliaBind = retargetJuliaMethodTableBindings(rawDb as any, projectId)
+         if (juliaBind.bound > 0 || juliaBind.foreignRowsSeen > 0) {
+           log.info(
+             `julia method-table bindings: ${juliaBind.bound} row(s) bound of ${juliaBind.scanned} ` +
+             `unbound julia row(s) scanned, from ${juliaBind.keys} one-binding key(s) over ` +
+             `${juliaBind.declarations} declaration(s); ${juliaBind.boundOwnFile} bound to a declaration ` +
+             `in the row's own file; ${juliaBind.foreignRowsSeen} non-julia row(s) seen and untouched`,
+           )
+         }
+
          // Cleanup temp tables
          rawDb.run(`DROP TABLE IF EXISTS _res_qname`)
          rawDb.run(`DROP TABLE IF EXISTS _res_name_unique`)
@@ -4423,7 +5178,7 @@ export async function storeResults(
      }
    } // Close the if (!options.skipResolution) block
  
-   return { symbols: totalSymbols, relationships: totalRelationships, imports: totalImports }
+   return { symbols: totalSymbols, relationships: totalRelationships, imports: totalImports, rolledBackBatches, rolledBackFiles }
   } finally {
     // M54.P1: restore the open-time FK policy on EVERY exit path (success,
     // throw, early return). The connection is process-cached and shared —
@@ -4506,6 +5261,65 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
     rawDb.run(`CREATE INDEX IF NOT EXISTS _res_name_idx ON _res_name(name)`)
     rawDb.run(`CREATE INDEX IF NOT EXISTS _res_name_uniq_idx ON _res_name(name, cnt)`)
 
+    // ── OWN-FILE PREFERENCE (M14 clause 4). Both lookup tables below collapse every name
+    // and every dotted suffix to ONE global winner via `MIN(id)` — the lexicographically
+    // smallest symbol id in the PROJECT. File paths sort, so an edge written in
+    // `tests/docbook/html/admon.xsl` binds to the same-named template declared in the
+    // PARALLEL tree `tests/docbook/fo/admon.xsl`: measured on libxslt, 138 of 388 `calls`
+    // edges did exactly that, every one of them classified `in-document` by the analyzer
+    // (i.e. the declaration IS in the edge's own file). The two statements below run FIRST
+    // and bind only edges whose target is declared in the edge's OWN file; the project-wide
+    // statements that follow are untouched and still fire for every row they fired for
+    // before, because they require `target_symbol_id IS NULL`.
+    rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qname_own (qualified_name TEXT, file_id TEXT, symbol_id TEXT NOT NULL)`)
+    rawDb.run(`DELETE FROM _res_qname_own`)
+    rawDb.prepare(
+      `INSERT INTO _res_qname_own (qualified_name, file_id, symbol_id)
+       SELECT qualified_name, file_id, MIN(id) FROM brain_symbol
+       WHERE project_id = ? AND qualified_name IS NOT NULL GROUP BY qualified_name, file_id`
+    ).run(projectId)
+    rawDb.run(`CREATE INDEX IF NOT EXISTS _res_qname_own_idx ON _res_qname_own(qualified_name, file_id)`)
+    const r0own = rawDb.run(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_qname_own.symbol_id,
+          is_cross_file = 0
+      FROM _res_qname_own
+      WHERE brain_relationship.target_external = _res_qname_own.qualified_name
+        AND _res_qname_own.file_id = (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1)
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.target_external IS NOT NULL
+        AND brain_relationship.project_id = '${projectId}'
+    `)
+
+    // ── OWN-FILE NAME PREFERENCE (arm B). The 15 `calls` rows arm A could not reach are bound by
+    // strategy 1's PROJECT-WIDE qualified-name match to a symbol in another file whose qualified
+    // name happens to equal the edge's target — measured shape: `colspec.colnum` binds to an
+    // attribute symbol in `tests/docbook/test/article2.xml` (qualified_name exactly
+    // `colspec.colnum`) while the edge's own file declares `colspec.colnum` as a template. The
+    // analyzer's class for those edges is `in-document`, i.e. the declaration IS in the own file,
+    // so the own file's NAME match is the intended target and the cross-file qualified-name match
+    // is a coincidence. This runs after the own-file qualified-name pass (a stronger signal within
+    // the same file) and before the project-wide statements.
+    rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_name_own (name TEXT, file_id TEXT, symbol_id TEXT NOT NULL)`)
+    rawDb.run(`DELETE FROM _res_name_own`)
+    rawDb.prepare(
+      `INSERT INTO _res_name_own (name, file_id, symbol_id)
+       SELECT name, file_id, MIN(id) FROM brain_symbol
+       WHERE project_id = ? GROUP BY name, file_id`
+    ).run(projectId)
+    rawDb.run(`CREATE INDEX IF NOT EXISTS _res_name_own_idx ON _res_name_own(name, file_id)`)
+    const r0ownName = rawDb.run(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_name_own.symbol_id,
+          is_cross_file = 0
+      FROM _res_name_own
+      WHERE brain_relationship.target_external = _res_name_own.name
+        AND _res_name_own.file_id = (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1)
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.target_external IS NOT NULL
+        AND brain_relationship.project_id = '${projectId}'
+    `)
+
     // Strategy 1: Qualified name exact match (fast JOIN)
     const r1 = rawDb.run(`
       UPDATE brain_relationship
@@ -4535,8 +5349,225 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
         AND brain_relationship.project_id = '${projectId}'
     `)
 
-    const resolved = (r1?.changes || 0) + (r2?.changes || 0)
-    log.debug("relationship resolution completed", { resolved, unresolved })
+    const resolvedBeforeDotted = (r0own?.changes || 0) + (r0ownName?.changes || 0) + (r1?.changes || 0) + (r2?.changes || 0)
+
+    // Strategy 3 (M60 determinism fix): a DOTTED target, by SUFFIX on qualified_name.
+    //
+    // An edge written `ASTEngine.LanguageAnalyzer` could not be matched by strategy 1,
+    // because a stored `qualified_name` is prefixed with the file stem:
+    //
+    //     edge says      ASTEngine.LanguageAnalyzer
+    //     symbol holds   t0128_engine.ASTEngine.LanguageAnalyzer
+    //
+    // so the exact comparison can never be true for those rows, and the `_i13_*` plan
+    // excludes dots and colons by construction. The ONLY resolver for a dotted target was
+    // therefore the eager one at INSERT time, which reads a partially-populated database
+    // and binds whatever file happened to be stored first. Measured on n200 before this
+    // strategy: 1,200 dotted edges unattached and 322 of 62,085 bindings differing between
+    // two identical runs, every one of them this shape.
+    //
+    // The lookup table is built the same way strategies 1 and 2 build theirs — one pass over
+    // the symbols, indexed once — rather than a correlated `substr()` per relationship. The
+    // correlated form was tried first and worked (dotted unattached 1,200 -> 424) but cost
+    // 68 s of post-processing (13 s -> 82 s on n200), because a function on the column cannot
+    // use an index. MIN(id) keeps the tie-break deterministic, as in strategies 1 and 2.
+    rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qsuffix (suffix TEXT, symbol_id TEXT NOT NULL, file_id TEXT)`)
+    rawDb.run(`DELETE FROM _res_qsuffix`)
+    rawDb.run(
+      `
+      WITH RECURSIVE suffixes(suffix, rest, id, file_id) AS (
+        SELECT qualified_name, qualified_name, id, file_id
+        FROM brain_symbol
+        WHERE project_id = ? AND qualified_name IS NOT NULL
+        UNION ALL
+        SELECT substr(rest, instr(rest, '.') + 1), substr(rest, instr(rest, '.') + 1), id, file_id
+        FROM suffixes WHERE instr(rest, '.') > 0
+      )
+      INSERT INTO _res_qsuffix (suffix, symbol_id, file_id)
+      SELECT suffix, MIN(id), MIN(file_id) FROM suffixes WHERE instr(suffix, '.') > 0 GROUP BY suffix
+    `,
+      projectId,
+    )
+    rawDb.run(`CREATE INDEX IF NOT EXISTS _res_qsuffix_idx ON _res_qsuffix(suffix)`)
+
+    // ── OWN-FILE PREFERENCE for the suffix table (see the note above strategy 1): the table
+    // above keeps ONE symbol per suffix for the whole project, so a caller in `html/` gets the
+    // `fo/` declaration. This per-(suffix, file) table keeps the own-file candidate reachable,
+    // and binds it first; the global statement below is unchanged.
+    rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qsuffix_own (suffix TEXT, file_id TEXT, symbol_id TEXT NOT NULL)`)
+    rawDb.run(`DELETE FROM _res_qsuffix_own`)
+    rawDb.run(
+      `
+      WITH RECURSIVE suffixes(suffix, rest, id, file_id) AS (
+        SELECT qualified_name, qualified_name, id, file_id
+        FROM brain_symbol
+        WHERE project_id = ? AND qualified_name IS NOT NULL
+        UNION ALL
+        SELECT substr(rest, instr(rest, '.') + 1), substr(rest, instr(rest, '.') + 1), id, file_id
+        FROM suffixes WHERE instr(rest, '.') > 0
+      )
+      INSERT INTO _res_qsuffix_own (suffix, file_id, symbol_id)
+      SELECT suffix, file_id, MIN(id) FROM suffixes WHERE instr(suffix, '.') > 0 GROUP BY suffix, file_id
+    `,
+      projectId,
+    )
+    rawDb.run(`CREATE INDEX IF NOT EXISTS _res_qsuffix_own_idx ON _res_qsuffix_own(suffix, file_id)`)
+    const r3own = rawDb.run(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_qsuffix_own.symbol_id,
+          is_cross_file = 0
+      FROM _res_qsuffix_own
+      WHERE brain_relationship.target_external = _res_qsuffix_own.suffix
+        AND _res_qsuffix_own.file_id = (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1)
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.target_external IS NOT NULL
+        AND instr(brain_relationship.target_external, '.') > 0
+        AND brain_relationship.project_id = '${projectId}'
+    `)
+
+    const r3 = rawDb.run(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_qsuffix.symbol_id,
+          is_cross_file = CASE WHEN _res_qsuffix.file_id != COALESCE(
+            (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1), ''
+          ) THEN 1 ELSE 0 END
+      FROM _res_qsuffix
+      WHERE brain_relationship.target_external = _res_qsuffix.suffix
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.target_external IS NOT NULL
+        AND instr(brain_relationship.target_external, '.') > 0
+        AND brain_relationship.project_id = '${projectId}'
+    `)
+    // Strategy 3b: the LEAF of a dotted or qualified target, when that leaf is unique
+    // in the project.
+    //
+    // Strategy 3 matches the dot-path, which is precise but fails whenever the referring
+    // analyzer writes a module the symbol's `qualified_name` does not carry — measured: a
+    // target `ASTEngine.SymbolKind` whose symbol is stored as `t0172_types.SymbolKind`.
+    // The eager resolve used to catch those by matching the leaf name (with a proximity
+    // ranking that depended on which file was stored first). This restores the coverage
+    // without the ordering dependence, and it keeps strategy 2's contract: bind only when
+    // the name is UNAMBIGUOUS (`cnt = 1`), so a qualified reference never silently lands
+    // on one of several same-named symbols elsewhere in the project.
+    //
+    // The leaf is computed in JS over the DISTINCT unresolved target names (a few hundred),
+    // not per row: SQLite has no "substring after the last occurrence" function, and a
+    // correlated expression here is precisely the shape that made the first version of
+    // strategy 3 cost 68 s of post-processing.
+    const leafUpdate = rawDb.prepare(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_name.symbol_id,
+          is_cross_file = CASE WHEN _res_name.file_id != COALESCE(
+            (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1), ''
+          ) THEN 1 ELSE 0 END
+      FROM _res_name
+      WHERE _res_name.name = ?
+        AND _res_name.cnt = 1
+        AND brain_relationship.target_external = ?
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.project_id = '${projectId}'
+    `)
+    const dottedStillNull = rawDb.prepare(`
+      SELECT DISTINCT target_external AS t FROM brain_relationship
+      WHERE target_symbol_id IS NULL AND target_external IS NOT NULL AND project_id = ?
+        AND (instr(target_external, '.') > 0 OR instr(target_external, ':') > 0)
+    `).all(projectId) as Array<{ t: string }>
+    let resolvedByLeaf = 0
+    for (const { t } of dottedStillNull) {
+      const leaf = t.split(/[.:]/).pop()
+      if (!leaf) continue
+      const res = leafUpdate.run(leaf, t)
+      resolvedByLeaf += res?.changes || 0
+    }
+
+    // Strategy 3c: the SAME ranking the eager resolve used, applied in the pass.
+    //
+    // Strategy 3b binds a leaf only when it is UNAMBIGUOUS (`cnt = 1`), which is right for a
+    // bare name but far too strict for a dotted one: in this repository (200,574 symbols)
+    // almost no leaf is unique, so 3b barely fires. Measured on a full index: the eager resolve
+    // attached 3,257 MORE edges than the pass did (+2,049 dotted, +2,244 colon), because it was
+    // RANKING candidates (definition first, then same file, then same language, then lowest id)
+    // and taking the best. The pass has to rank the same way, or removing it is a coverage
+    // regression — which is exactly what the full-index comparison caught.
+    //
+    // It can, and deterministically: the eager resolve ranked against the symbols stored SO FAR,
+    // so its answer depended on which worker finished first. This runs after the load over the
+    // complete symbol set with the same ORDER BY, so the winner is a function of the corpus.
+    //
+    // The ranking is computed once into a temp table with ROW_NUMBER() (window functions are
+    // already used elsewhere in this file — `_res_name` is built with COUNT(*) OVER), keyed by
+    // (target name, source symbol). The UPDATE then joins on that key. The obvious form — a
+    // correlated ORDER BY ... LIMIT 1 inside the SET — does NOT work here: SQLite answers
+    // `no such column: brain_relationship.source_symbol_id` three levels deep, which aborted the
+    // whole phase and left 45,037 attachments at 33,464 (measured).
+    if (dottedStillNull.length > 0) {
+      rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_leafmap (full TEXT PRIMARY KEY, leaf TEXT NOT NULL)`)
+      rawDb.run(`DELETE FROM _res_leafmap`)
+      const insertLeaf = rawDb.prepare(`INSERT OR IGNORE INTO _res_leafmap (full, leaf) VALUES (?, ?)`)
+      for (const { t } of dottedStillNull) {
+        // A PATH IS NOT A MEMBER CHAIN — the THIRD site of this defect, and the one that
+        // actually bound ghostty's edges. A path-shaped target gets NO leaf entry, so no
+        // global name can claim it through the join below. Deliberately narrow: `InitOpts.c`
+        // (a field) and `a.b.c` (a member chain) keep the reduction that is CORRECT for them.
+        if (t.includes("/") || t.includes("\\")) continue
+        const leaf = t.split(/[.:]/).pop()
+        if (leaf) insertLeaf.run(t, leaf)
+      }
+      rawDb.run(`DROP TABLE IF EXISTS temp._res_best`)
+      rawDb.run(
+        `
+        CREATE TEMP TABLE _res_best AS
+        SELECT full, src_id, symbol_id, symbol_file FROM (
+          SELECT r.target_external AS full,
+                 r.source_symbol_id AS src_id,
+                 s.id AS symbol_id,
+                 s.file_id AS symbol_file,
+                 ROW_NUMBER() OVER (
+                   PARTITION BY r.target_external, r.source_symbol_id
+                   ORDER BY (s.name = m.full) DESC,
+                            COALESCE(s.is_declaration, 0) ASC,
+                            (s.file_id = (SELECT b.file_id FROM brain_symbol b WHERE b.id = r.source_symbol_id)) DESC,
+                            (f.language = (SELECT f2.language FROM brain_file f2
+                                            WHERE f2.id = (SELECT b2.file_id FROM brain_symbol b2 WHERE b2.id = r.source_symbol_id))) DESC,
+                            s.id ASC
+                 ) AS rn
+          FROM brain_relationship r
+          JOIN _res_leafmap m ON m.full = r.target_external
+          JOIN brain_symbol s ON s.project_id = ? AND (s.name = m.full OR s.name = m.leaf)
+          LEFT JOIN brain_file f ON f.id = s.file_id
+          WHERE r.project_id = ? AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL
+        ) WHERE rn = 1
+      `,
+        projectId,
+        projectId,
+      )
+      rawDb.run(`CREATE INDEX IF NOT EXISTS _res_best_idx ON _res_best(full, src_id)`)
+      const r3c = rawDb.run(`
+        UPDATE brain_relationship
+        SET target_symbol_id = b.symbol_id,
+            is_cross_file = CASE WHEN b.symbol_file != COALESCE(
+              (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id), ''
+            ) THEN 1 ELSE 0 END
+        FROM _res_best b
+        WHERE b.full = brain_relationship.target_external
+          AND b.src_id IS brain_relationship.source_symbol_id
+          AND brain_relationship.target_symbol_id IS NULL
+          AND brain_relationship.target_external IS NOT NULL
+          AND brain_relationship.project_id = '${projectId}'
+      `)
+      resolvedByLeaf += r3c?.changes || 0
+    }
+
+    const resolved = resolvedBeforeDotted + (r3?.changes || 0) + (r3own?.changes || 0) + resolvedByLeaf
+    log.debug("relationship resolution completed", {
+      resolved,
+      resolvedByQualifiedExact: r1?.changes || 0,
+      resolvedByUniqueName: r2?.changes || 0,
+      resolvedByDottedSuffix: r3?.changes || 0,
+      resolvedByOwnFilePreference: (r0own?.changes || 0) + (r0ownName?.changes || 0) + (r3own?.changes || 0),
+      resolvedByLeafFallback: resolvedByLeaf,
+      unresolved,
+    })
 
     // Strategy 4 (M60, review JD2): the `<module>:<item>` import form.
     //
@@ -4835,6 +5866,25 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
     `)
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_src`)
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_pick`)
+
+    // The OWNER CHANNEL's claim over the rows that state their own receiver, for the
+    // same reason and in the same position as the call in `storeResults`: after every
+    // name-based strategy (including this pass's own plan, which is the one that binds
+    // the deferred population in the worker-pool flow) and before the cross-language
+    // pass, so that pass sees the target this channel chose. See
+    // `claimOwnerCarryingTargets` in `member-owner-resolution.ts`.
+    {
+      const ownerClaim = claimOwnerCarryingTargets(rawDb as any, projectId)
+      if (ownerClaim.withdrawn > 0) {
+        log.debug("member owner resolution (owner channel authoritative)", {
+          withdrawn: ownerClaim.withdrawn,
+          scanned: ownerClaim.scanned,
+          resolved: ownerClaim.resolved,
+          inheritedResolved: ownerClaim.inheritedResolved,
+          declined: ownerClaim.ownerAmbiguous + ownerClaim.ambiguousInChain + ownerClaim.notDeclared,
+        })
+      }
+    }
 
     // Cross-language normalization (polyglot fixture finding, M26 addendum):
     // this pass is the one that resolves forward references in the default
@@ -5475,20 +6525,239 @@ export async function indexProjectParallel(
         // other lane's name. Sequential on purpose: each builds its companion from
         // the same `results` and re-parses its own subset, and interleaving two
         // re-parse waves over one results array is a race nobody needs.
-        for (const companionLang of ["perl", "python"] as const) {
+        // JAVASCRIPT ADDED 2026-10-12. The third lane, and python's gap exactly: the analyzer emits
+        // `first-parent-guess` at 0.5 ONLY when `context.overrideCompanion` is absent
+        // (`real-javascript-analyzer.ts:1606`), while `:1585` already asks the right question —
+        // "does the base declare this member?" — of the map this pass builds. Measured over the
+        // whole JS population (13,162 files, 0 degraded, 0 threw): 6,268 of 6,820 `overrides` edges
+        // are guesses; with the companion, 571 are confirmed at 0.95, **1,163 false ones are never
+        // emitted at all**, and 4,534 whose base is outside the project keep guessing — a boundary
+        // that is real, so this reaches 1,734 rows and not 6,268. TYPESCRIPT IS DELIBERATELY NOT
+        // ADDED: `real-typescript-analyzer.ts` has zero `overrideCompanion` references, so the token
+        // would be a no-op that looks like a fix.
+        for (const companionLang of ["perl", "python", "javascript", "ruby"] as const) {
           const passStats = await populateOverrideCompanion({
             projectPath,
             results,
             language: companionLang,
             reparse: (f, p, ctx) => reparse(f, p, ctx),
+            // ── THE ID-CARRYING JOIN (r-lane, 2026-10-12) ────────────────────────────────────────
+            // The store's primary key is `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine}`,
+            // and `sourceId` is the SOURCE SYMBOL's id, found by scanning the file's storeable spans. The
+            // pass cannot compute either without these four, and they are the STORE'S OWN functions and
+            // rules rather than copies: ONE IMPLEMENTATION, TWO CALLERS. A second computation of the same
+            // resolution would be free to disagree with the store's, which is the whole reason the tuple
+            // key that preceded this one is being replaced.
+            //
+            // IT IS INERT UNTIL THE WRITE-BACK READS `confirmedIds`: the write-back below still keys on
+            // `confirmedKeys`, so these four populate an id list nothing consumes yet. A reader who sees
+            // `confirmedIds` in the stats could reasonably assume the id path was live; it is NOT, until
+            // the write-back changes, and this comment says so.
+            projectId: String(projectId),
+            fileIdOf: (fp: string) => `${projectId}:${path.relative(projectPath, fp)}`,
+            buildSpans: buildStoreableSpans,
+            enclosingSpanId,
+            makeStoreableName,
           })
           if (passStats.owners > 0) {
             log.info(
               `override companion (${companionLang}): ${passStats.owners} owners, ` +
                 `${passStats.refiles} file(s) re-analyzed, ${passStats.reapplied} reapplied, ` +
                 `${passStats.confirmed} confirmed, ${passStats.stillGuess} still a guess, ` +
-                `${passStats.failed} failed`,
+                `${passStats.failed} failed, ` +
+                // THE WIRING MADE VISIBLE (r-lane). Without these two numbers the id path could be
+                // POPULATED AND CONSUMED BY NOTHING and no log would say so — the exact defect this
+                // programme spent the evening finding in the companion tier itself. A run whose
+                // `ids` is 0 while `confirmed` is not has a wiring fault, and this line reports it.
+                `${passStats.confirmedIds.length} id(s) computed, ${passStats.confirmedIdsMissed} without one, ` +
+                `${passStats.confirmedIdsDuplicates} collapsed onto an id another row already claimed, ` +
+                `${passStats.confirmedNewInReparse} new in the re-parse, ` +
+                `${passStats.stillGuessIds?.length ?? 0} unconfirmed id(s)`,
             )
+          }
+          // ── THE WRITE-BACK (r-lane, 2026-10-12) ────────────────────────────────────────────────
+          //
+          // WHY THIS EXISTS, MEASURED RATHER THAN READ: the pass re-analyzes into an IN-MEMORY array and
+          // its confirmations were DISCARDED. On python the pass reported `1301 confirmed` and the store's
+          // `overrides` confidence census was `0.5=2204 0.95=507` BEFORE the pass and IDENTICAL AFTER it —
+          // not by 1301, not by one. On ruby, `53 confirmed` against `0.5=732 0.95=3`, unchanged across a
+          // two-arm A/B. So the companion tier — "read by fifteen lanes and populated by nobody in
+          // production" — was never persisted, in any lane, in any round.
+          //
+          // WHY HERE AND NOT EARLIER: the pass needs the COMPLETE symbol table, but `processInProcess`
+          // STREAMS batches to `storeResults` DURING parsing (`:1313`). Moving the pass before the store
+          // would mean holding every batch in memory until parsing ends — a change to the streaming
+          // design, not a move. So the pass stays and the store is updated after it.
+          //
+          // WHY A TARGETED UPDATE AND NOT A RE-STORE, which is the whole design: a re-store REPLACES a
+          // batch's rows with a newly parsed set, and any row the re-parse did not reproduce disappears
+          // silently. THIS IS THE FIRST CHANGE IN THIS PROGRAMME THAT CAN DELETE STORED DATA, so the merge
+          // shape is chosen to make that impossible BY CONSTRUCTION rather than to pass a test:
+          //
+          //   A ROW THE PASS COULD NOT CONFIRM IS NEVER NAMED BY THE WRITE-BACK. It keeps its stored
+          //   confidence, its reasonCode and its target_symbol_id, because only `UPDATE … WHERE id = ?`
+          //   statements are built, and only from the CONFIRMED set. An unconfirmed row is not merely
+          //   preserved — it is never the subject of a statement that could change or remove it.
+          //
+          // The identity comes from the pass itself (`confirmedKeys`), NOT from re-matching here: a second
+          // computation of the same predicate is a second answer.
+          // ── THE WRITE-BACK, KEYED ON THE PRIMARY KEY (r-lane, 2026-10-12) ─────────────────────
+          //
+          // WHY THIS EXISTS, MEASURED RATHER THAN READ: the pass re-analyzes into an IN-MEMORY array and
+          // its confirmations were DISCARDED. On python the pass reported `1301 confirmed` and the store's
+          // `overrides` confidence census was `0.5=2204 0.95=507` BEFORE the pass and IDENTICAL AFTER it —
+          // not by 1301, not by one. On ruby, `53 confirmed` against `0.5=732 0.95=3`, unchanged across a
+          // two-arm A/B. So the companion tier — "read by fifteen lanes and populated by nobody in
+          // production" — was never persisted, in any lane, in any round.
+          //
+          // THE TUPLE KEY IS REMOVED, AND THAT IS A DISPOSITION RATHER THAN A TIDY-UP. The first landing
+          // keyed on `(project_id, relationship_type, target_external, line_number)` and MOVED 826 ROWS;
+          // its key matched 2,100 store rows for 1,301 keys — 1.61 per key, 292 multi-matching — and it
+          // OMITTED `sourceId`, the component that distinguishes one source's override from another's at
+          // the same target and line. Clause 4's second form then found 93 rows reachable by an
+          // UNCONFIRMED key sitting at 0.95 and could not say whether that was harm. Keeping it for an
+          // A/B would compare a key against a defect; REMOVING IT REVERTS 826 MOVEMENTS OF UNKNOWN
+          // CORRECTNESS, which is the stronger reason — it is the only disposition that does not leave
+          // possibly-wrong rows in the store under a superseded commit.
+          //
+          // THE ID CANNOT COLLIDE: `brain_relationship.id` is TEXT PRIMARY KEY with no secondary unique
+          // constraint, and the pass computes it from its own re-parse using THE STORE'S OWN functions
+          // (`buildSpans`, `enclosingSpanId`) and THE STORE'S OWN factory (`makeStoreableName`) — one
+          // implementation, two callers. A row no confirmation names is never the subject of a statement,
+          // so clause 4 is a STRUCTURAL PROPERTY here rather than a test.
+          //
+          // AND THE MISS COUNTER IS PART OF THE FIX, NOT AN EXTRA: `changes()` is summed and compared
+          // against the ids attempted, because Reading A's failure mode is an UPDATE THAT MATCHES NOTHING
+          // and a silent failure is the one thing this design must not have.
+          if (passStats.confirmedIds?.length) {
+            try {
+              const wbDb: any = await BrainDatabase.getRawInstance(projectId)
+              const upd = wbDb.prepare("UPDATE brain_relationship SET confidence = ? WHERE id = ?")
+              const attempted = passStats.confirmedIds.length
+              let matched = 0
+              let zeroRow = 0
+              const apply = wbDb.transaction((rows: Array<{ id: string; confidence: number }>) => {
+                for (const r of rows) {
+                  const n = upd.run(r.confidence, r.id).changes
+                  matched += n
+                  if (n === 0) {
+                    zeroRow++
+                    // ── THE ATTRIBUTION OF A MISS (r-lane) ──────────────────────────────────────────
+                    // A zero-row UPDATE is either (i) an edge the store NEVER HAD — which the merge shape
+                    // makes correct and which the design cannot fix, because the shape that can insert is
+                    // the re-store shape that can delete — or (ii) a row that EXISTS UNDER A DIFFERENT ID,
+                    // which would be a defect in the id construction and would poison every other id this
+                    // run computed. The id's own format carries the fields, so the lookup needs nothing
+                    // extra and CANNOT be steered by what it finds.
+                    try {
+                      const tail = String(r.id).split(":rel:")[1] ?? ""
+                      const bits = tail.split(":")
+                      // READ FROM THE RIGHT, because sourceId is `${fileId}:${name}:${line}` and
+                      // fileId is `${projectId}:${relativePath}` — SO sourceId OCCUPIES FOUR
+                      // COLON-SEGMENTS. The first version of this probe sliced from the left and
+                      // searched the store for a target containing the TAIL OF THE SOURCE ID, which
+                      // returned NO_ROW for reasons that had nothing to do with the question.
+                      const relLine = bits[bits.length - 1] ?? "?"
+                      const relType = bits[bits.length - 2] ?? "overrides"
+                      const target = bits[bits.length - 3] ?? ""
+                      const hit = wbDb
+                        .prepare(
+                          "SELECT id FROM brain_relationship WHERE project_id = ? AND relationship_type = ? " +
+                            "AND target_external = ? AND line_number IS ?",
+                        )
+                        .all(String(projectId), relType, target, relLine === "?" ? null : Number(relLine)) as any[]
+                      process.stderr.write(
+                        `[SEVEN] ${hit.length === 0 ? "NO_ROW" : "DIFFERENT_ID"} storeRows=${hit.length} ` +
+                          `target=${target} line=${relLine} diffId=${hit[0]?.id ?? "-"} attemptedId=${r.id}\n`,
+                      )
+                    } catch (e: any) {
+                      process.stderr.write(`[SEVEN] lookup failed ${e?.message ?? e}\n`)
+                    }
+                  }
+                }
+                return { matched, zeroRow }
+              })
+              const res = apply(passStats.confirmedIds)
+              log.info(
+                `override companion (${companionLang}) write-back: ${res.matched} row(s) matched of ` +
+                  `${attempted} id(s) attempted, ${res.zeroRow} matched NOTHING`,
+              )
+              // THE STORE CENSUS, IN EVERY RUN — so the acceptance does not need a second instrument.
+              // `0.95` must rise by (confirmed - rows already at 0.95) and `0.5` must fall by exactly that;
+              // the TOTAL must not move, which is clause 4 at the store level: NO ROW LOST. And the
+              // unconfirmed rows must still be AT 0.5 — a write-back that tidies the confirmed count by
+              // moving the rest would show here as a `0.5` that fell further than the `0.95` rose.
+              try {
+                const cen = wbDb
+                  .prepare(
+                    "SELECT confidence AS c, COUNT(*) AS n FROM brain_relationship " +
+                      "WHERE relationship_type = 'overrides' GROUP BY confidence ORDER BY c",
+                  )
+                  .all() as any[]
+                const tot = wbDb
+                  .prepare("SELECT COUNT(*) AS n FROM brain_relationship WHERE relationship_type = 'overrides'")
+                  .get() as any
+                log.info(
+                  `override companion (${companionLang}) census: overrides conf = ` +
+                    `${cen.map((r) => `${r.c}=${r.n}`).join(" ") || "(none)"} · total=${tot?.n}`,
+                )
+              } catch (e: any) {
+                log.warn(`override companion (${companionLang}) census failed: ${e?.message ?? e}`)
+              }
+              // THE FALSIFIER, MADE LOUD. Reading A breaks by matching nothing; this line says so
+              // without anyone asking, AND REPORTS RATHER THAN RECOVERS — no fallback is attempted.
+              if (res.zeroRow > 0) {
+                log.warn(
+                  `override companion (${companionLang}) WRITE-BACK MISS: ${res.zeroRow} of ${attempted} ` +
+                    `ids matched no stored row — Reading A is wrong for those rows and Reading B is the ` +
+                    `design for them. REPORTED, NOT RECOVERED: no fallback is attempted in this run.`,
+                )
+              }
+            } catch (e: any) {
+              // The write-back must never turn a completed index into a failed one.
+              log.warn(`override companion (${companionLang}) write-back failed: ${e?.message ?? e}`)
+            }
+          }
+          // ── CLAUSE 4's SECOND FORM, PER ID (r-lane) ──────────────────────────────────────────
+          //
+          // THE ONE INFERENCE IN THE ACCEPTANCE, MADE MEASURABLE. The store census merges every 0.5 row, so
+          // "the unconfirmed are still at 0.5" could only be inferred from an equal-and-opposite aggregate
+          // movement — and THAT INFERENCE SURVIVES A DEFECT: if a confirmed key's UPDATE had landed on a row
+          // the pass did NOT confirm, the aggregate would still balance. THE PRIMARY KEY CANNOT DO THAT: each
+          // unconfirmed id is looked up BY ID, so a row either is the row the pass named or it is not.
+          //
+          // THREE OUTCOMES REPORTED SEPARATELY RATHER THAN AS A RATIO: still below the floor (the clause
+          // holding), moved to or above it (THE FINDING — the write-back touched a row it did not confirm),
+          // and ABSENT (expected non-zero: an unconfirmed row NEW IN THE RE-PARSE has no store row, for the
+          // same reason the seven confirmed ones do not). ABSENCE AND DISPLACEMENT ARE DIFFERENT FACTS, and
+          // folding them together would hide the one that matters.
+          if (passStats.stillGuessIds?.length) {
+            try {
+              const cdb: any = await BrainDatabase.getRawInstance(projectId)
+              const q = cdb.prepare("SELECT confidence AS c FROM brain_relationship WHERE id = ?")
+              let stillBelow = 0
+              let movedUp = 0
+              let absent = 0
+              for (const g of passStats.stillGuessIds) {
+                const row = q.get(g.id) as any
+                if (!row) absent++
+                else if (Number(row.c) < 0.7) stillBelow++
+                else movedUp++
+              }
+              log.info(
+                `override companion (${companionLang}) CLAUSE 4 per id: ${stillBelow} of ` +
+                  `${passStats.stillGuessIds.length} unconfirmed id(s) still below the floor, ` +
+                  `${movedUp} MOVED to or above it, ${absent} absent from the store`,
+              )
+              if (movedUp > 0) {
+                log.warn(
+                  `override companion (${companionLang}) CLAUSE 4 VIOLATED: ${movedUp} row(s) the pass did ` +
+                    `NOT confirm moved to or above the floor. THE FINDING. The acceptance does not close.`,
+                )
+              }
+            } catch (e: any) {
+              log.warn(`override companion (${companionLang}) clause 4 check failed: ${e?.message ?? e}`)
+            }
           }
         }
       }
@@ -5712,6 +6981,42 @@ export async function indexProjectParallel(
     // Clean up memory by clearing full results
     results.length = 0
 
+    // ── the run's final honesty check ─────────────────────────────────────────
+    // A store batch can roll back (constraint violation, a full disk) and be skipped.
+    // The recovery pass above usually rescues those files; when it cannot — the disk
+    // is still full — nothing used to say so, and the run reported success with a
+    // status of "complete". So the FINAL STATE is measured rather than assumed: which
+    // of the files this run discovered are absent from brain_file? Measured after a
+    // cancelled run this is non-zero by design, which is why the status rule below
+    // treats cancellation as its own outcome rather than as incompleteness.
+    let missingAfterRecovery = 0
+    if (!stats.cancelled) {
+      try {
+        const rawDb = await BrainDatabase.getRawInstance(projectId)
+        const storedPaths = new Set(
+          (rawDb.prepare(`SELECT path FROM brain_file WHERE project_id = ?`).all(projectId) as any[]).map(
+            (r: any) => r.path,
+          ),
+        )
+        missingAfterRecovery = files.filter((f) => !storedPaths.has(f) && !shouldSkipCli(f)).length
+      } catch {
+        // Best-effort: this check must never break a run that would otherwise finish.
+      }
+    }
+    if (stats.summary) {
+      stats.summary.storeFailures = stored.storeFailures ?? 0
+      stats.summary.storeFailureFiles = stored.storeFailureFiles ?? 0
+      stats.summary.missingAfterRecovery = missingAfterRecovery
+    }
+    if (missingAfterRecovery > 0 || (stored.storeFailures ?? 0) > 0) {
+      log.error("index is INCOMPLETE", {
+        storeFailures: stored.storeFailures ?? 0,
+        storeFailureFiles: stored.storeFailureFiles ?? 0,
+        missingAfterRecovery,
+        discoveredFiles: files.length,
+      })
+    }
+
     // Get total global stats including previously indexed ones to return correct totals
     const dbStats = await getIndexingStats(projectId)
     stats.symbolsExtracted = dbStats.symbols
@@ -5772,7 +7077,12 @@ export async function indexProjectParallel(
       filesParsed: stats.successFiles,
       symbolsIndexed: stats.symbolsExtracted,
       relationshipsIndexed: stats.relationshipsFound,
-      status: stats.errorFiles > 0 ? "partial" : "complete",
+      // "complete" is a claim about the INDEX, so it is decided by the index: parse
+      // errors, or files this run discovered that are still absent after recovery.
+      // A batch that rolled back and WAS recovered does not make the index partial —
+      // it is reported separately as storeFailures.
+      status:
+        stats.errorFiles > 0 || (stats.summary?.missingAfterRecovery ?? 0) > 0 ? "partial" : "complete",
       errors: stats.structuredErrors,
       performanceStats: perfStats,
       codebaseFingerprintProjectPath: projectPath,
@@ -5808,7 +7118,27 @@ export async function indexProjectParallel(
       // timing/outcome contract (M21.I2), zero duplicated phase logic.
       // M43.P1: this call is inside an indexProjectParallel run that already
       // holds the project lock — lockHeld=true prevents a self-deadlock.
-      const post = await runPostProcessing(projectId, { logger: _log, lockHeld: true })
+      let post: Awaited<ReturnType<typeof runPostProcessing>>
+      try {
+        post = await runPostProcessing(projectId, { logger: _log, lockHeld: true })
+      } catch (postErr: any) {
+        // "no index for project … run bb index first" is the right message for a project
+        // that was never indexed, and the WRONG one for this run: if we discovered files
+        // and stored none of them, the index is empty because the STORE failed — a full
+        // disk, a read-only database — and the user needs that cause, not an instruction
+        // to run the command they just ran. Measured: with every batch failing, the CLI
+        // printed "error: no index for project aff3f165 — … run bb index first" and the
+        // real reason appeared only in a log line.
+        if (missingAfterRecovery > 0) {
+          throw new Error(
+            `${missingAfterRecovery} of ${files.length} discovered file(s) could NOT be stored ` +
+              `(${stored.storeFailures ?? 0} store batch(es) rolled back), so there is nothing to derive ` +
+              `from and the index is INCOMPLETE. This is a write failure, not a parse failure: check free ` +
+              `disk space and that the database is writable, then re-run. (underlying: ${postErr?.message ?? postErr})`,
+          )
+        }
+        throw postErr
+      }
       phases.postProcessingMs = Date.now() - postProcessingStart
       phases.postProcessingPhases = post.phases
 
@@ -5916,7 +7246,12 @@ export async function indexProjectParallel(
         filesParsed: stats.successFiles,
         symbolsIndexed: stats.symbolsExtracted,
         relationshipsIndexed: stats.relationshipsFound,
-        status: stats.errorFiles > 0 ? "partial" : "complete",
+        // "complete" is a claim about the INDEX, so it is decided by the index: parse
+      // errors, or files this run discovered that are still absent after recovery.
+      // A batch that rolled back and WAS recovered does not make the index partial —
+      // it is reported separately as storeFailures.
+      status:
+        stats.errorFiles > 0 || (stats.summary?.missingAfterRecovery ?? 0) > 0 ? "partial" : "complete",
         errors: stats.structuredErrors,
         performanceStats: {
           schemaVersion: 1,
@@ -6034,7 +7369,7 @@ export interface FileChange {
  * (and inode) intact, so every open connection sees the fresh index right
  * away with no restart needed.
  */
-export function wipeProjectData(rawDb: any): void {
+export function wipeProjectData(rawDb: any): { rowsDeleted: number } {
   // M54.P1: bulk destructive op — FK OFF avoids any dependency-ordering
   // surprise mid-wipe, then the open-time policy is restored per the
   // BB_FK_ENFORCE seam (same contract as storeResults' finally).
@@ -6050,9 +7385,15 @@ export function wipeProjectData(rawDb: any): void {
     "brain_index_status",
     "brain_file",
   ]
+  // The count is RETURNED because the caller cannot otherwise tell a wipe that
+  // emptied a 3 GB file from one that ran on an already-empty database — and
+  // `freelist_count` is not a substitute: measured on the real 3.33 GB project
+  // database, it still read 0 pages free immediately after every row was deleted.
+  let rowsDeleted = 0
   for (const t of tables) {
     try {
-      rawDb.run(`DELETE FROM ${t}`)
+      const info = rawDb.run(`DELETE FROM ${t}`)
+      rowsDeleted += Number(info?.changes ?? 0)
     } catch {}
   }
   // temp resolution tables (per-connection; safe to clear if present)
@@ -6067,6 +7408,7 @@ export function wipeProjectData(rawDb: any): void {
   } else {
     rawDb.run("PRAGMA foreign_keys = ON")
   }
+  return { rowsDeleted }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -6381,8 +7723,16 @@ export async function runPostProcessing(
 
 /** One cross-file edge INTO a to-be-re-parsed file, captured before storeResults deletes it. */
 export interface InEdgeSnapshotRow {
-  source_symbol_id: string
-  target_name: string
+  /** UNION (main): the row's own primary key — the re-point matches on it, and without it a repair can
+   *  only re-insert a copy (which is what this branch's old repair did). */
+  id: string
+  source_symbol_id: string | null
+  /** UNION (main): the symbol the row pointed at when it was CAPTURED. Pass 1 restores this exactly,
+   *  instead of re-resolving by name — a name match can pick a DIFFERENT same-named symbol. */
+  target_symbol_id: string | null
+  /** What to re-point by when that symbol no longer exists: the row's own `target_external` spelling,
+   *  or the target symbol's name when it carried no spelling (some resolved rows have none). */
+  target_name: string | null
   relationship_type: string
   confidence: number
   context: string | null
@@ -6404,20 +7754,31 @@ export async function snapshotInEdges(projectId: ProjectID, fileIds: string[]): 
   for (let i = 0; i < fileIds.length; i += CHUNK) {
     const chunk = fileIds.slice(i, i + CHUNK)
     const placeholders = chunk.map(() => "?").join(",")
+    // UNION (main): the capture carries the row's ID and its captured TARGET POINTER, and it no
+    // longer filters out rows whose `target_external` is empty — it falls back to the target
+    // symbol's NAME for those. Main's measurement of why: of the rows that changed payload after a
+    // re-index, some "existed nowhere at all" precisely because this filter dropped them.
+    //
+    // AND THE COMMENT LIVES OUT HERE ON PURPOSE: a JS `//` line inside a SQL template literal is not
+    // a comment to either parser — tsc reported TS1005 on it, and SQLite would have rejected the
+    // statement. This is the same class as the backtick-in-a-template-literal hazard that has cost
+    // this fleet several runs; the compiler caught this one because it is inside a .ts file's string.
     const part = rawDb.prepare(`
-      SELECT r.source_symbol_id, r.target_external AS target_name, r.relationship_type,
-             r.confidence, r.context, r.line_number, r.metadata
+      SELECT r.id, r.source_symbol_id, r.target_symbol_id,
+             COALESCE(NULLIF(r.target_external, ''), t.name) AS target_name,
+             r.relationship_type, r.confidence, r.context, r.line_number, r.metadata
       FROM brain_relationship r
       JOIN brain_symbol t ON t.id = r.target_symbol_id
       WHERE r.project_id = ?
         AND t.file_id IN (${placeholders})
         AND r.source_symbol_id NOT IN (SELECT id FROM brain_symbol WHERE file_id IN (${placeholders}))
-        AND r.target_external IS NOT NULL AND r.target_external != ''
     `).all(projectId, ...chunk, ...chunk) as any[]
     for (const r of part) {
       rows.push({
-        source_symbol_id: r.source_symbol_id,
-        target_name: r.target_name,
+        id: String(r.id),
+        source_symbol_id: r.source_symbol_id ?? null,
+        target_symbol_id: r.target_symbol_id ?? null,
+        target_name: r.target_name ?? null,
         relationship_type: r.relationship_type,
         confidence: typeof r.confidence === "number" ? r.confidence : 0.5,
         context: r.context ?? null,
@@ -6430,50 +7791,197 @@ export async function snapshotInEdges(projectId: ProjectID, fileIds: string[]): 
 }
 
 /**
- * Restore snapshot edges as unresolved rows (target_external set, target NULL)
- * so the resolution phase re-resolves them against the fresh symbol table.
- * Deterministic ids make re-runs idempotent (INSERT OR IGNORE).
+ * UNION (src/ast batch): this function is MAIN's, PORTED WHOLE, because the two sides are two DESIGNS
+ * of the same repair rather than two edits of one:
+ *
+ *   THIS BRANCH  re-INSERTED the snapshot row as unresolved (target NULL, `:m40` id suffix) and let the
+ *                resolution phase re-resolve it BY NAME.
+ *   MAIN         UPDATEs the surviving row in place: pass 1 restores the captured target POINTER
+ *                (exact, never by name), pass 2 re-binds by name ONLY for rows whose symbol is
+ *                genuinely gone, within the touched files. Its own doc calls this branch's shape
+ *                "the old repair" and records why it was replaced: measured with
+ *                `script/m14/verify-store-path-parity.ts`, **187 of 10,171 rows stored a different
+ *                payload after a re-index, 185 of them is_cross_file** — "a name match can pick a
+ *                DIFFERENT same-named symbol, which is the divergence this change exists to remove".
+ *
+ * MAIN'S DOC IS KEPT VERBATIM BELOW, and the caller was ported with it (fileIds/out).
+ */
+
+/**
+ * Put back the target POINTER of every snapshot row that the store re-stored
+ * over. The row itself was never deleted (see the note in `storeResults`), so
+ * this is an UPDATE of the rows that are still there, in two passes:
+ *
+ *   1. EXACT — the row pointed at symbol S, and S is still in the index. This is
+ *      the ordinary case (an unchanged file's symbol ids are a function of file,
+ *      name and line), and it must NOT go through name resolution: a name match
+ *      can pick a DIFFERENT same-named symbol, which is the divergence this
+ *      change exists to remove. Measured before it existed
+ *      (`script/m14/verify-store-path-parity.ts`): 187 of 10,171 rows stored a
+ *      different payload after a re-index, 185 of them `is_cross_file` and 112
+ *      `target`, and 652 rows existed nowhere at all.
+ *
+ *   2. BY NAME — only for the rows whose symbol is genuinely gone (a symbol
+ *      really did move or vanish in the re-stored file). These re-bind within
+ *      the touched files only, by qualified_name first then name, lowest id
+ *      breaking ties, matching the store's own `resolveTargetStmt` proximity
+ *      order. When `fileIds` is not given, this pass is skipped and such rows
+ *      are reported as still-unresolved rather than guessed at.
+ *
+ * M59/#821 stays enforced, and it MOVES. A legacy index's stored `line_number =
+ * 0` used to be healed on the way back in because the old repair re-INSERTED the
+ * row (the inserted copy carried NULL). Nothing is inserted now, so the heal is a
+ * statement of its own — `healLegacyZeroLines` below — over EVERY captured row,
+ * not just the re-pointed ones: a row whose target symbol is gone never reaches
+ * either UPDATE, and the old shape healed it as a side effect of inserting. See
+ * `script/m59/verify-legacy-zero-heal.ts`.
+ *
+ * Returns the number of rows re-pointed. `stillUnresolved` and
+ * `healedZeroLines` are written to `opts.out` so a caller can report the
+ * remainder and the heal instead of hiding them.
  */
 // M59/#821: exported for the legacy-zero-heal gate (verify-legacy-zero-heal.ts) —
-// the repair path is the one place a pre-M59 index's stored 0 can re-enter the DB.
-export async function repairInEdges(projectId: ProjectID, snapshot: InEdgeSnapshotRow[]): Promise<number> {
+// the repair path is the one place a pre-M59 index's stored 0 could re-enter the DB.
+export async function repairInEdges(
+  projectId: ProjectID,
+  snapshot: InEdgeSnapshotRow[],
+  opts: {
+    fileIds?: string[]
+    out?: { stillUnresolved?: number; healedZeroLines?: number; importResolvedInEdges?: number }
+  } = {},
+): Promise<number> {
   if (snapshot.length === 0) return 0
   const rawDb = await BrainDatabase.getRawInstance(projectId)
   const now = Date.now()
-  const insert = rawDb.prepare(`
-    INSERT OR IGNORE INTO brain_relationship
-    (id, project_id, source_symbol_id, target_symbol_id, source_external, target_external, relationship_type, confidence, context, line_number, is_cross_file, is_cross_language, bridge_mechanism, metadata, time_created, time_updated)
-    VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, 1, 0, NULL, ?, ?, ?)
-  `)
-  let repaired = 0
-  const tx = rawDb.transaction((rows: InEdgeSnapshotRow[]) => {
-    // Batched multi-row INSERT (50 rows/statement): the per-run() overhead of
-    // single-row binds measured ~700ms for 12K rows on the A2 fixture — this
-    // pass sits on bb_edit/LSP's interactive path, so bind overhead matters.
-    for (let i = 0; i < rows.length; i += 50) {
-      const batch = rows.slice(i, i + 50)
-      const valuesSql = batch.map(() => "(?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, 1, 0, NULL, ?, ?, ?)").join(",")
-      const params: any[] = []
-      for (const r of batch) {
-        // M59/#821: snapshot rows from a LEGACY index may carry the old stored
-        // 0 ("unknown" written as a number). Re-storing it verbatim would let
-        // the class survive every reindex. Heal at the boundary: > 0 keeps the
-        // analyzer's line; 0/NULL/undefined becomes NULL. The id keeps the
-        // legacy `?? 0` component so re-runs stay idempotent with existing rows.
-        const ln = typeof r.line_number === "number" && r.line_number > 0 ? r.line_number : null
-        const id = `${r.source_symbol_id}:${r.relationship_type}:${r.target_name}:${r.line_number ?? 0}:m40`
-        // Idempotency: deterministic id + INSERT OR IGNORE (PK dedup).
-        params.push(id, projectId, r.source_symbol_id, r.target_name, r.relationship_type, r.confidence, r.context, ln, r.metadata, now, now)
-      }
-      rawDb.prepare(`
-        INSERT OR IGNORE INTO brain_relationship
-        (id, project_id, source_symbol_id, target_symbol_id, source_external, target_external, relationship_type, confidence, context, line_number, is_cross_file, is_cross_language, bridge_mechanism, metadata, time_created, time_updated)
-        VALUES ${valuesSql}
-      `).run(...params)
-      repaired += batch.length
+  rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _m40_inbound (rel_id TEXT PRIMARY KEY, target_id TEXT, target_name TEXT)`)
+  rawDb.run(`DELETE FROM _m40_inbound`)
+  const ins = rawDb.prepare(`INSERT OR IGNORE INTO _m40_inbound (rel_id, target_id, target_name) VALUES (?, ?, ?)`)
+  const tx0 = rawDb.transaction((rows: InEdgeSnapshotRow[]) => {
+    for (const r of rows) {
+      if (r.target_symbol_id) ins.run(r.id, r.target_symbol_id, r.target_name)
+      else ins.run(r.id, null, r.target_name)
     }
   })
-  tx(snapshot)
+  tx0(snapshot)
+
+  let repaired = 0
+  try {
+    // ── pass 1: exact ──────────────────────────────────────────────────────
+    // `s.id = i.target_id` is the guard that makes this exact: the row is only
+    // touched when the symbol it already pointed at is still in the index.
+    const exact = rawDb.prepare(`
+      UPDATE brain_relationship
+         SET target_symbol_id = i.target_id,
+             time_updated = ?
+        FROM _m40_inbound i
+        JOIN brain_symbol s ON s.id = i.target_id
+       WHERE brain_relationship.id = i.rel_id
+         AND brain_relationship.project_id = ?
+         AND brain_relationship.target_symbol_id IS NULL
+    `).run(now, projectId)
+    repaired += exact.changes
+
+    // ── pass 2: by name, inside the touched files only ──────────────────────
+    if (opts.fileIds && opts.fileIds.length > 0) {
+      rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _m40_touched (id TEXT PRIMARY KEY, name TEXT, qualified_name TEXT)`)
+      rawDb.run(`DELETE FROM _m40_touched`)
+      for (let i = 0; i < opts.fileIds.length; i += 500) {
+        const chunk = opts.fileIds.slice(i, i + 500)
+        const ph = chunk.map(() => "?").join(",")
+        rawDb.prepare(`INSERT OR IGNORE INTO _m40_touched (id, name, qualified_name)
+                       SELECT id, name, qualified_name FROM brain_symbol WHERE project_id = ? AND file_id IN (${ph})`).run(projectId, ...chunk)
+      }
+      // Same two-pass shape as the store's own name resolution: qualified name
+      // first (its rows win), bare name filling the rest, MIN(id) tie-break so
+      // the same input always yields the same target.
+      rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _m40_match (rel_id TEXT PRIMARY KEY, symbol_id TEXT)`)
+      rawDb.run(`DELETE FROM _m40_match`)
+      const matchFilter = `r.project_id = ? AND r.target_symbol_id IS NULL`
+      rawDb.prepare(`INSERT OR IGNORE INTO _m40_match (rel_id, symbol_id)
+        SELECT j.rel_id, MIN(j.symbol_id) FROM (
+          SELECT r.id AS rel_id, t.id AS symbol_id
+          FROM brain_relationship r JOIN _m40_inbound i ON i.rel_id = r.id
+          JOIN _m40_touched t ON t.qualified_name = i.target_name
+          WHERE ${matchFilter}
+        ) j GROUP BY j.rel_id`).run(projectId)
+      rawDb.prepare(`INSERT OR IGNORE INTO _m40_match (rel_id, symbol_id)
+        SELECT j.rel_id, MIN(j.symbol_id) FROM (
+          SELECT r.id AS rel_id, t.id AS symbol_id
+          FROM brain_relationship r JOIN _m40_inbound i ON i.rel_id = r.id
+          JOIN _m40_touched t ON t.name = i.target_name
+          WHERE ${matchFilter}
+        ) j GROUP BY j.rel_id`).run(projectId)
+      const byName = rawDb.prepare(`
+        UPDATE brain_relationship
+           SET target_symbol_id = m.symbol_id,
+               time_updated = ?
+          FROM _m40_match m
+         WHERE brain_relationship.id = m.rel_id
+           AND brain_relationship.project_id = ?
+           AND brain_relationship.target_symbol_id IS NULL
+      `).run(now, projectId)
+      repaired += byName.changes
+    }
+
+    // ── pass 3: the shared `<module>:<item>` resolver, scoped to the rows this
+    // call captured ────────────────────────────────────────────────────────
+    // A re-stored file's symbols MOVE (an inserted line shifts every id), so
+    // pass 1 cannot land (the id it captured is gone) and pass 2 cannot either
+    // when the row spells its target the way its own language writes an export:
+    // a JS/TS `imports` row spells `./module:name`, which is not any symbol's
+    // `name` or `qualified_name`. MEASURED (`js-repoint-miss-probe.ts`): a
+    // 5-file project whose hub gained a line lost all 6 of its inbound
+    // `imports` rows (14 → 10 edges into the hub) with `repairedInEdges = 8`, and
+    // A2 surfaced the same shape at scale — 3995 of 15994 in-edges lost, ALL of
+    // them this form. `resolveImportTargets` is the decider the full pass uses
+    // for it (M60/JD2), so this is a call, not a fourth copy of the rules; the
+    // id scope is what keeps a `--changed` run's writes inside its own scope.
+    //
+    // Skipped outright when no captured row carries a `:` spelling — the common
+    // (bare-name) case must not pay for a project-wide read it cannot use.
+    if (snapshot.some((r) => (r.target_name ?? "").includes(":"))) {
+      try {
+        const ids = new Set(snapshot.map((r) => r.id))
+        const imp = resolveImportTargets(rawDb as any, projectId, { onlyRowIds: ids })
+        if (imp.resolved > 0) repaired += imp.resolved
+        if (opts.out) opts.out.importResolvedInEdges = imp.resolved
+      } catch {
+        // A project without the import tables must not fail an index run over a
+        // relationship class that is a bonus; the remainder is counted below.
+      }
+    }
+
+    // ── M59/#821 heal — scoped to exactly the rows this call captured ───────
+    // A pre-M59 index holds rows stored with `line_number = 0`. The old repair
+    // healed them by re-inserting the row; nothing is inserted now, so the zero
+    // would have survived on every row that is NOT re-pointed (target symbol
+    // gone, spelling unmatched). `line_number = 0` is never a real line — the
+    // store's own contract is 1-based or NULL — so NULL is the honest value, and
+    // the heal is bounded to the captured population: a legacy zero on a row
+    // this run never touched is left for the run that does.
+    const healed = rawDb.prepare(`
+      UPDATE brain_relationship
+         SET line_number = NULL, time_updated = ?
+       WHERE project_id = ? AND line_number = 0
+         AND id IN (SELECT rel_id FROM _m40_inbound)
+    `).run(now, projectId)
+    // Reported through `opts.out`, not logged here: this function has no logger
+    // of its own (the caller's `_log` is call-scoped), and a module-level
+    // function must not reach for one — the first cut of this heal did, and the
+    // ReferenceError it threw after the UPDATEs left the caller's counters at
+    // zero while the DB was already changed. One writer, one reporter.
+    if (opts.out) opts.out.healedZeroLines = healed.changes
+
+    // What is left is the honest remainder: the row survives, its symbol is
+    // gone, and no symbol of the re-stored files answers to its spelling.
+    const left = rawDb.prepare(`
+      SELECT COUNT(*) c FROM brain_relationship r JOIN _m40_inbound i ON i.rel_id = r.id
+       WHERE r.project_id = ? AND r.target_symbol_id IS NULL
+    `).get(projectId) as any
+    if (opts.out) opts.out.stillUnresolved = Number(left?.c ?? 0)
+  } finally {
+    rawDb.run(`DELETE FROM _m40_inbound`)
+  }
   return repaired
 }
 
@@ -6564,12 +8072,18 @@ export async function runBoundedPostProcessing(
 
   // 1. in-edge repair
   let repairedInEdges = 0
+  const repairOut: { stillUnresolved?: number; healedZeroLines?: number } = {}
   {
     const _t = Date.now()
     try {
-      repairedInEdges = await repairInEdges(projectId, opts.snapshot)
+      // UNION (main): the repair UPDATEs surviving rows in place and needs the touched FILE ids for
+      // its by-name pass, plus an out-object so the remainder and the legacy-zero heal are REPORTED
+      // rather than hidden. This branch's caller passed neither.
+      repairedInEdges = await repairInEdges(projectId, opts.snapshot, { fileIds: touchedFileIds, out: repairOut })
       recordPhase("relationships", Date.now() - _t, "ok")
-      if (repairedInEdges > 0) _log.log(`  bounded: restored ${repairedInEdges} cross-file edge(s) into re-parsed files`)
+      if (repairedInEdges > 0) _log.log(`  bounded: re-pointed ${repairedInEdges} cross-file edge(s) into re-parsed files`)
+      if ((repairOut.stillUnresolved ?? 0) > 0) _log.log(`  bounded: ${repairOut.stillUnresolved} in-edge(s) survive unresolved (target symbol gone; named in the index report)`)
+      if ((repairOut.healedZeroLines ?? 0) > 0) _log.log(`  bounded: healed ${repairOut.healedZeroLines} legacy zero line(s) (M59/#821)`)
     } catch (e: any) {
       recordPhase("relationships", Date.now() - _t, "failed")
       log.warn("bounded in-edge repair failed", { error: e?.message })

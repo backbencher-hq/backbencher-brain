@@ -97,8 +97,10 @@
       "unconditional_assignable_selector",
       "uri",
       "void_type",
-      "while_statement"
+      "while_statement",
+      "ERROR"
     ],
+    "error_node_note": "ERROR — the wasm ABI's parse-error node, and this analyzer CONSULTS it rather than declining to see it: `rootNode.hasError` drives the error-collection pass (src/ast/real-dart-analyzer.ts:715-730) that reports every ERROR node inside a damaged region as a syntax warning, and ERROR is on the type-mention SKIP list (line 243, rationale at line 3439) because nothing inside a parse-error region is a fact about a well-formed program. Classified handled_verified for that reason, and because java, javascript, kotlin and bash record the identical pair the same way. Added 2026-10-12: `completeness-inventory.loadNamedNodeTypes` forces the ABI pair into every lane's type list, so leaving it unclassified failed section A on a node type the analyzer demonstrably rules on.",
     "corpus_verified": {
       "qualified": "authentic ProxiCall/lib files: `SessionOfflineBannerMode.reconnecting` -> `uses build->reconnecting` + `contains`; and 2,405 recovered `case Enum.member:` pattern reads (fix 3d4d7fa4)",
       "typed_identifier": "authentic ProxiCall/lib files: `T data` in a generic repository -> `data:property` with `contains` and `uses` edges"
@@ -111,7 +113,10 @@
       "new_expression",
       "symbol_literal"
     ],
-    "fixture_only_note": "Master review 3 (reviews/dart/master-review-3.md, F4): these 6 are claimed handled_verified and occur ZERO times in 1,294 ProxiCall/lib files, so their verification rests entirely on fixtures that construct them. `new_expression` is instructive: modern Dart makes `new` optional, so `Foo()` is a type_identifier and the node appears only under an explicit `new` — a legitimate reason for absence, but it means the claim is untested against how the corpus actually writes code. DARTD11's question (are these realizable by any Dart source in the pinned grammar?) is still open for all six. Counted toward handled, but marked here so the total is not read as 93 equally evidenced."
+    "fixture_only_note": "Master review 3 (reviews/dart/master-review-3.md, F4): these 6 are claimed handled_verified and occur ZERO times in 1,294 ProxiCall/lib files, so their verification rests entirely on fixtures that construct them. `new_expression` is instructive: modern Dart makes `new` optional, so `Foo()` is a type_identifier and the node appears only under an explicit `new` — a legitimate reason for absence, but it means the claim is untested against how the corpus actually writes code. DARTD11's question (are these realizable by any Dart source in the pinned grammar?) is still open for all six. Counted toward handled, but marked here so the total is not read as 93 equally evidenced.",
+    "_notes": {
+      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-dart-analyzer.ts:369-373 (with the module-level type set at :135)), and `extension-type.dart` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
+    }
   },
   "internal_silent": {
     "types": [
@@ -220,10 +225,15 @@
       "unary_expression",
       "uri_test",
       "yield_each_statement",
-      "yield_statement"
+      "yield_statement",
+      "MISSING"
     ],
+    "missing_node_note": "MISSING — the wasm ABI's node type for a token the parser INSERTED. This analyzer consults the CONDITION (`n.isMissing`, the same error loop at src/ast/real-dart-analyzer.ts:720) and publishes no symbol, no edge and no payload of its own for the TYPE: a phantom token is not a fact about the source. That split — condition handled, type silent — is exactly what internal_silent records, and it is the same split java, javascript, kotlin and bash record for this pair (java checks both type strings at real-java-analyzer.ts:435 and still files MISSING here). The string `MISSING` appears nowhere in real-dart-analyzer.ts; the condition does.",
     "corpus_silent_rationale": "function_expression (767 corpus files) and lambda_expression (17) are silent per DARTD2 — local functions, lambdas and function expressions are not module-level symbols. They were never LISTED, which is what left them unclassified rather than unaudited.",
-    "constructor_initializer_note": "initializer_list_entry / field_initializer / initializers are the `<this>.field = value` list a CONSTRUCTOR writes. They emit no symbol of their own because DARTD3 rules Dart constructors have no distinct NAME — the FIELD each entry initializes is the symbol, and DARTD13's post-pass already binds its declared type. Master review 3 (F2) removed these from the GAP list, where they had been asking for a symbol the family ruled out, and bucketed them here instead."
+    "constructor_initializer_note": "initializer_list_entry / field_initializer / initializers are the `<this>.field = value` list a CONSTRUCTOR writes. They emit no symbol of their own because DARTD3 rules Dart constructors have no distinct NAME — the FIELD each entry initializes is the symbol, and DARTD13's post-pass already binds its declared type. Master review 3 (F2) removed these from the GAP list, where they had been asking for a symbol the family ruled out, and bucketed them here instead.",
+    "_notes": {
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-dart-analyzer.ts:373); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+    }
   },
   "gap": {
     "_description": "Re-scoped by master review 3 (reviews/dart/master-review-3.md, F2) against the LIVE ProxiCall corpus. The previous grouping was by NODE TYPE FAMILY, which made the work unplannable: one row lumped eight record types under 'record type/literal symbols' and another lumped nine pattern types under 'destructuring pattern variables as symbols', and those are very different amounts of work. Rows are now one per DEFERRABLE UNIT, ranked by live occurrence count, and the two rows that were never gaps at all are gone (see removed_from_gaps). Occurrence counts are measured over 1,294 ProxiCall/lib files.",
@@ -237,7 +247,7 @@
         "missing": "RE-SCOPED AFTER MEASUREMENT, and the first framing of this row was wrong. It claimed pattern bindings 'deserve what a local declarator gets' and that the names are already computed so only a symbol is missing. Both halves fail against the corpus. (a) A local declarator is NOT a symbol in this lane either -- it goes in the `bound` set, and DT2-C rules reads of bound names as `uses` edges, the same convention TypeScript pins as `interp-uses` and the same reason `uses build -> context` publishes for a parameter. So a pattern-bound name publishing `uses f -> a` with no symbol is CONSISTENT, not a gap. (b) The real question is the navigation one every language shares: should a BINDING be a symbol so a consumer resolving that edge finds a node? That is a family decision, not Dart work. MEASURED on all six pattern forms (if-case, record positional, named field, list with rest, null-check) and every one already behaves exactly as a parameter does.",
         "effort": "DECISION, not construction. If bindings become symbols it is a cross-language change; if they stay bound this row closes as wontfix-by-convention and should be deleted from the gap list.",
         "measured_position": "All six forms verified: `uses` published to the bound name, no symbol, and a read of the name is correctly suppressed as a local. Identical to the parameter treatment, which is the convention.",
-        "shadowing_checked_and_correct": "A shadowing defect was SUSPECTED here and does not exist; recorded because the suspicion and its refutation are both informative. Probe: `class C { final String s; void f(Object? o) { if (o case final String s) print(s); } }` publishes `uses f -> s`, whose target NAME is also a field symbol in the file, so it reads at first like a fabricated member read. The metadata says otherwise: the edge is `confidence 0.9, isLocalRead` — the LOCAL-READ arm — and a genuine field read is `confidence 0.6, isBareRead`. The pattern binding shadows the field exactly as a parameter and a `var` do, all three measured at 0.9/isLocalRead against the 0.6 control. The apparent collision is inherent to a name-keyed graph and is the accepted `interp-uses` situation, not a wrong edge. Corpus census agrees: 0 of 1,294 ProxiCall/lib files have a pattern-bound name colliding with a same-file symbol, which is what correct behaviour plus idiomatic naming predicts."
+        "shadowing_checked_and_correct": "A shadowing defect was SUSPECTED here and does not exist; recorded because the suspicion and its refutation are both informative. Probe: `class C { final String s; void f(Object? o) { if (o case final String s) print(s); } }` publishes `uses f -> s`, whose target NAME is also a field symbol in the file, so it reads at first like a fabricated member read. The metadata says otherwise: the edge is `confidence 0.9, isLocalRead` — the LOCAL-READ arm — and a genuine field read is `confidence 0.6, isBareRead`. The pattern binding shadows the field exactly as a parameter and a `var` do, all three measured at 0.9/isLocalRead against the 0.6 control. The apparent collision is inherent to a name-keyed graph and is the accepted `interp-uses` situation, not a wrong edge. 2026-10-08 — the collision has since been made IMPOSSIBLE rather than accepted, without touching what the metadata above says: a bound read is spelled `<callable><BINDING_SEP><binding>`, a string no declaration name can equal, so the name-keyed graph never sees the bare name for a binding at all (`BINDING_SEP`, and the arbiter's `verifyBindingClaim`). The refutation recorded here still stands as the record of what the metadata proved; the spelling removed the need for a reader to rely on it. Corpus census agrees: 0 of 1,294 ProxiCall/lib files have a pattern-bound name colliding with a same-file symbol, which is what correct behaviour plus idiomatic naming predicts.\n\n[UNION: the version from the other side read — A shadowing defect was SUSPECTED here and does not exist; recorded because the suspicion and its refutation are both informative. Probe: `class C { final String s; void f(Object? o) { if (o case final String s) print(s); } }` publishes `uses f -> s`, whose target NAME is also a field symbol in the file, so it reads at first like a fabricated member read. The metadata says otherwise: the edge is `confidence 0.9, isLocalRead` — the LOCAL-READ arm — and a genuine field read is `confidence 0.6, isBareRead`. The pattern binding shadows the field exactly as a parameter and a `var` do, all three measured at 0.9/isLocalRead against the 0.6 control. The apparent collision is inherent to a name-keyed graph and is the accepted `interp-uses` situation, not a wrong edge. Corpus census agrees: 0 of 1,294 ProxiCall/lib files have a pattern-bound name colliding with a same-file symbol, which is what correct behaviour plus idiomatic naming predicts.]"
       },
       {
         "id": "DARTGAP2",
@@ -437,7 +447,7 @@
         "node_type": "selector + argument_part (named construction)",
         "status": "FIXED",
         "question": "First review: `Foo.named()` emitted a dangling calls->named (no such method exists; constructors are literally named 'constructor') while bare `Foo()` correctly instantiated. Same for prefix `p.Foo()` (calls->Foo) and tear-off `Foo.named` (silent).",
-        "resolution": "Receiver-chain walk: capitalized head + in-file named ctor (constructor-symbol knowledge) instantiates the class and drops the leaf call; prefix-qualified capitalized methods instantiate (generated mock code builds this way); static methods (C.create) and unknown cross-file X.y() stay leaf calls. Tear-offs of known named ctors instantiate. Gated by fixture dart/member-value-reads + mutants dart/named-ctor-leaf-call, dart/prefix-ctor-as-call.",
+        "resolution": "Receiver-chain walk: capitalized head + in-file named ctor (constructor-symbol knowledge) instantiates the class and drops the leaf call; prefix-qualified capitalized methods instantiate (generated mock code builds this way); static methods (C.create) stay calls. Tear-offs of known named ctors instantiate. Gated by fixture dart/member-value-reads + mutants dart/named-ctor-leaf-call, dart/prefix-ctor-as-call. THE LEAF-CALL HALF OF THIS RULE IS SUPERSEDED by DT-RS (2026-10-10): 'unknown cross-file X.y() stays a leaf call' is no longer the rule — the owner is now SPELLED and carries a declared cause. The fixture's pin moved from `calls m -> y` to `calls m -> X.y`, and the old leaf shape is a forbid row beside it.\n\n[UNION: the version from the other side read — Receiver-chain walk: capitalized head + in-file named ctor (constructor-symbol knowledge) instantiates the class and drops the leaf call; prefix-qualified capitalized methods instantiate (generated mock code builds this way); static methods (C.create) and unknown cross-file X.y() stay leaf calls. Tear-offs of known named ctors instantiate. Gated by fixture dart/member-value-reads + mutants dart/named-ctor-leaf-call, dart/prefix-ctor-as-call.]",
         "issue": "M49.DT1 dart first review"
       },
       {
@@ -469,7 +479,7 @@
         "node_type": "conditional selector chains (investigated, no defect)",
         "status": "RULED",
         "question": "First review: does `a?.b.c()` fabricate calls->b (conditional link read as invocation)? The battery initially suggested it.",
-        "resolution": "No defect — direct probe shows calls->c only on both sides (the three-selector chain resolves the leaf correctly). Pinned as calls->bump in the fixture to lock the conditional-invocation shape.",
+        "resolution": "No defect — direct probe shows calls->c only on both sides (the three-selector chain resolves the leaf correctly). Pinned as calls->bump in the fixture to lock the conditional-invocation shape; the pin moved to `calls -> A.bump` on 2026-10-10 under DT-RS (the receiver's type is named, so the target carries it), which is a target change and not a shape change — the conditional-invocation shape this entry settled is unchanged.\n\n[UNION: the version from the other side read — No defect — direct probe shows calls->c only on both sides (the three-selector chain resolves the leaf correctly). Pinned as calls->bump in the fixture to lock the conditional-invocation shape.]",
         "issue": "M49.DT1 dart first review"
       },
       {
@@ -479,6 +489,22 @@
         "question": "First review: member reads were invisible on both sides (this./obj./static/conditional access, cascade getters, subscript bases, interpolation) — the managed-OO family contract (csharp CS-R1, objc OC-E) unimplemented, lanes blind by circular consistency.",
         "resolution": "Reads emit uses@0.9 on both sides: argument-less selectors (callee links, plain-= LHS writes and builtins excluded), argument-less cascade selectors (cascade `=` assigns excluded), subscript bases (index-selector shapes incl. assignable-expression targets; declaration names bind via =-position rule), and string interpolation (template-substitution blanket + $x placeholders, labels excluded). Unqualified bare value reads (RHS, args, returns, conditions) need scope inventory and defer to review 2. Gated by fixture (14 uses pins, 1 write forbid) + 4 mutants.",
         "issue": "M49.DT1 dart first review"
+      },
+      {
+        "id": "DT-RS",
+        "node_type": "selector head whose receiver type the run can NAME but not see (X.y(), a?.bump(), a local declared with an explicit type)",
+        "status": "FIXED",
+        "question": "The receiver-availability cut measured 126,295 `calls` and 150,088 `uses` rows whose target stayed a bare member because the receiver's type was not visible in the file, and in most of them the run HELD the type's name. Was the leaf the honest spelling, or was the name?",
+        "resolution": "THE NAME. The target becomes `<Type>.<member>` and carries `baseBeyondRunScope: <Type>` — the declared cause whose contract is 'the run that wrote this edge could not look the owner up', which the gate reads ONLY where the target names nothing, so the spelling can never buy a resolution with an exemption. Priced per row against the gate's own key space before adopting: calls +45,861 ambiguous->resolved against -3,892 resolved->unresolved; uses +63,585 against -3,563; 55,973 rows that resolve neither way become a named bucket-3 population; 41,887 stay ambiguous even spelled (two files declaring the same owner AND member). LOWER-CASE HEADS KEEP THE LEAF: a value whose declared type the run did not resolve names no type at the site, so there is nothing to spell. Gated by fixture dart/receiver-spelling (the spelling, its claim, and the boundaries: lowercase head, visible type that rescinds it, visible type that does not declare the member) plus the updated dart/member-value-reads, dart/unknown-endpoint-r7, dart/payload-and-complexity and dart/receiver-cause, with four mutants (revert the spelling; spell lowercase heads; spell without the claim; spread to the receiverMemberOutsideRun branch). THIS ALSO SUPERSEDES R7's suppression of `RemoteFailure.unknown(...)` (`dart/unknown-endpoint-r7`): the row returns with its OWNER named, while R7's rejected alternatives (`load calls RemoteFailure`, the `instantiates` promotion) and the bare `unknown` endpoint stay forbidden — the change names the constructor, never the type alone. Corpus measurement: arm9, against arm8's before-table.",
+        "issue": "2026-10-10 receiver-type spelling"
+      },
+      {
+        "id": "DT-PC",
+        "node_type": "a class declared with a PRIMARY/declaring constructor (`abstract class Selector(final Token token)`)",
+        "status": "OPEN - GRAMMAR",
+        "question": "Bucket 3's oracle refuted 3 of 284,377 claims, each an edge whose declared cause named a base the EMITTING FILE itself declares (`scope.dart` claiming `AbstractTypeParameterScope`, declared at line 53 of the same file). Analyzer bug, degraded parse, or oracle false positive?",
+        "resolution": "A GRAMMAR HOLE, and neither of the other two: all three files parse FULL (`fallback: null`, `analysisVersion 4.0.0-m12.11-family-contract`) and the declarations are real source, but `wasm/tree-sitter-dart.wasm` returns ERROR nodes for the declaring-constructor form, so no class node exists for any walk to publish. Consequence measured: the class symbol and its members are LOST, and WITH an `extends` clause the grammar's recovery attaches them at LIBRARY scope (a member METHOD is republished as a top-level `function` symbol, `ownerName: \"\"`), so edges inside such a class are attributed to the library or to nothing. Population, over the gate's admission rule: 440 of 33,738 admitted files (1.30%) and 889 declarations, ALL in dart-sdk - zero in the other six population names - so every dart table in `docs/analyzers/real-dart-analyzer.md` carries this ceiling inside its dart-sdk rows, and no analyzer change can move them. NOT fixed here, and the fix is NOT AVAILABLE UPSTREAM TODAY (checked 2026-10-10): the form is PRIMARY CONSTRUCTORS, accepted for dart 3.13, the grammar chain advertises support through dart 3.11, and upstream tree-sitter-dart's request for the 3.12/3.13 forms (issue #105) was still OPEN on 2026-10-09. Closing it means patching `grammar.js` and rebuilding a shared artifact this lane ships two copies of (`tree-sitter-dart.wasm`, `dart.wasm` - both the local rebuild `tree-sitter-dart-new.wasm`, `reviews/m60-grammar-unmatched-source-read.md`), and any grammar change re-parses all 33,738 files and moves every column of every arm. THE DEFECT IS SHAPE-DEPENDENT, measured over six shapes (`class P(final int seed) {}` and `class P(final int seed);` lose the class entirely; `class P({required int seed}) {}` and `class P(int a, {String? b}) {}` are recovered with the params published as properties - plus junk such as `required`/`int` read as properties; `class P(final int seed) extends B {}` is recovered with its members at LIBRARY scope, a method republished as a top-level function, which is mis-attribution rather than loss; `class P({…}) extends B {}` is recovered correctly). The three oracle refutations are the positional shapes. THE IN-LANE ALTERNATIVE IS PRICED AND DOES NOT PAY (`validation/m14/fixtures/dart/primary-constructor-price.ts`, both sides parsed in the same run after proving an unchanged copy is inert): blanking the parameter list in the analyzer's copy before parsing, length-preserving, gives symbols +233, class-owned +989, edges +2,529, owner-qualified edge sources +784 over 409 files - POSITIVE, and still wrong, because on the NAMED shape the analyzer already publishes the parameters as class-owned properties and blanking DELETES them (migration_runner.dart 40->31, migration_summary_builder.dart 40->26, pubspec.dart 20->14), while a primary constructor's parameters ARE the class's fields: a fix that makes the class parse by removing its fields trades one mis-statement for another, and the honest version would SYNTHESISE them, which a length-preserving blank cannot. 135 declarations in 62 of the 440 files are the NO-BODY form (`class X({ … });`) and are outside the transform's reach (blanking leaves `class X;`); the price instrument's first version mishandled exactly that shape and deleted classes it was meant to repair, now a control. Verdict: the grammar is the fix - upstream #105 or a local patch of `grammar.js`. Watchdog: `validation/m14/fixtures/dart/primary-constructor-hole.ts` asserts the hole is STILL PRESENT (a clean parse, a published class, or a member attributed to its own primary-constructor class each fail the run) and re-measures the population on every run (a project newly using the form prints NEW EXPOSURE and fails), so this entry cannot go stale in either direction.",
+        "issue": "2026-10-10 cause-claim oracle"
       },
       {
         "id": "DT-R1",
@@ -493,7 +519,7 @@
         "node_type": "bare identifiers bound in scope",
         "status": "FIXED",
         "question": "Second review: parameters, body locals, loop/for-in/catch/lambda bindings, cascade receivers and constructor-initializer params invisible on both sides — every `return depth`, `foo(k)`, `use(x)` silent (OC-E parity gap).",
-        "resolution": "Exact scope inventory (frames already threaded; for-in/pattern bindings added to the collector; initializer lists bind sibling-signature params): bound names emit uses@0.9 isLocalRead, mutually exclusive with member reads (gate B) by construction. Oracle mirrors frames, bindings and arms exactly (including the direct-child param fix the first lane caught). Gated by fixture dart/value-reads (19 local pins) + mutant dart/drop-local-read-uses.",
+        "resolution": "Exact scope inventory (frames already threaded; for-in/pattern bindings added to the collector; initializer lists bind sibling-signature params): bound names emit uses@0.9 isLocalRead, mutually exclusive with member reads (gate B) by construction. Oracle mirrors frames, bindings and arms exactly (including the direct-child param fix the first lane caught). Gated by fixture dart/value-reads (19 local pins) + mutant dart/drop-local-read-uses. 2026-10-08 — the target is now SPELLED as a binding: `<callable><BINDING_SEP><binding>` (`BINDING_SEP`, src/ast/types.ts) with `metadata.localBinding`, because the STORE resolves a target by NAME and never reads metadata (`parallel-indexer.ts` Strategy 2 admits a bare name declared exactly once in the project), so a bare local name bound to any single declaration carrying it, in any file. The arbiter verifies the claim by the spelling alone (`verifyBindingClaim`: bindingVerified / bindingRefuted / bindingUnverified) and the separator tripwire asserts no published key contains it. Gated additionally by fixture dart/local-read (+ 2 expectations, 26/26) and the instrument validation/m14/fixtures/dart/local-read-phantom.ts (RED on the bare spelling, then CLOSED, with the counterfactual that removing the separator re-creates the false link), and planted as 4 edge cases in the gate's own control.",
         "issue": "M49.DT2 dart second review"
       },
       {
@@ -551,11 +577,19 @@
         "question": "Dart published `contains` — 7,698 edges in a 25-file sample, the largest single-label blob the M60 label-coverage sweep found — with no oracle at all and no allowlist entry, so none of it was compared while the lane printed a percentage.",
         "resolution": "Written from Dart's own containment rule in script/m14/oracles/dart-contains.ts, sharing no rule table or member list with RealDartAnalyzer, and wired with its allowlist entry in the same commit (full mirror, per M49.G7). Four language facts were found by the corpus, not by reading the grammar: (1) `static final X = e;` is a different field shape from `final T x;` — static_final_declaration_list — and handling only the first derived 2 of the 431 properties the jni bindings' `Arrays` publishes; (2) Dart 3 `extension type X._(...)` is its own declaration node, and the jni bindings declare every type that way; (3) `extension X on int` carries an extension_body, not a class_body, so every extension member was invisible; (4) a Dart 2.17+ ENHANCED enum puts fields, methods and constructors directly in the enum_body beside the constants. The oracle also had to STOP inventing: a draft assumed the analyzer disambiguates repeated members with `$1`, `$2` and fabricated that suffix, manufacturing 233 truth rows the analyzer does not publish — a fabrication on the TRUTH side, the direction that quietly inflates coverage. The `$` suffixes are LITERAL in the source (`static core$_.int binarySearch$1(`). Result: proxicall 100% covered / MISSING 0 / unexplained 2.6% (from unmeasured), dart-http 100% / MISSING 0 / unexplained 0%. 19 gate checks in script/m14/verify-dart-contains.ts pin every shape above, including the no-invention rule.",
         "measured_by": "script/m14/verify-dart-contains.ts, script/m14/tmp/dart-contains-adjudicate.ts"
+      },
+      {
+        "id": "DT-EXP",
+        "node_type": "overrides",
+        "status": "GATED — whole-corpus exposure watchdog; the 128-class must read 0 and the population is re-measured on every run",
+        "question": "Pass 3's first-heritage-parent fallback published `Object.<member>` for members `Object` does not declare (128 rows over dart-sdk, 18 more on the projects that do not publish `sdk/lib/core/object.dart`) and EVERY FIXTURE WAS GREEN while it happened. What fails when ANY `overrides` row names a base that does not expose the member, over the whole corpus, on every run?",
+        "resolution": "`validation/m14/fixtures/dart/override-exposure-watchdog.ts` walks the gate's population on every invocation — tracked `.dart` files ≤ 1 MB per project, `parseFile` at production's per-file scope — and for every `overrides` row decides, FROM EVIDENCE THAT RUN HAD, whether the base the target names exposes the member, in three tiers: (1) owner `Object` needs no file evidence at all, because `DART_OBJECT_INTERFACE_MEMBERS` is its entire interface, so `Object.toString` passes and `Object.length` is REFUTED — this is the 128-class and it must read 0 on every project forever; (2) an in-file owner declared `class`/`mixin` with NO heritage clause has its own body plus the five as its member set, so a member absent from the blanked body is REFUTED; (3) everything else — owner out of the file, owner with heritage, enum/extension type/body-less declaration, extension `on` the owner — is COUNTED and never judged, because a `baseBeyondRunScope` claim's honesty is `cause-claim-oracle.ts`'s question and a second instrument deciding it would drift from the first. The truth source is independent by construction (nothing is imported from `real-dart-analyzer.ts`; comments and literals are blanked, declarations are read from what remains) and a body that MENTIONS the member counts as exposing it — over-broad on purpose, since a false NEGATIVE costs coverage the walk prints while a false POSITIVE accuses a correct edge, the one direction this lane does not fail in. A control set runs BEFORE any corpus file is read, on synthetic sources through the SAME classifier, because a control that cannot reach `refuted` would report a spotless corpus whatever the corpus held; any refuted row, failed control or unparseable file exits non-zero. THE FIRST RUN REFUTED 159 ROWS IN dart-sdk AND 157 OF THEM WERE THE INSTRUMENT'S OWN: the body-start scan took a PRIMARY CONSTRUCTOR's named-parameter brace as the body (`abstract class InternalStatement({required super.fileOffset}) extends InternalNode` — the real heritage invisible, the parameter list standing in for the body), which produced 155 of the 159 in a 79-file cut, and the blanker was not nest-aware, so a nested block comment (legal Dart) leaked `}` and truncated a body slice while an interpolation holding a string with the same quote closed it early. Both now scan as the language defines them and both are controls. The remaining 2 were TRUE and led to a fix: every constructor symbol the analyzer emits is named `constructor`, so a subclass member with that name matched the BASE's CONSTRUCTOR BY NAME and published at 0.95 (dart-sdk `pkg/compiler/lib/src/universe/recorded_use.dart`) — constructors are never inherited or overridden, and the overrides oracle's `memberNamesOf` has never carried one as a member. Constructors are excluded from the analyzer's override member surface, the shape is pinned BOTH ways in dart/object-interface-override (case O forbids `CtorSub.constructor -> CtorBase.constructor`; case P keeps `GetterSub.constructor -> GetterBase.constructor`, because the rule is on the constructor SYMBOL and not on the spelling), and the PRE-FIX analyzer FAILS that pin while the fixed one passes. Every run re-reads the whole population and diffs the per-project counts against the committed `override-exposure-baseline.json` (`--write-baseline` records it), so a project that starts producing the shape reports NEW PROJECT, POPULATION GREW or MORE UNCHECKABLE BASES instead of silently widening. Run: `npx tsx validation/m14/fixtures/dart/override-exposure-watchdog.ts` (`--control-only` is seconds; a repo list narrows the walk).",
+        "measured_by": "validation/m14/fixtures/dart/override-exposure-watchdog.ts + override-exposure-baseline.json; validation/m14/fixtures/dart/object-interface-override.expectation.json (cases K/L/M/N + O/P); validation/m14/fixtures/dart/object-interface-mutant.ts (M6/M7)"
       }
     ],
-    "lastUpdated": "2026-09-24 (M60 dart lane: DARTD20-DARTD22)"
+    "lastUpdated": "2026-09-24 (M60 dart lane: DARTD20-DARTD22) · 2026-10-12 (dart lane: DT-EXP, the whole-corpus override-exposure watchdog)"
   },
-  "lastUpdated": "2026-09-30 (master review 3: F2 re-scope gaps to deferrable units, F3 classify 4 unclassified corpus types, F4 mark 6 fixture-only claims)",
+  "lastUpdated": "2026-09-30 (master review 3: F2 re-scope gaps to deferrable units, F3 classify 4 unclassified corpus types, F4 mark 6 fixture-only claims) · 2026-10-12 (dart lane: classify the forced ABI pair ERROR/MISSING — section A, with the code sites as the evidence)",
   "label_coverage": {
     "_description": "Which relationship labels this lane actually COMPARES. script/m14/verify-label-coverage.ts reads the differential allowlist, runs this analyzer over a corpus sample, and reports every label the analyzer EMITS that the allowlist DROPS: such a label is compared by nothing while the lane still prints a percentage. `contains` left this list when the M60 oracle landed.",
     "declared_gaps": [
@@ -576,6 +610,64 @@
         "was": "Emitted by the analyzer (65 edges per 15 files on proxicall) and dropped by the allowlist. There is no imports oracle for this lane, so admitting the label today would turn invisible edges into UNEXPLAINED ones rather than into a measurement — the #910 shape in reverse.",
         "closed": "The oracle exists and the label is admitted: `script/m14/oracles/dart-imports.ts` is pushed as `deriveDartImportsTruth` and `imports` is in the dart arm of the allowlist (script/m14/differential.ts:23186). Recorded here rather than deleted, because a gap that closes silently is indistinguishable from one that was never there."
       }
+    ]
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates"
+    ],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the dart-sdk corpus, BB_PICK_CAP=26000 NFILES=26000 bun script/m14/firing-check.mjs DART → 20,000/20,000 parsed of 20,000 admitted, even stride, `[corpus=dart-sdk WHOLE]`. ALL TEN types fire — there is nothing to exclude and no gap. The instrument's corpus for this lane is `dart-sdk`, whose admitted population is 25,706 files; the run stopped at 20,000 because `BB_SAMPLE_POP` caps the walk's collected population at 20,000 by default and this run did not raise it. So THIS IS A 20,000-of-25,706 CLAIM, stated rather than rounded up: it is 78% of the corpus by even stride, not the whole corpus.",
+      "calls": {
+        "edges": 390264
+      },
+      "uses": {
+        "edges": 743119
+      },
+      "contains": {
+        "edges": 293803
+      },
+      "imports": {
+        "edges": 61352
+      },
+      "references": {
+        "edges": 40856
+      },
+      "exports": {
+        "edges": 834
+      },
+      "extends": {
+        "edges": 17478
+      },
+      "implements": {
+        "edges": 7045
+      },
+      "overrides": {
+        "edges": 53588
+      },
+      "instantiates": {
+        "edges": 64654
+      }
+    },
+    "_from": "MEASURED, and this is the ONE lane where the answer needs no exclusion and no ruling: all ten types fire, with the smallest margin `exports` at 834 edges. The lane's earlier state was `dart 10/10 from=firing-log`, which was the right NUMBER derived from the wrong source — the firing log's 120-file stride sample. The number is now derived from a declared block over 20,000 files with per-type counts.\n\nTWO THINGS THIS BLOCK DOES NOT CLAIM, both owed and already recorded in the lane's own doc:\n1. INCOMING RESOLUTION IS THE LANE'S REAL GAP and it is large: whole-corpus incoming reads 1,033,665 ambiguous + 170,692 unresolved of 3.4M edges (validation/m14/results/incoming-laptop-b.current.log), with `overrides` the single worst type because its targets are published owner-qualified and the Flutter framework is 0 files in the declared population. Coverage and resolution are different questions and this block answers only the first.\n2. THE 20,000-FILE CAP. `BB_SAMPLE_POP` defaults to 20,000 and this run left it there, so the population is 78% of the admitted 25,706 by even stride. A later run that raises BB_SAMPLE_POP should reproduce or correct these ten counts — they are a lower bound on a stride, not a census."
+  },
+  "_unionConflicts": {
+    "count": 3,
+    "at": [
+      "$.gap.gaps[DARTGAP1].shadowing_checked_and_correct",
+      "$.design_decision.decisions[DT-A].resolution",
+      "$.design_decision.decisions[DT-E].resolution"
     ]
   }
 }

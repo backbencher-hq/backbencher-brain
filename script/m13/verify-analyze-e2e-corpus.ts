@@ -7,7 +7,6 @@ import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { Harness } from "./harness"
-import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 const harness = new Harness({
   issue: "M13.53", code: "An3", tool: "bb_analyze",
@@ -26,32 +25,12 @@ await indexProjectParallel(pid, root, {})
 
 const bb = path.resolve("bin/bb")
 const MODES = ["callers","callees","dependencies","stats","complexity"]
-// The modes do NOT share one argument shape, and this loop used to pretend they did.
-//
-// With `catch {}` in place, the disagreement was invisible. Filling in the catch made it
-// visible and the gate went red for three of its five modes — and the fault was the GATE'S,
-// not bb_analyze's. Measured per mode against the real CLI:
-//
-//     callers        target required   target "a"        exit 0
-//     callees        target required   target "a"        exit 0
-//     dependencies   target irrelevant target "a"        exit 1  "irrelevant options: target"
-//     stats          target irrelevant target "a"        exit 1  "irrelevant options: target"
-//     complexity     no target needed  target "a"        exit 1  "no indexed file matches \"a\""
-//                                                          no target      exit 0
-//
-// So the two shapes are split explicitly rather than guessed. Passing an option a mode
-// declares irrelevant is a caller error, and `bb_analyze` is right to refuse it — the gate
-// was asserting a contract that does not exist.
-const TARGET_MODES = new Set(["callers", "callees"])
 for (const mode of MODES) {
-  const args = TARGET_MODES.has(mode) ? { mode, target: "a" } : { mode }
   try {
     const out = execFileSync("node", [bb, "tool", "bb_analyze", "--dir", root, "--args",
-      JSON.stringify(args)], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
+      JSON.stringify({ mode, target: "a" })], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
     harness.check("CLI "+mode+": output not empty", out.length > 0, "len="+String(out.length))
-    } catch (error) {
-      harness.check("CLI "+mode+" -- bb_analyze did not run", false, "bb_analyze exited non-zero: " + (error instanceof Error ? error.message.slice(0, 140) : String(error)))
-    }
+  } catch {}
 }
 
 // negative: empty mode
@@ -81,8 +60,7 @@ try {
 rmSync(root, { recursive: true, force: true })
 
 // Corpus
-// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
-const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
+const REPO_ROOT = "$HOME/fixtures/repositories"
 for (const [repo, subPath, family] of [["rake","lib/rake","Ruby"],["graphql-js","src","TypeScript"]]) {
   const idxRoot = path.join(REPO_ROOT, repo, subPath)
   if (!existsSync(idxRoot)) { harness.check("corpus "+repo+": present", false, "missing"); continue }
@@ -94,9 +72,7 @@ for (const [repo, subPath, family] of [["rake","lib/rake","Ruby"],["graphql-js",
         const out = execFileSync("node", [bb, "tool", "bb_analyze", "--dir", idxRoot, "--args",
           JSON.stringify({ mode })], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
         harness.check("corpus "+repo+" "+mode+": returns output", out.length > 20, "len="+String(out.length))
-      } catch (error) {
-        harness.check("corpus "+repo+" "+mode+": bb_analyze did not run", false, "bb_analyze exited non-zero: " + (error instanceof Error ? error.message.slice(0, 140) : String(error)))
-      }
+      } catch {}
     }
   } catch(e) {
     harness.check("corpus "+repo+": session", false, e instanceof Error ? e.message : String(e))

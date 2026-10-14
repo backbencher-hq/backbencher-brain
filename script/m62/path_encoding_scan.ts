@@ -35,7 +35,7 @@ const PATTERN = /new URL\(\s*(?:import\.meta\.url|"[^"]*",\s*import\.meta\.url)\
  * blanking it would hide exactly the site we are hunting), and the regex-vs-
  * division ambiguity.
  */
-export function blankCommentsAndStrings(src: string, opts: { keepStrings?: boolean } = {}): string {
+export function blankCommentsAndStrings(src: string): string {
   const out = src.split("")
   const blank = (i: number): void => {
     if (out[i] !== "\n") out[i] = " "
@@ -162,23 +162,7 @@ export function blankCommentsAndStrings(src: string, opts: { keepStrings?: boole
     // ---- single/double quoted string ---------------------------------------
     if (c === "'" || c === '"') {
       const quote = c
-      // `keepStrings` exists because a string literal can BE the evidence.
-      //
-      // A detector for "this code spawns /usr/bin/code" has to see the literal,
-      // because the literal is the argument. Blanking string bodies — which is
-      // right for every other use of this scanner — erases exactly what it is
-      // looking for, and the check then passes over a file that contains the
-      // defect. Found by planting one and watching the gate report PASS.
-      //
-      // Comments are still blanked either way: a comment MENTIONING the path is not
-      // code that invokes it, and these files document the defect at length.
-      const keepBody = opts.keepStrings === true
-      // With keepStrings the QUOTES stay too, not just the body. A detector that
-      // wants to recognise `execFileSync("/usr/bin/code", …)` has to see the whole
-      // literal — body without delimiters is not a literal, and a pattern anchored
-      // on the quote never matches. Found by planting the defect and watching the
-      // gate stay green: the body survived, the delimiters did not.
-      if (!keepBody) blank(i)
+      blank(i)
       i++
       while (i < src.length && src[i] !== quote) {
         if (src[i] === "\\") {
@@ -188,11 +172,11 @@ export function blankCommentsAndStrings(src: string, opts: { keepStrings?: boole
           continue
         }
         if (src[i] === "\n") keepNewline(i)
-        else if (!keepBody) blank(i)
+        else blank(i)
         i++
       }
       if (i < src.length) {
-        if (!keepBody) blank(i)
+        blank(i)
         i++
       }
       prevPunct = quote

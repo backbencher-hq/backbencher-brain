@@ -1,5 +1,6 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { FILE_CLAIM_MAX_BYTES, fileClaimForTarget } from "./file-claim"
 
 /**
  * REAL GRAPHQL ANALYZER — pure tree-sitter AST extraction against the vendored
@@ -355,7 +356,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return t
   }
 
-  public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  public analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     // A fresh memo per call: a `Node` id is unique only within one tree, and the
     // binding reuses ids for nodes carried over from an older tree, so a cache
     // that outlived the call could return the PREVIOUS tree's type for this one.
@@ -1256,6 +1257,25 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           isGraphqlImport: true,
           importSource: importer,
           importForm: hi.form,
+          // `fileLevel` IS THE FLAG THAT MAKES THE SOURCE ABOVE JOINABLE, and this edge was missing
+          // it while this analyzer's own `exports` edges already carried it. The M60/#910 contract
+          // (`parallel-indexer.ts:4391`) reads it as:
+          //
+          //     if (!sourceSymbol && rel.metadata?.fileLevel === true) { … sourceExternal = relativePath }
+          //
+          // — a module-level edge whose source did not resolve to a symbol is rewritten to the
+          // IMPORTING FILE's project-relative path. Without the flag `source_external` keeps this
+          // analyzer's own spelling, a bare basename (`schema.graphql`), which no declaration can
+          // ever answer: the row existed, the dependency existed, and the only thing missing was who
+          // declared it — verbatim the defect that clause exists to fix, and the reason no surface
+          // could answer "what does this file include".
+          //
+          // NOTHING ABOVE IS DISCARDED: the store keeps this spelling in `metadata.scopeName`, and
+          // the fixture's assertion that the source IS the importing file's own name
+          // (`ontology-file-imports.expectation.json`) is about the analyzer's OUTPUT, which is
+          // unchanged. Metadata-only, so no target-side count can move — the residual probe's
+          // reproduction of the gate's TABLE 1, in the same run, is the independent check of that.
+          fileLevel: true,
           // The bound names are real GraphQL identifiers in this document's scope; `[]`
           // on a bare directive means "the document as a whole", which is not the same
           // as "no names" and is distinguished by `importForm` rather than by omission.
@@ -1296,6 +1316,40 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(s.metadata?.graphqlType ? { graphqlType: s.metadata.graphqlType } : {}),
         ...(s.metadata?.graphqlCategory ? { graphqlCategory: s.metadata.graphqlCategory } : {}),
       })
+    }
+
+    // ------------------------------------------------------------- THE FILE CLAIM
+    //
+    // A `#import "./other.graphql"` TARGET IS A PATH. The key space answers it only when the path
+    // happens to name a declared type or field, so the column reads unresolved — and the claim says
+    // the one thing about it the PROJECT can check: the path names a file the admitted population
+    // carries.
+    //
+    // MEASURED BEFORE EMITTING (`imports-claim-pricing.mts`, graphql's own stride sample of 200 per
+    // repo, 1,145 of 1,911 files): of 144 import edges, **134 name a file the population carries**
+    // (93.1%) and the cross-tab is EXACT in both directions — **0 would be refuted**. The admitted
+    // extensions are BOTH spellings the router maps to this language (`graphql` and `gql`), not the
+    // lane's older single-spelling habit: a claim about the other spelling can never verify while a
+    // miss still REFUTES.
+    const claimRoot = typeof context?.projectRoot === "string" && context.projectRoot.length > 0 ? context.projectRoot : null
+    if (claimRoot !== null) {
+      for (const r of relationships) {
+        if (r.type !== ASTEngine.RelationshipType.Imports) continue
+        const md = r.metadata as Record<string, unknown> | undefined
+        if (!md || typeof md.importProjectFile === "string") continue
+        const claim = fileClaimForTarget({
+          projectRoot: claimRoot,
+          filePath,
+          written: String(r.target ?? ""),
+          admittedExtensions: ["graphql", "gql"],
+          // THE POPULATION'S SIZE CAP, passed because this lane HAS over-cap files (4 for graphql,
+          // 2 for scss on the gate's own population line). A claim about one of them would be
+          // REFUTED, and nothing in the row would say why.
+          maxFileSizeBytes: FILE_CLAIM_MAX_BYTES,
+        })
+        if (claim === null) continue
+        md.importProjectFile = claim
+      }
     }
 
     return {

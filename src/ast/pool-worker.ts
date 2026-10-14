@@ -11,6 +11,10 @@ import type { ASTEngine } from "./engine"
 // silently becoming `any` here and `ProjectIndex` at the use site.
 import type { ProjectIndex } from "./project-index"
 import { detectLanguageFromPath } from "./language-detection"
+// THE BINDING SEPARATOR IS IMPORTED, NEVER RE-SPELLED. It is `\u0000` in `types.ts`, and a filter that
+// hard-coded its own copy would drift from the spelling the analyzers write — the "one spelling, two
+// places" hazard this programme keeps paying for.
+import { BINDING_SEP } from "./types"
 
 const require = createRequire(import.meta.url)
 
@@ -102,6 +106,22 @@ function safeSend(message: Record<string, unknown>): boolean {
   }
 }
 
+/**
+ * THE REGEX-FALLBACK SYMBOL — what this file can recover when a parse fails.
+ *
+ * IT IS A UNION WITH THE AST-PATH SYMBOL, AND THE UNION IS THE POINT: a caller reading `parseFile`'s
+ * `symbols` may be holding either, and the fields below are the ones ONLY the AST path can fill.
+ *
+ * THEY ARE DECLARED HERE AS OPTIONAL, WHICH IS A CORRECTION AND NOT A WIDENING. `parseFile` returns the
+ * union of this shape and the full symbol, so `s.kind`, `s.range`, `s.ownerName`, `s.scope` and
+ * `s.metadata` exist on one arm and not the other — and TypeScript therefore refused every read of them
+ * on the union, which is why **39 type errors across 8 files** in `script/m12` and `script/m14` had
+ * accumulated since the ratchet's baseline reached ZERO on 2026-10-08.
+ *
+ * The alternative — casting at each of the ~39 call sites — would have hidden the real fact the compiler
+ * was pointing at: **a fallback symbol genuinely does not have these**, so a reader must handle their
+ * absence. Declaring them optional states that once, in the type, where every reader sees it.
+ */
 interface BasicSymbol {
   name: string
   type: string
@@ -111,6 +131,20 @@ interface BasicSymbol {
   parameters?: any[]
   returnType?: string
   qualifiedCalls?: string[]
+  // ── FIELDS ONLY THE AST PATH FILLS. Optional because a fallback symbol cannot supply them.
+  //
+  // NO `range` HERE, AND THAT IS DELIBERATE — IT WAS TRIED AND REVERTED. `parseFile` FLATTENS
+  // `UniversalSymbol.range` into `startLine`/`endLine`/`startIndex`/`endIndex`, so **neither arm of this
+  // union carries a `range`**. Declaring it optional here silenced the compiler on nine probe sites
+  // without making the field exist: `s.range?.startLine` would still have been `undefined` at runtime,
+  // and one of those probes (`perl-probe.ts`) printed `Lundefined` on EVERY row because of it. **A type
+  // declaration that makes a dead read compile is the defect, not the fix** — it is the same shape as
+  // php's unreachable `owner_provable` (§6.11) and the same reason the `range` fallbacks were removed
+  // from the probes instead.
+  kind?: string
+  ownerName?: string
+  scope?: string
+  metadata?: Record<string, any>
 }
 
 interface BasicImport {
@@ -579,7 +613,36 @@ export function keepSymbol(s: any, lang: string): boolean {
     // `program` is reserved in Haskell/Elm-ish contexts; it is a SQL column name.
     sql: new Set(["program"]),
   }
-  if (RESERVED[lang]?.has(name)) return false
+  if (RESERVED[lang]?.has(name)) {
+    // …except where the language makes the word SEMI-RESERVED, and php does.
+    //
+    // PHP 7.0 made `self`, `parent` and the rest of the keyword list usable as
+    // METHOD, PROPERTY and CLASS-CONSTANT names, because a member is reached
+    // through its owner and can never be confused with the type position the
+    // keyword occupies. The name-only test above predates that distinction and
+    // deletes real members.
+    //
+    // MEASURED COST, whole admitted php population (5,094 files, 350,342 edges,
+    // production `parseFile`, 0 fallbacks): the only edge in the lane that names a
+    // declaration the store does not hold is `contains Node -> parent` in
+    // `phpmyadmin/src/Navigation/Nodes/Node.php:54` — `public Node|null $parent = null;`
+    // — deleted here while the analyzer kept emitting the containment.
+    // `validation/m14/fixtures/php/orphan-endpoint-gate.mts` is the gate that sees it
+    // (the fixture runner calls `analyze()` directly at `run-fixtures.ts:728`, so no
+    // fixture can observe this file): 5 orphaned `contains` targets in
+    // `keyword-member-names.php` before this change, 0 after. 98 corpus declarations
+    // are named `$parent`/`$self`; 0 methods or classes are.
+    //
+    // The exemption is deliberately narrow in two directions: it needs a member KIND,
+    // and it needs an OWNER, so it cannot resurrect a tree-sitter artifact that has
+    // neither — and a class, interface, trait, enum, namespace or top-level function
+    // named `parent`/`self` is still refused, which is what php actually reserves
+    // (`class parent {}` is a parse error, so that half can only be exercised by the
+    // injectable mutant `php/drop-keyword-named-members`).
+    const PHP_MEMBER_KINDS = new Set(["method", "property", "constant", "enum_member"])
+    const isPhpMember = lang === "php" && PHP_MEMBER_KINDS.has(String(s.kind)) && Boolean(s.ownerName)
+    if (!isPhpMember) return false
+  }
   return true
 }
 
@@ -635,7 +698,7 @@ export function nameTheSymbolRule(s: any, lang: string): string {
  * call.
  */
 const JS_FAMILY_LANGUAGES = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
-const CSS_FAMILY_LANGUAGES = new Set(["css", "scss", "less"])
+const CSS_FAMILY_LANGUAGES = new Set(["css", "scss", "sass", "less"])
 const NOISE_TARGET_FAMILIES: Record<string, Set<string>> = {}
 for (const n of [
   "namedChild", "childForFieldName", "namedChildren", "childCount", "namedChildCount",
@@ -651,7 +714,85 @@ for (const n of [
   NOISE_TARGET_FAMILIES[n] = CSS_FAMILY_LANGUAGES
 }
 
-export function filterNoiseRelationships(rels: any[], language: string, declaredNames?: Set<string>): any[] {
+/**
+ * The names a file BINDS without DECLARING — import bindings.
+ *
+ * WHY THIS EXISTS (JS lane finding §1). The NOISE_TARGETS escape hatch admits a
+ * row when the file DECLARES the name, on the reasoning recorded at the check:
+ * "an analyzer that accidentally emits `node.type` emits a name the file never
+ * declares". An import binding is exactly that second case and the hatch cannot
+ * see it: `import text from "./text.js"` binds `text`, publishes no symbol named
+ * `text`, and so EVERY row naming `text` is deleted on the way to the index — the
+ * `uses` reads AND the `imports` row itself, because the filter tests the target's
+ * last segment and that segment is the bound name. Measured on a 600-file svelte
+ * sample by `script/m14/javascript-two-path-loss.ts`: 378 rows lost, 0 gained, and
+ * the instrument attributes each deletion as "the escape hatch being unreachable for
+ * a name the file only READS or BINDS".
+ *
+ * This does NOT widen the hatch to property reads (see the OPEN half recorded in
+ * `docs/analyzers/real-javascript-analyzer.md` §1): a name the file neither
+ * declares nor binds is still treated as noise, and `type`/`parent` read off an
+ * external object keep being deleted until a policy decision is taken for them.
+ *
+ * Shape-agnostic on purpose: analyzers spell their import records differently
+ * (`items`, `localName`, `defaultName`, `alias`, `namespaceName`, and
+ * `"./m:item"` / `"X as Y"` / path-ish tails), and a language whose record this
+ * does not understand contributes nothing rather than contributing the wrong name.
+ */
+export function importBindingNames(imports: any[] | undefined): Set<string> {
+  const names = new Set<string>()
+  const add = (raw: unknown): void => {
+    if (typeof raw !== "string") return
+    let s = raw.trim()
+    if (!s) return
+    // `./m:text` — the last `:`-segment is the item; a `:12` line suffix was
+    // already consumed by the same split.
+    const colon = s.lastIndexOf(":")
+    if (colon >= 0) s = s.slice(colon + 1).trim()
+    // A path-ish tail names a module, not a binding.
+    const slash = s.lastIndexOf("/")
+    if (slash >= 0) s = s.slice(slash + 1).trim()
+    if (!s) return
+    // `X as Y` binds BOTH spellings in the file's text; the local one is Y.
+    const asAt = s.indexOf(" as ")
+    if (asAt > 0) {
+      const imported = s.slice(0, asAt).trim()
+      const local = s.slice(asAt + 4).trim()
+      if (imported) names.add(imported)
+      if (local) names.add(local)
+      return
+    }
+    names.add(s)
+  }
+  for (const i of imports ?? []) {
+    if (!i || typeof i !== "object") continue
+    if (Array.isArray(i.items)) for (const it of i.items) add(it)
+    add(i.localName)
+    add(i.defaultName)
+    add(i.alias)
+    add(i.namespaceName)
+  }
+  return names
+}
+
+/**
+ * UNION: main's helper, absent from this branch's copy and imported by `js-filter-hatch-probe.ts`.
+ * Verbatim from `origin/main` — it is self-contained and depends on nothing this file changed.
+ */
+export function filterNoiseRelationships(
+  rels: any[],
+  language: string,
+  declaredNames?: Set<string>,
+  /**
+   * NAMES THE FILE BINDS WITHOUT DECLARING THEM (`importBindingNames`). UNION: this parameter and the
+   * hatch below are main's, whose side of this file had them while this branch's did not — and a probe
+   * taken from main calls this function with FOUR arguments, so the two sides disagree about the
+   * signature rather than about the body. The body kept here is THIS BRANCH's (it carries the
+   * binding-separator and qualified-exemption fixes recorded below), so main's parameter was ported
+   * INTO it rather than the body being replaced.
+   */
+  boundNames?: Set<string>,
+): any[] {
   if (!rels || rels.length === 0) return rels
 
   // M60 (objc lane, 2026-09-25): the leaf must be the last NON-EMPTY segment.
@@ -666,7 +807,26 @@ export function filterNoiseRelationships(rels: any[], language: string, declared
   // is unchanged: a target of `:` or `` still has no non-empty segment and is
   // still dropped, and `file.h:12`/`std::vector` resolve exactly as before.
   const extractLeaf = (name: string): string => {
-    const noLine = name.replace(/:\d+$/, "")
+    // THE BINDING SEPARATOR IS NOT PART OF THE TARGET, AND LEAVING IT IN SILENTLY DELETES EDGES.
+    //
+    // A target spelled `<read source>\u0000<binding>` — the family mechanism for a local binding, which
+    // dart adopted and php has now adopted across all five variable-read arms — was passed through this
+    // leaf extractor whole. `split(":")` and `split(".")` do not split on the separator, so the SOURCE
+    // NAME stayed attached and counted toward the 80-character budget below, a budget whose intent is
+    // code snippets rather than identifiers.
+    //
+    // MEASURED CONSEQUENCE (php-lane, whole 5,094-file population, pre-registered prediction against
+    // observed): **1,132 additional edges dropped, 0 fewer** — the entire gap. Named instance: an 89-char
+    // test method whose leaf reached 93 chars and was deleted. **THE LOSS IS SILENT**: the edge is
+    // ABSENT from the graph rather than mis-bound, so no column, count or fixture shows it and only an
+    // explicit difference of two totals finds it. php-lane found it by exactly that difference.
+    //
+    // EVERY LANE THAT ADOPTS `BINDING_SEP` INHERITS THIS, and php is only the first. The segment AFTER
+    // the separator is the target; everything before it is the read site.
+    const afterSep = BINDING_SEP.length > 0 && name.includes(BINDING_SEP)
+      ? name.slice(name.lastIndexOf(BINDING_SEP) + BINDING_SEP.length)
+      : name
+    const noLine = afterSep.replace(/:\d+$/, "")
     const segments = noLine.split(":").filter((s) => s.length > 0)
     const last = segments[segments.length - 1] ?? ""
     const dotParts = last.split(".")
@@ -681,7 +841,17 @@ export function filterNoiseRelationships(rels: any[], language: string, declared
     // source-code identifiers. Keys such as `<<`, `<tag>`, `type` (HCL
     // `variable` type constraint), or a GraphQL field named `type`/`text` are
     // valid data and must bypass the universal identifier sanitizer.
-    if (language === "json" || language === "yaml" || language === "hcl" || language === "terraform" || language === "graphql") return true
+    //
+    // TOML BELONGS IN THIS LIST, and its absence was dropping edges. Measured by toml-lane
+    // (2026-10-09): `extractLeaf` splits a target on `:` and `.` before the leading-space test
+    // below, so a dotted key whose QUOTED segment contains a colon —
+    // `project.urls."CI: Azure Pipelines"`, valid TOML — yields the leaf ` Azure Pipelines"`,
+    // which starts with a space, so the edge was silently deleted on the way to the index. toml
+    // is a data language exactly like the four above: its targets are dotted key paths, a colon
+    // inside a quoted key is a character in a name rather than punctuation, and no part of the
+    // identifier sanitizer below applies to it. The two path-shaped exemptions further down
+    // (bash, toml's `imports`/`references`) still matter for their own targets and are unchanged.
+    if (language === "json" || language === "yaml" || language === "hcl" || language === "terraform" || language === "graphql" || language === "toml") return true
 
     // M14 #277 (bash): a `source`/`.` target is a FILESYSTEM PATH, which is the
     // same category as the data paths above and not a code identifier — so the
@@ -701,15 +871,47 @@ export function filterNoiseRelationships(rels: any[], language: string, declared
     // defect class BD4 exists to prevent — from being laundered through this
     // exemption. The differential is what proves both halves: its oracle
     // corroborates the path rows and expects no braced call rows.
-    if (language === "bash" && (r.type === "imports" || r.type === "references" || r.relationshipType === "imports" || r.relationshipType === "references")) {
+    // M60 (#919, toml lane): the SAME exemption, for the SAME reason, for toml's
+    // `imports`. A path dependency's target is the path AS WRITTEN —
+    // `[sources] Documenter = { path = ".." }` — and `extractLeaf("..")` splits on
+    // `.` to `["", "", ""]`, whose last segment is the EMPTY string, so
+    // `leaf.length < 1` deleted the edge on the way to the index. Measured on the
+    // corpus: the analyzer collected all 331 path-dependency sites and
+    // `parseFile` delivered only those whose leaf happened to survive, so the
+    // relative paths that are most of a Julia manifest's `[sources]` section
+    // (`..`, `../..`) were deleted silently while `crates/build-rs` survived.
+    //
+    // It is the same category as the data paths above and as bash's, so it gets
+    // the same narrowly-scoped exemption: only these two languages, only the two
+    // path-shaped labels, and still refusing a target over 200 characters or
+    // containing a newline. A `calls`/`contains` target that is a path is still
+    // garbage and is still dropped, which is what keeps a fabricated
+    // `calls -> ../x` from being laundered through this.
+    if ((language === "bash" || language === "toml") && (r.type === "imports" || r.type === "references" || r.relationshipType === "imports" || r.relationshipType === "references")) {
       if (target.length > 200 || target.includes("\n")) return false
       return true
     }
 
-    // Block garbage targets: source code snippets, malformed names
-    if (target.length > 200 || target.includes("\n")) return false
+    // Block garbage targets: source code snippets, malformed names.
+    //
+    // THE LENGTH BUDGET APPLIES TO THE LEAF, NOT TO THE WHOLE TARGET — and that distinction was
+    // silently deleting real edges. Measured by the css lane (2026-10-09): once css published
+    // project-unique `qualifiedName`s (`<file-scope>::<name>`) every target grew, and **46 edges per
+    // 60 files crossed this 200-character line and were DELETED on the way to the index** — 318
+    // more were already long enough bare. The css analyzer now refuses to qualify a target that
+    // would cross the line, which is the right instinct (a visible residual of 183 beats a silent
+    // deletion) but the wrong place: this budget exists to reject a target that is a code SNIPPET,
+    // and a snippet is long in its LEAF. A qualified name is long in its SCOPE, and the checks
+    // below validate the leaf on its own terms — `leaf.length > 80`, the garbage-character set, the
+    // spacing rules. So the length test moves to the leaf, where the intent always was, and no
+    // language needs an exemption in order to spell its targets unambiguously.
+    //
+    // A genuine snippet is still refused: its leaf is long or carries `{`/`}`/backtick/angle
+    // brackets, and both of those checks stay unconditional.
+    if (target.includes("\n")) return false
 
     const leaf = extractLeaf(target)
+    if (leaf.length > 80) return false
     const lower = leaf.toLowerCase()
 
     // Block targets that are clearly not valid symbol names. `$` is a valid
@@ -771,7 +973,40 @@ export function filterNoiseRelationships(rels: any[], language: string, declared
     // accidentally emits `node.type` emits a name the file never declares, while
     // a variable the file declares is a real node in the graph. So the list keeps
     // its power against the bug it was written for and stops eating the graph.
-    if (NOISE_TARGETS.has(leaf) && !(declaredNames && declaredNames.has(String(r.target ?? r.to ?? "")))) {
+    // M60 FS-P4-3. THE EXEMPTION MUST BE TESTED ON THE SAME STRING AS THE NOISE TEST.
+    //
+    // The noise test is on the target's LEAF (`NOISE_TARGETS.has(leaf)`) and the
+    // exemption was on the target AS WRITTEN. For a bare endpoint those are the same
+    // string and the asymmetry is invisible; for a QUALIFIED one they are not, and the
+    // exemption silently stops applying — so a file that declares `tearDown` has its own
+    // containment edge eaten as framework noise.
+    //
+    // Not hypothetical, and found by measuring a spelling change rather than by reading
+    // this function. `FsCheck/src/FsCheck/StateMachine.fs` declares `let tearDown` and
+    // emits `contains FsCheck.Experimental.StateMachine -> StateMachine.tearDown@209`:
+    //
+    //   engine path 115 contains   production path 114   the missing one is that edge
+    //
+    // and it is the ONLY difference between the two paths on that file, so the
+    // production filter is what deleted it.
+    //
+    // Scoped over the same 3,000-file corpus draw before and after the fsharp lane's
+    // endpoint change: edges whose target leaf is in `NOISE_TARGETS` and whose name the
+    // file DECLARES — 12 of 12 exempted before, 0 of 11 after. The filter was eating
+    // exactly the edges it exists to protect, and only for endpoints whose spelling had
+    // moved away from the bare name. Testing BOTH spellings keeps the block's power
+    // (a name this file does not declare is still dropped) and restores the exemption
+    // for every lane that spells an endpoint qualified.
+    const declaredTarget =
+      !!declaredNames &&
+      (declaredNames.has(String(r.target ?? r.to ?? "")) || declaredNames.has(leaf))
+    if (
+      NOISE_TARGETS.has(leaf) &&
+      !declaredTarget &&
+      // UNION: main's second hatch — a name the file BINDS without declaring (an imported binding is
+      // not framework noise). Absent here, present there, and the probe taken from main depends on it.
+      !(boundNames && boundNames.has(leaf))
+    ) {
       // M60 LUA-16: `NOISE_TARGETS` bundles three groups whose names are noise
       // ONLY in the languages that own the convention, and all three were applied
       // to every language. Measured over every Lua file of two pinned corpora, the
@@ -909,10 +1144,27 @@ export async function parseFile(filePath: string, projectPath: string, context?:
     }
 
     if (ext === ".dart") {
-      fs.appendFileSync(
-        bbDiagnosticsLogPath("worker-debug.log"),
-        `[Worker] ASTEngine.parseFile returned ${parsed?.relationships?.length || 0} relationships for ${filePath}\n`,
-      )
+      // WRAPPED, and the reason is measured rather than defensive habit. This debug line used
+      // to be an unguarded `fs.appendFileSync`, six lines below an identical write to
+      // `parse-errors.log` that IS wrapped in try/catch. Where the diagnostics directory is
+      // not writable — a read-only `$HOME` in a sandbox, a full disk, a container with `~/.bb`
+      // mounted read-only — the write THREW, and it threw AFTER `parseFile` returned, so the
+      // whole file fell through to the extractFallback path. The dart lane measured the
+      // consequence with a controlled A/B on the same 60 files and the same stride:
+      //
+      //     as run (unwritable diagnostics dir):     79 edges,  12 ambiguous,   0 unresolved
+      //     BB_DATA_DIR=/tmp/bb-data (writable):  8,112 edges, 530 ambiguous, 2,273 unresolved
+      //
+      // 102.7x the denominator, and the incoming gate's own summary said
+      // `parse failures: 0   degraded (regex fallback): 60` — an honest report of a lane
+      // measured on its fallback path. A DEBUG LOG MUST NEVER DECIDE WHETHER AN ANALYZER RUNS.
+      // Swallowing a failed diagnostic write is correct: the log is optional, the parse is not.
+      try {
+        fs.appendFileSync(
+          bbDiagnosticsLogPath("worker-debug.log"),
+          `[Worker] ASTEngine.parseFile returned ${parsed?.relationships?.length || 0} relationships for ${filePath}\n`,
+        )
+      } catch {}
     }
 
     // Stage 5: Universal Multi-Language Taint Data-Flow Extraction
@@ -974,6 +1226,71 @@ export async function parseFile(filePath: string, projectPath: string, context?:
     // and a nested one at ~1.93 per doubling. The `??=` keeps the split lazy so a file
     // with no such symbol never pays for it at all.
     let snippetLines: string[] | undefined
+
+    // ── THE INVARIANT: a symbol this function DROPS must not leave edges behind that name it ──
+    //
+    // MEASURED 2026-10-10 (fsharp lane). `keepSymbol` drops a symbol by NAME — its `UNIVERSAL`
+    // set takes `this` and `super` unconditionally (`:545-548`) — while the RELATIONSHIPS were
+    // never filtered at all, and could not be by that predicate: the filter is symbol-shaped and
+    // a relationship carries endpoint STRINGS. So the symbol vanished and its edges stayed,
+    // pointing at a symbol the consumer never received.
+    //
+    // The reproduction, on `fsharp/tests/service/data/SyntaxTree/Type/As 03.fs`:
+    //   analyze()  publishes `Module` and `this<Module>`
+    //   parseFile  returns  `Module` only
+    //   and BOTH `contains Module -> Module.this` and `exports Module -> Module.this` survived.
+    // The analyzer's own `contains` pass states the invariant that is violated: "the TARGET is
+    // always an identity this file minted" (`real-fsharp-analyzer.ts:2174-2180`).
+    //
+    // The rule is deliberately one-directional: an edge is dropped only when an endpoint STRING
+    // equals a name this call dropped AND no kept symbol still publishes that name. A name any
+    // kept symbol carries is never dropped, so nothing is lost for a symbol the consumer DID
+    // receive.
+    //
+    // SCOPE, because a measured fleet sweep is what sized it: this closes the DROPPED-SYMBOL
+    // seam only. It does NOT close every containment target that fails to resolve — julia and
+    // lua emit `exports` whose target was never a symbol identity at all (no symbol was dropped,
+    // so there is nothing to drop an edge for), 681 and 618 edges on the same sweep. Those are a
+    // different defect with a different owner, and this change is deliberately not widened to
+    // cover them.
+    // The drop-set must hold every IDENTITY the edges can name, not just the symbol's `name`:
+    // `keepSymbol` filters on the NAME (`this`), while a containment edge names the symbol's
+    // published identity (`Module.this` = its `metadata.fqn`). A first cut of this fix keyed the
+    // set on `name` alone and was measured INERT on the very files it was written for — the set
+    // held `this`, the edge said `Module.this`, nothing matched. The identities below are exactly
+    // the ones `ret.symbols` publishes at `qualifiedName`, derived the same way, so the two
+    // cannot drift.
+    const identityOf = (s: any): string[] => {
+      const out: string[] = []
+      if (s?.name) out.push(String(s.name))
+      if (s?.qualifiedName) out.push(String(s.qualifiedName))
+      if (typeof s?.metadata?.fqn === "string" && s.metadata.fqn) out.push(String(s.metadata.fqn))
+      if (s?.name) {
+        out.push(
+          s.qualifiedName || s.metadata?.fqn || (s.scope ? `${s.scope}.${s.name}` : String(s.name)),
+        )
+      }
+      return out
+    }
+    const keptSymbols: any[] = []
+    const keptNames = new Set<string>()
+    const notKept: any[] = []
+    for (const s of parsed.symbols ?? []) {
+      if (keepSymbol(s, parsed.language || language)) {
+        keptSymbols.push(s)
+        for (const id of identityOf(s)) keptNames.add(id)
+      } else {
+        notKept.push(s)
+      }
+    }
+    const droppedNames = new Set<string>()
+    for (const s of notKept) {
+      for (const id of identityOf(s)) {
+        // A symbol this call KEEPS may publish the same identity; then nothing is dropped.
+        if (!keptNames.has(id)) droppedNames.add(id)
+      }
+    }
+
     const ret = {
       success: true,
       language: parsed.language || language,
@@ -981,9 +1298,7 @@ export async function parseFile(filePath: string, projectPath: string, context?:
       fileHash: hash,
       sizeBytes,
       lastModified,
-      symbols: parsed.symbols
-        .filter((s: any) => keepSymbol(s, parsed.language || language))
-        .map((s: any) => {
+      symbols: keptSymbols.map((s: any) => {
         let snippet = ""
         if (SNIPPET_KINDS.has(s.kind)) {
           const lines = snippetLines ?? (snippetLines = content.split("\n"))
@@ -1161,6 +1476,43 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             if (m.isImplicitBinding === true) out.isImplicitBinding = m.isImplicitBinding
             if (typeof m.bindingSite === "string") out.bindingSite = m.bindingSite
             if (typeof m.isArray === "boolean") out.isArray = m.isArray
+
+            // ── the type hierarchy, M60/php (and every other lane that
+            // declares one) ──────────────────────────────────────────────────
+            // SDJ-8 writes this key into `brain_symbol.super_types` at
+            // `parallel-indexer.ts` and the comment there says it is "published
+            // by every analyzer on symbol.metadata.superTypes and discarded
+            // here". It was right about the discard, and the discard was not at
+            // that binding: it was HERE, in the allowlist above, which did not
+            // name the key. So the binding read `undefined` for every symbol in
+            // every language and wrote NULL for all of them, and a column that
+            // SDJ-8 documents as the hierarchy a consumer walks was, on real
+            // projects, empty.
+            //
+            // Measured on php, through the production path, with
+            // `script/m60/php-store-pipeline-seam.ts`: the analyzer published
+            // `metadata.superTypes` on 8 of 8 class-like symbols in two fixture
+            // sources and the store held the column on **0** — while the same
+            // two sources' `extends`/`implements` EDGES (11 rows) arrived
+            // intact. On a real project the count was 0 of 4,940. That gap is
+            // not a rendering detail: `override-retarget.ts` opens with
+            // `if (supertypes.size === 0) return out`, so a NULL column means the
+            // pass never runs and php has no project-wide hierarchy at all — not
+            // a thin one, none — and the `owner+inherited` resolution lever the
+            // ambiguity census priced at 24,223 endpoints cannot be implemented
+            // by any downstream consumer until the column carries the fact.
+            //
+            // The rule above still holds, and it is why this is a one-key
+            // widening rather than "forward metadata": the reader is
+            // enumerable and there is exactly one of it
+            // (`parallel-indexer.ts`'s INSERT). Unlike the CSS/markdown/bash
+            // blocks this key is NOT language-scoped — kotlin, scala, php, go
+            // and the rest all publish it under this exact name — so a
+            // per-language switch here would only move the drop somewhere
+            // nobody looks. Carried only when non-empty, mirroring the store's
+            // own emptiness test: `[]` and absent are one fact downstream, and
+            // the store already writes NULL for both.
+            if (Array.isArray(m.superTypes) && m.superTypes.length > 0) out.superTypes = m.superTypes
             return Object.keys(out).length > 0 ? out : undefined
           })(),
           snippet,
@@ -1211,17 +1563,79 @@ export async function parseFile(filePath: string, projectPath: string, context?:
         // the order is widest-known first and every step is a fallback, so nothing that
         // already resolved changes.
         const line = i.range?.startLine ?? i.line ?? i.line_number ?? i.lineNumber ?? 0
+        /**
+         * ROUND 17 — TWO FACTS THE ANALYZER PUBLISHES AND THIS PROJECTION DROPPED, which is why
+         * `brain_import.imported_as` had NO writer on the AST path for any language while the
+         * fallback path had one (M60), and why the classification five lanes declare never reached
+         * the column the file-dependency engine reads.
+         *
+         *   alias       `ImportInfo.alias` covers `import X as Y` (python, typescript). Python's
+         *               from-imports publish their bindings PER ITEM on `ImportInfo.itemBindings`,
+         *               which one `alias` cannot express (`from m import a as b, c as d` is two
+         *               bindings) — the seam's row id is per STATEMENT (`module:line`) while this
+         *               projection emits one row per ITEM, and the insert is `INSERT OR REPLACE`, so
+         *               the LAST item of a statement is what survives; the binding therefore has to
+         *               ride the item. Measured over the python population: **3,333** aliased
+         *               statements whose binding can reach the store (2,893 single-item, 20 whose
+         *               aliased item is last, 420 `import X as Y`), **6** that cannot (the aliased
+         *               item is not last — the six files are named in
+         *               `.tmp-py/price-last-item-wins.py`), and 41,560 where NULL is the CORRECT
+         *               value. The first price this round ran (`.tmp-py/price-import-alias-seam.py`)
+         *               bucketed by FIRST-vs-LATER and is superseded: the row semantics it assumed
+         *               are the opposite of the measured ones, which the probe
+         *               `.tmp-py/probe-import-rows.mts` shows directly (`… Sku as SKU, fixture`
+         *               stores `fixture`; `… fixture, Sku as SKU2` stores `Sku as SKU2`).
+         * NOT CARRIED HERE, and measured rather than waved at: the analyzer's `importType` (declared
+         * by makefile, objective-c, sql, xml, yaml, markdown, erlang, java, julia and clojure) is
+         * put into this projection's `type` field, which the indexer does not read — it reads
+         * `imp.importType` — so those lanes' classification is dropped for the store. Passing it
+         * through is a VOCABULARY decision, not a plumbing one: `brain.sql.ts` documents
+         * `import_type` as `"default", "named", "namespace", "side_effect"` while those lanes
+         * declare `make_include`, `include`, `sql_extension`, `java-module-requires`, …, so storing
+         * them would widen a documented contract. Python's own `import_type` is separately wrong
+         * for the same reason in reverse: the projection computes `"namespace"` for `import X`
+         * (correct) and for a from-import too (because the analyzer sets `isNamespace: true` on
+         * both), so `baseType` cannot be trusted as a classification for this lane. Pinned at its
+         * current value by `import-bound-name-seam.mts` (check B) so it cannot drift unseen.
+         */
+        const bindings = new Map<string, string>()
+        for (const b of (Array.isArray((i as any).itemBindings) ? (i as any).itemBindings : [])) {
+          if (b && typeof b.name === "string" && typeof b.as === "string" && b.name && b.as) {
+            bindings.set(b.name, b.as)
+          }
+        }
+        const itemCount = items.length
+        // A statement-wide `alias` is exact only when the statement has ONE item, i.e. when the
+        // binding cannot belong to a different item. A multi-item statement relies on the per-item
+        // list, which is the only shape that can distinguish `from m import a, c as d`.
+        const statementAlias = itemCount === 1 && typeof i.alias === "string" && i.alias
+          ? i.alias
+          : itemCount === 1 && typeof i.localName === "string" && i.localName
+            ? i.localName
+            : undefined
         return items
           .filter((name: string) => typeof name === "string" && name.length > 0)
           .map((name: string) => {
-            // "X as Y" → keep the alias form: name imported-as local alias
+            // "X as Y" → `name` is the IMPORTED name, `alias` the LOCAL BINDING.
+            //
+            // ROUND 17: this read `asMatch[2]` for BOTH, so the imported name was thrown away and
+            // `name` became the bound name — the one shape where the projection disagreed with the
+            // convention the fallback path's own comment states ("`name` keeps its original meaning,
+            // the imported name"). Measured consequence on the pipeline: `import { A as B } from
+            // "./a"` reached the indexer as `{name:"B", alias:"B"}`, so `imported_name` and
+            // `imported_as` were the SAME string and the imported `A` was nowhere in the store —
+            // while `patterns.ts` computes `usedName = imported_as || imported_name` and would have
+            // been right by accident. With the roles split, a consumer can tell which name the
+            // source module declares from which name this file binds.
             const asMatch = name.match(/^(\S+)\s+as\s+(\S+)$/)
-            const importedName = asMatch ? asMatch[2] : name
+            const importedName = asMatch ? asMatch[1] : name
             // Strip `type` qualifier: "type Repository" → "Repository"
             const cleanName = importedName.replace(/^type\s+/, "").trim()
+            const boundName = asMatch ? asMatch[2] : (bindings.get(name) ?? statementAlias)
             return {
               name: cleanName,
               path: i.module || i.path || "",
+              ...(boundName ? { alias: boundName } : {}),
               // The analyzer's OWN classification, when it declares one. Five lanes do:
               // makefile `make_include`, objective-c `include`, sql `sql_import`, xml
               // `xml-doctype`, yaml `yaml_tag_include` / `yaml_keyword_include` /
@@ -1244,7 +1658,21 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             }
           })
       }),
-      relationships: filterNoiseRelationships(parsed.relationships, language, new Set((parsed.symbols ?? []).map((s: any) => String(s?.name ?? "")).filter(Boolean))),
+      // THE DROPPED-SYMBOL INVARIANT — see `droppedNames` above. An edge that names a symbol
+      // this call filtered out is not a weaker edge, it is an edge to nothing, so it goes with
+      // the symbol. Applied BEFORE the noise filter so the two are independent and either can
+      // be measured alone.
+      relationships: filterNoiseRelationships(
+        droppedNames.size
+          ? (parsed.relationships ?? []).filter(
+              (r: any) =>
+                !droppedNames.has(String(r?.source ?? r?.from ?? "")) &&
+                !droppedNames.has(String(r?.target ?? r?.to ?? "")),
+            )
+          : parsed.relationships,
+        language,
+        new Set((parsed.symbols ?? []).map((s: any) => String(s?.name ?? "")).filter(Boolean)),
+      ),
       // M60 LUA-14: the analyzer's `exports` were never forwarded here, so the
       // entire export surface of every language was invisible to the index. This
       // is the same defect the `metadata` line below already documents for
@@ -1279,10 +1707,19 @@ export async function parseFile(filePath: string, projectPath: string, context?:
     }
 
     if (ext === ".dart") {
-      fs.appendFileSync(
-        bbDiagnosticsLogPath("worker-debug.log"),
-        `[Worker] Returning object with ${ret.relationships?.length || 0} relationships for ${filePath}\n`,
-      )
+      // THE SECOND of the two dart debug writes, and the one that actually decided the
+      // measurement. Wrapping only the first left the degradation in place: the controlled
+      // A/B still read `degraded (regex fallback): 60` and 79 edges with an unwritable
+      // diagnostics directory, against 8,112 edges with a writable one. This write sits on
+      // the success path immediately before `return ret`, so its throw aborted the return and
+      // the caller fell through to the fallback — i.e. a debug line decided whether the
+      // analyzer ran. Both are wrapped now; the log is optional, the parse is not.
+      try {
+        fs.appendFileSync(
+          bbDiagnosticsLogPath("worker-debug.log"),
+          `[Worker] Returning object with ${ret.relationships?.length || 0} relationships for ${filePath}\n`,
+        )
+      } catch {}
     }
 
     return ret
@@ -1426,17 +1863,6 @@ process.on("message", async (msg: any) => {
     }, Math.max(1, Math.round(watchdogMs / 2)))
     slowWarmNote.unref?.()
 
-    // Check BB_POOL_WORKER - a misconfigured env var (e.g. BB_POOL_WORKER=0) would
-    // make the worker skip the keep-alive and exit silently. The condition is the
-    // IPC channel (process.connected), not the env var. The env var is evidence.
-    if (process.env.BB_POOL_WORKER !== "1") {
-      process.stderr.write(
-        `[BB-WORKER-STARTUP] forked with BB_POOL_WORKER=${JSON.stringify(process.env.BB_POOL_WORKER ?? null)} rather than "1"; ` +
-          `serving anyway -- unset BB_POOL_WORKER to use in-process indexing
-`,
-      )
-    }
-
     const { engine: engineStatus, wasm: wasmStatus } = await warmUpWorker()
     // The parent has always handled `engine_fail` (parallel-indexer.ts:1557):
     // it counts the worker, reports the reason, and puts it in the idle pool
@@ -1516,10 +1942,41 @@ process.on("message", async (msg: any) => {
       return dot <= 0 ? "" : base.slice(dot).toLowerCase()
     }
     const contextFor = (filePath: string): ASTEngine.AnalyzeContext | undefined => {
-      if (indexCache === null) return undefined
+      const root = String(projectPath ?? "") || undefined
+      // THE ROOT DOES NOT COME FROM THE INDEX, so neither guard may gate it. This function used to
+      // return `undefined` unless a PROJECT INDEX existed for the extension — and `indexCache` is
+      // `null` unless the worker was handed indexes at all, which happens only for languages with an
+      // index spec (`INDEX_SPECS` carries `dart` alone). So for every other language production
+      // handed the analyzer NO CONTEXT, and with it no `projectRoot`.
+      //
+      // Found by json-lane (2026-10-10, `6fc778018`) and measured on both sides: the store held json
+      // qualified names UNSCOPED (`11152[3].fileSize`; 39 symbols across 39 files all named
+      // `functions` with qualified name `functions`) while the gate and every census — which pass
+      // `projectRoot` explicitly — measured them SCOPED (`data.json.11152[3].fileSize`). **The two
+      // instruments were therefore measuring DIFFERENT KEY SPACES**, and every cross-file collision
+      // the document scope exists to prevent was present in production and absent from the model.
+      // It also explains why the store binds these edges so readily: `resolveTargetStmt` matches
+      // `s.name` with `LIMIT 1`, and unscoped names collide heavily, so the tie-break decides far
+      // more often than the gate's numbers suggest.
+      //
+      // NOT json-specific: any lane whose language has no index spec was indexed without a root, so
+      // every analyzer deriving identity from `projectRoot` published one spelling to the gate and
+      // another to the store. Those analyzers are dart, json, php, toml, typescript and yaml — and
+      // dart is the only one with an index spec, so the other five are the blast radius.
+      //
+      // SAFE BY TYPE, not by hope: `AnalyzeContext.projectIndex` is OPTIONAL and ADDITIVE — "an
+      // analyzer that does not read this field behaves exactly as it did before it existed, byte for
+      // byte" — so a context carrying only a root cannot break a reader that wants an index.
+      //
+      // M60 yaml lane (2026-10-09), whose note follows, added `projectRoot` riding the index; the
+      // index was never the right carrier. `projectPath` is in the `parse_batch` message
+      // (`pool-worker.ts:1703`) and was until now passed only to `parseFile`'s second argument,
+      // where no analyzer could see it.
+      if (indexCache === null) return root === undefined ? undefined : { projectRoot: root }
       const ext = extnameOf(filePath)
       const built = indexCache.get(ext)
-      return built === undefined ? undefined : { projectIndex: built }
+      if (built === undefined) return root === undefined ? undefined : { projectRoot: root }
+      return { projectIndex: built, projectRoot: root }
     }
     // 45s per-file self-timeout; env-configurable (BB_FILE_TIMEOUT_MS) so
     // deterministic crash/timeout fixtures die fast (M21.W1).

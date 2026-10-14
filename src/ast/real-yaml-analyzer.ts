@@ -1,4 +1,6 @@
 import type { Node } from "web-tree-sitter"
+import { readFileSync, readdirSync, statSync } from "node:fs"
+import { join } from "node:path"
 import { ASTEngine } from "./engine"
 
 /**
@@ -57,6 +59,28 @@ import { ASTEngine } from "./engine"
 
 interface YamlContext {
   filePath: string
+  /**
+   * The project root this file was parsed against, when the caller knows it.
+   *
+   * Absent means "this caller did not say which project the file is in", and the document
+   * identity falls back to the filesystem basename — which is what it was before this
+   * field existed, and therefore what every fixture that passes no root still asserts.
+   */
+  projectRoot?: string
+  /**
+   * DID THE PINNED GRAMMAR PARSE THIS DOCUMENT AT ALL? `rootNode.hasError`, captured once.
+   *
+   * It exists because a MISS in the pointer index is not one fact. MEASURED over the whole
+   * corpus, 2026-09-10: 762 `references` edges carry
+   * `unresolvedReason=pointer-not-declared-in-file`, and **729 of them (96 %)** sit in the 15
+   * docker `api/docs/*.yaml` files whose root node is an ERROR — while the 183 CLEAN files of
+   * that same repository carry **zero**. The pointer those edges name IS declared:
+   * `api/docs/v1.25.yaml` has `definitions:` at line 131 and `MountType:` at 186, and the Python
+   * reference parser reads the file with 51 definitions. What fails is the grammar (a quoted
+   * scalar whose continuation line is under-indented), and an error-recovered tree is not
+   * evidence that a declaration is missing — so the old reason string stated something false.
+   */
+  parseHadError?: boolean
   content: string
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
@@ -101,8 +125,20 @@ interface YamlContext {
   tagHandles: Map<string, string>
   /** Duplicate-key disambiguation counters, keyed by document + base path. */
   duplicateCounters: Map<string, number>
-  /** `uses:` sites, held until the file's shape decides whether it is a workflow. */
-  pendingActionUses: { source: string; action: string; line: number; role: UsesRole }[]
+  /**
+   * `uses:` sites, held until the file's shape decides whether it is a workflow. `action` is the
+   * RESOLVABLE spelling (a root-anchored `$/…` has already been rewritten to `./…`) and `written`
+   * is the spelling the document actually carries, kept so the substitution is auditable from the
+   * edge alone. See `rootAnchoredActionPath`.
+   */
+  pendingActionUses: { source: string; action: string; written: string; line: number; role: UsesRole }[]
+  /**
+   * The `uses:`/`with:` facts of every STEP, keyed by the step container's qualified path and the
+   * step's index. Collected during the walk and joined in `resolveActionUses`, because the join is
+   * a question about EARLIER steps IN THE SAME JOB and must not depend on which key inside a step
+   * comes first (`with:` follows `uses:` in some corpus files and precedes it in others).
+   */
+  stepWithFacts: Map<string, Map<number, StepWithFacts>>
   /**
    * Named schema definitions a document PUBLISHES for other documents to reference by
    * `$ref`. Held for the same reason `pendingActionUses` is: the container only means a
@@ -110,7 +146,7 @@ interface YamlContext {
    */
   pendingSchemaPublications: { document: string; container: string; name: string; path: string; line: number }[]
   /** Sibling-name references awaiting the post-pass that can resolve them. */
-  pendingReferences: { source: string; target: string; kind: string; line: number }[]
+  pendingReferences: { source: string; target: string; kind: string; line: number; document?: string }[]
   frameworks: string[]
   frameworkPatterns: string[]
 }
@@ -137,6 +173,16 @@ interface VisitContext {
    * renamed to advertise it.
    */
   recoveredThrough?: { line: number; width: number }
+}
+
+/** One step's `uses:` and the `with:` keys that decide what a LATER local `uses:` names. */
+interface StepWithFacts {
+  /** The step's `uses:` line — the line the materialized claim cites as its authorisation. */
+  usesLine: number
+  uses?: string
+  path?: string
+  repository?: string
+  ref?: string
 }
 
 const MAPPING_TYPES = new Set(["block_mapping", "flow_mapping"])
@@ -215,10 +261,18 @@ const INCLUDE_TAGS = new Set([
 ])
 
 /** A value is only a PATH if it looks like one. A single bare word is a value. */
-function looksLikePath(text: string): boolean {
-  if (!text || text.includes(" ")) return false
+function looksLikePath(text: string, quoted = false): boolean {
+  // `quoted` relaxes the whitespace refusal and nothing else: a space inside a QUOTED scalar is
+  // part of a literal string, while a space in a plain scalar is the argument-list convention.
+  // `text.trim() !== text` is refused either way — a leading or trailing space is not a path.
+  if (!text || text.trim() !== text) return false
+  if (!quoted && text.includes(" ")) return false
   return text.includes(".") || text.includes("/")
 }
+
+/** The scalar node types whose text is a QUOTED literal: the source's own evidence that a space
+ *  inside the value is part of the string rather than a separator. */
+const QUOTED_SCALAR_TYPES = new Set(["single_quote_scalar", "double_quote_scalar"])
 
 /**
  * The keys whose SUBTREE carries a Kubernetes Secret's payload. A `kind: Secret`
@@ -277,6 +331,102 @@ const RESOURCE_REF_SCALARS = new Set(["serviceAccountName"])
 const FILE_IMPORT_KEYS = new Set([
   "include_tasks", "import_tasks", "import_playbook", "import_role", "include_role",
   "import_values", "import", "include",
+])
+
+/**
+ * The two members of `FILE_IMPORT_KEYS` that do NOT name a file: `include_role` and
+ * `import_role` name a ROLE.
+ *
+ * MEASURED, and the measurement is why this set exists rather than a comment. Over the whole
+ * admitted ansible population (2,082 `.yaml`/`.yml` files), 891 `imports` edges carry
+ * `yaml_keyword_include`. Attributed to the key on the edge's OWN `line_number` (which points
+ * at the key line), they split:
+ *
+ *     567  `include_tasks` / `import_tasks` / `import_playbook` / `include` … — a FILE
+ *     149  `name:`          — a nested scalar INSIDE a role-include mapping (the role's name)
+ *      45  `tasks_from:`    — a nested scalar, a file relative to the ROLE's `tasks/` dir
+ *      18  `role_name:`     — likewise
+ *      51  `hosts:` `public:` `gather_facts:` `allow_duplicates:` `command:` … — not files at all
+ *
+ * The 263 non-file edges exist because `scalarValues` recurses into a mapping and returns
+ * every nested VALUE scalar, so one `- import_role: {name: role1, tasks_from: x.yml}` publishes
+ * the role's name, its `tasks_from` file and any boolean in the block as three imports of this
+ * file. That over-reach is a SEPARATE, still-open defect in this lane (it is reported, not
+ * silently changed here — dropping 263 edges is an ontology decision, not a claim fix). What
+ * this set does is keep the over-reach from being turned into a NEW refutation by the file
+ * claim below: a `tasks_from:` spelling is relative to a role directory the analyzer does not
+ * resolve, so a claim that THIS file's directory holds it would be a claim this lane cannot
+ * support, and the arbiter would refute it — 10 such edges measured before the guard existed.
+ */
+const ROLE_IMPORT_KEYS = new Set(["include_role", "import_role"])
+
+/**
+ * THE CONTAINERS WHOSE `include:` IS A SELECTOR LIST, NOT A FILE IMPORT — each one measured.
+ *
+ * `include` is in `FILE_IMPORT_KEYS` because ansible and pyyaml-include spell a file import that
+ * way, but `include` is a GENERIC configuration key: five separate formats in this corpus use the
+ * same spelling for "the set of things this rule/target/build selects". Emitting those as imports is
+ * a false statement in two directions at once — an edge naming a file the project does not have, and
+ * an edge naming a file the project DOES have (`main` collides with 11 declarations in the docker
+ * project, so the arbiter could only report those AMBIGUOUS) — and, worse, a selector NAME such as
+ * `NSCondition` resolves to nothing, so the edge lands in `extOK` as a VERIFIED claim.
+ *
+ * The guard is on the KEY'S OWN POSITION, never on the value's shape: a selector list is a list of
+ * globs and so is a real glob include, so refusing by shape would drop the globs ansible really
+ * includes. Each parent below was read in the format that writes it:
+ *
+ *   `branches`  Azure Pipelines branch filter — `trigger.branches.include: [main, feature/*]`.
+ *               MEASURED on docker's vendored `sdk/azcore/ci.yml`: 12 false edges in one file
+ *               (`trigger`/`pr` × `branches`/`paths`). This one ALSO requires the document's own
+ *               `trigger:`/`pr:` claim (31 files in the admitted population declare either); the
+ *               rest do not, because their parent key is a selector container in every format that
+ *               spells it and none of them is a task-file key.
+ *   `paths`     semgrep rule paths (a rule's `paths.include` holds source GLOBS, e.g.
+ *               `…/migrations/tasks/*.py`) and Azure's path filter. MEASURED: 26 glob edges over 5
+ *               repositories.
+ *   `sources`, `generate_for`
+ *               Dart `build_runner` source selectors — `targets.<t>.sources.include: [lib/**,
+ *               $package$, lib/$lib$]` is a build target's file set, and
+ *               `builders.<b>.generate_for.include` holds Dart source GLOBS naming the file set a
+ *               BUILDER generates for. MEASURED: 21 glob edges over the flutter/semgrep
+ *               repositories, plus 4 more on riverpod's three `build.yaml` files.
+ *   `outputs`   GitHub Actions job outputs (`outputs.include: ${{ steps.x.outputs.include }}`) — a
+ *               named output, not a file.
+ *   `objc-interfaces`, `objc-protocols`, `enums`
+ *               ffigen's Selector lists (`objc-interfaces.include: [NSCondition, NSHTTPURLResponse,
+ *               …]`, `enums.include: [NSURLRequestCachePolicy, …]`) — Objective-C INTERFACE and ENUM
+ *               NAMES to bind, MEASURED on `dart-http/pkgs/cupertino_http/ffigen.yaml`: 34 false
+ *               edges, every one of them landing in `extOK` because a class name resolves to
+ *               nothing. `enums` is tested as an ANCESTOR as well as a parent, because ffigen
+ *               nests a second Selector list at `enums.as-int.include` — see below.
+ *   `exposure`  Spring Boot `management.endpoints.web.exposure.include: 'env,health'` — an endpoint
+ *               NAME list.
+ *
+ * ANY ANCESTOR SEGMENT COUNTS, not just the parent, and that is measured rather than convenient:
+ * `targets.<t>.sources.include` and `enums.as-int.include` are both Selector lists whose own parent
+ * is not the container. The DOCUMENT segment is excluded from the test, which is not a detail — the
+ * `matrix` guard this replaces had to state it, because `matrix.yml` has the document identity
+ * `matrix` and a bare suffix test made every top-level `include:` in that document invisible.
+ *
+ * A GROWING LIST IS THE WRONG SHAPE FOR THIS and it is worth saying why it is still the right move
+ * here: the alternative (a positive rule — "an include value must be spelled as a path") cannot
+ * separate a selector GLOB from an import glob, which is the actual ambiguity, so the position IS
+ * the evidence. What guards the list against arbitrariness is that every member is a parent under
+ * which the corpus was READ, and the instrument that found them all —
+ * `validation/m14/fixtures/yaml/include-key-position-census.ts` — is committed, so the next reader
+ * can count the population again instead of trusting this comment.
+ */
+const INCLUDE_SELECTOR_SEGMENTS = new Set([
+  "branches", "paths", "sources", "generate_for", "outputs", "exposure",
+  "objc-interfaces", "objc-protocols", "enums",
+])
+
+/**
+ * The directories that make a directory a ROLE. Used only to work out where a role's own
+ * subdirectories are, so a bare include inside `handlers/` can also be looked for in `tasks/`.
+ */
+const ROLE_SUBDIR_NAMES = new Set([
+  "tasks", "handlers", "vars", "defaults", "meta", "templates", "files", "library",
 ])
 
 /**
@@ -493,6 +643,8 @@ interface TagInfo {
   uri: string
   typeOverride?: string
   includePath?: string
+  /** The include value was a QUOTED scalar, so a space inside it is part of the literal. */
+  includeQuoted?: boolean
   line: number
 }
 
@@ -501,9 +653,11 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     content: string,
     filePath: string,
+    context?: ASTEngine.AnalyzeContext,
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
     const ctx: YamlContext = {
       filePath,
+      projectRoot: typeof context?.projectRoot === "string" ? context.projectRoot : undefined,
       content,
       symbols: [],
       relationships: [],
@@ -546,6 +700,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       tagHandles: new Map(),
       duplicateCounters: new Map(),
       pendingActionUses: [],
+      stepWithFacts: new Map(),
       pendingSchemaPublications: [],
       pendingReferences: [],
       frameworks: [],
@@ -553,13 +708,16 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // Parse errors are collected once by ASTEngine. Keeping that ownership in one
-    // place avoids duplicate warnings for the same ERROR/MISSING node.
+    // place avoids duplicate warnings for the same ERROR/MISSING node. The ONE fact this
+    // analyzer needs from it is whether the tree it is about to index is a clean parse, so it
+    // is read here rather than reconstructed later.
+    ctx.parseHadError = rootNode.hasError === true
     this.collectComments(rootNode, ctx)
     this.visit(rootNode, {
       parent: null,
       parentPath: "",
       pointerPath: "",
-      document: this.documentName(filePath, 1),
+      document: this.documentName(filePath, 1, ctx.projectRoot),
       depth: 0,
       siblingKeys: new Set(),
     }, ctx)
@@ -727,7 +885,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private visitDocument(node: Node, current: VisitContext, ctx: YamlContext, stack: { node: Node; context: VisitContext }[]): void {
-    const documentName = this.documentName(ctx.filePath, ctx.documentCount + 1)
+    const documentName = this.documentName(ctx.filePath, ctx.documentCount + 1, ctx.projectRoot)
     ctx.documentCount++
     if (ctx.documentCount > 1) this.addPattern(ctx, "Multi-document YAML")
     if (!ctx.anchors.has(documentName)) ctx.anchors.set(documentName, new Map())
@@ -844,7 +1002,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.addPattern(ctx, "Grammar Error Recovery")
 
     if (!current.parent) {
-      const documentName = this.documentName(ctx.filePath, ctx.documentCount + 1)
+      const documentName = this.documentName(ctx.filePath, ctx.documentCount + 1, ctx.projectRoot)
       // AN IDENTITY IS NOT A DECLARATION. A root-level ERROR has no `document` node, so
       // the source contains no document declaration and the analyzer must not invent one
       // named after the file stem. The M12 ground truth caught exactly this: for
@@ -997,10 +1155,11 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
           : undefined,
         recovered: current.recoveredThrough !== undefined || current.parent?.metadata?.recovered === true || undefined,
         recoveredThrough: current.recoveredThrough,
-        declaredType: tag?.shortName,
+        declaredType: this.tagTypeName(tag),
         tagUri: tag?.uri,
         tagLine: tag?.line,
         tagIncludePath: tag?.includePath,
+        tagIncludeQuoted: tag?.includeQuoted,
         scalarType: SCALAR_SHAPES.has(valueType) ? valueType : undefined,
         line,
       },
@@ -1049,6 +1208,10 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): void {
     const path = symbol.qualifiedName || symbol.id
 
+    // THE RUNNER'S ORDER AND SCOPE ARE DOCUMENT FACTS, collected per step as the walk passes them
+    // and joined after it — see `materializedActionSource` for the question they answer.
+    this.recordStepWithFacts(key, valueNode, current, ctx, line)
+
     // `$ref` and JSON pointers: resolved against the pointer index in a post-pass,
     // because the target may be declared later in the file.
     if (valueType === "string" && valueNode) {
@@ -1056,7 +1219,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (key === "$ref" || this.isJsonPointer(pointer)) {
         this.addRelationship(ctx, path, pointer, ASTEngine.RelationshipType.References, {
           relationshipType: "yaml_json_pointer",
-          isExternal: !pointer.startsWith("#/"),
+          ...this.pointerClaim(pointer, ctx),
           pointer: pointer.startsWith("#/") ? pointer.slice(1) : pointer,
           referencedName: pointer,
         }, line)
@@ -1064,9 +1227,18 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // Container composition: `depends_on` names a sibling service in the same file.
-    if (DEPENDS_ON_KEYS.has(key)) {
-      for (const name of this.scalarValues(valueNode)) {
-        ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_depends_on", line })
+    if (DEPENDS_ON_KEYS.has(key) && this.isDependencyPosition(key, current)) {
+      for (const name of this.dependencyTargets(valueNode)) {
+        // THE DOCUMENT TRAVELS WITH THE REFERENCE. A `needs:` target is a JOB ID, and a job is
+        // declared once per WORKFLOW FILE — so the bare name is ambiguous by construction and
+        // production's `COUNT(*) = 1` bare-name rule can never bind it. MEASURED on the whole
+        // corpus: 802 of the lane's 879 ambiguous `references` are exactly this shape
+        // (`test` 125 edges / 3 declarations, `get-go-version` 59 / 12, `build` 51 / 3 …). The
+        // document-scoped identity `<document>.jobs.<id>` is unique, and the lane already
+        // publishes it (`.github.workflows.publish-npm-nightly.jobs.test`, measured).
+        // The MARKER-NAME refusal below applies before the push — see the predicate.
+        if (RealYamlAnalyzer.markerNamespaceTarget(name)) continue
+        ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_depends_on", line, document: current.document })
       }
     }
 
@@ -1117,12 +1289,35 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // Ansible/Helm file imports, decided by key spelling.
-    if (FILE_IMPORT_KEYS.has(key)) {
-      for (const name of this.scalarValues(valueNode)) {
-        this.addImport(ctx, name, "yaml_keyword_include", keyNode, true)
-        this.addRelationship(ctx, path, name, ASTEngine.RelationshipType.Imports, {
+    if (FILE_IMPORT_KEYS.has(key) && !this.isIncludeSelectorKey(key, current, ctx)) {
+      for (const name of this.fileImportTargets(key, valueNode, current.parentPath, current.document)) {
+        // A ROLE IMPORT NAMES A ROLE, AND A ROLE IS A DIRECTORY. `include_role`/`import_role` with
+        // `name: X` resolves, in ansible, to `<roleRoot>/roles/X/tasks/main.yml` for whichever
+        // `roleRoot` on the search path (walking up from the importing file) carries it. The lane
+        // used to emit the bare name `X`, which is not a symbol anywhere — so the edge collided
+        // with every ordinary key spelled `X` and the arbiter could only read it as AMBIGUOUS.
+        // MEASURED over the whole admitted ansible population: 209 role-import sites, of which 131
+        // (62.7%) resolve to a `roles/<name>/tasks/main.yml` the project HAS. When the entry file
+        // is on disk the edge targets THAT FILE and carries the file claim, which the arbiter
+        // verifies; the ROLE NAME travels in metadata so nothing is lost. When no candidate exists
+        // the pre-existing bare-name behaviour is kept unchanged, so this fix can only ADD
+        // checkable edges — it cannot remove an edge or weaken a claim.
+        const roleEntry = ROLE_IMPORT_KEYS.has(key) ? this.roleEntryTarget(name, ctx) : null
+        const target = roleEntry ?? name
+        const claim = roleEntry !== null
+          ? { importProjectFile: [roleEntry] }
+          : this.keywordIncludeClaim(name, ctx, key)
+        this.addImport(ctx, target, "yaml_keyword_include", keyNode, true)
+        this.addRelationship(ctx, path, target, ASTEngine.RelationshipType.Imports, {
           relationshipType: "yaml_keyword_include",
-          isExternal: true,
+          ...(roleEntry !== null ? { roleName: name } : {}),
+          // THE CLAIM IS DECIDED, NOT ASSUMED. This site used to hard-code `isExternal: true`,
+          // which the arbiter reads as "look this target's OWNER up" — the wrong question for a
+          // path, and the source of the 107 refuted external claims the whole-population run
+          // found. `keywordIncludeClaim` states the file claim when the target is a file this
+          // project's admitted list can answer for, and nothing weaker than before when it is
+          // not. See the helper for the measurement and the two refusals.
+          ...claim,
         }, line)
       }
     }
@@ -1132,7 +1327,14 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // because a job-level `uses:` is a call and must not be labelled an import.
     if (key === "uses" && valueType === "string" && valueNode) {
       const role: UsesRole = isJobLevelPath(current.parentPath, current.document) ? "workflow-call" : "other"
-      ctx.pendingActionUses.push({ source: path, action: this.scalarText(valueNode), line, role })
+      const written = this.scalarText(valueNode)
+      ctx.pendingActionUses.push({
+        source: path,
+        action: RealYamlAnalyzer.rootAnchoredActionPath(written) ?? written,
+        written,
+        line,
+        role,
+      })
     }
 
     // A named schema definition under a PUBLICATION container. This is the one place YAML
@@ -1164,7 +1366,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.addImport(ctx, includePath, "yaml_tag_include", keyNode, true)
       this.addRelationship(ctx, path, includePath, ASTEngine.RelationshipType.Imports, {
         relationshipType: "yaml_tag_include",
-        isExternal: true,
+        ...this.tagIncludeClaim(includePath, ctx, symbol.metadata?.tagIncludeQuoted === true),
       }, (symbol.metadata?.tagLine as number) ?? line)
     }
   }
@@ -1236,10 +1438,11 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
           arrayIndex: index,
           recovered: current.recoveredThrough !== undefined || current.parent?.metadata?.recovered === true || undefined,
           recoveredThrough: current.recoveredThrough,
-          declaredType: tag?.shortName,
+          declaredType: this.tagTypeName(tag),
           tagUri: tag?.uri,
           tagLine: tag?.line,
           tagIncludePath: tag?.includePath,
+          tagIncludeQuoted: tag?.includeQuoted,
           isSensitive: current.inSensitiveSubtree === true || undefined,
           sensitivityReason: current.inSensitiveSubtree === true ? "sensitive-subtree" : undefined,
           line,
@@ -1275,14 +1478,14 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.addImport(ctx, tag.includePath, "yaml_tag_include", itemNode, true)
       this.addRelationship(ctx, current.parentPath, tag.includePath, ASTEngine.RelationshipType.Imports, {
         relationshipType: "yaml_tag_include",
-        isExternal: true,
+        ...this.tagIncludeClaim(tag.includePath, ctx, tag.includeQuoted === true),
       }, tag.line)
-    } else if (tag?.shortName) {
-      this.addRelationship(ctx, current.parentPath, tag.shortName, ASTEngine.RelationshipType.References, {
+    } else if (this.tagTypeName(tag)) {
+      this.addRelationship(ctx, current.parentPath, tag!.shortName, ASTEngine.RelationshipType.References, {
         relationshipType: "declared_type",
-        tagUri: tag.uri,
+        tagUri: tag!.uri,
         isExternal: true,
-      }, tag.line)
+      }, tag!.line)
     }
     stack.push({ node: valueNode, context: { ...current, depth: current.depth + 1, sequenceItem: false } })
   }
@@ -1294,11 +1497,11 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.addImport(ctx, tag.includePath, "yaml_tag_include", node, true)
       this.addRelationship(ctx, source, tag.includePath, ASTEngine.RelationshipType.Imports, {
         relationshipType: "yaml_tag_include",
-        isExternal: true,
+        ...this.tagIncludeClaim(tag.includePath, ctx, tag.includeQuoted === true),
       }, tag.line)
       return
     }
-    if (tag.shortName) {
+    if (this.tagTypeName(tag)) {
       this.addRelationship(ctx, source, tag.shortName, ASTEngine.RelationshipType.References, {
         relationshipType: "declared_type",
         tagUri: tag.uri,
@@ -1399,6 +1602,117 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  /**
+   * ONE STEP'S SHAPE, READ ONCE — `uses:`, and the `with:` keys that decide what a LATER local
+   * `uses:` names.
+   *
+   * WHY IT IS COLLECTED AND NOT LOOKED UP LATER. The question `materializedActionSource` answers is
+   * about the steps BEFORE this one IN THE SAME JOB, and a step's own keys do not come in a fixed
+   * order: measured over the whole admitted corpus, `with:` follows `uses:` in the HashiCorp-style
+   * files and PRECEDES it in others (control arm 7). So both are recorded into one record per step
+   * as the walk passes them, and the join happens after the walk, where no key order can matter.
+   * Only four key names are read, and only when they sit at a position that makes them a step's:
+   * `uses:` at `…steps[i]`, and `path:`/`repository:`/`ref:` at `…steps[i].with`.
+   */
+  private recordStepWithFacts(key: string, valueNode: Node | null, current: VisitContext, ctx: YamlContext, line: number): void {
+    let re: RegExp
+    if (key === "uses") re = /^(.*)\.steps\[(\d+)\]$/
+    else if (key === "path" || key === "repository" || key === "ref") re = /^(.*)\.steps\[(\d+)\]\.with$/
+    else return
+    if (valueNode === null) return
+    const node = this.scalarNode(valueNode)
+    if (!SCALAR_TYPES.has(node.type)) return
+    const value = this.scalarText(node)
+    if (value.length === 0) return
+    const m = re.exec(current.parentPath)
+    if (m === null) return
+    const container = m[1], index = Number(m[2])
+    const byIndex = ctx.stepWithFacts.get(container) ?? new Map<number, StepWithFacts>()
+    const entry = byIndex.get(index) ?? { usesLine: line }
+    if (key === "uses") {
+      entry.uses = value
+      entry.usesLine = line
+    } else entry[key] = value
+    byIndex.set(index, entry)
+    ctx.stepWithFacts.set(container, byIndex)
+  }
+
+  /**
+   * WHAT A LOCAL `uses:` TARGET NAMES, once the RUNNER'S OWN ORDER AND SCOPE are read.
+   *
+   * ## The defect this fixes
+   *
+   * `uses: ./security-scanner` in a job whose earlier step ran `actions/checkout@<sha>` with
+   * `with: {repository: hashicorp/security-scanner, path: security-scanner, ref: main}` names a
+   * directory that does not exist in the repository — because it is not supposed to: the checkout
+   * PUTS that repository's content there before the step runs. The lane emitted `isExternal: true`
+   * on the path, which the arbiter can only answer `externalUnverified` about, so 10 edges of the
+   * EXT-Q class were claims no check could ever reach. A site making an unsupportable claim is a
+   * FIX, not a ruling — and the claim IS supportable: the referent is a NAMED REPOSITORY at a NAMED
+   * REF, which `verifyRemoteRefClaim` verifies.
+   *
+   * MEASURED over the whole admitted population before this was written, from the text and
+   * independently of this analyzer (`validation/m14/fixtures/yaml/materialized-action-price.ts`):
+   * 523 local `uses: ./…` sites, 10 matched to a prior same-job checkout, 9 convertible and 1
+   * honestly left unverifiable:
+   *
+   *     ./security-scanner                    ×7  boundary, consul ×4, nomad, vault -> repo@main
+   *     ./ci-actions/.github/actions/setup      ×2  nimony        -> the project's own file
+   *     ./integration-release-action            ×1  waypoint      -> REFUSED: no `ref:` in the
+   *                                              checkout, and the shared rule refuses a ref-less
+   *                                              remoteRef, so the edge stays `isExternal`
+   *
+   * ## The two families, and why both are the same question
+   *
+   * A checkout WITH `repository: R` puts R's tree at `path:`; a checkout WITHOUT `repository:` puts
+   * THE CALLING REPOSITORY's tree there (nimony's own comment says the checkout exists so the local
+   * `uses:` has its file on disk). So the second family's `./ci-actions/.github/actions/setup` IS
+   * the project's `.github/actions/setup`, and the claim is the file claim the project's admitted
+   * list answers — the stripped path is handed to `actionUseClaim` as an extra candidate.
+   *
+   * ## What it refuses, because these are the shapes a wrong answer wears
+   *
+   * ONLY EARLIER STEPS COUNT: the runner materializes in step order, so a checkout AFTER the use
+   * cannot be its referent (control arm 4). ONLY THE SAME JOB: another job runs on another machine
+   * and materializes nothing for this one (arm 3). ONLY `./…`: a `../` target leaves the workspace,
+   * which a `path:` never does. ONLY AN `actions/checkout@…` STEP — an unrelated action carrying the
+   * same `with: path:` materializes nothing (arm 6). Key order inside the step is NOT evidence
+   * (arm 7). Where an in-repo `action.yml` also exists the MATERIALIZED repository wins, because a
+   * checkout REPLACES that directory at run time (arm 10, whose falsifier is arm 10b).
+   *
+   * NOT CLAIMED, and stated as refusals rather than implemented unmeasured (0 corpus sites each): a
+   * `../` target, a SUBPATH of a named repository, and an exact match against a checkout of the
+   * calling repository (which would name the project root as an action).
+   */
+  private materializedActionSource(use: { source: string; action: string }, ctx: YamlContext): { repository: string | null; ref: string | null; stripped: string | null; line: number } | null {
+    if (!use.action.startsWith("./")) return null
+    const m = /^(.*)\.steps\[(\d+)\]\.uses$/.exec(use.source)
+    if (m === null) return null
+    const byIndex = ctx.stepWithFacts.get(m[1])
+    if (byIndex === undefined) return null
+    const useIndex = Number(m[2])
+    const dir = use.action.slice(2).replace(/\/+$/, "")
+    if (dir.length === 0) return null
+    // THE NEAREST EARLIER CHECKOUT WINS, the same way the runner's own order resolves it.
+    let best: { index: number; facts: StepWithFacts; rest: string } | null = null
+    for (const [index, facts] of byIndex) {
+      if (index >= useIndex) continue
+      if (facts.uses === undefined || !/^actions\/checkout(@|$)/.test(facts.uses)) continue
+      if (facts.path === undefined) continue
+      const checkoutPath = facts.path.replace(/^\.\//, "").replace(/\/+$/, "")
+      if (checkoutPath.length === 0) continue
+      const rest = dir === checkoutPath ? "" : dir.startsWith(checkoutPath + "/") ? dir.slice(checkoutPath.length + 1) : null
+      if (rest === null) continue
+      if (best === null || index > best.index) best = { index, facts, rest }
+    }
+    if (best === null) return null
+    const repository = best.facts.repository !== undefined && best.facts.repository.length > 0 ? best.facts.repository : null
+    const ref = best.facts.ref !== undefined && best.facts.ref.length > 0 ? best.facts.ref : null
+    if (repository !== null && best.rest.length > 0) return null
+    if (repository === null && best.rest.length === 0) return null
+    return { repository, ref: repository === null ? null : ref, stripped: repository === null ? best.rest : null, line: best.facts.usesLine }
+  }
+
   /** A job-level `uses:` is a CALL of a reusable workflow, and never an import. */
   private resolveActionUses(ctx: YamlContext): void {
     if (ctx.pendingActionUses.length === 0) return
@@ -1408,6 +1722,10 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // reference rather than promoted to a call, because `jobs.<id>.uses` is only
     // defined by GitHub Actions and nothing else in YAML gives `jobs` that meaning.
     for (const use of ctx.pendingActionUses) {
+      // A DIFFERENT SPELLING MUST NOT BUY A DIFFERENT CLAIM. When `$/…` was rewritten to `./…` the
+      // written text travels in the edge's metadata, so the re-route is auditable without the
+      // document — the same rule the materialized-action re-route follows.
+      const spelling = use.written !== use.action ? { actionSpelling: use.written } : {}
       if (use.role === "workflow-call") {
         if (!isWorkflow) {
           this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.References, {
@@ -1427,16 +1745,39 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.Calls, {
           relationshipType: "yaml_workflow_call",
           evidenceClass: "structural",
-          isExternal: !local,
+          ...spelling,
+          // A REUSABLE-WORKFLOW CALL NAMES A FILE, not an action directory — see
+          // `workflowCallClaim`. Routed through `actionUseClaim` it looked for
+          // `<file>/action.yml`, found nothing, and claimed `isExternal` about a workflow
+          // file this project has (208 edges over the whole admitted population).
+          ...this.workflowCallClaim(use.action, ctx),
           resolved: false,
           unresolvedReason: local ? "workflow-in-same-repository-not-indexed" : "workflow-in-another-repository",
         }, use.line)
         continue
       }
+      // WHAT THIS LOCAL PATH NAMES IS DECIDED BY THE RUNNER'S OWN ORDER AND SCOPE. See
+      // `materializedActionSource` for the measurement behind the rule and every refusal.
+      const materialized = this.materializedActionSource(use, ctx)
+      const claim = materialized === null
+        ? this.actionUseClaim(use.action, ctx)
+        : {
+            // The claim IS the checked-out repository at its ref, and the `./D` spelling it
+            // replaced travels in metadata so a reader can audit the re-route from the edge alone.
+            ...(materialized.repository !== null
+              ? { remoteRef: true }
+              : this.actionUseClaim(use.action, ctx, materialized.stripped !== null ? [materialized.stripped] : [])),
+            materializedPath: use.action,
+            materializedAtLine: materialized.line,
+          }
+      const target = materialized !== null && materialized.repository !== null
+        ? (materialized.ref !== null ? `${materialized.repository}@${materialized.ref}` : materialized.repository)
+        : use.action
       if (!isWorkflow) {
-        this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.References, {
+        this.addRelationship(ctx, use.source, target, ASTEngine.RelationshipType.References, {
           relationshipType: "yaml_action_use_unverified",
-          isExternal: true,
+          ...claim,
+          ...spelling,
           resolved: false,
           unresolvedReason: "file-shape-is-not-a-github-workflow",
         }, use.line, 0.7, "shape-not-workflow")
@@ -1446,10 +1787,11 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // that name, and an import row that disagrees with its own relationship is a second
       // vocabulary for one fact. The corpus census asserts row-type == relationshipType
       // and caught the mismatch on its first run.
-      this.addImport(ctx, use.action, "yaml_action_use", undefined, !use.action.startsWith("./") && !use.action.startsWith("docker://"), use.line)
-      this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.Imports, {
+      this.addImport(ctx, target, "yaml_action_use", undefined, materialized !== null || (!use.action.startsWith("./") && !use.action.startsWith("docker://")), use.line)
+      this.addRelationship(ctx, use.source, target, ASTEngine.RelationshipType.Imports, {
         relationshipType: "yaml_action_use",
-        isExternal: !use.action.startsWith("./") && !use.action.startsWith("docker://"),
+        ...claim,
+        ...spelling,
       }, use.line)
     }
   }
@@ -1502,12 +1844,93 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         r.metadata.resolvedIn = "file"
         r.confidence = 1
       } else {
+        // THE RECOVERY FALLBACK. On an error-recovered tree the pointer key can be absent for a
+        // reason that has nothing to do with the document: the grammar FLATTENS. MEASURED on
+        // docker's `api/docs/v1.25.yaml`: the root is an ERROR node whose 54 `block_mapping_pair`
+        // children include `swagger:` at line 12 AND `MountType:` at line 186 — `definitions:`
+        // itself is gone and its members were hoisted to the top level, so the walk indexes
+        // `/MountType` while the document's `$ref` says `#/definitions/MountType`. The document
+        // publishes `api.docs.v1.25.MountType`, which is what the `$ref` means.
+        const recovered = this.resolvePointerOnRecoveredTree(pointer, String(r.source ?? ""), ctx)
+        if (recovered !== null) {
+          r.target = recovered
+          r.metadata.resolved = true
+          r.metadata.resolvedIn = "file"
+          // NOT exact: the binding is recovered from the document's own declared paths rather
+          // than from the pointer key, so it is reported at less than full confidence and with
+          // its provenance named, where a reader can tell the two apart.
+          r.metadata.resolvedVia = "document-shape-suffix"
+          r.confidence = 0.95
+          continue
+        }
         r.metadata.resolved = false
-        r.metadata.unresolvedReason = "pointer-not-declared-in-file"
+        // A MISS ON AN ERROR-RECOVERED TREE IS NOT A MISSING DECLARATION. The pointer index is
+        // built from the tree's own nesting, so when the grammar error-recovers the index can
+        // be keyed by paths the document does not have — and reporting that as
+        // `pointer-not-declared-in-file` states, falsely, that the document lacks the
+        // declaration. Measured: 729 of the corpus's 762 unresolved pointer edges sit in 15
+        // docker spec files with an ERROR root, none in that repo's 183 clean files.
+        r.metadata.unresolvedReason = ctx.parseHadError ? "parse-error-in-document" : "pointer-not-declared-in-file"
         r.confidence = 0.9
-        r.metadata.confidenceReason = "pointer-not-declared-in-file"
+        r.metadata.confidenceReason = r.metadata.unresolvedReason
       }
     }
+  }
+
+  /**
+   * WHAT A `$ref` MEANT WHEN THE GRAMMAR FLATTENED THE TREE IT POINTS INTO.
+   *
+   * Consulted only for a pointer the exact index missed, and ONLY on a tree the grammar errored
+   * on: on a clean parse the pointer key is the answer and this never runs, so no existing
+   * resolution can move. The evidence is the document's OWN declared paths (`documentShapes`,
+   * keyed by the symbol path the walk built) — the analyzer's published name for the same
+   * declaration, which is what the edge must target to be resolved at all by production.
+   *
+   * The rule, and it refuses more than it accepts:
+   *
+   *   * decode the pointer's segments (`~1` -> `/`, `~0` -> `~`) and join them with `.`;
+   *   * a declared path matches when it IS that string, or when the string ENDS WITH `.` + it —
+   *     i.e. the declaration sits at or below the path the pointer names, which is the shape a
+   *     hoisted level produces (`definitions.MountType` ends with `.MountType`);
+   *   * take the LONGEST match, so the most specific declaration wins;
+   *   * if two declared paths tie at that length, or the winner is not a published symbol path,
+   *     return null and let the edge stay unresolved. A recovered binding that is not unique is
+   *     a fabrication, and an ambiguous `$ref` is not a resolved one.
+   */
+  private resolvePointerOnRecoveredTree(pointer: string, source: string, ctx: YamlContext): string | null {
+    if (!ctx.parseHadError) return null
+    const document = this.documentOfPath(source, ctx)
+    if (document === null) return null
+    const shapes = ctx.documentShapes.get(document)
+    if (!shapes) return null
+    const decoded = pointer
+      .slice(1)
+      .split("/")
+      .map((seg) => seg.split("~1").join("/").split("~0").join("~"))
+      .join(".")
+    if (decoded.length === 0) return null
+    let longest = -1
+    let winner: string | null = null
+    let ties = 0
+    for (const key of shapes.keys()) {
+      if (key.length === 0) continue
+      if (key !== decoded && !decoded.endsWith(`.${key}`)) continue
+      if (key.length > longest) { longest = key.length; winner = key; ties = 1; continue }
+      if (key.length === longest) ties++
+    }
+    if (winner === null || ties !== 1) return null
+    const target = `${document}.${winner}`
+    return ctx.shapeIndex.has(target) ? target : null
+  }
+
+  /** The document a symbol path belongs to: the longest document name that prefixes it. */
+  private documentOfPath(source: string, ctx: YamlContext): string | null {
+    let best: string | null = null
+    for (const document of ctx.documentShapes.keys()) {
+      if (source !== document && !source.startsWith(`${document}.`)) continue
+      if (best === null || document.length > best.length) best = document
+    }
+    return best
   }
 
   /**
@@ -1516,9 +1939,133 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * top-level `services` keys — so a resolution claimed here is a resolution that was
    * measured, and an unresolved one says so with a reason and a sub-1.0 confidence.
    */
+  /**
+   * A `needs:` TARGET NAMES A JOB OF ITS OWN DOCUMENT, and the document-scoped identity is what
+   * makes it resolvable.
+   *
+   * `needs: [test]` inside `.github/workflows/build.yml` means `jobs.test` of THAT FILE, and
+   * every workflow in a project may declare a job named `test` — so the bare name carries N
+   * declarations in the project and production's resolver, which fills a bare name only when
+   * `COUNT(*) = 1` within the project, can never bind it. The lane already publishes each job as
+   * `<document>.jobs.<id>`; targeting that is unique, and it is what the edge MEANT.
+   *
+   * Measured before the change, whole corpus: 802 of the lane's 879 ambiguous `references` are
+   * this shape. The lookup is gated on the document's OWN shape index, so a Compose `depends_on`
+   * (which resolves through `serviceIndex` instead) and a name that merely looks like a job are
+   * both untouched — the check is "does this document declare `jobs.<target>`", not "does the
+   * target look like a job".
+   */
+  private resolveJobInDocument(ref: { target: string; document?: string }, ctx: YamlContext): string | null {
+    if (typeof ref.document !== "string" || ref.document.length === 0) return null
+    const shapes = ctx.documentShapes.get(ref.document)
+    if (!shapes || !shapes.has(`jobs.${ref.target}`)) return null
+    return `${ref.document}.jobs.${ref.target}`
+  }
+
+  /**
+   * A KUBERNETES OBJECT REFERENCED BY NAME, DECLARED IN A SIBLING FILE OF THE SAME DIRECTORY.
+   *
+   * ## The defect this fixes, and it was found by this lane's own falsifier
+   *
+   * `serviceAccountName: apiserver` in
+   * `staging/src/k8s.io/sample-apiserver/artifacts/example/deployment.yaml` was UNRESOLVED, while
+   * `.../artifacts/example/sa.yaml` declares `kind: ServiceAccount, metadata.name: apiserver` — the
+   * same directory, one manifest set, and `kubectl apply -f <dir>` reads both. `name-collision-
+   * falsifier.ts` proved it with a non-zero exit before this existed.
+   *
+   * ## The rule, PRICED before it was applied (the falsifier counts instead of asserting)
+   *
+   *   CEILING  1 ambiguous edge a same-directory, same-kind resolution can reach
+   *   CONTROL  0 of them sit in a directory declaring that kind+name TWICE (ambiguous even scoped)
+   *   CONTROL  117 MORE would be bound by a PROJECT-WIDE version of the rule, and every one of them
+   *            is refused: another manifest set is another cluster. The directory scope is the whole
+   *            claim, and that is what makes 117 a control rather than a ceiling.
+   *
+   * ## What it reads, and why that is not a contract violation
+   *
+   * `analyze()` is SYNCHRONOUS and the only parser accessor (`engine.getParser`) is async, so a
+   * sibling cannot be parsed here. The two candidate spellings of a sibling's declaration
+   * (`kind:` at column 0, `name:` inside a top-level `metadata:` block) are therefore read from the
+   * sibling's TEXT — and the important part is what the read is FOR: it is a CANDIDATE FILTER, never
+   * an extraction. The value it produces is a DOCUMENT IDENTITY, and the ARBITER then has to
+   * resolve that name against the project's own key space. A wrong sibling makes the edge
+   * unresolved again, not wrong; the only way text can turn into a fact here is through a lookup
+   * this analyzer does not perform. The current file's OWN structure still comes from the tree.
+   *
+   * It is bounded and refuses more than it accepts: only a `yaml_resource_ref` whose referring key
+   * maps to a KIND, only with a project root, only `.yaml`/`.yml` siblings, and it returns null the
+   * moment a SECOND sibling matches — two same-kind, same-name objects in one directory is exactly
+   * the case where the rule would be a guess.
+   */
+  private resolveSameDirectoryResource(ref: { target: string; source: string; kind: string }, ctx: YamlContext): string | null {
+    if (ref.kind !== "yaml_resource_ref") return null
+    const key = ref.source.slice(ref.source.lastIndexOf(".") + 1)
+    const kind = RealYamlAnalyzer.KIND_FOR_RESOURCE_KEY[key]
+    if (kind === undefined) return null
+    const root = ctx.projectRoot
+    if (typeof root !== "string" || root.length === 0) return null
+    const rel = RealYamlAnalyzer.projectRelativePath(ctx.filePath, ctx.projectRoot)
+    if (rel === null) return null
+    const cut = rel.lastIndexOf("/")
+    const dirRel = cut >= 0 ? rel.slice(0, cut) : ""
+    const dirAbs = dirRel.length > 0 ? join(root, ...dirRel.split("/")) : root
+    let entries: string[]
+    try {
+      entries = readdirSync(dirAbs)
+    } catch {
+      return null
+    }
+    const hits: string[] = []
+    for (const entry of entries.sort()) {
+      if (!/\.ya?ml$/i.test(entry)) continue
+      const siblingRel = dirRel.length > 0 ? `${dirRel}/${entry}` : entry
+      if (siblingRel === rel) continue
+      let text: string
+      try {
+        text = readFileSync(join(dirAbs, entry), "utf8")
+      } catch {
+        continue
+      }
+      if (!RealYamlAnalyzer.declaresResource(text, kind, ref.target)) continue
+      if (hits.length > 0) return null // two candidates: refuse rather than pick
+      hits.push(this.documentName(join(dirAbs, entry), 1, ctx.projectRoot))
+    }
+    return hits.length === 1 ? hits[0] : null
+  }
+
+  /** The two spellings a sibling manifest declares: `kind:` at column 0, and `name:` inside a
+   *  top-level `metadata:` block. Anchored, so a nested pod-template `metadata.name` is not read as
+   *  the document's own.
+   *
+   *  NOT PRIVATE, and the reason is a measurement rather than convenience: the question "does this
+   *  text filter produce the same CANDIDATE SET a parse would?" can only be answered against the
+   *  filter that actually runs, and a probe carrying its own copy would be testing the copy. */
+  static declaresResource(text: string, kind: string, name: string): boolean {
+    const kindMatch = text.match(/^kind:[ \t]*["']?([A-Za-z][\w.-]*)["']?[ \t]*$/m)
+    if (kindMatch === null || kindMatch[1] !== kind) return false
+    const meta = text.search(/^metadata:[ \t]*$/m)
+    if (meta < 0) return false
+    const nameMatch = text.slice(meta).match(/^[ \t]+name:[ \t]*["']?([^"'\n#]+?)["']?[ \t]*$/m)
+    return nameMatch !== null && nameMatch[1].trim() === name
+  }
+
+  /** The referring KEY -> the object KIND it names. One source of truth: the falsifier imports it,
+   *  so the instrument that PRICES this rule and the analyzer that APPLIES it cannot drift. */
+  static readonly KIND_FOR_RESOURCE_KEY: Record<string, string> = {
+    secretName: "Secret",
+    secretRef: "Secret",
+    secretKeyRef: "Secret",
+    secret: "Secret",
+    claimName: "PersistentVolumeClaim",
+    configMap: "ConfigMap",
+    configMapRef: "ConfigMap",
+    configMapKeyRef: "ConfigMap",
+    serviceAccountName: "ServiceAccount",
+  }
+
   private resolveSiblingReferences(ctx: YamlContext): void {
     for (const ref of ctx.pendingReferences) {
-      const resolved = this.resolveDeclaredName(ref.target, ctx)
+      const resolved = this.resolveDeclaredName(ref.target, ctx) ?? this.resolveJobInDocument(ref, ctx) ?? this.resolveSameDirectoryResource(ref, ctx)
       if (resolved) {
         this.addRelationship(ctx, ref.source, resolved, ASTEngine.RelationshipType.References, {
           relationshipType: ref.kind,
@@ -1765,6 +2312,90 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     ctx.relationships.push(relationship)
   }
 
+  /**
+   * WHICH SCALARS AN INCLUDE KEY ACTUALLY NAMES — the fix for the over-emission.
+   *
+   * `scalarValues` recurses into a mapping and returns every nested VALUE scalar, which is right
+   * for a bag of names and wrong for these keys: one
+   * `- import_role: {name: role1, tasks_from: x.yml, allow_duplicates: true}` published the role
+   * name, its sub-file and a BOOLEAN as three imports of this file. MEASURED over the whole
+   * admitted ansible population by attributing every include edge to the key on its own
+   * `line_number`: of 891 `imports` edges carrying `yaml_keyword_include`, only **567** came from
+   * a key that names a file at all — 149 from a nested `name:`, 45 from `tasks_from:`, 18 from
+   * `role_name:`, and 51 from keys a role import happens to contain (`hosts:`, `public:`,
+   * `gather_facts:`, `command:` …). The over-emission is not cosmetic: it is what put bare
+   * identifiers such as `a` (29 declarations), `c`, `foo` and `include_role` (123 declarations)
+   * into `imports`, where the arbiter can only read them as ambiguous.
+   *
+   * The rule now follows the key's meaning, which is the same thing the claim already follows:
+   *
+   *   a FILE key   `include_tasks`, `import_tasks`, `import_playbook`, `import_values`,
+   *                `include`, `import` — the file is the scalar value, or the `file:` sub-key
+   *                when the value is a mapping (ansible's documented long form).
+   *   a ROLE key   `include_role`, `import_role` — the value names a ROLE: its `name:`, or the
+   *                scalar shorthand. `tasks_from`/`vars_from`/`defaults_from`/`handlers_from`
+   *                name files inside a role DIRECTORY this analyzer does not resolve, so they are
+   *                not this file's imports, and a boolean is not a target at all.
+   */
+  private fileImportTargets(key: string, valueNode: Node | null, parentPath: string, document: string): string[] {
+    if (ROLE_IMPORT_KEYS.has(key)) {
+      const named = this.mappingEntryScalar(valueNode, "name")
+      if (named !== null) return [named]
+      // The scalar shorthand (`- include_role: some_role`) names the role directly; the first
+      // scalar of any other shape is that shape's only candidate for a role name.
+      return this.scalarValues(valueNode).slice(0, 1)
+    }
+    // `include:` IS NOT ALWAYS AN INCLUDE. Under a `matrix:` it is the build-matrix directive a
+    // CI system expands into JOB VARIANTS, and its members are dimensions, languages and shell
+    // commands. MEASURED: powershell's `windows-packaging-reusable.yml` published `x64`,
+    // `preview`, `win7`, `x86`, `stable`, `arm64` as imports of the workflow, and bulma's
+    // `.travis.yml` published `sass`, `node_js`, `gem install sass` and
+    // `node test/dart-sass/dart-sass.js`. Fourteen of this lane's 57 ambiguous `imports` were
+    // exactly these names, and the rest were sitting in the VERIFIED column as claims about
+    // files that do not exist. The parent path is the evidence, and it is the evidence the
+    // `uses:` role already reads.
+    // The document is excluded from the test BY NAME, and the control is why: a file called
+    // `matrix.yml` has the document identity `matrix`, so a bare `/matrix$/` test made every
+    // top-level `include:` in that document invisible. The guard is about a `matrix:` KEY, which
+    // is always a deeper path than the document itself.
+    if (key === "include" && parentPath !== document && /(^|\.)matrix$/.test(parentPath)) return []
+    const file = this.mappingEntryScalar(valueNode, "file")
+    if (file !== null) return [file]
+    // A MAPPING UNDER A FILE KEY IS NOT A LIST OF FILES. Only its `file:` names one (handled
+    // above), so a mapping contributes nothing here — which is what stops `- include: {hosts: …,
+    // gather_facts: …}` from publishing a play's own KEYS' values as imports of this file.
+    // MEASURED: attributing every include edge to the key on its own `line_number` found 51 such
+    // scalars in the ansible population alone (`hosts:` 15, `public:` 9, `gather_facts:` 5, …),
+    // and they are why bare identifiers like `time`, `main` and `dnf` appear in `imports`.
+    const node = valueNode ? this.scalarNode(valueNode) : null
+    if (node && MAPPING_TYPES.has(node.type)) return []
+    // A SEQUENCE names files only when ITS ITEMS ARE SCALARS (`- include: [a.yml, b.yml]`). An item
+    // that is a mapping is a matrix variant or a structured directive, and the scalars inside it
+    // are its FIELDS, not file names — recursing into them is what published `x64` and
+    // `gem install sass` above.
+    if (node && SEQUENCE_TYPES.has(node.type)) {
+      const out: string[] = []
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const item = node.namedChild(i)
+        if (!item) continue
+        // A SEQUENCE ITEM IS ITS OWN NODE TYPE in this grammar (`block_sequence_item`), and it is
+        // NOT in `WRAPPER_TYPES` — so `scalarNode` returns it unchanged and a scalar item looked
+        // like a nested node. The control caught it: `include: [real.yml]` emitted nothing while
+        // `include: [{architecture: x64}]` correctly emitted nothing, i.e. the two cases were
+        // indistinguishable. Unwrap one level, which is what the walker itself does
+        // (`visit`: `firstNamedChild(curr)` for a sequence item).
+        const unwrapped = item.type === "block_sequence_item" ? this.firstNonDecorationChild(item) : item
+        const scalar = unwrapped ? this.scalarNode(unwrapped) : null
+        if (!scalar || !SCALAR_TYPES.has(scalar.type)) continue
+        const text = this.scalarText(scalar)
+        if (text) out.push(text)
+      }
+      return out
+    }
+    // A scalar names one file.
+    return this.scalarValues(valueNode)
+  }
+
   private addImport(
     ctx: YamlContext,
     target: string,
@@ -1909,14 +2540,46 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!parsed) return null
     const shortName = parsed.shortName
     let includePath: string | undefined
+    let includeQuoted = false
     if (INCLUDE_TAGS.has(shortName)) {
       const sibling = this.firstNonDecorationChild(node)
       if (sibling) {
         const text = this.scalarText(sibling)
-        if (looksLikePath(text)) includePath = text
+        // A QUOTED scalar is a literal string, and a literal string may hold a space. The
+        // whitespace refusal exists for the UNQUOTED free-form convention ansible uses
+        // (`include_tasks: file=x.yml`), where the value is an argument list rather than a path;
+        // quoting is the source's own evidence that it is not one. MEASURED on hasura-engine's
+        // metadata testdata: `tables: !include "s 3/tables/tables.yaml"` names
+        // `metadata/databases/s 3/tables/tables.yaml`, which the repository HAS, and the space rule
+        // turned all six of the s 3/s 4/s 5 sites into a `declared_type` edge at a tag that names
+        // no type at all. `isLiteralPathSpelling` keeps its refusal of `key=`, templates, globs and
+        // URI schemes, so a quoted free-form string is still refused at the claim layer.
+        if (looksLikePath(text, QUOTED_SCALAR_TYPES.has(sibling.type))) {
+          includePath = text
+          includeQuoted = QUOTED_SCALAR_TYPES.has(sibling.type)
+        }
       }
     }
-    return { shortName, uri: parsed.uri, typeOverride: TAG_TYPE_OVERRIDES[shortName], includePath, line: tagNode.startPosition.row + 1 }
+    return { shortName, uri: parsed.uri, typeOverride: TAG_TYPE_OVERRIDES[shortName], includePath, includeQuoted, line: tagNode.startPosition.row + 1 }
+  }
+
+  /**
+   * THE TYPE NAME A TAG DECLARES, or undefined when the tag declares no type at all.
+   *
+   * An include-family tag names a FILE — `functions: !include "s1/functions/functions.yaml"` is an
+   * import and nothing else. Reading its short name as the name of a TYPE (which is what a
+   * `declared_type` edge says) was a category error the arbiter could see: the edges targeted the
+   * literal string `include`, which collides with ordinary keys spelled `include`, so ten of them
+   * were reported AMBIGUOUS against three unrelated declarations. The `includePath` marker is the
+   * same fact, but it is only set when the value was readable as a path, and a tag whose path the
+   * lane refuses still does not name a type — so the test is the tag's own membership in the closed
+   * include set, not the presence of a readable path.
+   *
+   * One definition, read at every `declared_type` site, so a new site cannot reintroduce the error.
+   */
+  private tagTypeName(tag: TagInfo | null): string | undefined {
+    if (!tag || INCLUDE_TAGS.has(tag.shortName)) return undefined
+    return tag.shortName
   }
 
   /**
@@ -2176,7 +2839,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (tag.typeOverride && context.parent && context.parent.metadata) {
           context.parent.metadata = {
             ...context.parent.metadata,
-            declaredType: tag.shortName,
+            declaredType: this.tagTypeName(tag),
             tagUri: tag.uri,
             tagLine: tag.line,
           }
@@ -2247,7 +2910,755 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return 1
   }
 
-  private documentName(filePath: string, documentIndex: number): string {
+  /**
+   * A document's PROJECT-RELATIVE directory chain, dot-joined, or "" when it cannot be known.
+   *
+   * Dot-joined rather than slash-joined on purpose: everything downstream treats a dotted
+   * string as a path (`Schema.X.properties`, `spec.containers[0]`), so a slash here would
+   * introduce a second, undeclared convention into the same key space.
+   *
+   * Empty when the root is unknown OR the file does not sit under it (a relative filePath
+   * against an absolute root, which is how several callers run). Refusing to guess is the
+   * point: a WRONG scope is worse than no scope, because the scope's whole job is to be the
+   * part of the identity that cannot collide.
+   */
+  private static documentDirScope(filePath: string, projectRoot?: string): string {
+    const rel = RealYamlAnalyzer.projectRelativePath(filePath, projectRoot)
+    if (rel === null) return ""
+    const cut = rel.lastIndexOf("/")
+    if (cut < 0) return ""
+    return rel.slice(0, cut).split("/").filter((s) => s.length > 0).join(".")
+  }
+
+  /**
+   * A filesystem path in the POSIX convention this analyzer's key space uses: every `\` becomes
+   * `/`, and TRAILING separators are dropped.
+   *
+   * WHY THIS IS A CHARACTER WALK AND NOT TWO `replace` CALLS. The two substitutions it replaces
+   * were `replace(/\\/g, "/")` followed by `replace(/\/+$/, "")` — two regex literals on each of
+   * two lines, i.e. four of the twelve regex usages the fleet's no-regex gate counted on this
+   * lane. The rule is mechanically enforced on ANALYZER source, so the walk is the form that keeps
+   * the gate's statement TRUE rather than waived. This is a predicate about a string the SOURCE
+   * wrote, not a node type the grammar never emits — the distinction the fsharp lane's fix
+   * (b3623467b) draws.
+   *
+   * THE ORDER IS LOAD-BEARING and is preserved exactly. Backslashes fold to `/` FIRST, so a path
+   * ending in `\` is still stripped by the trailing-separator pass; stripping first would leave the
+   * backslash and produce a key with a trailing `\` in it. Semantics are otherwise identical,
+   * including the degenerate cases: `""` stays `""`, and a string of nothing but separators
+   * (`"/"`, `"///"`) becomes `""` because the second pass removes every one of them.
+   */
+  private static toPosixPath(p: string): string {
+    let out = ""
+    for (let i = 0; i < p.length; i++) {
+      const ch = p[i]
+      out += ch === "\\" ? "/" : ch
+    }
+    let end = out.length
+    while (end > 0 && out[end - 1] === "/") end--
+    return out.slice(0, end)
+  }
+
+  /** The file's own path relative to its project root, POSIX-normalised, or null when unknown. */
+  private static projectRelativePath(filePath: string, projectRoot?: string): string | null {
+    if (!projectRoot) return null
+    const root = RealYamlAnalyzer.toPosixPath(projectRoot)
+    const file = RealYamlAnalyzer.toPosixPath(filePath)
+    if (root.length === 0 || file === root || !file.startsWith(root + "/")) return null
+    return file.slice(root.length + 1)
+  }
+
+  /** Collapse `.`, `..` and duplicate separators; null when the path escapes its root. */
+  private static normalizePosix(p: string): string | null {
+    const parts: string[] = []
+    for (const seg of p.split("/")) {
+      if (seg.length === 0 || seg === ".") continue
+      if (seg === "..") {
+        if (parts.length === 0) return null
+        parts.pop()
+        continue
+      }
+      parts.push(seg)
+    }
+    return parts.length > 0 ? parts.join("/") : null
+  }
+
+  /**
+   * THE CANDIDATE SPELLINGS a tag include could name INSIDE this project.
+   *
+   * A `!include` path is resolved by the LOADER, and the corpus runs two live conventions — Hasura
+   * resolves it against the including FILE's directory (`metadata/databases/databases.yaml`
+   * includes `s1/functions/functions.yaml`, and that file exists beside it), while pyyaml-include's
+   * test data resolves it against the REPO ROOT (`tests/data/0.yaml` includes
+   * `tests/data/include.d/1.yaml`). Both were read off the corpus, not guessed, and an analyzer
+   * cannot know which loader will read the file. So it states both candidate spellings and the
+   * ARBITER decides: the gate's file claim verifies when any candidate is an admitted file of the
+   * project (script/m14/incoming-rule.ts, `FILE_CLAIM_KEY`), and is REFUTED when none is.
+   *
+   * Null means "no claim can be made", and it is returned rather than an empty list so the caller
+   * keeps the weaker `isExternal` marker it used before: a URL include, or a file whose project
+   * root this run does not know (every fixture that passes no root), is exactly the case where the
+   * candidate set would be a fabrication.
+   *
+   * AND A SPELLING THAT IS NOT A PATH AT ALL GETS NO CANDIDATE EITHER, which is the guard
+   * `isLiteralPathSpelling` adds. Measured on the ansible population before it existed: a
+   * templated include (`'{{ service_type }}_cleanup.yml'`, 6 sites) and an ansible free-form
+   * `include_tasks: file=x.yml` (5 sites) both used to walk straight into a candidate set, and a
+   * candidate containing `{{ }}` can never be an admitted file — so the arbiter would have
+   * REFUTED the lane on 11 edges whose target was never a literal path. A claim has to be spelled
+   * as the thing it claims before a lookup can say anything about it, which is also why the
+   * gate's own `verifyRemoteRefClaim` refuses shapes it cannot read.
+   */
+  private relativePathCandidates(written: string, ctx: YamlContext, quoted = false): string[] | null {
+    if (!RealYamlAnalyzer.isLiteralPathSpelling(written, quoted)) return null
+    const rel = RealYamlAnalyzer.projectRelativePath(ctx.filePath, ctx.projectRoot)
+    if (rel === null) return null
+    const cut = rel.lastIndexOf("/")
+    const dir = cut >= 0 ? rel.slice(0, cut) : ""
+    const trimmed = written.startsWith("./") ? written.slice(2) : written
+    const rooted = trimmed.startsWith("/")
+    const out: string[] = []
+    const add = (p: string): void => {
+      const n = RealYamlAnalyzer.normalizePosix(p)
+      if (n !== null && !out.includes(n)) out.push(n)
+    }
+    add(rooted ? trimmed.slice(1) : dir.length > 0 ? `${dir}/${trimmed}` : trimmed)
+    if (!rooted) add(trimmed)
+    // THE ROLE-RELATIVE CANDIDATE, and it is measured rather than defensive. Ansible resolves a
+    // bare include inside a ROLE by searching the role's own subdirectories, so
+    // `roles/x/handlers/main.yml` including `default-cleanup.yml` finds
+    // `roles/x/tasks/default-cleanup.yml` — measured on 8 edges of the ansible population
+    // (`default-cleanup.yml`, `windows-cleanup.yml`, `systemd_cleanup.yml`, `B.yml`,
+    // `included_tasks.yml`, `tasks/handlers.yml` twice). Without this candidate each of those
+    // was REFUTED by a file claim that was true, which would have made the claim fix trade 95
+    // false refutations for 8 more.
+    const base = rooted ? null : RealYamlAnalyzer.roleSubdirBase(rel)
+    if (base !== null && base.length > 0) {
+      add(`${base}/tasks/${trimmed}`)
+      // AND THE ROLE-ROOT SPELLING, but ONLY when the target names the role subdirectory
+      // itself. `handlers/main.yml` including `tasks/handlers.yml` means `<role>/tasks/
+      // handlers.yml`; the `tasks/` prefix is the whole evidence for that reading, and without
+      // it `roleRoot/<written>` would be a guess that could match an unrelated sibling file and
+      // verify a claim for a reason that is not the include's. Guarded rather than added
+      // unguarded, because a candidate set that is too wide makes "verified" mean less.
+      if (ROLE_SUBDIR_NAMES.has(trimmed.split("/")[0])) add(`${base}/${trimmed}`)
+    }
+    return out.length > 0 ? out : null
+  }
+
+  /**
+   * THE ROLE ROOT of the file that is including something, or null when it is not inside a role.
+   *
+   * A role is a directory carrying `tasks/`, `handlers/`, `vars/`, `defaults/`, `meta/` — so the
+   * role root is the path BEFORE the LAST such segment. `roles/role1/handlers/main.yml` ->
+   * `roles/role1`; `roles/role1/tasks/sub/x.yml` -> `roles/role1`, which is what makes the
+   * fallback work for a nested task file too.
+   */
+  private static roleSubdirBase(rel: string): string | null {
+    const segs = rel.split("/")
+    segs.pop()
+    for (let i = segs.length - 1; i >= 0; i--) {
+      if (!ROLE_SUBDIR_NAMES.has(segs[i])) continue
+      return segs.slice(0, i).join("/")
+    }
+    return null
+  }
+
+  /**
+   * The claim a tag-include import carries. The file claim when the candidates are known (the
+   * project's own file list can confirm it), and the older `isExternal` marker otherwise — never
+   * both, because the rule routes the file claim first and an edge carrying both would be excused
+   * by the weaker one (`incoming-rule.ts`'s control plants exactly that pairing).
+   */
+  private tagIncludeClaim(includePath: string, ctx: YamlContext, quoted = false): Record<string, unknown> {
+    const candidates = this.relativePathCandidates(includePath, ctx, quoted)
+    return candidates !== null && this.projectCarriesFile(ctx, candidates)
+      ? { importProjectFile: candidates }
+      : { isExternal: true }
+  }
+
+  /**
+   * DOES THE PROJECT ACTUALLY CARRY ONE OF THESE CANDIDATES? A STAT, not a read.
+   *
+   * THE RULE, and it is now the same rule in json, toml and yaml: **a file claim is made only
+   * where the analyzer has evidence for it.** `verifyFileClaim` returning `externalRefuted` on a
+   * miss is pinned by the gate's own positive control (arms 4 and 5), and that is right — a file
+   * claim is a checkable statement and the check is its whole purpose. What was wrong was WHICH
+   * edges asserted it: 18 of them named paths this project does not have (a directory
+   * materialised at run time by a checkout step, a CodeQL query directory holding no yaml, files
+   * ansible's integration tests deliberately omit), and each one made a claim the analyzer had
+   * no evidence for. They now carry `isExternal` instead, which on a path-shaped target is
+   * `externalUnverified` — the honest outcome for a path the corpus does not contain — and the
+   * gate's rule is not weakened by one arm.
+   *
+   * Mirrors `real-json-analyzer.ts`'s `projectCarriesFile` exactly, including its two
+   * non-obvious decisions: this is a STAT and never a read (the lane's contract is that
+   * decisions come from the tree, and asking the filesystem whether a path exists asserts
+   * nothing about that file's contents), and an error that is NOT `ENOENT`/`ENOTDIR` counts as
+   * PRESENT, because "I could not look" must not be recorded as "it is not there".
+   */
+  private projectCarriesFile(ctx: YamlContext, candidates: string[]): boolean {
+    const root = ctx.projectRoot
+    if (typeof root !== "string" || root.length === 0) return false
+    for (const candidate of candidates) {
+      try {
+        if (statSync(join(root, candidate)).isFile()) return true
+      } catch (e: any) {
+        if (!(e?.code === "ENOENT" || e?.code === "ENOTDIR")) return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * THE CLAIM A `$ref` CARRIES — and for a cross-FILE pointer, `isExternal: true` was FALSE.
+   *
+   * `$ref` is spelled two ways and the difference is not cosmetic: `#/x` names a pointer into
+   * THIS document (nothing external about it), while `<file>#/x` names a pointer into ANOTHER
+   * DOCUMENT. The emit site stated `isExternal: !pointer.startsWith("#/")`, so the second shape
+   * claimed to be outside the declared population — and over the whole admitted population
+   * (18,364 `.yaml`/`.yml`, 189 repos) that claim is false **1,356 times**, every one of them in
+   * one repository's OpenAPI set:
+   *
+   *     references  "./Responses.OpenAPI.yaml#/400"                    681 edges (relative path)
+   *     references  "Shared.Components.OpenAPI.yaml#/components/…"     675 edges (bare sibling)
+   *
+   * `Grace/src/OpenAPI/Responses.OpenAPI.yaml` is an ADMITTED FILE of that project, and the
+   * arbiter said so: `pathLikeTarget` refuses to believe an "external" claim about a path, so all
+   * 1,356 read `externalUnverified` — the outcome that blocks a PASS. They were 71% of this lane's
+   * entire unverifiable population (`externalUnverified` 1,903).
+   *
+   * So the claim is the one the project can CHECK: the file part of the pointer, run through the
+   * same candidate builder and the same `statSync` evidence rule the `!include` sites use. The
+   * fragment is dropped — it addresses a position INSIDE the file, and a claim has to be spelled
+   * as the thing it claims before a lookup can say anything about it (the same reason
+   * `isLiteralPathSpelling` refuses a template). A pointer whose file this project does not carry
+   * (a URL, a runtime-materialised path, a `../` past the root, or a file that is genuinely
+   * absent) keeps the weaker `isExternal` marker, which on a path-shaped target is
+   * `externalUnverified` — the honest outcome, and the direction this fix cannot reverse.
+   *
+   * NOT CLAIMED: that the pointer RESOLVES. The target document is not indexed by this analyzer,
+   * so the edge still reports `unresolvedReason: "external-file"` (see
+   * `resolvePointerReferences`); what changed is that the file dependency it names is now a
+   * statement the project confirms instead of a false statement that it is outside the population.
+   */
+  private pointerClaim(pointer: string, ctx: YamlContext): Record<string, unknown> {
+    if (pointer.startsWith("#/")) return { isExternal: false }
+    const hash = pointer.indexOf("#")
+    const file = hash >= 0 ? pointer.slice(0, hash) : pointer
+    if (file.length === 0) return { isExternal: false }
+    const candidates = this.relativePathCandidates(file, ctx)
+    return candidates !== null && this.projectCarriesFile(ctx, candidates)
+      ? { importProjectFile: candidates }
+      : { isExternal: true }
+  }
+
+  /**
+   * THE CLAIM A REUSABLE-WORKFLOW CALL CARRIES — a FILE, not an action DIRECTORY.
+   *
+   * `jobs.<id>.uses: ./.github/workflows/build.yml` calls a workflow declared in another FILE of
+   * this repository, and it was routed through `actionUseClaim`, which for a `./` target resolves
+   * the ACTION's manifest (`action.yml`/`action.yaml`) inside it. That rule is right for
+   * `steps[].uses: ./dir` and wrong here in the one way that matters: the target IS the file, so
+   * the manifest lookup asks for `./.github/workflows/build.yml/action.yml`, finds nothing, and
+   * the edge falls back to `isExternal: true` — a false statement about a file the project has.
+   * MEASURED over the whole admitted population: **208** `calls` edges, this lane's entire `calls`
+   * unverifiable population, every one of them an admitted `.yml`:
+   *
+   *     "./.github/workflows/reusable-get-go-version.yml"   11 edges (consul)
+   *     "./.github/workflows/build.yml"                     10 (consul, cython, …)
+   *     "./.github/workflows/ci-job.yml"                    10 (cython)
+   *
+   * The file claim is the statement the project can check, and the candidates are built the same
+   * way every other file claim in this lane is (`relativePathCandidates` + `projectCarriesFile`).
+   * A remote call keeps the reference claim, and a local one the project does not carry keeps
+   * `isExternal` — the same two directions as `pointerClaim` above.
+   */
+  private workflowCallClaim(action: string, ctx: YamlContext): Record<string, unknown> {
+    if (!action.startsWith("./") && !action.startsWith("../")) return this.actionUseClaim(action, ctx)
+    const candidates = this.relativePathCandidates(action, ctx)
+    // NO ROOT MEANS NO CANDIDATE SET, and a candidate set without a root would be a fabrication.
+    // The pre-existing marker is kept through `actionUseClaim` itself rather than restated here,
+    // so this fix can only change an edge where EVIDENCE exists — a fixture run (every fixture
+    // passes no project root) sees the old marker, and the gate, which always passes one, sees
+    // the file claim. Pinned by `yaml/workflow-call-role`'s `isExternal: false`.
+    if (candidates === null) return this.actionUseClaim(action, ctx)
+    return this.projectCarriesFile(ctx, candidates)
+      ? { importProjectFile: candidates }
+      : { isExternal: true }
+  }
+
+  /**
+   * IS THIS KEY, AT THIS POSITION, A DEPENDENCY? A KEY NAME IS NOT A POSITION.
+   *
+   * `DEPENDS_ON_KEYS` fires on `depends_on|dependsOn|needs|requires` at ANY depth, and the corpus
+   * contains the counter-example the sibling `uses:` site already guards against with
+   * `isJobLevelPath`: GitHub Actions admits an action INPUT named `needs`,
+   *
+   *     - uses: r-lib/actions/setup-r-dependencies@v2
+   *       with:
+   *         needs: check          <- an input, NOT a job dependency
+   *
+   * so the analyzer emitted a `yaml_depends_on` reference for a key that names no dependency.
+   * MEASURED over the whole admitted population — every `yaml_depends_on` edge grouped by the
+   * position it was emitted from (1,938 edges, 413 candidate files, `yaml-depends-position`):
+   *
+   *     jobs.<id>.needs            1,655   TRUE  (a job dependency)
+   *     services.<svc>.depends_on     74   mixed — see `dependencyTargets`
+   *     steps[].with.needs            48   FALSE (an action input: check 14, website 12, …)
+   *     Azure stages[].dependsOn      22   TRUE
+   *     CircleCI jobs[].requires      38   TRUE
+   *
+   * So `needs` is gated to `jobs.<id>` and nothing else is: `depends_on`/`dependsOn`/`requires` are
+   * the spellings of OTHER loaders (Compose, Azure Pipelines, CircleCI) whose containers this
+   * analyzer has no shape index for, and every measured position for them is a true dependency.
+   * The gate is the same predicate the `uses:` site uses, so one notion of "job level" governs both.
+   *
+   * The 46 of the 48 that read `externalVerified` are why this is a FIX and not a ruling: a false
+   * edge that RESOLVES is worse than one that does not, and these were sitting in the VERIFIED
+   * column as claims about `check`, `website`, `pr-document` and `coverage`.
+   */
+  /**
+   * Is this an `include:` that selects a SET rather than naming a file? See
+   * `INCLUDE_SELECTOR_PARENT_KEYS` for the measurement behind each parent.
+   *
+   * For `branches` the document's own top-level claim (`trigger:`/`pr:`) is required as well, and it
+   * is read from the shape index rather than from the text: the ancestor is always visited before
+   * its descendant, so the shape is already indexed when the `include` key is read — no second pass,
+   * no text scan.
+   */
+  private isIncludeSelectorKey(key: string, current: VisitContext, ctx: YamlContext): boolean {
+    if (key !== "include") return false
+    const parentPath = current.parentPath ?? ""
+    const document = current.document
+    // The DOCUMENT segment is not a container: a file named `paths.yaml` has document identity
+    // `paths`, and counting it would make every top-level `include:` in that file invisible.
+    let rest = parentPath
+    if (rest === document) rest = ""
+    else if (rest.startsWith(`${document}.`)) rest = rest.slice(document.length + 1)
+    if (rest.length === 0) return false
+    let selector = false
+    let branches = false
+    for (const seg of rest.split(".")) {
+      if (!INCLUDE_SELECTOR_SEGMENTS.has(seg)) continue
+      selector = true
+      if (seg === "branches") branches = true
+    }
+    if (!selector) return false
+    // `branches` ALONE also requires the document's own pipeline claim, because `branches` is an
+    // ordinary word that a non-pipeline document may use; the other members are containers of
+    // selectors in every format that spells them and carry no such ambiguity.
+    if (!branches) return true
+    const shapes = ctx.documentShapes.get(document)
+    return shapes ? shapes.has("trigger") || shapes.has("pr") : false
+  }
+
+  private isDependencyPosition(key: string, current: VisitContext): boolean {
+    if (key === "needs") return isJobLevelPath(current.parentPath, current.document)
+    return true
+  }
+
+  /**
+   * WHICH NAMES A DEPENDENCY KEY NAMES, decided by the VALUE'S SHAPE.
+   *
+   * Compose's `depends_on` has two spellings, and they put the dependency name in different places:
+   *
+   *     depends_on: [db, cache]                  the names are the SEQUENCE ITEMS
+   *     depends_on:                              the names are the MAPPING KEYS
+   *       db:
+   *         condition: service_healthy           <- CONFIGURATION, not a name
+   *
+   * `scalarValues` walks a mapping's VALUES (it is built for payloads), so on the second form it
+   * returned the dependency's own settings — `service_healthy`, `service_started`,
+   * `service_completed_successfully` — and DROPPED the dependency. MEASURED over the whole admitted
+   * population: **31** such edges, all in `depends_on`, every one of them a false dependency on a
+   * condition string (22 `service_healthy`, 7 `service_started`, 2
+   * `service_completed_successfully`). The long form's keys are real services, so the fix ADDS the
+   * true edges while removing the false ones — and the delta is reported in BOTH directions.
+   *
+   * A sequence, a scalar, or a mapping with no pair keys falls through to `scalarValues` unchanged,
+   * so every shape that worked before still works.
+   */
+  /**
+   * A DEPENDENCY VALUE THAT NAMES A MARKER, not a member of any document.
+   *
+   * `DEPENDS_ON_KEYS` fires on four loader spellings (Compose `depends_on`, GitHub `needs`,
+   * Azure `dependsOn`, CircleCI `requires`), and in every one of them the value names a
+   * DECLARATION the same document carries — a service, a job, a stage. One corpus position
+   * breaks that premise: kube-api-linter's config spells a rule-to-marker requirement
+   *
+   *     dependenttags:
+   *       rules:
+   *         - identifier: "k8s:unionMember"
+   *           dependsOn: ["k8s:optional"]        <- a kubebuilder MARKER, not a key
+   *
+   * where the value is a Go-comment annotation (`+k8s:optional` in Go struct docs) — not a
+   * key any analyzer publishes in any lane, so the `references` edge it produced (target
+   * `k8s:optional`, `isExternal: true`) was structurally unverifiable: no symbol named
+   * `k8s:optional` can exist in the key space, and no instrument could ever confirm it.
+   * Same class as `steps[].with.needs` (an action INPUT read as a job dependency) and the
+   * 31 `service_healthy` condition strings: the key is spelled `dependsOn`, but the value
+   * at this position names no dependency the graph indexes.
+   *
+   * MEASURED, whole admitted population, every `yaml_depends_on` target counted UNTRUNCATED
+   * (1,895 edges over 413 candidate files, `.tmp-probe/yaml-depends-position-r16.txt`):
+   * **1,892 carry no colon; the only colon-bearing, template-free targets are the 3
+   * `k8s:optional` sites above** (kubernetes' `hack/golangci{,-hints}.yaml` and
+   * `hack/kube-api-linter/kube-api-linter.yaml`, every one under `dependenttags.rules[]`),
+   * so the rule fires on exactly the measured class with ZERO collateral. The shape is
+   * loader-independent and vocabulary-free — no list of marker namespaces, which is what
+   * made the previously-named candidate guard ("an ancestor segment names a marker-rule
+   * container") unpriceable at 3 edges:
+   *
+   *   * a colon is legal in no member name any of the four loaders admits (GitHub job ids,
+   *     Compose service names, Azure stage names, CircleCI job names are colon-free by
+   *     their formats' own rules), and
+   *   * every template spelling that could carry a colon (`${{ … }}`) contains `{{` and is
+   *     excluded — a template edge stays a RULED external claim, unchanged.
+   *
+   * A lookup-first variant (refuse only when the name is ALSO undeclared in the file) was
+   * considered and measured equivalent on this population: `k8s:optional` occurs as a KEY
+   * declaration in 0 of the three emitting files (grep, all sites are VALUES beside
+   * `identifier:`/`conflicts:`), so shape-first and lookup-first refuse the same 3 edges.
+   * Shape-first is chosen because it fires at capture with no dependence on walk order.
+   */
+  static markerNamespaceTarget(name: string): boolean {
+    return name.includes(":") && !name.includes("{{")
+  }
+
+  private dependencyTargets(valueNode: Node | null): string[] {
+    if (!valueNode) return []
+    const node = this.scalarNode(valueNode)
+    const pairs: Node[] = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child && MAPPING_PAIR_TYPES.has(child.type)) pairs.push(child)
+    }
+    if (pairs.length > 0) {
+      const names: string[] = []
+      for (const pair of pairs) {
+        const keyNode = pair.childForFieldName("key") || this.firstNonDecorationChild(pair)
+        const text = keyNode ? this.scalarText(keyNode) : ""
+        if (text) names.push(text)
+      }
+      if (names.length > 0) return names
+    }
+    return this.scalarValues(valueNode)
+  }
+
+  /**
+   * THE MANIFEST A LOCAL ACTION DIRECTORY IS FOR, confirmed to exist.
+   *
+   * `uses: ./dir` names a DIRECTORY, and the gate admits a directory claim by PREFIX over its
+   * admitted files — which can only ever be right for this lane when the directory holds a yaml
+   * file. Claiming the directory itself was measured wrong twice over: HashiCorp's
+   * `./security-scanner` and nimony's `./ci-actions/.github/actions/setup` are checked out AT RUN
+   * TIME and are not in the repository at all (7 + 2 edges), and gh-cli's CodeQL query directory
+   * exists but holds `.ql`/`.md` only (1 edge) — all of them REFUTED claims about directories the
+   * project cannot be asked about. The dependency a `uses: ./dir` really has is the action's
+   * DEFINITION FILE, which is `action.yml`/`action.yaml` by GitHub's own rule, so that is the
+   * candidate now — the same shape toml-lane landed on (claim the manifest FILE, not the
+   * directory). Null when no candidate carries one, and the caller then states `isExternal`.
+   */
+  private localActionManifest(ctx: YamlContext, candidates: string[]): string[] | null {
+    const root = ctx.projectRoot
+    if (typeof root !== "string" || root.length === 0) return null
+    for (const dir of candidates) {
+      for (const manifest of ["action.yml", "action.yaml"]) {
+        const candidate = `${dir}/${manifest}`
+        try {
+          if (statSync(join(root, candidate)).isFile()) return [candidate]
+        } catch (e: any) {
+          if (!(e?.code === "ENOENT" || e?.code === "ENOTDIR")) return [candidate]
+        }
+      }
+    }
+    return null
+  }
+
+  /**
+   * IS THIS SPELLING A LITERAL PATH, before anything is claimed about where it points?
+   *
+   * The arbiter checks a file claim by looking the candidate up in the project's ADMITTED file
+   * list. That lookup can only be evidence about a string that is a path: run it on a Jinja
+   * template and the miss is a fact about the template, not about the project.
+   *
+   *   `https://x/y.yaml`          a URL, refused by `://`      (already refused before this guard)
+   *   `{{ item }}`                a template — the `{`, `}`, `$` set covers `{{ }}` and `${ }`
+   *   `name=a`                    ansible's free-form `key=value`, which is a parameter list
+   *   `file=x.yml`                the same, and MEASURED: 5 sites in the ansible population
+   *   `'{{ svc }}_cleanup.yml'`   the same, and MEASURED: 6 sites
+   *   `package:lints/core.yaml`   A URI SCHEME, not a path. MEASURED over the whole corpus:
+   *                               **85 refuted edges** — `package:lints/recommended.yaml` 56,
+   *                               `package:dart_flutter_team_lints/analysis_options.yaml` 18,
+   *                               `package:lints/core.yaml` 5, `package:flutter_lints/flutter.yaml`
+   *                               4, `package:foo/foo_package_options.yaml` 1 — every one an
+   *                               `include:` in a Dart `analysis_options.yaml`, whose target is a
+   *                               PUB package resolved by pub, never a path in this project.
+   *   `.vsts-ci/windows/*.yml`    A GLOB. MEASURED: 1 refuted edge (powershell's azure-pipelines
+   *                               path filter). A glob names a SET, so no single candidate can be
+   *                               the thing it names.
+   *
+   * Everything else is admissible, including a bare `apt.yml` and a `subdir/x.yaml`.
+   */
+  private static isLiteralPathSpelling(written: string, quoted = false): boolean {
+    if (written.length === 0) return false
+    if (written.includes("://")) return false
+    // A template, whitespace, or a GLOB: `{{ x }}`, `${x}`, ansible's `name=a b` free-form,
+    // and `dir/*.yml`, which names a set rather than a file.
+    //
+    // THE WHITESPACE REFUSAL IS FOR THE UNQUOTED SPELLING ONLY. Quoting is the source's own
+    // evidence that the value is one literal string, and hasura-engine's metadata testdata relies
+    // on it (`tables: !include "s 3/tables/tables.yaml"` names
+    // `metadata/databases/s 3/tables/tables.yaml`, which the repository HAS). The template, glob,
+    // URI-scheme and `key=` refusals are unchanged and unquoted-by-construction, so a quoted
+    // free-form string is still refused.
+    if (/[{}$*?]/.test(written)) return false
+    if (!quoted && /\s/.test(written)) return false
+    // A URI SCHEME at the start (`package:`, `dart:`, `http:`) is not a path. Anchored, and the
+    // colon must arrive before any separator, so `sub/dir:x.yml` is untouched.
+    if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(written)) return false
+    // A free-form `key=value` parameter list is not a path, whatever its tail looks like.
+    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(written)) return false
+    return true
+  }
+
+  /**
+   * THE CLAIM A KEY-SPELLING INCLUDE CARRIES — and this is the fix for the 107 refuted external
+   * claims the whole-population run found.
+   *
+   * `- import_tasks: apt.yml` names a FILE in this project. Until this helper existed the edge
+   * carried `isExternal: true` and nothing else, so the arbiter asked its OWNER question —
+   * `targetOwner("apt.yml")` is `apt` — and ansible publishes a module named `apt`, so the claim
+   * "this is outside the corpus" was judged FALSE and the edge was counted against the lane. The
+   * refutation was an artefact of asking an owner question about a path.
+   *
+   * MEASURED over the whole admitted ansible population (2,082 files, 891 include edges, the
+   * key attributed from each edge's own `line_number`): 96 of the 107 refuted edges come from
+   * `include_tasks`/`import_tasks` and name a file — 95 of them a file the project HAS. This
+   * helper makes the claim the evidence can actually answer, and the arbiter verifies those 95
+   * against the project's own file list instead of refuting them against a module's name.
+   *
+   * TWO REFUSALS, each measured rather than assumed:
+   *
+   *   1. A ROLE KEY gets no file claim (`ROLE_IMPORT_KEYS`). `tasks_from: canary2.yml` is
+   *      relative to a role directory this analyzer does not resolve, so a claim that THIS
+   *      file's directory holds it would be refuted — 10 edges measured.
+   *   2. A TARGET THAT IS NOT SPELLED AS AN ADMITTED SPELLING gets no file claim. The arbiter's
+   *      file list is the lane's admitted population, `.yaml`/`.yml` only, so a claim about any
+   *      other suffix could never be confirmed and would be refuted by the claim rather than by
+   *      the project. `isLiteralPathSpelling` also refuses templates and free-form spellings.
+   *
+   * When no candidate can be stated the edge keeps the weaker `isExternal` marker it had — the
+   * pre-existing behaviour, unchanged, so this fix can only ADD verifiable claims, never remove
+   * an edge or silently re-label one.
+   */
+  /**
+   * THE ENTRY FILE A ROLE IMPORT RESOLVES TO — and the reason the lane can stop emitting a bare
+   * role name, which is never a symbol.
+   *
+   * Ansible resolves `include_role`/`import_role` `name: X` against a SEARCH PATH: for each
+   * directory from the importing file's own directory up to the project root, `roles/X`. The entry
+   * file of the resolved role is its `tasks/main.yml`. The lane's `imports` relation is file to
+   * file, so that file — not the role's NAME — is what an edge can point at, and pointing at it is
+   * what makes the edge checkable: a bare `X` collides with every mapping key spelled `X` (measured:
+   * `a` 29 declarations, `include_role` 123, `no_log` 42), so the arbiter had no disposition for it
+   * other than AMBIGUOUS.
+   *
+   * RETURNS NULL UNLESS THE FILE IS ACTUALLY THERE, checked with the same `statSync` evidence rule
+   * every other file claim in this lane uses. That ordering is the whole safety property: a role
+   * whose entry file cannot be found keeps the pre-existing bare-name marker, so the change can
+   * only ADD a verifiable claim and can never manufacture a refutation.
+   *
+   * The candidate is normalised segment by segment so that a role spelled with `..` cannot escape
+   * the project (`include_role: name=../x` occurs in ansible), and a candidate that escapes returns
+   * null rather than a path the arbiter's file list could never hold.
+   */
+  private roleEntryTarget(name: string, ctx: YamlContext): string | null {
+    if (typeof name !== "string" || name.length === 0) return null
+    const rel = RealYamlAnalyzer.projectRelativePath(ctx.filePath, ctx.projectRoot)
+    if (rel === null) return null
+    const parts = rel.split("/")
+    parts.pop()
+    for (let depth = parts.length; depth >= 0; depth--) {
+      const base = parts.slice(0, depth).join("/")
+      const raw = (base === "" ? "" : base + "/") + "roles/" + name + "/tasks/main.yml"
+      const segs: string[] = []
+      let escaped = false
+      for (const seg of raw.split("/")) {
+        if (seg === "" || seg === ".") continue
+        if (seg === "..") {
+          if (segs.length === 0) { escaped = true; break }
+          segs.pop()
+          continue
+        }
+        segs.push(seg)
+      }
+      if (escaped) continue
+      const cand = segs.join("/")
+      if (cand.length === 0) continue
+      if (this.projectCarriesFile(ctx, [cand])) return cand
+    }
+    return null
+  }
+
+  private keywordIncludeClaim(written: string, ctx: YamlContext, key: string): Record<string, unknown> {
+    if (ROLE_IMPORT_KEYS.has(key)) return { isExternal: true }
+    if (!/\.ya?ml$/i.test(written)) return { isExternal: true }
+    const candidates = this.relativePathCandidates(written, ctx)
+    // EVIDENCE BEFORE CLAIM. `keywordIncludeClaim` used to state the file claim for every
+    // admitted-looking spelling; where the project does not carry the file, that claim was
+    // refuted by the arbiter — and for the 7 residual edges (ansible's negative include
+    // fixtures, a collection playbook installed at run time, riverpod's missing
+    // `packages/analysis_options.yaml`) the refutation was true but the CLAIM was unsupported:
+    // the analyzer had no evidence the file was there. Confirmed candidates keep the claim (95
+    // of ansible's 107 refuted edges were of exactly this kind and stay VERIFIED); the rest fall
+    // back to `isExternal`.
+    return candidates !== null && this.projectCarriesFile(ctx, candidates)
+      ? { importProjectFile: candidates }
+      : { isExternal: true }
+  }
+
+  /**
+   * THE CLAIM A `uses:` TARGET CARRIES, decided by what the target actually names.
+   *
+   * Three shapes, measured over this corpus's workflow files rather than assumed: **7,265**
+   * remote actions (`actions/checkout@v6`, `r-lib/actions/setup-r@v2`), **501** local ones
+   * (`./ci-actions/.github/actions/setup` — a DIRECTORY), and **13** container images
+   * (`docker://hashicorp/terraform:1.9`).
+   *
+   *   docker://…            a container image                -> the REFERENCE claim (spelling)
+   *   ./… or ../…           a path in THIS project           -> the FILE claim (the project's list)
+   *   anything else         a pinned remote action reference -> the REFERENCE claim (spelling)
+   *
+   * The alternative for the first and third is what the lane did until now — `isExternal: true` on
+   * a target with no identifier-shaped owner — which the gate reads as UNVERIFIABLE, blocks a PASS
+   * on, and can say nothing else about. The alternative for the second is worse: it was marked NOT
+   * external and resolved to nothing, so a local action read as a broken edge. All three now carry
+   * a claim the arbiter can check, and a claim it can refute.
+   *
+   * When no project root is known the local shape keeps `isExternal: false` — the pre-existing
+   * behaviour — because a candidate set without a root would be a fabrication, and the file claim
+   * with no evidence is exactly what the rule's control refuses.
+   *
+   * AND THE LOCAL SHAPE CLAIMS THE MANIFEST, NOT THE DIRECTORY, confirmed to exist. Measured over
+   * the whole corpus: 11 residual refutations were local directories this project cannot be asked
+   * about — two of them checked out at run time by an earlier step (`path: security-scanner`,
+   * `path: ci-actions`), one holding `.ql`/`.md` and no yaml at all. A directory claim can only be
+   * admitted by prefix over the admitted YAML population, so it was a claim with no possible
+   * evidence. A `uses: ./dir` depends on the action's definition file (`action.yml`/`action.yaml`
+   * by GitHub's rule), which is a statement the arbiter's file list can actually answer. Where
+   * that manifest is absent the edge states `isExternal: true` — on a path-shaped target that is
+   * `externalUnverified`, not a refutation.
+   */
+  /**
+   * `$/…` IS A ROOT-ANCHORED PATH, the spelling one repository in the corpus uses where every
+   * other repository writes `./…`.
+   *
+   * WHAT WAS WRONG. A `uses:` value that is not `docker://` and does not begin `./`/`../` fell
+   * through to `actionUseClaim`'s last line, `return { remoteRef: true }` — a claim that `$/` is a
+   * GitHub OWNER and `.github` the repository under it. `$` is not an owner, and the target is not
+   * an action reference at all: it is a path in the checked-out tree. So the edge asserted an
+   * external remote action that does not exist, was read as `externalUnverified`, and the lane's
+   * `ext?` population carried it as unnamed. MEASURED over the whole corpus, this was **18 edges**, all
+   * of them terragrunt's (`uses: $/.github/actions/go-cache-restore` 15, `…/go-cache-save` 3).
+   *
+   * WHY THE REFERENT IS SUPPORTABLE, and the two places it could have been a ruling instead:
+   * `terragrunt/.github/actions/go-cache-restore/action.yml` and `…/go-cache-save/action.yml` are
+   * FILES THE PROJECT CARRIES, each a composite action whose name is exactly the last segment of
+   * the `uses:` value, and no `$/.github` directory exists anywhere in the tree. The rewrite is
+   * unconditional, so it manufactures nothing: a `$/…` action with no manifest in the project
+   * still lands in `actionUseClaim`'s local branch and falls back to `isExternal: true`, which is
+   * the weaker claim it carried before — the same refusal the `./…` spelling already has.
+   *
+   * WHAT IT DOES NOT DO. It does not read `$` as a GitHub expression, does not touch a target that
+   * merely CONTAINS `$/`, and does not apply to any other key: over the whole admitted population a
+   * `$/` spelling occurs only in a step-level `uses:`. Null means "not a root-anchored spelling", so
+   * a caller keeps the written text.
+   */
+  private static rootAnchoredActionPath(action: string): string | null {
+    return action.startsWith("$/") ? `./${action.slice(2)}` : null
+  }
+
+  private actionUseClaim(action: string, ctx: YamlContext, extraProjectPaths: string[] = []): Record<string, unknown> {
+    if (action.startsWith("docker://")) return { remoteRef: true }
+    if (action.startsWith("./") || action.startsWith("../")) {
+      const candidates = this.relativePathCandidates(action, ctx)
+      if (candidates === null) return { isExternal: false }
+      // A CHECKOUT OF THE CALLING REPOSITORY PUTS THE PROJECT'S OWN TREE AT `path:`, so a
+      // `./D/<rest>` target IS the project path `<rest>` — a candidate the literal spelling cannot
+      // produce. It is checked with the same manifest rule as every other candidate, and only where
+      // a rooted candidate set already exists, so the fixture harness sees the pre-existing marker
+      // and the gate sees the file claim. See `materializedActionSource`.
+      const all = extraProjectPaths.length > 0 ? [...extraProjectPaths, ...candidates] : candidates
+      const manifest = this.localActionManifest(ctx, all)
+      if (manifest !== null) return { importProjectFile: manifest }
+      // A STEP MAY CALL A WORKFLOW **FILE**, not only an action DIRECTORY.
+      //
+      // GitHub Actions admits `steps[].uses: ./.github/workflows/x.yml`, and the target is a
+      // reusable workflow (`on: workflow_call`) declared in a file of THIS project. The manifest
+      // lookup above cannot see it — there is no `action.yml` inside a file — so the edge fell
+      // through to `isExternal: true`, a false statement about a file the project has: the same
+      // defect class Round 5 fixed for the 208 job-level calls, in a spelling that fix did not
+      // cover. MEASURED over the whole admitted population, and named by the enumerator's own
+      // CLAIMABLE EDGES section, this is 1 edge:
+      //
+      //     "./.github/workflows/test-failure-notification.yml"
+      //       @ nomad/.github/workflows/test-scheduler-prop.yml:45
+      //       the project carries it, and the file declares `on: workflow_call`
+      //
+      // The claim is the FILE, and it is gated by the same two rules every other file claim in this
+      // lane uses: the spelling has to be an admitted spelling (`.yaml`/`.yml`, so the arbiter could
+      // ever confirm it — `keywordIncludeClaim`'s rule) and `statSync` has to find the candidate.
+      // A step-level `uses:` of a workflow file this project does NOT carry keeps `isExternal`,
+      // which is the honest outcome and keeps this change from manufacturing a refutation.
+      if (/\.ya?ml$/i.test(action) && this.projectCarriesFile(ctx, all)) {
+        return { importProjectFile: all }
+      }
+      return { isExternal: true }
+    }
+    return { remoteRef: true }
+  }
+
+  /**
+   * A document's IDENTITY, and it is scoped to the file.
+   *
+   * ## The defect this fixes
+   *
+   * The identity was the filesystem BASENAME, and a basename is not unique in a project.
+   * Measured on a 60-file stride of the yaml corpus: `hostports0.yaml` occurs **156 times**
+   * in one repository (Kubernetes' pod-security-admission testdata, once per API version
+   * and once per pass directory) and `Chart.yaml` **243 times** across the helm charts.
+   * Every member of every one of those documents was published under the same name —
+   * `hostports0.spec.containers[0]` had 156 declarations — so the `contains` edge asserting
+   * that containment could not be walked in either direction: the shared resolver resolves a
+   * bare name only under `HAVING COUNT(*) = 1`, and an exact-key match has to be unique too.
+   * The incoming gate read **78 ambiguous edges of 1,512** on that stride.
+   *
+   * ## The rule, and why it is the only sound one
+   *
+   * A file-scoped symbol's identity must contain the file. The basename is the ONE part of
+   * the path that is not unique; the project-relative directory chain is the part that is,
+   * and it is stable across machines in a way the absolute path is not. The BASENAME STAYS
+   * THE LAST SEGMENT, which is what keeps the leaf of every member path (`...v1.37.fail` +
+   * `hostports0` -> `hostports0`) unchanged for the store's leaf matching.
+   *
+   * ## Price, measured before the code was written
+   *
+   * `script/m14/incoming-gate.ts yaml yaml 60` with the identity scoped: **ambiguous 78 -> 0,
+   * unresolved 0 -> 0, resolved 1,432 -> 1,510** (+78, i.e. every previously-ambiguous edge
+   * now resolves and NO edge that resolved before stopped resolving). That last clause is the
+   * one the fleet worklist asked to be checked rather than assumed: it is the evidence that
+   * nothing in this corpus spells a document by its basename, so scoping the identity cannot
+   * break an incoming reference.
+   *
+   * ## What it does NOT do
+   *
+   * It does not make the BASENAME key unique — `hostports0` is still published by 156 files,
+   * because the basename is the readable name a human uses. It makes the QUALIFIED PATH
+   * unique, and that path is what `contains` emits and what strategy 1 matches exactly.
+   */
+  private documentName(filePath: string, documentIndex: number, projectRoot?: string): string {
     const slash = filePath.lastIndexOf("/")
     const base = slash >= 0 ? filePath.slice(slash + 1) : filePath
     let stem = base
@@ -2257,7 +3668,9 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     else if (lower.endsWith(".yaml")) stem = base.slice(0, -5)
     else if (lower.endsWith(".yml")) stem = base.slice(0, -4)
     stem = stem.trim() || "document"
-    return documentIndex === 1 ? stem : `${stem}#${documentIndex}`
+    const scope = RealYamlAnalyzer.documentDirScope(filePath, projectRoot)
+    const scoped = scope.length > 0 ? `${scope}.${stem}` : stem
+    return documentIndex === 1 ? scoped : `${scoped}#${documentIndex}`
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {

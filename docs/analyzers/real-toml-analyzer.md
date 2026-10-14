@@ -14,12 +14,26 @@
 > **Pass 2 — the adversarial pass.** Every pass-1 number was re-measured from a
 > cold `parseFile` and every one reproduced. The arbiter
 > (`script/m14/ontology-coverage-gate.ts`) was run against this lane's ruling
-> table for the first time and prints **`references` FALSIFIED at 167
+> table for the first time and printed **`references` FALSIFIED at 167
 > occurrences** — reported, adjudicated and left to the owner in "Pass 2". One
 > pass-1 sentence is **withdrawn** (a key lost with an `ERROR` region: measured 0,
 > not 2 in 2 files), one limitation is **added** (75.5% of edge target names are
 > published by 2 or more files of their own repository), and two probes of this
 > lane's own were wrong before they were right.
+>
+> **Pass 3 — M60 (#919), and the FALSIFIED row turned out to be a MEASUREMENT
+> artifact.** Two of the things above changed, and both change what this page may
+> claim. First, the FALSIFIED verdict came from a walk checkpoint that had settled
+> every file in an EARLIER run and measured none in the one being reported, so the
+> table was computed from 0 of 1,486 files and could only read NOT EMITTED; the gate
+> says so in its own output (`>>> THE TABLE BELOW IS ABOUT 0 OF 1486 FILES`) and
+> then publishes the verdict anyway. Re-run with `--fresh`, the lane emits **167
+> `references` edges across 5 files**, the row reads **EMITTED**, and the arbiter
+> **exits 0** (`emitted 2/10, ruled-sound 8, FALSIFIED 0`). `fd41b19d6` had
+> implemented the adjudication's rules already. Second, those 167 edges were
+> anchored at a symbol name that does not exist — see "The source of a
+> `references` edge was not a node". Both are corrected below rather than left to
+> contradict the gate.
 
 ## Language
 
@@ -123,7 +137,7 @@ Harness: `validation/m14/fixtures/toml/census.ts`.
 | `calls` | **RULED** | 0 | **A: grammar-inventory.** The corpus yields **20** distinct node types (§Language) and none is a function definition, method, or call. **Overturn:** a node type expressing a callable appearing in the inventory — `function_definition`, `call_expression`, `lambda`, `macro_invocation` |
 | `uses` | **RULED** | 0 | **A** (no value-evaluating node type) **+ B: parse-tree-count**, two probes. (i) A key named one of `uses, using, interpolate, interpolation, template, expr`: **1** occurrence in 1,141 files — `proxicall/supabase/config.toml:137`, `template = "Your code is {{ .Code }} ."`, a Go template carried as a string value. (ii) A `string` value containing an interpolation marker (`${`, `{{`, `%(`, `$(`): **366** occurrences in 155 files, and every one inspected is a *template for another tool* rendered before TOML ever reads it — `redwood/__fixtures__/.../redwood.toml:10` `"${WEB_DEV_PORT:8910}"` is a JS template, `traefik/integration/fixtures/acme/acme_base.toml:15` is Go's `{{range}}`. **Overturn:** the grammar producing an interpolation node, or a corpus file whose consumer reads a TOML value as already-interpolated |
 | `imports` | **RULED** | 0 | **B: parse-tree-count**, two probes. (i) A value naming a file that EXISTS on disk relative to the manifest: **216** hits in 68 files, broken out by target extension — `.rs` 146, `.md` 24, no-extension 12, `.txt` 10, **`.toml` 7**, `.py` 5, and 12 more of one each. (ii) The decisive sub-probe, a value naming another **`.toml`** file that exists: **7** hits in 4 files — `cabal/.typos-srcs.toml:6,7` (`extend-exclude` listing typos' own config files), `cargo/triagebot.toml:174,176,178` and `ghostty/typos.toml`, `pb-grpc/examples/python/ruff.toml`. Every one is a **list of files a tool is told about**, which is the shape the arbiter's own header warns about ("a probe that matches a SHAPE rather than a ROLE produces a number, and the number is worth nothing"). **Overturn:** a `.toml` value that a TOML parser is documented to splice into the document |
-| `references` | **RULED** | 0 | **A** (no reference node type) **+ B**, two probes. (i) A key named one of `$ref, ref, refs, reference, references, anchor, alias, target, points_to, link`: **169** hits in **6** files, broken out — `ref` 167, `target` 2. 167 of the 167 `ref` hits are `version.ref = "<name>"` in five Gradle `libs.versions.toml` version catalogues, and the 2 `target` hits are `target = "cgroup1/stats/metrics.pb.txt"` in `docker/vendor/.../Protobuild.toml`. (ii) Cargo's workspace inheritance, `x.workspace = true`: **1,269** hits in 138 files. **See "The two measurements `references` is most likely to be argued about"** — these are real dependencies and they are deliberately not emitted, with the reason stated there. **Overturn:** a TOML-v1.0.0 clause assigning meaning to a key whose value names another key |
+| `references` | **EMITTED** (M60 #919) | **167** | **A** (no reference node type) **+ B**, two probes. (i) A key named one of `$ref, ref, refs, reference, references, anchor, alias, target, points_to, link`: **169** hits in **6** files, broken out — `ref` 167, `target` 2. 167 of the 167 `ref` hits are `version.ref = "<name>"` in five Gradle `libs.versions.toml` version catalogues, and the 2 `target` hits are `target = "cgroup1/stats/metrics.pb.txt"` in `docker/vendor/.../Protobuild.toml`. (ii) Cargo's workspace inheritance, `x.workspace = true`: **1,269** hits in 138 files. **See "The two measurements `references` is most likely to be argued about"** for the adjudication and "The source of a `references` edge was not a node" for what the emission cost. The Gradle half is emitted (167 edges, both endpoints binding); the Cargo half remains unemitted. **Overturn:** a TOML-v1.0.0 clause assigning meaning to a key whose value names another key |
 | `exports` | **RULED** | 0 | **A** (no module surface) **+ B**, two probes. (i) A key named one of `export, exports, expose, exposed, pub, public, publish, main, module, mod, entrypoint`: **144** hits in 65 files — `module` 71, `publish` 49, `main` 16, `public` 6, `exposed` 2. (ii) A `[lib]`/`[[bin]]`/`[[bench]]`/`[[test]]`/`[[example]]` section carrying `name`, `path` or `crate-type`: **173** hits in 90 files. The `publish` hits are `publish = false`, a crates.io flag; the build-target hits name what cargo *builds*, and a crate's public surface is its Rust source, not its `Cargo.toml`. **Overturn:** a construct that publishes a name to a consumer of the document |
 | `extends` | **RULED** | 0 | **A** (no type declaration, so nothing to extend) **+ B**. A key named one of `extends, extend, extends_from, inherits_from, base, parent, superclass, derived_from, template`: **13** hits in 12 files — `base` 11, `extend` 1, `template` 1. All 11 `base` hits are `base = "my_base"` in `cargo/tests/testsuite/cargo_add/*/Cargo.toml`, where `--base` names a **git branch baseline** for `cargo add`, not a supertype. **Overturn:** a header or key whose declaration says "this entity IS-A that one" |
 | `implements` | **RULED** | 0 | **A** (no supertype clause, no interface node) **+ B**. A key named one of `implements, implement, implements_from, iface, interface, contracts`: **0** occurrences in 1,141 files. **Overturn:** a non-zero count |
@@ -543,7 +557,7 @@ the oracle needs the same second pass (§Report to the supervisor).
 | typecheck | clean |
 | honesty gate | **22 failures, none attributable to pass 2** — measured with this lane's changes stashed and the `HONESTY-GATE FAIL` lists byte-identical (22 = 22, `diff` empty): 11 banned terms in other lanes' files, 10 F1–F9 evidence-freshness entries, the freshness rule's own discrimination check, and F7's `analyzer-hygiene-cpp` / `analyzer-hygiene-elixir`. The count is 20 while a regenerated `M14.0.TOML-CENSUS.json` is on disk and 22 with the committed one — report item 6 |
 | M14 pass-2 probes | `pass2-probes.ts` — edge↔owner agreement 19,087/19,087, repo-scope resolution 24.5% unique / 75.5% ambiguous, role probes for `references`/`imports`/`overrides`/`exports`, DERIVATION findings 0 |
-| arbiter (proof run) | `emitted 1/10, ruled-sound 8, FALSIFIED 1, ruled-without-justification 0`, exit 1 on `references` — the run is in "Pass 2" above and in `script/m14/toml-ruled.ts`'s header |
+| arbiter (proof run) | pass 2, as recorded: `emitted 1/10, ruled-sound 8, FALSIFIED 1`, exit 1 on `references`. **Re-measured with `--fresh` (M60 #919): `emitted 2/10, ruled-sound 8, FALSIFIED 0, ruled-without-justification 0`, exit 0** — the pass-2 run had settled every file in an earlier run and measured none, so its table was computed from 0 of 1,486 files |
 
 ### Two probes were wrong before they were right
 
@@ -828,12 +842,442 @@ one are the role probes below, and what they found is not an edge this lane emit
 
 ### DERIVATION findings: **0**
 
-Measured, not asserted: the analyzer emits exactly one relationship type
-(`contains`, 19,087 edges over 1,141 files) and `deriveTomlEdges` in
-`script/m14/differential.ts` derives exactly one label (`contains`, from its
-`emit` helper, which is the only `label:` literal in the function). The
-difference of the two sets is **0**, so nothing this lane stores is compared
-against nothing. Computed by `pass2-probes.ts`, which prints both sets.
+Measured, not asserted. **As of M60 (#919) the analyzer emits two relationship
+types and the oracle derives both**, so the difference of the two sets is **0** and
+nothing this lane stores is compared against nothing:
+
+| type | analyzer emits | oracle derives | label compared |
+|---|---|---|---|
+| `contains` | 19,087 edges over 1,141 files | yes, from its `emit` helper | yes |
+| `references` | 167 edges over 5 files | yes, M60 #919 — a complete final-segment inventory requiring a unique declaration | yes |
+
+The `references` row was the lane's single DERIVATION finding before #919: emitted,
+stored, and compared against nothing. `rel-type-coverage-gate.ts --langs=toml` now
+reports CHECK 1 **clean**. Computed by `pass2-probes.ts`, which prints both sets.
+
+### Is the denominator 2 or 10? An applicability audit that refuses to assume
+
+The arbiter prints `emitted 2/10 ruled-sound 8`. Read as a score that says a fifth
+of the work is done, which is the opposite of what the measurement means — and
+`ONTOLOGY-WORKSTREAM-STATE.md:604` already caught that shape once ("Reporting
+`1/10` misrepresents finished work as broken work") and then watched the same
+instrument keep printing the raw count. So the denominator is the question this
+section answers.
+
+`script/m14/toml-applicability-audit.ts` answers it WITHOUT re-running the ruling
+table's own eight probes, because re-running an instrument on its own question
+cannot refute that instrument. It takes a whole-corpus **union inventory** — every
+node type, every key name, every value kind, every declaration — and asks, once,
+what TOML's grammar contains in total. It carries a **positive control**: the
+Gradle alias is known to occur 167 times on this corpus, so if the same walk does
+not find it the audit refuses to publish a verdict and exits 2. A silent instrument
+and a clean result are otherwise indistinguishable, and this lane's own header
+records a probe that read 0 against a construct that occurs 167 times.
+
+```
+$ npx tsx script/m14/toml-applicability-audit.ts --files=2000
+corpus: 1483 tracked .toml files · 1483 measured · 0 excluded
+POSITIVE CONTROL FIRED: 167 version-catalogue aliases across 5 files (>= 20 required)
+
+  types in the ontology           : 10
+  EMITTED (construct exists)      : 2  [contains, references]
+  RULED, verified by MEASUREMENT  : 5  [calls, uses, extends, implements, instantiates]
+  RULED, sound but ARGUABLE       : 0
+  RULED, UNVERIFIED               : 3  [imports, exports, overrides]
+
+  APPLICABLE (measured)           : 7 of 10
+  REPORTED : 7/7 APPLICABLE, MEASURED
+             NOT 2/10 — that form scores finished work as 20%
+```
+
+**The adjudication, after the audit was run at full corpus.** The first run left
+three rulings unverified. Two were resolved by measurement and one did not:
+
+```
+  types in the ontology           : 10
+  EMITTED and implemented         : 2  [contains, references]
+  APPLICABLE, NOT implemented     : 1  [imports]
+  RULED, verified by MEASUREMENT  : 6  [calls, uses, extends, implements, overrides, instantiates]
+  RULED, UNVERIFIED               : 1  [exports]
+                                    2+1+6+1 = 10 of 10
+
+  APPLICABLE = 3 of 10   (types whose construct EXISTS in the language)
+  IMPLEMENTED = 2/3 of those — the figure that is actually a completion score
+```
+
+**`imports` IS APPLICABLE, and the ruling table is wrong on that row.** The ruling
+dismissed 216 file-valued strings as "lists a tool is told about". Asked by ROLE
+instead of by name-shape — does a key that DECLARES A DEPENDENCY point at a path
+reaching another real manifest? — the corpus answers **331 dependency-shaped
+`path = "…"` sites, of which 317 resolve to a directory holding a
+`Cargo.toml` / `Project.toml`: 96% resolution.** The shapes are `[dependencies]`,
+`dev-dependencies`, `build-dependencies`, `workspace.dependencies`, Julia's
+`[sources]`, and `[patch.crates-io]`. A path dependency says the manifest cannot be
+built without another unit, which is an import in the plainest sense. It is written
+as an ordinary inline table, which is exactly why instrument A could not see it and
+why the ruling's own dismissal does not reach it. This is now the lane's cheapest
+remaining win: the construct is measured, the resolution is 96%, and it is a
+cross-document edge that makes toml's incoming side answer "what does this manifest
+depend on".
+
+**`overrides` is SOUND, and it took four corrections to establish.** The redefinition
+probe first reported **147** scalar keys declared twice in one document. Each was a
+scoping defect in the probe, not a population in the corpus:
+
+1. counted by FINAL SEGMENT rather than full PATH, so `Documenter` under `[deps]`
+   and again under `[weakdeps]` collapsed into one (147 → 38);
+2. inline-table keys were not scoped to their inline table, so `guava.module` and
+   `jetty.module` counted as one declaration (38 → 20);
+3. the count was SUMMED ACROSS DOCUMENTS, so `project.name` declared once in eleven
+   files read as eleven redefinitions of one (20 → 4);
+4. an ARRAY of inline tables (`authors = [{name = …}]`) was not scoped either (4 → 0).
+
+The settled number is **0 scalar redefinitions**, **1 repeated plain table header**
+corpus-wide, and **110 repeated array-of-tables headers, which TOML appends to** so
+nothing is replaced. The honest ground for this ruling is that size, not the reading.
+An earlier draft of the audit also claimed the parser flags that one repeated header
+as an ERROR; it does not, and that claim is withdrawn rather than kept because it
+sounded like evidence.
+
+**`exports` stays UNVERIFIED, and a claim made about it here was wrong.** An earlier
+draft said "the json lane reached the opposite conclusion". It does not:
+`json-ruled.ts` holds ONE entry (`instantiates`) and no `exports` ruling at all.
+json does not rule on `exports`, it **implements** it, at
+`src/ast/real-json-analyzer.ts:905`. So the two lanes took opposite branches rather
+than publishing contradictory reasoning, and neither has published a measurement
+that settles which branch is right — json's own `exports` is additionally
+un-audited (it sits in json's 6 un-audited types). On this type the config lanes are
+collectively unadjudicated, and toml's `exports` ruling is a judgement (a crate's
+public surface is its Rust source, not its manifest) that no measurement supports.
+
+**The right way to state this lane's state is three numbers, not one.**
+
+- **APPLICABLE 3 of 10** — contains, references, imports. A denominator of 10 scores
+  six measured absences as missing work.
+- **IMPLEMENTED 2 of those 3** — the actual completion score. `imports` is measured
+  to exist and is not emitted.
+- **RULED 6 by measurement, 1 open.**
+
+And applicability is still not coverage: `references` fires on the Gradle catalogue
+only, while the Cargo workspace-inheritance population (`x.workspace = true`, 1,269
+sites) is the same type and is also unimplemented. Even "2/3 implemented" overstates
+how much of each applicable type is covered.
+
+### `imports` — a path dependency, and the two things that were blocking it
+
+The applicability audit overturned this lane's own ruling that `imports` is
+inapplicable, so the type is now emitted. Two questions had to be answered before
+the code was written, and both were answered by measurement rather than assumption.
+
+**What is the target?** Not a resolved symbol — that is not available. A document's
+module symbol is its **file stem**, and the corpus holds **744 files named
+`Cargo.toml`** publishing the module `Cargo`, so **0 of 318** dependency sites
+could resolve to a unique symbol. The store's qualified-name strategy does not
+rescue it either: `qualified_name` is a *within-document* path (`parent.child`) and
+the pass dedups it project-wide with `MIN(id)`, so 744 candidates would resolve to
+one arbitrary document. The target is therefore **the path as written**, which
+matches nothing, and the store keeps the name with a NULL id — exactly the shape
+`traceCallees`'s unresolved arm exists to read. Verified end to end against the real
+schema before any of it was written: the row comes back as `ext:../b/Cargo.toml`.
+
+**What is the edge, and what is not?** Six sections declare a dependency
+(`dependencies`, `dev-dependencies`, `build-dependencies`, `workspace.dependencies`,
+Julia's `[sources]`, `[patch.crates-io]`). Everything else is excluded, and the
+exclusions are the interesting half:
+
+- `bin` and `lib` name **this crate's own source** (`src/main.rs`), so an edge
+  there would make every crate depend on itself.
+- a `path` key outside a dependency section is ordinary data — so the exclusion is
+  by **SECTION**, not by key name. Keying on the name is what made `clippy.toml`
+  report `path×15` redefinitions before its array-of-inline-tables was scoped.
+- an array of inline tables is a **list**, however its elements are spelled.
+
+**One defect the work surfaced that the audit alone could not.** The analyzer
+emitted all 331 sites and `parseFile` delivered only those whose leaf happened to
+survive the universal identifier sanitizer: `extractLeaf("..")` splits on `.` to
+`["", "", ""]`, whose last segment is empty, so `leaf.length < 1` fired. The `..`
+and `../..` forms are most of a Julia `[sources]` section, so they were deleted
+silently while `crates/build-rs` survived — and the analyzer reported having emitted
+them. This is the same defect bash recorded for its own `imports` (M14 #277), and
+the fix is the same narrowly-scoped exemption: two languages, two path-shaped labels,
+a target over 200 characters or containing a newline still refused, so a fabricated
+`calls -> ../x` cannot be laundered through it.
+
+**What the fixture does NOT prove, established by mutation rather than assumed.**
+Removing the toml exemption leaves every expectation in `path-dependencies.toml`
+**green**: the sanitizer lives in `pool-worker.ts`, and although toml is on this
+runner's `ASTEngine.parseFile` production-parity list, `engine.ts` does not apply
+that filter. This is the known-zeros gap bash's note describes, and it is recorded
+in the fixture header rather than left for the next reader to assume coverage. The
+sanitizer fix is verified separately by calling pool-worker's own
+`filterNoiseRelationships` — the function real indexing runs — over the analyzer's
+output: **4/4** on the fixture, **1/1** on a Julia `[sources]` document, **13/13** on
+cargo's root manifest.
+
+Two analyzer mutants die on the fixture: removing the section exclusion (caught by
+`bin.main`, which would make the crate depend on itself) and reading the inner key
+as the outer one (the mistake the audit's first version made, which reported 0 on a
+331-site population).
+
+### Cargo workspace inheritance — APPLICABLE, PROVEN, and deliberately NOT emitted
+
+`x.workspace = true` is the largest unimplemented population in this lane, and it is
+a `references` edge. It was researched to a decision rather than estimated:
+
+| measurement | figure |
+|---|---|
+| inheritance sites | **1,267** |
+| a workspace root manifest is findable by walking up | 1,267 (100%) |
+| the root actually declares that inherited key | **949** (75%) |
+| the target binds to **exactly one** symbol at project scope | **304** |
+| the target is declared by 2+ manifests (ambiguous) | **645** |
+
+Two spellings, and the difference decides whether a site is found at all:
+
+```toml
+[package]  edition.workspace = true         -> workspace.package.edition
+[dependencies] serde = { workspace = true } -> workspace.dependencies.serde
+```
+
+The bare form names its entry by the key that **owns** the inline table. Reading it
+as the key itself resolves every such site to `workspace.dependencies` with an empty
+leaf — 747 of 1,267, and the entire dependency-inheritance population missed. Three
+successive wrong readings of the same construct are recorded in the research because
+each produced a confident, plausible, wrong number: 0 of 1,267 (wrong header),
+1,267 of 1,267 unresolvable (key folded into the section), and 747 with an empty leaf.
+
+**It was implemented, verified against the differential, and then NOT shipped** —
+because the end-to-end experiment found it unsafe.
+
+Analyzer emission plus an independent oracle derivation agreed perfectly (100%
+covered, 0 unexplained). Indexed for real, 250 inheritance edges stored: **219 bound,
+31 left external, 140 flagged `is_cross_file`**, and every resolved edge landed in
+the correct workspace root. That is the good case, and it is the case a smaller
+project always produces — with one root, every target is unique.
+
+So the experiment was built to produce the BAD case: **two independent workspaces in
+one project**, which is what the corpus actually contains (`workspace.package.edition`
+is declared by **14** manifests). Measured on that project, and on the 19-member
+cargo subset with a single root:
+
+| | cargo (one workspace) | two-root (adversarial) |
+|---|---|---|
+| **shipped** | 219 correct, **0 false**, 31 unbound | 2 correct, **2 false**, 4 unbound |
+| variant A — suffix match + uniqueness guard | 16 correct, 0 false, 234 unbound | 0 correct, 0 false |
+| **variant B — full-name match + uniqueness guard** | **219 correct, 0 false**, 31 unbound | **0 correct, 0 false** |
+
+**A CORRECTION TO THIS PAGE, TWICE.** An earlier draft of this section reported "4 of
+4 resolved edges crossed workspaces", then a second reading reported a 64% false-edge
+rate on the cargo subset. Both were wrong, and both were wrong in MY measurement, not
+in the product: the verdict test compared a target file's `relative_path` against a
+source file's, and a workspace root's `relative_path` is the bare string
+`Cargo.toml`. The correct test is whether the target's **directory** is an ancestor of
+the source's. With that, the single-workspace case is **219 correct and 0 false**, and
+the adversarial case is **2 false**. The defect is real and the fix below is measured;
+the numbers that overstated it were an artefact of a string-prefix test on a path that
+is not a prefix.
+
+**The fix, measured rather than argued — variant B.** Strategy 3 looks the target up
+by everything after the FIRST dot, so `workspace.package.edition` is matched against
+the name `package.edition` — which means something else entirely in a member manifest
+(its own `[package] edition`). The `workspace.` prefix is not decoration; it is the
+only thing separating the inherited value from the local one, and stripping it is what
+makes the match wrong. Variant B matches the **whole** name and binds only when the
+candidate set has exactly one member, which is what `_res_name_unique` already does
+(`HAVING COUNT(*) = 1`). It keeps the shipped recall exactly (219 of 219) in the case
+where the answer is knowable, and refuses all of it in the case where it is not — which
+is the correct answer there, because with two roots no single declaration is right.
+
+Variant A (uniqueness guard on the suffix match) is too conservative: stripping the
+qualifier first leaves almost nothing uniquely matchable, so it throws away 203 of 219
+correct edges to buy precision it did not need.
+
+**Why it is not emitted.** An edge pointing at the wrong declaration is the mistake
+this repository names as the expensive one — it turns a rename into wrong advice.
+There is no lane-local fix: the analyzer sees one file and cannot know whether a name
+is unique across the project, and the store's uniqueness rule is shared by all 48
+lanes. The honest state of this cell is therefore **APPLICABLE and UNIMPLEMENTED,
+blocked on a store decision** — which is a different claim from "not applicable", and
+the only reason it can be made at all is that the applicability was measured.
+
+**THE FIX PROPOSED IN THE PREVIOUS REVISION IS MEASURED HARMFUL AND IS WITHDRAWN.**
+
+Variant B was measured only against this construct (250 toml edges) and looked
+strictly better. Measured against the whole index it is destructive. Strategy 3's
+suffix match is not an accident — it is the documented reason the strategy exists:
+
+```
+edge says      ASTEngine.LanguageAnalyzer
+symbol holds   t0128_engine.ASTEngine.LanguageAnalyzer
+```
+
+so the comparison must be on a suffix of `qualified_name`. Blast radius on this
+repository's live index — 5,771 bound dotted relationships:
+
+| how the bound symbol matched | count | Variant B |
+|---|---|---|
+| exact `qualified_name` | 776 | keeps |
+| **suffix only** | **3,053** | **destroys** |
+| no `qualified_name` | 0 | — |
+
+**Variant B would unbind 3,053 of 5,771 dotted edges — 53% — across typescript, hcl,
+yaml and every other lane that emits a qualified dotted name.** Real examples of the
+shape it would destroy: `.NET -> corpus-mapping.languageFamilies..NET`,
+`.resx -> corpus-mapping.unknownExtensions..resx`. It bought precision on one
+construct by deleting correct edges in every other. Withdrawn.
+
+**THE ACTUAL CAUSE, NAMED PRECISELY.** The two adversarial false edges bind a symbol
+whose **full name matches exactly** (`workspace.package.edition`) — but that name is
+declared by BOTH roots, so no single declaration is right. The binder is the
+**eager insert-time resolve**, which reads a partially-populated database and attaches
+whatever was stored first. That is the defect Strategy 3's own comment names:
+
+> "the ONLY resolver for a dotted target was therefore the eager one at INSERT time,
+> which reads a partially-populated database and binds whatever file happened to be
+> stored first."
+
+**It is pre-existing and not caused by this emission** — it is simply the first thing
+to reach it with a target that is genuinely ambiguous at project scope. The correct
+fix is therefore narrow and already the right direction: make the eager resolve
+**refuse an ambiguous dotted target and let the pass decide**, because the pass reads
+the complete symbol set. The three resolution strategies (`_res_qsuffix` by suffix,
+`_res_qsuffix` by unique leaf, and Strategy 3c's ranking) all run after every symbol
+exists and can answer correctly; the eager one cannot.
+
+**SO THE EMISSION STAYS OUT** — not because the construct is inapplicable, and not
+because the analysis is wrong, but because shipping an emitter onto a resolver that is
+known to fabricate on ambiguous dotted targets would trade a documented gap for
+undocumented false edges. It returns the moment the eager resolve refuses ambiguity.
+
+**What this costs, stated plainly.** 1,267 applicable sites stay unimplemented, of
+which 949 name a key their workspace root really declares and 304 would bind to
+exactly one symbol. Every one of those numbers is measured and re-runnable.
+
+### The resolver defect, measured fleet-wide — and why it is not this lane's to fix
+
+The eager insert-time resolve is not a toml problem. Measured on this repository's
+own live index (190,213 symbols, 496,886 relationships), it is a fleet-wide precision
+defect that this emission is merely the first thing to expose.
+
+**The fabrication signature, and its defensible core.** A bound edge that points into
+another file while a symbol of the EXACT SAME NAME exists in the edge's own file is
+what a partially-populated insert-time read produces:
+
+| | count |
+|---|---|
+| cross-file dotted edges | 1,543 |
+| ignored an **exact-name** symbol in their OWN file | **882** |
+| ignored a suffix-only local symbol | 36 |
+
+882 is the defensible set — the target's name matched a local symbol exactly, so there
+was a strictly better candidate and it was not taken. Hand-checked examples:
+
+```
+validation/m14/issue-urls.json   target M14.0.F1  -> bound to validation/m14/results/M14.0.F1.json
+validation/m14/issue-urls.json   target M14.1-JVM.java -> bound to validation/m13/corpus-mapping.json
+```
+
+By source language: **json 853**, markdown 18, elixir 9, lua 4, css 4. This is cause A
+from `MASTER-HANDOFF.md:109-131` — a published name that is not an identifier — at
+fleet scale: a string value in one JSON file whose text happens to equal a key name in
+another.
+
+**The fix, and its measured blast radius.** "Prefer a same-file candidate over a
+cross-file one" is a strict improvement: it can only move an edge to a symbol that
+already satisfies the store's own match rule, and it never touches an edge with no such
+candidate.
+
+| | count |
+|---|---|
+| bound edges that HAVE a same-file exact-name candidate | 102,393 |
+| already pointed there (correct — untouched) | 70,034 |
+| **would repoint** | **32,359** (json 31,785, typescript 105, toml 27, hcl 19, tsx 17, markdown 17) |
+
+Of the repoints, **~56 correct a cross-language fabrication** (json→javascript→json 23,
+json→typescript→json 16, markdown→json→markdown 17) — an edge that crossed into
+another language and now stops doing so. The remaining ~32,300 are same-language moves
+to a locally-declared symbol of the same name.
+
+**AND THE NARROW FIX THIS LANE ACTUALLY NEEDS.** Same-file preference does not solve
+workspace inheritance: a member manifest declares no `workspace.package.edition`
+locally, so the edge still reaches across to one of the two roots. What that needs is
+narrower and stricter — **a dotted target whose candidate set has more than one member
+is ambiguous and must be left unbound**, leaving suffix matching completely untouched so
+the `ASTEngine.LanguageAnalyzer -> t0128_engine.ASTEngine.LanguageAnalyzer` shape keeps
+resolving exactly as it does today. That is the same refusal `_res_name_unique` already
+performs (`HAVING COUNT(*) = 1`) applied to the one strategy that lacks it.
+
+**Why none of it is applied here.** Both changes are to `src/ast/parallel-indexer.ts`,
+which another lane is actively working in — it landed `4403697ef` ("rank dotted targets
+in the pass the way the eager resolve did") and `b21f8d8ad` ("resolve dotted targets in
+the pass, so the store path no longer needs its per-edge ORDER BY") within this session.
+Strategy 3c buys **recall** (+3,257 edges) and I have now measured that it does **not**
+buy this **precision**: the two-root adversarial case still produces 2 false edges under
+it. A 32,359-edge change to shared resolution needs its owner's gates and its own lane's
+sign-off, and duplicating that work would be the collision this repository has already
+paid for once.
+
+**What it is worth.** 882 wrong edges today; 1,267 applicable toml sites waiting on the
+refusal half. The measurements above are re-runnable against the live index and are the
+evidence either change needs.
+
+### What was verified before any of it was called done
+
+Emission is the cheap half. These are the checks that had to pass, and two of them
+caught something real — one of them in the verification harness rather than the
+product.
+
+**Corpus-wide agreement, through the production path.** `parseFile` (not
+`analyze()`) over all **1,483** tracked `.toml` files:
+
+| type | edges | cross-check |
+|---|---|---|
+| `contains` | 25,000 | — |
+| `references` | **167** | matches the adjudication's 167 |
+| `imports` | **331** across 153 files | matches this audit's 331 exactly |
+
+**A 4-site disagreement, chased to its cause — in my own harness.** A verification
+script re-counting the same population through `parseFile` reported **141** where
+this audit said **145**. Its directory walk did not sort, so the deterministic
+stride selected a *different* 742 files; both numbers were correct for their own
+set and the comparison was meaningless while looking exact. Sorting the walk made
+it **145 = 145**. A stride over an unsorted list is not reproducible, and the note
+is now in the audit beside the stride.
+
+**A phantom production defect, caught before it was reported.** The first end-to-end
+index of a document carrying `[sources] Documenter = { path = ".." }` stored **no**
+`imports` row while all 7 `contains` rows survived — which reads exactly like a
+store-side drop. It was not one: **`bin/bb` runs the compiled `dist/`**, which was
+built at 11:03, before this work. The index had run the old code. After
+`npm run build` the edge is stored (`docs/Project.toml imports .. @8`, external,
+confidence 1.0, total 864 → 865, exactly +1) and the consumer returns it:
+
+```
+bb_graph sources.Documenter --direction callees
+  edgesByType {"imports": 1}
+  sources.Documenter --imports--> id=ext:..  isExternal=true  tier=structural
+```
+
+Analyzer → sanitizer → store → the graph engine's unresolved arm → the tool. Worth
+recording that the end-to-end path cannot be verified at all without a build, and
+that a stale `dist/` produces a clean, confident, entirely fictional defect report.
+
+**Blast radius, on a shared file.** The sanitizer change is in `pool-worker.ts`,
+which all 48 lanes run through. The full fixture suite was run against it: **exit 0,
+zero lanes regressed against their recorded baselines.**
+
+**The one interaction that could have broken it.** `resolveImportTargets` runs on
+`imports` rows with a NULL target — which is exactly what this emits. It is scoped by
+`instr(target_external, ':') > 0`, i.e. `<module>:<item>` shapes only. A path target
+contains no colon, so the pass never sees these rows. Verified by reading the query,
+not assumed.
+
+**Still not verified, and stated rather than glossed.** 18 of 1,483 files carry parse
+errors and are measured as un-analyzable; none of them holds a dependency site, which
+was checked rather than assumed. Cross-document targets still resolve to **no symbol**
+(0 of 318 — the 744-file `Cargo` stem collision), so all 331 are external nodes: real
+and traversable, but not symbol-bound. That is the module-namespace question, and it
+is the same change that would clear the 124 ambiguous incoming edges.
 
 ### The ruling table, and the arbiter's own verdict
 
@@ -868,6 +1312,17 @@ Two notes on the arbiter's own text, because both are measurements:
 - **`references` is FALSIFIED and the row is left standing.** Choosing the
   instrument that reads zero would have produced eight green rows and a hidden
   167. The adjudication is next, and it is the owner's to overrule.
+
+- **THE VERDICT ABOVE WAS A CHECKPOINT ARTIFACT, AND THE OWNER'S DECISION WAS
+  RIGHT.** Re-run with `--fresh` — `npx tsx script/m14/ontology-coverage-gate.ts
+  toml --fresh` — the same gate over the same 1,486 files reads `references
+  EMITTED 167 edges in 4+ files`, `emitted 2/10 ruled-sound 8 FALSIFIED 0`, and
+  **exits 0**. The run above measured **0 files in its own run** and settled
+  1,486 from an earlier one, so it could only ever read NOT EMITTED. This is the
+  failure `rel-type-coverage-gate.ts:539-544` warns about for an unreadable
+  audited set — "a lane that cannot be read is not a lane with zero coverage" —
+  applied to a WALK rather than to an oracle, and it was not guarded. Reported as
+  the owner's decision on the row, not as a criticism of it.
 
 ### Adjudicating `references`: 167 that resolve, 1,269 that do not
 
@@ -917,6 +1372,58 @@ If the owner overrules (1) and (2), the two rules are:
 248 edges, both ends resolving, 1.3% of the 19,087 this lane already emits. Each
 would need an oracle in `deriveTomlEdges` before it is a DERIVATION finding rather
 than an unbacked edge.
+
+### The source of a `references` edge was not a node
+
+Found in M60 (#919), while closing this lane's DERIVATION finding. It is the
+defect the adjudication's ground (1) could not have predicted and no spelling
+comparison can catch.
+
+The emitted edges were anchored at `libraries.<lib>.version.ref` — the owning key's
+name with the alias key's path appended. **No such symbol is ever published.** An
+inline table's keys are recorded as `inlineKeys` METADATA on the owning symbol, not
+as symbols of their own, so that name identifies nothing:
+
+| | emitted | binds to exactly 1 symbol, in its own file |
+|---|---|---|
+| source | 167 | **0** |
+| target | 167 | **167** |
+
+So the lane's own headline measurement — "167 occurrences, 167 of them resolving"
+— was true of the target and was never true of the source. **An edge whose source
+binds to nothing is unreachable by every incoming query**, because
+`graph-engine.ts` `traceCallers` INNER-JOINs `brain_symbol` on `source_symbol_id`
+(`src/intelligence/graph/graph-engine.ts:729`); the row is dropped before the
+traversal sees it. `bb_graph direction=callers` on the owning key could not return
+it and `bb_impact` could not reason over it — on a lane whose `references` verdict
+had just been reported as the fleet's one FALSIFIED cell.
+
+**Why every gate was green.** The differential compares SPELLINGS, and the oracle
+spelled the same phantom, so the two agreed on 167 of 167 and the lane read 100%
+covered. The DERIVATION check asked whether an oracle derivation existed and, once
+`references` was added, it did. The incoming gate measured 47 of 145 as ambiguous
+and attributed the rest to resolution, because "0 unresolved" is the answer you
+get when a name matches no declaration at all. This is the same shape as the html
+F9 case `deriveTomlEdges`'s own header names: two transcriptions of one reading,
+agreeing by construction.
+
+**The fix** anchors the edge at the OWNING KEY — `libraries.groovy-bom`, a
+published symbol — and carries the specificity the phantom name held in
+`metadata.aliasKeyPath`. Count unchanged at 167; both endpoints now bind 167 of
+167. Pinned by `reference-anchors.toml`, whose `forbidRelationships` names the
+phantom spelling so restoring it fails the fixture: verified by applying the
+mutation and watching the fixture go red on both directions (3 expected edges
+missing, 1 forbidden edge present).
+
+**What this says about the other 45 lanes.** Every analyzer that emits a
+`contains`-style edge from a name it composes rather than from a published symbol
+has this defect, and the DERIVATION check cannot see it because it asks a different
+question. The instrument that would see it is the one already written and already
+reporting: `incoming-gate.ts` counts an endpoint that matches no declaration, but
+its `unresolved` column does not distinguish "names nothing" from "names something
+ambiguous". Making the walk refuse to publish a verdict when it measured 0 files is
+the same class of repair, in the same spirit as `rel-type-coverage-gate.ts`'s
+INPUT ERROR path.
 
 ### Two probes of this lane's own were wrong before they were right
 
