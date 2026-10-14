@@ -40,7 +40,7 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "a2a5c8d7904aefa2243bfdebba4a9f843ee93667",
+        "currentCommit": "d82177e3e2245505ef8db330214bef6751f40ad7",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 23,
@@ -57,7 +57,7 @@
       "scope": "LSP 0-based UTF-16 <-> index 1-based lines/byte columns conversion component with mutation suite",
       "evidence": {
         "status": "verified",
-        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+        "currentCommit": "d82177e3e2245505ef8db330214bef6751f40ad7",
         "verifierCommand": "npx tsx script/m24/verify-positions.ts",
         "evidenceFile": "P1.json",
         "passed": 48,
@@ -84,7 +84,7 @@
       "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
       "evidence": {
         "status": "verified",
-        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+        "currentCommit": "d82177e3e2245505ef8db330214bef6751f40ad7",
         "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
         "evidenceFile": "P2.json",
         "passed": 34,
@@ -124,7 +124,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+        "currentCommit": "d82177e3e2245505ef8db330214bef6751f40ad7",
         "verifierCommand": "npx tsx script/m24/verify-server.ts",
         "evidenceFile": "L1.json",
         "passed": 142,
@@ -154,7 +154,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "82a15fbb653c327b5607430aa8b984b394238c8a",
+        "currentCommit": "d82177e3e2245505ef8db330214bef6751f40ad7",
         "verifierCommand": "npx tsx script/m24/verify-hover.ts",
         "evidenceFile": "L2.json",
         "passed": 58,
@@ -184,7 +184,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+        "currentCommit": "d82177e3e2245505ef8db330214bef6751f40ad7",
         "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
         "evidenceFile": "L3.json",
         "passed": 122,
@@ -214,7 +214,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+        "currentCommit": "d82177e3e2245505ef8db330214bef6751f40ad7",
         "verifierCommand": "npx tsx script/m24/verify-symbols.ts",
         "evidenceFile": "L4.json",
         "passed": 50,
@@ -244,7 +244,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+        "currentCommit": "d82177e3e2245505ef8db330214bef6751f40ad7",
         "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
         "evidenceFile": "L5.json",
         "passed": 97,
@@ -274,10 +274,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+        "currentCommit": "d82177e3e2245505ef8db330214bef6751f40ad7",
         "verifierCommand": "npx tsx script/m24/verify-harness.ts",
         "evidenceFile": "V1.json",
-        "passed": 22,
+        "passed": 24,
         "failed": 0,
         "negativeCases": 6,
         "blockedReason": "bun-source leg is blocked in this environment (bun not installed); the harness attempts it every run and records the reason — never a silent skip",
@@ -302,7 +302,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "88e2d9f4494c0c3738e5f262807a3ff7dc87f03d",
+        "currentCommit": "d82177e3e2245505ef8db330214bef6751f40ad7",
         "verifierCommand": "npx tsx script/m24/verify-docs.ts",
         "evidenceFile": "D1.json",
         "passed": 47,
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T20:02:03.501Z",
-    "contentSha256": "1aae58a13fb32d2da1690ffa56d9dd60cb694f4f1ca298cc2ac9f470c5daa556"
+    "sealedAt": "2026-10-14T19:20:14.706Z",
+    "contentSha256": "1cddef7a284d0ecc7c880733a30e36e7b80d4c5e4ddc88b51ab2d68233a3feee"
   }
 }

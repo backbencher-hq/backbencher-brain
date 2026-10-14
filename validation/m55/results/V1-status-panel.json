@@ -3,25 +3,42 @@
   "code": "V1-status-panel",
   "milestone": "M55",
   "title": "The status surface (Truth Rule 1: a fact that cannot be read was not delivered)",
-  "status": "verified",
-  "passed": 42,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 39,
+  "failed": 3,
   "checks": 42,
-  "mutantsCaught": 11,
+  "mutantsCaught": 8,
   "mutantsTotal": 11,
   "negatives": 0,
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "c26b647a9a9cebf3b9a09935381c8cc4b171d6e9",
+  "sourceFingerprint": "1ddc6bce7f6cd5bcc9ce7e5e6a49c6d2a000cea3c207acb5b83dfbf7bd5a9752",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m55/verify-status-panel.ts",
+    "ide/vscode/package.json",
+    "ide/vscode/src/extension.ts",
+    "ide/vscode/src/status-markup.ts"
+  ],
+  "workingTreeRelevantChanges": [
+    "script/m55/verify-action-args.ts",
+    "script/m55/verify-identity.ts",
+    "script/m55/verify-panel-placement.ts",
+    "script/m55/verify-status-panel.ts"
+  ],
   "foundBy": "the V1 rig's own frame: validation/m55/frames/live-7/7-status.png (the visible content was the single line 'launch: compiled dist (bundled) — …')",
   "owner": "ide/vscode/src/status-markup.ts (pure markup) + ide/vscode/src/extension.ts (panel + reuse)",
   "modelOwner": "ide/vscode/src/status-model.ts (unchanged; gated by script/m25/verify-status-surface.ts)",
   "verifierCommand": "npx tsx script/m55/verify-status-panel.ts",
   "evidenceFile": "V1-status-panel.json",
-  "generatedAt": "2026-10-04T22:50:46.475Z",
-  "failures": [],
+  "generatedAt": "2026-10-14T19:58:55.688Z",
+  "failures": [
+    "M4: the stale marker is buried below the facts [mutant]",
+    "M8: the provenance facts stop rendering [mutant]",
+    "M10: a per-language row states its level twice [mutant]"
+  ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T22:50:46.477Z",
-    "contentSha256": "16e952a523b0d454c0e4edb11a281f3324b6af4a83268a9740297fc3599a0fe2"
+    "sealedAt": "2026-10-14T19:58:55.689Z",
+    "contentSha256": "60c54b6ae289db65482e26e297ec0e031940450ef83ace7b2d75e8e0855b83a6"
   }
 }
