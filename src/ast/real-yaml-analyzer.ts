@@ -771,17 +771,76 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (q.length > 0) declaredOwn.add(q)
     }
     let strippedOwnContradicted = 0
+    let strippedNoExternalShape = 0
+    // OPTION E — THE EXTERNAL SHAPE RULE (yaml clause 3, 2026-10-13; proposal
+    // `validation/m14/verification/OWNER-CLAIM-BASIS-PROPOSAL.md` §5).
+    //
+    // A CLAIM IS ONLY MADE WHERE THE TARGET'S SHAPE IDENTIFIES IT AS EXTERNAL. `verifyExternalClaim`
+    // verifies a bare target with probability 1 — its refutation test `declCount.get(tgt) > 0` is
+    // evaluated inside `classifyEdge`'s `decls === 0` branch, i.e. on a map that branch has already
+    // established returns 0 (incoming-rule.ts:869/:895/:600, §5l). MEASURED on a 2,624-file stride over
+    // all 189 corpus repos, the class that free pass certifies is not a set of external references:
+    //
+    //   110 bare single-segment `isExternal` targets =
+    //      91 name NOTHING in the project — and most are not names at all:
+    //         `{{ item }}`, `{{ import_playbook_role_name }}`, `True`, `1234567`,
+    //         `something_dangerous`, `foobar`, `vault` (an Ansible keyword)
+    //      19 name a role the repository DOES contain (`set_a_fact`, `include_parent_role_vars`),
+    //         so the "outside the declared population" claim is FALSE by the project's own file list
+    //   NOT ONE is a legitimate external reference that this rule would drop.
+    //
+    // So the marker is attached only to the shapes whose identity is external by construction:
+    //   · a PATH, URI or remote action ref — `./x`, `../y`, `docker://…`, `owner/repo@ref`
+    //   · a QUALIFIED name — a collection FQCN (`ns.coll.play`) or any dotted owner, where the
+    //     arbiter's own `targetOwner` lookup is a meaningful question
+    // A single segment has no external shape: it is indistinguishable from a local declaration that is
+    // simply absent, which is exactly why nothing can check the claim.
+    //
+    // A SUBTRACTION, like the guard above: it can only delete a marker. The stripped rows fall back to
+    // `unresolved` — VISIBLE, NAMED DEFECTS rather than certified externals, so the lane's residual
+    // RISES by them and that rise is the point. Checked against the pins first: the only fixture that
+    // pins `meta.isExternal: true` names `${{ parameters.dependsOn }}` (dotted, shape kept), so no
+    // fixture is contradicted by this rule.
+    const hasExternalShape = (tgt: string): boolean => {
+      if (tgt.includes("/") || tgt.includes(":") || tgt.includes("@")) return true
+      if (tgt.includes(".")) return true
+      return false
+    }
     for (const r of ctx.relationships as Array<{ target?: unknown; metadata?: Record<string, unknown> }>) {
       const md = r?.metadata
       if (!md || typeof md !== "object" || md.isExternal !== true) continue
       const tgt = String(r.target ?? "")
-      if (tgt.length === 0 || !declaredOwn.has(tgt)) continue
-      delete md.isExternal
-      strippedOwnContradicted++
+      if (tgt.length === 0) continue
+      // (1) the file's own key space answers to the name — the task-11 guard.
+      if (declaredOwn.has(tgt)) {
+        delete md.isExternal
+        strippedOwnContradicted++
+        continue
+      }
+      // (2) the shape does not identify the target as external — the Option E guard.
+      //
+      // A TAG REFERENCE IS EXEMPT, and the exemption is part of the same principle rather than an
+      // exception to it: for a tag the TARGET is the short spelling (`vault`, `str`) while the row
+      // documents the identity it means in `metadata.tagUri`. A tag names a TYPE CONSTRUCTOR — the
+      // YAML spec's own model puts it outside the document, and the standard form is a URI
+      // (`tag:yaml.org,2002:str`) while a LOCAL tag (`!vault`, `!unsafe`) is application-defined and
+      // has no scheme at all. Both are external by the spec, so a row carrying a tag identity is
+      // shape-identified external and stripping it would drop a legitimate reference — the one thing
+      // this rule must not do (MEASURED: 629 yaml `references` rows are tag references whose short
+      // name is a single segment, and demoting them would have been a false unresolved).
+      const tagUri = typeof md.tagUri === "string" ? md.tagUri : ""
+      if (!hasExternalShape(tgt) && tagUri.length === 0) {
+        delete md.isExternal
+        strippedNoExternalShape++
+      }
     }
     if (strippedOwnContradicted > 0) {
       ;(ctx.metadata as unknown as Record<string, unknown>).isExternalStrippedOwnFileContradicted =
         strippedOwnContradicted
+    }
+    if (strippedNoExternalShape > 0) {
+      ;(ctx.metadata as unknown as Record<string, unknown>).isExternalStrippedNoExternalShape =
+        strippedNoExternalShape
     }
 
     return {
