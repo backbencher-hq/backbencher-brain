@@ -44,6 +44,11 @@ import { TS_MUTANTS } from "./ts-mutants"
 // `tsc` decides that here rather than an eyeball.
 import { KOTLIN_MUTANTS } from "./kotlin-mutants"
 import { KOTLIN_EXPORTS_MUTANTS } from "./kotlin-exports-mutants"
+// task-7 batch D: the groovy lane's THREE registries. This file exports three `*_MUTANTS` symbols
+// and `verify-orphaned-mutants.ts` reports only the FIRST one per file, so two of these three --
+// GROOVY_R7_MUTANTS and GROOVY_RECEIVER_MUTANTS, 6 mutants -- were never in the gate's census at
+// all. Found by counting exports per file instead of trusting the gate's one-per-file regex.
+import { GROOVY_ONTOLOGY_MUTANTS, GROOVY_R7_MUTANTS, GROOVY_RECEIVER_MUTANTS } from "./groovy-ontology-mutants"
 // NOT WIRED, and deliberately: `ts-deriv-mutants.ts` is skipped with a NAMED blocker. Its mutant
 // `ts/placeholder-signature-member` exhausts a 4 GB heap on its own (EXIT 134, "Ineffective
 // mark-compacts near heap limit", 68 s) and `ts/computed-import-specifier-published` +
@@ -2506,6 +2511,10 @@ export const MUTANTS: Mutant[] = [
   // task-7 batch C.
   ...KOTLIN_MUTANTS,
   ...KOTLIN_EXPORTS_MUTANTS,
+  // task-7 batch D.
+  ...GROOVY_ONTOLOGY_MUTANTS,
+  ...GROOVY_R7_MUTANTS,
+  ...GROOVY_RECEIVER_MUTANTS,
   // The ts-deriv registry is deliberately NOT spread here. Do NOT write its identifier with three
   // leading dots in any comment in this file: `verify-orphaned-mutants.ts` decides "wired" with
   // `new RegExp("\.\.\." + exportName)`, a plain text search, so a COMMENTED-OUT spread satisfies it
