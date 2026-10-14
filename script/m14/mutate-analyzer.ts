@@ -39,6 +39,11 @@ import { PERL_MUTANTS } from "./perl-mutants"
 // an eyeball. Wired and verified one batch at a time.
 import { GO_MUTANTS } from "./go-mutants"
 import { TS_MUTANTS } from "./ts-mutants"
+// task-7 batch C: the kotlin lane's two registries. `KotlinMutant` carries the canonical fields plus
+// an extra optional `source?: string`; extra properties do not affect assignability to `Mutant`, and
+// `tsc` decides that here rather than an eyeball.
+import { KOTLIN_MUTANTS } from "./kotlin-mutants"
+import { KOTLIN_EXPORTS_MUTANTS } from "./kotlin-exports-mutants"
 // NOT WIRED, and deliberately: `ts-deriv-mutants.ts` is skipped with a NAMED blocker. Its mutant
 // `ts/placeholder-signature-member` exhausts a 4 GB heap on its own (EXIT 134, "Ineffective
 // mark-compacts near heap limit", 68 s) and `ts/computed-import-specifier-published` +
@@ -2498,6 +2503,9 @@ export const MUTANTS: Mutant[] = [
   // task-7 batch B.
   ...GO_MUTANTS,
   ...TS_MUTANTS,
+  // task-7 batch C.
+  ...KOTLIN_MUTANTS,
+  ...KOTLIN_EXPORTS_MUTANTS,
   // The ts-deriv registry is deliberately NOT spread here. Do NOT write its identifier with three
   // leading dots in any comment in this file: `verify-orphaned-mutants.ts` decides "wired" with
   // `new RegExp("\.\.\." + exportName)`, a plain text search, so a COMMENTED-OUT spread satisfies it
