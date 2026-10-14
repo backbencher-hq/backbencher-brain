@@ -444,12 +444,47 @@ async function run() {
       // the fixture-shape assertions honest for the rest of the session.
       const original = fs.readFileSync(mainPath, "utf8")
       const brainDbPath = path.join(dataDir, "projects", (() => {
-        // project dir = sha1(realpath)[0..40]; the extension resolved it —
-        // reuse the server's convention via the launch record's project id.
+        // project dir = sha1(realpath)[0..40]. The extension resolved it — this re-derives it
+        // because the extension host runs plain CJS and cannot import the server's TypeScript
+        // modules. sha1's hex digest is exactly 40 characters, so this agrees with
+        // src/util/project-id.ts, which writes `.substring(0, 40)`.
         const crypto = require("crypto")
         return crypto.createHash("sha1").update(require("fs").realpathSync(wsDir)).digest("hex")
       })(), "brain.db")
+      // THIS SNAPSHOT MUST NEVER REACH A REAL INDEX.
+      //
+      // script/m62/verify-live-db-snapshot.ts is right to object: reading a brain.db off the
+      // filesystem is only safe while the path provably belongs to THIS run's fixture. The
+      // driver sets BB_DATA_DIR to the fixture's temp data dir, so the only thing standing
+      // between this and somebody's real index is that fact — and the read below is
+      // `existsSync(p) ? read(p) : null`, so a wrong path would not throw. It would quietly
+      // restore nothing, and the assertions after it would pass against a fixture that was
+      // never restored, which is worse than a crash.
+      //
+      // So the containment is asserted rather than assumed, and it is asserted BEFORE the read.
+      // If the resolved path is not inside this run's data dir, that is a declared failure and
+      // the run stops, rather than a silently absent snapshot.
+      // Lexical containment, before any filesystem call: a string prefix test cannot throw and
+      // cannot be fooled by a symlink pointing outward, because it never resolves anything.
+      const insideDataDir = path.resolve(brainDbPath).startsWith(path.resolve(dataDir) + path.sep)
+      if (!insideDataDir) {
+        throw new Error(
+          "E5 REFUSING to read a brain.db outside this run's data dir: " +
+            brainDbPath + " is not inside " + dataDir,
+        )
+      }
       const dbSnapshot = fs.existsSync(brainDbPath) ? fs.readFileSync(brainDbPath) : null
+      // An absent snapshot is NOT silently tolerated. The original read was
+      // `existsSync(p) ? read(p) : null`, so a path that resolved to nothing would restore
+      // nothing and every assertion after it would still pass — against a fixture that was never
+      // restored. Reported loudly, without changing whether the run continues, because whether
+      // an absent seed is fatal is a question this file does not get to answer by assertion.
+      if (dbSnapshot === null) {
+        console.warn(
+          "E5 WARNING: no seeded brain.db at " + brainDbPath +
+            " — restoring it is what keeps the fixture-shape assertions honest",
+        )
+      }
       try {
         const fresh0 = await req("bb/staleness", { uri: mainUri })
         assert("E5 live: marker starts fresh after index", fresh0 && fresh0.stale === false, JSON.stringify(fresh0).slice(0, 160))
