@@ -100,12 +100,43 @@ const ROOT = process.cwd()
   // An absolute editor binary used as a COMMAND. `/usr/bin/code ?? "fallback"` is
   // the sanctioned last resort inside the resolver's callers, so the fallback form
   // is allowed; a bare `execFileSync("/usr/bin/code", …)` is not.
-  const HARDCODED =
-    /(?:execFileSync|spawnSync|spawn|execSync|sh)\s*\(\s*["'`]\/usr\/bin\/(?:code|cursor|windsurf|antigravity|zed)\b/
+  // An absolute editor binary used as a COMMAND. `/usr/bin/code ?? "fallback"` is
+  // the sanctioned last resort inside the resolver's callers, so the fallback form
+  // is allowed; a bare `execFileSync("/usr/bin/code", …)` is not.
+  //
+  // TWO THINGS THIS USED TO GET WRONG, both found by measurement rather than reading:
+  //
+  // 1. IT ONLY LOOKED AT THE FIRST ARGUMENT. A shell command is almost never
+  //    `sh("/usr/bin/code")`; it is `sh(`DISPLAY=${display} /usr/bin/code …`)`. The path is
+  //    literal text inside a TEMPLATE, and this gate read the tree with the default
+  //    blanking, which erases template string parts. So four real invocations of that exact
+  //    shape — script/m45/capture-driver.ts:104,171 and script/m45/session-driver.ts:224,281
+  //    — were invisible and the gate reported PASS. `keepTemplates` now keeps template text,
+  //    and the pattern below matches the path anywhere inside a command rather than only as
+  //    the first argument.
+  //
+  // 2. IT BLANKED COMMENTS BUT NOT THE SANCTIONED FALLBACK. A comment naming the path is
+  //    not an invocation, so comments stay blanked; the `?? "fallback"` form is a real
+  //    resolver call and is allowed explicitly below.
+  const HARDCODED = /\/usr\/bin\/(?:code|cursor|windsurf|antigravity|zed)\b/
+  // The resolver itself names every candidate it searches for, including /usr/bin last.
+  const ALLOWED = /script\/lib\/editor-cli\.ts$/
   const offenders: string[] = []
   for (const f of files) {
-    const code = blankCommentsAndStrings(readFileSync(path.join(ROOT, f), "utf8"), { keepStrings: true })
-    if (HARDCODED.test(code)) offenders.push(f)
+    if (ALLOWED.test(f)) continue
+    const code = blankCommentsAndStrings(readFileSync(path.join(ROOT, f), "utf8"), {
+      keepStrings: true,
+      keepTemplates: true,
+    })
+    for (const line of code.split("\n")) {
+      // The sanctioned last-resort form: a resolver call that may fall back to the
+      // legacy path. That is the ONE place a literal /usr/bin editor path is correct.
+      if (/\?\?/.test(line)) continue
+      if (HARDCODED.test(line)) {
+        offenders.push(f)
+        break
+      }
+    }
   }
   check(
     "no source invokes a hardcoded /usr/bin editor binary",

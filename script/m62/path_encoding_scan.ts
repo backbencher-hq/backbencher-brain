@@ -35,7 +35,7 @@ const PATTERN = /new URL\(\s*(?:import\.meta\.url|"[^"]*",\s*import\.meta\.url)\
  * blanking it would hide exactly the site we are hunting), and the regex-vs-
  * division ambiguity.
  */
-export function blankCommentsAndStrings(src: string, opts: { keepStrings?: boolean } = {}): string {
+export function blankCommentsAndStrings(src: string, opts: { keepStrings?: boolean; keepTemplates?: boolean } = {}): string {
   const out = src.split("")
   const blank = (i: number): void => {
     if (out[i] !== "\n") out[i] = " "
@@ -94,7 +94,24 @@ export function blankCommentsAndStrings(src: string, opts: { keepStrings?: boole
         lastWord = ""
         continue
       }
-      blank(i)
+      // Template STRING text, as opposed to its `${...}` interpolations.
+      //
+      // `keepTemplates` exists for the same reason `keepStrings` does, and the reason is
+      // the same shape of bug: a shell command is nearly always assembled in a template,
+      // not in a quoted literal.
+      //
+      //     sh(`DISPLAY=${display} /usr/bin/code --user-data-dir ${userDir}`)
+      //
+      // The interpolations are CODE and are always scanned, but `/usr/bin/code` is literal
+      // text inside the template — so with the default blanking it is erased, and a gate
+      // hunting a hardcoded editor binary scans a tree the evidence has been removed from.
+      // Measured on this tree: four real invocations of that exact shape, in
+      // script/m45/capture-driver.ts and script/m45/session-driver.ts, all invisible to
+      // script/m62/verify-cli-resolution.mts while it reported PASS.
+      //
+      // `keepStrings` deliberately does NOT imply this: for most detectors a template body
+      // is noise, and a caller must ask for it by name.
+      if (opts.keepTemplates !== true) blank(i)
       i++
       continue
     }

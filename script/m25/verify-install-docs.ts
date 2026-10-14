@@ -25,6 +25,7 @@
 
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
+import { resolveEditorCli } from "../lib/editor-cli.ts"
 import { tmpdir } from "node:os"
 import { pathToFileURL } from "node:url"
 import { join, resolve } from "node:path"
@@ -68,7 +69,22 @@ const pkg = JSON.parse(readFileSync(join(EXT_ROOT, "package.json"), "utf8")) as 
 const vsixName = `${pkg.name}-${pkg.version}.vsix`
 const vsixPath = join(EXT_ROOT, vsixName)
 
-check("pre: `code` CLI present (doc step S1 is executable)", existsSync("/usr/bin/code"))
+// The CLI is NOT at a fixed path. On a stock macOS install `code` lives inside the app
+// bundle and /usr/bin/code only exists if someone made a symlink, so hardcoding it made
+// this report "VS Code is not installed" on a machine that HAS VS Code — a failure that
+// reads like an environment gap and sends the reader to the wrong place. Resolved through
+// the one resolver, in the order that resolver declares (override, PATH, bundle, /usr/bin).
+const codeRes = resolveEditorCli("code")
+check(
+  "pre: `code` CLI present (doc step S1 is executable)",
+  codeRes.path !== null,
+  codeRes.path ? `via ${codeRes.via}: ${codeRes.path}` : `NOT FOUND — tried: ${codeRes.tried.join("; ")}`,
+)
+if (codeRes.path === null) {
+  console.log("  the install follow-along cannot run without an editor CLI; this is a declared environment gap, not a pass")
+  process.exit(2)
+}
+const CODE_CLI = codeRes.path
 if (!existsSync(vsixPath)) {
   // The doc names a real artifact; E4's verified gate produces it.
   console.log("  (VSIX absent — running the E4 packaging build to produce it)")
@@ -100,14 +116,14 @@ writeFileSync(join(fixture, "MathUtil.java"), "public class MathUtil {\n  public
 
 let installOut = ""
 try {
-  installOut = execFileSync("/usr/bin/code", ["--install-extension", vsixPath, "--extensions-dir", extDir], {
+  installOut = execFileSync(CODE_CLI, ["--install-extension", vsixPath, "--extensions-dir", extDir], {
     cwd: fixture, encoding: "utf8", timeout: 120_000, stdio: ["ignore", "pipe", "pipe"],
   })
 } catch (e) {
   installOut = String(e)
 }
 check("S1: CLI accepted the install", /was successfully installed|already installed/i.test(installOut), installOut.split("\n")[0]?.slice(0, 90) ?? "")
-const extList = execFileSync("/usr/bin/code", ["--list-extensions", "--show-versions", "--extensions-dir", extDir], {
+const extList = execFileSync(CODE_CLI, ["--list-extensions", "--show-versions", "--extensions-dir", extDir], {
   cwd: fixture, encoding: "utf8", timeout: 60_000, stdio: ["ignore", "pipe", "ignore"],
 })
 check("S1: installed at the manifest version", extList.includes(`${pkg.publisher}.${pkg.name}@${pkg.version}`), extList.trim())
