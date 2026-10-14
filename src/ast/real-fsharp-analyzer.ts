@@ -14,6 +14,14 @@
 // are filtered like the C# family.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+// THE BINDING SEPARATOR, IMPORTED RATHER THAN SPELLED. Task-99: this file used a literal `#` in
+// the binding spelling while its own comment (below) named `BINDING_SEP` as the convention — and
+// `BINDING_SEP` is `"\u0000"` (types.ts:190). `incoming-rule.verifyBindingClaim` refutes a marked
+// target with NO separator, so every one of this lane's local-binding edges was REFUTED for its
+// SPELLING: fsharp `bindFAIL` 24,448, the fleet's only non-zero must-be-zero column, with
+// `bindOK` 0. The dart and php analyzers already spell `` `${source}${BINDING_SEP}${name}` ``
+// (real-dart-analyzer.ts:2801,3097 · real-php-analyzer.ts:3131).
+import { BINDING_SEP } from "./types"
 
 // F# console output + .NET Console — filtered like C#'s Console.WriteLine.
 // NOTE: sprintf/sprintfn are string formatting (analog of string.Format),
@@ -566,7 +574,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       spelled: { target: string; resolution: string; qualifier?: string },
     ): { target: string; resolution: string; qualifier?: string; localBinding?: true } =>
       spelled.resolution === "local-binding" && owner
-        ? { ...spelled, target: `${owner}#${spelled.target}`, localBinding: true }
+        ? { ...spelled, target: `${owner}${BINDING_SEP}${spelled.target}`, localBinding: true }
         : spelled
 
     const publish = (s: ASTEngine.UniversalSymbol): void => {
