@@ -277,5 +277,104 @@
   "label_coverage": {
     "_description": "Which relationship labels this lane actually COMPARES. script/m14/verify-label-coverage.ts reads the differential allowlist, runs the analyzer over a corpus sample, and reports every label the analyzer EMITS that the allowlist DROPS. Clojure reached an empty gap list when the M60 round wired its `contains` and `uses` oracles, which had both been written in script/m14/clojure-truth.ts with no consumer in differential.ts at all.",
     "declared_gaps": []
-  }
+  },
+ "coverage": {
+  "implemented": [
+   "calls",
+   "uses",
+   "contains",
+   "imports",
+   "references",
+   "exports",
+   "extends",
+   "implements",
+   "overrides",
+   "instantiates"
+  ],
+  "excluded": [],
+  "corpusUnexercised": [],
+  "_emissionSites": {
+   "calls": [
+    "src/ast/real-clojure-analyzer.ts:1497",
+    "src/ast/real-clojure-analyzer.ts:1500",
+    "src/ast/real-clojure-analyzer.ts:2315",
+    "src/ast/real-clojure-analyzer.ts:2354"
+   ],
+   "uses": [
+    "src/ast/real-clojure-analyzer.ts:1474",
+    "src/ast/real-clojure-analyzer.ts:1481",
+    "src/ast/real-clojure-analyzer.ts:1486",
+    "src/ast/real-clojure-analyzer.ts:2239",
+    "src/ast/real-clojure-analyzer.ts:2272"
+   ],
+   "contains": [
+    "src/ast/real-clojure-analyzer.ts:2633"
+   ],
+   "imports": [
+    "src/ast/real-clojure-analyzer.ts:779"
+   ],
+   "references": [
+    "src/ast/real-clojure-analyzer.ts:917",
+    "src/ast/real-clojure-analyzer.ts:931",
+    "src/ast/real-clojure-analyzer.ts:946",
+    "src/ast/real-clojure-analyzer.ts:967"
+   ],
+   "exports": [
+    "src/ast/real-clojure-analyzer.ts:2866"
+   ],
+   "extends": [
+    "src/ast/real-clojure-analyzer.ts:1846",
+    "src/ast/real-clojure-analyzer.ts:1916"
+   ],
+   "implements": [
+    "src/ast/real-clojure-analyzer.ts:1791",
+    "src/ast/real-clojure-analyzer.ts:1809",
+    "src/ast/real-clojure-analyzer.ts:1823",
+    "src/ast/real-clojure-analyzer.ts:1925"
+   ],
+   "overrides": [
+    "src/ast/real-clojure-analyzer.ts:2747"
+   ],
+   "instantiates": [
+    "src/ast/real-clojure-analyzer.ts:1385",
+    "src/ast/real-clojure-analyzer.ts:2208",
+    "src/ast/real-clojure-analyzer.ts:2219",
+    "src/ast/real-clojure-analyzer.ts:2227"
+   ]
+  },
+  "_implemented_measured": {
+   "_unit": "WHOLE admitted clojure population, production path: `npx tsx script/m14/residual-gate.ts --lane clojure --json` (which invokes script/m14/incoming-gate.ts itself) reported 646 of 646 discovered files parsed, 3 repositories, 0 failed, admitted extensions .clj, .cljs, .cljc, .edn; the per-type edge counts below are that run's per-type rows, read 2026-10-14 (run wall clock 189s). Every one of the ten types fires, so there is no corpus zero to explain and no exclusion to make.",
+   "calls": {
+    "edges": 21517
+   },
+   "uses": {
+    "edges": 2365
+   },
+   "contains": {
+    "edges": 6516
+   },
+   "imports": {
+    "edges": 1452
+   },
+   "references": {
+    "edges": 5600
+   },
+   "exports": {
+    "edges": 4620
+   },
+   "extends": {
+    "edges": 42
+   },
+   "implements": {
+    "edges": 286
+   },
+   "overrides": {
+    "edges": 128
+   },
+   "instantiates": {
+    "edges": 928
+   }
+  },
+  "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-clojure-analyzer.ts, named per type in `_emissionSites`, AND a whole-population edge count in `_implemented_measured` over 646 of 646 admitted files in 3 repositories with 0 parse failures. NOTHING IS EXCLUDED because nothing needed to be: every one of the ten types fires corpus-wide, the smallest margin being `extends` at 42 edges and `overrides` at 128. The 120-file stride in validation/m14/results/firing-laptop-b.current.log reads all ten as fired as well, so the stride and the whole-population run agree. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified."
+ }
 }

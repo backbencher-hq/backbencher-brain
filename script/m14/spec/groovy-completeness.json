@@ -373,5 +373,66 @@
         "closes_when": "an overrides oracle exists for this language; then admit it and reconcile"
       }
     ]
-  }
+  },
+ "coverage": {
+  "implemented": [
+   "calls",
+   "uses",
+   "contains",
+   "imports",
+   "references",
+   "exports",
+   "extends",
+   "implements",
+   "overrides",
+   "instantiates"
+  ],
+  "excluded": [],
+  "corpusUnexercised": [],
+  "_emissionSites": {
+   "calls": [
+    "src/ast/real-groovy-analyzer.ts:1166",
+    "src/ast/real-groovy-analyzer.ts:1188",
+    "src/ast/real-groovy-analyzer.ts:1241",
+    "src/ast/real-groovy-analyzer.ts:1281"
+   ],
+   "uses": [
+    "src/ast/real-groovy-analyzer.ts:1290",
+    "src/ast/real-groovy-analyzer.ts:2276",
+    "src/ast/real-groovy-analyzer.ts:2319"
+   ],
+   "contains": [
+    "src/ast/real-groovy-analyzer.ts:254"
+   ],
+   "imports": [
+    "src/ast/real-groovy-analyzer.ts:529",
+    "src/ast/real-groovy-analyzer.ts:584"
+   ],
+   "references": [
+    "src/ast/real-groovy-analyzer.ts:499",
+    "src/ast/real-groovy-analyzer.ts:1822",
+    "src/ast/real-groovy-analyzer.ts:1900",
+    "src/ast/real-groovy-analyzer.ts:1991"
+   ],
+   "exports": [
+    "src/ast/real-groovy-analyzer.ts:366"
+   ],
+   "extends": [
+    "src/ast/real-groovy-analyzer.ts:639",
+    "src/ast/real-groovy-analyzer.ts:654",
+    "src/ast/real-groovy-analyzer.ts:670"
+   ],
+   "implements": [
+    "src/ast/real-groovy-analyzer.ts:686",
+    "src/ast/real-groovy-analyzer.ts:3040"
+   ],
+   "overrides": [
+    "src/ast/real-groovy-analyzer.ts:1641"
+   ],
+   "instantiates": [
+    "src/ast/real-groovy-analyzer.ts:1318"
+   ]
+  },
+  "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-groovy-analyzer.ts, named per type in `_emissionSites`. The pinned grammar wasm/tree-sitter-groovy.wasm (sha256 f1e68cb398e63f34) carries all ten productions: superclass + extends_interfaces for `extends`, interface_declaration/super_interfaces for `implements`, method_invocation/juxt_function_call for `calls`, import_declaration for `imports`, exports_module_directive for `exports` (Groovy 4 module directives \u2014 the `exports` edge is not a JVM visibility flag), object_creation_expression/explicit_constructor_invocation for `instantiates`. NO EXCLUSIONS. NOT YET CLAIMED: a per-type edge count \u2014 the firing log validation/m14/results/firing-laptop-b.current.log records GROOVY as NO CORPUS under groovy (0 of 10 fired), so the emission sites are the evidence here and a measured count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified."
+ }
 }

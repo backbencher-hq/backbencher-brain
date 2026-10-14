@@ -496,5 +496,94 @@
         "verified_by": "sorted(emitted kinds) + sorted(ruled kinds) == the 25 distinct enum values, asserted when this section is written"
       }
     }
-  }
+  },
+ "coverage": {
+  "implemented": [
+   "calls",
+   "uses",
+   "contains",
+   "imports",
+   "references",
+   "exports",
+   "implements",
+   "instantiates"
+  ],
+  "excluded": [
+   {
+    "label": "extends",
+    "evidence": "grammar-absence",
+    "from": "PINNED GRAMMAR wasm/tree-sitter-erlang.wasm (sha256 8d20d814b7ad9b69, the pin src/ast/engine.ts:1052 resolves) enumerated through web-tree-sitter's Language API: 338 node-type slots = 137 named + 201 anonymous, i.e. 132 distinct named types and 173 distinct anonymous tokens. 0 of the 132 named types is an inheritance production and 0 of the 173 anonymous tokens is extends, inherit, inherits, superclass or subclass. Erlang's module composition is `-behaviour` (a contract the module satisfies \u2014 the Implements edge this lane emits at src/ast/real-erlang-analyzer.ts:876) and `-include`, neither of which is IS-A. CROSS-GRAMMAR CONTROL: the identical probe finds base_class_clause in tree-sitter-cpp.wasm, superclass in tree-sitter-groovy.wasm and extends_clause in tree-sitter-scala.wasm \u2014 18 of the 64 loadable pinned grammars carry an inheritance production, so the instrument can see one and this 0 is a reading. CORPUS HALF: the pinned firing log validation/m14/results/firing-laptop-b.current.log reads extends SILENT over its 120-file even stride of erl,hrl \u2014 0 edges \u2014 while eight other types fire on that same stride (calls 9450 references 5223 contains 4491 exports 1973 uses 1354 instantiates 184 implements 15 imports 6). AND the analyzer has 0 `RelationshipType.Extends` references in src/ast/real-erlang-analyzer.ts.",
+    "quote": "0 of the 132 distinct named node types and 0 of the 173 distinct anonymous tokens in the pinned Erlang grammar is an IS-A production or keyword \u2014 a module satisfies a behaviour, it never inherits from one"
+   },
+   {
+    "label": "overrides",
+    "evidence": "grammar-absence",
+    "from": "PINNED GRAMMAR wasm/tree-sitter-erlang.wasm (sha256 8d20d814b7ad9b69): 0 of the 132 distinct named types and 0 of the 173 distinct anonymous tokens is an override or member-redefinition production \u2014 there is no override/override_specifier/virtual/redefinition node. THE NEAREST NAMES ARE ADJUDICATED, not overlooked: ssr_definition, ssr_replacement, ssr_when and the replacement_* node types are the binary-SSR forms (a binary-only OTP construct) and macro-body guards, which this lane's own spec script/m14/spec/erlang-completeness.json classifies as shapes with no corpus site rather than as overriding; the probe name sets above do not include them, and the reading of the full enumeration is what rules them out. CROSS-GRAMMAR CONTROL: the identical probe finds override_specifier in tree-sitter-solidity.wasm, virtual_specifier in tree-sitter-cpp.wasm and override_modifier in tree-sitter-typescript.wasm \u2014 7 of the 64 loadable pinned grammars carry an override production, so the probe can see one. CORPUS HALF: the pinned firing log validation/m14/results/firing-laptop-b.current.log reads overrides SILENT over its 120-file even stride of erl,hrl \u2014 0 edges \u2014 while eight other types fire on the same stride. AND the analyzer has 0 `RelationshipType.Overrides` references in src/ast/real-erlang-analyzer.ts.",
+    "quote": "0 of the 132 named types is an override production: Erlang has no inheritance, so there is no overridden declaration for an overriding one to point at"
+   }
+  ],
+  "corpusUnexercised": [],
+  "_emissionSites": {
+   "calls": [
+    "src/ast/real-erlang-analyzer.ts:1487",
+    "src/ast/real-erlang-analyzer.ts:1514",
+    "src/ast/real-erlang-analyzer.ts:1556"
+   ],
+   "uses": [
+    "src/ast/real-erlang-analyzer.ts:1622",
+    "src/ast/real-erlang-analyzer.ts:1634",
+    "src/ast/real-erlang-analyzer.ts:1657",
+    "src/ast/real-erlang-analyzer.ts:1672"
+   ],
+   "contains": [
+    "src/ast/real-erlang-analyzer.ts:1948"
+   ],
+   "imports": [
+    "src/ast/real-erlang-analyzer.ts:977"
+   ],
+   "references": [
+    "src/ast/real-erlang-analyzer.ts:824",
+    "src/ast/real-erlang-analyzer.ts:986",
+    "src/ast/real-erlang-analyzer.ts:1033",
+    "src/ast/real-erlang-analyzer.ts:1581"
+   ],
+   "exports": [
+    "src/ast/real-erlang-analyzer.ts:926"
+   ],
+   "implements": [
+    "src/ast/real-erlang-analyzer.ts:876"
+   ],
+   "instantiates": [
+    "src/ast/real-erlang-analyzer.ts:1598"
+   ]
+  },
+  "_implemented_measured": {
+   "_unit": "STRIDE SAMPLE, NOT POPULATION: the pinned firing log validation/m14/results/firing-laptop-b.current.log, 120-file even stride over the admitted erl,hrl corpus (120 of 120 parsed). Counts are that stride's own per-type counts for the eight types it fired; no whole-population run has been recorded for this lane, so no count here is a corpus total. `imports` is the smallest margin at 6 edges on the stride \u2014 named so a lower bound is not read as a large one.",
+   "calls": {
+    "edges": 9450
+   },
+   "uses": {
+    "edges": 1354
+   },
+   "contains": {
+    "edges": 4491
+   },
+   "references": {
+    "edges": 5223
+   },
+   "exports": {
+    "edges": 1973
+   },
+   "implements": {
+    "edges": 15
+   },
+   "instantiates": {
+    "edges": 184
+   },
+   "imports": {
+    "edges": 6
+   }
+  },
+  "_from": "DERIVATION. implemented = the eight types with an emission site in src/ast/real-erlang-analyzer.ts (per type in `_emissionSites`), each also carrying a stride count in `_implemented_measured`. The two types with no site \u2014 `extends` and `overrides` \u2014 are excluded by the pinned grammar's own inventory, not by the missing code, and the two exclusions are made independently: an IS-A production and an override production are different productions and the enumeration rules out both. `implements` is NOT a gap despite Erlang having no interfaces: `-behaviour` IS the conformance construct and the analyzer emits it (:876), with 15 edges on the stride. CLOSURE: implemented 8 + corpusUnexercised 0 + gaps 0 = applicable 8 = 10 - 2 grammar-absence - 0 unclassified."
+ }
 }

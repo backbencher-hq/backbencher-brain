@@ -383,5 +383,91 @@
         "resolution": "MEASURED, PINNED AND WATCHED. The floors (validation/m14/parse-success-baseline.json; the per-run artifact is validation/m14/results/M14.0.F10.json): fmt:cpp 72 files, 38 carry an ERROR node or a MISSING token (52.8%; ERROR 47.2% / MISSING 41.7%; damaged lines median 8, max 152); nlohmann-json:cpp 400 files, 126 (31.5%; ERROR 17.5% / MISSING 29.3%; median 6, max 1901). #743's own census read 73.0% on nlohmann-json when it was filed, and the grammar waves landed since (#743b's __has_include as a preprocessor argument, #743c's grammar-leaf gate, #907, #912's call-shaped arrival, #919's macro-declared body, #920's row-preserving blanking) are why the floor is re-pinned rather than quoted. THE GATE IS NOW IN THE BATTERY: script/m14/verify-parse-success.ts (M14.0.F10) existed but was wired into no chain - a gate nobody runs - and now runs inside `npm run verify` immediately after the F1 grammar audit, with `audit:parse-success-selftest` ahead of it. THE SELF-TEST IS WHY IT CAN BE TRUSTED: it measures one REAL lane and drives the gate's own verdictFor/exitCodeFor through every branch it claims - floor equal to the measurement (pass), floor above (pass-improved), floor below (FAIL), a floor pinned at 0% with any damage (FAIL, the hard rule #743 asks for), a CLEAN lane against a 0% floor (pass, the false-positive direction), a moved sample (sample-moved, which is NOT a pass), a lane absent from the baseline (unpinned), the same lane under --update-baseline (pinned), and the exit mapping fail-1 / needs-repin-2 / pass-0. Mutations proved the self-test can fail: folding sample-moved into pass is caught naming that branch (exit 1) and deleting the regression direction is caught naming both FAIL branches (exit 1), each restored byte-identical afterwards. The self-test also REFUSES a lane with no damaged file rather than passing vacuously, because such a lane cannot exercise the FAIL direction at all. NOT CLAIMED HERE: the grammar long tail is not fixed. The candidates censused for it are refused on measurement by M14.0.F11 (script/m14/verify-grammar-leaves.ts), whose G3 output gate reads real losses (21 vanished symbols and 52 lost pairs for the tree-preserving candidate) while G1 and G2 pass, so the remaining damage is a PINNED RESIDUAL that a live gate keeps visible. No consumer of the cpp lane may read 'MISSING=0' as 'the grammar parses everything'; the floors above are the honest number."
       }
     ]
+  },
+ "coverage": {
+  "implemented": [
+   "calls",
+   "uses",
+   "contains",
+   "imports",
+   "references",
+   "exports",
+   "extends",
+   "implements",
+   "overrides",
+   "instantiates"
+  ],
+  "excluded": [],
+  "corpusUnexercised": [],
+  "_emissionSites": {
+   "calls": [
+    "src/ast/real-cpp-analyzer.ts:4339"
+   ],
+   "uses": [
+    "src/ast/real-cpp-analyzer.ts:4145",
+    "src/ast/real-cpp-analyzer.ts:4534"
+   ],
+   "contains": [
+    "src/ast/real-cpp-analyzer.ts:4820"
+   ],
+   "imports": [
+    "src/ast/real-cpp-analyzer.ts:2750"
+   ],
+   "references": [
+    "src/ast/real-cpp-analyzer.ts:2470"
+   ],
+   "exports": [
+    "src/ast/real-cpp-analyzer.ts:2921",
+    "src/ast/real-cpp-analyzer.ts:3626",
+    "src/ast/real-cpp-analyzer.ts:4759"
+   ],
+   "extends": [
+    "src/ast/real-cpp-analyzer.ts:2903",
+    "src/ast/real-cpp-analyzer.ts:3134"
+   ],
+   "implements": [
+    "src/ast/real-cpp-analyzer.ts:4730"
+   ],
+   "overrides": [
+    "src/ast/real-cpp-analyzer.ts:4683"
+   ],
+   "instantiates": [
+    "src/ast/real-cpp-analyzer.ts:4452"
+   ]
+  },
+  "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-cpp-analyzer.ts, named per type in `_emissionSites`; the pinned grammar wasm/tree-sitter-cpp.wasm (sha256 0821b6f64ea5444e) carries the productions each of them keys on \u2014 base_class_clause for `extends` (1 of its 210 distinct named types), pure_virtual_clause/virtual_specifier for `overrides`, new_expression/template_instantiation for `instantiates`, preproc_include/using_declaration for `imports` (8 probe hits), class_specifier/access_specifier for `exports` (25 probe hits) \u2014 so there is no absent construct to exclude and nothing here to reclassify. NO EXCLUSIONS. NOT YET CLAIMED: a per-type whole-corpus or stride edge count for this lane, because the pinned firing log validation/m14/results/firing-laptop-b.current.log records CPP as NO CORPUS under cpp-example (0 of 10 types fired) and no whole-population run has been recorded for it in this block; the emission sites are the evidence, and a measured edge count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified.",
+  "_implemented_measured": {
+   "_unit": "STRIDE SAMPLE, NOT POPULATION, and a LOWER BOUND by construction: `npx tsx script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 400` \u2014 the instrument's own disclosure reads `population: 400 parsed of 400 sampled (corpus has 6641 .cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu files across 30 repos; stride sample)` and `SAMPLE, NOT POPULATION: 400 of 6641 files`. Per-type edges are TABLE 1 (the per-project scope production resolves in) of that run, read 2026-10-14; wall clock 217s. All ten types fire on the stride, the smallest margin being `references` at 80 edges, so every one of the ten is measured present rather than inferred from code.",
+   "calls": {
+    "edges": 58007
+   },
+   "uses": {
+    "edges": 5235
+   },
+   "contains": {
+    "edges": 9156
+   },
+   "imports": {
+    "edges": 2725
+   },
+   "references": {
+    "edges": 80
+   },
+   "exports": {
+    "edges": 146
+   },
+   "extends": {
+    "edges": 242
+   },
+   "implements": {
+    "edges": 16
+   },
+   "overrides": {
+    "edges": 94
+   },
+   "instantiates": {
+    "edges": 132
+   }
   }
+ }
 }

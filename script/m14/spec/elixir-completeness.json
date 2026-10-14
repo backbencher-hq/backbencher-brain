@@ -253,5 +253,90 @@
         "resolution": "RULED (2026-09-29): two claims, each with its own instrument, both run per corpus on a fixed 60-file sample. CLAIM 1 (line contract, M60): 0 line-less edges and every `contains` edge's line equals the member's own declaration line, checked EXACTLY per label (a call names its callee's line, a directive names the target node's line, an `instantiates` names the struct/exception's first argument) — no window, after the ±2-line heuristic of the earlier deep audit was replaced. CLAIM 2 (per-site identity): every naming construct in the file produced the edge it names — use/import/alias/require, %Mod{}, raise/reraise, struct/struct!, @behaviour, @derive, defimpl, Mod.fun(). Measured 2026-09-29 over 360 files of six corpora: 2,290/2,290 (100.00%), with the DECLARED silences counted and reported rather than assumed — 1,466 struct literals in pattern position (EX-D5/X2), 57 naming constructs inside a declaration attribute value (EX-D25) and self-directives (ELXD8). The instrument's own defects are part of the record, because an audit that cannot name a rule reports its own ignorance as analyzer loss: (1) it did not implement the pattern rule and reported 167 phantom missing `instantiates` in a 60-file slice, every one a def-head pattern; (2) its def-head half then compared web-tree-sitter node wrappers by IDENTITY (`.parent` returns a fresh wrapper per access), so the walk ran past the def into its do_block and returned false — 43 more phantoms; (3) its `=` rule returned its answer either way, so a default-bound struct in a signature (`insert_all(query = %Ecto.Query{}, _counter)`) looked like code; (4) it collected module spans from a direct `alias` child of the defmodule call when the name sits in its `arguments`, so the ELXD8 self-alias check could never fire. All four are fixed in the instrument, and CLAIM 2 stands at 100% only after they were — a number produced by a broken falsifier is not evidence. NOT claimed: that the six corpora are the whole of Elixir; that a name is extractable where the grammar yields none (the 21 `Unknown` placeholders over 1,586 files are all genuinely dynamic — `defmacro unquote(verb)(…)` names nothing static); that F5's per-file `catch { continue }` is safe (R4); or that the residual list R1-R7/R30 is closed."
       }
     ]
-  }
+  },
+ "coverage": {
+  "implemented": [
+   "calls",
+   "uses",
+   "contains",
+   "imports",
+   "references",
+   "exports",
+   "implements",
+   "overrides",
+   "instantiates"
+  ],
+  "excluded": [
+   {
+    "label": "extends",
+    "evidence": "grammar-absence",
+    "from": "PINNED GRAMMAR wasm/tree-sitter-elixir.wasm (sha256 ed99093c548c12d4, the pin src/ast/engine.ts:1044 resolves) enumerated through web-tree-sitter's Language API: 235 node-type slots = 74 named + 161 anonymous, i.e. 45 distinct named types and 158 distinct anonymous tokens. 0 of the 45 named types is an inheritance production (no class/inherit/superclass/extends_clause node exists) and 0 of the 158 anonymous tokens is extends, inherit, inherits, superclass or subclass. STATED CAVEAT, so a reader can judge it: Elixir's module-level directives (`use`, `import`, `alias`, `require`, `@behaviour`) all parse through the generic `call` and `@` nodes, which name no supertype \u2014 the grammar is expression-generic, and the claim here is that no production expresses IS-A, not that no macro could be written. CROSS-GRAMMAR CONTROL: the identical probe finds inheritance productions in 18 of the 64 loadable pinned grammars (base_class_clause in tree-sitter-cpp.wasm, superclass in tree-sitter-groovy.wasm, extends_clause in tree-sitter-scala.wasm), so the 0 is a reading the instrument can falsify. CORPUS HALF: the pinned firing log validation/m14/results/firing-laptop-b.current.log reads extends SILENT over its 120-file even stride of ex,exs \u2014 0 edges \u2014 while seven other types fire on that same stride (calls 8868 references 288 uses 670 contains 1781 exports 899 implements 40 instantiates 346). AND the analyzer has no extends emission site at all: 0 `RelationshipType.Extends` references in src/ast/real-elixir-analyzer.ts, against 1 Imports and 4 Implements sites in the same file.",
+    "quote": "0 of the 45 distinct named node types and 0 of the 158 distinct anonymous tokens in the pinned Elixir grammar is an IS-A production or keyword \u2014 no supertype slot exists to write"
+   }
+  ],
+  "corpusUnexercised": [],
+  "_emissionSites": {
+   "calls": [
+    "src/ast/real-elixir-analyzer.ts:1331",
+    "src/ast/real-elixir-analyzer.ts:1388",
+    "src/ast/real-elixir-analyzer.ts:2724"
+   ],
+   "uses": [
+    "src/ast/real-elixir-analyzer.ts:1137",
+    "src/ast/real-elixir-analyzer.ts:1142",
+    "src/ast/real-elixir-analyzer.ts:3002"
+   ],
+   "contains": [
+    "src/ast/real-elixir-analyzer.ts:942"
+   ],
+   "imports": [
+    "src/ast/real-elixir-analyzer.ts:3018"
+   ],
+   "references": [
+    "src/ast/real-elixir-analyzer.ts:2984"
+   ],
+   "exports": [
+    "src/ast/real-elixir-analyzer.ts:997"
+   ],
+   "implements": [
+    "src/ast/real-elixir-analyzer.ts:679",
+    "src/ast/real-elixir-analyzer.ts:768",
+    "src/ast/real-elixir-analyzer.ts:2296",
+    "src/ast/real-elixir-analyzer.ts:2299"
+   ],
+   "overrides": [
+    "src/ast/real-elixir-analyzer.ts:1074",
+    "src/ast/real-elixir-analyzer.ts:1770",
+    "src/ast/real-elixir-analyzer.ts:2584"
+   ],
+   "instantiates": [
+    "src/ast/real-elixir-analyzer.ts:1411"
+   ]
+  },
+  "_implemented_measured": {
+   "_unit": "STRIDE SAMPLE, NOT POPULATION: the pinned firing log validation/m14/results/firing-laptop-b.current.log, 120-file even stride over the admitted ex,exs corpus (120 of 120 parsed). Counts below are that stride's own per-type counts for the types it fired; `imports` and `overrides` read SILENT on the stride and therefore appear in NO count here \u2014 silence on 120 files is not a corpus zero, and no whole-population run has been recorded for this lane, so this block claims no number for them.",
+   "calls": {
+    "edges": 8868
+   },
+   "uses": {
+    "edges": 670
+   },
+   "contains": {
+    "edges": 1781
+   },
+   "references": {
+    "edges": 288
+   },
+   "exports": {
+    "edges": 899
+   },
+   "implements": {
+    "edges": 40
+   },
+   "instantiates": {
+    "edges": 346
+   }
+  },
+  "_from": "DERIVATION. implemented = the nine types with an emission site in src/ast/real-elixir-analyzer.ts (per type in `_emissionSites`), seven of which also carry a stride count in `_implemented_measured`. `extends` is excluded by the pinned grammar's own inventory, not by the missing code. TWO TYPES ARE IMPLEMENTED BUT UNMEASURED CORPUS-WIDE AND ARE NAMED AS SUCH: `imports` (:3018) and `overrides` (:1074, :1770, :2584) have emission sites and read SILENT on the 120-file stride; they stay in the denominator as implemented, their corpus exercise not yet demonstrated. CLOSURE: implemented 9 + corpusUnexercised 0 + gaps 0 = applicable 9 = 10 - 1 grammar-absence - 0 unclassified."
+ }
 }

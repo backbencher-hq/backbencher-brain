@@ -638,5 +638,63 @@
         "evidence": "bun script/m14/verify-go-lane-coverage.ts"
       }
     ]
-  }
+  },
+ "coverage": {
+  "implemented": [
+   "calls",
+   "uses",
+   "contains",
+   "imports",
+   "references",
+   "exports",
+   "extends",
+   "implements",
+   "overrides",
+   "instantiates"
+  ],
+  "excluded": [],
+  "corpusUnexercised": [],
+  "_emissionSites": {
+   "calls": [
+    "src/ast/real-go-analyzer.ts:2836",
+    "src/ast/real-go-analyzer.ts:3005",
+    "src/ast/real-go-analyzer.ts:3191",
+    "src/ast/real-go-analyzer.ts:3278"
+   ],
+   "uses": [
+    "src/ast/real-go-analyzer.ts:3252",
+    "src/ast/real-go-analyzer.ts:3669",
+    "src/ast/real-go-analyzer.ts:3745"
+   ],
+   "contains": [
+    "src/ast/real-go-analyzer.ts:2203"
+   ],
+   "imports": [
+    "src/ast/real-go-analyzer.ts:412"
+   ],
+   "references": [
+    "src/ast/real-go-analyzer.ts:885"
+   ],
+   "exports": [
+    "src/ast/real-go-analyzer.ts:518"
+   ],
+   "extends": [
+    "src/ast/real-go-analyzer.ts:2434",
+    "src/ast/real-go-analyzer.ts:2475"
+   ],
+   "implements": [
+    "src/ast/real-go-analyzer.ts:2691",
+    "src/ast/real-go-analyzer.ts:2710"
+   ],
+   "overrides": [
+    "src/ast/real-go-analyzer.ts:2354"
+   ],
+   "instantiates": [
+    "src/ast/real-go-analyzer.ts:2875",
+    "src/ast/real-go-analyzer.ts:3035",
+    "src/ast/real-go-analyzer.ts:3132"
+   ]
+  },
+  "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-go-analyzer.ts, named per type in `_emissionSites`. TWO OF THEM ARE GO'S OWN CONSTRUCTS RATHER THAN THE JVM SHAPES, and are named so the mapping is auditable: `extends` is struct embedding (metadata relationshipType go_struct_embedding, embedType struct_composition_extends, :2434/:2475 \u2014 Go's composition-of-types relation) and `overrides` is method-promotion shadowing (metadata go_method_promotion_shadowing, :2354 \u2014 the outer declaration that makes x.M select this method rather than the promoted one, depth-resolved per the Go spec's shallowest-depth rule). `implements` is interface satisfaction (interface_type is 1 of the 103 distinct named types in wasm/tree-sitter-go.wasm, sha256 9963ca89b616eaf0) and `instantiates` is composite_literal. NO EXCLUSIONS: the pinned grammar carries a production for every one of the ten. NOT YET CLAIMED: a per-type edge count \u2014 the firing log validation/m14/results/firing-laptop-b.current.log records GO as NO CORPUS under go-stdlib (0 of 10 fired), so the emission sites are the evidence here and a measured count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified."
+ }
 }
