@@ -39,8 +39,9 @@
 import { readFileSync, existsSync } from "node:fs"
 import { resolve, dirname } from "node:path"
 import { execFileSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
 
-const HERE: string = (import.meta as any).dir ?? dirname(new URL(import.meta.url).pathname)
+const HERE: string = (import.meta as any).dir ?? dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, "..", "..")
 const INCOMING_LOG = process.env.BB_BOARD_INCOMING ?? "validation/m14/results/incoming-laptop-b.current.log"
 

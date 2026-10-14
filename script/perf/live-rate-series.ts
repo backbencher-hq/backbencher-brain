@@ -39,8 +39,9 @@ import fs from "fs"
 import os from "os"
 import path from "path"
 import { spawnSync } from "child_process"
+import { fileURLToPath } from "node:url"
 
-const REPO_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../..")
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 
 interface Sample {
   tSec: number | null
