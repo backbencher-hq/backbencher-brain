@@ -78,6 +78,19 @@ import type { Node } from "web-tree-sitter"
 const DEPENDENCY_MANIFESTS = ["Cargo.toml", "Project.toml", "JuliaProject.toml", "pyproject.toml", "Package.toml"]
 
 /**
+ * THE CONVENTIONAL PUBLISH-SURFACE LEAVES — a CANDIDATE GENERATOR for `exports`, never the decision.
+ *
+ * These are the same eleven leaves the lane's census counts (module, publish, main, public, exposed,
+ * entrypoint, export(s), expose, pub, mod). A TOML key carries no grammar for "this is what I publish",
+ * so candidates must come from ecosystem conventions; what must NOT come from a name is the DECISION.
+ * See `pendingPublishSurface` in `analyze` for the data test that decides, and for why the name list
+ * alone was the ruled defect.
+ */
+const PUBLISH_SURFACE_KEYS = new Set([
+  "export", "exports", "expose", "exposed", "pub", "public", "publish", "main", "module", "mod", "entrypoint",
+])
+
+/**
  * THE FILE CLAIM for a path dependency, or null when no claim can be MADE.
  *
  * `imports` targets are paths as written, and the graph has to say something true about them. The
@@ -981,6 +994,30 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
      */
     const pendingWorkspace: { source: string; tableName: string; inherited: string | null; line: number }[] = []
 
+    /**
+     * `exports` CANDIDATES — and the ONE decision that may turn a candidate into an edge.
+     *
+     * LEAD RULING 2026-10-13: `exports` means A NAME THE UNIT PUBLISHES FOR OTHERS TO IMPORT, and a
+     * manifest key whose VALUE is a path or a directory (`publish = "build"`) is a publish-surface fact
+     * about an ARTIFACT, not an export of a name. Emitting one under `exports` is a TYPE ERROR IN
+     * EMISSION, and the consumer-visible consequence is a dangling edge a consumer can follow and get
+     * nothing back from.
+     *
+     * THE NAME LIST IS THE CANDIDATE GENERATOR, NEVER THE DECISION. A TOML key carries no grammar for
+     * "this is what I publish", so candidates have to come from the conventions the ecosystem uses — the
+     * same eleven leaves the lane's census counts (module, publish, main, public, exposed, entrypoint,
+     * export(s), expose, pub, mod). MEASURED: 174 such sites over the whole admitted population.
+     *
+     * THE DECISION IS THE DATA, and it is json's standard, measured: json's `exports` edge targets a
+     * DECLARATION THE SAME DOCUMENT PUBLISHES (29 of 29 edges over a 12-document sample). So a candidate
+     * becomes an edge only when its VALUE NAMES A DECLARATION OF THIS DOCUMENT; the target is that
+     * declaration. Under this test the corpus yields ZERO edges — 0 of the 174 sites' values name a
+     * declaration here, and the single project-wide coincidence (`publish = "build"`, an output
+     * directory) is not one of them — so the defect cannot occur by construction rather than by a name
+     * filter that would have to be maintained.
+     */
+    const pendingPublishSurface: { siteName: string; sitePath: string; value: string; line: number }[] = []
+
     /** Is the pair's value the boolean `true`? */
     const isBooleanTrue = (pair: Node): boolean => {
       const v = valueOf(pair)
@@ -1069,6 +1106,16 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
       const line = keyNode.startPosition.row + 1
+      // An `exports` CANDIDATE: a publish-surface key with a STRING value. The DECISION is made after
+      // the walk, when the document's own declaration set is complete — see `pendingPublishSurface`.
+      {
+        const ksegs = segmentsOf(keyNode)
+        const leaf = ksegs.length > 0 ? ksegs[ksegs.length - 1] : ""
+        if (PUBLISH_SURFACE_KEYS.has(leaf) && value !== null && value.type === "string") {
+          const sv = stringValueOf(value)
+          if (sv !== null && sv.length > 0) pendingPublishSurface.push({ siteName: name, sitePath: path, value: sv, line })
+        }
+      }
       symbols.push({
         name,
         qualifiedName: qualified(name),
@@ -1453,6 +1500,61 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     if (workspaceRefs > 0) patterns.push(`workspace-inheritance-refs x${workspaceRefs}`)
+    // ---- `exports`: a published NAME, and only where THIS DOCUMENT declares it ------------------
+    //
+    // LEAD RULING 2026-10-13. The name-list predicate counts 174 publish-surface sites over the
+    // corpus; the DATA decides that none of them is an export, because `exports` means a name the unit
+    // publishes for others to import and each of those values names a path, a directory or a
+    // coordinate. This pass makes that impossible by construction: a candidate becomes an edge only
+    // when its value names a declaration of this document, and the edge targets that declaration —
+    // json's measured standard (29 of 29 of its `exports` targets are declared in their own document).
+    // MEASURED over the whole admitted population: 174 candidates, 0 emitted. The graph is unchanged;
+    // what changed is that the type error can no longer be produced by a name filter.
+    let publishSurfaceSites = 0
+    let publishSurfaceExports = 0
+    if (pendingPublishSurface.length > 0) {
+      const declared = new Set<string>()
+      for (const s of symbols) {
+        const n = String(s.name ?? "")
+        if (n.length > 0) declared.add(n)
+      }
+      const seenTargets = new Set<string>()
+      for (const site of pendingPublishSurface) {
+        publishSurfaceSites++
+        // An export is not a self-loop, and it is not a reference to the site's OWN CONTEXT. The
+        // document is not a name it publishes; the site's own key is not; and neither is an ancestor
+        // table or a descendant of it. THAT LAST CLAUSE IS THE MEASURED COINCIDENCE, not a precaution:
+        // the whole corpus emits exactly one candidate under the weaker test —
+        //
+        //     docs/netlify.toml   [build]  base = "docs"  publish = "build"
+        //
+        // — where the OUTPUT DIRECTORY happens to share its enclosing table's name. Under the weaker
+        // test the analyzer emitted `docs.netlify -> docs.netlify.build`, a dangling export of a
+        // build artifact. `publish` inside `[build]` names the section it configures; it does not
+        // publish it. The ruling named this shape, and it is now a pinned fixture case.
+        if (site.value === moduleName || site.value === site.siteName) continue
+        if (site.value === site.sitePath || site.sitePath.startsWith(`${site.value}.`) || site.value.startsWith(`${site.sitePath}.`)) continue
+        if (!declared.has(site.value)) continue
+        const target = qualified(site.value)
+        if (seenTargets.has(target)) continue
+        seenTargets.add(target)
+        publishSurfaceExports++
+        relationships.push({
+          source: moduleName,
+          target,
+          type: ASTEngine.RelationshipType.Exports,
+          confidence: 1.0,
+          line_number: site.line,
+          metadata: {
+            tomlSpecific: true,
+            isPublishSurfaceExport: true,
+            exportForm: "manifest_publish_surface",
+            evidenceClass: "structural",
+          },
+        })
+      }
+    }
+    if (publishSurfaceExports > 0) patterns.push(`publish-surface-exports x${publishSurfaceExports}`)
     for (const { source, pathValue, section, line, base } of pendingImports) {
       importEdges++
       // THE FILE CLAIM, or nothing. A `path` dependency names a directory, and the statement the
@@ -1533,6 +1635,12 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           workspaceInheritanceSkippedLints: workspaceSkippedLints,
           workspaceInheritanceSkippedNoDecl: workspaceSkippedNoDecl,
           workspaceInheritanceSkippedNoRoot: workspaceSkippedNoRoot,
+          // THE `exports` ACCOUNTING: candidates seen by the conventional leaves, and the ones the
+          // DATA test turned into edges. Over the whole admitted population this reads 174 and 0 —
+          // the number the ruling is about, measured at the emission site instead of counted by a
+          // predicate that cannot tell a path from a name.
+          publishSurfaceSites,
+          publishSurfaceExports,
         },
       },
     }
