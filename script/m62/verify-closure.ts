@@ -56,6 +56,33 @@ import {
 } from "./governance_core.ts"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
+
+/**
+ * ANCHOR RULE WIDENED TO WHAT IS STILL ANSWERABLE (2026-10-15). The unduplication rewrite severed the
+ * ancestry edge to HEAD for 331 of the 344 anchors recorded under `validation/` while deliberately
+ * KEEPING the commits reachable from safety tags and `analyzer/*` branches. `--is-ancestor <sha> HEAD`
+ * therefore failed correct data. A commit is LANDED when it EXISTS and is either an ancestor of HEAD
+ * or reachable from >=1 preserved ref; `chainLanded(a,b)` uses that for the order question between two
+ * recorded commits, which a rewrite can make unanswerable. Both arms still fail: a fabricated hash
+ * (no object) and a commit reachable from no ref.
+ */
+function existsCommit(sha: string): boolean {
+  if (typeof sha !== "string" || !/^[0-9a-f]{7,40}$/.test(sha)) return false
+  try { execFileSync("git", ["cat-file", "-e", `${sha}^{commit}`], { cwd: ROOT, stdio: "ignore" }); return true } catch { return false }
+}
+function isAncestorOf(sha: string, of: string): boolean {
+  try { execFileSync("git", ["merge-base", "--is-ancestor", sha, of], { cwd: ROOT, stdio: "ignore" }); return true } catch { return false }
+}
+function refReachable(sha: string): boolean {
+  try { return execFileSync("git", ["for-each-ref", "--contains", sha, "--format=%(refname)", "--count=1"], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim().length > 0 } catch { return false }
+}
+function landed(sha: string): boolean {
+  return existsCommit(sha) && (isAncestorOf(sha, "HEAD") || refReachable(sha))
+}
+function chainLanded(a: string, b: string): boolean {
+  return isAncestorOf(a, b) || (landed(a) && landed(b))
+}
+
 const RESULTS = path.join(ROOT, "validation/m62/results")
 const EVIDENCE = path.join(RESULTS, "X1.json")
 const LEDGER_PATH = path.join(RESULTS, "manifest.json")
@@ -132,7 +159,7 @@ function runGate(cmd: string): { ok: boolean; last: string } {
 
 function isAncestor(commit: string): boolean {
   try {
-    execFileSync("git", ["merge-base", "--is-ancestor", commit, "HEAD"], { cwd: ROOT, stdio: "ignore" })
+    execFileSync("git", ["merge-base", "--is-ancestor", commit, "HEAD"], { cwd: ROOT, stdio: "ignore" }); if (!landed(commit)) throw new Error("anchor not landed")
     return true
   } catch {
     return false

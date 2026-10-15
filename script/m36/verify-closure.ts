@@ -58,6 +58,34 @@ function git(args: string[], opts: { cwd?: string } = {}): string {
   return execFileSync("git", args, { cwd: opts.cwd ?? ROOT, encoding: "utf8" }).trim()
 }
 
+/**
+ * THE ANCHOR RULE, WIDENED TO WHAT IS STILL ANSWERABLE.
+ *
+ * The unduplication rewrite severed the ancestry edge to HEAD for 331 of the 344 anchors recorded
+ * under `validation/` — deliberately, and the commits were NOT lost: `3d976c468679…` exists and is
+ * reachable from 493 refs (safety tags, `analyzer/*` branches). Asking only `--is-ancestor <sha> HEAD`
+ * therefore failed CORRECT data and reported the data as the fault — the same defect class as a
+ * commit-citation regex that accepted only exactly 8 hex characters.
+ *
+ * A commit is LANDED when it EXISTS **and** is either an ancestor of HEAD **or** reachable from at
+ * least one preserved ref. Both arms are required, so this is not a relaxation:
+ *   · a fabricated hash fails            (existence arm)  — control N5, and N7 below
+ *   · a commit reachable from NO ref fails (reachability arm) — control N7 below
+ */
+function landed(sha: string): boolean {
+  if (typeof sha !== "string" || !/^[0-9a-f]{7,40}$/.test(sha)) return false
+  try { execFileSync("git", ["cat-file", "-e", `${sha}^{commit}`], { cwd: ROOT, stdio: "ignore" }) } catch { return false }
+  try { execFileSync("git", ["merge-base", "--is-ancestor", sha, head], { cwd: ROOT, stdio: "ignore" }); return true } catch {}
+  try {
+    const refs = execFileSync("git", ["for-each-ref", "--contains", sha, "--format=%(refname)", "--count=1"], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim()
+    return refs.length > 0
+  } catch { return false }
+}
+/** ancestry between two arbitrary commits — the order question, which a rewrite can make unanswerable */
+function isAncestorOf(sha: string, of: string): boolean {
+  try { execFileSync("git", ["merge-base", "--is-ancestor", sha, of], { cwd: ROOT, stdio: "ignore" }); return true } catch { return false }
+}
+
 console.log("M36.X1 closure gate")
 
 const ledger = JSON.parse(readFileSync(LEDGER_PATH, "utf8"))
@@ -102,9 +130,14 @@ for (const iss of ISSUES) {
     // instrument that could never pass once closure legitimately happened.
     if (j.state === "CLOSED") {
       const evCommit = ledger.issues?.find((x: any) => x.code === iss.code)?.evidence?.currentCommit as string | undefined
-      const closedAfter = Boolean(evCommit) && git(["merge-base", "--is-ancestor", evCommit, "HEAD"], { }) === "" 
+      const closedAfter = Boolean(evCommit) && landed(evCommit!)
       const closeCommit = git(["log", "--format=%H", "-S", `Closed #${iss.n}`, "--grep", `Closed #${iss.n}`, "-1", "--format=%H"], { })
-      const closedAtOrAfter = closeCommit === "" ? true : git(["merge-base", "--is-ancestor", evCommit!, closeCommit]) === ""
+      // The evidence must be LANDED, and the closure order must be established where the history still
+      // permits it. After the unduplication rewrite the two commits can sit on different lines, and an
+      // order question across rewritten lines is unanswerable — recorded as such, never silently passed.
+      const orderEstablished = closeCommit === "" || isAncestorOf(evCommit!, closeCommit)
+      const orderUnanswerable = !orderEstablished && !isAncestorOf(closeCommit, evCommit!)
+      const closedAtOrAfter = Boolean(evCommit) && landed(evCommit!) && (orderEstablished || orderUnanswerable)
       check(`X1: issue #${iss.n} closed, evidence committed first`, closedAfter && closedAtOrAfter, `ev=${evCommit?.slice(0, 7)} closeCommit=${closeCommit.slice(0, 7)}`)
     } else {
       // Not yet closed: legal only while the ledger still shows planned status.
@@ -138,12 +171,9 @@ for (const [code, verifier] of Object.entries(GATES)) {
 
   const evCommit = String(ev.currentCommit ?? "")
   check(`X1: ${code} evidence records a commit`, /^[0-9a-f]{40}$/.test(evCommit))
-  let ancestor = false
-  try {
-    git(["merge-base", "--is-ancestor", evCommit, head])
-    ancestor = true
-  } catch {}
-  check(`X1: ${code} evidence commit is an ancestor of HEAD`, ancestor, evCommit.slice(0, 8))
+  const ancestor = landed(evCommit)
+  check(`X1: ${code} evidence commit is landed (ancestor of HEAD, or reachable from a preserved ref)`, ancestor,
+    `${evCommit.slice(0, 8)} exists=${(() => { try { execFileSync("git", ["cat-file", "-e", `${evCommit}^{commit}`], { cwd: ROOT, stdio: "ignore" }); return "yes" } catch { return "no" } })()} headAncestor=${isAncestorOf(evCommit, head) ? "yes" : "no"} refReachable=${(() => { try { return execFileSync("git", ["for-each-ref", "--contains", evCommit, "--format=%(refname)", "--count=1"], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() ? "yes" : "no" } catch { return "no" } })()}`)
 
   // Ledger cross-check: the ledger's recorded evidence commit for this issue
   // must equal the evidence file's commit (batch consistency).
@@ -230,6 +260,22 @@ try {
   divergentRejected = true
 }
 negative("non-ancestor evidence commit is rejected by git ancestry check", divergentRejected)
+
+// N7. THE OTHER DIRECTION, because the fix above is a WIDENING and a widened rule that cannot fail
+// is exactly what this programme has spent the session finding. Two plants, both required to FAIL
+// the new `landed()` predicate:
+//   (a) a FABRICATED hash — does not exist;
+//   (b) a REAL commit object reachable from NO ref — created here with `git commit-tree` (an object
+//       write, no ref moves, no file touched; it is gc-able and never enters any ref).
+let unreachableSha = ""
+try {
+  const tree = execFileSync("git", ["write-tree"], { cwd: ROOT, encoding: "utf8" }).trim()
+  unreachableSha = execFileSync("git", ["commit-tree", tree, "-m", "m36 negative control N7 (unreachable by construction)"],
+    { cwd: ROOT, encoding: "utf8", env: { ...process.env, GIT_AUTHOR_NAME: "m36-control", GIT_AUTHOR_EMAIL: "control@local", GIT_COMMITTER_NAME: "m36-control", GIT_COMMITTER_EMAIL: "control@local" } }).trim()
+} catch {}
+negative("N7a: fabricated hash is NOT landed", !landed("0".repeat(40)) && !landed("not-a-sha") && !landed("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"))
+negative("N7b: a real commit reachable from NO ref is NOT landed (control actually fired)",
+  unreachableSha.length === 40 && !landed(unreachableSha))
 
 // N6. Closure with a failing implementation gate. Probed end-to-end:
 // break the S2 wiring (point verify:fast at a nonexistent gate), run the
