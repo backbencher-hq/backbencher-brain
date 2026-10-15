@@ -111,13 +111,40 @@ function negative(label: string, condition: boolean, detail = ""): void {
   check(`${label} [negative]`, condition, detail)
 }
 
-/** Run one verifier with npx tsx; returns exit code. */
-function runVerifier(script: string): number {
+/**
+ * Run one verifier with npx tsx; returns its exit code AND the summary line it printed.
+ *
+ * WHY THE SUMMARY IS KEPT, AND WHY IT IS NOT COSMETIC. This returned the exit code alone, and the
+ * closure reported `exit=1` as the entire failure detail. Attributing m24's refusal therefore took a
+ * HAND-RUN of `verify-server.ts`, which is how it emerged that the verifier had run 142 checks, knew
+ * it stood at 123, and printed
+ *     `L1: KNOWN-GAP (123/142 passed, 32/34 mutants caught [0 by load failure only], 24 negative)`
+ * — and the closure discarded all of it in favour of `exit=1`. **A closure gate is meant to be a WORK
+ * QUEUE, and `exit=1` is not a queue entry; `123/142` is.** The difference is between "m24 is red" and
+ * "m24 is 19 checks short, in its LSP server, and its own instrument says so".
+ *
+ * THE RUNNER IS NOT THE CAUSE, AND THAT WAS MEASURED RATHER THAN ASSUMED. `npx tsx` is not what
+ * `package.json` uses for the suite, and a runner mismatch has already produced a fabricated
+ * catastrophe once this session — 312 phantom `script-integrity` failures whose entire text was
+ * `Bun is not defined`. So the hypothesis was tested before this change: `verify-server.ts` gives the
+ * IDENTICAL status line and exit code under `npx tsx` and under `bun`. The gate is reporting a real
+ * gap, not a broken runner. Every sub-verifier must be checked the same way before its redness is
+ * believed, and that check is cheap.
+ */
+function runVerifier(script: string): { code: number; summary: string } {
+  const lastSummary = (s: string): string =>
+    s
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => /^[A-Z][A-Z0-9-]*:\s/.test(l) || /^[A-Z][A-Z0-9-]*\s+—\s/.test(l))
+      .pop() ?? ""
   try {
-    execFileSync("npx", ["tsx", script], { cwd: ROOT, stdio: "pipe", timeout: 300_000 })
-    return 0
+    const out = execFileSync("npx", ["tsx", script], {
+      cwd: ROOT, stdio: "pipe", timeout: 300_000, encoding: "utf8",
+    })
+    return { code: 0, summary: lastSummary(String(out ?? "")) }
   } catch (e: any) {
-    return e.status ?? 1
+    return { code: e.status ?? 1, summary: lastSummary(String(e?.stdout ?? "")) }
   }
 }
 
@@ -186,8 +213,13 @@ console.log("M24.X1 closure-gate verifier\n")
 console.log("pass 1: full suite at HEAD")
 const exitCodes: Record<string, number> = {}
 for (const { code, script } of SUITE) {
-  exitCodes[code] = runVerifier(script)
-  check(`X1: ${code} verifier passes at HEAD`, exitCodes[code] === 0, `exit=${exitCodes[code]}`)
+  const r = runVerifier(script)
+  exitCodes[code] = r.code
+  check(
+    `X1: ${code} verifier passes at HEAD`,
+    r.code === 0,
+    r.summary ? `${r.summary}  (exit=${r.code})` : `exit=${r.code}`,
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -334,7 +366,7 @@ let headMovedDuringRun = false
 let skippedForHeadMove = 0
 for (const { code, script, evidenceFile } of SUITE) {
   const before = fingerprint(evidenceFile)
-  const exit = runVerifier(script)
+  const { code: exit } = runVerifier(script)
   const after = fingerprint(evidenceFile)
   if (readHead() !== headAtPass2) {
     headMovedDuringRun = true
@@ -368,7 +400,7 @@ for (const { code, script, evidenceFile } of SUITE) {
   // The retry is announced rather than silent, so a run that needed it says so.
   if (before === null || after === null || before !== after) {
     const retryBefore = fingerprint(evidenceFile)
-    const retryExit = runVerifier(script)
+    const { code: retryExit } = runVerifier(script)
     const retryAfter = fingerprint(evidenceFile)
     if (retryExit !== 0 || retryBefore === null || retryAfter === null || retryBefore !== retryAfter) {
       byteIdentical = false
