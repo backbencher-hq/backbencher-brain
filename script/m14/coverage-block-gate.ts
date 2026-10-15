@@ -497,9 +497,39 @@ for (const lane of allLanes) {
   for (const t of impl) { if (seen.has(t)) problems.push(`implemented lists "${t}" twice`); seen.add(t) }
   for (const t of gAbs) if (impl.includes(t)) problems.push(`"${t}" is BOTH implemented and excluded (grammar-absence)`)
   for (const t of zero) if (impl.includes(t)) problems.push(`"${t}" is BOTH implemented and excluded (zero-sites)`)
-  for (const t of unex.map((x) => (typeof x === "string" ? x : x?.label))) {
+  for (const x of unex) {
+    const t = typeof x === "string" ? x : x?.label
     if (!TYPES.includes(t)) { problems.push(`corpusUnexercised names "${t}", which is not one of the ten types`); continue }
     if (impl.includes(t)) problems.push(`"${t}" is BOTH implemented and corpusUnexercised`)
+    /**
+     * THE SAME EVIDENCE STANDARD `excluded` CARRIES, WHICH THIS LIST DID NOT.
+     *
+     * Until 2026-10-15 this loop checked the label was one of the ten types and that it was not also
+     * implemented — and NOTHING ELSE. An entry written as a BARE STRING, with no `evidence` class and no
+     * `from` citation, passed the gate in silence. `excluded` has required both since rule 3 above.
+     *
+     * MEASURED, WHICH IS WHY IT IS FIXED RATHER THAN DESCRIBED. `EXCLUSION-AUDIT-S1` found `html extends`
+     * and `html overrides` sitting in this list as bare strings, while the lane's own fixtures for those
+     * exact types are GREEN (`html 18 pass, 0 fail`) and the spec's own `_from` records the corpus carrying
+     * `extends` 31 and `overrides` 193 in one document. The ruling had recorded THE INSTRUMENT'S FALLBACK,
+     * not the language: that document was measured at 109,509–127,904 ms against the engine's 120 s cap, so
+     * the run returned `2.0-basic-fallback` with 0 symbols and 0 relationships. `scss overrides` carries
+     * `evidence: null` for the same reason. Three unevidenced rulings, two of them false, and the gate's
+     * silence is what let them sit there.
+     *
+     * A ruling without a class is a ruling nobody can check; a ruling without a citation is prose. Both are
+     * failures HERE for the same reason rule 3 makes them failures for `excluded` — the difference between
+     * the two lists is WHERE the type is counted (inside the denominator or outside it), never how much
+     * evidence the claim needs.
+     */
+    const cls = typeof x === "string" ? "" : x?.evidence
+    const from = typeof x === "string" ? "" : x?.from
+    if (cls !== "grammar-absence" && cls !== "zero-sites") {
+      problems.push(`corpusUnexercised "${t}" has no evidence class in {grammar-absence, zero-sites} (read ${JSON.stringify(cls ?? null)}); a bare string or a missing class is a ruling the gate cannot check`)
+    }
+    if (typeof from !== "string" || from.trim() === "") {
+      problems.push(`corpusUnexercised "${t}" cites no source; a ruling without a count is prose`)
+    }
   }
 
   const applicable = TOTAL - gAbs.length - unclassified.length

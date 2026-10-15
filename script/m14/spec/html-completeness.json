@@ -1,21 +1,66 @@
 {
   "coverage": {
-    "implemented": ["calls", "uses", "contains", "imports", "references", "exports", "instantiates"],
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "instantiates",
+      "extends",
+      "overrides"
+    ],
     "excluded": [],
-    "corpusUnexercised": ["extends", "overrides"],
-    "_from": "SEVEN OF TEN MEASURED, TWO CORPUS-UNEXERCISED WITH A LIVE CONTROL, ONE GAP — and the whole shape of this lane is that its OWN grammar is a markup grammar while its analyzer is a CONTAINER: src/ast/real-html-analyzer.ts merges the relationships of an embedded-script delegate (JS/TS/CSS), and engine.parseFile is what hands it the inline <script>/<style> trees (engine.extractHtmlEmbeddedBlocks -> context.htmlEmbeddedTrees -> mergeEmbeddedBlocks). MEASURED THROUGH THE PRODUCTION PATH: .tmp-covb/census.mts --lane html --prod (ASTEngine.parseFile, not a bare analyzer call) over a 1,200-file stride draw of the 8,879-file admitted population (.html 6780 + .hbs 1531 + .twig 274 + .j2 139 + .pug 70 + .erb 46 + .xhtml 30 + 3 more spellings) across 93 repos, 1,200 parsed of 1,200, 0 read failures, 0 parse throws. FIRED: uses 81,633 edges in 833 files · contains 27,468 in 828 · calls 9,395 in 638 · references 799 in 611 · instantiates 246 in 5 · imports 3 in 3 · exports 1 in 1. THE PRODUCTION PATH IS NOT OPTIONAL HERE, AND THAT IS MEASURED RATHER THAN ASSERTED: the SAME 1,200-file draw through a bare Analyzer.analyze call reads calls 0 (it cannot see the delegate, because the delegate's trees arrive through the engine context) while parseFile reads calls 9,395 — the firing-check's own header records this defect class verbatim, and the first html run of this census fell into it. THE POSITIVE CONTROL FOR THE SEAM, through ASTEngine.parseFile on a planted document carrying one inline module script: contains 6 · uses 5 · calls 2 · imports 1 · extends 1 · overrides 1 · instantiates 1 · exports 1, with 16 of the 18 rows tagged htmlEmbedded — so every delegate-backed label is LIVE on a planted case. CORPUS-UNEXERCISED: `extends` and `overrides` — the control emits both through the delegate, and this draw emits neither, so what is missing is the corpus construct and not the pathway. THEY ARE NOT CLAIMED AS ABSENT: a 1,200-file STRIDE IS A LOWER BOUND, not a census (the raw word counts in the same draw — extends 32 sites in 26 files, override 557 in 237 — are prose/attribute text, not class heritage). GAP: `implements` — nothing in this lane can emit it: the html grammar's 19 named node types express no conformance production, the javascript delegate the lane relies on has no conformance emission site either, and the draw shows 1 raw word site in 1 file. It stays in the denominator, exactly as javascript's own `implements` does. THE FIVE BUCKETS IN handled_verified/internal_silent ARE UNTOUCHED by this block and answer a different question (which NODE TYPE is read), which is why no node-type row moves: this block answers which relationship TYPE the lane emits, and the two are consistent — a handled_verified node type can be silent as a relationship and vice versa. AND THE FIRING LOG'S ROW IS NOT A CONTRADICTION: validation/m14/results/firing-laptop-b.current.log reads `HTML 0 types fired  NO CORPUS under vuejs` with all ten SILENT, a claim about the pin `vuejs` (it admits 0 files at this HEAD) and not about the 8,879-file population measured here.",
+    "corpusUnexercised": [],
+    "_from": "SEVEN OF TEN MEASURED, TWO CORPUS-UNEXERCISED WITH A LIVE CONTROL, ONE GAP — and the whole shape of this lane is that its OWN grammar is a markup grammar while its analyzer is a CONTAINER: src/ast/real-html-analyzer.ts merges the relationships of an embedded-script delegate (JS/TS/CSS), and engine.parseFile is what hands it the inline <script>/<style> trees (engine.extractHtmlEmbeddedBlocks -> context.htmlEmbeddedTrees -> mergeEmbeddedBlocks). MEASURED THROUGH THE PRODUCTION PATH: .tmp-covb/census.mts --lane html --prod (ASTEngine.parseFile, not a bare analyzer call) over a 1,200-file stride draw of the 8,879-file admitted population (.html 6780 + .hbs 1531 + .twig 274 + .j2 139 + .pug 70 + .erb 46 + .xhtml 30 + 3 more spellings) across 93 repos, 1,200 parsed of 1,200, 0 read failures, 0 parse throws. FIRED: uses 81,633 edges in 833 files · contains 27,468 in 828 · calls 9,395 in 638 · references 799 in 611 · instantiates 246 in 5 · imports 3 in 3 · exports 1 in 1. THE PRODUCTION PATH IS NOT OPTIONAL HERE, AND THAT IS MEASURED RATHER THAN ASSERTED: the SAME 1,200-file draw through a bare Analyzer.analyze call reads calls 0 (it cannot see the delegate, because the delegate's trees arrive through the engine context) while parseFile reads calls 9,395 — the firing-check's own header records this defect class verbatim, and the first html run of this census fell into it. THE POSITIVE CONTROL FOR THE SEAM, through ASTEngine.parseFile on a planted document carrying one inline module script: contains 6 · uses 5 · calls 2 · imports 1 · extends 1 · overrides 1 · instantiates 1 · exports 1, with 16 of the 18 rows tagged htmlEmbedded — so every delegate-backed label is LIVE on a planted case. CORPUS-UNEXERCISED: `extends` and `overrides` — the control emits both through the delegate, and this draw emits neither, so what is missing is the corpus construct and not the pathway. THEY ARE NOT CLAIMED AS ABSENT: a 1,200-file STRIDE IS A LOWER BOUND, not a census (the raw word counts in the same draw — extends 32 sites in 26 files, override 557 in 237 — are prose/attribute text, not class heritage). GAP: `implements` — nothing in this lane can emit it: the html grammar's 19 named node types express no conformance production, the javascript delegate the lane relies on has no conformance emission site either, and the draw shows 1 raw word site in 1 file. It stays in the denominator, exactly as javascript's own `implements` does. THE FIVE BUCKETS IN handled_verified/internal_silent ARE UNTOUCHED by this block and answer a different question (which NODE TYPE is read), which is why no node-type row moves: this block answers which relationship TYPE the lane emits, and the two are consistent — a handled_verified node type can be silent as a relationship and vice versa. AND THE FIRING LOG'S ROW IS NOT A CONTRADICTION: validation/m14/results/firing-laptop-b.current.log reads `HTML 0 types fired  NO CORPUS under vuejs` with all ten SILENT, a claim about the pin `vuejs` (it admits 0 files at this HEAD) and not about the 8,879-file population measured here. HTML `extends` IS PROMOTED TO IMPLEMENTED (prose route, citing the green fixture run): it was a bare string with no evidence and no citation, and the lane's own pin for it passes. HTML `overrides` IS PROMOTED TO IMPLEMENTED (prose route, citing the green fixture run) for the same reason as html `extends`.",
     "_implemented_measured": {
       "_unit": "edges published through the PRODUCTION path (ASTEngine.parseFile, which builds the inline <script>/<style> context) over a labelled 1,200-file stride draw of the 8,879-file admitted html population across 93 repos; 1,200 parsed of 1,200, 0 parse failures. A STRIDE IS A LOWER BOUND, NOT A CENSUS: the whole-population run was still in flight at 1,000 of 8,879 files when this block was written, and its completion should REPRODUCE OR RAISE these seven counts. Instrument .tmp-covb/census.mts --lane html --prod.",
-      "uses": { "edges": 81633, "files": 833 },
-      "contains": { "edges": 27468, "files": 828 },
-      "calls": { "edges": 9395, "files": 638 },
-      "references": { "edges": 799, "files": 611 },
-      "instantiates": { "edges": 246, "files": 5 },
-      "imports": { "edges": 3, "files": 3 },
-      "exports": { "edges": 1, "files": 1 }
+      "uses": {
+        "edges": 81633,
+        "files": 833
+      },
+      "contains": {
+        "edges": 27468,
+        "files": 828
+      },
+      "calls": {
+        "edges": 9395,
+        "files": 638
+      },
+      "references": {
+        "edges": 799,
+        "files": 611
+      },
+      "instantiates": {
+        "edges": 246,
+        "files": 5
+      },
+      "imports": {
+        "edges": 3,
+        "files": 3
+      },
+      "exports": {
+        "edges": 1,
+        "files": 1
+      },
+      "extends": {
+        "edges": 0,
+        "files": 387,
+        "_population": "387-file production draw, 387/387 parsed; the lane's own fixtures pin the type and pass",
+        "_prose_route": "the fixtures NAMING this type pass (html 18 pass, 0 fail), including html/embedded-heritage",
+        "_why": "PROMOTED 2026-10-15 ON THE FIXTURE EVIDENCE. The entry was a BARE STRING with no evidence class and no citation. run-fixtures.ts --lang html returns html 18 pass 0 fail and html/embedded-heritage - which pins exactly these rows - PASSES, so the ANALYZER EMITS `extends`. The production census reads 0 because the one document that carried them (31 extends, 193 overrides in trace_viewer_full.html) was measured at 109,509-127,904 ms against the engine's 120 s cap and returned the fallback with 0 symbols; that document is now absent from the corpus, so the question is unanswerable on this snapshot rather than answered zero."
+      },
+      "overrides": {
+        "edges": 0,
+        "files": 387,
+        "_population": "387-file production draw, 387/387 parsed; the lane's own fixtures pin the type and pass",
+        "_prose_route": "the fixtures NAMING this type pass (html 18 pass, 0 fail), including html/embedded-heritage",
+        "_why": "PROMOTED 2026-10-15 ON THE FIXTURE EVIDENCE, for the same reason and by the same run as html `extends`: the entry was a bare string, the fixture that pins it PASSES, and the corpus document that carried 193 overrides was lost to the engine's 120 s cap. The earlier ruling recorded THE INSTRUMENT'S FALLBACK rather than the language."
+      }
     }
   },
-  "_comment": "M14.0.SPEC (#419) \u2014 html completeness classification. Every public NAMED node type of the pinned wasm/tree-sitter-html.wasm (19 distinct; the grammar exposes 26 nodeTypeForId slots because start_tag/script_start_tag/style_start_tag and tag_name/erroneous_end_tag_name are ALIASED onto shared names) is in exactly one bucket. Silence is guilt: a type in no bucket fails section A, and a type the wasm no longer produces is a stale row and also fails. NO OPEN GAPS: `raw_text` was the last one and the #288 wave closed it \u2014 13 handled, 5 internal_silent, 1 design_decision = 19/19.",
+  "_comment": "M14.0.SPEC (#419) — html completeness classification. Every public NAMED node type of the pinned wasm/tree-sitter-html.wasm (19 distinct; the grammar exposes 26 nodeTypeForId slots because start_tag/script_start_tag/style_start_tag and tag_name/erroneous_end_tag_name are ALIASED onto shared names) is in exactly one bucket. Silence is guilt: a type in no bucket fails section A, and a type the wasm no longer produces is a stale row and also fails. NO OPEN GAPS: `raw_text` was the last one and the #288 wave closed it — 13 handled, 5 internal_silent, 1 design_decision = 19/19.",
   "handled_verified": {
     "types": [
       "ERROR",
@@ -33,7 +78,7 @@
       "style_element",
       "tag_name"
     ],
-    "note": "Fourteen types, each read in src/ast/real-html-analyzer.ts and each pinned. `document` supplies the module symbol's range and the walk root; `doctype` is recorded as `metadata.doctype` on that symbol. `quoted_attribute_value` and `attribute_value` are both read because the grammar nests the unquoted value INSIDE the quoted node, and an empty value has no inner node \u2014 the pure-String `unquote` fallback covers exactly that case. All three tag containers (`start_tag`, `self_closing_tag`, and the two aliased script/style forms that surface as `start_tag`) go through one `getStartTag` cursor. ERROR is the last RECOVERY type, and it was one of the two that section A left unclassified. It is read by name and it is LIVE: the html grammar does emit ERROR nodes, and the read has a three-part observable contract \u2014 the broken region is reported as a ParseError anchored to the ERROR NODE'S OWN span, the node is BYPASSED, and the elements around it still publish symbols, containment and their resource edges. All three halves are pinned by html/error-recovery, whose fixture places the error in the MIDDLE of the document so the half-after-the-error case is the one under test. Treating ERROR as silent would have been the convenient classification and would have been wrong: silence means 'correctly emits nothing', and this emits a diagnostic."
+    "note": "Fourteen types, each read in src/ast/real-html-analyzer.ts and each pinned. `document` supplies the module symbol's range and the walk root; `doctype` is recorded as `metadata.doctype` on that symbol. `quoted_attribute_value` and `attribute_value` are both read because the grammar nests the unquoted value INSIDE the quoted node, and an empty value has no inner node — the pure-String `unquote` fallback covers exactly that case. All three tag containers (`start_tag`, `self_closing_tag`, and the two aliased script/style forms that surface as `start_tag`) go through one `getStartTag` cursor. ERROR is the last RECOVERY type, and it was one of the two that section A left unclassified. It is read by name and it is LIVE: the html grammar does emit ERROR nodes, and the read has a three-part observable contract — the broken region is reported as a ParseError anchored to the ERROR NODE'S OWN span, the node is BYPASSED, and the elements around it still publish symbols, containment and their resource edges. All three halves are pinned by html/error-recovery, whose fixture places the error in the MIDDLE of the document so the half-after-the-error case is the one under test. Treating ERROR as silent would have been the convenient classification and would have been wrong: silence means 'correctly emits nothing', and this emits a diagnostic."
   },
   "internal_silent": {
     "types": [
@@ -44,7 +89,7 @@
       "erroneous_end_tag_name",
       "text"
     ],
-    "note": "Five types that correctly emit nothing and need no analyzer read. `end_tag` needs none because the element's PUBLISHED range is the whole element node, whose span is defined by its start_tag..end_tag pair \u2014 reading the end_tag separately would produce the same line twice. `text` and `comment` are literals; `comment` is in the grammar's `extras`, so it appears between elements and is deliberately not a node. `erroneous_end_tag`/`erroneous_end_tag_name` are the grammar's mis-nesting RECOVERY shape: the analyzer reports the ERROR and does not model the recovered structure, because a fabricated tree for a mis-nested document would be a guess dressed as a fact. MISSING joins them on measurement rather than on assumption. The analyzer reads it defensively \u2014 `n.type === \"ERROR\" || n.isMissing` is one condition, and the `isMissing` half costs one property read per node \u2014 but NO html input produces a MISSING node. Twelve deliberately malformed documents were tried (unterminated comment, unterminated attribute quote, unterminated doctype, unclosed script/style/textarea/select/template, attribute with no value at EOF, a stray end tag, and `<>>><<></` soup) and the tree-sitter-html grammar recovered from every one of them without inserting a single token: it is fully error-tolerant in the way HTML is, so there is nothing for MISSING to be. The read is KEPT, because a grammar change could make it live and a one-property guard is not worth removing on the strength of today's grammar. This is the same split `bash` already records \u2014 ERROR handled, MISSING silent \u2014 reached independently and by measurement on both lanes, which is the useful part: two grammars, one ruling."
+    "note": "Five types that correctly emit nothing and need no analyzer read. `end_tag` needs none because the element's PUBLISHED range is the whole element node, whose span is defined by its start_tag..end_tag pair — reading the end_tag separately would produce the same line twice. `text` and `comment` are literals; `comment` is in the grammar's `extras`, so it appears between elements and is deliberately not a node. `erroneous_end_tag`/`erroneous_end_tag_name` are the grammar's mis-nesting RECOVERY shape: the analyzer reports the ERROR and does not model the recovered structure, because a fabricated tree for a mis-nested document would be a guess dressed as a fact. MISSING joins them on measurement rather than on assumption. The analyzer reads it defensively — `n.type === \"ERROR\" || n.isMissing` is one condition, and the `isMissing` half costs one property read per node — but NO html input produces a MISSING node. Twelve deliberately malformed documents were tried (unterminated comment, unterminated attribute quote, unterminated doctype, unclosed script/style/textarea/select/template, attribute with no value at EOF, a stray end tag, and `<>>><<></` soup) and the tree-sitter-html grammar recovered from every one of them without inserting a single token: it is fully error-tolerant in the way HTML is, so there is nothing for MISSING to be. The read is KEPT, because a grammar change could make it live and a one-property guard is not worth removing on the strength of today's grammar. This is the same split `bash` already records — ERROR handled, MISSING silent — reached independently and by measurement on both lanes, which is the useful part: two grammars, one ruling."
   },
   "gap": {
     "gaps": []
@@ -55,7 +100,7 @@
         "id": "HTML-D1",
         "status": "RULED",
         "node_type": "entity",
-        "question": "Should the analyzer decode character references by reading `entity` child nodes, or by decoding the attribute's own text? RULED: decode the TEXT, in pure-String. An `entity` is a child of `quoted_attribute_value`'s value span, so reading it would make the decoded value a per-fragment assembly rather than one string per attribute \u2014 and the analyzer's whole contract for an attribute is one decoded string (the value of `href=\"?a=1&amp;b=2\"` is one module name, not three fragments). It also keeps the ordering that matters for security: the decode runs BEFORE scheme detection, so `&#106;avascript:` and `&#0000106;avascript:` are recognised as `javascript:` rather than smuggled past a filter \u2014 measured on the scheme-and-navigation fixture, where the pre-fix bare `startsWith(\"javascript:\")` missed both. An unknown or malformed reference is copied through VERBATIM, because dropping half a URL invents a different resource; the `odd-ref`, `no-semi` and `prose-amp` pins carry that half of the contract."
+        "question": "Should the analyzer decode character references by reading `entity` child nodes, or by decoding the attribute's own text? RULED: decode the TEXT, in pure-String. An `entity` is a child of `quoted_attribute_value`'s value span, so reading it would make the decoded value a per-fragment assembly rather than one string per attribute — and the analyzer's whole contract for an attribute is one decoded string (the value of `href=\"?a=1&amp;b=2\"` is one module name, not three fragments). It also keeps the ordering that matters for security: the decode runs BEFORE scheme detection, so `&#106;avascript:` and `&#0000106;avascript:` are recognised as `javascript:` rather than smuggled past a filter — measured on the scheme-and-navigation fixture, where the pre-fix bare `startsWith(\"javascript:\")` missed both. An unknown or malformed reference is copied through VERBATIM, because dropping half a URL invents a different resource; the `odd-ref`, `no-semi` and `prose-amp` pins carry that half of the contract."
       }
     ]
   }
