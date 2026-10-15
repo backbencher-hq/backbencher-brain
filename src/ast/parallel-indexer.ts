@@ -30,7 +30,12 @@ import { CrossLanguageIntelligencePersister } from "./cross-language-intelligenc
 import { detectLanguageFromPath } from "./language-detection"
 import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
-import { resolveImportTargets } from "./import-resolution"
+import {
+  resolveDottedTargets,
+  resolveImportTargets,
+  resolveNameTargets,
+  resolveRankedBareNameTargets,
+} from "./import-resolution"
 import { retargetCrossFileOverrides } from "./override-retarget"
 import { retargetJuliaMethodTableBindings } from "./julia-binding-collapse"
 import { claimOwnerCarryingTargets } from "./member-owner-resolution"
@@ -409,6 +414,17 @@ export interface ParallelIndexingStats {
     repairedInEdges: number
     purgedDeletedFiles: number
     touchedSymbols: number
+    /** Rows this run stored whose target the shared deciders resolved over the
+     *  complete tables (name strategies + the `<module>:<item>` resolver),
+     *  scoped to the files it re-stored. The M40.A2 phase that separates
+     *  "settled" from "left for a full pass" for a `--changed` run's own rows. */
+    resolvedStoredEdges?: number
+    /** Captured in-edges the repair could not re-point (target symbol gone). */
+    stillUnresolvedInEdges?: number
+    /** Pre-M59 `line_number = 0` rows healed to NULL by this run (M59/#821). */
+    healedZeroLines?: number
+    /** In-edges re-pointed through the `<module>:<item>` resolver. */
+    importResolvedInEdges?: number
   }
   /**
    * M22.V5: honest per-bucket run summary. Every input file lands in exactly
@@ -3233,13 +3249,36 @@ export async function storeResults(
      DELETE FROM brain_relationship 
      WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
    `)
-   // Also delete relationships from OTHER files that target this file's symbols.
-   // Without this, deleteFileSymbols fails with FK violation when cross-file
-   // relationships (e.g. calls, uses) still reference symbols being deleted.
+   // NOT deleted any more: the rows from OTHER files that target this file's
+   // symbols. The comment this statement carried said deleteFileSymbols would hit
+   // an FK violation without it, but the FK on `target_symbol_id` is declared
+   // `ON DELETE SET NULL` (schema-ddl.ts), so deleting a symbol CLEARS the inbound
+   // pointer and the row SURVIVES — the contract the bounded repair was built on
+   // and asserts (`script/m59/verify-legacy-zero-heal.ts`,
+   // `fk-clears-the-pointer-not-the-row`). The DELETE destroyed rows that nothing
+   // can re-emit on an incremental run: only the touched file is re-parsed, so the
+   // other files' rows are never re-created.
+   //
+   // MEASURED, at two scales and on a gate that predates this round:
+   //   script/m65/probe-a2-shape.ts   30 leaves + 1 hub: editing the hub dropped
+   //                                  117 of its 120 inbound edges (E1=3 vs E0=120)
+   //   script/m40/verify-a2-bounded-post.ts  full fixture: E1=0 vs E0=11,998 — RED
+   //                                  at HEAD in a clean worktree, not just here
+   //   script/m59/verify-legacy-zero-heal.ts "row … VANISHED — the store deleted a
+   //                                  row it cannot re-emit"
+   //   this repo's index              69,171 rows (11.0%) carry no source symbol —
+   //                                  the population D1's `unattributed` count
+   //                                  exists for; deleting the attributable ones
+   //                                  only grows it
+   //
+   // The statement is kept (unused at this call site) because `stmt` is the #737
+   // diagnostic map and `purgeDeletedFiles` has its own delete-by-target for files
+   // that are genuinely gone — that one is correct and stays.
    const deleteFileRelationshipsByTarget = rawDb.prepare(`
      DELETE FROM brain_relationship
      WHERE target_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
    `)
+
    const deleteFileTaints = rawDb.prepare(`
      DELETE FROM brain_taint_flow 
      WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
@@ -3482,8 +3521,12 @@ export async function storeResults(
          // brain_file REPLACE below cascades — keeps REPLACE's ON DELETE
          // CASCADE reach empty, which is what makes FK-ON safe here.
          stmt.deleteFileRelationships.run(fileId)
-         stmt.deleteFileRelationshipsByTarget.run(fileId)
-         stmt.deleteFileTaints.run(fileId, fileId)
+         // Inbound rows are intentionally LEFT ALIVE: the FK clears their target
+         // pointer (`ON DELETE SET NULL`), and the bounded pass re-points them from
+         // the pre-parse snapshot (repairInEdges pass 1) or the full pass
+         // re-resolves them by name. Deleting them here is unrecoverable on any
+         // run that does not re-parse their source file — see the statement's own
+         // comment above.
          // Must precede deleteFileSymbols — it resolves the file's symbol ids
          // through brain_symbol, so running it after would delete nothing.
          stmt.deleteFileEmbeddings.run(fileId)
@@ -3762,7 +3805,6 @@ export async function storeResults(
                      ? s.parameters.length
                      : undefined
                if (typeof sArity === "number" && !nameToSymbol.has(`${q}/${sArity}`)) nameToSymbol.set(`${q}/${sArity}`, s)
-             }
              }
              const k = s.type || s.kind || "unknown"
              if (CONTAINER_TYPES_LOOKUP.has(k)) {
@@ -5688,6 +5730,12 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
     // an earlier SQL spelling correlated the UPDATE target from a subquery's ORDER
     // BY, which does not resolve and threw SQLITE_ERROR inside a catch that hid it.
     // Both are why the location and the set-based shape are load-bearing.
+    // THE SCOPED PORT of this plan lives in `src/ast/import-resolution.ts`
+    // (`resolveRankedBareNameTargets`), because the bounded incremental pass has to make
+    // the same decision for the rows its own run re-stored and nothing else in the code
+    // base could. The two are kept honest by a measurement rather than by this comment:
+    // `script/m65/verify-refresh-resolution.ts` compares the refreshed store's whole edge
+    // state with a full index of the same source, for every lane of the fleet.
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_src`)
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_tier`)
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_best_file`)
@@ -7206,6 +7254,10 @@ export async function indexProjectParallel(
         repairedInEdges: bounded.repairedInEdges,
         purgedDeletedFiles: bounded.purgedDeletedFiles,
         touchedSymbols: bounded.touchedSymbols,
+        resolvedStoredEdges: bounded.resolvedStoredEdges,
+        stillUnresolvedInEdges: bounded.stillUnresolvedInEdges,
+        healedZeroLines: bounded.healedZeroLines,
+        importResolvedInEdges: bounded.importResolvedInEdges,
       }
       if (bounded.phases.some((p) => p.outcome === "failed")) {
         try {
@@ -7755,6 +7807,14 @@ export interface InEdgeSnapshotRow {
   /** UNION (main): the row's own primary key — the re-point matches on it, and without it a repair can
    *  only re-insert a copy (which is what this branch's old repair did). */
   id: string
+  /** WHOSE ROWS THESE ARE, as the store's own deletes define it: a row is re-emitted by a re-stored
+   *  file's store exactly when its SOURCE SYMBOL is one of that file's symbols (`storeResults`'s
+   *  `deleteFileRelationships`). Those rows survive the run only through the repair's EXACT pass —
+   *  the pointer restore — because the store re-decided their target from the re-parsed file alone,
+   *  and the guessing passes below would replace that decision with a proximity/name guess. Set by
+   *  `snapshotInEdges`; a row with no source symbol (a file-level row) is NOT owned by the store and
+   *  is therefore not exempt from either pass. */
+  own_source: boolean
   source_symbol_id: string | null
   /** UNION (main): the symbol the row pointed at when it was CAPTURED. Pass 1 restores this exactly,
    *  instead of re-resolving by name — a name match can pick a DIFFERENT same-named symbol. */
@@ -7762,6 +7822,16 @@ export interface InEdgeSnapshotRow {
   /** What to re-point by when that symbol no longer exists: the row's own `target_external` spelling,
    *  or the target symbol's name when it carried no spelling (some resolved rows have none). */
   target_name: string | null
+  /** THE DERIVED FLAGS, captured WITH the pointer they belong to. `is_cross_file` is written by every
+   *  resolution arm from the resolved target's file, and the STORE's own insert path writes it from
+   *  its own rule (own file -> 0) — so a pointer restored without its flags leaves a row claiming a
+   *  same-file target it does not have. MEASURED (`script/m14/verify-store-path-parity.ts`): with the
+   *  exact pass restoring the pointer alone, 1,675 of 9,563 rows kept a flag their captured target
+   *  contradicts. The three are restored verbatim, because the symbol the row pointed at is the same
+   *  symbol after the restore — nothing about them needs to be re-derived. */
+  is_cross_file: number | null
+  is_cross_language: number | null
+  bridge_mechanism: string | null
   relationship_type: string
   confidence: number
   context: string | null
@@ -7792,22 +7862,39 @@ export async function snapshotInEdges(projectId: ProjectID, fileIds: string[]): 
     // a comment to either parser — tsc reported TS1005 on it, and SQLite would have rejected the
     // statement. This is the same class as the backtick-in-a-template-literal hazard that has cost
     // this fleet several runs; the compiler caught this one because it is inside a .ts file's string.
+    // CAPTURE EVERY ROW POINTING INTO A RE-STORED FILE, including the ones whose own file also went
+    // through the store. The `NOT IN` that used to sit here said "rows this run re-emits do not need
+    // the repair", and that is false in a multi-file run: the re-emission happens when the OWNER
+    // file's batch is stored, and a DIFFERENT touched file's store clears the pointer afterwards
+    // (`ON DELETE SET NULL`) — nothing re-emits the row a second time, so the pointer is gone with
+    // no repair covering it. MEASURED (`script/m14/verify-store-path-parity.ts`, svelte draw of
+    // 120 files): 102 of 9,563 rows lost their resolved target on a same-source re-index, every one
+    // of them a row whose SOURCE is in a re-stored file and whose TARGET is in another one — the
+    // population the old predicate dropped on the floor, and 87 more rows were re-emitted under a
+    // different id and so were never matched at all. The flag carries the classification the two
+    // kinds need (exact-only vs guessable); it is not a second reason to skip a row.
     const part = rawDb.prepare(`
       SELECT r.id, r.source_symbol_id, r.target_symbol_id,
              COALESCE(NULLIF(r.target_external, ''), t.name) AS target_name,
-             r.relationship_type, r.confidence, r.context, r.line_number, r.metadata
+             r.is_cross_file, r.is_cross_language, r.bridge_mechanism,
+             r.relationship_type, r.confidence, r.context, r.line_number, r.metadata,
+             (CASE WHEN r.source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id IN (${placeholders}))
+                   THEN 1 ELSE 0 END) AS own_source
       FROM brain_relationship r
       JOIN brain_symbol t ON t.id = r.target_symbol_id
       WHERE r.project_id = ?
         AND t.file_id IN (${placeholders})
-        AND r.source_symbol_id NOT IN (SELECT id FROM brain_symbol WHERE file_id IN (${placeholders}))
-    `).all(projectId, ...chunk, ...chunk) as any[]
+    `).all(...chunk, projectId, ...chunk) as any[]
     for (const r of part) {
       rows.push({
         id: String(r.id),
+        own_source: Number(r.own_source) === 1,
         source_symbol_id: r.source_symbol_id ?? null,
         target_symbol_id: r.target_symbol_id ?? null,
         target_name: r.target_name ?? null,
+        is_cross_file: typeof r.is_cross_file === "number" ? r.is_cross_file : null,
+        is_cross_language: typeof r.is_cross_language === "number" ? r.is_cross_language : null,
+        bridge_mechanism: typeof r.bridge_mechanism === "string" ? r.bridge_mechanism : null,
         relationship_type: r.relationship_type,
         confidence: typeof r.confidence === "number" ? r.confidence : 0.5,
         context: r.context ?? null,
@@ -7849,6 +7936,15 @@ export async function snapshotInEdges(projectId: ProjectID, fileIds: string[]): 
  *      (`script/m14/verify-store-path-parity.ts`): 187 of 10,171 rows stored a
  *      different payload after a re-index, 185 of them `is_cross_file` and 112
  *      `target`, and 652 rows existed nowhere at all.
+ *      THE ROW'S DERIVED FLAGS COME BACK WITH IT. `is_cross_file` is written by
+ *      every resolution arm from the resolved target's FILE, and the store's own
+ *      insert path writes it from its rule (own file -> 0); a pointer put back
+ *      without its flags leaves the row asserting a same-file target it does not
+ *      have. MEASURED once the exact pass started reaching the rows the store had
+ *      re-emitted: 1,675 of 9,563 rows kept a flag their restored target
+ *      contradicts (`script/m14/verify-store-path-parity.ts`, check 3a). The
+ *      three are restored verbatim rather than re-derived, because the symbol the
+ *      row pointed at is the SAME symbol after the restore.
  *
  *   2. BY NAME — only for the rows whose symbol is genuinely gone (a symbol
  *      really did move or vanish in the re-stored file). These re-bind within
@@ -7856,6 +7952,17 @@ export async function snapshotInEdges(projectId: ProjectID, fileIds: string[]): 
  *      breaking ties, matching the store's own `resolveTargetStmt` proximity
  *      order. When `fileIds` is not given, this pass is skipped and such rows
  *      are reported as still-unresolved rather than guessed at.
+ *      RESTRICTED to the rows the store does NOT re-emit (`own_source = 0`): a
+ *      row whose own file was re-stored was already given a target by that
+ *      store's own resolution, and pass 2 could only replace it with a
+ *      same-named stranger elsewhere in the touched set.
+ *
+ * Pass 1 has no such restriction, and that asymmetry is the whole point: for a
+ * row the store re-emits, the EXACT pointer is the only thing the run destroyed.
+ * A batch over several files clears the pointer of a row whose SOURCE file was
+ * stored BEFORE its TARGET file was — the store re-emitted the row with its
+ * resolution, and the later batch's symbol delete cleared it. Nothing re-emits
+ * it again, so the pointer restore is the only writer that can put it back.
  *
  * M59/#821 stays enforced, and it MOVES. A legacy index's stored `line_number =
  * 0` used to be healed on the way back in because the old repair re-INSERTED the
@@ -7882,13 +7989,13 @@ export async function repairInEdges(
   if (snapshot.length === 0) return 0
   const rawDb = await BrainDatabase.getRawInstance(projectId)
   const now = Date.now()
-  rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _m40_inbound (rel_id TEXT PRIMARY KEY, target_id TEXT, target_name TEXT)`)
-  rawDb.run(`DELETE FROM _m40_inbound`)
-  const ins = rawDb.prepare(`INSERT OR IGNORE INTO _m40_inbound (rel_id, target_id, target_name) VALUES (?, ?, ?)`)
+  rawDb.run(`DROP TABLE IF EXISTS temp._m40_inbound`)
+  rawDb.run(`CREATE TEMP TABLE _m40_inbound (rel_id TEXT PRIMARY KEY, target_id TEXT, target_name TEXT, own_source INTEGER NOT NULL DEFAULT 0, xfile INTEGER, xlang INTEGER, bridge TEXT)`)
+  const ins = rawDb.prepare(`INSERT OR IGNORE INTO _m40_inbound (rel_id, target_id, target_name, own_source, xfile, xlang, bridge) VALUES (?, ?, ?, ?, ?, ?, ?)`)
   const tx0 = rawDb.transaction((rows: InEdgeSnapshotRow[]) => {
     for (const r of rows) {
-      if (r.target_symbol_id) ins.run(r.id, r.target_symbol_id, r.target_name)
-      else ins.run(r.id, null, r.target_name)
+      if (r.target_symbol_id) ins.run(r.id, r.target_symbol_id, r.target_name, r.own_source ? 1 : 0, r.is_cross_file, r.is_cross_language, r.bridge_mechanism)
+      else ins.run(r.id, null, r.target_name, r.own_source ? 1 : 0, r.is_cross_file, r.is_cross_language, r.bridge_mechanism)
     }
   })
   tx0(snapshot)
@@ -7901,6 +8008,9 @@ export async function repairInEdges(
     const exact = rawDb.prepare(`
       UPDATE brain_relationship
          SET target_symbol_id = i.target_id,
+             is_cross_file = COALESCE(i.xfile, 0),
+             is_cross_language = i.xlang,
+             bridge_mechanism = i.bridge,
              time_updated = ?
         FROM _m40_inbound i
         JOIN brain_symbol s ON s.id = i.target_id
@@ -7925,7 +8035,7 @@ export async function repairInEdges(
       // the same input always yields the same target.
       rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _m40_match (rel_id TEXT PRIMARY KEY, symbol_id TEXT)`)
       rawDb.run(`DELETE FROM _m40_match`)
-      const matchFilter = `r.project_id = ? AND r.target_symbol_id IS NULL`
+      const matchFilter = `r.project_id = ? AND r.target_symbol_id IS NULL AND i.own_source = 0`
       rawDb.prepare(`INSERT OR IGNORE INTO _m40_match (rel_id, symbol_id)
         SELECT j.rel_id, MIN(j.symbol_id) FROM (
           SELECT r.id AS rel_id, t.id AS symbol_id
@@ -7966,11 +8076,14 @@ export async function repairInEdges(
     // for it (M60/JD2), so this is a call, not a fourth copy of the rules; the
     // id scope is what keeps a `--changed` run's writes inside its own scope.
     //
-    // Skipped outright when no captured row carries a `:` spelling — the common
-    // (bare-name) case must not pay for a project-wide read it cannot use.
-    if (snapshot.some((r) => (r.target_name ?? "").includes(":"))) {
+    // Skipped outright when no captured row carries a `:` spelling AND is not
+    // re-emitted by its own file's store — the common (bare-name) case must not
+    // pay for a project-wide read it cannot use. `own_source` rows are excluded
+    // for pass 2's reason: the store already decided them, and this decider would
+    // be a second writer over a decision the run did not destroy.
+    if (snapshot.some((r) => !r.own_source && (r.target_name ?? "").includes(":"))) {
       try {
-        const ids = new Set(snapshot.map((r) => r.id))
+        const ids = new Set(snapshot.filter((r) => !r.own_source).map((r) => r.id))
         const imp = resolveImportTargets(rawDb as any, projectId, { onlyRowIds: ids })
         if (imp.resolved > 0) repaired += imp.resolved
         if (opts.out) opts.out.importResolvedInEdges = imp.resolved
@@ -8003,9 +8116,14 @@ export async function repairInEdges(
 
     // What is left is the honest remainder: the row survives, its symbol is
     // gone, and no symbol of the re-stored files answers to its spelling.
+    // COUNTED OVER THE ROWS THIS REPAIR IS THE ONLY WRITER FOR (`own_source = 0`):
+    // a captured row whose own file was re-stored is handed to the run's deciders
+    // (phase 2b) next, and a count taken here would report the same row as both a
+    // repair failure and a decider success — the kind of double number this file
+    // has been burned by before.
     const left = rawDb.prepare(`
       SELECT COUNT(*) c FROM brain_relationship r JOIN _m40_inbound i ON i.rel_id = r.id
-       WHERE r.project_id = ? AND r.target_symbol_id IS NULL
+       WHERE r.project_id = ? AND r.target_symbol_id IS NULL AND i.own_source = 0
     `).get(projectId) as any
     if (opts.out) opts.out.stillUnresolved = Number(left?.c ?? 0)
   } finally {
@@ -8056,6 +8174,25 @@ export interface BoundedPostProcessingResult {
   repairedInEdges: number
   purgedDeletedFiles: number
   touchedSymbols: number
+  /** Rows THIS RUN stored whose target was decided by the shared resolution
+   *  deciders over the complete tables — the four name arms (own-file then
+   *  project-wide) plus the `<module>:<item>` resolver — scoped to the files it
+   *  re-stored. Separate from `repairedInEdges`, which measures rows the FK had
+   *  already cleared; this counts the rows with no decider at all before this
+   *  phase existed. 0 on a run whose deciders had nothing to bind. */
+  resolvedStoredEdges: number
+  /** Captured in-edges that could NOT be re-pointed and survive as unresolved
+   *  rows (their target symbol is genuinely gone). `repairInEdges` has written
+   *  this since M40 and the phase logged it; it was never RETURNED, so a caller
+   *  reading the run's own report could not see the remainder. */
+  stillUnresolvedInEdges: number
+  /** Pre-M59 rows (`line_number = 0`) healed to NULL by this run's repair
+   *  (M59/#821). Written by the repair, logged in the phase, and — before this —
+   *  absent from the result the caller sees: the M59 gate reads
+   *  `derived.healedZeroLines` and read `undefined` while the heal itself worked. */
+  healedZeroLines: number
+  /** In-edges re-pointed through the shared `<module>:<item>` resolver. */
+  importResolvedInEdges: number
 }
 
 /**
@@ -8101,7 +8238,11 @@ export async function runBoundedPostProcessing(
 
   // 1. in-edge repair
   let repairedInEdges = 0
-  const repairOut: { stillUnresolved?: number; healedZeroLines?: number } = {}
+  let resolvedStoredEdges = 0
+  let stillUnresolvedInEdges = 0
+  let healedZeroLines = 0
+  let importResolvedInEdges = 0
+  const repairOut: { stillUnresolved?: number; healedZeroLines?: number; importResolvedInEdges?: number } = {}
   {
     const _t = Date.now()
     try {
@@ -8113,6 +8254,10 @@ export async function runBoundedPostProcessing(
       if (repairedInEdges > 0) _log.log(`  bounded: re-pointed ${repairedInEdges} cross-file edge(s) into re-parsed files`)
       if ((repairOut.stillUnresolved ?? 0) > 0) _log.log(`  bounded: ${repairOut.stillUnresolved} in-edge(s) survive unresolved (target symbol gone; named in the index report)`)
       if ((repairOut.healedZeroLines ?? 0) > 0) _log.log(`  bounded: healed ${repairOut.healedZeroLines} legacy zero line(s) (M59/#821)`)
+      if ((repairOut.importResolvedInEdges ?? 0) > 0) _log.log(`  bounded: ${repairOut.importResolvedInEdges} in-edge(s) re-pointed by the <module>:<item> resolver`)
+      stillUnresolvedInEdges = repairOut.stillUnresolved ?? 0
+      healedZeroLines = repairOut.healedZeroLines ?? 0
+      importResolvedInEdges = repairOut.importResolvedInEdges ?? 0
     } catch (e: any) {
       recordPhase("relationships", Date.now() - _t, "failed")
       log.warn("bounded in-edge repair failed", { error: e?.message })
@@ -8180,6 +8325,68 @@ export async function runBoundedPostProcessing(
     }
   }
 
+  // 2b. resolution of the rows THIS RUN STORED — the deciders the full pass runs
+  // ─────────────────────────────────────────────────────────────────────────
+  // The store's insert path decides only what a row's own file proves (J12): a
+  // cross-file name is deferred to the passes that read the COMPLETE tables. A
+  // full index runs them; a bounded run ran none of them, so a re-stored file's
+  // own cross-file edge had no decider and stayed NULL — the store then held a
+  // `calls` row with no target for a symbol the project resolves, and a graph
+  // read answers it as "nothing calls this" with `truncated: false`.
+  // MEASURED before this phase (`script/m65/probe-refresh-resolution.ts`): a
+  // two-file fixture's cross-file call went 1 bound row → 2 unresolved rows on
+  // a `reindexFilesParallel` refresh of the calling file, 0 bound to the target.
+  //
+  // These are CALLS to the shared deciders, not rules copied here: the name
+  // strategies (own file → project, all four arms, in the full pass's order) and
+  // the `<module>:<item>` import resolver, each scoped to the files this run
+  // re-stored — the rows this run owns. Reads are project-wide either way, so the
+  // decision is the one the full pass would make; only the UPDATEs are bounded,
+  // which keeps a `--changed` run out of files it never touched.
+  if (touchedFileIds.length > 0) {
+    const _t = Date.now()
+    try {
+      const named = resolveNameTargets(rawDb as any, projectId, { sourceFileIds: touchedFileIds })
+      // 2b.ii — the DOTTED/COLON arms (the full pass's strategies 3, 3b, 3c), before the
+      // import planner, which is where the full pass runs them. MEASURED before this call
+      // existed (gate, lane `erlang`): a caller naming `a:ref_target_erlang` kept two
+      // unresolved `calls` rows after a refresh while a full index bound both to the
+      // declaration in `a.erl`, and the scoped import planner had scanned ZERO of them.
+      const dotted = resolveDottedTargets(rawDb as any, projectId, { sourceFileIds: touchedFileIds })
+      const imports = resolveImportTargets(rawDb as any, projectId, { onlySourceFileIds: touchedFileIds })
+      // 2b.iii — THE RANKED BARE-NAME ARM, last, which is where the full pass runs it.
+      //
+      // `resolveNameTargets` binds a bare name only when the project holds exactly ONE
+      // candidate, so it declines every name that is declared twice — which is what a
+      // prototype beside its definition IS, the ordinary C/C++/Objective-C/header-split
+      // shape, and what any duplicated name is anywhere else. The full pass decides those
+      // rows by RANKING candidates (a definition ahead of a declaration, then the row's
+      // own file, then its own language, then the lowest id) in its `_i13_pick` plan.
+      //
+      // MEASURED before this call existed (script/m65/verify-refresh-resolution.ts, lane
+      // `c`): the refreshed store held two `calls` rows for `ref_target_c` with no target
+      // while a full index of the same source bound both to the definition — so `bb_graph`
+      // answered 0 callers, `truncated: false`, for a function with two call sites.
+      //
+      // It runs AFTER the two deciders above, on purpose: the full pass runs its plan
+      // after its strategies 1-4, and this one RE-BINDS (that is how it corrects a
+      // candidate an earlier strategy guessed), so the order is part of the decision.
+      const ranked = resolveRankedBareNameTargets(rawDb as any, projectId, { sourceFileIds: touchedFileIds })
+      resolvedStoredEdges = named.resolved + dotted.resolved + imports.resolved + ranked.resolved
+      if (resolvedStoredEdges > 0) {
+        _log.log(
+          `  bounded: resolved ${named.resolved} name-target, ${dotted.resolved} dotted/colon-target` +
+            ` (suffix ${dotted.byStage.suffix}, unique leaf ${dotted.byStage.uniqueLeaf}, ranked leaf ${dotted.byStage.rankedLeaf}),` +
+            ` ${imports.resolved} import-target and ${ranked.resolved} ranked bare-name row(s) this run stored`,
+        )
+      }
+      recordPhase("relationships", Date.now() - _t, "ok")
+    } catch (e: any) {
+      recordPhase("relationships", Date.now() - _t, "failed")
+      log.warn("bounded stored-row resolution failed", { error: e?.message })
+    }
+  }
+
   // 3. enrichment — scoped to touched sources
   {
     const _t = Date.now()
@@ -8243,7 +8450,17 @@ export async function runBoundedPostProcessing(
     }
   }
 
-  return { phases, totalMs: Date.now() - start, repairedInEdges, purgedDeletedFiles, touchedSymbols: touchedSymbols.length }
+  return {
+    phases,
+    totalMs: Date.now() - start,
+    repairedInEdges,
+    purgedDeletedFiles,
+    touchedSymbols: touchedSymbols.length,
+    resolvedStoredEdges,
+    stillUnresolvedInEdges,
+    healedZeroLines,
+    importResolvedInEdges,
+  }
 }
 
 // M48.C2 (#700): dir-mode change detection scoped to a subdirectory, computed
@@ -8317,7 +8534,7 @@ export async function reindexFilesParallel(
    *  reporting "3 errors" tells its caller nothing it can act on — not which file,
    *  not whether to retry, and not whether the failure is transient. Bounded, so a
    *  large failure cannot become a large payload. */
-  errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } }> {
+  errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number; resolvedStoredEdges: number; stillUnresolvedInEdges: number; healedZeroLines: number; importResolvedInEdges: number } }> {
   // M68: normalise the project root ONCE, here, so every `path.relative` in this
   // function and in storeResults agrees with what the INITIAL index wrote.
   //
@@ -8348,7 +8565,7 @@ export async function reindexFilesParallel(
   // only one that realpath'd it, and it was enough to break the whole incremental
   // path for that project.
   const realProjectPath = realpathSync(projectPath)
-  const result: { indexed: number; deleted: number; errors: number; skipped: number; skippedReason?: string; errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } } = { indexed: 0, deleted: 0, errors: 0, skipped: 0, errorDetail: [] }
+  const result: { indexed: number; deleted: number; errors: number; skipped: number; skippedReason?: string; errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number; resolvedStoredEdges: number; stillUnresolvedInEdges: number; healedZeroLines: number; importResolvedInEdges: number } } = { indexed: 0, deleted: 0, errors: 0, skipped: 0, errorDetail: [] }
 
   // M43.P1 (#656): deletion writes AND the delegated parse+post run are ONE
   // lock scope — a concurrent indexer must never interleave between our
@@ -8438,6 +8655,10 @@ export async function reindexFilesParallel(
         phases: indexResult.phases?.postProcessingPhases ?? [],
         repairedInEdges: indexResult.m40Bounded?.repairedInEdges ?? 0,
         touchedSymbols: indexResult.m40Bounded?.touchedSymbols ?? 0,
+        resolvedStoredEdges: indexResult.m40Bounded?.resolvedStoredEdges ?? 0,
+        stillUnresolvedInEdges: indexResult.m40Bounded?.stillUnresolvedInEdges ?? 0,
+        healedZeroLines: indexResult.m40Bounded?.healedZeroLines ?? 0,
+        importResolvedInEdges: indexResult.m40Bounded?.importResolvedInEdges ?? 0,
       }
       // `deferred` means the heavy phases were not run for this call. It is
       // published in `derived.pass` and there is nothing to count, so the

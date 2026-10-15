@@ -755,6 +755,70 @@ function loadImportInputs(
 }
 
 /**
+ * THE OWNERSHIP PREDICATE, WRITTEN ONCE.
+ *
+ * A bounded run may write only the rows IT owns, and the store records ownership in three
+ * ways — all three are contracts the store's own code states, so none of them is a guess:
+ *
+ *   the source SYMBOL's file     `brain_relationship.source_symbol_id` -> `brain_symbol.file_id`.
+ *                                An attributed row. The common case.
+ *   a FILE-LEVEL row's own file  `source_external` holds the importing file's PROJECT-RELATIVE
+ *                                PATH (M60/#910: "the row's `source_external` now holds the
+ *                                project-relative path every reader keys on"). The row has no
+ *                                source symbol to attribute it to, so this field IS its owner.
+ *   a FILE-LEVEL row's target   the target names a symbol declared in one of these files. The
+ *                                store writes such a row when the analyzer's source was a file
+ *                                scope (`exports`, file-level `uses`/`calls`/`imports`).
+ *
+ * The THIRD arm alone was not enough, and the failure is measured, not argued: with only the
+ * symbol and target arms, the deciders declined a file-level `imports` row whose target is a
+ * colon-spelled module item (`zimmerframe:walk` names no symbol), so a routine re-index left
+ * it unresolved while a full index bound it — 9 rows of 9,563 in
+ * `script/m14/verify-store-path-parity.ts`, every one an `imports` row, and the gate's own
+ * "no row LOSES its resolved target" invariant caught it. The `source_external` arm is what
+ * proves those rows belong to the run that touched their file.
+ *
+ * `sourceFileIds` are brain_file ids; the relative paths come from the same table, one query.
+ *
+ * THE CLAUSE IS WRITTEN AGAINST AN ALIAS, and the caller must give the one its statement uses.
+ * It defaults to the QUALIFIED table name (`brain_relationship`) because four of the five call
+ * sites write `UPDATE brain_relationship ... FROM ...` and reference the table unaliased. The
+ * fifth (`_rn_src`, in `resolveRankedBareNameTargets`) aliases it as `r`, and a clause naming a
+ * column of an alias the statement does not have does not weaken the scope — SQLite REJECTS the
+ * statement, the decider's own `catch` swallows it, and the pass reports `scanned: 0`. That is
+ * how the ranked arm became SILENTLY INERT for one round: lane `c` of
+ * `script/m65/verify-refresh-resolution.ts` (the prototype/definition pair the arm was written
+ * for) read `scanned: 0` and its three checks failed on exactly the rows the arm exists to
+ * bind. An alias parameter makes that unrepresentable rather than documented.
+ */
+function ownershipScope(
+  db: MinimalDb,
+  projectId: string,
+  sourceFileIds: string[] | undefined,
+  alias = "brain_relationship",
+): { clause: string; args: any[]; paths: string[] } {
+  if (!sourceFileIds || sourceFileIds.length === 0) return { clause: "", args: [], paths: [] }
+  const ids = sourceFileIds
+  const t = alias.endsWith(".") ? alias : `${alias}.`
+  const paths = (db
+    .prepare(
+      `SELECT relative_path AS p FROM brain_file WHERE project_id = ? AND id IN (${ids.map(() => "?").join(",")})`,
+    )
+    .all(projectId, ...ids) as Array<{ p: string }>).map((r) => String(r.p ?? "")).filter((p) => p.length > 0)
+  const idPh = ids.map(() => "?").join(",")
+  const pathPh = paths.length > 0 ? paths.map(() => "?").join(",") : null
+  const clause = ` AND (${t}source_symbol_id IN (SELECT id FROM brain_symbol WHERE project_id = ? AND file_id IN (${idPh}))
+      OR (${t}source_symbol_id IS NULL AND (
+           ${pathPh ? `${t}source_external IN (${pathPh}) OR ` : ""}${t}target_external IN (SELECT qualified_name FROM brain_symbol WHERE project_id = ? AND qualified_name IS NOT NULL AND file_id IN (${idPh}))
+        OR ${t}target_external IN (SELECT name FROM brain_symbol WHERE project_id = ? AND file_id IN (${idPh}))
+      )))`
+  const args: any[] = [projectId, ...ids]
+  if (pathPh) args.push(...paths)
+  args.push(projectId, ...ids, projectId, ...ids)
+  return { clause, args, paths }
+}
+
+/**
  * Decide a row's target by NAME, over the COMPLETE symbol table: the qualified
  * name first, then a name that is UNIQUE project-wide. These are the two rules
  * the full pass runs (strategies 1 and 2 of `resolveRelationships`), and this
@@ -780,6 +844,15 @@ function loadImportInputs(
  * (the full pass). Reads are project-wide either way; only the UPDATEs are
  * scoped, which is the bounded path's contract (a `--changed` run must not write
  * a row in a file it never touched).
+ *
+ * OWN-FILE PREFERENCE IS PART OF THE RULE, not a caller's flourish. The full
+ * pass runs four arms in a fixed order — own-file qualified name, own-file
+ * name, project-wide qualified name, project-wide unique name — because the two
+ * project-wide tables collapse every name to ONE global winner (`MIN(id)`), so
+ * a name declared in the row's own file would otherwise bind to a same-named
+ * symbol elsewhere (measured on libxslt: 138 of 388 `calls` edges). A scoped
+ * caller that skipped the own-file arms would write targets the full pass
+ * itself would not have chosen, which is why they are here and first.
  */
 export function resolveNameTargets(
   db: MinimalDb,
@@ -787,19 +860,45 @@ export function resolveNameTargets(
   opts: { sourceFileIds?: string[] } = {},
 ): { scanned: number; resolved: number } {
   const scopeIds = opts.sourceFileIds && opts.sourceFileIds.length > 0 ? opts.sourceFileIds : null
-  // The scope predicate is the one difference between the two callers; the
-  // rules above it are shared verbatim, including the is_cross_file expression
-  // (COALESCE to '' so an unknown source file counts as a cross rather than as
-  // NULL, which is what the full pass has always written).
-  const scopeClause = scopeIds
-    ? ` AND brain_relationship.source_symbol_id IN (SELECT id FROM brain_symbol WHERE project_id = ? AND file_id IN (${scopeIds.map(() => "?").join(",")}))`
-    : ""
-  const scopeArgs = scopeIds ? [projectId, ...scopeIds] : []
+  // The scope predicate is what "the rows this run owns" means, and it has TWO
+  // arms because the store records ownership in two ways:
+  //
+  //   the source SYMBOL's file     — an attributed row. The common case.
+  //   a FILE-LEVEL row whose TARGET names a symbol declared in one of these
+  //   files                        — the row the store writes when the analyzer's
+  //   source was a file scope (`exports`, file-level `uses`/`calls`/`imports`):
+  //   `source_symbol_id` is NULL, so the first arm cannot see it and nothing else
+  //   in the row proves which file it belongs to. Its TARGET does: the row exists
+  //   because that file publishes the name, and the arms below bind it to exactly
+  //   the symbol the full pass binds it to (the same tables, the same SQL).
+  //
+  // Measured, and why the second arm is not optional: without it a routine
+  // refresh left the edited file's `exports` rows unresolved while a full index
+  // of the same source bound every one of them (script/m65/verify-refresh-resolution.ts,
+  // typescript/javascript/rust/ruby/java before the arm existed).
+  //
+  // The predicate is the one difference between the two callers; the rules below
+  // it are shared verbatim, including the is_cross_file expression (COALESCE to
+  // '' so an unknown source file counts as a cross rather than as NULL, which is
+  // what the full pass has always written).
+  // The scope predicate is the shared ownership contract — see `ownershipScope`. It REPLACED
+  // an inline copy that carried only the symbol and target arms; the third arm (`source_external`
+  // = the file's relative path, the store's own record for a file-level row) is what lets the
+  // deciders write the file-level rows a bounded run owns.
+  // No alias: the four arms below write `UPDATE brain_relationship ... FROM ...` and name the
+  // table qualified, which is `ownershipScope`'s default.
+  const scope = ownershipScope(db, projectId, scopeIds ?? undefined)
+  const scopeClause = scope.clause
+  const scopeArgs = scope.args
   try {
     db.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qname (qualified_name TEXT PRIMARY KEY, symbol_id TEXT NOT NULL, file_id TEXT)`)
     db.run(`CREATE TEMP TABLE IF NOT EXISTS _res_name (name TEXT, symbol_id TEXT NOT NULL, file_id TEXT, cnt INTEGER)`)
+    db.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qname_own (qualified_name TEXT, file_id TEXT, symbol_id TEXT NOT NULL)`)
+    db.run(`CREATE TEMP TABLE IF NOT EXISTS _res_name_own (name TEXT, file_id TEXT, symbol_id TEXT NOT NULL)`)
     db.run(`DELETE FROM _res_qname`)
     db.run(`DELETE FROM _res_name`)
+    db.run(`DELETE FROM _res_qname_own`)
+    db.run(`DELETE FROM _res_name_own`)
     db.prepare(
       `INSERT OR IGNORE INTO _res_qname (qualified_name, symbol_id, file_id)
        SELECT qualified_name, MIN(id), MIN(file_id) FROM brain_symbol
@@ -810,14 +909,54 @@ export function resolveNameTargets(
        SELECT name, id, file_id, COUNT(*) OVER (PARTITION BY name)
        FROM brain_symbol WHERE project_id = ?`,
     ).run(projectId)
+    db.prepare(
+      `INSERT INTO _res_qname_own (qualified_name, file_id, symbol_id)
+       SELECT qualified_name, file_id, MIN(id) FROM brain_symbol
+       WHERE project_id = ? AND qualified_name IS NOT NULL GROUP BY qualified_name, file_id`,
+    ).run(projectId)
+    db.prepare(
+      `INSERT INTO _res_name_own (name, file_id, symbol_id)
+       SELECT name, file_id, MIN(id) FROM brain_symbol
+       WHERE project_id = ? GROUP BY name, file_id`,
+    ).run(projectId)
     db.run(`CREATE INDEX IF NOT EXISTS _res_name_idx ON _res_name(name)`)
     db.run(`CREATE INDEX IF NOT EXISTS _res_name_uniq_idx ON _res_name(name, cnt)`)
+    db.run(`CREATE INDEX IF NOT EXISTS _res_qname_own_idx ON _res_qname_own(qualified_name, file_id)`)
+    db.run(`CREATE INDEX IF NOT EXISTS _res_name_own_idx ON _res_name_own(name, file_id)`)
 
     const scannedRow = db.prepare(
       `SELECT COUNT(*) AS c FROM brain_relationship
         WHERE project_id = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL${scopeClause}`,
     ).get(projectId, ...scopeArgs) as any
     const scanned = Number(scannedRow?.c ?? 0)
+
+    // ── Arm 0: the row's OWN FILE, qualified name, then name ────────────────
+    // Both are `is_cross_file = 0` by construction: the declaration is in the
+    // row's own file. These run before the project-wide arms for the reason in
+    // the docstring above.
+    const r0own = db.prepare(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_qname_own.symbol_id,
+          is_cross_file = 0
+      FROM _res_qname_own
+      WHERE brain_relationship.target_external = _res_qname_own.qualified_name
+        AND _res_qname_own.file_id = (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1)
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.target_external IS NOT NULL
+        AND brain_relationship.project_id = '${projectId}'${scopeClause}
+    `).run(...scopeArgs)
+
+    const r0ownName = db.prepare(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_name_own.symbol_id,
+          is_cross_file = 0
+      FROM _res_name_own
+      WHERE brain_relationship.target_external = _res_name_own.name
+        AND _res_name_own.file_id = (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1)
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.target_external IS NOT NULL
+        AND brain_relationship.project_id = '${projectId}'${scopeClause}
+    `).run(...scopeArgs)
 
     const r1 = db.prepare(`
       UPDATE brain_relationship
@@ -846,9 +985,15 @@ export function resolveNameTargets(
         AND brain_relationship.project_id = '${projectId}'${scopeClause}
     `).run(...scopeArgs)
 
-    const resolved = (Number(r1?.changes) || 0) + (Number(r2?.changes) || 0)
+    const resolved =
+      (Number(r0own?.changes) || 0) +
+      (Number(r0ownName?.changes) || 0) +
+      (Number(r1?.changes) || 0) +
+      (Number(r2?.changes) || 0)
     db.run(`DROP TABLE IF EXISTS _res_qname`)
     db.run(`DROP TABLE IF EXISTS _res_name`)
+    db.run(`DROP TABLE IF EXISTS _res_qname_own`)
+    db.run(`DROP TABLE IF EXISTS _res_name_own`)
     return { scanned, resolved }
   } catch (e: any) {
     // A store that has not been migrated, or a temp table another pass holds,
@@ -856,7 +1001,419 @@ export function resolveNameTargets(
     try {
       db.run(`DROP TABLE IF EXISTS _res_qname`)
       db.run(`DROP TABLE IF EXISTS _res_name`)
+      db.run(`DROP TABLE IF EXISTS _res_qname_own`)
+      db.run(`DROP TABLE IF EXISTS _res_name_own`)
     } catch { /* best-effort */ }
+    return { scanned: 0, resolved: 0 }
+  }
+}
+
+/**
+ * THE DOTTED/COLON TARGET ARMS — strategies 3, 3b and 3c of the full pass, as a scoped
+ * decider.
+ *
+ * WHY THEY ARE NEEDED HERE
+ * A target the analyzer spells as a MEMBER CHAIN or a MODULE:ITEM pair (`A.refTarget`,
+ * `a:ref_target_erlang`) is bound by none of the name deciders above: `resolveNameTargets`
+ * compares the whole spelling against `name`/`qualified_name`, and a stored `qualified_name`
+ * is prefixed with the file stem, so the ordinary `Owner.member` never matches it. The full
+ * pass covers these shapes with three stages, in this order:
+ *
+ *   3   a dotted target by SUFFIX on `qualified_name` (the spelling the store actually holds)
+ *   3b  the target's LEAF, when that leaf is declared exactly once in the project
+ *   3c  the target's LEAF, RANKED — the target's full name first, then a definition ahead of
+ *       a declaration, then the row's own file, then its own language, then the lowest id
+ *
+ * MEASURED (script/m65/verify-refresh-resolution.ts, lane `erlang`): a caller in `b.erl`
+ * naming `a:ref_target_erlang` was bound by a full index to the declaration in `a.erl` and
+ * left UNBOUND by an incremental refresh of the caller — the refreshed store held two
+ * `calls` rows with no target, and `bb_graph` answered a symbol with two call sites as
+ * having none, `truncated: false`. The scoped import planner was asked first and scanned
+ * ZERO rows (it is a planner over the import/export surfaces, not over every colon-shaped
+ * call), so nothing else in the bounded pass could decide it.
+ *
+ * Only stages that need the row to be UNRESOLVED apply: the full pass's 3/3b/3c all carry
+ * `target_symbol_id IS NULL`, and this port keeps that guard, so it can never re-point a row
+ * an earlier decider already decided.
+ *
+ * The plan is the full pass's, statement for statement (`resolveRelationships` in
+ * `src/ast/parallel-indexer.ts`); only the rows WRITTEN are scoped. The drift guard is the
+ * 48-lane refreshed-store comparison in the gate named above.
+ */
+export function resolveDottedTargets(
+  db: MinimalDb,
+  projectId: string,
+  opts: { sourceFileIds?: string[] } = {},
+): { scanned: number; resolved: number; byStage: { suffix: number; uniqueLeaf: number; rankedLeaf: number } } {
+  const byStage = { suffix: 0, uniqueLeaf: 0, rankedLeaf: 0 }
+  const scopeIds = opts.sourceFileIds && opts.sourceFileIds.length > 0 ? opts.sourceFileIds : null
+  const scope = ownershipScope(db, projectId, scopeIds ?? undefined, "r")
+  const scopeClause = scope.clause
+  const scopeArgs = scope.args
+  const tables = [
+    "_dt_src", "_dt_qsuffix", "_dt_qsuffix_own", "_dt_name", "_dt_leaf", "_dt_best",
+  ] as const
+  const drop = () => {
+    for (const t of tables) {
+      try {
+        db.run(`DROP TABLE IF EXISTS temp.${t}`)
+      } catch {
+        /* a temp table another pass holds is not this pass's failure */
+      }
+    }
+  }
+  try {
+    drop()
+    // The scoped row set: unresolved targets that carry a `.` or a `:` — the two shapes the
+    // name deciders above cannot bind. Materialised with the source symbol's file and
+    // language because the ranking depends on both and neither can be correlated out of a
+    // subquery's ORDER BY here.
+    db.prepare(
+      `CREATE TEMP TABLE _dt_src AS
+       SELECT r.id AS rel_id, r.source_symbol_id AS src_id, r.target_external AS full,
+              COALESCE(src.file_id, '') AS src_file, COALESCE(sf.language, '') AS src_lang
+       FROM brain_relationship r
+       LEFT JOIN brain_symbol src ON src.id = r.source_symbol_id
+       LEFT JOIN brain_file sf ON sf.id = src.file_id
+       WHERE r.project_id = ?
+         AND r.target_symbol_id IS NULL
+         AND r.target_external IS NOT NULL
+         AND (instr(r.target_external, '.') > 0 OR instr(r.target_external, ':') > 0)${scopeClause}`,
+    ).run(projectId, ...scopeArgs)
+    const scanned = Number((db.prepare(`SELECT COUNT(*) AS c FROM _dt_src`).get() as any)?.c ?? 0)
+    if (scanned === 0) {
+      drop()
+      return { scanned: 0, resolved: 0, byStage }
+    }
+    db.run(`CREATE UNIQUE INDEX temp._dt_src_rel ON _dt_src(rel_id)`)
+
+    // ── stage 3: a DOTTED target, by SUFFIX on qualified_name ──────────────────
+    // `ASTEngine.LanguageAnalyzer` is stored as `t0128_engine.ASTEngine.LanguageAnalyzer`,
+    // so an exact comparison can never match it; every dot-prefixed truncation of a stored
+    // qualified_name is a candidate suffix.
+    db.prepare(
+      `CREATE TEMP TABLE _dt_qsuffix AS
+       WITH RECURSIVE suffixes(suffix, rest, id, file_id) AS (
+         SELECT qualified_name, qualified_name, id, file_id
+         FROM brain_symbol
+         WHERE project_id = ? AND qualified_name IS NOT NULL
+         UNION ALL
+         SELECT substr(rest, instr(rest, '.') + 1), substr(rest, instr(rest, '.') + 1), id, file_id
+         FROM suffixes WHERE instr(rest, '.') > 0
+       )
+       SELECT suffix, MIN(id) AS symbol_id, MIN(file_id) AS file_id FROM suffixes
+       WHERE instr(suffix, '.') > 0 GROUP BY suffix`,
+    ).run(projectId)
+    db.run(`CREATE INDEX temp._dt_qsuffix_idx ON _dt_qsuffix(suffix)`)
+    db.prepare(
+      `CREATE TEMP TABLE _dt_qsuffix_own AS
+       SELECT suffix, file_id, MIN(symbol_id) AS symbol_id FROM (
+         SELECT q.suffix AS suffix, s.file_id AS file_id, s.id AS symbol_id
+         FROM brain_symbol s JOIN _dt_qsuffix q ON q.suffix = s.qualified_name
+         WHERE s.project_id = ?
+       ) GROUP BY suffix, file_id`,
+    ).run(projectId)
+    db.run(`CREATE UNIQUE INDEX temp._dt_qsuffix_own_key ON _dt_qsuffix_own(suffix, file_id)`)
+    const s3own = db.run(
+      `UPDATE brain_relationship
+       SET target_symbol_id = o.symbol_id, is_cross_file = 0
+       FROM _dt_qsuffix_own o
+       WHERE brain_relationship.target_external = o.suffix
+         AND o.file_id = (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1)
+         AND brain_relationship.target_symbol_id IS NULL
+         AND instr(brain_relationship.target_external, '.') > 0
+         AND brain_relationship.id IN (SELECT rel_id FROM _dt_src)`,
+    )
+    const s3 = db.run(
+      `UPDATE brain_relationship
+       SET target_symbol_id = q.symbol_id,
+           is_cross_file = CASE WHEN q.file_id != COALESCE(
+             (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1), ''
+           ) THEN 1 ELSE 0 END
+       FROM _dt_qsuffix q
+       WHERE brain_relationship.target_external = q.suffix
+         AND brain_relationship.target_symbol_id IS NULL
+         AND instr(brain_relationship.target_external, '.') > 0
+         AND brain_relationship.id IN (SELECT rel_id FROM _dt_src)`,
+    )
+    byStage.suffix = Number(s3own?.changes ?? 0) + Number(s3?.changes ?? 0)
+
+    // ── stage 3b: the target's LEAF, when the project declares that leaf EXACTLY once ──
+    db.prepare(
+      `CREATE TEMP TABLE _dt_name AS
+       SELECT name, MIN(id) AS symbol_id, MIN(file_id) AS file_id, COUNT(*) AS cnt
+       FROM brain_symbol WHERE project_id = ? GROUP BY name`,
+    ).run(projectId)
+    db.run(`CREATE UNIQUE INDEX temp._dt_name_key ON _dt_name(name)`)
+    // A PATH IS NOT A MEMBER CHAIN, and the guard is the full pass's `extractLeaf`, SEGMENT
+    // FOR SEGMENT — which is not the same test as "does the whole spelling contain a slash".
+    // `extractLeaf` splits on ':' first and applies the path test to the LAST COLON SEGMENT,
+    // so `./A.svelte:A` (a file-level import whose item is `A`) reduces to `A`, while
+    // `synthetic/main.zig` (a file path, no colon) keeps its whole spelling and is left for a
+    // file claim rather than binding to a symbol named after its extension. Applying the test
+    // to the whole spelling instead was MEASURED here as a seam gap: the gate's `svelte` and
+    // `vue` lanes kept their module-path `imports` row unbound after a refresh while a full
+    // index bound it (`script/m65/verify-refresh-resolution.ts`).
+    // The reduction is computed in JS because SQLite has no "after the last occurrence"
+    // function, and a correlated expression here is the shape that made the full pass's first
+    // version of stage 3 cost 68 s.
+    db.run(`CREATE TEMP TABLE IF NOT EXISTS _dt_leaf (full TEXT, leaf TEXT)`)
+    db.run(`DELETE FROM _dt_leaf`)
+    const distinctFulls = db.prepare(`SELECT DISTINCT full FROM _dt_src`).all() as Array<{ full: string }>
+    const insertLeaf = db.prepare(`INSERT INTO _dt_leaf (full, leaf) VALUES (?, ?)`)
+    for (const { full } of distinctFulls) {
+      const lastColon = String(full).split(":").pop() ?? ""
+      if (lastColon.length === 0) continue
+      if (lastColon.includes("/") || lastColon.includes("\\")) continue
+      const leaf = lastColon.split(".").pop()
+      if (leaf && leaf.length > 0) insertLeaf.run(full, leaf)
+    }
+    let uniqueLeaf = 0
+    const uniq = db.prepare(
+      `UPDATE brain_relationship
+       SET target_symbol_id = n.symbol_id,
+           is_cross_file = CASE WHEN n.file_id != COALESCE(
+             (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1), ''
+           ) THEN 1 ELSE 0 END
+       FROM _dt_name n, _dt_leaf l
+       WHERE l.full = brain_relationship.target_external
+         AND n.name = l.leaf
+         AND n.cnt = 1
+         AND brain_relationship.target_symbol_id IS NULL
+         AND brain_relationship.id IN (SELECT rel_id FROM _dt_src)`,
+    ).run()
+    uniqueLeaf += Number(uniq?.changes ?? 0)
+    byStage.uniqueLeaf = uniqueLeaf
+
+    // ── stage 3c: the same LEAF, RANKED (the full name first, then definition-before-
+    // declaration, then the row's own file, then its own language, then the lowest id) ──
+    db.run(`DROP TABLE IF EXISTS temp._dt_best`)
+    db.prepare(
+      `CREATE TEMP TABLE _dt_best AS
+       SELECT full, src_id, symbol_id, symbol_file FROM (
+         SELECT r.target_external AS full,
+                r.source_symbol_id AS src_id,
+                s.id AS symbol_id,
+                s.file_id AS symbol_file,
+                ROW_NUMBER() OVER (
+                  PARTITION BY r.target_external, r.source_symbol_id
+                  ORDER BY (s.name = m.full) DESC,
+                           COALESCE(s.is_declaration, 0) ASC,
+                           (s.file_id = (SELECT b.file_id FROM brain_symbol b WHERE b.id = r.source_symbol_id)) DESC,
+                           (f.language = (SELECT f2.language FROM brain_file f2
+                                           WHERE f2.id = (SELECT b2.file_id FROM brain_symbol b2 WHERE b2.id = r.source_symbol_id))) DESC,
+                           s.id ASC
+                ) AS rn
+         FROM brain_relationship r
+         JOIN _dt_leaf m ON m.full = r.target_external
+         JOIN brain_symbol s ON s.project_id = ? AND (s.name = m.full OR s.name = m.leaf)
+         LEFT JOIN brain_file f ON f.id = s.file_id
+         WHERE r.project_id = ? AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL
+           AND r.id IN (SELECT rel_id FROM _dt_src)
+       ) WHERE rn = 1`,
+    ).run(projectId, projectId)
+    db.run(`CREATE INDEX temp._dt_best_idx ON _dt_best(full, src_id)`)
+    const ranked = db.prepare(
+      `UPDATE brain_relationship
+       SET target_symbol_id = b.symbol_id,
+           is_cross_file = CASE WHEN b.symbol_file != COALESCE(
+             (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id), ''
+           ) THEN 1 ELSE 0 END
+       FROM _dt_best b
+       WHERE b.full = brain_relationship.target_external
+         AND b.src_id IS brain_relationship.source_symbol_id
+         AND brain_relationship.target_symbol_id IS NULL
+         AND brain_relationship.target_external IS NOT NULL
+         AND brain_relationship.project_id = ?`,
+    ).run(projectId)
+    byStage.rankedLeaf = Number(ranked?.changes ?? 0)
+
+    const resolved = byStage.suffix + byStage.uniqueLeaf + byStage.rankedLeaf
+    drop()
+    return { scanned, resolved, byStage }
+  } catch (e: any) {
+    if (process.env.BB_DEBUG_DOTTED === "1") console.error("resolveDottedTargets failed:", e?.message)
+    drop()
+    return { scanned: 0, resolved: 0, byStage }
+  }
+}
+
+/**
+ * THE BARE-NAME RANKED ARM — the full pass's `_i13_pick` plan, as a scoped decider.
+ *
+ * WHY IT EXISTS, AND WHY IT IS HERE RATHER THAN IN THE FULL PASS
+ * The full pass resolves a bare-name edge (no `.` and no `:`) by a RANKING, not by
+ * uniqueness: the minimum declaration tier first (`is_declaration = 0`, so a
+ * DEFINITION beats a prototype — #612), then the row's own file, then the row's own
+ * language, then the lowest id. `resolveNameTargets` above binds a bare name only when
+ * the whole project holds exactly one candidate, so every shape with a prototype and
+ * its definition — the ordinary C, C++, Objective-C and header-split form — was out of
+ * its reach, and so was every name declared twice for any other reason.
+ *
+ * MEASURED (script/m65/verify-refresh-resolution.ts, lane `c`): a two-file fixture whose
+ * caller names a function declared in `a.h` and defined in `a.c` was bound by the full
+ * index to `a.c` (the definition) and left UNBOUND by an incremental refresh of the
+ * caller — `bb_graph` then answered 0 callers with `truncated: false` for a symbol with
+ * two call sites, while a full index of the same source answered 2. The bounded pass had
+ * run the shared deciders for that row and they had declined it, because the decision
+ * the full pass makes for that row lives in the `_i13_pick` plan and nowhere else. This
+ * function is that decision, factored out so there is ONE implementation of it.
+ *
+ * THE RANKING IS THE FULL PASS'S, STATEMENT FOR STATEMENT (see
+ * `resolveRelationships` in `src/ast/parallel-indexer.ts`, whose `_i13_*` plan is
+ * whole-project and whose result this reproduces on a scope). What differs is only the
+ * SCOPE: `sourceFileIds` restricts the rows WRITTEN to the files a bounded run owns.
+ * Every lookup it reads (`tier`, `best_file`, `best_lang`, `best_any`) is built from the
+ * complete symbol table either way, so the decision does not depend on the scope — which
+ * is the whole point of a scoped decider rather than a second rule set.
+ *
+ * DRIFT. Two implementations of one ranking is exactly what this file exists to prevent,
+ * and the guard is a measurement rather than a comment: the gate named above compares the
+ * refreshed store's whole edge state against a full index of the same source, for each of
+ * the fleet's 48 lanes (its lane set is read from `src/ast/real-*-analyzer.ts`), so a
+ * divergence between this plan and the full pass's is a FAILING CHECK on the lane whose
+ * fixture exposes it, not a silent difference.
+ *
+ * `contains` is excluded for the same reason the full pass excludes it: its target is
+ * pinned to the edge's own line rather than to a name, and re-picking it by name would
+ * discard the pin.
+ */
+export function resolveRankedBareNameTargets(
+  db: MinimalDb,
+  projectId: string,
+  opts: { sourceFileIds?: string[] } = {},
+): { scanned: number; resolved: number } {
+  const scopeIds = opts.sourceFileIds && opts.sourceFileIds.length > 0 ? opts.sourceFileIds : null
+  // The two-arm ownership predicate, identical in shape to `resolveNameTargets`': the
+  // source SYMBOL's file for an attributed row, and the target's declaring file for a
+  // FILE-level row (whose `source_symbol_id` is NULL, so nothing else in the row names
+  // its owner). `?` per id, the same spelling the sibling deciders use.
+  const scope = ownershipScope(db, projectId, scopeIds ?? undefined, "r")
+  const scopeClause = scope.clause
+  const scopeArgs = scope.args
+  const tables = ["_rn_src", "_rn_tier", "_rn_best_file", "_rn_best_lang", "_rn_best_any", "_rn_pick"] as const
+  const drop = () => {
+    for (const t of tables) {
+      try {
+        db.run(`DROP TABLE IF EXISTS temp.${t}`)
+      } catch {
+        /* a temp table another pass holds is not this pass's failure */
+      }
+    }
+  }
+  try {
+    drop()
+    // The source file and language the ranking depends on, materialised once, for the
+    // rows this run owns — and ONLY for them: the aggregate tables below are read-only
+    // and the apply step joins this table, so nothing outside the scope can be written.
+    db.prepare(
+      `CREATE TEMP TABLE _rn_src AS
+       SELECT r.id AS rel_id, src.file_id AS src_file, COALESCE(sf.language, '') AS src_lang
+       FROM brain_relationship r
+       LEFT JOIN brain_symbol src ON src.id = r.source_symbol_id
+       LEFT JOIN brain_file sf ON sf.id = src.file_id
+       WHERE r.project_id = ?
+         AND r.relationship_type <> 'contains'
+         AND r.target_external IS NOT NULL
+         AND instr(r.target_external, '.') = 0
+         AND instr(r.target_external, ':') = 0${scopeClause}`,
+    ).run(projectId, ...scopeArgs)
+    const scanned = Number(
+      (db.prepare(`SELECT COUNT(*) AS c FROM _rn_src`).get() as any)?.c ?? 0,
+    )
+    if (scanned === 0) {
+      drop()
+      return { scanned: 0, resolved: 0 }
+    }
+    db.run(`CREATE UNIQUE INDEX temp._rn_src_rel ON _rn_src(rel_id)`)
+    // (1) The winning declaration tier per name. A DEFINITION (0) outranks a
+    // declaration (1), which is #612's rule and the one that decides a
+    // prototype/definition pair.
+    db.prepare(
+      `CREATE TEMP TABLE _rn_tier AS
+       SELECT name, MIN(COALESCE(is_declaration, 0)) AS tier
+       FROM brain_symbol WHERE project_id = ?
+       GROUP BY name`,
+    ).run(projectId)
+    db.run(`CREATE UNIQUE INDEX temp._rn_tier_name ON _rn_tier(name)`)
+    // (2a) lowest id at the minimum tier, within one file.
+    db.prepare(
+      `CREATE TEMP TABLE _rn_best_file AS
+       SELECT s.name AS name, s.file_id AS file_id, MIN(s.id) AS symbol_id
+       FROM brain_symbol s
+       JOIN _rn_tier t ON t.name = s.name AND t.tier = COALESCE(s.is_declaration, 0)
+       WHERE s.project_id = ?
+       GROUP BY s.name, s.file_id`,
+    ).run(projectId)
+    db.run(`CREATE UNIQUE INDEX temp._rn_best_file_key ON _rn_best_file(name, file_id)`)
+    // (2b) lowest id at the minimum tier, within one language. The key is the COALESCEd
+    // language, so the '' bucket exists and '' matches '', the same comparison the full
+    // pass's window key made.
+    db.prepare(
+      `CREATE TEMP TABLE _rn_best_lang AS
+       SELECT s.name AS name, COALESCE(f.language, '') AS lang, MIN(s.id) AS symbol_id
+       FROM brain_symbol s
+       JOIN _rn_tier t ON t.name = s.name AND t.tier = COALESCE(s.is_declaration, 0)
+       LEFT JOIN brain_file f ON f.id = s.file_id
+       WHERE s.project_id = ?
+       GROUP BY s.name, COALESCE(f.language, '')`,
+    ).run(projectId)
+    db.run(`CREATE UNIQUE INDEX temp._rn_best_lang_key ON _rn_best_lang(name, lang)`)
+    // (2c) lowest id at the minimum tier, no further preference.
+    db.prepare(
+      `CREATE TEMP TABLE _rn_best_any AS
+       SELECT s.name AS name, MIN(s.id) AS symbol_id
+       FROM brain_symbol s
+       JOIN _rn_tier t ON t.name = s.name AND t.tier = COALESCE(s.is_declaration, 0)
+       WHERE s.project_id = ?
+       GROUP BY s.name`,
+    ).run(projectId)
+    db.run(`CREATE UNIQUE INDEX temp._rn_best_any_key ON _rn_best_any(name)`)
+    // The pick. The three LEFT JOINs ARE the ranking (own file, then own language, then
+    // anything), and the `IS NOT NULL` filter on the COALESCE is load-bearing: the apply
+    // step writes this table's target, so a pick row carrying NULL would write NULL over
+    // a target an earlier strategy had already resolved. `_rn_best_any` holds a row for
+    // every name the project declares, so the COALESCE is NULL exactly when no symbol
+    // carries the target name — the no-candidate case.
+    db.prepare(
+      `CREATE TEMP TABLE _rn_pick AS
+       SELECT t.rel_id AS rel_id,
+              COALESCE(bf.symbol_id, bl.symbol_id, ba.symbol_id) AS target_symbol_id
+       FROM _rn_src t
+       JOIN brain_relationship r ON r.id = t.rel_id
+       LEFT JOIN _rn_best_file bf ON bf.name = r.target_external AND bf.file_id = t.src_file
+       LEFT JOIN _rn_best_lang bl ON bl.name = r.target_external AND bl.lang = t.src_lang
+       LEFT JOIN _rn_best_any  ba ON ba.name = r.target_external
+       WHERE r.project_id = ?
+         AND COALESCE(bf.symbol_id, bl.symbol_id, ba.symbol_id) IS NOT NULL`,
+    ).run(projectId)
+    db.run(`CREATE UNIQUE INDEX temp._rn_pick_rel ON _rn_pick(rel_id)`)
+    const applied = db.run(
+      `UPDATE brain_relationship
+       SET target_symbol_id = p.target_symbol_id
+       FROM _rn_pick p
+       WHERE brain_relationship.id = p.rel_id`,
+    )
+    const resolved = Number(applied?.changes ?? 0)
+    // The target these rows now hold is not necessarily the one an earlier strategy
+    // picked, so `is_cross_file` is recomputed for the scoped bare-name population — the
+    // same step, on the same population restricted to this run, that the full pass runs
+    // whole-project.
+    db.prepare(
+      `UPDATE brain_relationship
+       SET is_cross_file = CASE WHEN t.file_id <> s.file_id THEN 1 ELSE 0 END
+       FROM brain_symbol t, brain_symbol s
+       WHERE t.id = brain_relationship.target_symbol_id
+         AND s.id = brain_relationship.source_symbol_id
+         AND brain_relationship.project_id = ?
+         AND brain_relationship.id IN (SELECT rel_id FROM _rn_src)`,
+    ).run(projectId)
+    drop()
+    return { scanned, resolved }
+  } catch (e: any) {
+    // A store that has not been migrated, or a temp table another pass holds, must not
+    // fail an index run over a relationship class that is a bonus.
+    drop()
     return { scanned: 0, resolved: 0 }
   }
 }

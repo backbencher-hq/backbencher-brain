@@ -367,6 +367,27 @@ async function main() {
       ? `0 of ${before.length} rows differ`
       : `${attributed.length} rows: ${explained} full-pass-NULL -> re-index-bound, ${rebound.length} bound -> a DIFFERENT symbol (${attributed.filter((r) => r.ambiguous).length} of all ${attributed.length} carry an ambiguous name), ${unexplained.length} on a unique name (NOT attributable)`,
   )
+  if (lost.length) {
+    // NAMED, not counted. The invariant above is the one that matters most (a re-index
+    // rewriting a graph edge the full index had), so when it fails the rows are printed:
+    // a count alone sends the next reader back to this script to add the printout.
+    console.log(`rows that LOST their resolved target through the re-index (${lost.length}):`)
+    for (const r of lost.slice(0, 20)) {
+      const detail = q(
+        `SELECT r.relationship_type AS t, r.target_external AS te, COALESCE(r.is_cross_file, 0) AS xf,
+                COALESCE(sf.relative_path, '') AS srcFile, COALESCE(ss.name, '') AS srcName
+           FROM brain_relationship r
+           LEFT JOIN brain_symbol ss ON ss.id = r.source_symbol_id
+           LEFT JOIN brain_file sf ON sf.id = ss.file_id
+          WHERE r.project_id = ? AND r.id = ?`,
+        pid,
+        r.id,
+      ) as any[]
+      console.log(`  ${r.type} ${r.id.slice(r.id.indexOf(":rel:") + 5, r.id.indexOf(":rel:") + 90)}`)
+      console.log(`    was: ${r.before ?? "NULL"}`)
+      console.log(`    now: ${r.after ?? "NULL"}  · row: ${JSON.stringify(detail[0] ?? null)}`)
+    }
+  }
   if (unexplained.length) {
     console.log(`rows whose target difference ambiguity does NOT explain (${unexplained.length}):`)
     for (const r of unexplained.slice(0, 20)) {

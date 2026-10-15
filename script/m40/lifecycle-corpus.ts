@@ -249,6 +249,10 @@ async function runSuite(): Promise<{ summary: Record<string, unknown> }> {
       check("S4: resumed run has full symbol coverage", sym4 >= N, String(sym4))
       check("S4: resumed run has resolved relationships", rel4 >= N, String(rel4))
       summary.S4 = { cancelled, resumeExit: r4.code, resumeDerived: dm ? dm[1] : null, symbols: sym4, relationships: rel4 }
+      if (process.env.BB_M40_S4_BREAKDOWN === "1") {
+        const rows = raw4.prepare(`SELECT relationship_type AS t, COUNT(*) AS c, SUM(CASE WHEN target_symbol_id IS NULL THEN 1 ELSE 0 END) AS unbound FROM brain_relationship WHERE project_id = ? GROUP BY relationship_type ORDER BY t`).all(pid4) as any[]
+        console.log("S4 BREAKDOWN:", JSON.stringify(rows))
+      }
     }
 
     // ══ S5: fingerprint adoption — project moved, index survives ══
