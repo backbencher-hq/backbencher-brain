@@ -3,6 +3,47 @@ import { ASTEngine } from "./engine"
 import * as path from "node:path"
 import { dirOf, fileClaimForTarget } from "./file-claim"
 
+// ── M49.R2 (task-133): char scans replacing this lane's regex literals, with the proofs inline ──
+// /^\s*package\s+/ — EXACT for this input: optional leading JS whitespace (the enumerable ES set), the
+// literal word "package", then at least one JS whitespace. Scanned left to right; no backtracking is
+// possible because the whitespace run is maximal and the word must follow it immediately.
+const hasJsWhitespace = (c: number): boolean =>
+  c === 9 || c === 10 || c === 11 || c === 12 || c === 13 || c === 32 || c === 160 || c === 5760 ||
+  (c >= 8192 && c <= 8202) || c === 8232 || c === 8233 || c === 8239 || c === 8287 || c === 12288 || c === 65279
+const stripPackagePrefix = (s: string): string => {
+  let i = 0
+  while (i < s.length && hasJsWhitespace(s.charCodeAt(i))) i++
+  if (!s.startsWith("package", i)) return s
+  i += 7
+  if (i >= s.length || !hasJsWhitespace(s.charCodeAt(i))) return s
+  while (i < s.length && hasJsWhitespace(s.charCodeAt(i))) i++
+  return s.slice(i)
+}
+// /;\s*$/ — EXACT: strip trailing JS whitespace, then drop a final ';' if that is what is left.
+const stripTrailingSemicolon = (s: string): string => {
+  let e = s.length
+  while (e > 0 && hasJsWhitespace(s.charCodeAt(e - 1))) e--
+  if (e > 0 && s.charCodeAt(e - 1) === 59) e--
+  return s.slice(0, e)
+}
+// /\/$/ — EXACT: at most ONE trailing '/' is removed (not a run: the literal has no `+`).
+const stripOneTrailingSlash = (s: string): string => (s.endsWith("/") ? s.slice(0, -1) : s)
+// /[/\\]/ — EXACT: includes '/' or '\\'.
+const hasPathSeparator = (s: string): boolean => s.includes("/") || s.includes("\\")
+// /^[a-z][a-z0-9+.-]*:/i — EXACT: `i` folds ASCII case, so the scan accepts either case for the first
+// letter and the tail class, and requires the first ':' after the run (the class cannot hold ':').
+const hasUriSchemePrefix = (s: string): boolean => {
+  const isLetter = (c: number) => (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+  if (s.length === 0 || !isLetter(s.charCodeAt(0))) return false
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (c === 58) return true
+    if (!isLetter(c) && !(c >= 48 && c <= 57) && c !== 43 && c !== 46 && c !== 45) return false
+  }
+  return false
+}
+
+
 /**
  * THE PROTOBUF DECLARATION SPEC for the project index — the fact this lane needs the indexer to hold
  * so its import-scope rule can accept a candidate ONLY WHEN THE PROJECT DECLARES IT.
@@ -60,7 +101,7 @@ export const PROTOBUF_DECLARATION_SPEC = {
     const packages: string[] = []
     for (const c of rootChildren) {
       if (String(c.type) !== "package") continue
-      const text = String(c.text ?? "").replace(/^\s*package\s+/, "").replace(/;\s*$/, "").trim()
+      const text = stripTrailingSemicolon(stripPackagePrefix(String(c.text ?? ""))).trim()
       if (text.length > 0) packages.push(text)
     }
     return packages.length > 0 ? `${packages.join(".")}.${own}` : own
@@ -1725,10 +1766,10 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         const target = written.trim()
         if (target.length > 0 && !target.includes("://") && !target.startsWith("/")) {
           const fileRel = path.relative(path.resolve(claimRoot), filePath).split(path.sep).join("/")
-          let rel = dirOf(fileRel).replace(/\/$/, "")
+          let rel = stripOneTrailingSlash(dirOf(fileRel))
           while (rel.length > 0) {
             extraCandidates.push(`${rel}/${target}`)
-            rel = dirOf(rel).replace(/\/$/, "")
+            rel = stripOneTrailingSlash(dirOf(rel))
           }
         }
         const claim = fileClaimForTarget({
@@ -1754,7 +1795,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           // PATH-SHAPED TARGETS ONLY. A bare name has no shape to check — `planfile.proto`,
           // `any.proto` — and certifying one is the laundering four lanes have now refused.
           const src = String(r.target ?? "")
-          if (/[/\\]/.test(src) || /^[a-z][a-z0-9+.-]*:/i.test(src)) md.sourcePathClaim = [src]
+          if (hasPathSeparator(src) || hasUriSchemePrefix(src)) md.sourcePathClaim = [src]
           continue
         }
         md.importProjectFile = claim

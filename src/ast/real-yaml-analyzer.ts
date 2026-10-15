@@ -3,6 +3,102 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { ASTEngine } from "./engine"
 
+// ── M49.R2 (task-133): CHAR SCANS REPLACING REGEX LITERALS, each with its equivalence proof inline. ──
+// The policy's ladder is AST first, char-scan second, regex only for raw-text micro-parses; these are
+// raw strings (paths, keys, spellings) with no AST node to ask, so they are rung two.
+// /^\.\// — EXACT: an anchored two-character literal test.
+const stripDotSlash = (s: string): string => (s.startsWith("./") ? s.slice(2) : s)
+// /\/+$/ — EXACT: one or more trailing '/'. The regex replaces the WHOLE trailing run with "", so the
+// scan walks back over '/' and slices once; no other character is read or written.
+const stripTrailingSlashes = (s: string): string => {
+  let e = s.length
+  while (e > 0 && s.charCodeAt(e - 1) === 47) e--
+  return e === s.length ? s : s.slice(0, e)
+}
+// /\.ya?ml$/i — EXACT for these literals: a case-insensitive two-spelling suffix. `i` folds the ASCII
+// range, and toLowerCase() folds the same range for the characters these spellings can contain.
+const isYamlSpelling = (s: string): boolean => {
+  const t = s.toLowerCase()
+  return t.endsWith(".yaml") || t.endsWith(".yml")
+}
+// /[{}$*?]/ — EXACT: membership of one of exactly five characters.
+const hasTemplateOrGlobChar = (s: string): boolean =>
+  s.includes("{") || s.includes("}") || s.includes("$") || s.includes("*") || s.includes("?")
+// /\s/ — EXACT per the ECMAScript WhiteSpace + LineTerminator set: code points 9,10,11,12,13,32,160,
+// 5760, 8192-8202, 8232, 8233, 8239, 8287, 12288, 65279. Every member is enumerated, so a character
+// outside the set cannot make this true and a member cannot make it false. (NOT `trim()`: trim tests
+// only the ENDS, while this predicate is existential over the whole string.)
+const hasJsWhitespace = (s: string): boolean => {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (c === 9 || c === 10 || c === 11 || c === 12 || c === 13 || c === 32 || c === 160 || c === 5760 ||
+        (c >= 8192 && c <= 8202) || c === 8232 || c === 8233 || c === 8239 || c === 8287 || c === 12288 || c === 65279) return true
+  }
+  return false
+}
+// /^[A-Za-z][A-Za-z0-9+.-]*:/ — EXACT: an ASCII letter, then a run of [A-Za-z0-9+.-] closed by ':'. The
+// class cannot contain ':', so the FIRST ':' after the run is the only candidate and no backtracking is
+// needed; a character outside the class that is not ':' ends the match attempt with false.
+const hasUriSchemePrefix = (s: string): boolean => {
+  const isAlpha = (c: number) => (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+  if (s.length === 0 || !isAlpha(s.charCodeAt(0))) return false
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (c === 58) return true
+    if (!isAlpha(c) && !(c >= 48 && c <= 57) && c !== 43 && c !== 46 && c !== 45) return false
+  }
+  return false
+}
+// /^[A-Za-z_][A-Za-z0-9_]*=/ — EXACT: an identifier closed by '='; same no-backtracking argument.
+const hasParamKeyPrefix = (s: string): boolean => {
+  const isStart = (c: number) => (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95
+  if (s.length === 0 || !isStart(s.charCodeAt(0))) return false
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (c === 61) return true
+    if (!isStart(c) && !(c >= 48 && c <= 57)) return false
+  }
+  return false
+}
+// /(^|\.)matrix$/ — EXACT: the whole string is "matrix", or it ends with ".matrix".
+const isMatrixPathKey = (s: string): boolean => s === "matrix" || s.endsWith(".matrix")
+// /^actions\/checkout(@|$)/ — EXACT: the literal prefix "actions/checkout" followed by '@' or by the
+// end of the string (length 16 is "actions/checkout").
+const isCheckoutAction = (s: string): boolean =>
+  s.startsWith("actions/checkout") && (s.length === 16 || s.charCodeAt(16) === 64)
+// /^metadata:[ \t]*$/m — EXACT: a line that is exactly "metadata:" plus optional spaces/tabs. Returns
+// the index of that line's first character, which is what String.search() returns for this pattern.
+const findMetadataLine = (text: string): number => {
+  let i = 0
+  while (i <= text.length) {
+    const nl = text.indexOf("\n", i)
+    const end = nl < 0 ? text.length : nl
+    let j = end
+    while (j > i && (text.charCodeAt(j - 1) === 32 || text.charCodeAt(j - 1) === 9)) j--
+    if (j - i === 9 && text.startsWith("metadata:", i)) return i
+    if (nl < 0) break
+    i = nl + 1
+  }
+  return -1
+}
+// /^(.*)\.steps\[(\d+)\](<suffix>)$/ — EXACT for the three step-path literals: the greedy `(.*)`
+// takes the LAST ".steps[" that leaves a digits-only bracket and the required suffix, which is what
+// walking back from the end finds; `\d+` is ASCII 0-9 only.
+const parseStepsPath = (s: string, suffix: string): [string, number] | null => {
+  if (!s.endsWith(suffix)) return null
+  const body = s.slice(0, s.length - suffix.length)
+  if (!body.endsWith("]")) return null
+  const open = body.lastIndexOf(".steps[")
+  if (open < 0) return null
+  const digits = body.slice(open + 7, body.length - 1)
+  if (digits.length === 0) return null
+  for (let i = 0; i < digits.length; i++) {
+    const c = digits.charCodeAt(i)
+    if (c < 48 || c > 57) return null
+  }
+  return [body.slice(0, open), Number(digits)]
+}
+
 /**
  * YAML analyzer backed exclusively by the vendored tree-sitter-yaml AST
  * (`@tree-sitter-grammars/tree-sitter-yaml@0.7.1`, pinned in
@@ -1716,24 +1812,22 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `uses:` at `…steps[i]`, and `path:`/`repository:`/`ref:` at `…steps[i].with`.
    */
   private recordStepWithFacts(key: string, valueNode: Node | null, current: VisitContext, ctx: YamlContext, line: number): void {
-    let re: RegExp
-    if (key === "uses") re = /^(.*)\.steps\[(\d+)\]$/
-    else if (key === "path" || key === "repository" || key === "ref") re = /^(.*)\.steps\[(\d+)\]\.with$/
-    else return
+    const suffix = key === "uses" ? "" : key === "path" || key === "repository" || key === "ref" ? ".with" : null
+    if (suffix === null) return
     if (valueNode === null) return
     const node = this.scalarNode(valueNode)
     if (!SCALAR_TYPES.has(node.type)) return
     const value = this.scalarText(node)
     if (value.length === 0) return
-    const m = re.exec(current.parentPath)
+    const m = parseStepsPath(current.parentPath, suffix)
     if (m === null) return
-    const container = m[1], index = Number(m[2])
+    const container = m[0], index = m[1]
     const byIndex = ctx.stepWithFacts.get(container) ?? new Map<number, StepWithFacts>()
     const entry = byIndex.get(index) ?? { usesLine: line }
     if (key === "uses") {
       entry.uses = value
       entry.usesLine = line
-    } else entry[key] = value
+    } else entry[key as "path" | "repository" | "ref"] = value
     byIndex.set(index, entry)
     ctx.stepWithFacts.set(container, byIndex)
   }
@@ -1787,20 +1881,20 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private materializedActionSource(use: { source: string; action: string }, ctx: YamlContext): { repository: string | null; ref: string | null; stripped: string | null; line: number } | null {
     if (!use.action.startsWith("./")) return null
-    const m = /^(.*)\.steps\[(\d+)\]\.uses$/.exec(use.source)
+    const m = parseStepsPath(use.source, ".uses")
     if (m === null) return null
-    const byIndex = ctx.stepWithFacts.get(m[1])
+    const byIndex = ctx.stepWithFacts.get(m[0])
     if (byIndex === undefined) return null
-    const useIndex = Number(m[2])
-    const dir = use.action.slice(2).replace(/\/+$/, "")
+    const useIndex = m[1]
+    const dir = stripTrailingSlashes(use.action.slice(2))
     if (dir.length === 0) return null
     // THE NEAREST EARLIER CHECKOUT WINS, the same way the runner's own order resolves it.
     let best: { index: number; facts: StepWithFacts; rest: string } | null = null
     for (const [index, facts] of byIndex) {
       if (index >= useIndex) continue
-      if (facts.uses === undefined || !/^actions\/checkout(@|$)/.test(facts.uses)) continue
+      if (facts.uses === undefined || !isCheckoutAction(facts.uses)) continue
       if (facts.path === undefined) continue
-      const checkoutPath = facts.path.replace(/^\.\//, "").replace(/\/+$/, "")
+      const checkoutPath = stripTrailingSlashes(stripDotSlash(facts.path))
       if (checkoutPath.length === 0) continue
       const rest = dir === checkoutPath ? "" : dir.startsWith(checkoutPath + "/") ? dir.slice(checkoutPath.length + 1) : null
       if (rest === null) continue
@@ -2118,7 +2212,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const hits: string[] = []
     for (const entry of entries.sort()) {
-      if (!/\.ya?ml$/i.test(entry)) continue
+      if (!isYamlSpelling(entry)) continue
       const siblingRel = dirRel.length > 0 ? `${dirRel}/${entry}` : entry
       if (siblingRel === rel) continue
       let text: string
@@ -2144,7 +2238,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
   static declaresResource(text: string, kind: string, name: string): boolean {
     const kindMatch = text.match(/^kind:[ \t]*["']?([A-Za-z][\w.-]*)["']?[ \t]*$/m)
     if (kindMatch === null || kindMatch[1] !== kind) return false
-    const meta = text.search(/^metadata:[ \t]*$/m)
+    const meta = findMetadataLine(text)
     if (meta < 0) return false
     const nameMatch = text.slice(meta).match(/^[ \t]+name:[ \t]*["']?([^"'\n#]+?)["']?[ \t]*$/m)
     return nameMatch !== null && nameMatch[1].trim() === name
@@ -2459,7 +2553,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `matrix.yml` has the document identity `matrix`, so a bare `/matrix$/` test made every
     // top-level `include:` in that document invisible. The guard is about a `matrix:` KEY, which
     // is always a deeper path than the document itself.
-    if (key === "include" && parentPath !== document && /(^|\.)matrix$/.test(parentPath)) return []
+    if (key === "include" && parentPath !== document && isMatrixPathKey(parentPath)) return []
     const file = this.mappingEntryScalar(valueNode, "file")
     if (file !== null) return [file]
     // A MAPPING UNDER A FILE KEY IS NOT A LIST OF FILES. Only its `file:` names one (handled
@@ -3514,13 +3608,13 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `metadata/databases/s 3/tables/tables.yaml`, which the repository HAS). The template, glob,
     // URI-scheme and `key=` refusals are unchanged and unquoted-by-construction, so a quoted
     // free-form string is still refused.
-    if (/[{}$*?]/.test(written)) return false
-    if (!quoted && /\s/.test(written)) return false
+    if (hasTemplateOrGlobChar(written)) return false
+    if (!quoted && hasJsWhitespace(written)) return false
     // A URI SCHEME at the start (`package:`, `dart:`, `http:`) is not a path. Anchored, and the
     // colon must arrive before any separator, so `sub/dir:x.yml` is untouched.
-    if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(written)) return false
+    if (hasUriSchemePrefix(written)) return false
     // A free-form `key=value` parameter list is not a path, whatever its tail looks like.
-    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(written)) return false
+    if (hasParamKeyPrefix(written)) return false
     return true
   }
 
@@ -3605,7 +3699,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private keywordIncludeClaim(written: string, ctx: YamlContext, key: string): Record<string, unknown> {
     if (ROLE_IMPORT_KEYS.has(key)) return { isExternal: true }
-    if (!/\.ya?ml$/i.test(written)) return { isExternal: true }
+    if (!isYamlSpelling(written)) return { isExternal: true }
     const candidates = this.relativePathCandidates(written, ctx)
     // EVIDENCE BEFORE CLAIM. `keywordIncludeClaim` used to state the file claim for every
     // admitted-looking spelling; where the project does not carry the file, that claim was
@@ -3713,7 +3807,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // ever confirm it — `keywordIncludeClaim`'s rule) and `statSync` has to find the candidate.
       // A step-level `uses:` of a workflow file this project does NOT carry keeps `isExternal`,
       // which is the honest outcome and keeps this change from manufacturing a refutation.
-      if (/\.ya?ml$/i.test(action) && this.projectCarriesFile(ctx, all)) {
+      if (isYamlSpelling(action) && this.projectCarriesFile(ctx, all)) {
         return { importProjectFile: all }
       }
       return { isExternal: true }
