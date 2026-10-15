@@ -795,10 +795,30 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       confidence: number,
       line: number,
       metadata: Record<string, unknown> = {},
+      /**
+       * `pathTarget` — A MODULE SPECIFIER IS A PATH, NOT A SYMBOL NAME, and this is the one guard it must skip.
+       *
+       * `isPlausibleSymbolName` exists to keep fabricated symbols out of the graph, and every other type this
+       * function emits names a SYMBOL: a call names a function, an inheritance edge names a contract. An
+       * `imports` edge names a FILE — `"./AccessControl.sol"`, `"@openzeppelin/contracts/token/ERC20.sol"` —
+       * and those spellings are precisely what the plausibility test rejects.
+       *
+       * MEASURED, WHICH IS WHY THIS PARAMETER EXISTS. The first attempt at emitting `imports` here went through
+       * this function with no opt-out: over **358 corpus files whose source contains `import`** it produced
+       * **ONE edge**, because 357 targets were paths and were dropped in silence by the guard four lines below.
+       * The single survivor was a fixture whose target happened to be identifier-shaped (`anotherFile`). A guard
+       * that silently discards legitimate output is the defect class this programme keeps finding, and it was
+       * found here by counting emissions against a corpus census rather than by reading the code.
+       *
+       * EVERY OTHER GUARD STILL APPLIES — the line must be finite and positive, a recovery line is refused, a
+       * reserved target is refused, and the `relKeys` dedup still runs — because those all mean something for a
+       * path. Only the symbol-name shape test is inapplicable, so only it is skipped.
+       */
+      opts: { pathTarget?: boolean } = {},
     ) => {
       if (caseAudit) __emits[__cur] = (__emits[__cur] ?? 0) + 1
       if (!source || !target) return
-      if (!isPlausibleSymbolName(target)) return
+      if (!opts.pathTarget && !isPlausibleSymbolName(target)) return
       // SOL-1: EVERY edge carries the line of the node that BEARS ITS NAME, and
       // that line is part of the identity, so two call sites of one callee are
       // two rows — the store resolves a containment edge BY the line it carries,
@@ -2663,6 +2683,42 @@ const meta = modifiersOf(node)
     }
 
     // ------------------------------------------------------------------ imports
+    /**
+     * `imports` — THE DECLARED TYPE WAS PARSED, LABELLED, AND NEVER EMITTED.
+     *
+     * `import_directive` has been handled since the parser grew a Solidity grammar: the branch reads the
+     * source path, the braced list, the alias and `any_source_type`, and pushes both `importEdges` (for the
+     * `references` edges below) and a well-formed `ASTEngine.ImportInfo` into `imports`. What it never did
+     * was mint an `imports` RELATIONSHIP: `grep -c 'RelationshipType.Imports' real-solidity-analyzer.ts`
+     * was **0**, so a file could import six modules and the graph recorded no dependency on any of them —
+     * the dependency existed only as a `references` edge carrying `import: true`, which is a claim about a
+     * NAME, not about a FILE.
+     *
+     * WHY THE EMISSION IS PER PATH AND NOT PER NAME. This loop's `references` arm is per imported NAME,
+     * because a reference is to a name: `import {A, B} from "./X.sol"` names two things and earns two
+     * reference edges. A dependency is on a FILE, and that statement names one — emitting per name would
+     * assert the same file dependency N times and inflate the type by the size of every braced list. The
+     * braced form is the COMMON one (measured: 826 `import_directive`, "the braced form is the common one
+     * in OpenZeppelin"), so the difference is not academic.
+     *
+     * THE TARGET IS THE SPECIFIER, matching every other lane in the fleet: `imports <fileModule> -> <path>`.
+     * `verifyExternalClaim` will classify a path-like target `externalUnverified` — that is a CLAIM column,
+     * never a resolution, and it is the same treatment `imports` gets in the lanes that have always emitted
+     * it. Artifact: validation/m14/verification/TYPE-GAP-PLAN.md, gap 1.
+     */
+    {
+      const seenImportPath = new Set<string>()
+      for (const e of importEdges) {
+        if (!e.path || seenImportPath.has(e.path)) continue
+        seenImportPath.add(e.path)
+        addRel(fileName, e.path, ASTEngine.RelationshipType.Imports, 1.0, e.line, {
+          import: true,
+          importPath: e.path,
+          ...(e.isNamespace ? { isNamespaceImport: true } : {}),
+        }, { pathTarget: true })
+      }
+    }
+
     for (const e of importEdges) {
       if (e.name === "*") {
         addRel(fileName, e.path, ASTEngine.RelationshipType.References, 1.0, e.line, {
