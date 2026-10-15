@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "outDir": null
+  },
+  "include": [
+    "script/**/*.ts",
+    "src/ast/pool_worker_globals.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests",
+    "script/m14/tmp"
+  ]
+}
