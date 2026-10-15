@@ -2,17 +2,17 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-13T23:02:27.146Z",
+  "generatedAt": "2026-10-15T04:24:00.699Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 30,
+  "totalRegexUsages": 33,
   "analyzersScanned": 48,
   "byClassification": {
-    "needs_review": 30
+    "needs_review": 33
   },
   "byReceiverCategory": {
-    "identifier": 19,
+    "identifier": 22,
     "other": 11
   },
   "perFile": [
@@ -22,7 +22,7 @@
       "usages": [
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 1619,
+          "line": 1720,
           "column": 30,
           "source": "/^(.*)\\.steps\\[(\\d+)\\]$/",
           "operation": "other",
@@ -33,7 +33,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 1620,
+          "line": 1721,
           "column": 76,
           "source": "/^(.*)\\.steps\\[(\\d+)\\]\\.with$/",
           "operation": "other",
@@ -44,7 +44,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 1689,
+          "line": 1790,
           "column": 15,
           "source": "/^(.*)\\.steps\\[(\\d+)\\]\\.uses$/",
           "operation": "test",
@@ -55,7 +55,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 1694,
+          "line": 1795,
           "column": 45,
           "source": "/\\/+$/",
           "operation": "replace",
@@ -66,7 +66,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 1700,
+          "line": 1801,
           "column": 40,
           "source": "/^actions\\/checkout(@|$)/",
           "operation": "test",
@@ -77,7 +77,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 1702,
+          "line": 1803,
           "column": 47,
           "source": "/^\\.\\//",
           "operation": "replace",
@@ -88,7 +88,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 1702,
+          "line": 1803,
           "column": 68,
           "source": "/\\/+$/",
           "operation": "replace",
@@ -99,7 +99,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 2020,
+          "line": 2121,
           "column": 12,
           "source": "/\\.ya?ml$/i",
           "operation": "test",
@@ -110,7 +110,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 2044,
+          "line": 2145,
           "column": 34,
           "source": "/^kind:[ \\t]*[\"']?([A-Za-z][\\w.-]*)[\"']?[ \\t]*$/m",
           "operation": "match",
@@ -121,7 +121,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 2046,
+          "line": 2147,
           "column": 30,
           "source": "/^metadata:[ \\t]*$/m",
           "operation": "search",
@@ -132,7 +132,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 2048,
+          "line": 2149,
           "column": 46,
           "source": "/^[ \\t]+name:[ \\t]*[\"']?([^\"'\\n#]+?)[\"']?[ \\t]*$/m",
           "operation": "match",
@@ -143,7 +143,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 2361,
+          "line": 2462,
           "column": 57,
           "source": "/(^|\\.)matrix$/",
           "operation": "test",
@@ -154,7 +154,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 3416,
+          "line": 3517,
           "column": 9,
           "source": "/[{}$*?]/",
           "operation": "test",
@@ -165,7 +165,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 3417,
+          "line": 3518,
           "column": 20,
           "source": "/\\s/",
           "operation": "test",
@@ -176,7 +176,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 3420,
+          "line": 3521,
           "column": 9,
           "source": "/^[A-Za-z][A-Za-z0-9+.-]*:/",
           "operation": "test",
@@ -187,7 +187,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 3422,
+          "line": 3523,
           "column": 9,
           "source": "/^[A-Za-z_][A-Za-z0-9_]*=/",
           "operation": "test",
@@ -198,7 +198,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 3507,
+          "line": 3608,
           "column": 10,
           "source": "/\\.ya?ml$/i",
           "operation": "test",
@@ -209,7 +209,7 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 3615,
+          "line": 3716,
           "column": 11,
           "source": "/\\.ya?ml$/i",
           "operation": "test",
@@ -222,7 +222,7 @@
     },
     {
       "file": "real-protobuf-analyzer.ts",
-      "count": 4,
+      "count": 6,
       "usages": [
         {
           "file": "real-protobuf-analyzer.ts",
@@ -248,7 +248,7 @@
         },
         {
           "file": "real-protobuf-analyzer.ts",
-          "line": 1665,
+          "line": 1728,
           "column": 44,
           "source": "/\\/$/",
           "operation": "replace",
@@ -259,12 +259,34 @@
         },
         {
           "file": "real-protobuf-analyzer.ts",
-          "line": 1668,
+          "line": 1731,
           "column": 38,
           "source": "/\\/$/",
           "operation": "replace",
           "receiver": "dirOf(rel)",
           "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-protobuf-analyzer.ts",
+          "line": 1757,
+          "column": 15,
+          "source": "/[/\\\\]/",
+          "operation": "test",
+          "receiver": "src",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-protobuf-analyzer.ts",
+          "line": 1757,
+          "column": 36,
+          "source": "/^[a-z][a-z0-9+.-]*:/i",
+          "operation": "test",
+          "receiver": "src",
+          "receiverCategory": "identifier",
           "classification": "needs_review",
           "justification": ""
         }
@@ -365,6 +387,23 @@
           "source": "/[.:$[\\]()]/",
           "operation": "test",
           "receiver": "target",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-toml-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-toml-analyzer.ts",
+          "line": 1590,
+          "column": 37,
+          "source": "/[/\\\\]|^[a-z][a-z0-9+.-]*:/i",
+          "operation": "test",
+          "receiver": "pathValue",
           "receiverCategory": "identifier",
           "classification": "needs_review",
           "justification": ""
