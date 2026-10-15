@@ -96,6 +96,38 @@ export function orphanArtifacts(artifactIds: string[], producers: Producer[]): s
   return artifactIds.filter((id) => !owned.has(id)).sort()
 }
 
+/**
+ * A `.superseded-<sha>` copy is an ARCHIVAL DUPLICATE, not an evidence identity — and treating
+ * one as an identity is what manufactured 19 phantom orphans.
+ *
+ * The union's own committed convention, `validation/m14/UNION-DISPOSITION-THE-LAST-164.md`:
+ * "Every take preserves the HEAD-side file VERBATIM as `<stem>.superseded-e7c9819f4.<ext>`, so
+ * nothing is overwritten in the sense that matters: both sides remain on disk and in git."
+ *
+ * So the copy is claimed by the SAME producer as the identity it preserves — but ONLY when that
+ * identity is itself present AND produced. Both conditions are required, and that is what keeps
+ * the rule's teeth:
+ *   * a copy whose live sibling is GONE is the only surviving record of a measurement, nothing
+ *     produces it, and it MUST still be an orphan;
+ *   * a copy whose sibling exists but has no producer MUST still be an orphan.
+ * The rule is not relaxed; its input set is corrected. Before this it reported files the union
+ * deliberately preserved as if a gate had written evidence nobody explained.
+ */
+export function supersededCopies(artifactIds: string[], producers: Producer[]) {
+  const owned = new Set(producers.map((p) => p.id))
+  const present = new Set(artifactIds)
+  const attributed: string[] = []
+  const unattributable: string[] = []
+  for (const id of artifactIds) {
+    const m = /^(.+)\.superseded-[0-9a-f]{7,40}$/.exec(id)
+    if (!m) continue
+    const stem = m[1]
+    if (present.has(stem) && owned.has(stem)) attributed.push(id)
+    else unattributable.push(id)
+  }
+  return { attributed: attributed.sort(), unattributable: unattributable.sort() }
+}
+
 export function missingArtifacts(producers: Producer[], artifactIds: string[], exempt: (id: string) => boolean): string[] {
   const present = new Set(artifactIds)
   return [...new Set(producers.map((p) => p.id))].filter((id) => !present.has(id) && !exempt(id)).sort()
@@ -212,10 +244,20 @@ function main(): void {
   check("every evidence identity has exactly one producer", clash.length === 0,
     clash.length ? clash.map((c) => `${c.id} <- ${c.files.join(" + ")}`).join(" | ") : "")
 
-  // 2. No orphan artifacts.
-  const orphans = orphanArtifacts(artifactIds, producers)
+  // 2. No orphan artifacts. Superseded archival copies are attributed to the producer of the
+  //    identity they preserve (see `supersededCopies`), and the attribution is DISCLOSED rather
+  //    than silent: silence is what this gate exists to remove.
+  const sup = supersededCopies(artifactIds, producers)
+  const archival = new Set(sup.attributed)
+  const orphans = orphanArtifacts(artifactIds.filter((id) => !archival.has(id)), producers)
   check("every evidence artifact is claimed by a producer (no orphans)", orphans.length === 0,
     orphans.length ? `${orphans.length}: ${orphans.slice(0, 6).join(", ")}` : "")
+  if (sup.attributed.length > 0) {
+    console.log(`disclosure: ${sup.attributed.length} superseded archival copy(ies) attributed to the producer of the identity they preserve: ${sup.attributed.slice(0, 6).join(", ")}${sup.attributed.length > 6 ? ", …" : ""}`)
+  }
+  if (sup.unattributable.length > 0) {
+    console.log(`disclosure: ${sup.unattributable.length} superseded copy(ies) whose live sibling is absent or unproduced — those stay ORPHANS: ${sup.unattributable.join(", ")}`)
+  }
 
   // 3. Every producer's artifact exists (the harness's own self-test id is
   //    written only under `selftest`, never by the battery).
@@ -262,6 +304,24 @@ function main(): void {
   negative("an artifact no producer claims is reported as an orphan",
     orphanArtifacts(["M14.0.F7", "M14.0.GHOST"], [{ file: "a.ts", id: "M14.0.F7" }]).join(",") === "M14.0.GHOST",
     "an orphan artifact was not reported")
+  // The archival-copy rule, in BOTH directions. The three below are the whole justification for
+  // attributing anything: without them the rule would be a switch for silencing orphans.
+  negative("a superseded copy whose live sibling is produced is attributed, not an orphan",
+    supersededCopies(["M14.0.F1", "M14.0.F1.superseded-e7c9819f4"], [{ file: "a.ts", id: "M14.0.F1" }])
+      .attributed.join() === "M14.0.F1.superseded-e7c9819f4",
+    "a preserved copy of a produced artifact was not attributed")
+  negative("a superseded copy with NO live sibling is NOT attributed",
+    supersededCopies(["M14.0.GONE.superseded-e7c9819f4"], [{ file: "a.ts", id: "M14.0.F1" }]).attributed.length === 0,
+    "a copy with no live sibling was attributed")
+  negative("a superseded copy whose live sibling has no producer is NOT attributed",
+    supersededCopies(["M14.0.X", "M14.0.X.superseded-e7c9819f4"], [{ file: "a.ts", id: "M14.0.F1" }]).attributed.length === 0,
+    "a copy of an unproduced sibling was attributed")
+  negative("an ordinary artifact is never attributed by the archival rule",
+    supersededCopies(["M14.0.F1"], [{ file: "a.ts", id: "M14.0.F1" }]).attributed.length === 0,
+    "a non-superseded artifact was attributed")
+  negative("an unattributable superseded copy is STILL reported as an orphan",
+    orphanArtifacts(["M14.0.GONE.superseded-e7c9819f4"], []).length === 1,
+    "the orphan rule lost its teeth for an unattributable copy")
   negative("a producer whose artifact is absent is reported as missing",
     missingArtifacts([{ file: "a.ts", id: "M14.0.F7" }], [], () => false).join(",") === "M14.0.F7",
     "a missing artifact was not reported")

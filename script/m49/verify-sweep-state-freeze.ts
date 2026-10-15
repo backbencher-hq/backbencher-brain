@@ -125,10 +125,61 @@ const sourceCode = source
 // Returns the mutated copy, or null when the harness no longer contains the
 // pattern at all — which is itself a wiring failure (the matching POSITIVE
 // check below fails), reported as such instead of crashing the gate.
-const mutate = (from: string, to: string): string | null => (source.includes(from) ? source.replace(from, to) : null)
+//
+// REPLACE **ALL** OCCURRENCES, and this is a fix to a control that could not fire.
+// With `String.replace(from, to)` only the FIRST occurrence was mutated, so a
+// pattern that appears at TWO call sites kept satisfying the rule through the
+// second one and the negative control reported FAIL while testing nothing:
+//   `const codeInputs = readCodeInputs(ROOT)`  appears at :24942 and :25127
+//   `process.exit(6)`                          appears at :25119 and :25206
+// Both controls below were failing for exactly that reason. A negative fixture
+// that plants the violation at ONE of N sites has not planted a violation.
+const mutate = (from: string, to: string): string | null => (source.includes(from) ? source.replaceAll(from, to) : null)
 const breaksWhenMutated = (from: string, to: string, rule: (src: string) => boolean) => {
   const m = mutate(from, to)
   return m !== null && !rule(m)
+}
+// Plants SEVERAL mutations before testing — for a violation that needs more than
+// one edit to be a violation (e.g. removing BOTH exits from a branch, where
+// removing one still leaves the branch exiting).
+const breaksWhenAllMutated = (pairs: [string, string][], rule: (src: string) => boolean) => {
+  let m = source
+  for (const [from, to] of pairs) {
+    if (!m.includes(from)) return false
+    m = m.replaceAll(from, to)
+  }
+  return !rule(m)
+}
+// The index one past the `}` matching the `{` at `open`, with string literals,
+// template literals and comments skipped so a brace inside prose does not
+// unbalance the walk. Used to extract a BRANCH BODY structurally: the previous
+// scoped-run rule sliced to the next blank line, which truncated the body 94
+// lines early and made its check impossible to pass.
+const stripComments = (t: string) =>
+  t.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").map((l) => l.replace(/(^|[^:])\/\/.*$/, "$1")).join("\n")
+const matchBrace = (src: string, open: number): number => {
+  let depth = 0
+  let state: "code" | "sq" | "dq" | "tpl" | "line" | "block" = "code"
+  for (let i = open; i < src.length; i++) {
+    const c = src[i], n = src[i + 1]
+    if (state === "code") {
+      if (c === "/" && n === "/") { state = "line"; i++; continue }
+      if (c === "/" && n === "*") { state = "block"; i++; continue }
+      if (c === "'") { state = "sq"; continue }
+      if (c === '"') { state = "dq"; continue }
+      if (c === "`") { state = "tpl"; continue }
+      if (c === "{") depth++
+      else if (c === "}") { depth--; if (depth === 0) return i + 1 }
+      continue
+    }
+    if (state === "line") { if (c === "\n") state = "code"; continue }
+    if (state === "block") { if (c === "*" && n === "/") { state = "code"; i++ } continue }
+    if (c === "\\") { i++; continue }
+    if (state === "sq" && c === "'") state = "code"
+    else if (state === "dq" && c === '"') state = "code"
+    else if (state === "tpl" && c === "`") state = "code"
+  }
+  return -1
 }
 // The child is handed the frozen state through its environment. The harness may
 // name the variable or its constant, so both spellings count as wired.
@@ -200,10 +251,32 @@ negative("the filter is not 'everything is dirt'", !dirt.includes("reviews/onboa
 negative("a rename is not reported by its OLD path", !dirt.includes("src/ast/old-name.ts"))
 
 // Wiring: the harness must read the dirt, carry it, and refuse to exit 0 on it.
-const codeInputsWiring = (src: string) => /const codeInputs = readCodeInputs\(ROOT\)/.test(src)
+//
+// THE CANONICAL READ, not "a read anywhere". The rule used to be
+// `/const codeInputs = readCodeInputs(ROOT)/`, which the `--emit` branch's read
+// (`:24942`, inside the scoped-run branch) satisfied on its own — so deleting the
+// CANONICAL read before the emit, which is the violation that matters, would have
+// passed. The rule now requires the last read before the canonical emit AND the
+// dirty-refusal that follows it.
+const codeInputsWiring = (src: string) => {
+  const emit = src.lastIndexOf("emitEvidence({")
+  if (emit < 0) return false
+  const i = src.lastIndexOf("const codeInputs = readCodeInputs(ROOT)", emit)
+  if (i < 0) return false
+  // ADJACENT, not merely somewhere between: with an unbounded window the scoped
+  // branch's own read at :24942 could stand in for the canonical one and the
+  // refusal 13,502 characters later still counted, so deleting the canonical read
+  // passed. The real read and its refusal are ~60 characters apart.
+  const refusal = src.slice(i, i + 400).indexOf("if (!codeInputs.clean)")
+  return refusal >= 0
+}
 check("the harness reads the code-input dirt before emitting", codeInputsWiring(source))
 negative("the code-input rule catches a harness that never reads it",
   breaksWhenMutated("const codeInputs = readCodeInputs(ROOT)", "const codeInputs = { head: \"\", clean: true, dirty: [] }", codeInputsWiring))
+negative("the code-input rule catches a canonical read deleted while the scoped branch keeps its own",
+  breaksWhenAllMutated([
+    ["\n  const codeInputs = readCodeInputs(ROOT)\n  if (!codeInputs.clean) {", "\n  const codeInputs = { head: \"\", clean: true, dirty: [] }\n  if (!codeInputs.clean) {"],
+  ], codeInputsWiring))
 const checkWiring = (src: string) => /id: "differential-code-inputs",[\s\S]{0,260}?status: codeInputs\.clean \? "pass" : "fail"/.test(src)
 check("the dirt is a check in the artifact, not console chatter", checkWiring(source))
 negative("the check-wiring rule catches an always-pass status",
@@ -212,7 +285,15 @@ const dataWiring = (src: string) => /\n      codeInputs,\n/.test(src)
 check("the dirt is recorded as artifact data", dataWiring(source))
 negative("the data-wiring rule catches a dropped payload",
   breaksWhenMutated("\n      codeInputs,\n", "\n", dataWiring))
-const exitWiring = (src: string) => /DIFFERENTIAL CODE INPUTS DIRTY/.test(src) && /process\.exit\(6\)/.test(src)
+// THE EXIT THAT BELONGS TO THE DIRTY PATH, not "an exit(6) somewhere". The rule
+// used to accept any `process.exit(6)` in the file, and the scoped branch's
+// unrelated `labelTruthGaps` exit (`:25119`) satisfied it — so replacing the
+// CANONICAL refusal with `process.exit(0)` would have passed. The rule now
+// requires the exit to appear AFTER the marker that announces the dirty run.
+const exitWiring = (src: string) => {
+  const marker = src.indexOf("DIFFERENTIAL CODE INPUTS DIRTY")
+  return marker >= 0 && /process\.exit\(6\)/.test(src.slice(marker))
+}
 check("a dirty measurement cannot exit 0", exitWiring(source))
 negative("the exit rule catches a silent dirty run",
   breaksWhenMutated("process.exit(6)", "process.exit(0)", exitWiring))
@@ -222,18 +303,40 @@ negative("the exit rule catches a silent dirty run",
 //     one, so an inspection erased the release claim). The rule is structural:
 //     the scoped branch exits before the emit, and says so in its output.
 //     A negative control removes the exit and requires the rule to notice.
+// The rule extracts the BRANCH BODY by brace matching, and this is the fix to a
+// rule that could never pass. It used to slice from the guard to the next BLANK
+// LINE, which in the current harness is 7,317 characters — it stops 94 lines
+// before the branch ends, so `M14.0.F5 NOT written` (:25099) and both exits
+// (:25119, :25123) were OUTSIDE the window and the check reported FAIL against a
+// harness that does exactly what the rule asks for. Its negative control passed
+// vacuously for the same reason: the rule was false for the real source AND for
+// every mutant, so `!rule(muted)` was true no matter what the mutation did.
+// Reported as a gate that cannot fail — the class it exists to catch is a scoped
+// probe writing the canonical artifact, and it would have reported green over it.
 const scopedGuard = (src: string) => {
   const i = src.indexOf("if (SCOPED_RUN) {")
   if (i < 0) return false
-  const block = src.slice(i, src.indexOf("\n\n", i))
-  // The CALL, not the name: the string also appears in prose above the block.
-  return block.includes("M14.0.F5 NOT written") && /process\.exit\(/.test(block)
-    && src.indexOf("emitEvidence({") > i
+  const open = src.indexOf("{", i)
+  const end = matchBrace(src, open)
+  if (end < 0) return false
+  const body = src.slice(open, end)
+  // COMMENTS STRIPPED, and this was a real hole in the first version of this
+  // rule: the branch's own prose contains the words `an explicit process.exit()`,
+  // which satisfied `/process\.exit\(/` on its own — so removing BOTH exits still
+  // left the rule passing, on a comment. A rule about what the CODE does must not
+  // be satisfiable by prose (the same reason `sourceCode` exists above).
+  const bodyCode = stripComments(body)
+  // The CANONICAL emit is the LAST one: the scoped `--emit` branch has its own
+  // lane-scoped `emitEvidence({...})` calls inside the branch above.
+  const emit = src.lastIndexOf("emitEvidence({")
+  return emit > end && bodyCode.includes("M14.0.F5 NOT written") && /process\.exit\(/.test(bodyCode)
 }
 check("a scoped probe run cannot write the canonical artifact", scopedGuard(source))
 negative("the scoped-run rule catches a probe that falls through to the emit",
-  breaksWhenMutated("a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one.", "", scopedGuard)
-  || breaksWhenMutated("process.exit(evaluation.regressions.length || evaluation.perfRegressions.length ? 5 : 0)", "void 0", scopedGuard))
+  breaksWhenAllMutated([
+    ["process.exit(evaluation.regressions.length || evaluation.perfRegressions.length ? 5 : 0)", "void 0"],
+    ["if (labelTruthGaps.length > 0) {\n      process.exit(6)\n    }", "if (labelTruthGaps.length > 0) {\n      process.exitCode = 6\n    }"],
+  ], scopedGuard))
 
 // 5. Durable scratch (defect 4): the resume journal, the cold-pool rotation
 //    state and the pinned corpus trees all lived in os.tmpdir(). This machine

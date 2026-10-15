@@ -102,6 +102,10 @@ interface Observation {
   confidence: number | null
   /** For identity constructs: the declared symbol spelling of the target. */
   symbolName?: string | null
+  /** The target the `uses` edge actually names (null when there is no edge). */
+  edgeTarget?: string | null
+  /** How that target spells the member: `count` is "bare", `Store.count" is "qualified". */
+  targetSpelling?: "bare" | "qualified" | null
 }
 
 async function observe(construct: Construct, lang: string): Promise<Observation> {
@@ -123,18 +127,32 @@ async function observe(construct: Construct, lang: string): Promise<Observation>
   // name is the whole point of the identity construct), so both sides accept
   // the bare and the `#`-prefixed spelling and the DECLARATION decides which
   // one is correct — that is what makes the #813 ruling gate-able.
-  const matches = (t: unknown) => {
+  //
+  // OWNER-QUALIFICATION IS ALSO A MATCH, and this is a MEASUREMENT fix, not a
+  // relaxation. The matcher used to accept only the bare spelling, so an
+  // analyzer that published the member as `Store.count` — the same spelling the
+  // fleet's dart `contains` ruling REQUIRES, because a bare member name repeated
+  // across a project is ambiguous by construction — was observed as `"none"`,
+  // indistinguishable from an analyzer that emitted no edge at all. That is what
+  // made dart and php report `declared source "read", observed "none"` while both
+  // were emitting `uses read -> Store.count` at confidence 0.9. The edge is found
+  // under either spelling and the SPELLING ITSELF becomes a declared axis below.
+  const memberMatches = (t: unknown) => {
     const s = String(t)
-    return s === construct.target || s === `#${construct.target}`
+    if (s === construct.target || s === `#${construct.target}`) return true
+    const leaf = s.slice(s.lastIndexOf(".") + 1)
+    return leaf === construct.target || leaf === `#${construct.target}`
   }
   const rel = (result.relationships ?? []).find(
-    (x: any) => (x.type ?? x.relationshipType) === "uses" && matches(x.target),
+    (x: any) => (x.type ?? x.relationshipType) === "uses" && memberMatches(x.target),
   )
-  const sym = (result.symbols ?? []).find((s: any) => matches(s.name))
+  const sym = (result.symbols ?? []).find((s: any) => memberMatches(s.name))
   return {
     source: rel ? String(rel.source) : "none",
     confidence: rel ? (typeof rel.confidence === "number" ? rel.confidence : null) : null,
     symbolName: sym ? String(sym.name) : null,
+    edgeTarget: rel ? String(rel.target) : null,
+    targetSpelling: rel ? (String(rel.target).includes(".") ? "qualified" : "bare") : null,
   }
 }
 
@@ -166,6 +184,16 @@ function compare(declared: any, observed: Observation): { ok: boolean; detail: s
   }
   if (declared?.symbolName !== undefined && declared.symbolName !== observed.symbolName) {
     return { ok: false, detail: `declared symbol name "${declared.symbolName}", observed "${observed.symbolName}"` }
+  }
+  // THE SPELLING AXIS, declared per lane. Before this, a lane could flip its edge
+  // target from `count` to `Store.count` — or to anything whose leaf matched —
+  // and the gate would not see it: the matcher normalised the difference away.
+  // Pinning it makes the check STRONGER than the one it replaces.
+  if (declared?.edgeTargetSpelling !== undefined && observed.targetSpelling !== declared.edgeTargetSpelling) {
+    return {
+      ok: false,
+      detail: `declared edge-target spelling "${declared.edgeTargetSpelling}", observed "${observed.targetSpelling}" (target "${observed.edgeTarget}")`,
+    }
   }
   return { ok: true, detail: "" }
 }
@@ -232,6 +260,19 @@ async function main() {
     compare({ state: "gap", reason: "x", issue: "#740" } as any, { source: "none", confidence: null } as any).ok)
   negative("rule rejects a wrong declared symbol name",
     !compare({ source: "read", symbolName: "#count" }, { source: "read", confidence: 0.6, symbolName: "count" }).ok)
+  // The spelling axis, both directions — and these are the controls for the fix
+  // that made dart/php readable: an edge that EXISTS under a qualified spelling
+  // must be found (so `source` is compared, not reported as "none"), while a lane
+  // whose spelling differs from its declaration must still FAIL.
+  negative("rule accepts a qualified edge target that the declaration pins as qualified",
+    compare({ source: "read", edgeTargetSpelling: "qualified" },
+      { source: "read", confidence: 0.9, edgeTarget: "Store.count", targetSpelling: "qualified" }).ok)
+  negative("rule rejects a lane that flips its edge-target spelling",
+    !compare({ source: "read", edgeTargetSpelling: "bare" },
+      { source: "read", confidence: 0.9, edgeTarget: "Store.count", targetSpelling: "qualified" }).ok)
+  negative("rule rejects a lane that drops its edge entirely",
+    !compare({ source: "read", edgeTargetSpelling: "bare" },
+      { source: "none", confidence: null, edgeTarget: null, targetSpelling: null }).ok)
 
   console.log(`M49.G9: ${passed}/${checks} checks passed, ${negatives} negative(s) exercised`)
   if (failed > 0) {
