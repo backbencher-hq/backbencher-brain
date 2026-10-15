@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
-import { visualizeProject } from "../../src/intelligence/visualization/visualization-engine"
+import { visualizeProject, formatVisualization } from "../../src/intelligence/visualization/visualization-engine"
 import { Harness } from "./harness"
 
 const harness = new Harness({
@@ -40,9 +40,22 @@ await indexProjectParallel(projectId, root, {})
   const ids = new Set(r.nodes.map((n: any) => n.id))
   const d = r.links.filter((l: any) => !ids.has(l.source) || !ids.has(l.target))
   harness.check("fidelity: no dangling links", d.length === 0, String(d.length))
-  harness.check("fidelity: omittedDanglingLinks >= 0", r.provenance.omittedDanglingLinks >= 0)
   harness.check("fidelity: provenance = canonical-graph-engine", r.provenance.source === "canonical-graph-engine", r.provenance.source)
-  harness.negative("fidelity: dangling count = 0 for valid graph", r.provenance.omittedDanglingLinks === 0, String(r.provenance.omittedDanglingLinks))
+  // M13.F9 (#701): the one counter that was called `omittedDanglingLinks` measured the NODE CUT,
+  // and the text then blamed `maxLinks` for it. The two reasons an edge can be absent are now
+  // counted apart, and the old name is gone rather than kept as an alias — a field whose name
+  // describes a different event than it measures is how this was missed in the first place.
+  harness.check(
+    "fidelity: the node cut and the budget cut are separate counters",
+    typeof r.provenance.linksOmittedWithNodeCut === "number" && typeof r.provenance.linksOmittedByBudget === "number",
+    JSON.stringify(r.provenance),
+  )
+  harness.negative("fidelity: the misleading `omittedDanglingLinks` name is gone", !("omittedDanglingLinks" in r.provenance), Object.keys(r.provenance).join(","))
+  harness.negative(
+    "fidelity: nothing is cut when every node is retained",
+    r.provenance.linksOmittedWithNodeCut === 0 && r.provenance.linksOmittedByBudget === 0,
+    JSON.stringify(r.provenance),
+  )
 }
 
 // 2. Truncation
@@ -76,6 +89,36 @@ await indexProjectParallel(projectId, root, {})
 
   const file = await visualizeProject(projectId, { scope: "file", target: "src/core/engine.ts", maxNodes: 100 })
   harness.check("scope: file -> engine.ts", file.nodes.length > 0 && file.nodes.every((n: any) => fp(n).includes("engine.ts")), [...new Set(file.nodes.map(fp))].join(","))
+}
+
+// 5. F9 — the node cut and the budget cut are reported as what they are
+{
+  const nodeCut = await visualizeProject(projectId, { scope: "project", maxNodes: 2, maxLinks: 5000, format: "json" })
+  harness.check("node cut: the loss is attributed to the node cut", nodeCut.provenance.linksOmittedWithNodeCut > 0, JSON.stringify(nodeCut.provenance))
+  harness.negative(
+    "node cut: `maxLinks` cut nothing, so the set is NOT reported truncated by it",
+    nodeCut.considered.relationshipSetTruncated === false,
+    `truncated=${nodeCut.considered.relationshipSetTruncated} budget=${nodeCut.provenance.linksOmittedByBudget} maxLinks=5000`,
+  )
+  const budgetCut = await visualizeProject(projectId, { scope: "project", maxNodes: 100, maxLinks: 1, format: "json" })
+  harness.check(
+    "budget cut: a link budget below the edge set IS reported as a relationship cut",
+    budgetCut.provenance.linksOmittedByBudget > 0 && budgetCut.considered.relationshipSetTruncated === true,
+    JSON.stringify({ provenance: budgetCut.provenance, truncated: budgetCut.considered.relationshipSetTruncated }),
+  )
+  harness.negative(
+    "budget cut: the two counters are not the same number",
+    budgetCut.provenance.linksOmittedWithNodeCut !== budgetCut.provenance.linksOmittedByBudget,
+    JSON.stringify(budgetCut.provenance),
+  )
+  // The TEXT format said "then cut by maxLinks" for the node cut. A reader checking the
+  // arithmetic was told the wrong event by the only reply they asked for.
+  const textCut = formatVisualization(await visualizeProject(projectId, { scope: "project", maxNodes: 2, maxLinks: 5000, format: "text" }))
+  harness.negative("node cut: the text does not blame maxLinks for the node cut", !textCut.includes("then cut by maxLinks"), textCut.split("\n").find((l) => l.startsWith("edges:")) ?? "")
+  harness.check("node cut: the text names the cut it made", textCut.includes("attached only to nodes the node cut removed"), textCut.split("\n").find((l) => l.startsWith("edges:")) ?? "")
+  harness.check("node cut: the text provenance line names both counters", textCut.includes("links-omitted-by-node-cut=") && textCut.includes("links-omitted-by-budget="), textCut.split("\n").reverse().find((l) => l.startsWith("provenance:")) ?? "")
+  const textBudget = formatVisualization(await visualizeProject(projectId, { scope: "project", maxNodes: 100, maxLinks: 1, format: "text" }))
+  harness.check("budget cut: the text says maxLinks did it, with the count", /then cut by maxLinks \(\d+ withdrawn\)/.test(textBudget), textBudget.split("\n").find((l) => l.startsWith("edges:")) ?? "")
 }
 
 rmSync(root, { recursive: true, force: true })

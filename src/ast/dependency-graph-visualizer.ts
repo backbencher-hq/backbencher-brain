@@ -58,6 +58,15 @@ export namespace DependencyGraphVisualizer {
     /** Every stored row behind this edge, so a reader can audit all of them and not
      *  only the representative `rowId`. */
     rowIds?: string[]
+    /** True when this edge was FOLDED from a relationship stored on a MEMBER of a
+     *  selected class-like symbol rather than on the symbol itself — the owner
+     *  cascade. The stored row still lives on the member, so the edge has to say
+     *  which member it came through or the picture claims evidence the symbol does
+     *  not have. Absent (never false-by-default-printed) on an ordinary edge. */
+    ownerCascade?: boolean
+    /** The member names the folded rows were stored on, `<name>:<type>`. Only ever
+     *  present together with `ownerCascade`. */
+    matchedMembers?: string[]
   }
 
   export interface GraphData {
@@ -67,7 +76,15 @@ export namespace DependencyGraphVisualizer {
      *  so: a partial graph that looks whole is the failure this documents. */
     excluded?: {
       symbols: number
+      /** Exclusions attributed to a path SEGMENT (the caller's list or the defaults). */
       byPattern: Record<string, number>
+      /** Exclusions attributed to the rules that are NOT segments — the unconditional
+       *  build-artifact suffixes and the test rule — so every dropped symbol has a name
+       *  attached and `symbols` can be reconciled with the attribution. */
+      byRule?: Record<string, number>
+      /** The build-artifact suffixes filtered unconditionally, declared because they are
+       *  not overridable and were previously invisible in the reply. */
+      suffixes?: string[]
       patterns: string[]
       includesTestFiles: boolean
     }
@@ -125,39 +142,61 @@ export namespace DependencyGraphVisualizer {
       : DEFAULT_EXCLUDE_SEGMENTS
     const includeTestFiles = options?.includeTests !== false
 
-    /** True when a path is inside one of the excluded SEGMENTS (or carries an
-     *  excluded suffix). A segment test, so `out` never matches `layout.rs`. */
-    const isExcluded = (candidate: string): boolean => {
+    /** The directories and file shapes the TEST rule covers when `includeTests` is false. */
+    const TEST_SEGMENTS = ["test", "tests", "spec", "specs", "__tests__", "testdata"]
+
+    /** The RULE that removes a path, or null when the path is kept — one rule, named.
+     *
+     *  MEASURED before: the filter was a boolean (`isExcluded`) and the ATTRIBUTION was a
+     *  separate lookup that could only see `excludeSegments`. So with four symbols dropped,
+     *  `byPattern` attributed ONE (`vendor`) and `src/b.d.ts`, `src/c.min.js`, `src/d.map` --
+     *  all dropped by DEFAULT_EXCLUDE_SUFFIXES -- were attributed to nothing; with
+     *  `includeTests:false` a fifth was dropped by the test rule and the block still read
+     *  `byPattern {vendor:1}`, so `symbols` could not be reconciled with `byPattern` and the
+     *  option the caller had set was invisible in the block.
+     *
+     *  Returning WHICH rule matched makes attribution the same act as the decision, so the two
+     *  can no longer disagree. A segment test, so `out` never matches `layout.rs`. */
+    const exclusionRule = (candidate: string): { kind: "segment" | "suffix" | "tests"; name: string } | null => {
       const parts = candidate.toLowerCase().split("/").filter(Boolean)
       for (const seg of excludeSegments) {
-        if (parts.includes(seg)) return true
+        if (parts.includes(seg)) return { kind: "segment", name: seg }
       }
       const leaf = parts.length > 0 ? parts[parts.length - 1]! : ""
       for (const suffix of DEFAULT_EXCLUDE_SUFFIXES) {
-        if (leaf.endsWith(suffix)) return true
+        if (leaf.endsWith(suffix)) return { kind: "suffix", name: suffix }
       }
       if (!includeTestFiles) {
-        for (const seg of ["test", "tests", "spec", "specs", "__tests__", "testdata"]) {
-          if (parts.includes(seg)) return true
+        for (const seg of TEST_SEGMENTS) {
+          if (parts.includes(seg)) return { kind: "tests", name: "test-sources" }
         }
-        if (/(?:^|[._-])(?:test|spec)\\.[a-z0-9]+$/.test(leaf)) return true
+        if (/(?:^|[._-])(?:test|spec)\.[a-z0-9]+$/.test(leaf)) return { kind: "tests", name: "test-sources" }
       }
-      return false
+      return null
     }
 
     // 2. Map and filter nodes
     let validNodes: GraphNode[] = []
     let excludedCount = 0
     const excludedByPattern = new Map<string, number>()
+    // The rules that are NOT segments, counted separately so every dropped symbol has a
+    // name attached to it: `test-sources` when the test rule matched, `build-suffix` for
+    // the unconditional build-artifact suffixes (declared below, with the list itself).
+    const excludedByRule = new Map<string, number>()
     for (const sym of symbols) {
       const filePath = sym.file || sym.filePath || ""
       const id = sym.id || ""
 
       // Skip declared build/noise paths, and count them so the answer can say so.
-      if (isExcluded(filePath) || isExcluded(id)) {
+      const removal = exclusionRule(filePath) ?? exclusionRule(id)
+      if (removal) {
         excludedCount++
-        const culprit = excludeSegments.find((seg) => filePath.toLowerCase().split("/").includes(seg) || id.toLowerCase().split("/").includes(seg))
-        if (culprit) excludedByPattern.set(culprit, (excludedByPattern.get(culprit) ?? 0) + 1)
+        if (removal.kind === "segment") {
+          excludedByPattern.set(removal.name, (excludedByPattern.get(removal.name) ?? 0) + 1)
+        } else {
+          const key = removal.kind === "suffix" ? `build-suffix ${removal.name}` : removal.name
+          excludedByRule.set(key, (excludedByRule.get(key) ?? 0) + 1)
+        }
         continue
       }
 
@@ -228,6 +267,8 @@ export namespace DependencyGraphVisualizer {
         if (existing) {
           existing.occurrences = (existing.occurrences ?? 1) + 1
           if (rel.row_id != null) (existing.rowIds ??= []).push(String(rel.row_id))
+          if (rel.owner_cascade) existing.ownerCascade = true
+          if (rel.matched_member != null) (existing.matchedMembers ??= []).push(String(rel.matched_member))
         } else {
           seenLinks.set(linkKey, null as any)
           const link: GraphLink = {
@@ -242,6 +283,10 @@ export namespace DependencyGraphVisualizer {
           // projection carried none of it, so no edge could be audited.
           if (rel.row_id != null) link.rowId = String(rel.row_id)
           if (rel.id != null && rel.row_id == null) link.rowId = String(rel.id)
+          // The owner cascade rides the edge, so the map can say "this came through
+          // a member" instead of silently presenting it as the symbol's own row.
+          if (rel.owner_cascade) link.ownerCascade = true
+          if (rel.matched_member != null) link.matchedMembers = [String(rel.matched_member)]
           if (rel.confidence != null) link.confidence = Number(rel.confidence)
           if (rel.evidence_tier != null) link.evidenceTier = String(rel.evidence_tier)
           if (rel.line_number != null) link.line = Number(rel.line_number)
@@ -269,6 +314,8 @@ export namespace DependencyGraphVisualizer {
       excluded: {
         symbols: excludedCount,
         byPattern: Object.fromEntries([...excludedByPattern.entries()].sort((a, b) => b[1] - a[1])),
+        byRule: Object.fromEntries([...excludedByRule.entries()].sort((a, b) => b[1] - a[1])),
+        suffixes: DEFAULT_EXCLUDE_SUFFIXES,
         patterns: excludeSegments,
         includesTestFiles: includeTestFiles,
       },

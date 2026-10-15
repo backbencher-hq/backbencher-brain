@@ -65,8 +65,11 @@ export function renderVisualizationStudio(documents: {
   graph: string
   codemap: string
   class: string
+  /** The view whose document is mounted when the artifact opens. */
+  initialView?: "graph" | "codemap" | "class"
 }): string {
-  const payload = escapeScript(JSON.stringify(documents))
+  const payload = escapeScript(JSON.stringify({ graph: documents.graph, codemap: documents.codemap, class: documents.class }))
+  const initial: "graph" | "codemap" | "class" = documents.initialView === "codemap" || documents.initialView === "class" ? documents.initialView : "graph"
   const script = `
     (function () {
       var docs = JSON.parse(document.getElementById("bb-studio-data").textContent);
@@ -75,55 +78,63 @@ export function renderVisualizationStudio(documents: {
       var status = document.getElementById("status");
       var buttons = Array.prototype.slice.call(document.querySelectorAll(".mode"));
       var labels = { graph: "Graph", codemap: "Code map", class: "UML" };
+      // WHICH DOCUMENT IS IN THE FRAME, read from the document itself.
+      //
+      // The styling used to branch on \`frame.dataset.mode\` — the slot the studio
+      // mounted — and the two can disagree, which they did as soon as a code map
+      // arrived in the graph slot. MEASURED in a browser: the frame's own title was
+      // "Backbencher Code Map", the active tab was graph, and the GRAPH branch ran,
+      // so the code map's legend was hidden and its panel geometry (side panel left
+      // of the rail, map to the right of it) never applied — an empty evidence
+      // column and labels colliding with the rail. Every renderer now declares
+      // \`data-bb-view\` on its own <html> element, and this reads that first: a
+      // document that describes itself is composed correctly in any slot.
+      function documentView() {
+        var doc = frame.contentDocument;
+        var declared = doc && doc.documentElement && doc.documentElement.getAttribute("data-bb-view");
+        return declared || frame.dataset.mode;
+      }
       function tuneViewport() {
         var doc = frame.contentDocument;
         if (!doc) return;
+        var view = documentView();
         var style = doc.createElement("style");
-        var common = [
-          "@media (max-width:760px) {",
-          "#hud { width: 300px !important; max-width: 300px !important; padding: 12px 14px !important; }",
-          "#stats { grid-template-columns: auto auto !important; gap: 2px 12px !important; }",
-          "#stats span { white-space: nowrap !important; }",
-          "#search { top: 62px !important; right: 16px !important; width: 220px !important; }",
-          "#search input { width: 100% !important; }",
-          "#savebtn { top: 16px !important; right: 16px !important; }",
-          "}"
-        ];
-        if (frame.dataset.mode === "graph" || frame.dataset.mode === "class") {
-          common.push(
-            "#hud { left: 88px !important; }",
-            "#legend { left: 88px !important; }",
-            "#detail { right: 88px !important; }"
-          );
-          if (frame.dataset.mode === "graph") {
-            common.push(
-              "#hud, #legend { display: none !important; }",
-              "#search { top: 16px !important; }"
-            );
-          } else {
-            common.push("#hud, #legend { display: none !important; }");
-          }
-        } else if (frame.dataset.mode === "codemap") {
-          common.push(
+        var rules = [];
+        if (view === "codemap") {
+          rules.push(
             "#side { left: 72px !important; }",
             "#map { left: 394px !important; }",
             "#path { left: 406px !important; }"
           );
+        } else {
+          // The census panel (#hud) and the decoding key (#legend) stay VISIBLE.
+          // They were hidden here, and this is the only delivery that is a picture:
+          // the reader got a canvas with no node/edge counts, no relationship
+          // legend and no encoding key, and hollow yellow rings on stale symbols
+          // with nothing on screen to say what a hollow ring meant.
+          rules.push(
+            "#hud { left: 88px !important; }",
+            "#legend { left: 88px !important; }",
+            "#detail { right: 88px !important; }",
+            "@media (max-width:760px) {",
+            "#hud { width: 300px !important; max-width: 300px !important; padding: 12px 14px !important; }",
+            "#stats { grid-template-columns: auto auto !important; gap: 2px 12px !important; }",
+            "#stats span { white-space: nowrap !important; }",
+            "#search { top: 62px !important; right: 16px !important; width: 220px !important; }",
+            "#search input { width: 100% !important; }",
+            "#savebtn { top: 16px !important; right: 16px !important; }",
+            "}"
+          );
         }
-        style.textContent = common.join("");
+        style.textContent = rules.join("");
         doc.head.appendChild(style);
-        if (frame.dataset.mode === "graph") {
-          var canvas = doc.getElementById("c");
-          if (canvas && doc.defaultView && doc.defaultView.WheelEvent) {
-            canvas.dispatchEvent(new doc.defaultView.WheelEvent("wheel", {
-              deltaY: -420,
-              clientX: Math.round(canvas.clientWidth / 2),
-              clientY: Math.round(canvas.clientHeight / 2),
-              bubbles: true,
-              cancelable: true
-            }));
-          }
-        }
+        // No synthetic input on load. The studio used to dispatch a WheelEvent
+        // (deltaY -420, about 2x zoom) into the map's canvas so labels would be
+        // legible, which moved the reader's view for them and cost 22 of 200 nodes
+        // of the first impression: the same graph read "showing 140 of 200 nodes"
+        // standalone and "118 of 200" inside the studio. The map now ships its own
+        // fit control, so the whole graph is one click away and nothing moves
+        // unless the reader moves it.
       }
       function mount(mode) {
         frame.dataset.mode = mode;
@@ -143,7 +154,7 @@ export function renderVisualizationStudio(documents: {
       buttons.forEach(function (button) {
         button.addEventListener("click", function () { mount(button.dataset.mode); });
       });
-      mount("graph");
+      mount("${initial}");
     }());
   `
   return [
@@ -162,7 +173,7 @@ export function renderVisualizationStudio(documents: {
     '<button class="mode" type="button" role="tab" data-mode="codemap" aria-selected="false"><span class="glyph">▦</span><span class="label">Code</span></button>',
     '<button class="mode" type="button" role="tab" data-mode="class" aria-selected="false"><span class="glyph">◇</span><span class="label">UML</span></button>',
     "</div>",
-    '<div id="status" aria-live="polite">Graph view loaded</div>',
+    '<div id="status" aria-live="polite">' + ({ graph: "Graph", codemap: "Code map", class: "UML" }[initial]) + " view loaded</div>",
     "</nav></main>",
     '<script id="bb-studio-data" type="application/json">', payload, "</script>",
     "<script>", script, "</script></body></html>",

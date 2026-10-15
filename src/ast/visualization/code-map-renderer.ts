@@ -273,10 +273,23 @@ export const CODE_MAP_SCRIPT = assemble([
     reportView()
   }
   /** Frame the whole world, with a margin. This is the view the map OPENS at. */
+  /** The scale at which the whole world fills the map area, with a 24px margin.
+   *
+   *  One function, because the readout has to answer the same question the fit answered. The
+   *  pill used to compare pixel extents instead, which is a DIFFERENT question, and it
+   *  disagreed with reality: MEASURED after the fit was corrected, the map opened fitted
+   *  (world 1247x976 inside a 1271x1000 area, 80%) and the pill still printed
+   *  "80% - scroll out to see all" - telling the reader to scroll out of a map that was
+   *  already whole. */
+  function fitScale() {
+    var W = map.clientWidth, H = map.clientHeight
+    if (!W || !H) return 1
+    return Math.max(0.08, Math.min(4, Math.min((W - 24) / WORLD_W, (H - 24) / WORLD_H)))
+  }
   function fitWorld() {
     var W = map.clientWidth, H = map.clientHeight
     if (!W || !H) return
-    view.k = Math.max(0.08, Math.min(4, Math.min((W - 24) / WORLD_W, (H - 24) / WORLD_H)))
+    view.k = fitScale()
     view.x = (W - WORLD_W * view.k) / 2
     view.y = (H - WORLD_H * view.k) / 2
     applyView(world)
@@ -286,7 +299,10 @@ export const CODE_MAP_SCRIPT = assemble([
   function reportView() {
     var W = map.clientWidth, H = map.clientHeight
     var w = WORLD_W * view.k, h = WORLD_H * view.k
-    var shown = w >= W - 8 && h >= H - 8
+    // "Whole map" means "at or beyond the scale at which it all fits", measured with the same
+    // function that performed the fit. Comparing pixel extents asked a different question than
+    // the one the fit answered: MEASURED, a fitted map reported itself as needing a scroll-out.
+    var shown = view.k >= fitScale() - 1e-6
     var el = document.getElementById("zoomstate")
     if (!el) return
     el.textContent = shown
@@ -850,8 +866,13 @@ export const CODE_MAP_SCRIPT = assemble([
     else fitWorld()
   })
   try {
-    fitWorld()
+    // draw() FIRST, then fit. MEASURED: #world measures the viewport divided by FIT_SCALE and
+    // is only recomputed inside draw(), so fitting before the first draw framed the DEFAULT
+    // 2400x1600 world and then left the reader looking at a 52% view of a world that no longer
+    // existed -- the map opened smaller than the space it had, said scroll-out-to-see-all,
+    // and the labels were scaled down with it. Frame the world that was actually laid out.
     draw()
+    fitWorld()
   } catch (e) {
     var z = document.getElementById("zoomstate")
     if (z) { z.className = "on"; z.textContent = "This map could not be laid out (" + String(e).slice(0, 120) + "). The symbols are still in the page as JSON." }
@@ -889,7 +910,7 @@ export function renderCodeMapDocument(o: {
   }).replace(/</g, "\\u003c")
   return [
     "<!DOCTYPE html>",
-    '<html lang="en">',
+    '<html lang="en" data-bb-view="codemap">',
     "<head>",
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',

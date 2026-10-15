@@ -415,6 +415,13 @@ function artifact(): Record<string, unknown> {
 export const FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string }> = {
   bb_search: { modes: ["symbol", "content", "file"], surfaces: "per-row `stale` flags + `freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`)" },
   bb_analyze: { modes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], surfaces: "`freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`); graph nodes and report rows carry `stale` flags (project-wide modes sample or resolve visible rows only — the block names its coverage mode)" },
+  // M13.F8 (#701): bb_visualize EMITS the envelope but does NOT auto-refresh, and the page said
+  // the opposite — it quoted the registered constants ("reads auto-refresh stale files within
+  // budget when enabled — disable with ... refresh=false") for a read path that never calls
+  // `maybeAutoRefresh` and whose schema does not publish `refresh` at all. Both facts are now
+  // stated: the surface it has, and the manual interface. `modes: []` is the same decision
+  // bb_patterns/bb_security/bb_health record — the envelope covers the graph's files as a SET
+  // rather than splitting the answer per mode — so there is no per-mode split to register.
   bb_visualize: { modes: [], surfaces: "per-node and per-link `stale` flags (links inherit worst-of-endpoints) + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON; truncation composes with staleness" },
   bb_migrate: { modes: ["plan"], surfaces: "per-plan `sourceFile` + `stale` flags with an up-front stale-plan notice + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON" },
   bb_patterns: { modes: [], surfaces: "per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh" },
@@ -523,6 +530,17 @@ function stalenessSection(tool: any): string {
   // two sentences after "this tool does not auto-refresh".
   if (tool.name === "bb_ask") {
     return `${modePart} Staleness surfaces as: ${info.surfaces}. This tool does not auto-refresh, and it emits no \`freshness\` envelope: a verified aggregate answer is a count over the whole index rather than a per-file fact, so there is no per-file envelope to publish. When a cited source is stale, remediation is manual: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only). Nothing is stale → no marker. Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
+  }
+  // M13.F8 (#701): bb_visualize emits the envelope and does NOT auto-refresh — the handler
+  // computes the summary and stops, so the flags describe the index as it stands. The page
+  // used to take the default branch and quote the registered constants, telling a reader the
+  // read path refreshes and that `refresh=false` turns it off; neither was true. The manual
+  // interface is inlined (the same spelling bb_health's branch uses) instead of quoted, so the
+  // sentence and the text beside it cannot contradict each other. The file-scope wording is
+  // named too: the runtime picks it for `scope: "file"` (before the fix the handler hardcoded
+  // the project scope for every scope, while this page promised the file one).
+  if (tool.name === "bb_visualize") {
+    return `${modePart} Staleness surfaces as: ${info.surfaces}. This tool does NOT auto-refresh: the flags and the envelope DESCRIBE the index as it stands, nothing is reindexed to make them stale or fresh, and there is no \`refresh\` option to opt out with. Project scope → run: \`bb index --changed\` (or the \`bb_index\` tool with the project path — incremental, changed files only). File scope → run: \`bb index "<file>"\` for the one file named in the answer. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
   }
   return `${modePart} Staleness surfaces as: ${info.surfaces}. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → \`${FRESHNESS_REMEDIATION.dir}\`; file scope → \`${FRESHNESS_REMEDIATION.file}\`. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
 }

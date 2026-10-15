@@ -490,16 +490,37 @@ export const FRESHNESS_REMEDIATION = {
  * `scope` is the human-stable target for file-level remediation (relative
  * path for single-file reads, project root path for multi-file reads).
  */
+/** Remediation for a read path that does NOT auto-refresh.
+ *
+ *  The registered constants above name the automatic behaviour, which is true for the tools
+ *  that HAVE it (M43.A1/A2) and false for a read path that only measures. MEASURED on
+ *  `bb_visualize`: it computed the freshness summary and stopped — no `maybeAutoRefresh`, no
+ *  `collectStaleFiles` — while its envelope and its text footer both printed "reads
+ *  auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or
+ *  refresh=false", naming an opt-out (`refresh=false`) that its schema does not publish and
+ *  that validation REJECTS. A caller was told to disable a behaviour the tool never had and
+ *  to disable it with an option it does not accept.
+ *
+ *  These strings keep the manual interface verbatim — the part that is true for EVERY read
+ *  path, and the part the M35 envelope gate asserts by substring (`bb index --changed`,
+ *  `bb_index`, and `bb index "<file>"` for file scope) — and drop only the claim that does
+ *  not hold. */
+export const FRESHNESS_REMEDIATION_MANUAL_ONLY = {
+  dir: 'this read does NOT auto-refresh — the rows describe the index as it stands; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)',
+  file: 'this read does NOT auto-refresh this file — the rows describe the index as it stands; manual repair: run: bb index "<file>" (or the bb_index tool with that file path)',
+} as const
+
 export function buildStalenessEnvelope(
   summary: FreshnessSummary,
-  scope: { kind: "file" | "dir"; path?: string },
+  scope: { kind: "file" | "dir"; path?: string; /** Set to false by a read path that does not auto-refresh, so the remediation cannot claim it did. Defaults to the registered auto-refresh wording. */ autoRefresh?: boolean },
 ): StalenessEnvelope {
   const staleish = summary.stale + summary.missing
+  const registered = scope.autoRefresh === false ? FRESHNESS_REMEDIATION_MANUAL_ONLY : FRESHNESS_REMEDIATION
   const remediation = staleish === 0
     ? ""
     : scope.kind === "file"
-      ? `${staleish} stale in this file — ${FRESHNESS_REMEDIATION.file.replace("<file>", scope.path ?? "this file")}`
-      : `${staleish} stale/missing — ${FRESHNESS_REMEDIATION.dir}`
+      ? `${staleish} stale in this file — ${registered.file.replace("<file>", scope.path ?? "this file")}`
+      : `${staleish} stale/missing — ${registered.dir}`
   return {
     fresh: summary.fresh,
     stale: summary.stale,

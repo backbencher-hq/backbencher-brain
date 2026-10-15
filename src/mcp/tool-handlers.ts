@@ -6,7 +6,7 @@ import { BrainTools, PatternBrainTools } from "../ast/tools"
 import { quickAnswer } from "../intelligence/search/quick-answer"
 import { detectOrphans } from "../intelligence/patterns/orphans"
 import { ASTEngine } from "../ast/engine"
-import { checkResultsFreshness, fileUnchangedSince, resolveRowsFreshnessDetailed, buildStalenessEnvelope, FRESHNESS_REMEDIATION, type FreshnessSummary } from "../brain/freshness"
+import { checkResultsFreshness, fileUnchangedSince, resolveRowsFreshnessDetailed, buildStalenessEnvelope, FRESHNESS_REMEDIATION, FRESHNESS_REMEDIATION_MANUAL_ONLY, type FreshnessSummary } from "../brain/freshness"
 import { CrossLanguageSecurityAnalysis } from "../security/cross-language-security"
 import { DependencyGraphVisualizer } from "../ast/dependency-graph-visualizer"
 import { CrossLanguageIntelligence } from "../ast/cross-language-intelligence"
@@ -19,7 +19,7 @@ import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
 import { getAnalysisHistory, executeAnalysis } from "../intelligence/analysis/run-history"
 import { generateDocumentation, formatDocumentation, type DocRequest } from "../intelligence/documentation/doc-engine"
-import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationScope } from "../intelligence/visualization/visualization-engine"
+import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationResult, type VisualizationScope, type VisualizationView } from "../intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../intelligence/migration/migration-engine"
 import { graphTraversal } from "../intelligence/graph/graph-engine"
 // M28.T1 (issue #624): the agent door reuses the EXACT components the IDE
@@ -1485,15 +1485,105 @@ const handlers: Record<string, ToolHandler> = {
     // M48.C2 (#700): every non-project scope needs a target — without one the
     // old path silently rendered a project-wide graph for a scoped request.
     if (scope !== "project" && !args.target) return textResult(`bb_visualize scope=${scope} requires a target`, true)
-    const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", view: ["graph", "codemap", "class"].includes(String(args.view)) ? args.view : "graph", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), relationshipTypes: Array.isArray(args.relationshipTypes) ? args.relationshipTypes.map(String) : undefined, languages: Array.isArray(args.languages) ? args.languages.map(String) : undefined }
+    // M13.F5 (#701): a bound is REFUSED, never quietly raised.
+    //
+    // MEASURED before: `maxNodes: 0` returned 1 node and echoed `truncation.maxNodes: 1` —
+    // the caller asked for no nodes and was handed one. The project has already ruled on this
+    // shape twice: `bb_health sampleSize: 0` was called out as "the caller asked to check no
+    // files and was told one file was checked and clean", and `bb_analyze` REFUSES `limit: 0`
+    // "because a returned page must mean the page that was asked for". The refusal names the
+    // accepted range, so an over-budget caller learns the ceiling instead of silently
+    // receiving a different page.
+    const VIZ_MAX_NODES = 2000, VIZ_MAX_LINKS = 20000
+    const boundRefusal = (name: "maxNodes" | "maxLinks", raw: unknown, ceiling: number, fallback: number): string | null => {
+      if (raw == null) return null
+      const asked = Number(raw)
+      if (!Number.isInteger(asked) || asked < 1 || asked > ceiling) {
+        return `bb_visualize: ${name} must be an integer between 1 and ${ceiling} (received ${JSON.stringify(raw)}) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit ${name} for the default ${fallback}`
+      }
+      return null
+    }
+    const nodeRefusal = boundRefusal("maxNodes", args.maxNodes, VIZ_MAX_NODES, 200)
+    if (nodeRefusal) return textResult(nodeRefusal, true)
+    const linkRefusal = boundRefusal("maxLinks", args.maxLinks, VIZ_MAX_LINKS, 5000)
+    if (linkRefusal) return textResult(linkRefusal, true)
+
+    // M13.F6/F7 (#701): a filter VALUE is checked against the index, and folded.
+    //
+    // MEASURED before: `languages: ["TypeScript"]` returned 0 nodes and declared "no indexed
+    // symbol matches scope=project languages=[TypeScript]" while the index stored
+    // `typescript`; and `relationshipTypes: ["call"]` (a typo for `calls`) left the nodes in
+    // place and emptied the edge set, and the answer still described itself as "complete for
+    // this node set" without naming the filter that had produced it. `bb_search` states the
+    // rule for itself — "language and symbolKind are matched case-insensitively … and a value
+    // the index does not contain is reported as an error rather than as zero results" — and
+    // this now agrees with it.
+    const vizVocabRaw = await BrainDatabase.getRawInstance(projectId as any)
+    const storedLanguages = (vizVocabRaw.prepare("SELECT DISTINCT language AS v FROM brain_file WHERE project_id=? AND language IS NOT NULL AND language<>'' ORDER BY v").all(projectId) as any[]).map((r) => String(r.v))
+    const storedRelationshipTypes = (vizVocabRaw.prepare("SELECT DISTINCT relationship_type AS v FROM brain_relationship WHERE project_id=? AND relationship_type IS NOT NULL AND relationship_type<>'' ORDER BY v").all(projectId) as any[]).map((r) => String(r.v))
+    const storedSymbolKinds = (vizVocabRaw.prepare("SELECT DISTINCT symbol_type AS v FROM brain_symbol WHERE project_id=? AND symbol_type IS NOT NULL AND symbol_type<>'' ORDER BY v").all(projectId) as any[]).map((r) => String(r.v))
+    const foldFilter = (label: string, values: unknown, stored: string[]): { folded?: string[]; refusal?: string } => {
+      if (!Array.isArray(values) || values.length === 0) return {}
+      const storedByLower = new Map(stored.map((value) => [value.toLowerCase(), value]))
+      const folded: string[] = []
+      const unknown: string[] = []
+      for (const asked of values.map(String)) {
+        const storedForm = storedByLower.get(asked.toLowerCase())
+        if (!storedForm) unknown.push(asked)
+        else if (!folded.includes(storedForm)) folded.push(storedForm)
+      }
+      if (unknown.length > 0) {
+        return {
+          refusal: `bb_visualize: unknown ${label}: ${unknown.join(", ")} — this index stores ${stored.length > 0 ? stored.join(", ") : "(no values recorded yet; index the project first)"}. ${label} are matched case-insensitively, and a value the index does not contain is reported as an error rather than as zero results.`,
+        }
+      }
+      return { folded }
+    }
+    const languageFilter = foldFilter("languages", args.languages, storedLanguages)
+    if (languageFilter.refusal) return textResult(languageFilter.refusal, true)
+    const relationshipFilter = foldFilter("relationshipTypes", args.relationshipTypes, storedRelationshipTypes)
+    if (relationshipFilter.refusal) return textResult(relationshipFilter.refusal, true)
+    // M13.F17 (#701): the kinds a caller can ask for, checked against the index like every
+    // other filter value. Without this the tool could only return whatever the index's ranking
+    // put first — measured on this repository, 124 of 200 nodes are `constant` or `property`
+    // and exactly one is a class, so "the architecture map" was a map of string constants with
+    // no way to ask for the architecture and (before the census below) nothing saying so.
+    const symbolKindFilter = foldFilter("symbolKinds", args.symbolKinds, storedSymbolKinds)
+    if (symbolKindFilter.refusal) return textResult(symbolKindFilter.refusal, true)
+
+    // M13.F1 (#701): the request drops NO published option. `excludePatterns` and
+    // `includeTests` are in the descriptor, the schema and the docs, the engine
+    // reads both and the renderer implements both — and this line used to build
+    // the request from eight fields, so a caller who passed `excludePatterns`
+    // got a bigger, differently-selected graph than they asked for, with an
+    // `excluded` block whose `patterns` list contradicted their argument.
+    // MEASURED through this handler: `excludePatterns:["src"]` left every src/
+    // symbol in the answer, and `includeTests:false` still returned
+    // test/app.test.ts with `includesTestFiles:true`. A filter the caller believes
+    // is scoping results, and which does not, is worse than a rejection.
+    const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", view: ["graph", "codemap", "class"].includes(String(args.view)) ? args.view : "graph", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), relationshipTypes: relationshipFilter.folded, languages: languageFilter.folded, symbolKinds: symbolKindFilter.folded, excludePatterns: Array.isArray(args.excludePatterns) ? args.excludePatterns.map(String) : undefined, includeTests: typeof args.includeTests === "boolean" ? args.includeTests : undefined }
     const result = await visualizeProject(projectId, request)
-    const htmlResults = request.format === "html"
-      ? [
-          result,
-          await visualizeProject(projectId, { ...request, view: "codemap" }),
-          await visualizeProject(projectId, { ...request, view: "class" }),
-        ]
-      : [result]
+    // M13.F4 (#701): every studio slot carries the document of ITS OWN view.
+    //
+    // The slots were built as [requested, codemap, class], so `view:"codemap"`
+    // produced [codemap, codemap, class]: the studio's graph slot received the code
+    // map, the codemap slot received the same document again, and the studio still
+    // mounted the graph tab — a rail whose labels lied, no force-directed map in
+    // the artifact at all, and the requested view nowhere on screen. MEASURED: two
+    // byte-identical 42,187-byte documents in one three-document payload.
+    //
+    // The requested view is reused rather than recomputed, so html costs one engine
+    // pass per DISTINCT view (three) instead of four for three documents.
+    const htmlViews = request.format === "html" ? (["graph", "codemap", "class"] as const) : null
+    const viewResultFor = new Map<VisualizationView, VisualizationResult>()
+    if (htmlViews) {
+      for (const view of htmlViews) {
+        viewResultFor.set(view, view === request.view ? result : await visualizeProject(projectId, { ...request, view }))
+      }
+    } else {
+      viewResultFor.set(request.view ?? "graph", result)
+    }
+    const htmlResults = [...viewResultFor.values()]
     // M35.S3: per-node stale flags (node file changed since index); links
     // inherit worst-of-endpoints — a link is stale if EITHER endpoint's file
     // is stale (the edge crosses changed code on either side). Truncation
@@ -1525,20 +1615,39 @@ const handlers: Record<string, ToolHandler> = {
       }
     }
     const vizEnvelopeSource = { ...vizSummary, staleRatio: vizRows.length ? (vizSummary.stale + vizSummary.missing) / vizRows.length : 0, freshnessMode: "complete" as const }
+    // M13.F8 (#701): the envelope describes the index, and says so.
+    //
+    // MEASURED before: this handler hardcoded `{ kind: "dir" }` for all five scopes, so
+    // `scope: "file"` emitted the PROJECT remediation while the generated page promised the
+    // file one — and the string it emitted (the registered one) said reads "auto-refresh stale
+    // files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false",
+    // advertising a behaviour this path does not have (`maybeAutoRefresh` is never called
+    // here) and an option its schema does not publish and validation rejects. The scope is now
+    // the caller's, and `autoRefresh: false` selects the manual-only wording, which is what
+    // this tool actually does.
+    const vizEnvelopeScope = scope === "file"
+      ? { kind: "file" as const, path: request.target, autoRefresh: false as const }
+      : { kind: "dir" as const, autoRefresh: false as const }
     if (request.format === "json") {
       const parsed = JSON.parse(formatVisualization(result))
-      parsed.freshness = buildStalenessEnvelope(vizEnvelopeSource, { kind: "dir" })
+      parsed.freshness = buildStalenessEnvelope(vizEnvelopeSource, vizEnvelopeScope)
       return textResult(JSON.stringify(parsed, null, 2))
     }
     if (request.format === "html") {
+      // `initialView` is the caller's `view`, so the document they asked for is the
+      // one that is mounted when the artifact opens.
       return textResult(renderVisualizationStudio({
-        graph: formatVisualization(htmlResults[0]!),
-        codemap: formatVisualization(htmlResults[1]!),
-        class: formatVisualization(htmlResults[2]!),
+        graph: formatVisualization(viewResultFor.get("graph")!),
+        codemap: formatVisualization(viewResultFor.get("codemap")!),
+        class: formatVisualization(viewResultFor.get("class")!),
+        initialView: request.view ?? "graph",
       }))
     }
     const vizOut = formatVisualization(result)
-    const vizFooter = vizSummary.stale + vizSummary.missing > 0 ? `\n\n${vizSummary.stale} stale, ${vizSummary.missing} missing of ${vizRows.length} graph files — ${FRESHNESS_REMEDIATION.dir}` : ""
+    // The footer names the same scope and the same (manual) interface the envelope does.
+    const vizFooter = vizSummary.stale + vizSummary.missing > 0
+      ? `\n\n${vizSummary.stale} stale, ${vizSummary.missing} missing of ${vizRows.length} graph files — ${(scope === "file" ? FRESHNESS_REMEDIATION_MANUAL_ONLY.file.replace("<file>", request.target ?? "this file") : FRESHNESS_REMEDIATION_MANUAL_ONLY.dir)}`
+      : ""
     return textResult(vizOut + vizFooter)
   },
 

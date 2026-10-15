@@ -108,6 +108,16 @@ export const CLASS_CSS = assemble([
     border-radius:999px;padding:6px 14px;max-width:40vw;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis}
   body.detail-open #hint{opacity:0;pointer-events:none}
+  /* The detail panel is HIDDEN until something is selected.
+   *
+   * MEASURED: with no rule of its own, the panel inherited .panel{position:absolute} and
+   * rendered at load as a 13x22 box at the top-left corner containing nothing but its close
+   * glyph (innerText U+2715) -- an empty panel over the diagram, in the one view whose
+   * siblings both hide theirs until there is something to say. The two rules below are the
+   * map's, and the anchors keep it out of the HUD's corner. */
+  #detail{right:16px;bottom:16px;padding:14px 18px;max-width:400px;max-height:44vh;
+    overflow:auto;display:none}
+  #detail.on{display:block}
   @media (max-width:820px){#legend{display:none}#hud{max-width:60vw}}
 `,
 ])
@@ -774,8 +784,13 @@ export const CLASS_SCRIPT = assemble([
     // Re-lay out only when the SIZE changed. A resize event that does not change the
     // viewport must not move a reader's boxes under them.
     var changed = nw !== W || nh !== H
+    var wasZero = W === 0 || H === 0
     W = nw; H = nh
     if (changed && W > 0 && H > 0) layout()
+    // The FIRST real measurement is a fit, not a re-layout: with W/H = 0 at first paint the
+    // load-time fit framed nothing, so the diagram has never been framed against the viewport
+    // it is actually drawn in. Every later resize keeps the reader's own scale (above).
+    if (changed && (wasZero || W === 0)) fitAll(false)
     render()
   }
   window.addEventListener("resize", resize)
@@ -877,6 +892,11 @@ export const CLASS_SCRIPT = assemble([
 
   try {
     resize()
+    // Fit AFTER the viewport has a real size. MEASURED from the rendered artifact: at first
+    // paint svg.clientWidth/Height are 0 (the element is positioned but not yet laid out),
+    // so the fit was computed against a zero-width viewport -- view.x/y centred on nothing
+    // and the picture opened with its top and left edges cut off, which is what screenshot 03
+    // showed. resize() re-fits the first time it sees a non-zero size.
     fitAll(false)
     render()
   } catch (e) {
@@ -939,7 +959,7 @@ export function renderClassDocument(o: {
   }).replace(/</g, "\\u003c")
   return [
     "<!DOCTYPE html>",
-    '<html lang="en">',
+    '<html lang="en" data-bb-view="class">',
     "<head>",
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',

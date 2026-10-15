@@ -12,7 +12,7 @@ const harness = new Harness({
   layers: ["unit"],
   decisions: {
     docsAuthority: "src/mcp/tool-registry.ts + script/verify-tool-docs.ts",
-    releaseGate: "V1-V3 verifiers wired + B3 evidence validator",
+    releaseGate: "V1-V7 verifiers wired + B3 evidence validator",
   },
   limitations: ["Covers bb_visualize only."],
 })
@@ -38,7 +38,7 @@ const gen = spawnSync("bun", ["run", "script/verify-tool-docs.ts"], { cwd: root,
 harness.check("docs: generator verify passes", gen.status === 0, gen.status === 0 ? "" : (gen.stderr || gen.stdout || "").slice(0, 200))
 
 // Evidence
-for (const code of ["v1", "v2", "v3"]) {
+for (const code of ["v1", "v2", "v3", "v5", "v6", "v7", "v8", "v9"]) {
   let d: any = null
   try { d = JSON.parse(readFileSync(path.join(RESULTS, code + ".json"), "utf8")) } catch {}
   const exists = !!d
@@ -50,7 +50,7 @@ for (const code of ["v1", "v2", "v3"]) {
 // Gate
 const gateSrc = readFileSync(path.join(root, "script", "verify-quality-gate.ts"), "utf8")
 const verifyScript = (JSON.parse(readFileSync(path.join(root, "package.json"), "utf8")) as any).scripts.verify ?? ""
-for (const v of ["verify-visualize-contract", "verify-visualize-fidelity", "verify-visualize-e2e-corpus"]) {
+for (const v of ["verify-visualize-contract", "verify-visualize-fidelity", "verify-visualize-e2e-corpus", "verify-visualize-options", "verify-visualize-target-literals", "verify-visualize-views", "verify-visualize-owner-fold", "verify-visualize-honesty"]) {
   harness.check("gate: " + v + " wired", gateSrc.includes("m13/" + v + ".ts") && verifyScript.includes("script/m13/" + v + ".ts"))
 }
 
