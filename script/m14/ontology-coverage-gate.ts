@@ -909,17 +909,59 @@ for (const t of ALL_TYPES) {
   const ruled = RULED.find((r) => r.type === t)
   const hit = treeHits.get(t)
   if (hit && hit.occurrences > 0) {
+    // ── A FALSIFICATION IS TWO CLAIMS, AND ONLY ONE OF THEM IS CERTIFIABLE ON A PARTIAL WALK.
+    //
+    // "the construct occurs Nx on the PARSE TREE"      <- the walker READ THE TREE. Real, always.
+    // "NOT EMITTED"                                    <- the EMITTED column. NOT certifiable when
+    //                                                     files were settled by an EARLIER walk,
+    //                                                     because the checkpoint stores per-file
+    //                                                     OUTCOMES and not per-file relationship
+    //                                                     types, so a settled file contributes no
+    //                                                     edges to this run's count.
+    //
+    // This branch used to emit FALSIFIED on BOTH, with no `complete` check and no `populationTag` —
+    // while the EMITTED branch four lines above DOES carry the tag, and the comment below states the
+    // rule this row was breaking: "a PARTIAL walk's tag rides on the row itself rather than living
+    // only in the header lines above it."
+    //
+    // MEASURED CONSEQUENCE, and this is why the guard is here rather than in a note: `bash` and `toml`
+    // BOTH read `FALSIFIED 1` on a partial walk and `FALSIFIED 0` on `--fresh` (bash also 0/10 -> 7/10
+    // emitted, unjustified 9 -> 3). The gate ACCUSED TWO LANES of a defect neither had, and the verdict
+    // it printed cites a file and a line — so it reads as though the claim had already been checked.
+    // THE PARSE-TREE HALF HAD BEEN. THE UNCERTIFIABLE HALF CARRIED NO MARKER AT ALL.
+    //
+    // The direction of this error is the one that matters: RULED-UNKNOWN WITHHOLDS a verdict and
+    // FALSIFIED ASSERTS one, so guarding the withheld verdict and not the asserted one means a partial
+    // run fails LOUDLY AND WRONGLY — and sends someone to rewrite an analyzer that was working.
+    const partial = !emittedPopulation.complete
     rows.push({
       type: t,
-      status: "FALSIFIED",
-      detail: `NOT EMITTED, but the construct occurs ${hit.occurrences}x across ${hit.files} file(s) on the PARSE TREE — it is derivable, so the ruling is wrong. e.g. ${hit.examples[0] ?? ""}`,
+      status: partial ? "RULED-UNKNOWN" : "FALSIFIED",
+      detail: partial
+        ? `NOT CERTIFIED: the construct occurs ${hit.occurrences}x across ${hit.files} file(s) on the PARSE TREE, ` +
+          `but the EMITTED column covers only ${emittedPopulation.measured.toLocaleString()}/${emittedPopulation.total.toLocaleString()} ` +
+          `files (${emittedPopulation.settled.toLocaleString()} settled by an earlier walk contribute NO edges, ` +
+          `${emittedPopulation.degraded.toLocaleString()} degraded, ${emittedPopulation.abandoned.toLocaleString()} abandoned), ` +
+          `so "NOT EMITTED" is NOT established and this row CANNOT be falsified. e.g. ${hit.examples[0] ?? ""}. ` +
+          `Re-run with --fresh to certify it.`
+        : `NOT EMITTED, but the construct occurs ${hit.occurrences}x across ${hit.files} file(s) on the PARSE TREE — it is derivable, so the ruling is wrong. e.g. ${hit.examples[0] ?? ""}`,
     })
     continue
   }
   if (ruled?.instrument === "A:grammar-inventory") {
     const present = (ruled.nodeTypesThatWouldMeanIt ?? []).filter((n) => grammarNodeTypes.has(n))
     if (present.length > 0) {
-      rows.push({ type: t, status: "FALSIFIED", detail: `NOT EMITTED, but the grammar DOES produce ${present.join(", ")} — the construct exists. Instrument A.` })
+      // SAME SPLIT AS ABOVE: the grammar claim is about the PARSER and is real; "NOT EMITTED" is about
+      // the EMITTED column and is not certifiable on a partial walk.
+      rows.push({
+        type: t,
+        status: emittedPopulation.complete ? "FALSIFIED" : "RULED-UNKNOWN",
+        detail: emittedPopulation.complete
+          ? `NOT EMITTED, but the grammar DOES produce ${present.join(", ")} — the construct exists. Instrument A.`
+          : `NOT CERTIFIED: the grammar DOES produce ${present.join(", ")}, but the EMITTED column covers only ` +
+            `${emittedPopulation.measured.toLocaleString()}/${emittedPopulation.total.toLocaleString()} files, so ` +
+            `"NOT EMITTED" is NOT established. Instrument A. Re-run with --fresh to certify it.`,
+      })
       continue
     }
   }
