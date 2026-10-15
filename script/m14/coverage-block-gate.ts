@@ -111,7 +111,22 @@ function lanes(): string[] {
   return [...out].sort()
 }
 
-type Firing = { fired: Set<string>; silent: Set<string>; label: string | null; parsed: string | null }
+type Firing = {
+  fired: Set<string>; silent: Set<string>; label: string | null; parsed: string | null
+  /**
+   * The block's OWN verdict says the run had NO CORPUS (`NO CORPUS under <repo>` / `0 types fired`).
+   * MEASURED 2026-10-15: the log's `PYTHON` block reads
+   *   `PYTHON  0 types fired   NO CORPUS under python-codesql`
+   *   `SILENT (constructible but produced nothing): calls extends implements uses imports exports
+   *    contains references overrides instantiates`
+   * while `residual-gate.ts --lane python` measures 1,293,362 edges at the same HEAD. So this block is
+   * NOT a lane that produced nothing — it is a RUN THAT HAD NOTHING TO READ, and printing its ten
+   * types as `silent-but-implemented` is a false silence. The reader was faithful; the STATE was
+   * missing. A zero is evidence only if the predicate could have returned non-zero — a no-corpus run
+   * never could.
+   */
+  noCorpus: boolean
+}
 function firingPerLane(): Map<string, Firing> {
   const out = new Map<string, Firing>()
   let text = ""
@@ -124,10 +139,14 @@ function firingPerLane(): Map<string, Firing> {
     if (t.includes("types fired")) {
       // The board's own label spelling: `MARKDOWN_B` is the log's name for `markdown`.
       const label = t.split(" ")[0] ?? ""
-      cur = { fired: new Set(), silent: new Set(), label, parsed: null }
+      // THE `NO CORPUS` MARKER IS ON THIS VERY LINE (`PYTHON  0 types fired   NO CORPUS under python-codesql`),
+      // not on the SILENT line that follows — a first draft guarded the wrong line and measured NO CORPUS 0.
+      cur = { fired: new Set(), silent: new Set(), label, parsed: null, noCorpus: /NO CORPUS/i.test(t) }
       out.set(label.toUpperCase(), cur)
       continue
     }
+    if (cur && /NO CORPUS/i.test(t)) { cur.noCorpus = true; continue }
+    if (cur && t.startsWith("SILENT")) { cur.noCorpus = cur.noCorpus || false }
     if (t.startsWith("SILENT") && cur) {
       const c = t.indexOf(":")
       if (c >= 0) for (const w of t.slice(c + 1).trim().split(/\s+/)) if (w !== "") cur.silent.add(w)
@@ -159,6 +178,8 @@ const LOG_ALIASES: Record<string, string[]> = {
   xml: ["XML_B"], markdown: ["MARKDOWN_B"], clean: ["CLEAN_B"],
   objc: ["OBJECTIVE_C"], vb: ["VISUAL_BASIC"], csharp: ["CSHARP"],
 }
+const notFiredLanes: string[] = []
+const noCorpusLanes: string[] = []
 function firingFor(lane: string, all: Map<string, Firing>): Firing | null {
   const names = [lane.toUpperCase(), ...(LOG_ALIASES[lane] ?? [])]
   for (const n of names) { const f = all.get(n); if (f) return f }
@@ -176,6 +197,10 @@ type Row = {
   silenceProseAttributed: string[]
   /** of those, the ones with no attribution to THIS type at all — the defect this check exists for */
   silenceUncited: string[]
+  /** THE LOG HAS NO ENTRY FOR THIS LANE — a measurement gap; never a silence */
+  notFired: boolean
+  /** THE LOG HAS AN ENTRY BUT THE RUN HAD NO CORPUS — a measurement gap; never a silence */
+  noCorpus: boolean
   /** one line per silent type saying which route substantiated it, or why none did */
   silenceDetails: string[]
 }
@@ -394,17 +419,17 @@ for (const lane of allLanes) {
   const abs = resolve(ROOT, rel)
   const problems: string[] = []
   if (!existsSync(abs)) {
-    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: ["no spec file"], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], silenceDetails: [] })
+    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: ["no spec file"], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], silenceDetails: [], notFired: !firingFor(lane, fires), noCorpus: false })
     continue
   }
   let doc: any
   try { doc = JSON.parse(readFileSync(abs, "utf8")) } catch (e) {
-    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: [`unparseable JSON: ${String(e).slice(0, 60)}`], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], silenceDetails: [] })
+    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: [`unparseable JSON: ${String(e).slice(0, 60)}`], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], silenceDetails: [], notFired: !firingFor(lane, fires), noCorpus: false })
     continue
   }
   const blk = doc?.coverage
   if (!blk || typeof blk !== "object" || !Array.isArray(blk.implemented)) {
-    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: [], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], silenceDetails: [] })
+    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: [], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], silenceDetails: [], notFired: !firingFor(lane, fires), noCorpus: false })
     continue
   }
   const impl: string[] = blk.implemented.filter((t: any) => TYPES.includes(t))
@@ -559,8 +584,16 @@ for (const lane of allLanes) {
   // a structured per-type count, or a citation that NAMES this type beside a count over an existing
   // artifact.
   const f = firingFor(lane, fires)
+  // THREE STATES, NOT TWO (2026-10-15). `f === null` means THE LOG HAS NO ENTRY FOR THIS LANE — a
+  // MEASUREMENT GAP, never a silence; `f.noCorpus` means the entry exists but the run had NOTHING TO
+  // READ — also a measurement gap, and the false-silence class measured on `python`. Only an entry
+  // that HAD a corpus and lists the type is a real SILENT finding.
+  const notFired = !f
+  const noCorpus = !!(f && f.noCorpus)
+  if (notFired) notFiredLanes.push(lane)
+  else if (noCorpus) noCorpusLanes.push(lane)
   const unexplained: string[] = [], counted: string[] = [], prose: string[] = [], uncited: string[] = [], details: string[] = []
-  if (f) for (const t of impl) if (f.silent.has(t)) {
+  if (f && !f.noCorpus) for (const t of impl) if (f.silent.has(t)) {
     unexplained.push(t)
     const s = substantiationFor(blk, t, TYPES)
     details.push(s.detail)
@@ -569,7 +602,7 @@ for (const lane of allLanes) {
     else uncited.push(t)
   }
 
-  rows.push({ lane, declared: true, implemented: impl.length, applicable, exclusions: excluded.length, problems, unexplainedSilence: unexplained, silenceCounted: counted, silenceProseAttributed: prose, silenceUncited: uncited, silenceDetails: details })
+  rows.push({ lane, declared: true, implemented: impl.length, applicable, exclusions: excluded.length, problems, unexplainedSilence: unexplained, silenceCounted: counted, silenceProseAttributed: prose, silenceUncited: uncited, silenceDetails: details, notFired, noCorpus })
   if (problems.length) problemsOf.set(lane, problems)
 }
 
@@ -603,6 +636,11 @@ if (JSON_MODE) {
   const nUncited = unexplained.reduce((n, r) => n + r.silenceUncited.length, 0)
   console.log()
   console.log(`declared ${rows.length - undeclared.length}/${rows.length}   blocks with problems ${broken.length}   lanes with silence ${unexplained.length}   of those, UNCITED ${uncited.length}`)
+  if (notFiredLanes.length || noCorpusLanes.length) {
+    console.log(`MEASUREMENT GAPS — NOT silences: NOT FIRED (no log entry) ${notFiredLanes.length}${notFiredLanes.length ? `: ${notFiredLanes.join(" ")}` : ""}`)
+    console.log(`                    NO CORPUS (entry present, run had nothing to read) ${noCorpusLanes.length}${noCorpusLanes.length ? `: ${noCorpusLanes.join(" ")}` : ""}`)
+    console.log(`  a zero is evidence only if the predicate could have returned non-zero: these lanes were never asked or had nothing to read.`)
+  }
   console.log(`SILENT-BUT-DECLARED-IMPLEMENTED, attributed PER TYPE: ${say(nCounted)} with a per-type count · ${say(nProse)} prose-attributed · ${say(nUncited)} UNSUBSTANTIATED`)
   if (undeclared.length) console.log(`NOT DECLARED (board falls back to prose+log, which is conservative but not a contract): ${undeclared.map((r) => r.lane).join(" ")}`)
   if (unexplained.length) {

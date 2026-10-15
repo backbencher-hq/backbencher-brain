@@ -422,6 +422,12 @@
     ]
   },
   "coverage": {
+    "_implemented_measured": {
+      "_unit": "whole yaml corpus: 18,364 admitted files, EMITTED column covering 18,354/18,364 (a LOWER BOUND — 10 files degraded by the regex fallback contribute no edges), measured by the lane's whole-corpus gate — validation/m14/fixtures/yaml/ontology-gate-yaml-whole-corpus-round5.txt, whose own header carries the corpus line. `files` is quoted as the artifact prints it, `4+ files`, i.e. a lower bound, not an exact count.",
+      "calls": { "edges": 327, "files": 4 },
+      "exports": { "edges": 4080, "files": 4 },
+      "overrides": { "edges": 26, "files": 4 }
+    },
     "implemented": [
       "contains",
       "uses",

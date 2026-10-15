@@ -651,6 +651,12 @@
     ]
   },
   "coverage": {
+    "_implemented_measured": {
+      "_unit": "whole php corpus: 5,094 admitted and 5,094 parsed .php files under $HOME/fixtures/repositories, measured 2026-10-09 — validation/m14/fixtures/php/exports-scope-census.json (exports) and validation/m14/fixtures/php/override-scope-census.json (overrides). The counts are those artifacts' own: exports = defineSites 58 (files 18), wider exportable units 5,261; overrides = sameFileOverrideEdges 2 + crossFileOverrideEdges 1,233 = 1,235 (crossFileFiles 755), with the artifact's own control match=true (oracleSameFileEdges 2 = thisWalkerSameFileEdges 2).",
+      "exports": { "edges": 58, "files": 18 },
+      "overrides": { "edges": 1235, "files": 755 }
+    },
+    "_gaps_note": "`exports` FIRES, AND ONE OF ITS SHAPES IS A GAP — recorded with its count rather than cited away. Evidence the firing is real: exports-scope-census.json measures 58 `define()` sites over 18 files, and override-scope-census.json's control matches. The gap: the ABSOLUTE-FQ spelling `\\define(...)` is refused at HEAD and the fixture that pins it FAILS, re-measured 2026-10-15 on HEAD 65b05404b (`bun run script/m14/run-fixtures.ts --lang php` -> 31 pass / 1 fail): `php/define-exports` reports 'expected symbol not found: AUTO_PREPEND_STYLE' and 'expected relationship not found: {type: exports, meta.calleeShape: absolute-fq, meta.fileLevel: true}'. The pin's own note records the census moving 57 -> 58 when this shape was accepted, so the gap is ONE edge (1 site of the 58) — a NAMED under-emission, not an exclusion. Evidence: validation/m14/fixtures/php/define-exports.expectation.json.",
     "implemented": [
       "calls",
       "uses",

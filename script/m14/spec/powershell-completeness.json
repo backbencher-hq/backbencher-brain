@@ -342,6 +342,11 @@
     ]
   },
   "coverage": {
+    "_implemented_measured": {
+      "_unit": "the lane's own per-type emission table over its 1,108-file sample — docs/analyzers/real-powershell-analyzer.md (the `type | status | edges | files | corpusBoth | intraBoth | tier` table). The counts are that table's own; it is the artifact PSD8's prose summarised, and it states the population it was taken over.",
+      "implements": { "edges": 3, "files": 2 },
+      "overrides": { "edges": 12, "files": 1 }
+    },
     "implemented": [
       "calls",
       "uses",
