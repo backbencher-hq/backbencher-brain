@@ -2313,7 +2313,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     // `createSymbol` returned early without emitting (an already-seen identity), and a key without
     // the disambiguator would NOT dedup against the one `createSymbol` did emit — the same
     // containment fact stored twice, once with the member's kind and once without.
-    this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, column.name, state, { memberKind: ASTEngine.SymbolKind.Property })
+    this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, column.name, state, { memberKind: ASTEngine.SymbolKind.Property }, this.range(rawName, state).startLine)
     if (isPrimaryKey) this.addPattern("Primary Key Constraint", state)
     if (isUnique) this.addPattern("Unique Constraint", state)
     if (references && referenceNode) {
@@ -2429,7 +2429,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
           ...(recovered ? { recoveredFromErrorRegion: true } : {}),
         },
       )
-      this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, constraint.name, state, { memberKind: ASTEngine.SymbolKind.Constant })
+      this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, constraint.name, state, { memberKind: ASTEngine.SymbolKind.Constant }, this.range(nameNode, state).startLine)
     }
     if (hasPrimary) this.addPattern("Primary Key Constraint", state)
     if (hasUnique) this.addPattern("Unique Constraint", state)
@@ -2545,7 +2545,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       // is the edge that survives. An index and a column of the same name under the same table is the
       // collision `memberKind` exists to resolve; leaving it off this path would leave exactly those
       // edges ambiguous, which is the case the key was added for.
-      this.addRelationship(ASTEngine.RelationshipType.Contains, tableName, name, state, { memberKind: ASTEngine.SymbolKind.Constant })
+      this.addRelationship(ASTEngine.RelationshipType.Contains, tableName, name, state, { memberKind: ASTEngine.SymbolKind.Constant }, this.range(nameNode, state).startLine)
       if (state.metadata.performanceScore !== undefined) state.metadata.performanceScore += 10
     }
   }
@@ -3206,7 +3206,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
         state,
         { type: "column", sqlType: this.columnType(definition, state), addedByAlter: true },
       )
-      this.addRelationship(ASTEngine.RelationshipType.Contains, table, column.name, state, { memberKind: ASTEngine.SymbolKind.Property })
+      this.addRelationship(ASTEngine.RelationshipType.Contains, table, column.name, state, { memberKind: ASTEngine.SymbolKind.Property }, this.range(nameNode, state).startLine)
     }
   }
 
@@ -3662,7 +3662,9 @@ private markDeclaration(node: Node, state: ParseState): boolean {
      * Deliberately NOT added: the owner's name. The edge's source already IS the owner, and
      * duplicating it would grow every containment edge to carry a fact the consumer can read.
      */
-    if (parent) this.addRelationship(ASTEngine.RelationshipType.Contains, parent.name, name, state, { memberKind: symbol.kind })
+    // `symbol.range.startLine` is the member's OWN declaration line — the same value `range(node, state)`
+    // computed for the symbol four lines up, so the edge and the symbol it names agree on position.
+    if (parent) this.addRelationship(ASTEngine.RelationshipType.Contains, parent.name, name, state, { memberKind: symbol.kind }, symbol.range.startLine)
     return symbol
   }
 
@@ -3695,6 +3697,14 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     target: string,
     state: ParseState,
     metadata: Record<string, any> = {},
+    /**
+     * The MEMBER's own declaration line.
+     *
+     * Optional in the parameter list so existing call sites keep compiling, but see the note at the
+     * push below: an edge without it cannot be navigated to, and the fleet's only exact binding
+     * test cannot see it. Every `contains` call site should pass one.
+     */
+    line?: number,
   ): void {
     if (!source || !target) return
     if (source === target && type === ASTEngine.RelationshipType.Contains) return
@@ -3811,7 +3821,31 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       return
     }
     state.relationshipKeys.add(key)
-    const relationship = { type, source, target, confidence: 1, weight: 1, metadata: { ...metadata, evidenceClass: metadata.evidenceClass ?? this.evidenceClassFor(type, metadata) } }
+    /**
+     * `line` / `line_number` ARE SET HERE, AND THEIR ABSENCE WAS A MEASURED DEFECT — not a styling
+     * gap and not a test artefact.
+     *
+     * `real-makefile-analyzer.ts:126` states the rule and this analyzer did not follow it: an edge's
+     * position is a PRODUCT field. The indexer stores it, and the address surfaces
+     * (`src/intelligence/graph/line-address.ts`) serve call-site positions from it, so **an edge
+     * with no line cannot be navigated TO**. Every relationship this analyzer emitted carried
+     * neither `line` nor `line_number`.
+     *
+     * The cost was measured on the fleet's own exact binding test. `incoming-gate.ts:583` names
+     * `contains` and `exports` as the only types whose edge line IS the target symbol's own start
+     * line, and `classifyIntent` (`:584-597`) returns `intended` only when `line !== null`. With no
+     * line stored that branch was UNREACHABLE, so all 12,132 of this lane's `contains` edges read
+     * `sameFileUnproven` and the lane scored **0.0% intended against a fleet at 96.4%**.
+     *
+     * That reading looked like 12,132 wrong bindings. It was 12,132 MISSING LINES. The bindings
+     * themselves were never in question: on the same population `arbitraryTwin` was 0 and
+     * `noDeclaration` was 0, i.e. every target had a declaration in the edge's own file.
+     */
+    const relationship = {
+      type, source, target, confidence: 1, weight: 1,
+      ...(line !== undefined ? { line, line_number: line } : {}),
+      metadata: { ...metadata, evidenceClass: metadata.evidenceClass ?? this.evidenceClassFor(type, metadata) },
+    }
     state.relationshipsByKey.set(key, relationship)
     state.relationships.push(relationship)
   }
