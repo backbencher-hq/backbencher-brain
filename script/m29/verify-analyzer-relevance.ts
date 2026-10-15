@@ -150,7 +150,21 @@ const evidence = {
   failed,
   realFailed: failed,
   failures,
-  checks,
+  // `checks` WAS DECLARED A SECOND TIME HERE — the bare array — SO THE SECOND KEY WON AND THE EMITTED
+  // FIELD WAS AN ARRAY WHERE A COUNT WAS INTENDED, which is `TS1117`: a syntax error TypeScript reports
+  // in ONE LINE, in a file that is in NEITHER tsconfig program. Measured, not assumed:
+  //   validation/m29/results/analyzer-relevance.json -> checks is a LIST (87 entries), no checksList.
+  //
+  // UNLIKE m61's `emit()`, WHICH DELIBERATELY REPAIRS ITS OWN DUPLICATE, THIS ONE HAD NO OVERRIDE — so
+  // the array really did win. It is repaired here by matching the convention m61 established:
+  // `checks` is the COUNT and `checksList` is the array.
+  //
+  // THE CONSEQUENCE WAS MEASURED FIRST, because a field's type is only a defect where something reads it:
+  // no consumer reads m29's `checks` as a number. The only references to this artefact in the tree are a
+  // COMMENT in script/lib/evidence.ts, a FILENAME in m61's claim_fingerprints.ts, and a lint note in
+  // m61/verify-lint.ts. So this repair changes NO behaviour today and makes the field mean what its
+  // sibling already means — while closing a trap for the first reader who does compare `checks === 0`.
+  checksList: checks,
   currentCommit: commit,
   verifierCommand: "npx tsx script/m29/verify-analyzer-relevance.ts",
   ...fingerprintFields(["m29.analyzer-relevance"], ROOT),

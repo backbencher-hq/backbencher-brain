@@ -3,7 +3,12 @@
   "code": "ANALYZER-RELEVANCE",
   "milestone": "M29",
   "status": "verified",
-  "checks": [
+  "checks": 87,
+  "passed": 87,
+  "failed": 0,
+  "realFailed": 0,
+  "failures": [],
+  "checksList": [
     "ok: R1: java — the list names its own fixture pack",
     "ok: R1: java — the list names its own analyzer",
     "ok: R1: java — the named analyzer module exists on disk",
@@ -92,13 +97,9 @@
     "ok: M: a list naming zig's analyzer for java would fail",
     "ok: M: a list without the language's own analyzer would fail"
   ],
-  "passed": 87,
-  "failed": 0,
-  "realFailed": 0,
-  "failures": [],
-  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "currentCommit": "a57d3c0594827cfa4121db96dcbdf08981ffb853",
   "verifierCommand": "npx tsx script/m29/verify-analyzer-relevance.ts",
-  "sourceFingerprint": "eab6582cc9a119074b3e3a65ca9f9fb4b27036296938b662c9b7b18ad6fed803",
+  "sourceFingerprint": "4a051b4a9b983da01fff02c6f06cd84e6e450a25c1b09887e39c1d4122f70c8c",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-analyzer-relevance.ts",
@@ -111,13 +112,13 @@
     "script/m29/wave-protocol.ts"
   ],
   "evidenceFile": "analyzer-relevance.json",
-  "generatedAt": "2026-10-05T22:34:24.774Z",
+  "generatedAt": "2026-10-15T20:05:45.957Z",
   "limitations": [
     "Static rule check over the live staleRelevantPaths module plus one differential against a stored leg pin; the legs' own S1-S6 gates re-run per execution."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:34:24.776Z",
-    "contentSha256": "2c2631f26f10b442ff50f7f8b921907ff7326c78a41978bb668014cf04dc4911"
+    "sealedAt": "2026-10-15T20:05:45.957Z",
+    "contentSha256": "9bb7c679741d952437a0cea2ed6ec79da5ec794dd360b3cd3a80c39cc6e9b641"
   }
 }
