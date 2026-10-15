@@ -158,8 +158,23 @@ const EXPECTED_ISSUE_NUMBERS = [623, 624, 625, 626, 627, 628, 629]
 const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   T1: ["src/mcp/tool-registry.ts", "src/mcp/tool-validation.ts", "src/mcp/tool-handlers.ts", "script/m28/verify-mcp-tools.ts"],
   U1: ["src/mcp/tool-handlers.ts", "script/m28/verify-union.ts"],
+  // A1 WAS DECLARED TWICE HERE AND THE SECOND KEY SILENTLY WON — `TS1117`, a syntax error TypeScript
+  // reports in ONE LINE and that this file is INVISIBLE TO, because `script/m28/**` is in neither
+  // tsconfig program. The shadowed first list was the CORRECT one:
+  //
+  //   A1: [... "src/brain/database.ts" ... "script/m28/verify-annotation-store.ts"]   <- SHADOWED
+  //   A1: [... "script/m28/verify-annotations.ts"]                                    <- WON, and names
+  //                                                                                     a file that DOES NOT EXIST
+  //
+  // SO A1'S STALENESS CHECK WATCHED A NON-EXISTENT FILE AND MISSED BOTH `src/brain/database.ts` AND
+  // **A1'S OWN VERIFIER**. `relevantFilesFor` reads this map directly at :294 with no override anywhere
+  // — unlike m61's `emit()`, which deliberately repairs a duplicate of its own — so nothing neutralised it.
+  //
+  // MEASURED BEFORE FIXING, because restoring a shadowed key changes WHAT THE GATE CHECKS and could have
+  // turned it red: none of the four files changed between A1's recorded commit (`2b2a3fafeb66`) and HEAD,
+  // so this repair changes NO verdict today while restoring the check's ability to SEE a FUTURE change —
+  // which is the entire point of a freshness rule.
   A1: ["src/brain/schema-ddl.ts", "src/brain/database.ts", "src/mcp/tool-registry.ts", "src/mcp/tool-handlers.ts", "script/m28/verify-annotation-store.ts"],
-  A1: ["src/brain/schema-ddl.ts", "src/mcp/tool-registry.ts", "src/mcp/tool-handlers.ts", "script/m28/verify-annotations.ts"],
   A2: ["src/lsp/annotation_ui.ts", "src/lsp/hover.ts", "src/lsp/cross_language_hover.ts", "src/lsp/graph_request.ts", "src/intelligence/contracts.ts", "script/m26/graph-core.ts", "script/m28/annotation-driver.lua", "script/m28/verify-annotation-ui.ts"],
   V1: ["docs/m28/MCP-SURFACE.md", "script/m28/verify-mcp-surface.ts", "src/mcp/tool-registry.ts"],
   X1: ["script/m28/verify-closure.ts"],
