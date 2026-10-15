@@ -76,10 +76,31 @@ function main() {
   // language directory must own a code or be declared `unwaved` with a reason.
   const CODES_PATH = path.join(ROOT, "validation/m49/wave-codes.json")
   check("wave-code registry exists", existsSync(CODES_PATH))
-  const registry: { prefixes?: Record<string, string[]>; unwaved?: Record<string, string> } =
+  const registry: { prefixes?: Record<string, string[]>; unwaved?: Record<string, string>; nonWaveCodes?: Record<string, string> } =
     existsSync(CODES_PATH) ? JSON.parse(readFileSync(CODES_PATH, "utf8")) : {}
   const ownedPrefixes = registry.prefixes ?? {}
   const unwaved = registry.unwaved ?? {}
+  /**
+   * `nonWaveCodes` — LEDGER ROWS THAT ARE NOT WAVES, AND WHY THEY ARE A VOCABULARY ENTRY RATHER
+   * THAN EXCEPTIONS IN CODE.
+   *
+   * `WAVE_CODE` is `^(prefix)[0-9]+$`, so five real ledger rows could never match it and G1 read
+   * them as "extra codes": `CLJ` and `ELX` are MULTI-WAVE SUMMARY rows ("Clojure analyzer waves
+   * CLOSED (CLJ1 + deep review + #881 + CLJ-ADV + …)"), `BEAM-MR` is a CROSS-LANGUAGE master-review
+   * pass rather than a per-language wave, and `TOML1`/`SVELTE1` were simply missing prefixes.
+   *
+   * THE TEMPTING WRONG FIX, AND WHY IT WAS REFUSED: renumbering `CLJ`→`CLJ1` and `ELX`→`ELX1`
+   * makes the regex pass by changing what the record SAYS — a summary row would then read as wave 1,
+   * which is false, and it was declined on exactly that ground before this file was touched.
+   *
+   * The alternative — letting `WAVE_CODE` accept any BARE owned prefix — breaks the negative control
+   * four lines down, which proves a bare `CPP` is REJECTED so that "no extra codes" cannot pass
+   * vacuously. A typo'd wave code and a declared summary row are not the same thing, so they are not
+   * given the same rule: a summary code must be DECLARED here, by name, with a reason, and an
+   * undeclared bare prefix still fails.
+   */
+  const nonWaveCodes: Record<string, string> = registry.nonWaveCodes ?? {}
+  const knownCode = (id: string) => REQUIRED_CODES.includes(id) || WAVE_CODE.test(id) || id in nonWaveCodes
   // Longest prefix first so `CPP1` is read as CPP+1, not as a failed C+`PP1`
   // that only succeeding by backtracking happens to hide.
   const prefixAlt = Object.keys(ownedPrefixes)
@@ -87,14 +108,15 @@ function main() {
     .map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
     .join("|")
   const WAVE_CODE = new RegExp(`^(?:${prefixAlt})[0-9]+$`)
-  check("ledger has no extra codes", issues.every((i) => REQUIRED_CODES.includes(String(i.id)) || WAVE_CODE.test(String(i.id))),
-    `extras: ${ids.filter((x) => !REQUIRED_CODES.includes(x) && !WAVE_CODE.test(x)).join(",")}`)
+  check("ledger has no extra codes", issues.every((i) => knownCode(String(i.id))),
+    `extras: ${ids.filter((x) => !knownCode(x)).join(",")}`)
   // The vocabulary must discriminate: every code the ledger actually carries
   // passes, a typo of an owned prefix does not, and a bare prefix (no wave
   // number) does not — otherwise "no extra codes" could pass vacuously.
   negative("wave-code vocabulary admits every code the ledger carries",
-    ids.filter((x) => !REQUIRED_CODES.includes(x)).every((c) => WAVE_CODE.test(c)))
+    ids.filter((x) => !REQUIRED_CODES.includes(x)).every((c) => knownCode(c) && (WAVE_CODE.test(c) || c in nonWaveCodes)))
   negative("wave-code vocabulary rejects an unowned prefix", !WAVE_CODE.test("FOO1") && !WAVE_CODE.test("CPP"))
+  negative("wave-code vocabulary rejects an UNDECLARED bare prefix", !knownCode("CPP") && !knownCode("ZZZ"))
   for (const i of issues) {
     const status = String(i.status)
     check(`${i.id} status legal`, ALLOWED_STATUS.includes(status), status)
@@ -187,7 +209,7 @@ function main() {
   const SELF_PATH = fileURLToPath(import.meta.url)
   const HERE = path.dirname(SELF_PATH)
   const governanceSrc = readFileSync(SELF_PATH, "utf8")
-  const registered = ["verify-governance.ts", "verify-r1-intake.ts", "verify-r2-regex.ts", "verify-closure.ts", "verify-evidence-lineage.ts", "verify-script-integrity.ts", "verify-census-lineage.ts", "verify-evidence-identity.ts", "verify-family-parity.ts", "verify-sweep-state-freeze.ts"]
+  const registered = ["verify-governance.ts", "verify-r1-intake.ts", "verify-r2-regex.ts", "verify-closure.ts", "verify-evidence-lineage.ts", "verify-script-integrity.ts", "verify-census-lineage.ts", "verify-evidence-identity.ts", "verify-family-parity.ts", "verify-sweep-state-freeze.ts", "verify-clj-core-list.ts", "verify-markdown-tables.ts"]
   for (const f of onDisk) {
     check(`verifier ${f} is registered in governance`, registered.includes(f))
   }

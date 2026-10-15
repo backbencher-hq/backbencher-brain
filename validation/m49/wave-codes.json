@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "purpose": "The wave-code vocabulary M49.G1 enforces over validation/m49/ledger.json. It lives here, as data, because the ledger is an append-only record written by whichever agent closes a review wave: a vocabulary hardcoded inside the gate drifts the moment a wave appends a legitimate code, and the drift shows up as G1 failing on a row no rule forbade (CPP1/RS1/GO1/CS1/Z1 at W13; RB1 at W14). The gate keeps its full strictness \u2014 a code outside this registry still fails \u2014 and now additionally requires every reviews/ language directory to either own a code or be listed under `unwaved` with a reason, so the next wave must register itself instead of tripping an invisible list.",
+  "purpose": "The wave-code vocabulary M49.G1 enforces over validation/m49/ledger.json. It lives here, as data, because the ledger is an append-only record written by whichever agent closes a review wave: a vocabulary hardcoded inside the gate drifts the moment a wave appends a legitimate code, and the drift shows up as G1 failing on a row no rule forbade (CPP1/RS1/GO1/CS1/Z1 at W13; RB1 at W14). The gate keeps its full strictness — a code outside this registry still fails — and now additionally requires every reviews/ language directory to either own a code or be listed under `unwaved` with a reason, so the next wave must register itself instead of tripping an invisible list.",
   "prefixes": {
     "C": [
       "c"
@@ -68,13 +68,52 @@
     ],
     "HTML": [
       "html"
+    ],
+    "TOML": [
+      "toml"
+    ],
+    "SVELTE": [
+      "svelte"
+    ],
+    "BEAM": [
+      "elixir",
+      "erlang"
     ]
   },
   "unwaved": {
-    "convergence": "Cross-language convergence sweep (M49.CONV) \u2014 its findings land as waves, not as a per-language ledger row.",
+    "convergence": "Cross-language convergence sweep (M49.CONV) — its findings land as waves, not as a per-language ledger row.",
     "java": "Java's review waves are registered in script/m14/spec/java-completeness.json (JD codes) plus the onboarding board; the M49 ledger carries no java row, because J2/J4/J5/J6 are JAVASCRIPT (J = javascript above). Recorded here rather than left silent, so the gap is visible in the gate output.",
     "svelte": "Svelte's waves (Sv1/Sv2, M49.W4) close through the web-family folder; no per-language M49 ledger row exists.",
     "systems-family": "Family-level roll-up (closure report + onboarding rows), not a per-language wave.",
-    "web-family": "Family-level roll-up (closure report + onboarding rows), not a per-language wave."
+    "web-family": "Family-level roll-up (closure report + onboarding rows), not a per-language wave.",
+    "tools": "Tooling and surface reviews (not a language): their findings land as waves or as proposals, and no per-language M49 ledger code is allocated.",
+    "migrate": "Feature review of the migrate tool (not a language): recorded in its own review folder and the onboarding board; no per-language ledger code.",
+    "merge": "Repository-merge review (a process record, not a language): its waves are the merge commits themselves; no per-language ledger code.",
+    "functional-family": "Family-level roll-up across the functional languages: a closure report plus onboarding rows, not a per-language wave, matching systems-family and web-family above.",
+    "health": "Feature review of the health tool (not a language): recorded in its own review folder and the onboarding board; no per-language ledger code.",
+    "xml": "Reviewed in reviews/xml/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "protobuf": "Reviewed in reviews/protobuf/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "make": "Reviewed in reviews/make/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "haskell": "Reviewed in reviews/haskell/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "perl": "Reviewed in reviews/perl/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "erlang": "Reviewed in reviews/erlang/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "clean": "Reviewed in reviews/clean/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "vb": "Reviewed in reviews/vb/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "powershell": "Reviewed in reviews/powershell/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "r": "Reviewed in reviews/r/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "graphql": "Reviewed in reviews/graphql/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "python": "Reviewed in reviews/python/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "lua": "Reviewed in reviews/lua/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "json": "Reviewed in reviews/json/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "bash": "Reviewed in reviews/bash/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "fsharp": "Reviewed in reviews/fsharp/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "yaml": "Reviewed in reviews/yaml/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "hcl": "Reviewed in reviews/hcl/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory.",
+    "markdown": "Reviewed in reviews/markdown/: its waves are recorded there and on the onboarding board, and no M49 ledger code is allocated to this directory."
+  },
+  "nonWaveCodes": {
+    "CLJ": "MULTI-WAVE SUMMARY row, not a wave: it records the Clojure analyzer waves as CLOSED as a group (CLJ1 + deep review + #881 + CLJ-ADV). Renumbering it to CLJ1 would make a summary read as wave 1, which is false.",
+    "ELX": "MULTI-WAVE SUMMARY row, not a wave: it records the Elixir waves as CLOSED as a group (EX2 + EX3 + EX-F5 + EX-ADV + F4/F8/M12). Renumbering it to ELX1 would make a summary read as wave 1, which is false.",
+    "BEAM-MR": "CROSS-LANGUAGE MASTER-REVIEW pass, not a wave: the java/groovy master-review formula applied across the BEAM family (clojure + elixir). It has no single language to own it, so no wave number can be correct."
   }
 }
