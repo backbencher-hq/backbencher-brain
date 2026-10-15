@@ -168,7 +168,7 @@ const report = {
 if (WANT_JSON) {
   console.log(JSON.stringify(report, null, 1))
 } else {
-  console.log(`rust `contains` — independent-oracle check`)
+  console.log("rust `contains` — independent-oracle check")
   console.log(`  population: ${files.length} files in [${report.population.repos.join(", ")}] · ${filesCompared} compared · ${cleanFiles} with zero disagreement · parse failures ${failures.length}`)
   console.log(`  oracle ${report.oracle.module} (imported by differential.ts:57, called 0 times) -> ${truthTotal} edges`)
   console.log(`  analyzer                                                          -> ${analyzerTotal} edges`)
