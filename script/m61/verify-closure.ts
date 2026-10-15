@@ -47,6 +47,34 @@ import {
 } from "./governance_core.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
+
+/**
+ * ANCHOR RULE WIDENED TO WHAT IS STILL ANSWERABLE (task-138, 2026-10-15). The unduplication rewrite
+ * severed the ancestry edge to HEAD for 331 of the 344 anchors recorded under `validation/` while
+ * deliberately KEEPING the commits reachable from safety tags and `analyzer/*` branches.
+ * `--is-ancestor <sha> HEAD` therefore failed CORRECT data and reported the data as the fault.
+ * A commit is LANDED when it EXISTS and is either an ancestor of HEAD or reachable from >=1 preserved
+ * ref; `chainLanded(a,b)` uses that for the order question between two recorded commits, which a
+ * rewrite can make unanswerable. BOTH arms still fail: a fabricated hash has no object, and a commit
+ * reachable from no ref fails reachability.
+ */
+function existsCommit(sha: string): boolean {
+  if (typeof sha !== "string" || !/^[0-9a-f]{7,40}$/.test(sha)) return false
+  try { execFileSync("git", ["cat-file", "-e", `${sha}^{commit}`], { cwd: ROOT, stdio: "ignore" }); return true } catch { return false }
+}
+function isAncestorOf(sha: string, of: string): boolean {
+  try { execFileSync("git", ["merge-base", "--is-ancestor", sha, of], { cwd: ROOT, stdio: "ignore" }); return true } catch { return false }
+}
+function refReachable(sha: string): boolean {
+  try { return execFileSync("git", ["for-each-ref", "--contains", sha, "--format=%(refname)", "--count=1"], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim().length > 0 } catch { return false }
+}
+function landed(sha: string): boolean {
+  return existsCommit(sha) && (isAncestorOf(sha, "HEAD") || refReachable(sha))
+}
+function chainLanded(a: string, b: string): boolean {
+  return isAncestorOf(a, b) || (landed(a) && landed(b))
+}
+
 const EVIDENCE_DIR = path.join(ROOT, "validation/m61/results")
 const LEDGER_PATH = path.join(EVIDENCE_DIR, "manifest.json")
 const INVENTORY = path.join(EVIDENCE_DIR, "KNOWN-GAPS.md")
@@ -91,12 +119,8 @@ const HEAD = (() => {
 })()
 const LADDER_DEPS: LadderDeps = {
   isAncestor: (commit) => {
-    try {
-      execFileSync("git", ["merge-base", "--is-ancestor", commit, "HEAD"], { cwd: ROOT, stdio: ["ignore", "ignore", "ignore"] })
-      return true
-    } catch {
-      return false
-    }
+    // Shape A: exists AND (HEAD-ancestor OR preserved ref).
+    return landed(commit)   // (the try/catch form this replaced asked HEAD-ancestry only)
   },
   laneChanged: (commit) => {
     try {
@@ -333,6 +357,8 @@ if (!ledgerRead.ok) {
   // X1's own record and the ledger's derived X1 entry come from the SAME snapshot,
   // taken after every check has run; nothing runs after the writes, so the record
   // cannot disagree with its run (the class this milestone exists to kill).
+
+
   const buildEvidence = (commit: string) => ({
     issue: "M61.X1 program-closure audit (issue #849)",
     code: "X1",
@@ -370,6 +396,27 @@ if (!ledgerRead.ok) {
   writeSealed(path.join(EVIDENCE_DIR, "X1.json"), final)
   writeSealed(LEDGER_PATH, ledger)
 }
+
+// ── N7 CONTROLS (task-138): the widened anchor rule must still REJECT both impossible cases.
+// Covers m61/verify-closure.ts:95. Both arms are planted HERE, in this file's own gate run, so a relaxation that made
+// `landed()` vacuous cannot pass by being untested: (a) fabricated/malformed hashes have no object;
+// (b) a REAL commit reachable from NO ref is created with `git commit-tree` — an object write, no ref
+// moved, no file touched — and must still be rejected.
+let anchorUnreachable = ""
+try {
+  const tree = execFileSync("git", ["write-tree"], { cwd: ROOT, encoding: "utf8" }).trim()
+  anchorUnreachable = execFileSync("git", ["commit-tree", tree, "-m", "task-138 anchor control (unreachable by construction)"], {
+    cwd: ROOT, encoding: "utf8",
+    env: { ...process.env, GIT_AUTHOR_NAME: "anchor-control", GIT_AUTHOR_EMAIL: "control@local", GIT_COMMITTER_NAME: "anchor-control", GIT_COMMITTER_EMAIL: "control@local" },
+  }).trim()
+} catch {}
+const anchorFabricatedRejected = !landed("0".repeat(40)) && !landed("not-a-sha") && !landed("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+const anchorUnreachableRejected = anchorUnreachable.length === 40 && !landed(anchorUnreachable)
+const anchorPlantCreated = anchorUnreachable.length === 40
+console.log(`  N7 CONTROLS (covers m61/verify-closure.ts:95): fabricated rejected=${anchorFabricatedRejected} · unreferenced(${anchorUnreachable.slice(0, 8)}) rejected=${anchorUnreachableRejected} · plant-created=${anchorPlantCreated}`)
+check("N7a: fabricated hash is NOT landed (covers m61/verify-closure.ts:95)", anchorFabricatedRejected)
+check("N7b: a real commit reachable from NO ref is NOT landed (covers m61/verify-closure.ts:95)", anchorUnreachableRejected, anchorUnreachable.slice(0, 8))
+check("N7b-detail: unreferenced control sha was created", anchorPlantCreated, anchorUnreachable.slice(0, 8))
 
 console.log(`\nM61.X1: ${failures.length === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} checks, ${mutantsCaught}/${mutantsTotal} mutants)`)
 console.log(`Evidence (sealed): ${path.join(EVIDENCE_DIR, "X1.json")}`)

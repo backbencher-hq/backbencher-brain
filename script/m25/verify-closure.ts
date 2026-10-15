@@ -142,12 +142,23 @@ function negative(label: string, ok: boolean, detail = ""): void {
   negatives++
   check(label, ok, detail)
 }
-function runVerifier(script: string, env?: NodeJS.ProcessEnv): number {
+function runVerifier(script: string, env?: NodeJS.ProcessEnv): { code: number; summary: string } {
+  // A CLOSURE GATE IS A WORK QUEUE, AND `exit=1` IS NOT A QUEUE ENTRY (task-139; shape copied from
+  // script/m24/verify-closure.ts). The sub-verifier had run 142 checks, knew it stood at 123, and
+  // PRINTED `L1: KNOWN-GAP (123/142 passed, …)`; `stdio: "pipe"` captured that and this gate threw it
+  // away in favour of the exit code. The sub-verifier's LAST status line is what a work queue needs,
+  // with the exit code kept beside it. MESSAGE ONLY: no check, boolean or counter changes here.
+  const lastSummary = (s: string): string =>
+    s
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => /^[A-Z][A-Z0-9-]*:\s/.test(l) || /^[A-Z][A-Z0-9-]*\s+—\s/.test(l))
+      .pop() ?? ""
   try {
-    execFileSync("npx", ["tsx", script], { cwd: ROOT, encoding: "utf8", timeout: 570_000, stdio: ["ignore", "pipe", "ignore"], env: { ...process.env, ...env } })
-    return 0
+    const out = execFileSync("npx", ["tsx", script], { cwd: ROOT, encoding: "utf8", timeout: 570_000, stdio: ["ignore", "pipe", "ignore"], env: { ...process.env, ...env } })
+    return { code: 0, summary: lastSummary(String(out ?? "")) }
   } catch (e) {
-    return (e as { status?: number }).status ?? 1
+    return { code: (e as { status?: number }).status ?? 1, summary: lastSummary(String((e as { stdout?: string }).stdout ?? "")) }
   }
 }
 function fingerprint(file: string): string | null {
@@ -164,8 +175,9 @@ console.log("pass 1: full M25 suite at HEAD (editor legs included; this takes a 
 const exits: Record<string, number> = {}
 for (const { code, script, editorLeg } of SUITE) {
   console.log(`  running ${code} (${editorLeg ? "editor leg" : "deterministic"})…`)
-  exits[code] = runVerifier(script, code === "E5" || code === "D1i" ? { E5_OUT: join(tmpdir(), `x1-${code}-${Date.now()}`) } : undefined)
-  check(`X1: ${code} verifier passes at HEAD`, exits[code] === 0, `exit=${exits[code]}`)
+  const r = runVerifier(script, code === "E5" || code === "D1i" ? { E5_OUT: join(tmpdir(), `x1-${code}-${Date.now()}`) } : undefined)
+  exits[code] = r.code
+  check(`X1: ${code} verifier passes at HEAD`, r.code === 0, r.summary ? `${r.summary}  (exit=${r.code})` : `exit=${r.code}`)
 }
 
 // --- Pass 2: §6 mutant-set coverage ------------------------------------------------
@@ -265,9 +277,9 @@ console.log("\npass 4: byte-identical regeneration check (deterministic legs; mo
 for (const { code, script, evidenceFiles, editorLeg } of SUITE) {
   if (editorLeg) continue
   const before = evidenceFiles.map(fingerprint)
-  const exit = runVerifier(script)
+  const { code: exit, summary: regenSummary } = runVerifier(script)
   const after = evidenceFiles.map(fingerprint)
-  check(`X1: ${code} regeneration run passes`, exit === 0, `exit=${exit}`)
+  check(`X1: ${code} regeneration run passes`, exit === 0, regenSummary ? `${regenSummary}  (exit=${exit})` : `exit=${exit}`)
   if (code === "E7") {
     // E7's blocked records embed generatedAt only; linux leg also embeds
     // live budgets — assert structure regenerated (all files still present),

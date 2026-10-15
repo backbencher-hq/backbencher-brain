@@ -58,6 +58,21 @@ function runVerifier(script: string): { exit: number; stdout: string } {
     return { exit: typeof code === "number" ? code : 1, stdout }
   }
 }
+
+/** A CLOSURE GATE IS A WORK QUEUE, AND `exit=1` IS NOT A QUEUE ENTRY (task-139; shape copied from
+ *  script/m24/verify-closure.ts). The sub-verifier's own LAST status line — `L1: KNOWN-GAP (123/142
+ *  passed, …)` — is the number a work queue needs; the exit code stays beside it. The stdout was
+ *  ALREADY captured here and thrown away; this uses it. MESSAGE ONLY: no check, boolean or counter
+ *  in this file changes. */
+function lastSummary(s: string): string {
+  return (
+    s
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => /^[A-Z][A-Z0-9-]*:\s/.test(l) || /^[A-Z][A-Z0-9-]*\s+—\s/.test(l))
+      .pop() ?? ""
+  )
+}
 function fingerprint(file: string): string | null {
   try {
     const j = parseSealedRecord(file)
@@ -137,7 +152,8 @@ for (const { code, script } of SUITE) {
   console.log(`  running ${code}…`)
   const run = runVerifier(script)
   suiteStdout[code] = run.stdout
-  check(`X1: ${code} verifier passes at HEAD`, run.exit === 0, `exit=${run.exit}`)
+  const s1 = lastSummary(run.stdout)
+  check(`X1: ${code} verifier passes at HEAD`, run.exit === 0, s1 ? `${s1}  (exit=${run.exit})` : `exit=${run.exit}`)
 }
 
 // --- Pass 2: per-mutant records -----------------------------------------------------
@@ -235,7 +251,8 @@ for (const { code, script, evidence } of SUITE) {
   const before = fingerprint(fp)
   const run = runVerifier(script)
   const after = fingerprint(fp)
-  check(`X1: ${code} regeneration run passes`, run.exit === 0, `exit=${run.exit}`)
+  const s2 = lastSummary(run.stdout)
+  check(`X1: ${code} regeneration run passes`, run.exit === 0, s2 ? `${s2}  (exit=${run.exit})` : `exit=${run.exit}`)
   check(`X1: ${code} evidence byte-identical (modulo generatedAt/currentCommit)`, before !== null && before === after)
 }
 

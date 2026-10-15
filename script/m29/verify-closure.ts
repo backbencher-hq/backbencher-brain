@@ -66,17 +66,32 @@ const currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, en
 // --- Pass 1: the full program ladder at HEAD ---------------------------------------
 console.log("pass 1: the full program ladder (M24–M29) at HEAD")
 const exits: Record<string, number> = {}
+/** A CLOSURE GATE IS A WORK QUEUE, AND `exit=1` IS NOT A QUEUE ENTRY (task-139; shape copied from
+ *  script/m24/verify-closure.ts). Every ladder leg is another milestone's closure, and its LAST status
+ *  line (`VERDICT: FAIL`, `X1: KNOWN-GAP (…)`) is the shortfall this gate throws away in favour of the
+ *  exit code. MESSAGE ONLY: no check, boolean or counter in this file changes. */
+function lastSummary(s: string): string {
+  return (
+    s
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => /^[A-Z][A-Z0-9-]*:\s/.test(l) || /^[A-Z][A-Z0-9-]*\s+—\s/.test(l))
+      .pop() ?? ""
+  )
+}
 function ladderRun(code: string, script: string): void {
   console.log(`  running ${code}…`)
   let exit = -1
+  let summary = ""
   try {
-    execFileSync("npx", ["tsx", script], { cwd: ROOT, encoding: "utf8", timeout: 580_000, stdio: ["ignore", "pipe", "ignore"] })
+    summary = lastSummary(String(execFileSync("npx", ["tsx", script], { cwd: ROOT, encoding: "utf8", timeout: 580_000, stdio: ["ignore", "pipe", "ignore"] }) ?? ""))
     exit = 0
   } catch (e) {
     exit = (e as { status?: number }).status ?? -1
+    summary = lastSummary(String((e as { stdout?: string }).stdout ?? ""))
   }
   exits[code] = exit
-  check(`X1: ${code} ladder run green at HEAD`, exit === 0, `exit=${exit}`)
+  check(`X1: ${code} ladder run green at HEAD`, exit === 0, summary ? `${summary}  (exit=${exit})` : `exit=${exit}`)
 }
 for (const { code, script, afterRegen } of SUITE) if (!afterRegen) ladderRun(code, script)
 

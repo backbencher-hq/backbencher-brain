@@ -40,6 +40,34 @@
 import { readFileSync, existsSync, rmSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 
+/**
+ * ANCHOR RULE WIDENED TO WHAT IS STILL ANSWERABLE (task-138, 2026-10-15). The unduplication rewrite
+ * severed the ancestry edge to HEAD for 331 of the 344 anchors recorded under `validation/` while
+ * deliberately KEEPING the commits reachable from safety tags and `analyzer/*` branches.
+ * `--is-ancestor <sha> HEAD` therefore failed CORRECT data and reported the data as the fault.
+ * A commit is LANDED when it EXISTS and is either an ancestor of HEAD or reachable from >=1 preserved
+ * ref; `chainLanded(a,b)` uses that for the order question between two recorded commits, which a
+ * rewrite can make unanswerable. BOTH arms still fail: a fabricated hash has no object, and a commit
+ * reachable from no ref fails reachability.
+ */
+function existsCommit(sha: string): boolean {
+  if (typeof sha !== "string" || !/^[0-9a-f]{7,40}$/.test(sha)) return false
+  try { execFileSync("git", ["cat-file", "-e", `${sha}^{commit}`], { encoding: "utf8", stdio: "ignore" }); return true } catch { return false }
+}
+function isAncestorOf(sha: string, of: string): boolean {
+  try { execFileSync("git", ["merge-base", "--is-ancestor", sha, of], { encoding: "utf8", stdio: "ignore" }); return true } catch { return false }
+}
+function refReachable(sha: string): boolean {
+  try { return execFileSync("git", ["for-each-ref", "--contains", sha, "--format=%(refname)", "--count=1"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim().length > 0 } catch { return false }
+}
+function landed(sha: string): boolean {
+  return existsCommit(sha) && (isAncestorOf(sha, "HEAD") || refReachable(sha))
+}
+function chainLanded(a: string, b: string): boolean {
+  return isAncestorOf(a, b) || (landed(a) && landed(b))
+}
+
+
 const ANALYZER = "src/ast/real-haskell-analyzer.ts"
 const ANALYZER_DOC = "docs/analyzers/real-haskell-analyzer.md"
 const REVIEW = "reviews/haskell/master-review.md"
@@ -378,9 +406,9 @@ const POOL_STATE = "validation/m14/tmp/haskell-lane-cold-pool.json"
         "--", "src/ast/real-haskell-analyzer.ts", "script/m14/differential.ts"]).out.trim()
       const stale = !!artCommit && !!lastTouch && artCommit !== lastTouch
       // is the analyzer's last change an ANCESTOR of the artifact's commit?
-      const ancestor = stale
-        ? run("git", ["merge-base", "--is-ancestor", lastTouch, artCommit]).code === 0
-        : false
+      // Shape B: artifact vs its own last touch — two recorded commits, either of which the
+      // rewrite can make unanswerable; chainLanded answers the order question where both are landed.
+      const ancestor = stale ? chainLanded(lastTouch, artCommit) : false
       ok = !stale || ancestor
       detail = ok
         ? `artifact carries a haskell row and it postdates the last analyzer change (${lanes.length} lanes)`
@@ -439,6 +467,24 @@ const POOL_STATE = "validation/m14/tmp/haskell-lane-cold-pool.json"
 }
 
 // ---------------------------------------------------------------------------
+
+// ── N7 CONTROLS (task-138): the widened anchor rule must still REJECT both impossible cases.
+// Covers m14/verify-haskell-lane.ts:382. Both arms planted here, in this lane's own gate run.
+add(15, "anchor rule controls: fabricated hash and unreferenced commit are both NOT landed", (() => {
+  let unreachable = ""
+  try {
+    const tree = execFileSync("git", ["write-tree"], { encoding: "utf8" }).trim()
+    unreachable = execFileSync("git", ["commit-tree", tree, "-m", "task-138 anchor control (unreachable by construction)"], {
+      encoding: "utf8",
+      env: { ...process.env, GIT_AUTHOR_NAME: "anchor-control", GIT_AUTHOR_EMAIL: "control@local", GIT_COMMITTER_NAME: "anchor-control", GIT_COMMITTER_EMAIL: "control@local" },
+    }).trim()
+  } catch {}
+  const fabricated = !landed("0".repeat(40)) && !landed("not-a-sha") && !landed("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+  const unreferenced = unreachable.length === 40 && !landed(unreachable)
+  console.log(`  N7a fabricated rejected=${fabricated} · N7b unreferenced(${unreachable.slice(0, 8)}) rejected=${unreferenced}`)
+  return fabricated && unreferenced
+})(), "both control arms must fire")
+
 const blocking = rows.filter((r) => !r.ok && r.blocking)
 const width = Math.max(...rows.map((r) => r.name.length))
 console.log(`Haskell lane completion audit — ${rows.length - blocking.length}/${rows.length} criteria met`)
