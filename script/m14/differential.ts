@@ -25042,6 +25042,7 @@ async function main() {
       // ONLY_LANGS yields, so the artifact is `M14.0.F5.scala.json` and the canonical
       // 43-language M14.0.F5.json stays untouched.
       else if (scope === "scala") emitEvidence({ ...base, issueId: "M14.0.F5.scala" })
+      else if (scope === "swift") emitEvidence({ ...base, issueId: "M14.0.F5.swift" })
       else throw new Error(
         `differential: --emit has no declared artifact id for scope "${scope}" — add one literal emit call `
         + '(`{ ...base, issueId: "M14.0.F5.<lane>" }`) beside clean\'s, because a computed id writes an artifact that '
