@@ -567,9 +567,29 @@ type MarkBucket = {
  *                       type's edge line is the READ SITE and not the target's (`references`), so
  *                       intent is NOT measurable this way and this class must not be read as
  *                       "wrong" or as "right".
- *   arbitraryTwin       nothing in the edge's own file answers to the name, but a declaration in
- *                       ANOTHER file does — exactly when the store's `s.id` tie-break (a TEXT
- *                       comparison of `${fileId}:${name}:${line}`) picks a foreign declaration.
+ *   arbitraryTwin       NOTHING IN THE EDGE'S OWN FILE answers to the name, but a declaration in
+ *                       ANOTHER file does. THAT IS THE WHOLE PREDICATE — `classifyIntent` returns it
+ *                       on `sameFile.length === 0` and asks no further question.
+ *
+ *                       THE CORRELATION THIS COMMENT USED TO ASSERT WAS WRONG, AND IT WAS THE
+ *                       SENTENCE A READER WOULD ACT ON. It read: "— exactly when the store's `s.id`
+ *                       tie-break (a TEXT comparison of `${fileId}:${name}:${line}`) picks a foreign
+ *                       declaration." NO COLLISION IS REQUIRED. The tie-break is counted by a
+ *                       DIFFERENT function over DIFFERENT inputs — `classifyEdge` produces the
+ *                       OUTCOME that `resolvedAmongCollision`/`ofWhich` counts, while this tally comes
+ *                       from `classifyIntent`; the one input they share is `ownFileDeclares`, which is
+ *                       why line ~1119 can say the two "agree by construction".
+ *
+ *                       THE NAME IS THE RESIDUAL HAZARD AND IT IS NOT FIXED HERE. For a `references`
+ *                       edge — deliberately absent from `LINE_IS_TARGET_LINE` because its line is the
+ *                       READ SITE — this class means CROSS-FILE REFERENCE, which is neither arbitrary
+ *                       nor a twin, and which is the NORMAL shape for that type. Measured on toml:
+ *                       `references` reads arbitraryTwin 1,085 beside `ofWhich 0`, i.e. 1,085 ordinary
+ *                       cross-file references and ZERO arbitration by the tie-break. A reader who
+ *                       trusts the name reads 1,085 as a hazard, because "arbitrary" is exactly the word
+ *                       the completion test's clause 4 uses for the class it wants at zero.
+ *                       **BEFORE READING A NON-ZERO `arbitraryTwin` AS A DEFECT, CHECK `ofWhich`.** That
+ *                       column is the tie-break; this one is not.
  *   noDeclaration       nothing in the project answers to it — the unresolved class.
  *
  * Validated against the STORE by validation/m14/fixtures/hcl/tools/store-binding-truth.mts, which
