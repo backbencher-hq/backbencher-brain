@@ -717,8 +717,8 @@
       },
       {
         "label": "overrides",
-        "evidence": "zero-sites",
-        "from": "ZIG.O.3 — the construct is expressible and occurs 0 times in the corpus, so by the class definition it STAYS IN the denominator (the hand table excluded it; corrected 2026-10-09)"
+        "evidence": "grammar-absence",
+        "from": "ZIG.O.3 IS RULED THE OTHER WAY, and this entry had paraphrased it as 'expressible': the ruling reads 'NO. A same-scope duplicate declaration in zig is a COMPILER DIAGNOSTIC (\"duplicate struct member name\"), not a language feature.' RE-MEASURED 2026-10-14 (task-120/121): a one-file git-init'd corpus whose whole content is that duplicate (`const S = struct { x: u32, x: u32 };`) parses (contains 2, exports 1) and emits `overrides 0` — so the zero is not a parse artefact, and the construct is not a language feature to implement. Two independent readings agree: the lane's own ZIG.O.3 ruling and this run. RECLASSIFIED zero-sites -> grammar-absence; applicable drops by one (zig 7/8 -> 7/7)."
       }
     ],
     "corpusUnexercised": [],
