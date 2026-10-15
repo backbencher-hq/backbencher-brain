@@ -3196,6 +3196,44 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       if (!nameNode || !identifierTypes.has(nameNode.type)) continue
       if (this.reservedColumnName(nameNode)) {
         state.ambiguity.reservedNameSymbolsSuppressed++
+        /**
+         * `ALTER TABLE c INHERIT p` ARRIVES HERE AS A COLUMN NAMED `INHERIT` WHOSE TYPE IS THE
+         * SUPERTYPE, and this branch used to drop the inheritance fact on the floor.
+         *
+         * The wired grammar cannot represent the clause, so it re-reads it as an ordinary column:
+         * probed against the pinned wasm,
+         *   `ALTER TABLE child INHERIT parent;`
+         *   → (alter_table (keyword_alter) (keyword_table) (object_reference name:(identifier))
+         *       (add_column (column_definition name:(identifier "INHERIT")
+         *                    custom_type:(object_reference name:(identifier "parent")))))
+         * The PARENT'S NAME SURVIVES in `custom_type`, so the fact is recoverable and `extends` is
+         * emitted from it instead of the construct being counted as suppressed and gone.
+         *
+         * ONLY `inherit`, NEVER `like`. `CREATE TABLE c (LIKE p INCLUDING ALL)` parses with the
+         * IDENTICAL shape — `column_definition name:(identifier "LIKE") custom_type:(object_reference "p")`
+         * — so the identifier text is the only discriminator available, and it is the right one:
+         * PostgreSQL's `LIKE` copies columns and creates NO inheritance relation, so an `extends`
+         * edge for it would be a fabricated edge. The floor is kept for `like`; the edge is taken
+         * for `inherit`.
+         *
+         * WHY THIS IS STILL ZERO-SITES ON OUR CORPUS, and why it is implemented anyway: the lane's
+         * own construct probe reads `extends-inherits 0` and `extends-like 9` over the admitted
+         * population, and the coverage rule keeps a `zero-sites` type IN the denominator precisely
+         * because the analyzer implements it and only the corpus is quiet. This closes that gap.
+         * The distinguishable case it CANNOT reach is stated rather than hidden:
+         * `CREATE TABLE child (...) INHERITS (parent)` — note the plural, a different clause —
+         * error-recovers to a TOP-LEVEL `(ERROR)` whose only children are `"INHERITS" "(" ")"`;
+         * the parent identifier does not survive, so no name can be recovered from the tree.
+         */
+        if (nameNode.text.toLowerCase() === "inherit") {
+          const parentNode = definition.childForFieldName?.("type") ?? definition.childForFieldName?.("custom_type")
+          const parentName = parentNode ? this.identifierName(parentNode, state) : ""
+          if (parentName) {
+            this.addRelationship(ASTEngine.RelationshipType.Extends, table, parentName, state, {
+              clause: "inherit",
+            }, this.range(nameNode, state).startLine)
+          }
+        }
         continue
       }
       const column = this.createSymbol(
