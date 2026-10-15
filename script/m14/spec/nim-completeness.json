@@ -191,15 +191,10 @@
       "exports",
       "extends",
       "overrides",
-      "instantiates"
+      "instantiates",
+      "implements"
     ],
-    "excluded": [
-      {
-        "label": "implements",
-        "evidence": "grammar-absence",
-        "from": "whole-corpus firing over ALL 3,917 admitted .nim files (`[corpus=nim WHOLE]`, 3,917/3,917 parsed, 0 degraded, instrument self-test PASS): implements 0 edges, while calls 66,531 · contains 20,032 · exports 285 · extends 543 · imports 7,190 · instantiates 1,868 · overrides 49 · references 35,221 · uses 27,637 fire on the same run. Nim's conformance-like idioms (concepts, C-interop interfaces) have no conformance-clause node; the zero is type-specific rather than a failed parse — it is the ONE silent type out of ten on a run that produced nine. NIMD3 now carries this measured 0 instead of an unclassified ruling."
-      }
-    ],
+    "excluded": [],
     "corpusUnexercised": [],
     "_implemented_measured": {
       "_unit": "edges published through the production path over the WHOLE 3,917-file nim population (no stride, 3,917/3,917 parsed, 0 degraded). Instrument: BB_PICK_CAP=4200 NFILES=4000 bun script/m14/firing-check.mjs NIM.",
@@ -229,8 +224,14 @@
       },
       "instantiates": {
         "edges": 1868
+      },
+      "implements": {
+        "edges": 47,
+        "files": 6063,
+        "_population": ".tmp-dm/in-nim.out, 6,063 of 6,063 admitted .nim/.nims/.nimble files across 8 repos, ONE RUN",
+        "_why": "NIM `implements` WAS RULED grammar-absence AND IS EMITTED: the population reading prints implements 47 (12 resolved). The ruling's own NIMD3 prose said 0 analyzer and cited 3,917 files; both are stale. The construct is a concept refining a concept / a concept-constrained generic, with two emission sites in real-nim-analyzer.ts (the nimRefines path and the isFormContracts path). Ruling corrected 2026-10-15 by EXCLUSION-AUDIT-S2."
       }
     },
-    "_from": "MEASURED whole-corpus over 3,917 files, no stride. The lane previously read `9/9 from=spec-declared ∪ firing-log` with `implements` classed UNCLASSIFIED (NIMD3) — a class the board's arithmetic SUBTRACTS while the stated rule does not allow it (HANDOFF §5.9). NIMD3 is now bound to the measured 0 and classified grammar-absence, so the denominator is earned rather than taken."
+    "_from": "MEASURED whole-corpus over 3,917 files, no stride. The lane previously read `9/9 from=spec-declared ∪ firing-log` with `implements` classed UNCLASSIFIED (NIMD3) — a class the board's arithmetic SUBTRACTS while the stated rule does not allow it (HANDOFF §5.9). NIMD3 is now bound to the measured 0 and classified grammar-absence, so the denominator is earned rather than taken. NIM `implements` WAS RULED grammar-absence AND IS EMITTED: the population reading prints implements 47 (12 resolved). The ruling's own NIMD3 prose said 0 analyzer and cited 3,917 files; both are stale. The construct is a concept refining a concept / a concept-constrained generic, with two emission sites in real-nim-analyzer.ts (the nimRefines path and the isFormContracts path). Ruling corrected 2026-10-15 by EXCLUSION-AUDIT-S2."
   }
 }

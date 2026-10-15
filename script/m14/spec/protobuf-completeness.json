@@ -185,7 +185,9 @@
     "implemented": [
       "contains",
       "imports",
-      "uses"
+      "uses",
+      "exports",
+      "overrides"
     ],
     "excluded": [
       {
@@ -204,21 +206,6 @@
         "from": "whole-corpus firing over ALL 128 admitted .proto files (pb-googleapis, `[corpus=pb-googleapis WHOLE]`, 128/128 parsed, 0 degraded, instrument self-test PASS): implements 0 edges. No conformance clause exists in the language."
       },
       {
-        "label": "references",
-        "evidence": "grammar-absence",
-        "from": "whole-corpus firing over ALL 128 admitted .proto files (pb-googleapis, `[corpus=pb-googleapis WHOLE]`, 128/128 parsed, 0 degraded, instrument self-test PASS): references 0 edges, against contains 3,470 and uses 1,159 — an absence that is type-specific, not an empty parse."
-      },
-      {
-        "label": "exports",
-        "evidence": "grammar-absence",
-        "from": "whole-corpus firing over ALL 128 admitted .proto files (pb-googleapis, `[corpus=pb-googleapis WHOLE]`, 128/128 parsed, 0 degraded, instrument self-test PASS): exports 0 edges. A .proto declares messages for importers; there is no export declaration to key on."
-      },
-      {
-        "label": "overrides",
-        "evidence": "grammar-absence",
-        "from": "whole-corpus firing over ALL 128 admitted .proto files (pb-googleapis, `[corpus=pb-googleapis WHOLE]`, 128/128 parsed, 0 degraded, instrument self-test PASS): overrides 0 edges. Proto has no member-override construct."
-      },
-      {
         "label": "instantiates",
         "evidence": "grammar-absence",
         "from": "whole-corpus firing over ALL 128 admitted .proto files (pb-googleapis, `[corpus=pb-googleapis WHOLE]`, 128/128 parsed, 0 degraded, instrument self-test PASS): instantiates 0 edges. A .proto declares types; it does not construct values."
@@ -235,8 +222,20 @@
       },
       "uses": {
         "edges": 1159
+      },
+      "exports": {
+        "edges": 4,
+        "files": 847,
+        "_population": ".tmp-dm/in-protobuf.out, 847 of 847 admitted .proto files across 21 repos, ONE RUN",
+        "_why": "PROTOBUF `exports` WAS RULED grammar-absence AND IS EMITTED: the population reading prints exports 4. The construct is `import public` (a re-export) and the emission site is real-protobuf-analyzer.ts:1605. The lane's OWN PB-REL-7 rules it emitted, so the coverage block contradicted the lane it describes. Ruling corrected 2026-10-15 by EXCLUSION-AUDIT-S2."
+      },
+      "overrides": {
+        "edges": 2,
+        "files": 847,
+        "_population": ".tmp-dm/in-protobuf.out, 847 of 847 admitted .proto files across 21 repos, ONE RUN",
+        "_why": "PROTOBUF `overrides` WAS RULED grammar-absence AND IS EMITTED: the population reading prints overrides 2, both resolved. The construct is two fields claiming one field_number and the emission site is real-protobuf-analyzer.ts:562. PB-REL-6 and PB-REL-11 both say in words that overrides is now EMITTED. Ruling corrected 2026-10-15 by EXCLUSION-AUDIT-S2."
       }
     },
-    "_from": "MEASURED whole-corpus, not sampled. This lane's instrument population IS its whole corpus (128 of 128 admitted), so the stride/sample caveat that muddied bash, css, r and json does NOT apply: `3 types fired` is a claim about the entire population this lane has. Three types fire and seven are zero on the same run, and every exclusion is grammar-absence rather than zero-sites because a .proto cannot express them at all."
+    "_from": "MEASURED whole-corpus, not sampled. This lane's instrument population IS its whole corpus (128 of 128 admitted), so the stride/sample caveat that muddied bash, css, r and json does NOT apply: `3 types fired` is a claim about the entire population this lane has. Three types fire and seven are zero on the same run, and every exclusion is grammar-absence rather than zero-sites because a .proto cannot express them at all. PROTOBUF `exports` WAS RULED grammar-absence AND IS EMITTED: the population reading prints exports 4. The construct is `import public` (a re-export) and the emission site is real-protobuf-analyzer.ts:1605. The lane's OWN PB-REL-7 rules it emitted, so the coverage block contradicted the lane it describes. Ruling corrected 2026-10-15 by EXCLUSION-AUDIT-S2. PROTOBUF `overrides` WAS RULED grammar-absence AND IS EMITTED: the population reading prints overrides 2, both resolved. The construct is two fields claiming one field_number and the emission site is real-protobuf-analyzer.ts:562. PB-REL-6 and PB-REL-11 both say in words that overrides is now EMITTED. Ruling corrected 2026-10-15 by EXCLUSION-AUDIT-S2. PROTOBUF `references` WAS RULED grammar-absence AND THE GRAMMAR CLAIM IS FALSE: the construct is a field's declared message/enum type, node message_or_enum_type, and PB-REL-5 says in words \"This is not a missing construct ... 10,166 message_or_enum_type nodes ... and it IS emitted\" - emitted under `uses` (role fieldType). The population reading prints references 0, so the LABEL is unused while the FACT is published. The exclusion claimed a GRAMMAR fact and was refuted by the lane's own rule; removing it returns the type to the denominator where it now shows as an unimplemented gap. Corrected 2026-10-15 by EXCLUSION-AUDIT-S2."
   }
 }

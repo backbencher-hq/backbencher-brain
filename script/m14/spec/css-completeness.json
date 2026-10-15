@@ -896,11 +896,6 @@
     ],
     "excluded": [
       {
-        "label": "calls",
-        "evidence": "grammar-absence",
-        "from": "CSS-D14 counts.vocabulary_candidates_found.calls = [] (no node type expresses it) + at_rule_at_function 0"
-      },
-      {
         "label": "extends",
         "evidence": "grammar-absence",
         "from": "CSS-D14 counts.vocabulary_candidates_found.extends = [] + @extend at_rules 0 (the positive control proves the probe can see a planted one)"
@@ -922,7 +917,7 @@
       }
     ],
     "corpusUnexercised": [],
-    "_from": "CSS-D14 counts.emitted_edges: contains 238,585 · imports 127 · overrides 149 · references 247,859 · uses 2,667 — the five the lane emits over the whole admitted population (imports/overrides fire 0 times on pico, which is why the firing log reads 3).",
+    "_from": "CSS-D14 counts.emitted_edges: contains 238,585 · imports 127 · overrides 149 · references 247,859 · uses 2,667 — the five the lane emits over the whole admitted population (imports/overrides fire 0 times on pico, which is why the firing log reads 3). CSS `calls` WAS RULED grammar-absence ON AN EMPTY WORD LIST AND THE GRAMMAR HAS IT: enumerating the pinned wasm/tree-sitter-css.wasm finds 64 named node types including call_expression, and THE SPEC'S OWN CENSUS IN THE SAME BLOCK ALREADY COUNTED IT - call_expression_nodes 341,686, distinct_function_names 90, control call_expression 4 - while vocabulary_candidates_found.calls stayed []. A probe cannot find what its word list does not contain. zero-sites cannot apply (it requires 0 assertions), so the honest class is a GAP and css's applicable rises from 6 to 7. Corrected 2026-10-15 by EXCLUSION-AUDIT-S0, independently corroborated by GRAMMAR-ABSENCE-WASM-CROSSCHECK.",
     "_implemented_measured": {
       "_unit": "edges published over the WHOLE 1,174-file `.css` population (85 repos, 0 parse failures, 5 tracked-but-absent, 2 over the 1 MB cap) — the lane's own census, WHICH PREDATES the population correction: the lane's DECLARED population is now `css,less` (1,228 files, d43a5fa4d), so this census describes a NARROWER set and its `imports` 127 is the `.css` half of the gate's 178. Kept as the record of what was measured rather than restated on a population it never walked, recorded in `design_decision.CSS-D14.counts.emitted_edges` of this file. THE LANE'S OWN INSTRUMENT POPULATION IS ONE REPO: `firing-check.mjs CSS_B` pins `pico` (238 files), on which imports and overrides fire ZERO times, which is why its log reads `3 types fired — SILENT imports exports overrides`. Whole-corpus `contains` is 238,585 and pico's share of it is the same order; whole-corpus `imports` is 127 and `overrides` is 149, in the 936 files pico does not contain. Same lesson as bash: a one-repo instrument cannot see a type whose occurrences live elsewhere.",
       "contains": {
