@@ -842,6 +842,43 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           const declaredName = declaration?.name
           const symbolName = declaredName ?? name
 
+          // ── NAMESPACE-PREFIX USE — the `uses` type this lane did not emit ─────
+          //
+          // An element written with a prefix DEPENDS ON the binding that prefix
+          // names: `<xsl:template>` is a `template` in whatever namespace the
+          // document's own `xmlns:xsl` binds. That binding is published by THIS
+          // analyzer as a `namespace` symbol whose name IS the prefix, owned by the
+          // element carrying the `xmlns:` attribute (`extractAttribute` below), so a
+          // prefix use has a real in-document declaration to resolve to.
+          //
+          // THE CONSTRUCT, CHOSEN BY DOABILITY: the alternative candidate was XPath
+          // built-in function use (`count()`, `substring()`), and those have NO
+          // declaration anywhere — in the project or in its corpus — so every edge
+          // would be dangling, which is the class this lane already REFUSES rather
+          // than emits (the 724 out-of-file `xsl:call-template` targets). A
+          // namespace-prefix use resolves inside the file, and any XSLT or XSD corpus
+          // is dense with it.
+          //
+          // EMITTED ONLY WHEN THE DOCUMENT BINDS THE PREFIX. `namespaceBindings` holds
+          // exactly what this file writes (`rememberNamespaces`), so the `xml` and
+          // `xmlns` prefixes — which the Namespaces specification binds itself and
+          // which `IMPLICIT_PREFIX_BINDINGS` covers for the reference pass — are
+          // absent by construction: no in-document declaration exists for the edge to
+          // name, and an undeclared prefix is refused, not published.
+          //
+          // THE DEFAULT NAMESPACE IS OUT OF SCOPE FOR THIS EDGE, stated rather than
+          // silently dropped: `xmlns="…"` has no written prefix, so its declaration is
+          // published with the empty name and its `contains` edge is skipped by
+          // `addRelationship`'s own `if (!source || !target) return` guard. A `uses`
+          // edge needs a name to point at, and the default binding has none.
+          if (prefix.length > 0 && namespaceBindings.has(prefix)) {
+            addRelationship(symbolName, prefix, ASTEngine.RelationshipType.Uses, {
+              role: "xml_namespace_prefix_use",
+              namespaceUri: namespaceBindings.get(prefix),
+              resolvable: "in-document",
+            }, nameNode)
+          }
+
           // ── THE NEAREST NAMED DECLARATION ABOVE THIS ELEMENT ──────────────────
           //
           // This exists for two edge types, and it exists because the obvious owner was
@@ -2377,6 +2414,25 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (colon > 0 && attributeLocalName.length === 0) return
     const name = isNamespace ? namespacePrefix : attributeLocalName
     const kind = isNamespace ? ASTEngine.SymbolKind.Namespace : ASTEngine.SymbolKind.Property
+
+    // ── NAMESPACE-PREFIX USE, ATTRIBUTE HALF ──────────────────────────────────
+    // Same construct as the element half above, for an attribute written with a
+    // prefix: `xsi:type="…"` USES the binding the document's own `xmlns:xsi`
+    // declares. The source is the element carrying the attribute — attributes are
+    // published as members of that element (`ownerName`) — and the pair collapses
+    // with the element's own edge by `addRelationship`'s (source, type, target) key
+    // when both carry the same prefix, which is the ordinary case.
+    //
+    // The `xmlns:` declaration attributes never reach here: `colon` is forced to -1
+    // when `isNamespace`, so `attributePrefix` is undefined for exactly the
+    // attribute that IS the declaration — a declaration does not use itself.
+    if (attributePrefix && namespaceBindings.has(attributePrefix)) {
+      addRelationship(ownerName, attributePrefix, ASTEngine.RelationshipType.Uses, {
+        role: "xml_namespace_prefix_use",
+        namespaceUri: namespaceBindings.get(attributePrefix),
+        resolvable: "in-document",
+      }, nameNode)
+    }
 
     symbols.push({
       name,
