@@ -122,6 +122,61 @@ function hasExportAttributeSpelling(text: string): boolean {
 }
 
 /**
+ * THE EXPORT ATTRIBUTE AS WRITTEN, FOUND IN TEXT RATHER THAN IN A NODE (task-152, C lane).
+ *
+ * `hasExportAttributeSpelling` decides WHETHER; this decides WHAT the edge's target should say, for
+ * the case where the grammar models the attribute as no node at all. Measured on
+ * `sqlite/src/test_loadext.c` lines 94-96 inside the guarding `preproc_ifdef`: children are
+ * `#ifdef` / `identifier "_WIN32"` / `#endif` and the `__declspec(dllexport)` line exists only in the
+ * node's text. The scan:
+ *
+ *   · removes `/* … *​/` and `//` comments first, so a marker merely MENTIONED in a comment cannot
+ *     make an export claim about the declaration that follows the block;
+ *   · takes the balanced parenthesised spelling after `__declspec` or `__attribute__` — balanced,
+ *     not "to the first `)`", because `__attribute__((visibility("default")))` nests two levels;
+ *   · returns "" unless the extracted spelling passes `hasExportAttributeSpelling`.
+ *
+ * The caller bounds it further: the block must be the declaration's IMMEDIATE predecessor.
+ */
+function exportAttributeTextIn(rawText: string): string {
+  let text = ""
+  for (let i = 0; i < rawText.length; i++) {
+    const c = rawText[i]
+    if (c === "/" && rawText[i + 1] === "*") {
+      const end = rawText.indexOf("*/", i + 2)
+      i = end < 0 ? rawText.length : end + 1
+      continue
+    }
+    if (c === "/" && rawText[i + 1] === "/") {
+      const end = rawText.indexOf("\n", i + 2)
+      i = end < 0 ? rawText.length : end
+      continue
+    }
+    text += c
+  }
+  for (const kw of ["__declspec", "__attribute__"]) {
+    const at = stringIndexOf(text, kw)
+    if (at < 0) continue
+    let depth = 0
+    let i = at + kw.length
+    for (; i < text.length; i++) {
+      const c = text[i]
+      if (c === "(") depth++
+      else if (c === ")") {
+        depth--
+        if (depth === 0) {
+          i++
+          break
+        }
+      }
+    }
+    const spelling = collapseWhitespace(text.slice(at, Math.min(i, text.length)))
+    if (hasExportAttributeSpelling(spelling)) return spelling
+  }
+  return ""
+}
+
+/**
  * The node types the C grammar gives an ATTRIBUTE. Read from
  * `grammars/tree-sitter-c/src/node-types.json`, not remembered: all four are
  * declared there (`attribute_specifier` and `ms_declspec_modifier` both verify
@@ -138,6 +193,29 @@ const ATTRIBUTE_NODES = new Set<string>([
   "attribute_declaration",
   "ms_declspec_modifier",
   "ms_call_modifier",
+])
+
+/**
+ * THE PREPROCESSOR BLOCKS AN EXPORT ATTRIBUTE CAN HIDE IN (task-152, C lane).
+ *
+ * `#ifdef _WIN32` / `__declspec(dllexport)` / `#endif` immediately before a declaration is the
+ * sqlite/Windows idiom, and it was invisible: the marker's only parent is the preproc block while
+ * the declaration it belongs to is its SIBLING, and `emitAttributeExport`'s scan skips
+ * `preproc_ifdef`/`preproc_if` BY NAME (deliberately — that skip is what stops a statement inside a
+ * body becoming an export claim). Measured on the C-routed sqlite corpus: 64 files carry
+ * `__declspec(dllexport)` or `EXPORT_SYMBOL`, and `sqlite/src/test_loadext.c` carries two
+ * `__declspec(dllexport)` sites at lines 95/116 (both under `#ifdef _WIN32`) and produced ZERO
+ * `exports` edges before this form existed.
+ *
+ * The list is the four nodes the C grammar gives a conditional block; adjacency is enforced by the
+ * caller (`previousSibling`, comments allowed through), which is what keeps the attribute from
+ * drifting onto an unrelated declaration.
+ */
+const PREPROC_ATTRIBUTE_GUARDS = new Set<string>([
+  "preproc_ifdef",
+  "preproc_if",
+  "preproc_elif",
+  "preproc_else",
 ])
 
 import type { Node } from "web-tree-sitter"
@@ -1825,6 +1903,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           // #989: recorded for the `overrides` post-pass. One push, no name
           // resolution here -- see `fnDefNodes`.
           fnDefNodes.push(node)
+          // task-152: THE EXPORT ATTRIBUTE ON A DEFINITION. `emitAttributeExport` was called only
+          // from the `declaration` case, so a function DEFINITION carrying an export attribute —
+          // either on the heading (`__declspec(dllexport) int f(void) {…}`) or guarded by the
+          // preprocessor block immediately before it (`#ifdef _WIN32 / __declspec(dllexport) /
+          // #endif / int f(void) {…}`, the sqlite idiom) — published nothing at all. Measured:
+          // `sqlite/src/test_loadext.c`, lines 95 and 116, zero `exports` edges.
+          this.emitAttributeExport(node, content, relationships, emittedExports, patterns)
           // #918: the POINTER-RETURN macro-wrapped heading. Measured on sqlite
           // `ext/wasm/libcmpp.c`: `CMPP__EXPORT(void *, cmpp_mrealloc)(…)` and
           // its five siblings arrive as a function_definition whose `type` field
@@ -2169,7 +2254,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             // reads a MARKER; C also writes the boundary as an attribute, and the
             // attribute is a grammar node rather than a convention, so this is a
             // GAP rather than a widening of a list.
-            this.emitAttributeExport(node, relationships, emittedExports, patterns)
+            this.emitAttributeExport(node, content, relationships, emittedExports, patterns)
             // #918, the DECLARATION spelling of the same heading — recovery cut
             // the region at the first parameter (`declaration` + an ERROR holding
             // the rest of the parameter list and the body's opening — measured:
@@ -3519,6 +3604,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private emitAttributeExport(
     decl: Node,
+    content: string,
     relationships: ASTEngine.UniversalRelationship[],
     emittedExports: Set<string>,
     patterns: Record<string, boolean>,
@@ -3526,6 +3612,17 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (this.exportAttributeMacros.size === 0 && !ATTRIBUTE_NODES.size) return
     let markerText = ""
     let markerKind: "attribute" | "attribute_macro" = "attribute"
+    // ---- Form C: the attribute sits inside a PREPROCESSOR block that IMMEDIATELY PRECEDES the
+    // declaration — `#ifdef _WIN32` / `__declspec(dllexport)` / `#endif` / `int f(void) {...}`.
+    // This is a third form, not a widening of A or B: the marker is in the file and is spelled
+    // `__declspec(dllexport)`, but its only parent is the preproc block and the declaration is its
+    // SIBLING, while Form A's scan skips preproc nodes by name. Adjacency (comments allowed) is the
+    // predicate, so a marker cannot attach to a declaration it does not guard.
+    const guarded = this.precedingPreprocExportAttribute(decl, content)
+    if (guarded) {
+      markerText = guarded
+      markerKind = "attribute"
+    }
     // ---- Form A: the attribute is a node on (or inside the declarator of) the declaration.
     const scanDepth = (n: Node, depth: number): void => {
       if (markerText || depth > 3) return
@@ -3575,6 +3672,90 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         exportMarkerKind: markerKind,
       },
     })
+  }
+
+  /**
+   * FORM C of the export attribute (task-152): the marker is inside the preprocessor block that
+   * immediately precedes the declaration.
+   *
+   *   #ifdef _WIN32
+   *   __declspec(dllexport)
+   *   #endif
+   *   int testloadext_init(sqlite3 *db, ...) { ... }
+   *
+   * The tree for that source is `preproc_ifdef > ERROR > ms_declspec_modifier` followed by a
+   * SIBLING `function_definition` — so Form A's scan cannot reach the marker (it skips preproc
+   * nodes on purpose) and no macro prefix exists for Form B. Measured before this method existed:
+   * `sqlite/src/test_loadext.c`, two `__declspec(dllexport)` sites (lines 95, 116), zero `exports`
+   * edges; 64 sqlite files carry the marker.
+   *
+   * ADJACENCY IS THE GUARD, and it is strict: only comments may sit between the block and the
+   * declaration. A block that is not the declaration's immediate predecessor returns "" — which is
+   * what keeps an unrelated `#ifdef` (a feature test, an include guard) from exporting whatever
+   * happens to follow it.
+   */
+  private precedingPreprocExportAttribute(decl: Node, content: string): string {
+    let prev: Node | null = decl.previousSibling
+    while (prev && (prev.type === "comment" || prev.type === "preproc_call")) prev = prev.previousSibling
+    if (prev && PREPROC_ATTRIBUTE_GUARDS.has(prev.type)) {
+      const viaTree = this.preprocGuardAttributeInTree(prev)
+      if (viaTree) return viaTree
+    }
+    return this.preprocGuardAttributeInText(decl, content)
+  }
+
+  /** The tree half of Form C: the grammar kept the marker as a node inside the guarding block. */
+  private preprocGuardAttributeInTree(block: Node): string {
+    const marker = this.findExportAttributeNode(block, 0)
+    if (marker) return collapseWhitespace(marker.text)
+    return exportAttributeTextIn(block.text)
+  }
+
+  /**
+   * THE TEXT HALF OF FORM C, and on the real corpus this is the half that fires.
+   *
+   * `engine.ts` BLANKS `__declspec(…)` and `__attribute__((…))` out of the content it hands the
+   * PARSER (c/cpp only, space-for-space so offsets and line numbers stay honest — see its
+   * `blankKeepingNewlines`), while the ANALYZER is handed the ORIGINAL content. So on the production
+   * path the marker is in no node AND in no node's text: measured, `sqlite/src/test_loadext.c` — the
+   * `preproc_ifdef` at lines 94-96 has node text `"#ifdef _WIN32\n                     \n#endif"`,
+   * the `__declspec(dllexport)` at line 95 replaced by 21 spaces.
+   *
+   * This reads the ORIGINAL lines immediately above the declaration, under the same strict adjacency:
+   * the last non-blank line before it must be `#endif`, and the matching `#if…` must be within 24
+   * lines. Only the lines INSIDE that guard are searched, comments are stripped by
+   * `exportAttributeTextIn`. Nothing else in the file is consulted, so an attribute cannot attach to
+   * a declaration it does not guard.
+   */
+  private preprocGuardAttributeInText(decl: Node, content: string): string {
+    const lines = content.split("\n")
+    let i = decl.startPosition.row - 1
+    while (i >= 0 && lines[i] !== undefined && lines[i].trim() === "") i--
+    if (i < 0 || lines[i] === undefined || !/^\s*#\s*endif\b/.test(lines[i])) return ""
+    const blockEnd = i
+    let blockStart = -1
+    for (let j = i - 1; j >= 0 && j >= i - 24; j--) {
+      if (/^\s*#\s*(if|ifdef|ifndef)\b/.test(lines[j])) {
+        blockStart = j
+        break
+      }
+    }
+    if (blockStart < 0) return ""
+    return exportAttributeTextIn(lines.slice(blockStart, blockEnd + 1).join("\n"))
+  }
+
+  /** The export attribute INSIDE a preprocessor block, or null. Bounded by depth, never enters a body. */
+  private findExportAttributeNode(n: Node, depth: number): Node | null {
+    if (depth > 4 || n.type === "compound_statement") return null
+    if (ATTRIBUTE_NODES.has(n.type) && hasExportAttributeSpelling(n.text)) return n
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) {
+        const r = this.findExportAttributeNode(c, depth + 1)
+        if (r) return r
+      }
+    }
+    return null
   }
 
   /**
