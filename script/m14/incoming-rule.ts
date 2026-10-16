@@ -711,13 +711,59 @@ export function pathLikeTarget(tgt: string): boolean {
   return FILE_EXTENSIONS.has(ext)
 }
 
+/** A URI with a scheme (`https:`, `file:`, `dart:`) — as opposed to a Windows drive letter. */
+const URI_SCHEME = /^[a-z][a-z0-9+.-]*:/i
+const WINDOWS_DRIVE = /^[a-zA-Z]:[\\/]/
+/** Is this path-shaped target one of the project's OWN admitted files? Suffix match, separator-
+ *  normalised, because a target is written project-relative while the admitted list may be absolute. */
+export function pathTargetInProject(facts: ProjectFacts, tgt: string): boolean {
+  const norm = tgt.replace(/\\/g, "/").replace(/^\.\//, "").trim()
+  if (norm === "" || norm.endsWith("/")) return false
+  for (const f of facts.files) {
+    const nf = f.replace(/\\/g, "/")
+    if (nf === norm || nf.endsWith(`/${norm}`)) return true
+  }
+  return false
+}
+
 export function verifyExternalClaim(
   declCount: Map<string, number>,
   tgt: string,
+  /** THE PROJECT'S ADMITTED FILES. Without them a path can only be refused; with them, case 1 below
+   *  becomes an ANSWER about the case that is actually measurable. */
+  facts?: ProjectFacts,
 ): "externalVerified" | "externalRefuted" | "externalUnverified" {
-  // A FILE TARGET IS NOT A NAME CLAIM. Checked BEFORE the owner lookup, because the lookup is what
-  // manufactured the 113 false refutations described above.
-  if (pathLikeTarget(tgt)) return "externalUnverified"
+  // A FILE TARGET IS NOT A NAME CLAIM — but it is still a QUESTION, and refusing to ask it was a
+  // CLASSIFIER BUG rather than a bar that is too strict.
+  //
+  // The old rule returned `externalUnverified` for every path-like target, because looking them up once
+  // manufactured 113 false refutations. **THE TRADE WAS RIGHT ABOUT THE CASE IT FEARED AND WRONG ABOUT
+  // THE CASE IT CREATED**: an INTERNAL file reference — a yaml `embed.yml` sitting beside the file that
+  // refers to it — was classified EXTERNAL AND UNVERIFIABLE, so an edge that is provably resolvable read
+  // as "a claim no check can reach", and since a PASS requires `externalUnverified === 0` the lane could
+  // never get there. Measured before this fix: **yaml 711 of 742 `externalUnverified` are path-like,
+  // 95.8%**, and 3 of 3 sampled targets exist in the corpus beside their referring files.
+  //
+  // THE SPLIT IS THREE-WAY, AND ONLY CASE 1 IS A REFUTATION — the 113 false refutations came from
+  // treating EVERY path as case 1:
+  //   1  a path that IS in the project's admitted file list -> the marker is provably wrong, the file
+  //                                                            is HERE -> REFUTED (evidence, not a guess)
+  //   2  a path that exists NOWHERE in the corpus           -> genuinely outside OR dangling; the
+  //                                                            corpus cannot tell those apart, so it
+  //                                                            stays a REFUSAL — recorded, never silence
+  //   3  a URI with a scheme                                -> genuinely external, UNCHANGED
+  //
+  // AND THE `ext?` THAT REMAINS IS NOT A DEAD END FOR BARE NAMES. The comment further down this file
+  // claims the strict condition was unreachable for lanes whose targets are bare names (php 2,478 of
+  // 2,483; bash every command). THAT COMMENT WAS STALE WHEN IT WAS WRITTEN: it describes a rule that no
+  // longer exists. A clean bare name IS looked up directly today and cannot land in `ext?` unless it
+  // carries whitespace or braces — asserted in this gate's own control at
+  // `incoming-gate.ts` ("a bare identifier the key space does not publish did not verify as external").
+  if (pathLikeTarget(tgt)) {
+    if (URI_SCHEME.test(tgt) && !WINDOWS_DRIVE.test(tgt)) return "externalUnverified"
+    if (facts) return pathTargetInProject(facts, tgt) ? "externalRefuted" : "externalUnverified"
+    return "externalUnverified"
+  }
   const owner = targetOwner(tgt)
   // NO DOTTED OWNER: ask about the TARGET ITSELF when it is a plain identifier, and stay
   // unverifiable when it is not (a path or URI cannot be a published symbol's name, so a
@@ -1098,7 +1144,10 @@ export function classifyEdge(
       const outcome = verifyFileClaim(facts, claim.candidates)
       return { outcome, decls, kinds: kindText, verifiedBy: outcome === "externalVerified" ? "projectFacts" : undefined }
     }
-    const outcome = verifyExternalClaim(declCount, tgt)
+    // `facts` IS PASSED THROUGH: it is what lets a path-shaped target be ANSWERED (case 1 = the file is
+    // in the project, so the external marker is provably wrong) instead of only refused. Where the
+    // caller built no file list, the verdict is the old refusal — unchanged, never quietly accepted.
+    const outcome = verifyExternalClaim(declCount, tgt, facts)
     // WHICH MECHANISM CONFIRMED IT, kept apart on purpose. A dotted target is verified
     // through its OWNER; a bare identifier through the TARGET itself (see
     // verifyExternalClaim). Sharing one label would let a control for one mechanism pass

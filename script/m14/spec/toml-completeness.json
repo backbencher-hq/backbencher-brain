@@ -125,6 +125,12 @@
         "edges": 1350,
         "files": 5,
         "_revision": "RE-MEASURED 2026-10-13 at HEAD 001b481c4, `npx tsx script/m14/residual-gate.ts --lane toml`: 1,350 edges, 1,350 resolved, ofWhich 0, amb 0, unresolved 0. The 2026-10-09 census recorded 167 edges / 5 files \u2014 the Gradle alias pass alone, BEFORE the workspace-inheritance implementation (TOML-G1), which added 1,183 edges across ~101 further files. `files` is left at the census's 5 because that is what the census measured; the edge count is the gate's, re-measured at the revision named here."
+      },
+      "exports": {
+        "edges": 0,
+        "files": 0,
+        "_why": "IMPLEMENTED AND IT EMITS ZERO, DISCLOSED RATHER THAN EXCLUDED, over the whole 1,486-file admitted population. THIS IS A SUBSTANTIATED ZERO, NOT A DEFAULT ONE: the guard is RIGHT and the zero is REAL. Measured doability: 174 publish-surface sites, 118 string-valued, 0 naming a declaration in their own document; exactly 1 names anything in the project (docs/netlify.toml publish=\"build\", the [build] coincidence the own-context clause already excludes); 11 path-shaped but 0 ending in .toml; 69 colon coordinates. The mutant prices the alternative at 20 edges / 0 resolved / 19 unresolved. Evidence: validation/m14/verification/CALLS-REFERENCES-AND-TOML.md",
+        "_unit": "validation/m14/verification/TOML-n-of-n-AND-THE-GATE-BUG-THAT-PUNISHES-DISCLOSURE.md"
       }
     },
     "_exports_zero_disclosed": "LEAD RULING 2026-10-16 (Option A). `exports` was excluded as `zero-sites`, which the owner has refused for a guard-caused zero: the guard is RIGHT and the zero is REAL, but a zero caused by a guard is not an ABSENCE, so it may not shrink the denominator. Moving it to `implemented` makes toml read 4 implemented of 4 applicable WITH exports(0) CITED AND VISIBLE - n/n honestly, with nothing hidden and no edge invented. The alternative (keeping it excluded) required a class the owner does not accept here, since grammar-absence is FALSE (TOML expresses it; the fixture emits one edge) and zero-sites misnames a guard as an empty corpus."

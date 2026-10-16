@@ -1104,6 +1104,12 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   // the verdict reads; pooled beside it because that is the one every earlier dart number in
   // this programme was measured with, and dropping it silently would make this run
   // incomparable to its own history — and BOTH are complete here, which is the point.
+  // CLAUSE 2's NAMED PART. A declared cause is the analyzer's stated REASON for an edge it could not
+  // resolve; the bar says every such edge must be "attributed to a NAMED cause with a measured count".
+  // The gate counted them (`causeDeclared`) but never kept the NAME, so the only thing a reader could
+  // check was a total. Collected here, printed by `printReport`, and required to carry a ruling by
+  // clause 3 below.
+  const causeNames = new Map<string, number>()
   for (const e of pending) {
     const row = rows.get(e.label)!
     const marks = row.marks.get(e.sig)!
@@ -1125,7 +1131,16 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     // 5 of 5 verified, 0 refuted, `extFAIL` 0 — the 0.0% refutation risk the claim was admitted on.
     const needsFacts =
       e.claim?.kind === "projectFacts" || e.claim?.kind === "projectFile" || e.claim?.kind === "sourcePath"
-    const facts = needsFacts ? projectFacts?.get(e.repo) : undefined
+    // TASK-156 — AND AN `owner` CLAIM NEEDS THEM TOO, which is the whole reason the three-way split
+    // over path-like targets was INERT when it landed. `needsFacts` lists only the three claim kinds
+    // whose VERIFICATION reads the file list, so a plain `owner` claim — the kind a path-shaped
+    // external target actually carries — was classified with `facts === undefined` and fell back to
+    // the old single refusal. The file list itself is built for every repo (:827) and was simply not
+    // passed. Every other consumer of `facts` guards on its own claim kind before reading it, so the
+    // only behaviour this changes is the path branch of `verifyExternalClaim`, which is the point:
+    // a path-like target whose file IS in the project now REFUTES the external marker instead of
+    // reading as a claim no check can reach.
+    const facts = projectFacts?.get(e.repo)
     // CONTAINS GOES THROUGH A DIFFERENT RESOLVER — see `classifyEdge`'s `containsLike`. Production
     // binds it with `resolveContainsTargetStmt`, which prefers the edge's own file and returns
     // LIMIT 1, so a name collision is not an ambiguity for this type. Measured by xml-lane: 94.1%
@@ -1153,7 +1168,15 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // BUCKET 3, in its own count here too — and note what it does NOT do: it never reaches
       // `marks.resolved`, so a marker set carrying a declared cause cannot read as handled in
       // the diagnostic that orders the remaining work.
-      case "causeDeclared": case "causeRefuted": marks.cause++; break
+      case "causeDeclared": case "causeRefuted": {
+        marks.cause++
+        // THE NAMED CAUSE, retained. `base` is the analyzer's stated reason (`baseBeyondRunScope`'s
+        // value); `null` is a real state and is named as such rather than dropped, because a cause
+        // with no name cannot be ruled and clause 3 must be able to say so.
+        const cn = e.claim?.kind === "cause" ? (e.claim.base ?? "(unnamed cause)") : "(unnamed cause)"
+        causeNames.set(cn, (causeNames.get(cn) ?? 0) + 1)
+        break
+      }
       // `unresolved` AND `externalRefuted`: a refuted claim is not clean, and folding it in
       // with the verified ones would hide the one outcome that is a lane's own defect.
       default: marks.unres++
@@ -1182,6 +1205,10 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
 
   return {
     lang, ext: exts.join(","), admittedExts: exts, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, bindingCollapse: BINDING_COLLAPSE, bindingCollapsedKeys: collapsedKeys, rows, fallbackRows, emptyResults,
+    // CLAUSE 2's NAMED causes with their measured counts — collected in the classification loop and
+    // consumed by `clauseResults`. A Map, so the same cause named by many edges is one entry with a
+    // count rather than many entries.
+    causeNames,
     bindingSpelling: { separator: BINDING_SEP, keys: separatorKeys, examples: separatorExamples },
     // THE EXCLUSIONS TRAVEL WITH THE POPULATION. A reader comparing two runs has to be able
     // to see whether the population moved under them, and a lane returning to a number it
@@ -1608,7 +1635,190 @@ function selfTest(): { ok: boolean; failures: string[] } {
   return { ok: failures.length === 0, failures }
 }
 
-function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes; pooled: Outcomes; reason: string } {
+// ─────────────────────────────── THE BAR'S CLAUSES, ONE RESULT EACH ───────────────────────────────
+/**
+ * THE BAR (`docs/analyzers/HANDOFF.md` §5b; restated by the owner as four clauses, 2026-10-16):
+ *
+ *   1  every edge resolves, or carries a claim the project verifies
+ *   2  every ambiguous/unresolved edge classified by a NAMED cause, with a measured count
+ *   3  each cause fixed over the SAME population, or ruled with a RUN FALSIFIER
+ *   4  extFAIL / bindFAIL / causeFAIL = 0          STANDARD: RESOLVED, NOT RULED.
+ *
+ * WHAT WAS MISSING, worked out from this file rather than from the brief:
+ *
+ *   clause 1 — IMPLEMENTED, and STRICTER THAN CLAUSE 4 ALONE, deliberately. Clause 4 names the three
+ *     FAIL counters (`extFAIL`/`bindFAIL`/`causeFAIL` = the `*Refuted` columns). The PASS also
+ *     required `externalUnverified === 0` and `bindingUnverified === 0`. That is not a mismatch with
+ *     the bar: `ext?` is defined by this programme's own legend as "a claim no check can reach",
+ *     which is not "a claim the project verifies" — so an `ext?` edge fails CLAUSE 1, not clause 4.
+ *     Clause 4 is implemented inside `bad`; clause 1 is implemented by `bad` + the two `*Unverified`
+ *     counters. THE STRICT READING IS KEPT (see `EXTERNAL-UNVERIFIED-DECISION` below).
+ *   clause 2 — HALF-IMPLEMENTED. Declared causes were COUNTED and never NAMED, so the "named" half of
+ *     the clause could not be audited: a reader could see `causeDeclared 12` and not one reason.
+ *     `rep.causeNames` now retains the name (`baseBeyondRunScope`'s value) and the verdict prints it.
+ *   clause 3 — **UNENFORCED.** The word "falsifier" occurred in this file only inside a narrative
+ *     comment about how json-lane once found a defect. NOTHING checked that a ruling carried one, so
+ *     a ruling in prose passed a clause that demands a run. This is the clause implemented here.
+ *   clause 4 — IMPLEMENTED: `bad` carries `externalRefuted + bindingRefuted + causeRefuted`.
+ *
+ * ── EXTERNAL-UNVERIFIED-DECISION ────────────────────────────────────────────────────────────────
+ * KEEP `externalUnverified === 0` AS A PASS REQUIREMENT. The evidence is the programme's own
+ * vocabulary, in `validation/m14/fixtures/laptop-a/README.md` and the probe logs beside it:
+ *
+ *     extOK   = external claim the PROJECT CONFIRMS
+ *     ext?    = claim no check can reach (no identifier owner, and no project fact for it)
+ *     extFAIL = claim the project REFUTES, counted against the lane
+ *
+ * `ext?` is a DISCLOSURE COLUMN, not a failure column — but clause 1 admits only two states, RESOLVED
+ * or "carries a claim the project VERIFIES", and an unreachable claim is neither. So `ext?` blocks a
+ * PASS by clause 1, and relaxing it would be reading clause 4 alone as if it were the whole bar.
+ * The claim that this made a PASS unreachable for bare-name lanes was TRUE ONCE AND WAS FIXED, not by
+ * relaxing the bar but by making the claim checkable: `verifyExternalClaim`'s bare-target path looks a
+ * bare identifier up directly (`incoming-rule.ts:725-742`), so php's 2,478 dotless targets and bash's
+ * commands CAN verify. What remains `ext?` is a target whose SPELLING makes a lookup meaningless — a
+ * path, a URI, a member spelling like `operator ==` — and for those the honest report is what this
+ * gate now prints: the clause that failed and the count that failed it.
+ *
+ * ── WHAT THIS GATE SHOULD *NOT* CHECK ───────────────────────────────────────────────────────────
+ * Clause 3's falsifier cannot be VERIFIED here — a run that would have failed had the ruling been
+ * wrong cannot be executed from inside a census, and pretending otherwise would be the same defect
+ * this file is full of warnings about. What IS checkable, and is checked: that a ruling exists for
+ * every named cause, that it names THIS run's population (clause 3's "the SAME population"), and that
+ * its falsifier carries a RUN and a stated OBSERVATION that would have failed. That is a floor, and
+ * the report says so rather than claiming the clause is proved.
+ */
+export type ClauseResult = { clause: 1 | 2 | 3 | 4; bar: string; ok: boolean; detail: string }
+
+/** The lens clause 3's "SAME population" is judged through: a fingerprint of THIS run's population. */
+export function populationFingerprint(rep: Report): string {
+  return [
+    `parsed=${rep.parsed}/${rep.files.length}`,
+    `admitted=${rep.total}`,
+    `exts=${rep.admittedExts.join(",")}`,
+    `index=${rep.index ? "yes" : "no"}`,
+  ].join(" ")
+}
+
+/** A cause ruling: the population it was measured over, and the run that would have FAILED if wrong. */
+export type CauseRuling = { population?: string; falsifier?: { run?: string; wouldFail?: string } }
+
+/**
+ * WHERE A RULING LIVES. `validation/m14/instruments/<lang>/incoming-declaration.json` is the lane's
+ * own machine-readable declaration — the only per-lane surface this gate may read (it may not write
+ * one: a gate that writes its own input checks nothing). A ruling is read, never defaulted:
+ * an absent file, an absent `causeRulings` map, or an unparseable file all mean NO RULING, which is a
+ * clause-3 failure and not a pass.
+ */
+export function loadCauseRulings(lang: string): { rulings: Record<string, CauseRuling>; source: string | null } {
+  const p = `validation/m14/instruments/${lang}/incoming-declaration.json`
+  if (!existsSync(p)) return { rulings: {}, source: null }
+  try {
+    const j = JSON.parse(readFileSync(p, "utf8"))
+    const r = j?.causeRulings
+    return { rulings: r && typeof r === "object" ? r : {}, source: p }
+  } catch {
+    return { rulings: {}, source: p }
+  }
+}
+
+/**
+ * CLAUSE 3. Every NAMED cause with a nonzero count must be either fixed (it then has no count, so it
+ * never reaches here) or RULED with a run falsifier over the SAME population.
+ */
+export function clause3Check(
+  causeNames: Map<string, number>,
+  fingerprint: string,
+  rulings: Record<string, CauseRuling>,
+  source: string | null,
+): { ok: boolean; detail: string; failures: string[] } {
+  const failures: string[] = []
+  if (causeNames.size === 0) return { ok: true, detail: "no declared cause carries a count, so there is nothing to rule", failures }
+  const where = source ?? "validation/m14/instruments/<lang>/incoming-declaration.json (NOT FOUND)"
+  for (const [name, count] of [...causeNames].sort((a, b) => b[1] - a[1])) {
+    const r = rulings[name]
+    if (!r) {
+      failures.push(`cause "${name}" (${count} edge(s)) has NO ruling in ${where} — clause 3 requires it fixed over this population OR ruled with a run falsifier`)
+      continue
+    }
+    if (typeof r.population !== "string" || r.population.trim() === "" || r.population !== fingerprint) {
+      failures.push(`cause "${name}" (${count} edge(s)) is ruled over a DIFFERENT population: ruling says ${JSON.stringify(r.population ?? null)}, this run is ${JSON.stringify(fingerprint)} — clause 3 says the SAME population`)
+    }
+    const f = r.falsifier
+    if (!f || typeof f.run !== "string" || f.run.trim() === "" || typeof f.wouldFail !== "string" || f.wouldFail.trim() === "") {
+      failures.push(`cause "${name}" (${count} edge(s)) carries no RUN FALSIFIER — clause 3 wants a run that would have FAILED had the ruling been wrong; a ruling with no run is prose`)
+    }
+  }
+  return {
+    ok: failures.length === 0,
+    detail: failures.length === 0
+      ? `${causeNames.size} named cause(s) ruled over this run's population, each with a run falsifier`
+      : `${failures.length} problem(s) over ${causeNames.size} named cause(s)`,
+    failures,
+  }
+}
+
+/**
+ * THE NEGATIVE CONTROL FOR CLAUSE 3 — a guard that cannot fail is not a guard.
+ *
+ * This repository produced FIVE checks that could not fail in one session, each written by someone who
+ * believed it worked. So every way a ruling can be absent or hollow is planted here and the check must
+ * REFUSE it, and one COMPLETE ruling must be ACCEPTED — the acceptance arm is what stops the control
+ * passing by refusing everything, which is the other way a control lies.
+ */
+export function clause3Control(): { passed: number; failures: string[] } {
+  const fp = populationFingerprint({ parsed: 120, files: Array(120), total: 999, admittedExts: ["toml"], index: null } as unknown as Report)
+  const okRun = { run: "npx tsx script/m14/incoming-gate.ts toml toml 120", wouldFail: "wouldFail: a `baseBeyondRunScope` edge whose base IS declared in the corpus" }
+  const arms: Array<{ name: string; want: boolean; causes: Map<string, number>; rulings: Record<string, CauseRuling> }> = [
+    { name: "K no declared cause is vacuously met", want: true, causes: new Map(), rulings: {} },
+    { name: "L a named cause with NO ruling is refused", want: false, causes: new Map([["BeyondThing", 3]]), rulings: {} },
+    { name: "M a ruling over a DIFFERENT population is refused", want: false, causes: new Map([["BeyondThing", 3]]), rulings: { BeyondThing: { population: "parsed=1/1 admitted=1 exts=toml index=no", falsifier: okRun } } },
+    { name: "N a ruling with NO falsifier at all is refused", want: false, causes: new Map([["BeyondThing", 3]]), rulings: { BeyondThing: { population: fp } } },
+    { name: "O a falsifier with no RUN and nothing that would fail is refused", want: false, causes: new Map([["BeyondThing", 3]]), rulings: { BeyondThing: { population: fp, falsifier: { run: "   ", wouldFail: "" } } } },
+    { name: "P a COMPLETE ruling over this population is ACCEPTED", want: true, causes: new Map([["BeyondThing", 3]]), rulings: { BeyondThing: { population: fp, falsifier: okRun } } },
+    { name: "Q one hollow cause among several is refused, not averaged away", want: false, causes: new Map([["A", 1], ["B", 2]]), rulings: { A: { population: fp, falsifier: okRun }, B: { population: fp, falsifier: { run: "x", wouldFail: "  " } } } },
+  ]
+  const failures: string[] = []
+  let passed = 0
+  for (const a of arms) {
+    const got = clause3Check(a.causes, fp, a.rulings, "control").ok
+    if (got === a.want) passed++
+    else failures.push(`clause-3 control ${a.name}: expected ${a.want ? "accepted" : "REFUSED"}, got ${got ? "accepted" : "REFUSED"}`)
+  }
+  return { passed, failures }
+}
+
+/** The four clauses, each with its own number, so a failure names what failed rather than that it did. */export function clauseResults(rep: Report, t: Outcomes): ClauseResult[] {
+  const unr = t.ambiguousByDecl + t.unresolved
+  const clause1ok = unr === 0 && t.externalRefuted === 0 && t.bindingRefuted === 0 && t.causeRefuted === 0 && t.externalUnverified === 0 && t.bindingUnverified === 0
+  const { rulings, source } = loadCauseRulings(rep.lang)
+  const c3 = clause3Check(rep.causeNames, populationFingerprint(rep), rulings, source)
+  return [
+    {
+      clause: 1, bar: "every edge resolves, or carries a claim the project verifies", ok: clause1ok,
+      detail: clause1ok
+        ? `0 ambiguous + 0 unresolved, 0 refuted claim(s), 0 unverifiable claim(s) (ext? 0, bind? 0)`
+        : `${unr} ambiguous/unresolved + ${t.externalRefuted + t.bindingRefuted + t.causeRefuted} refuted claim(s) + ${t.externalUnverified + t.bindingUnverified} claim(s) no check can reach (ext? ${t.externalUnverified}, bind? ${t.bindingUnverified})`,
+    },
+    {
+      clause: 2, bar: "every ambiguous/unresolved edge classified by a NAMED cause, with a measured count",
+      ok: t.causeRefuted === 0,
+      detail:
+        rep.causeNames.size === 0
+          ? `no edge carries a declared cause (residual ${unr})`
+          : `${rep.causeNames.size} named cause(s): ` + [...rep.causeNames].sort((a, b) => b[1] - a[1]).map(([n, c]) => `${n} ${c}`).join(" · ") + ` (${t.causeDeclared} declared, ${t.causeRefuted} REFUTED)`,
+    },
+    {
+      clause: 3, bar: "each cause fixed over the SAME population, or ruled with a RUN FALSIFIER",
+      ok: c3.ok, detail: c3.detail + (c3.ok ? "" : ` — ${c3.failures.join(" | ")}`),
+    },
+    {
+      clause: 4, bar: "extFAIL / bindFAIL / causeFAIL = 0", ok: t.externalRefuted === 0 && t.bindingRefuted === 0 && t.causeRefuted === 0,
+      detail: `extFAIL ${t.externalRefuted} · bindFAIL ${t.bindingRefuted} · causeFAIL ${t.causeRefuted}`,
+    },
+  ]
+}
+
+function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes; pooled: Outcomes; clauses: ClauseResult[]; reason: string } {
   const t = emptyOutcomes()
   const pooled = emptyOutcomes()
   let edges = 0
@@ -1641,9 +1851,19 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
     add(t, r.project)
     add(pooled, r.pooled)
   }
+  // THE FOUR CLAUSES, EACH WITH ITS OWN RESULT — computed HERE, above the early returns, because a run
+  // refused for an unmeasured population or a broken key space must still say which clause it stands
+  // on. `pass` is every clause met, clause 3 included, which is the clause that was unenforced until
+  // now: this is the OLD condition PLUS clause 3, so no check was weakened and no lane passes that did
+  // not pass before.
+  const clauses = clauseResults(rep, t)
+  const failedClauses = clauses.filter((c) => !c.ok)
+  const clausePrefix = failedClauses.length
+    ? failedClauses.map((c) => `CLAUSE ${c.clause} (${c.bar}) FAILS — ${c.detail}`).join("  ||  ") + "  --  "
+    : ""
   // A lane with no corpus is UNMEASURED, which is not the same as passing and must not
   // render as one. Exits 2.
-  if (rep.parsed === 0) return { pass: false, edges, totals: t, pooled, reason: "no corpus admitted — UNMEASURED, not a pass" }
+  if (rep.parsed === 0) return { pass: false, edges, totals: t, pooled, clauses, reason: "no corpus admitted — UNMEASURED, not a pass" }
   // THE BINDING CLAIM'S EVIDENCE IS THE SPELLING, and the spelling is evidence only while no
   // published declaration name carries the separator: a target containing it could then name a
   // declaration, and every binding claim in the run would be checking nothing. That is a
@@ -1651,7 +1871,7 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
   // rather than left to the per-edge check to notice.
   if (rep.bindingSpelling.keys > 0) {
     return {
-      pass: false, edges, totals: t, pooled,
+      pass: false, edges, totals: t, pooled, clauses,
       reason:
         `${rep.bindingSpelling.keys} published key(s) contain the binding separator ` +
         `\`${showSep(rep.bindingSpelling.separator)}\` ${JSON.stringify(rep.bindingSpelling.examples).replace(/\\u0000/g, "\\\\u0000")}, so a target ` +
@@ -1672,9 +1892,9 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
     (t.bindingUnverified > 0 ? ` + ${t.bindingUnverified} unverifiable` : "") +
     (t.causeDeclared > 0 ? ` + ${t.causeDeclared} declared cause(s) beyond this run's reach` : "")
   const scope = `of ${edges} edges, resolved against the file's OWN PROJECT (production's scope)`
-  if (bad === 0 && t.externalUnverified === 0 && t.bindingUnverified === 0) {
+  if (clauses.every((c) => c.ok)) {
     return {
-      pass: true, edges, totals: t, pooled,
+      pass: true, edges, totals: t, pooled, clauses,
       reason: `every one ${scope} resolves to exactly one declaration, or carries a claim the project confirms (${ext}; ${bind})`,
       // NOT REACHABLE TODAY FOR DART, and left in place because it is the shape a PASS takes: the
       // per-file column carries declared causes, which do not score, so this branch is entered only
@@ -1683,13 +1903,16 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
   }
   if (bad === 0) {
     return {
-      pass: false, edges, totals: t, pooled,
-      reason: `${t.externalUnverified} external claim(s) name no identifier-shaped owner, so the project can neither confirm nor deny them (${ext})`,
+      pass: false, edges, totals: t, pooled, clauses,
+      reason:
+        clausePrefix +
+        `${t.externalUnverified} external claim(s) name no identifier-shaped owner, so the project can neither confirm nor deny them (${ext})`,
     }
   }
   return {
-    pass: false, edges, totals: t, pooled,
+    pass: false, edges, totals: t, pooled, clauses,
     reason:
+      clausePrefix +
       `${t.ambiguousByDecl} ambiguous + ${t.unresolved} unresolved ${scope}` +
       (t.externalRefuted > 0 ? `, and ${t.externalRefuted} external claim(s) REFUTED by the project` : "") +
       (t.bindingRefuted > 0 ? `, and ${t.bindingRefuted} binding claim(s) REFUTED — a target marked as a binding whose spelling can name a declaration` : "") +
@@ -2351,6 +2574,13 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     console.log()
   }
   console.log(`VERDICT: ${v.pass ? "PASS" : "FAIL"} — ${v.reason}`)
+  // EVERY CLAUSE ON ITS OWN LINE, WITH ITS OWN NUMBER. `bad === 0 && …` produced one boolean, and the
+  // fleet's experience this session is that a gate which cannot say WHY gets misread for weeks. A
+  // clause that FAILS is marked so a reader can find it without parsing the sentence above.
+  for (const c of v.clauses) {
+    console.log(`  clause ${c.clause} ${c.ok ? "ok  " : "FAIL"} — ${c.bar}`)
+    console.log(`           ${c.detail}`)
+  }
   if (!ident(v.totals, v.pooled)) {
     console.log(
       `  (the same edges under the pooled corpus key space: ${v.pooled.ambiguousByDecl} ambiguous + ` +
@@ -2412,6 +2642,38 @@ const BOARD_LOG_PATH = (() => {
 // THE CONTROL RUNS FIRST, ALWAYS. Before any lane, before any corpus. An instrument that
 // cannot detect a planted failure must not be allowed to print a verdict about a language.
 const control = selfTest()
+// AND THE CONTROL FOR THE NEW CHECK. Clause 3 was unenforced until this file grew it, so its control
+// runs on EVERY invocation beside the classification control and refuses to report a lane if it stops
+// firing. Arms K-Q: every hollow ruling refused, one complete ruling accepted.
+{
+  const c3 = clause3Control()
+  if (c3.failures.length > 0) {
+    control.ok = false
+    control.failures.push(...c3.failures)
+  }
+  // `--self-test` PRINTS the arms. A control that runs silently proves nothing to a reader who was not
+  // watching, and this session's whole lesson is that a check must be SEEN to fail — so the same switch
+  // that shows the coverage gate's arms shows these.
+  if (process.argv.includes("--self-test")) {
+    const fp = populationFingerprint({ parsed: 120, files: Array(120), total: 999, admittedExts: ["toml"], index: null } as unknown as Report)
+    const okRun = { run: "…incoming-gate.ts toml toml 120", wouldFail: "…an edge whose base IS declared in the corpus" }
+    const show: Array<{ name: string; want: boolean; causes: Map<string, number>; rulings: Record<string, CauseRuling> }> = [
+      { name: "K no declared cause is vacuously met", want: true, causes: new Map(), rulings: {} },
+      { name: "L a named cause with NO ruling is refused", want: false, causes: new Map([["BeyondThing", 3]]), rulings: {} },
+      { name: "M a ruling over a DIFFERENT population is refused", want: false, causes: new Map([["BeyondThing", 3]]), rulings: { BeyondThing: { population: "parsed=1/1 admitted=1 exts=toml index=no", falsifier: okRun } } },
+      { name: "N a ruling with NO falsifier at all is refused", want: false, causes: new Map([["BeyondThing", 3]]), rulings: { BeyondThing: { population: fp } } },
+      { name: "O a falsifier with no RUN and nothing that would fail is refused", want: false, causes: new Map([["BeyondThing", 3]]), rulings: { BeyondThing: { population: fp, falsifier: { run: "   ", wouldFail: "" } } } },
+      { name: "P a COMPLETE ruling over this population is ACCEPTED", want: true, causes: new Map([["BeyondThing", 3]]), rulings: { BeyondThing: { population: fp, falsifier: okRun } } },
+      { name: "Q one hollow cause among several is refused, not averaged away", want: false, causes: new Map([["A", 1], ["B", 2]]), rulings: { A: { population: fp, falsifier: okRun }, B: { population: fp, falsifier: { run: "x", wouldFail: "  " } } } },
+    ]
+    console.log(`clause-3 self-test — ${c3.passed}/${show.length} arms (a ruling needs a population AND a run falsifier)`)
+    for (const a of show) {
+      const got = clause3Check(a.causes, fp, a.rulings, "control").ok
+      const ok = got === a.want
+      console.log(`  ${ok ? "PASS" : "FAIL"} ${a.name} -> ${got ? "accepted" : "REFUSED"}`)
+    }
+  }
+}
 if (!control.ok) {
   console.error("FATAL: this gate's own positive control did not fire.")
   for (const f of control.failures) console.error(`  ${f}`)

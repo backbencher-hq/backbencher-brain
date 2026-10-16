@@ -335,19 +335,62 @@ function namesTypeBesideACount(text: string, t: string, allTypes: string[]): boo
  *            so it is reported as its own route rather than folded in with it.
  */
 function substantiationFor(blk: any, t: string, allTypes: string[]): { route: "counted" | "prose" | "none"; detail: string } {
+  let countedDetail = ""
   const m = blk?._implemented_measured
   if (m && typeof m === "object" && m[t] && typeof m[t] === "object") {
     const e = m[t]
     const edges = typeof e.edges === "number" ? e.edges : null
     const files = typeof e.files === "number" ? e.files : null
     const unit = typeof m._unit === "string" ? m._unit.trim() : ""
+    // A ZERO MAY BE SUBSTANTIATED BY THE STRONG ROUTE — BUT ONLY BY CARRYING STRICTLY MORE THAN A
+    // NON-ZERO COUNT DOES. The old rule required a NON-ZERO `edges`/`files`, so a type that correctly
+    // emits NOTHING could never be substantiated by the route this gate itself calls stronger ("a
+    // sentence is not a pointer") no matter how complete its evidence — which REWARDED EXCLUSION AND
+    // PENALISED DISCLOSURE, and is why the fleet was excluding honest zeros instead of disclosing
+    // them. The fix is NOT "allow zero": a zero is a claim about a POPULATION, so it must carry the
+    // population claim (`_unit`, naming an artifact that exists) AND a `_why` naming an artifact that
+    // exists and contains the doability evidence. A BARE ZERO STILL FAILS (control arm F).
+    const why = typeof e._why === "string" ? e._why.trim() : typeof m._why === "string" ? m._why.trim() : ""
+    const zero = (edges ?? 0) <= 0 && (files ?? 0) <= 0
     const bad: string[] = []
     if (edges === null && files === null) bad.push("neither `edges` nor `files` is a number")
-    else if ((edges ?? 0) <= 0 && (files ?? 0) <= 0) bad.push(`the counts are zero (edges=${edges ?? "-"} files=${files ?? "-"})`)
+    else if (zero) {
+      if (why === "") {
+        bad.push(
+          `the counts are zero (edges=${edges ?? "-"} files=${files ?? "-"}) and no \`_why\` is given — ` +
+          `a bare zero is not evidence: an empty result is only evidence if the predicate could have ` +
+          `returned non-zero, so a zero must cite the doability study that says it could not`,
+        )
+      } else {
+        const whyPaths = pathTokensIn(why)
+        const whyCited = whyPaths.filter((p) => existsSync(resolve(ROOT, p)))
+        if (whyCited.length === 0) {
+          bad.push(
+            `the counts are zero and \`_why\` names no artifact that exists ` +
+            `(${whyPaths.length === 0 ? "it names no path at all" : `checked ${whyPaths.join(", ")}`}) — ` +
+            `the doability evidence must be citable, not asserted`,
+          )
+        }
+      }
+    }
     if (unit === "") bad.push("`_unit` is missing, so the count's population is unstated")
     for (const p of pathTokensIn(unit)) if (!existsSync(resolve(ROOT, p))) bad.push(`_unit names ${p}, which does not exist`)
-    if (bad.length === 0) return { route: "counted", detail: `${t}: edges=${edges ?? "-"} files=${files ?? "-"}` }
-    return { route: "none", detail: `${t}: _implemented_measured.${t} is not usable — ${bad.join("; ")}` }
+    if (bad.length === 0) {
+      if (zero) {
+        const whyCited = pathTokensIn(why).filter((p) => existsSync(resolve(ROOT, p)))
+        return {
+          route: "counted",
+          detail: `${t}: edges=0 files=0 — ZERO, and substantiated by a population (\`_unit\`) AND a cited doability study (${whyCited.join(", ")})`,
+        }
+      }
+      return { route: "counted", detail: `${t}: edges=${edges ?? "-"} files=${files ?? "-"}` }
+    }
+    // DEFECT FIX (1): A USABLE-COUNTED FAILURE MUST NOT VETO THE PROSE ROUTE. This used to
+    // `return { route: "none" }` here, so a lane that ADDED a per-type measurement entry — the most
+    // complete disclosure possible — LOST a prose citation that was sitting right there in `_from`,
+    // while a lane that disclosed NOTHING kept it. Recording a zero cost the lane its citation. Both
+    // routes are now tried; this reason is carried forward and reported only if prose also fails.
+    countedDetail = `_implemented_measured.${t} is not usable — ${bad.join("; ")}`
   }
   const cites: string[] = []
   if (typeof blk?._from === "string") cites.push(blk._from)
@@ -357,7 +400,12 @@ function substantiationFor(blk: any, t: string, allTypes: string[]): { route: "c
     const existing = pathTokensIn(c).find((p) => existsSync(resolve(ROOT, p)))
     if (existing) return { route: "prose", detail: `${t}: named beside a count in a citation that also names ${existing} (prose, not pointer-verified)` }
   }
-  return { route: "none", detail: `${t}: no \`_implemented_measured.${t}\` entry, and no citation names ${t} beside a count over an artifact that exists` }
+  return {
+    route: "none",
+    detail: countedDetail
+      ? `${t}: ${countedDetail}; and no citation names ${t} beside a count over an artifact that exists`
+      : `${t}: no \`_implemented_measured.${t}\` entry, and no citation names ${t} beside a count over an artifact that exists`,
+  }
 }
 
 // ---------------------------------------------------------------- the attribution check's control
@@ -384,6 +432,36 @@ function attributionSelfTest(verbose: boolean): { passed: number; failures: stri
     { name: "D a mention whose count belongs to the NEXT type name does not", want: "none", blk: { implemented: ["uses"], _from: spoofed } },
     { name: "E a per-type count with no `_unit` does not (population unstated)", want: "none", blk: { implemented: ["uses"], _from: aboutOther, _implemented_measured: { uses: { edges: 12, files: 3 } } } },
     { name: "F a per-type count of zero does not", want: "none", blk: { implemented: ["uses"], _from: aboutOther, _implemented_measured: { _unit: `whole corpus over ${A}`, uses: { edges: 0, files: 0 } } } },
+    // THE ZERO ROUTE, BOTH WAYS. Arm F above is untouched and still fires: a BARE zero is still not
+    // evidence. Arm G is the new acceptance — a zero that carries STRICTLY MORE than a non-zero count
+    // does (a population AND a cited doability study). Arm H proves the extra requirement can FAIL, so
+    // arm G is not an unconditional admission of every zero: a `_why` that names no artifact that
+    // exists is still refused. Without H, G would pass for any string at all.
+    {
+      name: "G a per-type count of zero WITH a population and a cited study does",
+      want: "counted",
+      blk: { implemented: ["uses"], _from: aboutOther, _implemented_measured: { _unit: `whole corpus over ${A}`, uses: { edges: 0, files: 0, _why: `the construct is absent from this grammar, so the predicate cannot fire: see ${A}` } } },
+    },
+    {
+      name: "H a per-type count of zero whose `_why` names NO existing artifact does not",
+      want: "none",
+      blk: { implemented: ["uses"], _from: aboutOther, _implemented_measured: { _unit: `whole corpus over ${A}`, uses: { edges: 0, files: 0, _why: "trust me, it cannot fire, see validation/m14/does-not-exist.json" } } },
+    },
+    // THE VETO ARM. Before the fix, an UNUSABLE per-type entry returned `none` on the spot and never
+    // reached the prose citation in `_from` — so disclosing a bad measurement cost the lane a
+    // citation it already had. Here BOTH are present and the prose citation must win.
+    {
+      name: "I an unusable per-type entry no longer vetoes a valid prose citation",
+      want: "prose",
+      blk: { implemented: ["uses"], _from: aboutSame, _implemented_measured: { _unit: `whole corpus over ${A}`, uses: { edges: 0, files: 0 } } },
+    },
+    // ...and the fall-through must NOT rescue a lane that has nothing else: the same unusable entry
+    // with only a citation about ANOTHER type stays `none`, and its detail must carry BOTH reasons.
+    {
+      name: "J an unusable per-type entry with no citation of its own is still none",
+      want: "none",
+      blk: { implemented: ["uses"], _from: aboutOther, _implemented_measured: { units: 1, uses2: { edges: 1, files: 1 } } },
+    },
   ]
   const failures: string[] = []
   let passed = 0
