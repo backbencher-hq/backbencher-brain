@@ -436,7 +436,12 @@ for (const [idx, mt] of mutants.entries()) {
   }
   const mutantPath = path.join(ROOT, "validation/m42", `h4-mutant-${idx + 1}.ts`)
   let mutated = original.replace(mt.from, mt.to)
-  if (mutant.rewrite) {
+  // TASK-149: this read `mutant.rewrite` — `mutant` is the REPORTING FUNCTION declared at :60
+  // (`function mutant(label, caught, detail)`), NOT the mutant table entry. The loop variable is
+  // `mt` and the table's own type declares `rewrite?: boolean`, with four entries setting it
+  // (:368 :376 :391 :408). So the branch was dead at runtime and those four mutants were written
+  // with their original relative imports, which do not resolve from validation/m42/.
+  if (mt.rewrite) {
     // The module lives in src/lsp with relative imports — point them back at
     // the real files so the mutant module loads.
     mutated = mutated.replace(/from "\.\.\/brain\/database"/g, `from "${abs(path.join(ROOT, "src/brain/database.ts"))}"`)

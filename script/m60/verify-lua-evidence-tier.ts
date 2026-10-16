@@ -95,7 +95,12 @@ async function worker(): Promise<void> {
     if (i >= files.length) return
     const f = files[i]
     let r: any
-    try { r = await parseFile(f.abs, f.dir) } catch { continue }
+    // TASK-149: this read `f.dir`, a field `CorpusFile` (:55) does not declare and `corpusFiles()`
+    // never sets — it pushes `{ repo: e, rel, abs: path.join(dir, rel) }` (:71), where the local
+    // `dir = path.join(CR, e)` is the CORPUS REPO ROOT and was simply not carried. `parseFile`'s
+    // second parameter is the PROJECT PATH (`src/ast/pool-worker.ts:1074`), so the value the call
+    // always meant is that repo root, reconstructed here from the fields the interface does have.
+    try { r = await parseFile(f.abs, path.join(CR, f.repo)) } catch { continue }
     const isFallback = r?.fallback === true
     for (const e of r.relationships ?? []) {
       edges++

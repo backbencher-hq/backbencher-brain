@@ -194,9 +194,23 @@ async function run(projectId: never, root: Record<string, unknown>): Promise<Wal
   // The signature of an edge, EXCLUDING the kind rank — the pin must not change
   // which edges exist, and the row identity is (rowId, matchedId, relType,
   // symName/extName, line). Sorted so the comparison is order-independent.
+  // TASK-149: this read `e.callSite?.filePath`, and `CallSiteAddress` HAS NO `filePath` —
+  //   { kind: "call-site"; file: string; line: number }
+  //   | { kind: "declaration"; file: string; line: number; note: string }
+  //   | { kind: "unknown"; file: string; line: null; note: string }        (src/intelligence/contracts.ts:309-312)
+  // The field is `file`, so that segment of the signature was ALWAYS the empty string and this
+  // comparison was blind to every call-site location — the same shape this file's own note below
+  // records one round earlier, for `extName`. The nested value also needs its own type here: the
+  // parameter is `Record<string, unknown>` and both call sites pass the real rows through
+  // `as never` (:211-214), which is what left `e.callSite` unreadable to the compiler.
+  const callSiteOf = (e: Record<string, unknown>): { file?: string; line?: number | null } | undefined =>
+    e.callSite as { file?: string; line?: number | null } | undefined
   const sig = (rows: Array<Record<string, unknown>>): string =>
     rows
-      .map((e) => `${String(e.rowId)}|${String(e.relationshipType ?? "")}|${String(e.from)}|${String(e.to)}|${String(e.callSite?.filePath ?? "")}:${String(e.callSite?.line ?? "")}`)
+      .map((e) => {
+        const cs = callSiteOf(e)
+        return `${String(e.rowId)}|${String(e.relationshipType ?? "")}|${String(e.from)}|${String(e.to)}|${String(cs?.file ?? "")}:${String(cs?.line ?? "")}`
+      })
       .sort()
       .join("\n")
   // The external arm emits nodes named `ext:<name>` — that is the marker the

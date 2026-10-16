@@ -70,7 +70,12 @@ const FIXTURE: Record<string, string> = {
       const nodeIds = new Set(graph.nodes.map((n) => n.id))
       const dangling = graph.links.filter((l) => !nodeIds.has(l.source) || !nodeIds.has(l.target)).length
       ck("V1: no dangling links inside result", dangling === 0, "dangling=" + dangling)
-      nk("V1: omitted dangling links are reported as a number (0 here since all nodes retained)", typeof graph.provenance.omittedDanglingLinks === "number", "omitted=" + graph.provenance.omittedDanglingLinks)
+      // TASK-149: `omittedDanglingLinks` WAS REMOVED from the provenance block — see
+      // src/intelligence/visualization/visualization-engine.ts:193-206, which documents the removal
+      // (the counter was always about the NODE CUT and "dangling" was never what it measured) and
+      // names the two counters that replaced it. `nk()` increments `failed` on a false condition
+      // (:23), so this check was FAILING against the current engine, not passing silently.
+      nk("V1: omitted-link counters are reported as numbers (both 0 here since all nodes retained)", typeof graph.provenance.linksOmittedWithNodeCut === "number" && typeof graph.provenance.linksOmittedByBudget === "number", "withNodeCut=" + graph.provenance.linksOmittedWithNodeCut + " byBudget=" + graph.provenance.linksOmittedByBudget)
       // format text (only when a text-format request is made — json format returns JSON)
       const textGraph = await visualizeProject(projectId, { scope: "project", format: "text" })
       const text = formatVisualization(textGraph)
@@ -107,7 +112,7 @@ const FIXTURE: Record<string, string> = {
       ck("V2: truncation flag set when budget exceeded", tight.truncation.truncated === true, "truncated=" + tight.truncation.truncated)
       ck("V2: truncation reports original counts", tight.truncation.originalNodes > tight.nodes.length, "orig=" + tight.truncation.originalNodes + " kept=" + tight.nodes.length)
       ck("V2: truncation reports limits", tight.truncation.maxNodes === 2 && tight.truncation.maxLinks === 2, "limits=" + tight.truncation.maxNodes + "/" + tight.truncation.maxLinks)
-      ck("V2: omitted dangling links counted (links pruned to kept nodes)", typeof tight.provenance.omittedDanglingLinks === "number", "omitted=" + tight.provenance.omittedDanglingLinks)
+      ck("V2: the omitted-link counters are counted (links pruned to kept nodes)", typeof tight.provenance.linksOmittedWithNodeCut === "number" && typeof tight.provenance.linksOmittedByBudget === "number", "withNodeCut=" + tight.provenance.linksOmittedWithNodeCut + " byBudget=" + tight.provenance.linksOmittedByBudget)
     } catch (e: any) {
       ck("V2: setup", false, (e?.message || String(e)).slice(0, 160))
     } finally {
