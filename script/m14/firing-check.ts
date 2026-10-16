@@ -213,7 +213,29 @@ async function analyzerDigest(lang: string): Promise<string> {
   }
   if (!rel) rel = `real-${lang}-analyzer`
   const here = (import.meta as any).dirname ?? "."
-  const full = path.join(here, "..", "ast", `${rel}.ts`)
+  /**
+   * THE ANALYZER IS UNDER `src/ast`, NOT `script/ast` — AND THE WRONG PATH MADE A GUARD UNFALSIFIABLE.
+   *
+   * This was `path.join(here, "..", "ast", ...)` with `here = script/m14`, which resolves to
+   * `script/ast/real-<lang>-analyzer.ts`. **THAT DIRECTORY DOES NOT EXIST** — the analyzers live in
+   * `src/ast/`. So this function returned `MISSING:<path>` for EVERY lane, and the guard that consumes
+   * it did this:
+   *
+   *     r.analyzerStableDuringRun = digestBefore === digestAfter      // MISSING === MISSING -> TRUE
+   *     if (!r.analyzerStableDuringRun) { …ANALYZER CHANGED DURING THE RUN… }
+   *
+   * **The digest was the same string both times because it was the same PATH, so the check read `true`
+   * for every lane and the "MIXTURE of two analyzer states" warning could NEVER fire.** That is the
+   * fifth unfalsifiable check found in this repository in one session, and it sat on the instrument
+   * whose rows every coverage claim is built from. Measured by coverage-c, verified here: `script/ast/
+   * real-scala-analyzer.ts` MISSING, `src/ast/real-scala-analyzer.ts` EXISTS.
+   *
+   * THE SECOND HALF IS THE ONE THAT KEEPS IT HONEST: a MISSING digest must NOT compare as stable. Two
+   * identical failure strings are not evidence that the analyzer held still, and this guard exists to
+   * detect a MIXTURE — so an unavailable digest is reported as its own state rather than silently
+   * satisfying the equality.
+   */
+  const full = path.join(here, "..", "..", "src", "ast", `${rel}.ts`)
   if (!ex(full)) return `MISSING:${full}`
   return createHash("sha256").update(rf(full)).digest("hex")
 }
@@ -427,8 +449,16 @@ async function main(): Promise<void> {
     const r = await measure(lang, SAMPLE)
     const digestAfter = await analyzerDigest(lang)
     r.analyzerDigest = digestBefore
-    r.analyzerStableDuringRun = digestBefore === digestAfter
-    if (!r.analyzerStableDuringRun) {
+    // AN UNAVAILABLE DIGEST IS NOT A STABLE ONE. This line used to be the equality alone, and because
+    // the resolver pointed at a directory that does not exist (see `analyzerDigest`), both sides were
+    // the SAME failure string — so the guard read `true` for every lane and could never fire. Two
+    // identical MISSING values are not evidence that the analyzer held still; they are evidence that
+    // nobody looked. The equality is kept for the real case, and the unavailable case is called out.
+    const digestUnavailable = digestBefore.startsWith("MISSING:") || digestAfter.startsWith("MISSING:")
+    r.analyzerStableDuringRun = !digestUnavailable && digestBefore === digestAfter
+    if (digestUnavailable) {
+      process.stderr.write(`ANALYZER DIGEST UNAVAILABLE (${digestBefore.slice(0, 60)}) — stability NOT established `)
+    } else if (!r.analyzerStableDuringRun) {
       r.degradedFallbacks++
       process.stderr.write(`ANALYZER CHANGED DURING THE RUN (${digestBefore.slice(0, 12)} -> ${digestAfter.slice(0, 12)}) `)
     }
