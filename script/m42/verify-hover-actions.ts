@@ -49,7 +49,8 @@ const README = path.join(ROOT, "ide/vscode/README.md")
 let checks = 0
 let passed = 0
 const failures: string[] = []
-let mutantStats = { caught: 0, total: 0 }
+let mutantStats = { caught: 0, total: 0, unloaded: 0 }
+const unloadedMutants: string[] = []
 
 function check(label: string, ok: boolean, detail = ""): void {
   checks++
@@ -61,6 +62,27 @@ function mutant(label: string, caught: boolean, detail = ""): void {
   mutantStats.total++
   if (caught) mutantStats.caught++
   check(`${label} [mutant]`, caught, detail)
+}
+/**
+ * A mutant whose module could not be LOADED — its own state, never `caught`.
+ *
+ * TASK-150. The loader used to be `try { const m = await import(p); caught = await mt.probe(m) }
+ * catch { caught = true }`, which wraps LOADING and RUNNING in one `try` and cannot tell them
+ * apart. A module that will not import therefore reported as a mutant the probe had caught — the
+ * worst direction a mutation gate can fail in, because it manufactures strength where there is
+ * none. The module is counted in `total` (the denominator must not shrink to hide it) and NOT in
+ * `caught`, and it is named in the summary and in the evidence.
+ */
+function unloadedMutant(label: string, reason: string): void {
+  mutantStats.total++
+  mutantStats.unloaded++
+  unloadedMutants.push(`${label}: ${reason}`)
+  check(`${label} [mutant]`, false, `module could not be LOADED — NEVER TESTED: ${reason}`)
+}
+/** The load/probe classification, isolated so the control below can drive it. */
+function classifyAttempt(loaded: boolean, probeCaught: boolean): "caught" | "survived" | "unloaded" {
+  if (!loaded) return "unloaded"
+  return probeCaught ? "caught" : "survived"
 }
 
 const currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
@@ -442,28 +464,83 @@ for (const [idx, mt] of mutants.entries()) {
   // (:368 :376 :391 :408). So the branch was dead at runtime and those four mutants were written
   // with their original relative imports, which do not resolve from validation/m42/.
   if (mt.rewrite) {
-    // The module lives in src/lsp with relative imports — point them back at
-    // the real files so the mutant module loads.
-    mutated = mutated.replace(/from "\.\.\/brain\/database"/g, `from "${abs(path.join(ROOT, "src/brain/database.ts"))}"`)
-    mutated = mutated.replace(/from "\.\/impact"/g, `from "${abs(path.join(ROOT, "src/lsp/impact.ts"))}"`)
-    mutated = mutated.replace(/from "\.\/navigation"/g, `from "${abs(path.join(ROOT, "src/lsp/navigation.ts"))}"`)
-    mutated = mutated.replace(/from "\.\/enrichment"/g, `from "${abs(path.join(ROOT, "src/lsp/enrichment.ts"))}"`)
+    // Bind EVERY relative specifier the module carries to its absolute path, so the mutant module
+    // loads wherever it is written.
+    //
+    // TASK-150: this used to be four hand-written replacements, and TWO OF THEM WERE NO-OPS —
+    // `../brain/database` is a TYPE import (erased at runtime, so redirecting it changes nothing)
+    // and the file has no `./impact` import at all — while THREE real VALUE imports went
+    // UNCOVERED and still could not resolve from `validation/m42/`: `./positions` (:34),
+    // `./relations` (:35) and `../intelligence/graph/line-address` (:41). The list is now DERIVED
+    // from the module itself, so an import added to it tomorrow is covered without editing a list
+    // here — and there is no list left that can mean something other than what it says.
+    mutated = mutated.replace(/(\bfrom\s+")(\.{1,2}\/[^"]*)(")/g, (_m, pre: string, spec: string, post: string) => {
+      const base = path.resolve(path.dirname(mt.file), spec)
+      const target = existsSync(`${base}.ts`)
+        ? `${base}.ts`
+        : existsSync(path.join(base, "index.ts"))
+          ? path.join(base, "index.ts")
+          : base
+      return `${pre}${target}${post}`
+    })
   }
   writeFileSync(mutantPath, mutated)
   let caught = false
+  let loaded = false
+  let loadError = ""
   try {
-    const m = await import(mutantPath)
-    caught = await mt.probe(m as never)
-  } catch {
-    caught = true
+    const m = await import(mutantPath) // LOADING the mutant module
+    loaded = true
+    caught = await mt.probe(m as never) // RUNNING its probe
+  } catch (e) {
+    // THE SPLIT. `loaded` is set between the two acts and is the only thing that can tell them
+    // apart; without it both land in the same bucket and a module that never imported is reported
+    // as a mutant the probe caught.
+    if (loaded) {
+      caught = true // the probe itself threw — the mutation was caught, the loud way
+    } else {
+      loadError = (e instanceof Error ? e.message.split("\n")[0]! : String(e)).slice(0, 140)
+    }
   } finally {
     try {
       rmSync(mutantPath, { force: true })
     } catch {}
   }
-  mutant(`M${idx + 1} caught — ${mt.name}`, caught)
+  if (classifyAttempt(loaded, caught) === "unloaded") unloadedMutant(`M${idx + 1} — ${mt.name}`, loadError)
+  else mutant(`M${idx + 1} caught — ${mt.name}`, caught)
 }
 check("G4: all planted mutants caught", mutantStats.caught === mutantStats.total && mutantStats.total > 0, `${mutantStats.caught}/${mutantStats.total}`)
+
+// --- NEGATIVE CONTROL for the load/probe split ------------------------------------------------
+// A guard that cannot fail is not a guard. This plants a module that GENUINELY cannot load and
+// requires the new state to report it as unloaded rather than as a caught mutant — and requires the
+// classifier to still call a live probe's verdict correctly, so the control cannot pass by making
+// everything "unloaded".
+{
+  const controlPath = path.join(ROOT, "validation/m42", "h4-control-unloadable.ts")
+  writeFileSync(controlPath, `import { nothingHere } from "./definitely-does-not-exist"\nexport const probe = () => nothingHere\n`)
+  let controlLoaded = false
+  try {
+    await import(controlPath)
+    controlLoaded = true
+  } catch {
+    /* expected: the specifier above cannot resolve */
+  } finally {
+    try {
+      rmSync(controlPath, { force: true })
+    } catch {}
+  }
+  check(
+    "G4 control: a module that cannot load classifies as UNLOADED, never caught",
+    controlLoaded === false && classifyAttempt(false, false) === "unloaded",
+    `loaded=${controlLoaded} classifyAttempt(false,false)=${classifyAttempt(false, false)}`,
+  )
+  check(
+    "G4 control: the classifier still reports a live probe's own verdict",
+    classifyAttempt(true, true) === "caught" && classifyAttempt(true, false) === "survived",
+    `caught=${classifyAttempt(true, true)} survived=${classifyAttempt(true, false)}`,
+  )
+}
 
 // --- Persist evidence ---------------------------------------------------------------------
 mkdirSync(path.dirname(EVIDENCE), { recursive: true })
@@ -481,6 +558,10 @@ const result = {
     realComponentFailures: failed,
     mutantsCaught: mutantStats.caught,
     mutantsTotal: mutantStats.total,
+    // TASK-150: the number that makes "N/N mutants caught" honest. A mutant counted here was never
+    // tested — its module could not be loaded — and it is NOT part of mutantsCaught.
+    mutantsUnloaded: mutantStats.unloaded,
+    unloadedMutants,
   },
   negatives: mutantStats.total,
   fixture: "script/m42/h2-fixture.ts (real indexer + real dist server)",
@@ -495,5 +576,9 @@ const result = {
   ],
 }
 writeSealed(EVIDENCE, result)
-console.log(`H4: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantStats.caught}/${mutantStats.total} mutants caught)`)
+console.log(`H4: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantStats.caught}/${mutantStats.total} mutants caught${mutantStats.unloaded > 0 ? `, ${mutantStats.unloaded} UNLOADED — never tested` : ""})`)
+if (mutantStats.unloaded > 0) {
+  console.log(`     UNLOADED mutants (counted in total, NOT in caught):`)
+  for (const u of unloadedMutants) console.log(`       - ${u}`)
+}
 if (failed > 0) process.exit(1)
