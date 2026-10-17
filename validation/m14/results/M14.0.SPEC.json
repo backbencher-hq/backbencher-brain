@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "fc72cade03191a38e4c64b03f670e05c25168064f94b77758e557ef0c3727fc9",
-    "sealedAt": "2026-10-17T22:08:56.000Z"
+    "contentSha256": "9b9ee36a2e4d72e7adc17b2dae37f82b10a95412df88ba0bddad041fb6a1a4c2",
+    "sealedAt": "2026-10-17T22:17:21.000Z"
   },
   "checks": [
     {
@@ -373,80 +373,6 @@
       "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "python",
-      "status": "pass"
-    },
-    {
-      "description": "javascript: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "javascript: 14 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "javascript: 33 ruled, 19 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (javascript)",
-      "detail": "127 types, 89 handled, 19 silent, 14 gaps, 52 decisions",
-      "id": "section-a-structural",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "9 relationship kinds pinned by javascript fixtures; 9 emitted and all accounted for",
-      "detail": "pinned: calls, contains, exports, extends, imports, instanceof_check, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, imports, instantiates, overrides, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for javascript (5)",
-      "detail": "qualified_calls, docstrings, complexity, visibility, parameters",
-      "id": "section-c-payload-matrix",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "3 tier(s) pinned: import_based, inferred, structural",
-      "id": "section-d-evidence-tiers",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "lodash:javascript at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor lodash:javascript: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "javascript avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "lodash:javascript 1724.9 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "javascript analyzer docs present and committed",
-      "detail": "docs/analyzers/javascript.md, docs/analyzers/real-javascript-analyzer.md",
-      "id": "section-g-docs",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "javascript",
       "status": "pass"
     },
     {
@@ -2372,11 +2298,85 @@
       "id": "section-h-cross-language",
       "language": "kotlin",
       "status": "pass"
+    },
+    {
+      "description": "javascript: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript: 14 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript: 33 ruled, 19 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (javascript)",
+      "detail": "118 types, 89 handled, 19 silent, 14 gaps, 52 decisions",
+      "id": "section-a-structural",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "9 relationship kinds pinned by javascript fixtures; 9 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, extends, imports, instanceof_check, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, imports, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for javascript (5)",
+      "detail": "qualified_calls, docstrings, complexity, visibility, parameters",
+      "id": "section-c-payload-matrix",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, inferred, structural",
+      "id": "section-d-evidence-tiers",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "lodash:javascript at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor lodash:javascript: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "lodash:javascript 1724.9 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/javascript.md, docs/analyzers/real-javascript-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "javascript",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "2be8ce9ed44306fab4e750f7e8c9deb8b6f36125",
-  "committedAt": "2026-10-17T18:08:56-04:00",
+  "commit": "12c1764c4a17c0850e4b9596c4736027a0993ef4",
+  "committedAt": "2026-10-17T18:17:21-04:00",
   "data": {
     "languages": {
       "c": {
@@ -3270,7 +3270,7 @@
           "J12: A re-indexed file's inbound edges whose target name is ambiguous in the project keep whatever symbol the writer that ran FIRST happened to pick. The insert path's `resolveTargetStmt` binds a bare name by proximity (same file, then same language, then any, id tie-break) and claims a cross even when the name has many candidates; the resolution pass refuses a name that is not unique (`_res_name.cnt = 1`). Which one touches a row first depends on batch order, so the stored edge is a function of indexing ORDER, not of the source.",
           "JSD54: an `overrides` row's target was bound to the row's OWN method - a self-edge - instead of the base member it names, whenever the base was declared in another file or was a host global"
         ],
-        "nodeTypeCount": 127,
+        "nodeTypeCount": 118,
         "pendingDecisions": [
           "JSD-calls-oracle",
           "JSD9",
@@ -3329,7 +3329,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "127 types, 89 handled, 19 silent, 14 gaps, 52 decisions",
+            "detail": "118 types, 89 handled, 19 silent, 14 gaps, 52 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -3353,7 +3353,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/javascript.md, docs/analyzers/real-javascript-analyzer.md",
+            "detail": "docs/analyzers/javascript.md, docs/analyzers/real-javascript-analyzer.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4631,9 +4631,9 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-17T18:08:56-04:00",
-  "regeneratedAtCommit": "2be8ce9ed44306fab4e750f7e8c9deb8b6f36125",
-  "runtime": "node v22.22.1",
+  "regeneratedAt": "2026-10-17T18:17:21-04:00",
+  "regeneratedAtCommit": "12c1764c4a17c0850e4b9596c4736027a0993ef4",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
 }

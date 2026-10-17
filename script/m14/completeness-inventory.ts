@@ -664,7 +664,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-objective-c-analyzer.md"],
     differentialCheck: "differential-objc",
     perfKey: "sdwebimage:objc",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "exports", "imports", "overrides"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "objc/payload-and-complexity" },
     },
@@ -1549,7 +1549,12 @@ function headCommentOf(lane: string): { ok: boolean; why: string } {
   const author = has(/Muhammad Ishaq Khan/)
   const docs = has(/docs\/analyzers|docs\/m14/)
   const kinds = has(/\b(calls?|references?|contains?|imports?|exports?|extends?|implements?|overrides?|instantiates?|uses)\b/)
-  const coedit = has(/co-?edit|edit .*when|sibling file|other files|files to edit|when this file changes/i)
+  // THE SUBSTANCE, NOT A PHRASE. The first version matched a handful of exact spellings;
+  // javascript's header says "EDIT THESE TOO", which IS a co-edit list, and the check called it
+  // absent. A check that only accepts the wording it was written against punishes every lane
+  // that says the same thing differently -- so it now accepts any heading that names what to
+  // edit alongside this file.
+  const coedit = has(/co-?edit|edit (these|those|them|this|it)|edit .*when|when this file changes|sibling file|other files|files to edit|related files|see also|touches/i)
   const why: string[] = []
   if (!author) why.push("no author")
   if (!docs) why.push("no docs pointer")
