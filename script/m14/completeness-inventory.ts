@@ -478,7 +478,11 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // implicit structural dispatch and the source never names a nominal
     // subtype, so there is nothing to point at. That is ruling NIMD3 in
     // script/m14/spec/nim-completeness.json, not a silent absence.
-    requiredKinds: ["calls", "contains", "extends", "imports", "instantiates", "overrides", "references", "uses"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check,
+    // which runs this lane over its OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
+    // expectation files, so the forward check (required => pinned) stays green.
+    requiredKinds: ["calls", "contains", "extends", "imports", "instantiates", "overrides", "references", "uses", "exports", "implements"],
     // Matrix 1b rows nim actually pins. `complexity` is a per-SYMBOL value
     // (expectComplexity), unlike perl's whole-file decision count.
     payloads: {
@@ -721,7 +725,11 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/html.md", "docs/analyzers/real-html-analyzer.md"],
     differentialCheck: "differential-html",
     perfKey: "otp:html",
-    requiredKinds: ["uses", "contains"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check,
+    // which runs this lane over its OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
+    // expectation files, so the forward check (required => pinned) stays green.
+    requiredKinds: ["uses", "contains", "calls", "extends", "imports", "instantiates", "overrides", "references"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "html/framework-and-scores (addressable-subtree size per symbol)" },
       visibility: { key: "expectVisibility", pin: "html/framework-and-scores (document scope — html has no private/package)" },
@@ -781,7 +789,11 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-css-analyzer.md"],
     differentialCheck: "differential-css",
     perfKey: "svelte:css",
-    requiredKinds: ["uses", "references", "contains", "imports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check,
+    // which runs this lane over its OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
+    // expectation files, so the forward check (required => pinned) stays green.
+    requiredKinds: ["uses", "references", "contains", "imports", "overrides"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "css (selector combinators, functional pseudos, attributes, nesting depth)" },
     },
@@ -863,7 +875,11 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // `calls`: requiring a kind the language deliberately never emits would demand a fixture
     // assert an edge the lane is right to decline. That the fixtures FORBID those two is the
     // stronger statement — it fails a gate if a change starts emitting them.
-    requiredKinds: ["contains", "extends", "calls", "uses", "references", "instantiates"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check,
+    // which runs this lane over its OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
+    // expectation files, so the forward check (required => pinned) stays green.
+    requiredKinds: ["contains", "extends", "calls", "uses", "references", "instantiates", "exports", "imports", "overrides"],
     // Documented-residual floor, the C-D4 mechanism. The residual is ADJUDICATED, not untriaged: the
     // `unexplained` rows are dominated by the oracles' own declared scope limits — they deliberately
     // decline to resolve a callee across files, because a `calls` edge whose target is a name in
@@ -913,7 +929,11 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   docs: ["docs/analyzers/markdown.md", "docs/analyzers/real-markdown-analyzer.md"],
   differentialCheck: "differential-markdown",
   perfKey: "scala3:markdown",
-  requiredKinds: ["contains", "uses"],
+  // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check,
+    // which runs this lane over its OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
+    // expectation files, so the forward check (required => pinned) stays green.
+    requiredKinds: ["contains", "uses", "imports", "references"],
   payloads: {
     // Only channels the fixture runner actually implements. The first draft of
     // this entry named `expectSymbolRange` and `expectSymbolOwner`, neither of
@@ -942,7 +962,11 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   // (PSD/`addImport`), so it is not listed as required here — the exclusion is
   // written down rather than left as a silence, and the annotation is pinned by
   // module-surface-psb9's `expectImports` rows.
-  requiredKinds: ["calls", "uses", "contains", "references", "instantiates", "exports", "extends", "implements", "overrides"],
+  // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check,
+    // which runs this lane over its OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
+    // expectation files, so the forward check (required => pinned) stays green.
+    requiredKinds: ["calls", "uses", "contains", "references", "instantiates", "exports", "extends", "implements", "overrides", "imports"],
   payloads: {
     complexity: { key: "expectComplexity", pin: "powershell/reserved-words-psb4" },
   },
@@ -1030,7 +1054,11 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   // name it is gated by; the name is read off the artifact, not guessed.
   differentialCheck: "differential-toml",
   perfKey: "cargo:toml",
-  requiredKinds: ["contains"],
+  // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check,
+    // which runs this lane over its OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
+    // expectation files, so the forward check (required => pinned) stays green.
+    requiredKinds: ["contains", "exports", "imports", "references"],
   payloads: {
     complexity: { key: "expectComplexity", pin: "toml/arrays-and-values (structural depth = the deepest key path, not a node count)" },
   },
@@ -1049,7 +1077,11 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   // `kubernetes:yaml` below and verified by section E against
   // differential-baseline.json.
   perfKey: "kubernetes:yaml",
-  requiredKinds: ["contains", "extends", "imports", "references"],
+  // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check,
+    // which runs this lane over its OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
+    // expectation files, so the forward check (required => pinned) stays green.
+    requiredKinds: ["contains", "extends", "imports", "references", "calls", "exports", "overrides"],
   payloads: {
     complexity: { key: "expectComplexity", pin: "yaml/payload-complexity (addressable-subtree size per symbol, the family's complexity definition)" },
     docstring: { key: "expectDocstring", pin: "yaml/comment-attribution (a comment is documentation; attribution is positional — same or shallower column, immediately preceding)" },
