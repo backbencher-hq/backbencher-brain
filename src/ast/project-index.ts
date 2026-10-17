@@ -90,6 +90,22 @@ export interface ProjectIndex {
   damagedFiles: Set<string>
   /** How many files were read, and how many were damaged. */
   stats: { files: number; damaged: number }
+  /**
+   * WHETHER THIS INDEX SAW THE PROJECT'S WHOLE ADMITTED FILE SET — the bit that turns "the project
+   * declares no such name" from a guess into a statement a claim may rest on.
+   *
+   * A PER-FILE ANALYZER CANNOT PROVE A BARE NAME IS EXTERNAL, and `markExternalTargets` in more than one
+   * lane refuses to publish the "probably the platform type" claim for exactly that reason. The proof
+   * needs the PROJECT key space — and a SAMPLED index is not the project. `projectIndexesFor` builds
+   * from the run's file list, so a cap-400 run indexes a fragment of each repository; a claim verified
+   * against that fragment is refuted the moment an unsampled file of the SAME repository declares the
+   * name, which raises `extFAIL`, the column this fleet treats as must-not-rise.
+   *
+   * OPTIONAL AND FAIL-CLOSED: every constructor that does not state completeness leaves it `undefined`,
+   * and `deserializeProjectIndex` reads an absent field as `false`. AN INDEX WHOSE COMPLETENESS NOBODY
+   * STATED IS NOT COMPLETE. A reader must test `=== true`, never truthiness of the object.
+   */
+  complete?: boolean
 }
 
 /** The Solidity declaration shapes, as the GRAMMAR names them. Kept as data so a
@@ -943,6 +959,9 @@ export function emptyProjectIndex(): ProjectIndex {
     symbolNames: new Set(),
     damagedFiles: new Set(),
     stats: { files: 0, damaged: 0 },
+    // FALSE, NOT undefined: an empty index is the least complete index there is, and a reader that
+    // trusts it would certify every bare name in the corpus as external.
+    complete: false,
   }
 }
 
@@ -1189,6 +1208,12 @@ export interface SerializedProjectIndex {
    * before this field existed still deserializes (to an absent map, exactly as before).
    */
   closedMembers?: [string, string[]][]
+  /**
+   * Completeness travels WITH the payload, because the analyzer that reads it receives a DESERIALIZED
+   * index (the worker and the gate alike). Optional on read for the same reason `closedMembers` is: a
+   * payload written before this field existed must still deserialize — to `false`, the safe direction.
+   */
+  complete?: boolean
 }
 
 export function serializeProjectIndex(index: ProjectIndex): SerializedProjectIndex {
@@ -1207,6 +1232,9 @@ export function serializeProjectIndex(index: ProjectIndex): SerializedProjectInd
     symbolNames: [...index.symbolNames],
     damagedFiles: [...index.damagedFiles],
     stats: { ...index.stats },
+    // `=== true` rather than a truthy pass-through: nothing but the literal boolean true may
+    // serialize as complete.
+    complete: index.complete === true,
     closedMembers: [...((index as any).__closedMembers?.entries() ?? [])].map(([k, v]: [string, Set<string>]) => [k, [...v]]),
   }
 }
@@ -1227,6 +1255,8 @@ export function deserializeProjectIndex(raw: unknown): ProjectIndex | null {
   for (const n of r.symbolNames) index.symbolNames.add(n)
   for (const f of r.damagedFiles ?? []) index.damagedFiles.add(f)
   index.stats = { files: r.stats?.files ?? 0, damaged: r.stats?.damaged ?? 0 }
+  // AN ABSENT FIELD IS false. A payload written before completeness existed cannot vouch for itself.
+  index.complete = r.complete === true
   if (Array.isArray(r.closedMembers)) {
     ;(index as any).__closedMembers = new Map(r.closedMembers.map(([k, v]) => [k, new Set(v)]))
   }

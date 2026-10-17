@@ -100,6 +100,8 @@ import { ASTEngine } from "./engine"
 // would be a second rule (the programme has paid for copied rules more than once).
 import { EXTENSION_LANGUAGE } from "./language-detection"
 
+const require = createRequire(import.meta.url)
+
 // The three embedded-block delegates are loaded LAZILY and INDEPENDENTLY, and
 // deliberately NOT as static imports. A static import makes a broken delegate a
 // load-time failure of THIS module, so a compile error in the CSS analyzer — which

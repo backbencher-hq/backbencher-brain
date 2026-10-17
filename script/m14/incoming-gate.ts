@@ -216,7 +216,16 @@ export const LANES_B: Record<string, string> = {
  * a backtick.
  */
 export const LANES_A: Record<string, string> = {
-  c: "c,h", clojure: "clj,cljs,cljc,edn", cpp: "cpp,cc,cxx,hpp,hxx,hh", csharp: "cs,csx",
+  // `cpp` NOW ADMITS `h`. The engine has sniffed `.h` CONTENT since language-detection.ts:402 (class /
+  // namespace / template< / :: decide cpp), so production already routes ~3,095 of the 15,098 measurable
+  // `.h` files to cpp and the rest to c. THIS TABLE DID NOT, so cpp's population was missing its own
+  // headers: measured on 2026-10-17, 83% of cpp's `calls` residual was declared in a `.h` file the lane
+  // never parsed, and the lane measured 56% of the files the router assigns it. The fix is the admission
+  // ONLY — the per-file routing still runs through the engine, so no file is measured twice and C keeps
+  // the plain-C headers it is entitled to. Found by c's lane (proposals/c-h-boundary.md), which measured
+  // 2,936 genuine C++ headers inside C's 15,098 (19.45%) and priced extension-only routing as a
+  // 12,162-plain-C-header regression.
+  c: "c,h", clojure: "clj,cljs,cljc,edn", cpp: "cpp,cc,cxx,hpp,hxx,hh,h", csharp: "cs,csx",
   elixir: "ex,exs", erlang: "erl,hrl", go: "go", groovy: "groovy,gvy,gradle", haskell: "hs,lhs",
   html: "html,htm", java: "java", javascript: "js,mjs,cjs,jsx", kotlin: "kt,kts",
   "objective-c": "m,mm", perl: "pl,pm,t,pod", python: "py,pyi,pyw", rust: "rs",
@@ -695,9 +704,26 @@ const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> =
 }
 const INDEX_CACHE = process.env.BB_INDEX_CACHE ?? "/tmp/bb-project-index"
 
-/** Build (or reuse) one index per repository, the unit production builds for. */
+/**
+ * Build (or reuse) one index per repository, the unit production builds for.
+ *
+ * `whole` SAYS WHETHER `files` IS THE PROJECT'S WHOLE ADMITTED SET OR A STRIDE SAMPLE OF IT, and it is
+ * stamped onto every index this returns as `ProjectIndex.complete`. It exists because of one measured
+ * question a per-file analyzer cannot answer: **is this bare name external, or merely declared in a file
+ * this run did not read?** Several lanes correctly refuse to publish "probably the platform type" without
+ * the project key space; the key space now exists (`JAVA_DECLARATION_SPEC` and five siblings in
+ * `src/ast/project-index.ts`), but an index built from a cap-400 sample of a 4,000-file repository is NOT
+ * that project. A claim verified against the fragment is refuted the moment an unsampled sibling file
+ * declares the name — which raises `extFAIL`, the column this fleet treats as must-not-rise. So the claim
+ * may only be made when the index is whole, and the analyzer must read `complete === true`, never infer it.
+ *
+ * THE CACHE IS WHY THIS IS SET AFTER THE BRANCH RATHER THAN AT CONSTRUCTION: an index built by an earlier
+ * WHOLE run is cached and can be reused by a SAMPLED one, so a payload's own `complete: true` would leak
+ * across runs and let a sample vouch for a project it never read. The caller's `whole` is the authority,
+ * so it overwrites whatever the cache said.
+ */
 async function projectIndexesFor(
-  lang: string, files: string[],
+  lang: string, files: string[], whole: boolean,
 ): Promise<{ byRepo: Map<string, any>; built: number; cached: number; damaged: number; indexed: number }> {
   const byRepo = new Map<string, any>()
   const entry = INDEX_SPECS[lang]
@@ -730,12 +756,19 @@ async function projectIndexesFor(
       const raw = JSON.parse(readFileSync(cachePath, "utf8"))
       if (raw?.files === repoFiles.length && raw?.newest === newest) {
         const back = mod.deserializeProjectIndex(raw.index)
-        if (back !== null) { byRepo.set(repo, back); cached++; indexed += raw.files; continue }
+        if (back !== null) {
+          // THE CALLER'S `whole` WINS OVER THE PAYLOAD'S OWN FLAG. A whole-run index reused by a sampled
+          // run must NOT claim to be the project it was built from.
+          back.complete = whole === true
+          byRepo.set(repo, back); cached++; indexed += raw.files; continue
+        }
       }
     } catch { /* no usable cache: build below */ }
     const index = await mod.buildProjectIndexStreaming(wasm, repoFiles, spec)
     damaged += index.stats.damaged
     indexed += index.stats.files
+    // The builder never states completeness (it cannot see the run); the caller does.
+    index.complete = whole === true
     byRepo.set(repo, index)
     built++
     try {
@@ -814,7 +847,9 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   let aliasedKeys = 0
 
   // Built BEFORE the walk, because production's index is built before its batch runs too.
-  const indexInfo = useIndex ? await projectIndexesFor(lang, files) : null
+  // `maxFiles <= 0` is the gate's "no cap" form: `discoverFiles` strides only when a cap is set, so
+      // this is exactly the condition under which `files` is the whole admitted population.
+      const indexInfo = useIndex ? await projectIndexesFor(lang, files, maxFiles <= 0) : null
   const repoOf = (f: string): string => {
     const rel = f.startsWith(CR) ? f.slice(CR.length + 1) : f
     return path.join(CR, rel.split(path.sep)[0])

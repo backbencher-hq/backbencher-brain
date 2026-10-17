@@ -1,3 +1,21 @@
+// C Intelligence Engine — Author: Muhammad Ishaq Khan
+// What this file is: the pure-AST analyzer for C (extensions c/h, routed by
+// src/ast/language-detection.ts). Every `.h` reaches this analyzer in PRODUCTION
+// (pool-worker.ts:1079 passes no content); the engine/gate path (engine.ts:1772)
+// passes content, so language-detection.ts:402 sniffs ObjC/C++ first. That
+// two-route split is measured in validation/m14/proposals/c-h-boundary.md — edit
+// the ROUTER to change it, never this file.
+// Grammar: tree-sitter-c 0.24.1 (WASM loaded by engine.ts), wired in
+// engine.ts getAnalyzer → RealCAnalyzer. Pure AST; string logic runs only on
+// AST-extracted values, never as a regex on source.
+// Relationship types covered: calls, uses, contains, imports, references,
+// exports, overrides, instantiates. `extends`/`implements` are RULED OUT —
+// C-D1: C has no inheritance grammar; a census showing either is a defect here.
+// Where its scripts/validations live: script/m14/spec/c-completeness.json, and
+// validation/m14/fixtures/c/**. Run: script/m14/run-fixtures.ts --lang c;
+// script/m14/incoming-gate.ts c c 400. State + residual: C-FIX.md, C-STATE.md.
+// EDIT THESE TOO: docs/analyzers/real-c-analyzer.md, the spec, the fixtures.
+
 function inArray(arr: any[], val: any): boolean {
   for (let i = 0; i < arr.length; i++) {
     if (arr[i] === val) return true
@@ -222,7 +240,32 @@ import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
 // Pre-allocated lookup arrays — avoids per-node allocation overhead
-const MALLOC_FUNCTIONS = ["malloc", "calloc", "realloc", "kmalloc", "vmalloc"]
+//
+// #989 `instantiates`, the ALLOCATOR REGISTER. The five standard names were the
+// whole of the register, and the corpus says that is the wrong SHAPE for the
+// construct rather than merely short. Measured on sqlite (359 files): 680
+// allocation call sites carry a type the parse can recover (an enclosing cast,
+// or `sizeof(<type>)` in the argument list), and 152 of those name a type the
+// FILE declares — `sqlite3_malloc64` 82, `sqlite3_malloc` 45,
+// `sqlite3_realloc64` 23, against `malloc`'s 2. So 150 of 152 (98.7%) produced
+// nothing, and the whole of what this relation emitted on that corpus was the 2.
+//
+// The three PROJECT wrappers are added because the wrapper call is the same
+// allocation the standard name spells — `(Fts3Table *)sqlite3_malloc64(…)` is
+// `(Fts3Table *)malloc(…)` with a project allocator in the middle. This is a
+// REGISTER, not C's vocabulary, and it is named as a limit: a project that wraps
+// malloc under another name needs that name here or its allocation edges go
+// missing; the general rule needs whole-program typing (C-D2). The TARGET rules
+// are what keep the widening honest and are UNCHANGED — the type must be one the
+// file DECLARES (so `(struct Opaque *)sqlite3_malloc(…)` with Opaque declared
+// elsewhere publishes nothing), `void *` names no type, and a FREE publishes no
+// `instantiates` (it is on the FREE register below). Pinned by
+// `validation/m14/fixtures/c/instantiates-allocator-register-989` (authored
+// before the run: 3 positives, 5 forbids, count == 3).
+const MALLOC_FUNCTIONS = [
+  "malloc", "calloc", "realloc", "kmalloc", "vmalloc",
+  "sqlite3_malloc64", "sqlite3_malloc", "sqlite3_realloc64",
+]
 const FREE_FUNCTIONS = ["free", "kfree", "vfree"]
 const UNSAFE_STRINGS = ["strcpy", "sprintf", "gets"]
 const SAFE_STRINGS = ["strncpy", "snprintf"]
@@ -7416,6 +7459,20 @@ private isAttributeInternalCall(callNode: Node, fnNode: Node): boolean {
       // reading a field that does not exist.
       if (n.type === "sizeof_expression") return typeNameOf(n.namedChild(0))
       if (n.type === "parenthesized_expression") return typeNameOf(n.namedChild(0))
+      // `identifier`, and ONLY behind the `declared()` gate at every call site.
+      //
+      // `sizeof(Seg)` parses with a `parenthesized_expression` around a plain
+      // `identifier` when the operand sits in an expression position (measured on
+      // `sqlite3_realloc64(0, sizeof(Seg))` in
+      // `validation/m14/fixtures/c/instantiates-allocator-register-989`), while
+      // `sizeof(struct Opaque)` keeps a `type_descriptor`. Reading only
+      // `type_identifier` therefore made the sizeof-only spelling work for the
+      // `struct` form and fail for the typedef form -- the same fact with two node
+      // types, which is exactly the class of gap this helper's comments record. The
+      // name is only ever USED if `declared()` finds it in the file's own type maps,
+      // so returning the identifier cannot turn a variable read into an instantiation
+      // unless a type of that name is declared in the same file too.
+      if (n.type === "identifier") return n.text
       // NOT `elaborated_specifier`: that node type does not exist in tree-sitter-c --
       // it is Java/TypeScript's, and the F1 grammar oracle caught the literal on the
       // first run of this change ("unknown=1"), which is exactly the finding it exists

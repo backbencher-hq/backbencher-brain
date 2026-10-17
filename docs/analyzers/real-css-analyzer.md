@@ -777,7 +777,7 @@ analyzer wrote.
 | extends | no — RULED | 0 | — | instrument A: 0 of 103 node types is a type declaration. instrument B: **0** `@extend` at-rules on the tree |
 | implements | no — RULED | 0 | — | instrument A: 0 of 103 node types is a supertype/implementation clause |
 | calls | no — RULED | 0 | — | instrument A: 0 function-definition node types. instrument B: **0** CSS-Functions-L1 `@function` declarations on the tree |
-| exports | no — RULED | 0 | — | instrument A: 0 export node types. instrument B: **0** `composes: … from …` and **0** `:export` blocks on the tree |
+| exports | yes — but only as an `ExportInfo[]` payload, never as a graph edge | 0 graph edges | — | the graph side is what instrument A/B ruled on and still measures **0**: 0 export node types, **0** `composes: … from …` and **0** `:export` blocks on the tree. The OTHER channel is live: every top-level symbol (`!s.scope`) is pushed onto `ctx.exports` as an `ExportInfo` (`name`, `kind`, `range`, `visibility`), which is what the import/export consumers read. This row read "no — RULED", so a reader could not tell a channel that is empty from one that is not |
 | instantiates | no — RULED | 0 | — | instrument A: 0 object-creation node types. instrument B as well, and this is the part that matters: **162,470** `var(--x)` calls in 392 files, every one a READ already emitted as `references` |
 
 **The `imports` resolution rate is 0%, and PASS 2 CORRECTED THE REASON THIS FILE GAVE FOR

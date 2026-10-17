@@ -1,5 +1,35 @@
+/**
+ * REAL RUST ANALYZER — the `rust` (`rs`) lane of the incoming-graph programme.
+ * Author: Muhammad Ishaq Khan.
+ *
+ * WHAT THIS FILE IS. One tree-sitter Rust file (`web-tree-sitter` + the bundled
+ * `wasm/tree-sitter-rust.wasm`) walked once into UniversalSymbols and relationships. It covers all
+ * ten ontology relationship types — calls, uses, contains, imports, references, exports, extends,
+ * implements, overrides, instantiates — and this file is the only code that decides what each one
+ * means for Rust.
+ *
+ * WHERE THE REST OF THE LANE LIVES. `docs/analyzers/real-rust-analyzer.md` (the prose contract) ·
+ * `script/m14/spec/rust-completeness.json` (per-type expectation inventory) · `validation/m14/
+ * fixtures/rust/**` (fixtures + the probes `call-qualifier-census.mts`, `import-claim-census.mts`,
+ * `repointed-call-edges.mts`) · `validation/m14/verification/RUST-STATE.md` (owner ledger) and
+ * `RUST-FIX.md` (residual report).
+ * WHEN THIS FILE CHANGES, ALSO EDIT: the completeness spec, the fixtures pinning the touched edge
+ * type (`bun run script/m14/run-fixtures.ts --lang rust`), the docs above, and the STATE ledger.
+ * NEVER edit `script/m14/**` — the arbiter is Lead-owned; write a proposal instead.
+ *
+ * THE ARBITER CONTRACT. `script/m14/incoming-gate.ts` walks this analyzer over a stride sample and
+ * classifies every edge with `script/m14/incoming-rule.ts`: a target either resolves to a key the
+ * file's own PROJECT publishes (`name` and `qualifiedName` both count) or carries a claim the
+ * project can CHECK — `importProjectFile` against the project's admitted file list,
+ * `languageNamespace` against the analyzer's declared roots, etc. A claim the project REFUTES is
+ * counted against the lane (`extFAIL`); a claim no check can reach is `ext?` and blocks a PASS.
+ * Emit a claim only where the evidence confirming it is available to this per-file analyzer.
+ */
+import { readdirSync, readFileSync, statSync } from "node:fs"
+import * as path from "node:path"
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { FILE_CLAIM_MAX_BYTES } from "./file-claim"
 
 // Extract the route path from an axum-style method attribute
 // (`#[get("/users")]` → `/users`). Pure-String scan — replaces the legacy
@@ -59,6 +89,295 @@ function hasBareWord(hay: string, word: string): boolean {
   return false
 }
 
+/**
+ * THE MODULE-FILE RULE — the file a Rust module path names. This is the evidence behind the
+ * `importProjectFile` claim the `imports` rows carry, and it is exported so the lane's census
+ * (`validation/m14/fixtures/rust/import-claim-census.mts`) prices the SAME arithmetic the
+ * analyzer emits rather than a copy of it.
+ *
+ * WHY A FILE CLAIM, AND NOT AN EXTERNALITY MARKER. `use crate::apis::client::Client;` depends on
+ * the MODULE `crate::apis` (a path's leaf is the binding, not the dependency — see
+ * `rustImportRows`), and Rust defines that module by exactly one file:
+ * `<crate source root>/apis.rs` or `<crate source root>/apis/mod.rs`. The arbiter's file-claim
+ * kind (`FILE_CLAIM_KEY = "importProjectFile"`) verifies that against the project's own ADMITTED
+ * FILE LIST and refutes it when no candidate is admitted — a question about files, which never
+ * consults a declaration name, so it cannot refute a name the project declares. That is the
+ * property a bare-name externality marker lacks: `clone`, `new` and `default` are declared all
+ * over, and a marker that is only read where nothing is declared is verified by construction
+ * (a vacuous pass, refused in `validation/m14/verification/RUST-FIX.md` §9).
+ *
+ * THE BASE, read from the Rust reference rather than guessed:
+ *   crate::a  -> <crate source root>/a.rs | <crate source root>/a/mod.rs
+ *   self::a   -> <dir of this file>/a.rs  | <dir of this file>/a/mod.rs
+ *   super::a  -> <parent module dir>/a.rs | <parent module dir>/a/mod.rs
+ *                (dirname for `x.rs`, dirname(dirname) for `mod.rs`)
+ * The crate source root is the nearest ancestor directory holding `lib.rs` or `main.rs`; a Cargo
+ * target directory (`src/bin`, `tests`, `examples`, `benches`) is a crate root of its own, and a
+ * file with no such ancestor is a crate root itself. MEASURED on the gate's cap-400 sample: of
+ * 538 unresolved internal module imports, 376 name an admitted file (351 `crate::`, 4 `self::`,
+ * 21 `super::`) and 155 name none — those get NO claim, which is what keeps `extFAIL` at 0.
+ */
+function rustCrateSourceRoot(filePath: string, projectRoot: string): string {
+  const dir = path.dirname(filePath)
+  const dirName = path.basename(dir)
+  // A Cargo target file that is its own crate root. Children of a crate root are looked up in
+  // the root file's own directory, so `src/bin/foo.rs` -> `src/bin/*.rs`, not `src/*.rs` — the
+  // ancestor `lib.rs` belongs to a DIFFERENT crate and must not become the base.
+  if (dirName === "bin" || dirName === "tests" || dirName === "examples" || dirName === "benches") return dir
+  const stop = path.resolve(projectRoot)
+  let d = dir
+  for (;;) {
+    for (const rootFile of ["lib.rs", "main.rs"]) {
+      try {
+        if (statSync(path.join(d, rootFile)).isFile()) return d
+      } catch { /* not this directory: keep walking */ }
+    }
+    const current = path.resolve(d)
+    if (current === stop) break
+    const up = path.dirname(d)
+    if (up === d || !path.resolve(up).startsWith(stop)) break
+    d = up
+  }
+  return dir
+}
+
+/**
+ * The candidate module file(s) a module path names, project-root-relative is NOT decided here —
+ * these are absolute paths, and the caller confirms them with `statSync` before claiming (an
+ * unconfirmed claim is what refutes). Returns `null` when this lane refuses to claim: an `std`/
+ * `core`/`alloc` path (there is no project file to name), a `self::`/`super::` path inside an
+ * INLINE module (the edge does not carry the mod path, so the base cannot be stated), the
+ * two-segment `crate::Foo` form whose leaf is an ITEM at the crate root rather than a module, or an
+ * external crate this project does not carry.
+ *
+ * THE FOURTH FORM — a WORKSPACE-MEMBER crate path (`use cargo_util::ProcessBuilder;`). A bare root
+ * names an external crate, and a workspace member IS a crate this project carries: its root file is
+ * `<crate dir>/src/lib.rs` (or the `[lib] path` its manifest states), and `use cargo_util::a::b`
+ * depends on that crate's `a::b` module file. Membership is read from the manifest of the WORKSPACE
+ * THE IMPORTING FILE BELONGS TO (`rustWorkspaceCrates`) — never from a directory name, and never
+ * from a crate found elsewhere in the tree.
+ *
+ * WHY MEMBERSHIP AND NOT "ANY MANIFEST UNDER THE PROJECT": measured 2026-10-17, a walk of every
+ * Cargo.toml under cargo's root found a TEST-FIXTURE crate named `serde`
+ * (`tests/testsuite/cargo_remove/gc_keep_used_patch/out/serde/src/lib.rs`) and would have claimed
+ * it for 11 real `use serde::…` edges — a false statement the admitted-file check cannot catch,
+ * because the fixture file really is admitted. A test-fixture crate is not a member of the
+ * workspace, and the workspace is the set of crates the importing crate can actually name.
+ *
+ * The claim is also REFUSED when the importing crate has a local module of the same name — under
+ * Rust's uniform paths that local module would be the dependency, and a claim naming the other file
+ * would be false about the code.
+ */
+export function rustModuleFileCandidates(
+  module: string,
+  filePath: string,
+  projectRoot: string,
+  atFileScope: boolean,
+): string[] | null {
+  const parts = module.split("::").filter((p) => p.length > 0)
+  if (parts.length === 0) return null
+  const rootWord = parts[0]
+  if (rootWord === "crate" || rootWord === "self" || rootWord === "super") {
+    if (rootWord !== "crate" && !atFileScope) return null
+    const dir = path.dirname(filePath)
+    if (rootWord === "crate") {
+      const base = rustCrateSourceRoot(filePath, projectRoot)
+      // `use crate::{…}` (a root GROUP: the written target is the bare word `crate`) and
+      // `use crate::Item` (a root ITEM, upper-case leaf, including the `use crate::Filter::*`
+      // wildcard) both depend on the CRATE ROOT FILE — that is where a `crate::` path resolves.
+      // It is claimed only when exactly one of `lib.rs`/`main.rs` sits there: with both, which
+      // crate the importing file belongs to is a fact this edge does not state, so it is refused.
+      if (parts.length === 1 || (parts.length === 2 && /^[A-Z]/.test(parts[1]))) {
+        return crateRootFileCandidates(base)
+      }
+      const stem = path.join(base, ...parts.slice(1))
+      return [`${stem}.rs`, path.join(stem, "mod.rs")]
+    }
+    const isModRs = path.basename(filePath) === "mod.rs"
+    if (rootWord === "self") {
+      // `use self::{…}` names THIS module, whose file is the edge's own file. The claim would be
+      // circular (it would confirm itself), so it is refused rather than counted.
+      if (parts.length < 2) return null
+      const stem = path.join(dir, ...parts.slice(1))
+      return [`${stem}.rs`, path.join(stem, "mod.rs")]
+    }
+    // `super`: the parent module's directory for a child, or the parent module's OWN file when
+    // the path is the bare word `super` (`use super::{…}` — a group of the parent's items).
+    const base = isModRs ? path.dirname(dir) : dir
+    if (parts.length === 1) return [`${base}.rs`, path.join(base, "mod.rs")]
+    const stem = path.join(base, ...parts.slice(1))
+    return [`${stem}.rs`, path.join(stem, "mod.rs")]
+  }
+  if (rootWord === "std" || rootWord === "core" || rootWord === "alloc") return null
+  // A WORKSPACE-MEMBER CRATE ROOT. The workspace is discovered from the importing file, and its
+  // member map is cached per workspace directory, so one index run reads each manifest once.
+  const libFile = rustWorkspaceCrates(filePath, projectRoot).get(rootWord)
+  if (libFile === undefined) return null
+  // THE LOCAL-MODULE AMBIGUITY. `use foo::x` can name a module of THIS crate as well as the crate
+  // `foo`; the claim may only be written when the local reading cannot be the dependency.
+  const localBase = rustCrateSourceRoot(filePath, projectRoot)
+  const localStem = path.join(localBase, rootWord)
+  if (isFile(localStem + ".rs") || isFile(path.join(localStem, "mod.rs"))) return null
+  if (parts.length === 1) return [libFile]
+  const crateSrc = path.dirname(libFile)
+  const stem = path.join(crateSrc, ...parts.slice(1))
+  return [`${stem}.rs`, path.join(stem, "mod.rs")]
+}
+
+/**
+ * WORKSPACE-MEMBER MODULE NAME -> ITS LIBRARY ROOT FILE, for the workspace the importing file
+ * belongs to; cached per workspace directory.
+ *
+ * THE WORKSPACE IS FOUND FROM THE FILE, not from the project root: repositories here put the
+ * workspace at the root (cargo, ripgrep, r-air), under a subdirectory (`hasura-engine/v3`), or not
+ * at all (a single crate such as `Grace/sdk/rust/grace-sdk`). The nearest ancestor manifest that
+ * declares `[workspace]` is the workspace root; if there is none, the file's own crate is the whole
+ * set. Members come from that manifest's `members` list (globs expanded by one directory level per
+ * `*`), and the root package itself is a member whenever the root manifest has `[package]`.
+ *
+ * A member's library root is its `[lib] path` when declared and `<dir>/src/lib.rs` otherwise; a
+ * member with no library root (a binary-only crate) cannot be imported by name and is absent from
+ * the map, which refuses the claim rather than guessing.
+ */
+const RUST_WORKSPACE_CRATES = new Map<string, Map<string, string>>()
+
+function isFile(p: string): boolean {
+  try {
+    return statSync(p).isFile()
+  } catch {
+    return false
+  }
+}
+
+/**
+ * THE CRATE ROOT FILE a `crate::…` path resolves at — `lib.rs` or `main.rs` in the crate source
+ * root, or `null` when BOTH are there. Both means the directory holds a library and a binary, and
+ * the edge does not say which crate the importing file belongs to; a claim naming the wrong one
+ * would be false about the code, so the ambiguity is refused rather than resolved by preference.
+ */
+function crateRootFileCandidates(base: string): string[] | null {
+  const lib = path.join(base, "lib.rs")
+  const main = path.join(base, "main.rs")
+  const hasLib = isFile(lib)
+  const hasMain = isFile(main)
+  if (hasLib && hasMain) return null
+  if (hasLib) return [lib]
+  if (hasMain) return [main]
+  return null
+}
+
+function readManifest(dir: string): string {
+  try {
+    return readFileSync(path.join(dir, "Cargo.toml"), "utf8")
+  } catch {
+    return ""
+  }
+}
+
+/** The module name a manifest declares, or null when it is not a package. */
+function manifestPackageName(text: string): string | null {
+  const name = /\n\s*name\s*=\s*"([A-Za-z_][A-Za-z0-9_-]*)"/.exec("\n" + text)?.[1]
+  return name === undefined ? null : name.replace(/-/g, "_")
+}
+
+/** The library root file a crate directory declares, or null when it has none. */
+function manifestLibFile(dir: string, text: string): string | null {
+  const libSection = /\[lib\]([\s\S]*?)(?:\n\[|$)/.exec(text)?.[1] ?? ""
+  const libPath = /\bpath\s*=\s*"([^"]+)"/.exec(libSection)?.[1]
+  const libFile = libPath !== undefined ? path.resolve(dir, libPath) : path.join(dir, "src", "lib.rs")
+  return isFile(libFile) ? libFile : null
+}
+
+/** Expand one `members` pattern relative to the workspace directory (`*` = one directory level). */
+function expandMemberPattern(workspaceDir: string, pattern: string): string[] {
+  let bases = [workspaceDir]
+  for (const seg of pattern.split("/")) {
+    if (seg === "*") {
+      const next: string[] = []
+      for (const base of bases) {
+        try {
+          for (const e of readdirSync(base, { withFileTypes: true })) {
+            if (e.isDirectory() && !e.name.startsWith(".")) next.push(path.join(base, e.name))
+          }
+        } catch { /* unreadable directory: the pattern contributes nothing */ }
+      }
+      bases = next
+    } else {
+      bases = bases.map((base) => path.join(base, seg))
+    }
+  }
+  return bases
+}
+
+function findWorkspaceDir(filePath: string, projectRoot: string): string | null {
+  const stop = path.resolve(projectRoot)
+  let dir = path.dirname(filePath)
+  let nearestPackageDir: string | null = null
+  for (;;) {
+    if (isFile(path.join(dir, "Cargo.toml"))) {
+      if (nearestPackageDir === null) nearestPackageDir = dir
+      if (/^\s*\[workspace\]/m.test(readManifest(dir))) return dir
+    }
+    const current = path.resolve(dir)
+    if (current === stop) break
+    const up = path.dirname(dir)
+    if (up === dir || !path.resolve(up).startsWith(stop)) break
+    dir = up
+  }
+  return nearestPackageDir
+}
+
+function rustWorkspaceCrates(filePath: string, projectRoot: string): Map<string, string> {
+  const workspaceDir = findWorkspaceDir(filePath, projectRoot)
+  if (workspaceDir === null) return new Map()
+  const cached = RUST_WORKSPACE_CRATES.get(workspaceDir)
+  if (cached !== undefined) return cached
+  const out = new Map<string, string>()
+  const rootText = readManifest(workspaceDir)
+  const addCrate = (dir: string): void => {
+    const text = readManifest(dir)
+    const name = manifestPackageName(text)
+    if (name === null || out.has(name)) return
+    const libFile = manifestLibFile(dir, text)
+    if (libFile !== null) out.set(name, libFile)
+  }
+  // The root package is a member, and for a single-crate repository it is the ONLY one.
+  addCrate(workspaceDir)
+  const membersBlock = /(?:^|\n)\s*members\s*=\s*\[([\s\S]*?)\]/.exec(rootText)?.[1]
+  if (membersBlock !== undefined) {
+    for (const m of membersBlock.matchAll(/["']([^"']+)["']/g)) {
+      for (const dir of expandMemberPattern(workspaceDir, m[1])) addCrate(dir)
+    }
+  }
+  if (RUST_WORKSPACE_CRATES.size > 32) RUST_WORKSPACE_CRATES.clear()
+  RUST_WORKSPACE_CRATES.set(workspaceDir, out)
+  return out
+}
+
+/**
+ * Confirm ONE of the candidates against the filesystem and return it project-relative, or `null`.
+ *
+ * The three confirmation clauses are the shared guard's (`src/ast/file-claim.ts`, which every
+ * file-claim lane uses): the candidate must exist, be a FILE, carry an admitted extension, and sit
+ * under the population's size cap — beyond the cap the gate's admitted list does not hold it, and
+ * a claim about it would be REFUTED rather than merely unconfirmed. The candidate arithmetic
+ * itself is Rust's and stays here, exactly as `file-claim.ts`'s header says it must.
+ */
+function confirmModuleFile(candidates: string[], projectRoot: string): string | null {
+  const root = path.resolve(projectRoot)
+  for (const cand of candidates) {
+    const rel = path.relative(root, cand).split(path.sep).join("/")
+    if (rel.length === 0 || rel.startsWith("../") || path.isAbsolute(rel)) continue
+    if (!rel.toLowerCase().endsWith(".rs")) continue
+    try {
+      const st = statSync(cand)
+      if (!st.isFile() || st.size > FILE_CLAIM_MAX_BYTES) continue
+    } catch { continue }
+    return rel
+  }
+  return null
+}
+
 // R8 (M60 standing rule, enforced by G1): the family contract is THREE metadata
 // keys — `framework` (the deterministic primary pick), `detectedFrameworks`
 // (always an array) and `frameworkPatterns` (aligned) — and rust published two
@@ -111,6 +430,14 @@ interface RustContext {
   tree: { rootNode: Node }
   content: string
   filePath: string
+  /**
+   * THE PROJECT ROOT, when the caller states one (`parallel-indexer.ts` and the incoming gate both
+   * pass `{ projectRoot }`; a bare fixture runner does not). Only the `importProjectFile` claim
+   * uses it: the claim is checked against the project's admitted file list, so an analyzer with no
+   * project root must NOT emit it — an unconfirmed claim is one the arbiter REFUTES, and `extFAIL`
+   * is a lane counter, not a rounding error.
+   */
+  projectRoot: string
   symbols: ASTEngine.UniversalSymbol[]
   imports: ASTEngine.ImportInfo[]
   relationships: ASTEngine.UniversalRelationship[]
@@ -211,11 +538,15 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     content: string,
     filePath: string,
+    context?: ASTEngine.AnalyzeContext,
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata?: Partial<ASTEngine.FileMetadata> } {
     const ctx: RustContext = {
       tree: { rootNode },
       content,
       filePath,
+      // Absent for a per-file-only caller (the fixture runner calls `analyze` with no context):
+      // the file claim is then not emitted at all, which is the safe answer, never a guess.
+      projectRoot: typeof context?.projectRoot === "string" ? context.projectRoot : "",
       symbols: [],
       imports: [],
       relationships: [],
@@ -1105,6 +1436,15 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
             continue
           }
+          // THE FILE CLAIM — `crate::apis` / `self::util` / `super::flags` name a FILE, and the
+          // claim says so. Confirmed with `statSync` before it is written: a candidate that does
+          // not exist is not claimed at all, so the arbiter can never REFUTE this lane's claim
+          // (extFAIL 0). Computed per `use` path, not per binding — `importRowByKey` dedupes the
+          // path after this point, so the stat cost is one per distinct module per file.
+          const moduleFiles = ctx.projectRoot.length > 0 && path.isAbsolute(ctx.filePath)
+            ? rustModuleFileCandidates(row.module, ctx.filePath, ctx.projectRoot, atFileScope)
+            : null
+          const projectFile = moduleFiles === null ? null : confirmModuleFile(moduleFiles, ctx.projectRoot)
           importRowByKey.set(key, {
             source,
             target: row.module,
@@ -1127,6 +1467,13 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
               // binding is re-declared by every file that imports it.
               items: row.items,
               ...(reExports.length > 0 ? { reExports } : {}),
+              // THE ARBITER'S FILE CLAIM (`FILE_CLAIM_KEY` in script/m14/incoming-rule.ts).
+              // A project-relative POSIX path the project's own admitted list can CONFIRM; the
+              // claim is never written unconfirmed, which is what keeps extFAIL at 0. Not a
+              // declaration claim: it says the module this path names is a file this project
+              // has, and it is the right terminal state for an import whose declaring file is
+              // outside the run's population (the 400-file sample, or a build target).
+              ...(projectFile !== null ? { importProjectFile: projectFile } : {}),
             },
           })
         }

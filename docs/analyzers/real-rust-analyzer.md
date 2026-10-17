@@ -515,10 +515,77 @@ so the ruling is falsifiable.
 | `derivation.ts` | this lane's DERIVATION debt, read with `rel-type-coverage-gate.ts`'s own `runGate()` without writing its artifact |
 | `direction.ts` | the store-level INCOMING/OUTGOING arm counts (currently blocked — §3) |
 
+## The import file claim — the arbiter's `importProjectFile` (M14 residual, 2026-10-17)
+
+An `imports` edge names a MODULE, and a Rust module is defined by exactly one file. For the
+internal module paths the analyzer can locate from the importing file alone, the edge now carries
+the arbiter's FILE claim (`metadata.importProjectFile`) — the shared claim kind
+`script/m14/incoming-rule.ts` verifies against the project's own UNSAMPLED admitted file list
+(`FILE_CLAIM_KEY`, `verifyFileClaim`). It is a statement about a FILE, never about a declaration:
+it cannot refute a name the project declares, which is the trap a bare-name externality marker
+falls into (`clone`, `new`, `default` are declared all over, and `extFAIL` must stay 0).
+
+**The rule** (`rustModuleFileCandidates` / `confirmModuleFile` in `src/ast/real-rust-analyzer.ts`):
+
+| written path | candidate file(s) |
+| --- | --- |
+| `crate::a::b` | `<crate source root>/a/b.rs` · `<crate source root>/a/b/mod.rs` |
+| `self::a` (file scope) | `<dir of this file>/a.rs` · `<dir of this file>/a/mod.rs` |
+| `super::a` (file scope) | `<parent module dir>/a.rs` · `<parent module dir>/a/mod.rs` |
+| `member::a::b` (workspace member) | `<member lib dir>/a/b.rs` · `<member lib dir>/a/b/mod.rs`; `member` alone → the member's `lib.rs` |
+
+The crate source root is the nearest ancestor directory holding `lib.rs`/`main.rs`; a Cargo target
+directory (`src/bin`, `tests`, `examples`, `benches`) is a crate root of its own. The workspace
+member rule reads the manifest of the WORKSPACE THE IMPORTING FILE BELONGS TO (nearest ancestor
+`[workspace]` manifest, else the file's own crate): members from its `members` list (globs
+expanded), package name `-`→`_`, library root from `[lib] path` or `src/lib.rs`. **Membership, not
+"any manifest under the project", is load-bearing:** a plain walk of every `Cargo.toml` under cargo
+found a TEST-FIXTURE crate named `serde`
+(`tests/testsuite/cargo_remove/gc_keep_used_patch/out/serde/src/lib.rs`) and would have claimed it
+for 11 real `use serde::…` edges — a false statement the admitted-file check cannot catch, because
+the fixture file really is admitted. The membership rule refuses it, and the census artifact shows
+zero `serde` claims.
+
+**Refused, with the count each refusal costs on the cap-400 sample:** one-segment paths that are not
+workspace members (`serde`, `axum`, `tokio` — 381 unresolved), `std::` paths (233), `self::`/`super::`
+inside an inline `mod` (the edge does not carry the mod path — 7), two-segment `crate::Foo` (the
+dependency is the crate root, not a file named `Foo.rs`), a workspace member with a same-named local
+module in the importing crate, and any candidate whose file the filesystem does not confirm (155).
+A claim is written ONLY where `statSync` confirms the file (admitted extension, a file, under the
+population's 1 MB cap), which is why the arbiter has never refuted one: `extFAIL 0`.
+
+**Measured, `bun run script/m14/incoming-gate.ts rust rs 400`** (same population, three readings):
+
+| axis | baseline | after internal paths | after workspace members |
+| --- | --- | --- | --- |
+| `imports` unresolved | 1,660 | 1,284 | **863** |
+| `imports` extOK / extFAIL | 0 / 0 | 376 / 0 | **797 / 0** |
+| TOTAL unresolved | 23,637 | 23,261 | **22,840** |
+| TOTAL extOK / extFAIL | 0 / 0 | 376 / 0 | **797 / 0** |
+| TOTAL resolved / ambiguous | 9,419 / 9,874 | 9,419 / 9,874 | **9,419 / 9,874** |
+| `arbitraryTwin` (binding intent) | 13,191 | 13,191 | **13,191** |
+
+**The instrument and its control:** `validation/m14/fixtures/rust/import-claim-census.mts` reruns
+the real analyzer over the gate's stride sample, verifies EVERY emitted claim against the gate's
+admitted-file rule (git ls-files · `.rs` · ≤ 1 MB) and exits non-zero if zero claims verify or any
+claim is refused; its row-by-row artifact is `import-claim-rows.json` (797 rows). Result: 797
+verified / 0 refused, deterministic across runs.
+
+**What this claim is not.** It resolves the import's FILE, not a symbol declaration — the honest
+terminal state for an import whose declaring file is outside the run's population. The 863 imports
+still unresolved are: 233 `std::` paths, 381 one-segment external crate names (`serde`, `axum`, …),
+126 `crate::` paths whose module file did not exist in the sample, 34 `super::`/`self::` (inline-mod
+and no-file cases), and 89 external/workspace paths whose file was not found. A `::`-aware namespace
+claim for `std`/`core`/`alloc` is a proposal (`validation/m14/proposals/`), not an emission: Rust
+call edges carry the bare leaf as their TARGET, so a namespace claim can only reach PATH-shaped
+targets, and the shared matcher is dot-segment-based.
+
 ## Evidence pointers
 
 - Fixtures: `validation/m14/fixtures/rust/` (M14) and
   `validation/m12/fixtures/rust/` (M12)
+- M14 import-claim evidence: `validation/m14/fixtures/rust/import-claim-census-after3.txt`,
+  `import-claim-rows.json`, `gate-400-before.txt`, `gate-400-after.txt`, `gate-400-after2.txt`
 - M14 differential evidence: `validation/m14/results/M14.0.F5.json`
 - M14 completeness evidence: `validation/m14/results/M14.0.SPEC.json`
 - M14 mutation evidence: `validation/m14/results/M14.0.F4.json`

@@ -4901,7 +4901,47 @@ export async function storeResults(
               // Line-less edges keep the previous identity exactly, so languages
               // whose analyzer emits no line are unchanged (their per-site rows
               // are unprovable until #825 lands — never fabricated here).
-              const relId = `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine ?? "?"}`
+              //
+              // M65/D2 (bb_graph review) — A ROW WHOSE SOURCE DID NOT RESOLVE
+              // CARRIES ITS OWN FILE IN THE IDENTITY. It did not: `sourceId` is
+              // null for every unattributed row, so the identity was
+              // `${projectId}:rel:null:<target>:<type>:<line>` — NO FILE COMPONENT.
+              // Two DIFFERENT files emitting the same edge on the same line then
+              // produced ONE id, and `INSERT OR IGNORE` kept whichever file the
+              // worker pool stored first. Measured on this repository's own index:
+              // 69,177 of 631,159 rows carry the `:rel:null:` shape. Three
+              // independent lanes measured what that costs, and every one of them
+              // named the same cause:
+              //   · the java store round-trip lost 2 `imports` rows to it, printed
+              //     as "collide ACROSS files under the store's id (no file
+              //     component)" (script/m14/lanes/java-store-roundtrip.ts);
+              //   · the vue round-trip documents the same collision class;
+              //   · script/m65/verify-refresh-resolution.ts reported cpp and
+              //     objective-c `refresh-parity` failures that ALTERNATED between
+              //     runs — both files include the same header on line 1, so the
+              //     refreshed world and a full index of the same source kept
+              //     different winners. That one is the D2 property itself (a
+              //     bounded refresh storing the same edges as a full index)
+              //     failing a race, not a lane losing its reach.
+              //
+              // The row's own file is the ONE fact that makes it unique, and the
+              // store already documents the spelling for exactly this case: the
+              // `:rel:file:<path>:` anchor. Two readers expect it and neither
+              // could ever match, because no writer wrote it —
+              // `src/ast/import-resolution.ts` (`anchors`, the ownership clause
+              // that exists so a bounded run may re-decide a FILE-LEVEL row of a
+              // file it re-stored) and
+              // `script/m14/js-ontology/js-source-classification.ts` (`ownFileOf`,
+              // whose gate script/m14/verify-js-source-attribution.ts asserts B3
+              // "the row's OWN file is recoverable from the id (the `file:`
+              // anchor)"). Writing it here is what makes those two live.
+              //
+              // `relativePath` is this file's project-relative path — the same
+              // value written to `source_external` for a file-level row two
+              // blocks above, so the id and the column agree. An ATTRIBUTED row
+              // is untouched: its identity already names its source symbol.
+              const sourceIdentity = sourceId ?? `file:${relativePath}`
+              const relId = `${projectId}:rel:${sourceIdentity}:${targetName}:${relType}:${relLine ?? "?"}`
 
  
              stmt.insertRelationship.run(
@@ -6612,7 +6652,15 @@ export async function indexProjectParallel(
         // that is real, so this reaches 1,734 rows and not 6,268. TYPESCRIPT IS DELIBERATELY NOT
         // ADDED: `real-typescript-analyzer.ts` has zero `overrideCompanion` references, so the token
         // would be a no-op that looks like a fix.
-        for (const companionLang of ["perl", "python", "javascript", "ruby"] as const) {
+        // `cpp` ADDED 2026-10-17 BECAUSE IT PASSES THE SAME TEST THE TYPESCRIPT EXCLUSION STATES:
+        // `real-cpp-analyzer.ts` DOES read `context.overrideCompanion`, and its cross-file-override fixture
+        // already passes — what was missing was the wiring that populates the companion for its language.
+        // Measured by cpp's lane: every one of its 1,875 `overrides` edges was unresolved because the target
+        // was `Base.method`, a spelling no cpp symbol answers to; restoring the leaf+owner spelling moved
+        // them from unresolved to ambiguous but left the intended base machine-readable in
+        // `metadata.overriddenOwner` for exactly this companion to bind. One word, and the acceptance is
+        // that arbitraryTwin does not rise.
+        for (const companionLang of ["perl", "python", "javascript", "ruby", "cpp"] as const) {
           const passStats = await populateOverrideCompanion({
             projectPath,
             results,

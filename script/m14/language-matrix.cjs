@@ -67,20 +67,38 @@ for (const m of log.matchAll(/^([A-Z][A-Z0-9_-]*)[ \t]+\d+ types fired(.*?)(?=^[
 }
 
 // ---- 4. per-lane per-type resolution, from one bounded incoming-gate run
-function resolution(lane) {
+/**
+ * THE MAP IN language-detection.ts IS `EXTENSION -> LANGUAGE`, NOT THE OTHER WAY ROUND. The first version of
+ * this function looked for `${lane}: "ext"` and found nothing for every lane whose language name is not also
+ * its extension (bash, csharp, objc, ...), so it passed `bash bash 200` to the gate, got no table, and marked
+ * every cell `?`. JSON was the ONE lane that appeared to work, because `json: "json"` happens to match in
+ * both directions — which is exactly how a parser bug survives a spot check.
+ *
+ * THE SECOND TABLE ON THE SAME OUTPUT IS THE POOLED INTENT SPLIT, and its first row is also `calls`. So
+ * parsing stops at the first TOTAL line; a reader that kept going would overwrite the real row with the
+ * intent row and quietly report a different number under the same name.
+ */
+function extensionFor(lane) {
   const det = fs.readFileSync(path.join(ROOT, "src/ast/language-detection.ts"), "utf8")
-  const esc = lane.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  const m = det.match(new RegExp(`\\b${esc}\\s*:\\s*"([a-z0-9_+.-]+)"`))
-  const ext = m ? m[1] : lane
+  const block = det.slice(0, det.indexOf("} as const") > 0 ? det.indexOf("} as const") : 8000)
+  const pairs = [...block.matchAll(/([a-z0-9_+.-]+)\s*:\s*"([a-z0-9_+.-]+)"/g)].map(m => [m[1], m[2]])
+  const hit = pairs.find(([, lang]) => lang === lane)
+  return hit ? hit[0] : lane
+}
+
+function resolution(lane) {
+  const ext = extensionFor(lane)
   let out = {}
   try {
     const txt = execFileSync("bun", ["run", "script/m14/incoming-gate.ts", lane, ext, CAP], { cwd: ROOT, encoding: "utf8", timeout: 600000 })
     for (const line of txt.split("\n")) {
       const r = line.trim().split(/\s+/)
+      if (r[0] === "TOTAL") break            // the FIRST table only; the next one is the intent split
       if (r.length >= 8 && TYPES.includes(r[0])) {
-        out[r[0]] = { edges: +r[1].replace(/,/g,""), resolved: +r[2].replace(/,/g,""), collRes: +r[3].replace(/,/g,""), unresolved: +r[6]?.replace(/,/g,"") || 0 }
+        out[r[0]] = { edges: +r[1].replace(/,/g,""), resolved: +r[2].replace(/,/g,""), collRes: +r[3].replace(/,/g,""), unresolved: +(r[6] ?? "0").replace(/,/g,"") || 0 }
       }
     }
+    if (!Object.keys(out).length) out.__error = `no table for ext "${ext}"`
   } catch (e) { out = { __error: String(e.message).slice(0, 80) } }
   return out
 }

@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "3836f04f7733af6e8ab622ffc9164541c82fd3d4737315e5a6a4520b1ab367a1",
-    "sealedAt": "2026-10-13T22:43:29.000Z"
+    "contentSha256": "348c2b186700f035853419628317ebe170de68c72aceff1b3c244b07375e921d",
+    "sealedAt": "2026-10-16T22:43:16.000Z"
   },
   "checks": [
     {
@@ -25,13 +25,13 @@
     },
     {
       "description": "vue adversarial fixtures",
-      "detail": "56/64 fixtures pass",
+      "detail": "61/64 fixtures pass",
       "id": "fixtures-vue",
       "status": "fail"
     },
     {
       "description": "svelte adversarial fixtures",
-      "detail": "42/53 fixtures pass",
+      "detail": "47/53 fixtures pass",
       "id": "fixtures-svelte",
       "status": "fail"
     },
@@ -67,7 +67,7 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "42/46 fixtures pass",
+      "detail": "43/47 fixtures pass",
       "id": "fixtures-c",
       "status": "fail"
     },
@@ -85,15 +85,15 @@
     },
     {
       "description": "python adversarial fixtures",
-      "detail": "53/53 fixtures pass",
+      "detail": "54/54 fixtures pass",
       "id": "fixtures-python",
       "status": "pass"
     },
     {
       "description": "go adversarial fixtures",
-      "detail": "29/31 fixtures pass",
+      "detail": "31/31 fixtures pass",
       "id": "fixtures-go",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "zig adversarial fixtures",
@@ -103,7 +103,7 @@
     },
     {
       "description": "csharp adversarial fixtures",
-      "detail": "20/24 fixtures pass",
+      "detail": "21/24 fixtures pass",
       "id": "fixtures-csharp",
       "status": "fail"
     },
@@ -121,9 +121,9 @@
     },
     {
       "description": "objc adversarial fixtures",
-      "detail": "11/16 fixtures pass",
+      "detail": "16/16 fixtures pass",
       "id": "fixtures-objc",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "r adversarial fixtures",
@@ -133,7 +133,7 @@
     },
     {
       "description": "lua adversarial fixtures",
-      "detail": "14/14 fixtures pass",
+      "detail": "15/15 fixtures pass",
       "id": "fixtures-lua",
       "status": "pass"
     },
@@ -145,9 +145,9 @@
     },
     {
       "description": "php adversarial fixtures",
-      "detail": "31/32 fixtures pass",
+      "detail": "32/32 fixtures pass",
       "id": "fixtures-php",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "protobuf adversarial fixtures",
@@ -187,7 +187,7 @@
     },
     {
       "description": "xml adversarial fixtures",
-      "detail": "31/31 fixtures pass",
+      "detail": "32/32 fixtures pass",
       "id": "fixtures-xml",
       "status": "pass"
     },
@@ -241,19 +241,19 @@
     },
     {
       "description": "html adversarial fixtures",
-      "detail": "14/18 fixtures pass",
+      "detail": "18/18 fixtures pass",
       "id": "fixtures-html",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "toml adversarial fixtures",
-      "detail": "9/9 fixtures pass",
+      "detail": "10/10 fixtures pass",
       "id": "fixtures-toml",
       "status": "pass"
     },
     {
       "description": "css adversarial fixtures",
-      "detail": "22/22 fixtures pass",
+      "detail": "23/23 fixtures pass",
       "id": "fixtures-css",
       "status": "pass"
     },
@@ -277,9 +277,9 @@
     },
     {
       "description": "json adversarial fixtures",
-      "detail": "17/18 fixtures pass",
+      "detail": "18/18 fixtures pass",
       "id": "fixtures-json",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "powershell adversarial fixtures",
@@ -295,8 +295,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "fc6df238be756b96b036651162f680ffd38bcbc9",
-  "committedAt": "2026-10-13T18:43:29-04:00",
+  "commit": "fb93f6f18dc095338a02a11fe137fa0a719d72d7",
+  "committedAt": "2026-10-16T18:43:16-04:00",
   "data": {
     "details": [
       {
@@ -1237,10 +1237,8 @@
       },
       {
         "fixture": "vue/kebab-registry-name",
-        "ok": false,
-        "problems": [
-          "forbidden relationship present: {\"target\":\"cardWidget\"} (found imports[KebabRegistry->cardWidget]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "vue/lifecycle-server-prefetch",
@@ -1304,10 +1302,8 @@
       },
       {
         "fixture": "vue/options-rename-identity",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"ActualName\",\"target\":\"./Child.vue:Child\"}; got: instantiates[ActualName->MyChild]@0.95; imports[ActualName->Child]@1; imports[ActualName->vuex:mapState]@1; calls[upper->toUpperCase]@0.9; calls[mounted->dispatch]@0.9; exports[ActualName->api]@1; uses[ActualName->String]@0.6; uses[upper->lab]@0.6; uses[mounted->$store]@0.6; uses[ActualName->lab]@0.95; uses[ActualName->upper]@0.95; contains[ActualName->lab]@1; contains[ActualName->upper]@1; contains[ActualName->mounted]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "vue/options-setup-method",
@@ -1351,11 +1347,8 @@
       },
       {
         "fixture": "vue/script-relations",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Derived.render\",\"target\":\"Base.render\"}; got: instantiates[script-relations->Widget]@0.95; calls[main->read]@0.9; calls[main->helper]@0.9; references[main->read]@0.8; imports[script-relations->helper]@1; imports[script-relations->Widget]@1; exports[script-relations->api]@1; imports[script-relations->vue:ref]@1; extends[Derived->Base]@1; contains[Base->render]@1; contains[Derived->render]@1; contains[Derived->own]@1; overrides[Derived.render->render]@0.95; uses[Derived->Base]@0.6; uses[useField->state]@0.6; uses[useField->value]@0.6; uses[script-relations->state]@0.95",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"script-relations\",\"target\":\"./helper:helper\",\"meta.evidenceClass\":\"import_based\"}; got: instantiates[script-relations->Widget]@0.95; calls[main->read]@0.9; calls[main->helper]@0.9; references[main->read]@0.8; imports[script-relations->helper]@1; imports[script-relations->Widget]@1; exports[script-relations->api]@1; imports[script-relations->vue:ref]@1; extends[Derived->Base]@1; contains[Base->render]@1; contains[Derived->render]@1; contains[Derived->own]@1; overrides[Derived.render->render]@0.95; uses[Derived->Base]@0.6; uses[useField->state]@0.6; uses[useField->value]@0.6; uses[script-relations->state]@0.95"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "vue/script-setup-props-emits",
@@ -1364,18 +1357,13 @@
       },
       {
         "fixture": "vue/tag-namespace-and-dotted",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"source\":\"TagNamespaced\",\"target\":\"el-button\",\"type\":\"instantiates\"}; got: instantiates[TagNamespaced->Form]@0.95; instantiates[TagNamespaced->Ui]@0.95; instantiates[TagNamespaced->ElButton]@0.95; imports[TagNamespaced->Form]@1; imports[TagNamespaced->Ui]@1",
-          "expected relationship not found: {\"source\":\"TagNamespaced\",\"target\":\"el-button\",\"type\":\"instantiates\"}; got: instantiates[TagNamespaced->Form]@0.95; instantiates[TagNamespaced->Ui]@0.95; instantiates[TagNamespaced->ElButton]@0.95; imports[TagNamespaced->Form]@1; imports[TagNamespaced->Ui]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "vue/template-lines-825",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"./ChildPanel.vue:ChildPanel\",\"line_number\":25,\"note\":\"SEAM: a script-relative line shifted to the file's — this name is written on file line 25\"}; got: instantiates[Panel->ChildPanel]@0.95; instantiates[Panel->TabPane]@0.95; imports[Panel->ChildPanel]@1; uses[Panel->String]@0.6; uses[Panel->Number]@0.6; uses[onSave->title]@0.6; uses[onSave->label]@0.6; uses[Panel->label]@0.95; uses[Panel->count]@0.95; uses[Panel->title]@0.95; contains[Panel->label]@1; contains[Panel->count]@1; contains[Panel->data]@1; contains[Panel->title]@1; contains[Panel->onSave]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "vue/template-member-uses",
@@ -1461,10 +1449,8 @@
       },
       {
         "fixture": "svelte/bare-module-block",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"bare-module-block\",\"target\":\"./palette.js:PALETTE\"}; got: exports[bare-module-block->PALETTE]@1; exports[bare-module-block->tint]@1; imports[bare-module-block->PALETTE]@1; exports[bare-module-block->title]@1; uses[bare-module-block->PALETTE]@0.95; uses[bare-module-block->title]@0.95; uses[bare-module-block->count]@0.95; contains[bare-module-block->title]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "svelte/conditional-blocks",
@@ -1500,11 +1486,8 @@
       },
       {
         "fixture": "svelte/dynamic-target-sites",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"./Widget.svelte:Widget\"}; got: imports[dynamic-target-sites->Widget]@1; imports[dynamic-target-sites->Panel]@1; instantiates[dynamic-target-sites->Widget]@0.95; instantiates[dynamic-target-sites->Panel]@0.95",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"./Panel.svelte:Panel\"}; got: imports[dynamic-target-sites->Widget]@1; imports[dynamic-target-sites->Panel]@1; instantiates[dynamic-target-sites->Widget]@0.95; instantiates[dynamic-target-sites->Panel]@0.95"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "svelte/each-block",
@@ -1518,11 +1501,8 @@
       },
       {
         "fixture": "svelte/error-recovery",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"./Alpha.svelte:Alpha\",\"line_number\":2}; got: instantiates[error-recovery->Alpha]@0.95; instantiates[error-recovery->Beta]@0.95; imports[error-recovery->Alpha]@1; imports[error-recovery->Beta]@1; uses[error-recovery->shared]@0.95",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"./Beta.svelte:Beta\",\"line_number\":3}; got: instantiates[error-recovery->Alpha]@0.95; instantiates[error-recovery->Beta]@0.95; imports[error-recovery->Alpha]@1; imports[error-recovery->Beta]@1; uses[error-recovery->shared]@0.95"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "svelte/evidence-tiers-and-columns",
@@ -1644,10 +1624,8 @@
       },
       {
         "fixture": "svelte/relationship-kinds",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"relationship-kinds\",\"target\":\"./helper:helper\",\"meta.evidenceClass\":\"import_based\"}; got: instantiates[relationship-kinds->Widget]@0.95; extends[Derived->Base]@1; calls[main->helper]@0.9; calls[main->increment]@0.9; calls[main->useField]@0.9; references[Derived->Base]@0.8; references[useField->state]@0.8; references[main->increment]@0.8; references[main->useField]@0.8; overrides[Derived.render->Base.render]@0.95; imports[relationship-kinds->helper]@1; imports[relationship-kinds->Widget]@1; exports[relationship-kinds->title]@1; exports[relationship-kinds->increment]@1; contains[Base->render]@1; contains[Derived->render]@1; imports[relationship-kinds->show]@1; uses[toggle->box]@0.6; uses[toggle->open]@0.6; uses[relationship-kinds->title]@0.95; contains[relationship-kinds->title]@1; contains[relationship-kinds->increment]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "svelte/render-tag-argument-reads",
@@ -1726,10 +1704,8 @@
       },
       {
         "fixture": "svelte/template-lines-825",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"./Child.svelte:Child\",\"line_number\":12,\"note\":\"SEAM: a script-relative line shifted to the file's\"}; got: instantiates[template-lines-825->Child]@0.95; calls[template-lines-825->bump]@0.85; imports[template-lines-825->Child]@1; uses[bump->count]@0.6; uses[template-lines-825->bump]@0.95; uses[template-lines-825->count]@0.95; uses[template-lines-825->label]@0.95; contains[template-lines-825->label]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "svelte/template-member-uses",
@@ -3984,12 +3960,16 @@
         ]
       },
       {
+        "fixture": "c/export-preproc-guarded-152",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/exports-attribute-989",
         "ok": false,
         "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"attr_on_definition\",\"target\":\"__declspec(dllexport)\",\"line_number\":74,\"comment\":\"Form A on a DEFINITION. The declaration case never sees a definition, so this needed its own call site in the `function_definition` branch; without it 55 of the 59 corpus sites stay invisible.\"}; got: imports[global->stddef.h]@1; calls[attr_not_an_export->malloc]@1; exports[attr_leading->__declspec(dllexport)]@1; exports[attr_gnu_trailing->__attribute__((visibility(\"default\")))]@1; exports[attr_gnu_prefix->__attribute__((visibility(\"default\")))]@1; exports[attr_with_extern->__declspec(dllexport)]@1; exports[cmpp_malloc->CMPP_EXPORT]@1; calls[global->attr_selfref_decl]@1; exports[platform_marker->PLATFORM_EXPORT]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"wasm_reset\",\"target\":\"WASM_EXPORT\",\"line_number\":80,\"comment\":\"Form B, the GNU spelling behind a macro (`#define WASM_EXPORT __attribute__((used, visibility(\\\"default\\\")))`). `used` in the replacement list must not stop the match, and `visibility(\\\"default\\\")` must be found inside a list that also carries other attributes.\"}; got: imports[global->stddef.h]@1; calls[attr_not_an_export->malloc]@1; exports[attr_leading->__declspec(dllexport)]@1; exports[attr_gnu_trailing->__attribute__((visibility(\"default\")))]@1; exports[attr_gnu_prefix->__attribute__((visibility(\"default\")))]@1; exports[attr_with_extern->__declspec(dllexport)]@1; exports[cmpp_malloc->CMPP_EXPORT]@1; calls[global->attr_selfref_decl]@1; exports[platform_marker->PLATFORM_EXPORT]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"single_platform_marker\",\"target\":\"SINGLE_PLATFORM_EXPORT\",\"line_number\":125,\"comment\":\"CONTROL 7's positive half: a marker with ONE definition that says export. It shares every lexical property of PLATFORM_EXPORT and differs only in agreeing with itself, so a rule that refused both would satisfy CONTROL 7's negative half while losing the construct.\"}; got: imports[global->stddef.h]@1; calls[attr_not_an_export->malloc]@1; exports[attr_leading->__declspec(dllexport)]@1; exports[attr_gnu_trailing->__attribute__((visibility(\"default\")))]@1; exports[attr_gnu_prefix->__attribute__((visibility(\"default\")))]@1; exports[attr_with_extern->__declspec(dllexport)]@1; exports[cmpp_malloc->CMPP_EXPORT]@1; calls[global->attr_selfref_decl]@1; exports[platform_marker->PLATFORM_EXPORT]@1",
+          "expected relationship not found: {\"type\":\"exports\",\"from\":\"wasm_reset\",\"target\":\"WASM_EXPORT\",\"line_number\":80,\"comment\":\"Form B, the GNU spelling behind a macro (`#define WASM_EXPORT __attribute__((used, visibility(\\\"default\\\")))`). `used` in the replacement list must not stop the match, and `visibility(\\\"default\\\")` must be found inside a list that also carries other attributes.\"}; got: imports[global->stddef.h]@1; calls[attr_not_an_export->malloc]@1; exports[attr_leading->__declspec(dllexport)]@1; exports[attr_gnu_trailing->__attribute__((visibility(\"default\")))]@1; exports[attr_gnu_prefix->__attribute__((visibility(\"default\")))]@1; exports[attr_with_extern->__declspec(dllexport)]@1; exports[attr_on_definition->__declspec(dllexport)]@1; exports[cmpp_malloc->CMPP_EXPORT]@1; calls[global->attr_selfref_decl]@1; exports[platform_marker->PLATFORM_EXPORT]@1",
+          "expected relationship not found: {\"type\":\"exports\",\"from\":\"single_platform_marker\",\"target\":\"SINGLE_PLATFORM_EXPORT\",\"line_number\":125,\"comment\":\"CONTROL 7's positive half: a marker with ONE definition that says export. It shares every lexical property of PLATFORM_EXPORT and differs only in agreeing with itself, so a rule that refused both would satisfy CONTROL 7's negative half while losing the construct.\"}; got: imports[global->stddef.h]@1; calls[attr_not_an_export->malloc]@1; exports[attr_leading->__declspec(dllexport)]@1; exports[attr_gnu_trailing->__attribute__((visibility(\"default\")))]@1; exports[attr_gnu_prefix->__attribute__((visibility(\"default\")))]@1; exports[attr_with_extern->__declspec(dllexport)]@1; exports[attr_on_definition->__declspec(dllexport)]@1; exports[cmpp_malloc->CMPP_EXPORT]@1; calls[global->attr_selfref_decl]@1; exports[platform_marker->PLATFORM_EXPORT]@1",
           "forbidden relationship present: {\"type\":\"exports\",\"from\":\"platform_marker\",\"comment\":\"CONTROL 7, the measured case. libcmpp.c defines CMPP_EXPORT four times -- `extern __declspec(dllexport)`, `extern __declspec(dllimport)`, `extern`, `extern` -- in mutually exclusive platform arms. Only one survives preprocessing, so which spelling is in effect depends on the build's -D set (C-D2). Keyed on the FIRST definition the analyzer would refuse 161 real markers; keyed on ANY it would publish 161 edges false for every non-Windows build. The export boundary holds only where EVERY spelling agrees.\"} (found exports[platform_marker->PLATFORM_EXPORT]@1)"
         ]
       },
@@ -4459,9 +4439,9 @@
         "fixture": "rust/bare-tuple-constructor",
         "ok": false,
         "problems": [
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"build\",\"target\":\"Ok\",\"comment\":\"inside the declaring module: the local tuple struct shadows the prelude, so this IS a construction\"}; got: calls[build->Ok]@1; calls[prelude_side->Ok]@1; calls[seeded->Hasher]@1; calls[mixed->default_ish]@1; calls[default_ish->Hasher]@1; uses[shapes->Unit]@1; calls[shapes->Tuple]@1; uses[shapes->Tuple]@1; calls[shapes->make]@1; calls[shapes->PascalFn]@1; contains[makers->Ok]@1; contains[makers->build]@1; contains[Hasher->OFFSET_BASIS]@1; contains[Hasher->seeded]@1; contains[Hasher->mixed]@1; contains[Hasher->default_ish]@1; contains[Kind->Unit]@1; contains[Kind->Tuple]@1; contains[Kind->Named]@1; references[build->Ok]@0.9; references[prelude_side->Result]@0.9; references[seeded->Hasher]@0.9; references[default_ish->Hasher]@0.9; exports[(file)->makers]@1; exports[(file)->prelude_side]@1; exports[(file)->Hasher]@1; exports[(file)->Kind]@1; exports[(file)->Unit]@1; exports[(file)->PascalFn]@1; exports[(file)->shapes]@1",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"seeded\",\"target\":\"Hasher\",\"comment\":\"the decidable site — ripgrep's fnv.rs:15 shape\"}; got: calls[build->Ok]@1; calls[prelude_side->Ok]@1; calls[seeded->Hasher]@1; calls[mixed->default_ish]@1; calls[default_ish->Hasher]@1; uses[shapes->Unit]@1; calls[shapes->Tuple]@1; uses[shapes->Tuple]@1; calls[shapes->make]@1; calls[shapes->PascalFn]@1; contains[makers->Ok]@1; contains[makers->build]@1; contains[Hasher->OFFSET_BASIS]@1; contains[Hasher->seeded]@1; contains[Hasher->mixed]@1; contains[Hasher->default_ish]@1; contains[Kind->Unit]@1; contains[Kind->Tuple]@1; contains[Kind->Named]@1; references[build->Ok]@0.9; references[prelude_side->Result]@0.9; references[seeded->Hasher]@0.9; references[default_ish->Hasher]@0.9; exports[(file)->makers]@1; exports[(file)->prelude_side]@1; exports[(file)->Hasher]@1; exports[(file)->Kind]@1; exports[(file)->Unit]@1; exports[(file)->PascalFn]@1; exports[(file)->shapes]@1",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"default_ish\",\"target\":\"Hasher\",\"comment\":\"second call site, second function: the rule is per site, not per type\"}; got: calls[build->Ok]@1; calls[prelude_side->Ok]@1; calls[seeded->Hasher]@1; calls[mixed->default_ish]@1; calls[default_ish->Hasher]@1; uses[shapes->Unit]@1; calls[shapes->Tuple]@1; uses[shapes->Tuple]@1; calls[shapes->make]@1; calls[shapes->PascalFn]@1; contains[makers->Ok]@1; contains[makers->build]@1; contains[Hasher->OFFSET_BASIS]@1; contains[Hasher->seeded]@1; contains[Hasher->mixed]@1; contains[Hasher->default_ish]@1; contains[Kind->Unit]@1; contains[Kind->Tuple]@1; contains[Kind->Named]@1; references[build->Ok]@0.9; references[prelude_side->Result]@0.9; references[seeded->Hasher]@0.9; references[default_ish->Hasher]@0.9; exports[(file)->makers]@1; exports[(file)->prelude_side]@1; exports[(file)->Hasher]@1; exports[(file)->Kind]@1; exports[(file)->Unit]@1; exports[(file)->PascalFn]@1; exports[(file)->shapes]@1"
+          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"build\",\"target\":\"Ok\",\"comment\":\"inside the declaring module: the local tuple struct shadows the prelude, so this IS a construction\"}; got: calls[build->Ok]@1; calls[prelude_side->Ok]@1; calls[seeded->Hasher]@1; calls[mixed->Hasher::default_ish]@1; calls[default_ish->Hasher]@1; uses[shapes->Unit]@1; calls[shapes->Tuple]@1; uses[shapes->Tuple]@1; calls[shapes->make]@1; calls[shapes->PascalFn]@1; contains[makers->Ok]@1; contains[makers->build]@1; contains[Hasher->OFFSET_BASIS]@1; contains[Hasher->seeded]@1; contains[Hasher->mixed]@1; contains[Hasher->default_ish]@1; contains[Kind->Unit]@1; contains[Kind->Tuple]@1; contains[Kind->Named]@1; references[build->Ok]@0.9; references[prelude_side->Result]@0.9; references[seeded->Hasher]@0.9; references[default_ish->Hasher]@0.9; exports[(file)->makers]@1; exports[(file)->prelude_side]@1; exports[(file)->Hasher]@1; exports[(file)->Kind]@1; exports[(file)->Unit]@1; exports[(file)->PascalFn]@1; exports[(file)->shapes]@1",
+          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"seeded\",\"target\":\"Hasher\",\"comment\":\"the decidable site — ripgrep's fnv.rs:15 shape\"}; got: calls[build->Ok]@1; calls[prelude_side->Ok]@1; calls[seeded->Hasher]@1; calls[mixed->Hasher::default_ish]@1; calls[default_ish->Hasher]@1; uses[shapes->Unit]@1; calls[shapes->Tuple]@1; uses[shapes->Tuple]@1; calls[shapes->make]@1; calls[shapes->PascalFn]@1; contains[makers->Ok]@1; contains[makers->build]@1; contains[Hasher->OFFSET_BASIS]@1; contains[Hasher->seeded]@1; contains[Hasher->mixed]@1; contains[Hasher->default_ish]@1; contains[Kind->Unit]@1; contains[Kind->Tuple]@1; contains[Kind->Named]@1; references[build->Ok]@0.9; references[prelude_side->Result]@0.9; references[seeded->Hasher]@0.9; references[default_ish->Hasher]@0.9; exports[(file)->makers]@1; exports[(file)->prelude_side]@1; exports[(file)->Hasher]@1; exports[(file)->Kind]@1; exports[(file)->Unit]@1; exports[(file)->PascalFn]@1; exports[(file)->shapes]@1",
+          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"default_ish\",\"target\":\"Hasher\",\"comment\":\"second call site, second function: the rule is per site, not per type\"}; got: calls[build->Ok]@1; calls[prelude_side->Ok]@1; calls[seeded->Hasher]@1; calls[mixed->Hasher::default_ish]@1; calls[default_ish->Hasher]@1; uses[shapes->Unit]@1; calls[shapes->Tuple]@1; uses[shapes->Tuple]@1; calls[shapes->make]@1; calls[shapes->PascalFn]@1; contains[makers->Ok]@1; contains[makers->build]@1; contains[Hasher->OFFSET_BASIS]@1; contains[Hasher->seeded]@1; contains[Hasher->mixed]@1; contains[Hasher->default_ish]@1; contains[Kind->Unit]@1; contains[Kind->Tuple]@1; contains[Kind->Named]@1; references[build->Ok]@0.9; references[prelude_side->Result]@0.9; references[seeded->Hasher]@0.9; references[default_ish->Hasher]@0.9; exports[(file)->makers]@1; exports[(file)->prelude_side]@1; exports[(file)->Hasher]@1; exports[(file)->Kind]@1; exports[(file)->Unit]@1; exports[(file)->PascalFn]@1; exports[(file)->shapes]@1"
         ]
       },
       {
@@ -4624,6 +4604,11 @@
       },
       {
         "fixture": "python/base-shapes",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/builtin-namespace-is-a-language-claim",
         "ok": true,
         "problems": []
       },
@@ -4969,12 +4954,8 @@
       },
       {
         "fixture": "go/imports-empty-path",
-        "ok": false,
-        "problems": [
-          "expected metadata.invalidImportPathCount = 2; got undefined",
-          "forbidden relationship present: {\"type\":\"imports\",\"from\":\"gofixture\",\"target\":\"\",\"comment\":\"R7: an empty endpoint. `import \\\"\\\"` is not a dependency; the compiler rejects the file.\"} (found imports[gofixture->]@0.9)",
-          "forbidden relationship present: {\"type\":\"imports\",\"from\":\"gofixture\",\"target\":\"``\",\"comment\":\"the raw string's DELIMITERS survived, which both bypassed the empty-endpoint guard and published a target no Go declaration can contain\"} (found imports[gofixture->``]@0.9)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "go/imports-recovered",
@@ -5018,11 +4999,8 @@
       },
       {
         "fixture": "go/r7-empty-endpoints",
-        "ok": false,
-        "problems": [
-          "expected metadata.r7DroppedEdges = 1; got undefined",
-          "expected metadata.invalidImportPathCount = 0; got undefined"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "go/relationship-and-payloads",
@@ -5208,20 +5186,11 @@
           "expected export not found: {\"name\":\"Acme.Surface.IPublicContract\",\"comment\":\"an interface is an exported type exactly as a class is\"}; got: [\"FileScopedPublic\",\"FileScopedInternal\"]",
           "expected export not found: {\"name\":\"Acme.Surface.PublicEnum\",\"comment\":\"an enum is an exported type too — the enum branch's rule is stated, not inherited by luck\"}; got: [\"FileScopedPublic\",\"FileScopedInternal\"]",
           "expected export not found: {\"name\":\"Acme.FileScoped.FileScopedPublic\",\"comment\":\"THE PIN THAT MATTERS: the file-scoped namespace spelling selects the SAME set as the block form. The pre-fix guard could not see a file-scoped namespace at all and published 300 of 300 top-level declarations on the first 300 roslyn files (which are file-scoped-namespace files) as exports, under BARE names, including `internal` ones.\"}; got: [\"FileScopedPublic\",\"FileScopedInternal\"]",
-          "expected import not found: {\"module\":\"LegacyLib\",\"comment\":\"`extern alias LegacyLib;` is an import directive with its own node type (`extern_alias_directive`) and produced NOTHING before this round — no payload row, no relationship, no references edge\"}; got: [{\"module\":\"System\"},{\"module\":\"System.Collections.Generic\"},{\"module\":\"System.Math\"},{\"module\":\"System.Text\"},{\"module\":\"System.IO\"},{\"module\":\"System.Threading\"},{\"module\":\"System.Environment\"},{\"module\":\"System.Text.RegularExpressions\"}]",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"System\",\"line_number\":18,\"meta.importKind\":\"namespace\",\"meta.evidenceClass\":\"import_based\",\"meta.relationshipType\":\"using_import\"}; got: references[PublicType->System]@0.9; references[PublicType->System.Collections.Generic]@0.9; references[PublicType->System.Math]@0.9; references[PublicType->System.Text]@0.9; references[PublicType->System.IO]@0.9; references[PublicType->System.Threading]@0.9; references[PublicType->System.Environment]@0.9; references[PublicType->System.Text.RegularExpressions]@0.9; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1; contains[Acme.FileScoped->FileLocalType]@1; contains[Acme.Inner->Doubled]@1; exports[Acme.Surface->PublicType]@1; exports[Acme.Surface->IPublicContract]@1; exports[Acme.Surface->PublicEnum]@1; exports[Acme.FileScoped->FileScopedPublic]@1; exports[Acme.Inner->Doubled]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"System.Math\",\"line_number\":20,\"meta.importKind\":\"static\",\"note\":\"`using static System.Math;` — a static-member import, NOT a namespace import. All four shapes share one node type, so this row is the only thing that tells them apart.\"}; got: references[PublicType->System]@0.9; references[PublicType->System.Collections.Generic]@0.9; references[PublicType->System.Math]@0.9; references[PublicType->System.Text]@0.9; references[PublicType->System.IO]@0.9; references[PublicType->System.Threading]@0.9; references[PublicType->System.Environment]@0.9; references[PublicType->System.Text.RegularExpressions]@0.9; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1; contains[Acme.FileScoped->FileLocalType]@1; contains[Acme.Inner->Doubled]@1; exports[Acme.Surface->PublicType]@1; exports[Acme.Surface->IPublicContract]@1; exports[Acme.Surface->PublicEnum]@1; exports[Acme.FileScoped->FileScopedPublic]@1; exports[Acme.Inner->Doubled]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"System.Text\",\"line_number\":21,\"meta.importKind\":\"alias\",\"meta.usingAlias\":\"Alias\",\"meta.isUsingAlias\":true}; got: references[PublicType->System]@0.9; references[PublicType->System.Collections.Generic]@0.9; references[PublicType->System.Math]@0.9; references[PublicType->System.Text]@0.9; references[PublicType->System.IO]@0.9; references[PublicType->System.Threading]@0.9; references[PublicType->System.Environment]@0.9; references[PublicType->System.Text.RegularExpressions]@0.9; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1; contains[Acme.FileScoped->FileLocalType]@1; contains[Acme.Inner->Doubled]@1; exports[Acme.Surface->PublicType]@1; exports[Acme.Surface->IPublicContract]@1; exports[Acme.Surface->PublicEnum]@1; exports[Acme.FileScoped->FileScopedPublic]@1; exports[Acme.Inner->Doubled]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"System.IO\",\"line_number\":22,\"meta.importKind\":\"namespace\",\"note\":\"`using global::System.IO;` — the qualifier is stripped, so this is indistinguishable from `using System.IO;` on purpose\"}; got: references[PublicType->System]@0.9; references[PublicType->System.Collections.Generic]@0.9; references[PublicType->System.Math]@0.9; references[PublicType->System.Text]@0.9; references[PublicType->System.IO]@0.9; references[PublicType->System.Threading]@0.9; references[PublicType->System.Environment]@0.9; references[PublicType->System.Text.RegularExpressions]@0.9; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1; contains[Acme.FileScoped->FileLocalType]@1; contains[Acme.Inner->Doubled]@1; exports[Acme.Surface->PublicType]@1; exports[Acme.Surface->IPublicContract]@1; exports[Acme.Surface->PublicEnum]@1; exports[Acme.FileScoped->FileScopedPublic]@1; exports[Acme.Inner->Doubled]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"System.Threading\",\"line_number\":24,\"meta.importKind\":\"global_namespace\",\"note\":\"`global using` binds for the whole COMPILATION, not for this file. That is a different dependency from `using System.Threading;` and the label now says so.\"}; got: references[PublicType->System]@0.9; references[PublicType->System.Collections.Generic]@0.9; references[PublicType->System.Math]@0.9; references[PublicType->System.Text]@0.9; references[PublicType->System.IO]@0.9; references[PublicType->System.Threading]@0.9; references[PublicType->System.Environment]@0.9; references[PublicType->System.Text.RegularExpressions]@0.9; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1; contains[Acme.FileScoped->FileLocalType]@1; contains[Acme.Inner->Doubled]@1; exports[Acme.Surface->PublicType]@1; exports[Acme.Surface->IPublicContract]@1; exports[Acme.Surface->PublicEnum]@1; exports[Acme.FileScoped->FileScopedPublic]@1; exports[Acme.Inner->Doubled]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"System.Environment\",\"line_number\":25,\"meta.importKind\":\"global_static\"}; got: references[PublicType->System]@0.9; references[PublicType->System.Collections.Generic]@0.9; references[PublicType->System.Math]@0.9; references[PublicType->System.Text]@0.9; references[PublicType->System.IO]@0.9; references[PublicType->System.Threading]@0.9; references[PublicType->System.Environment]@0.9; references[PublicType->System.Text.RegularExpressions]@0.9; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1; contains[Acme.FileScoped->FileLocalType]@1; contains[Acme.Inner->Doubled]@1; exports[Acme.Surface->PublicType]@1; exports[Acme.Surface->IPublicContract]@1; exports[Acme.Surface->PublicEnum]@1; exports[Acme.FileScoped->FileScopedPublic]@1; exports[Acme.Inner->Doubled]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"System.Text.RegularExpressions\",\"line_number\":26,\"meta.importKind\":\"global_alias\",\"meta.usingAlias\":\"GlobalAlias\"}; got: references[PublicType->System]@0.9; references[PublicType->System.Collections.Generic]@0.9; references[PublicType->System.Math]@0.9; references[PublicType->System.Text]@0.9; references[PublicType->System.IO]@0.9; references[PublicType->System.Threading]@0.9; references[PublicType->System.Environment]@0.9; references[PublicType->System.Text.RegularExpressions]@0.9; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1; contains[Acme.FileScoped->FileLocalType]@1; contains[Acme.Inner->Doubled]@1; exports[Acme.Surface->PublicType]@1; exports[Acme.Surface->IPublicContract]@1; exports[Acme.Surface->PublicEnum]@1; exports[Acme.FileScoped->FileScopedPublic]@1; exports[Acme.Inner->Doubled]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"LegacyLib\",\"line_number\":28,\"meta.importKind\":\"extern_alias\",\"meta.isExternAlias\":true,\"note\":\"an ASSEMBLY alias, not a namespace: `imports` only, never a `references` twin, because the differential's csharp truth does not derive this node\"}; got: references[PublicType->System]@0.9; references[PublicType->System.Collections.Generic]@0.9; references[PublicType->System.Math]@0.9; references[PublicType->System.Text]@0.9; references[PublicType->System.IO]@0.9; references[PublicType->System.Threading]@0.9; references[PublicType->System.Environment]@0.9; references[PublicType->System.Text.RegularExpressions]@0.9; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1; contains[Acme.FileScoped->FileLocalType]@1; contains[Acme.Inner->Doubled]@1; exports[Acme.Surface->PublicType]@1; exports[Acme.Surface->IPublicContract]@1; exports[Acme.Surface->PublicEnum]@1; exports[Acme.FileScoped->FileScopedPublic]@1; exports[Acme.Inner->Doubled]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Surface.PublicType\",\"line_number\":33,\"meta.evidenceClass\":\"structural\",\"meta.relationshipType\":\"assembly_public_surface\",\"note\":\"the line is the one the NAME is written on, not the declaration's first line — the doc comment sits above it\"}; got: references[PublicType->System]@0.9; references[PublicType->System.Collections.Generic]@0.9; references[PublicType->System.Math]@0.9; references[PublicType->System.Text]@0.9; references[PublicType->System.IO]@0.9; references[PublicType->System.Threading]@0.9; references[PublicType->System.Environment]@0.9; references[PublicType->System.Text.RegularExpressions]@0.9; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1; contains[Acme.FileScoped->FileLocalType]@1; contains[Acme.Inner->Doubled]@1; exports[Acme.Surface->PublicType]@1; exports[Acme.Surface->IPublicContract]@1; exports[Acme.Surface->PublicEnum]@1; exports[Acme.FileScoped->FileScopedPublic]@1; exports[Acme.Inner->Doubled]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Surface.IPublicContract\",\"line_number\":47}; got: references[PublicType->System]@0.9; references[PublicType->System.Collections.Generic]@0.9; references[PublicType->System.Math]@0.9; references[PublicType->System.Text]@0.9; references[PublicType->System.IO]@0.9; references[PublicType->System.Threading]@0.9; references[PublicType->System.Environment]@0.9; references[PublicType->System.Text.RegularExpressions]@0.9; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1; contains[Acme.FileScoped->FileLocalType]@1; contains[Acme.Inner->Doubled]@1; exports[Acme.Surface->PublicType]@1; exports[Acme.Surface->IPublicContract]@1; exports[Acme.Surface->PublicEnum]@1; exports[Acme.FileScoped->FileScopedPublic]@1; exports[Acme.Inner->Doubled]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Surface.PublicEnum\",\"line_number\":51}; got: references[PublicType->System]@0.9; references[PublicType->System.Collections.Generic]@0.9; references[PublicType->System.Math]@0.9; references[PublicType->System.Text]@0.9; references[PublicType->System.IO]@0.9; references[PublicType->System.Threading]@0.9; references[PublicType->System.Environment]@0.9; references[PublicType->System.Text.RegularExpressions]@0.9; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1; contains[Acme.FileScoped->FileLocalType]@1; contains[Acme.Inner->Doubled]@1; exports[Acme.Surface->PublicType]@1; exports[Acme.Surface->IPublicContract]@1; exports[Acme.Surface->PublicEnum]@1; exports[Acme.FileScoped->FileScopedPublic]@1; exports[Acme.Inner->Doubled]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.FileScoped.FileScopedPublic\",\"line_number\":63}; got: references[PublicType->System]@0.9; references[PublicType->System.Collections.Generic]@0.9; references[PublicType->System.Math]@0.9; references[PublicType->System.Text]@0.9; references[PublicType->System.IO]@0.9; references[PublicType->System.Threading]@0.9; references[PublicType->System.Environment]@0.9; references[PublicType->System.Text.RegularExpressions]@0.9; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1; contains[Acme.FileScoped->FileLocalType]@1; contains[Acme.Inner->Doubled]@1; exports[Acme.Surface->PublicType]@1; exports[Acme.Surface->IPublicContract]@1; exports[Acme.Surface->PublicEnum]@1; exports[Acme.FileScoped->FileScopedPublic]@1; exports[Acme.Inner->Doubled]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Inner.Doubled\",\"line_number\":82,\"meta.evidenceClass\":\"structural\",\"note\":\"the nested-namespace shape: ONE spelling. `contains` publishes the namespace as `Acme.Inner` (the innermost declaration's own name, which already contains the outer one), and the export target agrees with it. The pre-fix value was `Acme.Outer.Acme.Inner.Doubled` — same type, two names in one result.\"}; got: references[PublicType->System]@0.9; references[PublicType->System.Collections.Generic]@0.9; references[PublicType->System.Math]@0.9; references[PublicType->System.Text]@0.9; references[PublicType->System.IO]@0.9; references[PublicType->System.Threading]@0.9; references[PublicType->System.Environment]@0.9; references[PublicType->System.Text.RegularExpressions]@0.9; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1; contains[Acme.FileScoped->FileLocalType]@1; contains[Acme.Inner->Doubled]@1; exports[Acme.Surface->PublicType]@1; exports[Acme.Surface->IPublicContract]@1; exports[Acme.Surface->PublicEnum]@1; exports[Acme.FileScoped->FileScopedPublic]@1; exports[Acme.Inner->Doubled]@1",
+          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Surface.PublicType\",\"line_number\":33,\"meta.evidenceClass\":\"structural\",\"meta.relationshipType\":\"assembly_public_surface\",\"note\":\"the line is the one the NAME is written on, not the declaration's first line — the doc comment sits above it\"}; got: references[PublicType->System]@0.9; imports[root->System]@1; references[PublicType->System.Collections.Generic]@0.9; imports[root->System.Collections.Generic]@1; references[PublicType->System.Math]@0.9; imports[root->System.Math]@1; references[PublicType->System.Text]@0.9; imports[root->System.Text]@1; references[PublicType->System.IO]@0.9; imports[root->System.IO]@1; references[PublicType->System.Threading]@0.9; imports[root->System.Threading]@1; references[PublicType->System.Environment]@0.9; imports[root->System.Environment]@1; references[PublicType->System.Text.RegularExpressions]@0.9; imports[root->System.Text.RegularExpressions]@1; imports[root->LegacyLib]@1; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1",
+          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Surface.IPublicContract\",\"line_number\":47}; got: references[PublicType->System]@0.9; imports[root->System]@1; references[PublicType->System.Collections.Generic]@0.9; imports[root->System.Collections.Generic]@1; references[PublicType->System.Math]@0.9; imports[root->System.Math]@1; references[PublicType->System.Text]@0.9; imports[root->System.Text]@1; references[PublicType->System.IO]@0.9; imports[root->System.IO]@1; references[PublicType->System.Threading]@0.9; imports[root->System.Threading]@1; references[PublicType->System.Environment]@0.9; imports[root->System.Environment]@1; references[PublicType->System.Text.RegularExpressions]@0.9; imports[root->System.Text.RegularExpressions]@1; imports[root->LegacyLib]@1; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1",
+          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Surface.PublicEnum\",\"line_number\":51}; got: references[PublicType->System]@0.9; imports[root->System]@1; references[PublicType->System.Collections.Generic]@0.9; imports[root->System.Collections.Generic]@1; references[PublicType->System.Math]@0.9; imports[root->System.Math]@1; references[PublicType->System.Text]@0.9; imports[root->System.Text]@1; references[PublicType->System.IO]@0.9; imports[root->System.IO]@1; references[PublicType->System.Threading]@0.9; imports[root->System.Threading]@1; references[PublicType->System.Environment]@0.9; imports[root->System.Environment]@1; references[PublicType->System.Text.RegularExpressions]@0.9; imports[root->System.Text.RegularExpressions]@1; imports[root->LegacyLib]@1; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1",
+          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.FileScoped.FileScopedPublic\",\"line_number\":63}; got: references[PublicType->System]@0.9; imports[root->System]@1; references[PublicType->System.Collections.Generic]@0.9; imports[root->System.Collections.Generic]@1; references[PublicType->System.Math]@0.9; imports[root->System.Math]@1; references[PublicType->System.Text]@0.9; imports[root->System.Text]@1; references[PublicType->System.IO]@0.9; imports[root->System.IO]@1; references[PublicType->System.Threading]@0.9; imports[root->System.Threading]@1; references[PublicType->System.Environment]@0.9; imports[root->System.Environment]@1; references[PublicType->System.Text.RegularExpressions]@0.9; imports[root->System.Text.RegularExpressions]@1; imports[root->LegacyLib]@1; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1",
+          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Inner.Doubled\",\"line_number\":82,\"meta.evidenceClass\":\"structural\",\"note\":\"the nested-namespace shape: ONE spelling. `contains` publishes the namespace as `Acme.Inner` (the innermost declaration's own name, which already contains the outer one), and the export target agrees with it. The pre-fix value was `Acme.Outer.Acme.Inner.Doubled` — same type, two names in one result.\"}; got: references[PublicType->System]@0.9; imports[root->System]@1; references[PublicType->System.Collections.Generic]@0.9; imports[root->System.Collections.Generic]@1; references[PublicType->System.Math]@0.9; imports[root->System.Math]@1; references[PublicType->System.Text]@0.9; imports[root->System.Text]@1; references[PublicType->System.IO]@0.9; imports[root->System.IO]@1; references[PublicType->System.Threading]@0.9; imports[root->System.Threading]@1; references[PublicType->System.Environment]@0.9; imports[root->System.Environment]@1; references[PublicType->System.Text.RegularExpressions]@0.9; imports[root->System.Text.RegularExpressions]@1; imports[root->LegacyLib]@1; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1",
           "forbidden relationship present: {\"type\":\"exports\",\"target\":\"PublicType\",\"note\":\"a BARE name is not an export name for a namespaced type: `PublicType` is not a name this assembly exports, `Acme.Surface.PublicType` is. This forbid is the whole reason the published name changed.\"} (found exports[Acme.Surface->PublicType]@1)"
         ]
       },
@@ -5293,16 +5262,8 @@
       },
       {
         "fixture": "csharp/using-tuple-alias",
-        "ok": false,
-        "problems": [
-          "expected import not found: {\"module\":\"(int,System.Collections.Generic.List)\",\"note\":\"a qualified element keeps its path: the rule strips element names, not namespaces\"}; got: [{\"module\":\"System\"},{\"module\":\"System.Collections.Generic\"},{\"module\":\"System.Text\"},{\"module\":\"System.Collections.Generic.Dictionary\"},{\"module\":\"(Type ContainerType,string FieldName)\"},{\"module\":\"(Type,string)\"},{\"module\":\"(int Count,System.Collections.Generic.List\"},{\"module\":\"OneElement\"}]",
-          "forbidden import present: {\"module\":\"OneElement\",\"note\":\"same row, stated by its published spelling\"} (found OneElement)",
-          "forbidden import present: {\"module\":\"(Type ContainerType,string FieldName)\",\"note\":\"the pre-fix spelling: element names welded onto the module\"} (found (Type ContainerType,string FieldName))",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"(Type,string)\",\"line_number\":29,\"meta.importKind\":\"alias\",\"meta.evidenceClass\":\"import_based\",\"note\":\"THE PIN. Pre-fix this target was `(Type ContainerType,string FieldName)`.\"}; got: references[Widget->System]@0.9; references[Widget->System.Collections.Generic]@0.9; references[Widget->System.Text]@0.9; references[Widget->System.Collections.Generic.Dictionary]@0.9; references[Widget->Widget]@0.9; references[Widget->(Type ContainerType,string FieldName)]@0.9; references[Widget->(Type,string)]@0.9; references[Widget->(int Count,System.Collections.Generic.List]@0.9; references[Widget->OneElement]@0.9; contains[Acme.Tuple->Widget]@1; exports[Acme.Tuple->Widget]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"(Type,string)\",\"line_number\":30,\"meta.importKind\":\"alias\",\"note\":\"and the SAME string for the tuple written without element names — one type, one name, which is the property the pre-fix value could not hold\"}; got: references[Widget->System]@0.9; references[Widget->System.Collections.Generic]@0.9; references[Widget->System.Text]@0.9; references[Widget->System.Collections.Generic.Dictionary]@0.9; references[Widget->Widget]@0.9; references[Widget->(Type ContainerType,string FieldName)]@0.9; references[Widget->(Type,string)]@0.9; references[Widget->(int Count,System.Collections.Generic.List]@0.9; references[Widget->OneElement]@0.9; contains[Acme.Tuple->Widget]@1; exports[Acme.Tuple->Widget]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"(int,System.Collections.Generic.List)\",\"line_number\":31,\"meta.importKind\":\"alias\"}; got: references[Widget->System]@0.9; references[Widget->System.Collections.Generic]@0.9; references[Widget->System.Text]@0.9; references[Widget->System.Collections.Generic.Dictionary]@0.9; references[Widget->Widget]@0.9; references[Widget->(Type ContainerType,string FieldName)]@0.9; references[Widget->(Type,string)]@0.9; references[Widget->(int Count,System.Collections.Generic.List]@0.9; references[Widget->OneElement]@0.9; contains[Acme.Tuple->Widget]@1; exports[Acme.Tuple->Widget]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"System.Collections.Generic.Dictionary\",\"line_number\":28,\"meta.importKind\":\"alias\",\"meta.isUsingAlias\":true,\"meta.usingAlias\":\"Generic\"}; got: references[Widget->System]@0.9; references[Widget->System.Collections.Generic]@0.9; references[Widget->System.Text]@0.9; references[Widget->System.Collections.Generic.Dictionary]@0.9; references[Widget->Widget]@0.9; references[Widget->(Type ContainerType,string FieldName)]@0.9; references[Widget->(Type,string)]@0.9; references[Widget->(int Count,System.Collections.Generic.List]@0.9; references[Widget->OneElement]@0.9; contains[Acme.Tuple->Widget]@1; exports[Acme.Tuple->Widget]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "dart/bare-member-read-uses",
@@ -5610,13 +5571,8 @@
       },
       {
         "fixture": "objc/field-invocation",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"calls\",\"source\":\"start\",\"target\":\"progressHandler\",\"meta.isFieldInvocation\":true,\"meta.reasonCode\":\"field-callee-kind-not-determined\",\"line_number\":62,\"comment\":\"`self.progressHandler(3)` — a block property invoked for effect. The field name is read off the field_identifier, never off the receiver's text, so the target is a name the file declares\"}; got: references[root->Foundation/Foundation.h]@0.9; extends[FieldCallSink->NSObject]@1; extends[FieldCallDemo->NSObject]@1; uses[start->done]@0.9; uses[start->progressHandler]@0.9; uses[peek->loopCount]@0.9; uses[peek->seen]@0.9; uses[chain->onTap]@0.9; uses[chain->sink]@0.9; calls[others->dispatch_async]@0.95; calls[others->dispatch_get_main_queue]@0.95; calls[others->peek]@0.95; contains[FieldCallSink->onTap]@1; contains[FieldCallDemo->progressHandler]@1; contains[FieldCallDemo->sink]@1; contains[FieldCallDemo->loopCount]@1; contains[FieldCallDemo->start]@1; contains[FieldCallDemo->peek]@1; contains[FieldCallDemo->chain]@1; contains[FieldCallDemo->others]@1",
-          "expected relationship not found: {\"type\":\"calls\",\"source\":\"chain\",\"target\":\"onTap\",\"meta.isFieldInvocation\":true,\"meta.reasonCode\":\"field-callee-kind-not-determined\",\"line_number\":73,\"comment\":\"a field CHAIN: `self.sink.onTap(1)` names the INNERMOST field, the same name the `uses` row for the same expression carries. Naming `sink` instead would name the receiver, and the receiver is a value, not a symbol\"}; got: references[root->Foundation/Foundation.h]@0.9; extends[FieldCallSink->NSObject]@1; extends[FieldCallDemo->NSObject]@1; uses[start->done]@0.9; uses[start->progressHandler]@0.9; uses[peek->loopCount]@0.9; uses[peek->seen]@0.9; uses[chain->onTap]@0.9; uses[chain->sink]@0.9; calls[others->dispatch_async]@0.95; calls[others->dispatch_get_main_queue]@0.95; calls[others->peek]@0.95; contains[FieldCallSink->onTap]@1; contains[FieldCallDemo->progressHandler]@1; contains[FieldCallDemo->sink]@1; contains[FieldCallDemo->loopCount]@1; contains[FieldCallDemo->start]@1; contains[FieldCallDemo->peek]@1; contains[FieldCallDemo->chain]@1; contains[FieldCallDemo->others]@1",
-          "expected relationship not found: {\"type\":\"calls\",\"source\":\"others\",\"target\":\"dispatch_async\",\"meta.isCFunctionCall\":true,\"meta.reasonCode\":\"callee-not-resolved-in-unit\",\"comment\":\"the pre-existing producer keeps its own flag and its own reason code; the field branch must not re-tag it\"}; got: references[root->Foundation/Foundation.h]@0.9; extends[FieldCallSink->NSObject]@1; extends[FieldCallDemo->NSObject]@1; uses[start->done]@0.9; uses[start->progressHandler]@0.9; uses[peek->loopCount]@0.9; uses[peek->seen]@0.9; uses[chain->onTap]@0.9; uses[chain->sink]@0.9; calls[others->dispatch_async]@0.95; calls[others->dispatch_get_main_queue]@0.95; calls[others->peek]@0.95; contains[FieldCallSink->onTap]@1; contains[FieldCallDemo->progressHandler]@1; contains[FieldCallDemo->sink]@1; contains[FieldCallDemo->loopCount]@1; contains[FieldCallDemo->start]@1; contains[FieldCallDemo->peek]@1; contains[FieldCallDemo->chain]@1; contains[FieldCallDemo->others]@1",
-          "expected relationship not found: {\"type\":\"calls\",\"source\":\"others\",\"target\":\"peek\",\"meta.isMessageExpression\":true,\"meta.reasonCode\":\"dynamic-dispatch-selector\",\"comment\":\"a message send keeps the selector branch and its code; three producers, three codes\"}; got: references[root->Foundation/Foundation.h]@0.9; extends[FieldCallSink->NSObject]@1; extends[FieldCallDemo->NSObject]@1; uses[start->done]@0.9; uses[start->progressHandler]@0.9; uses[peek->loopCount]@0.9; uses[peek->seen]@0.9; uses[chain->onTap]@0.9; uses[chain->sink]@0.9; calls[others->dispatch_async]@0.95; calls[others->dispatch_get_main_queue]@0.95; calls[others->peek]@0.95; contains[FieldCallSink->onTap]@1; contains[FieldCallDemo->progressHandler]@1; contains[FieldCallDemo->sink]@1; contains[FieldCallDemo->loopCount]@1; contains[FieldCallDemo->start]@1; contains[FieldCallDemo->peek]@1; contains[FieldCallDemo->chain]@1; contains[FieldCallDemo->others]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "objc/framework-surface-pins",
@@ -5625,39 +5581,13 @@
       },
       {
         "fixture": "objc/generics-and-reason-codes",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"calls\",\"source\":\"valueForKey:\",\"target\":\"stringWithFormat:\",\"meta.reasonCode\":\"dynamic-dispatch-selector\",\"comment\":\"honesty §4.1: a message send is below 1.0 because it names a SELECTOR and the objc runtime decides which class implements it\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->CacheProtocol.h]@0.9; extends[Cache->Store]@1; implements[Cache->KeyType]@1; implements[Cache->ObjectType]@1; implements[Cache->CacheProtocol]@1; extends[Box->NSObject]@1; implements[Box->ValueType]@1; extends[Plain->NSObject]@1; implements[Plain->NSCopying]@1; implements[Plain->NSFastEnumeration]@1; calls[plainValue->init]@0.95; instantiates[plainValue->Cache]@0.9; calls[plainValue->stringWithFormat:]@0.95; uses[plainValue->key]@0.9; uses[plainValue->cache]@0.9; uses[plainValue->value]@0.9; calls[plainValue->length]@0.95; uses[plainValue->text]@0.9; uses[plainValue->width]@0.9; calls[plainValue->copy]@0.95; calls[trimmed->description]@0.95; uses[trimmed->plainValue]@0.9; calls[valueForKey:->stringWithFormat:]@0.95; uses[valueForKey:->key]@0.9; uses[valueForKey:->length]@0.9; uses[valueForKey:->name]@0.9; calls[valueForKey:->errorWithDomain:code:userInfo:]@0.95; uses[valueForKey:->failure]@0.9; calls[valueForKey:->init]@0.95",
-          "expected relationship not found: {\"type\":\"calls\",\"source\":\"valueForKey:\",\"target\":\"errorWithDomain:code:userInfo:\",\"meta.reasonCode\":\"dynamic-dispatch-selector\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->CacheProtocol.h]@0.9; extends[Cache->Store]@1; implements[Cache->KeyType]@1; implements[Cache->ObjectType]@1; implements[Cache->CacheProtocol]@1; extends[Box->NSObject]@1; implements[Box->ValueType]@1; extends[Plain->NSObject]@1; implements[Plain->NSCopying]@1; implements[Plain->NSFastEnumeration]@1; calls[plainValue->init]@0.95; instantiates[plainValue->Cache]@0.9; calls[plainValue->stringWithFormat:]@0.95; uses[plainValue->key]@0.9; uses[plainValue->cache]@0.9; uses[plainValue->value]@0.9; calls[plainValue->length]@0.95; uses[plainValue->text]@0.9; uses[plainValue->width]@0.9; calls[plainValue->copy]@0.95; calls[trimmed->description]@0.95; uses[trimmed->plainValue]@0.9; calls[valueForKey:->stringWithFormat:]@0.95; uses[valueForKey:->key]@0.9; uses[valueForKey:->length]@0.9; uses[valueForKey:->name]@0.9; calls[valueForKey:->errorWithDomain:code:userInfo:]@0.95; uses[valueForKey:->failure]@0.9; calls[valueForKey:->init]@0.95",
-          "expected relationship not found: {\"type\":\"calls\",\"source\":\"valueForKey:\",\"target\":\"dispatch_once\",\"meta.reasonCode\":\"callee-not-resolved-in-unit\",\"comment\":\"a C call carries a DIFFERENT code from a message send: the callee name is exact, but this translation unit does not define it and the grammar cannot tell a function from a macro\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->CacheProtocol.h]@0.9; extends[Cache->Store]@1; implements[Cache->KeyType]@1; implements[Cache->ObjectType]@1; implements[Cache->CacheProtocol]@1; extends[Box->NSObject]@1; implements[Box->ValueType]@1; extends[Plain->NSObject]@1; implements[Plain->NSCopying]@1; implements[Plain->NSFastEnumeration]@1; calls[plainValue->init]@0.95; instantiates[plainValue->Cache]@0.9; calls[plainValue->stringWithFormat:]@0.95; uses[plainValue->key]@0.9; uses[plainValue->cache]@0.9; uses[plainValue->value]@0.9; calls[plainValue->length]@0.95; uses[plainValue->text]@0.9; uses[plainValue->width]@0.9; calls[plainValue->copy]@0.95; calls[trimmed->description]@0.95; uses[trimmed->plainValue]@0.9; calls[valueForKey:->stringWithFormat:]@0.95; uses[valueForKey:->key]@0.9; uses[valueForKey:->length]@0.9; uses[valueForKey:->name]@0.9; calls[valueForKey:->errorWithDomain:code:userInfo:]@0.95; uses[valueForKey:->failure]@0.9; calls[valueForKey:->init]@0.95",
-          "expected relationship not found: {\"type\":\"instantiates\",\"source\":\"valueForKey:\",\"target\":\"NSMutableDictionary\",\"meta.reasonCode\":\"allocator-receiver-not-cross-file-checked\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->CacheProtocol.h]@0.9; extends[Cache->Store]@1; implements[Cache->KeyType]@1; implements[Cache->ObjectType]@1; implements[Cache->CacheProtocol]@1; extends[Box->NSObject]@1; implements[Box->ValueType]@1; extends[Plain->NSObject]@1; implements[Plain->NSCopying]@1; implements[Plain->NSFastEnumeration]@1; calls[plainValue->init]@0.95; instantiates[plainValue->Cache]@0.9; calls[plainValue->stringWithFormat:]@0.95; uses[plainValue->key]@0.9; uses[plainValue->cache]@0.9; uses[plainValue->value]@0.9; calls[plainValue->length]@0.95; uses[plainValue->text]@0.9; uses[plainValue->width]@0.9; calls[plainValue->copy]@0.95; calls[trimmed->description]@0.95; uses[trimmed->plainValue]@0.9; calls[valueForKey:->stringWithFormat:]@0.95; uses[valueForKey:->key]@0.9; uses[valueForKey:->length]@0.9; uses[valueForKey:->name]@0.9; calls[valueForKey:->errorWithDomain:code:userInfo:]@0.95; uses[valueForKey:->failure]@0.9; calls[valueForKey:->init]@0.95",
-          "expected relationship not found: {\"type\":\"instantiates\",\"source\":\"plainValue\",\"target\":\"Cache\",\"meta.reasonCode\":\"allocator-receiver-not-cross-file-checked\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->CacheProtocol.h]@0.9; extends[Cache->Store]@1; implements[Cache->KeyType]@1; implements[Cache->ObjectType]@1; implements[Cache->CacheProtocol]@1; extends[Box->NSObject]@1; implements[Box->ValueType]@1; extends[Plain->NSObject]@1; implements[Plain->NSCopying]@1; implements[Plain->NSFastEnumeration]@1; calls[plainValue->init]@0.95; instantiates[plainValue->Cache]@0.9; calls[plainValue->stringWithFormat:]@0.95; uses[plainValue->key]@0.9; uses[plainValue->cache]@0.9; uses[plainValue->value]@0.9; calls[plainValue->length]@0.95; uses[plainValue->text]@0.9; uses[plainValue->width]@0.9; calls[plainValue->copy]@0.95; calls[trimmed->description]@0.95; uses[trimmed->plainValue]@0.9; calls[valueForKey:->stringWithFormat:]@0.95; uses[valueForKey:->key]@0.9; uses[valueForKey:->length]@0.9; uses[valueForKey:->name]@0.9; calls[valueForKey:->errorWithDomain:code:userInfo:]@0.95; uses[valueForKey:->failure]@0.9; calls[valueForKey:->init]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"source\":\"valueForKey:\",\"target\":\"name\",\"meta.reasonCode\":\"value-read-by-scope-inference\",\"comment\":\"a read is exact; what the row infers is WHICH binding the name denotes, so the code says that\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->CacheProtocol.h]@0.9; extends[Cache->Store]@1; implements[Cache->KeyType]@1; implements[Cache->ObjectType]@1; implements[Cache->CacheProtocol]@1; extends[Box->NSObject]@1; implements[Box->ValueType]@1; extends[Plain->NSObject]@1; implements[Plain->NSCopying]@1; implements[Plain->NSFastEnumeration]@1; calls[plainValue->init]@0.95; instantiates[plainValue->Cache]@0.9; calls[plainValue->stringWithFormat:]@0.95; uses[plainValue->key]@0.9; uses[plainValue->cache]@0.9; uses[plainValue->value]@0.9; calls[plainValue->length]@0.95; uses[plainValue->text]@0.9; uses[plainValue->width]@0.9; calls[plainValue->copy]@0.95; calls[trimmed->description]@0.95; uses[trimmed->plainValue]@0.9; calls[valueForKey:->stringWithFormat:]@0.95; uses[valueForKey:->key]@0.9; uses[valueForKey:->length]@0.9; uses[valueForKey:->name]@0.9; calls[valueForKey:->errorWithDomain:code:userInfo:]@0.95; uses[valueForKey:->failure]@0.9; calls[valueForKey:->init]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"source\":\"plainValue\",\"target\":\"width\",\"meta.reasonCode\":\"value-read-by-scope-inference\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->CacheProtocol.h]@0.9; extends[Cache->Store]@1; implements[Cache->KeyType]@1; implements[Cache->ObjectType]@1; implements[Cache->CacheProtocol]@1; extends[Box->NSObject]@1; implements[Box->ValueType]@1; extends[Plain->NSObject]@1; implements[Plain->NSCopying]@1; implements[Plain->NSFastEnumeration]@1; calls[plainValue->init]@0.95; instantiates[plainValue->Cache]@0.9; calls[plainValue->stringWithFormat:]@0.95; uses[plainValue->key]@0.9; uses[plainValue->cache]@0.9; uses[plainValue->value]@0.9; calls[plainValue->length]@0.95; uses[plainValue->text]@0.9; uses[plainValue->width]@0.9; calls[plainValue->copy]@0.95; calls[trimmed->description]@0.95; uses[trimmed->plainValue]@0.9; calls[valueForKey:->stringWithFormat:]@0.95; uses[valueForKey:->key]@0.9; uses[valueForKey:->length]@0.9; uses[valueForKey:->name]@0.9; calls[valueForKey:->errorWithDomain:code:userInfo:]@0.95; uses[valueForKey:->failure]@0.9; calls[valueForKey:->init]@0.95",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"root\",\"target\":\"Foundation/Foundation.h\",\"line_number\":39,\"meta.reasonCode\":\"include-target-not-resolved\",\"comment\":\"the include directive is exact; whether `<UIKit/UIKit.h>` names a file in this repository is not checked and for a system framework never can be\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->CacheProtocol.h]@0.9; extends[Cache->Store]@1; implements[Cache->KeyType]@1; implements[Cache->ObjectType]@1; implements[Cache->CacheProtocol]@1; extends[Box->NSObject]@1; implements[Box->ValueType]@1; extends[Plain->NSObject]@1; implements[Plain->NSCopying]@1; implements[Plain->NSFastEnumeration]@1; calls[plainValue->init]@0.95; instantiates[plainValue->Cache]@0.9; calls[plainValue->stringWithFormat:]@0.95; uses[plainValue->key]@0.9; uses[plainValue->cache]@0.9; uses[plainValue->value]@0.9; calls[plainValue->length]@0.95; uses[plainValue->text]@0.9; uses[plainValue->width]@0.9; calls[plainValue->copy]@0.95; calls[trimmed->description]@0.95; uses[trimmed->plainValue]@0.9; calls[valueForKey:->stringWithFormat:]@0.95; uses[valueForKey:->key]@0.9; uses[valueForKey:->length]@0.9; uses[valueForKey:->name]@0.9; calls[valueForKey:->errorWithDomain:code:userInfo:]@0.95; uses[valueForKey:->failure]@0.9; calls[valueForKey:->init]@0.95",
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"root\",\"target\":\"CacheProtocol.h\",\"line_number\":40,\"meta.fileLevel\":true,\"comment\":\"`imports` is at 1.0 — it is the directive itself — so it must carry NO reasonCode; the 0.9 `references` twin is the row that does\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->CacheProtocol.h]@0.9; extends[Cache->Store]@1; implements[Cache->KeyType]@1; implements[Cache->ObjectType]@1; implements[Cache->CacheProtocol]@1; extends[Box->NSObject]@1; implements[Box->ValueType]@1; extends[Plain->NSObject]@1; implements[Plain->NSCopying]@1; implements[Plain->NSFastEnumeration]@1; calls[plainValue->init]@0.95; instantiates[plainValue->Cache]@0.9; calls[plainValue->stringWithFormat:]@0.95; uses[plainValue->key]@0.9; uses[plainValue->cache]@0.9; uses[plainValue->value]@0.9; calls[plainValue->length]@0.95; uses[plainValue->text]@0.9; uses[plainValue->width]@0.9; calls[plainValue->copy]@0.95; calls[trimmed->description]@0.95; uses[trimmed->plainValue]@0.9; calls[valueForKey:->stringWithFormat:]@0.95; uses[valueForKey:->key]@0.9; uses[valueForKey:->length]@0.9; uses[valueForKey:->name]@0.9; calls[valueForKey:->errorWithDomain:code:userInfo:]@0.95; uses[valueForKey:->failure]@0.9; calls[valueForKey:->init]@0.95",
-          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"KeyType\",\"comment\":\"OC-ONT-6, the pre-fix defect: this class's own TYPE PARAMETER is not a protocol. 7 fabricated edges corpus-wide, 2 of them on this one declaration\"} (found implements[Cache->KeyType]@1)",
-          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"ObjectType\",\"comment\":\"same\"} (found implements[Cache->ObjectType]@1)",
-          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"ValueType\",\"comment\":\"same — `Box<ValueType>` adopts nothing at all\"} (found implements[Box->ValueType]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "objc/linkage-and-imports",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"root\",\"target\":\"Foundation/Foundation.h\",\"meta.relationshipType\":\"include_dependency\",\"meta.isSystem\":true,\"meta.isImport\":true,\"meta.fileLevel\":true,\"meta.module\":\"Foundation/Foundation.h\",\"line_number\":46}; got: references[root->Foundation/Foundation.h]@0.9; references[root->Widget.h]@0.9; exports[root->WidgetLimit]@1; exports[root->WidgetSharedCounter]@1; uses[internalHelper->v]@0.9; uses[internalHelper->WidgetLimit]@0.9; extends[Serializer->NSObject]@1; calls[initWithWidth:->init]@0.95; instantiates[initWithWidth:->self]@0.9; calls[freshSerializer->initWithWidth:]@0.95; instantiates[freshSerializer->self]@0.9; calls[measure->internalHelper]@0.95; uses[measure->internalConstant]@0.9; extends[LoudSerializer->Serializer]@1; calls[duplicate->initWithWidth:]@0.95; instantiates[duplicate->super]@0.9; uses[audibleMetric->internalConstant]@0.9; contains[WidgetSize->width]@1; contains[WidgetSize->height]@1; contains[Serializer->initWithWidth:]@1; contains[Serializer->freshSerializer]@1; contains[Serializer->measure]@1; contains[LoudSerializer->duplicate]@1; contains[Serializer->audibleMetric]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"root\",\"target\":\"Widget.h\",\"meta.relationshipType\":\"include_dependency\",\"meta.isSystem\":false,\"meta.isImport\":true,\"meta.fileLevel\":true,\"meta.module\":\"Widget.h\",\"line_number\":47,\"comment\":\"a QUOTED include is not a system include: isSystem comes from the <...> spelling, never from the stripped path\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->Widget.h]@0.9; exports[root->WidgetLimit]@1; exports[root->WidgetSharedCounter]@1; uses[internalHelper->v]@0.9; uses[internalHelper->WidgetLimit]@0.9; extends[Serializer->NSObject]@1; calls[initWithWidth:->init]@0.95; instantiates[initWithWidth:->self]@0.9; calls[freshSerializer->initWithWidth:]@0.95; instantiates[freshSerializer->self]@0.9; calls[measure->internalHelper]@0.95; uses[measure->internalConstant]@0.9; extends[LoudSerializer->Serializer]@1; calls[duplicate->initWithWidth:]@0.95; instantiates[duplicate->super]@0.9; uses[audibleMetric->internalConstant]@0.9; contains[WidgetSize->width]@1; contains[WidgetSize->height]@1; contains[Serializer->initWithWidth:]@1; contains[Serializer->freshSerializer]@1; contains[Serializer->measure]@1; contains[LoudSerializer->duplicate]@1; contains[Serializer->audibleMetric]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"WidgetLimit\",\"meta.relationshipType\":\"module_export\",\"meta.isExport\":true,\"meta.fileLevel\":true,\"meta.evidenceClass\":\"structural\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->Widget.h]@0.9; exports[root->WidgetLimit]@1; exports[root->WidgetSharedCounter]@1; uses[internalHelper->v]@0.9; uses[internalHelper->WidgetLimit]@0.9; extends[Serializer->NSObject]@1; calls[initWithWidth:->init]@0.95; instantiates[initWithWidth:->self]@0.9; calls[freshSerializer->initWithWidth:]@0.95; instantiates[freshSerializer->self]@0.9; calls[measure->internalHelper]@0.95; uses[measure->internalConstant]@0.9; extends[LoudSerializer->Serializer]@1; calls[duplicate->initWithWidth:]@0.95; instantiates[duplicate->super]@0.9; uses[audibleMetric->internalConstant]@0.9; contains[WidgetSize->width]@1; contains[WidgetSize->height]@1; contains[Serializer->initWithWidth:]@1; contains[Serializer->freshSerializer]@1; contains[Serializer->measure]@1; contains[LoudSerializer->duplicate]@1; contains[Serializer->audibleMetric]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"WidgetSharedCounter\",\"meta.relationshipType\":\"module_export\",\"meta.isExport\":true,\"meta.fileLevel\":true,\"meta.evidenceClass\":\"structural\",\"comment\":\"`extern` is external linkage, so it IS an export\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->Widget.h]@0.9; exports[root->WidgetLimit]@1; exports[root->WidgetSharedCounter]@1; uses[internalHelper->v]@0.9; uses[internalHelper->WidgetLimit]@0.9; extends[Serializer->NSObject]@1; calls[initWithWidth:->init]@0.95; instantiates[initWithWidth:->self]@0.9; calls[freshSerializer->initWithWidth:]@0.95; instantiates[freshSerializer->self]@0.9; calls[measure->internalHelper]@0.95; uses[measure->internalConstant]@0.9; extends[LoudSerializer->Serializer]@1; calls[duplicate->initWithWidth:]@0.95; instantiates[duplicate->super]@0.9; uses[audibleMetric->internalConstant]@0.9; contains[WidgetSize->width]@1; contains[WidgetSize->height]@1; contains[Serializer->initWithWidth:]@1; contains[Serializer->freshSerializer]@1; contains[Serializer->measure]@1; contains[LoudSerializer->duplicate]@1; contains[Serializer->audibleMetric]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"Serializer\",\"meta.relationshipType\":\"module_export\",\"meta.isExport\":true,\"meta.fileLevel\":true,\"meta.evidenceClass\":\"structural\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->Widget.h]@0.9; exports[root->WidgetLimit]@1; exports[root->WidgetSharedCounter]@1; uses[internalHelper->v]@0.9; uses[internalHelper->WidgetLimit]@0.9; extends[Serializer->NSObject]@1; calls[initWithWidth:->init]@0.95; instantiates[initWithWidth:->self]@0.9; calls[freshSerializer->initWithWidth:]@0.95; instantiates[freshSerializer->self]@0.9; calls[measure->internalHelper]@0.95; uses[measure->internalConstant]@0.9; extends[LoudSerializer->Serializer]@1; calls[duplicate->initWithWidth:]@0.95; instantiates[duplicate->super]@0.9; uses[audibleMetric->internalConstant]@0.9; contains[WidgetSize->width]@1; contains[WidgetSize->height]@1; contains[Serializer->initWithWidth:]@1; contains[Serializer->freshSerializer]@1; contains[Serializer->measure]@1; contains[LoudSerializer->duplicate]@1; contains[Serializer->audibleMetric]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"LoudSerializer\",\"meta.relationshipType\":\"module_export\",\"meta.isExport\":true,\"meta.fileLevel\":true,\"meta.evidenceClass\":\"structural\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->Widget.h]@0.9; exports[root->WidgetLimit]@1; exports[root->WidgetSharedCounter]@1; uses[internalHelper->v]@0.9; uses[internalHelper->WidgetLimit]@0.9; extends[Serializer->NSObject]@1; calls[initWithWidth:->init]@0.95; instantiates[initWithWidth:->self]@0.9; calls[freshSerializer->initWithWidth:]@0.95; instantiates[freshSerializer->self]@0.9; calls[measure->internalHelper]@0.95; uses[measure->internalConstant]@0.9; extends[LoudSerializer->Serializer]@1; calls[duplicate->initWithWidth:]@0.95; instantiates[duplicate->super]@0.9; uses[audibleMetric->internalConstant]@0.9; contains[WidgetSize->width]@1; contains[WidgetSize->height]@1; contains[Serializer->initWithWidth:]@1; contains[Serializer->freshSerializer]@1; contains[Serializer->measure]@1; contains[LoudSerializer->duplicate]@1; contains[Serializer->audibleMetric]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"WidgetSize\",\"meta.relationshipType\":\"module_export\",\"meta.isExport\":true,\"meta.fileLevel\":true,\"meta.evidenceClass\":\"structural\",\"comment\":\"a typedef of a struct at file scope has external linkage\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->Widget.h]@0.9; exports[root->WidgetLimit]@1; exports[root->WidgetSharedCounter]@1; uses[internalHelper->v]@0.9; uses[internalHelper->WidgetLimit]@0.9; extends[Serializer->NSObject]@1; calls[initWithWidth:->init]@0.95; instantiates[initWithWidth:->self]@0.9; calls[freshSerializer->initWithWidth:]@0.95; instantiates[freshSerializer->self]@0.9; calls[measure->internalHelper]@0.95; uses[measure->internalConstant]@0.9; extends[LoudSerializer->Serializer]@1; calls[duplicate->initWithWidth:]@0.95; instantiates[duplicate->super]@0.9; uses[audibleMetric->internalConstant]@0.9; contains[WidgetSize->width]@1; contains[WidgetSize->height]@1; contains[Serializer->initWithWidth:]@1; contains[Serializer->freshSerializer]@1; contains[Serializer->measure]@1; contains[LoudSerializer->duplicate]@1; contains[Serializer->audibleMetric]@1",
-          "expected relationship not found: {\"type\":\"instantiates\",\"source\":\"initWithWidth:\",\"target\":\"Serializer\",\"meta.isObjCAlloc\":true,\"line_number\":67,\"comment\":\"`return [[self alloc] init];` — [self alloc] allocates the RECEIVER'S OWN CLASS, not a class named `self`\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->Widget.h]@0.9; exports[root->WidgetLimit]@1; exports[root->WidgetSharedCounter]@1; uses[internalHelper->v]@0.9; uses[internalHelper->WidgetLimit]@0.9; extends[Serializer->NSObject]@1; calls[initWithWidth:->init]@0.95; instantiates[initWithWidth:->self]@0.9; calls[freshSerializer->initWithWidth:]@0.95; instantiates[freshSerializer->self]@0.9; calls[measure->internalHelper]@0.95; uses[measure->internalConstant]@0.9; extends[LoudSerializer->Serializer]@1; calls[duplicate->initWithWidth:]@0.95; instantiates[duplicate->super]@0.9; uses[audibleMetric->internalConstant]@0.9; contains[WidgetSize->width]@1; contains[WidgetSize->height]@1; contains[Serializer->initWithWidth:]@1; contains[Serializer->freshSerializer]@1; contains[Serializer->measure]@1; contains[LoudSerializer->duplicate]@1; contains[Serializer->audibleMetric]@1",
-          "expected relationship not found: {\"type\":\"instantiates\",\"source\":\"freshSerializer\",\"target\":\"Serializer\",\"meta.isObjCAlloc\":true,\"line_number\":70}; got: references[root->Foundation/Foundation.h]@0.9; references[root->Widget.h]@0.9; exports[root->WidgetLimit]@1; exports[root->WidgetSharedCounter]@1; uses[internalHelper->v]@0.9; uses[internalHelper->WidgetLimit]@0.9; extends[Serializer->NSObject]@1; calls[initWithWidth:->init]@0.95; instantiates[initWithWidth:->self]@0.9; calls[freshSerializer->initWithWidth:]@0.95; instantiates[freshSerializer->self]@0.9; calls[measure->internalHelper]@0.95; uses[measure->internalConstant]@0.9; extends[LoudSerializer->Serializer]@1; calls[duplicate->initWithWidth:]@0.95; instantiates[duplicate->super]@0.9; uses[audibleMetric->internalConstant]@0.9; contains[WidgetSize->width]@1; contains[WidgetSize->height]@1; contains[Serializer->initWithWidth:]@1; contains[Serializer->freshSerializer]@1; contains[Serializer->measure]@1; contains[LoudSerializer->duplicate]@1; contains[Serializer->audibleMetric]@1",
-          "expected relationship not found: {\"type\":\"instantiates\",\"source\":\"duplicate\",\"target\":\"Serializer\",\"meta.isObjCAlloc\":true,\"line_number\":84,\"comment\":\"`[[super alloc] initWithWidth:2]` names the SUPERCLASS, read from the in-file extends clause LoudSerializer -> Serializer\"}; got: references[root->Foundation/Foundation.h]@0.9; references[root->Widget.h]@0.9; exports[root->WidgetLimit]@1; exports[root->WidgetSharedCounter]@1; uses[internalHelper->v]@0.9; uses[internalHelper->WidgetLimit]@0.9; extends[Serializer->NSObject]@1; calls[initWithWidth:->init]@0.95; instantiates[initWithWidth:->self]@0.9; calls[freshSerializer->initWithWidth:]@0.95; instantiates[freshSerializer->self]@0.9; calls[measure->internalHelper]@0.95; uses[measure->internalConstant]@0.9; extends[LoudSerializer->Serializer]@1; calls[duplicate->initWithWidth:]@0.95; instantiates[duplicate->super]@0.9; uses[audibleMetric->internalConstant]@0.9; contains[WidgetSize->width]@1; contains[WidgetSize->height]@1; contains[Serializer->initWithWidth:]@1; contains[Serializer->freshSerializer]@1; contains[Serializer->measure]@1; contains[LoudSerializer->duplicate]@1; contains[Serializer->audibleMetric]@1",
-          "forbidden relationship present: {\"type\":\"instantiates\",\"target\":\"self\",\"comment\":\"the pre-fix defect: `self` is the implicit receiver keyword, not a class name\"} (found instantiates[initWithWidth:->self]@0.9)",
-          "forbidden relationship present: {\"type\":\"instantiates\",\"target\":\"super\",\"comment\":\"same, for the superclass receiver\"} (found instantiates[duplicate->super]@0.9)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "objc/macro-prefixed-declaration",
@@ -5671,15 +5601,8 @@
       },
       {
         "fixture": "objc/module-imports",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"root\",\"target\":\"Foundation/Foundation.h\",\"meta.relationshipType\":\"include_dependency\",\"meta.isObjCModuleImport\":false,\"line_number\":35,\"comment\":\"the pre-existing include path is unchanged by this fixture: it keeps include_dependency and is NOT tagged as a module import\"}; got: references[root->Foundation/Foundation.h]@0.9; extends[ModuleImportDemo->NSObject]@1; contains[ModuleImportDemo->rowHeight]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"root\",\"target\":\"WidgetKit\",\"meta.relationshipType\":\"module_import\",\"meta.isObjCModuleImport\":true,\"meta.isObjCImport\":true,\"meta.isImport\":true,\"meta.fileLevel\":true,\"meta.module\":\"WidgetKit\",\"line_number\":36,\"comment\":\"fileLevel is load-bearing, not decoration: it is what makes the store put the IMPORTING FILE in source_external instead of the file-scope placeholder, which is how src/lsp/graph_request.ts's usages mode reaches the edge\"}; got: references[root->Foundation/Foundation.h]@0.9; extends[ModuleImportDemo->NSObject]@1; contains[ModuleImportDemo->rowHeight]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"root\",\"target\":\"CoreData\",\"meta.relationshipType\":\"module_import\",\"meta.isObjCModuleImport\":true,\"meta.isObjCImport\":true,\"meta.isImport\":true,\"meta.fileLevel\":true,\"meta.module\":\"CoreData\",\"line_number\":37}; got: references[root->Foundation/Foundation.h]@0.9; extends[ModuleImportDemo->NSObject]@1; contains[ModuleImportDemo->rowHeight]@1",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"root\",\"target\":\"WidgetKit\",\"meta.isObjCModuleImport\":true,\"meta.reasonCode\":\"clang-module-name-not-resolved\",\"line_number\":36,\"comment\":\"the sub-1.0 twin carries its OWN reason code; an include's row below keeps the other one\"}; got: references[root->Foundation/Foundation.h]@0.9; extends[ModuleImportDemo->NSObject]@1; contains[ModuleImportDemo->rowHeight]@1",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"root\",\"target\":\"CoreData\",\"meta.isObjCModuleImport\":true,\"meta.reasonCode\":\"clang-module-name-not-resolved\",\"line_number\":37}; got: references[root->Foundation/Foundation.h]@0.9; extends[ModuleImportDemo->NSObject]@1; contains[ModuleImportDemo->rowHeight]@1",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"root\",\"target\":\"Foundation/Foundation.h\",\"meta.reasonCode\":\"include-target-not-resolved\",\"line_number\":35,\"comment\":\"an #include and an @import are DIFFERENT claims about the same relationship kind, so they must not share one code — the same collapsing the two overrides branches refuse\"}; got: references[root->Foundation/Foundation.h]@0.9; extends[ModuleImportDemo->NSObject]@1; contains[ModuleImportDemo->rowHeight]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "objc/payload-and-complexity",
@@ -5698,11 +5621,8 @@
       },
       {
         "fixture": "objc/selector-attributes",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"calls\",\"source\":\"describe\",\"target\":\"stringWithFormat:\",\"meta.reasonCode\":\"dynamic-dispatch-selector\",\"comment\":\"OC-ONT-7's reason code is asserted here too, because the selector rule and the reason-code rule are both stamped in the same pass and a regression in one must not hide the other\"}; got: references[root->Foundation/Foundation.h]@0.9; extends[Store->NSObject]@1; uses[initWithConfig:->config]@0.9; calls[initWithConfig:->unsignedIntegerValue]@0.95; uses[initWithConfig:->limit]@0.9; calls[flushPending:->purge]@0.95; calls[describe->stringWithFormat:]@0.95; uses[describe->pending]@0.9; extends[LoudStore->Store]@1; extends[RemoteStore->NSMutableArray]@1; contains[Store->initWithConfig:]@1; contains[Store->flushPending:]@1; contains[Store->purge]@1; contains[Store->cancel]@1; contains[Store->compact]@1; contains[Store->describe]@1; contains[LoudStore->purge]@1; contains[RemoteStore->removeAllObjects]@1; overrides[LoudStore.purge->Store.purge]@0.95; overrides[RemoteStore.removeAllObjects->NSMutableArray.removeAllObjects]@0.5",
-          "expected relationship not found: {\"type\":\"overrides\",\"source\":\"LoudStore.purge\",\"target\":\"Store.purge\",\"meta.reasonCode\":\"verified-base-declared-in-file\",\"comment\":\"the VERIFIED branch at 0.95: `Store` is declared in this file and declares `purge`. Honesty §4.1 wants a reason code per row, and one code for both branches would call a verification a guess\"}; got: references[root->Foundation/Foundation.h]@0.9; extends[Store->NSObject]@1; uses[initWithConfig:->config]@0.9; calls[initWithConfig:->unsignedIntegerValue]@0.95; uses[initWithConfig:->limit]@0.9; calls[flushPending:->purge]@0.95; calls[describe->stringWithFormat:]@0.95; uses[describe->pending]@0.9; extends[LoudStore->Store]@1; extends[RemoteStore->NSMutableArray]@1; contains[Store->initWithConfig:]@1; contains[Store->flushPending:]@1; contains[Store->purge]@1; contains[Store->cancel]@1; contains[Store->compact]@1; contains[Store->describe]@1; contains[LoudStore->purge]@1; contains[RemoteStore->removeAllObjects]@1; overrides[LoudStore.purge->Store.purge]@0.95; overrides[RemoteStore.removeAllObjects->NSMutableArray.removeAllObjects]@0.5"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "objc/selector-identity",
@@ -5895,6 +5815,11 @@
         "problems": []
       },
       {
+        "fixture": "lua/stdlib-globals",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "julia/dispatch-and-hierarchy",
         "ok": true,
         "problems": []
@@ -5941,12 +5866,8 @@
       },
       {
         "fixture": "php/define-exports",
-        "ok": false,
-        "problems": [
-          "expected symbol not found: {\"name\":\"AUTO_PREPEND_STYLE\",\"kind\":\"constant\"}; got: App\\Config:namespace, DECLARED_CONST:constant, lazyDefaults:function, computed:function, Reader:class, read:method, CLOOGLE_DB_HOST:constant, CLOOGLE_DB_USER:constant, CONDITIONAL_TOP_LEVEL:constant",
-          "expected export not found: {\"name\":\"AUTO_PREPEND_STYLE\"}; got: [\"CLOOGLE_DB_HOST\",\"CLOOGLE_DB_USER\",\"CONDITIONAL_TOP_LEVEL\"]",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"AUTO_PREPEND_STYLE\",\"confidenceMin\":1,\"meta.relationshipType\":\"define_call\",\"meta.calleeShape\":\"absolute-fq\",\"meta.fileLevel\":true,\"note\":\"the FULLY QUALIFIED spelling of the global `define`. PHP resolves `\\\\define` to the global function unconditionally (no namespace lookup, no fallback), so refusing this callee was a MISSED publication — measured: phpunit's `tests/end-to-end/generic/_files/auto_prepend_file.php` is one file-scope `\\\\define('AUTO_PREPEND_FILE_LOADED', true);` whose whole purpose is a globally visible constant, and the census went 57 -> 58 `exports` edges when this shape was accepted.\"}; got: imports[global->Runtime\\Missing\\Helper]@1; uses[computed->computed\u0000name]@0.9; uses[read->CLOOGLE_DB_HOST]@0.9; uses[read->DECLARED_CONST]@0.9; exports[global->CLOOGLE_DB_HOST]@1; exports[global->CLOOGLE_DB_USER]@1; exports[global->CONDITIONAL_TOP_LEVEL]@1; contains[App\\Config->DECLARED_CONST]@1; contains[App\\Config->lazyDefaults]@1; contains[App\\Config->computed]@1; contains[App\\Config->Reader]@1; contains[Reader->read]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "php/dynamic-callee",
@@ -7130,6 +7051,11 @@
         "problems": []
       },
       {
+        "fixture": "xml/uses-namespace-prefix",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "xml/xsd-declared-name-lines",
         "ok": true,
         "problems": []
@@ -7779,17 +7705,13 @@
       },
       {
         "fixture": "html/embedded-heritage",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"comment\":\"`overrides` likewise. `TrackedSeries.describe` REDECLARES `TrackedShape.describe`, so this is an override in the only sense the language has one — and both endpoints are real symbols in this file, which is not true of the 193 corpus rows this type produces (there the supertype is a Closure-compiled qualified name like `tr.v.d.Diagnostic`, so NEITHER end resolves). The row carries the delegate's own `reasonCode`, which is what honesty contract §4.1 asks for and what the 0.5-confidence corpus rows do not carry.\",\"type\":\"overrides\",\"from\":\"TrackedSeries.describe\",\"target\":\"TrackedShape.describe\",\"line_number\":32,\"meta.htmlEmbedded\":true,\"meta.embeddedLang\":\"js\",\"meta.reasonCode\":\"verified-in-file\"}; got: contains[embedded-heritage->app]@1; contains[embedded-heritage->TrackedShape]@1; contains[TrackedShape->describe]@1; contains[embedded-heritage->TrackedSeries]@1; contains[TrackedSeries->describe]@1; contains[TrackedSeries->total]@1; contains[embedded-heritage->Unrelated]@1; contains[Unrelated->render]@1; contains[embedded-heritage->registry]@1; contains[embedded-heritage->plain]@1; extends[TrackedSeries->TrackedShape]@1; contains[TrackedShape->describe]@1; contains[TrackedSeries->describe]@1; contains[TrackedSeries->total]@1; contains[Unrelated->render]@1; overrides[TrackedSeries.describe->describe]@0.95; instantiates[embedded-heritage->TrackedSeries]@0.95; instantiates[embedded-heritage->Unrelated]@0.95; calls[embedded-heritage->describe]@0.9; calls[embedded-heritage->render]@0.9; uses[TrackedSeries->TrackedShape]@0.6; uses[embedded-heritage->TrackedSeries]@0.6; uses[embedded-heritage->Unrelated]@0.6; uses[embedded-heritage->registry]@0.6; uses[embedded-heritage->plain]@0.6"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "html/embedded-origin-marks",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"comment\":\"The import is written on line 47; block-relative it is line 2, so the shift is what makes this pin true.\",\"type\":\"imports\",\"from\":\"embedded-origin-marks\",\"target\":\"/lib/mount.js:mount\",\"line_number\":47,\"meta.htmlEmbedded\":true,\"meta.embeddedLineOffset\":45}; got: contains[embedded-origin-marks->sheet]@1; contains[embedded-origin-marks->app]@1; contains[app->widget]@1; contains[app->widget-again]@1; contains[embedded-origin-marks->.lead]@1; contains[embedded-origin-marks->MOUNTED]@1; contains[embedded-origin-marks->teardown]@1; imports[embedded-origin-marks->mount]@1; calls[embedded-origin-marks->mount]@0.9; calls[embedded-origin-marks->getElementById]@0.9; calls[teardown->mount]@0.9; exports[embedded-origin-marks->MOUNTED]@1; exports[embedded-origin-marks->teardown]@1; uses[embedded-origin-marks->document]@0.6; uses[teardown->node]@0.6"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "html/error-budget-broken",
@@ -7818,18 +7740,8 @@
       },
       {
         "fixture": "html/idref-carriers",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"comment\":\"ACCESSIBILITY IDREF, role-independent, so it is read off the element's own attribute map rather than from a per-tag row. `aria-labelledby` and `aria-describedby` on ONE start tag produce TWO edges.\",\"type\":\"uses\",\"from\":\"panel\",\"target\":\"title\",\"line_number\":28,\"meta.idrefCarrier\":\"*@aria-labelledby\",\"meta.idrefList\":true,\"meta.evidenceClass\":\"structural\",\"confidence\":1}; got: contains[idref-carriers->app]@1; contains[app->title]@1; contains[app->panel]@1; contains[app->hint]@1; contains[app->open]@1; contains[app->dialog-one]@1; contains[app->open-title]@1; contains[app->warn]@1; contains[app->warn-title]@1; contains[app->h-qty]@1; contains[app->h-price]@1; contains[app->cell-a]@1; contains[app->outer]@1; contains[app->outside-field]@1; contains[app->browsers]@1; contains[app->browser-field]@1; contains[app->lbl]@1; contains[app->named-target]@1; contains[app->bare-label]@1; contains[app->empty-for]@1; contains[app->decorative]@1; contains[app->atom]@1; contains[app->slider]@1; contains[app->true]@1; contains[app->polite]@1; contains[app->dialog]@1; contains[app->dangling]@1; references[panel->title]@1; references[panel->hint]@1; references[open->dialog-one]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"panel\",\"target\":\"hint\",\"line_number\":28,\"meta.idrefCarrier\":\"*@aria-describedby\",\"meta.isIdrefReference\":true}; got: contains[idref-carriers->app]@1; contains[app->title]@1; contains[app->panel]@1; contains[app->hint]@1; contains[app->open]@1; contains[app->dialog-one]@1; contains[app->open-title]@1; contains[app->warn]@1; contains[app->warn-title]@1; contains[app->h-qty]@1; contains[app->h-price]@1; contains[app->cell-a]@1; contains[app->outer]@1; contains[app->outside-field]@1; contains[app->browsers]@1; contains[app->browser-field]@1; contains[app->lbl]@1; contains[app->named-target]@1; contains[app->bare-label]@1; contains[app->empty-for]@1; contains[app->decorative]@1; contains[app->atom]@1; contains[app->slider]@1; contains[app->true]@1; contains[app->polite]@1; contains[app->dialog]@1; contains[app->dangling]@1; references[panel->title]@1; references[panel->hint]@1; references[open->dialog-one]@1",
-          "expected relationship not found: {\"comment\":\"FORWARD reference. `open-title` is declared on line 33, BELOW the dialog on line 32. HTML allows a forward IDREF and real pages rely on it; the resolver runs after the walk precisely so this resolves, which is the same reason `<label for>` is deferred.\",\"type\":\"uses\",\"from\":\"dialog-one\",\"target\":\"open-title\",\"line_number\":32,\"meta.idrefCarrier\":\"*@aria-labelledby\"}; got: contains[idref-carriers->app]@1; contains[app->title]@1; contains[app->panel]@1; contains[app->hint]@1; contains[app->open]@1; contains[app->dialog-one]@1; contains[app->open-title]@1; contains[app->warn]@1; contains[app->warn-title]@1; contains[app->h-qty]@1; contains[app->h-price]@1; contains[app->cell-a]@1; contains[app->outer]@1; contains[app->outside-field]@1; contains[app->browsers]@1; contains[app->browser-field]@1; contains[app->lbl]@1; contains[app->named-target]@1; contains[app->bare-label]@1; contains[app->empty-for]@1; contains[app->decorative]@1; contains[app->atom]@1; contains[app->slider]@1; contains[app->true]@1; contains[app->polite]@1; contains[app->dialog]@1; contains[app->dangling]@1; references[panel->title]@1; references[panel->hint]@1; references[open->dialog-one]@1",
-          "expected relationship not found: {\"comment\":\"SOURCE, not the nearest addressable ancestor. `warn` carries the id `aria-labelledby` names on the NEXT line. The `source` is the element that WRITES the reference, which is what `emitResource`, the in-document fragment href and the differential's `deriveHtmlEdges` all do.\",\"type\":\"uses\",\"from\":\"warn\",\"target\":\"warn-title\",\"line_number\":40,\"meta.idrefCarrier\":\"*@aria-labelledby\"}; got: contains[idref-carriers->app]@1; contains[app->title]@1; contains[app->panel]@1; contains[app->hint]@1; contains[app->open]@1; contains[app->dialog-one]@1; contains[app->open-title]@1; contains[app->warn]@1; contains[app->warn-title]@1; contains[app->h-qty]@1; contains[app->h-price]@1; contains[app->cell-a]@1; contains[app->outer]@1; contains[app->outside-field]@1; contains[app->browsers]@1; contains[app->browser-field]@1; contains[app->lbl]@1; contains[app->named-target]@1; contains[app->bare-label]@1; contains[app->empty-for]@1; contains[app->decorative]@1; contains[app->atom]@1; contains[app->slider]@1; contains[app->true]@1; contains[app->polite]@1; contains[app->dialog]@1; contains[app->dangling]@1; references[panel->title]@1; references[panel->hint]@1; references[open->dialog-one]@1",
-          "expected relationship not found: {\"comment\":\"LIST carrier: `td headers` is a space-separated IDREF list, so one row per token — the same one-row-per-candidate rule `srcset` follows. Two tokens, two edges, both on the line the attribute is written on.\",\"type\":\"uses\",\"from\":\"cell-a\",\"target\":\"h-qty\",\"line_number\":52,\"meta.idrefCarrier\":\"td@headers\",\"meta.idrefList\":true}; got: contains[idref-carriers->app]@1; contains[app->title]@1; contains[app->panel]@1; contains[app->hint]@1; contains[app->open]@1; contains[app->dialog-one]@1; contains[app->open-title]@1; contains[app->warn]@1; contains[app->warn-title]@1; contains[app->h-qty]@1; contains[app->h-price]@1; contains[app->cell-a]@1; contains[app->outer]@1; contains[app->outside-field]@1; contains[app->browsers]@1; contains[app->browser-field]@1; contains[app->lbl]@1; contains[app->named-target]@1; contains[app->bare-label]@1; contains[app->empty-for]@1; contains[app->decorative]@1; contains[app->atom]@1; contains[app->slider]@1; contains[app->true]@1; contains[app->polite]@1; contains[app->dialog]@1; contains[app->dangling]@1; references[panel->title]@1; references[panel->hint]@1; references[open->dialog-one]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"cell-a\",\"target\":\"h-price\",\"line_number\":52,\"meta.idrefCarrier\":\"td@headers\",\"meta.idrefList\":true}; got: contains[idref-carriers->app]@1; contains[app->title]@1; contains[app->panel]@1; contains[app->hint]@1; contains[app->open]@1; contains[app->dialog-one]@1; contains[app->open-title]@1; contains[app->warn]@1; contains[app->warn-title]@1; contains[app->h-qty]@1; contains[app->h-price]@1; contains[app->cell-a]@1; contains[app->outer]@1; contains[app->outside-field]@1; contains[app->browsers]@1; contains[app->browser-field]@1; contains[app->lbl]@1; contains[app->named-target]@1; contains[app->bare-label]@1; contains[app->empty-for]@1; contains[app->decorative]@1; contains[app->atom]@1; contains[app->slider]@1; contains[app->true]@1; contains[app->polite]@1; contains[app->dialog]@1; contains[app->dangling]@1; references[panel->title]@1; references[panel->hint]@1; references[open->dialog-one]@1",
-          "expected relationship not found: {\"comment\":\"FORM IDREF: a control that belongs to a form declared elsewhere in the document. `input@form` is not a resource and not an endpoint, so it is `uses`/structural and never `imports`.\",\"type\":\"uses\",\"from\":\"outside-field\",\"target\":\"outer\",\"line_number\":59,\"meta.idrefCarrier\":\"input@form\",\"meta.evidenceClass\":\"structural\"}; got: contains[idref-carriers->app]@1; contains[app->title]@1; contains[app->panel]@1; contains[app->hint]@1; contains[app->open]@1; contains[app->dialog-one]@1; contains[app->open-title]@1; contains[app->warn]@1; contains[app->warn-title]@1; contains[app->h-qty]@1; contains[app->h-price]@1; contains[app->cell-a]@1; contains[app->outer]@1; contains[app->outside-field]@1; contains[app->browsers]@1; contains[app->browser-field]@1; contains[app->lbl]@1; contains[app->named-target]@1; contains[app->bare-label]@1; contains[app->empty-for]@1; contains[app->decorative]@1; contains[app->atom]@1; contains[app->slider]@1; contains[app->true]@1; contains[app->polite]@1; contains[app->dialog]@1; contains[app->dangling]@1; references[panel->title]@1; references[panel->hint]@1; references[open->dialog-one]@1",
-          "expected relationship not found: {\"comment\":\"A single-valued IDREF carries NO `idrefList`, so a consumer can tell one named element from two.\",\"type\":\"uses\",\"from\":\"browser-field\",\"target\":\"browsers\",\"line_number\":61,\"meta.idrefCarrier\":\"input@list\"}; got: contains[idref-carriers->app]@1; contains[app->title]@1; contains[app->panel]@1; contains[app->hint]@1; contains[app->open]@1; contains[app->dialog-one]@1; contains[app->open-title]@1; contains[app->warn]@1; contains[app->warn-title]@1; contains[app->h-qty]@1; contains[app->h-price]@1; contains[app->cell-a]@1; contains[app->outer]@1; contains[app->outside-field]@1; contains[app->browsers]@1; contains[app->browser-field]@1; contains[app->lbl]@1; contains[app->named-target]@1; contains[app->bare-label]@1; contains[app->empty-for]@1; contains[app->decorative]@1; contains[app->atom]@1; contains[app->slider]@1; contains[app->true]@1; contains[app->polite]@1; contains[app->dialog]@1; contains[app->dangling]@1; references[panel->title]@1; references[panel->hint]@1; references[open->dialog-one]@1",
-          "expected relationship not found: {\"comment\":\"`<label for>` STILL WORKS through the new table and keeps the flag its own fixture pins, because it is now a row rather than a special case. This pin is the regression control for that claim: delete the `label` row from `IDREF_RULES` and this row stops matching.\",\"type\":\"uses\",\"from\":\"lbl\",\"target\":\"named-target\",\"line_number\":65,\"meta.idrefCarrier\":\"label@for\",\"meta.isLabelAssociation\":true,\"meta.evidenceClass\":\"structural\"}; got: contains[idref-carriers->app]@1; contains[app->title]@1; contains[app->panel]@1; contains[app->hint]@1; contains[app->open]@1; contains[app->dialog-one]@1; contains[app->open-title]@1; contains[app->warn]@1; contains[app->warn-title]@1; contains[app->h-qty]@1; contains[app->h-price]@1; contains[app->cell-a]@1; contains[app->outer]@1; contains[app->outside-field]@1; contains[app->browsers]@1; contains[app->browser-field]@1; contains[app->lbl]@1; contains[app->named-target]@1; contains[app->bare-label]@1; contains[app->empty-for]@1; contains[app->decorative]@1; contains[app->atom]@1; contains[app->slider]@1; contains[app->true]@1; contains[app->polite]@1; contains[app->dialog]@1; contains[app->dangling]@1; references[panel->title]@1; references[panel->hint]@1; references[open->dialog-one]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "html/idref-references",
@@ -7838,10 +7750,8 @@
       },
       {
         "fixture": "html/inline-embedded-code",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"comment\":\"The import is written on line 32; block-relative it is line 2, so the shift is what makes this pin true.\",\"type\":\"imports\",\"from\":\"inline-embedded-code\",\"target\":\"/lib/helper.js:helper\",\"line_number\":32,\"meta.embeddedLang\":\"js\",\"meta.embeddedLineOffset\":30}; got: contains[inline-embedded-code->page-style]@1; contains[inline-embedded-code->site-header]@1; contains[inline-embedded-code->.header]@1; contains[inline-embedded-code->#site-header]@1; contains[inline-embedded-code->renderBanner]@1; contains[inline-embedded-code->SHIPPED]@1; imports[inline-embedded-code->helper]@1; calls[renderBanner->getElementById]@0.9; calls[renderBanner->helper]@0.9; calls[inline-embedded-code->renderBanner]@0.9; uses[renderBanner->document]@0.6; uses[renderBanner->text]@0.6; uses[inline-embedded-code->console]@0.6; uses[inline-embedded-code->SHIPPED]@0.6"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "html/object-archive-carrier",
@@ -7909,6 +7819,11 @@
         "problems": []
       },
       {
+        "fixture": "toml/publish-surface-and-paths",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "toml/reference-anchors",
         "ok": true,
         "problems": []
@@ -7955,6 +7870,11 @@
       },
       {
         "fixture": "css/ie-filter-arguments",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "css/import-claims-carry-the-reason",
         "ok": true,
         "problems": []
       },
@@ -8334,6 +8254,11 @@
         "problems": []
       },
       {
+        "fixture": "json/DocumentIdentity",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "json/Dotted.name",
         "ok": true,
         "problems": []
@@ -8397,11 +8322,6 @@
         "fixture": "json/TopLevelSiblings",
         "ok": true,
         "problems": []
-      },
-      {
-        "fixture": "json/manifest/package.expectation.superseded-e7c9819f4",
-        "ok": false,
-        "reason": "missing expectation file"
       },
       {
         "fixture": "json/manifest/package",
@@ -8671,7 +8591,7 @@
       },
       "c": {
         "fail": 4,
-        "pass": 42
+        "pass": 43
       },
       "clean": {
         "fail": 0,
@@ -8686,12 +8606,12 @@
         "pass": 42
       },
       "csharp": {
-        "fail": 4,
-        "pass": 20
+        "fail": 3,
+        "pass": 21
       },
       "css": {
         "fail": 0,
-        "pass": 22
+        "pass": 23
       },
       "dart": {
         "fail": 0,
@@ -8710,8 +8630,8 @@
         "pass": 15
       },
       "go": {
-        "fail": 2,
-        "pass": 29
+        "fail": 0,
+        "pass": 31
       },
       "graphql": {
         "fail": 0,
@@ -8730,8 +8650,8 @@
         "pass": 12
       },
       "html": {
-        "fail": 4,
-        "pass": 14
+        "fail": 0,
+        "pass": 18
       },
       "java": {
         "fail": 10,
@@ -8742,8 +8662,8 @@
         "pass": 74
       },
       "json": {
-        "fail": 1,
-        "pass": 17
+        "fail": 0,
+        "pass": 18
       },
       "julia": {
         "fail": 0,
@@ -8755,7 +8675,7 @@
       },
       "lua": {
         "fail": 0,
-        "pass": 14
+        "pass": 15
       },
       "make": {
         "fail": 2,
@@ -8770,16 +8690,16 @@
         "pass": 13
       },
       "objc": {
-        "fail": 5,
-        "pass": 11
+        "fail": 0,
+        "pass": 16
       },
       "perl": {
         "fail": 8,
         "pass": 14
       },
       "php": {
-        "fail": 1,
-        "pass": 31
+        "fail": 0,
+        "pass": 32
       },
       "powershell": {
         "fail": 0,
@@ -8791,7 +8711,7 @@
       },
       "python": {
         "fail": 0,
-        "pass": 53
+        "pass": 54
       },
       "r": {
         "fail": 0,
@@ -8822,8 +8742,8 @@
         "pass": 17
       },
       "svelte": {
-        "fail": 11,
-        "pass": 42
+        "fail": 6,
+        "pass": 47
       },
       "swift": {
         "fail": 4,
@@ -8831,7 +8751,7 @@
       },
       "toml": {
         "fail": 0,
-        "pass": 9
+        "pass": 10
       },
       "typescript": {
         "fail": 6,
@@ -8842,12 +8762,12 @@
         "pass": 2
       },
       "vue": {
-        "fail": 8,
-        "pass": 56
+        "fail": 3,
+        "pass": 61
       },
       "xml": {
         "fail": 0,
-        "pass": 31
+        "pass": 32
       },
       "yaml": {
         "fail": 0,
@@ -8872,9 +8792,9 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-13T18:43:29-04:00",
-  "regeneratedAtCommit": "fc6df238be756b96b036651162f680ffd38bcbc9",
-  "runtime": "node v22.22.1",
+  "regeneratedAt": "2026-10-16T18:43:16-04:00",
+  "regeneratedAtCommit": "fb93f6f18dc095338a02a11fe137fa0a719d72d7",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
 }

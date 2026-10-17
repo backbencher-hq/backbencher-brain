@@ -28,6 +28,47 @@ function stripLeadingAt(text: string): string {
 }
 
 /**
+ * THE ROOT OF A PURE DOTTED NAME, or "" when the text is not one.
+ *
+ * `os.path.join` -> `os`; `self.store.save` -> `self`; `argparse.ArgumentParser` -> `argparse`.
+ * `re.sub(...).strip().lower` -> "" — and that is the whole reason this exists.
+ *
+ * A call's `fullCallee` is the TEXT of the function child, and when the receiver is an
+ * EXPRESSION that text is the expression: `re.sub(...).strip().lower` starts with an imported
+ * module's name but its final member is `str.lower` on the RESULT, not a member of `re`. A claim
+ * built from `fullCallee.split(".")[0]` would certify that edge external and be FALSE. So the
+ * evidence reader accepts only a chain of identifier segments separated by dots — no call, no
+ * subscript, no whitespace, no operator — and the member edges (`uses`, `references`, `extends`)
+ * already carry that shape because their `qualified` field comes from an `attribute` node.
+ *
+ * A character scan rather than a regex, like every other shape test in this lane (the
+ * `no-regex-gate` counts them).
+ */
+function dottedChainRoot(text: string): string {
+  if (text.length === 0) return ""
+  let i = 0
+  let root = ""
+  while (i < text.length) {
+    const first = text.charCodeAt(i)
+    const firstOk = (first >= 65 && first <= 90) || (first >= 97 && first <= 122) || first === 95
+    if (!firstOk) return ""
+    let j = i + 1
+    while (j < text.length) {
+      const c = text.charCodeAt(j)
+      const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+      if (!ok) break
+      j++
+    }
+    if (root === "") root = text.slice(i, j)
+    if (j === text.length) return root
+    if (text.charCodeAt(j) !== 46) return ""
+    i = j + 1
+    if (i === text.length) return ""
+  }
+  return root
+}
+
+/**
  * Names the STORE has reserved, so a bare endpoint equal to one is indistinguishable from a
  * synthetic scope. Derived from the indexer's own list rather than restated, because a
  * second hand-maintained copy is exactly what standing rule R7 was written about: a copied
@@ -228,6 +269,30 @@ interface PythonContext {
    * the one shape that HAS one.
    */
   importRoots: Set<string>
+  /**
+   * THE IMPORT-EVIDENCE BINDING, per file: each name a MODULE-LEVEL import binds, mapped to the
+   * module it came from (`Path` -> `pathlib`, `pa` -> `pyarrow`, `os` -> `os`).
+   *
+   * Collected by `collectModuleImportBindings` BEFORE the walk (python resolves names at runtime,
+   * not positionally, so an import written after its first use still binds it). Only module-level
+   * imports are recorded: a function-local import is a LOCAL binding (`functionLocals`), and the
+   * external claim refuses those names. Read by `certifyImportEvidenceClaims`, which publishes the
+   * arbiter's external claim (`metadata.isExternalTarget` + `externalReason` + `externalSpecifier`).
+   */
+  moduleImportBindings: Map<string, string>
+  /**
+   * THE LEXICAL SCOPES A NAME CAN BE LOCAL TO, with their 1-based line ranges: one entry per
+   * `def`, one per `lambda`, one per comprehension. Built from `functionLocals` plus a range
+   * walk, and read by the import-evidence certifier to answer "is this name a LOCAL at the
+   * EDGE'S OWN LINE?".
+   *
+   * WHY PER-LINE AND NOT PER-FILE. The first version used a file-wide shadow set, and the lane's
+   * own fixture measured what that costs: a single `def f(os): ...` anywhere in a file stripped
+   * the `os` claim from every OTHER function's `os.path.*` edges — under-claiming so hard that a
+   * true positive and a true negative in one fixture could not both hold. Python's LEGB rule is
+   * positional; so is this.
+   */
+  functionScopes: Array<{ startLine: number; endLine: number; bound: Set<string> }>
   seenRels: Set<string>
   // (class\u001fattr) — one Property per instance attribute per class (PYD1)
   instanceAttrs: Set<string>
@@ -381,6 +446,68 @@ const PY_NAMESPACE_CLAIM_TYPES: ReadonlySet<string> = new Set([
  */
 const PY_NAMESPACE_REFUSING_REASONS: ReadonlySet<string> = new Set([
   "local-binding-target", "inline-type-parameter", "member-read",
+])
+
+/**
+ * THE IMPORT-EVIDENCE EXTERNAL CLAIM — the class this lane's census calls `EXTERNAL`, published
+ * on the key the arbiter reads.
+ *
+ * THE DEFECT THIS CLOSES. `python-endpoint-resolution.ts` already bins an endpoint whose name
+ * "binds to a name this file IMPORTED and to nothing in the corpus" as EXTERNAL — its own words,
+ * its own axis — and on the 400-file census that bin holds calls 545 · uses 68 · references
+ * 1,105 · extends 28 (project scope, `cause-400.log`). The analyzer published NO marker for
+ * them, so the arbiter counted every one as `unresolved`: an unmarked external edge is
+ * indistinguishable from a broken one, and the gate says so in its own docstring. This is the
+ * fleet's finding (a), on this lane: the reason is computed and thrown away.
+ *
+ * THE CLAIM IS THE FILE'S OWN IMPORT STATEMENT, and the evidence is checkable in the file:
+ *
+ *   `from pathlib import Path`   binds `Path`                  -> `Path` is pathlib's name
+ *   `import os`                  binds `os`                    -> `os.path.exists` is os.path's
+ *   `import pyarrow as pa`       binds `pa`                    -> `pa.Table` is pyarrow's
+ *
+ * The target stays the LEAF in every case — the endpoint contract eight fixtures pin — and this
+ * pass only ADDS metadata. It cannot raise `resolved`, cannot move a tie-break, and cannot touch
+ * `collRes`: the arbiter reads an external claim only where the target names nothing.
+ *
+ * WHY THIS IS NOT THE "MARK EVERY UNRESOLVED EDGE EXTERNAL" FREE PASS. Three properties, each
+ * one a fact about the FILE rather than about the corpus being empty:
+ *   1. THE NAME MUST BE BOUND BY A MODULE-LEVEL IMPORT of this file (`bound`), or the target's
+ *      own written route must start at such a binding (`route`). A dynamic member call
+ *      (`self.m()`), a local receiver (`recv.m()`), a bare name bound by nothing — all keep
+ *      the old reading. That is the boundary the census draws between `declared-external` and
+ *      `declared-dynamic`, and the boundary the previous round proved CLOSED for a declared
+ *      cause (the target is a bare leaf, so `targetOwner` is null and a `baseBeyondRunScope`
+ *      claim is REFUTED by the arbiter's own spelling check).
+ *   2. A NAME THIS FILE DECLARES IS NOT EXTERNAL (`declaredHere`), and neither is a name any
+ *      function in this file binds (`shadowedAnywhere`) — the local shadows the import by
+ *      python's own LEGB rule, so the import is not the binding the read sees.
+ *   3. IT IS REFUTABLE BY THE PROJECT. The arbiter verifies the claim against the project key
+ *      space (`verifyExternalClaim`); a project that declares the name in the SAME FILE
+ *      contradicts it (`claimDispositionOnAmbiguous` -> `contradicted`) and one that declares it
+ *      in another file contributes no failure but is reported `ownFileSilent`.
+ *
+ * RELATIVE and `__future__` imports are excluded: the first names THIS project, the second binds
+ * no name at all (PY-D19's own ruling), so neither is evidence of externality.
+ *
+ * ONE CLAIM PER EDGE. An edge that already carries the builtin namespace claim keeps it (the
+ * earlier certifier runs first), which is the rule zig's post-pass states: a reader can see
+ * WHICH mechanism verified what.
+ */
+const PY_IMPORT_CLAIM_TYPES: ReadonlySet<string> = new Set([
+  "calls", "uses", "references", "extends", "implements",
+])
+
+/**
+ * THE REASON CODES THAT SAY THE NAME IS BOUND IN THIS FILE, NOT IN AN IMPORT.
+ *
+ * `local-binding-target` and `inline-type-parameter` are the reference-side refusals the namespace
+ * claim already lists; `local-callee` is the call-side one (PY-D14: a nested `def`, a parameter or
+ * a local assignment shadows the module name by LEGB). A `uses` edge's `member-read` is NOT a
+ * refusal here: its ROUTE is the evidence, and `self.x` / `rows.x` simply have no imported root.
+ */
+const PY_IMPORT_REFUSING_REASONS: ReadonlySet<string> = new Set([
+  "local-binding-target", "inline-type-parameter", "local-callee",
 ])
 
 /**
@@ -609,6 +736,8 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       functionSymbolIndex: {},
       declaredTypes: new Set(),
       importRoots: new Set(),
+      moduleImportBindings: new Map(),
+      functionScopes: [],
       seenRels: new Set(),
       instanceAttrs: new Set(),
       currentModule: moduleName,
@@ -667,10 +796,21 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // user class named ABC, and python resolves names at runtime rather than positionally.
     ctx.interfaceBindings = this.collectInterfaceBindings(rootNode)
 
+    // THE IMPORT-EVIDENCE BINDINGS, before the walk: `certifyImportEvidenceClaims` needs every
+    // module-level import this file makes, including the ones written BELOW the name's first use.
+    ctx.moduleImportBindings = this.collectModuleImportBindings(rootNode)
+
     // PY-D14 (round 7): the local binding set of every function, computed before the walk for the
     // same reason the two pre-passes above are — a bare-name callee's scope is a fact about the
     // whole function body, not about the position the walk happens to reach it from.
     ctx.functionLocals = this.collectFunctionLocals(rootNode)
+
+    // THE LEXICAL SCOPES with line ranges, AFTER `functionLocals` exists: the certifier asks
+    // "is this name a local at the EDGE'S OWN LINE?", so the ranges must carry the locals they
+    // own. Built here rather than beside the import pre-pass because that runs earlier and would
+    // see an empty map — which is exactly how the first version of this guard passed a negative
+    // it was written to refuse.
+    ctx.functionScopes = this.collectFunctionScopes(rootNode, ctx.functionLocals)
 
     // #748 (M49 dup-key family ruling, Option A — the same rule js/ts/vue
     // pinned): python binds the LAST definition of a name in one container
@@ -923,6 +1063,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // that an edge added by any of the passes above is certified too — and it only ADDS a
     // metadata key, never a target, which is why it must not run before the emitters.
     this.certifyLanguageNamespaceRoutes(ctx)
+    // AND THE IMPORT-EVIDENCE CLAIM, after the namespace claim so an edge carries ONE mechanism
+    // (a builtin name this file also imports is claimed by the import, because the import
+    // shadows the builtin at that name; the namespace certifier refuses import-bound names).
+    this.certifyImportEvidenceClaims(ctx)
 
     const detectedFrameworks: string[] = PY_FRAMEWORK_ORDER.filter((f) => ctx.frameworks[f])
     const detectedPatterns: string[] = []
@@ -3920,6 +4064,149 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * THE MODULE-LEVEL IMPORT BINDINGS: every name this file's MODULE scope binds by an import,
+   * mapped to the module that supplies it. The evidence `certifyImportEvidenceClaims` turns into
+   * the arbiter's external claim.
+   *
+   * SCOPE IS THE POINT. It descends through module-level `if`/`try`/`with` blocks (an import
+   * inside `try:` is still a module binding) but NOT into a `def`/`class`/`lambda`/comprehension
+   * body: an import there binds a local (or a class attribute), not a module name, and claiming
+   * a module-level relation for it would be a fact about a different scope. Relative imports are
+   * skipped because they name THIS project, and `__future__` imports are skipped because they
+   * bind no name at all — PY-D19's own ruling, stated at `extractImport`.
+   *
+   * The SHAPES read are the ones the grammar produces, not what the words look like:
+   *
+   *   import a.b               binds `a`      module `a.b`
+   *   import a.b as c          binds `c`      module `a.b`
+   *   from a.b import C        binds `C`      module `a.b`
+   *   from a.b import C as D   binds `D`      module `a.b`
+   *   from . import C          SKIPPED (relative)
+   *   from a import *          binds no single name
+   *
+   * A duplicate binding (`from a import X` then `from b import X`) keeps the FIRST module in
+   * file order, which is the one a reader reaches first and the one the later import replaces;
+   * the ambiguity is why the claim is only ever a statement about where the LAST binding came
+   * from. This is deliberately conservative: under-claiming cannot make a false statement.
+   */
+  private collectModuleImportBindings(rootNode: Node): Map<string, string> {
+    const out = new Map<string, string>()
+    const put = (bound: string, module: string): void => {
+      if (bound.length === 0 || module.length === 0) return
+      if (!out.has(bound)) out.set(bound, module)
+    }
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "function_definition" || n.type === "class_definition" || n.type === "lambda" ||
+          n.type === "list_comprehension" || n.type === "set_comprehension" ||
+          n.type === "dictionary_comprehension" || n.type === "generator_expression") continue
+      if (n.type === "future_import_statement") continue
+      if (n.type === "import_statement") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "dotted_name") {
+            const first = c.namedChild(0)
+            if (first?.type === "identifier") put(first.text, c.text)
+          } else if (c.type === "aliased_import") {
+            const nm = c.childForFieldName("name") ?? c.namedChild(0)
+            const alias = c.childForFieldName("alias") ?? c.namedChild(c.namedChildCount - 1)
+            const module = nm?.text ?? ""
+            const bound = alias?.type === "identifier" ? alias.text : module.split(".")[0] ?? ""
+            if (module.length > 0 && bound.length > 0) put(bound, module)
+          }
+        }
+        continue
+      }
+      if (n.type === "import_from_statement") {
+        // THE MODULE IS THE FIRST named child of type dotted_name/relative_import; every OTHER
+        // named child is an ITEM. The `import` keyword is an ANONYMOUS token, not a named child —
+        // the first version of this loop waited for `sawImport` and therefore recorded NO item of
+        // ANY `from` import (the whole class of `from pathlib import Path` bindings was missing,
+        // which the fixture caught immediately). The module is skipped by NODE ID, not by text,
+        // for the reason round 18 states at `extractImport`: `from datetime import datetime`
+        // spells the module and the item with the same string.
+        let module = ""
+        let moduleId: number | undefined
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "relative_import" || c.type === "dotted_name") {
+            module = c.text
+            moduleId = c.id
+            break
+          }
+        }
+        // A relative import names this project's own tree; `__future__` handles itself above.
+        if (module.length === 0 || module.startsWith(".")) continue
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (moduleId !== undefined && c.id === moduleId) continue
+          if (c.type === "identifier" || c.type === "dotted_name") {
+            put(c.text, module)
+          } else if (c.type === "aliased_import") {
+            const nm = c.childForFieldName("name") ?? c.namedChild(0)
+            const alias = c.childForFieldName("alias") ?? c.namedChild(c.namedChildCount - 1)
+            const item = nm?.text ?? ""
+            const bound = alias?.type === "identifier" ? alias.text : item
+            if (item.length > 0) put(bound, module)
+          }
+          // `wildcard_import` binds no single name: nothing to record.
+        }
+        continue
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
+  }
+
+  /**
+   * THE LEXICAL SCOPES, with line ranges: every `def`, `lambda` and comprehension node, paired
+   * with the names ITS OWN scope binds. Read by `certifyImportEvidenceClaims` to ask whether a
+   * route root is a LOCAL at the edge's own line.
+   *
+   * The `def` bindings come from `functionLocals` (PY-D14's pre-pass); the lambda/comprehension
+   * bindings come from `scopeOwnBindings` (PY-D22's reader), so the two scopes are read by the
+   * functions that already own those rules rather than re-derived here. Ranges NEST, so a check
+   * that walks every scope containing the line sees an enclosing function's binding from inside
+   * a nested def, which is python's LEGB rule rather than an approximation of it.
+   */
+  private collectFunctionScopes(
+    rootNode: Node,
+    locals: Map<string, Set<string>>,
+  ): Array<{ startLine: number; endLine: number; bound: Set<string> }> {
+    const out: Array<{ startLine: number; endLine: number; bound: Set<string> }> = []
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "function_definition") {
+        out.push({
+          startLine: n.startPosition.row + 1,
+          endLine: n.endPosition.row + 1,
+          bound: locals.get(this.functionLocalsKey(n)) ?? new Set<string>(),
+        })
+      } else if (n.type === "lambda" || n.type === "list_comprehension" || n.type === "set_comprehension" ||
+                 n.type === "dictionary_comprehension" || n.type === "generator_expression") {
+        out.push({
+          startLine: n.startPosition.row + 1,
+          endLine: n.endPosition.row + 1,
+          bound: this.scopeOwnBindings(n),
+        })
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
+  }
+
+  /**
    * PY-D18's SECOND HALF — publish the module-scope symbol for each `global`-created name that has
    * no module-scope declaration already, AFTER the walk so the dedupe sees every symbol the file
    * published (a module `def X`, a class `X`, a module-level `X = …`, an `import X`).
@@ -4880,6 +5167,81 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (boundByImport.has(tgt)) continue
       if (PY_NAMESPACE_REFUSING_REASONS.has(String(md.reasonCode ?? ""))) continue
       md.languageNamespace = [...PY_BUILTIN_NAMESPACE]
+    }
+  }
+
+  /**
+   * THE IMPORT-EVIDENCE EXTERNAL CLAIM, certified on the COMPLETE edge set.
+   *
+   * The evidence and the guards are stated on `PY_IMPORT_CLAIM_TYPES`; this is the mechanism.
+   * Two shapes, because a python name reaches a module in two ways:
+   *
+   *   TARGET-BOUND  the target IS a name this file's module scope binds by import
+   *                 (`from pathlib import Path` -> `references f -> Path`)
+   *   ROUTE-BOUND   the target is a MEMBER, and the edge's own `metadata.qualified` chain starts
+   *                 at such a binding (`import os` -> `calls f -> getenv`, route `os.getenv`)
+   *
+   * THE ROUTE IS READ FROM THE EDGE, not re-derived: it is the spelling the source wrote, and it
+   * is the same field the endpoint fixtures pin. A dotted target whose root is NOT a binding
+   * (`self.x`, `rows.x`) gets nothing — that is the dynamic class, and it is deliberately left
+   * unresolved.
+   *
+   * THE CLAIM'S SPELLING follows java's precedent (`real-java-analyzer.ts:4029-4040`):
+   * `isExternalTarget` (the key the arbiter's EXTERNAL_KEYS list reads) plus `externalReason`
+   * and `externalSpecifier`, so a reader can audit WHY this edge was certified and WHICH module
+   * the name came from instead of trusting a boolean.
+   */
+  private certifyImportEvidenceClaims(ctx: PythonContext): void {
+    const bindings = ctx.moduleImportBindings
+    if (!bindings || bindings.size === 0) return
+    const declaredHere = new Set<string>()
+    for (const s of ctx.symbols) {
+      const nm = String(s.name ?? "")
+      if (nm.length > 0) declaredHere.add(nm)
+    }
+    // IS THE NAME A LOCAL AT THIS EDGE'S OWN LINE? python's LEGB rule is POSITIONAL, so the
+    // question is asked of the scopes that CONTAIN the line (ranges nest, so an enclosing
+    // function's binding is visible from a nested def). A file-wide set was measured wrong by
+    // this lane's own fixture: one `def f(os)` stripped every OTHER function's `os.*` claim.
+    const shadowedAt = (line: number, name: string): boolean => {
+      if (line > 0) {
+        for (const scope of ctx.functionScopes) {
+          if (line >= scope.startLine && line <= scope.endLine && scope.bound.has(name)) return true
+        }
+        return false
+      }
+      for (const scope of ctx.functionScopes) if (scope.bound.has(name)) return true
+      return false
+    }
+    for (const r of ctx.relationships) {
+      const label = String(r.type ?? "")
+      if (!PY_IMPORT_CLAIM_TYPES.has(label)) continue
+      const md = r.metadata as Record<string, any> | undefined
+      if (!md || typeof md !== "object") continue
+      // ONE CLAIM PER EDGE, and the builtin namespace claim (certified first) keeps its edges.
+      if (md.isExternalTarget === true || md.languageNamespace !== undefined) continue
+      const tgt = String(r.target ?? "")
+      if (tgt.length === 0) continue
+      if (declaredHere.has(tgt)) continue
+      const line = Number((r as any).line_number ?? 0)
+      if (PY_IMPORT_REFUSING_REASONS.has(String(md.reasonCode ?? ""))) continue
+      const route = String(md.qualified ?? "")
+      const root = dottedChainRoot(route)
+      if (root.length > 0 && route.indexOf(".") > 0) {
+        const specifier = bindings.get(root)
+        if (!specifier) continue
+        if (shadowedAt(line, root)) continue
+        md.isExternalTarget = true
+        md.externalReason = "imported-module-member"
+        md.externalSpecifier = specifier
+        continue
+      }
+      const specifier = bindings.get(tgt)
+      if (!specifier) continue
+      if (shadowedAt(line, tgt)) continue
+      md.isExternalTarget = true
+      md.externalReason = "imported-name"
+      md.externalSpecifier = specifier
     }
   }
 

@@ -386,7 +386,7 @@ the 603-file probe that came back INCONCLUSIVE, and what would separate them.
 | `calls` | yes — EMITTED (was GAP) | **402** | 76+ | **100 %**, and **100 % of sources are declared callers** | 0 |
 | `extends` | yes — EMITTED (was GAP) | **1,429** | 113 | **31.4 %** both ends / **100.0 %** source | 0 |
 | `overrides` | yes — EMITTED (was RULED — the corpus overturned it) | **3** | 3 | **100 %** | 0 |
-| `uses` | no — not emitted. RULED-SOUND, instrument B, probe count **0** over 11,552 walked files | 0 | 0 | — | — |
+| `uses` | yes — EMITTED, and ONLY as a NAMESPACE-PREFIX use: a prefixed element or attribute whose prefix THE DOCUMENT ITSELF BINDS (`xmlns:p="…"` → `uses` with `role: "xml_namespace_prefix_use"`, `resolvable: "in-document"`), the element half and the attribute half collapsing to one edge by `(source, type, target)`. An unbound prefix is refused, `xmlns`/`xml` have no in-document declaration to name, and the default namespace has no written prefix. The earlier cell read "no — not emitted. RULED-SOUND, instrument B, probe count **0** over 11,552 walked files": that census counts the NON-prefix readings this kind must never take — the right answer to the question it asked, and the row was wrong only where it concluded that no other reading exists. Re-read against the source 2026-10-16 | — | — | in-document, by construction | 0 |
 | `exports` | no — not emitted. RULED-SOUND, instrument A, 611 sites adjudicated | 0 | 0 | — | — |
 | `implements` | no — not emitted. RULED-SOUND, instrument A, 5 sites adjudicated | 0 | 0 | — | — |
 | `instantiates` | no — not emitted. RULED-SOUND, instrument A, probe counts **0** and **0** | 0 | 0 | — | — |

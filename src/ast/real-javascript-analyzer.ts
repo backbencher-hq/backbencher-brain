@@ -1,12 +1,23 @@
-// JavaScript Intelligence Engine
-// M12.10 rewrite: C#-family contract, pure-AST, fully regex-free.
-//   - Symbols: no locals/params/lambda-params as symbols; classes, methods,
-//     accessors -> property, fields, module-scope functions/constants,
-//     constructor -> constructor, prototype methods.
-//   - Relationships: leaf identities (calls: Distance -> Sqrt); contains from
-//     ownerName; extends/implements, instantiates, imports/exports (ESM + CJS),
-//     overrides; builtins filtered (console.*, Object leaf methods, super).
-//   - ESM + CommonJS both first-class (import/export, require/module.exports).
+// JavaScript Intelligence Engine — Author: Muhammad Ishaq Khan
+// What this file is: the pure-AST analyzer for JavaScript (extensions js/jsx/mjs/cjs,
+// routed by src/ast/language-detection.ts). It produces symbols, imports, exports and
+// the relationships the graph engine stores; it is regex-free and never reads text
+// where the tree has a node. Grammar: tree-sitter-javascript 0.23.1 (WASM loaded by
+// engine.ts), plus the JSX nodes it carries. ESM and CommonJS are both first-class.
+// Relationship types covered: calls, uses, imports, exports, extends, instantiates,
+// overrides, contains, references. `implements` is RULED OUT — JavaScript has no
+// implements clause (six instruments; docs §"What was RULED"). The emission table,
+// confidence tiers and every count live in docs/analyzers/real-javascript-analyzer.md.
+// Where its scripts and validations live: script/m14/spec/javascript-completeness.json
+// (ontology ledger), validation/m14/fixtures/javascript/** (77 fixtures + expectations,
+// run by script/m14/run-fixtures.ts --lang javascript), validation/m14/verification/
+// JAVASCRIPT-STATE.md and JAVASCRIPT-RESIDUAL.md, and the gates
+// script/m14/incoming-gate.ts, verify-js-binding-resolution.ts, verify-js-import-seam.ts,
+// verify-js-source-attribution.ts, verify-doc-truth-emissions.ts.
+// EDIT THESE TOO: the doc, the spec, the fixtures. This analyzer is the DELEGATE HOST
+// for vue and svelte (real-vue-analyzer.ts and real-svelte-analyzer.ts call it for
+// their <script> blocks), so a shared-emission change must re-run THEIR fixtures too;
+// shared store paths (pool-worker.ts, parallel-indexer.ts) own resolution, not this file.
 
 import type { Node } from "web-tree-sitter"
 import * as path from "path"
@@ -313,6 +324,34 @@ function scopeString(scopes: JSScopeEntry[]): string {
 // ============================================================================
 
 import { isJsBuiltin, jsBuiltinHasMember } from "./js-builtin-prototypes"
+
+/**
+ * THE FILE-LEVEL ACTOR — the source spelling for an edge whose actor is the FILE,
+ * not a symbol: a re-export's dependency row.
+ *
+ * `"(file)"` is the family's already-declared sentinel for "this FILE, as a unit"
+ * (rust `RUST_FILE_SOURCE`, scala `FILE_MODULE`, kotlin, zig, graphql and nim spell
+ * it the same way and pair it with `metadata.fileLevel: true`). This lane spelled
+ * the actor `moduleName` (the basename), and the store resolves a source BY NAME
+ * against the file's own symbol table — so a module-scope row and a function-scope
+ * row named like the module are spelled identically, and 155 of the first 250
+ * admitted files declare a symbol whose name EQUALS their module basename
+ * (measured in the lost lineage this constant was recovered from).
+ *
+ * PRE-SCOPE, stated: this constant is used by the RE-EXPORT rows only in this
+ * round, because their fixtures (`reexport-forms`, `star-reexport`) are the ones
+ * that pin the sentinel. The other file-level sites (imports/exports/uses) still
+ * spell `moduleName`; adopting the sentinel everywhere is the next step and needs
+ * the store-side re-run, not a silent partial spelling.
+ *
+ * `(` and `)` cannot appear in a JavaScript identifier, so no declaration can be
+ * named `(file)` and the store's name lookup cannot attach one of these rows to a
+ * symbol by accident. The terminal pass at the end of `analyze` tags every row
+ * carrying this source with `metadata.fileLevel` + `metadata.scopeName`, which is
+ * what the store's existing branch (parallel-indexer, M60/#910) reads to record
+ * the project-relative path as `source_external`.
+ */
+const FILE_LEVEL_SOURCE = "(file)"
 
 export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
@@ -1146,12 +1185,38 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         // (`./`, `../`) or absolute specifier is local by the grammar of the source itself; anything
         // else keeps its current spelling untouched, which is what makes the external half provably
         // unmoved.
-              const bareLocalItem = !isNamespaceItem && jsItemName !== "" && (srcPath.startsWith(".") || srcPath.startsWith("/"))
+              // ONE FORM KEEPS THE MODULE-QUALIFIED SPELLING: a DEFAULT import.
+              // Its local binding (`Def` in `import Def from "./lib"`) names no
+              // declaration — the module exports `default` — so the bare name
+              // pass can only leave it unresolved or attach it to an unrelated
+              // same-named symbol. The module-aware resolver is the honest route
+              // (`declaredKind: "default"` -> the target module's default export,
+              // recovered through the export row's `localName`), and it reads
+              // `<module>:<item>` rows only. MEASURED on the two-file probe: with
+              // the default row spelled `./lib.js:Def`, `resolveImportTargets`
+              // binds it to `Main` (the declared default) — 1 scanned, 1 resolved.
+              const bareLocalItem = item.kind === "named" && !isNamespaceItem && jsItemName !== "" && (srcPath.startsWith(".") || srcPath.startsWith("/"))
+              // THE SYMBOL THE EDGE REFERS TO, for a LOCAL named specifier: the
+              // DECLARED name, not the local binding. `import { draw as render }`
+              // refers to `draw`; `render` is a name in THIS file. The target is
+              // read by the store's name pass, so spelling the local binding
+              // there attaches the row to whatever declaration shares that name —
+              // MEASURED on a two-file project (a fixture with `draw as render`
+              // beside `class Widget { render() {} }`): the import row bound to
+              // `Widget.render` in the target's own file, a wrong binding of the
+              // exact class the m40 gate calls "the decoy". Nothing is lost by the
+              // re-spelling: `metadata.declaredName` still carries the source
+              // name and `imports[]` still carries the local binding the file
+              // writes. A DEFAULT import keeps the local binding as its target
+              // (`default` is in the symbol denylist and names no declaration);
+              // a NAMESPACE import keeps `<module>:*` (no member is named).
+              const localNamedTarget = item.kind === "named" ? (item.declared || jsItemName) : jsItemName
               relationships.push({
                 source: moduleName,
-                // FOR A LOCAL MODULE the target is the ITEM (the symbol the edge refers to); for an
-                // external one it stays `<specifier>:<item>`, which is what the importing fixtures pin.
-                target: bareLocalItem ? jsItemName : `${srcPath}:${isNamespaceItem ? "*" : jsItemName}`,
+                // FOR A LOCAL MODULE the target is the symbol the edge refers to;
+                // for an external one it stays `<specifier>:<local binding>`,
+                // which is what the importing fixtures pin.
+                target: bareLocalItem ? localNamedTarget : `${srcPath}:${isNamespaceItem ? "*" : jsItemName}`,
                 type: ASTEngine.RelationshipType.Imports,
                 confidence: isNamespaceItem ? 0.6 : 1.0,
                 ...this.lineField(item.node),
@@ -1183,21 +1248,59 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const exportSource = node.childForFieldName("source")
           if (exportSource) {
             const modPath = stringContent(exportSource)
-            // Named clauses carry their names (`export { a, b } from "./m"`);
-            // a bare star records "*".
+            // Named clauses carry the members they re-export. The two
+            // spellings in a specifier are DIFFERENT facts: `name` is the member
+            // in the SOURCE module (what the specifier resolves to), `alias` is
+            // the name THIS module exports it under (`export { readFile as read }
+            // from "fs"` re-exports `readFile`). JSD45/JSD46: the old code kept
+            // only `alias ?? name` for the `imports[]` payload and published ONE
+            // `path:*` row for the whole statement, so the member names were
+            // discarded — 713 named re-export statements carrying 790 written
+            // member names across the corpora became a module-level dependency
+            // with no member, at 0.6, while `import { a } from './m'` already
+            // yielded `m:a` at 1.0. Same member, same module path, first-class in
+            // one direction and thrown away in the other.
+            const namedSpecs: { member: string; exportedAs: string; node: Node }[] = []
             const clauseNames: string[] = []
             const clause2 = this.findChildByType(node, "export_clause")
             if (clause2) {
               for (let i = 0; i < clause2.namedChildCount; i++) {
                 const spec = clause2.namedChild(i)
                 if (spec && spec.type === "export_specifier") {
+                  const nameNode = spec.childForFieldName("name") ?? spec.namedChild(0)
                   const alias = spec.childForFieldName("alias")
-                  const nm = alias ?? spec.childForFieldName("name")
-                  if (nm) clauseNames.push(nm.text)
+                  // A module namespace name may itself be a STRING (`export {
+                  // "a-b" as c } from "m"`, ES2022 arbitrary module namespace
+                  // names), whose `.text` carries the quotes — `stringContent` is
+                  // the same unquoting the module path uses.
+                  const member = nameNode
+                    ? (nameNode.type === "string" ? stringContent(nameNode) : String(nameNode.text ?? ""))
+                    : ""
+                  if (nameNode && member) {
+                    // UNCHANGED for the `imports[]` payload: the exported
+                    // spelling, which is what the two barrel fixtures pin
+                    // (`alias || name`).
+                    namedSpecs.push({ member, exportedAs: alias ? String(alias.text) : member, node: nameNode })
+                    clauseNames.push(alias ? String(alias.text) : member)
+                  }
                 }
               }
             }
             const starOnly = !clause2 && this.hasToken(node, "*")
+            // THE TWO STAR FORMS ARE DIFFERENT FACTS, and until now they emitted
+            // byte-identical records. `export * from "./m"` REDISTRIBUTES every
+            // member of `./m`; `export * as ns from "./m"` binds ONE name in this
+            // file and redistributes nothing. The grammar marks them apart with a
+            // NAMED `namespace_export` child (`"* as ns"`), so this is a tree
+            // fact rather than a text guess — and it is also why `starOnly` is
+            // FALSE for the namespace form: the `*` is inside that named node,
+            // not a direct token. A resolver reading a star edge as a
+            // redistribution would otherwise invent, for a consumer of this file,
+            // every member of `./m` the language does not export from it.
+            const namespaceExport = this.findChildByType(node, "namespace_export")
+            const namespaceAlias = namespaceExport
+              ? String(namespaceExport.childForFieldName("name") ?? namespaceExport.namedChild(0)?.text ?? "")
+              : ""
             imports.push({
               module: modPath,
               items: starOnly ? ["*"] : clauseNames,
@@ -1205,22 +1308,57 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               range: this.nodeToRange(node),
               metadata: { reExport: true },
             })
-            relationships.push({
-              source: moduleName,
-              target: `${modPath}:*`,
-              type: ASTEngine.RelationshipType.Imports,
-              // JD-J12 (M60, 2026-09-27): a clause-less re-export (`export * from
-              // "m"`) names the MODULE and no member of it — `*` again. The
-              // comment below is right that the written name is the path
-              // argument, but a module path is not a symbol, so 1.0 overstated
-              // it the same way it overstated `require` and the namespace import.
-              // Kept, marked, and demoted: the re-export dependency is real.
-              confidence: 0.6,
-              // A re-export with no clause names the MODULE, so the written name
-              // is the module-path argument itself.
-              ...this.lineField(exportSource),
-              metadata: { isReExport: true, unresolved: true },
-            })
+            if (namedSpecs.length) {
+              for (const spec of namedSpecs) {
+                relationships.push({
+                  source: FILE_LEVEL_SOURCE,
+                  // The MEMBER in the source module — not the alias this module
+                  // exports it under, which is what an `exports` edge is about.
+                  target: `${modPath}:${spec.member}`,
+                  type: ASTEngine.RelationshipType.Imports,
+                  // 1.0 for the same reason a named import keeps 1.0: the member
+                  // name is WRITTEN in this file, and ESM fixes its meaning (the
+                  // source module must export `member`), so this is a stated
+                  // dependency and not an inference. `export *` / `export * as ns`
+                  // keep 0.6 and `unresolved` — they write no member name.
+                  confidence: 1.0,
+                  // The specifier's OWN line: a clause is a list, and the name the
+                  // edge is about is written on its own line.
+                  ...this.lineField(spec.node),
+                  metadata: {
+                    isReExport: true,
+                    declaredName: spec.member,
+                    declaredKind: "named",
+                    ...(spec.exportedAs !== spec.member ? { exportedAs: spec.exportedAs } : {}),
+                  },
+                })
+              }
+            } else {
+              relationships.push({
+                source: FILE_LEVEL_SOURCE,
+                target: `${modPath}:*`,
+                type: ASTEngine.RelationshipType.Imports,
+                // JD-J12 (M60, 2026-09-27): a clause-less re-export (`export *
+                // from "m"`) names the MODULE and no member of it — `*` again. A
+                // module path is not a symbol, so 1.0 overstated it the same way
+                // it overstated `require` and the namespace import. Kept, marked,
+                // and demoted: the re-export dependency is real.
+                confidence: 0.6,
+                // A re-export with no clause names the MODULE, so the written
+                // name is the module-path argument itself.
+                ...this.lineField(exportSource),
+                // `starForm` is the discriminator, and it is the one piece of
+                // evidence a resolver needs to tell a REDISTRIBUTION from a
+                // namespace binding: only `all` may be followed for a name this
+                // file does not publish.
+                metadata: {
+                  isReExport: true,
+                  unresolved: true,
+                  starForm: namespaceAlias ? "namespace" : "all",
+                  ...(namespaceAlias ? { namespaceName: namespaceAlias } : {}),
+                },
+              })
+            }
             patterns["ES6 ReExports"] = true
           }
           break
@@ -1422,7 +1560,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
     }
-    this.extractExportRelationships(exports, relationships, moduleName)
+    // An export is by definition the MODULE's surface — the file is the actor.
+    // See FILE_LEVEL_SOURCE for why the spelling is the sentinel and not the
+    // basename: the store resolves a source BY NAME, and a module basename is a
+    // legal JavaScript identifier this ecosystem itself uses
+    // (`visitors/Attribute.js` declaring `function Attribute`).
+    this.extractExportRelationships(exports, relationships, FILE_LEVEL_SOURCE)
     // M49 #868: decorators are metadata on the symbol they decorate, so their
     // only edge is a reference FROM that symbol, at the decorator's own line.
     this.extractDecoratorRelationships(symbols, relationships)
@@ -1484,6 +1627,23 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // errors) the same measurement is 0 and 0. It fires only where the input is
     // not JavaScript, and dropping the row is right there too — the row is a
     // statement about the grammar's error recovery, not about the program.
+    //
+    // ── A FILE-LEVEL ROW SAYS SO ─────────────────────────────────────────────
+    //
+    // Every row sourced at `FILE_LEVEL_SOURCE` has the MODULE as its actor.
+    // `fileLevel` is the store's existing contract for exactly that (M60/#910: it
+    // rewrites `source_external` to the project-relative path — a NODE a consumer
+    // can follow — rather than a bare basename that may or may not be a
+    // declaration in this file). Applied HERE, terminally, for the same reason the
+    // endpoint guard below is: the re-export sites are three today and a fourth
+    // added tomorrow is the one that forgets. `scopeName` keeps the module's own
+    // name, which the store's branch otherwise takes from the source spelling.
+    // It runs BEFORE the endpoint guard so a row reaching it with the sentinel is
+    // judged on its real endpoints, not on a placeholder.
+    for (const r of relationships) {
+      if (r.source !== FILE_LEVEL_SOURCE) continue
+      r.metadata = { ...(r.metadata ?? {}), fileLevel: true, scopeName: moduleName }
+    }
     for (let i = relationships.length - 1; i >= 0; i--) {
       const r = relationships[i]
       if (!r.source || !r.target) relationships.splice(i, 1)
@@ -1862,17 +2022,31 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   private extractExportRelationships(
     exports: ASTEngine.ExportInfo[],
     relationships: ASTEngine.UniversalRelationship[],
-    moduleName: string,
+    // The MODULE-SCOPE ACTOR: an export is by definition the module's surface,
+    // so this pass takes no other source (see FILE_LEVEL_SOURCE).
+    moduleActor: string,
   ): void {
     for (const item of exports) {        relationships.push({
-          source: moduleName,
+          source: moduleActor,
           target: item.name,
           type: ASTEngine.RelationshipType.Exports,
           confidence: 1.0,
           // The exported NAME's own line, from the export's range when the
           // collector recorded one. Absent rather than invented when it did not.
           ...(item.range?.startLine ? { line_number: item.range.startLine } : {}),
-          metadata: { isDefault: item.isDefault },
+          // THE RECORD'S OWN metadata is carried through, not replaced by
+          // `{isDefault}`. JSD53's ruling: JD-J14 decided a NAMED default
+          // declaration is exported under `default` (ECMAScript) and kept the
+          // declaration's own name in `metadata.localName` "so nothing is lost"
+          // — and this line then dropped it, so the loss was total. The row's
+          // target `default` matches no symbol (it is in the symbol denylist),
+          // so `import Def from "./m"` could not resolve for any module with a
+          // named default export, and `script/m40/verify-import-resolution.ts`
+          // JD2.4 has been red since. `loadImportInputs` reads exactly this
+          // `localName` (src/ast/import-resolution.ts) to recover the
+          // declaration in the row's own file. Additive: `isDefault` stays, and
+          // the engine's own evidenceClass/fileLevel are added later.
+          metadata: { isDefault: item.isDefault, ...(item.metadata ?? {}) },
         })
     }
   }

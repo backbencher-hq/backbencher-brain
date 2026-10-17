@@ -49,8 +49,8 @@ and graded; the tenth is blocked on the gate's first-row skip (Open findings §1
 | extends | **EMITTED** | svelte 15 / 14; ts corpus 3,575 / 1,031; **lodash 0** (ES5 has no `class`) | `class_heritage` → base class leaf name | 1.0 |
 | implements | **RULED** — the language has no `implements` clause. **Six instruments, two of them new this round and decisive** — see "What was RULED" | 0 emitted on every corpus | — | — |
 | instantiates | **EMITTED** | svelte 140 / 72; lodash 586 / 21; ts corpus 6,415 / 1,264 | `new_expression` → constructor leaf name; 55 global runtime constructors filtered (`JS_GLOBAL_CONSTRUCTORS`) | 0.95 |
-| imports | **EMITTED** | svelte 7,120 / 3,317; lodash 78 / 27; ts corpus 12,842 / 2,030 | ESM `import_statement` → module leaf → `${modulePath}:${item}` per item (named/default/namespace); CJS `require()` and dynamic `import()` → `${modulePath}:*`; re-export → `${modulePath}:*` — **and the re-export spelling discards a named clause's members; 713 statements / 790 specifiers across the corpora, measured. Open finding §5** | 1.0 named/default, 0.6 for a `*` leaf (JD-J12: `*` names no symbol) |
-| exports | **EMITTED** | svelte 4,856 / 3,404; lodash 60 / 12; ts corpus 26,043 / 3,148 | ESM `export` statements (declaration, export_clause, default); CJS `module.exports = { … }` (object keys), `exports.x = …` → module leaf → exported name | 1.0 |
+| imports | **EMITTED** | svelte 7,120 / 3,317; lodash 78 / 27; ts corpus 12,842 / 2,030 | ESM `import_statement` → per item. **A LOCAL relative/absolute module's NAMED specifier targets the DECLARED name** (`import { draw as render } from "./lib"` → `draw`), because the local binding is a name in THIS file and publishing it lets the store's name pass attach the row to an unrelated same-named declaration (measured: it bound `Widget.render`). The local binding is kept in `imports[]` and `metadata.declaredName`. **A LOCAL DEFAULT specifier keeps `<module>:<binding>`** (`import Def from "./lib"` → `./lib:Def`) so the module-aware resolver can reach the target module's default export; it resolves (`Def → Main`) through the wired `resolveImportTargets`. **A namespace specifier keeps `<module>:*`**. An EXTERNAL specifier keeps `<specifier>:<binding>`. **A named re-export now publishes ONE row per written member** (`export { readFile as read } from "fs"` → `fs:readFile` at 1.0 with `metadata {isReExport, declaredName, exportedAs}`), and `export *` / `export * as ns` / `export {}` keep `<module>:*` at 0.6, marked `unresolved`, discriminated by `metadata.starForm` (`all` vs `namespace`). Re-export and `exports` rows are sourced at the family sentinel `(file)` with `metadata.fileLevel`, not the module basename (a basename is a legal identifier; 155 of the first 250 admitted files declare a symbol equal to their module name — `visitors/Attribute.js` → `function Attribute`). **DEBT, stated: the differential's import oracle still spells the OLD contract and is master-owned — see Open finding §5** | 1.0 named/default, 0.6 for a `*` leaf (JD-J12: `*` names no symbol) |
+| exports | **EMITTED** | svelte 4,856 / 3,404; lodash 60 / 12; ts corpus 26,043 / 3,148 | ESM `export` statements (declaration, export_clause, default); CJS `module.exports = { … }` (object keys), `exports.x = …` → exported name. **Source is `(file)` + `metadata.fileLevel`.** **The export record's own metadata is carried through** (`{isDefault, ...item.metadata}`), so a NAMED default declaration's row carries `metadata.localName` (`export default class Main` → `localName: "Main"`); `loadImportInputs` uses it to recover the declaration, which is what lets `import Def from "./lib"` resolve to `Main` (JSD53, m40 JD2.4) | 1.0 |
 | overrides | **EMITTED** | svelte 52 / 7 files (all at 0.5); ts corpus **630 / 148** `[re-measured, was 644 / 158]`; **lodash 0** | derived member matching base-class member name, over METHODS, CONSTRUCTORS and ACCESSOR PAIRS; an accessor pair is a prototype member, so `get x()`/`set x(v)` shadow a base accessor too, and the pair collapses to ONE edge (J10). Symbol kinds are unchanged by that widening — accessors are still kinded `property`. A `#private` name can neither be declared by a base nor shadowed by a subclass, so it is always silent (J9). Base resolved via extends + cross-file harness companion (`User.format → BaseService.format`) | 0.95 in-file verified, 0.5 first-parent guess |
 | contains | **EMITTED** | svelte 654 / 63; lodash 16 / 8; ts corpus **23,121 / 3,483** `[re-measured, was 23,209]` | computed from `ownerName` on symbols (single pass) — class members, object-literal members, prototype methods | 1.0 |
 | uses | **EMITTED** | svelte 30,758 / 2,544; lodash 7,691 / 48; ts corpus 215,640 / 11,901 | **Four emission sites:** bare identifier reads at 0.9 (`return config`, `if (flag)`); member-chain segments at 0.85 (`title.length` → `title`); template-substitution reads at 0.85; and the chain ROOT of a call's callee at 0.6 with `metadata.callReceiver` (`title.toUpperCase()` → `title`). The 0.6 tier exists because `calls` names only the leaf, so the receiver is named by nothing else — see X1 in `script/m14/spec/svelte-completeness.json`. `this`/`super` are excluded as keywords. **The SOURCE expression is `method \|\| owner \|\| moduleName`** — `\|\|`, not `??`, so a zero-length recovered name cannot win (JSD35) | 0.6 / 0.85 / 0.9 |
@@ -411,26 +411,30 @@ above when run through this lane's own runner** — 60 defined, 60 caught, but o
 survivors in scala/csharp/elixir" no longer matches: scala has 1, csharp and
 elixir have 0, and java/groovy/make/php have 5 between them.
 
-### 5. `imports` throws away the members a named re-export clause writes
+### 5. `imports` re-export members — FIXED 2026-10-17; the ORACLE half is still owed
 
-`export { a, b } from "./m"` names two members. The lane spells **every**
-re-export target `${modulePath}:*` at confidence 0.6 with
-`metadata.unresolved: true` — including the form that wrote the names. Measured
-across the three corpora: **svelte 106 named re-export statements carrying 271
-specifiers, the ts corpus 607 statements carrying 519, lodash 0.** So 713
-statements and 790 written member names are published as a module-level
-dependency with no member, and demoted below the 0.7 threshold for it.
+**Status: the analyzer half landed this iteration; the differential's oracle half did NOT and is
+master-owned.** `export { a, b } from "./m"` now publishes one `imports` row per written member —
+`m:a`, `m:b` at 1.0 with `metadata.declaredName` and `metadata.exportedAs` — and the star/namespace/empty
+forms keep `m:*` at 0.6 with `metadata.starForm` (`all` vs `namespace`), `unresolved`. Fixtures
+`javascript/reexport-forms` and `javascript/star-reexport` pin all of it and were RED before the change,
+GREEN after. MEASURED pre-fix on the corpora: **svelte 106 named re-export statements carrying 271
+specifiers, the ts corpus 607 statements carrying 519, lodash 0** — 713 statements and 790 written member
+names published as a module-level dependency with no member.
 
-It is not defensible as a design choice: `import { a } from "./m"` already yields
-`m:a` at 1.0 with `metadata.declaredName`, measured and oracle-confirmed, so the
-same member name from the same module path is a first-class edge in one direction
-and discarded in the other. **Not shipped here, deliberately**: the import
-oracle's contract in `deriveJavaScriptImportEdges` states `export … from` → `path:*`
-for all three re-export forms verbatim, so changing the analyzer alone turns all
-790 into MISSING rows against a recorded baseline of 0 — which is what the
-previous round's finding §2 says about its own unfixed defect. The change is in
-both files and must land in one merge; `script/m14/differential.ts` is the
-master's. Reported, not taken.
+**THE OWED HALF, named precisely so it can be applied in one merge:** `deriveJavaScriptImportEdges` in
+`script/m14/differential.ts` (master-owned) still derives `path:*` for all three re-export forms, and it
+still spells the OLD import contract for local modules (`<module>:<local binding>`) — the analyzer's local
+named imports have been bare since `d0f2ea19b` and now target the DECLARED name. Until the oracle moves,
+the differential reports the re-export member rows and the local-import rename as MISSING/analyzer-only.
+`script/m14/differential.ts` is the master's; this lane's proposal
+(`validation/m14/proposals/javascript-callee-guard-and-store-wiring.md`) carries the exact patch shape.
+
+Also fixed in the same pass: `export *` and `export * as ns` used to emit BYTE-IDENTICAL records. The
+grammar marks the namespace form with a named `namespace_export` child (`"* as ns"`), so the discriminator
+is a tree fact, not a text guess, and it is also why `hasToken(node,'*')` is false for it. A resolver that
+reads a star edge as a redistribution would otherwise invent, for a consumer of this file, every member of
+`./m` the language does not export from it.
 
 ### 6. A latent owner shape with ZERO corpus occurrences — measured, and not shipped
 
@@ -555,7 +559,7 @@ agreement.
 | every type has a verdict with a number | 10/10 — nine EMITTED with counts and file spreads on three corpora re-measured at this commit, one RULED with **six** instruments of which three are new and two of those decisive |
 | emitted types answer all six questions | the ten subsections above; each answer cites its instrument and measurement, names what the instrument cannot see, and — new this round — **attributes every MISSING row** to the production noise filter or to a real gap. 218 of 225 MISSING rows on the svelte draw are filter deletions; the 7 that are not are all oracle over-derivation, listed by construct and file |
 | no unknown symbols, no empty names, no placeholder-literal endpoints | 0 empty endpoints, 0 `global` sources, 0 empty symbol names, re-measured on all three corpora. Remaining "placeholder-looking" endpoints enumerated and classified, with one **classification corrected this round**: `module` as a `calls` TARGET is a written method name (`template.module(data)` in `lodash/lib/fp/build-modules.js:102`, `QUnit.module(…)` in `lodash/test/test-fp.js`), not the CommonJS free variable — 100 rows on lodash that the R7 heuristic mislabels, 0 on svelte |
-| fixtures assert the new behaviour and a mutant must die | 74 fixtures, 74 pass / 0 fail. **No analyzer behaviour changed this round**, so no new fixture is claimed: the full-corpus relationship count is byte-identical (svelte 75,561 before and after), which is the measurement that says the payload did not move. The four lane mutants were re-run through the new runner and **4 of 4 die** — while §3 records that the canonical command does not run them at all |
+| fixtures assert the new behaviour and a mutant must die | **[re-measured 2026-10-17]** 77 fixtures, **76 pass / 1 fail**, baseline `validation/m14/fixture-baseline.json` allowed 3 failing and now allows the run's 1. The pass count rose from 74 by recovering the lost lineage's two re-export fixture halves (`reexport-forms`, `star-reexport` were RED at HEAD) — see `validation/m14/verification/JAVASCRIPT-STATE.md`. The one remaining failure is `non-name-callee-refused`, whose analyzer half is four lines but whose ORACLE half lives in master-owned `script/m14/differential.ts`; it is proposed, not silently ignored (`validation/m14/proposals/javascript-callee-guard-and-store-wiring.md`). The old sentence here claimed "no analyzer behaviour changed this round" — that was true of the round it was written for and is FALSE of this one; the fixture count and the payload both moved. Mutation/differential rows below are from that earlier round and were NOT re-run this iteration. |
 | mutation, differential and payload/latency re-run | mutation: javascript **56 caught / 0 survived** in the shared registry, plus **4 caught / 0 survived** through `javascript-mutant-runner.ts`; the 6 registry survivors are java 1, groovy 2, scala 1, make 1, php 1. differential: svelte 120 files 1,457 truth / 1,456 covered / MISSING=1 / unexplained=0 / heuristic=0, hash `fc839056ff888724`; lodash 55 files 12,819 / 12,819 / MISSING=0 / unexplained=0, hash `494e1b94766e8ade`; ts corpus 200 files 3,445 truth / 3,406 covered / MISSING=39 / unexplained=1 (an `exports` row), all 39 MISSING in `tsc/testdata/baselines` files the JS grammar cannot parse. payload: **399-file svelte sample 34,569 relationships at this commit** — see the caveat below |
 | doc + spec updated | this file; JSD33 (`implements` RULED), JSD34 (class-expression heritage), JSD35 (R7 runtime), JSD36 (`pool-worker` loss), **JSD38–JSD40 added this round** (grammar-declared inventory, the probe that fires on the sibling grammar, the counterfactual parse, and the JSDoc resolvability measurement) |
 

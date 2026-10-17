@@ -75,6 +75,20 @@ Two consequences, both of which invalidate numbers this file previously quoted:
   population the count is **0**, and the analyzer's own rule ("never `global contains X`")
   holds. The 1,058 are a **C++ lane** finding, not this lane's.
 
+> **2026-10-17 — the header boundary is now MEASURED, and the two routes disagree.**
+> `validation/m14/proposals/c-h-boundary.md` (instrument
+> `validation/m14/fixtures/c/probe-h-boundary.ts`) walks all **17,709 tracked `.h`** in the
+> corpus: **15,098** are measurable, of which **2,936 (19.45%) carry genuine C++ evidence**
+> (2,668 C++-only, 268 dual-language) and **12,162 are plain C**. **Production indexes all
+> 15,098 with this analyzer** — `pool-worker.ts:1079` calls `detectLanguageFromPath(filePath)`
+> with **no content**, so the content sniff at `language-detection.ts:402` never runs there —
+> while `engine.ts:1772` (the gate path) passes content and sends **3,095 to cpp + 259 to
+> objective-c**. That is a **3,354-file (22.21%) divergence between what the gates measure and
+> what production indexes**; any number in this page that says "C/H files" is a statement
+> about the population the cited instrument used, and the proposal carries both. Fixing it
+> needs `pool-worker.ts` / `language-detection.ts` (outside this lane): an extension-table
+> flip would hand cpp 12,162 plain-C headers (80.5% of that feed).
+
 ### Per-type verdict
 
 Verdict vocabulary is the workstream's: **EMITTED** (production `parseFile` produced it
@@ -93,6 +107,17 @@ measurement), **GAP** (the language has the construct — implemented this wave 
 | `instantiates` | **EMITTED** | 2 | 2 | `c_allocation` |
 | `extends` | **RULED** | 0 | 0 | — |
 | `implements` | **RULED** | 0 | 0 | — |
+
+> **2026-10-17, `instantiates` re-measured and MOVED.** On the lane's standing
+> `incoming-gate.ts c c 400` stride the type read **0 edges** (a type that fires on its
+> fixtures and nowhere on the population is not covered), and the authored fixture
+> `c/instantiates-allocator-register-989` was failing. The register was widened and the
+> `sizeof(typedef)` operand path repaired (§"`instantiates` is thin" → *LANDED*); the same
+> stride now reads **19 edges, 19 resolved, 0 collRes, 0 arbitraryTwin**, and every target
+> is a type declared in the SAME FILE (`fixtures/c/probe-c-instantiates.ts`, 19/19). The
+> table above is the historical sqlite measurement and is kept for its provenance; the
+> CURRENT count is in `script/m14/spec/c-completeness.json` `_implemented_measured`
+> (2026-10-17 entry) and `validation/m14/fixtures/c/measurements/gate-c-after-instantiates-400.txt`.
 
 **Arbiter:** `bun script/m14/ontology-coverage-gate.ts c --fresh` → **emitted 8/10,
 ruled-sound 2, FALSIFIED 0, ruled-without-justification 0, exit 0** over 4,421 admitted
@@ -165,6 +190,39 @@ that someone will propose it:
 | a local variable of a locally declared type with a brace initializer | 152 in 31 files | **refused** — construction by assignment, and each is already a `contains`/`references` fact |
 | a compound literal `(Type){…}` of a locally declared type | **0 in 0 files** | the construct C offers instead, and it does **not occur in this corpus** — so there is no compound-literal GAP to close here |
 | `sizeof(<locally declared type>)` anywhere | **0 in 0 files** | sizeof *names* a type without creating one; a rule counting it would be wrong in principle and is measured at zero besides |
+
+#### LANDED 2026-10-17 — the register widened, the `sizeof` operand repaired, and the numbers
+
+The section above is kept because its reasoning was right about the *class* and its count was
+right about the *sqlite cast spelling*. What changed is that the authored fixture
+(`validation/m14/fixtures/c/instantiates-allocator-register-989`, pinned before the analyzer
+run) measures the construct from the other side and outranks prose that predates it:
+
+* **The register.** `MALLOC_FUNCTIONS` held the five standard names. On sqlite's 359 files,
+  **680** allocation sites carry a type recoverable from the parse and **152** name a type
+  the FILE declares — `sqlite3_malloc64` 82, `sqlite3_malloc` 45, `sqlite3_realloc64` 23,
+  `malloc` 2. The three project wrappers are added, and the fixture names the limit: it is a
+  REGISTER, so the next project's wrapper still needs its name (C-D2, no whole-program typing).
+* **The `sizeof` operand.** `sizeof(Seg)` parses with a `parenthesized_expression` around a
+  plain **`identifier`** when it sits in an expression position, while `sizeof(struct Opaque)`
+  keeps a `type_descriptor`. `typeNameOf` read only `type_identifier`/`struct_specifier`, so
+  the sizeof-only spelling worked for the `struct` form and failed for the typedef form — the
+  exact row `c989_wrapped_sizeof_only` pins. The identifier is now read, and every call site
+  still passes through `declared()`, so it can only name a type the FILE declares.
+* **The measurement, both axes.** Same `c c 400` stride: `instantiates` **0 → 19** edges,
+  **19 resolved**, collRes 0, amb 0, **arbitraryTwin 0** (all 19 are same-file declarations:
+  intent class `sameFileUnproven`, the file-crossing class did not move — TOTAL arbitraryTwin
+  2943 before and after). TOTAL edges 49,021 → 49,040; `resolved` 17,680 → 17,699; every other
+  column byte-identical; unresolved unchanged at 25,710.
+* **Every edge hand-read.** `fixtures/c/probe-c-instantiates.ts` reproduces the gate's stride
+  exactly and prints each edge with the target type's own declaration line; 19/19 are
+  `struct` declarations in the same file, e.g. `sqlite/src/wal.c:1973` `(WalIterator *)sqlite3_malloc64(…)`
+  → `WalIterator struct@591`, and `sqlite/test/tt3_stress.c:313` `Stress2Ctx *pCtx = sqlite3_malloc(sizeof(Stress2Ctx))`
+  (sizeof-only, the repaired path) → `Stress2Ctx struct@279`. Artifact:
+  `measurements/probe-c-instantiates.txt`.
+* **Fixtures:** 43 pass / 4 fail → **44 pass / 3 fail**; the three remaining are the export
+  marker class (`export-linkage-marker-989`, `export-marker-class-965`, `exports-attribute-989`),
+  untouched by this change and stated in `C-STATE.md` §3.
 
 ### `exports` is narrow on purpose, and the wide reading is measured
 

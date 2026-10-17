@@ -56,6 +56,36 @@
 | syntax errors | ✅ | ERROR/missing nodes surfaced as warnings; counted in `parseErrors` |
 | decorators/attributes | ✅ | `@property` attributes parsed but not surfaced per-symbol |
 
+### A declaration and its implementation are TWO symbols — a NAME is not an IDENTITY
+
+`@interface A` and `@implementation A`, and the method declared in the first and
+implemented in the second, publish **two symbols per unit** — `A.h:4(method)` and
+`A.m:4(method)`, both named `refTargetObjc:` (the full selector), each owned by its own
+file's class symbol. Measured on the fixture shape this lane is gated with (`A.h`
+declares `+ (int)refTargetObjc:(int)x;`, `A.m` implements it, `B.m` sends
+`[A refTargetObjc:1]`): **2 symbols** under the selector, and a message send from ANOTHER
+file binds to the **declaration** (`A.h`) in **6 of 6** fresh indexes — deterministically,
+not by luck.
+
+The duplication is the FLEET's shape, not this lane's quirk. The same measurement gives
+**c** 2 symbols (`a.h` declares, `a.c` defines) binding to the **definition** (`a.c`, 6/6),
+**cpp** 2 (`a.hpp` declares, `a.cpp` defines) binding to the **definition** (`a.cpp`, 6/6),
+while the single-file lanes publish one (**java** 1, **csharp** 1). The rule a consumer
+has to follow:
+
+> **A published name is not an identity.** Where a lane splits a declaration from its
+definition, a name-based lookup can match more than one symbol, and *which* sibling an
+edge lands on is the LANE's declared preference — the **definition** for c and cpp, the
+**declaration** for objective-c — never a uniqueness assumption. Consumers must scope by
+name and report the multiplicity.
+>
+> This is not hypothetical: `script/m65/verify-refresh-resolution.ts` asked
+`WHERE name = ? LIMIT 1` (no `ORDER BY`), got the `A.m` sibling in 5 of 8 indexes, and
+reported this lane as having *"lost its reach"* while the call had bound cross-file in
+8 of 8. The gate now scopes the reach predicate by name and publishes
+`symbolsWithTargetName` and `boundSiblingFiles`, so a future split is visible in the
+sealed evidence instead of being averaged away.
+
 ## Relationship ontology
 
 | Relationship type | Emitted? | How resolved | Confidence model |
@@ -63,13 +93,65 @@
 | contains | ✅ | REAL container ownership only: class/protocol/extension → member (post-loop over `ownerName`). Never `global contains X`. | 1.0 |
 | references | ✅ | import/include dependencies on the objc-native path (`root → module` from `preproc_include` with `system_lib_string`/`string_literal` → `string_content` children, line number from the node position). Config headers without class markers go through the shared C-family path, which names its file-scope source `global` (c/cpp precedent: 7 such rows each) | 1.0 |
 | uses | ✅ | value reads (OC-E): parameters in argument position, body locals incl. bare declarators, same-file ivars/properties, file globals, for-in variables, and bare receivers inside sends and C calls. Source = the enclosing METHOD. A call CALLEE is never also a read (the calls edge owns it, CGD17 parity), and neither is a DECLARATION name — including a block-pointer parameter's (`void (^handler)(NSString *)` publishes nothing at the declaration; the name binds, and its only edge is the call where it is invoked) | 0.9 |
-| calls | ✅ | message expressions — source = enclosing METHOD name, target = the FULL SELECTOR: every keyword identifier that takes ':', never the receiver itself and never a first-keyword truncation that cannot name an overload: `[NSString stringWithFormat:]` → `stringWithFormat`, `[super init]` → `init`, `[message uppercaseString]` → `uppercaseString`); C function calls (`call_expression` → identifier) | 1.0 |
-| instantiates | ✅ | `[[Foo alloc] init]` / `[Foo new]` → target = the class receiver (the identifier receiver of the alloc/new message, incl. nested `[[Foo alloc] init]` where the inner message receiver is the class) | 0.9 |
+| calls | ✅ | message expressions — source = enclosing METHOD name, target = the FULL SELECTOR: every keyword identifier that takes ':', never the receiver itself and never a first-keyword truncation that cannot name an overload: `[NSString stringWithFormat:]` → `stringWithFormat`, `[super init]` → `init`, `[message uppercaseString]` → `uppercaseString`); C function calls (`call_expression` → identifier); FIELD invocations (`call_expression` whose grammar `function` field is a `field_expression`, e.g. `self.downloadProgressBlock(x)` → the innermost FIELD name, `isFieldInvocation`). Three producers, three reason codes — message send `dynamic-dispatch-selector`, field callee `field-callee-kind-not-determined`, C callee `callee-not-resolved-in-unit` (only where this unit does not define the name) | 0.95 |
+| instantiates | ✅ | `[[Foo alloc] init]` / `[Foo new]` → target = the class receiver (the identifier receiver of the alloc/new message, incl. nested `[[Foo alloc] init]` where the inner message receiver is the class). `self` resolves to the ENCLOSING CLASS and `super` to the same-file `extends` clause's superclass — the two receiver KEYS are never published as targets, and where the superclass is not in this translation unit the row is refused rather than named | 0.9 |
 | extends | ✅ | `@interface Foo : Bar` → `Foo extends Bar`; `@protocol P <Q>` → `P extends Q` | 1.0 |
-| implements | ✅ | `@interface Foo : Bar <P1, P2>` → `Foo implements P1/P2` (protocol list via `parameterized_arguments`/`protocol_*` children) | 1.0 |
+| implements | ✅ | `@interface Foo : Bar <P1, P2>` → `Foo implements P1/P2` (protocol list via `parameterized_arguments`/`protocol_*` children). **The adoption list is selected by POSITION, not by shape** — see OC-ONT-6 below | 1.0 |
 | imports | ✅ | `preproc_include` → module name (pure-String unwrap of `system_lib_string` angle brackets / `string_content`) + framework detection (UIKit/Foundation/AppKit/Cocoa) | 1.0 |
-| exports | ✅ | all symbols exported with `visibility: "public"` | — |
-| overrides | — | n/a (ObjC message dispatch is dynamic; no override contract) | — |
+| exports | ✅ | a file-scope declaration with EXTERNAL linkage (C99 6.2.2p5): `root → <name>` with `relationshipType: "module_export"`, `isExport`, `fileLevel`, `evidenceClass: "structural"`. A class, a protocol, a `typedef`, a function, a variable and a marker-bearing declaration (`FOUNDATION_EXPORT`, `extern` → `metadata.exportMarker`) all publish the same way. `static` is internal linkage and is NOT an export (its symbol keeps `visibility: "private"`); a member rides `contains`; a category label is never a unit (OC-B); an imported module is a dependency | 1.0 |
+| overrides | ✅ | a subclass method whose FULL SELECTOR matches a superclass method's: verified (`verified-base-declared-in-file`, 0.95) when the superclass is declared in this file, otherwise a deterministic below-threshold first-parent guess (`first-parent-guess`, 0.5). `NSObject`/`NSProxy` are excluded as the universal root | 0.95 / 0.5 |
+
+### Honesty §4.1: one reason code per family, and what each one says
+
+The contract asks every relationship below confidence 1.0 to carry a machine-readable
+reason code, and in this lane each FAMILY has its own word — a row below 1.0 with no code
+was the pre-fix state (18,794 rows over the admitted universe: 8,077 `calls`, 9,307 `uses`,
+902 `references`, 508 `instantiates`), and collapsing two families onto one word would call
+two different doubts the same fact:
+
+| producer | code | what is not determined |
+|---|---|---|
+| message send | `dynamic-dispatch-selector` | the selector is exact; which class implements it is decided at runtime |
+| field-invoked callee | `field-callee-kind-not-determined` | the field is exact; whether it holds a block, a function pointer or (in a `.mm`) a C++ member is not |
+| C call to a name this unit does not define | `callee-not-resolved-in-unit` | the identifier is exact; the callee is defined elsewhere and the grammar cannot tell a function from a macro |
+| `uses` (bare or member read, incl. message arguments) | `value-read-by-scope-inference` | the read is exact; which binding the name denotes is inferred from scope |
+| `instantiates` | `allocator-receiver-not-cross-file-checked` | the allocator receiver is exact; that it denotes an allocatable class is not checked across files |
+| include (`references`) | `include-target-not-resolved` | the directive is exact; whether the header resolves in this repository is not (a system framework's never can) |
+| clang module import (`references`) | `clang-module-name-not-resolved` | same, for `@import`/module spelling |
+| `overrides` | `verified-base-declared-in-file` / `first-parent-guess` | verification, or a deterministic first-parent guess below the 0.7 floor |
+
+A row at confidence 1.0 carries NO code: a code there would claim a doubt that does not
+exist. `contains`/`extends`/`implements`/`exports`/`imports` are all 1.0 and all silent.
+
+### OC-ONT-6: `<...>` is three different lists, separated by position
+
+`@interface Cache <KeyType, ObjectType> : Store <KeyType, ObjectType> <CacheProtocol>`
+carries three `parameterized_arguments` children and the pinned grammar names all three
+identically: the class's own lightweight-generic TYPE PARAMETERS, its superclass's TYPE
+ARGUMENTS, and its ADOPTED PROTOCOLS. Reading every list as an adoption list published
+`implements Cache -> KeyType` — a name no file declares, because it is this class's own type
+parameter. The partition is positional, and exact, because the grammar keeps the `:` and `(`
+as direct children: a list BEFORE the `:` is the declaration's own type parameters; the first
+list AFTER the `:` is the superclass's type ARGUMENTS exactly when every name in it is one of
+those parameters (the ordinary `@interface Plain : NSObject <NSCopying>` declares none, so
+its single list adopts); every later list adopts. A class EXTENSION re-declares the enclosing
+class's parameters in front of its `()` and adopts nothing; a CATEGORY's genuine list sits
+AFTER its `(` — mirror images, which is why the rule cannot be "a list before the paren".
+Measured with the F5 oracle over the two production corpora (322 files): the oracle derives
+exactly 7 such type-parameter rows and the lane publishes none of them, and the independent
+re-derivation in `script/m60/objc-construct-site-probe.ts` finds all 119 genuine adoption
+sites emitted with 0 unmatched.
+
+### OC-ONT-8: `exports` is external linkage, and that is what settled the family
+
+The family was first scoped to MARKER-bearing declarations (OBJCD9). The external-linkage
+scope above supersedes that, on a measured conflict: the same `extern` declaration cannot be
+both `import_based` and `structural`, and a class cannot be both a required export and a
+forbidden one, so this was put to the owner on 2026-10-15 and the external-linkage scope was
+ruled. The evidence for the ruling is the oracle's own export-site derivation, which counts
+file-scope declarations by linkage rather than by marker (`script/m60/objc-construct-site-probe.ts`:
+338 construct sites against 98 edges emitted by the marker-only rule), and the fleet's
+tiering, which c/cpp/powershell apply to `exports` as `structural`.
 
 **Relationship source identity:** message/call sources are the enclosing
 METHOD/function name — never the receiver and never a block scope. File-scope

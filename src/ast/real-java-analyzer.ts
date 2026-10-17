@@ -1,3 +1,37 @@
+/**
+ * real-java-analyzer.ts — the Java `.java` AST analyzer.
+ *
+ * Author: Muhammad Ishaq Khan.
+ *
+ * WHAT IT IS. `RealJavaAnalyzer` implements `ASTEngine.LanguageAnalyzer` for `.java`: one
+ * tree-sitter walk publishes symbols and the ten relationship types this lane covers —
+ * contains, imports, exports, references, uses, calls, instantiates, extends, implements,
+ * overrides. Wired at `src/ast/engine.ts` `getAnalyzer` → `case "java"`.
+ *
+ * WHERE THE REST LIVES. Docs: `docs/analyzers/real-java-analyzer.md` (grammar provenance +
+ * per-type emission sites). Declaration spec: `script/m14/spec/java-completeness.json`.
+ * Fixtures + expectations: `validation/m14/fixtures/java/**`. Gate: `script/m14/
+ * incoming-gate.ts`, arbiter `script/m14/incoming-rule.ts` — BOTH SHARED/Lead-owned: propose
+ * in `validation/m14/proposals/java-*.md`, never edit. Owner state: `validation/m14/
+ * verification/JAVA-STATE.md`.
+ *
+ * WHEN THIS FILE CHANGES, ALSO EDIT: the docs file above, the completeness spec when a type's
+ * coverage moves, the java fixtures + their `.expectation.json`, and JAVA-STATE.md with the
+ * before/after gate columns. A take from another branch that replaces this file loses
+ * gate-measured fixes (see JAVA-STATE.md §3) — re-measure the gate's columns, not only the
+ * fixture failure count.
+ *
+ * GRAMMAR. `tree-sitter-java`, shipped as `wasm/tree-sitter-java.wasm` (a redistributor
+ * build of `tree-sitter-wasms@0.1.11`; sha256 + provenance in the docs file). There is NO
+ * vendored grammar source under `grammars/` for this lane, so the wasm cannot be rebuilt
+ * from this tree — only re-sourced and re-admitted.
+ *
+ * ARBITER CONTRACT THIS FILE RELIES ON. A target must name a DECLARATION (a leaf name, not
+ * `Owner.member`: the resolver's key space is declaration names) or carry a claim the arbiter
+ * verifies — `metadata.isExternal*` through `externalClaimOf`/`verifyExternalClaim`, and the
+ * family binding spelling `${caller}${BINDING_SEP}${binding}` with `metadata.localBinding`.
+ * `script/m14/**` is the Lead's; this file only consumes those rules.
+ */
 function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1
 }
@@ -351,7 +385,7 @@ function javaTypeBaseName(node: Node | null | undefined): string {
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
-import { findDeclaringParent, localEdgeLabel } from "./override-context"
+import { findDeclaringParent, localEdgeLabel, localEdgeName } from "./override-context"
 
 export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
@@ -568,6 +602,16 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             // `scoped_identifier`, so this is the dependency the module pass reads,
             // not a name matched from text. The `references` mention beside it keeps
             // 0.9, which is the tier the family uses for a name-resolved mention.
+            //
+            // THE TARGET STAYS THE MODULE PATH, and the re-spelling tried here is
+            // MEASURED AND REJECTED rather than forgotten. `d5385c960` restated local
+            // imports to their leaf (+ `module` metadata) and measured "0 false locals" —
+            // a true statement about LOCALITY that is not this gate's question. Re-measured
+            // at cap 400 with `--index`: the gate indexes 4,020 qualifiedName aliases, so
+            // `com.example.core.Foo` ALREADY resolves to the declaration's qualified name,
+            // and the re-spelling moved `imports` resolved 104 → 64 with amb(decl) 0 → 40
+            // (unresolved unchanged at 263). A leaf whose FQN was unique can collide by
+            // name; the FQN cannot. The declaration is reached; the re-spelling lost it.
             ...this.lineField(this.findChildByType(node, "scoped_identifier") || this.findChildByType(node, "identifier"), node),
             metadata: { relationshipType: "import_declaration", isJavaImport: true, isWildcard: isAsterisk, isStatic, isModuleDependency: true },
           })
@@ -2623,7 +2667,19 @@ currentPackage,
         // type -> `handle.Criterion,…boolean)`, not a name). Neither single cut
         // is right in both directions; deleting balanced groups first is.
         const localSource = localEdgeLabel(task.fqn)
-        const localTarget = localEdgeLabel(targetFqn)
+        // THE TARGET IS THE MEMBER NAME, NOT `Owner.member` — restoring the branch's measured
+          // fix (`45b879423`) that a file-level take from main reverted. The resolver binds against
+          // DECLARATIONS, and a declaration is named by its leaf: measured on this lane, 100% of
+          // overrides targets were dotted, 100% had their leaf declared in the edge's own file, and
+          // 100% classified `unresolved` (cap-400: 1,182 of 1,194). `localEdgeName` derives the
+          // leaf AFTER the paren deletion `localEdgeLabel` performs, so a dotted parameter list
+          // cannot be cut into a non-name. The owner is REAL identity and now lives in metadata
+          // (`declaringType`), not in a target no declaration can answer to.
+        const localTarget = localEdgeName(targetFqn)
+        const localQualified = localEdgeLabel(targetFqn)
+        const declaringType = localQualified.lastIndexOf(".") > 0
+          ? localQualified.slice(0, localQualified.lastIndexOf("."))
+          : ""
 
         relationships.push({
           source: localSource,
@@ -2634,7 +2690,12 @@ currentPackage,
           // the task carries from the node itself. Omitted, never zeroed, when it
           // is somehow absent (#821).
           ...(task.line ? { line_number: task.line } : {}),
-          metadata: { relationshipType: "method_override", isJavaOverride: true, reasonCode },
+          metadata: {
+            relationshipType: "method_override",
+            isJavaOverride: true,
+            reasonCode,
+            ...(declaringType ? { declaringType } : {}),
+          },
         })
       }
     }

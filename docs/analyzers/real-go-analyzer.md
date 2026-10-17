@@ -1137,6 +1137,47 @@ fix is to drop the `!started` skip so the loop starts at the first body row.
 The previous revision of this file asserted this off-by-one as the explanation; it is confirmed
 here by execution rather than by reading, and the confirmation is what the assertion lacked.
 
+## VERIFIED EXTERNAL CLAIM ON LEAF TARGETS — `isStdlib` (2026-10-17)
+
+**What it is.** The lane's unresolved targets are BARE LEAVES (`json.Marshal` publishes `Marshal`),
+and their real reasons ride `metadata.reasonCode`, which the incoming gate reads nowhere. The one
+claim the arbiter can verify on a bare target is an external `owner` claim, and the lane now attaches
+`isStdlib: true` (plus `stdlibPath`, the import path that proves it — not itself a claim key) on
+three surfaces, without moving the emitted target:
+
+| surface | qualified spelling held | proves | cap-400 result |
+|---|---|---|---|
+| `calls` | `metadata.callExpression` (`json.Marshal`) | the call is a DIRECT member of an imported stdlib package | unresolved 10,238 -> **8,232**, extOK 0 -> **2,006** |
+| `references` | `metadata.qualifiedType` (`context.Context`) | the type use names an imported stdlib package's type | unresolved 5,926 -> **4,269**, extOK 0 -> **1,657** |
+| `instantiates` | `metadata.qualifiedType` (`http.Server{}`) | the constructed type is an imported stdlib package's type | unresolved 1,657 -> **1,593**, extOK 0 -> **64** |
+
+**The proof, not a shape guess.** `GO_STDLIB_TOP_LEVEL` is the Go distribution's closed set of
+top-level package directories. A claim is attached only when (i) the qualifier is a package THIS
+FILE imports (alias read from the analyzer's own `ImportInfo`), (ii) the import path's first segment
+is in that set, (iii) the qualifier is not the file's own package name and not a name the file
+declares (shadowing), and (iv) the file does not itself publish the leaf. A receiver selector
+(`r.reader.SearchWhere`), a deeper chain (`pkg.Value.Method`), a project-local package
+(`internal/util`) and a third-party module (`github.com/...`) all fail the proof and stay silent.
+The bounded audit (`validation/m14/fixtures/go/probe-go-claim-edges.ts`, first 60 stride files)
+reads 564 claimed edges back against the WRITTEN import specs: qualifier-not-imported 0,
+module-not-stdlib 0, shadowed-by-file-declaration 0, claim-without-qualifier 0.
+
+**What it does NOT do, stated so the column is not read as stronger than it is.** It never raises
+`resolved`; it does not change a target; it is a claim about the target's ORIGIN, verified by the
+closed set rather than by the key-space lookup (for a bare target the lookup returns 0 by
+construction, so it can never manufacture a refutation). It deliberately leaves 8,232 calls and 4,269
+references unresolved: a receiver method's declaration cannot be proved external from a per-file
+import list, and an unqualified type leaf has no owner to prove.
+
+**Why NOT `baseBeyondRunScope`.** Measured against the arbiter's own `classifyEdge`: the cause
+channel requires `base === targetOwner(target)`, and `targetOwner` of a bare leaf is null, so the
+lane's own `reasonCode` placed on that key reads `causeRefuted` on **24,385 of 24,385** unresolved
+edges. Qualifying the target would make the claim attachable (`~4,983` calls and `~3,950`
+references at cap 400), but it would break the family leaf contract pinned by
+`go/incoming-resolve-outgoing-only` and `go/relationship-and-payloads`, reopen the R10
+`references|.`/`calls|.` separators, and require a clause-3 ruling for every qualifier name in a
+shared instrument file. See `validation/m14/proposals/go-cause-channel.md`.
+
 ## Supported constructs
 
 - Fixtures: `validation/m14/fixtures/go/` — 22 fixtures, all passing. `service.go` (positive) and

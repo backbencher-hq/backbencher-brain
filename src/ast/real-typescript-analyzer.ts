@@ -1,6 +1,24 @@
-// TypeScript/JavaScript Intelligence Engine
-// Complete AST analysis with zero stubs, zero shortcuts, 100% real implementation
-// The most powerful TypeScript analyzer ever built
+// ───────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — `RealTypeScriptAnalyzer`, the TypeScript/TSX AST analyzer. It is
+// registered in `engine.ts` for BOTH language ids: `typescript` (.ts/.mts/.cts) and `tsx`
+// (.tsx); the code is shared and only the wasm grammar differs.
+// RELATIONSHIP TYPES IT EMITS — all ten: calls, uses, contains, imports, exports,
+// references, extends, implements, overrides, instantiates.
+// WHERE ITS EVIDENCE LIVES — docs/analyzers/real-typescript-analyzer.md (+ -ontology.md);
+// fixtures validation/m14/fixtures/typescript/** (run `bun run script/m14/run-fixtures.ts
+// --lang typescript`); gate `bun run script/m14/incoming-gate.ts typescript ts 400`; spec
+// script/m14/spec/typescript-completeness.json; state validation/m14/verification/
+// TYPESCRIPT-STATE.md; the named-cause census in fixtures/typescript/tools/*.mts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/ast/engine.ts (wiring + grammar),
+// src/ast/language-detection.ts (extensions), the two docs above, every fixture AND its
+// .expectation.json pair, the completeness spec, and the census tools (their buckets
+// reproduce the gate's rule and must be re-run, not re-spelled).
+// GRAMMAR IT DEPENDS ON — tree-sitter-typescript 0.23.2: tree-sitter-typescript.wasm (ts)
+// and tree-sitter-tsx.wasm (tsx, because the plain grammar carries no JSX). This file
+// carries NO regex literal by contract (script/m14/no-regex-gate.sh).
+// ───────────────────────────────────────────────────────────────────────────────
 
 import type { Node } from "web-tree-sitter"
 import { detectFrameworks, type FrameworkInfo } from "./framework-detectors"
@@ -46,14 +64,19 @@ const TS_OBJECT_LEAF_METHODS = new Set([
 //                          overlap is deliberate — one class of thing, two uses.
 //   TS_TEST_RUNNER_GLOBALS describe/it/test/expect/beforeEach/... — declared by the
 //                          TEST FRAMEWORK in node_modules, not by the project.
+//   TS_TEST_FRAMEWORK_MODULES
+//                          the PACKAGE SPECIFIERS that prove the same origin when the file
+//                          DOES bind the name: `import { expect } from "@jest/globals"` says
+//                          where the declaration lives, and it is not this project.
 //   TS_LIB_TYPE_NAMES      the TypeScript LIB types (`lib.es5.d.ts` and the utility
 //                          types every compiler since 2.1 ships): `Partial`,
 //                          `Record`, `Awaited`, `HTMLElement`, ...
 //
-// A NAME IN ONE OF THESE TABLES IS NOT PROOF BY ITSELF — a file may declare or
-// import `Map`, `test` or `Date` and mean its own. So every claim below requires
-// the FILE to bind neither the name nor its receiver (see `markExternalTargets`),
-// and the file's own symbol and import lists are the check.
+// A NAME IN ONE OF THESE TABLES IS NOT PROOF BY ITSELF — a file may declare `Map`, `test`
+// or `Date` and mean its own. So a claim requires the FILE to bind neither the name nor its
+// receiver (see `markExternalTargets`), EXCEPT that a binding whose own import specifier is
+// a pinned test-framework package is itself the evidence. The file's own symbol and import
+// lists are the check either way.
 // ============================================================================
 const TS_RUNTIME_GLOBALS = new Set([
   // namespace objects
@@ -86,6 +109,42 @@ const TS_TEST_RUNNER_GLOBALS = new Set([
   "suite", "xit", "xdescribe", "fit", "fdescribe", "specify", "context",
   "jest", "vi", "vitest", "sinon", "cy", "assert", "spyOn", "mock", "fn",
 ])
+
+/**
+ * THE TEST-FRAMEWORK PACKAGES — the second, STRONGER evidence for the same claim.
+ *
+ * `TS_TEST_RUNNER_GLOBALS` above proves "this name is the framework's" only while the file
+ * binds NEITHER the name nor its receiver. The common modern spelling defeats that proof:
+ * `import { describe, it, expect } from "@jest/globals"` — the name IS bound, by an import
+ * whose SPECIFIER names a package that lives in `node_modules`, not in the project. So the
+ * file itself says where the declaration is, and it says it more specifically than any
+ * table could. Measured on the 400-file stride: 662 calls edges (the largest remaining
+ * doable class after the ambient-global pass) are a bare callee bound by an import from
+ * one of these packages, and the previous `bound.has(target)` guard refused every one.
+ *
+ * PINNED, and matched by WHOLE SEGMENT (never substring): `@jest/globals` and its subpaths
+ * match; `jest-utils` does not. A project that declares or re-exports one of these names
+ * still blocks the claim through `declaredHere`, and the arbiter still refutes the claim
+ * if the project publishes the name — so the list can only add claims the project can
+ * check, never shelter a resolvable edge.
+ */
+const TS_TEST_FRAMEWORK_MODULES = new Set([
+  "@jest/globals", "@jest/expect", "@jest/test-globals", "@jest/fake-timers",
+  "jest", "vitest", "@vitest/expect", "@vitest/spy", "@vitest/runner",
+  "mocha", "chai", "ava", "tap", "uvu", "jasmine", "sinon", "expect",
+  "node:test", "bun:test", "cypress", "@playwright/test", "playwright",
+  "@testing-library/jest-dom", "supertest",
+])
+
+/** Is `module` a pinned test-framework package? Whole segments only — see the table. */
+function isTestFrameworkModule(module: string): boolean {
+  if (module.length === 0) return false
+  for (const pkg of TS_TEST_FRAMEWORK_MODULES) {
+    if (module === pkg) return true
+    if (module.startsWith(pkg + "/")) return true
+  }
+  return false
+}
 
 /** TypeScript LIB types the compiler ships, not the project. */
 const TS_LIB_TYPE_NAMES = new Set([
@@ -133,6 +192,74 @@ function callHeadName(text: string): string | null {
   if (open <= 0) return null
   const head = text.slice(0, open)
   return isPlainIdentifier(head) ? head : null
+}
+
+/**
+ * THE CALLEE'S LEAF NAME, BY SHAPE — an ALLOWLIST, never `callee.text`.
+ *
+ * A `calls` target is a NAME. Before this reducer the target was the callee's raw
+ * source text filtered by a DENYLIST (newlines, backticks, `${`, brace-equals,
+ * >100 chars), and a denylist can only enumerate the garbage someone has already
+ * seen. Measured over 32,672 `call_expression` nodes on 400 tracked corpus files,
+ * the grammar produces TEN callee shapes — identifier 18,529 · member_expression
+ * 14,030 · parenthesized_expression 51 · import 22 · non_null_expression 11 ·
+ * super 10 · await_expression 8 · call_expression 6 · subscript_expression 3 ·
+ * unary_expression 2 — and every shape the reducer did not understand published
+ * its raw text as the target (`calls activate -> "!context.globalState.get"`,
+ * `calls watchFile -> "ensureDynamicPollingWatchFile()"`, each a DUPLICATE of a
+ * correct edge the named-child recursion already emitted, carrying a pseudo-name
+ * no symbol index can join).
+ *
+ * THE ALLOWLIST IS DELIBERATELY NARROW, and the narrowness was MEASURED. Reducing
+ * through `await`/`!`/`as` as well was the first cut; it retargeted 48 pseudo-name
+ * edges, and 17 of them landed in the gate's `arbitraryTwin` class — the class where
+ * wrong picks live — because `await this.request<X>({...})` then emitted the bare
+ * leaf `request`, which the project declares as an unrelated constant in another
+ * file (15 of the 17). A pseudo-name is unjoinable; a wrong name is BINDABLE. So a
+ * wrapper around a MEMBER callee publishes nothing, and only the one wrapper that
+ * changes no name — parentheses, `(foo)()` -> `foo` — is reduced through. The
+ * measured effect on the 400-file stride: all 51 non-identifier target edges are
+ * dropped (23,555 -> 23,504), `arbitraryTwin` is FLAT at 2,582, `resolved` FLAT at
+ * 6,941, `collRes` FLAT at 1,592 and `amb(decl)` FLAT at 1,364.
+ *
+ * Returns null for every shape that names nothing or whose name cannot be stated
+ * without its receiver: a call of a call (`f()(x)`), a subscript, `super`, an
+ * anonymous function, and `await`/`!`/cast wrappers around a member. Returning
+ * null means NO edge, never the text; the caller still walks the subtree, so calls
+ * inside an IIFE body are kept (`calls-callee-shape-reduction` pins every case;
+ * mutants typescript/calls-callee-raw-text and typescript/calls-callee-no-reduction).
+ *
+ * Bounded (8 unwrap steps), total, and regex-free by the file's contract.
+ */
+function calleeLeafName(node: Node | null | undefined): string | null {
+  let n: Node | null = node ?? null
+  // PARENTHESES ONLY. `(readNegated)("k")` names `readNegated`; every other wrapper is
+  // either name-changing or receiver-dropping, and the measurement above is why it refuses.
+  for (let guard = 0; guard < 8 && n && n.type === "parenthesized_expression"; guard++) {
+    n = n.namedChild(0)
+  }
+  if (!n) return null
+  if (n.type === "identifier") return isPlainIdentifier(n.text) ? n.text : null
+  if (n.type === "member_expression") {
+    const property = n.childForFieldName("property")
+    if (!property) return null
+    // A PRIVATE MEMBER KEEPS ITS `#` IN THE NAME. `this.#step()` targets the method symbol
+    // `#step` (the symbol is stored with the `#` spelling — M49 W15 #813), so the leaf is
+    // callable-shaped when it is `#` followed by a plain identifier, and `#` alone is not.
+    if (property.type === "private_property_identifier") {
+      const text = property.text
+      return text.length > 1 && text[0] === "#" && isPlainIdentifier(text.slice(1)) ? text : null
+    }
+    return isPlainIdentifier(property.text) ? property.text : null
+  }
+  // `nested_identifier` is the grammar's `A.B` in a heritage/namespace position; a
+  // call cannot have one as a callee today, but reducing it costs one branch and
+  // keeps a future grammar honest rather than silent.
+  if (n.type === "nested_identifier") {
+    const last = n.namedChild(n.namedChildCount - 1)
+    return last && isPlainIdentifier(last.text) ? last.text : null
+  }
+  return null
 }
 
 
@@ -3954,19 +4081,22 @@ class TypeScriptAnalysisRunner {
    * port: no target, no source, no line and no edge is changed — a `metadata` claim is added
    * to edges whose callee this file can prove it does not bind.
    *
-   * ## The four proofs, and the evidence for each
+   * ## The five proofs, and the evidence for each
    *
-   *   bare callee, test-runner global   `describe(...)`, `expect(...)` — the callee is a BARE
-   *                                     identifier, the file neither declares nor imports it,
-   *                                     and the name is in the pinned framework table.
+   *   bare callee, test-runner global   `describe(...)`, `expect(...)` — a BARE identifier the
+   *                                     file neither declares nor imports, in the pinned table.
+   *   bare callee, framework package    `describe(...)` under `import { describe } from
+   *                                     "@jest/globals"` — the file DOES bind it, and its own
+   *                                     import SPECIFIER says the declaration is in node_modules.
+   *                                     (Any export of a pinned package, not only tabled names.)
    *   bare callee, runtime global       `setTimeout(...)`, `Symbol(...)` — same test, pinned
    *                                     language/host table.
    *   member of a runtime global        `Object.keys(...)`, `JSON.stringify(...)` — the
    *                                     receiver text is an identifier in the pinned table and
    *                                     the file does not bind it.
    *   member of a framework call        `expect(x).toEqual(y)` — the receiver is a CALL whose
-   *                                     head is an unbound test-runner global, so the receiver's
-   *                                     type is the framework's, not the project's.
+   *                                     head is a test-runner global or a pinned framework
+   *                                     binding, so the receiver's type is the framework's.
    *   type-position lib name            `Date`, `Promise`, `Record` in a type position — the
    *                                     name is in the pinned lib table and unbound here.
    *
@@ -3991,23 +4121,31 @@ class TypeScriptAnalysisRunner {
    * production: NO resolver reads `isExternalTarget` (`parallel-indexer.ts` and `engine.ts`
    * carry zero occurrences), so a marker can never suppress a binding in the store.
    *
-   * The negative control is structural and worth stating: a name this file DECLARES or
-   * IMPORTS is never marked, whatever table it is in — `import { expect } from "chai"` and
-   * `class Map {}` both keep their edges unmarked.
+   * The negative control is structural and worth stating: a name this file DECLARES is never
+   * marked, whatever table it is in (`class Map {}`), and an import from a package that is NOT
+   * a pinned test framework is never marked either (`import { expect } from "chai-adjacent"`,
+   * a workspace package, the project's own `./helpers`).
    */
   private markExternalTargets(
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
   ): number {
-    // WHAT THIS FILE BINDS. Its own declarations (name and qualified name), plus every local
-    // name its own `imports` edges publish — the lane's own output is the evidence, exactly as
-    // the java twin's `markExternalTargets` reads its own import list rather than guessing.
+    // WHAT THIS FILE BINDS. Three sets, because they answer three different questions:
+    //   declaredHere  the file DECLARES the name (symbols) — never mark, whatever an import says;
+    //   bound         the file binds the name at all (declarations + import locals) — a binding
+    //                 with an UNKNOWN origin is not evidence the name is external;
+    //   frameworkBound a binding whose own import SPECIFIER names a pinned test-framework
+    //                 package — the file itself says where that declaration lives (node_modules).
+    // The lane's own `imports` edges are the evidence, exactly as the java twin's
+    // `markExternalTargets` reads its own import list rather than guessing.
+    const declaredHere = new Set<string>()
     const bound = new Set<string>()
+    const frameworkBound = new Map<string, string>()
     for (const s of symbols) {
       const n = String(s?.name ?? "")
-      if (n.length > 0) bound.add(n)
+      if (n.length > 0) { declaredHere.add(n); bound.add(n) }
       const q = String((s as { qualifiedName?: string })?.qualifiedName ?? "")
-      if (q.length > 0) bound.add(q)
+      if (q.length > 0) { declaredHere.add(q); bound.add(q) }
     }
     for (const r of relationships) {
       if (String(r?.type ?? "") !== "imports") continue
@@ -4016,7 +4154,10 @@ class TypeScriptAnalysisRunner {
       const module = String(md?.module ?? "")
       if (module.length === 0) continue
       const local = String(md?.alias ?? (tgt.includes(":") ? tgt.slice(tgt.lastIndexOf(":") + 1) : tgt))
-      if (local.length > 0 && local !== "*") bound.add(local)
+      if (local.length > 0 && local !== "*") {
+        bound.add(local)
+        if (isTestFrameworkModule(module)) frameworkBound.set(local, module)
+      }
     }
 
     let marked = 0
@@ -4027,7 +4168,12 @@ class TypeScriptAnalysisRunner {
       // looked up by its owner, and a claim on it can be refuted; a file (`foo.ts`) or a
       // fragment (`a b`) is refused by the verifier as unreachable. Neither can be earned here.
       if (!isPlainIdentifier(target)) continue
-      if (bound.has(target)) continue
+      // A NAME THIS FILE DECLARES is never external — the framework origin cannot outrank the
+      // file's own declaration. Otherwise a binding blocks the claim UNLESS its import names a
+      // pinned test-framework package, which is the new, stronger proof (see the table).
+      if (declaredHere.has(target)) continue
+      if (bound.has(target) && !frameworkBound.has(target)) continue
+      const fromFramework = frameworkBound.has(target)
       const md = (r.metadata ?? (r.metadata = {})) as Record<string, unknown>
       if (md.isExternalTarget === true) continue
       const t = String(r.type ?? "")
@@ -4039,19 +4185,31 @@ class TypeScriptAnalysisRunner {
           // No callee text: nothing here can tell the receiver from a local. Refuse.
         } else if (callee === target) {
           if (TS_TEST_RUNNER_GLOBALS.has(target)) reason = "test-runner-global"
+          // ANY export of a pinned test package is framework-provided: the specifier is the
+          // evidence, not the spelling of the name (`defineConfig` from `vitest/config`).
+          else if (fromFramework) reason = "test-runner-global"
           else if (TS_RUNTIME_GLOBALS.has(target)) reason = "runtime-global"
         } else if (callee.endsWith(`.${target}`)) {
           const recv = callee.slice(0, callee.length - target.length - 1)
-          if (isPlainIdentifier(recv) && !bound.has(recv)) {
+          if (isPlainIdentifier(recv) && fromFramework) {
+            // `jest.fn()`, `vi.fn()`, `sinon.stub()` — a namespace import of a test package.
+            reason = "test-runner-global"
+            receiver = recv
+          } else if (isPlainIdentifier(recv) && !bound.has(recv)) {
             if (TS_RUNTIME_GLOBALS.has(recv)) { reason = "builtin-lib-type"; receiver = recv }
           } else {
             // THE RECEIVER IS A CALL: `expect(trace).toEqual`. Only the receiver's HEAD is
-            // consulted, and only against the framework table — a project function's result
-            // (`buildThing().assert`) refuses, because `buildThing` is not in it.
+            // consulted, and only against the framework tables — a project function's result
+            // (`buildThing().assert`) refuses, because `buildThing` is in neither.
             const head = callHeadName(recv)
-            if (head !== null && !bound.has(head) && TS_TEST_RUNNER_GLOBALS.has(head)) {
-              reason = "test-runner-global"
-              receiver = head
+            if (head !== null) {
+              if (frameworkBound.has(head)) {
+                reason = "test-runner-global"
+                receiver = head
+              } else if (!bound.has(head) && TS_TEST_RUNNER_GLOBALS.has(head)) {
+                reason = "test-runner-global"
+                receiver = head
+              }
             }
           }
         }
@@ -4861,45 +5019,16 @@ class TypeScriptAnalysisRunner {
               }
               return
             }
-            let targetName = callee.text
-            let fullCallee = callee.text
+            const fullCallee = callee.text
+            // THE TARGET IS A NAME, REDUCED BY SHAPE — see `calleeLeafName` for the
+            // measured ten callee shapes and the corpus defects this replaces. A callee
+            // that names nothing (a call of a call, a subscript, `super`, an anonymous
+            // function) publishes NO edge; the subtree is still walked below, so calls
+            // inside an IIFE body are kept.
+            const targetName = calleeLeafName(callee)
 
-            // Handle member expressions (obj.method())
-            if (callee.type === "member_expression") {
-              const property = callee.childForFieldName("property")
-              if (property) {
-                targetName = property.text
-              }
-            } else if (callee.type === "subscript_expression") {
-              // W2 (web-family contract, JS J-subscript precedent): computed
-              // member calls — `nodeTransforms[i](node)`, `el[assignKey](...)`
-              // — have no clean call target. The pre-fix branch let the RAW
-              // subscript text through ("nodeTransforms[i]" targets no symbol
-              // index can join — 2 fabrications in vue-core transform.ts
-              // alone). JS skips these; TS must too (probed 2026-09-08).
-              //
-              // M49 W4 (T3): the EDGE is skipped, never the SUBTREE — the
-              // arguments still carry real calls (see the import branch note).
-              for (let i = 0; i < n.namedChildCount; i++) {
-                const child = n.namedChild(i)
-                if (child) processNode(child, currentSymbol, this.nextDecoratorFlag(n, ancestorInDecorator))
-              }
-              return
-            }
-
-            // Skip targets that are clearly not valid function names:
-            // - Tree-sitter ERROR nodes leaking code blocks
-            // - Template literal fragments
-            // - Overly long text (>100 chars can't be a real name)
-            // - Text containing spaces, newlines, or expression syntax
-            if (
-              targetName.length > 100 ||
-              targetName.includes("\n") ||
-              targetName.includes("`") ||
-              targetName.includes("${") ||
-              hasBraceEquals(targetName)
-            ) {
-              // Skip — malformed call_expression from tree-sitter error recovery
+            if (targetName === null) {
+              // Skip the EDGE, never the SUBTREE.
             } else if (this.isTypeScriptBuiltinCall(targetName, fullCallee)) {
               // Filtered builtins (console output, Object leaf methods, super)
             } else {
@@ -4914,6 +5043,15 @@ class TypeScriptAnalysisRunner {
               ...this.lineField(callee.type === "member_expression" ? (callee.childForFieldName("property") ?? callee) : callee),
               metadata: {
                 calleeExpression: callee.text,
+                // WHICH WRAPPER THE LEAF WAS REDUCED THROUGH, recorded only when there was
+                // one. A consumer can then tell `(foo)()` from `foo()` and `foo!()` from
+                // `foo()` without re-parsing, and an audit of `calleeLeafName`'s allowlist
+                // can enumerate exactly the shapes it fired on. Absent means the callee was
+                // already an identifier or a member expression — the two shapes that need
+                // no reduction — so the field cannot be mistaken for "shape unknown".
+                ...(callee.type !== "identifier" && callee.type !== "member_expression"
+                  ? { calleeShape: callee.type }
+                  : {}),
                 line: n.startPosition.row + 1,
               } as any,
             })

@@ -1,3 +1,25 @@
+// C++ Intelligence Engine — Author: Muhammad Ishaq Khan
+// What this file is: the pure-AST analyzer for C++ (cc/cpp/cxx/c++/hpp/hxx/ipp/inl/cu, routed by
+// src/ast/language-detection.ts); it produces the symbols and relationships the graph engine stores,
+// and string logic runs only on AST-extracted values, never as a regex on source.
+// Relationship types covered (ten, no exclusions): calls, uses, contains, imports, references,
+// exports, extends, implements, overrides, instantiates — per-type rulings and emission sites in
+// script/m14/spec/cpp-completeness.json (`coverage._emissionSites`) and docs/analyzers/real-cpp-analyzer.md.
+// Where its scripts and validations live: script/m14/spec/cpp-completeness.json · fixtures
+// validation/m14/fixtures/cpp/** (`bun run script/m14/run-fixtures.ts --lang cpp`) · CPP-STATE.md +
+// CPP-RESIDUAL.md under validation/m14/verification/ · proposals validation/m14/proposals/cpp-*.md.
+// EDIT THESE TOO: docs/analyzers/real-cpp-analyzer.md, the spec JSON, and the fixtures/expectations
+// pinning a changed edge.
+// THE `.h` BOUNDARY: `detectLanguageFromPath` maps `.h` -> `c` by SPELLING and disambiguates by
+// CONTENT at language-detection.ts:402; production uses that (engine.ts parseFile -> getAnalyzer), but
+// the M14 gate's discovery admits by extension set only, so 3,095 cpp-routed headers (87,181
+// `#define`s, 83% of this lane's `calls` residual) sit outside its measured population. Proposed in
+// validation/m14/proposals/cpp-h-routing.md — do NOT fix it here, and do NOT touch `T(x)` (a
+// class-type functional construction IS a `calls` edge: cpp/call-target-name-surface-924).
+// Grammar: tree-sitter-cpp, a vendored local fork of 0.23.4 (wasm/tree-sitter-cpp.wasm), byte-pinned
+// in validation/m14/grammar-pins.json; wired in engine.ts getAnalyzer -> RealCppAnalyzer.
+
+
 function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1
 }
@@ -4679,7 +4701,16 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
           seenOv.add(k)
           relationships.push({
             source: `${pend.cls}.${pend.method}`,
-            target: `${hit.base}.${pend.method}`,
+            // THE TARGET IS THE DECLARED MEMBER, NOT `Base.method`. The resolver matches an
+            // edge target against a SYMBOL NAME (or a qualified-name alias), and a cpp member
+            // symbol publishes only its leaf — `pool-worker.ts` normalises `qualifiedName` to
+            // `name` for a symbol with no `scope`/`fqn`, so `Base.method` is a spelling no
+            // declaration answers to. Measured before this spelling was restored: 1,875 of
+            // 1,875 `overrides` edges unresolved on the whole cpp population (CPP-RESIDUAL §1).
+            // This is commit a29357562's landed fix ("the leaf spelling … WITH the owner carried
+            // in metadata", measured there as 86 edges: 86 unresolved -> 0), which the
+            // `0b597d2e4` take-main merge dropped and this iteration restores.
+            target: pend.method,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: hit.confidence,
             // M59.A7 (#825): the overriding method's own declaration site (the
@@ -4689,6 +4720,13 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
             metadata: {
               isVirtualOverride: true,
               reasonCode: hit.reasonCode,
+              // THE OWNER CARRIES THE DISTINCTION THE TARGET NO LONGER CAN. Two methods named
+              // `run` in two classes are two declarations; the leaf names both, so the base
+              // that was actually matched by the signature/keyword evidence rides HERE rather
+              // than disappearing. This is the field the lane's own fixtures pin
+              // (`meta.overriddenOwner`), and it is the machine-readable answer to "which
+              // declaration did the resolver intend" when the leaf alone is ambiguous.
+              overriddenOwner: hit.base,
               // M14-HONESTY-CONTRACT §4: any edge under 1.0 carries a
               // machine-readable reason code, and `override`/`final` is
               // recorded so a reader can tell an asserted override from an

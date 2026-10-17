@@ -65,9 +65,34 @@ serialises to `"extends"`, `Implementation` to `"implements"`, and `Imports` to
 | overrides | ✅ | `@Override` + a three-tier BFS over `classHierarchy` (type-arg-clean parents): exact in-file signature match, then generic substitution, then the project companion index, then the first-parent guess. Each tier sets BOTH a confidence and a machine-readable `metadata.reasonCode` — `exact-in-file`, `generic-substitution`, `companion-index`, `first-parent-guess` — which is what contract §4 asks for | **1.0 / 0.9 / 0.85 / 0.5**, matching the reason-code ladder. This file previously claimed "1.0 (exact / companion-resolved) / 0.9 (fallback)", which was wrong twice: the companion tier is **0.85**, not 1.0, and the first-parent fallback is **0.5**, not 0.9. The 0.5 tier is deliberate — it sits below `patterns.ts`'s 0.7 `confidenceThreshold` so a guessed override cannot reach pattern analysis |
 | references | ✅ | import edges and the post-pass that rewrites their source from the package name to the file's primary type (first top-level class/interface/enum); also type references (`references:getStatus:String`, `references:Mapper:B`, `references:genericBound:T` in the recorded differential) | 0.9, 0.95, 1.0 |
 | contains | ✅ | owner → owned symbols (deduped against engine-generated contains in `storeResults`) | 1.0, or 0.6 when the member is a phantom |
-| **imports** | ❌ **not emitted** | `RelationshipType.Imports` is **never referenced by this analyzer**. This file previously carried an `imports` row reading "`import_declaration` → `scoped_identifier`/`identifier`; metadata for static/wildcard". The *node* is read and the metadata is captured, but the *edge kind* is `references` (confidence 0.9), as the `references` row above and the `depends` row below both describe. Corrected 2026-10-02 | — |
+| **imports** | ✅ **EMITTED** | `import_declaration` → the module name as a `RelationshipType.Imports` edge at **1.0** (`metadata.relationshipType: "import_declaration"`, `isWildcard`/`isStatic`), **and** an `ImportInfo[]` entry on the import-site channel; a JLS 7.7.1 `requires` clause is the same edge (1.0, **0.9** for `requires static`, which is optional at compile time). The same directive also publishes the dotted path as a `references` edge at 0.9 — the family's deliberate pairing: `imports` is the DEPENDENCY, `references` is the MENTION. This row read "**never referenced by this analyzer**" from 2026-10-02, which was true of the analyzer that correction was written against and was falsified by the import-edge work that followed it; re-read against the source 2026-10-16 | 1.0 (import, module `requires`), 0.9 (`requires static`) |
 | depends | ❌ not a kind | `depends` is not a member of `RelationshipType` in `src/ast/types.ts`. This file's old `depends` row was the `references` row wearing a second name: "imports → `References` (Java import edge)" is the same edge as `references` above, at confidence 0.9. The family has no `depends` kind | — |
 | field_access | ❌ not a kind | Same: `field_access` is not a `RelationshipType`. The rule it described is real — `collectFieldAccessUses` with enclosing-type scope (`this`/`super` → owner) at confidence 0.6 — and it emits **`uses`**, which is what the `uses` row above now says | — |
+
+## Target spelling and the arbiter contract — two measured rulings (2026-10-17)
+
+The resolver binds targets by **declaration name** (plus the gate's qualifiedName aliases), so an edge's
+target spelling decides whether it can resolve at all. Two conventions were measured at cap 400
+(`incoming-gate.ts java java 400`) and are recorded here because both are easy to "fix" in the wrong
+direction; the full before/after tables and the intent census are in
+`validation/m14/verification/JAVA-STATE.md`.
+
+1. **`overrides` targets are the MEMBER LEAF, never `Owner.member`** — and the owner is carried in
+   `metadata.declaringType`. This is the fleet convention (`override-context.ts` `localEdgeName`, commit
+   `45b879423`); a file-level take from main reverted it and it was re-applied here. Measured at cap 400:
+   the type moved `unresolved 1,182 / resolved 0` → `resolved 543 / amb(decl) 651 / unresolved 0`,
+   `arbitraryTwin` **unchanged at 3,960**, and 6 fixtures that pin the leaf spelling started passing.
+   **A FQN target (`pkg.Base.member`) was priced and rejected:** java methods publish qualifiedNames and
+   the gate aliases them, so it would bind exactly — but the base lives in another file, so all 1,194
+   edges would land in `arbitraryTwin`, the forbidden movement. The residual (at most 109 edges where an
+   external base + project-unique leaf binds to the override itself) is named in
+   `validation/m14/proposals/java-override-base-claim.md`.
+2. **`imports` targets stay the MODULE PATH.** The branch once re-spelled a project-local import to its
+   leaf (+ `module` metadata) and measured "0 false locals" — a true LOCALITY statement, not a resolution
+   statement. Re-measured here with `--index`: `resolved 104 → 64`, `amb(decl) 0 → 40`, unresolved
+   unchanged 263. The gate indexes 4,020 qualifiedName aliases, so `pkg.Type` already reaches the
+   declaration's qualified name while a leaf can collide by name. The re-spelling was reverted, with the
+   measurement at the emission site.
 
 ## Supported constructs
 

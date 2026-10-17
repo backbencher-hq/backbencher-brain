@@ -38,6 +38,19 @@
   `template_function`) + `arguments`)
 - Language detection: `.cpp`/`.cc`/`.cxx`/`.hpp`/`.hxx` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealCppAnalyzer`
+- **The `.h` boundary (measured 2026-10-17).** `detectLanguageFromPath` maps `.h` → `c` *by
+  spelling* and disambiguates by *content* (`language-detection.ts:402`: Objective-C markers →
+  `objective-c`, C++ markers → `cpp`, else `c`). Production applies that content branch for the
+  analyzer decision (`engine.parseFile` re-detects with content at `engine.ts:1763` and calls
+  `getAnalyzer(language)` at `:1830`), so a C++-marker header **is** parsed by this analyzer in
+  production. The M14 gate's discovery does not: `incoming-gate.ts:314 admitByExtension` admits by
+  extension set, and cpp's set contains no `h`, so a cpp lane run parses none of them and resolves
+  `.cc` calls against a key space that omits every header declaration. Measured on this corpus:
+  **3,095 `.h` files content-route to cpp** (11,787 to c, 259 to objective-c), carrying **87,181
+  `#define`s**; `CPP-RESIDUAL.md` attributes **83% of this lane's `calls` residual** to exactly that
+  boundary (fmt: 3,040 macro `#define`s + 2,090 header definitions of 6,227 unresolved `calls`).
+  The exact change is proposed in `validation/m14/proposals/cpp-h-routing.md` — it is deliberately
+  NOT in this file, because a per-file analyzer cannot read another file.
 - Pure AST — symbols and relationships derive from Tree-sitter nodes/fields,
   never source-text scanning. The only string processing is on values already
   extracted from AST nodes (pure-String helpers, no regex — see Regex inventory,
@@ -504,7 +517,32 @@ claimed away per row.
 | extends | yes | **42 / 29** | **26/26 = 100%** (lane oracle) | yes | 16.7% both ends, **92.9%** target corpus-resolvable | 1.0 on all; `structural` | 0 |
 | references | yes | **27 / 7** | **21/21 = 100%** (lane oracle) | yes | 0% — the target is the namespace the `using` names | 0.9 on all, `import_based`, **`reasonCode: "using-declaration-names-a-namespace"`** | 0 |
 | instantiates | yes | **21 / 14** | audited by the shared differential, not re-runnable here | yes | 38.1% both ends, 71.4% target corpus-resolvable | 1.0 on all; `structural` | 0 |
-| overrides | yes | **9 / 2** | **9/9 = 100%** (lane oracle) | yes | 0% — both endpoints are SYNTHETIC (`Cls.method`), not symbols | 0.9, `usage_contextual`, `reasonCode: "signature-match"` | 0 |
+| overrides | yes | **9 / 2** | **9/9 = 100%** (lane oracle) | yes | leaf target + `metadata.overriddenOwner` (2026-10-17, see below); **before that: 0%**, both endpoints were SYNTHETIC (`Cls.method`), not symbols | 0.9 `signature-match` (inferred) / 1.0 `override-keyword+signature-match` (the author wrote `override`) | 0 |
+
+**`overrides` target spelling — corrected 2026-10-17.** The row above used to say Q5 = 0% because
+both endpoints were synthetic. That was a real defect and it is now fixed: the edge target is the
+DECLARED member's leaf (`run`) and the matched base travels in `metadata.overriddenOwner` (`Base`).
+Reason, measured: the resolver matches a target against a symbol's `name` or `qualifiedName`, and a
+cpp member symbol carries no distinct `qualifiedName`, so `Base.run` names nothing at all — **1,875
+of 1,875 `overrides` edges read `unresolved` on the whole population** (`CPP-RESIDUAL.md` §1). This
+is not a new design: commit `a29357562` landed exactly this spelling and measured it (86 edges: 86
+unresolved → 0; fixtures 36/11 → 41/6), and the later `0b597d2e4` "take main" merge dropped it.
+After the restoration the edges are **ambiguous by leaf, not unresolved** — C++ member names repeat
+across classes — and the base that the signature/keyword evidence selected is recorded in metadata,
+which is the machine-readable answer to "which declaration did the resolver intend". A resolver that
+wants to bind them uniquely can read that field; the analyzer cannot make two same-named member
+symbols one. Fixtures: cpp went from 42 pass / 9 fail to **50 pass / 1 fail** (§ the remaining
+failure is `friend-definition-body-owner`, a stale pin discussed in `CPP-STATE.md`).
+
+**Whole-population AFTER (same command, one run, rc=0, 2026-10-17):** `overrides` = **1,875 edges ·
+0 resolved · 0 collRes · 1,875 amb(decl) · 0 unresolved · 0 noDecl** (was 1,875 unresolved), and the
+lane total moved by exactly that type — unresolved **339,896 → 338,021**, amb(decl) 454,816 →
+456,691, resolved 391,063 and **collRes 104,069 unchanged**, `arbitraryTwin` for this type **0 → 0**.
+That is a MOVE from unresolved to ambiguous, not a reduction of the residual total (794,712): the
+residual is `amb + unresolved` by construction, and the owner is the part that can now be read.
+Two defects the hand-read of ten edges surfaced are recorded as C8/C9 in `CPP-STATE.md` (a
+macro-prefixed class named after its base, and a qualified external base binding to a same-file
+sibling leaf); they are the next in-scope work.
 
 `script/cpp-review/ontology-census.ts` measures every column above on each run:
 endpoint resolution against an index built from ANALYZER OUTPUT (exact about what the

@@ -1,3 +1,24 @@
+/**
+ * REAL GO ANALYZER — Author: Muhammad Ishaq Khan.
+ * WHAT THIS FILE IS. The production `LanguageAnalyzer` for Go (pinned `grammars/tree-sitter-go.wasm`):
+ * parses one file and emits the ten relationships that apply — calls, uses, contains, imports,
+ * references, exports, extends, implements, overrides, instantiates. Targets follow the family LEAF
+ * contract (Rust M12.18): a selector call publishes its leaf (`strings.ToUpper` -> `ToUpper`) with
+ * the qualified spelling in metadata (`callExpression`/`qualifiedType`/`selectorExpression`).
+ * WHERE ITS EVIDENCE LIVES. Doc `docs/analyzers/real-go-analyzer.md`; spec
+ * `script/m14/spec/go-completeness.json`; fixtures `validation/m14/fixtures/go/**`; lane state
+ * `validation/m14/verification/GO-STATE.md`; gate + arbiter `script/m14/incoming-gate.ts` and
+ * `script/m14/incoming-rule.ts`.
+ * WHEN THIS FILE CHANGES, EDIT TOO: the canonical doc, the spec's measured block and emission
+ * sites, the fixture(s) pinning the changed surface, and GO-STATE (both axes, same cap); `script/m14/**` is not ours.
+ * ARBITER CONTRACT. `classifyEdge` reads an `owner` claim (`isStdlib`, `isExternal`, ...) only where
+ * the target names nothing; the declared cause `baseBeyondRunScope` also requires
+ * `base === targetOwner(target)`, and a bare leaf has no owner — measured on this lane, 24,385/24,385
+ * unresolved edges read `causeRefuted` when their own reasonCode is placed there. A leaf-target claim
+ * must therefore be the external kind, and only where this file PROVES the target's origin (the
+ * closed Go stdlib package set below), never a shape guess.
+ */
+
 // Utility functions to avoid array methods
 function stringIncludes(str: string, val: string): boolean {
   if (!str) return false
@@ -151,6 +172,41 @@ const GO_STDLIB_SINGLE_SEGMENT = new Set<string>([
   "path", "plugin", "reflect", "regexp", "runtime", "slices", "sort", "strconv", "strings",
   "structs", "sync", "syscall", "testing", "time", "unicode", "unique", "unsafe", "weak",
 ])
+
+/**
+ * THE GO STANDARD LIBRARY'S TOP-LEVEL PACKAGE NAMES — the CLOSED set a qualified CALL can be checked
+ * against, and a different object from `GO_STDLIB_SINGLE_SEGMENT` above.
+ *
+ * WHY A SECOND SET. The import claim (`isStdlib` on an `imports` edge) can only reach a
+ * SINGLE-SEGMENT module path: the arbiter sends a path-shaped target (`encoding/json`) to
+ * `externalUnverified`, which is a clause-1 failure exactly as `unresolved` is. A CALL edge has the
+ * opposite shape — a bare leaf (`json.Marshal` publishes `Marshal`) — so the claim is read directly
+ * and a bare identifier always verifies there. What the call edge needs is not the whole module path
+ * but PROOF that the qualifier is a stdlib package, and `encoding` is the first segment of every
+ * `encoding/...` import while no third-party module path starts with a stdlib top-level name
+ * (third-party paths begin with a domain, and project-local paths begin with the module path).
+ *
+ * The set is the Go distribution's own top-level package directories, so membership is DECIDABLE and
+ * closed (the same standard the import set meets): a name left out costs a claim (the edge stays
+ * `unresolved`, which is honest); a name wrongly included would fabricate one. It is deliberately
+ * NOT the file's `isGoStandardLibrary` sweep, whose last clause (`!stringIncludes(path, ".")`) calls
+ * a project-local `internal/util` a stdlib package.
+ */
+const GO_STDLIB_TOP_LEVEL = new Set<string>([
+  "archive", "bufio", "bytes", "cmp", "compress", "container", "context", "crypto", "database",
+  "debug", "embed", "encoding", "errors", "expvar", "flag", "fmt", "go", "hash", "html", "image",
+  "index", "io", "iter", "log", "maps", "math", "mime", "net", "os", "path", "plugin", "reflect",
+  "regexp", "runtime", "slices", "sort", "strconv", "strings", "structs", "sync", "syscall",
+  "testing", "text", "time", "unicode", "unique", "unsafe", "weak",
+])
+
+/** Is this import path a Go standard library package path? First-segment membership in the closed
+ *  top-level set; a domain (`github.com/...`), a project path (`internal/...`) and an aliased path
+ *  are all correctly outside it, because none of those first segments is a stdlib directory. */
+function isGoStdlibModulePath(module: string): boolean {
+  const first = module.split("/")[0]
+  return first.length > 0 && GO_STDLIB_TOP_LEVEL.has(first)
+}
 
 /**
  * GO26 (round 5): the ONE Go framework vocabulary for this analyzer.
@@ -414,11 +470,18 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // PHASE 1: Extract Go symbols with proper understanding
     this.extractGoSymbols(rootNode, symbols)
 
-    // PHASE 2: Analyze Go-specific relationships
-    this.analyzeGoRelationships(rootNode, relationships, symbols, ctx)
-
-    // PHASE 3: Process Go imports (with proper module path handling)
+    // PHASE 2: Analyze Go-specific relationships. The imports are read FIRST because the call,
+    // reference and construction surfaces now need the qualifiers they declare (a `json.Marshal`
+    // call can only be PROVED a stdlib call by the `encoding/json` import written in this same
+    // file). `processGoImports` only fills `imports`; the import EDGES are still pushed below, so
+    // emission order is unchanged.
     this.processGoImports(rootNode, imports)
+    // One map for every surface: qualifier spelling -> stdlib import path, proved from this file's
+    // own import list. Empty means no claim is attached anywhere (never a shape guess).
+    const stdlibQualifiers = this.collectGoStdlibQualifiers(imports)
+    this.analyzeGoRelationships(rootNode, relationships, symbols, ctx, stdlibQualifiers)
+
+    // PHASE 3: (imports were processed above; this phase emits their edges)
 
     // PHASE 3b: Add DependsOn relationships for imports
     //
@@ -591,8 +654,10 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // PHASE 5.5: Declared-type reference graph (M14): struct fields, params,
     // receivers, return values, var declarations. Absent until M14 — the
     // corpus oracle never checked it. qualified_type keeps its dotted
-    // pkg.Type form; builtins are excluded.
-    this.extractDeclaredTypeRefs(rootNode, relationships)
+    // pkg.Type form; builtins are excluded. The same stdlib proof as the call
+    // surface lets a qualified stdlib type use carry `isStdlib` without moving
+    // its leaf target (see `goStdlibTypeClaim`).
+    this.extractDeclaredTypeRefs(rootNode, relationships, stdlibQualifiers, symbols)
 
     // PHASE 5.6: #419-D evidence-tier classification for EVERY emitted
     // relationship (family rules — rust/c/cpp/cpp all classify; go did NOT,
@@ -855,7 +920,15 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * qualified_type keeps its dotted pkg.Type form per the M14 dotted-name
    * convention; pointer/array/map/etc. wrappers descend; builtins excluded.
    */
-  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+  private extractDeclaredTypeRefs(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    stdlibQualifiers: Map<string, string> = new Map(),
+    symbols: ASTEngine.UniversalSymbol[] = [],
+  ): void {
+    // The file's own package name, for the same reason the call surfaces read it: a qualifier equal
+    // to it names a sibling declaration, never a stdlib package.
+    const ownPackageName = this.goOwnPackageName(rootNode)
     const emitted = new Set<string>()
     // Go's PREDECLARED identifiers (spec, Predeclared identifiers): the types
     // `bool`, the numeric types, `string`, `error`, and the two predeclared
@@ -964,13 +1037,24 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           const key = `${source}|${target}|${relType}`
           if (emitted.has(key)) continue
           emitted.add(key)
+          // THE CLAIM THE LEAF TARGET CAN CARRY — proved from this file's own import list: the USE
+          // is written `pkg.Type` and `pkg` is an imported standard-library package. It states the
+          // type's origin without moving the leaf target, so the R10 separator contract and every
+          // fixture that pins the leaf stay untouched.
+          const stdlibModule = qualified !== undefined
+            ? this.goStdlibTypeClaim(qualified, target, symbols, stdlibQualifiers, ownPackageName)
+            : null
           relationships.push({
             source,
             target,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.95,
             ...(this.nodeLine(t) ? { line_number: this.nodeLine(t)! } : {}),
-            metadata: { relationshipType: relType, ...(qualified ? { qualifiedType: qualified } : {}) },
+            metadata: {
+              relationshipType: relType,
+              ...(qualified ? { qualifiedType: qualified } : {}),
+              ...(stdlibModule !== null ? { isStdlib: true, stdlibPath: stdlibModule } : {}),
+            },
           })
         }
       }
@@ -2227,6 +2311,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
     _ctx: GoContext,
+    stdlibQualifiers: Map<string, string> = new Map(),
   ) {
     // 1. Analyze struct embedding relationships (extends only)
     this.analyzeGoStructEmbedding(rootNode, relationships)
@@ -2241,14 +2326,14 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.analyzeGoInterfaceImplementation(rootNode, relationships, symbols)
 
     // 3. Analyze function call relationships (leaf targets, incl. stdlib)
-    this.analyzeGoFunctionCalls(rootNode, relationships, symbols)
+    this.analyzeGoFunctionCalls(rootNode, relationships, symbols, stdlibQualifiers)
 
     // 3.5. Package-scope call expressions (var/const initializers, e.g.
     // `var _ = intVar(123)`, `var r = regexp.MustCompile(...)`). These are
     // real calls at package level that findGoFunctionCalls (body-only) never
     // captures — a genuine analyzer gap (Go wave 2026-08-28: newexpr.go,
     // session.go NewString, semtok.go MustCompile all leaked as MISSING).
-    this.analyzeGoPackageScopeCalls(rootNode, relationships, symbols)
+    this.analyzeGoPackageScopeCalls(rootNode, relationships, symbols, stdlibQualifiers)
 
     // 3.6. Composite-literal construction (`Foo{...}`, `&Foo{...}`,
     // `pkg.Foo{...}`) — Go's primary construction syntax, which emits NO
@@ -2258,7 +2343,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // — family parity). Source = containing fn/method ("global" at package
     // scope), target = the literal's type leaf. Slice/map/array literals and
     // elided element types (no type child) are skipped.
-    this.analyzeGoCompositeLiteralConstruction(rootNode, relationships)
+    this.analyzeGoCompositeLiteralConstruction(rootNode, relationships, symbols, stdlibQualifiers)
 
     // 4. Analyze Go-specific patterns (channels, goroutines, defer)
     this.analyzeGoSpecificPatterns(rootNode, relationships, symbols)
@@ -2868,6 +2953,116 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * THE FILE'S STDLIB PACKAGE QUALIFIERS: the spelling a call site may use for an imported stdlib
+   * package -> that package's import path.
+   *
+   * Go lets a file qualify a package member by the import's LOCAL NAME: the alias when written
+   * (`j "encoding/json"`), otherwise the package's own name, which for the standard library is the
+   * last path segment except for the few packages whose name differs from their directory (and
+   * those are aliased by every consumer that needs the distinction). `_` and `.` imports qualify
+   * nothing and are skipped; two distinct modules claiming one qualifier cannot be distinguished at
+   * a call site, so the qualifier is dropped rather than guessed.
+   */
+  private collectGoStdlibQualifiers(imports: ASTEngine.ImportInfo[]): Map<string, string> {
+    const out = new Map<string, string>()
+    const conflicted = new Set<string>()
+    for (const imp of imports) {
+      const module = String(imp.module ?? "")
+      if (module.length === 0 || !isGoStdlibModulePath(module)) continue
+      const alias = typeof imp.alias === "string" ? imp.alias : ""
+      if (alias === "_" || alias === ".") continue
+      const packageName = String(imp.metadata?.packageName ?? this.getGoPackageName(module))
+      const qualifier = alias.length > 0 ? alias : packageName
+      if (qualifier.length === 0) continue
+      if (out.has(qualifier) && out.get(qualifier) !== module) {
+        conflicted.add(qualifier)
+        continue
+      }
+      if (!conflicted.has(qualifier)) out.set(qualifier, module)
+    }
+    for (const q of conflicted) out.delete(q)
+    return out
+  }
+
+  /**
+   * THE ONE CLAIM A LEAF CALL TARGET CAN CARRY — `isStdlib` when the call is a DIRECT member of a
+   * standard-library package this file imports.
+   *
+   * WHY THIS IS THE CHANNEL. The gate reads `metadata.reasonCode` nowhere; the claims it reads are
+   * `EXTERNAL_KEYS` (verified against the key space) and `baseBeyondRunScope` (verified by spelling
+   * + owner consistency). This lane's unresolved calls are BARE LEAVES (`fmt.Println` publishes
+   * `Println`), and `targetOwner("Println")` is null, so a declared cause can never be attached to
+   * one: measured over the 400-file stride, all 24,385 unresolved edges read `causeRefuted` when
+   * their own reason is placed on that key. The external channel is different by construction — a
+   * bare identifier is looked up directly and, because the claim is read only where the target names
+   * nothing, the lookup returns 0 and the claim verifies without ever being able to manufacture a
+   * refutation. What makes it HONEST is the proof in front of it, not the arbiter: the qualifier is
+   * a package the file itself imports, and the import path's first segment is a member of the Go
+   * standard library's closed top-level set. A receiver variable (`r.reader.SearchWhere`), a local
+   * shadow of an import name, a project-local package and a third-party module all fail that proof
+   * and are left silent.
+   *
+   * WHAT IT DOES NOT DO. It never raises `resolved`, it does not change the emitted target, and it
+   * does not claim anything about a leaf this FILE publishes (then the edge is not external at the
+   * per-file scope the analyzer actually knows). Returns the import path when the claim is true.
+   */
+  private goStdlibCallClaim(
+    callExpression: string,
+    leaf: string,
+    symbols: ASTEngine.UniversalSymbol[],
+    qualifiers: Map<string, string>,
+    ownPackageName: string,
+  ): string | null {
+    const firstDot = callExpression.indexOf(".")
+    // A bare callee, or a DEEPER chain (`pkg.Sub.Field`, `pkg.Value.Method`): the leaf is not the
+    // direct member of the package the qualifier names, so the proof does not hold. Deliberately
+    // excluded — the same boundary `baseBeyondRunScope` calls "unspellable".
+    if (firstDot <= 0) return null
+    if (callExpression.indexOf(".", firstDot + 1) !== -1) return null
+    const qualifier = callExpression.slice(0, firstDot)
+    const module = qualifiers.get(qualifier)
+    if (module === undefined) return null
+    if (qualifier === ownPackageName) return null
+    // A declaration in this file that carries the qualifier's spelling shadows the package name at
+    // some scope, so the call site may be reading that binding rather than the package. No claim.
+    if (findSymbol(symbols, (s) => s.name === qualifier)) return null
+    // If this file publishes the leaf, the edge has an in-file declaration to answer it and is not
+    // external at the scope this analyzer can see.
+    if (findSymbol(symbols, (s) => this.isGoPackageCallable(s) && s.name === leaf)) return null
+    return module
+  }
+
+  /**
+   * THE SAME PROOF FOR A QUALIFIED TYPE SPELLING — the shared shape behind the `references` and
+   * `instantiates` claims: `context.Context`, `http.Server`, `time.Duration`.
+   *
+   * The differences from `goStdlibCallClaim` are deliberate and are the two ways a type use differs
+   * from a call: the leaf is a TYPE, so any declaration of that name in this file is enough to stop
+   * the claim (a call needs a callable); and a qualified spelling is held for the USE even when the
+   * file also declares the leaf, which is exactly the case where the edge may bind to the wrong
+   * declaration — so the guard matters more here, not less. A deeper chain (`pkg.Sub.Type`) is not
+   * a direct package member and is refused, as on the call surface.
+   */
+  private goStdlibTypeClaim(
+    qualified: string,
+    leaf: string,
+    symbols: ASTEngine.UniversalSymbol[],
+    qualifiers: Map<string, string>,
+    ownPackageName: string,
+  ): string | null {
+    const firstDot = qualified.indexOf(".")
+    if (firstDot <= 0) return null
+    if (qualified.indexOf(".", firstDot + 1) !== -1) return null
+    const qualifier = qualified.slice(0, firstDot)
+    const module = qualifiers.get(qualifier)
+    if (module === undefined) return null
+    if (qualifier === ownPackageName) return null
+    if (findSymbol(symbols, (s) => s.name === qualifier)) return null
+    if (findSymbol(symbols, (s) => s.name === leaf)) return null
+    return module
+  }
+
+  /**
    * Go Function Call Analysis
    * Analyzes Go function calls including package-qualified calls.
    * Family contract (Rust M12.18): calls emit LEAF targets — a receiver chain
@@ -2882,6 +3077,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
+    stdlibQualifiers: Map<string, string>,
   ) {
     const functions = filterSymbols(
       symbols,
@@ -2915,6 +3111,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           return
         }
         if (targetFunction) {
+          // THE CLAIM A LEAF TARGET CAN CARRY — see `goStdlibCallClaim`: only a DIRECT member of a
+          // stdlib package this file imports, never a receiver selector and never a deeper chain.
+          const stdlibModule = this.goStdlibCallClaim(call, targetFunction, symbols, stdlibQualifiers, ownPackageName)
           relationships.push({
             source: func.name,
             target: targetFunction,
@@ -2925,6 +3124,10 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               relationshipType: "go_function_call",
               callExpression: call,
               isPackageQualified: stringIncludes(call, "."),
+              // `isStdlib` is one of the gate's recognised EXTERNAL_KEYS, and the PROOF is the
+              // import written in this file plus the closed top-level stdlib set (`stdlibPath` is
+              // the evidence, kept beside the claim for a reviewer; it is not a claim key).
+              ...(stdlibModule !== null ? { isStdlib: true, stdlibPath: stdlibModule } : {}),
             },
           })
           // Go constructors: NewFoo() — PascalCase top-level function.
@@ -2984,6 +3187,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
+    stdlibQualifiers: Map<string, string>,
   ) {
     const declared = new Set<string>()
     // GO3: dot-import leniency for bare package-scope callees (mirrored).
@@ -3084,6 +3288,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           const callKey = `call:${callSrc}:${leaf}`
           if (emit && !emitted.has(callKey)) {
             emitted.add(callKey)
+            // Same leaf-target claim as the function-body site (`goStdlibCallClaim`): the proof is
+            // the import written in this file, not the shape of the leaf.
+            const stdlibModule = this.goStdlibCallClaim(fn.text, leaf, symbols, stdlibQualifiers, ownPackageName)
             relationships.push({
               source: callSrc,
               target: leaf,
@@ -3096,6 +3303,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
                 relationshipType: "go_package_scope_call",
                 callExpression: fn.text,
                 isPackageQualified: qualified,
+                ...(stdlibModule !== null ? { isStdlib: true, stdlibPath: stdlibModule } : {}),
               },
             })
           }
@@ -3150,7 +3358,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * type) and elided element literals have no type child — both are skipped
    * naturally by the type-child gate below.
    */
-  private analyzeGoCompositeLiteralConstruction(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]) {
+  private analyzeGoCompositeLiteralConstruction(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[] = [],
+    stdlibQualifiers: Map<string, string> = new Map(),
+  ) {
+    const ownPackageName = this.goOwnPackageName(rootNode)
     const stack: Node[] = [rootNode]
     const seen = new Set<string>()
     while (stack.length > 0) {
@@ -3184,11 +3398,14 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "composite_literal") {
         const typeNode = node.childForFieldName("type") ?? (node.namedChildCount > 0 ? node.namedChild(0) : undefined)
         let target: string | undefined
+        // The qualified spelling the source wrote (`http.Server`), kept for the stdlib proof below.
+        let qualifiedRaw: string | undefined
         if (typeNode) {
           if (typeNode.type === "type_identifier") {
             target = typeNode.text
           } else if (typeNode.type === "qualified_type") {
             const raw = typeNode.text
+            qualifiedRaw = raw
             const dot = raw.lastIndexOf(".")
             target = dot !== -1 ? raw.slice(dot + 1) : raw
           } else if (typeNode.type === "generic_type") {
@@ -3198,6 +3415,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             const base = typeNode.namedChildCount > 0 ? typeNode.namedChild(0) : undefined
             if (base && (base.type === "type_identifier" || base.type === "qualified_type")) {
               const raw = base.text
+              if (base.type === "qualified_type") qualifiedRaw = raw
               const dot = raw.lastIndexOf(".")
               target = dot !== -1 ? raw.slice(dot + 1) : raw
             }
@@ -3211,6 +3429,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           const key = `${src}.${target}`
           if (!seen.has(key)) {
             seen.add(key)
+            // The constructed type is written `pkg.Type`; when `pkg` is a stdlib package this file
+            // imports, the construction names a stdlib declaration and can say so on a LEAF target.
+            const stdlibModule = qualifiedRaw !== undefined
+              ? this.goStdlibTypeClaim(qualifiedRaw, target, symbols, stdlibQualifiers, ownPackageName)
+              : null
             relationships.push({
               source: src,
               target,
@@ -3218,7 +3441,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               confidence: 0.8,
               // M59.A7 (#825): the constructed TYPE's line.
               ...(this.nodeLine(typeNode) ? { line_number: this.nodeLine(typeNode)! } : {}),
-              metadata: { relationshipType: "go_composite_literal_construction", isConstructor: true },
+              metadata: {
+                relationshipType: "go_composite_literal_construction",
+                isConstructor: true,
+                ...(qualifiedRaw !== undefined ? { qualifiedType: qualifiedRaw } : {}),
+                ...(stdlibModule !== null ? { isStdlib: true, stdlibPath: stdlibModule } : {}),
+              },
             })
           }
         }

@@ -197,5 +197,10 @@
   "regeneratedAtCommit": "75af19303c3882cafdf20aebe3bd3e1522e0c975",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Completeness spec (#419) — A–H sections per language"
+  "title": "Completeness spec (#419) — A–H sections per language",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-17T14:42:43.669Z",
+    "contentSha256": "f18e8e15a956ad65ac4e2b215fe2f7bb62ca293866bf13813c70e7b5418d5cf2"
+  }
 }
