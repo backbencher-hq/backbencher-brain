@@ -401,40 +401,42 @@
   "corpusUnexercised": [],
   "_emissionSites": {
    "calls": [
-    "src/ast/real-cpp-analyzer.ts:4339"
+    "src/ast/real-cpp-analyzer.ts:4366"
    ],
    "uses": [
-    "src/ast/real-cpp-analyzer.ts:4145",
-    "src/ast/real-cpp-analyzer.ts:4534"
+    "src/ast/real-cpp-analyzer.ts:4172",
+    "src/ast/real-cpp-analyzer.ts:4561"
    ],
    "contains": [
-    "src/ast/real-cpp-analyzer.ts:4820"
+    "src/ast/real-cpp-analyzer.ts:4863"
    ],
    "imports": [
-    "src/ast/real-cpp-analyzer.ts:2750"
+    "src/ast/real-cpp-analyzer.ts:2771"
    ],
    "references": [
-    "src/ast/real-cpp-analyzer.ts:2470"
+    "src/ast/real-cpp-analyzer.ts:2497"
    ],
    "exports": [
-    "src/ast/real-cpp-analyzer.ts:2921",
-    "src/ast/real-cpp-analyzer.ts:3626",
-    "src/ast/real-cpp-analyzer.ts:4759"
+    "src/ast/real-cpp-analyzer.ts:2948",
+    "src/ast/real-cpp-analyzer.ts:3653",
+    "src/ast/real-cpp-analyzer.ts:4802"
    ],
    "extends": [
-    "src/ast/real-cpp-analyzer.ts:2903",
-    "src/ast/real-cpp-analyzer.ts:3134"
+    "src/ast/real-cpp-analyzer.ts:2930",
+    "src/ast/real-cpp-analyzer.ts:3161"
    ],
    "implements": [
-    "src/ast/real-cpp-analyzer.ts:4730"
+    "src/ast/real-cpp-analyzer.ts:4773"
    ],
    "overrides": [
-    "src/ast/real-cpp-analyzer.ts:4683"
+    "src/ast/real-cpp-analyzer.ts:4719"
    ],
    "instantiates": [
-    "src/ast/real-cpp-analyzer.ts:4452"
+    "src/ast/real-cpp-analyzer.ts:4479"
    ]
   },
+  "_emissionSites_revision": "Lines re-derived 2026-10-17 after the required head comment and the `overrides` spelling restoration moved every push site; the previous values were taken before both edits and no longer name the emitters.",
+  "_overridesSpelling": "2026-10-17: an `overrides` edge targets the DECLARED MEMBER's leaf (`run`), not `Base.run`, and carries metadata.overriddenOwner = the matched base. Measured reason: `Base.run` answers to no symbol's `name`, and a cpp member symbol publishes no distinct qualifiedName alias, so the dotted spelling resolved 0 of 1,875 edges on the whole population (CPP-RESIDUAL.md). This restores commit a29357562, which the 0b597d2e4 take-main merge dropped; a29357562 measured 86 edges as 86 unresolved -> 0 and fixtures 36/11 -> 41/6. Leaf targets are AMBIGUOUS when several classes declare the member (C++ member names repeat), so the intended base is carried in metadata for a resolver that can read it. WHOLE-POPULATION AFTER (residual-gate --lane cpp, cap 0, rc=0, same command as the baseline): overrides 1,875 edges / 0 resolved / 0 collRes / 1,875 amb / 0 unresolved / 0 noDecl (was 1,875 unresolved); lane unresolved 339,896 -> 338,021, resolved and collRes unchanged, arbitraryTwin for this type 0 -> 0. Fixtures 42/9 -> 50/1. The hand-read of ten edges surfaced two further in-lane defects (a macro-prefixed class named after its BASE, and a qualified external base binding to a same-file sibling leaf), recorded as C8/C9 in CPP-STATE.md.",
   "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-cpp-analyzer.ts, named per type in `_emissionSites`; the pinned grammar wasm/tree-sitter-cpp.wasm (sha256 0821b6f64ea5444e) carries the productions each of them keys on \u2014 base_class_clause for `extends` (1 of its 210 distinct named types), pure_virtual_clause/virtual_specifier for `overrides`, new_expression/template_instantiation for `instantiates`, preproc_include/using_declaration for `imports` (8 probe hits), class_specifier/access_specifier for `exports` (25 probe hits) \u2014 so there is no absent construct to exclude and nothing here to reclassify. NO EXCLUSIONS. NOT YET CLAIMED: a per-type whole-corpus or stride edge count for this lane, because the pinned firing log validation/m14/results/firing-laptop-b.current.log records CPP as NO CORPUS under cpp-example (0 of 10 types fired) and no whole-population run has been recorded for it in this block; the emission sites are the evidence, and a measured edge count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified.",
   "_implemented_measured": {
    "_unit": "STRIDE SAMPLE, NOT POPULATION, and a LOWER BOUND by construction: `npx tsx script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 400` \u2014 the instrument's own disclosure reads `population: 400 parsed of 400 sampled (corpus has 6641 .cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu files across 30 repos; stride sample)` and `SAMPLE, NOT POPULATION: 400 of 6641 files`. Per-type edges are TABLE 1 (the per-project scope production resolves in) of that run, read 2026-10-14; wall clock 217s. All ten types fire on the stride, the smallest margin being `references` at 80 edges, so every one of the ten is measured present rather than inferred from code.",

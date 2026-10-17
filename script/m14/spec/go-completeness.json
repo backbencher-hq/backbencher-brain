@@ -656,77 +656,103 @@
   "corpusUnexercised": [],
   "_emissionSites": {
    "calls": [
-    "src/ast/real-go-analyzer.ts:2836",
-    "src/ast/real-go-analyzer.ts:3005",
-    "src/ast/real-go-analyzer.ts:3191",
-    "src/ast/real-go-analyzer.ts:3278"
+    "src/ast/real-go-analyzer.ts:3120",
+    "src/ast/real-go-analyzer.ts:3297",
+    "src/ast/real-go-analyzer.ts:3504",
+    "src/ast/real-go-analyzer.ts:3591"
    ],
    "uses": [
-    "src/ast/real-go-analyzer.ts:3252",
-    "src/ast/real-go-analyzer.ts:3669",
-    "src/ast/real-go-analyzer.ts:3745"
+    "src/ast/real-go-analyzer.ts:3565",
+    "src/ast/real-go-analyzer.ts:3982",
+    "src/ast/real-go-analyzer.ts:4058"
    ],
    "contains": [
-    "src/ast/real-go-analyzer.ts:2203"
+    "src/ast/real-go-analyzer.ts:2373"
    ],
    "imports": [
-    "src/ast/real-go-analyzer.ts:412"
+    "src/ast/real-go-analyzer.ts:517"
    ],
    "references": [
-    "src/ast/real-go-analyzer.ts:885"
+    "src/ast/real-go-analyzer.ts:1050"
    ],
    "exports": [
-    "src/ast/real-go-analyzer.ts:518"
+    "src/ast/real-go-analyzer.ts:641"
    ],
    "extends": [
-    "src/ast/real-go-analyzer.ts:2434",
-    "src/ast/real-go-analyzer.ts:2475"
+    "src/ast/real-go-analyzer.ts:2604",
+    "src/ast/real-go-analyzer.ts:2645"
    ],
    "implements": [
-    "src/ast/real-go-analyzer.ts:2691",
-    "src/ast/real-go-analyzer.ts:2710"
+    "src/ast/real-go-analyzer.ts:2861",
+    "src/ast/real-go-analyzer.ts:2880"
    ],
    "overrides": [
-    "src/ast/real-go-analyzer.ts:2354"
+    "src/ast/real-go-analyzer.ts:2524"
    ],
    "instantiates": [
-    "src/ast/real-go-analyzer.ts:2875",
-    "src/ast/real-go-analyzer.ts:3035",
-    "src/ast/real-go-analyzer.ts:3132"
+    "src/ast/real-go-analyzer.ts:3163",
+    "src/ast/real-go-analyzer.ts:3328",
+    "src/ast/real-go-analyzer.ts:3440"
    ]
   },
-  "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-go-analyzer.ts, named per type in `_emissionSites`. TWO OF THEM ARE GO'S OWN CONSTRUCTS RATHER THAN THE JVM SHAPES, and are named so the mapping is auditable: `extends` is struct embedding (metadata relationshipType go_struct_embedding, embedType struct_composition_extends, :2434/:2475 \u2014 Go's composition-of-types relation) and `overrides` is method-promotion shadowing (metadata go_method_promotion_shadowing, :2354 \u2014 the outer declaration that makes x.M select this method rather than the promoted one, depth-resolved per the Go spec's shallowest-depth rule). `implements` is interface satisfaction (interface_type is 1 of the 103 distinct named types in wasm/tree-sitter-go.wasm, sha256 9963ca89b616eaf0) and `instantiates` is composite_literal. NO EXCLUSIONS: the pinned grammar carries a production for every one of the ten. NOT YET CLAIMED: a per-type edge count \u2014 the firing log validation/m14/results/firing-laptop-b.current.log records GO as NO CORPUS under go-stdlib (0 of 10 fired), so the emission sites are the evidence here and a measured count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified. MEASURED, 2026-10-14: `npx tsx script/m14/incoming-gate.ts go go 500` over a 500-file even stride of the 49,915 admitted .go files in 26 repositories (instrument disclosure: `population: 500 parsed of 500 sampled`) fires ALL TEN types, so the code reading and the measurement agree for every one of them: calls 14509, uses 9763, references 9438, contains 4620, exports 4028, imports 3116, instantiates 2432, extends 147, implements 73 and overrides 8. `overrides` is the smallest margin at 8 edges and is named so a lower bound is not mistaken for a total.",
+  "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-go-analyzer.ts, named per type in `_emissionSites`. TWO OF THEM ARE GO'S OWN CONSTRUCTS RATHER THAN THE JVM SHAPES, and are named so the mapping is auditable: `extends` is struct embedding (metadata relationshipType go_struct_embedding, embedType struct_composition_extends, :2604/:2645 \u2014 Go's composition-of-types relation) and `overrides` is method-promotion shadowing (metadata go_method_promotion_shadowing, :2524 \u2014 the outer declaration that makes x.M select this method rather than the promoted one, depth-resolved per the Go spec's shallowest-depth rule). `implements` is interface satisfaction (interface_type is 1 of the 103 distinct named types in wasm/tree-sitter-go.wasm, sha256 9963ca89b616eaf0) and `instantiates` is composite_literal. NO EXCLUSIONS: the pinned grammar carries a production for every one of the ten. NOT YET CLAIMED: a per-type edge count \u2014 the firing log validation/m14/results/firing-laptop-b.current.log records GO as NO CORPUS under go-stdlib (0 of 10 fired), so the emission sites are the evidence here and a measured count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified. MEASURED, 2026-10-14: `npx tsx script/m14/incoming-gate.ts go go 500` over a 500-file even stride of the 49,915 admitted .go files in 26 repositories (instrument disclosure: `population: 500 parsed of 500 sampled`) fires ALL TEN types, so the code reading and the measurement agree for every one of them: calls 14509, uses 9763, references 9438, contains 4620, exports 4028, imports 3116, instantiates 2432, extends 147, implements 73 and overrides 8. `overrides` is the smallest margin at 8 edges and is named so a lower bound is not mistaken for a total.",
   "_implemented_measured": {
-   "_unit": "STRIDE SAMPLE, NOT POPULATION: `npx tsx script/m14/incoming-gate.ts go go 500` \u2014 instrument disclosure `population: 500 parsed of 500 sampled (corpus has 49915 .go files across 26 repos; stride sample)` and `SAMPLE, NOT POPULATION: 500 of 49915 files`; per-type edges are TABLE 1 of that run, read 2026-10-14, wall clock 289s. A stride is a lower bound by construction, so these are lower bounds and not corpus totals \u2014 the corpus is 100x the stride, so a type's true count may be far larger and none of these numbers may be read as an absence.",
+   "_unit": "STRIDE SAMPLE, NOT POPULATION: `bun run script/m14/incoming-gate.ts go go 400` — instrument disclosure `population: 400 parsed of 400 sampled (corpus has 49915 .go files across 26 repos; stride sample)` and `SAMPLE, NOT POPULATION: 400 of 49915 files`; per-type edges are TABLE 1 of that run, read 2026-10-17. A stride is a lower bound by construction, so these are lower bounds and not corpus totals — the corpus is ~125x the stride, so a type's true count may be far larger and none of these numbers may be read as an absence.",
    "calls": {
-    "edges": 14509
+    "edges": 14953
    },
    "uses": {
-    "edges": 9763
+    "edges": 8434
    },
    "contains": {
-    "edges": 4620
+    "edges": 4298
    },
    "imports": {
-    "edges": 3116
+    "edges": 2803
    },
    "references": {
-    "edges": 9438
+    "edges": 9555
    },
    "exports": {
-    "edges": 4028
+    "edges": 2762
    },
    "extends": {
-    "edges": 147
+    "edges": 123
    },
    "implements": {
-    "edges": 73
+    "edges": 37
    },
    "overrides": {
-    "edges": 8
+    "edges": 1
    },
    "instantiates": {
-    "edges": 2432
+    "edges": 2318
+   },
+   "_leafClaims": {
+    "measured": "2026-10-17, same 400-file cap as TABLE 1; before/after in validation/m14/verification/GO-STATE.md and validation/m14/fixtures/go/measurements/gate-go-state-400-final.txt",
+    "what": "`isStdlib: true` (plus `stdlibPath`, evidence not a claim key) on LEAF-target edges whose qualified spelling names a DIRECT member of an import of this file and whose import path's first segment is in the closed Go stdlib top-level set (GO_STDLIB_TOP_LEVEL). Emitted targets never move.",
+    "unresolvedBefore": {
+     "calls": 10238,
+     "references": 5926,
+     "instantiates": 1657,
+     "total": 24385
+    },
+    "unresolvedAfter": {
+     "calls": 8232,
+     "references": 4269,
+     "instantiates": 1593,
+     "total": 20658
+    },
+    "extOKBefore": 830,
+    "extOKAfter": 4557,
+    "axes": {
+     "resolved": "15726 -> 15726",
+     "collRes": "1807 -> 1807",
+     "arbitraryTwin": "8195 -> 8195",
+     "extFAIL": "0 -> 0",
+     "causeOK": "0 -> 0"
+    },
+    "whyNotCauseChannel": "baseBeyondRunScope requires base === targetOwner(target); targetOwner of a bare leaf is null, so the lane reasonCode on that key is causeRefuted on 24,385/24,385 unresolved edges (probe-go-fix.ts TRAP 1). The qualified-target route is priced in validation/m14/proposals/go-cause-channel.md."
    }
   }
  }

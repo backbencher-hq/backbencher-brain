@@ -115,6 +115,22 @@ export type ExternalClaim =
   // THE SOURCE-PATH CLAIM — evidence is the WRITTEN SOURCE STRING as the document spells it, and the
   // verdict is the inverse of a file claim: a candidate the project admits REFUTES it.
   | { kind: "sourcePath"; sources: string[] }
+  // THE MODULE-PATH IMPORT CLAIM (task-168) — SYNTHESIZED BY THIS RULING LAYER, not carried by the
+  // analyzer. An `imports` edge whose target is a DOTTED MODULE PATH ending in a TYPE name
+  // (`java.util.List`, `org.grails.compiler.injection.GrailsASTUtils`) names a package/module, and the
+  // arbiter's refutation key for it is the OWNER — everything before the last dot, i.e. a PACKAGE PATH,
+  // which a project almost never declares as a symbol. So the claim is VERIFIABLE rather than assumed:
+  // `verifyExternalClaim` checks the owner against the project key space, and a project that DOES declare
+  // it refutes the claim, which is exactly the safety net this layer exists to provide.
+  //
+  // WHY HERE AND NOT IN THE ANALYZER: deciding this needs the PROJECT key space, and a per-file analyzer
+  // does not have it. The java analyzer documents the same refusal in `markExternalTargets` — "they are
+  // *probably* the platform types, and 'probably' is what this marker must not say".
+  //
+  // NARROWED DELIBERATELY TO A CAPITALISED LEAF, so that lowercase module paths other lanes emit
+  // (`os.path`, `json.parser`) are untouched: those lanes' key spaces can declare a module symbol of the
+  // same name, which would REFUTE the claim and turn a resolution gap into a new clause-4 defect.
+  | { kind: "importPath" }
   // BUCKET 3 — A DECLARED CAUSE, and deliberately NOT an external claim.
   //
   // `base` is the reason the analyzer states (`baseBeyondRunScope`'s value: the heritage base
@@ -368,7 +384,18 @@ export function namespaceRootOf(tgt: string): string {
  */
 export function namespaceMatchOf(tgt: string, roots: readonly string[]): string | null {
   if (tgt.length === 0 || roots.length === 0) return null
-  const segs = tgt.split(".")
+  // SPLIT ON `::` AS WELL AS `.`, because a language namespace is not always dotted. Rust spells a
+  // namespace `std::fs`, `core::fmt`, `alloc::vec`; with a dot-only split those targets yielded ONE
+  // segment (`std::fs`) and no root could ever match, so `languageNamespace` was structurally
+  // unreachable for the lane. Measured by rust's lane: 233 `std::` import rows sat unresolved behind
+  // this single line, and the priced win was imports unresolved 863 -> 630, extOK 797 -> 1,030.
+  //
+  // THE PRE-REGISTERED FALSIFIER, agreed before the change: **any `extFAIL` on the rows this newly
+  // reaches REFUTES the emission rule.** A namespace claim must be verified by the project, and a
+  // claim that turns out refuted is a false statement the gate must catch, not a recall improvement.
+  // This is additive and cannot reach a call edge: a call's target is a bare leaf, which has no
+  // separator at all and is refused as vacuous by the lanes that measured it (rust, go, toml, yaml).
+  const segs = tgt.split(/\.|::/)
   for (let n = segs.length; n >= 1; n--) {
     const cand = segs.slice(0, n).join(".")
     if (roots.includes(cand)) return cand
@@ -429,8 +456,18 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
     }
   }
   if (hasCause) return { kind: "cause", base: cause, conflict: false }
+  // THE MODULE-PATH IMPORT CLAIM — checked LAST, so every explicit analyzer claim above wins, and only
+  // where the edge carries no claim at all. See `importPath` in the claim union for the why and the
+  // deliberate capitalised-leaf narrowing.
+  if (rel?.type === "imports" || rel?.type === "brain_import") {
+    const t = String(rel?.target ?? "")
+    if (DOTTED_MODULE_TYPE.test(t)) return { kind: "importPath" }
+  }
   return null
 }
+
+/** A DOTTED MODULE PATH ENDING IN A TYPE NAME — `java.util.List`, `a.b.C`. Not a path, not a URL. */
+export const DOTTED_MODULE_TYPE = /^[A-Za-z_$][A-Za-z0-9_$]*(\.[A-Za-z_$][A-Za-z0-9_$]*)*\.[A-Z][A-Za-z0-9_$]*$/
 
 /** Is this edge declared as naming something outside the corpus? */
 export function isMarkedExternal(rel: any): boolean {

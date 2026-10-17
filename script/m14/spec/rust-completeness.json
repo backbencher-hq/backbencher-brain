@@ -537,6 +537,16 @@
       "instantiates": {
         "edges": 6019
       }
+    },
+    "_claims": {
+      "_what": "THE ARBITER CLAIMS THIS ANALYZER EMITS, by edge type. A claim is not a resolution: it is a statement the project can CHECK, and the column it moves is extOK (verified) / extFAIL (refuted). Recorded here because a claim is part of what the lane publishes, exactly as a relationship type is.",
+      "imports": {
+        "key": "importProjectFile",
+        "kind": "projectFile",
+        "rule": "crate::a::b -> <crate source root>/a/b.rs | a/b/mod.rs; bare `crate` (root group) and `crate::Item` (upper-case root item / wildcard) -> the crate root file (lib.rs or main.rs, refused when BOTH exist); bare `super` (a group of the parent's items) -> the parent module's own file; self::a and super::a at FILE SCOPE -> the same file forms under the module's own / parent's directory. The crate source root is the nearest ancestor with lib.rs or main.rs; src/bin, tests, examples and benches are crate roots of their own. A bare root that is a member of THIS FILE'S WORKSPACE (members list of the nearest ancestor [workspace] manifest; package name with - -> _; lib root from [lib] path or src/lib.rs) -> that member's lib.rs, or its a/b.rs | a/b/mod.rs. Membership rather than any manifest under the project is load-bearing: a whole-tree manifest walk found a test-fixture crate named serde (tests/testsuite/cargo_remove/gc_keep_used_patch/out/serde) and would have claimed 11 real use serde edges. Refused: one-segment non-members, std::/core::/alloc:: roots, self::/super:: inside an inline mod, two-segment crate::Foo, a same-named local module in the importing crate, and any candidate the filesystem does not confirm.",
+        "measured": "cap-400 stride population (bun run script/m14/incoming-gate.ts rust rs 400, 2026-10-17, four readings): imports 1,751 edges / 1,660 unresolved BEFORE -> 1,284 + 376 extOK (internal paths) -> 863 + 797 extOK (workspace members) -> 799 + 861 extOK (crate root and bare super), extFAIL 0 at every reading; TOTAL unresolved 23,637 -> 23,261 -> 22,840 -> 22,776, resolved 9,419 unchanged, ambiguous 9,874 unchanged, arbitraryTwin 13,191 BYTE-IDENTICAL. Census control: validation/m14/fixtures/rust/import-claim-census.mts reports 861 emitted (on unresolved edges), 861 verified against the gate's admitted-file rule, 0 refused, and exits non-zero if either control fails. Row-by-row: validation/m14/fixtures/rust/import-claim-rows.json.",
+        "not_claimed": "The 799 imports still unresolved: 342 one-segment (311 external crate names and 31 bare crate/super/self words), 233 std:: paths, 101 crate:: paths whose module file did not exist in the sample, 34 super::x whose leaf is an item, and 89 external-crate-rooted paths whose crate is not a workspace member. A ::-aware languageNamespace claim for std/core/alloc is a proposal (validation/m14/proposals/), not an emission: the shared matcher is dot-segment-based and Rust spells paths with ::."
+      }
     }
   }
 }

@@ -533,6 +533,8 @@ falls into (`clone`, `new`, `default` are declared all over, and `extFAIL` must 
 | `self::a` (file scope) | `<dir of this file>/a.rs` · `<dir of this file>/a/mod.rs` |
 | `super::a` (file scope) | `<parent module dir>/a.rs` · `<parent module dir>/a/mod.rs` |
 | `member::a::b` (workspace member) | `<member lib dir>/a/b.rs` · `<member lib dir>/a/b/mod.rs`; `member` alone → the member's `lib.rs` |
+| `crate` (root group) · `crate::Item` (root item) | `<crate source root>/lib.rs` or `main.rs` — refused when BOTH are there (`lib`+`bin` in one dir: the edge does not say which crate the file belongs to) |
+| `super` (bare word, a group of the parent's items) | the PARENT MODULE's own file: `x.rs`/`x/mod.rs` at the parent's directory |
 
 The crate source root is the nearest ancestor directory holding `lib.rs`/`main.rs`; a Cargo target
 directory (`src/bin`, `tests`, `examples`, `benches`) is a crate root of its own. The workspace
@@ -556,36 +558,39 @@ population's 1 MB cap), which is why the arbiter has never refuted one: `extFAIL
 
 **Measured, `bun run script/m14/incoming-gate.ts rust rs 400`** (same population, three readings):
 
-| axis | baseline | after internal paths | after workspace members |
-| --- | --- | --- | --- |
-| `imports` unresolved | 1,660 | 1,284 | **863** |
-| `imports` extOK / extFAIL | 0 / 0 | 376 / 0 | **797 / 0** |
-| TOTAL unresolved | 23,637 | 23,261 | **22,840** |
-| TOTAL extOK / extFAIL | 0 / 0 | 376 / 0 | **797 / 0** |
-| TOTAL resolved / ambiguous | 9,419 / 9,874 | 9,419 / 9,874 | **9,419 / 9,874** |
-| `arbitraryTwin` (binding intent) | 13,191 | 13,191 | **13,191** |
+| axis | baseline | after internal paths | after workspace members | after crate-root/super |
+| --- | --- | --- | --- | --- |
+| `imports` unresolved | 1,660 | 1,284 | 863 | **799** |
+| `imports` extOK / extFAIL | 0 / 0 | 376 / 0 | 797 / 0 | **861 / 0** |
+| TOTAL unresolved | 23,637 | 23,261 | 22,840 | **22,776** |
+| TOTAL extOK / extFAIL | 0 / 0 | 376 / 0 | 797 / 0 | **861 / 0** |
+| TOTAL resolved / ambiguous | 9,419 / 9,874 | 9,419 / 9,874 | 9,419 / 9,874 | **9,419 / 9,874** |
+| `arbitraryTwin` (binding intent) | 13,191 | 13,191 | 13,191 | **13,191** |
 
 **The instrument and its control:** `validation/m14/fixtures/rust/import-claim-census.mts` reruns
 the real analyzer over the gate's stride sample, verifies EVERY emitted claim against the gate's
 admitted-file rule (git ls-files · `.rs` · ≤ 1 MB) and exits non-zero if zero claims verify or any
-claim is refused; its row-by-row artifact is `import-claim-rows.json` (797 rows). Result: 797
-verified / 0 refused, deterministic across runs.
+claim is refused; its row-by-row artifact is `import-claim-rows.json` (869 claim rows, 861 of them
+on unresolved edges; 8 ride edges that resolve anyway and move nothing). Result: 861 verified on
+unresolved / 0 refused, deterministic across runs.
 
 **What this claim is not.** It resolves the import's FILE, not a symbol declaration — the honest
-terminal state for an import whose declaring file is outside the run's population. The 863 imports
-still unresolved are: 233 `std::` paths, 381 one-segment external crate names (`serde`, `axum`, …),
-126 `crate::` paths whose module file did not exist in the sample, 34 `super::`/`self::` (inline-mod
-and no-file cases), and 89 external/workspace paths whose file was not found. A `::`-aware namespace
-claim for `std`/`core`/`alloc` is a proposal (`validation/m14/proposals/`), not an emission: Rust
-call edges carry the bare leaf as their TARGET, so a namespace claim can only reach PATH-shaped
-targets, and the shared matcher is dot-segment-based.
+terminal state for an import whose declaring file is outside the run's population. The 799 imports
+still unresolved are: **342 one-segment** (311 external crate names — `serde`, `anyhow`, … — and 31
+bare `crate`/`super`/`self` words), **233 `std::` paths**, **101 `crate::` paths whose module file
+did not exist in the sample** (inline modules, `#[path]`, or a tracked-but-absent corpus file), **34
+`super::x` whose leaf is an ITEM rather than a module**, and **89 external-crate-rooted paths**
+(`axum::` 16, `cargo::` 10, `cargo_util_terminal::` 5, …) whose crate is not a workspace member. A `::`-aware namespace claim for `std`/`core`/`alloc` is a proposal
+(`validation/m14/proposals/`), not an emission: Rust call edges carry the bare leaf as their TARGET,
+so a namespace claim can only reach PATH-shaped targets, and the shared matcher is dot-segment-based.
 
 ## Evidence pointers
 
 - Fixtures: `validation/m14/fixtures/rust/` (M14) and
   `validation/m12/fixtures/rust/` (M12)
-- M14 import-claim evidence: `validation/m14/fixtures/rust/import-claim-census-after3.txt`,
-  `import-claim-rows.json`, `gate-400-before.txt`, `gate-400-after.txt`, `gate-400-after2.txt`
+- M14 import-claim evidence: `validation/m14/fixtures/rust/import-claim-census-after5.txt`,
+  `import-claim-rows.json`, `gate-400-before.txt`, `gate-400-after.txt`, `gate-400-after2.txt`,
+  `gate-400-after3.txt`
 - M14 differential evidence: `validation/m14/results/M14.0.F5.json`
 - M14 completeness evidence: `validation/m14/results/M14.0.SPEC.json`
 - M14 mutation evidence: `validation/m14/results/M14.0.F4.json`

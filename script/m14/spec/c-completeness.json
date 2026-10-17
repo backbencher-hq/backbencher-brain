@@ -26,12 +26,12 @@
    "type_definition",
    "union_specifier",
    "macro_prefixed_type_specifier",
-   "macro_specifier"
-  ,
-      "ERROR"],
-    "_notes": {
-      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-c-analyzer.ts:1040 and the `case \"ERROR\"` recovery branch at :1921), and `exports-marker-conventions-963.c` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
-    }
+   "macro_specifier",
+   "ERROR"
+  ],
+  "_notes": {
+   "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-c-analyzer.ts:1040 and the `case \"ERROR\"` recovery branch at :1921), and `exports-marker-conventions-963.c` is a committed fixture whose parse tree contains one \u2014 the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
+  }
  },
  "internal_silent": {
   "types": [
@@ -138,12 +138,12 @@
    "goto_statement",
    "update_expression",
    "subscript_expression",
-   "preproc_header_name"
-  ,
-      "MISSING"],
-    "_notes": {
-      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-c-analyzer.ts:763 and :800 (the `isError`/missing-tail reads)); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
-    }
+   "preproc_header_name",
+   "MISSING"
+  ],
+  "_notes": {
+   "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain \u2014 a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-c-analyzer.ts:763 and :800 (the `isError`/missing-tail reads)); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+  }
  },
  "gap": {
   "_description": "No confirmed C emission gaps remain after current fixture review; differential and mutation are separate evidence requirements.",
@@ -353,37 +353,37 @@
   "corpusUnexercised": [],
   "_emissionSites": {
    "calls": [
-    "src/ast/real-c-analyzer.ts:2564"
+    "src/ast/real-c-analyzer.ts:2834"
    ],
    "uses": [
-    "src/ast/real-c-analyzer.ts:2815",
-    "src/ast/real-c-analyzer.ts:3062"
+    "src/ast/real-c-analyzer.ts:3091",
+    "src/ast/real-c-analyzer.ts:3338"
    ],
    "contains": [
-    "src/ast/real-c-analyzer.ts:3248"
+    "src/ast/real-c-analyzer.ts:3524"
    ],
    "imports": [
-    "src/ast/real-c-analyzer.ts:2286"
+    "src/ast/real-c-analyzer.ts:2534"
    ],
    "references": [
-    "src/ast/real-c-analyzer.ts:3062"
+    "src/ast/real-c-analyzer.ts:3338"
    ],
    "exports": [
-    "src/ast/real-c-analyzer.ts:2155",
-    "src/ast/real-c-analyzer.ts:2698",
-    "src/ast/real-c-analyzer.ts:3568"
+    "src/ast/real-c-analyzer.ts:2403",
+    "src/ast/real-c-analyzer.ts:2974",
+    "src/ast/real-c-analyzer.ts:3856"
    ],
    "overrides": [
-    "src/ast/real-c-analyzer.ts:3319",
-    "src/ast/real-c-analyzer.ts:3376"
+    "src/ast/real-c-analyzer.ts:3595",
+    "src/ast/real-c-analyzer.ts:3652"
    ],
    "instantiates": [
-    "src/ast/real-c-analyzer.ts:2614"
+    "src/ast/real-c-analyzer.ts:2890"
    ]
   },
   "_from": "DERIVATION. implemented = the eight types with an emission site in src/ast/real-c-analyzer.ts, named per type in `_emissionSites` (calls 1 site, uses 2, contains 1, imports 1, references 1, exports 3, overrides 2, instantiates 1). The two types with NO site are excluded by the pinned grammar's own inventory, not by the missing code: C cannot express IS-A or interface satisfaction, so there is no construct for the analyzer to miss. TWO GROUPS OF ZEROS, KEPT APART BECAUSE THEY MEAN DIFFERENT THINGS. (1) `extends` and `implements` read 0 on BOTH the 120-file firing-log stride and the clean 400-file .c-only run, AND the pinned grammar has no production for either \u2014 grammar-absence, excluded. (2) `exports` and `instantiates` ARE implemented here (3 and 1 emission sites, pinned by fixtures) and read 0 on BOTH strides as well; this block does NOT call that a corpus zero, because two strides are not a census, and it does NOT exclude them \u2014 they stay in the denominator as implemented types whose corpus exercise is measured zero on two strides and NOT established as zero corpus-wide. The construct exists in C for both (a visibility macro; a heap allocation) and the code exists for both, so the honest class is 'implemented, unexercised on every stride measured so far'. CLOSURE: implemented 8 + corpusUnexercised 0 + gaps 0 = applicable 8 = 10 - 2 grammar-absence - 0 unclassified.",
   "_implemented_measured": {
-   "_unit": "STRIDE SAMPLE, NOT POPULATION: `npx tsx script/m14/incoming-gate.ts c c 400` \u2014 the .c-ONLY stride, because a pooled c,h run pools .h headers the router sends to the objective-c analyzer. Instrument disclosure verbatim: `population: 400 parsed of 400 sampled (corpus has 5002 .c files across 38 repos; stride sample)`, plus `excluded from that population: 755 tracked-but-absent/unreadable + 1 over the 1 MB cap`. Per-type edges are TABLE 1 of that run, read 2026-10-14. SIX types fire on it (below). FOUR read 0 on it and are NOT given a count here: `extends` and `implements` (grammar-absence, excluded) and `exports`/`instantiates` (implemented, 0 on two separate strides, not claimed as a corpus zero). A stride is a lower bound, so these six are lower bounds.",
+   "_unit": "STRIDE SAMPLE, NOT POPULATION: `bun run script/m14/incoming-gate.ts c c 400` \u2014 the .c-ONLY stride, because a pooled c,h run pools .h headers the router sends to the objective-c analyzer. Instrument disclosure verbatim: `population: 400 parsed of 400 sampled (corpus has 5002 .c files across 38 repos; stride sample)`, plus `excluded from that population: 755 tracked-but-absent/unreadable + 1 over the 1 MB cap`. Per-type edges are TABLE 1 of that run, re-read 2026-10-17 after the #989 allocator-register + sizeof-identifier fix: SEVEN types fire on it (calls 32064 \u00b7 uses 12754 \u00b7 contains 1123 \u00b7 imports 1427 \u00b7 references 1591 \u00b7 overrides 53 \u00b7 instantiates 19) and `exports` fires 9 edges that do NOT resolve (the marker token is not a symbol \u2014 the three export fixtures track that class). `extends` and `implements` are excluded by grammar-absence and read 0. A stride is a lower bound, so these are lower bounds.",
    "calls": {
     "edges": 32064
    },
@@ -401,6 +401,16 @@
    },
    "overrides": {
     "edges": 53
+   },
+   "instantiates": {
+    "edges": 19,
+    "resolved": 19,
+    "note": "#989: 19 of 19 resolve, 0 collRes, 0 arbitraryTwin; every edge's target type is declared in the SAME FILE (probe-c-instantiates.ts, 19/19). 0 edges before the fix on this stride."
+   },
+   "exports": {
+    "edges": 9,
+    "resolved": 0,
+    "note": "marker-name edges (`__declspec(dllexport)` etc.); the source is a definition, the target is the marker token, which is not a symbol. Fixtures export-linkage-marker-989 / export-marker-class-965 / exports-attribute-989 pin the remaining work."
    }
   }
  }
