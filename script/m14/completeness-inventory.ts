@@ -1734,7 +1734,31 @@ async function runLang(cfg: LangConfig): Promise<{ checks: SectionCheck[]; summa
     }
     for (const c of sectionFails) console.error(`${cfg.id} SECTION FAIL: ${c.id} — ${c.detail}`)
   }
-  const summary = `${cfg.id}: ${types.length} types classified; sections A-H: ${checks.length - sectionFails.length}/${checks.length} pass`
+  // *** THE VERDICT MUST NOT BE READABLE AS "DONE", BECAUSE IT IS NOT "DONE". ***
+  //
+  // THIS GATE VERIFIES EIGHT THINGS ABOUT A LANE'S COMPLETENESS AS AN INSTRUMENT: every grammar node type
+  // classified, every emitted relationship kind named and fixture-pinned, the payload matrix, evidence tiers,
+  // a corpus differential floor, a perf budget, truthful docs with the head comment, and cross-language
+  // consistency.
+  //
+  // IT DOES NOT VERIFY THE OWNER'S DEFINITION OF DONE, AND IT WAS BEING READ AS IF IT DID -- which is how a
+  // green row got reported as "35 languages done" while the relationship matrix said 183 of 424 applicable
+  // cells (43.2%). The two unmeasured parts are named here, in the verdict itself, so that a green row can
+  // never again be quoted as finished work:
+  //
+  //   (b) ACTUALLY EMITTING AT WHOLE POPULATION   -- measured by the firing log, NOT by this gate
+  //       (this file contains ZERO references to the firing log)
+  //   (c) RESOLVING CORRECTLY (arbitraryTwin...)  -- measured by the incoming gate's binding-intent split,
+  //       NOT by this gate (this file contains ZERO references to arbitraryTwin / collRes)
+  //
+  // AND THE DENOMINATOR IS THE LANE'S DECLARED SET, NOT THE LANGUAGE'S TRUE APPLICABLE SET. The gate can say
+  // "every kind we listed is accounted for"; it CANNOT say "every kind this language has is implemented".
+  // That is the difference the owner's standard makes, and this verdict refuses to blur it.
+  const green = checks.length - sectionFails.length
+  const summary = `${cfg.id}: ${types.length} types classified; lane-pass ${green}/${checks.length} ` +
+    `(A-H: structural/contract/evidence/perf/docs) — NOT "done": emission at whole population and ` +
+    `correct-resolution (arbitraryTwin) are measured elsewhere, and the denominator is the DECLARED kind set, ` +
+    `not the language's true applicable set`
   return { checks, summary, failures }
 }
 
