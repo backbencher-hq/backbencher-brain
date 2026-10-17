@@ -1228,7 +1228,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "full_reference_link":
         case "collapsed_reference_link":
         case "shortcut_link": {
-          this.emitReferenceLink(inn, addRel, source, definitions, fileLine(inn))
+          this.emitReferenceLink(inn, addRel, source, definitions, fileLine(inn), undefined, pendingAnchors)
           break
         }
         case "image": {
@@ -1237,7 +1237,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
           // was already handled by the `link_destination` arm above.
           const labelNode = this.findChildByTypeAny(inn, new Set(["link_label"]))
           if (labelNode) {
-            this.emitReferenceLink(inn, addRel, source, definitions, fileLine(inn), this.stripBrackets(labelNode.text))
+            this.emitReferenceLink(inn, addRel, source, definitions, fileLine(inn), this.stripBrackets(labelNode.text), pendingAnchors)
           }
           break
         }
@@ -1277,6 +1277,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
     definitions: Map<string, { destination: string; line: number }>,
     line: number | undefined,
     knownLabel?: string,
+    pendingAnchors?: { source: string; fragment: string; literal: string; line?: number }[],
   ): void {
     // `[text][ref]` carries the reference in a `link_label`; `[ref][]` and `[ref]`
     // carry it in the link text, which IS the label.
@@ -1285,20 +1286,68 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
     const defined = definitions.get(label)
     // Undefined => literal text, not a link. See the method comment.
     if (!defined) return
+    // THE DESTINATION IS TREATED THE SAME WAY THE INLINE ARM TREATS ITS OWN, and the
+    // asymmetry was a real gap rather than a style difference. `[x][ref]` and `[x](ref)`
+    // are the SAME link in CommonMark with the destination written somewhere else, so
+    // every rule the inline arm applies at `walkInlineTree`'s `link_destination` case has
+    // to apply here too — and two of them did not:
+    //
+    //  - THE FILE MODEL. The inline arm resolves a relative destination against the
+    //    containing document and targets the file's published document symbol; this arm
+    //    published `defined.destination` VERBATIM, so `[x][ref]` + `[ref]: other.md` named
+    //    the raw string `other.md` while the symbol the file publishes is
+    //    `docs/other.md` — an endpoint that cannot bind even when the target IS in the
+    //    index. Measured on this lane's whole-cargo population (243 files, the gate's
+    //    `--repo=cargo` mode, `validation/m14/verification/MARKDOWN-gate-cargo-*.txt`):
+    //    `uses unresolved 995 -> 504` and `uses resolved 443 -> 913`, with `collRes`
+    //    unchanged at 2165.
+    //  - THE SAME-DOCUMENT FRAGMENT. A destination that is ONLY a fragment names a heading
+    //    in THIS document, and the inline arm DEFERS it to `pendingAnchors` so it can be
+    //    resolved to the heading's published spelling after the walk. This arm published
+    //    `uses -> "#the-section"` — the raw fragment, which is precisely the spelling
+    //    MD-D6 exists to stop publishing. In the 400-file stride population exactly one
+    //    definition is fragment-only (`dart-sdk/pkg/analysis_server/doc/process/
+    //    running_in_vs_code.md`, `[2]: #vs-code-configuration`) and it now publishes the
+    //    `references` edge to the heading it names.
+    //
+    // THE EDGE COUNT MOVES BY ONE IN THAT POPULATION, AND IT IS AN IDENTITY RULE RATHER THAN
+    // A LOST LINK: `cargo/doc/book/src/reference/workspaces.md:14` carries TWO reference links
+    // (`[patch]` and `[replace]`) on ONE line whose destinations name the same page
+    // (`overriding-dependencies.md`, two different fragments). Once both resolve to that
+    // page's document symbol the two relations are (source, type, target, line)-identical and
+    // `addRel` keeps one — the M59 #822 identity the store's relationship primary key uses.
+    // The written destination stays on the surviving edge as `linkDestination`, so nothing is
+    // lost from the source. Measured edge-set diff: `validation/m14/fixtures/markdown/
+    // measurements/edges-{before,after}.tsv`, 12904 -> 12903 rows on the same population.
+    //
+    // Both routes are the inline arm's own code, called with the destination the
+    // definition declares, so the two forms cannot drift apart again. The destination AS
+    // WRITTEN is preserved on the edge as `linkDestination`, which is the half the lane's
+    // earlier ruling was protecting; nothing is fabricated and nothing is lost.
+    const destination = defined.destination
+    if (pendingAnchors && destination.charCodeAt(0) === 35 /* '#' */) {
+      pendingAnchors.push({ source, fragment: destination.slice(1), literal: destination, line })
+      return
+    }
+    const target =
+      this.linkKindOf(destination).targetKind === "repoRelativePath"
+        ? (markdownResolveRelativeLink(destination, this.currentFilePath) ?? destination)
+        : destination
     addRel(
       source,
       ASTEngine.RelationshipType.Uses,
-      defined.destination,
+      target,
       {
         role: "markdown_link",
         linkText: label,
         linkForm: node.type,
         resolvedVia: "link_reference_definition",
+        linkDestination: destination,
         // The destination, not the label. A reference link resolves its LABEL
         // through the definition and its DESTINATION is what the edge points at, so
         // classifying the label would answer a question nobody asked — `[home]` is
         // not a path and `http://example.com` is not a heading.
-        ...this.linkTargetMetadata(defined.destination),
+        ...this.linkTargetMetadata(destination),
       },
       line,
     )

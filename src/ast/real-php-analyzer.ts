@@ -1723,9 +1723,18 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // handled inline below).
     const seed: PhpValueScope = { bound: new Set<string>(), parent: null }
     this.collectPhpScopeBinds(node.parent, seed.bound)
-    const stack: Array<{ n: Node; parent: Node | null; scope: PhpValueScope }> = [{ n: node, parent: null, scope: seed }]
+    // `entry` is the ENTRY NODE's own frame, and it is a FLAG rather than
+    // `n === node` (which is what this traversal used to test, and which the
+    // analyzer-hygiene gate rightly flags): web-tree-sitter hands out a fresh
+    // wrapper per access, so a node identity test is the KAD2/TSD2 defect class
+    // wherever the reference is not the stored one. It happened to work here —
+    // the seed frame stores the very reference `node` is — but "it works
+    // because of how this one frame was built" is not a property a reader can
+    // check, and the gate could not tell the two cases apart. The flag says
+    // which frame is the entry's, and the escape below reads it directly.
+    const stack: Array<{ n: Node; parent: Node | null; scope: PhpValueScope; entry: boolean }> = [{ n: node, parent: null, scope: seed, entry: true }]
     while (stack.length > 0) {
-      const { n, parent, scope } = stack.pop()!
+      const { n, parent, scope, entry } = stack.pop()!
       const type = n.type
 
       if (type === "function_call_expression") {
@@ -1940,11 +1949,11 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // the wrong parent. The escape publishes it and walks its subtree as the declaration it
         // is, so descending into it HERE as well would emit every call and read inside it TWICE:
         // once attributed to the damaged method and once to the member itself. The skip is
-        // restricted to the ENTRY node's own children (`n === node`), so a declaration nested
+        // restricted to the ENTRY node's own children (`entry`), so a declaration nested
         // inside a deeper statement of the same damaged body keeps the old, single walk — that
         // shape is not published by the escape and skipping it here would LOSE its edges.
-        if (n === node && this.recoveryMisnestedCallable(node, child)) continue
-        stack.push({ n: child, parent: n, scope: childScope })
+        if (entry && this.recoveryMisnestedCallable(node, child)) continue
+        stack.push({ n: child, parent: n, scope: childScope, entry: false })
       }
     }
   }

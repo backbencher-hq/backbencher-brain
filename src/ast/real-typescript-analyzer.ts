@@ -30,6 +30,113 @@ const TS_OBJECT_LEAF_METHODS = new Set([
 ])
 
 // ============================================================================
+// THE PROOF TABLES FOR "THIS NAME IS OUTSIDE THE CORPUS"
+//
+// These are the EVIDENCE for a claim, not a heuristic about what a name looks
+// like, which is why they are PINNED here and printed in full:
+//
+//   TS_RUNTIME_GLOBALS     identifiers the LANGUAGE RUNTIME provides: the global
+//                          namespace objects (`Object`, `JSON`, `Math`, `Reflect`,
+//                          `console`), the standard classes, the host objects
+//                          (`window`, `document`, `process`), and the global
+//                          functions (`setTimeout`, `fetch`, `structuredClone`).
+//                          `JS_GLOBAL_CONSTRUCTORS` at the bottom of this file
+//                          already pins the CONSTRUCTOR half of this list for
+//                          `instantiates`; this is its READ/ CALL half, and the
+//                          overlap is deliberate — one class of thing, two uses.
+//   TS_TEST_RUNNER_GLOBALS describe/it/test/expect/beforeEach/... — declared by the
+//                          TEST FRAMEWORK in node_modules, not by the project.
+//   TS_LIB_TYPE_NAMES      the TypeScript LIB types (`lib.es5.d.ts` and the utility
+//                          types every compiler since 2.1 ships): `Partial`,
+//                          `Record`, `Awaited`, `HTMLElement`, ...
+//
+// A NAME IN ONE OF THESE TABLES IS NOT PROOF BY ITSELF — a file may declare or
+// import `Map`, `test` or `Date` and mean its own. So every claim below requires
+// the FILE to bind neither the name nor its receiver (see `markExternalTargets`),
+// and the file's own symbol and import lists are the check.
+// ============================================================================
+const TS_RUNTIME_GLOBALS = new Set([
+  // namespace objects
+  "Object", "JSON", "Math", "Reflect", "console", "globalThis", "Intl", "Atomics",
+  // standard classes / values
+  "Array", "ArrayBuffer", "BigInt", "BigInt64Array", "BigUint64Array", "Boolean", "DataView",
+  "Date", "Error", "EvalError", "Float32Array", "Float64Array", "Function", "Infinity", "Int8Array",
+  "Int16Array", "Int32Array", "Map", "NaN", "Number", "Promise", "Proxy", "RangeError", "ReferenceError",
+  "RegExp", "Set", "SharedArrayBuffer", "String", "Symbol", "SyntaxError", "TypeError", "URIError",
+  "Uint8Array", "Uint8ClampedArray", "Uint16Array", "Uint32Array", "WeakMap", "WeakRef", "WeakSet",
+  // host objects
+  "window", "document", "navigator", "location", "history", "localStorage", "sessionStorage",
+  "performance", "crypto", "process", "Buffer", "global", "module", "exports", "require",
+  "URL", "URLSearchParams", "TextEncoder", "TextDecoder", "AbortController", "AbortSignal",
+  "Blob", "File", "FileReader", "FormData", "Headers", "Request", "Response", "WebSocket",
+  "Worker", "SharedWorker", "XMLHttpRequest", "Image", "Event", "CustomEvent", "MessageEvent",
+  "MouseEvent", "KeyboardEvent", "ResizeObserver", "MutationObserver", "IntersectionObserver",
+  // global functions
+  "setTimeout", "clearTimeout", "setInterval", "clearInterval", "setImmediate", "queueMicrotask",
+  "requestAnimationFrame", "cancelAnimationFrame", "fetch", "structuredClone", "atob", "btoa",
+  "parseInt", "parseFloat", "isNaN", "isFinite", "encodeURIComponent", "decodeURIComponent",
+  "encodeURI", "decodeURI", "eval",
+])
+
+/** The TEST-RUNNER globals — mocha/jest/vitest/jasmine's ambient API. Declared by the
+ *  framework; a project that declares one of these names is caught by the same-file
+ *  check below, and the arbiter still resolves the edge if the project publishes it. */
+const TS_TEST_RUNNER_GLOBALS = new Set([
+  "describe", "it", "test", "expect", "beforeEach", "afterEach", "beforeAll", "afterAll",
+  "suite", "xit", "xdescribe", "fit", "fdescribe", "specify", "context",
+  "jest", "vi", "vitest", "sinon", "cy", "assert", "spyOn", "mock", "fn",
+])
+
+/** TypeScript LIB types the compiler ships, not the project. */
+const TS_LIB_TYPE_NAMES = new Set([
+  "Partial", "Required", "Readonly", "Pick", "Record", "Omit", "Exclude", "Extract", "NonNullable",
+  "ReturnType", "Parameters", "ConstructorParameters", "InstanceType", "ThisParameterType",
+  "OmitThisParameter", "ThisType", "Uppercase", "Lowercase", "Capitalize", "Uncapitalize", "Awaited",
+  "PropertyKey", "PropertyDescriptor", "CallableFunction", "NewableFunction", "IArguments",
+  "TemplateStringsArray", "ArrayLike", "ConcatArray", "ReadonlyArray", "ReadonlyMap", "ReadonlySet",
+  "PromiseLike", "Iterable", "Iterator", "IterableIterator", "AsyncIterable", "AsyncIterator",
+  "AsyncIterableIterator", "Generator", "AsyncGenerator", "GeneratorFunction",
+  "AsyncGeneratorFunction", "HTMLElement", "Element", "Node", "NodeList", "Document", "Window",
+  "EventTarget", "Storage",
+])
+
+/**
+ * IS THIS TEXT A PLAIN IDENTIFIER? Regex-free by contract — this file carries no
+ * regex literal (`script/m14/no-regex-gate.sh`), so the character classes are
+ * written out. `$` and `_` are legal starts in TypeScript; digits are not.
+ */
+function isPlainIdentifier(text: string): boolean {
+  if (text.length === 0) return false
+  const first = text[0]
+  const firstOk = first === "_" || first === "$" ||
+    (first >= "a" && first <= "z") || (first >= "A" && first <= "Z")
+  if (!firstOk) return false
+  for (let i = 1; i < text.length; i++) {
+    const c = text[i]
+    if (c === "_" || c === "$" || (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9")) continue
+    return false
+  }
+  return true
+}
+
+/**
+ * THE NAME A CALL EXPRESSION IS ROOTED AT, for the RECEIVER-IS-A-CALL proof:
+ * `expect(trace).toEqual` -> `expect`. Returns null unless the text ENDS in `)`
+ * and its head (everything before the first `(`) is a plain identifier, so
+ * `(expect)(x)`, `foo.bar(x)`, `a[0]()` and `foo(x).bar` all refuse. Refusing is
+ * the safe direction: an unmarked edge stays in the residual where a reader can
+ * see it, while a WRONG claim is counted against the lane.
+ */
+function callHeadName(text: string): string | null {
+  if (text.length === 0 || !text.endsWith(")")) return null
+  const open = text.indexOf("(")
+  if (open <= 0) return null
+  const head = text.slice(0, open)
+  return isPlainIdentifier(head) ? head : null
+}
+
+
+// ============================================================================
 // PURE-STRING HELPERS (regex-free normalization)
 // All token/type text normalization uses startsWith/endsWith + slice — never
 // regex literals — keeping the analyzer fully regex-free (criterion 1). These
@@ -2237,6 +2344,13 @@ class TypeScriptAnalysisRunner {
     // the count is observable in the payload matrix and in the sweep probe.)
     void baseMismatches
 
+    // LAST, AND DELIBERATELY SO. Every phase that can DROP an edge has run
+    // (`dropDuplicateTypeMentionLabels`, `filterPhantomDupKeyEdges`), so a marker can only ever
+    // land on a row that is actually published — marking earlier would leave claims on rows that
+    // no longer exist, which is a claim about nothing. The pass reads this file's own symbols and
+    // import edges as its evidence; it changes no target, no source and no line.
+    void this.markExternalTargets(relationships, symbols)
+
     return {
       language: "typescript",
       symbols,
@@ -3823,6 +3937,141 @@ class TypeScriptAnalysisRunner {
       }
       md.evidenceClass = "usage_contextual"
     }
+  }
+
+  /**
+   * MARK WHAT THIS FILE PROVABLY CANNOT DECLARE — the lane's missing marking subsystem,
+   * bounded to the four proofs that need nothing but the file.
+   *
+   * ## Why this file, and why now
+   *
+   * `validation/m14/verification/REAL-TYPESCRIPT-NO-MARKING-SUBSYSTEM-AND-THE-SCOPE-SPLIT.md`
+   * records the state this method begins to fix, in this lane's own words: *"Every edge to a
+   * dependency member, a Node builtin or a runtime global reads as an UNRESOLVED BINDING
+   * instead of being MARKED — the shape the fleet gate calls out."* The edges ARE emitted; the
+   * MARK is what is absent, and `script/m14/incoming-gate.ts` reads the mark through
+   * `EXTERNAL_KEYS` (`isExternalTarget` among them). So this is the ADDITIVE half of that
+   * port: no target, no source, no line and no edge is changed — a `metadata` claim is added
+   * to edges whose callee this file can prove it does not bind.
+   *
+   * ## The four proofs, and the evidence for each
+   *
+   *   bare callee, test-runner global   `describe(...)`, `expect(...)` — the callee is a BARE
+   *                                     identifier, the file neither declares nor imports it,
+   *                                     and the name is in the pinned framework table.
+   *   bare callee, runtime global       `setTimeout(...)`, `Symbol(...)` — same test, pinned
+   *                                     language/host table.
+   *   member of a runtime global        `Object.keys(...)`, `JSON.stringify(...)` — the
+   *                                     receiver text is an identifier in the pinned table and
+   *                                     the file does not bind it.
+   *   member of a framework call        `expect(x).toEqual(y)` — the receiver is a CALL whose
+   *                                     head is an unbound test-runner global, so the receiver's
+   *                                     type is the framework's, not the project's.
+   *   type-position lib name            `Date`, `Promise`, `Record` in a type position — the
+   *                                     name is in the pinned lib table and unbound here.
+   *
+   * ## THE TRAP THIS AVOIDS, MEASURED
+   *
+   * The tempting spelling is the QUALIFIED one (`Object.keys` instead of `keys`), because it
+   * "publishes the qualifier". MEASURED on this lane's own 400-file population
+   * (`validation/m14/fixtures/typescript/tools/unresolved-census.mts --sim`, the gate's own
+   * `classifyEdge` as the judge): retargeting the 263 `receiver.member` edges produced **18
+   * refuted claims and 14 claims no check can reach**, where keeping the leaf produced **0 of
+   * either** — because `verifyExternalClaim` looks a DOTTED target up by its OWNER (`path`),
+   * which a project may well publish, while a DOTLESS target is looked up as itself and only
+   * on the branch where the project publishes nothing of that name. So this method NEVER
+   * rewrites a target, and it refuses any non-identifier target — the guard is what makes a
+   * refutation unreachable rather than merely unobserved.
+   *
+   * ## What this is NOT
+   *
+   * It is not a resolution: an edge marked here is NOT counted resolved, by this analyzer or
+   * by the arbiter — it moves from "no answer" to "a stated, refutable reason", and the
+   * arbiter checks the reason against the project's own key space. It also does not touch
+   * production: NO resolver reads `isExternalTarget` (`parallel-indexer.ts` and `engine.ts`
+   * carry zero occurrences), so a marker can never suppress a binding in the store.
+   *
+   * The negative control is structural and worth stating: a name this file DECLARES or
+   * IMPORTS is never marked, whatever table it is in — `import { expect } from "chai"` and
+   * `class Map {}` both keep their edges unmarked.
+   */
+  private markExternalTargets(
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+  ): number {
+    // WHAT THIS FILE BINDS. Its own declarations (name and qualified name), plus every local
+    // name its own `imports` edges publish — the lane's own output is the evidence, exactly as
+    // the java twin's `markExternalTargets` reads its own import list rather than guessing.
+    const bound = new Set<string>()
+    for (const s of symbols) {
+      const n = String(s?.name ?? "")
+      if (n.length > 0) bound.add(n)
+      const q = String((s as { qualifiedName?: string })?.qualifiedName ?? "")
+      if (q.length > 0) bound.add(q)
+    }
+    for (const r of relationships) {
+      if (String(r?.type ?? "") !== "imports") continue
+      const tgt = String(r?.target ?? "")
+      const md = r?.metadata as { module?: unknown; alias?: unknown } | undefined
+      const module = String(md?.module ?? "")
+      if (module.length === 0) continue
+      const local = String(md?.alias ?? (tgt.includes(":") ? tgt.slice(tgt.lastIndexOf(":") + 1) : tgt))
+      if (local.length > 0 && local !== "*") bound.add(local)
+    }
+
+    let marked = 0
+    for (const r of relationships) {
+      const target = String(r?.target ?? "")
+      if (target.length === 0) continue
+      // DOTLESS IDENTIFIERS ONLY — see the docstring's TRAP section. A target with a dot is
+      // looked up by its owner, and a claim on it can be refuted; a file (`foo.ts`) or a
+      // fragment (`a b`) is refused by the verifier as unreachable. Neither can be earned here.
+      if (!isPlainIdentifier(target)) continue
+      if (bound.has(target)) continue
+      const md = (r.metadata ?? (r.metadata = {})) as Record<string, unknown>
+      if (md.isExternalTarget === true) continue
+      const t = String(r.type ?? "")
+      const callee = String(md.calleeExpression ?? "")
+      let reason: string | null = null
+      let receiver: string | null = null
+      if (t === "calls" || t === "uses" || t === "instantiates") {
+        if (callee.length === 0) {
+          // No callee text: nothing here can tell the receiver from a local. Refuse.
+        } else if (callee === target) {
+          if (TS_TEST_RUNNER_GLOBALS.has(target)) reason = "test-runner-global"
+          else if (TS_RUNTIME_GLOBALS.has(target)) reason = "runtime-global"
+        } else if (callee.endsWith(`.${target}`)) {
+          const recv = callee.slice(0, callee.length - target.length - 1)
+          if (isPlainIdentifier(recv) && !bound.has(recv)) {
+            if (TS_RUNTIME_GLOBALS.has(recv)) { reason = "builtin-lib-type"; receiver = recv }
+          } else {
+            // THE RECEIVER IS A CALL: `expect(trace).toEqual`. Only the receiver's HEAD is
+            // consulted, and only against the framework table — a project function's result
+            // (`buildThing().assert`) refuses, because `buildThing` is not in it.
+            const head = callHeadName(recv)
+            if (head !== null && !bound.has(head) && TS_TEST_RUNNER_GLOBALS.has(head)) {
+              reason = "test-runner-global"
+              receiver = head
+            }
+          }
+        }
+      } else if (t === "references" || t === "extends" || t === "implements") {
+        // A TYPE POSITION: the name is a lib type the compiler ships. `Record`, `Date` and
+        // `Promise` are lib types AND plausible project names, which is why the `bound` test
+        // above is what decides, and why the arbiter still resolves the edge if the PROJECT
+        // declares the name — a marker that the project's own key space can answer is inert.
+        // BOTH TABLES: the utility types are `lib.es5.d.ts`'s generics and the runtime table is
+        // its value half — `Date`, `Promise`, `Array` arrive in type positions from the same
+        // standard library, and one proof covers the two spellings of one origin.
+        if (TS_LIB_TYPE_NAMES.has(target) || TS_RUNTIME_GLOBALS.has(target)) reason = "builtin-lib-type"
+      }
+      if (reason === null) continue
+      md.isExternalTarget = true
+      md.externalReason = reason
+      if (receiver !== null) md.externalReceiver = receiver
+      marked++
+    }
+    return marked
   }
 
 

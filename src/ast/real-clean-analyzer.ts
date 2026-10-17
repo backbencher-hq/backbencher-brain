@@ -488,6 +488,82 @@ const DECISION_NODE_TYPES = new Set([
   "binary_expression",
 ])
 
+/**
+ * THE CLEAN STANDARD ENVIRONMENT'S OWN TYPE AND MODULE NAMES — the closed set the `references`
+ * marker below is checked against.
+ *
+ * ## Why a list, and why THIS list
+ *
+ * The incoming gate's clause 1 counts an edge as a hole unless it resolves or CARRIES A CLAIM THE
+ * PROJECT VERIFIES, and `isStdlib` is one of the spellings that channel reads
+ * (`script/m14/incoming-rule.ts` `EXTERNAL_KEYS`; go and kotlin mark their stdlibs with it,
+ * `real-go-analyzer.ts:481`, `real-kotlin-analyzer.ts:465`). Measured on the whole 312-file lane
+ * (see `validation/m14/verification/CLEAN-FIX.md` §3): **1,796 of the 4,677 `unresolved` edges are a
+ * bare type/class name the file's own project does not declare, and 744 more name nothing anywhere
+ * in the corpus** — `String` 869, `World` 222, `Bool` 126, `Int` 90, `Real` 75, `StdEnv` 56 …
+ * No target SPELLING can resolve those: the declaration lives in the Clean standard library, which
+ * is in another repository of the corpus. What CAN be said about them, checkably, is that the name
+ * is the standard environment's — and this list is what makes that a measurement rather than a guess.
+ *
+ * ## THE LIST IS DERIVED, NOT AUTHORED
+ *
+ * The corpus carries the language's own standard library: `clean-stdlib` (74 files) and `Prelude`
+ * (42 files) are Clean's StdEnv sources, while `Clyde`, `eastwood` and `cloogle.org` are ordinary
+ * applications. `validation/m14/fixtures/clean/stdlib-inventory.mts` parses exactly those two
+ * repositories through production `parseFile` and reports every name they publish — 859 names, 276 of
+ * them with kind `module` / `type` / `class` / `interface`, 213 of those plain identifiers, and 173
+ * of those capitalised. **The 173 below are that last set verbatim**, because a `references` edge in
+ * a typed position names a module, type, class or interface, and Clean capitalises those names.
+ * The lowercase entries the extractor reports under those kinds are class MEMBERS and parse
+ * artifacts (`a`, `abs`, `sin`), and a lowercase bare target is not what this marker is for.
+ *
+ * ## WHAT IT CLAIMS, AND WHAT IT DOES NOT
+ *
+ * The marker says "this name is the standard environment's". It is read by the arbiter only where
+ * the target names NOTHING in the project's key space, so it can never move a resolved or ambiguous
+ * edge — the property the gate's own docstring requires of an `owner`-kind marker. It is applied
+ * only to a target THIS FILE does not declare (guard 3 in `markStandardEnvironmentTargets`), so the
+ * statement is true at the file's own scope as well as at the project's.
+ *
+ * IT IS NOT A RESOLUTION and it is not counted as one: an `externalVerified` edge is still an edge
+ * with no `target_symbol_id`, reported in its own column. And the 771 unresolved bare names this
+ * list does NOT cover — `Pointer` 238, `Property` 117, `FilePath` 63, `MaybeError` 33, `Text` 27,
+ * `ResponseMessage` 22 … — are left as holes on purpose: they are the Clean platform/builtin names
+ * whose StdEnv declarations this corpus does not carry (`clean-stdlib/_system.dcl` is 0 bytes) plus
+ * genuinely project-internal names (`CloogleDB`, `ABCArgument`, `gLSPJSONDecode`), and certifying
+ * those would be a claim about a language set that does not exist.
+ */
+const CLEAN_STD_ENV_NAMES = new Set<string>([
+  "Applicative", "Arith", "Array", "Bool", "CONS", "Char", "ConsPos", "DynamicTemp", "EITHER",
+  "Enum", "Eq", "FIELD", "File", "FileEnv", "FileSystem", "Files", "Functor", "GenConsAssoc",
+  "GenConsPrio", "GenType", "GenericConsDescriptor", "GenericDict", "GenericDict0",
+  "GenericFieldDescriptor", "GenericRecordDescriptor", "GenericTypeDefDescriptor", "IncDec", "Int",
+  "List", "Maybe", "Monad", "MultDiv", "NormaliseState", "Num", "OBJECT", "Option", "Ord", "PAIR",
+  "PlusMin", "Prelude", "RECORD", "Real", "Semigroup", "Show", "St", "StdArray", "StdBool",
+  "StdChar", "StdCharList", "StdClass", "StdDebug", "StdDynamic", "StdEnum", "StdEnv", "StdFile",
+  "StdFunc", "StdFunctions", "StdGeneric", "StdInt", "StdList", "StdMaybe", "StdMisc", "StdOrdList",
+  "StdOverloaded", "StdOverloadedList", "StdReal", "StdStrictLists", "StdString", "StdTuple",
+  "String", "TC_Bool", "TC_Char", "TC_Dynamic", "TC_File", "TC_Int", "TC_Real", "TC_World",
+  "TC__Arrow", "TC__LazyArray", "TC__LazyArrayP2", "TC__List", "TC__Maybe", "TC__PackedArray",
+  "TC__PackedArrayP2", "TC__STuple10", "TC__STuple11", "TC__STuple12", "TC__STuple13",
+  "TC__STuple14", "TC__STuple15", "TC__STuple16", "TC__STuple17", "TC__STuple18", "TC__STuple19",
+  "TC__STuple2", "TC__STuple20", "TC__STuple21", "TC__STuple22", "TC__STuple23", "TC__STuple24",
+  "TC__STuple25", "TC__STuple26", "TC__STuple27", "TC__STuple28", "TC__STuple29", "TC__STuple3",
+  "TC__STuple30", "TC__STuple31", "TC__STuple32", "TC__STuple4", "TC__STuple5", "TC__STuple6",
+  "TC__STuple7", "TC__STuple8", "TC__STuple9", "TC__StrictArray", "TC__StrictArrayP2",
+  "TC__StrictList", "TC__StrictMaybe", "TC__StrictTailStrictList", "TC__TailStrictList",
+  "TC__Tuple10", "TC__Tuple11", "TC__Tuple12", "TC__Tuple13", "TC__Tuple14", "TC__Tuple15",
+  "TC__Tuple16", "TC__Tuple17", "TC__Tuple18", "TC__Tuple19", "TC__Tuple2", "TC__Tuple20",
+  "TC__Tuple21", "TC__Tuple22", "TC__Tuple23", "TC__Tuple24", "TC__Tuple25", "TC__Tuple26",
+  "TC__Tuple27", "TC__Tuple28", "TC__Tuple29", "TC__Tuple3", "TC__Tuple30", "TC__Tuple31",
+  "TC__Tuple32", "TC__Tuple4", "TC__Tuple5", "TC__Tuple6", "TC__Tuple7", "TC__Tuple8", "TC__Tuple9",
+  "TC__UnboxedArray", "TC__UnboxedArrayP2", "TC__UnboxedList", "TC__UnboxedMaybe",
+  "TC__UnboxedTailStrictList", "TC__Unit", "TypeCode", "TypeCodeConstructor", "UList", "UMaybe",
+  "UNIT", "UTSList", "UnificationEnvironment", "World", "_SystemArray", "_SystemDynamic",
+  "_SystemEnum", "_SystemEnumStrict", "_SystemStrictLists", "_SystemStrictMaybes",
+  "_UnificationEnvironment",
+])
+
 export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, fileContent: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     const ctx: CleanContext = {
@@ -792,6 +868,8 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         md.importProjectFile = claim
       }
     }
+
+    this.markStandardEnvironmentTargets(ctx)
 
     const patterns: string[] = []
     for (const p in ctx.patterns) patterns.push(p)
@@ -2658,6 +2736,60 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
           // claim is checked by the TypeScript scanner on every run rather than trusted.
           md.evidenceClass = target.includes(".") || target.includes("'") ? "reference_qualified" : "usage_contextual"
       }
+    }
+  }
+
+  /**
+   * MARK THE STANDARD ENVIRONMENT'S TYPE NAMES — one pass over the finished edge list, exactly as
+   * kotlin's `markPlatformTargets` (`real-kotlin-analyzer.ts:411`) and go's stdlib marker do it, so
+   * a new emission site cannot forget it and no pre-existing key is touched.
+   *
+   * THE PROBLEM IT ANSWERS, MEASURED ON THE WHOLE 312-FILE LANE. `unresolved` is 4,677 edges and
+   * 2,540 of them are a BARE name: `String` 869, `World` 222, `Bool` 126, `Int` 90, `Real` 75,
+   * `StdEnv` 56 … The declaration exists — in the Clean standard library, in another repository —
+   * and this analyzer's own doctrine says why the edge is still emitted: "a `references` edge in a
+   * typed position is a type reference whatever the type is" (this file's EDGE DISCIPLINE header).
+   * What was missing was not the edge, it was the STATEMENT: 1,788 of those edges name a name the
+   * standard environment declares, and the lane said nothing about it, so the arbiter counted every
+   * one of them as a silent hole.
+   *
+   * THREE GUARDS, and each one is a fact about THIS file rather than a guess:
+   *
+   *  1. EDGE KIND. Only `references` and `implements` — the two edge types whose target IS a type
+   *     mention. `contains` / `exports` targets are this file's own declarations; `calls` targets
+   *     are callee leaves or the source-spelled qualified names the calls rule owns; `imports`
+   *     targets are `Module:item`, which cannot equal a bare name; `uses`, `overrides` and
+   *     `instantiates` carry 0 unresolved edges in the measured population (TABLE 1 of the report),
+   *     so marking them would be inert and is not done.
+   *  2. THE CLOSED LIST. The target must be in `CLEAN_STD_ENV_NAMES`, which is DERIVED from the
+   *     corpus's own stdlib repositories (`clean-stdlib` + `Prelude`) — see that constant. A target
+   *     containing a dot is never in it, which matters: the arbiter refutes an `owner` claim whose
+   *     owner the project declares, and every dotted target has an owner segment that a project may
+   *     well publish (`System.CommandLine` in Clyde). Bare names only, so no claim this pass attaches
+   *     can be refuted, and `extFAIL` cannot move.
+   *  3. THE FILE'S OWN DECLARATIONS VETO. `targetIsInFile` is computed by `classifyEvidenceTier`
+   *     over this file's symbol table and is already on every edge; where it is true the edge is a
+   *     same-file reference and there is nothing external to claim. Without this guard the claim
+   *     would be FALSE at the file's own scope, and the arbiter discloses exactly that as
+   *     `contradicted` in its claim-carrying-ambiguous block.
+   *
+   * NOTHING ELSE ABOUT AN EDGE IS TOUCHED: source, target, type, line and every pre-existing
+   * metadata key are byte-identical, and the marker is read by the arbiter ONLY where the target
+   * names nothing in the project's key space — so it can never move a resolved edge, can never
+   * raise `resolved`, and never changes `collRes`.
+   */
+  private markStandardEnvironmentTargets(ctx: CleanContext): void {
+    for (const r of ctx.relationships) {
+      const t = String(r.type)
+      if (t !== ASTEngine.RelationshipType.References && t !== ASTEngine.RelationshipType.Implements) continue
+      const target = r.target
+      if (typeof target !== "string" || target.length === 0) continue
+      if (!CLEAN_STD_ENV_NAMES.has(target)) continue
+      const md = r.metadata as Record<string, unknown> | undefined
+      if (!md || typeof md !== "object") continue
+      if (md.targetIsInFile === true) continue
+      if (md.isStdlib === true) continue
+      md.isStdlib = true
     }
   }
 

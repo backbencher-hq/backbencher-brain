@@ -1798,19 +1798,55 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     const stack: Node[] = [rootNode]
     const seenFacts = new Set<string>()
     for (const f of imports) seenFacts.add(`${f.range?.startLine ?? 0}|${f.module ?? ""}`)
-    // TWO dedupe sets, one per TYPE. Keying both on "any isImport edge" was wrong
-    // in a way only the fixture could see: the shape branches publish a
-    // `references` twin, so every site they handled looked already-seen and the
-    // pass skipped it — including its `imports` twin, which is the edge the whole
-    // class exists for. Dedupe is per LABEL, exactly as the F5 matcher compares.
-    const seenRefEdges = new Set<string>()
-    const seenImportEdges = new Set<string>()
+    // TWO dedupe MAPS, one per TYPE — the map is the dedupe AND the handle.
+    //
+    // Keying both on "any isImport edge" was wrong in a way only the fixture could
+    // see: the shape branches publish a `references` twin, so every site they
+    // handled looked already-seen and the pass skipped it — including its `imports`
+    // twin, which is the edge the whole class exists for. Dedupe is per LABEL,
+    // exactly as the F5 matcher compares.
+    //
+    // WHY A MAP AND NOT A SET (the second half of the same defect, measured on this
+    // lane's own 400-file draw). Splitting the sets freed the `imports` twin but NOT
+    // the `references` twin, and the reason is ORDER: `analyze`'s own walk emits the
+    // reference edge at an `@import` site first (`metadata: {relationshipType:
+    // "zig_import", isImport: true}` and nothing else), so by the time this pass runs
+    // the site IS already-seen on the reference label and the SKIP discards the file
+    // claim — on the label production reads as `unresolved`. MEASURED, same draw:
+    // 504 `references` edges carry `isImport` with no claim, of which **476 name a
+    // file that exists on disk, is `.zig` and is under the cap**, i.e. a file THIS
+    // GUARD would have confirmed; the identical site's `imports` twin carries
+    // `importProjectFile` and verifies. One site, one written path, two labels, one
+    // fact — and the claim-less writer was suppressing the claim-carrying one.
+    // `ghostty/pkg/macos/os.zig` is the shape (`@import("os/log.zig")` line 1), and
+    // `ghostty/pkg/highway/src/detect/loongarch.zig` is the control INSIDE one file:
+    // its line 3 (`linux.zig`) is pre-written on the reference label and lost the
+    // claim, its line 2 (`../targets.zig`) is not, and both labels carry it.
+    //
+    // So the existing edge is now the place the claim LANDS rather than a reason to
+    // skip. This keeps ONE decision point for "may I claim this file" — the shared
+    // `fileClaimForTarget` guard, called exactly as before — instead of a second copy
+    // in the earlier writer, and it adds no edge, removes no edge and reorders
+    // nothing: it writes one key onto an edge that already exists.
+    const refEdgesAt = new Map<string, ASTEngine.UniversalRelationship>()
+    const importEdgesAt = new Map<string, ASTEngine.UniversalRelationship>()
     for (const r of relationships) {
       if ((r.metadata as any)?.isImport && typeof r.line_number === "number") {
         const k = `${r.line_number}|${r.target}`
-        if (r.type === ASTEngine.RelationshipType.Imports) seenImportEdges.add(k)
-        else seenRefEdges.add(k)
+        if (r.type === ASTEngine.RelationshipType.Imports) importEdgesAt.set(k, r)
+        else refEdgesAt.set(k, r)
       }
+    }
+    /**
+     * The claim, written onto the edge that carries the site — the existing one when
+     * there is one, the one pushed below otherwise. Never overwrites a claim already
+     * present: the guard is the sole authority for the value, and a second writer
+     * replacing it would be a second rule.
+     */
+    const attachFileClaim = (edge: ASTEngine.UniversalRelationship, claim: string | null): void => {
+      if (claim === null) return
+      const md = edge.metadata ?? (edge.metadata = {})
+      if (md.importProjectFile === undefined) md.importProjectFile = claim
     }
     while (stack.length > 0) {
       const n = stack.pop()!
@@ -1878,9 +1914,11 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
                   metadata: { zigImport: true, builtin: text, ...(isUsingNamespace ? { usingnamespace: true } : {}) },
                 })
               }
-              if (!seenImportEdges.has(k)) {
-                seenImportEdges.add(k)
-                relationships.push({
+              const existingImport = importEdgesAt.get(k)
+              if (existingImport) {
+                attachFileClaim(existingImport, fileClaim)
+              } else {
+                const edge: ASTEngine.UniversalRelationship = {
                   source: "(global)",
                   target,
                   type: ASTEngine.RelationshipType.Imports,
@@ -1892,11 +1930,19 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
                     // above `collectZigImportSites`' call site for why it is on both.
                     ...(fileClaim ? { importProjectFile: fileClaim } : {}),
                   },
-                })
+                }
+                relationships.push(edge)
+                importEdgesAt.set(k, edge)
               }
-              if (!seenRefEdges.has(k)) {
-                seenRefEdges.add(k)
-                relationships.push({
+              const existingRef = refEdgesAt.get(k)
+              if (existingRef) {
+                // THE EXISTING EDGE IS WHERE THE CLAIM LANDS — see `refEdgesAt`'s block
+                // comment: on this label the reference is usually ALREADY written by
+                // `analyze`'s walk, which is exactly the edge the gate reads as
+                // `unresolved` when the claim is missing.
+                attachFileClaim(existingRef, fileClaim)
+              } else {
+                const edge: ASTEngine.UniversalRelationship = {
                   source: "(global)",
                   target,
                   type: ASTEngine.RelationshipType.References,
@@ -1906,7 +1952,9 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
                     relationshipType: "zig_import", isImport: true,
                     ...(fileClaim ? { importProjectFile: fileClaim } : {}),
                   },
-                })
+                }
+                relationships.push(edge)
+                refEdgesAt.set(k, edge)
               }
             }
           }

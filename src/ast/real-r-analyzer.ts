@@ -53,6 +53,46 @@ const R5_MEMBER_LISTS = new Set(["fields", "methods"])
 const DATA_MEMBER_LISTS = new Set(["fields"])
 
 /**
+ * THE PACKAGE-NAMESPACE CLAIM — the edge subtypes whose TARGET is a PACKAGE, not a declaration.
+ *
+ * The three spellings `handleLibrary` (`:2174`, `:2195`) and the `::` branch (`:1968`, `:1993`)
+ * write. Membership is a fact about how the edge was EMITTED, never a guess from the target's
+ * shape, so the claim cannot creep onto an edge whose target is a member or a file path —
+ * `r_source` (`source("helpers.R")`) names a FILE and is deliberately absent.
+ */
+const PACKAGE_NAMESPACE_SUBTYPES = new Set([
+  "library_import",
+  "library_dependency",
+  "namespace_access",
+])
+
+/**
+ * An R PACKAGE NAME, which is not an R identifier: letters, digits and dots, starting with a
+ * letter and not ending in a dot (R's own `DESCRIPTION` rule). `lmArmadillo.R` is a FILE, and the
+ * trailing `R` is exactly why the subtype guard above is the first line of defence and this regex
+ * the second — the regex alone would admit it.
+ */
+const R_PACKAGE_NAME = /^[A-Za-z][A-Za-z0-9.]*[A-Za-z0-9]$|^[A-Za-z]$/
+
+/**
+ * THE CLAIM IS READ BEFORE THE COUNT, which is the whole point and the whole risk.
+ *
+ * `classifyEdge` reads `metadata.languageNamespace` in its OWN branch and returns
+ * `externalVerified`/`externalRefuted` from it without ever consulting the symbol table
+ * (`incoming-rule.ts:1077-1092`: *"the claim is the sole authority for the OUTCOME and returning
+ * early is the point"*). So this claim can never create a tie-break — `resolvedAmongCollision` is
+ * untouched by construction, which is the axis this programme measures at ~75% wrong — and it can
+ * also take an outcome AWAY from `resolved` where the target happens to be declared. Both
+ * directions are measured before it is attached, in
+ * `validation/m14/fixtures/r/namespace-claim-price.ts`, and the report
+ * (`validation/m14/verification/R-FIX.md`) prints all three.
+ */
+const PACKAGE_NAMESPACE_LABELS: ReadonlySet<string> = new Set([
+  ASTEngine.RelationshipType.Imports,
+  ASTEngine.RelationshipType.References,
+])
+
+/**
  * How a call was attributed to a source symbol, and how much to trust it.
  * M14 requires every sub-1.0 edge to carry a reason code, so the reason travels
  * with the edge rather than living only in a doc comment.
@@ -477,6 +517,11 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       relationshipKeys.add(key)
       uniqueRelationships.push(rel)
     }
+
+    // THE PACKAGE-NAMESPACE CLAIM, attached here — after the (type, source, target) collapse, so
+    // it is applied to the edges the RESULT carries rather than to emissions that were folded
+    // away, and before every counter below reads the list. ADDITIVE ONLY: one metadata key.
+    this.certifyPackageNamespaces(uniqueRelationships, symbols)
 
     // WHAT THE RESULT ACTUALLY CARRIES, counted AFTER the collapse above.
     //
@@ -1030,6 +1075,93 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     if (typeof line === "number" && Number.isFinite(line) && line > 0) rel.line_number = line
     out.push(rel)
+  }
+
+  /**
+   * CERTIFY THE EDGES WHOSE TARGET IS A PACKAGE NAMESPACE — R's base and dependency packages are
+   * not repositories in this corpus, so no key space it can build will ever answer them.
+   *
+   * THE DEFECT THIS CLOSES. `library(cli)` and `cli::cli_abort()` reach the graph as a dependency
+   * on `cli`, and the arbiter reads `imports`/`references` target `cli` and finds no declaration
+   * of it anywhere in the project — which is TRUE, and which is what `unresolved` means. The lane
+   * measures this class at **660 of its 8,785-edge residual** on its own 400-file draw
+   * (`validation/m14/verification/R-FIX.md` §3: `imports:bare-name 330 · references:bare-name
+   * 330`, top targets `cli 61 · withr 38 · lifecycle 19 · utils 18 · testthat 14 · Rcpp 13`), while
+   * publishing NOTHING the arbiter reads. This is the fleet's finding (a) in its claim form: the
+   * analyzer already HOLDS the namespace — it is the edge's target — and never declares it.
+   *
+   * WHY THIS IS NOT A BLANKET EXTERNAL MARKER, and the distinction is the one that matters. The
+   * claim does not say "this did not resolve". It says **the target's ROOT is a language
+   * namespace, and here is the closed list of packages this FILE names** — decidable from R's own
+   * semantics, because `library(x)` LOADS a package and `x::f` is only legal when `x` IS one. It is
+   * the shape five other lanes already carry: hcl's `BUILTIN_ROOTS`, python's
+   * `PY_BUILTIN_NAMESPACE` (whose class is this class in its own words — *"Python's runtime
+   * namespace is not a project, so `dict`, `tuple`, `object` … can never be answered by any key
+   * space this corpus builds"*), zig's `["std"]`, powershell's `["System"]`, graphql's built-in
+   * scalars. The evidence list is the file's own dependency set, so widening it is a visible act on
+   * the edge rather than an opaque boolean (property 2 of `NAMESPACE_CLAIM_KEY`).
+   *
+   * FIVE GUARDS, each evidential, mirroring the python lane's `certifyLanguageNamespaceRoutes`:
+   *   1. the edge's SUBTYPE is one whose target is a package by construction
+   *      (`PACKAGE_NAMESPACE_SUBTYPES`) — never inferred from the spelling alone;
+   *   2. the target IS in the file's declared package list — the claim's evidence;
+   *   3. the target is package-name-shaped (`R_PACKAGE_NAME`) as well as listed;
+   *   4. the file does not DECLARE the name itself — `cli <- function(...)` makes `cli` a
+   *      declaration in this file and the claim would then be false;
+   *   5. the edge carries no claim already (`languageNamespace` is undefined), so an edge that
+   *      another mechanism already explains keeps that mechanism.
+   *
+   * THE TARGET IS NEVER REWRITTEN AND NO PRE-EXISTING FIELD CHANGES: one additive metadata key.
+   * Every other byte of every edge this lane emitted is identical, which is what makes the
+   * before/after table a measurement of this claim and of nothing else.
+   *
+   * WHAT IT CANNOT DO, stated here rather than discovered later. The analyzer sees ONE FILE, so
+   * guard 4 covers only the file's own declarations: where the PROJECT declares a symbol that
+   * shares a package's name — `methods()` in S7, the `Matrix` CLASS in the Matrix package — the
+   * claim still wins and the edge reads `externalVerified` instead of `resolved`. That is 40 edges
+   * on the 400-file draw, each one a name-coincidence in ANOTHER file (gate intent:
+   * `arbitraryTwin`, the class this programme's brief calls the cross-file hazard), and they are
+   * enumerated in `namespace-claim-price.ts` and in the report rather than absorbed.
+   */
+  private certifyPackageNamespaces(
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+  ): number {
+    /** GUARD 1 + 2 — the declared evidence list: the packages THIS FILE names. */
+    const packages = new Set<string>()
+    for (const rel of relationships) {
+      const label = String(rel.type || (rel as any).relationshipType || "")
+      if (!PACKAGE_NAMESPACE_LABELS.has(label)) continue
+      const md = (rel.metadata ?? {}) as Record<string, any>
+      if (!PACKAGE_NAMESPACE_SUBTYPES.has(String(md.relationshipSubType ?? ""))) continue
+      const tgt = String(rel.target ?? "")
+      // GUARD 3 — a file PATH (`cpp/attributes.cpp`) is never admitted to the list.
+      if (R_PACKAGE_NAME.test(tgt)) packages.add(tgt)
+    }
+    if (packages.size === 0) return 0
+    const roots = [...packages].sort()
+    /** GUARD 4 — a name this file declares is a declaration here, not a namespace. */
+    const declaredHere = new Set<string>()
+    for (const s of symbols) {
+      const name = String(s?.name ?? "")
+      if (name.length > 0) declaredHere.add(name)
+    }
+    let certified = 0
+    for (const rel of relationships) {
+      const md = rel.metadata as Record<string, any> | undefined
+      if (!md || typeof md !== "object") continue
+      // GUARD 5 — one claim per edge, and an edge that already carries this one is left alone.
+      if (md.languageNamespace !== undefined) continue
+      const label = String(rel.type || (rel as any).relationshipType || "")
+      if (!PACKAGE_NAMESPACE_LABELS.has(label)) continue
+      if (!PACKAGE_NAMESPACE_SUBTYPES.has(String(md.relationshipSubType ?? ""))) continue
+      const tgt = String(rel.target ?? "")
+      if (!packages.has(tgt)) continue
+      if (declaredHere.has(tgt)) continue
+      md.languageNamespace = [...roots]
+      certified++
+    }
+    return certified
   }
 
   /**

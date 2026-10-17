@@ -709,7 +709,22 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           // It is why leaving `references` in place beside `imports` is not a
           // duplicate claim: the two carry different markers and answer different
           // questions ("what names came into scope" vs "what does this file depend on").
-          metadata: { importModule: imp.module, isImportNameReference: true },
+          //
+          // M14 SWIFT RESIDUAL — THE CLAIM MOVES ONTO THE KEY THE ARBITER READS.
+          // `isExternal: true` has been set on this RELATIONSHIP since INCOMING_SWIFT
+          // JOB 2, and `externalClaimOf` (script/m14/incoming-rule.ts:396) reads
+          // `rel.metadata` ONLY — so the statement was invisible and the lane's `extOK`
+          // column read 0 while its own sentence above said "a MODULE brought into scope
+          // rather than a symbol the graph holds". Measured on the 400-file bounded run
+          // (`m14-swift-cause-probe.mts`): 916 `references` + 900 `imports` edges are
+          // unresolvable, every one of them naming a module no file in the run declares
+          // (Foundation, UIKit, XCTest, Flutter, NIOCore …). Publishing the SAME claim
+          // inside `metadata` is ROUTING, not a new judgement. It cannot move a
+          // resolution: `classifyEdge` consults a claim only where the run declares no
+          // symbol of that name (`:1147`), and with a declaration present it reads the
+          // claim "to RECORD it, never to move the outcome" (`:1188-1194`) — so
+          // `resolved`, `collRes` and `amb(decl)` are untouched in both directions.
+          metadata: { importModule: imp.module, isImportNameReference: true, isExternal: true },
         })
       }
     }
@@ -773,7 +788,13 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `@_exported\nimport Basic` lines the edge at the module name, 11,
           // never the attribute's line, 10).
           ...(typeof reLine === "number" ? { line_number: reLine } : {}),
-          metadata: { exportForm: re.form, reExport: true, reexportsModule: re.module },
+          // M14 SWIFT RESIDUAL: `@_exported import M` re-exports a MODULE, and the
+          // relationship already says `isExternal: true` (`:768`) — but the arbiter
+          // reads `metadata`. Same routing, same safety, as the `references`/`imports`
+          // edges: a claim is consulted only where the run declares no symbol of that
+          // name, so no resolution can move. The `exports` INFO row below keeps its
+          // metadata unchanged: it is a declaration, not an external claim.
+          metadata: { exportForm: re.form, reExport: true, reexportsModule: re.module, isExternal: true },
         })
         if (!emittedExportNames.has(re.module)) {
           emittedExportNames.add(re.module)
@@ -881,6 +902,11 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         // #910: the importer is this FILE, so the indexer must be told this is
         // a file-level edge rather than a scope placeholder named `root`.
         fileLevel: true,
+        // M14 SWIFT RESIDUAL: the same module-external claim the `references` edge
+        // carries, on the key the arbiter reads — see the block at that edge above.
+        // `isExternal` was already `true` on this relationship (`:893`); `metadata` is
+        // the only place `externalClaimOf` looks.
+        isExternal: true,
       }
       if (scopedHere > 1) {
         delete edgeMd.scopedItem

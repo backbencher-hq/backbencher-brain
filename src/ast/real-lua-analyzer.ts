@@ -96,6 +96,48 @@ const LUA54_TABLES: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * M60 LUA-57: the BASIC-LIBRARY GLOBALS of Lua 5.4, transcribed from the same
+ * manual §6.1 that `LUA54_TABLES` comes from (§6.1 "Basic Functions"). Twenty-six
+ * names, because that is what the section lists: `assert`, `collectgarbage`,
+ * `dofile`, `error`, `getmetatable`, `ipairs`, `load`, `loadfile`, `next`, `pairs`,
+ * `pcall`, `print`, `rawequal`, `rawget`, `rawlen`, `rawset`, `require`, `select`,
+ * `setmetatable`, `tonumber`, `tostring`, `type`, `warn`, `xpcall`, `_G`,
+ * `_VERSION`.
+ *
+ * WHY THIS IS A DIFFERENT LIST FROM `LUA54_TABLES`, and not a wider one. A member
+ * read publishes its FINAL SEGMENT (LUA-13), so `table.insert(x)` and a bare
+ * `insert(x)` both arrive with target `insert` — which is exactly why the
+ * name-list rule for standard FIELDS was measured and REJECTED here
+ * (`markStdlibExternal`, 16,195 edges against the shipped rule's population): Lua
+ * 5.4 publishes no global named `insert`, so the name alone cannot tell the
+ * standard library from a user's own global.
+ *
+ * A name in THIS list is the one case where the bare spelling IS the standard
+ * library: `_G.tostring` is the documented function, so a call or a read spelled
+ * `tostring` with no receiver resolves through `_ENV` to it unless the file binds
+ * the name itself. That last clause is not decoration — it is the guard, and the
+ * same one-sided test the receiver rule uses (`declaredAt`, at or before the edge's
+ * line) decides it.
+ *
+ * WHAT IS DELIBERATELY ABSENT. `unpack`, `loadstring` and `module` were basic
+ * functions in 5.1 and are NOT in the 5.4 manual: `unpack` is `table.unpack`,
+ * `loadstring` was removed, `module` was removed. `jit` and `bit32` belong to
+ * LuaJIT and 5.2 respectively and are not in the 5.4 reference manual at all.
+ * `package` and `arg` are data tables, `_ENV` is an upvalue rather than a readable
+ * global, and the eight library TABLES are already handled by `LUA54_TABLES` as
+ * RECEIVERS — a bare read of `string` as a VALUE is left unmarked rather than
+ * claimed by a second rule. A number produced against a hand-typed list is only as
+ * good as the list, so the claim this list supports is stated no wider than the
+ * section it is transcribed from.
+ */
+const LUA54_GLOBALS: ReadonlySet<string> = new Set([
+  "assert", "collectgarbage", "dofile", "error", "getmetatable", "ipairs",
+  "load", "loadfile", "next", "pairs", "pcall", "print", "rawequal", "rawget",
+  "rawlen", "rawset", "require", "select", "setmetatable", "tonumber",
+  "tostring", "type", "warn", "xpcall", "_G", "_VERSION",
+])
+
+/**
  * THE MODULE BASES a lua `require` is resolved against — the ONE part of this fix that is lua's
  * and not the shared guard's.
  *
@@ -202,6 +244,10 @@ interface LuaContext {
    *  names a documented Lua 5.4 standard table, held back until every symbol this
    *  file declares is known. See `markStdlibExternal`. */
   stdlibCandidates: Array<{ rel: ASTEngine.UniversalRelationship; receiver: string }>
+  /** M60 LUA-57: edges whose TARGET is itself the name of a documented Lua 5.4
+   *  basic-library GLOBAL — a bare identifier call or read, never a member's field.
+   *  Held for the same reason and decided by the same guard; see `LUA54_GLOBALS`. */
+  stdlibGlobalCandidates: Array<{ rel: ASTEngine.UniversalRelationship; name: string }>
   /**
    * THE PROJECT ROOT and the file's own path, exactly as the caller gave them
    * (`AnalyzeContext.projectRoot` / `analyze`'s `filePath`). Held so a `require` can state the ONE
@@ -257,6 +303,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       supertypeLinks: new Map(),
       factorySupertypeLines: new Map(),
       stdlibCandidates: [],
+      stdlibGlobalCandidates: [],
       ...(rooted ? { projectRoot: projectRootRaw, filePath: filePathRaw } : {}),
       moduleFileClaims: new Map<string, string | null>(),
     }
@@ -2045,6 +2092,21 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // which is a structural fact about this edge's own node and needs no list.
     const receiver = nameNode ? this.stdlibReceiverOf(nameNode) : null
     if (receiver) ctx.stdlibCandidates.push({ rel: relationship, receiver })
+    // M60 LUA-57: the OTHER half of §6.1, and the same discipline. `calls` and `uses`
+    // are the two types whose target IS a name looked up through `_ENV`, so a bare
+    // spelling there can be the standard library's own global; every other type
+    // names something else with the same node (a `contains` edge has no node at all,
+    // `instantiates`/`extends` pass a node whose text is NOT their target), which is
+    // why the type test is here rather than inside the name test — and `target ===
+    // nameNode.text` is checked too, because an edge whose target and node disagree
+    // would otherwise be marked under a name it does not carry.
+    const globalName = (type === ASTEngine.RelationshipType.Calls || type === ASTEngine.RelationshipType.Uses)
+      && nameNode !== null && nameNode !== undefined && target === nameNode.text
+      ? this.stdlibGlobalNameOf(nameNode)
+      : null
+    if (globalName !== null && LUA54_GLOBALS.has(globalName)) {
+      ctx.stdlibGlobalCandidates.push({ rel: relationship, name: globalName })
+    }
     ctx.relationships.push(relationship)
   }
 
@@ -2088,6 +2150,31 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const receiver = owner.childForFieldName("table")
     if (!receiver || receiver.type !== "identifier") return null
     return receiver.text
+  }
+
+  /**
+   * M60 LUA-57 — the node's text when the node is a BARE identifier, or `null` when
+   * it is a member's name.
+   *
+   * The inverse question to `stdlibReceiverOf`, and it is answered structurally for
+   * the same reason: `("abc"):type()` and `obj.type()` both publish target `type`
+   * with a node whose TEXT is `type`, and neither is the standard library global —
+   * the first because its receiver is a literal, the second because its receiver is
+   * an identifier that is not a documented table. Text alone cannot tell either from
+   * a bare `type(x)`, so the shape decides: a name that is the FIELD or METHOD of an
+   * index expression is a member's name and never a global read. The RECEIVER half
+   * of an index expression is deliberately NOT excluded — it is a genuine bare read
+   * of that identifier — but no `calls`/`uses` edge is ever published under it, so
+   * the case is unreachable from the only two call sites that consult this.
+   */
+  private stdlibGlobalNameOf(nameNode: Node): string | null {
+    if (nameNode.type !== "identifier") return null
+    const owner = nameNode.parent
+    if (owner && (owner.type === "dot_index_expression" || owner.type === "method_index_expression")) {
+      const field = owner.childForFieldName("field") ?? owner.childForFieldName("method")
+      if (field && this.isSameNode(field, nameNode)) return null
+    }
+    return nameNode.text
   }
 
   /**
@@ -2150,7 +2237,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * LUA-55 in docs/analyzers/real-lua-analyzer.md.
    */
   private markStdlibExternal(ctx: LuaContext): void {
-    if (ctx.stdlibCandidates.length === 0) return
+    if (ctx.stdlibCandidates.length === 0 && ctx.stdlibGlobalCandidates.length === 0) return
     // The shadowing guard, on the language's own rule rather than the file's
     // extent.
     //
@@ -2208,6 +2295,22 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       rel.metadata.external = true
       rel.metadata.externalKind = "lua54-stdlib"
       rel.metadata.externalReceiver = receiver
+    }
+    // M60 LUA-57: the basic-library GLOBALS, through the SAME guard and for the same
+    // one-sided reason — `tostring(x)` before a later `local tostring` reads the
+    // standard library and is marked, and any declaration at or before the edge
+    // withholds the mark. `externalReceiver` is deliberately NOT written: there is no
+    // receiver, and inventing one would make a global read look like a member read to
+    // every consumer that keys on the pair. No second list is consulted here; the
+    // membership test was already made at the node and is re-made as a guard in case a
+    // caller pushes a candidate this list does not carry.
+    for (const { rel, name } of ctx.stdlibGlobalCandidates) {
+      if (!LUA54_GLOBALS.has(name)) continue
+      const line = Number(rel.line_number ?? 0)
+      const lines = declaredAt.get(name)
+      if (lines && lines.some(l => l <= 0 || (line > 0 && l <= line))) continue
+      rel.metadata.external = true
+      rel.metadata.externalKind = "lua54-global"
     }
   }
 

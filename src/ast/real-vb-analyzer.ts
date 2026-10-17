@@ -50,6 +50,79 @@ const IS_IMPORT = "isImport"
 /** The metadata key that marks a dependency edge as import-based. */
 const INCLUDE_DEPENDENCY = "include_dependency"
 
+/**
+ * THE GRAMMAR'S CLOSED SET OF BUILT-IN TYPE KEYWORDS, AND THE CLAIM IT LICENSES.
+ *
+ * MEASURED RESIDUAL THIS CLOSES. The lane's whole admitted population (`vb`, 58 of 58 files, 12,390
+ * edges) carries **1,831 unresolved `references` edges whose type position is one of these 16
+ * keywords** — `As String`, `Dim v As Integer`, `As Object` — which is 29.9% of the lane's 6,134
+ * unresolved edges and 66.4% of its 2,759 `references` edges. Bucketed by NAMED CONSTRUCT by the
+ * lane's own census (`validation/m14/fixtures/vb/tools/vb-residual-census.ts`, which walks the real
+ * tree and names the SOURCE NODE): it is the lane's largest single cause with no answer.
+ *
+ * WHY IT IS DECIDABLE AND NOT A HEURISTIC. The list is not derived from the corpus; it is the
+ * LANGUAGE's, read off the wired grammar —
+ * `grammars/tree-sitter-vbnet/grammar.js:942-958`:
+ *
+ *     predefined_type: ($) => choice(ci("Boolean"), ci("Byte"), ci("SByte"), ci("Char"), ci("Date"),
+ *       ci("Decimal"), ci("Double"), ci("Integer"), ci("Long"), ci("Object"), ci("Short"),
+ *       ci("Single"), ci("String"), ci("UInteger"), ci("ULong"), ci("UShort"))
+ *
+ * — a CLOSED choice with no open alternative, reachable from `_type` and from `nullable_type`
+ * (`:937`, `:965`). So the test is a NODE-TYPE test (`token.type === "predefined_type"`), never a
+ * spelling test: `From`/`Exception`/`Label` are ordinary `simple_name`s and are NOT in this class,
+ * however much they look like framework names. This is the shape the fleet already authorized for
+ * graphql's five spec built-in scalars (`real-graphql-analyzer.ts:123-140` and its emission at
+ * `:508`) — "membership in the closed 5-name built-in scalar set is a DECIDABLE TEST with no missing
+ * grammar node and no new corpus".
+ *
+ * WHY THE CLAIM IS `languageNamespace` AND NOT THE TWO OBVIOUS ALTERNATIVES. Both refusals are the
+ * fleet's, recorded by that same file at `:128-140`, and both were re-derived here rather than
+ * assumed:
+ *
+ *   * An `owner` marker (`isExternal`/`isExternalTarget`/`isStdlib`) is READ ONLY WHERE
+ *     `decls === 0` (`incoming-rule.ts` `classifyEdge`), so on a bare name it verifies by
+ *     construction and NO corpus can ever refute it. That is a free pass, and this lane's class is
+ *     100% bare names (all 1,831 targets carry no dot). Refused.
+ *   * The DECLARED-CAUSE channel (`baseBeyondRunScope`) cannot express it either: `classifyEdge`
+ *     accepts a declared cause only where the declared base EQUALS the target's own owner
+ *     (`targetOwner` splits on the last dot and returns `null` for a bare name), so every one of
+ *     these edges would read `causeRefuted` — a clause-4 `causeFAIL` counted against the lane for a
+ *     true statement. Refused.
+ *
+ * What is left is the arbiter's claim for a CLOSED LANGUAGE VOCABULARY: the target's ROOT is checked
+ * against THIS LIST, carried on the edge, and never against the symbol table (`NAMESPACE_CLAIM_KEY`,
+ * `incoming-rule.ts:274-330`). It stays refutable by construction — an edge whose target the list
+ * does not carry reads `externalRefuted` — which is why the claim is attached ONLY where the node is
+ * a `predefined_type` and the target is canonicalised into this list. The reason travels with the
+ * claim as `languageNamespaceBasis`, which no claim channel reads, so it cannot misfire.
+ *
+ * THE PRICE, MEASURED AND DISCLOSED. The namespace branch is checked BEFORE the declaration count, so
+ * the claim also re-reads edges whose name a project DOES answer. On this lane that population is
+ * EMPTY, and it is empty as a measurement, not as an assumption: the census reports
+ * **0 declarations whose name spells a built-in keyword in either admitted repository**, and of the
+ * 1,831 `predefined_type` edges **0 are `resolved` and 0 are `ambiguous`** today — so the claim moves
+ * 1,831 edges from `unresolved` to `externalVerified` and can move nothing off a good answer. There
+ * is no second class to attribute, which is exactly the disclosure graphql had to make and could not
+ * (its 10,118 `resolved` + 1,398 `ambiguous` edges on four corpus files).
+ *
+ * CANONICAL SPELLING, and why one target changes. VB identifiers are case-insensitive: the corpus
+ * writes `dim v as integer` (fsharp/tests/fsharp/core/members/set-only-property/vb.vb:3-16), and the
+ * grammar's `ci()` accepts it, so the node's own text can be any case. The claim's root check is a
+ * case-sensitive list membership (`namespaceMatchOf`), so publishing the site's casing would make a
+ * true claim read `externalRefuted`. The published target for a `predefined_type` node is therefore
+ * the language's canonical spelling of the keyword it read — a normalisation with a stated reason,
+ * measured at 3 edges on this corpus, and the only emitted target this change touches.
+ */
+const VB_BUILTIN_TYPE_NAMES: readonly string[] = [
+  "Boolean", "Byte", "SByte", "Char", "Date", "Decimal", "Double", "Integer",
+  "Long", "Object", "Short", "Single", "String", "UInteger", "ULong", "UShort",
+]
+/** The same closed set folded to lower case, so a `predefined_type` node is read off its own text. */
+const VB_BUILTIN_TYPE_CANONICAL: ReadonlyMap<string, string> = new Map(
+  VB_BUILTIN_TYPE_NAMES.map((n) => [n.toLowerCase(), n]),
+)
+
 export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   // Populated per analyze() call. The engine constructs one analyzer and reuses
   // it across files, so nothing here may survive a call — see reset().
@@ -3305,7 +3378,17 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
     const token = this.namingToken(typeNode, typeNode.text)
-    const target = this.nameText(token ?? typeNode)
+    // THE BUILT-IN KEYWORD — read off the NODE TYPE, and only off the node type. `namingToken`
+    // already descends `nullable_type` and `array_type` to the element type, so `As String?` and
+    // `As String()` land here with the `predefined_type` node itself, which is what makes this test
+    // cover the keyword in every position rather than only the bare one. The canonical spelling is
+    // read from the same closed set the claim publishes, so the two can never drift: a target this
+    // map returns is a target the claim's own list contains, by construction (see
+    // `VB_BUILTIN_TYPE_NAMES` for the measurement, the precedents and the refusals).
+    const builtin = token !== null && token.type === "predefined_type"
+      ? VB_BUILTIN_TYPE_CANONICAL.get(this.nameText(token).toLowerCase())
+      : undefined
+    const target = builtin ?? this.nameText(token ?? typeNode)
     if (target.length === 0) return
     if (this.declaredNames.has(target)) return
     this.relationships.push({
@@ -3314,7 +3397,16 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       type: RelationshipType.References,
       confidence: 0.6,
       line_number: this.nodeLine(token ?? typeNode),
-      metadata: { role, qualified: typeNode.type === "qualified_name" || typeNode.type === "global_qualified_name" },
+      metadata: {
+        role,
+        qualified: typeNode.type === "qualified_name" || typeNode.type === "global_qualified_name",
+        ...(builtin !== undefined
+          ? {
+              languageNamespace: [...VB_BUILTIN_TYPE_NAMES],
+              languageNamespaceBasis: "vb-grammar-predefined-type",
+            }
+          : {}),
+      },
     })
   }
 

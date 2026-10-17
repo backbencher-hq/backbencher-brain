@@ -45,7 +45,124 @@ import { ASTEngine } from "./engine"
  *   - `export NAME` with no `=` is an `export_directive` over a `list`, with no
  *     assignment node at all — the name is a real export that no other branch
  *     of this walk would ever see.
+ *
+ * ## The external claims, and why they are metadata rather than edge types
+ *
+ * The `uses` pool is by design the pool of names NO declaration in this file answers
+ * to — a Make prerequisite is usually a FILE and a Make variable is often set by the
+ * command line, the environment or another makefile — and the analyzer has always
+ * LABELLED that reason (`evidenceClass`: `external`, `builtin`, `automatic`, …).
+ * The incoming gate reads none of those spellings: its external channel is a closed
+ * list of keys (`script/m14/incoming-rule.ts` `EXTERNAL_KEYS`) plus the claim kinds,
+ * and its marker-signature builder drops `evidenceClass` outright. MEASURED over the
+ * gate's own 400-of-683 stride draw before this change: `extOK 0 · ext? 0 ·
+ * causeOK 0` on 3,936 unresolved edges, i.e. every computed reason was invisible to
+ * the only instrument that scores it.
+ *
+ * So the two claims below are published on the keys that instrument READS. They are
+ * additive metadata: no symbol, no edge type, no target, no line and no pre-existing
+ * metadata value changes. NEITHER CLAIM CAN RAISE A RESOLUTION — the arbiter reads
+ * both only where the target names nothing — so neither can move an edge into a
+ * tie-break (`collRes`), which is the one outcome this round forbids.
  */
+/**
+ * GNU MAKE'S OWN NAME SPACE — the closed list a `languageNamespace` claim certifies.
+ *
+ * WHAT IT IS: the names GNU Make itself defines, which no makefile declares and no
+ * key space can therefore answer. Two halves, both documented:
+ *
+ *   * the builtin/implicit variables (`BUILTIN_VARIABLES` inside `analyze()` is a
+ *     SUBSET of this list, deliberately: the attach test below is membership HERE,
+ *     so a name that ever leaves the inner list can only cost this lane a claim it
+ *     could have made, never manufacture one the list does not contain), and
+ *   * the automatic variables, spelled as this analyzer emits them (`$@`, `$*`, …).
+ *     A spelling the grammar TRUNCATED (`$(@)`, `$(@:/`, `$(@:bin/%=%`) is
+ *     deliberately absent: covering it would mean writing a malformed member into a
+ *     closed list, which is how a "declared namespace" stops being declarable.
+ *
+ * THE LIST IS THE CLAIM (`incoming-rule.ts` `NAMESPACE_CLAIM_KEY`, property 2): it
+ * travels on every edge that carries the claim, so widening it is one reviewable
+ * array in one file, and the arbiter checks the target's root against THIS list and
+ * never against the symbol table. Property 1 — refutability — holds by construction
+ * here: the attach test and the verification are the same membership test, so a
+ * claimed edge whose target is NOT in the list cannot be produced by this file.
+ */
+const GNU_MAKE_NAMESPACE: ReadonlySet<string> = new Set([
+  // builtin and implicit variables (the same spellings the analyzer's inner list uses)
+  "MAKE", "MAKEFILE_LIST", "MAKEFILES", "MAKEFLAGS", "MAKECMDGOALS", "MAKELEVEL",
+  "CURDIR", "SUFFIXES", ".DEFAULT_GOAL", "VPATH", "SHELL", "MFLAGS",
+  "CC", "CXX", "CPP", "AR", "ARFLAGS", "AS", "ASFLAGS", "LD", "LDFLAGS", "LDLIBS",
+  "RM", "CFLAGS", "CXXFLAGS", "CPPFLAGS", "YFLAGS", "LEX", "YACC", "AWK", "FC",
+  "GET", "PC", "TEX", "TEXI2DVI", "WEAVE", "CWEAVE", "CTANGLE",
+  // automatic variables, as emitted
+  "$@", "$%", "$<", "$?", "$^", "$+", "$*", "$|",
+  "$(@D)", "$(@F)", "$(%D)", "$(%F)", "$(<D)", "$(<F)", "$(?D)", "$(?F)",
+  "$(^D)", "$(^F)", "$(+D)", "$(+F)", "$(*D)", "$(*F)", "$(|D)", "$(|F)",
+])
+const GNU_MAKE_NAMESPACE_ROOTS: readonly string[] = [...GNU_MAKE_NAMESPACE]
+
+/**
+ * A bare Make identifier — `[A-Za-z_][A-Za-z0-9_]*`, by CHARACTER CODE.
+ *
+ * Not a regex literal, and that is a lane rule rather than a preference:
+ * `script/m12/make-contract-probe.ts` asserts this file carries none, a check that
+ * found the pattern `split` that used to end `moduleName()`. The test is also the
+ * scope of the claim it guards: a dotted or path-shaped target is looked up through
+ * its OWNER by the arbiter, and an owner this population declares REFUTES the claim
+ * (measured: 15 such refutations on the unscoped version of this rule), so those
+ * targets are left alone rather than claimed.
+ */
+function isBareMakeName(s: string): boolean {
+  if (s.length === 0) return false
+  const first = s.charCodeAt(0)
+  if (!((first >= 65 && first <= 90) || (first >= 97 && first <= 122) || first === 95)) return false
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (!((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95)) return false
+  }
+  return true
+}
+
+/**
+ * THE CLAIM AN EDGE'S OWN, ALREADY-COMPUTED REASON EARNS — or `{}` when it earns none.
+ *
+ *   1. the target is in GNU MAKE'S OWN NAME SPACE  -> `languageNamespace`
+ *      A `languageNamespace` claim says the target's root is a language namespace
+ *      rather than a declaration of this project. It is checked against the list on
+ *      the edge and NEVER against the symbol table, which is what makes it the right
+ *      claim for `MAKE`, `CC`, `CURDIR` and `$@`: a project that declares `CC = gcc`
+ *      does not make `CC` cease to be a GNU Make implicit variable.
+ *   2. the edge's reason is `external` and the target is a bare identifier -> `isExternal`
+ *      The gate reads `isExternal` as an `owner` claim: it looks the name up in the
+ *      PROJECT's own key space and REFUTES a claim the project answers. Where the
+ *      target is a bare identifier the claim is exactly "no declaration in this
+ *      population answers this name" — the same statement the analyzer already made
+ *      as `evidenceClass: "external"`, and the arbiter now verifies it instead of
+ *      trusting it.
+ *
+ * EVERYTHING ELSE IS LEFT UNCLAIMED, and the omissions are decisions, not gaps:
+ *   * `external_prerequisite` — its target names a FILE, and the only claim kind that
+ *     can verify a file (`importProjectFile`) is checked against the lane's ADMITTED
+ *     file list, which for this lane holds make files only. Attaching it would refute
+ *     every build product and every source file. Measured, not feared: see
+ *     `validation/m14/verification/MAKE-FIX.md` §3.
+ *   * `local_binding` — `$(foreach mod,…)`'s binder IS bound here. "Not published"
+ *     would be true and "external" would be false, and the second is what the claim says.
+ *   * `include_literal` — a computed include published as the variable it expands; the
+ *     missing fact is the PATH, which no symbol lookup can supply.
+ *   * every `references`/`contains`/`exports` edge — a `references` edge means THIS
+ *     file declares the name, which is the one case both claims would be false.
+ */
+function makeExternalClaim(
+  kind: ASTEngine.RelationshipType,
+  target: string,
+  evidenceClass: string,
+): Record<string, unknown> {
+  if (kind !== ASTEngine.RelationshipType.Uses) return {}
+  if (GNU_MAKE_NAMESPACE.has(target)) return { languageNamespace: GNU_MAKE_NAMESPACE_ROOTS }
+  if (evidenceClass === "external" && isBareMakeName(target)) return { isExternal: true }
+  return {}
+}
 export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -759,10 +876,17 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
       // restatements of the label: a declaration this file makes is STRONGEST,
       // a builtin is a named fact about the language, and a file path or an
       // external variable is an INFERENCE that the name is not declared here.
+      //
+      // AND THE TIER IS NOW PUBLISHED WHERE THE ARBITER READS IT — see
+      // `makeExternalClaim`: the same reason, on the claim keys the incoming gate's
+      // closed channel accepts. Additive: `role`, `evidenceClass` and `isBuiltin`
+      // are byte-identical to what this lane published before, and the spread adds
+      // a key only where the reason above was already computed.
       addRel(e.source, kind, e.target, e.line, {
         role: e.role,
         evidenceClass: label,
         isBuiltin: isBuiltinVar,
+        ...makeExternalClaim(kind, e.target, label),
       })
     }
 

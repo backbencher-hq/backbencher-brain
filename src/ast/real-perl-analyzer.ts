@@ -1470,6 +1470,12 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // legend-tier value wins and is never re-derived).
     this.classifyEvidenceTier(relationships)
 
+    // THE STATED CAUSE, ON THE CHANNEL THE ARBITER READS. Placed after every emitter (the call
+    // walk, the deferred base pass, the override pass) and before the return, because it is a
+    // statement ABOUT the edges that already exist: it adds one metadata key and changes no
+    // source, target, label, line or confidence.
+    this.publishStatedCauses(symbols, relationships)
+
     return { symbols, relationships, imports, exports, errors, metadata }
   }
 
@@ -1999,6 +2005,90 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private leafName(name: string): string {
     const colon = name.lastIndexOf("::")
     return colon >= 0 ? name.slice(colon + 2) : name
+  }
+
+  /**
+   * THE BASE A `leaf.member` TARGET NAMES — the single-dot, identifier-shaped owner the declared
+   * cause channel is defined over, or null when the target cannot carry that claim at all.
+   *
+   * This is not a style choice, it is the channel's own precondition. The arbiter takes the owner
+   * as everything before the LAST dot (`incoming-rule.ts` `targetOwner`) and accepts a stated base
+   * only when it is IDENTIFIER-SHAPED and IS that owner
+   * (`classifyEdge`: `const shaped = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(claim.base)` then
+   * `const consistent = shaped && owner === claim.base`). A target carrying two dots, an empty
+   * member, or an owner with `::` in it therefore cannot be given this claim: writing one there
+   * reads `causeRefuted`, which is `causeFAIL` — a clause-4 defect, not a stated cause.
+   *
+   * The character test is the lane's own `isPerlIdentStart`/`isPerlIdentChar` rather than a regex
+   * literal, because this file's contract forbids regex literals (proved by
+   * `script/m14/tmp/perl-zero-regex.mts`), and reusing them keeps the predicate from drifting away
+   * from the rest of the lane.
+   */
+  private statedOwnerOf(target: string): string | null {
+    const dot = target.lastIndexOf(".")
+    if (dot <= 0 || dot === target.length - 1) return null
+    // EXACTLY ONE DOT: `IOLoop.start` is the shape; `Foo::Bar.baz` and `a.b.c` are not.
+    if (target.indexOf(".") !== dot) return null
+    const owner = target.slice(0, dot)
+    if (!isPerlIdentStart(owner[0]!)) return null
+    for (let i = 1; i < owner.length; i++) if (!isPerlIdentChar(owner[i]!)) return null
+    return owner
+  }
+
+  /**
+   * PUBLISH THE REASON THE LANE ALREADY COMPUTES, ON THE KEY THE GATE READS — the fleet's finding
+   * (a), measured on this lane rather than assumed: every perl edge below confidence 1.0 carries a
+   * machine-readable `metadata.reasonCode` (M14 HONESTY-CONTRACT §4.1 — the 1,664 `contains` edges
+   * are @1.0 and carry none), and the arbiter's bucket-3 column reads
+   * `metadata.baseBeyondRunScope` ONLY (`incoming-rule.ts` `CAUSE_CLAIM_KEY`). So the gate printed
+   * `causeOK 0`, `clause 2 ok — no edge carries a declared cause (residual 6998)`, and clause 2
+   * passed VACUOUSLY over a 4,110-edge unresolved residual. See
+   * `validation/m14/verification/PERL-FIX.md` for the bucketed residual and the measurements.
+   *
+   * WHAT THE CLAIM MEANS, and it is a claim about the RUN, not about the project: "the base this
+   * edge names is beyond THIS RUN's reach" (`incoming-rule.ts`, `CAUSE_CLAIM_KEY`). Production
+   * parses a perl file with NO project index and NO override companion
+   * (`parallel-indexer.ts` `PROJECT_INDEX_EXTENSIONS` names only `.sol`), so a class another file
+   * declares is genuinely out of this run's sight — which is exactly what the lane's own reason
+   * codes already say (`first-parent-guess`: "the base does not declare it anywhere visible";
+   * `name-only-callee`: "whether it binds to a sub in this file, an imported sub, or a
+   * module-level sub is not decided at this edge"). Dart is the reference implementation of this
+   * mechanism for the index-less case (`real-dart-analyzer.ts:2089-2091`).
+   *
+   * THE GUARD, and it is the difference between a stated cause and a laundering vector: the claim
+   * is attached ONLY where the class the target names is NOT published by the file being analyzed.
+   * When this file declares the class, the run DID reach it, and "beyond this run's reach" would be
+   * FALSE — so `IOLoop.start` inside `package IOLoop` keeps its reason code and states nothing.
+   * The arbiter cannot check this half (property 4 of the channel — a second implementation — is
+   * explicitly not claimed to exist), so the analyzer must not state it.
+   *
+   * It can never move a resolution number. `classifyEdge` reads a cause ONLY inside its
+   * `decls === 0` branch, so a claimed edge is already unresolved; and it is REFUTED outright if
+   * the edge also carries an external claim — the lane publishes none, which is why the conflict
+   * branch cannot fire here.
+   */
+  private publishStatedCauses(symbols: ASTEngine.UniversalSymbol[], relationships: ASTEngine.UniversalRelationship[]): void {
+    // THE CLASSES THIS FILE ITSELF PUBLISHES, BY LEAF. A perl package symbol's `name` is its full
+    // package name (`Mojo::Base`), so the leaf is what a `leaf.member` target can name.
+    const declaredHere = new Set<string>()
+    for (const symbol of symbols) {
+      const kind = symbol.kind
+      if (kind !== ASTEngine.SymbolKind.Class && kind !== ASTEngine.SymbolKind.Trait) continue
+      const name = String(symbol.name ?? "")
+      if (name) declaredHere.add(this.leafName(name))
+    }
+    for (const relationship of relationships) {
+      const type = relationship.type
+      // THE THREE LABELS WHOSE TARGET IS `leaf.member`. `extends` targets a bare leaf and
+      // `references`/`uses` target a leaf or a `::` path — none of them can carry this claim, and
+      // none is given one.
+      if (type !== ASTEngine.RelationshipType.Calls && type !== ASTEngine.RelationshipType.Overrides && type !== ASTEngine.RelationshipType.Instantiates) continue
+      const metadata = relationship.metadata as Record<string, unknown> | undefined
+      if (!metadata || metadata.baseBeyondRunScope !== undefined) continue
+      const owner = this.statedOwnerOf(String(relationship.target ?? ""))
+      if (owner === null || declaredHere.has(owner)) continue
+      metadata.baseBeyondRunScope = owner
+    }
   }
 
   private isAllCapsName(name: string): boolean {

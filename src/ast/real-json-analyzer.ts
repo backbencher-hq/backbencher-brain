@@ -112,6 +112,41 @@ interface JsonContext {
    *  qualified path of the object that declares it. Built during the symbol walk because a
    *  qualified path only exists there. */
   typeDeclarations: Map<string, string>
+  /**
+   * THE IDENTITIES THIS DOCUMENT DECLARES FOR ITSELF — an `$id` string mapped to the
+   * qualified path of the object that carries it.
+   *
+   * JSON Schema names a schema two ways. A JSON POINTER (`#/a/b`) is a LOCATION inside the
+   * document, and `referenceTarget` has resolved those for a long time. An IDENTITY is the
+   * other way: `$id` declares a base URI for the schema resource it sits in, and a `$ref` may
+   * name that identity instead of pointing into the tree. The identity form was published
+   * VERBATIM with `isExternal: true`, which is a claim about the CORPUS that a declaration in
+   * this same document cannot support — and it made the edge unverifiable: the gate classifies
+   * a path/URI-shaped external claim as `externalUnverified`, a column that blocks a PASS and
+   * tells nobody anything.
+   *
+   * MEASURED over the whole corpus (`validation/m14/fixtures/json/document-identity-census.ts`,
+   * 16,163 json-family files judged): 6 `$ref`s in 2 repositories name an identity their OWN
+   * document declares. Four of them (`gql-graphql-mesh/.../petstore-3.1.json:297,300,320,324`)
+   * are exactly this lane's 4 `ext?` edges on `--repo=gql-graphql-mesh`; the other two
+   * (`powershell/dsc/pwsh.profile.dsc.resource.json:96,99`) already resolved by NAME because
+   * the `$defs` KEY publishes the URI as a symbol name — they gain the qualified target and no
+   * count moves.
+   *
+   * First declaration wins, the rule the duplicate-key contract and `emittedPaths` already
+   * state: an `$id` repeated in one document is not two identities.
+   */
+  documentIds: Map<string, string>
+  /**
+   * AN `$anchor` NAME -> every qualified path in this document that declares it.
+   *
+   * `$anchor` names a location INSIDE a schema resource (`<base>#<name>`), so the name alone
+   * identifies nothing: two resources in one document may each declare `foo`. The resolver
+   * therefore accepts an anchor only when its object IS the declared base object or sits UNDER
+   * it — the base URI is what scopes the fragment — and a list is kept so that scoping is a
+   * decision made from evidence rather than from whichever declaration the walk visited last.
+   */
+  documentAnchors: Map<string, string[]>
   /** An inheritance statement found during the walk, with its target still a NAME. Resolved
    *  in a later pass, because a declaration can appear after the reference to it. */
   inheritanceCandidates: { source: string; target: string; key: string; form: string; label: "extends" | "implements"; line: number }[]
@@ -192,6 +227,8 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       usesReferenceLiterals: false,
       usesClassDeclarations: false,
       typeDeclarations: new Map(),
+      documentIds: new Map(),
+      documentAnchors: new Map(),
       inheritanceCandidates: [],
       objectCount: 0,
       propertyCount: 0,
@@ -375,6 +412,27 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           const value = pair.childForFieldName("value")
           if (!key) continue
           this.noteDocumentConventions(key, value, ctx)
+          // A DOCUMENT-DECLARED IDENTITY, recorded in the walk that ALREADY carries the
+          // declaring object's qualified path in `parentPath` (which is the same path
+          // `extractSymbols` publishes as that object's `qualifiedName`). This is the whole
+          // cost of resolving `$ref`s that name identities instead of locations: one map
+          // insert in a pass that already runs, and no re-read of the tree.
+          //
+          // A `$id` may carry an empty fragment (`…/schema#`); one trailing `#` is stripped
+          // on BOTH sides of the comparison so the two spellings of one base URI agree.
+          if (value?.type === "string" && (key === "$id" || key === "$anchor")) {
+            const declared = this.stripQuotes(String(value.text ?? ""))
+            if (declared.length > 0) {
+              if (key === "$id") {
+                const base = this.withoutEmptyFragment(declared)
+                if (!ctx.documentIds.has(base)) ctx.documentIds.set(base, parentPath)
+              } else {
+                const paths = ctx.documentAnchors.get(declared)
+                if (paths) paths.push(parentPath)
+                else ctx.documentAnchors.set(declared, [parentPath])
+              }
+            }
+          }
           schemaKeys.add(key)
           if (key === "required" && value?.type === "array") {
             const required = new Set<string>()
@@ -799,7 +857,12 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const ref of ctx.referenceSymbols) {
       const refPath = ref.metadata?.refPath as string | undefined
       if (!refPath) continue
-      const target = this.referenceTarget(ctx, refPath)
+      // AN IDENTITY THE DOCUMENT ITSELF DECLARES takes precedence over the raw spelling: it is
+      // the third form a `$ref` can take, beside the local pointer (`#/a/b`, resolved by
+      // `referenceTarget`) and the sibling file (`imports`). `null` when the document declares
+      // nothing under that identity, in which case the edge keeps its exact previous shape.
+      const declaredIdentity = this.documentDeclaredIdentity(ctx, refPath)
+      const target = declaredIdentity ?? this.referenceTarget(ctx, refPath)
       const source = String(ref.metadata?.fullPath || ref.name)
       // THE FILE CLAIM, and it exists because a path-shaped target is UNVERIFIABLE by the
       // arbiter's owner lookup BY DESIGN: `verifyExternalClaim` cannot look up an owner holding
@@ -880,7 +943,10 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           // rows for one dependency are adjudicated the same way — and where the project does not
           // carry the file, BOTH labels carry the external claim, so one dependency is never
           // adjudicated two ways.
-          ...(claimedFile ? { importProjectFile: claimedFile } : { isExternal: !this.isLocalPointer(refPath) }),
+          // AN IDENTITY THE DOCUMENT DECLARES IS NOT EXTERNAL EITHER: the third same-document
+          // form. `$id`/`$anchor` declarations are what make the target a declaration HERE, so the
+          // corpus claim that made the edge `ext?` would be a claim this file refutes.
+          ...(claimedFile ? { importProjectFile: claimedFile } : { isExternal: !this.isLocalPointer(refPath) && declaredIdentity === null }),
           // Honesty contract §4 point 1: anything below 1.0 carries a machine-readable code.
           // The 0.8 case is exactly one thing — the pointer names a location this document
           // does not declare — so the code says so, and the 1.0 case says the opposite.
@@ -1499,6 +1565,55 @@ const bracket = parent.lastIndexOf("[")
     // local pointers are exactly this shape (RFC 6901 `~1` = `/`, `~0` = `~`).
     const local = [ctx.rootName, ...refPath.slice(2).split("/").map((seg) => this.decodePointerSegment(seg))].join(".")
     return ctx.symbolMap.has(local) ? local : refPath
+  }
+
+  /**
+   * A `$ref` THAT NAMES AN IDENTITY THIS DOCUMENT DECLARES — or `null`.
+   *
+   * This is the third form a `$ref` can take, and the one whose target was being published
+   * verbatim with a corpus claim it cannot support:
+   *
+   *   1  `#/a/b`    a JSON POINTER — a location in this document; `referenceTarget` answers it.
+   *   2  `x.json`   a SIBLING FILE — `imports`, with the project's file claim on both labels.
+   *   3  `<uri>`    an IDENTITY — `$id` declares a base URI for a schema resource and `$anchor`
+   *                 declares a fragment name inside one. JSON Schema resolves the reference
+   *                 against the declared base, and the declaration IS the object carrying the
+   *                 `$id`; this analyzer already publishes that object's qualified path.
+   *
+   * MEASURED (`validation/m14/fixtures/json/document-identity-census.ts`): 6 corpus `$ref`s in
+   * 2 repositories name an identity their own document declares; 4 of them were this lane's
+   * whole `ext?` class on `--repo=gql-graphql-mesh`.
+   *
+   * The returned path is the DECLARING OBJECT'S `qualifiedName`, i.e. production resolver
+   * strategy 1's exact key — never a basename stem — so this cannot mass-move edges into
+   * `collRes` the way a stem rebase would, and it mints no symbol.
+   *
+   * A fragment is accepted only where the base's resource really is where it lives: for an
+   * `$anchor`, the declaring object must BE the base object or sit UNDER it. A bare anchor name
+   * scopes nothing on its own, so a name declared in another resource of the same document is
+   * refused rather than guessed.
+   */
+  private documentDeclaredIdentity(ctx: JsonContext, refPath: string): string | null {
+    const hash = refPath.indexOf("#")
+    const base = this.withoutEmptyFragment(hash < 0 ? refPath : refPath.slice(0, hash))
+    if (base.length === 0) return null
+    const declared = ctx.documentIds.get(base)
+    if (declared === undefined) return null
+    const fragment = hash < 0 ? "" : refPath.slice(hash + 1)
+    // no fragment: the base URI IS the resource's identity
+    if (fragment.length === 0) return declared
+    // a `/`-leading fragment is a JSON POINTER into that resource — form 1 above, already answered
+    if (fragment.startsWith("/")) return null
+    const anchorPaths = ctx.documentAnchors.get(fragment)
+    if (!anchorPaths) return null
+    const underBase = anchorPaths.find((p) => p === declared || p.startsWith(`${declared}.`))
+    return underBase ?? null
+  }
+
+  /** One trailing empty fragment is not part of an identity: `…/schema` and `…/schema#` name the
+   *  same base URI (RFC 3986 §6.2.2), and `$id`/`$ref` use both spellings. */
+  private withoutEmptyFragment(uri: string): string {
+    return uri.endsWith("#") ? uri.slice(0, -1) : uri
   }
 
   /** RFC 6901: within a pointer segment, `~1` is `/` and `~0` is `~`, decoded in that order. */

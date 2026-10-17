@@ -52,6 +52,7 @@
 
 import type { Node } from "web-tree-sitter"
 import * as path from "node:path"
+import { existsSync } from "node:fs"
 import { ASTEngine } from "./engine"
 import { RealCssAnalyzer, cssFileScopeOf } from "./real-css-analyzer"
 import { dirOf, FILE_CLAIM_MAX_BYTES, fileClaimForTarget, foldProjectPath } from "./file-claim"
@@ -322,6 +323,73 @@ function isPrivateSassName(published: string): boolean {
   return bare.startsWith("-") || bare.startsWith("_")
 }
 
+/**
+ * A SPECIFIER THAT NAMES A PACKAGE OR A REMOTE RESOURCE, NOT A PATH IN THIS PROJECT.
+ *
+ * THE SHAPE TEST IS DELIBERATELY NARROW, and the narrowness is the whole point. There are other
+ * unresolved `@import`s in this corpus that are just as unresolved and must NOT be marked by this
+ * predicate: 144 of them are `consul-ui/components/…` in `consul`, which name files that ARE in the
+ * project under a different spelling (`ui/packages/consul-ui/app/components/…`) and are resolved by
+ * ember-cli's addon-tree includePaths at build time — a fact that exists in no tracked file
+ * (`consul/ui/packages/consul-ui/ember-cli-build.js:184-192` lists only `node_modules` paths). Marking
+ * one of those "external" would be a FALSE statement about a dependency the project carries. So a
+ * specifier is claimed outside the admitted population only when its SHAPE puts it outside by
+ * construction:
+ *
+ *   `https://…`, `//host/…`   a remote stylesheet — no admitted file can be named by a URI
+ *   `…/node_modules/…`        a package tree; the corpus is git-tracked files and node_modules is not
+ *   `~/pkg/…`                webpack's package spelling
+ *   `@scope/pkg/…`           an npm scoped package
+ *
+ * A bare package name (`@import "bulma"`) is NOT claimed: a bare name can also be a declaration, and
+ * a claim that hides a resolution is the laundering vector the claim kinds were designed to refuse.
+ */
+function isExternalImportSpecifier(written: string): boolean {
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(written) || written.startsWith("//")) return true
+  if (/(^|\/)node_modules\//.test(written)) return true
+  if (written.startsWith("~")) return true
+  if (/^@[A-Za-z0-9][A-Za-z0-9._-]*\//.test(written)) return true
+  return false
+}
+
+/**
+ * THE CLAIM IS ATTACHED ONLY WHEN THE GATE CANNOT REFUTE IT — checked here, not assumed.
+ *
+ * `sourcePathClaim` means "nothing the project ADMITS resolves to this written source string". The
+ * gate verifies it (`incoming-rule.ts:1108-1121`) by rebuilding candidates from the source string and
+ * asking whether the project's admitted file list contains any of them. A REFUTED claim is `extFAIL`
+ * and is counted AGAINST the lane, so attaching a claim that the project could refute would be worse
+ * than attaching none.
+ *
+ * The admitted list is a subset of the files that EXIST, so "no candidate exists on disk" proves the
+ * gate cannot find one. The candidate set is restated from `sourcePathCandidates` rather than
+ * imported: production code does not import the validation scripts, and a shared import here would
+ * make the analyzer depend on the gate that judges it.
+ */
+function sourcePathClaimIsUnrefutable(projectRoot: string, written: string): boolean {
+  const candidates: string[] = []
+  const push = (v: string) => {
+    const t = v.trim()
+    if (t.length > 0 && !candidates.includes(t)) candidates.push(t)
+  }
+  push(written)
+  push(written.replace(/^\.\//, ""))
+  push(written.replace(/^\.\.\//, ""))
+  const segs = written.split("/").filter((x) => x.length > 0 && x !== "." && x !== "..")
+  if (segs.length > 0) {
+    push(segs.join("/"))
+    push(segs[segs.length - 1])
+  }
+  for (const candidate of candidates) {
+    try {
+      if (existsSync(path.resolve(projectRoot, candidate))) return false
+    } catch {
+      return false
+    }
+  }
+  return true
+}
+
 export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     // The CSS subset. Its `errors` are KEPT: they were verified to be honest — the
@@ -460,8 +528,36 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
           maxFileSizeBytes: FILE_CLAIM_MAX_BYTES,
           extraCandidates: extra,
         })
-        if (claim === null) continue
-        md.importProjectFile = claim
+        if (claim !== null) {
+          md.importProjectFile = claim
+          continue
+        }
+        // ── THE REASON, DECLARED INSTEAD OF DROPPED ─────────────────────────────────────────────
+        //
+        // Above, the analyzer asks the project's own files whether an admitted `.scss` file answers
+        // to the written specifier, and attaches the FILE claim when one does. When NONE does, the
+        // edge is left bare — and on the gate's population 61 edges (whole corpus: 452) end up in
+        // `unresolved` with no statement of WHY, which is the one thing a residual must not do.
+        //
+        // THE GATE ALREADY HAS THE CHANNEL FOR THIS SHAPE. `sourcePathClaim`
+        // (`incoming-rule.ts:339-374`, adopted by protobuf/toml/yaml) means exactly what this pass
+        // computed: **nothing the project ADMITS resolves to this written source string.** It is a
+        // claim, not a resolution — `classifyEdge` reads it only into `externalVerified`/
+        // `externalRefuted`, never into `resolved` — so it cannot create a tie-break and cannot move
+        // `collRes` in either direction. And it is REFUTABLE BY A RUN, not by trust: the gate rebuilds
+        // the candidate spellings from this very string and asks the project's admitted file list
+        // (`incoming-rule.ts:1108-1121`); a project that adds the file flips the claim to `extFAIL`.
+        //
+        // WHICH EDGES GET IT IS THE WHOLE SAFETY ARGUMENT, so it is stated as a rule rather than as a
+        // heuristic: only specifiers whose SHAPE is outside the project by construction
+        // (`isExternalImportSpecifier`), and only when the gate's own candidate set cannot match a
+        // file that exists (`sourcePathClaimIsUnrefutable`). The 144 in-project `consul-ui/…`
+        // specifiers and the `.sass`/`.css` files that DO exist are deliberately NOT claimed: the
+        // first would be a false statement about a dependency the project carries, and the second is
+        // a real file another language lane owns, not an external one.
+        if (isExternalImportSpecifier(written) && sourcePathClaimIsUnrefutable(claimRoot, written)) {
+          md.sourcePathClaim = [written]
+        }
       }
     }
 

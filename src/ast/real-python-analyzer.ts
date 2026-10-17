@@ -296,6 +296,94 @@ export const PYTHON_BUILTINS = new Set([
 ])
 
 /**
+ * THE LANGUAGE-NAMESPACE CLAIM — the evidence list is the INTERPRETER'S OWN BUILTIN NAMESPACE,
+ * and it is a declared table rather than a copy of `PYTHON_BUILTINS` above for a measured
+ * reason: that set is the CALL FILTER ("never legitimate in-file call targets") and it holds no
+ * exception or warning name at all, so `class MyError(Exception)` and `x: BaseException` were
+ * outside it. The claim's list is therefore the namespace itself:
+ *
+ *     python3 -c "import builtins; print(' '.join(sorted(dir(builtins))))"     # 157 names, 3.12
+ *
+ * The six names `site` adds to that module (`exit`, `quit`, `copyright`, `credits`, `license`,
+ * `help`) are NOT filtered out: the table states what the interpreter's `builtins` module
+ * carries, which is the fact the claim rests on, and a rule with a subtraction in it is a
+ * second claim about which of python's names are real. `PYTHON_BUILTINS` is a subset of this
+ * list; it is deliberately NOT extended by the claim, so a name added to the CALL filter never
+ * silently becomes a namespace claim.
+ *
+ * WHY THIS CLAIM AND NOT THE MODULE ROUTES. A member call through a module (`os.path.dirname`)
+ * is the lane's larger class, and python — like rust — computes the full chain
+ * (`metadata.qualified`) and publishes the leaf as the endpoint. Republishing the chain AS the
+ * target was implemented, measured, and REVERTED: it breaks eight pinned fixtures that state the
+ * lane's endpoint contract in their own words (`python/qualified-endpoint-spellings`,
+ * `python/member-read-is-not-a-declaration`, `python/implements-interface-bases`,
+ * `python/implements-proof-requires-binding`, `python/interface-declaration-needs-abc-meta`,
+ * `python/interface-qualified-subscript-head`, `python/dispatch-reason-codes`,
+ * `python/star-import-is-a-binding-rule`), and a claim verified against the target's own root
+ * cannot be attached to a leaf. The measurement and the fixture evidence are in
+ * `validation/m14/verification/PYTHON-FIX.md`.
+ */
+const PY_BUILTIN_NAMESPACE: ReadonlySet<string> = new Set(
+  (
+    "ArithmeticError AssertionError AttributeError BaseException BaseExceptionGroup BlockingIOError "
+    + "BrokenPipeError BufferError BytesWarning ChildProcessError ConnectionAbortedError ConnectionError "
+    + "ConnectionRefusedError ConnectionResetError DeprecationWarning EOFError Ellipsis EncodingWarning "
+    + "EnvironmentError Exception ExceptionGroup False FileExistsError FileNotFoundError FloatingPointError "
+    + "FutureWarning GeneratorExit IOError ImportError ImportWarning IndentationError IndexError "
+    + "InterruptedError IsADirectoryError KeyError KeyboardInterrupt LookupError MemoryError "
+    + "ModuleNotFoundError NameError None NotADirectoryError NotImplemented NotImplementedError OSError "
+    + "OverflowError PendingDeprecationWarning PermissionError ProcessLookupError RecursionError "
+    + "ReferenceError ResourceWarning RuntimeError RuntimeWarning StopAsyncIteration StopIteration "
+    + "SyntaxError SyntaxWarning SystemError SystemExit TabError TimeoutError True TypeError "
+    + "UnboundLocalError UnicodeDecodeError UnicodeEncodeError UnicodeError UnicodeTranslateError "
+    + "UnicodeWarning UserWarning ValueError Warning ZeroDivisionError __build_class__ __debug__ __doc__ "
+    + "__import__ __loader__ __name__ __package__ __spec__ abs aiter all anext any ascii bin bool "
+    + "breakpoint bytearray bytes callable chr classmethod compile complex copyright credits delattr dict "
+    + "dir divmod enumerate eval exec exit filter float format frozenset getattr globals hasattr hash help "
+    + "hex id input int isinstance issubclass iter len license list locals map max memoryview min next "
+    + "object oct open ord pow print property quit range repr reversed round set setattr slice sorted "
+    + "staticmethod str sum super tuple type vars zip"
+  ).split(" "),
+)
+
+/**
+ * THE EDGE TYPES A LANGUAGE-NAMESPACE CLAIM IS CERTIFIED ON — and only these, because the
+ * claim says "the TARGET names a language namespace" and on some types the target is not a name
+ * at all.
+ *
+ *   `uses`   EXCLUDED, and this is the one that would have been wrong. A `uses` edge is a
+ *            MEMBER READ: its target is the member's own leaf (`self.stash` publishes `stash`,
+ *            `obj.type` publishes `type`), so a leaf that happens to spell a builtin is a
+ *            member NAME and not the interpreter's namespace. Measured on the 400-file gate
+ *            row: including `uses` certified 409 edges, 200 of them edges the project had
+ *            already RESOLVED — the false-claim class, removed by this exclusion.
+ *   `calls`  EXCLUDED, because the call emitter already returns on a builtin target
+ *            (`PYTHON_BUILTINS` at the top of `processOneCall`), so a call can never name one.
+ *   `contains`, `exports`, `imports`, `overrides`, `instantiates` name declarations and import
+ *            specifiers rather than language namespaces.
+ *
+ * What is left is exactly the three types on which a bare name IS a reference to something the
+ * interpreter owns: a type annotation, a heritage base, an interface base.
+ */
+const PY_NAMESPACE_CLAIM_TYPES: ReadonlySet<string> = new Set([
+  "references", "extends", "implements",
+])
+
+/**
+ * THE REASON CODES THAT SAY THE NAME IS BOUND IN THIS FILE, NOT IN THE LANGUAGE.
+ *
+ * `dynamicTypeBindingReason` returns these when the name is a parameter, assignment, walrus or
+ * comprehension target, a nested `def`/`class` name, a PEP-695 type parameter, or a member of a
+ * runtime object. In every one of those the source is NOT naming the interpreter's builtin —
+ * `def f(type): ... isinstance(x, type)` names the parameter — so the claim would be false and
+ * the analyzer has already stated why. A claimed edge keeps its reason code; it simply does not
+ * get a namespace claim on top of a reason that says the opposite.
+ */
+const PY_NAMESPACE_REFUSING_REASONS: ReadonlySet<string> = new Set([
+  "local-binding-target", "inline-type-parameter", "member-read",
+])
+
+/**
  * VERIFY_PY10 — REMOVED, with the measurement that removed it.
  *
  * This set gated the name on a `class_definition` and a `function_definition`, which is
@@ -831,6 +919,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.extractMemberUses(rootNode, ctx, phantomDefs)
     this.extractVirtualRegistrations(rootNode, ctx)
     this.classifyEvidenceTier(ctx.relationships)
+    // AND LAST, the language-namespace claim: it runs over the COMPLETE relationship set — so
+    // that an edge added by any of the passes above is certified too — and it only ADDS a
+    // metadata key, never a target, which is why it must not run before the emitters.
+    this.certifyLanguageNamespaceRoutes(ctx)
 
     const detectedFrameworks: string[] = PY_FRAMEWORK_ORDER.filter((f) => ctx.frameworks[f])
     const detectedPatterns: string[] = []
@@ -4721,6 +4813,73 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       md.evidenceClass = "usage_contextual"
+    }
+  }
+
+  /**
+   * THE LANGUAGE-NAMESPACE CLAIM — certify the edges whose TARGET is a name in the
+   * interpreter's own builtin namespace.
+   *
+   * THE DEFECT THIS CLOSES. Python's runtime namespace is not a project, so `dict`, `tuple`,
+   * `object`, `Exception` and `ValueError` can never be answered by any key space this corpus
+   * builds — and the lane measures them as a named axis (`builtin`, 868 of 8,715 unresolved on
+   * its own 400-file draw; 461 of them `references`, 330 `calls`, 77 `extends`) while publishing
+   * NOTHING the arbiter reads. `causeOK` is 0 on every type of this lane, so clause 2 is
+   * satisfied vacuously: an unmarked external edge is indistinguishable from a broken one, and
+   * the gate says so (`incoming-gate.ts` docstring: *"an unmarked external edge is
+   * indistinguishable from a broken one, so it counts against the lane"*). This is the fleet's
+   * finding (a): the lane already computes the reason and publishes it on no key the gate reads.
+   *
+   * WHY A CLAIM AND NOT A RESOLUTION. The namespace claim is read ONLY where the target names
+   * nothing (`classifyEdge`'s `decls === 0` branch), so it CANNOT raise `resolved`, cannot move
+   * a tie-break, and cannot touch `collRes` — the axis this programme measures at ~75% wrong.
+   * Everything it can do is re-label an edge that is already a gap as a STATED, refutable one.
+   *
+   * FIVE GUARDS, each evidential:
+   *   1. the target is in `PY_BUILTIN_NAMESPACE` — the declared, closed list that IS the claim's
+   *      evidence (the interpreter's `builtins` namespace, one command to regenerate);
+   *   2. the file does not DECLARE that name itself (`declaredHere`) — `class Exception: ...` in
+   *      a real file makes the name a declaration, and the claim would then be false;
+   *   3. the file does not BIND it by an import (`boundByImport`) — `from mymod import
+   *      Exception` makes the name a local binding of this file, and python resolves it there
+   *      before the builtin namespace is ever consulted. Import bindings are NOT published as
+   *      symbols, so guard 2 alone does not cover them;
+   *   4. the edge type is one whose target names a thing rather than a member or a declaration
+   *      (`PY_NAMESPACE_CLAIM_TYPES`);
+   *   5. the edge's own reason code does not say the name is bound in this file
+   *      (`PY_NAMESPACE_REFUSING_REASONS`).
+   *
+   * One claim per edge, and an edge that already carries a claim keeps its mechanism — the rule
+   * zig's own post-pass states, so a reader can see WHICH mechanism verified what. THE TARGET IS
+   * NEVER REWRITTEN HERE: the value is additive metadata, so every pre-existing field of every
+   * edge this lane emitted is byte-identical.
+   */
+  private certifyLanguageNamespaceRoutes(ctx: PythonContext): void {
+    const declaredHere = new Set<string>()
+    for (const s of ctx.symbols) declaredHere.add(String(s.name))
+    // The same rule the module-variable publisher uses for "an import already binds this name"
+    // (`collectGlobalWriteNames`): an aliased row binds its alias, a namespace import binds its
+    // root, and a `from` row binds its items.
+    const boundByImport = new Set<string>()
+    for (const im of ctx.imports) {
+      if (im.alias) boundByImport.add(im.alias)
+      if (im.module && im.isNamespaceImport) boundByImport.add(im.module.split(".")[0]!)
+      if (!(im.items ?? []).includes("*")) {
+        for (const it of im.items ?? []) if (it !== "*") boundByImport.add(it)
+      }
+    }
+    for (const r of ctx.relationships) {
+      const md = r.metadata as Record<string, any> | undefined
+      if (!md || typeof md !== "object") continue
+      if (md.languageNamespace !== undefined) continue
+      const label = String(r.type ?? r.relationshipType ?? "")
+      if (!PY_NAMESPACE_CLAIM_TYPES.has(label)) continue
+      const tgt = String(r.target ?? "")
+      if (tgt.length === 0 || !PY_BUILTIN_NAMESPACE.has(tgt)) continue
+      if (declaredHere.has(tgt)) continue
+      if (boundByImport.has(tgt)) continue
+      if (PY_NAMESPACE_REFUSING_REASONS.has(String(md.reasonCode ?? ""))) continue
+      md.languageNamespace = [...PY_BUILTIN_NAMESPACE]
     }
   }
 

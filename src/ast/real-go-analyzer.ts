@@ -125,6 +125,34 @@ const GO_SUB_UNIT_REASON: Record<string, string> = {
 }
 
 /**
+ * THE GO STANDARD LIBRARY'S SINGLE-SEGMENT IMPORT PATHS — a CLOSED set, so membership is a
+ * DECIDABLE TEST rather than a shape heuristic (the same object graphql's five built-in scalars
+ * are). It exists because the import edge is the ONE surface in this lane that can carry a claim
+ * the arbiter can verify AND that costs nothing: `isStdlib` is one of the gate's recognised
+ * external keys (`script/m14/incoming-rule.ts` EXTERNAL_KEYS), while this lane's real reason for
+ * an import edge — `target_is_a_module_path_not_a_symbol` (`GO_SUB_UNIT_REASON` above) — rides on
+ * `metadata.reasonCode`, which the cause channel does not read and which a bare leaf target cannot
+ * reach anyway (bucket 3 requires the claim's base to BE the target's owner).
+ *
+ * WHY NOT THE FILE'S OWN `isGoStandardLibrary` (`:4407`): its last clause is
+ * `|| !stringIncludes(importPath, ".")` — a SWEEP that answers "the path carries no dot", which is
+ * true of a project-local `internal/util` too. Publishing THAT flag as an external claim would
+ * have fabricated externality for project-local imports; a closed list claims exactly its members.
+ * MEASURED on the 400-file stride: 830 of this lane's 2,740 unresolved imports are single-segment
+ * members of this set and all 830 verify; the sweep would have claimed all of those plus every
+ * dotless project-local path in the same population.
+ *
+ * DELIBERATELY CONSERVATIVE: a package left out leaves an edge unresolved (no harm), a package
+ * wrongly included fabricates a claim (the one direction this programme does not accept).
+ */
+const GO_STDLIB_SINGLE_SEGMENT = new Set<string>([
+  "bufio", "bytes", "cmp", "context", "crypto", "embed", "encoding", "errors", "expvar", "flag",
+  "fmt", "hash", "html", "image", "io", "iter", "log", "maps", "math", "mime", "net", "os",
+  "path", "plugin", "reflect", "regexp", "runtime", "slices", "sort", "strconv", "strings",
+  "structs", "sync", "syscall", "testing", "time", "unicode", "unique", "unsafe", "weak",
+])
+
+/**
  * GO26 (round 5): the ONE Go framework vocabulary for this analyzer.
  *
  * The file previously carried TWO of them, written independently:
@@ -393,7 +421,21 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.processGoImports(rootNode, imports)
 
     // PHASE 3b: Add DependsOn relationships for imports
+    //
+    // R7, THE IMPORT-PATH HALF. An EMPTY import path is not a dependency on nothing: Go's spec
+    // requires `ImportPath` to be a non-empty string and the compiler rejects the file, so the edge
+    // resolves to nothing and can never be followed by `src/ast/import-resolution.ts`. The guard
+    // SUPPRESSES the edge and COUNTS the suppression in `metadata.invalidImportPathCount`, because
+    // a guard that drops rows with nothing to show for it is indistinguishable from a guard that is
+    // not running — and the count is what a consumer can see (`go/imports-empty-path` pins both
+    // halves, and its FORBIDS carry the shape: the five real paths around the empty specs, two of
+    // them inside the same grouped block, must all still emit).
+    let invalidImportPathCount = 0
     for (const imp of imports) {
+      if ((imp.module ?? "").length === 0) {
+        invalidImportPathCount++
+        continue
+      }
       relationships.push({
         source: packageName || filePath,
         target: imp.module || "",
@@ -419,7 +461,25 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // single import and for each entry of a grouped one (the spec starts
         // at its path — an alias would share the line).
         ...(imp.range?.startLine ? { line_number: imp.range.startLine } : {}),
-        metadata: { isGoImportDep: true, isImport: true, packageName: imp.metadata?.packageName },
+        metadata: {
+          isGoImportDep: true,
+          isImport: true,
+          packageName: imp.metadata?.packageName,
+          // THE ONE EXTERNAL CLAIM AN IMPORT EDGE CAN CARRY, and it is a claim about the NAME'S
+          // ORIGIN that the corpus cannot falsify because it is not about the corpus: the module is
+          // a member of the Go standard library's own package set (`GO_STDLIB_SINGLE_SEGMENT`
+          // above). `isStdlib` is one of the gate's recognised EXTERNAL_KEYS, so this converts a
+          // silent hole into a STATED, verifiable claim — never into a resolution, and the rule
+          // reads it only where the target names nothing, so no `resolved` row can move.
+          //
+          // ATTACHED ONLY TO SINGLE-SEGMENT PATHS, because the rule reaches a multi-segment one
+          // (`encoding/json`) as a PATH: `pathLikeTarget` sends it to `externalUnverified`, which
+          // is a clause-1 failure exactly as `unresolved` is. Claiming there would move an edge
+          // from one failure column into another and make the table look better without answering
+          // anything — so it is not done. MEASURED on the 400-file stride: this covers 830 of the
+          // lane's 25,215 unresolved edges and all 830 verify; the other 24,385 are untouched.
+          ...(GO_STDLIB_SINGLE_SEGMENT.has(imp.module ?? "") ? { isStdlib: true } : {}),
+        },
       })
     }
 
@@ -537,6 +597,25 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // PHASE 5.6: #419-D evidence-tier classification for EVERY emitted
     // relationship (family rules — rust/c/cpp/cpp all classify; go did NOT,
     // so the completeness D-tier gate could never pin >=2 tiers for go).
+    //
+    // R7 CHOKE POINT — no relationship may carry an EMPTY endpoint, whichever of the push sites
+    // produced it, and the drops are COUNTED. It sits here, once, rather than as a guard per site,
+    // because each emitter reads a name from a node it believes is well formed and the grammar does
+    // not always deliver one: a guard per site fixes the site it was written for and leaves the
+    // others — which is exactly how the PHASE-3b import guard was bypassed by a raw-string spelling
+    // (`go/imports-empty-path`). The filter is the reason a recovered hole costs exactly the ONE
+    // edge whose name is unreadable and nothing else in the file: well-formed declarations either
+    // side of it keep their rows, and a VALID file drops nothing (`go/r7-empty-endpoints` pins the
+    // shapes and the zero, which is the control that tells an effective gate from an over-eager one).
+    let r7DroppedEdges = 0
+    {
+      const kept: ASTEngine.UniversalRelationship[] = []
+      for (const r of relationships) {
+        if (String(r.source ?? "").length > 0 && String(r.target ?? "").length > 0) kept.push(r)
+        else r7DroppedEdges++
+      }
+      if (r7DroppedEdges > 0) relationships.splice(0, relationships.length, ...kept)
+    }
     this.classifyEvidenceTier(relationships)
 
     // GO26 (round 5): one traversal, one number, two keys. The pre-fix code
@@ -581,6 +660,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         hasTypeInference: true,
         hasFrameworkIntelligence: true,
         analysisVersion: "3.0.1-go-iterative-stateless",
+        // R7's two counters, published because a suppression a consumer cannot see is a
+        // suppression it cannot trust: `r7DroppedEdges` is every relationship the choke point
+        // refused for an empty source or target, `invalidImportPathCount` is the import subset of
+        // them. A valid file reports 0/0, which is what makes a non-zero value evidence.
+        r7DroppedEdges,
+        invalidImportPathCount,
       },
     }
   }
@@ -797,14 +882,14 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // with no text: `src/cmd/compile/internal/syntax/testdata/tparams.go`
         // carries `func f[ /* ERROR empty type parameter list */ ]()`, and the
         // pinned grammar types the gap as a `type_identifier` whose `text` is
-        // "". The walk collected it like any other type name and published
+        // "". The walk used to collect it like any other type name and publish
         // `references f -> ""` — an endpoint no declaration can resolve, which
-        // is the defect class rule R7 names. Measured over the corpus: 1 such
-        // edge in 500 files, on a file the grammar cannot parse cleanly, and it
-        // was the ONLY empty endpoint in any of the ten types. The guard is here
-        // rather than at the push site because this collector is the only place
-        // that can tell a recovered hole from a written name.
-        if (!n.text) return
+        // is the defect class rule R7 names. It is NOT guarded here: the node is
+        // collected (once, by the dedupe below) and the CHOKE POINT before the
+        // evidence-tier classifier drops the row and COUNTS it in
+        // `metadata.r7DroppedEdges`. A guard at this site would make the drop
+        // invisible, which is the half `go/r7-empty-endpoints` pins — and the
+        // choke point also covers the other eight push sites by construction.
         if (!BUILTINS.has(n.text) && !out.some((x) => x.text === n.text)) out.push(n)
         return
       }
@@ -4251,7 +4336,15 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** Strip surrounding double quotes from an interpreted string literal. */
   private stripQuotedString(text: string): string {
-    if (text.length >= 2 && text[0] === '"' && text[text.length - 1] === '"') {
+    // A Go `string_lit` IS `interpreted_string_lit | raw_string_lit` (the pinned grammar's own
+    // alternative), so the delimiters are `"` OR a backtick pair — and only the interpreted pair was
+    // stripped. The omission was not cosmetic: the import path of ``import `...` `` reached the edge
+    // WITH its backticks, so an EMPTY raw string produced the target "``", which is not empty, and
+    // the empty-endpoint guard never saw it. A guard that a one-character difference in the source
+    // walks past is the worst shape a guard can have, because it looks effective
+    // (`go/imports-empty-path`, defect 2).
+    const q = text.length >= 2 ? text[0] : ""
+    if ((q === '"' || q === "`") && text[text.length - 1] === q) {
       return text.slice(1, -1)
     }
     return text

@@ -233,6 +233,20 @@ export const PROTOBUF_DECLARATION_SPEC = {
 const PROTOBUF_EXTERNAL_NAMESPACES: readonly string[] = [
   "google.protobuf",
   "google.api",
+  // `google.rpc` is the Google API's error-code/status surface (`google.rpc.Status`,
+  // `google.rpc.Code`, `google/rpc/error_details.proto`), and it was missing from a list whose
+  // job is exactly the runtime namespaces no admitted file declares FOR THE PROJECT THAT READS
+  // THEM. MEASURED whole population before adding it
+  // (validation/m14/fixtures/protobuf/measurements/claim-pricing.mts §A): the entry attaches to
+  // 30 `uses` edges — 17 read in projects that do NOT ship `google/rpc` (docker 6,
+  // waypoint 10, kubernetes 1) and are `unresolved` today, 13 read in `pb-googleapis`, which
+  // DOES ship `google/rpc/status.proto` and where the edges resolve today. The 13 are the
+  // `resolved -> extOK` shape §8.2 of `FOUR-CLAUSE-protobuf.md` already pre-authorized for
+  // `google.protobuf` (415 such moves): a per-file analyzer cannot know which project it is in,
+  // so a namespace claim is a statement about the LIST and the arbiter checks it against the
+  // list — never the symbol table. Widening an array is a visible, reviewable act, which is
+  // what makes the 13 acceptable in exchange for closing 17.
+  "google.rpc",
   "gogoproto",
   "protoc-gen-openapiv2",
 ]
@@ -1725,8 +1739,16 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
     // A claim that misses is REFUTED and `extFAIL` must stay 0, which is why the guard checks the
     // extension, the project boundary and the filesystem rather than assuming a path is a file.
     //
-    // `exports` is deliberately NOT claimed here: public re-exports carry the same path spelling,
-    // and that column was not priced. An unmeasured claim is what this lane keeps refusing to write.
+    // `exports` CARRIES THE SAME PATH SPELLING AND NOW GOES THROUGH THE SAME GUARDED ARM (task-31).
+    // It was left out because that column was "not priced"; it is priced now, and the price is the
+    // only thing that kept it out. MEASURED whole population
+    // (`validation/m14/fixtures/protobuf/measurements/claim-pricing.mts` §B): 4 `exports` edges,
+    // all 4 resolve to an admitted file through the ancestor-directory candidates this arm already
+    // builds, 0 refuted. A public re-export is a republication FACT, and "the project carries the
+    // file this re-export names" is exactly the evidence the file claim records — the source-path
+    // fallback below would have been the weaker claim (it says "no admitted path resolves the
+    // written string" about a file the project demonstrably has), so exports runs the same arm and
+    // not a special case.
     //
     // IT RUNS AFTER THE **SECOND** `drain()` AND BOTH HALVES OF THAT ARE NOT COSMETIC. The walk is an
     // explicit stack, so statements are visited — and their edges pushed — inside `drain()`; the
@@ -1736,7 +1758,21 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
     const claimRoot = typeof context?.projectRoot === "string" && context.projectRoot.length > 0 ? context.projectRoot : null
     if (claimRoot !== null) {
       for (const r of relationships) {
-        if (r.type !== ASTEngine.RelationshipType.Imports) continue
+        // `exports` (an `import public`) carries THE SAME path spelling as an import, so it runs
+        // through THE SAME guarded arm rather than a weaker special case. MEASURED whole
+        // population before allowing it in (`measurements/claim-pricing.mts` §B): 4 `exports`
+        // edges, and every one resolves to an admitted file — the written path is include-root
+        // relative (`google/protobuf/cpp_file_options.proto`) while the project carries it under
+        // `src/google/protobuf/cpp_file_options.proto`, which the ancestor-directory candidates
+        // this arm already builds reach exactly (candidate `src/…`, `statSync` confirmed). A
+        // file claim is the STRONGER evidence and it is the one this arm was built to produce;
+        // the source-path fallback below would also have verified, but it states the weaker fact
+        // ("no admitted path resolves the written string") about a file the project demonstrably
+        // has. 4/4 claimed · 0 refuted before wiring.
+        if (
+          r.type !== ASTEngine.RelationshipType.Imports &&
+          r.type !== ASTEngine.RelationshipType.Exports
+        ) continue
         const md = r.metadata as Record<string, unknown> | undefined
         if (!md || typeof md.importProjectFile === "string") continue
         const written = String(r.target ?? "")

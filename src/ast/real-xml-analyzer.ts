@@ -1,4 +1,6 @@
 import type { Node } from "web-tree-sitter"
+import { statSync } from "node:fs"
+import * as path from "node:path"
 import { ASTEngine } from "./engine"
 import { fileClaimForTarget } from "./file-claim"
 
@@ -389,6 +391,22 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     xml: "http://www.w3.org/XML/1998/namespace",
     xmlns: "http://www.w3.org/2000/xmlns/",
   }
+
+  /**
+   * THE LANE'S OWN FILE VOCABULARY, as ONE set with two readers — the two halves of the imports
+   * file claim must not be able to disagree about what a file of this lane is.
+   *
+   * The router maps exactly these seven extensions to language `xml`
+   * (`src/ast/language-detection.ts:197`, the M60 XML lane comment above it), the incoming gate's
+   * lane definition admits exactly these (`script/m14/incoming-gate.ts` LANES_B). The POSITIVE half
+   * of the claim passes them to `fileClaimForTarget` as the admitted set; the NEGATIVE half requires
+   * a bare target to end in one of them before it will call the target a file. A second spelling of
+   * the list in the same file would be a second rule, and the copy that drifted would be the one
+   * that mattered.
+   */
+  private static readonly IMPORT_FILE_EXTENSIONS: ReadonlySet<string> = new Set([
+    "xml", "xsd", "dtd", "svg", "xsl", "xslt", "rng",
+  ])
 
   /**
    * Transient per-attribute context, set by the element branch before its
@@ -3225,6 +3243,39 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `unresolved` and into `extOK` — a claim the project VERIFIES, which is what clause 1 asks for and is
    * a RESOLUTION in the owner's standard rather than a ruling. An edge whose path cannot be confirmed is
    * left exactly as it was: no claim, no refutation, extFAIL stays zero.
+   *
+   * ── THE NEGATIVE HALF OF THE SAME CLAIM, WHICH WAS THE UNSTATED HOLE ────────────────────────────
+   *
+   * The file claim above can only ever say "the file IS here". When the file is not here the edge said
+   * NOTHING checkable, and the incoming gate counted it as `unresolved` — this lane's largest unresolved
+   * class: **60 of its 72 whole-population unresolved edges (83.3 %), all of them `imports`** (39
+   * `schemaLocation` paths + 21 external-ID `SYSTEM` paths; measured at HEAD `fb93f6f18`, recorded in
+   * `validation/m14/verification/XML-FIX.md` §2.2). The analyzer already computes the reason —
+   * `importTargetClass` returns `resolvable: "file"` for exactly this shape (`:2780`) — and then
+   * publishes it on a key the gate does not read. That is the fleet-wide cause (a) of
+   * `RESIDUAL-CLASSIFICATION-41-LANES.md:20-34`, present on this lane.
+   *
+   * So the negative half is published as `sourcePathClaim`, the claim kind the arbiter ALREADY verifies
+   * (`SOURCE_PATH_CLAIM_KEY`, `script/m14/incoming-rule.ts:321-337`, `classifyEdge`'s inverted-polarity
+   * branch): *nothing the project ADMITS resolves to this written source string*. No new channel, no new
+   * marker spelling, no claim the project cannot check.
+   *
+   * WHY THIS CAN NEVER REFUTE, which is the property `extFAIL` 0 depends on: the gate's verdict for this
+   * claim is a pure function of `facts.files` (the admitted-file list), and `facts.files` is a SUBSET of
+   * the files that exist on disk. Before attaching, every spelling the gate's `sourcePathCandidates`
+   * tests — plus separator-normalised variants of them — is checked against the filesystem under the
+   * project root (`isFileAbsentFromProject`). If ANY candidate exists as a regular file, the claim is NOT
+   * attached and the edge is left exactly as it was. So "claim attached" implies "no candidate can be in
+   * `facts.files`" implies "the gate cannot refute it" — by construction, not by measurement luck.
+   *
+   * AND THE SHAPE GUARD IS NOT THE BARE-NAME LAUNDERING HOLE THE CLAIM'S OWN RULE WARNS ABOUT: the claim
+   * is attached only to an `imports` target the LANE classified `resolvable: "file"`, and only when it is
+   * spelled as a path (a separator) or ends in one of THIS LANE's seven admitted file extensions.
+   * `imports` targets are created from `SystemLiteral`/`schemaLocation` attribute text — a file reference
+   * by construction, never a declaration name — and a target ending in `.dtd`/`.xsd`/… cannot be a
+   * published symbol in this lane's key space in any ordinary document. What is refused is the bare word
+   * with no file spelling (`SYSTEM "foo"`), which is exactly where the "could also name a declaration"
+   * risk the claim's contract names actually lives.
    */
   private attachFileClaims(
     relationships: ASTEngine.UniversalRelationship[],
@@ -3243,12 +3294,77 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         projectRoot,
         filePath,
         written,
-        admittedExtensions: ["xml", "xsd", "dtd", "svg", "xsl", "xslt", "rng"],
+        admittedExtensions: [...RealXmlAnalyzer.IMPORT_FILE_EXTENSIONS],
       })
-      if (claim === null) continue
-      md.importProjectFile = claim
+      if (claim !== null) {
+        md.importProjectFile = claim
+        rel.metadata = md as ASTEngine.UniversalRelationship["metadata"]
+        continue
+      }
+      // THE NEGATIVE HALF — see the docstring above. `resolvable` is the class `importTargetClass`
+      // already computed for this edge, so this branch cannot reach a target the analyzer did not
+      // itself classify as a file.
+      if (md.resolvable !== "file") continue
+      if (!this.isPathShapedImportTarget(written)) continue
+      if (!this.isFileAbsentFromProject(projectRoot, written)) continue
+      md.sourcePathClaim = [written]
       rel.metadata = md as ASTEngine.UniversalRelationship["metadata"]
     }
+  }
+
+  /**
+   * IS THIS `imports` TARGET SPELLED AS A FILE? — the guard for the negative file claim.
+   *
+   * A target with a path separator is a path. A target with no separator is a FILE only when it
+   * carries a file EXTENSION this lane admits — the vocabulary comes from `IMPORT_FILE_EXTENSIONS`,
+   * the same set the positive file claim is checked against, so the two halves of the claim cannot
+   * disagree about what a file of this lane is. A bare word with no file spelling (`SYSTEM "foo"`)
+   * is refused, because that is the one shape that could also be a declaration name.
+   */
+  private isPathShapedImportTarget(written: string): boolean {
+    if (written.includes("/") || written.includes("\\")) return true
+    const dot = written.lastIndexOf(".")
+    if (dot <= 0 || dot === written.length - 1) return false
+    return RealXmlAnalyzer.IMPORT_FILE_EXTENSIONS.has(written.slice(dot + 1).toLowerCase())
+  }
+
+  /**
+   * NO SPELLING OF THIS TARGET IS A FILE UNDER THE PROJECT ROOT — the proof that the negative file
+   * claim cannot be refuted by the arbiter.
+   *
+   * The candidate arithmetic MIRRORS the gate's `sourcePathCandidates` (`incoming-rule.ts:344-353`:
+   * the written string, `./`-stripped, `../`-stripped, the dot-segment-joined path, the basename)
+   * and is a SUPERSET of it (separator normalisation is added), so a spelling the gate would test can
+   * never be missing here. A superset is the safe direction: a candidate this guard sees but the gate
+   * does not can only make the guard refuse a claim (the edge stays unresolved, never refuted).
+   *
+   * It is a REFUSAL, never a resolution: it returns true only when nothing was found, and its only
+   * effect is to suppress a claim.
+   */
+  private isFileAbsentFromProject(projectRoot: string, written: string): boolean {
+    const trimmed = written.trim()
+    const normalised = trimmed.replace(/\\/g, "/")
+    const segments = normalised.split("/").filter((s) => s.length > 0 && s !== "." && s !== "..")
+    const candidates = new Set<string>([
+      trimmed,
+      normalised,
+      normalised.replace(/^\.\//, ""),
+      normalised.replace(/^\.\.\//, ""),
+      segments.join("/"),
+      segments.length > 0 ? segments[segments.length - 1]! : "",
+    ])
+    for (const candidate of candidates) {
+      // A candidate the gate could never find in `facts.files` (which holds project-relative POSIX
+      // paths): absolute spellings, `..` escapes, and the empty string are not lookups to make.
+      if (candidate.length === 0 || candidate.startsWith("/")) continue
+      if (candidate === ".." || candidate.startsWith("../")) continue
+      try {
+        if (statSync(path.join(projectRoot, candidate)).isFile()) return false
+      } catch {
+        // Absent IS the answer this guard needs; only a found file stops the claim.
+      }
+    }
+    return true
   }
 
   private qualifySameFileTier(symbols: ASTEngine.UniversalSymbol[], relationships: ASTEngine.UniversalRelationship[]): void {

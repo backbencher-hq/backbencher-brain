@@ -3119,11 +3119,73 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isValueNotType = (leaf: string): boolean =>
       fileValues.has(leaf) || fileCallables.has(leaf) || NIM_LITERAL_KEYWORDS.indexOf(leaf) !== -1
 
+    /**
+     * IS THIS TYPE REFERENCE INSIDE A `concept` BODY? — the test `Self` needs, and the
+     * reason it is a shape test rather than a name list.
+     *
+     * `Self` is the type a `concept` body is written against: the compiler supplies it,
+     * and NO FILE DECLARES IT, so a `references` edge to it can never bind. But `Self` is
+     * not a reserved word the way `static` and `type` are — outside a concept body it is
+     * an ordinary identifier a project may declare — so suppressing it by name alone
+     * would be a claim about the language the language does not make. The grammar HAS the
+     * node (`concept_declaration`, `grammars/tree-sitter-nim/grammar.js:763`, whose
+     * `body` field is the block the concept's signatures live in), so the exact predicate
+     * is available and is used here.
+     *
+     * Measured on the whole 5,846-file `.nim` population
+     * (`validation/m14/fixtures/nim/residual-cause-census.mts --sample 0`): `references`
+     * unresolved 2,489, of which **`static` 403, `type` 241, `Self` 225** — with sites
+     * `template handleCR(writeToComment: static[bool] = false)`,
+     * `proc new*(_: type GraphqlRef): GraphqlRef =`, and
+     * `proc iGetShadowed(s: Self)` inside `ShadowConcept* = concept`. Nothing in that
+     * population declares any of the three (`inRunDecls 0` for each).
+     */
+    const insideConceptBody = (n: Node): boolean => {
+      let p: Node | null = n.parent
+      while (p) {
+        if (p.type === "concept_declaration") return true
+        p = p.parent
+      }
+      return false
+    }
+
     const push = (site: Node, relation: string, owner: { name: string; kind: string } | null): void => {
       if (site.type !== "identifier") return
       const leaf = site.text
       if (!leaf) return
       if (NIM_BUILTIN_TYPES.indexOf(leaf) !== -1) return
+      // ── A KEYWORD IN A TYPE POSITION IS NOT A TYPE ─────────────────────────────────
+      //
+      // `NIM_BUILTIN_TYPES` above is this same rule for the language's own type NAMES
+      // ("a `references` edge to one of these can never resolve to a declared type"), and
+      // it is incomplete in exactly one direction: it lists types, not reserved WORDS.
+      // Two constructs carry a TYPE but write a KEYWORD where the type goes, and the walk
+      // below read the keyword as if it were the referenced type:
+      //
+      //   `proc frmt: static[FormatStr]`   -> a `static` identifier in a type position
+      //   `proc new*(_: type GraphqlRef)`  -> a `type` identifier in a type position
+      //
+      // Neither can ever bind. Measured on the whole 5,846-file `.nim` population: 403
+      // `static` + 241 `type` = **644 of the 2,489 unresolved `references` edges
+      // (25.9%)**, with 0 declarations of either name anywhere in the run.
+      //
+      // THE SET IS THE TWO MEASURED WORDS AND NOT THE WHOLE OF `KEYWORD_LIKE`, and the
+      // reason is a measurement rather than a preference. The broad test
+      // (`isKeywordLike`, the predicate the `calls` pass at `:2827` and the `uses` pass at
+      // `:2918` already apply) was tried first and removed **873** edges where these two
+      // words account for **644 + `Self`'s 225 = 869**, i.e. it also removed 4 edges whose
+      // targets were never named. **And one of those 873 was a `resolved` reference**: Nim
+      // declares its own OPERATOR names with backticks in the standard library
+      // (`nim/lib/system.nim:89` ``proc `or`*(a, b: typedesc)``, `:92` `` `and` ``,
+      // `:95` `` `not` ``, `:777` `` `is` ``, `:857` `` `of` ``, `:764` `` `in` ``,
+      // `:109` `` `addr` ``, `:795` `` `isnot` ``, `nim/lib/posix/posix.nim:790`
+      // `` `raise` ``), so a reference to one of those names CAN bind and a blanket
+      // keyword sweep silently deletes a real dependency. A repair that trades one
+      // resolution for 872 holes is not a repair; the measured two-word set trades zero.
+      if (NIM_TYPE_POSITION_KEYWORDS.indexOf(leaf) !== -1) return
+      // `Self` is the concept body's implicit type — the shape test above, plus the file's
+      // OWN declaration set, so a file that declares a real `Self` keeps its edges.
+      if (leaf === NIM_CONCEPT_SELF && !fileTypes.has(leaf) && insideConceptBody(site)) return
       if (genericParamNames.has(leaf)) return
       if (isValueNotType(leaf)) return
       if (!owner) return
@@ -4153,6 +4215,38 @@ const PARAMETER_MODIFIERS = ["sink", "out", "var", "let", "static"]
  *  `extends` to them is a guaranteed-dangling edge. Every OTHER base is a real
  *  inheritance fact the store resolves. */
 const NIM_COMPILER_ROOTS = new Set(["RootObj", "RootRef", "Object", "rootObj"])
+
+/**
+ * The type a `concept` body is written against. The compiler supplies it and no file
+ * declares it — the same standing `NIM_COMPILER_ROOTS` has for the inheritance roots, and
+ * the same standing `auto`/`untyped`/`typedesc` have in `NIM_BUILTIN_TYPES`.
+ *
+ * Kept as its own name rather than appended to `NIM_BUILTIN_TYPES` because the predicate
+ * is DIFFERENT: `auto` is a type name the compiler reserves everywhere, while `Self` is
+ * only the implicit type INSIDE a `concept` body — outside one it is an ordinary
+ * identifier a project may declare. `push` therefore tests this one against the grammar
+ * shape (`concept_declaration`) and the file's own type set, and `NIM_BUILTIN_TYPES`
+ * against nothing but the name.
+ */
+const NIM_CONCEPT_SELF = "Self"
+
+/**
+ * The reserved words that stand WHERE A TYPE GOES, and the two the residual census named.
+ *
+ *   `static[FormatStr]` — the compile-time type class; `static` is the keyword and the
+ *                         referenced type is the argument inside the brackets.
+ *   `type GraphqlRef`   — a typedesc parameter; `type` is the keyword and `GraphqlRef`
+ *                         is the referenced type.
+ *
+ * Deliberately NOT the whole of `KEYWORD_LIKE`: see the measurement beside the test in
+ * `makeDeclaredTypeRefHelpers`. Nim's standard library declares backticked OPERATOR names
+ * (`` `or` ``, `` `and` ``, `` `not` ``, `` `is` ``, `` `of` ``, `` `in` ``, `` `addr` ``,
+ * `` `isnot` ``, `` `raise` ``) which are in `KEYWORD_LIKE` and CAN be reference targets,
+ * so a blanket keyword sweep deletes real dependencies.
+ */
+const NIM_TYPE_POSITION_KEYWORDS = ["static", "type"]
+
+
 
 /** Type names of the language and its `system` module: a `references` edge to
  *  one of these can never resolve to a declared type. */

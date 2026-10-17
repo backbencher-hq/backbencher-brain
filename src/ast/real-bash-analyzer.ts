@@ -1366,6 +1366,61 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * THE SHELL'S OWN VARIABLE NAMES, ON THE KEY THE INCOMING GATE READS — the one part of this
+   * lane's residual an analyzer can answer.
+   *
+   * ## The defect this closes is the fleet's finding (a), and this lane had it
+   *
+   * The fact was already computed: `isShellDefined` (`SHELL_DEFINED_VARS`, the interpreter's own
+   * name space) is set on every read of a name the shell binds. But `script/m14/incoming-rule.ts`
+   * reads external claims from a CLOSED list of keys (`EXTERNAL_KEYS`, `:56-66`) and
+   * `isShellDefined` is not one of them — so on the gate's own 400-file stride **125 unresolved
+   * `uses` edges carried the reason and `extOK` read 0**, the spelling problem the fleet brief
+   * records for html's `isExternalResource`. The reason is republished here as a CLAIM
+   * (`isExternal`, the key BD12 already uses for path-invoked commands) with the evidence naming
+   * which list spoke.
+   *
+   * ## Why this is sound where the CALL marker was withdrawn (and stays withdrawn)
+   *
+   * `SHELL_DEFINED_VARS` is the shell's name space, not a guess about the corpus: `BASH_SOURCE`,
+   * `PIPESTATUS`, `UID`, `SECONDS` … are bound by the interpreter running the script, so no file
+   * of any project declares them and the claim cannot be refuted by a sourced library the way a
+   * bare command name can (a file may define `grep` as a function — measured 82 of 435 refuted,
+   * which is why `externalCommandEvidence` below stayed path-invoked only and
+   * `bash/incoming-external-marker-bd12` forbids the wider marker).
+   * MEASURED on this population with `probe-bash-residual-causes.mts --repo-wide` (all 3,178
+   * admitted files of the 118 sampled repositories parsed into a declaration index): **123 of the
+   * 125 marked edges name nothing the project declares; 2 do** (`HOSTNAME` read in
+   * `kubernetes/cluster/addons/addon-manager/kube-addons.sh` while another file of that project
+   * binds it) — the false-in-fact class, reported rather than hidden, and the same shape the `c`
+   * lane published (55 of 2,686, its `zig`/musl counter-example).
+   *
+   * ## The guard, and why it is not optional
+   *
+   * NOT EMITTED WHEN THIS FILE ITSELF BINDS THE NAME. `HOSTNAME=$(hostname)` makes a later
+   * `$HOSTNAME` a read of a PROJECT variable, and the claim would then be false about the file in
+   * hand. The guard asks the question `variableDeclaredInFile` already answers, from the same
+   * `declSites` index — one rule, not two.
+   *
+   * ## What the claim can and cannot do to the table
+   *
+   * `classifyEdge` reaches the verifier only where the key space declares NOTHING by that name
+   * (`incoming-rule.ts:1147`), and a bare identifier is looked up directly (`:815`) — so the
+   * outcome is `externalVerified` (the project confirms it) or, if a declaration exists,
+   * `externalRefuted`, which counts AGAINST the lane. It can never raise `resolved`, never turn an
+   * ambiguous edge into anything, and never touch `collRes` or the binding-intent split.
+   */
+  private externalShellVariableEvidence(
+    name: string,
+    declSites: Map<string, { owner: string; line: number; kind: string }[]>,
+  ): Record<string, unknown> {
+    if (!SHELL_DEFINED_VARS.has(name)) return {}
+    const cands = declSites.get(name)
+    if (cands !== undefined && cands.length > 0) return {}
+    return { isExternal: true, externalEvidence: "shellDefinedVariable" }
+  }
+
+  /**
    * A `$name` read in a file that also declares `name` as a FUNCTION.
    *
    * `resolveDeclaration` declines here, and correctly so: it is asked "is this name
@@ -1865,6 +1920,11 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           // a consumer can tell `${BASH_SOURCE[0]}` from a project variable
           // instead of seeing 23 undiagnosable edges to one shell name.
           ...(SHELL_DEFINED_VARS.has(name) ? { isShellDefined: true } : {}),
+          // THE SAME FACT ON THE KEY THE INCOMING GATE READS -- see
+          // `externalShellVariableEvidence`. A read of a name the interpreter itself binds is
+          // not a read of a project declaration, and until this the lane published that only
+          // as `isShellDefined`, which `incoming-rule.ts` does not read as a claim.
+          ...this.externalShellVariableEvidence(name, declSites),
           // Why a `uses` edge does not name a line, when the reason is that this file
           // binds the name as a variable nowhere. `resolveDeclaration` publishes nothing
           // in that case and the edge looks identical to one that resolved, so the

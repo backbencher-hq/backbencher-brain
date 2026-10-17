@@ -103,6 +103,54 @@ const EXTENSION_TO_DEFINITION: Record<string, string> = {
   InputObjectTypeExtension: "InputObjectTypeDefinition",
 }
 
+/**
+ * THE FIVE SCALARS THE SPECIFICATION PREDECLARES — a CLOSED list, and the claim's whole evidence.
+ *
+ * `graphql-js/src/type/scalars.ts:321-329` is the reference implementation's own statement of it:
+ * *"All built-in scalar types defined by the GraphQL specification"*, five entries —
+ * `GraphQLString` `GraphQLInt` `GraphQLFloat` `GraphQLBoolean` `GraphQLID` — with
+ * `isSpecifiedScalarType` beside it at `:331`. The list is not derived from the corpus (a
+ * corpus-derived list would be an authority that is not one); it is the language's.
+ *
+ * ## Why a declared_type edge to one of them needs a CLAIM at all
+ *
+ * No document in any project declares them, so no key space can answer them: measured over the
+ * whole admitted population (1,606 `.graphql` files, 22 repos, `probe-graphql-residual-causes.mts`),
+ * **`references` carries 23,972 unresolved edges and 23,814 of them name one of these five.** They
+ * are the lane's largest single cause with no answer — 46.3% of the lane's 51,443 whole-population
+ * unresolved edges.
+ *
+ * ## Why the claim is `languageNamespace` and not the two obvious alternatives
+ *
+ * The `owner` marker (`isExternal` and its siblings) is READ ONLY WHERE `decls === 0`, so on a bare
+ * name it verifies by construction and no corpus can ever refute it — the free pass measured in
+ * `validation/m14/verification/OWNER-CLAIM-BASIS-PROPOSAL.md`. This lane had already refused it for
+ * this exact class in writing ("it cannot be refuted, and `unresolved` would fall while nothing got
+ * truer"). And the DECLARED-CAUSE channel (`baseBeyondRunScope`, the source of the gate's `causeOK`)
+ * cannot express the cause either: `classifyEdge` accepts a declared cause only where the declared
+ * base EQUALS the target's own owner, and a bare target has no owner — run it and `String` reads
+ * `causeRefuted`, i.e. a clause-4 `causeFAIL` counted against the lane.
+ *
+ * What is left is the arbiter's authorized claim for a closed language vocabulary: the target's ROOT
+ * is checked against THIS LIST, carried on the edge, and never against the symbol table. It is
+ * refutable by construction — an edge whose target the list does not carry reads `externalRefuted` —
+ * which is why the analyzer attaches it ONLY where the target IS one of the five at `addDeclaredType`.
+ *
+ * ## The price, measured and disclosed rather than discovered later
+ *
+ * The namespace branch is checked BEFORE the declaration count, so the claim also re-reads the edges
+ * whose name a project answers anyway: over the whole population, 23,814 `unresolved` edges become
+ * `externalVerified` — the gain — and, beside it, **10,118 `resolved` and 1,398 `ambiguous` edges
+ * become `externalVerified` too**. Attributed rather than summarised: four corpus files declare a
+ * built-in scalar (`InvalidSchemaWithBuiltins.schema.graphql`, `GitHub.graphql`, `ChatSchema.graphql`,
+ * `introspection.graphql`) and account for the 10,118; the 1,398 are a bare-name collision with two
+ * FIELDS called `ID` in one project, because the key space answers a name through any symbol carrying
+ * it. hcl (32 edges) and protobuf (415) disclosed the same consequence of the same design
+ * (`validation/m14/verification/NAMESPACE-CLAIM-IMPLEMENTATION.md` §5-§8).
+ */
+const SPEC_BUILTIN_SCALARS: readonly string[] = ["String", "Int", "Float", "Boolean", "ID"]
+const SPEC_BUILTIN_SCALAR_SET: ReadonlySet<string> = new Set(SPEC_BUILTIN_SCALARS)
+
 /** A directive applied to a declaration or a selection, with its constant arguments. */
 interface DirectiveApplication {
   name: string
@@ -446,6 +494,21 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       addRelationship(source, target, ASTEngine.RelationshipType.References, line, role, {
         ...metadata,
         relationshipType: "declared_type",
+        // THE CLAIM — attached HERE and nowhere else, because this closure is the ONE place every
+        // declared-type position passes through (directive argument, field return, field argument,
+        // input field, variable) and the only place where `target` is guaranteed to be a TYPE NAME
+        // rather than a member spelling. A union member list, an export row and a field selection are
+        // NOT type clauses, so the 48 edges of those shapes whose target happens to spell one of the
+        // five are left alone and stay `unresolved` — a measured boundary, not an oversight.
+        //
+        // The reason travels WITH the claim (`languageNamespaceBasis`) so the disposition can be read
+        // off the edge; it is not a key any claim channel reads, so it cannot misfire.
+        ...(SPEC_BUILTIN_SCALAR_SET.has(target)
+          ? {
+              languageNamespace: [...SPEC_BUILTIN_SCALARS],
+              languageNamespaceBasis: "graphql-spec-builtin-scalar",
+            }
+          : {}),
       })
     }
 

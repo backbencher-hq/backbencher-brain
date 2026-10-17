@@ -2605,6 +2605,107 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // ══════════════════════════════════════════════════════════════════════════════════════
+    // FS-P18. THE DECLARED CAUSE — the reason this walk already holds, published on the key
+    // the incoming gate's bucket-3 channel reads (`baseBeyondRunScope`, `incoming-rule.ts:274`).
+    //
+    // WHY THIS EXISTS, and it is a defect about a KEY rather than about a reason. This lane
+    // computes a reason for every edge it cannot bind (`metadata.targetResolution`, assigned
+    // a few hundred lines up) and the gate's clause 2 was satisfied VACUOUSLY: the gate
+    // printed `clause 2 ok … no edge carries a declared cause (residual 26288)`, because the
+    // only key it reads for a stated cause was never written. A classification published on a
+    // key nobody reads is not a classification; the fleet census names this lane as that
+    // instance (`RESIDUAL-CLASSIFICATION-41-LANES.md:23-25`).
+    //
+    // WHAT IS PUBLISHED. `baseBeyondRunScope` carries the BASE — the gate's own definition of
+    // it, everything before the target's last dot — and it says only what a per-file walk can
+    // truthfully say: *this run could not reach that base*. It is NOT an external claim, and
+    // the difference is the whole reason the channel exists: `isExternal` claims a fact about
+    // the PROJECT, which a file cannot check and which this lane measured 17.9%-70.4% TRUE at
+    // project scope before retiring it (FS-P8, below); `baseBeyondRunScope` claims a fact about
+    // the RUN, which the gate verifies against the edge's own target and never folds into a
+    // resolution.
+    //
+    // THE FIVE CHECKS. Each one is a way the claim would be FALSE or REFUTED rather than a
+    // convention, and all five are computed here rather than assumed from the class name:
+    //
+    //   1. THE CLASS is one whose own meaning is "this file does not publish this path". The
+    //      whitelist is explicit and the classes that assert the OPPOSITE are absent from it
+    //      on purpose: `self-member` and `base-member` name a base THIS FILE published (the
+    //      enclosing type, the resolved base), and `opened-module` names a module this file
+    //      OPENED — in all three the base was within the run's reach, so bucket 3's sentence
+    //      would be false. Measured on the gate's own 400-file stride: those three classes
+    //      hold 188 + 6 + 49 unresolved edges, 201 of them owner-shaped, and every one is
+    //      left unclaimed.
+    //   2. NOT PROJECT-INDEX-REFINED. FS-P10 renames a class to `in-project-*` when the RUN's
+    //      project index answered the name positively — the run could look, and it did, so
+    //      "beyond this run's reach" would be a false statement about a base it just found.
+    //   3. THE BASE IS ONE IDENTIFIER SEGMENT, which is the gate's own spelling test
+    //      (`incoming-rule.ts:1152-1156`) and the only shape where `targetOwner(target)` can
+    //      equal the reason. A base with a dot (or a bare target) reads `causeRefuted` — a
+    //      clause-4 MUST-BE-ZERO column — so this check is what keeps the change from moving
+    //      16,817 edges from `unresolved` into `causeFAIL` instead of into `causeOK`.
+    //   4. THE RUN NEITHER PUBLISHED NOR OPENED THE BASE, checked against the COMPLETE published
+    //      sets (the walk has finished, which is what makes this decidable here and not at
+    //      emit time). This is the check that refuses 1,018 of the 8,129 owner-shaped edges in
+    //      these classes on the gate's stride — 617 of them already visible to the replica's
+    //      narrower "name or qualifiedName" reach test, whose examples are
+    //      `Bolero/tests/Unit.Client/Templating.fs:246 -> File.Nested1` (the file publishes
+    //      `File`) and `Deedle/src/Deedle.Parquet/Parquet.fs:466 -> Frame.addCol` (the file
+    //      opened `Frame`). The remaining 401 are opened HEAD segments the replica does not
+    //      model: `open BenchmarkDotNet.Attributes` puts `BenchmarkDotNet` — the base of that
+    //      very `open` edge — into `openedScopes`, so the claim is refused rather than made
+    //      about a namespace the file just opened.
+    //   5. NO EXTERNAL CLAIM IS ON THE EDGE. Bucket 3 and the external books are mutually
+    //      exclusive by contract, and an edge carrying both is `causeRefuted` BEFORE its count
+    //      is read — "I could not see it" and "it is outside the population" are two different
+    //      statements and a lane that makes both has claimed nothing.
+    //
+    // WHAT IT CANNOT DO, stated because a reader will otherwise assume more: it cannot raise
+    // `resolved` (the gate reads it only where the target names nothing, so it can only
+    // re-label a gap), it cannot move `collRes` (nothing about any target changes), and it
+    // does not touch `bare-external` — 11,531 unresolved edges, the lane's largest bucket,
+    // whose targets have NO owner for the reason to name and are therefore refused by check 3
+    // rather than by a decision here.
+    const CAUSE_BASE_CLASSES = new Set([
+      "external-type-or-module",    // the owner is module-like and NOT opened here (:537, :548)
+      "external-namespace",         // the namespace path is not an identity this file minted (:2428)
+      "module-member",              // `penult.leaf`, the two-segment form unpublished here (:532)
+      "base-member-external",       // the base type is not in this file (:520, :2439)
+      "interface-member-external",  // ditto, for the interface form (:2439)
+    ])
+    const CAUSE_BASE_SHAPE = /^[A-Za-z_$][A-Za-z0-9_$]*$/
+    // The external-claim keys, spelled as `incoming-rule.ts` EXTERNAL_KEYS spells them. A copy
+    // rather than an import because this analyzer imports nothing from the gate layer, and the
+    // cost of divergence is bounded and loud: a key added there and not here would let check 5
+    // miss it, and the gate would report the conflict as `causeRefuted` — visible in clause 4
+    // rather than silent. Named here so the next reader knows which copy to update.
+    const EXTERNAL_CLAIM_KEYS = [
+      "zigExternalRef", "nimStdlibModule", "isExternal", "isExternalTarget", "external",
+      "externalRef", "isStdlib", "stdlibModule", "moduleNamingEdges", "markAsExternal",
+      "isExternalBase", "importOutsideProject",
+    ]
+    for (const rel of relationships) {
+      const md = rel.metadata as Record<string, any> | undefined
+      if (!md) continue
+      if (!CAUSE_BASE_CLASSES.has(String(md.targetResolution ?? ""))) continue
+      if (md.projectIndexRefined === true) continue
+      if (EXTERNAL_CLAIM_KEYS.some((k) => md[k] === true || (Array.isArray(md[k]) && md[k].length > 0))) continue
+      const target = String(rel.target ?? "")
+      const dot = target.lastIndexOf(".")
+      if (dot <= 0) continue
+      const base = target.slice(0, dot)
+      if (!CAUSE_BASE_SHAPE.test(base)) continue
+      // THE RUN'S REACH, read off the sets the walk filled: a base this file published, named as
+      // a module/namespace header, opened, or bound as a local was NOT out of reach.
+      if (
+        publishedNames.has(base) || publishedQnames.has(base) || publishedTypeNames.has(base) ||
+        moduleNames.has(base) || namespaceNames.has(base) ||
+        openedScopes.has(base) || localNames.has(base)
+      ) continue
+      md.baseBeyondRunScope = base
+    }
+
     // FS-P8 — THE EXTERNAL CLAIM, and it is a claim the incoming gate can REFUTE.
     //
     // `incoming-gate.ts fsharp fs` asked this lane's incoming question for the first time on

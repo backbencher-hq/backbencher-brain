@@ -132,6 +132,80 @@ function isSelfOverride(declaring: string | undefined | null, ownerName: string 
 }
 
 /**
+ * THE JVM PLATFORM NAMESPACES — the closed, declared list a `languageNamespace` claim certifies.
+ *
+ * ## The gap this closes, measured
+ *
+ * `bun run script/m14/incoming-gate.ts scala scala 400` reads **6,733 unresolved of 21,792 edges**,
+ * and the bucket the lane can honestly answer is the target that names a **JVM platform type the
+ * corpus cannot contain**: `java.util.concurrent.TimeUnit`, `java.lang.management.ManagementFactory`,
+ * `java.util.concurrent.atomic.AtomicInteger`, `javax.management.ObjectName`. Those are real
+ * dependencies, they are not project declarations, and before this claim they were
+ * indistinguishable from a broken edge.
+ *
+ * The lane had no external marker of ANY kind: `real-scala-analyzer.ts` published zero
+ * `EXTERNAL_KEYS` spellings, so a JDK type and a typo read the same in every column. Six sibling
+ * lanes already carry this exact claim kind (`real-zig-analyzer.ts:1377` `["std"]`,
+ * `real-powershell-analyzer.ts:3087` `["System"]`, `real-protobuf-analyzer.ts:743`,
+ * `real-python-analyzer.ts:4882`, `real-graphql-analyzer.ts:508`, `real-hcl-analyzer.ts`), which is
+ * why the mechanism is copied rather than invented.
+ *
+ * ## The list is a MEASUREMENT, not a taste
+ *
+ * Whole scala corpus (19,168 files, 3 repos), 2026-10-16:
+ *
+ *   * files declaring a package under `java|javax|jdk|sun`: **1** —
+ *     `scala3/tests/pos/t8367.scala:1` writes `package java.lang` (the file's own comment calls the
+ *     package definition "pretty sneaky"), and it declares `class Throwable`. `certifyJvmPlatformTargets`
+ *     refuses EVERY claim in a file whose own module is under a platform root, which is exactly that
+ *     file, and the per-target `declaredHere` guard is the second line of the same defence.
+ *   * `jdk` is DELIBERATELY ABSENT: `scala3/library/src/scala/jdk/package.scala:49` declares
+ *     `package object jdk`, so `jdk.X` is a spelling a scala file can mean a PROJECT declaration by —
+ *     the protobuf-`google`/hcl-29 false-external shape. It costs nothing: 0 dotted `jdk.*` targets
+ *     exist in the measured population.
+ *   * bare declarations NAMED `java` DO exist (`tests/pos/i5033b.scala:1` declares `class java`,
+ *     `Evaluator.scala:16` declares `val java`), which is why a claim requires a DOT in the target —
+ *     14 of the 117 candidate edges in the measured population are a BARE `java` read and every one
+ *     of them is refused by that rule.
+ *
+ * ## Why it cannot make anything worse, structurally
+ *
+ * `classifyEdge` reads a namespace claim as the SOLE AUTHORITY for its edge and returns before the
+ * declaration count (`script/m14/incoming-rule.ts:1073-1090`), so a claim on an edge whose target IS
+ * a project declaration would relabel a RESOLUTION as `externalVerified` — a hiding risk, not a
+ * laundering one. It is measured at zero on this population: of the 117 edges whose target leads with
+ * a platform root, **0 are `resolved` or `ambiguous`** (census §H). The claim is refutable by
+ * construction too — a target whose leading segments match no listed root reads `externalRefuted`,
+ * which is what the 10 REFUTED import claims already in this lane's TABLE 1 look like.
+ */
+const SCALA_JVM_PLATFORM_ROOTS: ReadonlySet<string> = new Set(["java", "javax", "sun"])
+
+/**
+ * THE CLAIM SPELLINGS THE ARBITER READS, all of them (`script/m14/incoming-rule.ts:164-339`).
+ *
+ * One claim per edge: an edge already carrying one keeps ITS mechanism, so a reader can always see
+ * which mechanism spoke (property 3 of the namespace design). `isExternalBase`/`isStdlib`/… are
+ * absent from this lane's emission sites today, and they are listed anyway because the guard's job is
+ * the CONTRACT — a future site that adds one must not have a second claim stacked on top of it.
+ */
+const SCALA_CLAIM_KEYS_ON_EDGE: readonly string[] = [
+  "localBinding",
+  "remoteRef",
+  "importProjectFile",
+  "languageNamespace",
+  "sourcePathClaim",
+  "importOutsideProject",
+  "baseBeyondRunScope",
+  "isExternal",
+  "isExternalTarget",
+  "isStdlib",
+  "stdlibModule",
+  "isExternalBase",
+  "external",
+  "externalRef",
+]
+
+/**
  * SCALA RESERVED WORDS — the words a declaration may NOT be named (SLS 1.1,
  * plus the Scala 3 additions), each measured to produce an ERROR node in every
  * identifier position by the pinned grammar
@@ -1296,6 +1370,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.collectExpressionUses(rootNode, relationships)
 
     this.classifyEvidenceTier(relationships)
+    // AFTER the tier pass, so nothing downstream can be re-keyed by a marker it never saw — the same
+    // ordering reason the kotlin lane's platform marker is applied at the end of analyze.
+    // AFTER the tier pass, so nothing downstream can be re-keyed by a marker it never saw — the same
+    // ordering reason the kotlin lane's platform marker is applied at the end of analyze.
+    this.certifyJvmPlatformTargets(rootNode, relationships, symbols)
 
     return {
       symbols,
@@ -2586,6 +2665,71 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (c) stack.push(c)
       }
     }
+  }
+
+  /**
+   * CERTIFY THE JVM PLATFORM TARGETS — one pass over the finished edge list, additive.
+   *
+   * The claim, the list and the measurements behind it are on `SCALA_JVM_PLATFORM_ROOTS` above. This
+   * method is the mechanism; these are the four guards, each one forced by a measured case rather than
+   * by taste:
+   *
+   *   1. **DOTTED ONLY.** A bare target is refused even when it IS a platform word, because a scala
+   *      file can and does declare that name (`class java`, `val java`). 14 of the 117 candidate edges
+   *      in the measured population are a bare `java` read; every one of them is refused here.
+   *   2. **NOT A NAME THIS FILE DECLARES.** The same guard zig uses, and the second line of defence
+   *      behind guard 4.
+   *   3. **NO SECOND CLAIM.** An edge already certified by another mechanism keeps it.
+   *   4. **NOT IN A FILE THAT WRITES IN A PLATFORM NAMESPACE.** `scala3/tests/pos/t8367.scala` declares
+   *      `package java.lang` and a `class Throwable` in it; a file whose own module leads with a
+   *      platform root is writing IN the namespace, so nothing it names is certified.
+   *
+   * RETURNS the number of edges certified, so a caller can print it — the count is not asserted here
+   * because the analyzer publishes no file-level metadata key for it (adding one would change a payload
+   * every fixture reader sees, for a number the gate already reports).
+   */
+  private certifyJvmPlatformTargets(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+  ): number {
+    const moduleName = this.scalaModuleName(rootNode)
+    const headDot = moduleName.indexOf(".")
+    const ownModuleHead =
+      moduleName === RealScalaAnalyzer.FILE_MODULE ? "" : headDot < 0 ? moduleName : moduleName.slice(0, headDot)
+    if (SCALA_JVM_PLATFORM_ROOTS.has(ownModuleHead)) return 0
+
+    const declaredHere = new Set<string>()
+    for (const s of symbols) {
+      if (s.name) declaredHere.add(String(s.name))
+      const q = (s as { qualifiedName?: unknown }).qualifiedName
+      if (typeof q === "string" && q.length > 0) declaredHere.add(q)
+    }
+
+    let certified = 0
+    for (const rel of relationships) {
+      const md = rel.metadata as Record<string, unknown> | undefined
+      if (!md || typeof md !== "object") continue
+      // Guard 3 is checked FIRST so a claimed edge is never even read for a target shape.
+      let claimed = false
+      for (const k of SCALA_CLAIM_KEYS_ON_EDGE) {
+        if (md[k] !== undefined) {
+          claimed = true
+          break
+        }
+      }
+      if (claimed) continue
+      const target = String(rel.target ?? "")
+      // Guard 1: a dot is what makes the leading segment a NAMESPACE rather than a name.
+      const dot = target.indexOf(".")
+      if (dot <= 0) continue
+      // Guard 4's per-target half (the module half ran above): a word in the target's own spelling.
+      if (declaredHere.has(target)) continue
+      if (!SCALA_JVM_PLATFORM_ROOTS.has(target.slice(0, dot))) continue
+      md.languageNamespace = [...SCALA_JVM_PLATFORM_ROOTS]
+      certified++
+    }
+    return certified
   }
 
   private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {

@@ -23,6 +23,7 @@
 // vars they initialize are first-class symbols, the rune CALLS are not.
 
 import type { Node, Tree } from "web-tree-sitter"
+import { readdirSync, readFileSync, statSync } from "node:fs"
 import * as path from "path"
 import { ASTEngine } from "./engine"
 import { RealJavaScriptAnalyzer } from "./real-javascript-analyzer"
@@ -53,6 +54,59 @@ function shiftMetadataLineMirrors(md: Record<string, unknown> | undefined, lineO
       md[k] = v.map((x) => (typeof x === "number" ? x + lineOffset : x))
     }
   }
+}
+
+// ============================================================================
+// THE PACKAGES A PROJECT PUBLISHES — the evidence behind every claim below
+// ============================================================================
+
+/**
+ * ONTOLOGY-WORKSTREAM SVELTE4 (2026-10-16). The lane's unresolved residual is 1,570
+ * edges and most of it is not a missing computation — it is a reason the analyzer
+ * already holds and publishes on a key nothing reads (the fleet-wide finding in
+ * `validation/m14/verification/RESIDUAL-CLASSIFICATION-41-LANES.md`, finding (a)).
+ *
+ * A bare module specifier is NOT automatically external, and THIS lane's corpus is the
+ * counterexample rather than a hypothetical one: the `svelte` checkout declares the
+ * package name `svelte` in `package.json`, and its own tests import `svelte`,
+ * `svelte/store` and `svelte/elements` — measured on this lane's own 400-file draw,
+ * 24 of the 55 `svelte`-rooted import records sit in that repository and every one of
+ * them names a declaration that IS in the checkout (`packages/svelte/src/…`). A shape
+ * test alone would publish a false external claim on all 24.
+ *
+ * So the test is a FACT, not a shape: the names the project itself publishes. The read
+ * is bounded and cached per project root — one `package.json` at the root plus one per
+ * `packages/*` and `apps/*` (3 files for this corpus's monorepos; 6 project roots in
+ * the whole admitted population) — and it happens only when a bare specifier needs the
+ * test. Absent, unreadable or non-JSON files contribute NO name, which fails toward
+ * not claiming: a name we do not have cannot excuse an external claim.
+ */
+const PROJECT_PUBLISHED_PACKAGES = new Map<string, Set<string>>()
+
+function projectPublishedPackages(projectRoot: string): Set<string> {
+  const cached = PROJECT_PUBLISHED_PACKAGES.get(projectRoot)
+  if (cached) return cached
+  const names = new Set<string>()
+  const read = (p: string): void => {
+    try {
+      const j = JSON.parse(readFileSync(p, "utf8")) as { name?: unknown }
+      if (typeof j?.name === "string" && j.name.trim() !== "") names.add(j.name.trim())
+    } catch {
+      // absent / unreadable / not JSON — no name, and no name means no excuse
+    }
+  }
+  read(path.join(projectRoot, "package.json"))
+  for (const dir of ["packages", "apps"]) {
+    let entries: string[]
+    try {
+      entries = readdirSync(path.join(projectRoot, dir))
+    } catch {
+      continue
+    }
+    for (const e of entries) read(path.join(projectRoot, dir, e, "package.json"))
+  }
+  PROJECT_PUBLISHED_PACKAGES.set(projectRoot, names)
+  return names
 }
 
 // ============================================================================
@@ -1430,6 +1484,13 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships.length = 0
     relationships.push(...uniqueRelationships)
 
+    // ONTOLOGY-WORKSTREAM SVELTE4 (2026-10-16): publish the resolution claims this lane
+    // already holds — the module half of an import, and the provenance of an imported
+    // binding — on the keys the arbiter reads. AFTER the dedupe, so each surviving edge is
+    // decided once. See `publishResolutionClaims` for what is claimed, what is deliberately
+    // NOT claimed, and why no target is rebased.
+    this.publishResolutionClaims(relationships, imports, symbols, filePath, context?.projectRoot)
+
     // Evidence tiers on EVERY edge (#419-D) — same rules as the Vue/JVM family.
     this.classifyEvidenceTier(relationships)
     const cyclomaticComplexity = 1 + templateDecisions + scriptDecisions
@@ -1838,6 +1899,148 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       out.push({ name: item, isNamespace, module })
     }
     return out
+  }
+
+  /**
+   * IS THIS MODULE SPECIFIER A PACKAGE THE PROJECT DOES NOT PUBLISH?
+   *
+   * The NEGATIVE cases are the whole rule, and each one is a shape that would otherwise be
+   * claimed wrongly:
+   *
+   *   * `.` / `..` / `/` — a FILE, not a package. That question belongs to the file claim
+   *     (`importProjectFile`) and is answered separately below.
+   *   * `$lib`, `$app`, `$env` — a framework ALIAS into the project's own tree. In this
+   *     corpus the app root is not the project root (`shadcn-svelte/docs/src/lib`), so the
+   *     analyzer cannot even spell the file it names; calling it external would be a false
+   *     statement that the admitted file list happens to confirm, which is the laundering
+   *     shape and is refused here rather than discovered later.
+   *   * a URI scheme (`virtual:`, `http:`, `data:`) — not a package at all.
+   *   * a bare name the project PUBLISHES (`projectPublishedPackages`) — the monorepo
+   *     self-reference, measured above at 24 import records in the `svelte` checkout.
+   *
+   * A single-segment specifier IS eligible, and that is deliberately wider than the shape
+   * rule `sourcePathClaim`'s own docstring states for FILE targets (`"dependency"`,
+   * `"SubProjectB"`): a module specifier with no separator and no extension cannot name a
+   * relative file in ESM, and the thing that stops a self-reference is the published-name
+   * table rather than the shape. Measured after the change: 0 of the resulting claims was
+   * refuted by the project's own file list.
+   */
+  private isExternalPackageSpecifier(spec: string, published: Set<string>): boolean {
+    if (spec === "" || spec.startsWith(".") || spec.startsWith("/") || spec.startsWith("$")) return false
+    if (spec.includes("\\") || /\s/.test(spec)) return false
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(spec)) return false
+    const segs = spec.split("/").filter((s) => s !== "")
+    if (segs.length === 0) return false
+    const root = spec.startsWith("@") ? segs.slice(0, 2).join("/") : segs[0]
+    if (root === "" || root === "@") return false
+    return !published.has(root)
+  }
+
+  /**
+   * PUBLISH THE CLAIM THE LANE ALREADY HOLDS — the module half of an import edge, and the
+   * PROVENANCE of an imported binding.
+   *
+   * THE DEFECT IS NOT A MISSING COMPUTATION. Three of this lane's four largest unresolved
+   * shapes are edges where the answer is already computed and thrown away one line later:
+   *
+   *   imports (616 of 616 unresolved)  the edge publishes `<specifier>:<item>` and
+   *     `metadata.module` carries the specifier, but NO claim key is set — so a dependency
+   *     the project HAS (142 relative `.svelte` specifiers in this draw) and a dependency the
+   *     project CANNOT have (bare npm packages) both read "no answer". `externalClaimOf`
+   *     reads `importProjectFile` and `sourcePathClaim`; neither was ever set here.
+   *   instantiates / calls / uses / references  a target whose ROOT binding is an import
+   *     from a package the project does not publish (`TrendingUpIcon` from
+   *     `@lucide/svelte/icons/minus`, `AccordionPrimitive.Root` from `bits-ui`) names a
+   *     declaration outside the population — which is precisely what `isExternal` claims,
+   *     and what the checkout's own package names can PROVE from provenance instead of
+   *     guessing from the name.
+   *
+   * WHAT IS DELIBERATELY NOT DONE, and this is the trap refused in CODE rather than in
+   * prose: **no target is ever rebased.** `<Card.Root/>` is not rewritten to `Root` or to
+   * the module's file stem `card`; `$lib/utils.js:cn` is not rewritten to `cn`. That rewrite
+   * moves edges out of `unresolved` and into `collRes` — a tie-break the indexer measures
+   * 37,318 of 49,729 WRONG — and the names it would land on in this corpus (`Root`,
+   * `Header`, `Title`, `Trigger`, `Button`, `card`) are exactly the registry's recurring
+   * ones. A claim is not a resolution: `classifyEdge` reads an external marker or a cause
+   * ONLY where the target names nothing (`decls === 0`), so no edge here can become
+   * `resolved` and the ambiguity columns cannot move.
+   *
+   * AND THE `$lib` / RELATIVE NON-FILE HALF IS LEFT ALONE ON PURPOSE. 251 `$lib` import
+   * edges and the 214 component/read edges bound to `$lib` or relative modules name
+   * declarations that ARE in the project (the module resolves under `src/lib`; the component
+   * is `button.svelte`'s own `button` symbol). No honest claim exists for them, and the
+   * module-namespace member (`<Card.Root/>`, 419 edges — this lane's top cause) has no
+   * name-keyed identity at all. Both are ruled in `validation/m14/verification/SVELTE-FIX.md`
+   * §2 with the file-level evidence.
+   */
+  private publishResolutionClaims(
+    relationships: ASTEngine.UniversalRelationship[],
+    imports: ASTEngine.ImportInfo[],
+    symbols: ASTEngine.UniversalSymbol[],
+    filePath: string,
+    projectRoot: string | undefined,
+  ): void {
+    // NO ROOT, NO CLAIM. Every rule below is a statement about the PROJECT — is this file in
+    // it, is this package its own — and an analyzer that cannot name the project cannot make
+    // one. Per-file callers (the fixture runner, the differential's probe arm) pass no
+    // `projectRoot`, so for them this method returns before touching an edge.
+    if (!projectRoot) return
+    const published = projectPublishedPackages(projectRoot)
+    /** local binding name -> the module specifier that binds it (first binding wins). */
+    const bindings = new Map<string, string>()
+    for (const imp of imports) {
+      for (const b of this.importLocalBindings(imp)) if (!bindings.has(b.name)) bindings.set(b.name, b.module)
+    }
+    const declaredHere = new Set(symbols.map((s) => String(s.name ?? "")))
+    /** a plain identifier or a dotted identifier chain — never a path, a URI or a member spelling */
+    const IDENT_CHAIN = /^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*$/
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      const tgt = String(r.target ?? "")
+      if (String(r.type) === ASTEngine.RelationshipType.Imports) {
+        const spec = typeof md.module === "string" ? md.module : ""
+        if (spec === "") continue
+        if (spec.startsWith("./") || spec.startsWith("../")) {
+          // (a) THE FILE CLAIM — a relative specifier that NAMES A `.svelte` FILE IN THIS
+          //     PROJECT. The candidate is the repo-relative spelling the arbiter's own file
+          //     list uses (`path.relative(projectRoot, …)`, POSIX separators), and it is
+          //     emitted only when the file is actually there: a DANGLING relative import is a
+          //     real defect and must not be excused by a claim the file list would refute.
+          //     A `.js`/`.ts` specifier is left alone — the lane's population holds `.svelte`
+          //     files only, so a claim naming a `.ts` file would be refuted by construction.
+          if (!spec.endsWith(".svelte")) continue
+          const abs = path.resolve(path.dirname(filePath), spec)
+          let isFile = false
+          try {
+            isFile = statSync(abs).isFile()
+          } catch {
+            isFile = false
+          }
+          if (!isFile) continue
+          const rel = path.relative(projectRoot, abs).split(path.sep).join("/")
+          if (rel === "" || rel.startsWith("..")) continue
+          md.importProjectFile = rel
+          continue
+        }
+        // (b) THE SOURCE-PATH CLAIM — a bare specifier for a package the project does not
+        //     publish. Its own falsifier is the admitted file list: the moment the checkout
+        //     carries a file that resolves to this written specifier, the claim is refuted
+        //     and counted against the lane.
+        if (this.isExternalPackageSpecifier(spec, published)) md.sourcePathClaim = [spec]
+        continue
+      }
+      // (c) THE OWNER CLAIM — a target whose ROOT binding is an import from a package the
+      //     project does not publish. Provenance, not a name guess: the analyzer read the
+      //     import that binds the name. A target the file ITSELF declares is skipped,
+      //     because there the claim would be refutable by the file's own declaration.
+      if (!IDENT_CHAIN.test(tgt)) continue
+      const root = tgt.includes(".") ? tgt.slice(0, tgt.indexOf(".")) : tgt
+      if (declaredHere.has(root)) continue
+      const spec = bindings.get(root)
+      if (spec === undefined) continue
+      if (!this.isExternalPackageSpecifier(spec, published)) continue
+      md.isExternal = true
+    }
   }
 
   // ============================================================================

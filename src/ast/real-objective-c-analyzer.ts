@@ -1,5 +1,10 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+// OC-E BINDING SPELLING. The separator is the FAMILY constant (`src/ast/types.ts:190`), imported
+// rather than re-spelled: the store's leaf extractor (`pool-worker.ts:812-833`), the gate's binding
+// verifier (`incoming-rule.ts:506-510`) and dart/php/julia/fsharp all read THIS spelling, and a
+// local copy of `"\u0000"` would be a second rule that could drift from the first.
+import { BINDING_SEP } from "./types"
 
 // OC-E: implicit names and constant spellings are never value reads —
 // `self`/`super` are implicit receivers, `nil`/`Nil`/`NULL`/`YES`/`NO`/
@@ -39,6 +44,36 @@ function isUnterminatedDeclaration(node: any): boolean {
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i)
     if (child && child.isMissing && child.type === ";") return true
+  }
+  return false
+}
+
+// The same refusal, for a declaration the grammar could not parse at all. An `ERROR` node
+// inside a declaration means the grammar guessed at the shape, and what it produced is a
+// fragment of the source line — so any name read out of it is a name the analyzer invented.
+//
+// Measured (afnetworking, AFURLSessionManager.m): `@property (...) AFURLSessionDid…Block
+// didFinishEventsForBackgroundURLSession AF_API_UNAVAILABLE(macos);` mis-nests as a
+// `declaration` whose children are the property header's own words, ERROR nodes, and a
+// `function_declarator` named `AF_API_UNAVAILABLE` with a parameter list `(macos)`. The
+// prototype arm published that macro as a Function symbol, and the OC-ONT-8 exports family
+// published it as this unit's surface — a name no file declares. 2 declarations over the two
+// production corpora (the other is the same file's AF_API_AVAILABLE line).
+//
+// Deliberately ERROR-only: an `isMissing` node is a separate, narrower class the caller
+// already tests for (the missing terminator), and widening this to every `isMissing` child
+// would refuse declarations whose only fault is an unbalanced paren inside a macro body.
+function hasParseError(node: any): boolean {
+  const stack: any[] = [node]
+  let guard = 0
+  while (stack.length > 0 && guard++ < 20000) {
+    const n = stack.pop()
+    if (!n) continue
+    if (n.type === "ERROR") return true
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i)
+      if (c) stack.push(c)
+    }
   }
   return false
 }
@@ -103,6 +138,32 @@ const OBJC_FRAMEWORK_PATTERNS: Record<string, string[]> = {
 // declaration, and 162 of 169 corpus headers would each manufacture an edge per
 // symbol. A convention the grammar cannot see must not be turned into a graph
 // edge; it is declared as a limitation with the count attached.
+// OC-ONT-8: the symbol kinds that can BE a translation unit's published surface.
+//
+// A class, a protocol (`@interface`/`@protocol`), a `typedef`, an enum, a struct/union, a
+// function and a variable are file-scope DECLARATIONS, and objective-c/C gives each of them
+// linkage. A METHOD, a PROPERTY and an enum MEMBER are members of one of those, and
+// membership is what `contains` says — publishing a selector as the unit's surface would
+// claim the unit defines a name it only owns.
+//
+// WHY THIS SET EXISTS RATHER THAN "every top-level symbol". Measured over the two
+// production corpora: with the member kinds allowed, 777 export rows were produced of which
+// 108 sat on `method` symbols that carry no `ownerName` — methods DECLARED inside a
+// `@protocol`, which this lane leaves unowned (a pre-existing symbol-level gap, reported and
+// not repaired here because repairing it moves `contains` for every protocol in the
+// corpus). The kind test is over the analyzer's own symbol model, not over source text.
+const OBJC_LINKAGE_UNIT_KINDS: ReadonlySet<string> = new Set([
+  ASTEngine.SymbolKind.Class,
+  ASTEngine.SymbolKind.Interface,
+  ASTEngine.SymbolKind.Struct,
+  ASTEngine.SymbolKind.Union,
+  ASTEngine.SymbolKind.Enum,
+  ASTEngine.SymbolKind.Type,
+  ASTEngine.SymbolKind.Function,
+  ASTEngine.SymbolKind.Variable,
+  ASTEngine.SymbolKind.Constant,
+])
+
 const OBJC_EXPORT_MARKERS: ReadonlySet<string> = new Set([
   // Foundation's spelling of `extern __attribute__((visibility("default")))` —
   // the marker every framework header uses for its published surface.
@@ -159,6 +220,24 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const blockFrameStack: Array<Set<string>> = []
     const globals = new Set<string>()
     const classMembers = new Map<string, Set<string>>()
+    // OC-ONT-4: class name -> superclass, read from the same-file `extends` clause the
+    // `@interface` already declares. `[[super alloc] init]` allocates a SUPERCLASS
+    // instance and the superclass is only nameable when a clause in THIS translation unit
+    // says so: a `.m` with its `@interface` in a header cannot resolve it, and naming
+    // `super` instead would publish a keyword no file declares. Filled as the walk
+    // reaches each class declaration, and the declaration always precedes its
+    // `@implementation` in the file, so a `[super alloc]` in a body reads a filled map.
+    const classSuper = new Map<string, string>()
+    // OC-ONT-8: the linkage inventory the `exports` family is derived from. A file-scope
+    // declaration is published to the units that import this file exactly when it has
+    // EXTERNAL linkage, and `static` is the one spelling of the opposite (C99 6.2.2p5,
+    // which Objective-C inherits verbatim). `internalLinkage` holds the names a `static`
+    // removed; `exportMarkers`/`exportLineByName` hold the marker spelling and the line of
+    // each declaration that carried one, so a marker row keeps naming the marker it rests
+    // on while the EDGE itself is emitted once, in the post-pass, from the symbol table.
+    const internalLinkage = new Set<string>()
+    const exportMarkers = new Map<string, string>()
+    const exportLineByName = new Map<string, number>()
     // OC-F (second review): same-file enum case names — `case Red:` and
     // `x == Alpha` reference enum members as values. NS_ENUM/NS_OPTIONS
     // definitions live in headers (out of unit, silent by design); in-file
@@ -316,13 +395,19 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
               fileLevel: true,
             },
           })
+          // The `references` twin carries its OWN reason code (honesty §4.1: every row below
+          // 1.0 names why). An `#include`/`#import` names a HEADER PATH — exact as written,
+          // but whether that path resolves to a file in this repository is not checked here
+          // and for a system framework never can be. A clang module's row below keeps a
+          // DIFFERENT code, because a module is not a header path: one code for both forms
+          // would call an unresolved path and an unverifiable module name the same fact.
           relationships.push({
             source: "root",
             target: modName,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
             line_number: this.nodeLine(modNode ?? node),
-            metadata: { isObjCImport: true, isObjCModuleImport: false },
+            metadata: { isObjCImport: true, isObjCModuleImport: false, reasonCode: "include-target-not-resolved" },
           })
         }
       }
@@ -361,7 +446,10 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
             line_number: this.nodeLine(nameNode ?? node),
-            metadata: { isObjCImport: true, isObjCModuleImport: true },
+            // Its OWN code, not the include's: the target names a MODULE and nothing in this
+            // walk knows whether the build defines a module under that name. Pinned by
+            // objc/module-imports ("the sub-1.0 twin carries its OWN reason code").
+            metadata: { isObjCImport: true, isObjCModuleImport: true, reasonCode: "clang-module-name-not-resolved" },
           })
           relationships.push({
             source: "root",
@@ -418,45 +506,36 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
             // Categories can ALSO declare protocol conformance:
             // `@interface NSString (Cat) <NSCoding>` — the class genuinely
-            // adopts the protocol (same parameterized_arguments shape as a
-            // plain class). Emit implements sourced from the EXTENDED class
-            // (family convention: swift extension protocol adoption).
-            for (let ci = 0; ci < node.namedChildCount; ci++) {
-              const cn = node.namedChild(ci)
-              if (cn && cn.type === "parameterized_arguments") {
-                for (let pj = 0; pj < cn.namedChildCount; pj++) {
-                  const pn = cn.namedChild(pj)
-                  if (pn && (pn.type === "type_identifier" || pn.type === "identifier" || pn.type === "type_name")) {
-                    relationships.push({ source: nameNode.text, target: pn.text, type: ASTEngine.RelationshipType.Implements, confidence: 1.0, line_number: this.nodeLine(pn), metadata: { objcSpecific: true, isProtocol: true, isCategoryProtocol: true } })
-                  }
-                }
-              }
+            // adopts the protocol. Emit implements sourced from the EXTENDED
+            // class (family convention: swift extension protocol adoption).
+            //
+            // OC-ONT-6: the adoption list is selected by POSITION, not by shape,
+            // because a class EXTENSION re-declares the enclosing class's generic
+            // TYPE PARAMETERS in front of its `()` with the very same
+            // `parameterized_arguments`: `@interface Cache <KeyType, ObjectType> ()`
+            // published `implements Cache -> KeyType`. A category's genuine list sits
+            // AFTER the `(`, so the two are mirror images and only a positional rule
+            // separates them (objc/generics-and-reason-codes pins both).
+            for (const p of this.objcInheritanceLists(node).protocols) {
+              relationships.push({ source: nameNode.text, target: p.name, type: ASTEngine.RelationshipType.Implements, confidence: 1.0, line_number: this.nodeLine(p.node), metadata: { objcSpecific: true, isProtocol: true, isCategoryProtocol: true } })
             }
           } else {
             // Plain class: extract superclass + protocols for relationships.
-            let foundName = false
-            let superName: string | null = null
-            // The node each inherited name was read from. A name captured as a string has no
-            // line, and the M59.A7 contract asks for the line of the NAME.
-            let superNode: Node | null = null
-            let protocols: string[] = []
-            const protocolNodes: Node[] = []
-            for (let ci = 0; ci < node.namedChildCount; ci++) {
-              const cn = node.namedChild(ci)
-              if (!cn) continue
-              if (cn.type === "identifier" && !foundName) { foundName = true; continue }
-              // Pinned grammar: superclass is the plain identifier after `:`;
-              // protocols live under parameterized_arguments > type_name.
-              if ((cn.type === "type_identifier" || cn.type === "identifier") && !superName) { superName = cn.text; superNode = cn }
-              if (cn.type === "parameterized_arguments") {
-                for (let pj = 0; pj < cn.namedChildCount; pj++) {
-                  const pn = cn.namedChild(pj)
-                  if (pn && (pn.type === "type_identifier" || pn.type === "identifier" || pn.type === "type_name")) { protocols.push(pn.text); protocolNodes.push(pn) }
-                }
-              }
-            }
+            //
+            // OC-ONT-6: `<...>` is NOT always a protocol list. All three of a
+            // lightweight-generic class's lists are `parameterized_arguments`, so the
+            // adoption list is picked by POSITION — see `objcInheritanceLists` for the
+            // rule and the fabricated edges it removes (`implements Cache -> KeyType`).
+            const { superClass: superName, superNode, protocols: protocolList } =
+              this.objcInheritanceLists(node)
+            const protocols: string[] = protocolList.map((p) => p.name)
+            // OC-ONT-4: remember the clause for `[[super alloc] ...]` inside this class's
+            // methods. An `@implementation` may also restate it, so the later declaration
+            // refines rather than blanks an entry (a bare `@implementation Foo` carries no
+            // colon and must not erase the `@interface Foo : Bar` already recorded).
+            if (superName) classSuper.set(nameNode.text, superName)
             if (superName) { relationships.push({ source: nameNode.text, target: superName, type: ASTEngine.RelationshipType.Extends, confidence: 1.0, line_number: this.nodeLine(superNode ?? nameNode), metadata: { objcSpecific: true } }) }
-            for (let pk = 0; pk < protocols.length; pk++) { relationships.push({ source: nameNode.text, target: protocols[pk], type: ASTEngine.RelationshipType.Implements, confidence: 1.0, line_number: this.nodeLine(protocolNodes[pk] ?? nameNode), metadata: { objcSpecific: true, isProtocol: true } }) }
+            for (const p of protocolList) { relationships.push({ source: nameNode.text, target: p.name, type: ASTEngine.RelationshipType.Implements, confidence: 1.0, line_number: this.nodeLine(p.node ?? nameNode), metadata: { objcSpecific: true, isProtocol: true } }) }
             symbols.push({
               name: nameNode.text,
               kind: ASTEngine.SymbolKind.Class,
@@ -543,6 +622,17 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       else if (node.type === "function_definition") {
         const nameNode = this.findFunctionName(node)
         if (nameNode) {
+          // OC-ONT-8: `static NSInteger helper(...) {}` is a DEFINITION with internal
+          // linkage — the helper is a real symbol and a real call target, but it is not
+          // part of what this translation unit publishes. 50 of the corpus's file-scope
+          // function definitions carried `static` and every one was published public.
+          for (let si = 0; si < node.namedChildCount; si++) {
+            const sc = node.namedChild(si)
+            if (sc && sc.type === "storage_class_specifier" && sc.text.trim() === "static") {
+              internalLinkage.add(nameNode.text)
+              break
+            }
+          }
           nextActiveScope = nameNode.text
           // OC-E: file-scope C functions open a fresh value frame with no
           // enclosing class (their locals are the richest bare-read source
@@ -745,18 +835,27 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
           // identifier in reach is a specifier macro. Traversal still descends
           // either way — the walk below is driven by this branch's return
           // state, not by the loop — so nothing nested is skipped.
-          if (!isUnterminatedDeclaration(node)) {
+          if (!isUnterminatedDeclaration(node) && !hasParseError(node)) {
             // The export marker slot, read once for the whole declaration: an
             // Objective-C/C export marker (`FOUNDATION_EXPORT`, `extern`) is a
             // NAMED `storage_class_specifier` the grammar emits, which is what
             // makes the `exports` edge declaration-backed rather than a spelling
             // matched in source text.
+            //
+            // OC-ONT-8: the same slot is ALSO where `static` is read, because internal
+            // linkage (C99 6.2.2p5) is the one spelling that REMOVES a file-scope
+            // declaration from this unit's published surface. Measured over the pinned
+            // corpus before the rule existed: 50 file-scope function_definitions and 67
+            // file-scope declarations carried `static` and every one was published
+            // `visibility: "public"` — asserting an importability the language denies.
             let exportMarker: string | null = null
+            let storageStatic = false
             for (let si = 0; si < node.namedChildCount; si++) {
               const sc = node.namedChild(si)
               if (!sc || sc.type !== "storage_class_specifier") continue
               const st = sc.text.trim()
-              if (OBJC_EXPORT_MARKERS.has(st)) { exportMarker = st; break }
+              if (st === "static") storageStatic = true
+              if (!exportMarker && OBJC_EXPORT_MARKERS.has(st)) exportMarker = st
             }
             for (let di = 0; di < node.namedChildCount; di++) {
               const dc = node.namedChild(di)
@@ -815,21 +914,17 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // symbol in this file, and `fileLevel` is what lets the store name
                 // the importing FILE on the source half (the same key c and
                 // powershell set for exactly this situation).
-                if (exportMarker) {
-                  relationships.push({
-                    source: "root",
-                    target: dname,
-                    type: ASTEngine.RelationshipType.Exports,
-                    confidence: 1.0,
-                    line_number: this.nodeLine(node),
-                    metadata: {
-                      isObjCExport: true,
-                      relationshipType: "objc_exported_declaration",
-                      exportMarker,
-                      fileLevel: true,
-                    },
-                  })
-                }
+                // OC-ONT-8: the DECLARATION is recorded here and the export EDGE is
+                // emitted in the post-pass, once every symbol of the file is known. The
+                // reason is that the two things an export row needs come from different
+                // places: the marker and the linkage come from THIS node, while the name
+                // that can actually be exported is the SYMBOL the declaration produces —
+                // and a declaration whose declarator is a phantom (the unterminated
+                // stacked-macro shape, afnetworking AFURLRequestSerialization.h:31)
+                // produces no symbol, so it must publish no edge. Emitting here keyed the
+                // row on the declarator TEXT, which is how a phantom could be exported.
+                if (storageStatic) internalLinkage.add(dname)
+                if (exportMarker) { exportMarkers.set(dname, exportMarker); exportLineByName.set(dname, this.nodeLine(node)) }
               }
             }
           }
@@ -900,8 +995,32 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
               const receiver = node.namedChild(0)
               if (receiver) {
                 if (receiver.type === "identifier" || receiver.type === "type_identifier") {
-                  receiverLeaf = receiver.text
-                  recvTargetNode = receiver
+                  // OC-ONT-4: `[[self alloc] init]` allocates an instance of the
+                  // RECEIVER'S OWN CLASS, and `[[super alloc] init]` one of its
+                  // superclass. `self`/`super` are the implicit receiver KEYWORDS — no file
+                  // declares them and no consumer can resolve them — so the pre-fix code
+                  // published `instantiates <method> -> self`, 24 of 507 corpus edges
+                  // (4.7%), naming a keyword. The enclosing class is already resolved here
+                  // (`owner`), and `super` resolves from the same-file extends clause.
+                  // Where neither is knowable the row is NOT published: a target that names
+                  // a keyword is a worse answer than no row, and the oracle divergence
+                  // instrument classifies exactly this refusal as the analyzer being right
+                  // (script/m60/objc-oracle-divergence.ts, `instantiates->self`).
+                  // objc/linkage-and-imports pins the resolved pair
+                  // (`duplicate -> Serializer`, the SUPERCLASS, and no row naming `super`).
+                  const keyword = receiver.text === "self" || receiver.text === "super" ? receiver.text : null
+                  if (keyword) {
+                    const resolved = keyword === "self" ? owner : classSuper.get(owner)
+                    // `super` must name the SUPERCLASS, never the enclosing class: naming the
+                    // subclass would invert the edge (objc/linkage-and-imports forbids it).
+                    if (resolved && resolved !== "global") {
+                      receiverLeaf = resolved
+                      recvTargetNode = receiver
+                    }
+                  } else {
+                    receiverLeaf = receiver.text
+                    recvTargetNode = receiver
+                  }
                 } else if (receiver.type === "message_expression") {
                   // Nested: [[Logger alloc] ...] — the inner message's receiver
                   // is the class. If the inner selector is itself alloc/new,
@@ -917,16 +1036,28 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
                 }
               }
               if (receiverLeaf) {
-                relationships.push({ source: activeScope, target: receiverLeaf, type: ASTEngine.RelationshipType.Instantiates, confidence: 0.9, line_number: this.nodeLine(recvTargetNode ?? node), metadata: { isObjCAlloc: true } })
+                // Honesty §4.1: `[Foo alloc]` names the allocator's RECEIVER in this
+                // translation unit — the name is exact — but whether that name denotes a
+                // class this build can see as an allocator (`+alloc` on a class declared
+                // elsewhere, a class extension in a header, a macro spelling a factory) is
+                // not checked across files. That is the doubt, so it is the code
+                // (objc/generics-and-reason-codes pins the word).
+                relationships.push({ source: activeScope, target: receiverLeaf, type: ASTEngine.RelationshipType.Instantiates, confidence: 0.9, line_number: this.nodeLine(recvTargetNode ?? node), metadata: { isObjCAlloc: true, reasonCode: "allocator-receiver-not-cross-file-checked" } })
               }
             } else {
+              // Honesty §4.1: the row is below 1.0 and now says why. A message send names a
+              // SELECTOR; which class implements it is decided at runtime, so the edge is
+              // dynamic dispatch even when the receiver's class is known in this file. The
+              // C-call producer below keeps a DIFFERENT code — one code for both would call
+              // a runtime dispatch and an unresolved translation unit the same fact
+              // (objc/generics-and-reason-codes and objc/selector-attributes pin the pair).
               relationships.push({
                 source: activeScope,
                 target: msgSel,
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.95,
                 line_number: this.nodeLine(this.fullMessageSelectorNode(node) ?? node),
-                metadata: { isMessageExpression: true }
+                metadata: { isMessageExpression: true, reasonCode: "dynamic-dispatch-selector" }
               })
             }
             // OC-E bare reads inside the send: the receiver (namedChild(0)
@@ -966,14 +1097,22 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   type: ASTEngine.RelationshipType.Uses,
                   confidence: 0.9,
                   line_number: this.nodeLine(kk.n),
-                  metadata: { isBareRead: true, isMessageArgument: !this.sameNode(kk.n, recvNode) },
+                  metadata: { isBareRead: true, isMessageArgument: !this.sameNode(kk.n, recvNode), reasonCode: "value-read-by-scope-inference" },
                 })
               }
             }
           }
        }
       else if (node.type === "call_expression") {
-        const funcNode = this.findChild(node, (n) => n.type === "identifier")
+        // The grammar FIELDS the callee as `function`: an `identifier` for a C call and a
+        // `field_expression` for `self.blockProp(x)` (probe-verified on the pinned wasm,
+        // 2026-10). The old code looked only for a direct `identifier` child, so a callee
+        // reached through a FIELD produced NO `calls` row at all while the same
+        // `field_expression` still produced its `uses` row — the call was invisible.
+        // Measured over the router's 322 admitted files before this branch existed
+        // (script/m60/objc-call-shape-probe.ts): identifier 3,615 sites -> 2,277 edges,
+        // field_expression 823 sites / 44 callee names -> 0 edges.
+        const funcNode = node.childForFieldName("function") ?? this.findChild(node, (n) => n.type === "identifier")
         // OC-G (second review): `@protocol(P)` parses as at_expression >
         // call_expression with callee `protocol` — a compiler directive,
         // not an invocation (OC-R2 @selector parity: directives name,
@@ -989,6 +1128,30 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
           return false
         })()
         if (funcNode && activeScope !== "global" && isInBody && !(inAtDirective && funcNode.text === "protocol")) {
+          if (funcNode.type === "field_expression") {
+            // A FIELD-INVOKED callee (`self.progressHandler(3)`). The name a consumer can
+            // resolve is the FIELD's, never the receiver's: for a chain the outermost
+            // `field_expression`'s own `field` IS the innermost field
+            // (`self.sink.onTap(1)` -> `onTap`), and naming `sink` would name a value.
+            //
+            // The row is deliberately NOT the C branch's: the callee name is exact here
+            // too, but what is undetermined is the KIND of callable the field holds — a
+            // block, a function pointer, or (in a .mm) a C++ member — so it carries its
+            // own code `field-callee-kind-not-determined`. Collapsing it onto
+            // `callee-not-resolved-in-unit` would say a translation-unit binding is
+            // unresolved (objc/field-invocation forbids exactly that).
+            const fieldNode = funcNode.childForFieldName("field") ?? this.findChild(funcNode, (n) => n.type === "field_identifier")
+            if (fieldNode && fieldNode.text.trim()) {
+              relationships.push({
+                source: activeScope,
+                target: fieldNode.text,
+                type: ASTEngine.RelationshipType.Calls,
+                confidence: 0.95,
+                line_number: this.nodeLine(fieldNode),
+                metadata: { isFieldInvocation: true, reasonCode: "field-callee-kind-not-determined" }
+              })
+            }
+          } else {
             relationships.push({
               source: activeScope,
               target: funcNode.text,
@@ -997,6 +1160,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
               line_number: this.nodeLine(funcNode),
               metadata: { isCFunctionCall: true }
             })
+          }
         }
       }
       // 8b. Member READS (managed-OO family contract — dart/swift/csharp
@@ -1017,7 +1181,15 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               line_number: this.nodeLine(field),
-              metadata: { isFieldRead: true, relationshipType: "field_access" },
+              // Honesty §4.1: sub-1.0 rows carry their own machine-readable code, and
+              // `uses` has ONE — the read is exact (the field name is in the source) and
+              // what the row infers is WHICH binding the name denotes, resolved against
+              // the enclosing class's members. The `calls` rows for the same node keep a
+              // different word (`field-callee-kind-not-determined`), because the call is
+              // about the callable's KIND and the read is about the binding
+              // (objc/generics-and-reason-codes pins the family, objc/field-invocation
+              // pins that the two labels on one node are told apart by their flags).
+              metadata: { isFieldRead: true, relationshipType: "field_access", reasonCode: "value-read-by-scope-inference" },
             })
           }
         }
@@ -1061,7 +1233,11 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               line_number: this.nodeLine(node),
-              metadata: { isBareRead: true },
+              // Honesty §4.1: the read is exact — the identifier is in the source — and what
+              // the row INFERS is which binding the name denotes (parameter, body local,
+              // same-file ivar/property, file global). That is the whole of the doubt, so it
+              // is the whole of the code (objc/generics-and-reason-codes pins the word).
+              metadata: { isBareRead: true, reasonCode: "value-read-by-scope-inference" },
             })
           }
         }
@@ -1130,6 +1306,69 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const uniqueRelationships = Array.from(uniqueRelMap.values())
     const relKeySet = new Set(uniqueRelMap.keys())
+
+    // --- OC-ONT-8: the `exports` family, at the FLEET's scope and vocabulary.
+    //
+    // WHAT AN EXPORT IS HERE. A file-scope declaration with EXTERNAL linkage is visible to
+    // every translation unit that imports this file (C99 6.2.2p5, inherited verbatim), and
+    // that is the whole of the claim: a class, a protocol, a `typedef` of a struct, a
+    // function, a variable, and a marker-bearing declaration (`FOUNDATION_EXPORT`, `extern`)
+    // all publish the same way. Measured with script/m60/objc-construct-site-probe.ts over
+    // the 322 admitted files: 338 file-scope external-linkage construct sites against 98
+    // edges emitted by the marker-only rule — the 240-site gap is the declarations that are
+    // publishable and were not published, and the same instrument's own export scope is the
+    // external-linkage one this family now uses.
+    //
+    // WHY `<root> -> <name>` AND NOT THE C SIBLING'S `<name> -> <MACRO>`. The C analyzer
+    // publishes `exports curl_strequal -> CURL_EXTERN`, whose TARGET names no symbol
+    // anywhere. go (`packageName -> name`), python (`moduleName -> name`), typescript
+    // (`moduleLeafName -> name`) and powershell (`top().scope -> name`) all put the
+    // container on the source half and the NAME on the target half, so both ends resolve.
+    // Objective-C has no module keyword, so the container is the translation unit — the
+    // `root` this lane already uses for its file-scope edges — and `fileLevel` is the key
+    // the store reads to name the importing FILE on such a row. The FLEET vocabulary
+    // (`relationshipType: "module_export"`, `isExport`, `fileLevel`) is what c, cpp and
+    // powershell publish, so a consumer reads one shape for all five.
+    //
+    // NOT AN EXPORT: a `static` unit (internal linkage), a member (it rides `contains`), a
+    // category label (OC-B), an imported module (a dependency, `imports`/`references`), a
+    // superclass declared elsewhere, and a type parameter (OC-ONT-6). Each of those is
+    // pinned as a forbidden row by objc/linkage-and-imports.
+    //
+    // The marker rows keep their OWN vocabulary on top (`exportMarker`) because a marker is
+    // a different FACT about the same declaration — what spelling the claim came from —
+    // while the claim itself is one thing.
+    for (const s of uniqueSymbols) {
+      // Members are not top-level units.
+      if (s.ownerName || s.scope) continue
+      // OC-B: a category is not a top-level resolvable unit — exporting `@interface
+      // NSString (Trim)` as `NSString` would claim the class is defined here. This also
+      // excludes the category LABEL, which is never a symbol in this lane at all.
+      if (s.kind === ASTEngine.SymbolKind.Extension) continue
+      // A member is not a linkage unit (see OBJC_LINKAGE_UNIT_KINDS for the measurement
+      // behind this line: 108 of 777 rows otherwise sat on ownerless `method` symbols).
+      if (!OBJC_LINKAGE_UNIT_KINDS.has(s.kind)) continue
+      // Internal linkage: visible only inside this translation unit.
+      if (internalLinkage.has(s.name)) continue
+      const key = `${ASTEngine.RelationshipType.Exports}|root->${s.name}`
+      if (relKeySet.has(key)) continue
+      relKeySet.add(key)
+      const marker = exportMarkers.get(s.name)
+      uniqueRelationships.push({
+        source: "root",
+        target: s.name,
+        type: ASTEngine.RelationshipType.Exports,
+        confidence: 1.0,
+        ...(exportLineByName.has(s.name) ? { line_number: exportLineByName.get(s.name)! } : s.range?.startLine ? { line_number: s.range.startLine } : {}),
+        metadata: {
+          relationshipType: "module_export",
+          isExport: true,
+          isObjCExport: true,
+          fileLevel: true,
+          ...(marker ? { exportMarker: marker } : {}),
+        },
+      })
+    }
 
     // Add Contains relationships for owned symbols (dedup against existing
     // edges — a contains must never be emitted twice for the same pair)
@@ -1210,7 +1449,11 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             // M59.A7: the OVERRIDING member's own declaration line (the base's copy lives
             // in another translation unit, and the row is written here).
             ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
-            metadata: { isOverride: true },
+            // The VERIFIED branch names its own evidence: the superclass is declared in THIS
+            // file and declares the same full selector, so this row is a verification. The
+            // guessed branch below keeps `first-parent-guess` — one code for both would call
+            // a verification a guess (objc/selector-attributes pins the pair).
+            metadata: { isOverride: true, reasonCode: "verified-base-declared-in-file" },
           })
         }
       } else if (!classNameSet.has(base)) {
@@ -1232,6 +1475,85 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
     }
+
+    // --- Reason codes for the C-call producer (honesty §4.1). A C call names its callee
+    // EXACTLY — the identifier is in the source — but the grammar cannot tell a function
+    // from a macro, and whether THIS translation unit defines the name is what the code has
+    // to say. So it is stamped only where the claim is true: the callee is not a function
+    // this file declares. An in-unit callee keeps NO code, because "not resolved in this
+    // unit" would be a statement the store itself contradicts. objc/field-invocation and
+    // objc/generics-and-reason-codes pin the external cases (`dispatch_async`,
+    // `dispatch_once`) and pin that the message-send producer keeps its OWN code, so the
+    // two branches must not share one.
+    const fileFunctions = new Set<string>()
+    for (const s of uniqueSymbols) {
+      if (s.kind === ASTEngine.SymbolKind.Function) fileFunctions.add(s.name)
+    }
+    for (const r of uniqueRelationships) {
+      if (r.type !== ASTEngine.RelationshipType.Calls) continue
+      const md: any = r.metadata ?? {}
+      if (!md.isCFunctionCall || md.reasonCode) continue
+      if (!fileFunctions.has(String(r.target))) md.reasonCode = "callee-not-resolved-in-unit"
+    }
+
+    // --- OC-E BINDING SPELLING: a unit-local read is a BINDING, not a declaration -------------
+    //
+    // WHAT WAS WRONG. Every bare-identifier read this walk emits carries
+    // `isBareRead: true, reasonCode: "value-read-by-scope-inference"` — the analyzer's own proof
+    // that the name denotes a value BOUND IN THIS SCOPE (`isBoundValue`, :298: a parameter, a body
+    // local, a block parameter, a for-in variable, a same-file ivar/property, a file global, an
+    // enum case). The edge then publishes the BARE NAME, and the binding identity — the callable
+    // the name was bound in, which is `r.source` and has been in hand the whole time — is thrown
+    // away. The store publishes no locals (DARTD8), so a bare local name can never be answered;
+    // where some unrelated declaration in the project happens to carry the same spelling, the
+    // store binds the read to THAT declaration instead. MEASURED, whole 262-file admitted
+    // population (`validation/m14/fixtures/objc/binding-census.ts`, which reproduces the gate's
+    // TABLE 1 row for row): of the 7,077 unresolved bare reads this pass touches, 6,939 are
+    // unresolved, 1,209 are bound to a foreign same-named declaration and 793 sit in the ambiguous
+    // column — 2,002 reads attached to a declaration the source never named. The largest single
+    // cause in this lane's 20,930-edge residual is this construct: 6,939 edges, 33.2%.
+    //
+    // THE FIX IS THE FAMILY'S, NOT A NEW CLAIM. `BINDING_SEP` + `metadata.localBinding` is the
+    // mechanism dart (`real-dart-analyzer.ts:2801`), php (`real-php-analyzer.ts:3140`, the
+    // `$variable` fix that took that lane 57.2% -> 27.6%), julia (`real-julia-analyzer.ts:1440`)
+    // and fsharp (`real-fsharp-analyzer.ts:577`) already publish, and the gate verifies it by the
+    // TARGET'S OWN SPELLING (`verifyBindingClaim`), refuting a marked edge whose target carries no
+    // separator. A binding claim is checked BEFORE the declaration count and can never return
+    // `resolved`, so this cannot mass-move edges into `collRes` — the trap this lane's brief names.
+    //
+    // THE PREDICATE IS DELIBERATELY NARROWER THAN "EVERY BARE READ", and each exclusion is a
+    // measured class rather than caution:
+    //   * `isFieldRead` is refused. `self.width` / `w.next` names a MEMBER — a property or ivar of
+    //     a class — not a binding, and claiming a binding for it would be false. Those 3,617 edges
+    //     stay exactly where they are (a separate named cause in the report).
+    //   * a name THIS FILE PUBLISHES is refused. Then the name denotes a declaration the store can
+    //     see (`_count`, `store`, `gTotal`, `gItems`, an enum case), the bare spelling is the right
+    //     one, and re-spelling it would DESTROY a correct link rather than remove a false one. The
+    //     test is the file's own published symbol set, which is exactly what the store will key.
+    //   * a dual-marked read (bare AND field, the dedup union at :1288-1289) is refused by the
+    //     `isFieldRead` clause, because one of its two provenances names a member.
+    //
+    // WHAT IT COSTS, STATED RATHER THAN DISCOVERED LATER. The 1,209 false links become unbound
+    // (their `target_symbol_id` goes from a WRONG declaration to NULL), so the store's `resolved`
+    // count FALLS while the gate's residual falls with it. That trade is the point — a wrong link
+    // is worse than no link — and it is why the number is reported on both sides rather than only
+    // the improving one. No edge is dropped: the target stays a non-empty string, and
+    // `pool-worker`'s leaf extractor already reads the segment AFTER the separator (`:826-833`),
+    // which is the php-lane lesson that a lane adopting this spelling inherits.
+    const publishedNames = new Set<string>()
+    for (const s of uniqueSymbols) if (s.name) publishedNames.add(s.name)
+    for (const r of uniqueRelationships) {
+      if (r.type !== ASTEngine.RelationshipType.Uses) continue
+      const md: any = r.metadata ?? {}
+      if (md.isBareRead !== true || md.isFieldRead === true) continue
+      const leaf = String(r.target ?? "")
+      // No source means no binding identity to spell, and a target the file itself publishes is a
+      // declaration, not a unit-local — the two refusals above, applied.
+      if (!leaf || !r.source || publishedNames.has(leaf)) continue
+      r.target = `${r.source}${BINDING_SEP}${leaf}`
+      md.localBinding = true
+    }
+
     // Evidence-tier classification (managed-OO family contract — swift/dart/
     // csharp #264–#266 precedent; M14 section D requires >=2 distinct
     // evidenceClass values). structural (grammar clauses, conf 1.0) |
@@ -1256,7 +1578,12 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (s.kind === ASTEngine.SymbolKind.Extension) continue
         if (seenExportNames.has(s.name)) continue
         seenExportNames.add(s.name)
-        exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" })
+        // OC-ONT-8: `visibility` states who can see the name, so a `static` unit is
+        // `private` rather than `public` — the pre-fix state published all 50 corpus
+        // static function definitions and all 67 static declarations as `public`,
+        // asserting an importability the language denies (C99 6.2.2p5). The name stays in
+        // this list because it IS a symbol of this file; only the visibility claim moves.
+        exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: internalLinkage.has(s.name) ? "private" : "public" })
       }
     }
     // CONV-OC-1: the emitted order is the declared table, never the Set's insertion
@@ -1312,7 +1639,13 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const type = r.type ?? r.relationshipType ?? ""
       const md: any = r.metadata ?? {}
       if (type === "contains") { md.evidenceClass = "structural"; continue }
-      if (type === "imports" || type === "exports" || type === "references") { md.evidenceClass = "import_based"; continue }
+      // OC-ONT-8: `exports` is a DECLARATION fact — the declaration is in this file and its
+      // linkage is read off the grammar's own `storage_class_specifier` — so it is
+      // structural, the tier c/cpp/powershell classify it as. `imports`/`references` stay
+      // `import_based`: those name something OUT of this unit (a header, a module), which
+      // is the tier's meaning.
+      if (type === "exports") { md.evidenceClass = "structural"; continue }
+      if (type === "imports" || type === "references") { md.evidenceClass = "import_based"; continue }
       if (type === "calls" || type === "uses") {
         md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
         continue
@@ -1703,6 +2036,108 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private nodeLine(n: Node): number {
     return n.startPosition.row + 1
+  }
+
+  /**
+   * OC-ONT-6 — the three lists Objective-C spells with ONE token sequence.
+   *
+   * `@interface Cache <KeyType, ObjectType> : Store <KeyType, ObjectType> <CacheProtocol>`
+   * has three `parameterized_arguments` children, and the pinned grammar names all three
+   * identically: the class's own lightweight-generic TYPE PARAMETERS, its superclass's TYPE
+   * ARGUMENTS, and its ADOPTED PROTOCOLS. Reading every list as an adoption list published
+   * `implements Cache -> KeyType` / `-> ObjectType` — the class's own type parameters as
+   * protocols, names no file declares (objc/generics-and-reason-codes).
+   *
+   * The lists are separated by POSITION, and position is exact here rather than heuristic
+   * because the pinned grammar keeps the `:` and `(` tokens as direct children:
+   *
+   *   1. a list BEFORE the `:` is part of the DECLARATION — the class's own type parameters,
+   *      never a protocol;
+   *   2. the FIRST list after the `:` is the superclass's type ARGUMENTS exactly when every
+   *      name in it is one of those parameters, and is otherwise the adoption list: the
+   *      ordinary `@interface Plain : NSObject <NSCopying>` declares no parameters, so its
+   *      single list adopts;
+   *   3. every later list is an adoption list.
+   *
+   * A class EXTENSION re-declares the enclosing class's parameters in front of its `()`
+   * (`@interface Cache <KeyType, ObjectType> ()`), so its lists are all declaration-region
+   * and none adopts; a CATEGORY is the mirror image — `@interface Plain (Trim)
+   * <NSFastEnumeration>` — and its list sits AFTER the `(`, so a category's lists all adopt.
+   * The two positions are mirrors, which is why the rule cannot be "a list before the paren"
+   * alone (objc/generics-and-reason-codes pins both).
+   *
+   * The same partition is re-derived independently in
+   * script/m60/objc-construct-site-probe.ts so the F5 differential compares two derivations
+   * rather than one against itself.
+   */
+  private objcInheritanceLists(node: Node): {
+    superClass: string | null
+    superNode: Node | null
+    typeParams: string[]
+    protocols: Array<{ name: string; node: Node }>
+  } {
+    const membersOf = (pa: Node): Array<{ name: string; node: Node }> => {
+      const out: Array<{ name: string; node: Node }> = []
+      for (let i = 0; i < pa.namedChildCount; i++) {
+        const m = pa.namedChild(i)
+        if (m && (m.type === "type_identifier" || m.type === "identifier" || m.type === "type_name")) {
+          out.push({ name: m.text, node: m })
+        }
+      }
+      return out
+    }
+    // The `:` and `(` that bound the two regions, plus every list in child order.
+    let colonIdx = -1
+    let parenIdx = -1
+    const lists: Array<{ node: Node; idx: number }> = []
+    for (let ci = 0; ci < node.childCount; ci++) {
+      const c = node.child(ci)
+      if (!c) continue
+      if (!c.isNamed && c.type === ":" && colonIdx < 0) { colonIdx = ci; continue }
+      if (!c.isNamed && c.type === "(" && parenIdx < 0) { parenIdx = ci; continue }
+      if (c.isNamed && c.type === "parameterized_arguments") lists.push({ node: c, idx: ci })
+    }
+    // A category is `@interface Name (Category)`; an extension is `@interface Name ()`.
+    // Both carry the paren, and this file treats both through the category branch.
+    const isCategory = parenIdx >= 0 && (colonIdx < 0 || parenIdx < colonIdx)
+    const isDeclarationRegion = (idx: number): boolean =>
+      colonIdx >= 0 ? idx < colonIdx : isCategory && idx < parenIdx
+
+    // 1. the declaration region's lists are the class's own type parameters.
+    const typeParams: string[] = []
+    for (const l of lists) {
+      if (!isDeclarationRegion(l.idx)) continue
+      for (const m of membersOf(l.node)) typeParams.push(m.name)
+    }
+    const paramSet = new Set(typeParams)
+
+    // 2/3. the inheritance region, in child order: the superclass name, its type arguments,
+    // then the adoption list. `argsConsumed` is what makes the SECOND post-colon list adopt
+    // even when its names repeat the parameters (the `Store <KeyType, ObjectType>` case).
+    let superClass: string | null = null
+    let superNode: Node | null = null
+    const protocols: Array<{ name: string; node: Node }> = []
+    let argsConsumed = false
+    for (let ci = 0; ci < node.childCount; ci++) {
+      const c = node.child(ci)
+      if (!c) continue
+      if (colonIdx >= 0 && ci > colonIdx && superClass === null && c.isNamed &&
+          (c.type === "identifier" || c.type === "type_identifier")) {
+        superClass = c.text
+        superNode = c
+        continue
+      }
+      if (!c.isNamed || c.type !== "parameterized_arguments") continue
+      if (isDeclarationRegion(ci)) continue
+      const mem = membersOf(c)
+      if (colonIdx >= 0 && !argsConsumed && mem.length > 0 && mem.every((m) => paramSet.has(m.name))) {
+        argsConsumed = true
+        continue
+      }
+      for (const m of mem) protocols.push(m)
+      if (colonIdx >= 0) argsConsumed = true
+    }
+    return { superClass, superNode, typeParams, protocols }
   }
 
   private fullMessageSelector(node: Node): string {

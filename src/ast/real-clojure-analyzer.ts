@@ -3059,6 +3059,127 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       s.qualifiedName = `${sc}/${s.name}`
     }
 
+    // ── CLJ-EX1: PUBLISH THE REASON THIS LANE ALREADY COMPUTES ──────────────
+    //
+    // THE OBLIGATION IS THIS LANE'S OWN, IN ITS OWN WORDS. The lane's committed
+    // declaration (`validation/m14/instruments/clojure/incoming-declaration.json:29`)
+    // records the state and the bar together:
+    //
+    //   "EXTERNAL IS 0 on all ten types, and that is a state, not a defect claim:
+    //    this lane's analyzer emits no provable external marker, so by construction
+    //    every unbound target in it is backlog ... Marking is future work with a
+    //    proof obligation the Java precedent shows how to meet: an edge may only
+    //    join the external class if the analyzer can record WHY the target is
+    //    outside the project (see real-java-analyzer.ts's isExternalTarget +
+    //    externalReason), because an unmarked unresolved edge and a marked one are
+    //    different claims."
+    //
+    // THE REASON WAS ALREADY COMPUTED AND PUBLISHED WHERE NOTHING READS IT. The
+    // libspec handler tags every dependency edge it emits with `isLibraryDep: true`
+    // (pushImport at :780 and the `references` twins at :917, :931, :946, :967,
+    // :978, :1498, :2318, :2358) and pushes `isExternal: true` onto the `imports`
+    // ARRAY row (:927, :970, :977) — an array `incoming-gate.ts` never walks. So
+    // this is the 41-lane brief's fleet cause (a) exactly ("lanes already compute
+    // the reason but publish it on a key the gate does not read"), and the fix is
+    // to publish it on the key the gate DOES read: `isExternalTarget` is in
+    // `incoming-rule.ts:56-66`'s recognised set, and the arbiter then VERIFIES the
+    // claim by looking the target's owner up in the project's own key space
+    // (`verifyExternalClaim`), so a wrong claim is refuted and charged to this
+    // lane rather than being believed.
+    //
+    // WHY A CLAIM CANNOT MOVE A RESOLUTION. The marker is read only inside
+    // `classifyEdge`'s `decls === 0` branch (`incoming-rule.ts:1145-1178`), so an
+    // edge whose target names a declaration keeps its `resolved`/`ambiguous`
+    // outcome however it is marked. That is what makes this change arithmetic on
+    // one column instead of a re-binding of the graph.
+    //
+    // WHICH TARGETS MAY BE MARKED, AND WHY IT IS NOT "EVERYTHING I REQUIRED".
+    // Measured BEFORE this landed, by `validation/m14/fixtures/clojure/probe-clojure-claims.mts`
+    // (which re-classifies these same edges through the gate's own rule and asserts
+    // its totals against the gate's TABLE 1 row — cap-400 and whole-population
+    // runs, logs in `validation/m14/fixtures/clojure/lane-logs/`):
+    //
+    //   every `isLibraryDep` edge (3,825 at cap-400)   563..916 verified BUT
+    //                                                  56..105 non-clean: `extFAIL` 56
+    //   minus path-like targets                        49 refuted by owner overlap
+    //   minus non-language roots                        7 refuted (`clojure.core.async`:
+    //                                                  the corpus declares a FIXTURE ns
+    //                                                  `clojure.core`, so the owner key
+    //                                                  IS published)
+    //   THE SHIPPED PREDICATE                           948 verified, 0 refuted,
+    //                                                  0 unverifiable (whole population)
+    //
+    // The refutations are the arbiter working as designed, not a bug to route around:
+    // `targetOwner` is everything before the FINAL dot, so a 2-dot target's key is an
+    // INTERMEDIATE namespace (`clojure.test` for `clojure.data.generators`, `next` for
+    // `next.jdbc`) which a project may itself declare — the zig measurement recorded in
+    // `incoming-rule.ts`'s EXTERNAL_KEYS doc says the same thing ("the mechanism is
+    // sound where the owner is itself qualified and over-reaches where the owner is a
+    // single segment the project may well publish"). A refuted claim is counted AGAINST
+    // the lane and `extFAIL` is 0 today, so the two restrictions below are what keep
+    // this change from trading one defect for another:
+    //
+    //   1. THE ROOT MUST BE A NAMESPACE THE LANGUAGE OR ITS RUNTIME PROVIDES — a
+    //      CLOSED, corpus-independent set (`clojure`, `cljs`, `js`, `goog`), the shape
+    //      the 41-lane brief blesses at graphql ("membership in the closed 5-name
+    //      built-in scalar set is a DECIDABLE TEST with no missing grammar node and no
+    //      new corpus"). Third-party libraries are deliberately NOT listed: whether a
+    //      project vendors `babashka`/`ring`/`schema` is a PROJECT fact this analyzer,
+    //      which sees one file, cannot know, and a corpus-derived list would be a
+    //      laundered constant. `java`/`javax` are also not listed, and that is measured
+    //      too: the arbiter's `pathLikeTarget` reads a Java package's final segment as
+    //      a file extension (`java.sql` → `.sql`), and a path-like target carrying a
+    //      claim reads `externalUnverified` — "a claim no check can reach" — in the one
+    //      column this lane keeps at 0. JVM interop reaches the graph as bare class
+    //      targets and `Class/member` statics, which no claim channel can check, and
+    //      they are left unresolved rather than mislabelled.
+    //   2. THE VERIFIER'S KEY MUST BE THE CERTIFIED ROOT — the owner (text before the
+    //      final dot) must be a single segment, i.e. exactly the root this list matched.
+    //      Without this, the claim's stated evidence and the key the arbiter checks
+    //      disagree (`ring.mock.request` would be certified by `ring` but verified
+    //      against `ring.mock`), and at population level that disagreement costs 79
+    //      refuted claims (`clojure.data.generators` 46, `clojure.test.generative` 14,
+    //      `clojure.core.async` 7, `clojure.test.check` 7, `clojure.test.SwissArmy` 5).
+    //
+    // AND THE JAVA PRECEDENT'S GUARD, kept because it is the precedent's own shape
+    // (`real-java-analyzer.ts:3952`: "A name this file declares is project code,
+    // whatever it is called"): a target this file declares is skipped. It is inert by
+    // construction — a target the file declares has a declaration, so the edge is not
+    // in the `decls === 0` branch and the marker could never be read — and measured
+    // inert: the arm with it and the arm without it are identical (638 marked, 589
+    // moved) at cap-400.
+    {
+      const LANGUAGE_PLATFORM_ROOTS = new Set(["clojure", "cljs", "js", "goog"])
+      const declaredHere = new Set<string>()
+      for (const s of symbols) {
+        if (typeof s.name === "string" && s.name.length > 0) declaredHere.add(s.name)
+      }
+      for (const r of relationships) {
+        const md = r.metadata as Record<string, any> | undefined
+        // THE REASON THE ANALYZER ALREADY COMPUTED, and nothing else qualifies.
+        if (!md || md.isLibraryDep !== true || md.isExternalTarget === true) continue
+        const tgt = typeof r.target === "string" ? r.target : ""
+        if (tgt.length === 0) continue
+        // A `ns/name` CALL or an interop static is not what this list certifies, and it is
+        // path-like to the arbiter's verifier besides; every `isLibraryDep` target is a
+        // dotted namespace today, so this is a guard rather than a filter with a budget.
+        if (tgt.includes("/") || tgt.includes("\\") || tgt.includes(":")) continue
+        if (declaredHere.has(tgt)) continue
+        // `namespaceRootOf` / `targetOwner`, spelled as `incoming-rule.ts:354` and `:648` spell
+        // them (first dot / final dot) because the claim's evidence and the arbiter's key must
+        // be the same string.
+        const firstDot = tgt.indexOf(".")
+        const root = firstDot > 0 ? tgt.slice(0, firstDot) : tgt
+        if (!LANGUAGE_PLATFORM_ROOTS.has(root)) continue
+        const lastDot = tgt.lastIndexOf(".")
+        const owner = lastDot > 0 ? tgt.slice(0, lastDot) : null
+        if (owner !== null && owner.includes(".")) continue
+        md.isExternalTarget = true
+        md.externalReason = "language-platform-namespace"
+        md.externalSpecifier = root
+      }
+    }
+
     return {
       language: "clojure",
       symbols,

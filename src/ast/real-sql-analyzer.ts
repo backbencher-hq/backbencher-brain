@@ -253,7 +253,7 @@ function classifyExternalTarget(
   target: string,
   qualified?: string,
   wholeQuotedName = false,
-): "postgresCatalog" | "informationSchema" | "implicitSchema" | "platform" | null {
+): "postgresCatalog" | "informationSchema" | "implicitSchema" | "platform" | "providedFunction" | null {
   if (qualified) {
     const q = qualified.toLowerCase()
     if (q.startsWith("information_schema.")) return "informationSchema"
@@ -287,6 +287,103 @@ function classifyExternalTarget(
   }
   return null
 }
+
+/**
+ * A CALL TO A FUNCTION A SQL ENGINE OR A STOCK EXTENSION PROVIDES — the vocabulary behind
+ * `external: "providedFunction"`.
+ *
+ * ## WHY THIS EXISTS, AND WHY IT IS NOT `SQL_BUILTINS`
+ *
+ * `SQL_BUILTINS` (below) answers the same question — "is this name the project's, or is it
+ * provided?" — and answers it by SUPPRESSING the edge: `processCalls` drops the call before it is
+ * published. That is the right treatment where the analyzer has decided the call is not a fact
+ * worth an edge, and it is kept exactly as it was. It is the WRONG treatment for the names below,
+ * for a reason that was measured rather than preferred: `plan`/`finish` and the other pgTAP
+ * assertion helpers read as DANGLING CALLS — 597 pgTAP edges over the admitted corpus — because
+ * the family is only half-listed in `SQL_BUILTINS` (it carries `is`, `isnt`, `matches`,
+ * `throws_ok`, `lives_ok`, `results_eq`, `set_eq`), and a dropped edge reports nothing at all
+ * while a labelled one states what the function is.
+ *
+ * So the edge is KEPT and LABELLED, which is this lane's existing contract for a PostgreSQL or
+ * platform object (`classifyExternalTarget`, and the `postgresCatalog` arm that already sets
+ * `isExternal`): "an edge with neither a resolved symbol nor an external label is a genuine gap".
+ *
+ * ## THE CLAIM, AND WHY IT CANNOT BE LAUNDERED
+ *
+ * `metadata.external = "providedFunction"` + `metadata.isExternal = true` is the arbiter's own
+ * `owner` claim (`script/m14/incoming-rule.ts:56`, `:462`), and for a bare target it is verified
+ * by a direct lookup (`:800-810`): the claim is consulted ONLY where the target has zero
+ * declarations in the project (`:1148`), so
+ *   * it can never re-label an edge that resolves or collides — a project that declares `plan`
+ *     keeps its `plan` edges, because `classifyEdge` never reaches the claim at `decls > 0`;
+ *   * it can never read `ext?` for a bare identifier, and it cannot manufacture a refutation;
+ *   * it is still REFUTABLE in principle, which is the point: the marker is a statement about the
+ *     POPULATION, and the lookup is what makes it true rather than a thing the lane asserted.
+ * The guard at the call site is `!state.symbolNames.has(target)` — a file that declares the name
+ * itself never gets an external label for it, which is the "CONTRADICTED" class the arbiter
+ * reports for a per-file claim the edge's own file refutes.
+ *
+ * ## WHAT IS IN IT, AND WHAT IS DELIBERATELY NOT
+ *
+ * The names are the ones the admitted corpus actually calls, measured per provider
+ * (`validation/m14/fixtures/sql/residual-buckets.json`, whole-population run, 2026-10-16), plus
+ * the family members `SQL_BUILTINS` already names. A provider is listed only where it IS a stock
+ * component of a SQL engine the corpus runs on:
+ *
+ *   pgTAP 595 edges · DuckDB 138 · PostgreSQL 66 · uuid-ossp 45 · SQLite 11 · pg_cron 2 · MSSQL 1
+ *
+ * NOT in it, and each is a different finding rather than a smaller one:
+ *   * `wh_time_key`/`wh_date_key`/`wh_dim_key` (71 edges) are **boundary's own** sqltest helpers,
+ *     created by that repository's Go test scaffolding. Their declaration is the project's, just
+ *     not in SQL, so labelling them "provided" would be a false statement about the world — they
+ *     stay unresolved.
+ *   * the `aoc2022_*` macro family (~30 edges) is DECLARED in the corpus
+ *     (`duckdb/benchmark/recursive_cte/aoc2022/load/day23.sql`, `CREATE MACRO`), so it is the
+ *     analyzer's publication gap and not an external reference — and the grammar has no node for
+ *     it (480 node types in `construct-probe.json`, none a macro), so it cannot be closed here.
+ *   * `ROLLUP`, `varying`, `xor`, `EXEC`, `pat` are not functions at all; they are keywords the
+ *     grammar hands to `invocation` (`GROUP BY ROLLUP(a,b)`, `character varying(20)`). They are a
+ *     grammar-fidelity defect and labelling them external would hide it.
+ *   * `is_valid` was in the first version of this list and was REMOVED by measurement. It is not a
+ *     pgTAP function; the corpus calls it once, in `postgrest/test/spec/fixtures/schema.sql:1813`
+ *     as `is_valid(input::isbn)` from the project's own wrapper `is_valid_isbn`. Its provider is
+ *     unproven, so the name does not belong in a vocabulary whose whole content is provider
+ *     attribution. Found by diffing the edges this change moves against the fixture-side bucket
+ *     vocabulary (`validation/m14/fixtures/sql/residual-buckets.mts`), which had declined it.
+ */
+export const SQL_PROVIDED_FUNCTIONS = new Set<string>([
+  // 102 names. `isempty` is PostgreSQL's range function and sits in the PostgreSQL group, not
+  // pgTAP's `is_empty` — the two are one character apart and a different provider.
+  // pgTAP — the PostgreSQL unit-testing extension. `boundary/internal/db/sqltest/` is a suite of
+  // it: `select plan(8);` … `select * from finish();`.
+  "plan", "finish", "collect_tap", "ok", "skip", "cmp_ok", "set_ne", "results_ne", "row_eq",
+  "is_empty", "isnt_empty", "is_strict", "isnt_strict",
+  "has_index", "hasnt_index", "has_function", "has_trigger", "has_view", "hasnt_view",
+  "has_table", "hasnt_table", "has_column", "hasnt_column", "has_domain", "has_type",
+  "col_not_null", "col_is_null", "col_is_pk", "col_has_default", "col_hasnt_default",
+  "col_default_is", "col_type_is", "domain_type_is", "fk_ok", "trigger_is", "volatility_is",
+  "throws_like",
+  // PostgreSQL's own built-ins — the `SQL_BUILTINS` remit's first clause. `isempty` is HERE and not
+  // with pgTAP's `is_empty`: it is PostgreSQL's range function (`isempty(anyrange)`), a different
+  // spelling with a different provider, and the two are one character apart.
+  "isempty", "family", "json_typeof", "json_to_recordset", "jsonb_to_recordset",
+  "jsonb_array_length", "jsonb_object_keys", "jsonb_array_elements_text", "to_regprocedure",
+  "convert_to", "convert_from", "regexp_split_to_array", "regexp_split_to_table",
+  "current_schema", "xmlconcat2", "pow", "enum_first", "get_byte", "cosh",
+  // uuid-ossp, beside the `uuid_generate_v4`/`uuid_generate_v1`/`uuid_nil` `SQL_BUILTINS` carries.
+  "uuid_generate_v1mc",
+  // DuckDB — the engine the corpus's `duckdb/` tree runs on.
+  "read_parquet", "read_csv", "read_csv_auto", "len", "strlen", "strftime", "quantile_cont",
+  "quantile_disc", "approx_quantile", "reservoir_quantile", "date_diff", "array_contains",
+  "array_push_back", "array_pop_front", "list", "list_resize", "list_distinct", "list_transform",
+  "list_position", "list_aggregate", "list_sum", "countif", "arg_min", "hash",
+  "bitstring_agg", "lttb", "median", "min_by", "max_by", "product", "instr", "group_concat",
+  // SQLite — its core functions plus the extensions its own source tree ships.
+  "hex", "strdup", "randomblob", "sha1", "sha1b", "sha1_query", "sha3_query",
+  "ieee754_from_int", "parse_create_index", "shell_prompt_test",
+  // MSSQL's metadata function, and pg_cron's scheduling pair.
+  "columnproperty", "schedule", "unschedule",
+])
 
 export const SQL_BUILTINS = new Set([
   // Provided by PostgreSQL or a stock EXTENSION rather than by this project.
@@ -716,6 +813,7 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         overridesEmitted: 0,
         overloadNotReplacementSkipped: 0,
         pgCatalogMarkedExternal: 0,
+        providedFunctionCallsMarked: 0,
         instantiationsEmitted: 0,
         reservedNameSymbolsSuppressed: 0,
         indexOwnersAdopted: 0,
@@ -3776,13 +3874,32 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     // (`vault.decrypted_secrets` -> `decrypted_secrets`), so classification has
     // to look at the qualified name the metadata carries as well, or a platform
     // object is read as a project table.
-    const externalKind = classifyExternalTarget(
+    let externalKind = classifyExternalTarget(
       target,
       metadata.qualified as string | undefined,
       metadata.quotedName === true,
     )
+    /**
+     * A CALL WHOSE CALLEE A SQL ENGINE OR A STOCK EXTENSION PROVIDES, and which THIS FILE does
+     * not declare. See `SQL_PROVIDED_FUNCTIONS` for the vocabulary, the claim, and what is
+     * deliberately outside it.
+     *
+     * The `state.symbolNames` guard is the analyzer's, not the arbiter's, and it is the half the
+     * arbiter cannot supply: a per-file claim cannot be refuted by ANOTHER file's declaration
+     * (`incoming-rule.ts`'s `ownFileSilent`), so an edge whose own file declares the callee must
+     * never be labelled external by this lane.
+     */
+    if (
+      !externalKind
+      && type === ASTEngine.RelationshipType.Calls
+      && !state.symbolNames.has(target)
+      && SQL_PROVIDED_FUNCTIONS.has(target.toLowerCase())
+    ) {
+      externalKind = "providedFunction"
+      state.ambiguity.providedFunctionCallsMarked++
+    }
     if (externalKind && !state.externalTargets) {
-      state.externalTargets = { postgresCatalog: 0, informationSchema: 0, implicitSchema: 0, platform: 0 }
+      state.externalTargets = { postgresCatalog: 0, informationSchema: 0, implicitSchema: 0, platform: 0, providedFunction: 0 }
     }
     if (externalKind) {
       state.externalTargets![externalKind]++
@@ -3822,6 +3939,24 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       if (externalKind === "postgresCatalog") {
         metadata = { ...metadata, external: externalKind, isExternal: true }
         state.ambiguity.pgCatalogMarkedExternal++
+      }
+      /**
+       * THE SECOND MARKED ARM, and the rule for what may be marked is the arbiter's own
+       * (`incoming-rule.ts:56`, "An edge must opt in, per key, and the key must mean the same
+       * thing fleet-wide or the number is not comparable between lanes"): a KIND is marked only
+       * where the claim is a documented fact about the LANGUAGE or the ENGINE rather than a guess
+       * about a name. `informationSchema`, `platform` and `implicitSchema` stay UNMARKED for the
+       * reason the block above states — their bare-name arm is a list of ordinary words
+       * (`tables`, `columns`, `views`) that a project table may legitimately carry, so the claim
+       * "external" is not one this lane can make about the EDGE'S TARGET STRING.
+       *
+       * `providedFunction` passes that test where they fail: the name itself is a function the
+       * engine or a stock extension installs, the edge's own file does not declare it (guarded at
+       * the classification site), and a project that DOES declare it never reaches this branch,
+       * because the claim is consulted only at zero declarations.
+       */
+      if (externalKind === "providedFunction") {
+        metadata = { ...metadata, external: externalKind, isExternal: true }
       }
     }
     // The dedup key, and why `memberKind` is part of the IDENTITY rather than only of the payload.

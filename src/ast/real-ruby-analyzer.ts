@@ -376,6 +376,32 @@ export function isRubyStaticSuperclassName(text: string): boolean {
   return true
 }
 
+/**
+ * Is `name` a plain identifier — `[A-Za-z_$][A-Za-z0-9_$]*` and nothing else?
+ *
+ * A CHAR SCAN rather than a regular expression, for the same reason the rest of this file
+ * scans: `script/m14/no-regex-gate.sh` delegates to the tree-sitter regex census, and a
+ * `new RegExp` here would add a use to it. The set is the ARBITER'S OWN
+ * (`script/m14/incoming-rule.ts`: the declared-cause claim is admitted only when the reason
+ * "must be identifier-shaped and must be the target's own owner").
+ *
+ * It exists for exactly one caller: whether a first-parent guess may state WHY it could not
+ * reach its base. A base that is not identifier-shaped — whitespace that survived a lexical
+ * scan, an operator name — must stay silent there rather than be REFUTED, because a refuted
+ * cause is counted against the lane (clause 4).
+ */
+export function isRubyIdentifierShaped(name: string): boolean {
+  if (!name) return false
+  const isAlpha = (c: number): boolean => (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95 || c === 36
+  const isDigit = (c: number): boolean => c >= 48 && c <= 57
+  if (!isAlpha(name.charCodeAt(0))) return false
+  for (let i = 1; i < name.length; i++) {
+    const c = name.charCodeAt(i)
+    if (!isAlpha(c) && !isDigit(c)) return false
+  }
+  return true
+}
+
 export const RAILS_MACRO_METHODS = new Set([
   "has_many", "belongs_to", "has_one", "has_and_belongs_to_many",
   "scope", "default_scope",
@@ -1244,6 +1270,27 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       memberByContains: "owned symbols are containment, not importable units",
     }
 
+    // --- The OWNER-QUALIFIED identity of an owned method IS NOT PUBLISHED, and that ---
+    // --- is a MEASURED decision rather than an omission. See `RUBY-FIX.md` §4.      ---
+    //
+    // This pass was written, landed, and run: it sets `qualifiedName = ownerName + "." + name`
+    // on every owned method, which is what the lane's own override targets
+    // (`target: base + "." + s.name`) have always spelled while publishing no declaration
+    // that could answer them. It works — `overrides` 169 resolved, `unresolved` 14,229 ->
+    // 13,122 on the cap-400 population — and it was REVERTED because of what it does to the
+    // gate's BINDING-INTENT table: publishing a cross-file target's answering key moves 146
+    // `overrides` edges from `nothingAnywhere` into `arbitraryTwin`, the file-crossing class
+    // the incoming rule names as where the wrong picks live (8,839 -> 8,985 lane-wide). The
+    // rule for this programme is explicit — if `arbitraryTwin` rises the change made the lane
+    // worse — so the rise is reported and the change is not kept. The measured numbers for
+    // BOTH halves (the gate table and a replay of production's four pre-suffix resolution
+    // passes) are in `validation/m14/verification/RUBY-FIX.md` §4.
+    //
+    // WHAT REPLACED IT is the other half of the same finding and it IS kept: the reason the
+    // lane already computed on those edges (`first-parent-guess`) is now routed onto the
+    // arbiter's declared-cause channel, which is a statement and never a resolution — see the
+    // override pass below.
+
     // --- Override relationships ---
     // Ruby permits implicit overrides; use local declarations first, then the
     // project companion index supplied by the production/differential caller.
@@ -1315,7 +1362,32 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 0.5,
           line_number: s.range?.startLine,
-          metadata: { isOverride: true, reasonCode: "first-parent-guess" },
+          metadata: {
+            isOverride: true,
+            reasonCode: "first-parent-guess",
+            // THE REASON, ROUTED WHERE THE ARBITER READS IT.
+            //
+            // The lane has stated why since M37.10 — `reasonCode: "first-parent-guess"` — and the
+            // incoming gate never saw it: its declared-cause channel reads `baseBeyondRunScope`
+            // (`script/m14/incoming-rule.ts:274`), so `causeOK` is 0 fleet-wide and the residual
+            // reads as an unstated hole. The claim is the TRUE half of what this branch already
+            // knows: the base is not declared in this file AND the companion index gave no opinion
+            // (it is never populated in production, M37.10), so the run could not look. It is a
+            // claim about the RUN, not about the project, which is why the arbiter reads it only
+            // where the target names nothing and why it can never raise `resolved`.
+            //
+            // Three conditions, each of them the arbiter's own (`classifyEdge`):
+            //   · the value must be IDENTIFIER-SHAPED and must BE the target's owner, or the
+            //     claim is REFUTED (`causeFAIL`, counted against the lane, clause 4);
+            //   · `base === s.ownerName` is the leaf-collapse self-collision guard's case
+            //     (`class Rake::TestCase < Test::Unit::TestCase`): the run DID reach that
+            //     spelling — it is the class's own leaf — so "beyond this run's reach" would be
+            //     the wrong statement and that edge stays silent;
+            //   · it is MUTUALLY EXCLUSIVE with every external marker, by the arbiter's rule.
+            ...(base !== s.ownerName && isRubyIdentifierShaped(base)
+              ? { baseBeyondRunScope: base }
+              : {}),
+          },
         })
       }
     }

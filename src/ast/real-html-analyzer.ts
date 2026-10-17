@@ -92,8 +92,13 @@
 
 import type { Node, Tree } from "web-tree-sitter"
 import * as path from "path"
+import { existsSync } from "node:fs"
 import { createRequire } from "node:module"
 import { ASTEngine } from "./engine"
+// THE ROUTER'S OWN TABLE, imported rather than restated: which extensions this lane's admitted
+// file list can contain is a fact about `language-detection.ts`, and a second copy of it here
+// would be a second rule (the programme has paid for copied rules more than once).
+import { EXTENSION_LANGUAGE } from "./language-detection"
 
 // The three embedded-block delegates are loaded LAZILY and INDEPENDENTLY, and
 // deliberately NOT as static imports. A static import makes a broken delegate a
@@ -726,6 +731,64 @@ const FORM_ACTION_INPUT_TYPES: Record<string, boolean> = table<boolean>({ submit
 const INPUT_FORMACTION_RULE: ResourceRule = { attr: "formaction", resourceType: "form-action", link: true }
 
 /**
+ * THE DOCUMENT EXTENSIONS THIS LANE'S ADMITTED FILE LIST CAN CONTAIN — derived from the router,
+ * never listed here. `EXTENSION_LANGUAGE` maps `html`, `htm`, `xhtml`, `hbs`, `twig`, `pug`,
+ * `erb`, `mustache`, `ejs`, `liquid`, `njk`, `jinja`, `j2` to this language; a file claim is a
+ * statement about a file the project ADMITS, so it may only be published for a spelling the
+ * router itself routes here. A single extension listed by hand would be a second copy of the
+ * routing rule and would age independently of it.
+ */
+const HTML_DOCUMENT_EXTS: ReadonlySet<string> = new Set(
+  Object.keys(EXTENSION_LANGUAGE).filter((ext) => EXTENSION_LANGUAGE[ext] === "html"),
+)
+
+/** The extension of a resource target, query and fragment stripped (`x/y.css?v=1#a` -> `css`). */
+function resourceExtension(value: string): string {
+  const clean = value.split("#")[0].split("?")[0]
+  const base = clean.slice(clean.lastIndexOf("/") + 1)
+  const dot = base.lastIndexOf(".")
+  return dot <= 0 ? "" : base.slice(dot + 1).toLowerCase()
+}
+
+/**
+ * THE PROJECT-RELATIVE FILE A RESOURCE TARGET NAMES — the qualifier this analyzer computed
+ * NOWHERE, and which the incoming gate could not answer without.
+ *
+ * WHY THIS FUNCTION EXISTS. The lane emitted the attribute string verbatim, so a hyperlink
+ * written `../index.html` inside `docs/api/x/index.html` reached the graph as the four-character
+ * *relative* spelling `../index.html` — a string no declaration and no admitted file can ever
+ * answer. MEASURED on the lane's own bounded population (400 of 6,780 admitted `.html` files,
+ * `bun run script/m14/incoming-gate.ts html html 400`): **22,260 navigation links and 3,785
+ * resource fetches unresolved, 25,041 of the 32,656 residual path-shaped.** The document's own
+ * directory is arithmetic, not a corpus lookup, and it was already in hand: `analyze` receives
+ * `filePath`, and the arbiter supplies `context.projectRoot` (`incoming-gate.ts:918`) — the same
+ * root the project's admitted file list is keyed on.
+ *
+ * WHAT IT IS NOT. It does not rewrite the edge's `target`: the written spelling stays the target,
+ * because that is what the document SAYS and because retargeting a path into a basename stem is
+ * the one move this lane was warned off — it mass-moves edges from `unresolved` into `collRes`,
+ * where the indexer measures ~75 % of tie-break picks as wrong. This returns a CANDIDATE for a
+ * claim, and the claim is verified by the project, never by this analyzer.
+ *
+ * `null` means "no candidate can be stated": an empty path, the project root itself, or a target
+ * that escapes the project (`../../..`, which no admitted file can be).
+ */
+function rebaseToProject(documentPath: string, projectRoot: string, value: string): string | null {
+  const written = value.split("#")[0].split("?")[0]
+  if (written.length === 0) return null
+  // A root-relative path is rooted at the PROJECT, which is the only root this analyzer knows;
+  // anything else is relative to the document that wrote it.
+  const abs = written.startsWith("/")
+    ? path.resolve(projectRoot, written.slice(1))
+    : path.resolve(path.dirname(documentPath), written)
+  const rel = path.relative(projectRoot, abs)
+  if (rel.length === 0) return null
+  const posix = rel.split(path.sep).join("/")
+  if (posix.startsWith("..") || path.posix.isAbsolute(posix)) return null
+  return posix
+}
+
+/**
  * THE IDREF CLASS — attributes whose HTML content model is a space-separated list
  * of element IDs, and which are therefore REFERENCES into the document's own
  * address space rather than resources, navigations or controls.
@@ -861,12 +924,82 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * "no" from "not measured", and only a published field can say that.
    */
   private unavailableEmbeddedLangs: string[] = []
+  /**
+   * THE DOCUMENT AND ITS PROJECT ROOT, for the two claim keys a resource edge can carry.
+   *
+   * Fields rather than two more parameters on `emitResource`, whose six call sites already
+   * thread eight arguments each: the values are properties OF THE ANALYSIS (`filePath` and
+   * `context.projectRoot`), they are identical for every emission in one document, and
+   * `analyze` is synchronous, so the pair is set once at the top of the walk and read by the
+   * helper below. Empty `claimProjectRoot` means the caller did not name a project root — the
+   * fixture runner does not — and a project-relative candidate is then NOT stated: an
+   * unrooted path would be a claim about a file list the caller never supplied.
+   */
+  private claimDocumentPath = ""
+  private claimProjectRoot = ""
+
+  /**
+   * THE CLAIM A RESOURCE TARGET CAN CARRY — the reason the edge names something this run cannot
+   * resolve to a declaration, published on a key the ARBITER reads.
+   *
+   * THE DEFECT THIS CLOSES, in this lane's own measurement. `incoming-rule.ts` recognises a fixed
+   * list of keys (`EXTERNAL_KEYS`, `:56-80`) plus the file/source-path claim kinds, and the lane
+   * published `isExternalResource` on its network-URL fetches — a truthful marker on a spelling
+   * that is not in that list, so the arbiter read the edge as an unstated hole. `causeOK` was 0
+   * fleet-wide for exactly this reason. The fix is not to invent a new marker but to publish the
+   * claim in the vocabulary the arbiter already verifies:
+   *
+   *   A NETWORK URL (`https:`, `http:`, `//cdn…`) is outside every admitted file list BY
+   *   CONSTRUCTION, so the edge carries `sourcePathClaim`. Its polarity is inverted on purpose
+   *   (`incoming-rule.ts:317-339`): the project REFUTES the claim the moment a candidate IS an
+   *   admitted file, which is what stops this from becoming a laundering channel.
+   *
+   *   AN HTML DOCUMENT that exists beside this one — `../index.html`, `page.html`, `/guide.html`
+   *   — carries `importProjectFile`, the FILE claim, and it is the honest one: the project's own
+   *   admitted list then CONFIRMS the file. MEASURED over the lane's bounded population: of
+   *   20,470 such targets, 20,295 name a document that is on disk AND admitted, and the other
+   *   175 are DEAD LINKS — nothing on disk — which is why existence is probed before the claim is
+   *   published. Without that probe the claim would be published on 175 targets that name no file,
+   *   and the arbiter would count 175 refutations against the lane: a false statement, not a
+   *   better-looking table.
+   *
+   *   ANYTHING ELSE PATH-SHAPED (`../../styles/main.css`, `/assets/x.js`) carries the same
+   *   `sourcePathClaim`: the project admits no file answering the written string, which for an
+   *   extension this lane cannot admit is true by construction.
+   *
+   *   A BARE NAME GETS NOTHING (`details.html` with no file beside it, `main`, `getItem`). The
+   *   source-path claim is defined only for a target containing `/` or a scheme
+   *   (`incoming-rule.ts:335-337`), and a bare name is exactly the spelling that can also name a
+   *   DECLARATION — so publishing a claim on it is the one move that could hide a resolution.
+   *
+   * EVERY KEY HERE IS ADDITIVE. The target is untouched, no existing metadata key is renamed or
+   * removed, and a claim is read by the arbiter only where the target names no declaration
+   * (`classifyEdge`), so no edge's resolution can move because of this function.
+   */
+  private resourceClaimMetadata(value: string, network: boolean): Record<string, unknown> {
+    if (network) return { sourcePathClaim: [value] }
+    if (this.claimProjectRoot.length > 0 && HTML_DOCUMENT_EXTS.has(resourceExtension(value))) {
+      const rebased = rebaseToProject(this.claimDocumentPath, this.claimProjectRoot, value)
+      if (rebased !== null && existsSync(path.join(this.claimProjectRoot, rebased))) {
+        return { importProjectFile: [rebased] }
+      }
+    }
+    if (value.includes("/") || urlScheme(value).length > 0) return { sourcePathClaim: [value] }
+    return {}
+  }
+
   analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
+
+    // The document identity and its project root, for `resourceClaimMetadata`. Set BEFORE the
+    // walk and overwritten on every call, so a reused analyzer instance cannot carry one
+    // document's root into the next one's claims.
+    this.claimDocumentPath = filePath
+    this.claimProjectRoot = context?.projectRoot ?? ""
 
     // --- Parse errors, ONCE and CAPPED ---------------------------------------
     // The engine already walks the tree for ERROR/MISSING nodes and caps the
@@ -1761,6 +1894,11 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           isFormEndpoint: rule.navigation !== true,
           evidenceClass: "usage_contextual",
           confidenceReason: "observed-hyperlink-not-derived",
+          // THE CLAIM, on the channel the arbiter reads. A hyperlink is the largest
+          // unresolved class this lane has (22,260 of 32,656 in the bounded
+          // population) and it was emitted as a bare relative spelling, so the
+          // document that wrote it was the only thing that could answer it.
+          ...this.resourceClaimMetadata(value, false),
         },
       })
       return "navigation"
@@ -1776,6 +1914,9 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         resourceType: rule.resourceType,
         isExternalResource: network,
         evidenceClass: rule.evidenceClass ?? (network ? "usage_contextual" : "import_based"),
+        // Same claim, same keys: a fetch names a FILE (`../styles/main.css`) or a
+        // network URL, and both were published verbatim with no reason attached.
+        ...this.resourceClaimMetadata(value, network),
       },
     })
     if (rule.import && !network) {

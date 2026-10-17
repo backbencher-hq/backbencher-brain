@@ -98,6 +98,34 @@ const parseStepsPath = (s: string, suffix: string): [string, number] | null => {
   }
   return [body.slice(0, open), Number(digits)]
 }
+// /^[a-z][a-z0-9_]*$/ — EXACT: a lowercase ASCII letter, then lowercase letters, digits and '_'.
+// This is the parameter-name alphabet of the Ansible k=v shorthand (`name=`, `tasks_from=`), not a
+// general identifier class: upper case, '$' and '.' cannot start one, so a role name carrying them
+// can never be mistaken for a parameter and takes the pre-existing scalar path.
+const isAnsibleParamName = (s: string): boolean => {
+  if (s.length === 0) return false
+  const first = s.charCodeAt(0)
+  if (first < 97 || first > 122) return false
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if ((c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95) continue
+    return false
+  }
+  return true
+}
+// /^[A-Za-z0-9_$-]+$/ — EXACT: the alphabet a bare `$ref` NAME can carry. Deliberately no '.', '/',
+// ':' or '#': a value with any of those is a path, a URI or a JSON pointer and must never be read as
+// a sibling-name reference.
+const isBareRefName = (s: string): boolean => {
+  if (s.length === 0) return false
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57)) continue
+    if (c === 95 || c === 45 || c === 36) continue
+    return false
+  }
+  return true
+}
 
 /**
  * YAML analyzer backed exclusively by the vendored tree-sitter-yaml AST
@@ -1499,8 +1527,19 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // verifies; the ROLE NAME travels in metadata so nothing is lost. When no candidate exists
         // the pre-existing bare-name behaviour is kept unchanged, so this fix can only ADD
         // checkable edges — it cannot remove an edge or weaken a claim.
-        const roleEntry = ROLE_IMPORT_KEYS.has(key) ? this.roleEntryTarget(name, ctx) : null
-        const target = roleEntry ?? name
+        const roleEntry = ROLE_IMPORT_KEYS.has(key)
+          ? this.roleEntryTarget(name, ctx, this.roleEntryFileHint(valueNode))
+          : null
+        // AN INLINE PARAMETER LIST NO ROLE ANSWERS KEEPS THE PRE-EXISTING TARGET. The parsed name
+        // from `name=a public=no` is `a`; if no role entry file exists for it, publishing the bare
+        // `a` would trade one silence for a name collision (the ambiguity trap this whole round is
+        // about), so the raw scalar the pre-existing code emitted is kept in exactly that case. The
+        // new spelling is used only where an entry file on disk makes it a CHECKABLE claim.
+        const inlineFallback = ROLE_IMPORT_KEYS.has(key) && roleEntry === null
+          && this.inlineRoleParams(valueNode) !== null
+          ? this.scalarValues(valueNode).slice(0, 1)[0]
+          : undefined
+        const target = roleEntry ?? inlineFallback ?? name
         const claim = roleEntry !== null
           ? { importProjectFile: [roleEntry] }
           : this.keywordIncludeClaim(name, ctx, key)
@@ -2021,6 +2060,50 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (emitted > 0) this.addPattern(ctx, "Published Schema Components")
   }
 
+  /**
+   * A `$ref` WHOSE VALUE IS A BARE NAME, RESOLVED AGAINST THE `test-data:` BLOCK IT LIVES IN.
+   *
+   * The convention is documented by the file's own consumer (gql-sangria's `CatsSupport.resolveRef`,
+   * cited at the call site): inside a `test-data:` block, `{$ref: name}` means the entry `name` of
+   * THAT block, not a JSON pointer. It is a REFERENCE convention rather than a path, so the target
+   * must be the published declaration path, which is what makes the edge resolve instead of
+   * appearing as an ambiguous bare leaf.
+   *
+   * Refuses more than it accepts:
+   *   * the value must be a bare name — a '.', '/', ':' or '#' anywhere means a path, URI or JSON
+   *     pointer and this rule does not apply (`isBareRefName`);
+   *   * the read site must be INSIDE a `test-data:` block (the nearest ancestor, found from the
+   *     shape index), so a `$ref` elsewhere in a file that happens to have one is untouched;
+   *   * the target path must EXIST in the document's shape index — a name the block does not
+   *     declare returns null and the pre-existing `external-file` reading is kept.
+   *
+   * MEASURED corpus-wide: the only `test-data`-nested bare `$ref` values are gql-sangria's four
+   * (`data` ×3, `deepData` ×1); the other bare spellings corpus-wide are 26 `$ref: null` in the
+   * Grace OpenAPI documents, which have no `test-data` block and therefore never reach this rule.
+   *
+   * Both endpoints are therefore existing declarations of this one file, and the target is a
+   * qualified path — so this can move an edge out of the ambiguous/unresolved columns and cannot
+   * put one into a collision.
+   */
+  private resolveTestDataReference(source: string, pointer: string, ctx: YamlContext): string | null {
+    if (!isBareRefName(pointer)) return null
+    // THE BLOCK IS THE NEAREST `test-data:` ANCESTOR OF THE READ SITE, and it is found from the
+    // document's OWN shape index rather than assumed to sit at the document root — measured on the
+    // gql-sangria scenario, the block is `…Executor.tests[0].given.test-data`, four levels down.
+    // The LONGEST matching ancestor wins, so a `test-data` nested inside another one resolves
+    // against the inner block, which is the one a loader would hand the resolver.
+    let block: string | null = null
+    for (const [path, valueType] of ctx.shapeIndex) {
+      if (valueType !== "object") continue
+      if (!path.endsWith(".test-data")) continue
+      if (!source.startsWith(`${path}.`)) continue
+      if (block === null || path.length > block.length) block = path
+    }
+    if (block === null) return null
+    const target = `${block}.${pointer}`
+    return ctx.shapeIndex.has(target) ? target : null
+  }
+
   /** `$ref` targets that point outside this file, or at a pointer nothing declares. */
   private resolvePointerReferences(ctx: YamlContext): void {
     for (const r of ctx.relationships) {
@@ -2028,6 +2111,32 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const pointer = r.metadata.pointer as string | undefined
       if (typeof pointer !== "string") continue
       if (!pointer.startsWith("/")) {
+        // A `$ref` VALUE THAT IS NOT A POINTER IS USUALLY A FILE — but one corpus convention
+        // writes it as a BARE NAME inside the `test-data:` block its loader resolves it against.
+        // MEASURED, whole admitted population: the only `test-data`-nested bare `$ref` values are
+        // gql-sangria's execution scenarios (Executor.yaml:38,47,49; the other bare spellings
+        // corpus-wide are 26 `$ref: null` in the Grace OpenAPI documents, which no `test-data`
+        // gate reaches), and the loader's own rule is
+        // `gql-sangria/modules/core/src/test/scala/sangria/util/CatsSupport.scala:250-251`:
+        //     case JsObject(fields) if fields.keySet == Set("$ref") =>
+        //       testData(fields("$ref").stringValue)
+        // i.e. the target is the `test-data.<name>` entry of the SAME document. The published path
+        // is looked up in the document's own shape index and must exist, so this is a resolution
+        // to a declaration, not a guess between candidates.
+        const testDataTarget = this.resolveTestDataReference(String(r.source ?? ""), pointer, ctx)
+        if (testDataTarget !== null) {
+          r.target = testDataTarget
+          r.metadata.resolved = true
+          r.metadata.resolvedIn = "file"
+          r.metadata.resolvedVia = "test-data-reference"
+          r.confidence = 1
+          // NOT an external reference any more. The marker said "this names a file outside the
+          // project", which the in-file resolution REFUTES; removing it keeps the Option E pass
+          // (which runs after this) from certifying a claim on an edge that resolved.
+          delete r.metadata.isExternal
+          delete r.metadata.unresolvedReason
+          continue
+        }
         r.metadata.resolved = false
         r.metadata.unresolvedReason = "external-file"
         continue
@@ -2536,6 +2645,16 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (ROLE_IMPORT_KEYS.has(key)) {
       const named = this.mappingEntryScalar(valueNode, "name")
       if (named !== null) return [named]
+      // ANSIBLE'S INLINE k=v SHORTHAND IS NOT A ROLE NAME. `- import_role: name=a public=no` is the
+      // documented inline form of `{name: a, public: no}`. It used to fall through to the scalar
+      // shorthand below and publish the WHOLE PARAMETER LIST as the role's name, which names
+      // nothing; MEASURED, whole admitted population: **20 inline sites, 18 of them naming a role
+      // whose entry file is on disk** (privacy.yml, allowed_dupes.yml, no_dupes.yml, 47023.yml and
+      // the three chained 47023_roleN tasks — see `validation/m14/verification/YAML-FIX.md` §6.1).
+      // The parsed list is returned only where EVERY token is a `key=value` pair: a plain scalar
+      // role name (`- include_role: some_role`) has no '=' and keeps the pre-existing path.
+      const inline = this.inlineRoleParams(valueNode)
+      if (inline !== null) return [inline.get("name")!]
       // The scalar shorthand (`- include_role: some_role`) names the role directly; the first
       // scalar of any other shape is that shape's only candidate for a role name.
       return this.scalarValues(valueNode).slice(0, 1)
@@ -3669,32 +3788,93 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * the project (`include_role: name=../x` occurs in ansible), and a candidate that escapes returns
    * null rather than a path the arbiter's file list could never hold.
    */
-  private roleEntryTarget(name: string, ctx: YamlContext): string | null {
+  private roleEntryTarget(name: string, ctx: YamlContext, tasksFrom: string | null = null): string | null {
     if (typeof name !== "string" || name.length === 0) return null
     const rel = RealYamlAnalyzer.projectRelativePath(ctx.filePath, ctx.projectRoot)
     if (rel === null) return null
     const parts = rel.split("/")
     parts.pop()
+    // THE ENTRY SPELLINGS, IN AN ORDER THAT CANNOT MOVE AN EDGE THAT RESOLVES TODAY.
+    // `tasks/main.yml` is always tried first, so a role import that already targets an entry file
+    // keeps that exact target. `tasks/<tasks_from>` — which ansible actually loads INSTEAD of
+    // main.yml when the parameter is present — is the fallback, used only where main.yml does not
+    // exist. MEASURED whole admitted population: 5 sites where main.yml is absent and the
+    // `tasks_from` file is present (YAML-FIX.md §6.1) — 191 mapping-form role imports though, so
+    // the order matters for 128 of them: a target that resolves must not change.
+    const spellings: string[] = [`roles/${name}/tasks/main.yml`]
+    if (typeof tasksFrom === "string" && tasksFrom.length > 0) {
+      spellings.push(`roles/${name}/tasks/${tasksFrom}`)
+    }
     for (let depth = parts.length; depth >= 0; depth--) {
       const base = parts.slice(0, depth).join("/")
-      const raw = (base === "" ? "" : base + "/") + "roles/" + name + "/tasks/main.yml"
-      const segs: string[] = []
-      let escaped = false
-      for (const seg of raw.split("/")) {
-        if (seg === "" || seg === ".") continue
-        if (seg === "..") {
-          if (segs.length === 0) { escaped = true; break }
-          segs.pop()
-          continue
+      for (const spelling of spellings) {
+        const raw = (base === "" ? "" : base + "/") + spelling
+        const segs: string[] = []
+        let escaped = false
+        for (const seg of raw.split("/")) {
+          if (seg === "" || seg === ".") continue
+          if (seg === "..") {
+            if (segs.length === 0) { escaped = true; break }
+            segs.pop()
+            continue
+          }
+          segs.push(seg)
         }
-        segs.push(seg)
+        if (escaped) continue
+        const cand = segs.join("/")
+        if (cand.length === 0) continue
+        if (this.projectCarriesFile(ctx, [cand])) return cand
       }
-      if (escaped) continue
-      const cand = segs.join("/")
-      if (cand.length === 0) continue
-      if (this.projectCarriesFile(ctx, [cand])) return cand
     }
     return null
+  }
+
+  /**
+   * THE PARAMETERS OF AN INLINE ROLE IMPORT — `import_role: name=a public=no`.
+   *
+   * Ansible accepts the parameters of `include_role`/`import_role` as an inline `k=v` list as well
+   * as a mapping, and the lane read the whole list as ONE role name. This parses the list and
+   * returns it, or null unless EVERY whitespace-separated token is a `key=value` pair with a
+   * lowercase parameter name AND the list carries `name`:
+   *
+   *   * a plain scalar role name (`- include_role: some_role`) has no '=' → null, pre-existing path;
+   *   * a templated value (`name={{ role }}`) keeps its '{{' spelling as the VALUE of `name` and is
+   *     returned as the name — it will not resolve to a directory, and the caller keeps the
+   *     pre-existing target in that case (the fallback in `emitKeySemantics`);
+   *   * only the tokens are scanned; there is no regex and no guessing at quoting.
+   *
+   * The two parameters that name an entry FILE are read by `roleEntryFileHint`.
+   */
+  private inlineRoleParams(node: Node | null): Map<string, string> | null {
+    const scalar = node ? this.scalarNode(node) : null
+    if (!scalar || !SCALAR_TYPES.has(scalar.type)) return null
+    const text = this.scalarText(scalar)
+    if (text.length === 0) return null
+    const params = new Map<string, string>()
+    let i = 0
+    while (i < text.length) {
+      while (i < text.length && hasJsWhitespace(text[i])) i++
+      const start = i
+      while (i < text.length && !hasJsWhitespace(text[i])) i++
+      if (i === start) continue
+      const token = text.slice(start, i)
+      const eq = token.indexOf("=")
+      if (eq <= 0 || eq === token.length - 1) return null
+      const key = token.slice(0, eq)
+      if (!isAnsibleParamName(key)) return null
+      params.set(key, token.slice(eq + 1))
+    }
+    return params.size > 0 && params.has("name") ? params : null
+  }
+
+  /** The `tasks_from:` file a role import names, in EITHER spelling ansible accepts: the mapping
+   *  form (`import_role: {name: X, tasks_from: y.yml}`) or the inline form
+   *  (`import_role: name=X tasks_from=y.yml`). Null when no entry file is named, which is the
+   *  common case and keeps the pre-existing `tasks/main.yml` target. */
+  private roleEntryFileHint(valueNode: Node | null): string | null {
+    const named = this.mappingEntryScalar(valueNode, "tasks_from")
+    if (named !== null) return named
+    return this.inlineRoleParams(valueNode)?.get("tasks_from") ?? null
   }
 
   private keywordIncludeClaim(written: string, ctx: YamlContext, key: string): Record<string, unknown> {

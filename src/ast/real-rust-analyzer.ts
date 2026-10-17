@@ -139,6 +139,20 @@ interface RustContext {
   // records the node here and the normal call/macro handler attaches the
   // isAwait marker to its single edge (one edge per call site).
   awaitedCalls: Set<number>
+  // M14 RUST RESIDUAL — the call edge -> the qualified key its receiver names.
+  //
+  // `self.m()` and `Self::m()` are the two receiver forms whose type Rust fixes at
+  // PARSE time: `self` IS the enclosing impl type and `Self` is that type's keyword
+  // alias. Every other receiver form (`self.repository.find()`, `x.y.z()`) is an
+  // arbitrary expression the grammar carries no type for, so it stays on the bare
+  // leaf — see `validation/m14/verification/RUST-FIX.md` §4.
+  //
+  // The candidate is recorded HERE, at the call site, and APPLIED in
+  // `publishQualifiedCallTargets` after the walk, because the test that makes the
+  // binding safe — "does this file DECLARE `T::m`?" — cannot be answered while the
+  // walk is still inside the first method of the impl (`fn a(&self) { self.b() }`
+  // precedes `fn b`).
+  qualifiedCallCandidates?: Map<ASTEngine.UniversalRelationship, string>
 }
 
 export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -692,6 +706,10 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // and for what is deliberately refused.
     this.emitRustModuleSurface(rootNode, ctx)
     this.emitRustTraitOverrides(rootNode, ctx)
+
+    // M14 RUST RESIDUAL: the qualifier the CALL side computes is re-spelled onto the target,
+    // once the file's own declared member keys exist — see the pass for what it refuses.
+    this.publishQualifiedCallTargets(ctx)
 
     // R7: how much of this file's graph DECLINES to name an owner. Published
     // rather than kept in a log, because the honesty contract §4 requires the
@@ -1635,6 +1653,89 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * M14 RUST RESIDUAL — the receiver forms whose type Rust fixes at PARSE time.
+   *
+   * `self` in a method body IS the enclosing impl type, and `Self` is that type's own
+   * keyword alias, so `self.m()` / `Self::m()` name the enclosing type with no inference.
+   * The turbofish wrappers (`self.m::<T>()`, `Self::m::<T>()`) are unwrapped to the same
+   * base. Every other callee shape this analyzer sees — `self.repository.find()`,
+   * `x.y.z()`, `Type::new()` — is either an arbitrary receiver EXPRESSION or a path whose
+   * first segment is a module or an external type, and none of those is decidable from the
+   * tree alone. Returns `null` outside an `impl` block (a trait default body has no impl
+   * type, and `Self` there resolves to the trait — not to a member key this lane
+   * publishes).
+   */
+  private selfReceiverImplType(node: Node, functionNode: Node): string | null {
+    const base = functionNode.type === "generic_function"
+      ? functionNode.childForFieldName("function") ?? functionNode
+      : functionNode
+    if (base.type === "field_expression") {
+      if (base.childForFieldName("value")?.text !== "self") return null
+    } else if (base.type === "scoped_identifier") {
+      if (!base.text.startsWith("Self::")) return null
+    } else {
+      return null
+    }
+    return this.enclosingImplType(node)
+  }
+
+  /**
+   * M14 RUST RESIDUAL — publish the qualifier the lane already computes, ON BOTH ENDS.
+   *
+   * ## The defect, measured
+   *
+   * `incoming-gate.ts rust rs 400` reads 42,930 edges / 23,637 unresolved, and the largest
+   * unresolved bucket is the call whose callee carries a receiver (13,423). `handleCallExpression`
+   * sets `metadata.qualified` (the receiver expression) on every call edge and resolves on the
+   * BARE LEAF — and a member name is not identifying, so the edge has no answer.
+   *
+   * ## What this pass does, and the three things it refuses
+   *
+   * It re-spells the target as `<ImplType>::<member>` for a `self.m()` / `Self::m()` call
+   * **only when THIS FILE declares that exact member key in an `impl` block** (the keys are the
+   * `metadata.fqn` values `createSymbol` publishes). Three refusals, each one a measurement:
+   *
+   *   1. **No dot, ever.** `parallel-indexer` strategy 3 fires on any target containing a `.`:
+   *      it reduces the target to everything after the first dot and binds `MIN(sym.id)` — the
+   *      arbitrary tie-break the indexer measures ~75% wrong. `::` cannot reach that branch, so
+   *      a miss here is an honest NULL rather than a confident wrong answer.
+   *   2. **Own file only.** A cross-file member would resolve too, and would move the edge from
+   *      `sameFileUnproven` to `arbitraryTwin` in the gate's binding-intent test — the
+   *      file-crossing class that must not grow. The own-file test is what keeps it flat.
+   *   3. **Calls only.** An `overrides` target rewritten to `<Trait>::<m>` has the same
+   *      cross-file hazard (the trait is usually declared elsewhere) and the emitter's own note
+   *      records that a dotted variant was measured 100% unresolved; it is left alone.
+   *
+   * `toSymbol` and `metadata.qualified` are NOT touched: they are the `qualified_calls` PAYLOAD
+   * (pinned by `validation/m14/fixtures/rust/qualified-calls-ownership.rs`), a different fact
+   * from the resolution key, and re-spelling them would change a pinned surface to serve a
+   * resolution it does not perform.
+   */
+  private publishQualifiedCallTargets(ctx: RustContext): void {
+    const declaredMembers = new Set<string>()
+    for (const s of ctx.symbols) {
+      const fqn = (s.metadata as Record<string, unknown> | undefined)?.fqn
+      if (typeof fqn === "string" && fqn) declaredMembers.add(fqn)
+    }
+    if (declaredMembers.size === 0) return
+
+    for (const rel of ctx.relationships) {
+      if (rel.type !== ASTEngine.RelationshipType.Calls) continue
+      const target = String(rel.target ?? "")
+      if (!target || target.includes("::")) continue
+      let key = ctx.qualifiedCallCandidates?.get(rel) ?? null
+      if (!key) {
+        // The `T::m(...)` path form: the analyzer's own `metadata.qualified` IS the qualified
+        // spelling, and the file-declares-it test below is the same one the receiver form uses.
+        const q = String((rel.metadata as Record<string, unknown> | undefined)?.qualified ?? "")
+        if (/^[A-Za-z_][A-Za-z0-9_]*::[A-Za-z_][A-Za-z0-9_]*$/.test(q) && q.endsWith(`::${target}`)) key = q
+      }
+      if (!key || !declaredMembers.has(key)) continue
+      rel.target = key
+    }
+  }
+
+  /**
    * R10 (M60 standing rule) — the NAME of the type an impl implements.
    *
    * An impl symbol is named after the type it implements (stable identity, see
@@ -1750,6 +1851,34 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: { ...extraMetadata },
     }
     symbol.id = this.uniqueId(symbol.id)
+
+    // M14 RUST RESIDUAL — THE DECLARATION SIDE OF THE QUALIFIER.
+    //
+    // A member declared DIRECTLY inside `impl T` publishes the qualified identity
+    // `T::<member>` (at `metadata.fqn`, which `pool-worker.ts:1270` normalises to the
+    // symbol's `qualifiedName`). Nothing published it before, so a qualified target had
+    // no key to bind to: `parallel-indexer` resolves a relationship target by exact
+    // `qualified_name` (strategy 1), then by a project-unique bare name (strategy 2),
+    // then by everything after the first `.` of a DOTTED target (strategy 3) — and
+    // strategy 3 is the arbitrary tie-break this change deliberately cannot reach,
+    // because `::` contains no dot.
+    //
+    // The alias is derived from the NODE, not from `parent`, so it is the same fact in
+    // both places: `implSelfTypeName` is exactly what `Self` resolves to in this analyzer
+    // (`enclosingImplType`), and a `declaration_list` directly under an `impl_item` is
+    // exactly the set of members the type has here. Trait members are NOT aliased: an
+    // `overrides` target rewritten to `<Trait>::<m>` would move an edge whose own file
+    // declares the leaf (sameFileUnproven) into the file-crossing class
+    // (arbitraryTwin) whenever the trait is declared elsewhere — a rise this change is
+    // forbidden from causing.
+    if (kind === ASTEngine.SymbolKind.Function || kind === ASTEngine.SymbolKind.Method) {
+      const memberList = node.parent
+      const implNode = memberList?.parent
+      if (memberList?.type === "declaration_list" && implNode?.type === "impl_item") {
+        const implType = this.implSelfTypeName(implNode.childForFieldName("type"))
+        if (implType) (symbol.metadata as Record<string, unknown>).fqn = `${implType}::${name}`
+      }
+    }
     return symbol
   }
 
@@ -3158,7 +3287,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata.rustSpecific = true
       metadata.isAwait = true
     }
-    ctx.relationships.push({
+    const callRel: ASTEngine.UniversalRelationship = {
       source,
       target,
       fromSymbol: source,
@@ -3175,7 +3304,17 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       confidence: 1.0,
       ...(this.nodeLine(calleeNameNode) ? { line_number: this.nodeLine(calleeNameNode)! } : {}),
       metadata,
-    })
+    }
+    ctx.relationships.push(callRel)
+
+    // M14 RUST RESIDUAL — the call site's own contribution to the qualifier. Only the
+    // two keyword-anchored receiver forms are recorded; the target itself is re-spelled
+    // in `publishQualifiedCallTargets`, and only for a key this file DECLARES.
+    const selfImplType = this.selfReceiverImplType(node, functionNode)
+    if (selfImplType) {
+      const candidates = ctx.qualifiedCallCandidates ?? (ctx.qualifiedCallCandidates = new Map())
+      candidates.set(callRel, `${selfImplType}::${target}`)
+    }
 
     // #383 payload: calls per enclosing function — attached DIRECTLY to the
     // enclosing fn/method symbol (RSD1: the old name-keyed qcByFunction map

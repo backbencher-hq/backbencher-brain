@@ -1,5 +1,6 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { BINDING_SEP } from "./types"
 
 interface Scope {
   node: Node
@@ -480,6 +481,55 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (s.ownerName === ctx.currentModule || (!s.ownerName && !s.scope)) {
           ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" })
         }
+      }
+    }
+
+    // ── THE BINDING CHANNEL, for the one class of edge this lane emits that no
+    // declaration can ever answer: a callee that is a where/let LOCAL.
+    //
+    // The class is old and deliberate. A local is NOT a module symbol
+    // (HSD6/HSD19, unchanged — this publishes no symbol), but it IS a declared
+    // callable, so its call sites attribute to the local and its edge identity is
+    // the lexical owner chain (`owner.local`, nested `owner.inner.local`; see
+    // `collectLocalScopes` and docs/analyzers/real-haskell-analyzer.md). What was
+    // missing is not the identity — the analyzer computes it and publishes it AS
+    // THE TARGET — but the DISPOSITION: a target spelled `helper.go` reads, to
+    // every key space, exactly like a target that names a declaration which is
+    // missing. It is neither.
+    //
+    // The family already owns the channel for exactly this statement: the BINDING
+    // spelling (`BINDING_SEP`, src/ast/types.ts:190) carried by the
+    // `metadata.localBinding` claim the arbiter verifies — dart
+    // (`real-dart-analyzer.ts:2801`), php, fsharp (`real-fsharp-analyzer.ts:577`),
+    // julia (`real-julia-analyzer.ts:1440`), objective-c
+    // (`real-objective-c-analyzer.ts:1516`). The claim says "this target names a
+    // binding, not a declaration"; the arbiter REFUTES it the moment a declaration
+    // answers the target (`incoming-rule.ts:1124-1130`, checked BEFORE the count),
+    // and the separator is U+0000, which no published key can carry
+    // (`incoming-rule.ts:150-161`).
+    //
+    // MEASURED over the 400-file incoming-gate draw: 902 of this lane's 7,701
+    // `unresolved` edges are exactly this class (11.7% — the largest cause in the
+    // lane whose answer the analyzer already holds), and `collRes` cannot move:
+    // the edge was never resolved and is not resolved by a claim.
+    //
+    // THE IDENTITY IS KEPT VERBATIM after the separator, so the target still
+    // carries the lexical owner chain the M60 wave defined, and the LAST dotted
+    // segment — the leaf every consumer reduces to (`normTarget`,
+    // `differential.ts:1026`, and the lane's committed truth in
+    // validation/m12/ground-truth/haskell.json) — is byte-identical. The callable
+    // that makes the call goes in front, which is the family's spelling
+    // (`${source}${BINDING_SEP}${binding}`).
+    const localIdentities = new Set<string>()
+    for (const block of ctx.localScopes.blockLocals.values()) {
+      for (const identity of block.values()) localIdentities.add(identity)
+    }
+    if (localIdentities.size > 0) {
+      for (const rel of ctx.relationships) {
+        const target = rel.target ?? ""
+        if (!localIdentities.has(target)) continue
+        rel.target = `${rel.source ?? ""}${BINDING_SEP}${target}`
+        rel.metadata = { ...(rel.metadata ?? {}), localBinding: true }
       }
     }
 

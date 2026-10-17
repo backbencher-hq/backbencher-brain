@@ -316,6 +316,157 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     return name.length === 0 ? null : name
   }
 
+  /**
+   * THE KOTLIN PLATFORM'S OWN TYPE NAMES — the DEFAULT-IMPORTED set, as a CLOSED LIST.
+   *
+   * ## What this answers, and what it deliberately does not
+   *
+   * A bare `String`, `Int`, `List`, `Unit`, `Throwable` target names a declaration in
+   * `kotlin.*` (or one of the other default-imported packages: kotlin.collections,
+   * kotlin.text, kotlin.ranges, kotlin.sequences, kotlin.annotation, kotlin.comparisons,
+   * kotlin.io) — NOT a declaration in the project. MEASURED over this lane's 400-file gate
+   * population (2,067-file corpus, 6 projects), the unresolved edges whose target is one of
+   * these spellings number 2,936: 2,734 `references`, 172 `instantiates`, 27 `extends`,
+   * 3 `implements`. The top spellings are `String` 685, `Boolean` 332, `Int` 316, `Any` 315,
+   * `List` 269, `Unit` 238, `Long` 136, `Result` 96, `Throwable` 91, `Map` 68, `Double` 48,
+   * `Pair` 45, `Function` 40, `Array` 30. This is the largest ANALYZER-facing cause in the
+   * lane's residual; the largest cause overall (6,753 `calls` edges) is the 400-file stride
+   * hiding a declaration that does exist — an instrument artifact, not an analyzer defect.
+   *
+   * The membership test is DECIDABLE from a closed list, which is why it may be claimed at
+   * all: there is no lookup and no corpus fact behind it — a bare identifier of one of these
+   * spellings that is not this file's own is the platform's declaration of that name. The
+   * model is graphql's closed built-in scalar set.
+   *
+   * ## The three guards, each one measured rather than assumed
+   *
+   * 1. BARE SPELLINGS ONLY. A DOTTED target is not marked, and the reason is a measurement of
+   *    the arbiter's own classifier: `incoming-rule.ts` `pathLikeTarget` reads a dotted target
+   *    whose last segment is a source-file extension as a PATH, so `kotlin.js` would land in
+   *    `externalUnverified` (`ext?`) — a claim no check can reach, which blocks a PASS instead
+   *    of earning one. The dotted language-FQN channel (1,667 further edges: `kotlin.test` 228,
+   *    `kotlin.coroutines` 141, `java.util.concurrent` 66, `java.util` 60, `kotlin.time` 33,
+   *    `java.util.UUID` 18 …) is therefore PRICED AND LEFT, not guessed at.
+   * 2. NOT A NAME THIS FILE COULD MEAN ITSELF. The corpus refutes the naive version: Exposed
+   *    declares `org.jetbrains.exposed.v1.core.Sequence` and `...core.Function`, and
+   *    kotlinx-coroutines declares package `kotlin.coroutines.jvm.internal` — so a bare
+   *    `Sequence` in an Exposed file that imports the project's own `Sequence` is NOT the
+   *    platform's type, and marking it would assert something false about what the edge means.
+   *    The marker is attached only where the file neither declares that name nor imports a
+   *    declaration whose simple name or alias is that name. Both lists are already in hand at
+   *    the point of the check — no new walk, no new parse. MEASURED: 40 edges vetoed.
+   * 3. A WILDCARD IMPORT VETOES EVERY BARE NAME. `MariaDBDialect.kt` carries
+   *    `import org.jetbrains.exposed.v1.core.*` and writes `nextVal(seq: Sequence, …)`; an
+   *    explicit star import beats the DEFAULT star import in Kotlin, so that `Sequence` is
+   *    Exposed's own class. What a wildcard names cannot be enumerated from this file, so the
+   *    file claims nothing. MEASURED: 1,518 candidate edges vetoed (54% of the naive 2,936);
+   *    the 1,386 that remain are the change's whole yield.
+   *
+   * ## Why the marker is safe wherever it is attached
+   *
+   * The arbiter reads an external claim ONLY where the target names nothing in the project
+   * (`classifyEdge`, the `decls === 0` branch): on an edge whose target IS a project
+   * declaration the marker is inert, so it can never hide a resolution and never turn one into
+   * a gap. On a bare target the claim is verified by looking the target up and finding
+   * nothing — which is exactly the state in which it is read.
+   *
+   * TWO SPELLINGS ARE EXCLUDED, AND THE EXCLUSION IS A MEASUREMENT RATHER THAN A TASTE:
+   * `Sequence` and `Function` are default-imported (`kotlin.sequences.Sequence`, `kotlin.Function`)
+   * and this corpus declares both UNDER ITS OWN PACKAGE (`org.jetbrains.exposed.v1.core`). A
+   * same-package declaration needs NO import, so no per-file guard can see it: in the 400-file
+   * draw the marker was attached to `Alias.kt:139` — `object : Function<T>(columnType)`, which is
+   * Exposed's own class — and a false external is the one defect this programme has reverted a fix
+   * over (hcl's 29, protobuf's 37). Excluding the two spellings costs exactly TWO edges of the
+   * 1,388 (one of them that false one) and removes the only measured instance; the hazard CLASS
+   * remains declarable — a name redeclared in the same package of an unseen file — and for these
+   * 53 spellings a scan of all 2,346 `.kt`/`.kts` files found no other instance.
+   */
+  private static readonly KOTLIN_DEFAULT_IMPORTED_TYPES: ReadonlySet<string> = new Set([
+    // kotlin.*  (NOTE: `Function` is deliberately absent — see the exclusion note above.)
+    "Any", "Nothing", "Unit", "Boolean", "Byte", "Char", "Double", "Float", "Int", "Long",
+    "Short", "String", "Array", "CharSequence", "Comparable", "Enum", "Lazy",
+    "Pair", "Triple", "Result", "Throwable", "Exception", "Error", "RuntimeException",
+    "IllegalArgumentException", "IllegalStateException", "UnsupportedOperationException",
+    "IndexOutOfBoundsException", "ArithmeticException", "ClassCastException",
+    "NullPointerException", "NoSuchElementException", "NumberFormatException",
+    "ConcurrentModificationException", "Number", "Annotation", "Deprecated", "Suppress",
+    "OptIn", "Comparator", "UInt", "ULong", "UByte", "UShort",
+    // kotlin.collections.*
+    "Iterable", "MutableIterable", "Iterator", "MutableIterator", "ListIterator", "Collection",
+    "MutableCollection", "List", "MutableList", "Set", "MutableSet", "Map", "MutableMap",
+    "ArrayList", "HashMap", "HashSet", "LinkedHashMap", "LinkedHashSet", "ArrayDeque",
+    // kotlin.text.* / kotlin.ranges.*  (NOTE: `Sequence` is deliberately absent — same reason.)
+    "StringBuilder", "Regex", "MatchResult", "IntRange", "LongRange", "CharRange",
+    "ClosedRange",
+  ])
+
+  /**
+   * ATTACH THE PLATFORM MARKER — one pass over the finished edge list, so a new emission site
+   * cannot forget it (the defect class that produced this lane's two import shapes).
+   *
+   * `isStdlib` is the spelling the arbiter already recognises as an external claim
+   * (`incoming-rule.ts` `EXTERNAL_KEYS`), and no kotlin edge carried it before this change, so
+   * the column it feeds read 0 for this lane while these edges were counted as silent holes.
+   * Nothing else about an edge is touched: target, source, line and every pre-existing
+   * metadata key are byte-identical.
+   */
+  private markPlatformTargets(
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    imports: ASTEngine.ImportInfo[],
+  ): void {
+    // GUARD 2 — what THIS file could mean by a bare spelling: its own declarations, and the
+    // simple names its import list introduces (aliases included: `import a.b.C as D` makes
+    // both `C` and `D` names this file can mean).
+    //
+    // GUARD 3 — A WILDCARD IMPORT VETOES EVERY BARE NAME, and it is the guard the corpus
+    // forced. `MariaDBDialect.kt` carries `import org.jetbrains.exposed.v1.core.*` and writes
+    // `nextVal(seq: Sequence, …)`; an explicit star import beats the DEFAULT star import in
+    // Kotlin, so that `Sequence` is Exposed's own class, not `kotlin.sequences.Sequence` — and
+    // Exposed declares it (`org/jetbrains/exposed/v1/core/Sequence.kt:19`). Whatever a wildcard
+    // names is not enumerable from this file, so the honest response is to claim nothing here
+    // rather than to guess which names a package does not declare. MEASURED cost over the
+    // 400-file population: 1,518 of the 2,936 candidate edges carry a wildcard import in their
+    // own file and are left silent; the 40 the two other guards veto are named in the report.
+    let hasWildcardImport = false
+    const fileOwned = new Set<string>()
+    for (const s of symbols) {
+      const n = s?.name
+      if (typeof n === "string" && n.length > 0) fileOwned.add(n)
+    }
+    for (const imp of imports) {
+      const mod = imp?.module
+      if (typeof mod !== "string" || mod.length === 0) continue
+      if (mod.endsWith("*") || imp?.isNamespaceImport === true) { hasWildcardImport = true; continue }
+      const dot = mod.lastIndexOf(".")
+      const leaf = dot >= 0 ? mod.slice(dot + 1) : mod
+      if (leaf.length > 0) fileOwned.add(leaf)
+      if (typeof imp.alias === "string" && imp.alias.length > 0) fileOwned.add(imp.alias)
+    }
+    if (hasWildcardImport) return
+    for (const rel of relationships) {
+      // GUARD 1 — the four edge types whose target IS a type mention. `contains`, `exports`,
+      // `calls`, `uses` and `overrides` are untouched: their targets are declarations of this
+      // file, callee leaves, binding-shaped names or `Owner.member` paths, and none of those
+      // is what this claim states.
+      const t = rel.type
+      if (
+        t !== ASTEngine.RelationshipType.References &&
+        t !== ASTEngine.RelationshipType.Instantiates &&
+        t !== ASTEngine.RelationshipType.Extends &&
+        t !== ASTEngine.RelationshipType.Implements
+      ) continue
+      const target = rel.target
+      if (typeof target !== "string") continue
+      if (!RealKotlinAnalyzer.KOTLIN_DEFAULT_IMPORTED_TYPES.has(target)) continue
+      if (fileOwned.has(target)) continue
+      const md = rel.metadata as Record<string, unknown> | undefined
+      if (!md || typeof md !== "object") continue
+      if (md.isStdlib === true) continue
+      md.isStdlib = true
+    }
+  }
+
   analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     const ctx: KotlinContext = {
       content,
@@ -1054,6 +1205,12 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     this.classifyEvidenceTier(relationships)
+
+    // LAST, and deliberately after the evidence classifier so nothing downstream can be
+    // re-keyed by a marker it never saw before. See markPlatformTargets for the closed list,
+    // the two measured guards, and the arbiter branch that makes the marker inert on any
+    // edge whose target IS a project declaration.
+    this.markPlatformTargets(relationships, symbols, imports)
 
     return {
       symbols,

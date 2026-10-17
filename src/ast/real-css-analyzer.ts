@@ -1,5 +1,5 @@
 import type { Node } from "web-tree-sitter"
-import { existsSync } from "node:fs"
+import { existsSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { ASTEngine } from "./engine"
 
@@ -641,12 +641,22 @@ const RECOVERY_CHILD_CAP = 10000
 const STRUCTURAL_SCOPE_AT_RULES = new Set(["@layer", "@container", "@scope"])
 
 export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     // The importing stylesheet's own name, for `@import` edges. Pure-String, and
     // the LAST path segment: `a/b/theme.css` imports as `theme.css`, which is how
     // the module is written in the import itself and how the store spells a file.
     const lastSegment = lastPathSegment(filePath)
     this.importerName = lastSegment || filePath || "stylesheet"
+    // THE CALLER'S PROJECT ROOT, for the one claim that needs it (`importProjectFile`).
+    //
+    // Read from the CONTEXT rather than rediscovered from `.git` the way `cssFileScopeOf` does,
+    // because a `projectFile` claim is a statement about a FILE LIST the caller supplied, and
+    // only the caller knows which list that is. Empty means the caller named no project root —
+    // the fixture runner does not (`run-fixtures.ts:986` calls `analyze` with no context) — and
+    // then the claim is NOT stated: an unrooted relative path would be a claim about a project
+    // the analyzer invented. This is html's rule for the same claim (`real-html-analyzer.ts`,
+    // `claimProjectRoot`), copied rather than re-argued.
+    this.claimProjectRoot = typeof context?.projectRoot === "string" ? context.projectRoot : ""
     // Whether that name is a REAL basename or the fallback above. The stylesheet module
     // symbol is published only for a real basename: publishing one named `stylesheet`
     // would put a placeholder literal in a name-bearing field, which is the M60 R7 rule
@@ -1587,6 +1597,15 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   /** The directory of the file being analyzed, for resolving a RELATIVE import specifier. */
   private fileDir = ""
 
+  /**
+   * The CALLER's project root, or `""`. Set per `analyze` run from `context.projectRoot`.
+   *
+   * Used for exactly one thing: turning the sibling file an `@import` resolves to into the
+   * PROJECT-RELATIVE path an `importProjectFile` claim carries. Empty (the fixture runner's
+   * case) means the claim is not stated — see the note at the assignment in `analyze`.
+   */
+  private claimProjectRoot = ""
+
   private determineSelectorKind(
     hasId: boolean,
     hasClass: boolean,
@@ -2495,7 +2514,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * bucket. The alternative — naming a same-basename file in another directory — is what the
    * bare spelling already does, and it is right only by luck.
    */
-  private siblingImportTarget(specifier: string): string | null {
+  private siblingImportFile(specifier: string): string | null {
     if (this.fileDir === "" || specifier.length === 0) return null
     // An absolute path is not a sibling, and a scheme/@/~ spelling was returned before this is
     // reached. Everything else — `_variables.less`, `./x.css`, `../a/b.css`, `vendor/x.css` — is
@@ -2504,11 +2523,100 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (specifier.startsWith("/")) return null
     const sibling = path.resolve(this.fileDir, specifier)
     if (!existsSync(sibling)) return null
+    return sibling
+  }
+
+  private siblingImportTarget(specifier: string): string | null {
+    const sibling = this.siblingImportFile(specifier)
+    if (sibling === null) return null
     const base = lastPathSegment(sibling)
     if (base.length === 0) return null
     const scope = cssFileScopeOf(sibling)
     if (scope === "") return null
     return `${scope}::${base}`
+  }
+
+  /**
+   * THE CLAIM AN `@import` TARGET CAN CARRY — the reason the edge names something this run cannot
+   * resolve, published on a key the ARBITER reads rather than in a comment.
+   *
+   * THE DEFECT THIS CLOSES, in this lane's own measurement. The gate's residual for `css` over the
+   * 400-file stride is **85 edges = 70 ambiguous + 15 unresolved**; the 15 are ALL `@import`
+   * specifiers that name no declaration in the sampled key space, and they carried NO claim of any
+   * kind — the marker table showed `imports  importSource+importSpecifier+isCssImport` with
+   * `extClaim 0`. This is the fleet-wide finding (`RESIDUAL-CLASSIFICATION-41-LANES.md:18-34`) in
+   * its earlier form: not a truthful marker on an unread spelling, but no marker at all, on a
+   * construct whose reason the analyzer ALREADY computes — `importTargetName` above branches on
+   * network URL vs project path vs package name.
+   *
+   * THE TWO SHAPES THE CENSUS FOUND, and each one's claim:
+   *
+   *   A NETWORK URL (`https://fonts.googleapis.com/css?family=…`, 7 of the 15) is outside every
+   *   admitted file list BY CONSTRUCTION, so the edge carries `sourcePathClaim`. Its polarity is
+   *   inverted on purpose (`incoming-rule.ts`, `SOURCE_PATH_CLAIM_KEY`): the project REFUTES the
+   *   claim the moment a candidate IS an admitted file, which is what stops this from becoming a
+   *   laundering channel. MEASURED, with the arbiter's own `classifyEdge` and its own admitted
+   *   file facts: **7 of 7 verify, 0 refuted** — and the spelling cannot produce a refutation,
+   *   since no admitted path answers a URL.
+   *
+   *   A RELATIVE SPECIFIER THAT RESOLVES TO A FILE BESIDE THIS ONE (`styles/layout.css`,
+   *   `MavenPro.css`; 8 of the 15) is a dependency the project plainly HAS — it is on disk, and it
+   *   is an admitted file — but the sampler did not draw the file that declares it, so the target
+   *   (`<scope>::<basename>`) answers nothing in the key space. The honest claim is
+   *   `importProjectFile`: the project's own admitted list CONFIRMS the file, which is evidence the
+   *   analyzer never saw. MEASURED the same way: **8 of 8 verify, 0 refuted** — the candidate is
+   *   the sibling's real repo-relative path (`plugins/org.jkiss.dbeaver.ui.ai/web/styles/layout.css`,
+   *   …) and every one of the eight is in the admitted file list. This is the yaml `!include`
+   *   claim's law (`incoming-rule.ts`, `FILE_CLAIM_KEY`): a miss would REFUTE, so existence is
+   *   checked before the claim is published — never the other way round.
+   *
+   * WHAT IS DELIBERATELY LEFT UNMARKED, which is the half that keeps this from being a blanket
+   * excuse. A BARE PACKAGE NAME (`tailwindcss`, `tw-animate-css`) gets NOTHING: the source-path
+   * claim is defined only for a target containing `/` or a scheme, and a bare name is exactly the
+   * spelling that can also name a DECLARATION. An `@`-SCOPED PACKAGE SUBPATH
+   * (`@fontsource-variable/figtree/index.css`) gets nothing either: it is not in this population,
+   * and its claim's CANDIDATES include the bare basename (`index.css`), which a repo that admits a
+   * root-level `index.css` would refute. A claim that has not been measured is not published.
+   *
+   * EVERY KEY HERE IS ADDITIVE. The target is untouched — no rebasing, no basename stripping — so
+   * `resolved`, `collRes` and the binding-intent table cannot move; the claim is read by the
+   * arbiter only where the key space declares nothing by that target (`classifyEdge`'s
+   * `decls === 0` branch), so no existing resolution can be relabelled either.
+   */
+  private importClaimMetadata(specifier: string): Record<string, unknown> {
+    // NO NAMED PROJECT, NO CLAIM. Both claim kinds are statements about THE PROJECT'S OWN ADMITTED
+    // FILE LIST — `sourcePathClaim` says nothing in that list answers this string, `importProjectFile`
+    // says the list contains it — and the arbiter verifies each against exactly that list
+    // (`incoming-rule.ts`, `verifyFileClaim` / `classifyEdge`). A caller that names no project root
+    // has told this analyzer nothing about which list the claim would be judged against, so the
+    // analyzer states nothing. That boundary is also what keeps this change INSIDE the css lane:
+    // the html and scss analyzers delegate to this class for embedded blocks with THREE arguments
+    // (`real-html-analyzer.ts:2070`, `real-scss-analyzer.ts:401`) and therefore get byte-identical
+    // output to before, while production (`parallel-indexer.ts:1298`) and the incoming gate pass
+    // `{ projectRoot }` and get the claims.
+    if (this.claimProjectRoot.length === 0) return {}
+    if (specifier.startsWith("http:") || specifier.startsWith("https:") || specifier.startsWith("//")) {
+      return { sourcePathClaim: [specifier] }
+    }
+    // A PACKAGE SPECIFIER IS NOT A SIBLING, and `importTargetName` already declares that by
+    // returning these spellings verbatim before any path resolution. Reaching the existence test
+    // with `@scope/x` or `~pkg/x` would resolve them against the CSS directory and could find a
+    // path that has nothing to do with the package — the one way this helper could state a claim
+    // about the wrong file.
+    if (specifier.startsWith("@") || specifier.startsWith("~")) return {}
+    const sibling = this.siblingImportFile(specifier)
+    if (sibling === null) return {}
+    // A DIRECTORY is not a file claim. `existsSync` is true for `styles/` as well, and the
+    // verifier's directory rule would then decide the claim on whatever the directory happens to
+    // contain — which is a fact about a directory, not the file this import names.
+    try {
+      if (!statSync(sibling).isFile()) return {}
+    } catch {
+      return {}
+    }
+    const rel = path.relative(this.claimProjectRoot, sibling)
+    if (rel.length === 0 || rel.startsWith("..")) return {}
+    return { importProjectFile: [rel.split(path.sep).join("/")] }
   }
 
   private importTargetName(specifier: string): string {
@@ -2562,7 +2670,17 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         // enclosing construct, not the name.
         line_number: this.lineOf(stringNode),
         confidence: 1.0,
-        metadata: { isCssImport: true, importSource: this.importerName, importSpecifier: moduleName },
+        metadata: {
+          isCssImport: true,
+          importSource: this.importerName,
+          importSpecifier: moduleName,
+          // THE REASON, on the channel the arbiter reads. `imports` was the only residual type of
+          // this lane that published NO claim at all (gate marker table: `extClaim 0`), while the
+          // analyzer already knew which specifiers are network URLs and which name a project file.
+          // Additive: the target is untouched, so no resolution can move — see
+          // `importClaimMetadata` for the measured 15 of 15 verifications and what is NOT marked.
+          ...this.importClaimMetadata(moduleName),
+        },
       })
       if (moduleName.indexOf("tailwind") !== -1) ctx.frameworks["Tailwind CSS"] = true
       if (moduleName.indexOf("bootstrap") !== -1) ctx.frameworks["Bootstrap"] = true

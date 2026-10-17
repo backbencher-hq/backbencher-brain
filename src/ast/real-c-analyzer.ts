@@ -359,6 +359,121 @@ const DANGEROUS_FUNCTIONS = ["system", "popen", "execve", "execvp", "execl", "ex
 const SIGNAL_FUNCTIONS = ["signal", "sigaction", "sigprocmask", "sigemptyset", "sigfillset", "sigaddset", "sigdelset", "sigwait", "sigpending", "sigsuspend"]
 const ASM_KEYWORDS = ["__asm__", "__asm", "asm", "__volatile__"]
 const COMPLEXITY_NODES = ["if_statement", "for_statement", "while_statement", "do_statement", "case_statement", "conditional_expression"]
+/**
+ * THE ISO C STANDARD LIBRARY — a CLOSED, PUBLISHED name set, and the ONLY reason this analyzer
+ * says a callee is external.
+ *
+ * ## Why a claim at all
+ *
+ * A `calls printf(...)` edge names a declaration that is in `<stdio.h>` — a header shipped with
+ * the compiler, in no repository. On the incoming gate that edge reads `unresolved`: the target
+ * names no declaration in the run, which is true, and the edge therefore reads as a silent hole
+ * with no stated reason. The gate has a bucket for exactly this — an external claim the PROJECT
+ * VERIFIES (`extOK`) — and a bare-name claim is read there only where the key space declares
+ * NOTHING by that name (`incoming-rule.ts`: the `decls === 0` branch), so the claim is consulted
+ * at the one moment it is true about the run and it can never turn a resolved edge into anything
+ * else, nor manufacture a refutation. Measured on the lane's own 400-file `.c` population: 2,645
+ * of the 28,348 unresolved edges (9.3%) are calls whose callee is a name in this set, and every
+ * one of them carries NO external key at all today.
+ *
+ * ## Why THIS set, and why it stops here
+ *
+ * The list is the C standard's own library — C17 §7, every function and every function-like macro
+ * a program can CALL — and nothing else. That is the whole justification available to a per-file
+ * analyzer: it cannot see another file of the project, so it can never know whether `jv_free` is
+ * a sibling module's function or a stranger's. It CAN know what the language itself defines in
+ * headers that no project ships, and that knowledge does not depend on the corpus, the sample, or
+ * the run's completeness.
+ *
+ * THE LINE IS DRAWN AT THE LANGUAGE ON PURPOSE. POSIX and Win32 names are also outside any
+ * corpus, and a partial hand list of them would be a census of names this lane happened to meet —
+ * the laundering the gate's own header warns about ("mark every unresolved edge external and
+ * `unresolved` reads 0"). Measured cost of NOT taking them, so the boundary is priced rather than
+ * asserted: on the same 400-file population POSIX would add 103 edges and Win32 198 — 0.4% and
+ * 0.7% of the residual — against a list whose membership rule would no longer be a standard.
+ *
+ * ## What it may not do
+ *
+ * The claim is attached ONLY where the FILE declares no such name (`declaredNames`, the
+ * order-independent file-scope pre-pass) and ONLY to a plain named callee — never to a
+ * `field_expression` callee, whose target is a struct member that happens to share the spelling
+ * (`p->read(p)`), not the library function. A project that defines its own `printf` keeps its
+ * resolution: the claim is unread wherever a declaration answers to the name.
+ */
+const ISO_C_LIBRARY_NAMES = new Set<string>([
+  // <assert.h> — the macro callers actually invoke by name.
+  "assert",
+  // <ctype.h>
+  "isalnum", "isalpha", "isblank", "iscntrl", "isdigit", "isgraph", "islower", "isprint",
+  "ispunct", "isspace", "isupper", "isxdigit", "tolower", "toupper",
+  // <fenv.h>
+  "feclearexcept", "fegetenv", "fegetexceptflag", "fegetround", "feholdexcept", "feraiseexcept",
+  "fesetenv", "fesetexceptflag", "fesetround", "fetestexcept", "feupdateenv",
+  // <inttypes.h>
+  "imaxabs", "imaxdiv", "strtoimax", "strtoumax", "wcstoimax", "wcstoumax",
+  // <locale.h>
+  "localeconv", "setlocale",
+  // <math.h>
+  "acos", "acosf", "acosl", "acosh", "acoshf", "acoshl", "asin", "asinf", "asinl", "asinh",
+  "asinhf", "asinhl", "atan", "atanf", "atanl", "atan2", "atan2f", "atan2l", "atanh", "atanhf",
+  "atanhl", "cbrt", "cbrtf", "cbrtl", "ceil", "ceilf", "ceill", "copysign", "copysignf",
+  "copysignl", "cos", "cosf", "cosl", "cosh", "coshf", "coshl", "erf", "erff", "erfl", "erfc",
+  "erfcf", "erfcl", "exp", "expf", "expl", "exp2", "exp2f", "exp2l", "expm1", "expm1f", "expm1l",
+  "fabs", "fabsf", "fabsl", "fdim", "fdimf", "fdiml", "floor", "floorf", "floorl", "fma",
+  "fmaf", "fmal", "fmax", "fmaxf", "fmaxl", "fmin", "fminf", "fminl", "fmod", "fmodf", "fmodl",
+  "frexp", "frexpf", "frexpl", "hypot", "hypotf", "hypotl", "ilogb", "ilogbf", "ilogbl", "ldexp",
+  "ldexpf", "ldexpl", "lgamma", "lgammaf", "lgammal", "llrint", "llrintf", "llrintl", "llround",
+  "llroundf", "llroundl", "log", "logf", "logl", "log10", "log10f", "log10l", "log1p", "log1pf",
+  "log1pl", "log2", "log2f", "log2l", "logb", "logbf", "logbl", "lrint", "lrintf", "lrintl",
+  "lround", "lroundf", "lroundl", "modf", "modff", "modfl", "nan", "nanf", "nanl", "nearbyint",
+  "nearbyintf", "nearbyintl", "nextafter", "nextafterf", "nextafterl", "nexttoward",
+  "nexttowardf", "nexttowardl", "pow", "powf", "powl", "remainder", "remainderf", "remainderl",
+  "remquo", "remquof", "remquol", "rint", "rintf", "rintl", "round", "roundf", "roundl", "scalbn",
+  "scalbnf", "scalbnl", "scalbln", "scalblnf", "scalblnl", "sin", "sinf", "sinl", "sinh", "sinhf",
+  "sinhl", "sqrt", "sqrtf", "sqrtl", "tan", "tanf", "tanl", "tanh", "tanhf", "tanhl", "tgamma",
+  "tgammaf", "tgammal", "trunc", "truncf", "truncl",
+  // <setjmp.h> — the macro callers write, plus the function it may expand to.
+  "setjmp", "longjmp",
+  // <signal.h>
+  "signal", "raise",
+  // <stdarg.h> — macros, and they are invoked by name in real code.
+  "va_start", "va_arg", "va_copy", "va_end",
+  // <stddef.h>
+  "offsetof",
+  // <stdio.h>
+  "remove", "rename", "tmpfile", "tmpnam", "fclose", "fflush", "fopen", "freopen", "setbuf",
+  "setvbuf", "fprintf", "fscanf", "printf", "scanf", "snprintf", "sprintf", "sscanf", "vfprintf",
+  "vfscanf", "vprintf", "vscanf", "vsnprintf", "vsprintf", "vsscanf", "fgetc", "fgets", "fputc",
+  "fputs", "getc", "getchar", "putc", "putchar", "puts", "ungetc", "fread", "fwrite", "fgetpos",
+  "fseek", "fsetpos", "ftell", "rewind", "clearerr", "feof", "ferror", "perror", "fgetwc",
+  "fgetws", "fputwc", "fputws", "getwc", "getwchar", "putwc", "putwchar", "ungetwc", "fwprintf",
+  "fwscanf", "swprintf", "swscanf", "vfwprintf", "vfwscanf", "vswprintf", "vswscanf", "vwprintf",
+  "vwscanf", "wprintf", "wscanf", "fwide",
+  // <stdlib.h>
+  "atof", "atoi", "atol", "atoll", "strtod", "strtof", "strtold", "strtol", "strtoll", "strtoul",
+  "strtoull", "rand", "srand", "calloc", "free", "malloc", "realloc", "abort", "atexit", "exit",
+  "_Exit", "getenv", "system", "bsearch", "qsort", "abs", "labs", "llabs", "div", "ldiv", "lldiv",
+  "mblen", "mbtowc", "wctomb", "mbstowcs", "wcstombs",
+  // <string.h>
+  "memcpy", "memmove", "strcpy", "strncpy", "strcat", "strncat", "memcmp", "strcmp", "strcoll",
+  "strncmp", "strxfrm", "memchr", "strchr", "strcspn", "strpbrk", "strrchr", "strspn", "strstr",
+  "strtok", "memset", "strerror", "strlen",
+  // <time.h>
+  "clock", "time", "difftime", "mktime", "strftime", "gmtime", "localtime", "ctime", "asctime",
+  "timespec_get",
+  // <uchar.h>
+  "mbrtoc16", "c16rtomb", "mbrtoc32", "c32rtomb",
+  // <wchar.h>
+  "wcscat", "wcschr", "wcscmp", "wcscoll", "wcscpy", "wcscspn", "wcsftime", "wcslen", "wcsncat",
+  "wcsncmp", "wcsncpy", "wcspbrk", "wcsrchr", "wcsspn", "wcsstr", "wcstod", "wcstof", "wcstold",
+  "wcstol", "wcstoll", "wcstok", "wcstoul", "wcstoull", "wcsxfrm", "wmemchr", "wmemcmp",
+  "wmemcpy", "wmemmove", "wmemset", "mbrtowc", "wcrtomb", "mbsrtowcs", "wcsrtombs", "mbsinit",
+  "btowc", "wctob",
+  // <wctype.h>
+  "iswalnum", "iswalpha", "iswblank", "iswcntrl", "iswdigit", "iswgraph", "iswlower", "iswprint",
+  "iswpunct", "iswspace", "iswupper", "iswxdigit", "towlower", "towupper", "wctrans", "towctrans",
+  "wctype",
+])
 // CGD9 (M37 #601 dead-code sweep): DECLARATION_NODES, STRUCT_TYPE_NODES,
 // DECLARATOR_NODES, TYPE_NODES were declared and never referenced anywhere —
 // disconnected constants that suggested coverage that did not exist. Removed.
@@ -2643,13 +2758,41 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             // targets containing quotes/newlines (never real callees).
             !target.includes('"') && !target.includes("\n") && !target.includes("{")
           ) {
+            // THE ONE CASE WHERE THIS ANALYZER CAN SAY WHY THE TARGET NAMES NOTHING.
+            //
+            // The target is a bare callee name and the file declares no such name, so the edge
+            // depends on a declaration this run cannot see. That is two different facts, and only
+            // one of them is decidable here: `jv_free` may be a sibling module's function (the
+            // analyzer cannot see another file), while `printf` is the C standard library's own
+            // name — fixed by the language, in a header no project ships. `ISO_C_LIBRARY_NAMES`
+            // is the second fact and nothing else.
+            //
+            // The claim is `isExternal: true`, the key the incoming gate's external-claim channel
+            // reads. It is consulted ONLY where the key space declares nothing by the target's
+            // name (`incoming-rule.ts` `classifyEdge`, the `decls === 0` branch), so it cannot
+            // move a resolved or ambiguous edge in either direction, and for a bare name it can
+            // never read `externalRefuted`. The gate's own control pins that property — an
+            // external claim on a resolvable target is refused there, which is what stops this
+            // marker from becoming a blanket excuse for the residual.
+            //
+            // `isFunctionPointer` edges are excluded: `p->read(p)` names a struct MEMBER that
+            // happens to share a library spelling, not the library function, and the member's
+            // declaration is the struct's own.
+            const stdlibCallee =
+              !isFuncPtr && !declaredNames.has(target) && ISO_C_LIBRARY_NAMES.has(target)
             relationships.push({
               source: scopeManager.getRelationshipSource(),
               target: target,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 1.0,
               line_number: this.nodeLine(targetNode),
-              metadata: { relationshipType: "c_function_call", isFunctionPointer: isFuncPtr },
+              metadata: {
+                relationshipType: "c_function_call",
+                isFunctionPointer: isFuncPtr,
+                ...(stdlibCallee
+                  ? { isExternal: true, externalEvidence: "iso-c-standard-library-name" }
+                  : {}),
+              },
             })
 
             // #383 payload: calls of the enclosing function (C has no
