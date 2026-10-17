@@ -1,4 +1,27 @@
 /**
+ * Author: Muhammad Ishaq Khan
+ *
+ * SCSS analyzer. It DELEGATES the whole walk to `RealCssAnalyzer` (the reasoning is in the block below)
+ * and adds only what the SCSS grammar adds on top of CSS: `$variables`, `%placeholders`,
+ * `@mixin`/`@include`, `@function`/`@return`, `@extend` and `#{…}` interpolation. It reimplements
+ * nothing, so it inherits every CSS fix for free.
+ *
+ * Relationship types it covers: uses, references, contains, imports, calls, exports, extends, overrides.
+ * Grammar: `wasm/tree-sitter-scss.wasm`, built on tree-sitter-css 0.20.0 — it does NOT inherit the CSS
+ * lane's four local grammar patches (see `script/m14/verify-grammar-pins.ts`).
+ *
+ * Where the rest of the lane lives: docs/analyzers/real-scss-analyzer.md · spec
+ * script/m14/spec/scss-completeness.json · fixtures validation/m14/fixtures/scss/ · validation
+ * validation/m14/results/ and validation/m14/verification/.
+ *
+ * WHEN THIS FILE CHANGES, EDIT THESE TOO — a change here that skips them publishes a contract nobody
+ * updated: `src/ast/real-css-analyzer.ts` (the delegated walk; a node-handling fix usually belongs
+ * THERE and applying it here drifts both) · `src/ast/file-claim.ts` and `src/ast/project-index.ts` (the
+ * shared claim/index types this consumes) · `script/m14/spec/scss-completeness.json` (a new or removed
+ * node type changes a bucket) · `validation/m14/fixtures/scss/*.expectation.json` (the pins sections B
+ * and D read) · `script/m14/completeness-inventory.ts` (Lead-owned: this lane's requiredKinds/docs rows)
+ * · `docs/analyzers/real-scss-analyzer.md` (the measured narrative).
+ *
  * The SCSS analyzer.
  *
  * ── WHY THIS DELEGATES TO RealCssAnalyzer INSTEAD OF REIMPLEMENTING IT ─────────

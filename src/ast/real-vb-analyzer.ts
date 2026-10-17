@@ -1,4 +1,31 @@
 /**
+ * RealVbAnalyzer — Visual Basic .NET, on a vendored and repaired tree-sitter-vbnet grammar
+ * (M14 completeness ceremony).
+ *
+ * Author: Muhammad Ishaq Khan.
+ *
+ * THE RELATIONSHIP TYPES THIS FILE COVERS: all ten of the ontology — `contains`, `imports`,
+ * `references`, `calls`, `uses`, `extends`, `implements`, `overrides`, `instantiates`, `exports` —
+ * read off VB's class/interface declarations, `Inherits`/`Implements` clauses, `Overrides` members,
+ * `New` object creation and `Imports` statements. THIS LANE IS NOT YET GATED by the completeness
+ * inventory (no `LANG_CONFIG` entry), so its sections A-H are not yet machine-verified; this header
+ * exists so the ceremony half is in place when the config is proposed.
+ *
+ * WHERE THE RECORD LIVES: docs/analyzers/real-vb-analyzer.md; spec
+ * script/m14/spec/vb-completeness.json; fixtures validation/m14/fixtures/vb; grammar side
+ * grammars/tree-sitter-vbnet/PIN.md; lane review reviews/vb/master-review.md.
+ *
+ * WHEN THIS FILE CHANGES, CO-EDIT: the completeness spec, the expectation files under
+ * validation/m14/fixtures/vb, the docs above, and — when the GRAMMAR is the thing that moved — the
+ * vendored grammar's PIN.md (this grammar is cloned and repaired, so its patches are part of the
+ * contract). THE SHARED REGISTRIES ARE LEAD-OWNED: script/m14/run-fixtures.ts, differential.ts,
+ * wasm/ — request, do not edit.
+ *
+ * THE GRAMMAR IT DEPENDS ON: `wasm/tree-sitter-vbnet.wasm`, built from the vendored
+ * grammars/tree-sitter-vbnet. The lane history follows below.
+ */
+
+/**
  * RealVbAnalyzer — Visual Basic .NET, on a vendored and repaired
  * tree-sitter-vbnet grammar.
  *

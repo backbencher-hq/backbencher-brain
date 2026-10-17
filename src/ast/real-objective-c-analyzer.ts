@@ -1,3 +1,24 @@
+/**
+ * Objective-C Intelligence Engine — Author: Muhammad Ishaq Khan
+ * What this file is: the pure-AST analyzer for Objective-C (extensions m/mm/objc), wired in
+ * engine.ts getAnalyzer → RealObjectiveCAnalyzer. Imports come from preproc_include nodes
+ * DURING the walk (no source-text scanning); framework detection is a String.includes check on
+ * the module name. The binding separator it reads is the FAMILY constant in src/ast/types.ts
+ * (see the import comment below), so family-wide identity changes belong there, not here.
+ * Grammar: tree-sitter-objc.wasm (WASM loaded by engine.ts).
+ * Relationship types covered: calls, uses, contains, imports, references, exports, extends,
+ * implements, overrides, instantiates.
+ * Where its scripts/validations live: docs/analyzers/real-objective-c-analyzer.md,
+ * script/m14/spec/objc-completeness.json, validation/m14/fixtures/objc/**, and the LANG_CONFIG
+ * row in script/m14/completeness-inventory.ts (id "objc").
+ * EDIT THESE TOO when this file changes: src/ast/types.ts (the family binding separator), the
+ * spec, the fixtures, the doc above, and the LANG_CONFIG row.
+ * GATE CAVEAT, recorded where the co-edit list can act on it: section G's head-comment check
+ * looks for src/ast/real-<id>-analyzer.ts, so for id `objc` it looks for a file this lane does
+ * not have (`real-objective-c-analyzer.ts` is the real one). The check needs an analyzerFile
+ * mapping; until then this lane's section G reads `analyzer file absent` however complete the
+ * head is.
+ */
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 // OC-E BINDING SPELLING. The separator is the FAMILY constant (`src/ast/types.ts:190`), imported

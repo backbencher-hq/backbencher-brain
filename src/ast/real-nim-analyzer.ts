@@ -1,3 +1,18 @@
+/**
+ * Nim Intelligence Engine — Author: Muhammad Ishaq Khan
+ * What this file is: the pure-AST analyzer for Nim (extension nim), wired in engine.ts
+ * getAnalyzer → RealNimAnalyzer. Declaration-site extraction over procs, types, fields, enums
+ * and the template/macro surface, plus the call/use graph over expressions.
+ * Grammar: tree-sitter-nim.wasm (WASM loaded by engine.ts).
+ * Relationship types covered: calls, uses, contains, imports, references, exports, extends,
+ * implements, overrides, instantiates.
+ * Where its scripts/validations live: docs/analyzers/real-nim-analyzer.md,
+ * script/m14/spec/nim-completeness.json, validation/m14/fixtures/nim/**, and the LANG_CONFIG
+ * row in script/m14/completeness-inventory.ts.
+ * EDIT THESE TOO when this file changes: src/ast/override-context.ts — this analyzer imports
+ * `findDeclaringParent` from it, and the `extends`/`overrides` classification is decided
+ * there rather than here; also the spec, the fixtures, the doc above, and the LANG_CONFIG row.
+ */
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { findDeclaringParent } from "./override-context"

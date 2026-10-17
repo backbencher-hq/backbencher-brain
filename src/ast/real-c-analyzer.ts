@@ -1,28 +1,22 @@
-// C Intelligence Engine — Author: Muhammad Ishaq Khan
-// What this file is: the pure-AST analyzer for C (extensions c/h, routed by
-// src/ast/language-detection.ts). Every `.h` reaches this analyzer in PRODUCTION
-// (pool-worker.ts:1079 passes no content); the engine/gate path (engine.ts:1772)
-// passes content, so language-detection.ts:402 sniffs ObjC/C++ first. That
-// two-route split is measured in validation/m14/proposals/c-h-boundary.md — edit
-// the ROUTER to change it, never this file.
-// Grammar: tree-sitter-c 0.24.1 (WASM loaded by engine.ts), wired in
-// engine.ts getAnalyzer → RealCAnalyzer. Pure AST; string logic runs only on
-// AST-extracted values, never as a regex on source.
-// Relationship types covered: calls, uses, contains, imports, references,
-// exports, overrides, instantiates. `extends`/`implements` are RULED OUT —
-// C-D1: C has no inheritance grammar; a census showing either is a defect here.
-// `exports` has THREE emission forms and its FALSE edges are ranked above missing
-// ones: a macro is a linkage marker only if EVERY definition of it opens with
-// `extern` and none names `dllimport` (so a platform-varied marker whose arms
-// disagree publishes NOTHING, and an import boundary publishes nothing), a marker
-// on a declaration inside a `compound_statement` publishes nothing, and the
-// attribute path never reads an attribute spelling out of a `#define` line.
-// Pinned by fixtures/c/export-linkage-marker-989 and exports-attribute-989 CONTROL 7;
-// record from iteration 2 in validation/m14/verification/C-STATE.md §0.
-// Where its scripts/validations live: script/m14/spec/c-completeness.json, and
-// validation/m14/fixtures/c/**. Run: script/m14/run-fixtures.ts --lang c;
-// script/m14/incoming-gate.ts c c 400. State + residual: C-FIX.md, C-STATE.md.
-// EDIT THESE TOO: docs/analyzers/real-c-analyzer.md, the spec, the fixtures.
+// C LANE — the pure-AST analyzer for C (.c/.h).
+// Author: Muhammad Ishaq Khan
+// What this file is: parses the pinned tree-sitter-c grammar and publishes the C
+// lane's symbols and relationship types: calls, uses, contains, imports,
+// references, exports, overrides and instantiates. `extends`/`implements` are
+// ruled out (C has no inheritance grammar — C-D1); a census showing either is a
+// defect here. `exports` has THREE emission forms (extern linkage markers,
+// attributes, compound-statement declarations) and its FALSE edges rank above
+// missing ones; pinned by fixtures/c/export-linkage-marker-989 and CONTROL 7.
+// Routing: every `.h` reaches this analyzer in production (pool-worker passes no
+// content) while the engine/gate path sniffs ObjC/C++ first — change the ROUTER,
+// not this file, to move that boundary (validation/m14/proposals/c-h-boundary.md).
+// Grammar: tree-sitter-c@0.24.1, pinned as wasm/tree-sitter-c.wasm (sha256 f9a2d771…).
+// Docs / spec / fixtures / validations: docs/analyzers/real-c-analyzer.md ·
+// script/m14/spec/c-completeness.json · validation/m14/fixtures/c/** ·
+// validation/m14/verification/C-STATE.md + C-FIX.md.
+// CO-EDIT LIST — when this file changes, review in the SAME pass: those docs, the
+// spec and fixtures above, C-STATE.md, and src/ast/language-detection.ts +
+// src/ast/engine.ts if routing or registration moves.
 
 function inArray(arr: any[], val: any): boolean {
   for (let i = 0; i < arr.length; i++) {

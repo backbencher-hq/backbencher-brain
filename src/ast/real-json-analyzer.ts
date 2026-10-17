@@ -1,3 +1,24 @@
+// REAL JSON ANALYZER — the production AST analyzer for .json / .jsonc / .jsonl / .jsonlog.
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS. tree-sitter-json in, UniversalSymbols + UniversalRelationships out, pure AST extraction,
+// no regex fallback. It covers nine relationship types by name: calls, uses, contains, imports, references,
+// exports, extends, implements and overrides (instantiates is not emitted — JSON constructs nothing).
+// WHERE ITS CONTRACT LIVES: docs/analyzers/real-json-analyzer.md and docs/analyzers/json.md; the
+// machine-readable classification is script/m14/spec/json-completeness.json; its fixtures are
+// validation/m14/fixtures/json/; its measured clause records are validation/m14/verification/FOUR-CLAUSE-json.md
+// and the ambiguity/real-gap documents beside it.
+// GRAMMAR: tree-sitter-json (wasm/tree-sitter-json.wasm).
+// CO-EDIT WHEN THIS FILE CHANGES: script/m14/spec/json-completeness.json (a new emitted kind or node type must
+// be classified), validation/m14/fixtures/json/ (the expectation files pin the target spellings and the
+// contains model), docs/analyzers/real-json-analyzer.md (the long-form contract), and the lane's measured
+// record under validation/m14/verification/.
+// TWO MEASURED FACTS A FUTURE READER WILL OTHERWISE RE-OPEN. (1) The `contains` model over a Terraform
+// stack-bundle manifest is CORRECT — measured at 20 symbols and 19 `contains` edges; the shape is JSON
+// object nesting, not code containment, and it is the intended model. (2) The differential once reported
+// `analyzer-edges=0` for this lane: that was a HARNESS defect (an instrument path), NOT a containment or an
+// emission failure — do not re-open the false hunt.
+
 // Pure AST JSON analyzer.
 //
 // JSON has no declarations beyond object keys and values. The contract used by

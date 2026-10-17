@@ -1,24 +1,23 @@
-// C++ Intelligence Engine — Author: Muhammad Ishaq Khan
-// What this file is: the pure-AST analyzer for C++ (cc/cpp/cxx/c++/hpp/hxx/ipp/inl/cu, routed by
+// C++ Intelligence Engine — Author: Muhammad Ishaq Khan  What this file is: the pure-AST analyzer for C++ (cc/cpp/cxx/c++/hpp/hxx/ipp/inl/cu, routed by
 // src/ast/language-detection.ts); it produces the symbols and relationships the graph engine stores,
 // and string logic runs only on AST-extracted values, never as a regex on source.
-// Relationship types covered (ten, no exclusions): calls, uses, contains, imports, references,
-// exports, extends, implements, overrides, instantiates — per-type rulings and emission sites in
+// Relationship types covered (ten, no exclusions): calls, uses, contains, imports, references, exports,
+// extends, implements, overrides, instantiates — per-type rulings and emission sites in
 // script/m14/spec/cpp-completeness.json (`coverage._emissionSites`) and docs/analyzers/real-cpp-analyzer.md.
 // Where its scripts and validations live: script/m14/spec/cpp-completeness.json · fixtures
 // validation/m14/fixtures/cpp/** (`bun run script/m14/run-fixtures.ts --lang cpp`) · CPP-STATE.md +
 // CPP-RESIDUAL.md under validation/m14/verification/ · proposals validation/m14/proposals/cpp-*.md.
-// EDIT THESE TOO: docs/analyzers/real-cpp-analyzer.md, the spec JSON, and the fixtures/expectations
-// pinning a changed edge.
-// THE `.h` BOUNDARY: `detectLanguageFromPath` maps `.h` -> `c` by SPELLING and disambiguates by
-// CONTENT at language-detection.ts:402; production uses that (engine.ts parseFile -> getAnalyzer), but
-// the M14 gate's discovery admits by extension set only, so 3,095 cpp-routed headers (87,181
-// `#define`s, 83% of this lane's `calls` residual) sit outside its measured population. Proposed in
-// validation/m14/proposals/cpp-h-routing.md — do NOT fix it here, and do NOT touch `T(x)` (a
-// class-type functional construction IS a `calls` edge: cpp/call-target-name-surface-924).
-// Grammar: tree-sitter-cpp, a vendored local fork of 0.23.4 (wasm/tree-sitter-cpp.wasm), byte-pinned
-// in validation/m14/grammar-pins.json; wired in engine.ts getAnalyzer -> RealCppAnalyzer.
-
+// CO-EDIT WHEN THIS FILE CHANGES (the list everybody skips): docs/analyzers/real-cpp-analyzer.md · the spec
+// JSON · validation/m14/fixtures/cpp/** · script/m14/differential.ts (`deriveCppEdges` — the TRUTH side; an
+// emission the oracle does not derive lands as MISSING/UNEXPLAINED) · script/m14/completeness-inventory.ts
+// (`cpp` LANG_CONFIG) · src/ast/language-detection.ts · src/ast/engine.ts.
+// THE `.h` BOUNDARY: `detectLanguageFromPath` maps `.h` -> `c` by SPELLING and disambiguates by CONTENT at
+// language-detection.ts:402; production uses that, but the M14 gate's discovery admits by extension set only,
+// so 3,095 cpp-routed headers (87,181 `#define`s, 83% of this lane's `calls` residual) sit outside its
+// measured population. Proposed in validation/m14/proposals/cpp-h-routing.md — do NOT fix it here, and do
+// NOT touch `T(x)` (a class-type functional construction IS a `calls` edge: cpp/call-target-name-surface-924).
+// Grammar: tree-sitter-cpp, a vendored local fork of 0.23.4 (wasm/tree-sitter-cpp.wasm), byte-pinned in
+// validation/m14/grammar-pins.json; wired in engine.ts getAnalyzer -> RealCppAnalyzer.
 
 function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1

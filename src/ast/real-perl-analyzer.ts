@@ -1,3 +1,22 @@
+/**
+ * Perl Intelligence Engine — Author: Muhammad Ishaq Khan
+ * What this file is: the pure-AST analyzer for Perl (extensions pl/pm/perl), wired in
+ * engine.ts getAnalyzer → RealPerlAnalyzer. It reads packages, subs and variables and the
+ * Perl builtin/named-operator surface (REAL_PERL_BUILTINS below) without source-text scanning.
+ * Grammar: tree-sitter-perl.wasm (WASM loaded by engine.ts).
+ * Relationship types covered: calls, uses, contains, imports, references, extends, implements,
+ * overrides, instantiates.
+ * Where its scripts/validations live: docs/analyzers/real-perl-analyzer.md,
+ * script/m14/spec/perl-completeness.json, validation/m14/fixtures/perl/**, and the LANG_CONFIG
+ * row in script/m14/completeness-inventory.ts.
+ * THE LANE'S KNOWN OPEN CLASS, so the next contributor knows where the residual lives: the
+ * differential's last measured reading is missing=1635, unexplained=0 — real unanswered edges,
+ * mostly RECEIVER-TYPED APPLICATION-OBJECT calls. They are not parser failures; they are a
+ * per-file typing boundary, and a future wave must either resolve them or rule them with a run
+ * falsifier rather than explaining them away.
+ * EDIT THESE TOO when this file changes: the spec, the fixtures, the doc above, and the
+ * LANG_CONFIG row.
+ */
 import { ASTEngine } from "./engine"
 import type { Node } from "web-tree-sitter"
 

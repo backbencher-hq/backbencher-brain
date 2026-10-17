@@ -1,3 +1,21 @@
+// CSS LANE — the pure-AST analyzer for CSS (.css).
+// Author: Muhammad Ishaq Khan
+// What this file is: parses the pinned tree-sitter-css grammar and publishes the
+// lane's symbols and the five relationship types it implements: contains, imports,
+// references, uses and overrides. `exports` is a measured zero-sites ruling (the
+// ICSS/CSS-Modules :export convention occurs 0 times in the whole admitted
+// population); the other excluded kinds and their evidence live in the spec's
+// `excluded` block — NOTE the `calls` exclusion is CONTESTED (the pinned grammar
+// HAS `call_expression`: validation/m14/verification/EXCLUSION-AUDIT-S0.md).
+// Grammar: tree-sitter-css@0.25.0, pinned as wasm/tree-sitter-css.wasm
+// (sha256 e3ef97f902f804b7…).
+// Docs / spec / fixtures / validations: docs/analyzers/real-css-analyzer.md ·
+// script/m14/spec/css-completeness.json · validation/m14/fixtures/css/** ·
+// validation/m14/verification/CSS-STATE.md.
+// CO-EDIT LIST — when this file changes, review in the SAME pass: the docs above,
+// the spec (node-type buckets + the excluded evidence, especially the contested
+// calls row), the fixtures, and CSS-STATE.md. Shared registration/routing:
+// src/ast/engine.ts (getAnalyzer) and src/ast/language-detection.ts.
 import type { Node } from "web-tree-sitter"
 import { existsSync, statSync } from "node:fs"
 import * as path from "node:path"

@@ -1,3 +1,27 @@
+/**
+ * Author: Muhammad Ishaq Khan
+ *
+ * Swift analyzer. Declarations (class/struct/enum/protocol/extension/func/var/typealias) plus the
+ * dependency edges. The override/companion machinery lives in `override-context.ts` so that an
+ * extension declaring its type's companion is resolved once rather than re-derived at every call site;
+ * protocol conformance makes this lane one of the family's `implements` lanes.
+ *
+ * Relationship types it covers (all ten): calls, extends, implements, instantiates, uses, references,
+ * contains, overrides, exports, imports.
+ * Grammar: `wasm/tree-sitter-swift.wasm` (pinned; grammar probes under validation/m14/fixtures/swift/).
+ *
+ * Where the rest of the lane lives: docs/analyzers/real-swift-analyzer.md · spec
+ * script/m14/spec/swift-completeness.json · fixtures validation/m14/fixtures/swift/ · validation
+ * validation/m14/results/ and validation/m14/verification/SWIFT-FIX.md.
+ *
+ * WHEN THIS FILE CHANGES, EDIT THESE TOO — a change here that skips them publishes a contract nobody
+ * updated: `src/ast/override-context.ts` (the declaring-parent / override-companion resolution this
+ * file relies on) · `src/ast/engine.ts` (the shared ParseResult/relationship contract) ·
+ * `script/m14/spec/swift-completeness.json` (a new or removed node type changes a bucket) ·
+ * `validation/m14/fixtures/swift/*.expectation.json` (the pins sections B and D read) ·
+ * `script/m14/completeness-inventory.ts` (Lead-owned: this lane's requiredKinds/docs rows) ·
+ * `docs/analyzers/real-swift-analyzer.md`.
+ */
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { findDeclaringParent, type OverrideCompanion } from "./override-context"

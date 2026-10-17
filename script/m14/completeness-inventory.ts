@@ -51,6 +51,12 @@ const BASELINE = path.join(ROOT, "validation", "m14", "differential-baseline.jso
 interface LangConfig {
   id: string
   wasm: string
+  /** THE ANALYZER FILE, when it does not follow `real-<id>-analyzer.ts`.
+   *  THE objective-c LANE IS THE CASE: its config id is `objc` and its analyzer is
+   *  `src/ast/real-objective-c-analyzer.ts`, so a hardcoded `real-objc-analyzer.ts` made
+   *  section G report "analyzer file absent" and NO header could ever satisfy it. The file
+   *  must not be renamed -- engine.ts imports it and the docs and spec name it. */
+  analyzerFile?: string
   // A SECOND grammar the lane also loads (markdown: block + inline). Declared
   // because the markdown entry carries it, and left OPTIONAL because most lanes
   // have none. FINDING, recorded rather than papered over: nothing in this file
@@ -650,6 +656,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     title: "php managed-OO wave (#268)",
   },
   objc: {
+    analyzerFile: "src/ast/real-objective-c-analyzer.ts",
     id: "objc",
     wasm: "tree-sitter-objc.wasm",
     classification: "objc-completeness.json",
@@ -948,6 +955,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   // classified in disjoint buckets, 5 fixtures, 17 mutants, and a corpus
   // differential at 100 % / 0 missing / 0 unexplained on both corpora.
   make: {
+    analyzerFile: "src/ast/real-makefile-analyzer.ts",
     id: "make",
     wasm: "tree-sitter-make.wasm",
     classification: "make-completeness.json",
@@ -1382,7 +1390,7 @@ async function emittedKinds(cfg: LangConfig): Promise<Set<string>> {
   const out = new Set<string>()
   const dir = path.join(ROOT, cfg.fixturesDir)
   if (!fs.existsSync(dir)) return out
-  if (!fs.existsSync(path.join(ROOT, "src", "ast", `real-${cfg.id}-analyzer.ts`))) return out
+  if (!fs.existsSync(path.join(ROOT, cfg.analyzerFile ?? path.join("src", "ast", `real-${cfg.id}-analyzer.ts`)))) return out
   // *** THE SOURCE UNIVERSE IS THE ONE THE EXPECTATIONS DESCRIBE, NOT EVERY FILE IN THE DIRECTORY. ***
   //
   // This function used to parse EVERY non-.json file in the fixtures directory. Most lane directories
@@ -1530,7 +1538,8 @@ function verifySectionF(cfg: LangConfig): SectionCheck {
  * and the co-edit list -- so those are what is read.
  */
 function headCommentOf(lane: string): { ok: boolean; why: string } {
-  const p = path.join(ROOT, "src", "ast", `real-${lane}-analyzer.ts`)
+  const cfg = LANG_CONFIGS[lane]
+  const p = path.join(ROOT, cfg?.analyzerFile ?? path.join("src", "ast", `real-${lane}-analyzer.ts`))
   if (!fs.existsSync(p)) return { ok: false, why: "analyzer file absent" }
   const src = fs.readFileSync(p, "utf8")
   // The LEADING comment block only: everything before the first import/export statement.

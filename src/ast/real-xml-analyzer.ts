@@ -1,3 +1,29 @@
+/**
+ * XML analyzer — backed exclusively by the vendored tree-sitter-xml AST (M14 completeness ceremony).
+ *
+ * Author: Muhammad Ishaq Khan.
+ *
+ * THE RELATIONSHIP TYPES THIS FILE COVERS: SEVEN kinds, every one audited whole-population by the
+ * lane's owner — `contains`, `imports`, `references`, and these four measured ones: `calls` is REAL
+ * (xslt `call-template`, with 724 cross-file refusals counted), `uses` is REAL (a namespace-prefixed
+ * use of a binding the document itself declares), `extends` is REAL (XSD §3.4.2 derivation), and
+ * `overrides` is REAL (XSLT §5.5 competing rules). **`instantiates` IS NOT EMITTED AT ALL** — the
+ * completeness gate was once asking this lane for instantiation edges on TypeScript's behalf, a
+ * mis-attributed kind that no XML construct can carry. A future reader will otherwise "find" the
+ * missing instantiation edges; they do not exist.
+ *
+ * WHERE THE RECORD LIVES: docs/analyzers/xml.md + docs/analyzers/real-xml-analyzer.md; spec
+ * script/m14/spec/xml-completeness.json; fixtures validation/m14/fixtures/xml; grammar
+ * grammars/tree-sitter-xml/ (vendored); lane records under validation/m14/verification/.
+ *
+ * WHEN THIS FILE CHANGES, CO-EDIT: the completeness spec, the expectations under
+ * validation/m14/fixtures/xml, the docs above, and `src/ast/file-claim.ts` whenever the claim shape
+ * moves (this file reads `fileClaimForTarget`). THE SHARED REGISTRIES ARE LEAD-OWNED:
+ * script/m14/run-fixtures.ts, differential.ts, wasm/.
+ *
+ * THE GRAMMAR IT DEPENDS ON: `wasm/tree-sitter-xml.wasm` built from grammars/tree-sitter-xml.
+ */
+
 import type { Node } from "web-tree-sitter"
 import { statSync } from "node:fs"
 import * as path from "node:path"

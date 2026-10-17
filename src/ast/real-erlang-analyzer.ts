@@ -1,3 +1,24 @@
+// Erlang / OTP analyzer — Author: Muhammad Ishaq Khan  What this file is: the pure-AST analyzer for Erlang (`.erl`/`.hrl`, routed by src/ast/language-detection.ts)
+// — the OTP surface in full: `-module`/`-export`/`-behaviour` attributes become symbols and edges, function
+// clauses become methods with arity-aware identity, and every relationship derives from Tree-sitter nodes
+// (pure char scans; no RegExp on source). The full grammar classification lives in the spec, not here.
+// Relationship types covered (eight, measured this round over the 29 expectation-paired fixture sources):
+// contains 152 · references 88 · exports 72 · calls 37 · uses 18 · implements 5 · instantiates 4 · imports 3
+// (this grammar expresses no `extends`; the ten-type ontology's remaining rows are ruled in the spec).
+// ER-D1 — REMOTE-CALL TARGET CONVENTION, recorded so nobody "fixes" it: a remote call's target KEEPS the
+// module qualifier on the EDGE (`calls target="lists:map"`, `"io:format"`), and NO symbol carries a
+// `qualifiedName` alias. The two are consistent — the qualifier lives in the edge target, not in a symbol  name — and the evidence-tier split below uses that same colon as its signal.
+// M14 section D: every relationship states metadata.evidenceClass — structural (contains/exports/implements/
+// instantiates) · import_based (imports) · reference_qualified (references + `mod:fn` calls) · usage_contextual
+// (bare calls + uses).  Where docs, spec, fixtures and validations live: docs/analyzers/real-erlang-analyzer.md ·
+// script/m14/spec/erlang-completeness.json · validation/m14/fixtures/erlang/** ·
+// `bun run script/m14/run-fixtures.ts --lang erlang` · ERLANG-STATE.md under validation/m14/verification/.
+// CO-EDIT WHEN THIS FILE CHANGES: the spec's node-type buckets · the fixtures pinning a changed edge · the docs
+// · script/m14/differential.ts (`deriveErlangEdges` — the TRUTH side; an emission the oracle does not derive
+// lands as MISSING/UNEXPLAINED) · script/m14/completeness-inventory.ts (`erlang` LANG_CONFIG: requiredKinds is
+// exactly the eight above) · src/ast/engine.ts (getAnalyzer + wasm) · src/ast/language-detection.ts  (`.erl`/`.hrl`) · the BEAM sibling src/ast/real-elixir-analyzer.ts.
+// Grammar: tree-sitter-erlang (wasm/tree-sitter-erlang.wasm; engine.ts resolves node_modules/tree-sitter-erlang).
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 

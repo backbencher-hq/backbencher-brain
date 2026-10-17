@@ -1,3 +1,23 @@
+// Author: Muhammad Ishaq Khan
+// WHAT THIS FILE IS: the HTML analyzer — pure tree-sitter AST extraction over elements,
+//   attributes, ids/IDREFs and inline handlers, plus the embedded <script>/<style> seam (the
+//   "HTML Intelligence Engine" M60.LCM rewrite: single-pass, regex-free).
+// RELATIONSHIP SURFACE: contains, references (the IDREF class is html's own), calls, uses,
+//   imports, exports, instantiates, extends, overrides — `exports` is NOT html's own (see below).
+// DOCS: docs/analyzers/html.md and docs/analyzers/real-html-analyzer.md.
+// SPEC + FIXTURES: script/m14/spec/html-completeness.json · validation/m14/fixtures/html/.
+// CO-EDIT LIST — edit these when this file changes: both docs above; the completeness spec's
+//   handled/silent/gap/design_decision buckets AND its coverage block; every affected
+//   expectation under validation/m14/fixtures/html/; script/m14/html-ruled.ts (the RULED table
+//   the arbiter reads); the html seat in script/m14/differential.ts; and the lane instruments
+//   script/m14/html-ontology-census.ts / html-origin-census.ts when a measured count moves.
+// GRAMMAR: `tree-sitter-html` → wasm/tree-sitter-html.wasm (pin: validation/m14/grammar-pins.json);
+//   the embedded-script seam is the ENGINE's polyglot path, not this grammar's.
+// THE TWO TRUE-AT-ONCE STATEMENTS ABOUT `exports`: html emits the kind only THROUGH THE
+//   EMBEDDED-SCRIPT DELEGATION (a `<script type="module">`'s export becomes a relationship on
+//   the host document), so the contract row must name it; while three fixtures FORBID a
+//   pure-HTML export. Both are right: different LAYERS of one result. Positive witness:
+//   `embedded-module-export`; negative controls: `embedded-origin-marks` + the IDREF fixture.
 // HTML Intelligence Engine
 // M14 (#288) / M60.LCM rewrite: the web-family contract, pure-AST, fully
 // regex-free, single-pass O(nodes + attribute bytes).

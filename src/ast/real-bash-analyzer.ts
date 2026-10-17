@@ -1,3 +1,18 @@
+// BASH LANE — the pure-AST analyzer for shell scripts (.sh/.bash/.zsh).
+// Author: Muhammad Ishaq Khan
+// What this file is: parses the pinned tree-sitter-bash grammar and publishes the
+// shell lane's symbols and relationship types: calls, uses, contains, imports,
+// references, exports and overrides. `instantiates` is NEVER emitted — bash has
+// no construction form; fixtures/bash/no-instantiation pins the absence.
+// Grammar: wasm/tree-sitter-bash.wasm (sha256 f55f3f6c780e79fa…).
+// Docs / spec / fixtures / validations: docs/analyzers/real-bash-analyzer.md ·
+// script/m14/spec/bash-completeness.json · validation/m14/fixtures/bash/** ·
+// validation/m14/verification/BASH-STATE.md.
+// CO-EDIT LIST — when this file changes, review these in the SAME pass: the docs
+// above, the spec's node-type buckets (section A of the completeness inventory),
+// the lane's fixture expectations, and BASH-STATE.md. Shared registration and
+// routing to edit when the lane's files change: src/ast/engine.ts (getAnalyzer)
+// and src/ast/language-detection.ts (sh/bash/zsh → bash).
 import type { Node } from "web-tree-sitter"
 import { existsSync } from "node:fs"
 import * as path from "node:path"

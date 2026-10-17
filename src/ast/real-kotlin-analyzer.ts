@@ -1,3 +1,20 @@
+// REAL KOTLIN ANALYZER — the production AST analyzer for .kt / .kts files.
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS. tree-sitter-kotlin in, UniversalSymbols + UniversalRelationships out, pure AST
+// extraction, no regex fallback. It covers all ten relationship types by name: calls, uses, contains,
+// imports, references, exports, extends, implements, overrides and instantiates.
+// WHERE ITS CONTRACT LIVES: docs/analyzers/kotlin.md and docs/analyzers/real-kotlin-analyzer.md; the
+// machine-readable classification is script/m14/spec/kotlin-completeness.json; fixtures are
+// validation/m14/fixtures/kotlin/; measured clause and residual records are under
+// validation/m14/verification/.
+// GRAMMAR: tree-sitter-kotlin (wasm/tree-sitter-kotlin.wasm).
+// CO-EDIT WHEN THIS FILE CHANGES: script/m14/spec/kotlin-completeness.json (a new emitted kind or node type
+// must be classified; section A fails on silence), validation/m14/fixtures/kotlin/ (the expectation files pin
+// the endpoint spellings and the inheritance/implements surfaces), and docs/analyzers/real-kotlin-analyzer.md.
+// The shared arbiter script/m14/incoming-rule.ts and the gate script/m14/completeness-inventory.ts are
+// Lead-owned: propose, never edit them from a lane.
+
 function stringIncludes(str: string, val: string): boolean {
   if (!str) return false
   return str.indexOf(val) !== -1

@@ -1,3 +1,30 @@
+/**
+ * Author: Muhammad Ishaq Khan
+ *
+ * Solidity analyzer. Walks the tree-sitter-solidity tree and publishes the declarations a contract
+ * project depends on — contracts, interfaces, libraries, structs, enums, events, errors, modifiers,
+ * functions, state variables and constants — plus the dependency edges between them. It is the family's
+ * reference lane for `implements` and for the reserved-token / primitive-type guards the other lanes
+ * copied.
+ *
+ * Relationship types it covers (all ten): contains, calls, references, uses, extends, implements,
+ * instantiates, overrides, exports, imports.
+ * Grammar: `wasm/tree-sitter-solidity.wasm` (pinned; grammar probes under
+ * validation/m14/fixtures/solidity/).
+ *
+ * Where the rest of the lane lives: docs/analyzers/real-solidity-analyzer.md · spec
+ * script/m14/spec/solidity-completeness.json · fixtures validation/m14/fixtures/solidity/ · validation
+ * validation/m14/results/ and validation/m14/verification/SOLIDITY-FIX.md.
+ *
+ * WHEN THIS FILE CHANGES, EDIT THESE TOO — a change here that skips them publishes a contract nobody
+ * updated: `src/ast/solidity-reserved-tokens.ts` (the keyword/primitive/refused-name tables the guards
+ * below read; a new guard almost always adds a row there) · `src/ast/engine.ts` and
+ * `src/ast/project-index.ts` (the shared parse/context types) · the sibling analyzers that copied this
+ * lane's `implements` and reserved-token reading (a clause change must be mirrored or the family
+ * diverges) · `script/m14/spec/solidity-completeness.json` ·
+ * `validation/m14/fixtures/solidity/*.expectation.json` · `script/m14/completeness-inventory.ts`
+ * (Lead-owned: this lane's requiredKinds/docs rows) · `docs/analyzers/real-solidity-analyzer.md`.
+ */
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { isReservedTarget, isPrimitiveTypeToken, ENGINE_FUNCTION_NAMES, STORE_REFUSED_SYMBOL_NAMES } from "./solidity-reserved-tokens"

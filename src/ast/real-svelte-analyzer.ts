@@ -1,3 +1,31 @@
+/**
+ * Author: Muhammad Ishaq Khan
+ *
+ * Svelte analyzer. A two-layer parse — tree-sitter-svelte for the SFC skeleton, then each `<script>`
+ * body under tree-sitter-javascript/typescript via the engine pre-parse — so template component usages,
+ * `on:` event handlers, props, reactive declarations and script imports/calls/exports are all read from
+ * the AST, never from text. Fully regex-free.
+ *
+ * Relationship types it covers: instantiates (template component usages), calls (`on:` handlers and
+ * script calls), imports, exports, contains, references, uses, extends, overrides and **implements**.
+ * `implements` is load-bearing here: this lane emits class-heritage implements edges, and its contract
+ * row was once MISSING the kind — the same shape as ruby's row. If the heritage handling below changes,
+ * re-check that row: a kind emitted but absent from the row fails section B in the other direction.
+ *
+ * Grammar: `wasm/tree-sitter-svelte.wasm` for the SFC skeleton; tree-sitter-javascript/typescript for
+ * the script bodies (engine pre-parse, `context.sfcScriptTrees`).
+ *
+ * Where the rest of the lane lives: docs/analyzers/svelte.md · docs/analyzers/real-svelte-analyzer.md ·
+ * spec script/m14/spec/svelte-completeness.json · fixtures validation/m14/fixtures/svelte/ ·
+ * validation validation/m14/results/ and validation/m14/verification/SVELTE-FIX-admitted.txt.
+ *
+ * WHEN THIS FILE CHANGES, EDIT THESE TOO: `src/ast/real-javascript-analyzer.ts` and
+ * `src/ast/real-typescript-analyzer.ts` (the script-body contract this lane delegates to — a change
+ * there moves this lane's symbols) · `src/ast/engine.ts` (the SFC script-tree pre-parse and the range
+ * offsets back to SFC lines) · `script/m14/spec/svelte-completeness.json` ·
+ * `validation/m14/fixtures/svelte/*.expectation.json` · `script/m14/completeness-inventory.ts`
+ * (Lead-owned: this lane's requiredKinds/docs rows) · `docs/analyzers/real-svelte-analyzer.md`.
+ */
 // Svelte Intelligence Engine
 // M12.13 rewrite: C#-family contract, pure-AST, fully regex-free.
 //   - Two-layer parse: (1) tree-sitter-svelte gives the SFC skeleton — the

@@ -1,3 +1,23 @@
+// Author: Muhammad Ishaq Khan
+// WHAT THIS FILE IS: the Haskell analyzer — pure tree-sitter AST extraction over modules,
+//   data/newtype/type declarations, classes and instances, function bindings and local scopes,
+//   publishing symbols and relationships from the tree with no regex over source text.
+// RELATIONSHIP SURFACE: all ten the ontology declares — contains, calls, uses, imports,
+//   references, exports, extends, implements, overrides, instantiates.
+// DOCS: docs/analyzers/real-haskell-analyzer.md (the lane's measured record).
+// SPEC + FIXTURES: script/m14/spec/haskell-completeness.json · validation/m14/fixtures/haskell/.
+// CO-EDIT LIST — edit these when this file changes: the doc above; the completeness spec's
+//   handled/silent/gap/design_decision buckets AND its coverage block; every affected
+//   expectation under validation/m14/fixtures/haskell/; the lane's instruments
+//   script/m14/haskell-truth.ts and script/m14/verify-haskell-lane.ts; and the haskell seat in
+//   script/m14/differential.ts.
+// GRAMMAR: vendored `tree-sitter-haskell` → wasm/tree-sitter-haskell.wasm (pin:
+//   validation/m14/grammar-pins.json). The trees carry extras and supertypes, so the walk reads
+//   FIELDS (`name`, `parameters`, `body`) and named children rather than child indices.
+// MEASURED FACT THE SECTION-A READER MUST KNOW: the gate once accused 48 spec rows of "grammar
+//   drift" and ALL 48 were ANONYMOUS tokens. tree-sitter spells keywords (`class`, `where`,
+//   `let`, `in`) as anonymous literals, and `nodeTypeIsNamed` never returns them. An anonymous
+//   token is NEVER a section-A row — do not add one to a bucket to silence a drift report.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { BINDING_SEP } from "./types"

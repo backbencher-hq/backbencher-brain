@@ -1,3 +1,25 @@
+/**
+ * YAML analyzer — the `.yaml`/`.yml` lane's production path (M14 completeness ceremony).
+ *
+ * Author: Muhammad Ishaq Khan.
+ *
+ * THE RELATIONSHIP TYPES THIS FILE COVERS: `contains`, `imports`, `references`, `uses`, `calls`,
+ * `extends`, `overrides`, `exports`. THE CONTRACT ON `uses` IS BIDIRECTIONAL AND PINNED BY FORBID
+ * CONTROLS: a merge key `<<: *defaults` must be `extends` and NEVER `uses`, and a plain alias must
+ * never inherit — the fixtures forbid both wrong directions, so a future change that widens `uses`
+ * or lets an alias inherit fails a pin rather than quietly passing. Do not relax either guard.
+ *
+ * WHERE THE RECORD LIVES: docs/analyzers/yaml.md + docs/analyzers/real-yaml-analyzer.md; spec
+ * script/m14/spec/yaml-completeness.json; fixtures validation/m14/fixtures/yaml (incl. the
+ * `uses` forbid controls); lane records under validation/m14/verification/.
+ *
+ * WHEN THIS FILE CHANGES, CO-EDIT: the completeness spec, the merge-key/alias expectations under
+ * validation/m14/fixtures/yaml (both directions), the docs above, and the lane's verification
+ * records. THE SHARED REGISTRIES ARE LEAD-OWNED: script/m14/run-fixtures.ts, differential.ts, wasm/.
+ *
+ * THE GRAMMAR IT DEPENDS ON: `wasm/tree-sitter-yaml.wasm` (tree-sitter-yaml), sha-pinned in the spec.
+ */
+
 import type { Node } from "web-tree-sitter"
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"

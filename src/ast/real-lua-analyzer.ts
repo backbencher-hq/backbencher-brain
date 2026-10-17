@@ -1,3 +1,19 @@
+// REAL LUA ANALYZER — the production AST analyzer for .lua files.
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS. tree-sitter-lua in, UniversalSymbols + UniversalRelationships out, pure AST extraction,
+// no regex fallback. It covers nine relationship types by name: calls, uses, contains, imports, references,
+// exports, extends, overrides and instantiates.
+// WHERE ITS CONTRACT LIVES: docs/analyzers/real-lua-analyzer.md (long form); machine-readable classification
+// in script/m14/spec/lua-completeness.json; fixtures in validation/m14/fixtures/lua/; measured clause and
+// ambiguity records under validation/m14/verification/ (FOUR-CLAUSE-lua.md and the calls split).
+// GRAMMAR: tree-sitter-lua (wasm/tree-sitter-lua.wasm).
+// CO-EDIT WHEN THIS FILE CHANGES: script/m14/spec/lua-completeness.json (new node types and emitted kinds must
+// be classified — silence is guilt), validation/m14/fixtures/lua/ (expectation files pin the endpoints and the
+// module/import surfaces), and docs/analyzers/real-lua-analyzer.md. The shared arbiter
+// script/m14/incoming-rule.ts and the gate script/m14/completeness-inventory.ts are Lead-owned: propose for
+// them, never edit them from a lane.
+
 // Pure-AST Lua analyzer — M12.32 extraction contract.
 // Declarations and relationships come from Tree-sitter nodes/fields. No regex
 // fallback or source-wide scanning is used.

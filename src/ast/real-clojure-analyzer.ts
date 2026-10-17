@@ -1,3 +1,18 @@
+// CLOJURE LANE — the pure-AST analyzer for Clojure (.clj/.cljc/.cljs).
+// Author: Muhammad Ishaq Khan
+// What this file is: parses the pinned tree-sitter-clojure grammar and publishes
+// the lane's symbols and all TEN relationship types: calls, uses, contains,
+// imports, references, exports, extends, implements, overrides and instantiates
+// (tagged-constructor forms; CLJ-D1 rules the rest out). Reader payloads are never
+// walked as code.
+// Grammar: wasm/tree-sitter-clojure.wasm (sha256 90f8866b74d04e16…).
+// Docs / spec / fixtures / validations: docs/analyzers/real-clojure-analyzer.md ·
+// script/m14/spec/clojure-completeness.json · validation/m14/fixtures/clojure/** ·
+// validation/m14/verification/CLOJURE-STATE.md.
+// CO-EDIT LIST — when this file changes, review in the SAME pass: the docs above,
+// the spec's node-type buckets and label_coverage (sections A/D), the lane's 72
+// fixture expectations (evidence-tier pins included), and CLOJURE-STATE.md.
+// Shared registration/routing: src/ast/engine.ts and src/ast/language-detection.ts.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 

@@ -1,3 +1,24 @@
+// Elixir / BEAM analyzer — Author: Muhammad Ishaq Khan  What this file is: the pure-AST analyzer for Elixir (`.ex`/`.exs`, routed by src/ast/language-detection.ts)
+// — it publishes the symbols and relationships the graph engine stores, from Tree-sitter nodes only, with no
+// RegExp on source text. `defmodule` becomes a module symbol with module scope, `def`/`defp` a method with its
+// arity, and `use`/`import`/`alias`/`require` an import the resolver can follow.
+// Relationship types covered (nine, measured this round over the 82 expectation-paired fixture sources):
+// contains 330 · exports 248 · calls 93 · references 70 · uses 38 · instantiates 29 · implements 25 ·
+// overrides 15 · imports 14 (this grammar expresses no `extends`). Constructs with their own rulings:
+// `defoverridable` and behaviour callbacks emit `overrides`/`implements`; a qualified call (`Mod.fun`) keeps
+// its qualifier and is `reference_qualified`, while a bare `f(...)` is `usage_contextual`.
+// M14 section D: every relationship states metadata.evidenceClass — structural / import_based /
+// reference_qualified / usage_contextual (and `inferred` for a low-confidence fall-through).
+// Where docs, spec, fixtures and validations live: docs/analyzers/real-elixir-analyzer.md ·
+// script/m14/spec/elixir-completeness.json · validation/m14/fixtures/elixir/** ·  `bun run script/m14/run-fixtures.ts --lang elixir`.
+// CO-EDIT WHEN THIS FILE CHANGES: the spec's node-type buckets · the fixtures pinning a changed edge · the docs
+// · script/m14/differential.ts (`deriveElixirEdges` — the TRUTH side; an emission the oracle does not derive
+// lands as MISSING/UNEXPLAINED) · src/ast/engine.ts (getAnalyzer + wasm) · src/ast/language-detection.ts
+// (`.ex`/`.exs`) · the BEAM sibling src/ast/real-erlang-analyzer.ts (keep the tier model in step). NOTE:
+// elixir has NO `LANG_CONFIG` row in script/m14/completeness-inventory.ts yet, so the gate still answers
+// "unknown language elixir"; the row lands with its completeness wave and must name the nine kinds above.
+// Grammar: tree-sitter-elixir (wasm/tree-sitter-elixir.wasm; engine.ts maps node_modules/tree-sitter-elixir).
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 

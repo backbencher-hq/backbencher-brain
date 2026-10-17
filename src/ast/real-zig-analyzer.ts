@@ -1,3 +1,27 @@
+/**
+ * Zig analyzer — the `.zig` lane's production path (M14 completeness ceremony).
+ *
+ * Author: Muhammad Ishaq Khan.
+ *
+ * THE RELATIONSHIP TYPES THIS FILE COVERS: `contains`, `imports`, `references`, `uses`, `calls`,
+ * `instantiates`, `exports`. The lane deliberately does NOT emit `extends`/`implements`/`overrides`:
+ * Zig has no inheritance clause, an interface is an `opaque` container plus function POINTERS, and a
+ * same-scope duplicate declaration is a compiler diagnostic rather than a feature (ZIG.O.1-O.3). The
+ * admitted extension list below is READ FROM the arbiter's own detection map rather than assumed,
+ * because a file claim against an extension the population cannot hold could never verify.
+ *
+ * WHERE THE RECORD LIVES: docs/analyzers/real-zig-analyzer.md; spec
+ * script/m14/spec/zig-completeness.json; fixtures validation/m14/fixtures/zig; lane records under
+ * validation/m14/verification/.
+ *
+ * WHEN THIS FILE CHANGES, CO-EDIT: the completeness spec, the expectations under
+ * validation/m14/fixtures/zig, the docs above, and `src/ast/file-claim.ts` when the claim shape moves
+ * (this file reads `fileClaimForTarget`/`FILE_CLAIM_MAX_BYTES`). THE SHARED REGISTRIES ARE LEAD-OWNED:
+ * script/m14/run-fixtures.ts, differential.ts, wasm/.
+ *
+ * THE GRAMMAR IT DEPENDS ON: `wasm/tree-sitter-zig.wasm` (tree-sitter-zig).
+ */
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { FILE_CLAIM_MAX_BYTES, fileClaimForTarget } from "./file-claim"

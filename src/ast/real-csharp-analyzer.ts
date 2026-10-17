@@ -1,24 +1,21 @@
-// Pure-AST C# analyzer — M12 per-analyzer perfection contract.
-//
-// Emits exactly the M12 differential contract (mirroring the Java family):
-//   Symbols: namespace, class, interface, struct, record, enum, enum_member,
-//            delegate, event, method, constructor, property. NO locals, NO
-//            parameters, NO accessor scopes, NO synthetic members.
-//   Relationships: contains, extends, implements, calls, instantiates,
-//            overrides (qualified Owner.method -> Parent.method), uses
-//            (field access), references (imports -> module paths).
-//
-// Grammar notes (tree-sitter-c-sharp v0.23.5, upgraded for M12.07):
-//   * primary constructors (C# 12) parse cleanly (the previously wired
-//     grammar failed on them)
-//   * C# base lists have no keyword distinction (unlike Java's
-//     extends/implements): the first entry may be a base class OR an
-//     interface. Kind is resolved via the optional type-kind companion
-//     (context.typeKinds, built by the harness pre-pass from the cross-file
-//     symbol space — same machinery as the override companion); unknown
-//     external types use the deterministic C# language rule: first base =
-//     extends, remaining = implements.
-
+// C# LANE — the pure-AST analyzer for C# (M12 per-analyzer perfection contract).
+// Author: Muhammad Ishaq Khan
+// What this file is: parses the pinned tree-sitter-c_sharp grammar and publishes
+// the M12 contract's symbols (namespace/class/interface/struct/record/enum/
+// member/delegate/event/method/constructor/property; NO locals, parameters or
+// accessor scopes) and all TEN relationship types: contains, extends, implements,
+// calls, instantiates, overrides, uses, references, imports and exports.
+// Base lists are kind-resolved through the optional type-kind companion (first
+// base = extends, remaining = implements; unknown externals follow the C# rule) —
+// the same harness pre-pass that builds the override companion.
+// Grammar: wasm/tree-sitter-c_sharp.wasm (sha256 6f69e1cae44e1c32…).
+// Docs / spec / fixtures / validations: docs/analyzers/real-csharp-analyzer.md ·
+// script/m14/spec/csharp-completeness.json · validation/m14/fixtures/csharp/** ·
+// validation/m14/verification/CSHARP-FIX.md.
+// CO-EDIT LIST — when this file changes, review in the SAME pass: those docs, the
+// spec and fixtures above, src/ast/override-context.ts (the companion this file
+// imports) and its pre-pass producer, and CSHARP-FIX.md. Registration:
+// src/ast/engine.ts (getAnalyzer) and routing: src/ast/language-detection.ts.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 

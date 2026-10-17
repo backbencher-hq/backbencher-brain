@@ -1,3 +1,23 @@
+// Author: Muhammad Ishaq Khan
+// WHAT THIS FILE IS: the GraphQL analyzer — pure tree-sitter AST extraction over schema
+//   definitions (type/interface/union/enum/input/scalar) and operations (query/mutation/
+//   subscription/fragment); symbols and relationships only, never a regex over source text.
+// RELATIONSHIP SURFACE: contains, exports, implements, imports, overrides, references, uses.
+//   No calls/extends/instantiates — GraphQL has no calls and its heritage is interface impl.
+// DOCS: docs/analyzers/real-graphql-analyzer.md (the lane's measured record).
+// SPEC + FIXTURES: script/m14/spec/graphql-completeness.json · validation/m14/fixtures/graphql/.
+// CO-EDIT LIST — edit these when this file changes: the doc above; the completeness spec's
+//   handled/silent/gap/design_decision buckets AND its coverage block; every affected
+//   expectation under validation/m14/fixtures/graphql/ (they are the behavioural pins);
+//   script/m14/graphql-ruled.ts (the RULED table the arbiter reads); and
+//   grammars/tree-sitter-graphql/README when a node name or a grammar patch moves.
+// GRAMMAR: vendored, patched `tree-sitter-graphql` → wasm/tree-sitter-graphql.wasm (pin:
+//   validation/m14/grammar-pins.json). Node names are PascalCase BY CONTRACT, not upstream's
+//   snake_case — see the grammar directory's README before "normalising" one.
+// THE LIMITATION NO GATE CAN SEE: this analyzer cannot distinguish a real scalar declaration
+//   from a REDEFINITION of a built-in scalar. Price measured: 10,118 `resolved` and 1,398
+//   `ambiguous` edges became `externalVerified`, from four corpus files declaring built-ins:
+//   InvalidSchemaWithBuiltins.schema.graphql, GitHub.graphql, ChatSchema.graphql, introspection.graphql.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { FILE_CLAIM_MAX_BYTES, fileClaimForTarget } from "./file-claim"

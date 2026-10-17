@@ -1,3 +1,20 @@
+/**
+ * PHP Intelligence Engine — Author: Muhammad Ishaq Khan
+ * What this file is: the pure-AST analyzer for PHP (extensions php/phtml), wired in engine.ts
+ * getAnalyzer → RealPhpAnalyzer. It resolves class and base-class names while walking
+ * (`baseByClass`) and routes the include/require surface through src/ast/file-claim.ts, so a
+ * path target carries a claim the gate can CHECK instead of a dangling name.
+ * Grammar: tree-sitter-php.wasm (with tree-sitter-php_only.wasm in the pinned set), loaded by
+ * engine.ts.
+ * Relationship types covered: calls, uses, contains, imports, references, exports, extends,
+ * implements, overrides, instantiates.
+ * Where its scripts/validations live: docs/analyzers/real-php-analyzer.md,
+ * script/m14/spec/php-completeness.json, validation/m14/fixtures/php/**, and the LANG_CONFIG
+ * row in script/m14/completeness-inventory.ts.
+ * EDIT THESE TOO when this file changes: src/ast/file-claim.ts (the include/require claim
+ * machinery this analyzer emits through), the spec, the fixtures, the doc above, and the
+ * LANG_CONFIG row.
+ */
 import type { Node } from "web-tree-sitter"
 import { statSync } from "node:fs"
 import * as path from "node:path"

@@ -1,3 +1,27 @@
+/**
+ * Vue Intelligence Engine — the `.vue` lane's production path (M14 completeness ceremony).
+ *
+ * Author: Muhammad Ishaq Khan.
+ *
+ * THE RELATIONSHIP TYPES THIS FILE COVERS: `contains`, `imports`, `references`, `uses`, `extends`,
+ * `implements`, `overrides`, `instantiates`, `exports` — plus the internal `Provides` relationship
+ * that is not one of the ten ontology kinds. THE SEAM THAT MATTERS: an SFC's `<script>` block is
+ * DELEGATED to `RealTypeScriptAnalyzer` (`src/ast/real-typescript-analyzer.ts`), so some kinds on a
+ * .vue file are minted by the TypeScript analyzer — a `vue` header that lists only this file's own
+ * literals would be wrong, and a change in the delegate can change vue's edges.
+ *
+ * WHERE THE RECORD LIVES: docs/analyzers/vue.md + docs/analyzers/real-vue-analyzer.md; spec
+ * script/m14/spec/vue-completeness.json; fixtures validation/m14/fixtures/vue.
+ *
+ * WHEN THIS FILE CHANGES, CO-EDIT: the completeness spec, the expectation files under
+ * validation/m14/fixtures/vue, the docs above, AND `src/ast/real-typescript-analyzer.ts` when the
+ * change touches the SFC delegation (the delegate is the other half of this file's contract). THE
+ * SHARED REGISTRIES ARE LEAD-OWNED: script/m14/run-fixtures.ts, differential.ts, wasm/.
+ *
+ * THE GRAMMAR IT DEPENDS ON: `wasm/tree-sitter-vue.wasm` for the SFC structure, and
+ * `wasm/tree-sitter-typescript.wasm` for the delegated script block. The lane history follows below.
+ */
+
 // Vue Intelligence Engine
 // M12.12 rewrite: C#-family contract, pure-AST.
 //

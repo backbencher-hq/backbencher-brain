@@ -1,18 +1,23 @@
-// Dart Intelligence Engine
-// M12.11 rewrite: C#-family contract, pure-AST, fully regex-free.
-//   - Symbols: classes, mixins, extensions, enums (+enum members), typedefs,
-//     methods, getters/setters -> property, fields, top-level functions,
-//     constructors -> "constructor"; NO locals/params/lambda-params as symbols.
-//   - Relationships: leaf identities (calls: Counter -> Sqrt); contains from
-//     ownerName; extends/implements/mixin-uses; instantiates (capitalized
-//     constructor invocations + constructor_invocation nodes); imports/exports
-//     (import/export/part directives); overrides (@override or same-name in
-//     base, in-file or cross-file via override companion); global builtins
-//     (print/assert) filtered.
-//   - Dart call syntax: no `new` — capitalized identifier + argument_part
-//     selector = constructor invocation (instantiates); lowercase identifier +
-//     argument_part = function call; selector chains (obj.method(...)) resolve
-//     to the leaf method name; cascade_section calls resolve to the selector.
+// Dart Intelligence Engine — Author: Muhammad Ishaq Khan
+// What this file is: the pure-AST analyzer for Dart (`.dart`, routed by src/ast/language-detection.ts) — the
+// M12.11 rewrite under the C#-family contract: it publishes the symbols and relationships the graph engine
+// stores, works from AST nodes only, and is fully regex-free (string work is char-code scans). Symbols:
+// classes, mixins, extensions, enums (+enum members), typedefs, methods, getters/setters -> property,
+// fields, top-level functions, constructors -> "constructor"; NO locals/params/lambda params.
+// Relationship types covered (ten, measured this round over the 30 expectation-paired fixture sources):
+// contains 292 · uses 228 · calls 85 · references 73 · instantiates 55 · extends 41 · overrides 29 ·
+// imports 21 · implements 18 · exports 3. The rules: leaf identities for calls (`Counter -> Sqrt`); contains
+// from ownerName; extends/implements/mixin-uses from the superclass clause; instantiates from capitalized
+// constructor invocations (Dart has no `new`); imports/exports from import/export/part directives; overrides
+// from `@override` or same-name-in-base (cross-file via the override companion); builtins (print/assert)
+// filtered; selector chains and cascade_sections resolve to the selector.
+// Where docs, spec, fixtures and validations live: docs/analyzers/real-dart-analyzer.md ·
+// script/m14/spec/dart-completeness.json · validation/m14/fixtures/dart/** · `bun run script/m14/run-fixtures.ts --lang dart`.
+// CO-EDIT WHEN THIS FILE CHANGES: the spec's node-type buckets · the fixtures pinning a changed edge · the
+// docs · script/m14/differential.ts (`deriveDartEdges` — the TRUTH side; an emission the oracle does not
+// derive lands as MISSING/UNEXPLAINED) · script/m14/completeness-inventory.ts (`dart` LANG_CONFIG) ·
+// src/ast/engine.ts (getAnalyzer + wasm) · src/ast/language-detection.ts (`.dart` routing).
+// Grammar: tree-sitter-dart (wasm/tree-sitter-dart.wasm, resolved through node_modules by engine.ts).
 
 import type { Node } from "web-tree-sitter"
 import * as path from "path"

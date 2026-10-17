@@ -1,4 +1,31 @@
 /**
+ * TOML analyzer — the `.toml` lane's production path (M14 completeness ceremony).
+ *
+ * Author: Muhammad Ishaq Khan.
+ *
+ * THE RELATIONSHIP TYPES THIS FILE COVERS: `contains`, `imports`, `references`, `exports` — and only
+ * those four. Note the measured fact on the `imports` row: its evidence class is **`import_based`**,
+ * because a Cargo `path` dependency names a FILE THE DOCUMENT ITSELF WRITES (`path = "../crate"`), so
+ * the claim the arbiter reads is a project-file claim. The spec once said "TOML has no import of any
+ * kind"; that claim was CORRECTED (a path dependency is a file dependency) and is kept in the record
+ * rather than erased. `exports` is the lane's zero-sites type — implemented (candidates by convention,
+ * decision by data) and corpus-silent because a guard declines every candidate; a mutant prices it.
+ *
+ * WHERE THE RECORD LIVES: docs/analyzers/toml.md + docs/analyzers/real-toml-analyzer.md;
+ * spec script/m14/spec/toml-completeness.json; fixtures + census probe validation/m14/fixtures/toml
+ * (tools/residual-whole-population.mts); lane records validation/m14/verification/FOUR-CLAUSE-toml.md,
+ * GAP-CLOSURE-toml.md and toml-COVERAGE-BLOCK-AUDIT.md.
+ *
+ * WHEN THIS FILE CHANGES, CO-EDIT: the completeness spec (types/coverage block), the per-shape
+ * expectations under validation/m14/fixtures/toml, the census probe when the measured population or
+ * vocabulary moves, and the docs above. THE SHARED REGISTRIES ARE LEAD-OWNED — script/m14/run-fixtures.ts,
+ * script/m14/differential.ts and the wasm/ pins: request the change, do not edit them from this lane.
+ *
+ * THE GRAMMAR IT DEPENDS ON: `wasm/tree-sitter-toml.wasm` (tree-sitter-toml), sha-pinned in the spec's
+ * `grammar` block. The lane's rulings and defect history follow below.
+ */
+
+/**
  * TOML analyzer — M14 (#289).
  *
  * Enters a lane that had a grammar and nothing else: `toml` was absent from

@@ -1,3 +1,23 @@
+// REAL JULIA ANALYZER — the production AST analyzer for .jl files.
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS. tree-sitter-julia in, UniversalSymbols + UniversalRelationships out, pure AST extraction,
+// no regex fallback. It covers nine relationship types by name: calls, uses, contains, imports, references,
+// exports, extends, overrides and instantiates.
+// WHERE ITS CONTRACT LIVES: docs/analyzers/real-julia-analyzer.md (long form); machine-readable classification
+// in script/m14/spec/julia-completeness.json; fixtures in validation/m14/fixtures/julia/; measured
+// clause/ambiguity records under validation/m14/verification/ (FOUR-CLAUSE-julia.md and the calls-ambiguity
+// split).
+// GRAMMAR: tree-sitter-julia, and MEASURED, IT IS THE ONLY ONE THIS ANALYZER LOADS —
+// wasm/tree-sitter-julia.wasm. A fleet brief of 2026-10-17 said this lane pins a companion wasm; that is not
+// true at this revision: LANG_CONFIGS.julia declares no `companionWasm`, the analyzer loads one grammar, and
+// no julia companion wasm exists in wasm/. Section A's union rule (`cfg.wasm` + every `companionWasm`) is a
+// single grammar here — if a companion is ever added, declare it in the config and classify its node types.
+// CO-EDIT WHEN THIS FILE CHANGES: script/m14/spec/julia-completeness.json (new node types and emitted kinds),
+// validation/m14/fixtures/julia/ (expectation files pin the endpoints), docs/analyzers/real-julia-analyzer.md,
+// and the lane's records in validation/m14/verification/. The shared arbiter script/m14/incoming-rule.ts is
+// Lead-owned: propose, never edit it from a lane.
+
 import { readFileSync } from "node:fs"
 import * as path from "node:path"
 import type { Node } from "web-tree-sitter"

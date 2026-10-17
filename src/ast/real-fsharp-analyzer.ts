@@ -1,23 +1,24 @@
-// Pure-AST F# analyzer — the M12 per-analyzer contract.
-//
-// Emits exactly the M12 differential contract (mirroring the C# family):
-//   Symbols: namespace, module, class, interface, enum, enum_member,
-//            property, method, function, constructor (named "constructor").
-//            NO locals, NO lambda params, NO synthetic members.
-//   Relationships: all TEN the ontology declares — contains, exports, extends,
-//            implements, overrides, instantiates, calls, uses, references,
-//            imports. MEASURED over the 13 expectation-paired fixture sources
-//            (2026-10-17): contains 175, calls 104, exports 93, references 39,
-//            imports 19, uses 13, overrides 10, implements 8, extends 7,
-//            instantiates 2. THIS PARAGRAPH SAID "NO uses (C# family emits
-//            none)" until this inventory: that was true when the lane mirrored
-//            the C# family and stopped being true when the exports/uses wave
-//            landed without updating the header. The fixture suite pins all ten,
-//            and `docs/analyzers/fsharp.md` carries the surface table.
-//
-// Pure AST: no regex on source text; override/default/member keywords are read
-// from tree-sitter token nodes. Builtins (console output, Object leaf methods)
-// are filtered like the C# family.
+// Pure-AST F# analyzer — Author: Muhammad Ishaq Khan  What this file is: the pure-AST analyzer for F# (`.fs`/`.fsi`/`.fsx`, routed by src/ast/language-detection.ts)
+// — the M12 per-analyzer contract mirroring the C# family: pure AST, no regex on source text, override/default/
+// member keywords read from tree-sitter token nodes, console output / Object leaf methods filtered like C#.
+// Symbols: namespace, module, class, interface, enum, enum_member, property, method, function, constructor
+// (named "constructor"). NO locals, NO lambda params, NO synthetic members.
+// Relationship types covered — ALL TEN the ontology declares: contains, exports, extends, implements, overrides,
+// instantiates, calls, uses, references, imports. MEASURED this round over the 13 expectation-paired fixture
+// sources (the gate's own discovery rule): contains 175, exports 93, calls 42, references 36, uses 11,
+// imports 11, overrides 10, implements 8, extends 7, instantiates 1. CORRECTION RECORDED, NOT APPENDED: this
+// header said "NO uses (C# family emits none)" and listed SEVEN kinds until the exports/uses wave — true when
+// the lane mirrored the C# family, false from the moment the wave landed; the counts above are re-measured.
+// Where docs, spec, fixtures and validations live: docs/analyzers/real-fsharp-analyzer.md and
+// docs/analyzers/fsharp.md (surface table) · script/m14/spec/fsharp-completeness.json ·
+// validation/m14/fixtures/fsharp/** · `bun run script/m14/run-fixtures.ts --lang fsharp`.
+// CO-EDIT WHEN THIS FILE CHANGES: the spec's node-type buckets · the fixtures pinning a changed edge · both
+// docs · script/m14/differential.ts (`deriveFsharpEdges` — the TRUTH side; an emission the oracle does not
+// derive lands as MISSING/UNEXPLAINED) · script/m14/completeness-inventory.ts (`fsharp` LANG_CONFIG, perfKey
+// "fsharp:csharp") · src/ast/engine.ts (getAnalyzer + wasm) · src/ast/language-detection.ts (`.fs`/`.fsi`/
+// `.fsx`) · the C# sibling src/ast/real-csharp-analyzer.ts.
+// Grammar: tree-sitter-fsharp (wasm/tree-sitter-fsharp.wasm; engine.ts resolves node_modules/tree-sitter-fsharp).
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 // THE BINDING SEPARATOR, IMPORTED RATHER THAN SPELLED. Task-99: this file used a literal `#` in

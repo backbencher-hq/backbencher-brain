@@ -1,3 +1,26 @@
+// REAL MAKE ANALYZER — the production AST analyzer for GNU Make files (.mk / .mak / literal `Makefile`).
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS. tree-sitter-make in, UniversalSymbols + UniversalRelationships out, pure AST extraction,
+// no regex fallback. It covers six relationship types by name: contains, references, uses, imports, exports
+// and calls.
+// WHERE ITS CONTRACT LIVES: docs/analyzers/real-make-analyzer.md (the doc is named for the LANGUAGE, not for
+// this module — see the lane-name note below); machine-readable classification in
+// script/m14/spec/make-completeness.json; fixtures in validation/m14/fixtures/make/; measured records under
+// validation/m14/verification/.
+// GRAMMAR: tree-sitter-make (wasm/tree-sitter-make.wasm).
+// WHY THIS MODULE IS `real-makefile-analyzer.ts` WHILE THE LANE IS `make`: the router's lane definition is
+// `make: "mk,mak,makefile"` (script/m14/incoming-gate.ts), and `admitByExtension` matches a bare BASENAME equal
+// to an admitted extension for exactly this reason — so a file literally named `Makefile` (no dot, no
+// extension) is admitted to this lane. It looks like a bug and is not. The analyzer MODULE keeps the
+// `makefile` spelling while the LANE is `make`; script/m14/completeness-inventory.ts derives
+// `real-${cfg.id}-analyzer.ts` = `real-make-analyzer.ts` from the lane id, so section G's head-comment check
+// reports "analyzer file absent" for this lane — a filename-mapping defect in the gate, not a missing header.
+// CO-EDIT WHEN THIS FILE CHANGES: script/m14/spec/make-completeness.json (new node types/kinds must be
+// classified), validation/m14/fixtures/make/ (expectation files pin the target spellings), and
+// docs/analyzers/real-make-analyzer.md. The router's lane map in script/m14/incoming-gate.ts is Lead-owned:
+// propose, never edit it from a lane.
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 

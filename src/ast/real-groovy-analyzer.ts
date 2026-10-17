@@ -1,3 +1,20 @@
+// Author: Muhammad Ishaq Khan
+// WHAT THIS FILE IS: the Groovy analyzer — pure tree-sitter AST extraction over classes,
+//   traits/interfaces, enums, methods, constructors, properties, fields and closures; symbols
+//   and relationships only, never a regex over source text (M12 per-analyzer contract).
+// RELATIONSHIP SURFACE: all ten the ontology declares — contains, calls, uses, references,
+//   imports, exports, extends, implements, overrides, instantiates.
+// DOCS: docs/analyzers/groovy.md and docs/analyzers/real-groovy-analyzer.md.
+// SPEC + FIXTURES: script/m14/spec/groovy-completeness.json (plus groovy-spec-table.json) ·
+//   validation/m14/fixtures/groovy/.
+// CO-EDIT LIST — edit these when this file changes: both docs above; the completeness spec's
+//   handled/silent/gap/design_decision buckets AND its coverage block; every affected
+//   expectation under validation/m14/fixtures/groovy/; the groovy seat in
+//   script/m14/differential.ts; and the lane instruments script/m14/groovy-ontology-census.mts /
+//   script/m14/groovy-ontology-mutants.ts when a rule's measured count moves.
+// GRAMMAR: vendored, patched amaanq `tree-sitter-groovy` → wasm/tree-sitter-groovy.wasm (pin:
+//   validation/m14/grammar-pins.json). The patches are load-bearing — formal params may be
+//   untyped (`def foo(a, b = 2)`), which is why the walk reads fields rather than child types.
 // Pure-AST Groovy analyzer — M12 per-analyzer perfection contract.
 //
 // Emits exactly the M12 differential contract (mirroring the Java family):

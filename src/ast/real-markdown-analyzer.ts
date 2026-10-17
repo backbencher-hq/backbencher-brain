@@ -1,3 +1,23 @@
+/**
+ * Markdown Intelligence Engine — Author: Muhammad Ishaq Khan
+ * What this file is: the pure-AST analyzer for Markdown (extensions md/markdown), wired in
+ * engine.ts getAnalyzer → RealMarkdownAnalyzer. It walks the BLOCK grammar and, through
+ * `walkInlineTree`, the INLINE grammar that decomposes link, image, emphasis and code spans.
+ * Grammar: tree-sitter-markdown.wasm AND its companion tree-sitter-markdown_inline.wasm, both
+ * loaded by engine.ts. THE LANE PINS A COMPANION WASM, and the completeness gate's section A
+ * unions cfg.wasm with every companionWasm. Before that union was implemented this lane had
+ * 19 classified rows accused of GRAMMAR DRIFT — all 19 real, all produced by the inline
+ * grammar. A future reader who "fixes" such a row by deleting it deletes a CORRECT
+ * classification: check which grammar produces a type (engine's companionWasm, not the spec)
+ * before touching the row.
+ * Relationship types covered: contains, uses, imports, references (links and inline constructs).
+ * Where its scripts/validations live: docs/analyzers/markdown.md and
+ * docs/analyzers/real-markdown-analyzer.md, script/m14/spec/markdown-completeness.json,
+ * validation/m14/fixtures/markdown/**, and the LANG_CONFIG row in
+ * script/m14/completeness-inventory.ts (which MUST keep companionWasm listed).
+ * EDIT THESE TOO when this file changes: the spec, the fixtures, BOTH docs above, and the
+ * LANG_CONFIG row — section G of the completeness inventory fails when this list is not honoured.
+ */
 import type { Node } from "web-tree-sitter"
 import { existsSync } from "node:fs"
 import * as path from "node:path"

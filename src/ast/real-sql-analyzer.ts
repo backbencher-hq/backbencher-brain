@@ -1,3 +1,42 @@
+/**
+ * Author: Muhammad Ishaq Khan
+ *
+ * SQL analyzer. A SQL file is a SCHEMA, not a program: the declarations are the product, the
+ * relationships are containment plus data dependencies, and there is no import graph in the language
+ * sense (psql's `\i`/`\ir` and `CREATE EXTENSION` are the two file/unit dependencies it does emit).
+ *
+ * Relationship types it covers: contains (the largest), uses, references, calls, imports, overrides,
+ * instantiates. It does NOT emit `exports` or `extends` — both are RULED non-derivable (SQL-D16,
+ * SQL-D14), not forgotten.
+ * Grammar: `wasm/tree-sitter-sql.wasm`, patched — provenance and the patch list are in the spec's
+ * `grammar_provenance`.
+ *
+ * ⚠ THE INVENTORY NUMBERS, because both have been misread before. The wasm enumerates 594 named node
+ * types with 4 DUPLICATE spellings (`dollar_quote`, `cast`, `field`, `from`); the inventory gate
+ * dedupes to 590 and adds the universal ERROR/MISSING pair = 592, of which this lane's spec classifies
+ * 82 handled / 478 silent / 17 gaps / 25 decisions. The 478 silent rows are dominated by the
+ * keyword/type-token class — a keyword is never a table and never a function (SQL-D3), and a type token
+ * is not a declaration.
+ *
+ * ⚠ NO DIFFERENTIAL ORACLE — A RULED ABSENCE, NOT MISSING WORK. SQL-G14: `script/m14/differential.ts`
+ * carries 34 `derive*Edges` and NONE derives SQL, so a scoped SQL run ends "derived ZERO truth edges".
+ * Consequence: no floor and no avgMsPerFile can be produced, so #419 sections E and F are UNMEASURABLE
+ * for this lane and its residual is UNFLOORED. That is recorded and accepted — do NOT read a missing
+ * floor as work not yet done, and never invent a floor row. The remedy is scoped in
+ * validation/m14/verification/SQL-STATE.md §6 (6-8 oracle modules, ~800-1,500 lines).
+ *
+ * Where the rest of the lane lives: docs/analyzers/sql.md · docs/analyzers/real-sql-analyzer.md · spec
+ * script/m14/spec/sql-completeness.json (buckets + SQL-D1..D25 + SQL-G1..G19) · fixtures
+ * validation/m14/fixtures/sql/ (17 .sql, expectation pins, and the lane's census instruments) ·
+ * validation validation/m14/verification/SQL-STATE.md.
+ *
+ * WHEN THIS FILE CHANGES, EDIT THESE TOO — a change here that skips them publishes a contract nobody
+ * updated: `script/m14/spec/sql-completeness.json` (a new or removed emission moves a bucket or a gap
+ * row) · `validation/m14/fixtures/sql/*.expectation.json` (the pins sections B and D read) ·
+ * `validation/m14/fixtures/sql/lane-census.ts` and `contains-shape-probe.ts` (the lane's own
+ * instruments) · `script/m14/completeness-inventory.ts` (Lead-owned: this lane's requiredKinds/docs
+ * rows) · `docs/analyzers/real-sql-analyzer.md` and `validation/m14/verification/SQL-STATE.md`.
+ */
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 

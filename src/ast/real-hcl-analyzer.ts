@@ -1,3 +1,21 @@
+// Author: Muhammad Ishaq Khan
+// WHAT THIS FILE IS: the HCL / Terraform analyzer — pure tree-sitter AST extraction over
+//   `config_file` → `body` blocks (resource, data, module, variable, output, locals, terraform)
+//   and their attributes; Terraform's expression language is walked for references and calls.
+// RELATIONSHIP SURFACE: contains, references, calls, imports, exports, extends, overrides, uses
+//   (the lane rules the OO-only kinds out; see the completeness spec's RULED entries).
+// DOCS: docs/analyzers/real-hcl-analyzer.md (lane record) and docs/analyzers/hcl.md.
+// SPEC + FIXTURES: script/m14/spec/hcl-completeness.json · validation/m14/fixtures/hcl/.
+// CO-EDIT LIST — edit these when this file changes: both docs above; the completeness spec's
+//   handled/silent/gap/design_decision buckets AND its coverage block; every affected
+//   expectation under validation/m14/fixtures/hcl/; script/m14/hcl-probe.ts (the lane's shape
+//   probe); and the hcl seat in script/m14/differential.ts.
+// GRAMMAR: vendored `tree-sitter-hcl`, verified byte-exact against
+//   tree-sitter-grammars/tree-sitter-hcl@64ad6278 → wasm/tree-sitter-hcl.wasm (pin:
+//   validation/m14/grammar-pins.json); 64 named node types, fields `key`/`val`.
+// FIELD-SHAPE NOTE: a `block`'s braces are SIBLINGS (`block_start`/`block_end`), not children,
+//   and `get_attr` is a sibling of its `variable_expr` base — recovery or region logic that
+//   assumes a child span re-publishes the wrong lines (measured on the lane's own fixtures).
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
