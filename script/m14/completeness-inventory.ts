@@ -729,7 +729,13 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // which runs this lane over its OWN fixture sources and fails a kind that is emitted
     // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
     // expectation files, so the forward check (required => pinned) stays green.
-    requiredKinds: ["uses", "contains", "calls", "extends", "imports", "instantiates", "overrides", "references"],
+    // `exports` ARRIVES THROUGH THE EMBEDDED-SCRIPT DELEGATION, not from HTML itself. Section B runs the
+    // lane over its own fixture sources and sees the kind, because an embedded <script> is parsed by the
+    // JS analyzer and its edges are the html lane's output for that document. A PURE-HTML export is still
+    // forbidden and three fixtures enforce that with forbidRelationships -- the two statements are not in
+    // conflict, they describe different LAYERS of one file. Naming it here is the contract catching up with
+    // what the analyzer publishes, which is exactly what the reverse check exists to force.
+    requiredKinds: ["uses", "contains", "calls", "extends", "imports", "instantiates", "overrides", "references", "exports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "html/framework-and-scores (addressable-subtree size per symbol)" },
       visibility: { key: "expectVisibility", pin: "html/framework-and-scores (document scope — html has no private/package)" },
@@ -1098,7 +1104,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
 // than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
 // degenerate invocation_expression subtrees) — bounded to that corpus corner.
-const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl", "css", "toml", "markdown", "julia", "solidity", "scss"]
+const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl", "css", "toml", "markdown", "julia", "solidity", "scss", "yaml"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
