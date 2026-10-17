@@ -444,15 +444,45 @@ try {
     // pinned here so a change in the shared handler shows up as a diff in this
     // gate rather than as a surprise in a client's token budget.
     {
-      const res = await createToolHandlers().bb_doc({ mode: "project", format: "json", limit: 20 }, { projectPath: root, projectId } as any)
+      // ONE REQUEST, FOUR NUMBERS — and that is a correction, not a detail. This block used to
+      // measure the engine object from `doc({mode:"project", limit:50})` and the transport from
+      // `bb_doc({mode:"project", format:"json", limit:20})`, which are TWO DIFFERENT DOCUMENTS,
+      // so its comparison could fail for a reason that has nothing to do with the transport.
+      // MEASURED in that shape on this fixture: engine object 15,891 (limit 50) against handler
+      // compact 14,240 (limit 20), so the check reported that the handler had REMOVED 1,651
+      // characters — while the same request at ONE limit puts the envelope ON TOP of the object.
+      // Measured on this repository's own project scope, one request each: limit 20 object
+      // 21,600 -> handler compact 21,696 (+96) -> wire 27,217; limit 50 object 43,041 -> handler
+      // 43,138 (+97) -> wire 53,284. The handler does not trim; the old check was measuring its
+      // own mismatched pair. A gate that compares two different documents is not a gate about
+      // the transport.
+      const req = { mode: "project" as const, limit: 20 }
+      const same = await doc(req)
+      const objectChars = JSON.stringify(same).length
+      const reported = same.quality.budget.estimatedTokens * 4
+      const res = await createToolHandlers().bb_doc({ ...req, format: "json" }, { projectPath: root, projectId } as any)
       const wire = (res.content[0].text as string).length
-      const transported = JSON.stringify(JSON.parse(res.content[0].text as string)).length
-      const objectChars = JSON.stringify(d).length
-      const reported = d.quality.budget.estimatedTokens * 4
+      const carried: any = JSON.parse(res.content[0].text as string)
+      const transported = JSON.stringify(carried).length
+      const covers = (r: { reported: number; object: number; transported: number; wire: number }): boolean =>
+        r.reported >= r.object && r.transported >= r.object && r.wire >= r.transported
       check("T27: the reported figure covers the object, and the transport's overhead is disclosed",
-        reported >= objectChars && transported >= objectChars && wire >= transported,
-        `reported ${reported} >= engine object ${objectChars}; handler adds a freshness envelope to ${transported} (+${transported - objectChars}); ` +
+        covers({ reported, object: objectChars, transported, wire }),
+        `reported ${reported} >= engine object ${objectChars}; the handler carries that document plus its envelope at ${transported} (+${transported - objectChars}); ` +
         `the wire form is indented and carries ${wire} (+${wire - transported}), ${(wire / objectChars).toFixed(2)}x the object. A caller budgeting from estimatedTokens is budgeting for the OBJECT, not the wire bytes.`)
+      // The envelope is an ADDITION, not a substitution: the payload still carries the document
+      // the engine produced. Without this, `transported >= objectChars` would also pass for a
+      // handler that padded its answer while dropping the citations a caller asked for.
+      check("T27: and the transport carries that same document rather than a trimmed one",
+        Array.isArray(carried.sections) && carried.sections.length === same.sections.length &&
+          carried.citations.length === same.citations.length && carried.unknowns.length === same.unknowns.length,
+        JSON.stringify({ sections: [same.sections.length, carried.sections?.length], citations: [same.citations.length, carried.citations.length], unknowns: [same.unknowns.length, carried.unknowns.length], envelope: transported - objectChars }))
+      // The negative twin for the SHARED predicate, and it is the exact shape this check
+      // reported before the two requests were aligned: a transport that returns less than the
+      // engine object must be convicted rather than excused by its own indentation.
+      negative("the transport-size predicate convicts a handler that returns LESS than the engine object",
+        !covers({ reported, object: objectChars, transported: objectChars - 1_651, wire }),
+        `transported ${objectChars - 1_651} < object ${objectChars}, the gap the old check reported as a defect`)
     }
     // The DEFAULT call must fit the DEFAULT budget. It used to overflow it 3x
     // on every real repository measured and return the oversized document.
