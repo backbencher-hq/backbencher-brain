@@ -468,14 +468,25 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         line_number: line,
         // Every edge this analyzer emits is read off a NAMED AST NODE — an
         // `ImplementsInterfaces` clause, a `NamedType`, a field's own `Name`, a
-        // `Directives` child — so `structural` is the class for all of them and is
+        // `Directives` child — so `structural` is the class for most of them and is
         // stated rather than left absent. 38 sibling lanes publish this key and this
         // one published none, which made "how much of this graph is guesswork" a
         // question with no machine-readable answer on this lane: the honesty contract
         // §4.3 requires the heuristic ratio to be a QUERYABLE number, and an absent
         // key is not queryable. `confidence` was already 1 everywhere, so nothing
         // here is newly a heuristic — the key says so explicitly.
-        metadata: { ...metadata, relationshipRole: role, evidenceClass: "structural" },
+        //
+        // THE ONE TIER THAT IS NOT STRUCTURAL: `imports`. A `#import "file.graphql"`
+        // hash-import's TARGET is a FILE PATH read out of a comment string, not a name
+        // read off a named AST node — it is the lane's file-dependency claim (the same
+        // ladder toml's imports row carries), so it is `import_based`. Section D of the
+        // completeness inventory requires two DISTINCT tiers pinned by fixtures, and
+        // this is the lane's honest second one rather than a manufactured value.
+        metadata: {
+          ...metadata,
+          relationshipRole: role,
+          evidenceClass: type === ASTEngine.RelationshipType.Imports ? "import_based" : "structural",
+        },
       })
     }
 

@@ -4,13 +4,13 @@
   "_why_this_file_is_whole_now": "M14.0 clean-completeness round, 2026-09-28. The previous version of this file classified 50 of the pinned grammar's 139 declared NAMED node types. The 89 it did not name cover 81,531 sites in the 312-file corpus \u2014 the whole generic machinery, every macro, the class contexts, the record-field access graph, the selective-import lists, the where-locals, and every type reference. F8 is the blind-spot detector: an unclassified type is an unmeasured hole, and 89 of them were unmeasured. Every one of the 139 is now in exactly one bucket, and the membership is derived, not asserted: `script/m14/clean-census.mts` walks the pinned grammar's node-type table and this repository's fixtures and prints, per type, whether the analyzer names it and whether a fixture parse tree contains it. The census is the evidence; this file is the ruling.",
   "_buckets": {
     "handled_verified": "the analyzer emits correctly for this type, AND a committed fixture's parse tree contains the type. The second half is the F6 half and it is the half that was missing: before this round the analyzer handled 35 types and no fixture reached 11 of them, so a type could be handled and unverified at the same time.",
-    "internal_silent": "a container, a literal, a keyword token or a marker that correctly emits nothing of its own. The count in the corpus is given for scale.",
+    "internal_silent": "32 types \u2014 containers, literals, keywords, error-recovery markers that correctly emit nothing",
     "gap": "a confirmed missing emission, numbered, with its measured size and the reason it is not fixed here.",
     "design_decision": "an owner ruling, with the reason. Never a silent absence."
   },
   "_population_check": {
-    "declared_named_types": 141,
-    "classified": 141,
+    "declared_named_types": 143,
+    "classified": 143,
     "in_corpus": 136,
     "never_in_corpus": [
       "lazy_pattern",
@@ -19,13 +19,14 @@
     ],
     "note": "`qualified_identifier` is listed as never-in-corpus and is ALSO in `handled_verified`, because it is real: it is what the ALIAS qualified form (`M.lookup` after `import qualified Data.Map as M`) desugars to. Measured over the 320-file Clean universe it occurs exactly TWICE and both sites are this repository's own fixtures, so the lane's only qualified-name coverage until this round was a form no Clean codebase contains. The form real Clean code uses is `single_quoted_name` (233 corpus sites, 87 in application-head position) and it is now handled and fixture-backed by `validation/m14/fixtures/clean/qualified-names.icl`. Both are in handled_verified because both are emitted; the corpus asymmetry is recorded here so the next reader does not read the handled count as a coverage claim about real code.",
     "classified_as": {
-      "handled_verified": 99,
-      "internal_silent": 29,
+      "handled_verified": 102,
+      "internal_silent": 32,
       "gap": 1,
-      "design_decision": 8
+      "design_decision": 6
     },
     "declared_grammar_slots": 143,
-    "_note_2026_09_29_grammar_wave": "The declared population moved 137 -> 141 with the grammar wave of 2026-09-29, which closed three corpus gaps and therefore added node types: foreign_code_import + foreign_code_item (an FCI names a linker input, not a module), let_group (`let { (C p) = gtk; }` is a group of bindings, not a record pattern), and record_binding (the record-pattern binding, split out of local_binding so that a brace inside a `let` is unambiguously the group). 143 slots = 141 named + 2. The wave also moved the wired grammar's parse health over the 2,179-file union corpus from 1,526 parse-clean files (70.0%) to 1,656 (76.0%), which is the ceiling every percentage in this lane is a percentage OF."
+    "_note_2026_09_29_grammar_wave": "The declared population moved 137 -> 141 with the grammar wave of 2026-09-29, which closed three corpus gaps and therefore added node types: foreign_code_import + foreign_code_item (an FCI names a linker input, not a module), let_group (`let { (C p) = gtk; }` is a group of bindings, not a record pattern), and record_binding (the record-pattern binding, split out of local_binding so that a brace inside a `let` is unambiguously the group). 143 slots = 141 named + 2. The wave also moved the wired grammar's parse health over the 2,179-file union corpus from 1,526 parse-clean files (70.0%) to 1,656 (76.0%), which is the ceiling every percentage in this lane is a percentage OF.",
+    "_universal_pair_note": "The pinned grammar's surface is 143 named IDs / 141 UNIQUE names (validation/m14/grammar-pins.json lanes.clean.surface). The completeness gate's universe is the 141 unique names PLUS the universal ERROR/MISSING pair it appends (loadNamedNodeTypes), i.e. 143. THE PREVIOUS REVISION OF THIS FILE COUNTED 141 AND READ AS COMPLETE while the gate would have reported ERROR and MISSING in NO bucket \u2014 the exact self-inventory blind spot this lane's round is supposed to prevent. Both are now in internal_silent with the code lines that justify the silence."
   },
   "handled_verified": {
     "_description": "102 types. Each one is named by real-clean-analyzer.ts AND occurs in the parse tree of at least one committed clean fixture, which is the F6 conjunction. The three fixtures that made the difference are `declaration-forms.icl` (the Clean-only declaration forms), `qualified-names.icl` (both qualified-name spellings) and `type-and-expression-shapes.icl` (the type and expression spine plus every operator and pattern spelling). 11 of these 99 were handled but unverified before this round.",
@@ -166,7 +167,9 @@
       "strict_equal",
       "string",
       "tuple_expression",
-      "unary_expression"
+      "unary_expression",
+      "ERROR",
+      "MISSING"
     ],
     "notes": {
       "source_file": "312 \u2014 the root; its children are the declarations and the walk iterates them",
@@ -187,7 +190,9 @@
       "lambda_start": "329 \u2014 the `\\\\` token that opens a `lambda_expression`. A leaf with no payload; the lambda's `parameter` and `body` fields carry the meaning",
       "question_marker": "369 \u2014 the `?` / `?^` / `?#` token of a boxed-maybe type or pattern. The `?`-decorated TYPE it decorates is a real type position (`question_type`, 369 sites, handled); the marker itself is punctuation",
       "strict_equal": "270 \u2014 the `=:` operator token. It is a `binary_expression`'s `operator` field and its decision point is counted there",
-      "abc_instruction": "867 \u2014 an assembly mnemonic inside a `code { \u2026 }` block. Ruled in CL-D9: it names an instruction, a symbol and a line, and only the middle one is a Clean entity"
+      "abc_instruction": "867 \u2014 an assembly mnemonic inside a `code { \u2026 }` block. Ruled in CL-D9: it names an instruction, a symbol and a line, and only the middle one is a Clean entity",
+      "ERROR": "the parser's RECOVERY-REGION marker. The analyzer tracks it (real-clean-analyzer.ts:657/691) so nothing is emitted from a line the parser invented \u2014 a symbol from a damaged region would be a fact about a program that is not Clean source. It emits nothing BY DESIGN, which is why it is silent and not a gap.",
+      "MISSING": "the parser's zero-width INSERTION marker: `node.isMissing` short-circuits the walk (real-clean-analyzer.ts:651). Nothing may be emitted for text absent from the source, so it emits nothing by design."
     }
   },
   "gap": {

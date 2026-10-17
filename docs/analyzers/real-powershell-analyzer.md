@@ -1562,3 +1562,39 @@ shape evidence (`dotnet`, `WriteLine`, `Describe`, `It`, `Should`), and 74 of it
 name a declaration the same repository publishes, which the analyzer cannot see from one file.
 Ruled in PSD10 with the gain recorded (unresolved would fall to ~1,884) so a later round can
 take it deliberately rather than by accident.
+
+## #419 completeness inventory (2026-10-17) — the reading
+
+The lane's config was already present; this round measured it and closed one spec-shape defect.
+`bun run script/m14/completeness-inventory.ts --lang powershell` reads **6 of 8 sections**:
+
+```
+pass  A  154 types, 50 handled, 86 silent, 8 gaps, 10 decisions
+pass  B  10 kinds pinned, the same 10 emitted — all accounted for
+pass  C  complexity payload row
+pass  D  4 tiers: import_based · inferred · structural · usage_contextual
+FAIL  E  no baseline floor row for powershell:powershell
+FAIL  F  no avgMsPerFile for powershell:powershell
+pass  G  this doc + the analyzer head comment
+pass  H  M14.CC1.json, 12 checks
+```
+
+**E/F are one absent baseline cell, not a missing instrument.** `script/m14/differential.ts` already
+carries and wires `derivePowershellEdges` (`:23812-23819`, M60 #278 F5), and `:24083` records powershell
+being joined to the calls/uses/contains/exports/references audited set so the oracle's truth edges are
+not dropped before comparison. The `powershell:powershell` row (`<repo>:<lang>`) is what a baseline
+sweep supplies; the baseline's existing `powershell:javascript`, `powershell:c`, … rows are the OTHER
+analyzers over the powershell corpus.
+
+**The spec-shape audit** (the four shapes the fleet keeps finding) is clean: `handled_verified.types` and
+`internal_silent.types` are string arrays (50 / 86), `design_decision.decisions` exists (10), and
+`gaps[].node_type` holds type names, not prose. Coverage is real: **154 wasm types, 154 classified, 0
+unclassified, 0 stale**, of which 18 are classified by PSD1-PS6's decision rows.
+
+**One defect fixed.** PSD7-PSD10 carried PROSE in `node_type` (`"relationship metadata: …"`,
+`"relationship:overrides (…)"`), a field the inventory gate comma-splits into its classified-type set —
+the same shape as lua's sentence-valued `gaps[].node_type`, one bucket over. Harmless only because all
+154 types were already covered, and fixed anyway: the four `node_type` fields were removed while the
+rulings remain intact in each record's `question`/`resolution`, and the spec records the removal in
+`_spec_shape_2026_10_17`. Section A is unchanged after the edit. Full record:
+`validation/m14/verification/POWERSHELL-STATE.md`.

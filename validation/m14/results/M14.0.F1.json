@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "2cc2476a7e5f3dd472929f8c38cb1388b955bfac41ca39eceeebc2e0dbc8e84d",
-    "sealedAt": "2026-10-17T21:41:12.000Z"
+    "contentSha256": "e7b02f30940a48e2ae801fda2868108e0cb6f2108a557e8959ce7062efe488ce",
+    "sealedAt": "2026-10-17T22:26:28.000Z"
   },
   "checks": [
     {
@@ -30,8 +30,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "b3410bd55c2ff6ad76780e373111f63dc44ee3b9",
-  "committedAt": "2026-10-17T17:41:12-04:00",
+  "commit": "9cd965b3819b20c55254317facc0030541931099",
+  "committedAt": "2026-10-17T18:26:28-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -50,21 +50,21 @@
             "context": "real-r-analyzer.ts:const:PACKAGE_NAMESPACE_SUBTYPES",
             "kind": "type",
             "lang": "r",
-            "line": 63,
+            "line": 76,
             "literal": "library_import"
           },
           {
             "context": "real-r-analyzer.ts:const:PACKAGE_NAMESPACE_SUBTYPES",
             "kind": "type",
             "lang": "r",
-            "line": 63,
+            "line": 76,
             "literal": "library_dependency"
           },
           {
             "context": "real-r-analyzer.ts:const:PACKAGE_NAMESPACE_SUBTYPES",
             "kind": "type",
             "lang": "r",
-            "line": 63,
+            "line": 76,
             "literal": "namespace_access"
           }
         ]
@@ -438,27 +438,27 @@
         "waivedFindings": [
           {
             "justification": "M14 grammar audit (real-html-analyzer.ts:1038, the `<input type=...>` label counter): an HTML input-type ATTRIBUTE VALUE, not a parse-tree node reference. `type` is a lowercased attribute string from `attrs[\"type\"]`, so the comparison is live and correct and the grammar declares no node by this name. Waived, not fixed — there is nothing to fix, and the swift `String` entry is the same shape.",
-            "line": 1464,
+            "line": 1484,
             "literal": "hidden"
           },
           {
             "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
-            "line": 1464,
+            "line": 1484,
             "literal": "submit"
           },
           {
             "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
-            "line": 1464,
+            "line": 1484,
             "literal": "button"
           },
           {
             "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
-            "line": 1464,
+            "line": 1484,
             "literal": "reset"
           },
           {
             "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
-            "line": 1464,
+            "line": 1484,
             "literal": "image"
           }
         ],
@@ -733,17 +733,17 @@
         "unknownNodeTypes": [
           {
             "context": "real-r-analyzer.ts:const:PACKAGE_NAMESPACE_SUBTYPES",
-            "line": 63,
+            "line": 76,
             "literal": "library_import"
           },
           {
             "context": "real-r-analyzer.ts:const:PACKAGE_NAMESPACE_SUBTYPES",
-            "line": 63,
+            "line": 76,
             "literal": "library_dependency"
           },
           {
             "context": "real-r-analyzer.ts:const:PACKAGE_NAMESPACE_SUBTYPES",
-            "line": 63,
+            "line": 76,
             "literal": "namespace_access"
           }
         ],
@@ -845,12 +845,12 @@
         "waivedFindings": [
           {
             "justification": "M14 grammar audit (real-sql-analyzer.ts:58, the SQL_KEYWORDS set): a SQL KEYWORD in a keyword table, not a parse-tree node reference. `table` is the reserved word the guard exists to recognise, and the audit's `X.type === \"lit\"` / set-literal heuristic reports set members the way it reports node types. Waived, not fixed — deleting the keyword would change behaviour, and the swift `String` entry is the same shape (a type-name table, waived with a justification).",
-            "line": 864,
+            "line": 903,
             "literal": "table"
           },
           {
             "justification": "M14.0.F1 register repayment (2026-10-08, real-sql-analyzer.ts:922 adoptLateDeclaredIndexOwners): this is the symbol-metadata TAG THE ANALYZER ITSELF WRITES — `createSymbol(..., { type: \"index\", indexName, table, columns })` at real-sql-analyzer.ts:2380, read back as `symbol.metadata?.type !== \"index\"` — not a parse-tree node reference. The pinned sql grammar declares no node named `index` (its index productions are `create_index` / `alter_index` / `drop_index` / `index_fields` / `index_hint` / `keyword_index`), and no comparison in this analyzer ever tests a node against it. Waived, not fixed: deleting the comparison would drop the CREATE INDEX symbols' owner adoption, which is a behaviour change with no grammar conformance to buy. Same shape as the sql `table`/`grant_statement` and typescript `default_export_expression` entries above — an analyzer-owned payload compared against a literal, making no grammar claim. The site carries a comment saying so.",
-            "line": 1072,
+            "line": 1111,
             "literal": "index"
           }
         ],
@@ -898,82 +898,82 @@
         "waivedFindings": [
           {
             "justification": "M49.S1 (real-swift-analyzer.ts ENUM_RAW_VALUE_TYPES): this is a TYPE-NAME table (Swift raw-value enum types), not a parse-tree node reference. The audit scanner counts string literals in const initializers it treats as node-type sets; every literal in this set is a Swift stdlib type name compared against enum rawType payloads. No grammar conformance claim is made by these literals.",
-            "line": 79,
+            "line": 103,
             "literal": "String"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "Character"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "Int"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "Int8"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "Int16"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "Int32"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "Int64"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "UInt"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "UInt8"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "UInt16"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "UInt32"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "UInt64"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "Float"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "Float32"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "Float64"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 79,
+            "line": 103,
             "literal": "Double"
           }
         ],
@@ -1164,9 +1164,9 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-10-17T17:41:12-04:00",
-  "regeneratedAtCommit": "b3410bd55c2ff6ad76780e373111f63dc44ee3b9",
-  "runtime": "node v22.22.1",
+  "regeneratedAt": "2026-10-17T18:26:28-04:00",
+  "regeneratedAtCommit": "9cd965b3819b20c55254317facc0030541931099",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
 }

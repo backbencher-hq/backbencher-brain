@@ -159,7 +159,8 @@
       "with_expression",
       "with_member_access_expression",
       "with_statement",
-      "yield_statement"
+      "yield_statement",
+      "ERROR"
     ]
   },
   "internal_silent": {
@@ -185,7 +186,8 @@
       "myclass_expression",
       "resume_statement",
       "tuple_expression",
-      "variance_annotation"
+      "variance_annotation",
+      "MISSING"
     ]
   },
   "gap": {
@@ -245,5 +247,21 @@
         "edges": 374
       }
     }
+  },
+  "_section_a": {
+    "wasm": "wasm/tree-sitter-vbnet.wasm (VENDORED: built from grammars/tree-sitter-vbnet; grammar-pins.json lanes.vb)",
+    "nodeTypeSlots": 450,
+    "namedUnique": 166,
+    "anonymous": 283,
+    "gateUniverse": 168,
+    "buckets": {
+      "handled_verified": 146,
+      "internal_silent": 22
+    },
+    "unclassified": 0,
+    "stale": 0,
+    "method": "web-tree-sitter nodeTypeIsNamed/nodeTypeForId on the PINNED VENDORED wasm; ERROR/MISSING injected per the gate's own rule; anonymous keyword/punctuation tokens are NOT rows.",
+    "pin_drift_finding": "validation/m14/grammar-pins.json lanes.vb.wired sha256 c6182994… / 4,073,046 B does not match the wired file 4d8d8e0e… / 4,083,368 B, and the pinned vendored grammar.js is 74,567 B while the tree has 76,000 B: the vendored grammar was repaired AFTER the pin was recorded. The SPEC matches the wired wasm (145+21=166 named types, 0 stale), so the spec is current and the PIN is stale; re-record the pin.",
+    "measured": "2026-10-17"
   }
 }
