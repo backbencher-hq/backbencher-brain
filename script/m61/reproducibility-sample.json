@@ -31,13 +31,25 @@
       "milestone": "m42",
       "record": "validation/m42/results/H1.json",
       "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
-      "rationale": "hover-highlight component — pure, no server"
+      "rationale": "DECLARED BLOCKED (see declaredBlocked): the earlier rationale here claimed \"pure, no server\", which was false — the gate indexes .tools/m42-h1-fixture and drives dist/lsp/server.js"
+    },
+    {
+      "milestone": "m42",
+      "record": "validation/m42/results/H6.json",
+      "verifierCommand": "npx tsx script/m42/verify-hub-navigation.ts",
+      "rationale": "hub-navigation surface derivation — source records only, no dist, no fixture, no server (measured: re-runs green in an isolated worktree)"
     },
     {
       "milestone": "m44",
       "record": "validation/m44/results/U6.json",
       "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
-      "rationale": "usages-fallback decision core — pure, no server"
+      "rationale": "DECLARED BLOCKED (see declaredBlocked): claimed \"pure, no server\"; it actually runs bin/bb index and the dist/lsp server"
+    },
+    {
+      "milestone": "m44",
+      "record": "validation/m44/results/U2.json",
+      "verifierCommand": "npx tsx script/m44/verify-hub-list.ts",
+      "rationale": "hub-list derivation from the m26 harness record — a sealed source read plus a pure law set, no runtime deps (measured: re-runs green in an isolated worktree)"
     },
     {
       "milestone": "m55",
@@ -52,5 +64,14 @@
       "rationale": "the sealing theme re-proves itself — the auditor's own foundation"
     }
   ],
-  "declaredBlocked": []
+  "declaredBlocked": [
+    {
+      "record": "validation/m42/results/H1.json",
+      "reason": "Requires .tools/m42-h1-fixture, which .gitignore excludes (line 30: `.tools/`), AND a built dist/lsp/server.js. In a checkout the command dies at realpathSync before writing a record: ENOENT /tmp/<iso>/.tools/m42-h1-fixture. Declared rather than removed from the sample so every audit record keeps naming a gate that cannot reproduce from a clean checkout."
+    },
+    {
+      "record": "validation/m44/results/U6.json",
+      "reason": "Requires a built dist/ bundle: it runs bin/bb index over its own fixture and then the dist/lsp server. In a checkout the index command exits 1 (no build output), so no fresh record is produced. Declared for the same reason as m42/H1."
+    }
+  ]
 }

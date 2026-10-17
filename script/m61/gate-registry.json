@@ -3,7 +3,7 @@
   "milestone": "M61",
   "issue": "M61.V4 verifier lint (issue #845)",
   "authority": "docs/m61/M61-MASTER-PLAN.md D-4 (a gate that cannot fail is not evidence)",
-  "note": "Only what no single owner can express is declared here. Gate membership, outputs, sealing, can-fail proofs, tier membership and env vars are all DERIVED by script/m61/gate_lint.ts (from the records, the gate sources, package.json and the lane ladder) \u2014 never duplicated in this file.",
+  "note": "Only what no single owner can express is declared here. Gate membership, outputs, sealing, can-fail proofs, tier membership and env vars are all DERIVED by script/m61/gate_lint.ts (from the records, the gate sources, package.json and the lane ladder) — never duplicated in this file.",
   "lanes": [
     "m24",
     "m25",
@@ -72,23 +72,23 @@
     },
     {
       "path": "script/m29/generate-giant-corpus.ts",
-      "reason": "deterministic corpus generator \u2014 invoked BY the giant-repo gate"
+      "reason": "deterministic corpus generator — invoked BY the giant-repo gate"
     },
     {
       "path": "script/m29/generate-precision-ledger.ts",
-      "reason": "ledger generator \u2014 invoked BY the precision-ledger gate"
+      "reason": "ledger generator — invoked BY the precision-ledger gate"
     },
     {
       "path": "script/m29/giant-repo-budget.ts",
-      "reason": "latency runner \u2014 invoked BY the giant-repo gate"
+      "reason": "latency runner — invoked BY the giant-repo gate"
     },
     {
       "path": "script/m29/wave-execute.ts",
-      "reason": "wave runner \u2014 invoked BY the wave-execution gate"
+      "reason": "wave runner — invoked BY the wave-execution gate"
     },
     {
       "path": "script/m29/wave-protocol.ts",
-      "reason": "wave protocol data + helpers \u2014 no verdict of its own"
+      "reason": "wave protocol data + helpers — no verdict of its own"
     },
     {
       "path": "script/m55/lsp-wire.ts",
@@ -109,23 +109,23 @@
     {
       "path": "script/m61/adopt-sealed-writes3.ts",
       "reason": "one-shot adoption codemod (already applied)"
+    },
+    {
+      "path": "script/m61/project-lane-ledgers.ts",
+      "reason": "the generic lane-ledger projector: it rewrites each lane's manifest from that lane's records and throws if a record will not project. The verdict belongs to script/m61/verify-ledger-truth.ts (V7), which checks the projected ledgers."
     }
   ],
   "declaredNoCanFail": [
     {
-      "gate": "script/m25/run-vscode-e2e.mts",
-      "reason": "editor LEG runner: it consumes the shared assertion core (script/m25/feature-assertions.ts), whose can-fail proofs are gated by script/m25/verify-harness-core.ts. The runner's record reports the core's assertions; the proof belongs to the core, not the transport adapter."
-    },
-    {
       "gate": "script/m25/run-fork-e2e.mts",
-      "reason": "fork-editor leg runner \u2014 same as the VS Code runner: the can-fail proof belongs to the shared assertion core."
+      "reason": "fork-editor leg runner — same as the VS Code runner: the can-fail proof belongs to the shared assertion core."
     }
   ],
   "declaredEnv": [
     {
       "name": "BB_DATA_DIR",
       "role": "input",
-      "reason": "the index data root \u2014 a data input, not a skip switch"
+      "reason": "the index data root — a data input, not a skip switch"
     },
     {
       "name": "BB_GATE_BREAK_STALE_LOCK",
@@ -136,32 +136,21 @@
       "name": "BB_M55_SKIP_LADDER",
       "role": "skip",
       "reason": "m55's declared ladder skip mode (the lane's only pre-existing skip switch)"
+    },
+    {
+      "name": "BB_MAX_PROJECTS",
+      "role": "input",
+      "reason": "caps how many projects the surface-divergence measurement walks; a scope input to that measurement, not a way to skip a check"
     }
   ],
   "declaredArtifactRecords": [
     {
       "record": "validation/m61/results/manifest.json",
-      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority, per-issue evidence) \u2014 a declared plan record whose every entry is a PROJECTION of a gate's record, not a gate verdict of its own"
-    },
-    {
-      "record": "validation/m24/results/manifest.json",
-      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
-    },
-    {
-      "record": "validation/m25/results/manifest.json",
-      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority, per-issue evidence) — a declared plan record whose every entry is a PROJECTION of a gate's record, not a gate verdict of its own"
     },
     {
       "record": "validation/m26/results/manifest.json",
-      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
-    },
-    {
-      "record": "validation/m27/results/manifest.json",
-      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
-    },
-    {
-      "record": "validation/m28/results/manifest.json",
-      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) — a declared plan record, not a gate verdict"
     },
     {
       "record": "validation/m29/results/PRECISION-LEDGER.json",
@@ -176,32 +165,20 @@
       "reason": "generated precision-ledger data produced by the declared runner script/m29/generate-precision-ledger.ts; the VERDICT record is R4-verify.json"
     },
     {
-      "record": "validation/m29/results/manifest.json",
-      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
-    },
-    {
       "record": "validation/m29/results/ramp-groovy.json",
-      "reason": "per-language ramp measurement produced by the declared ramp runner \u2014 measurement data, judged by the ramp gate"
+      "reason": "per-language ramp measurement produced by the declared ramp runner — measurement data, judged by the ramp gate"
     },
     {
       "record": "validation/m29/results/ramp-zig.json",
-      "reason": "per-language ramp measurement produced by the declared ramp runner \u2014 measurement data, judged by the ramp gate"
-    },
-    {
-      "record": "validation/m29/results/wave-java.json",
-      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate) \u2014 declared by this lane: its 26 per-language siblings already carried the declaration and this one did not, which was a hole in the artifact list"
-    },
-    {
-      "record": "validation/m44/results/KNOWN-GAPS.json",
-      "reason": "the milestone's known-gaps register \u2014 a declaration of what is NOT done, not a gate verdict (the m42 twin of the same artifact already carries this declaration)"
+      "reason": "per-language ramp measurement produced by the declared ramp runner — measurement data, judged by the ramp gate"
     },
     {
       "record": "validation/m29/results/wave-1-approval.json",
-      "reason": "owner approval record (approvedBy/approvedAt) \u2014 a human decision, not a gate verdict"
+      "reason": "owner approval record (approvedBy/approvedAt) — a human decision, not a gate verdict"
     },
     {
       "record": "validation/m29/results/wave-2-approval.json",
-      "reason": "owner approval record (approvedBy/approvedAt) \u2014 a human decision, not a gate verdict"
+      "reason": "owner approval record (approvedBy/approvedAt) — a human decision, not a gate verdict"
     },
     {
       "record": "validation/m29/results/wave-c.json",
@@ -313,23 +290,47 @@
     },
     {
       "record": "validation/m42/results/KNOWN-GAPS.json",
-      "reason": "the milestone's known-gaps register \u2014 a declaration of what is NOT done, not a gate verdict"
+      "reason": "the milestone's known-gaps register — a declaration of what is NOT done, not a gate verdict"
     },
     {
       "record": "validation/m42/results/board-closure.json",
-      "reason": "m42 board closure receipt (milestones + closed issue ids) \u2014 a bookkeeping artifact"
+      "reason": "m42 board closure receipt (milestones + closed issue ids) — a bookkeeping artifact"
     },
     {
       "record": "validation/m42/results/manifest.json",
-      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) — a declared plan record, not a gate verdict"
     },
     {
       "record": "validation/m44/results/manifest.json",
-      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) — a declared plan record, not a gate verdict"
     },
     {
-      "record": "validation/m55/results/manifest.json",
-      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+      "record": "validation/m24/results/manifest.superseded-e7c9819f4.json",
+      "reason": "superseded snapshot: the pre-re-seal copy of its companion record, kept so a reader can see what the envelope replaced. No gate writes it; the live companion is the record."
+    },
+    {
+      "record": "validation/m25/results/E4-openvsx.superseded-e7c9819f4.json",
+      "reason": "superseded snapshot: the pre-re-seal copy of its companion record, kept so a reader can see what the envelope replaced. No gate writes it; the live companion is the record."
+    },
+    {
+      "record": "validation/m25/results/manifest.superseded-e7c9819f4.json",
+      "reason": "superseded snapshot: the pre-re-seal copy of its companion record, kept so a reader can see what the envelope replaced. No gate writes it; the live companion is the record."
+    },
+    {
+      "record": "validation/m26/results/external-arm-baseline.superseded-e7c9819f4.json",
+      "reason": "superseded snapshot: the pre-re-seal copy of its companion record, kept so a reader can see what the envelope replaced. No gate writes it; the live companion is the record."
+    },
+    {
+      "record": "validation/m55/results/V1-blocked-path.superseded-e7c9819f4.json",
+      "reason": "superseded snapshot: the pre-re-seal copy of its companion record, kept so a reader can see what the envelope replaced. No gate writes it; the live companion is the record."
+    },
+    {
+      "record": "validation/m55/results/V1-probe.superseded-e7c9819f4.json",
+      "reason": "superseded snapshot: the pre-re-seal copy of its companion record, kept so a reader can see what the envelope replaced. No gate writes it; the live companion is the record."
+    },
+    {
+      "record": "validation/m26/results/external-arm-recapture-audit.json",
+      "reason": "the audit trail of the 2026-10-11 re-capture of the m26 external-arm golden: fingerprints before/after and the proof the delta was renumbering, not loss. Written once by the capture pass, never re-emitted by a gate."
     }
   ],
   "declaredLegacyUnsealed": [
@@ -389,7 +390,7 @@
     },
     {
       "gate": "script/m27/verify-matrix.ts",
-      "reason": "editor\u00d7feature matrix: needs every editor runtime installed"
+      "reason": "editor×feature matrix: needs every editor runtime installed"
     },
     {
       "gate": "script/m28/verify-governance.ts",
@@ -429,11 +430,11 @@
     },
     {
       "gate": "script/m53/verify-r1-ladder.ts",
-      "reason": "the lane integration ladder (41 gates, ~15 min) \u2014 run deliberately, not per edit"
+      "reason": "the lane integration ladder (41 gates, ~15 min) — run deliberately, not per edit"
     },
     {
       "gate": "script/m61/verify-claim-fingerprints.ts",
-      "reason": "the \u00a78.4 source-fingerprint gate (M61.V8): walks every validation/ record and re-derives each in-scope fingerprint from its declared coverage on disk. Read-only but repo-wide, so it is run deliberately rather than per edit; package.json wiring is outside the write scope of the lane that added it."
+      "reason": "the §8.4 source-fingerprint gate (M61.V8): walks every validation/ record and re-derives each in-scope fingerprint from its declared coverage on disk. Read-only but repo-wide, so it is run deliberately rather than per edit; package.json wiring is outside the write scope of the lane that added it."
     }
   ]
 }

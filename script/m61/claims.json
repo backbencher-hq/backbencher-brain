@@ -62,7 +62,7 @@
     {
       "id": "m44-x1",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "template": "closure gate verified (X1 {passed}/{checks} at HEAD)",
+      "template": "closure gate X1 {passed}/{checks} at HEAD",
       "derive": { "kind": "field", "source": "validation/m44/results/X1.json", "template": "{passed}/{checks}" }
     },
     {

@@ -2,17 +2,12 @@
   "issue": "M61.V5 claim pins (issue #846)",
   "code": "V5",
   "milestone": "M61",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 37,
-  "passed": 33,
-  "failed": 4,
-  "realFailed": 4,
-  "failures": [
-    "C2: no published claim has drifted from its ledger — m25-issues: published 0 row(s), expected \"| v1 | M25 | The Extension | **CLOSED** (5/11 verified)\" | m26-issues: published 0 row(s), expected \"| v2 | M26 | The Graph | **CLOSED** (8/11 verified)\" | m27-issues: published 0 row(s), expected \"| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (2/7 verified)\" | m28-issues: published 0 row(s), expected \"| v4 | M28 | The Union (MCP + agent) | **CLOSED** (3/7 verified)\"",
-    "M: stale-row (a stale row beside a correct one is drift, not a passing pin) — outcome=drifted published=0 mismatched=1",
-    "M: pin-blind — the mutant did NOT manifest the defect — the suite could not fail",
-    "M: stale-row-blind — the mutant did NOT manifest the defect — the suite could not fail"
-  ],
+  "passed": 37,
+  "failed": 0,
+  "realFailed": 0,
+  "failures": [],
   "checksList": [
     "ok: C0: no registry problems",
     "ok: C0: the registry pins a non-trivial number of claims",
@@ -20,7 +15,7 @@
     "ok: C0: more than one derivation kind is exercised",
     "ok: C1: no claim is blocked (every cited source resolves)",
     "ok: C1: every claim's derivation yields numbers",
-    "FAIL: C2: no published claim has drifted from its ledger — m25-issues: published 0 row(s), expected \"| v1 | M25 | The Extension | **CLOSED** (5/11 verified)\" | m26-issues: published 0 row(s), expected \"| v2 | M26 | The Graph | **CLOSED** (8/11 verified)\" | m27-issues: published 0 row(s), expected \"| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (2/7 verified)\" | m28-issues: published 0 row(s), expected \"| v4 | M28 | The Union (MCP + agent) | **CLOSED** (3/7 verified)\"",
+    "ok: C2: no published claim has drifted from its ledger",
     "ok: C2: the pins are live (at least one row was found for every claim)",
     "ok: C3: every declared doc exists and honors its coverage status",
     "ok: C3: the audit set covers README, the website and the docs end to end",
@@ -40,9 +35,9 @@
     "ok: core: claimAnchor — short segments are never anchors",
     "ok: core: claimAnchor — the most specific candidate wins over the longest",
     "ok: M: pin-blind (a doc that no longer states the claim reports as drifted)",
-    "FAIL: M: stale-row (a stale row beside a correct one is drift, not a passing pin) — outcome=drifted published=0 mismatched=1",
-    "FAIL: M: pin-blind — the mutant did NOT manifest the defect — the suite could not fail",
-    "FAIL: M: stale-row-blind — the mutant did NOT manifest the defect — the suite could not fail",
+    "ok: M: stale-row (a stale row beside a correct one is drift, not a passing pin)",
+    "ok: M: pin-blind",
+    "ok: M: stale-row-blind",
     "ok: M: blocked-as-ok",
     "ok: M: unfilled-as-ok",
     "ok: M: render-blind",
@@ -52,106 +47,94 @@
     "ok: M: unpinned-blind",
     "ok: R: this verifier's own evidence is a sealed record"
   ],
-  "currentCommit": "8def4a5d56c9e987b6b19fab29e2ceffeb473cca",
+  "currentCommit": "0df683b360ce4f067c230d81ebcf6c7f0cbea996",
   "verifierCommand": "npx tsx script/m61/verify-claims.ts",
   "evidenceFile": "V5.json",
-  "generatedAt": "2026-10-17T18:17:21.876Z",
+  "generatedAt": "2026-10-17T18:36:24.467Z",
   "claims": [
     {
       "id": "m25-issues",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
+      "outcome": "pinned",
       "rendered": "| v1 | M25 | The Extension | **CLOSED** (5/11 verified)",
-      "published": 0,
-      "reason": "1 published row(s) state the claim (\"| v1 | M25 | The Extension | **CLOSED** (\") without the ledger's numbers: expected \"| v1 | M25 | The Extension | **CLOSED** (5/11 verified)\""
+      "published": 1
     },
     {
       "id": "m26-issues",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
+      "outcome": "pinned",
       "rendered": "| v2 | M26 | The Graph | **CLOSED** (8/11 verified)",
-      "published": 0,
-      "reason": "1 published row(s) state the claim (\"| v2 | M26 | The Graph | **CLOSED** (\") without the ledger's numbers: expected \"| v2 | M26 | The Graph | **CLOSED** (8/11 verified)\""
+      "published": 1
     },
     {
       "id": "m27-issues",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
+      "outcome": "pinned",
       "rendered": "| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (2/7 verified)",
-      "published": 0,
-      "reason": "1 published row(s) state the claim (\"| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (\") without the ledger's numbers: expected \"| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (2/7 verified)\""
+      "published": 1
     },
     {
       "id": "m28-issues",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
+      "outcome": "pinned",
       "rendered": "| v4 | M28 | The Union (MCP + agent) | **CLOSED** (3/7 verified)",
-      "published": 0,
-      "reason": "1 published row(s) state the claim (\"| v4 | M28 | The Union (MCP + agent) | **CLOSED** (\") without the ledger's numbers: expected \"| v4 | M28 | The Union (MCP + agent) | **CLOSED** (3/7 verified)\""
+      "published": 1
     },
     {
       "id": "m29-issues",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
+      "outcome": "pinned",
       "rendered": "| v5 | M29 | Precision Waves | **CLOSED** (2/9 verified)",
-      "published": 0,
-      "reason": "1 published row(s) state the claim (\"| v5 | M29 | Precision Waves | **CLOSED** (\") without the ledger's numbers: expected \"| v5 | M29 | Precision Waves | **CLOSED** (2/9 verified)\""
+      "published": 1
     },
     {
       "id": "m42-issues",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
+      "outcome": "pinned",
       "rendered": "| v6 | M42 | The Interactive Hover | **CLOSED** (2/8 verified)",
-      "published": 0,
-      "reason": "1 published row(s) state the claim (\"| v6 | M42 | The Interactive Hover | **CLOSED** (\") without the ledger's numbers: expected \"| v6 | M42 | The Interactive Hover | **CLOSED** (2/8 verified)\""
+      "published": 1
     },
     {
       "id": "m44-x1",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
-      "rendered": "closure gate verified (X1 43/53 at HEAD)",
-      "published": 0,
-      "reason": "published row does not match the ledger: expected to find \"closure gate verified (X1 43/53 at HEAD)\""
+      "outcome": "pinned",
+      "rendered": "closure gate X1 43/53 at HEAD",
+      "published": 1
     },
     {
       "id": "m26-mutants",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
+      "outcome": "pinned",
       "rendered": "74 mutants caught across 11 suites | [m26 ledger]",
-      "published": 0,
-      "reason": "1 published row(s) state the claim (\" suites | [m26 ledger]\") without the ledger's numbers: expected \"74 mutants caught across 11 suites | [m26 ledger]\""
+      "published": 1
     },
     {
       "id": "m27-mutants",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
+      "outcome": "pinned",
       "rendered": "17 mutants caught across 4 suites | [m27 ledger]",
-      "published": 0,
-      "reason": "1 published row(s) state the claim (\" suites | [m27 ledger]\") without the ledger's numbers: expected \"17 mutants caught across 4 suites | [m27 ledger]\""
+      "published": 1
     },
     {
       "id": "m28-mutants",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
+      "outcome": "pinned",
       "rendered": "24 mutants caught across 6 suites | [m28 ledger]",
-      "published": 0,
-      "reason": "1 published row(s) state the claim (\" suites | [m28 ledger]\") without the ledger's numbers: expected \"24 mutants caught across 6 suites | [m28 ledger]\""
+      "published": 1
     },
     {
       "id": "m26-timeline",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
+      "outcome": "pinned",
       "rendered": "M26 closed: 8/11 issues verified",
-      "published": 0,
-      "reason": "1 published row(s) state the claim (\"M26 closed: \") without the ledger's numbers: expected \"M26 closed: 8/11 issues verified\""
+      "published": 1
     },
     {
       "id": "m26-x1",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
+      "outcome": "pinned",
       "rendered": "X1 closure gate 48/50 with per-mutant records",
-      "published": 0,
-      "reason": "1 published row(s) state the claim (\" with per-mutant records\") without the ledger's numbers: expected \"X1 closure gate 48/50 with per-mutant records\""
+      "published": 1
     }
   ],
   "coverage": [
@@ -211,7 +194,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T18:17:21.876Z",
-    "contentSha256": "d9133f140c4a684d80610a0ff44483cd9d472f0b237cece06ef662c0c813b7fe"
+    "sealedAt": "2026-10-17T18:36:24.468Z",
+    "contentSha256": "5ebad0bde2110c49a973b18e7bba37b163075ced012ac29ffd3522be56ae7c75"
   }
 }

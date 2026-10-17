@@ -1345,6 +1345,15 @@ async function main() {
   const { emitEvidence } = await import("./evidence-harness")
   const checks: any[] = []
   const data: any = { languages: {} }
+  // A SCOPED RUN MERGES; IT DOES NOT REPLACE. `--lang dart` used to write a
+  // ledger containing exactly one language, because `data.languages` started
+  // empty and `emitEvidence` overwrites the file. Measured twice: the ledger held
+  // 21 languages at 2cc7b150e and one (dart) from 9172fefe7 onward, and
+  // script/m29/verify-wave-protocol.ts then died on
+  // `languages["java"].sections` — a gate that could not read its own subject. A
+  // previous repair (aaa462b84) restated the 20 languages by hand, which treats
+  // the symptom. A bare run is still the authority; a scoped run keeps every
+  // language it did not measure.
   for (const r of results) {
     const cfg = cfgs.find((c) => r.summary.startsWith(c.id + ":"))!
     const { spec } = loadSpec(cfg)
@@ -1365,6 +1374,29 @@ async function main() {
       sections: Object.fromEntries(r.checks.map((c) => [c.id, { status: c.status, detail: c.detail ?? "" }])),
     }
   }
+  if (langArg) {
+    const ledgerPath = path.join(RESULTS, "M14.0.SPEC.json")
+    let prior: { checks?: any[]; data?: { languages?: Record<string, unknown> } } = {}
+    try {
+      prior = JSON.parse(fs.readFileSync(ledgerPath, "utf8")) as typeof prior
+    } catch {
+      prior = {}
+    }
+    const touched = new Set(ids)
+    const keptLangs = Object.entries(prior.data?.languages ?? {}).filter(([id]) => !touched.has(id))
+    const keptChecks = (prior.checks ?? []).filter((c: any) => typeof c?.language === "string" && !touched.has(c.language))
+    if (keptLangs.length > 0) {
+      const merged: Record<string, unknown> = {}
+      for (const [id, row] of keptLangs) merged[id] = row
+      for (const [id, row] of Object.entries(data.languages)) merged[id] = row
+      data.languages = merged
+      // Kept rows lead, so a scoped run never re-numbers the languages it did not
+      // measure: the order on disk stays the order a full run produced.
+      checks.unshift(...keptChecks)
+      console.log(`scoped run (--lang ${ids.join(",")}): kept ${keptLangs.length} other language row(s) from ${path.relative(ROOT, ledgerPath)}`)
+    }
+  }
+
   emitEvidence({
     issueId: "M14.0.SPEC",
     title: "Completeness spec (#419) — A–H sections per language",
