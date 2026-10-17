@@ -1,3 +1,20 @@
+// Protobuf Intelligence Engine — Author: Muhammad Ishaq Khan
+// What this file is: the pure-AST analyzer for Protobuf (.proto, routed by
+// src/ast/language-detection.ts); it produces the symbols and relationships the graph engine stores.
+// Relationship types covered: contains, references, imports, uses, calls, extends, implements,
+// overrides — per-type rulings and emission sites in script/m14/spec/protobuf-completeness.json; lane
+// doc docs/analyzers/real-protobuf-analyzer.md.
+// THE `sourcePath` CLAIM KIND EXISTS PARTLY BECAUSE OF THIS LANE: its 581 unresolved MODULE PATHS were
+// one of the three independent cases that forced that claim kind into existence. A path is a FILE, not
+// a namespace — so this lane's path-shaped targets are answered by the `sourcePath` claim
+// (src/ast/*-claim modules / the claim kinds in script/m14/incoming-rule.ts). A NAMESPACE claim cannot
+// reach them; do not add one here expecting these edges to resolve.
+// Where its scripts and validations live: script/m14/spec/protobuf-completeness.json · fixtures
+// validation/m14/fixtures/protobuf/** · docs/analyzers/real-protobuf-analyzer.md.
+// WHEN THIS FILE CHANGES, EDIT THESE TOO (the co-edit list): docs/analyzers/real-protobuf-analyzer.md,
+// the spec JSON's emission sites, and the fixtures/expectations pinning a changed edge.
+// Grammar: tree-sitter-proto (wasm/tree-sitter-proto.wasm).
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import * as path from "node:path"

@@ -386,6 +386,24 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     payloads: { complexity: { key: "expectComplexity", pin: "erlang (function-clause/branch count per declaration; 4 fixtures pin it)" } },
     title: "erlang pass (#419)",
   },
+  // fsharp ENTERS AT 8/8 sections apart from the head comment, which this round's ceremony check newly
+  // enforces (the lane is one of the 40 that never had one -- it is on the owner's list). Its inventory found
+  // three real spec defects: `handled_verified.types` was a list of OBJECTS where the gate reads string[], so
+  // all 48 handled rows were invisible; 115 of 198 types sat in no bucket; and four stale rows named types this
+  // wasm never produces. Classified from a 120-file shape census rather than prose. Its E/F already pass --
+  // perfKey "fsharp:csharp" is the PINNED row (fsharp:fsharp names a row no artifact answers).
+  fsharp: {
+    id: "fsharp",
+    wasm: "tree-sitter-fsharp.wasm",
+    classification: "fsharp-completeness.json",
+    fixturesDir: "validation/m14/fixtures/fsharp",
+    docs: ["docs/analyzers/real-fsharp-analyzer.md"],
+    differentialCheck: "differential-fsharp",
+    perfKey: "fsharp:csharp",
+    requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"],
+    payloads: {},
+    title: "fsharp wave (#419; E/F green on fsharp:csharp)",
+  },
   swift: {
     id: "swift",
     wasm: "tree-sitter-swift.wasm",
@@ -1202,7 +1220,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
 // than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
 // degenerate invocation_expression subtrees) — bounded to that corpus corner.
-const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl", "css", "toml", "markdown", "julia", "solidity", "scss", "yaml", "clojure", "erlang", "html"]
+const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl", "css", "toml", "markdown", "julia", "solidity", "scss", "yaml", "clojure", "erlang", "html", "fsharp"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
@@ -1494,13 +1512,54 @@ function verifySectionF(cfg: LangConfig): SectionCheck {
   }
 }
 
+/**
+ * THE HEAD COMMENT IS PART OF THE CEREMONY, AND IT WAS NOT A GATE CHECK UNTIL NOW.
+ *
+ * Owner requirement: every analyzer opens with a 10-20 line comment naming the AUTHOR, what the file is,
+ * the relationship types it covers, where its docs/specs/fixtures/validations live, WHICH OTHER FILES TO
+ * EDIT when this one changes, and the grammar it depends on -- written for a future contributor.
+ *
+ * MEASURED 2026-10-17 BEFORE THIS CHECK EXISTED: 48 analyzers, **8 had it, 40 did not.** Sections A-H were
+ * all green for many of those 40, which is the whole lesson: a requirement that is only in a brief is a
+ * requirement that gets skipped, and every lane will report its own section list as complete while the
+ * ceremony is missing. It is checked here so it cannot be skipped silently again.
+ *
+ * WHAT IS REQUIRED IS SUBSTANCE, NOT BOILERPLATE. A copy-pasted four-line banner that names the author and
+ * nothing else fails, deliberately: the author alone is a signature, not a map. The four things a future
+ * contributor actually needs are the author, a docs/spec pointer, the relationship kinds this file emits,
+ * and the co-edit list -- so those are what is read.
+ */
+function headCommentOf(lane: string): { ok: boolean; why: string } {
+  const p = path.join(ROOT, "src", "ast", `real-${lane}-analyzer.ts`)
+  if (!fs.existsSync(p)) return { ok: false, why: "analyzer file absent" }
+  const src = fs.readFileSync(p, "utf8")
+  // The LEADING comment block only: everything before the first import/export statement.
+  const cut = src.search(/^(import|export|const|class|function)\b/m)
+  const head = cut > 0 ? src.slice(0, cut) : src.slice(0, 3000)
+  const has = (re: RegExp) => re.test(head)
+  const author = has(/Muhammad Ishaq Khan/)
+  const docs = has(/docs\/analyzers|docs\/m14/)
+  const kinds = has(/\b(calls?|references?|contains?|imports?|exports?|extends?|implements?|overrides?|instantiates?|uses)\b/)
+  const coedit = has(/co-?edit|edit .*when|sibling file|other files|files to edit|when this file changes/i)
+  const why: string[] = []
+  if (!author) why.push("no author")
+  if (!docs) why.push("no docs pointer")
+  if (!kinds) why.push("no relationship kinds")
+  if (!coedit) why.push("no co-edit list")
+  return { ok: author && docs && kinds && coedit, why: why.join(", ") }
+}
+
 function verifySectionG(cfg: LangConfig): SectionCheck {
   const missing = cfg.docs.filter((d) => !fs.existsSync(path.join(ROOT, d)))
+  const head = headCommentOf(cfg.id)
+  const fails: string[] = []
+  if (missing.length) fails.push(`missing docs: ${missing.join(", ")}`)
+  if (!head.ok) fails.push(`analyzer head comment: ${head.why}`)
   return {
     id: "section-g-docs",
-    description: `${cfg.id} analyzer docs present and committed`,
-    status: missing.length ? "fail" : "pass",
-    detail: missing.length ? `missing: ${missing.join(", ")}` : cfg.docs.join(", "),
+    description: `${cfg.id} analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list`,
+    status: fails.length ? "fail" : "pass",
+    detail: fails.length ? fails.join(" | ") : cfg.docs.join(", ") + " + head comment present",
   }
 }
 

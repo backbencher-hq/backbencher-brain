@@ -1,3 +1,16 @@
+// R Intelligence Engine — Author: Muhammad Ishaq Khan
+// What this file is: the pure-AST analyzer for R (.r/.R, routed by src/ast/language-detection.ts); it
+// produces the symbols and relationships the graph engine stores, with string logic on AST-extracted
+// values only.
+// Relationship types covered: contains, references, calls, uses, imports, exports, extends,
+// implements, overrides, instantiates — per-type rulings and emission sites in
+// script/m14/spec/r-completeness.json; lane doc docs/analyzers/real-r-analyzer.md.
+// Where its scripts and validations live: script/m14/spec/r-completeness.json · fixtures
+// validation/m14/fixtures/r/** (`bun run script/m14/run-fixtures.ts --lang r`).
+// WHEN THIS FILE CHANGES, EDIT THESE TOO (the co-edit list): docs/analyzers/real-r-analyzer.md, the
+// spec JSON's emission sites, and every fixture/expectation pinning an edge whose type or target moved.
+// Grammar: tree-sitter-r (wasm/tree-sitter-r.wasm).
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 

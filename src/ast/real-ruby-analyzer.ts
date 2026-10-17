@@ -1,3 +1,19 @@
+// Ruby Intelligence Engine — Author: Muhammad Ishaq Khan
+// What this file is: the pure-AST analyzer for Ruby (.rb, routed by src/ast/language-detection.ts); it
+// produces the symbols and relationships the graph engine stores.
+// Relationship types covered (the emitted set, stated so the contract row cannot drift from this file
+// again): calls, uses, contains, imports, references, exports, extends, implements, overrides,
+// instantiates. FOUR OF THESE — `exports`, `imports`, `overrides`, `references` — were MISSING from
+// this lane's contract row and were found by the reverse check (the analyzer published them while the
+// row did not name them). They are named now; if this file starts or stops emitting one of the ten,
+// EDIT THE ROW IN THE SAME COMMIT and say which layer emits it.
+// Where its scripts and validations live: script/m14/spec/ruby-completeness.json · fixtures
+// validation/m14/fixtures/ruby/** (`bun run script/m14/run-fixtures.ts --lang ruby`) · lane doc
+// docs/analyzers/real-ruby-analyzer.md.
+// WHEN THIS FILE CHANGES, EDIT THESE TOO (the co-edit list): docs/analyzers/real-ruby-analyzer.md, the
+// spec JSON's emission sites and requiredKinds row, and the fixtures/expectations pinning a changed edge.
+// Grammar: tree-sitter-ruby (wasm/tree-sitter-ruby.wasm).
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 

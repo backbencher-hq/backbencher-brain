@@ -1,3 +1,17 @@
+// PowerShell Intelligence Engine — Author: Muhammad Ishaq Khan
+// What this file is: the pure-AST analyzer for PowerShell (.ps1/.psm1/.psd1, routed by
+// src/ast/language-detection.ts); it produces the symbols and relationships the graph engine stores,
+// and string logic runs only on AST-extracted values, never as a regex on source.
+// Relationship types covered (ten): calls, uses, contains, imports, references, exports, extends,
+// implements, overrides, instantiates — per-type rulings and emission sites in
+// script/m14/spec/powershell-completeness.json; lane doc docs/analyzers/real-powershell-analyzer.md.
+// Where its scripts and validations live: script/m14/spec/powershell-completeness.json · fixtures
+// validation/m14/fixtures/powershell/** (`bun run script/m14/run-fixtures.ts --lang powershell`).
+// WHEN THIS FILE CHANGES, EDIT THESE TOO (the co-edit list): docs/analyzers/real-powershell-analyzer.md,
+// the spec JSON's emission sites, and every fixture/expectation pinning an edge whose type or target
+// moved. A kind this file emits must be named in the contract row, or the reverse check fails.
+// Grammar: tree-sitter-powershell (wasm/tree-sitter-powershell.wasm).
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
