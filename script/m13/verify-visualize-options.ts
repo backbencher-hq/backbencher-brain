@@ -313,12 +313,14 @@ harness.check("control: default patterns are the documented twelve", JSON.string
 // ── view (F4a: the text format names the picture it describes) ───────────────
 {
   const asText = async (view: string): Promise<string> => (await handlers.bb_visualize({ scope: "project", view, format: "text" }, ctx)).content[0].text as string
-  for (const view of ["graph", "codemap", "class"]) {
-    const text = await asText(view)
-    harness.check(`view: text names ${view}`, text.includes(`view: ${view} `), text.split("\n").slice(0, 3).join(" | ").slice(0, 160))
-    harness.negative(`view: ${view} text does not claim another view`, !["graph", "codemap", "class"].filter((v) => v !== view).some((v) => new RegExp(`view: ${v} `).test(text)), "")
-    const parsed = await run({ view })
-    harness.check(`view: json carries ${view}`, parsed.view === view, String(parsed.view))
+  const text = await asText("graph")
+  harness.check("view: text names graph", text.includes("view: graph "), text.split("\n").slice(0, 3).join(" | ").slice(0, 160))
+  harness.negative("view: graph text names only graph", !/view: (?!graph )\w+ /.test(text), "")
+  const parsed = await run({ view: "graph" })
+  harness.check("view: json carries graph", parsed.view === "graph", String(parsed.view))
+  for (const view of ["grid", "orbit"]) {
+    const refused = await asText(view)
+    harness.negative(`view: ${view} is refused, not answered as the graph`, refused.includes("unknown view") && !refused.includes("view: graph "), refused.slice(0, 160))
   }
 }
 
@@ -348,12 +350,10 @@ harness.check("control: default patterns are the documented twelve", JSON.string
   harness.check("layout: the region document declares itself", declared(regionsDoc) === "regions", declared(regionsDoc))
   harness.check("layout: and the force document declares itself", declared(forceDoc) === "force", declared(forceDoc))
   harness.negative("layout: the two documents really differ", regionsDoc !== forceDoc, regionsDoc === forceDoc ? "byte-identical" : `${regionsDoc.length} vs ${forceDoc.length} chars`)
-  // The layout is a graph option. A code map has no force layout to arrange, so the
-  // reply must not claim one -- silence about an inapplicable option beats a line that
-  // describes a choice the picture does not have.
-  const codemapText = (await handlers.bb_visualize({ scope: "project", view: "codemap", format: "text" }, ctx)).content[0].text as string
-  harness.negative("layout: a code map is not told it has a force layout", !codemapText.includes("layout:"), codemapText.split("\n").find((l) => l.startsWith("layout:")) ?? "")
-  harness.check("layout: but json still records what the graph would draw", (await run({ view: "codemap" })).layout === "regions", "no layout in a codemap answer")
+  // An unknown view carries no layout at all: the refusal states what is accepted
+  // rather than describing an arrangement for a picture the tool does not draw.
+  const refusedText = (await handlers.bb_visualize({ scope: "project", view: "grid", format: "text" }, ctx)).content[0].text as string
+  harness.negative("layout: an unknown view is not told about a force layout", !refusedText.includes("layout:"), refusedText.split("\n").find((l) => l.startsWith("layout:")) ?? "")
 }
 
 // ── structural: no published option can be accepted and ignored ──────────────

@@ -1,17 +1,17 @@
 // script/m13/verify-visualize-views.ts — M13.61 (V7).
 //
-// `view` MUST SURVIVE ITS OWN FORMATS — the gate for F4, F11, F14, F15 and F16.
+// The GRAPH is the only picture — the gate for F4, F11, F14, F15 and F16.
+// An unknown `view` is refused rather than answered as the graph (asserted
+// below); the studio payload holds the one graph slot, mounts it, and the
+// panels survive.
 //
 // Measured before the fix:
-//   (a) text: `view: "codemap"` and `view: "class"` produced BYTE-IDENTICAL text
-//       to `view: "graph"`, and the word "codemap" appeared nowhere in it;
-//   (b) html: the studio slots were built as [requested, codemap, class], so
-//       `view: "codemap"` shipped [codemap, codemap, class] — two byte-identical
-//       42,187-byte documents, the code map in the tab labelled Graph, no
-//       force-directed map in the artifact at all, and the requested view not
-//       mounted;
+//   (a) text: an unknown `view` produced BYTE-IDENTICAL text to `view: "graph"`,
+//       with nothing naming the requested value;
+//   (b) html: the studio mounted `graph` whatever was asked for, so a caller
+//       asking for a picture the tool does not draw received a different picture;
 //   (c) the studio keyed its injected CSS on the TAB it had mounted rather than on
-//       the document it held, so the code map got the GRAPH's rules;
+//       the document it held, so a document landed under the wrong rules;
 //   (d) those rules were `#hud, #legend { display: none !important; }` — the whole
 //       census panel (nodes, edges, stored rows, heaviest edge, languages, stale
 //       count, excluded note) and the whole decoding key (size = gravity, hollow
@@ -43,8 +43,9 @@ const harness = new Harness({
   title: "bb_visualize: view fidelity — text names it, html mounts it, panels survive",
   layers: ["unit", "integration"],
   decisions: {
-    slots: "each studio slot holds the document of its OWN view, asserted from the embedded payload",
-    mounting: "the mounted view is the requested one, asserted on the studio's own mount() call",
+    slots: "the payload holds the one graph slot, asserted from the embedded payload",
+    mounting: "the mounted view is the graph, asserted on the studio's own mount() call",
+    refusal: "unknown view values are refused rather than answered as the graph",
     selfDescribing: "every renderer document declares data-bb-view on its <html>, and the studio reads that (not the tab)",
     panels: "no rule hides #hud/#legend; the census expression is the count itself, not `.length` of a count",
     regions: "nodes are grouped by their DIRECTORY (a directory of fewer than three symbols folds into its parent), anchored per region, and drawn as named pods; the Modules filter reads the same grouping, and the nodes carry it",
@@ -68,18 +69,22 @@ const handlers = createToolHandlers() as any
 const ctx = { projectPath: root, projectId }
 const text = async (args: Record<string, unknown>): Promise<string> =>
   (await handlers.bb_visualize(args, ctx)).content[0].text as string
-const VIEWS = ["graph", "codemap", "class"] as const
-
 // ── text names the picture ──────────────────────────────────────────────────
-for (const view of VIEWS) {
-  const reply = await text({ scope: "project", view, format: "text" })
-  harness.check(`text: names view=${view}`, reply.includes(`view: ${view} `), reply.split("\n").slice(0, 3).join(" | ").slice(0, 140))
+{
+  const reply = await text({ scope: "project", view: "graph", format: "text" })
+  harness.check("text: names view=graph", reply.includes("view: graph "), reply.split("\n").slice(0, 3).join(" | ").slice(0, 140))
+  // An unknown view is REFUSED rather than answered as the graph: a caller asking
+  // for a picture the tool does not draw must not receive a different picture.
+  for (const view of ["grid", "orbit"]) {
+    const refused = await text({ scope: "project", view, format: "text" })
+    harness.negative(`text: view=${view} is refused, not answered as the graph`, refused.includes("unknown view") && !refused.includes("view: graph "), refused.slice(0, 160))
+  }
 }
 
 // ── json carries it ─────────────────────────────────────────────────────────
-for (const view of VIEWS) {
-  const parsed = JSON.parse(await text({ scope: "project", view, format: "json" }))
-  harness.check(`json: view=${view}`, parsed.view === view, String(parsed.view))
+{
+  const parsed = JSON.parse(await text({ scope: "project", view: "graph", format: "json" }))
+  harness.check("json: view=graph", parsed.view === "graph", String(parsed.view))
 }
 
 // ── html: three slots, each holding its OWN view's document ─────────────────
@@ -90,29 +95,15 @@ const studioFor = async (view: string, extra: Record<string, unknown> = {}): Pro
 }
 
 {
-  const { html, payload } = await studioFor("codemap")
+  const { html, payload } = await studioFor("graph")
   const slots = Object.keys(payload)
-  harness.check("html: the payload has the three view slots", JSON.stringify(slots.sort()) === JSON.stringify(["class", "codemap", "graph"]), JSON.stringify(slots))
-  for (const view of VIEWS) {
-    const doc = payload[view] ?? ""
-    const declared = doc.match(/<html[^>]*data-bb-view="(\w+)"/)
-    harness.check(`html: the ${view} slot holds a document that declares itself ${view}`, !!declared && declared[1] === view, declared ? declared[1] : "no declaration")
-  }
-  const lengths = new Set(VIEWS.map((view) => (payload[view] ?? "").length))
-  harness.negative("html: the three documents are distinct (no slot is a duplicate of another)", lengths.size === 3, JSON.stringify([...lengths]))
-  harness.check("html: the requested view is the one mounted", html.includes('mount("codemap")'), (html.match(/mount\("\w+"\)/g) ?? []).join(","))
-  harness.negative("html: and no other view is mounted in its place", !html.includes('mount("graph")') && !html.includes('mount("class")'), (html.match(/mount\("\w+"\)/g) ?? []).join(","))
-  // THE LABEL IS PINNED, and it is "Symbol map" on purpose: the view drew one rectangle per
-  // symbol and called itself "Code map", which is the name of a different artifact (Sourcegraph's
-  // Chromium map draws every token). The negative twin is what keeps the old word from drifting
-  // back in — a label that promises a token map is a lie, however well the picture renders.
-  harness.check("html: the status line names the mounted view by the label the page uses", html.includes("Symbol map view loaded"), "status missing")
-  harness.negative("html: and the retired label is gone from the studio chrome", !html.includes("Code map view loaded") && !html.includes("\u25b8Code map") && !html.includes("</span>Code map"), "the old label is still in the shell")
-
-  const graphStudio = await studioFor("graph")
-  harness.check("html: view=graph mounts the map", graphStudio.html.includes('mount("graph")') && !graphStudio.html.includes('mount("codemap")'), (graphStudio.html.match(/mount\("\w+"\)/g) ?? []).join(","))
-  const classStudio = await studioFor("class")
-  harness.check("html: view=class mounts the UML document", classStudio.html.includes('mount("class")') && !classStudio.html.includes('mount("graph")'), (classStudio.html.match(/mount\("\w+"\)/g) ?? []).join(","))
+  harness.check("html: the payload holds the one graph slot", JSON.stringify(slots.sort()) === JSON.stringify(["graph"]), JSON.stringify(slots))
+  const doc = payload.graph ?? ""
+  const declared = doc.match(/<html[^>]*data-bb-view="(\w+)"/)
+  harness.check("html: the graph slot holds a document that declares itself graph", !!declared && declared[1] === "graph", declared ? declared[1] : "no declaration")
+  harness.check("html: the graph is the view mounted", html.includes('mount("graph")'), (html.match(/mount\("\w+"\)/g) ?? []).join(","))
+  harness.check("html: and it is the only view mounted", (html.match(/mount\("\w+"\)/g) ?? []).length === 1, (html.match(/mount\("\w+"\)/g) ?? []).join(","))
+  harness.check("html: the status line names the mounted view by the label the page uses", html.includes("Graph view loaded"), "status missing")
 
   // ── the panels live in the SIDEBAR, and the VIEW publishes them (F11) ──────
   //
@@ -189,10 +180,9 @@ const studioFor = async (view: string, extra: Record<string, unknown> = {}): Pro
   harness.check("map: the summary is published to the mount", graphDoc.includes("regionLinks: lastBundles.length") && graphDoc.includes("crossRegionEdgesOnFrame: lastCross"), "no summary in state()")
   // ── the live line is the VIEW's, not the shell's ─────────────────────────────
   //
-  // MEASURED while adding the code map to this sidebar: the line used to be composed BY THE
+  // MEASURED while a second document shared this sidebar: the line used to be composed BY THE
   // SHELL out of st.visibleNodes / st.visibleEdges / st.regionLinks, so the mount had to know
-  // what a region link is -- and a code map mounted in the frame was described in the graph's
-  // vocabulary, with the graph's counts. The view publishes the rows it wants printed
+  // what a region link is. The view publishes the rows it wants printed
   // (state().onScreen) and the shell prints them; the sentence that reconciles the canvas with
   // the census is now one of the GRAPH's own rows, which is where it belongs. The assertions
   // follow the contract rather than the old spelling of it.
@@ -278,7 +268,7 @@ const studioFor = async (view: string, extra: Record<string, unknown> = {}): Pro
   harness.check("map: a collapsed box still names what is picked", graphDoc.includes("function summaryOf(o)") && graphDoc.includes("if (dtitleEl) dtitleEl.textContent = summaryOf(o);"), "a collapsed box cannot say what it hides")
   harness.check("map: the box docks to either side", graphDoc.includes('setPanel({ dock: dock === "left" ? "right" : "left" })') && /#detail\.dock-left\{left:14px;right:auto\}/.test(graphDoc) && /#detail\.dock-right\{left:auto;right:14px\}/.test(graphDoc), "no dock rule")
   harness.check("map: and a drag across the middle of the frame moves it", graphDoc.includes("Math.abs(ev.clientX - start.x) > 40") && graphDoc.includes('setPanel({ dock: ev.clientX < window.innerWidth / 2 ? "left" : "right" })'), "no drag-to-dock")
-  // state() grew the live rows in the code map's pass (V11), so the assertion is anchored on the
+  // state() grew the live rows in a later pass, so the assertion is anchored on the
   // two facts it is about -- the layout and the panel are read off the view -- rather than on the
   // exact tail of the object literal, which a further key would have failed.
   harness.check("map: its state is published, not only painted", graphDoc.includes("panel: panelState,") && graphDoc.includes("setPanel: setPanel,") && graphDoc.includes("layout: LAYOUT, panel: panelState(),"), "no panel state on the API")

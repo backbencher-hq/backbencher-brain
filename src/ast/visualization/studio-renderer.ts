@@ -9,10 +9,9 @@
  * are chrome-free documents that publish what the sidebar needs through
  * `window.__bbView`.
  *
- * A view that does not publish an API yet (the symbol map and the type diagram are
- * their own passes) still mounts; the sidebar then says so instead of inventing
- * numbers, and its data downloads stay disabled rather than handing out something
- * that is not there.
+ * The graph document publishes its census, filters, encoding key and data ports
+ * through `window.__bbView`, and the sidebar renders them; a document with no API
+ * mounts with empty sections and disabled downloads rather than invented numbers.
  */
 
 const STUDIO_CSS = `
@@ -52,7 +51,7 @@ const STUDIO_CSS = `
   .hide { display: none !important; }
 
   /* ── mode ────────────────────────────────────────────────────────────── */
-  #modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  #modes { display: grid; grid-template-columns: 1fr; gap: 6px; }
   .mode { display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
     font: inherit; font-size: 11.5px; color: var(--muted); background: transparent;
     border: 1px solid var(--line); border-radius: 9px; padding: 9px 6px; }
@@ -142,7 +141,7 @@ const STUDIO_CSS = `
   @media (max-width: 900px) {
     #workbench { grid-template-columns: 1fr; grid-template-rows: minmax(200px, 42vh) minmax(0, 1fr); }
     #side { border-right: 0; border-bottom: 1px solid var(--line); }
-    #modes { grid-template-columns: repeat(3, 1fr); }
+
   }
 `
 
@@ -152,23 +151,8 @@ function escapeScript(value: string): string {
 
 export function renderVisualizationStudio(documents: {
   graph: string
-  codemap: string
-  class: string
-  /** The view whose document is mounted when the artifact opens. */
-  initialView?: "graph" | "codemap" | "class"
 }): string {
-  const payload = escapeScript(JSON.stringify({ graph: documents.graph, codemap: documents.codemap, class: documents.class }))
-  const initial: "graph" | "codemap" | "class" = documents.initialView === "codemap" || documents.initialView === "class" ? documents.initialView : "graph"
-  // THE LABELS NAME WHAT IS DRAWN, not the word the feature was inspired by. "Code map" was
-  // read as Sourcegraph's Chromium map — every TOKEN of every file, rendered as a map — while
-  // this view draws one rectangle per SYMBOL sized by the lines it spans. "UML" promised a
-  // class model with attributes, methods, cardinalities and visibility; this view draws types
-  // and three relationship kinds, and nothing else. A label that promises more than the picture
-  // delivers is the defect, so the labels moved rather than the pictures.
-  //
-  // The API VALUE stays `codemap` / `class`: it is a published enum, and renaming it would break
-  // every caller to fix a word. Only the human-facing label changed.
-  const LABELS = { graph: "Graph", codemap: "Symbol map", class: "Type diagram" } as const
+  const payload = escapeScript(JSON.stringify({ graph: documents.graph }))
   const script = `
     (function () {
       var docs = JSON.parse(document.getElementById("bb-studio-data").textContent);
@@ -194,7 +178,7 @@ export function renderVisualizationStudio(documents: {
       var clearBtn = document.getElementById("clear");
       var statusEl = document.getElementById("status");
       var dlButtons = Array.prototype.slice.call(document.querySelectorAll(".dl"));
-      var labels = { graph: "Graph", codemap: "Symbol map", class: "Type diagram" };
+      var labels = { graph: "Graph" };
       var liveTimer = 0;
       // The arrangement the READER picked, held by the page rather than by the mount. The
       // documents are static strings, so without this a trip to another mode and back
@@ -226,12 +210,10 @@ export function renderVisualizationStudio(documents: {
       // ── the live line: what the view actually holds right now ─────────────
       // ── the live line: what the VIEW says is on screen right now ─────────────
       //
-      // The rows come from the view, in the view's own words. MEASURED while adding the code
-      // map to this sidebar: the line used to be composed HERE, out of st.visibleNodes,
-      // st.visibleEdges and st.regionLinks, so the shell had to know what a region link was
-      // -- and a code map mounted in the frame would have been described as "nodes 1412 of
-      // 1412, edges 0 of 0": the graph's vocabulary, and the graph's counts, for a picture
-      // that has no edges. A view publishes state(); it can publish what to print with it.
+      // The rows come from the view, in the view's own words. The line used to be composed
+      // HERE, out of st.visibleNodes, st.visibleEdges and st.regionLinks, so the shell had to
+      // know what a region link was. A view publishes state(); it can publish what to print
+      // with it.
       function updateLive() {
         var view = api();
         if (!view || !view.state) { liveEl.textContent = "\\u2014"; return; }
@@ -429,7 +411,7 @@ export function renderVisualizationStudio(documents: {
         var view = api();
         var declared = documentView();
         var label = labels[declared] || "View";
-        titleEl.textContent = (view && view.title) || (declared === "codemap" ? "Symbol map" : declared === "class" ? "Type diagram" : label);
+        titleEl.textContent = (view && view.title) || label;
         subEl.textContent = (view && view.subtitle) || "bb_visualize \\u00b7 self-contained \\u00b7 no network";
         renderData(view);
         renderFilters(view);
@@ -441,11 +423,9 @@ export function renderVisualizationStudio(documents: {
           renderLayouts(api());
         }
         renderEncoding(view);
-        // The downloads are per PORT, not per view. MEASURED while adding the code map: the
-        // three buttons were switched together whenever a view published data() at all, so a
-        // code map -- which draws no edges -- handed out an edges.csv holding nothing but its
-        // header. A control that downloads an empty file is a control that lies, so the port
-        // decides, and the title names which one is missing and why.
+        // The downloads are per PORT, not per view: a control that downloads an empty file
+        // is a control that lies, so the port decides, and the title names which one is
+        // missing and why.
         var ports = view && view.data ? dataPorts(view) : null;
         dlButtons.forEach(function (b) {
           var kind = b.dataset.dl;
@@ -457,10 +437,8 @@ export function renderVisualizationStudio(documents: {
         });
         fitBtn.disabled = !(view && view.fit);
         clearBtn.disabled = !(view && view.reset);
-        // The instruction line belongs to the VIEW, published as its hint port, for the same reason
-        // the rows above do: the shell used to hold the graph's sentence and print NOTHING for
-        // any other view, so a mounted code map had an empty View section while its own fading
-        // hint pill over the drawing was the only place its gestures were written down.
+        // The instruction line belongs to the VIEW, published as its hint port, for the same
+        // reason the rows above do: the shell never holds a sentence about the drawing.
         viewNoteEl.textContent = (view && view.hint) || "";
         fallbackEl.hidden = !!view;
         if (!view) {
@@ -501,7 +479,7 @@ export function renderVisualizationStudio(documents: {
           downloadData(kind);
         });
       });
-      mount("${initial}");
+      mount("graph");
     }());
   `
   return [
@@ -524,7 +502,7 @@ export function renderVisualizationStudio(documents: {
     '<section class="sec" id="modeSection">',
     '<h2 class="secLabel">Mode</h2>',
     '<div id="modes" role="tablist" aria-label="Visualization mode">',
-    '<button class="mode active" type="button" role="tab" data-mode="graph" aria-selected="true"><span class="glyph">&#9678;</span>Graph</button>',        '<button class="mode" type="button" role="tab" data-mode="codemap" aria-selected="false" title="one rectangle per SYMBOL, area = the lines it spans — not a token-level code map"><span class="glyph">&#9638;</span>Symbol map</button>',        '<button class="mode" type="button" role="tab" data-mode="class" aria-selected="false" title="types with inheritance, implementation and containment only — no attributes, methods, cardinalities or visibility, because the index stores none"><span class="glyph">&#9671;</span>Type diagram</button>',
+    '<button class="mode active" type="button" role="tab" data-mode="graph" aria-selected="true"><span class="glyph">&#9678;</span>Graph</button>',
     "</div>",
     "</section>",
     // The layout choice sits directly under the mode, because it shapes the picture the
@@ -575,7 +553,7 @@ export function renderVisualizationStudio(documents: {
     '<button class="dl" type="button" data-dl="edges"><b>edges &middot; csv</b><span>one row per stored edge</span></button>',
     "</div>",
     "</section>",
-    '<footer id="status" aria-live="polite">' + LABELS[initial] + " view loaded</footer>",
+    '<footer id="status" aria-live="polite">Graph view loaded</footer>',
     "</aside>",
     '<div id="content"><iframe id="view" title="Backbencher visualization"></iframe></div>',
     "</main>",

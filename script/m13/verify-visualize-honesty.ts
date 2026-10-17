@@ -14,12 +14,12 @@
 //        refresh=false", for a read path that never calls `maybeAutoRefresh`, publishing no
 //        `refresh` option (validation REJECTS it), and emitting the DIR remediation for
 //        `scope: \"file\"`.
-//   F18  the code map opened at 52% and said "scroll out to see all": `fitWorld()` ran BEFORE
-//        the first `draw()`, and the world is resized inside `draw()`, so the map was framed
-//        against a world that no longer existed and never re-fitted.
-//   F19  the class view rendered an empty detail panel at load (box `[0,0,13,22]`, innerText
-//        `✕`) because it had no CSS rule of its own, and its first fit ran against a viewport
-//        that was still 0 wide.
+//   F18  the first paint framed against a world that no longer existed and never
+//        re-fitted: the fit ran BEFORE the first draw, and the world is resized
+//        inside the draw.
+//   F19  the detail panel rendered empty at load (box `[0,0,13,22]`, innerText `✕`)
+//        because it had no CSS rule of its own, and the first fit ran against a
+//        viewport that was still 0 wide.
 //
 // The renderer assertions are made on the EMITTED artifact rather than on a DOM, because this
 // repository has no DOM in its dev dependencies; the pixels are verified out of band
@@ -44,7 +44,7 @@ const harness = new Harness({
   decisions: {
     attribution: "every dropped symbol is attributed to exactly one named rule, so `symbols` reconciles with `byPattern` + `byRule`",
     freshness: "the remediation is the manual interface, because this read path does not auto-refresh and publishes no `refresh` option",
-    firstPaint: "the emitted documents are asserted for the ORDER of their load path (a fit before the layout frames nothing)",
+    firstPaint: "the emitted graph document is asserted structurally (it declares its layout, ships its save control, hides the picked-item box until something is picked)",
   },
   limitations: [
     "No DOM in this repository's dev dependencies, so the renderer assertions are structural (load-path order, CSS rules present) and the pixels come from the out-of-band screenshots.",
@@ -183,33 +183,14 @@ const code = (html: string): string =>
   harness.check("freshness: the page names the manual interface for both scopes", section.includes("bb index --changed") && section.includes('bb index "<file>"'), section.slice(0, 200))
 }
 
-// ── F18/F19 — the first paint: fit what was laid out, and hide an empty panel ─
+// ── F18/F19 — the first paint: the graph declares its layout, ships its save
+//    control, and hides the picked-item box until something is picked ─────────
 {
-  const codeMap = await reply({ view: "codemap", format: "html" })
-  const classDoc = await reply({ view: "class", format: "html" })
-  const flatMap = code(codeMap)
-  const flatClass = code(classDoc)
-  harness.check("first paint: the code map lays out before it fits", flatMap.includes("draw() fitWorld()"), "load path not in the expected order")
-  harness.negative("first paint: it does not fit a world that has not been laid out yet", !flatMap.includes("fitWorld() draw()"), "still fitting before the first draw")
-  // THIS LINE USED TO PIN THE DEFECT IN PLACE, and that is worth recording where it stood.
-  // The check required the text `var shown = view.k >= fitScale() - 1e-6`, which is true at the
-  // fit AND at every scale ABOVE it -- so the pill said "whole map \u00b7 scroll to zoom in" while
-  // the map was at 338% with three quarters of it off the frame, and because the class that
-  // displays the pill is set when the whole map is NOT on screen, the pill was never displayed
-  // at any zoom. MEASURED in a real browser on the emitted src/ document: three wheel notches
-  // took the published zoom from 0.8 to 3.377 and the pill's own text did not move. A gate that
-  // pins an expression instead of the behaviour the expression is meant to produce keeps the
-  // bug it was written next to. The comparison is now read in the other direction, and the
-  // BEHAVIOUR is asserted where it can actually be driven: V11
-  // (script/m13/verify-visualize-codemap.ts) delivers a wheel to the artifact's OWN listener
-  // and checks both states -- "whole map" hidden at the fit, "338% \u00b7 drag to pan, scroll to
-  // zoom" shown after the gesture -- with a negative that fails on the old predicate.
-  harness.check("first paint: the zoom pill asks the fit scale whether the map is whole", flatMap.includes("var wholeMapOnScreen = view.k <= fitScale() + 1e-6"), "the pill no longer asks the shared fit scale for the answer")
-  harness.check("first paint: the fit and the readout share one scale function", flatMap.includes("function fitScale()") && flatMap.includes("view.k = fitScale()"), "fitScale() not shared")
-  harness.check("first paint: the codemap still ships its save control", flatMap.includes("bb-code-map.html"), "")
-  harness.check("first paint: the class view hides its detail panel until something is selected", flatClass.includes("#detail{right:16px;bottom:16px") && flatClass.includes("display:none") && flatClass.includes("#detail.on{display:block}"), "")
-  harness.check("first paint: and it re-fits once the viewport has a real size", flatClass.includes("if (changed && (wasZero || W === 0)) fitAll(false)"), "")
-  harness.check("first paint: the class view still ships its fit control", flatClass.includes('id="fitall"'), "")
+  const graphDoc = await reply({ view: "graph", format: "html" })
+  const flatMap = code(graphDoc)
+  harness.check("first paint: the graph document declares its layout", /<html[^>]*data-bb-layout="(regions|force)"/.test(flatMap), "no data-bb-layout on <html>")
+  harness.check("first paint: the graph still ships its save control", flatMap.includes("bb-architecture-map.html"), "")
+  harness.check("first paint: the picked-item box hides until something is selected", flatMap.includes("#detail{right:14px;bottom:14px") && flatMap.includes("display:none"), "")
 }
 
 rmSync(root, { recursive: true, force: true })

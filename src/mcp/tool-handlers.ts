@@ -19,7 +19,7 @@ import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
 import { getAnalysisHistory, executeAnalysis } from "../intelligence/analysis/run-history"
 import { generateDocumentation, formatDocumentation, type DocRequest } from "../intelligence/documentation/doc-engine"
-import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationResult, type VisualizationScope, type VisualizationView, type VisualizationLayout } from "../intelligence/visualization/visualization-engine"
+import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationScope, type VisualizationLayout } from "../intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../intelligence/migration/migration-engine"
 import { graphTraversal } from "../intelligence/graph/graph-engine"
 // M28.T1 (issue #624): the agent door reuses the EXACT components the IDE
@@ -1593,6 +1593,12 @@ const handlers: Record<string, ToolHandler> = {
     // no way to ask for the architecture and (before the census below) nothing saying so.
     const symbolKindFilter = foldFilter("symbolKinds", args.symbolKinds, storedSymbolKinds)
     if (symbolKindFilter.refusal) return textResult(symbolKindFilter.refusal, true)
+    // The dependency graph is the only picture this tool draws. An unknown view is
+    // REFUSED rather than silently answered as the graph — a caller asking for a
+    // picture this tool does not draw must not receive a different picture.
+    if (args.view != null && String(args.view) !== "graph") {
+      return textResult(`bb_visualize draws only the dependency graph: unknown view ${JSON.stringify(String(args.view))}. Omit view or pass view "graph".`, true)
+    }
 
     // M13.F1 (#701): the request drops NO published option. `excludePatterns` and
     // `includeTests` are in the descriptor, the schema and the docs, the engine
@@ -1604,29 +1610,9 @@ const handlers: Record<string, ToolHandler> = {
     // symbol in the answer, and `includeTests:false` still returned
     // test/app.test.ts with `includesTestFiles:true`. A filter the caller believes
     // is scoping results, and which does not, is worse than a rejection.
-    const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", view: ["graph", "codemap", "class"].includes(String(args.view)) ? args.view : "graph", layout: ["regions", "force"].includes(String(args.layout)) ? (String(args.layout) as VisualizationLayout) : "regions", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), offset: args.offset == null ? undefined : Number(args.offset), relationshipTypes: relationshipFilter.folded, languages: languageFilter.folded, symbolKinds: symbolKindFilter.folded, excludePatterns: Array.isArray(args.excludePatterns) ? args.excludePatterns.map(String) : undefined, includeTests: typeof args.includeTests === "boolean" ? args.includeTests : undefined }
+    const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", view: "graph", layout: ["regions", "force"].includes(String(args.layout)) ? (String(args.layout) as VisualizationLayout) : "regions", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), offset: args.offset == null ? undefined : Number(args.offset), relationshipTypes: relationshipFilter.folded, languages: languageFilter.folded, symbolKinds: symbolKindFilter.folded, excludePatterns: Array.isArray(args.excludePatterns) ? args.excludePatterns.map(String) : undefined, includeTests: typeof args.includeTests === "boolean" ? args.includeTests : undefined }
     const result = await visualizeProject(projectId, request)
-    // M13.F4 (#701): every studio slot carries the document of ITS OWN view.
-    //
-    // The slots were built as [requested, codemap, class], so `view:"codemap"`
-    // produced [codemap, codemap, class]: the studio's graph slot received the code
-    // map, the codemap slot received the same document again, and the studio still
-    // mounted the graph tab — a rail whose labels lied, no force-directed map in
-    // the artifact at all, and the requested view nowhere on screen. MEASURED: two
-    // byte-identical 42,187-byte documents in one three-document payload.
-    //
-    // The requested view is reused rather than recomputed, so html costs one engine
-    // pass per DISTINCT view (three) instead of four for three documents.
-    const htmlViews = request.format === "html" ? (["graph", "codemap", "class"] as const) : null
-    const viewResultFor = new Map<VisualizationView, VisualizationResult>()
-    if (htmlViews) {
-      for (const view of htmlViews) {
-        viewResultFor.set(view, view === request.view ? result : await visualizeProject(projectId, { ...request, view }))
-      }
-    } else {
-      viewResultFor.set(request.view ?? "graph", result)
-    }
-    const htmlResults = [...viewResultFor.values()]
+    const htmlResults = [result]
     // M35.S3: per-node stale flags (node file changed since index); links
     // inherit worst-of-endpoints — a link is stale if EITHER endpoint's file
     // is stale (the edge crosses changed code on either side). Truncation
@@ -1677,13 +1663,8 @@ const handlers: Record<string, ToolHandler> = {
       return textResult(JSON.stringify(parsed, null, 2))
     }
     if (request.format === "html") {
-      // `initialView` is the caller's `view`, so the document they asked for is the
-      // one that is mounted when the artifact opens.
       return textResult(renderVisualizationStudio({
-        graph: formatVisualization(viewResultFor.get("graph")!),
-        codemap: formatVisualization(viewResultFor.get("codemap")!),
-        class: formatVisualization(viewResultFor.get("class")!),
-        initialView: request.view ?? "graph",
+        graph: formatVisualization(result),
       }))
     }
     const vizOut = formatVisualization(result)
