@@ -20,7 +20,7 @@
  *
  * RUN: node script/m14/language-matrix.cjs [cap]        (cap default 200; pass 0 for the whole population)
  */
-const { execFileSync } = require("node:child_process")
+const { execFileSync, spawnSync } = require("node:child_process")
 const fs = require("node:fs")
 const path = require("node:path")
 
@@ -80,34 +80,53 @@ for (const m of log.matchAll(/^([A-Z][A-Z0-9_-]*)[ \t]+\d+ types fired(.*?)(?=^[
  */
 function extensionFor(lane) {
   const det = fs.readFileSync(path.join(ROOT, "src/ast/language-detection.ts"), "utf8")
-  const block = det.slice(0, det.indexOf("} as const") > 0 ? det.indexOf("} as const") : 8000)
-  const pairs = [...block.matchAll(/([a-z0-9_+.-]+)\s*:\s*"([a-z0-9_+.-]+)"/g)].map(m => [m[1], m[2]])
+  // THE WHOLE MAP, NOT A BYTE SLICE. The first version sliced to `} as const` (absent) or 8,000 chars,
+  // which cut the map off around line 100 — so `sh: "bash"` (line 171) and `rs: "rust"` (line 109) were
+  // simply not in the text and those lanes fell back to passing their own name as the extension, producing
+  // `bash bash 50` and a table for nobody. A slice bound is a guess about a file's layout; find the object.
+  const start = det.indexOf("export const EXTENSION_LANGUAGE")
+  if (start < 0) return lane
+  const open = det.indexOf("{", start)
+  let depth = 0, end = -1
+  for (let i = open; i < det.length; i++) {
+    if (det[i] === "{") depth++
+    else if (det[i] === "}") { depth--; if (depth === 0) { end = i; break } }
+  }
+  if (end < 0) return lane
+  const body = det.slice(open + 1, end)
+  const pairs = [...body.matchAll(/([a-z0-9_+.-]+)\s*:\s*"([a-z0-9_+.-]+)"/g)].map(m => [m[1], m[2]])
   const hit = pairs.find(([, lang]) => lang === lane)
   return hit ? hit[0] : lane
 }
 
 function resolution(lane) {
   const ext = extensionFor(lane)
-  // INCREMENTAL CACHE: a 48-lane sequential run competes with the agent fleet for the box and has already
-  // been killed by load once. Each lane's reading is written to disk the moment it is measured, so a kill
-  // costs the lane in flight rather than the whole run, and a re-run resumes instead of restarting.
   const CACHE = path.join(ROOT, ".tmp-lead/matrix-cache.json")
   let cache = {}
   try { cache = JSON.parse(fs.readFileSync(CACHE, "utf8")) } catch { cache = {} }
   const stamp = cache[lane]
-  if (stamp && stamp.cap === CAP && Date.now() - stamp.at < 6 * 3600 * 1000 && stamp.rows) return stamp.rows
+  // A CACHED ROW IS ONLY REUSED IF IT PARSED. The previous cache stored command failures under
+  // `__error` and then served them forever, which is how a matrix can look complete and be empty.
+  if (stamp && stamp.cap === CAP && stamp.rows && !stamp.rows.__error &&
+      Date.now() - stamp.at < 6 * 3600 * 1000) return stamp.rows
   let out = {}
-  try {
-    const txt = execFileSync("bun", ["run", "script/m14/incoming-gate.ts", lane, ext, CAP], { cwd: ROOT, encoding: "utf8", timeout: 600000 })
-    for (const line of txt.split("\n")) {
-      const r = line.trim().split(/\s+/)
-      if (r[0] === "TOTAL") break            // the FIRST table only; the next one is the intent split
-      if (r.length >= 8 && TYPES.includes(r[0])) {
-        out[r[0]] = { edges: +r[1].replace(/,/g,""), resolved: +r[2].replace(/,/g,""), collRes: +r[3].replace(/,/g,""), unresolved: +(r[6] ?? "0").replace(/,/g,"") || 0 }
+  // THE GATE EXITS 1 WHEN THE LANE FAILS A CLAUSE — that is a RESULT, not a failure of the instrument.
+  // `execFileSync` throws on any non-zero status and throws away stdout, which is the whole table, so
+  // every lane that legitimately failed clause 1 was recorded as "no reading". spawnSync keeps both.
+  const r = spawnSync("bun", ["run", "script/m14/incoming-gate.ts", lane, ext, CAP],
+    { cwd: ROOT, encoding: "utf8", timeout: 600000, maxBuffer: 64 * 1024 * 1024 })
+  const txt = (r.stdout || "") + ""
+  for (const line of txt.split("\n")) {
+    const f = line.trim().split(/\s+/)
+    if (f[0] === "TOTAL") break            // the FIRST table only; the next one is the intent split
+    if (f.length >= 8 && TYPES.includes(f[0])) {
+      out[f[0]] = {
+        edges: +f[1].replace(/,/g, ""), resolved: +f[2].replace(/,/g, ""),
+        collRes: +f[3].replace(/,/g, ""), unresolved: +(f[6] ?? "0").replace(/,/g, "") || 0,
       }
     }
-    if (!Object.keys(out).length) out.__error = `no table for ext "${ext}"`
-  } catch (e) { out = { __error: String(e.message).slice(0, 80) } }
+  }
+  if (!Object.keys(out).length) out.__error = `no table (ext "${ext}", exit ${r.status})`
   cache[lane] = { cap: CAP, at: Date.now(), rows: out }
   try { fs.mkdirSync(path.dirname(CACHE), { recursive: true }); fs.writeFileSync(CACHE, JSON.stringify(cache)) } catch {}
   return out

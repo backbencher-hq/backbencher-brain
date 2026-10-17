@@ -104,7 +104,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // (no declaration form creates a type hierarchy) and `instantiates` (no
     // constructors) are ruled N/A in BD7 of the spec, so they are not required
     // here — the exclusion is written down rather than left as a silence.
-    requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports", "overrides"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "bash/payload-and-complexity" },
     },
@@ -118,7 +123,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-cpp-analyzer.md"],
     differentialCheck: "differential-cpp",
     perfKey: "fmt:cpp",
-    requiredKinds: ["uses", "references", "calls", "instantiates", "extends", "overrides", "imports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["uses", "references", "calls", "instantiates", "extends", "overrides", "imports", "contains", "exports", "implements"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "cpp/payload-and-complexity" },
       qualified_calls: { key: "expectQualifiedCalls", pin: "cpp/payload-and-complexity" },
@@ -150,7 +160,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // looser: any regression now fails instead of fitting under a documented
     // allowance that no longer describes the code.
     floorResidual: { missing: 0, unexplained: 0, ruling: "C-D4" },
-    requiredKinds: ["uses", "references", "exports", "imports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["uses", "references", "exports", "imports", "calls", "contains", "instantiates", "overrides"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "c/complexity-and-payloads" },
     },
@@ -164,7 +179,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-rust-analyzer.md"],
     differentialCheck: "differential-rust",
     perfKey: "ripgrep:rust",
-    requiredKinds: ["uses", "references", "exports", "contains", "calls", "extends", "implements", "instantiates"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["uses", "references", "exports", "contains", "calls", "extends", "implements", "instantiates", "imports", "overrides"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "rust/payload-parity" },
       qualified_calls: { key: "expectQualifiedCalls", pin: "rust/payload-parity" },
@@ -179,7 +199,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/go.md", "docs/analyzers/real-go-analyzer.md"],
     differentialCheck: "differential-go",
     perfKey: "go-tools:go",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "imports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "imports", "exports", "overrides"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "go/complexity-parity" },
       qualified_calls: { key: "expectQualifiedCalls", pin: "go/qualified-calls-payload" },
@@ -204,7 +229,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // kind; the isImport marker still pins zig, whose lane has not come up
     // yet, and remains the c family's evidence that an unresolved edge IS a
     // dependency. When zig's lane is ruled, its emission moves with it.)
-    requiredKinds: ["calls", "uses", "contains", "references", "imports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "uses", "contains", "references", "imports", "exports", "instantiates"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "zig/calls-uses-complexity (symbol complexity)" },
       parameters: { key: "expectParameters", pin: "zig/calls-uses-complexity (parameters payload)" },
@@ -220,7 +250,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-csharp-analyzer.md"],
     differentialCheck: "differential-csharp",
     perfKey: "powershell:csharp",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "csharp/payload-and-complexity" },
       parameters: { key: "expectParameters", pin: "csharp/payload-and-complexity" },
@@ -261,7 +296,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-swift-analyzer.md"],
     differentialCheck: "differential-swift",
     perfKey: "swift-nio:swift",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "swift/payload-and-complexity" },
       visibility: { key: "expectVisibility", pin: "swift/payload-and-complexity" },
@@ -276,7 +316,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-ruby-analyzer.md"],
     differentialCheck: "differential-ruby",
     perfKey: "rake:ruby",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "exports", "imports", "overrides", "references"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "ruby/payload-and-complexity" },
     },
@@ -322,7 +367,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-haskell-analyzer.md"],
     differentialCheck: "differential-haskell",
     perfKey: "cabal:haskell",
-    requiredKinds: ["calls", "extends", "instantiates", "contains", "references", "implements"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "extends", "instantiates", "contains", "references", "implements", "exports", "imports", "overrides", "uses"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "haskell/payload-and-complexity" },
     },
@@ -348,7 +398,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // is resolvable only within a file), `imports`/`exports` as RELATIONSHIPS
     // (ImportInfo/ExportInfo are payload rows the indexer stores, not edges),
     // and `overrides` beyond the guessed first-parent chain (PERLD13).
-    requiredKinds: ["calls", "contains", "extends", "implements", "instantiates", "overrides"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "contains", "extends", "implements", "instantiates", "overrides", "imports", "references", "uses"],
     // Matrix 1b rows perl actually pins. `complexity` is a FILE-metadata row
     // (expectMetadata/cyclomaticComplexity), not expectComplexity: perl
     // complexity is a whole-file decision count, so a per-symbol value would
@@ -397,7 +452,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-xml-analyzer.md"],
     differentialCheck: "differential-xml",
     perfKey: "grails-core:xml",
-    requiredKinds: ["contains", "references", "imports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["contains", "references", "imports", "calls", "extends", "overrides", "uses"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "xml/type-graph" },
     },
@@ -458,7 +518,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // every kind in THIS row is pinned by a fixture and never whether the analyzer
     // emits a kind the row omits. That is fixed in `verifySectionB` (same round), and
     // it is what now catches this class instead of a human noticing.
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "php/payload-and-complexity" },
     },
@@ -506,7 +571,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/groovy.md", "docs/analyzers/real-groovy-analyzer.md"],
     differentialCheck: "differential-groovy",
     perfKey: "grails-core:groovy",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
     payloads: {
       qualified_calls: { key: "expectQualifiedCalls", pin: "groovy/qualified-call-path" },
       docstrings: { key: "expectComments", pin: "groovy/groovydoc-payload" },
@@ -525,7 +595,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/kotlin.md", "docs/analyzers/real-kotlin-analyzer.md"],
     differentialCheck: "differential-kotlin",
     perfKey: "Exposed:kotlin",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
     payloads: {
       qualified_calls: { key: "expectQualifiedCalls", pin: "kotlin/qualified-calls-builtin-names" },
       docstrings: { key: "expectComments", pin: "kotlin/kdoc-extraction" },
@@ -545,7 +620,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/scala.md", "docs/analyzers/real-scala-analyzer.md"],
     differentialCheck: "differential-scala",
     perfKey: "scala3:scala",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
     payloads: {
       qualified_calls: { key: "expectQualifiedCalls", pin: "scala/qualified-calls-payload" },
       docstrings: { key: "expectComments", pin: "scala/scaladoc-payload" },
@@ -602,7 +682,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/vue.md", "docs/analyzers/real-vue-analyzer.md"],
     differentialCheck: "differential-vue",
     perfKey: "vue-core:vue",
-    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "implements"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "vue/template-decision-complexity" },
       parameters: { key: "expectParameters", pin: "vue/script-sub-analyzer parameters" },
@@ -710,7 +795,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/svelte.md", "docs/analyzers/real-svelte-analyzer.md"],
     differentialCheck: "differential-svelte",
     perfKey: "svelte:svelte",
-    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "implements"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "svelte/payload-pins (script complexity)" },
       parameters: { key: "expectParameters", pin: "svelte/script-sub-analyzer parameters" },
@@ -802,7 +892,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // fixture assert an edge the lane deliberately never emits. The restored
     // entry listed it and section B failed on exactly that — recorded here
     // because the failure is the reason the value is right.
-    requiredKinds: ["contains", "references", "uses", "imports", "exports"],
+    // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
+    // It runs the lane over the lane's OWN fixture sources and fails a kind that is emitted
+    // while the contract row omits it -- published output no contract row accounted for.
+    // Every kind added here is ALREADY pinned by this lane's expectation files, so the
+    // forward check (required => pinned) stays green; only the missing names are added.
+    requiredKinds: ["contains", "references", "uses", "imports", "exports", "calls", "extends", "overrides"],
     payloads: {},
     title: "hcl/terraform data-config wave (M60, 2026-09-26; config entry restored 2026-09-27)",
   },
