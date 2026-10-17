@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "227712d1956f3e19062eb959d6ac5667a5f2d7e47974f73051d5847ee6ac885f",
-    "sealedAt": "2026-10-17T23:19:36.000Z"
+    "contentSha256": "0acba792a421ca0c8e06a9a595ea4da978baf17a87548114d7d1803d7942e54a",
+    "sealedAt": "2026-10-17T23:36:37.000Z"
   },
   "checks": [
     {
@@ -2520,11 +2520,85 @@
       "id": "section-h-cross-language",
       "language": "xml",
       "status": "pass"
+    },
+    {
+      "description": "hcl: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "hcl",
+      "status": "pass"
+    },
+    {
+      "description": "hcl: 2 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "hcl",
+      "status": "pass"
+    },
+    {
+      "description": "hcl: 10 ruled, 1 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "hcl",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (hcl)",
+      "detail": "66 types, 57 handled, 9 silent, 2 gaps, 11 decisions",
+      "id": "section-a-structural",
+      "language": "hcl",
+      "status": "pass"
+    },
+    {
+      "description": "8 relationship kinds pinned by hcl fixtures; 8 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, extends, imports, overrides, references, uses; emitted: calls, contains, exports, extends, imports, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "hcl",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for hcl (0)",
+      "detail": "",
+      "id": "section-c-payload-matrix",
+      "language": "hcl",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "4 tier(s) pinned: builtin_qualified, import_based, reference_qualified, structural",
+      "id": "section-d-evidence-tiers",
+      "language": "hcl",
+      "status": "pass"
+    },
+    {
+      "description": "tf-aws-components:hcl at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor tf-aws-components:hcl: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "hcl",
+      "status": "pass"
+    },
+    {
+      "description": "hcl avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "tf-aws-components:hcl 5 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "hcl",
+      "status": "pass"
+    },
+    {
+      "description": "hcl analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/real-hcl-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "hcl",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "hcl",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "d5be0d1cefd279f0d2d98db9c49651108bb3366f",
-  "committedAt": "2026-10-17T19:19:36-04:00",
+  "commit": "49a31320c165ebdb7cfc317fd1bbd679ca81db7c",
+  "committedAt": "2026-10-17T19:36:37-04:00",
   "data": {
     "languages": {
       "c": {
@@ -3343,6 +3417,62 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/real-haskell-analyzer.md + head comment present",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "12 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "hcl": {
+        "gaps": [
+          "HCL-G1: undefined",
+          "HCL-G2: undefined"
+        ],
+        "nodeTypeCount": 66,
+        "pendingDecisions": [
+          "HCL-D1"
+        ],
+        "ruledDecisions": [
+          "HCL-D1a",
+          "HCL-D9",
+          "HCL-D10",
+          "HCL-D2",
+          "HCL-D3",
+          "HCL-D4",
+          "HCL-D5",
+          "HCL-D6",
+          "HCL-D7",
+          "HCL-D8"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "66 types, 57 handled, 9 silent, 2 gaps, 11 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, exports, extends, imports, overrides, references, uses; emitted: calls, contains, exports, extends, imports, overrides, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "4 tier(s) pinned: builtin_qualified, import_based, reference_qualified, structural",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor tf-aws-components:hcl: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "tf-aws-components:hcl 5 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-hcl-analyzer.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4908,8 +5038,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-17T19:19:36-04:00",
-  "regeneratedAtCommit": "d5be0d1cefd279f0d2d98db9c49651108bb3366f",
+  "regeneratedAt": "2026-10-17T19:36:37-04:00",
+  "regeneratedAtCommit": "49a31320c165ebdb7cfc317fd1bbd679ca81db7c",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"

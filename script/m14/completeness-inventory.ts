@@ -1123,7 +1123,10 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     fixturesDir: "validation/m14/fixtures/hcl",
     docs: ["docs/analyzers/real-hcl-analyzer.md"],
     differentialCheck: "differential-hcl",
-    perfKey: "terraform:hcl",
+    // THE ROW EXISTS UNDER THE REPO THAT MEASURED IT. The oracle run produced `tf-aws-components:hcl`
+    // `{missing: 0, unexplained: 0, perf.avgMsPerFile: 5}` -- and `terraform:hcl` names a row no artifact
+    // answers, so section E read "no baseline floor row" while the measurement was on disk the whole time.
+    perfKey: "tf-aws-components:hcl",
     // NO `calls`: hcl RULES that kind not applicable on measurement (0 of its 64
     // node types declare a function, and 0 of 12,977 corpus function_call nodes
     // resolve to a declared symbol), so requiring it pinned would demand a
