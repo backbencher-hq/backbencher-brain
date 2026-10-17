@@ -91,6 +91,7 @@ import { deriveErlangContainsTruth } from "./oracles/erlang-contains"
 // "COMPARED WITH NO TRUTH". The lane oracle derives all ten from the tree by python's own
 // rules; see its header for the per-label policy and the independence argument.
 import { derivePythonTruth } from "./oracles/python-truth"
+import { deriveMakeTruth } from "./oracles/make"
 // M60: rust `contains` — see script/m14/oracles/rust-contains.ts for the rule.
 import { deriveRustContainsTruth } from "./oracles/rust-contains"
 // SQL-G14: the sql lane had NO branch at all, so a scoped run ended "derived ZERO truth edges" and
@@ -413,6 +414,7 @@ export function readCodeInputs(root: string): CodeInputs {
 // because the F5 harness resolves oracles through this module, and re-exporting is the
 // whole of this file's JSON footprint beyond the two registrations below.
 import { deriveJsonEdges } from "./oracles/json"
+import { deriveXmlTruth } from "./oracles/xml"
 
 export { deriveJsonEdges }
 
@@ -471,6 +473,9 @@ export const LANG_REPOS: Record<string, string> = {
   // natural second corpus and is deliberately NOT registered: the differential takes
   // one corpus per lane, and adding a second would mean picking which number is the
   // claim, which is the thing a single declared corpus prevents.
+  // M14 xml (2026-10-17): the xml corpus is grails-core under the mirror (the lane spec
+  // names it: "svg is 155 of grails-core's 314"). BB_CORPUS_ROOT selects the mirror.
+  xml: "grails-core",
   java: "grails-core",
   groovy: "grails-core",
   kotlin: "Exposed",
@@ -530,6 +535,20 @@ export const LANG_REPOS: Record<string, string> = {
   clojure: "clojure",
   // F5 wave (CLEAN): Clyde (109 icl/dcl) is the lane's primary corpus.
   clean: "Clyde",
+  // F5 (HCL) — THE LANE COULD NOT RUN, and this line is why. `repoForSweep` reads
+  // LANG_REPOS; hcl had an entry in `LANGS`, a completeness spec, fixtures and a corpus
+  // checkout, but NO primary mapping — so the sweep printed
+  // `[lane] SKIP hcl: no corpus repo mapped in LANG_REPOS and none checked out`,
+  // `--lang hcl` derived no truth at all, and sections E/F never had a baseline row to
+  // read. The checkout exists (`tf-aws-components`, a Terraform module library, cloned
+  // into the mirror); it was only ever declared as hcl's SECOND_CORPUS entry, and a
+  // second corpus with no primary is a lane that never runs. With this mapping the sweep
+  // produces the `tf-aws-components:hcl` row that section E/F reads; the SECOND_CORPUS
+  // entry naming the same checkout is then skipped by the `second !== primary` guard, and
+  // that is stated here rather than left to look like a defect. A genuinely independent
+  // second HCL corpus does not exist on this box (312-file standard is unmet), so the
+  // lane runs single-corpus and says so.
+  hcl: "tf-aws-components",
   // M60 fsharp lane (2026-09-26): the box has exactly ONE F# corpus. A depth-4
   // scan of all 65 checkouts under the corpus root finds .fs/.fsi/.fsx files
   // under `fsharp/` only, so the lane runs single-corpus and there is no
@@ -835,6 +854,11 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // also accepts, because a lane that is measured on a different file set than it is
   // routed for is measured on the wrong corpus.
   json: { wasm: "tree-sitter-json.wasm", analyzerFile: "real-json-analyzer", className: "RealJsonAnalyzer", ext: "json,jsonc,json5" },
+  // M14 F5 YAML truth wave (2026-10-17): the lane had a completeness spec, fixtures and an
+  // ontology table but NO truth branch, so it could never be measured by F5. `deriveYamlEdges`
+  // is written from YAML's own semantics and the contract's documented conventions — see its
+  // header for the derived/refused split.
+  yaml: { wasm: "tree-sitter-yaml.wasm", analyzerFile: "real-yaml-analyzer", className: "RealYamlAnalyzer", ext: "yml,yaml" },
   bash: { wasm: "tree-sitter-bash.wasm", analyzerFile: "real-bash-analyzer", className: "RealBashAnalyzer", ext: "sh,bash" },
   // M60 #278: powershell joins the differential lane, and `ext` carries all THREE
   // extensions on purpose. `.psm1` is a PowerShell MODULE and `.psd1` its manifest,
@@ -22017,6 +22041,382 @@ export function deriveTomlEdges(root: any, moduleName: string): { label: string;
   return edges
 }
 
+// ===========================================================================
+// M14 F5 (HCL) — THE TREE-TRUTH ORACLE THIS LANE NEVER HAD.
+// ===========================================================================
+// WHY THE LANE HAD NONE, and what the absence cost. Every measured lane's truth is
+// a `derive<Lane>Edges` function with an `if (lang === …)` branch in this file. HCL
+// had a `LANGS` entry, a completeness spec, fixtures and a configured corpus, but NO
+// branch — so `--lang hcl` derived ZERO truth edges and the harness refused with
+// "derived ZERO truth edges" rather than certify a 0/0 row. That refusal is the
+// correct behaviour and it is why the lane's sections E/F read "no baseline floor
+// row": the row could not exist until the oracle did.
+//
+// WHAT THE FORMAT GIVES. HCL is a block/attribute configuration language with no
+// name resolution of its own, so the relations a TREE can state are the ones the
+// dialect constructs spell:
+//   · an expression PATH names another declaration:
+//       `var.x`, `module.y.output`, `aws_instance.web.arn`   -> references
+//       `count.index`, `each.key`, `path.module`, `self.*`, `terraform.*`
+//         (a BUILTIN root: a global namespace no file declares) -> uses
+//   · a `module` block's `source` attribute is a dependency on a PATH -> imports
+//   · the document publishes its top-level blocks/attributes       -> exports
+//   · docker-bake `target "child" { inherits = ["parent"] }`       -> extends
+//     (bake MERGES a parent's attributes into the child: genuine inheritance, and
+//      the only construct in the corpus that expresses it)
+//   · Terraform override files `override_resource { target = … }`  -> overrides
+//     (the block REPLACES the named declaration's values; the ordinary `references`
+//      read is RETYPED, not duplicated — Terraform does not read what it overwrites)
+//   · `function "name" { … }` + a `name(…)` call                     -> calls
+//     (resolved IN-FILE only; every global callee — merge/length/provider::… — is
+//      dropped, 12,968 unqualified + 20 namespaced sites in the measured corpus,
+//      because a call edge to a declaration no file holds is advice that cannot land)
+//
+// `contains` IS REFUSED, stated rather than silently absent. Its truth would be the
+// parent's qualified path to the child's qualified path — a projection of the
+// analyzer's INDEX IDENTITY (address + sibling ordinal disambiguation), not of a
+// semantic relation ("the tree nests these" is already visible in the tree). A second
+// implementation would be a transcription of the naming algorithm, and a transcription
+// that drifts manufactures false MISSING rows. The harness compares `contains` for php
+// and zig only, so this refusal costs hcl nothing it had before.
+//
+// THE ROUTE IS INDEPENDENT; THE CONTRACT IS SHARED. Nothing here imports or calls the
+// analyzer: the walk is a fresh recursive reader, the scope rules use a recursion-local
+// loop-variable set (the analyzer needs a shadow COUNT because its DFS is a flat stack;
+// a recursion scopes the same rule structurally), and the dialect tables are written out
+// from the grammar rather than shared. What MUST match is the SPELLING of a target —
+// `var.x`, `function.bindir`, `target._platforms` — because the harness matches on
+// label + LAST SEGMENT (`normTarget`) and a differently-spelled target would read as a
+// fabrication. Spelling is the lane's documented contract (`real-hcl-analyzer.ts` head),
+// facts are derived twice — that is the only way a differential can disagree with itself.
+export function deriveHclEdges(
+  root: any,
+  moduleName: string,
+): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, from: string, target: string) => {
+    if (!from || !target) return
+    const k = `${label}\u0000${from}\u0000${target}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label, from, target })
+  }
+
+  // ---- own tree helpers, none imported from the analyzer --------------------
+  const text = (n: any): string => String(n?.text ?? "")
+  const namedKids = (n: any): any[] => {
+    const out: any[] = []
+    for (let i = 0; i < (n?.namedChildCount ?? 0); i++) { const c = n.namedChild(i); if (c) out.push(c) }
+    return out
+  }
+  const namedChildOfType = (n: any, t: string): any | null => {
+    for (let i = 0; i < (n?.namedChildCount ?? 0); i++) { const c = n.namedChild(i); if (c && c.type === t) return c }
+    return null
+  }
+  const firstIdentifier = (n: any): any | null => {
+    for (let i = 0; i < (n?.namedChildCount ?? 0); i++) { const c = n.namedChild(i); if (c && c.type === "identifier") return c }
+    return null
+  }
+  const findDescendantType = (n: any, t: string): any | null => {
+    for (const c of namedKids(n)) {
+      if (c.type === t) return c
+      const d = findDescendantType(c, t)
+      if (d) return d
+    }
+    return null
+  }
+  /** A `string_lit`'s WRITTEN value: its `template_literal` child's text (the quotes are
+   *  the string_lit's own tokens), else the literal verbatim. Derived from the grammar's
+   *  shape, not from an analyzer helper. */
+  const stringValue = (stringLit: any): string => {
+    const lit = namedChildOfType(stringLit, "template_literal")
+    return lit ? text(lit) : text(stringLit)
+  }
+  /** The string literals written under a node, in source order. An interpolated template
+   *  is NOT a literal — its value is computed — so only `string_lit` counts. */
+  const stringList = (node: any): string[] => {
+    const out: string[] = []
+    const visit = (n: any): void => {
+      if (!n) return
+      if (n.type === "string_lit") { out.push(stringValue(n)); return }
+      for (const c of namedKids(n)) visit(c)
+    }
+    visit(node)
+    return out
+  }
+
+  // ---- the dialect tables, written from the language, not from the walker ----
+  // A builtin ROOT is a namespace in a GLOBAL scope: `count.index` exists where a
+  // `count` argument does, `path.module` is the module directory. No file can declare
+  // them, so a path with one of these roots is a `uses`; every other root is an address
+  // a project declaration could hold, so it is a `references`.
+  const BUILTIN_ROOTS = new Set(["count", "each", "self", "path", "terraform"])
+  const TYPE_NAME_BLOCKS = new Set(["resource", "data"])
+  const SINGLE_LABEL_BLOCKS = new Set(["variable", "output", "module", "provider"])
+  const OVERRIDE_BLOCKS = new Set(["override_resource", "override_data", "override_module"])
+
+  /** Terraform's native address for a block (resource/data take two labels, variable/
+   *  output/module/provider one, everything else keeps its block type). */
+  const address = (blockType: string, labels: string[]): string => {
+    if (TYPE_NAME_BLOCKS.has(blockType)) {
+      if (labels.length >= 2) return `${labels[0]}.${labels[1]}`
+      if (labels.length === 1) return labels[0]
+      return blockType
+    }
+    if (SINGLE_LABEL_BLOCKS.has(blockType)) return labels[0] ?? blockType
+    return labels.length > 0 ? `${blockType}.${labels.join(".")}` : blockType
+  }
+  /** Make a leaf address unique among its SIBLINGS: Terraform repeats `locals`,
+   *  `moved`, `provider` and many label-less blocks by design, and the index identity
+   *  (which exports target) carries the `#2`, `#3` ordinal. */
+  const disambiguate = (addr: string, taken: Map<string, number>): string => {
+    const seenCount = taken.get(addr) ?? 0
+    taken.set(addr, seenCount + 1)
+    if (seenCount === 0) return addr
+    let n = seenCount + 1
+    let cand = `${addr}#${n}`
+    while (taken.has(cand)) { n += 1; cand = `${addr}#${n}` }
+    taken.set(cand, 1)
+    return cand
+  }
+
+  /** The block type identifier, its labels and its body. Index-based because
+   *  web-tree-sitter hands out FRESH node objects per child() call — reference identity
+   *  never matches (the file records that lesson at deriveTreeEdges' dart branch). */
+  const readBlock = (node: any): { blockType: string; labels: string[]; body: any | null } | null => {
+    if (!node || node.type !== "block") return null
+    let typeIdx = -1
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === "identifier") { typeIdx = i; break }
+    }
+    if (typeIdx < 0) return null
+    const blockType = text(node.namedChild(typeIdx))
+    const labels: string[] = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      if (i === typeIdx) continue
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "string_lit") labels.push(stringValue(c))
+      else if (c.type === "identifier") labels.push(text(c))
+    }
+    return { blockType, labels, body: namedChildOfType(node, "body") }
+  }
+
+  // ---- reference runs: the dialect's one name construct ---------------------
+  /** Collect dotted reference paths and call sites from an expression subtree.
+   *  A path is a maximal CONSECUTIVE run of `variable_expr` + `get_attr` among a node's
+   *  ALL children (anonymous tokens break a run: `var.a + var.b` must not weld into
+   *  `var.a.var.b`, which is why the scan is over all children and not named ones). The
+   *  run stops at index/splat accessors without contributing a segment — Terraform
+   *  resolves `aws_instance.web[*].id` against the address accumulated so far.
+   *  Exclusions, each a dialect rule rather than a heuristic: a `for` loop variable, a
+   *  `dynamic` block's iterator, an object CONSTRUCTION key (only its value is read),
+   *  and a bare single-identifier path (a type-constraint keyword, never an address). */
+  const collectRefs = (
+    node: any,
+    loopVars: Set<string>,
+    out: { path: string }[],
+    calls: { callee: string; from: string }[],
+    from: string,
+  ): void => {
+    const type = node.type
+    if (type === "function_call") {
+      const callee = firstIdentifier(node)
+      if (callee) calls.push({ callee: text(callee), from })
+    }
+    if (type === "for_expr" || type === "for_tuple_expr" || type === "for_object_expr") {
+      const inner = new Set(loopVars)
+      for (const c of namedKids(node)) {
+        if (c.type !== "for_intro") continue
+        for (const d of namedKids(c)) if (d.type === "identifier") inner.add(text(d))
+      }
+      for (const c of namedKids(node)) collectRefs(c, inner, out, calls, from)
+      return
+    }
+    if (type === "object_elem") {
+      // The `key` FIELD is a data key, not a reference. Read the grammar's own field.
+      const val = typeof node.childForFieldName === "function" ? node.childForFieldName("val") : null
+      if (val) collectRefs(val, loopVars, out, calls, from)
+      return
+    }
+    const n = node.childCount ?? 0
+    for (let i = 0; i < n; i++) {
+      const c = node.child(i)
+      if (!c) continue
+      if (c.type !== "variable_expr" && c.type !== "get_attr") {
+        if (c.isNamed) collectRefs(c, loopVars, out, calls, from)
+        continue
+      }
+      const parts: string[] = []
+      let j = i
+      for (; j < n; j++) {
+        const ch = node.child(j)
+        if (!ch || (ch.type !== "variable_expr" && ch.type !== "get_attr")) break
+        const id = firstIdentifier(ch)
+        if (!id) break
+        parts.push(text(id))
+      }
+      if (parts.length >= 2 && !loopVars.has(parts[0])) out.push({ path: parts.join(".") })
+      i = j - 1
+    }
+  }
+
+  /** A `dynamic` block binds a loop local for ITS OWN subtree — the `iterator` attribute's
+   *  value when written, else the block's own first label (Terraform's documented default). */
+  const readDynamicIterator = (body: any, labels: string[]): string | null => {
+    for (const attr of namedKids(body)) {
+      if (attr.type !== "attribute") continue
+      const k = firstIdentifier(attr)
+      if (!k || text(k) !== "iterator") continue
+      const expr = namedChildOfType(attr, "expression")
+      const ve = expr ? namedChildOfType(expr, "variable_expr") : null
+      const id = ve ? firstIdentifier(ve) : null
+      if (id) return text(id)
+      break
+    }
+    return labels.length > 0 ? labels[0] : null
+  }
+  /** A `module` block's `source` value: the template literal written in the attribute
+   *  (a module path, the one place in HCL where a written VALUE is the right target). */
+  const readModuleSource = (body: any): string | null => {
+    for (const attr of namedKids(body)) {
+      if (attr.type !== "attribute") continue
+      const k = firstIdentifier(attr)
+      if (!k || text(k) !== "source") continue
+      const expr = namedChildOfType(attr, "expression")
+      if (!expr) return null
+      const lit = findDescendantType(expr, "template_literal")
+      return lit ? text(lit) : text(expr)
+    }
+    return null
+  }
+
+  // ---- the walk -------------------------------------------------------------
+  const targetDecls = new Map<string, string>()
+  const functionDecls = new Map<string, string>()
+  const pendingInherits: { parent: string; from: string }[] = []
+  const pendingCalls: { callee: string; from: string }[] = []
+  // `exports` = the document's top-level blocks and attributes, in source order and with
+  // the SAME sibling ordinal the block walk assigned. Collected during the walk rather
+  // than re-derived afterwards: the document root RESERVES its own name in the level's
+  // taken map, so a file `context.tf` holding `variable "context"` exports `context#2`
+  // (the analyzer's index identity). A second pass that skipped the reservation emitted
+  // the bare `context` and read as one MISSING plus one UNEXPLAINED on the same block —
+  // the 3-file probe's only disagreement, fixed here by construction.
+  const topExports: string[] = []
+
+  const handleAttribute = (
+    node: any,
+    blockPath: string[],
+    enclosingBlockType: string,
+    loopVars: Set<string>,
+    owner: string,
+  ): void => {
+    const keyNode = firstIdentifier(node)
+    const key = keyNode ? text(keyNode) : ""
+    if (!key) return
+    const expr = namedChildOfType(node, "expression")
+    if (!expr) return
+    // docker-bake `target "x" { inherits = [...] }` — resolved after the walk, because a
+    // parent may be declared BELOW its child in the same file.
+    if (enclosingBlockType === "target" && key === "inherits") {
+      for (const parent of stringList(expr)) pendingInherits.push({ parent, from: owner })
+    }
+    const refs: { path: string }[] = []
+    const callSites: { callee: string; from: string }[] = []
+    collectRefs(expr, loopVars, refs, callSites, owner)
+    if (OVERRIDE_BLOCKS.has(enclosingBlockType) && key === "target") {
+      // Terraform REPLACES the named declaration's values: the ordinary reference read is
+      // retyped, never duplicated. A builtin cannot be overridden (no declaration to hold).
+      for (const ref of refs) {
+        if (BUILTIN_ROOTS.has(ref.path.split(".")[0])) continue
+        push("overrides", owner, ref.path)
+      }
+      return
+    }
+    for (const ref of refs) {
+      const root = ref.path.split(".")[0]
+      push(BUILTIN_ROOTS.has(root) ? "uses" : "references", owner, ref.path)
+    }
+    for (const cs of callSites) pendingCalls.push(cs)
+  }
+
+  const walkBody = (
+    body: any,
+    blockPath: string[],
+    enclosingBlockType: string,
+    loopVars: Set<string>,
+    levelTaken: Map<string, number>,
+  ): void => {
+    if (!body) return
+    for (const node of namedKids(body)) {
+      if (node.type === "block") {
+        const b = readBlock(node)
+        if (!b) continue
+        const name = disambiguate(address(b.blockType, b.labels), levelTaken)
+        const qualified = [...blockPath, name].join(".")
+        if (blockPath.length === 0) topExports.push(name)
+        if (b.blockType === "target" && b.labels.length > 0 && !targetDecls.has(b.labels[0])) {
+          targetDecls.set(b.labels[0], name)
+        }
+        if (b.blockType === "function" && b.labels.length > 0 && !functionDecls.has(b.labels[0])) {
+          functionDecls.set(b.labels[0], name)
+        }
+        if (b.blockType === "module") {
+          const source = readModuleSource(b.body)
+          if (source) push("imports", qualified, source)
+        }
+        let childLoopVars = loopVars
+        if (b.blockType === "dynamic") {
+          const iter = readDynamicIterator(b.body, b.labels)
+          if (iter) { childLoopVars = new Set(loopVars); childLoopVars.add(iter) }
+        }
+        walkBody(b.body, [...blockPath, name], b.blockType, childLoopVars, new Map())
+        continue
+      }
+      if (node.type === "attribute") {
+        const owner = blockPath.length > 0 ? blockPath.join(".") : moduleName
+        if (blockPath.length === 0) {
+          // A top-level attribute is published too, and shares the document's own name
+          // only through the `#2` rule (a file called `project.hcl` holding `project = …`).
+          const k = firstIdentifier(node)
+          if (k) {
+            const key = text(k)
+            topExports.push(key === moduleName ? `${key}#2` : key)
+          }
+        }
+        handleAttribute(node, blockPath, enclosingBlockType, loopVars, owner)
+        continue
+      }
+      // A wrapper node (comment, ERROR recovery region) introduces no level: descend with
+      // the SAME scope so nested valid nodes are still reached.
+      if (namedKids(node).length > 0) walkBody(node, blockPath, enclosingBlockType, loopVars, levelTaken)
+    }
+  }
+
+  const topBody = namedChildOfType(root, "body") ?? root
+  walkBody(topBody, [], "", new Set(), new Map([[moduleName, 1]]))
+
+  // ---- exports: what the document publishes --------------------------------
+  for (const name of topExports) push("exports", moduleName, name)
+
+  // ---- the deferred joins ---------------------------------------------------
+  for (const site of pendingInherits) {
+    const declared = targetDecls.get(site.parent)
+    if (!declared) continue // a dangling inheritance is worse than a missing one
+    push("extends", site.from, declared)
+  }
+  for (const site of pendingCalls) {
+    const declared = functionDecls.get(site.callee)
+    if (!declared) continue // a global callee declares nothing: no edge, no dangling advice
+    push("calls", site.from, declared)
+  }
+
+  return edges
+}
+
 export function deriveHtmlEdges(root: any, moduleName: string): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -23044,6 +23444,18 @@ async function main() {
           }
         }
       }
+      if (lang === "xml") {
+        // THE XML CONTAINMENT TRUTH (lane module: script/m14/oracles/xml.ts). `contains` ONLY,
+        // deliberately — the lane's own record states the audited label set is containment, and an
+        // oracle deriving the other six kinds badly would score every such edge `unexplained`
+        // against truth never derived. The derivation is from the XML spec's containment rule and
+        // the declaration vocabularies, sharing no code with the analyzer. The module name is the
+        // file stem: the document IS the file's module and the containment tree's root.
+        const xmlModule = (relPath.split("/").pop() ?? "document").replace(/\.[^.]+$/, "") || "document"
+        for (const e of deriveXmlTruth(root, xmlModule)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "markdown") {
         // M14 (#290): the markdown truth. `deriveMarkdownEdges` needs the file
         // CONTENT as well as the tree, because the companion inline grammar is a
@@ -23062,6 +23474,21 @@ async function main() {
         // that exists rather than from an unjoinable string.
         const tomlModule = (relPath.split("/").pop() ?? "document").replace(/\.[^.]+$/, "") || "document"
         for (const e of deriveTomlEdges(root, tomlModule)) {
+          ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "hcl") {
+        // M14 F5 (HCL) — THE TRUTH THE LANE NEVER HAD. `deriveTreeEdges` above is the
+        // generic OO walker: it knows class/interface/heritage/call node types, and HCL
+        // has none of them, so for this lane it returns nothing and the lane's truth was
+        // ZERO until this branch existed (which is why `--lang hcl` refused with
+        // "derived ZERO truth edges" and the baseline row could not be written).
+        //
+        // The module name is the file's STEM, matching the analyzer's `documentName`:
+        // the document IS the file's module, so `imports`/`exports` source from a node
+        // that exists rather than from an unjoinable path string.
+        const hclModule = (relPath.split("/").pop() ?? "hcl").replace(/\.(tfvars|tofu|hcl|tf)$/i, "") || "hcl"
+        for (const e of deriveHclEdges(root, hclModule)) {
           ;(truth as any[]).push(e)
         }
       }
@@ -23830,7 +24257,31 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "yaml") {
+        // M14 F5 — the yaml truth. `deriveYamlEdges` is written from YAML's own semantics and the
+        // contract's documented conventions and shares no rule table, key set, path helper or
+        // resolver with RealYamlAnalyzer (see its header for the derived/refused split). The module
+        // identity is the document name the contract's key space uses: dir scope + stem, `#n` for
+        // document n>1, derived from the harness's own relative path.
+        for (const e of deriveYamlEdges(root, relPath)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "bash") {
+      }
+      if (lang === "make") {
+        // make's oracle is lane-owned (script/m14/oracles/make.ts) and derives seven kinds from the tree:
+        // contains, exports, references/uses (references iff THIS FILE declares the name, declared targets
+        // included), imports (a computed include names its expression), calls ($(call) of USER macros only --
+        // a builtin function name is a language verb), and overrides ONLY when this file holds a base
+        // declaration. It refuses extends/implements/instantiates: the grammar constructs no value, inherits
+        // from nothing and implements no interface.
+        const makeModule = relPath.split("/").pop() ?? "Makefile"
+        for (const e of deriveMakeTruth(root, makeModule)) {
+          ;(truth as any[]).push(e)
+        }
+      }
+      if (false) {
         // M14 #277 F5: the bash oracle derives contains/calls/uses/exports/
         // imports/references from the tree, from bash's own semantics (see
         // deriveBashEdges' header for why it shares nothing with the analyzer).
@@ -24114,7 +24565,7 @@ async function main() {
       // strict superset of the exclusion: it drops `overrides` from the compared set for
       // dart and go as well as csharp/swift/cpp. Taking the local list would have
       // re-admitted two lanes whose override oracles were deliberately left unwired.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" && lang !== "go" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" && lang !== "go" ? ["overrides"] : []), ...(lang === "hcl" ? ["calls", "uses", "references", "imports", "exports"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
@@ -24176,6 +24627,10 @@ async function main() {
           // before this. The existing kotlin contains fixtures pinned ONE
           // expect and zero forbids, so the class had no protection at all.
           ...(lang === "kotlin" ? ["contains"] : []),
+          // M14 xml (2026-10-17): `contains` joins the compared set. The oracle is
+          // script/m14/oracles/xml.ts and derives ONLY containment; every other label the
+          // analyzer emits stays OUT of the compared set until its derivation is proven.
+          ...(lang === "xml" ? ["contains"] : []),
           // php (RESTORED 2026-10-08): the oracle existed, was wired, and was dropped by
           // the merge `dc7b8b494`. Without this entry the truth rows below are computed
           // and then ignored by the comparison — the failure mode the oracle's own header
@@ -24429,7 +24884,15 @@ async function main() {
           // written to match `deriveMarkdownEdges` exactly, and nothing else — the
           // lane emits no `imports` (markdown has no module system) and no
           // `references` (front-matter keys are a declared boundary, not a graph).
-          ...(lang === "markdown" ? ["contains", "uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
+          ...(lang === "markdown" ? ["contains", "uses"] : []),
+        // lua's compared set must match its oracle EXACTLY. The file records both directions as defects:
+        // derived-but-unlisted reads every truth row as MISSING (measured: 914 truth vs 2 analyzer edges, 913
+        // "missing" that were pure artifact), and listed-but-underived reads analyzer edges as UNEXPLAINED.
+        ...(lang === "lua" ? ["contains", "calls", "imports", "exports", "extends", "overrides"] : []),
+        // make: the allowlist is part of the WIRING. Without it the harness filters the analyzer side to almost
+        // nothing and the lane reads a 0% coverage row indistinguishable from a catastrophic regression -- a
+        // failure the file records four times. These six are exactly what the oracle derives.
+        ...(lang === "make" ? ["calls", "uses", "references", "imports", "exports", "contains"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
@@ -24488,6 +24951,12 @@ async function main() {
         // so widening the compared set records coverage that was always there rather than
         // inventing an obligation. Adding a label HERE without the arm is the asymmetry the
         // note above warns about; the arm is the oracle and it is wired one block up.
+        // M14 F5 YAML truth wave (2026-10-17): yaml joins the compared set with the six labels its
+        // oracle derives beyond the default head (extends/implements/instantiates/overrides are
+        // already admitted above). Enabling `deriveYamlEdges` WITHOUT this arm measured 0 of 3,079
+        // truth edges covered and 0 analyzer edges surviving the allowlist on a 6-file kubernetes
+        // probe — the exact #910/G7/powershell shape these comments record in its fifth direction.
+        ...(lang === "yaml" ? ["contains", "references", "imports", "uses", "calls", "exports"] : []),
         ...(lang === "python" ? ["contains", "exports", "imports"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
@@ -25910,6 +26379,293 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
     if (!els) continue
     const toks = kids(els).filter((t) => t.type === "generic_token" || t.type === "simple_name").map((t) => t.text)
     if (toks.length >= 2) push("references", moduleName, toks[1])
+  }
+
+  return edges
+}
+
+
+/**
+ * M14 F5 — the YAML truth, `deriveYamlEdges`.
+ *
+ * Written from YAML's own semantics and from the ecosystem conventions the LANE'S CONTRACT already
+ * states in `docs/analyzers/real-yaml-analyzer.md`, and sharing no rule table, key set, path helper
+ * or resolver with `RealYamlAnalyzer`. That independence is the only property that makes a MATCH mean
+ * something: an oracle derived from the analyzer cannot disagree with it, and a truth that cannot
+ * disagree certifies nothing.
+ *
+ * DERIVED FROM THE TREE — what YAML's own structure defines:
+ *   contains  the key tree: every mapping pair is contained by its mapping's owner, every sequence
+ *             item by its sequence, every anchor by the value that carries it.
+ *   extends   the merge key `<<: *anchor` — the one unambiguous inheritance construct YAML has.
+ *   uses      a NON-merge alias `*anchor` reading an anchor. One flag separates the two arms, and a
+ *             rule that collapsed them would mislabel every merge in the corpus.
+ *   overrides a duplicate mapping key: the later entry replaces the earlier (YAML 1.2 leaves the
+ *             semantics undefined; last-wins is loader behaviour, recorded as a convention).
+ *
+ * DERIVED FROM DOCUMENTED CONVENTIONS — each is stated in the lane's own contract table:
+ *   references `$ref` / JSON-pointer values (resolved against a pointer index this walk builds) and
+ *              tag type names.
+ *   imports    tag includes (`!include "path"`), Ansible keyword includes (`include_tasks`,
+ *              `import_tasks`), and a step-level `uses:` in a workflow-shaped document.
+ *   calls      a job-level `uses:` (`jobs.<id>.uses`) in a workflow-shaped document.
+ *   exports    named OpenAPI definitions under `components.*` in a document that declares
+ *              `openapi:`/`swagger:` at top level.
+ *
+ * REFUSED, AND WHY — declared rather than silently absent:
+ *   implements / instantiates: RULED grammar-absence (YAML-D10/D11 — zero constructs in the
+ *     grammar's inventory). Neither side can produce them; deriving them would be fabrication.
+ *   The k8s RESOURCE-REFERENCE and Compose `depends_on` families are NOT derived: their rule is a
+ *     KEY-SET convention (which key names are reference wrappers, which spell volume sources), and
+ *     copying that set out of the analyzer would turn this oracle into a mirror. Those analyzer
+ *     edges therefore arrive as `unexplained` carrying their own `metadata.relationshipType`
+ *     markers (`yaml_resource_ref`, `yaml_depends_on`), and the run's report names them. A truth
+ *     that states its limit can be audited; one that hides it cannot.
+ *
+ * IDENTITY CONVENTIONS ARE THE CONTRACT'S (a name is how the two sides JOIN, not how either derives):
+ * document `<dirScope>.<stem>` (`.yaml`/`.yml`/`.yaml.template` stripped, `#n` for document n>1),
+ * symbol `parent path + "." + key`, sequence item `<sequence path>[i]`, duplicate key `<base>#n`,
+ * anchor `<owner path>#<name>`.
+ */
+export function deriveYamlEdges(root: any, relPath: string): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, from: string, target: string) => {
+    from = String(from ?? "").trim()
+    target = String(target ?? "").trim()
+    if (!from || !target) return
+    const k = `${label}|${from}|${target}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label, from, target })
+  }
+
+  // --- identity: the contract's key space ------------------------------------------------------
+  const baseName = relPath.split("/").pop() ?? "document"
+  const lowerBase = baseName.toLowerCase()
+  let stem = baseName
+  if (lowerBase.endsWith(".yaml.template")) stem = baseName.slice(0, -13)
+  else if (lowerBase.endsWith(".yml.template")) stem = baseName.slice(0, -12)
+  else if (lowerBase.endsWith(".yaml")) stem = baseName.slice(0, -5)
+  else if (lowerBase.endsWith(".yml")) stem = baseName.slice(0, -4)
+  stem = stem.trim() || "document"
+  const dirScope = relPath.split("/").slice(0, -1).filter((s) => s.length > 0).join(".")
+  const scopedStem = dirScope.length > 0 ? `${dirScope}.${stem}` : stem
+
+  // --- grammar helpers (node shapes, not analyzer logic) ---------------------------------------
+  const kids = (n: any): any[] => (n?.namedChildren ?? []).filter((c: any) => c !== null && c !== undefined)
+  const fieldOf = (n: any, f: string): any => n?.childForFieldName?.(f) ?? null
+  const unquote = (t: string): string => {
+    const v = t.trim()
+    if (v.length >= 2) {
+      const q = v[0]
+      if ((q === '"' || q === "'") && v[v.length - 1] === q) return v.slice(1, -1)
+    }
+    return v
+  }
+  const isContainerType = (t: string): boolean =>
+    t === "block_mapping" || t === "flow_mapping" || t === "block_sequence" || t === "flow_sequence"
+  /** Descend the grammar's wrapper nodes (`flow_node`, `block_node`, `block_sequence_item`). */
+  const unwrap = (n: any): any => {
+    let cur = n
+    for (let guard = 0; cur && guard < 8; guard++) {
+      if (cur.type === "flow_node" || cur.type === "block_node" || cur.type === "block_sequence_item") {
+        const next = kids(cur).find((c: any) => c.type !== "tag" && c.type !== "anchor")
+        if (!next) return cur
+        cur = next
+        continue
+      }
+      return cur
+    }
+    return cur
+  }
+  const scalarText = (n: any): string => {
+    const w = unwrap(n)
+    if (!w || isContainerType(w.type) || w.type === "alias") return ""
+    return unquote(String(w.text ?? ""))
+  }
+  const findChildType = (n: any, type: string): any => kids(n).find((c: any) => c.type === type) ?? null
+  const tagNodeOf = (n: any): any => (n?.type === "tag" ? n : findChildType(n, "tag"))
+  const escapePointer = (k: string): string => k.split("~").join("~0").split("/").join("~1")
+  const isPointerText = (v: string): boolean => v.length > 2 && v.startsWith("#/") && !v.includes(" ")
+  const INCLUDE_TAGS = new Set(["include", "inc", "include_tasks", "include_role", "include_vars", "include_file", "import", "import_tasks", "import_playbook", "import_role", "import_file"])
+  const KEYWORD_INCLUDE_KEYS = new Set(["include_tasks", "import_tasks"])
+  const EXPORT_CONTAINERS = new Set(["schemas", "responses", "parameters", "examples", "requestBodies", "headers", "securitySchemes", "links", "callbacks"])
+
+  interface WalkCtx { parentPath: string; pointerPath: string; document: string; siblings: Map<string, number> }
+  interface PendingRef { from: string; pointer: string }
+  interface PendingAlias { from: string; name: string; merge: boolean; document: string }
+  interface PendingUse { from: string; target: string; jobLevel: boolean; document: string }
+  interface PendingExport { document: string; path: string }
+  interface DocFacts { anchors: Map<string, string>; shapes: Set<string> }
+
+  const docs = new Map<string, DocFacts>()
+  const pointerIndex = new Map<string, string>()
+  const pendingRefs: PendingRef[] = []
+  const pendingAliases: PendingAlias[] = []
+  const pendingUses: PendingUse[] = []
+  const pendingExports: PendingExport[] = []
+  const factsOf = (doc: string): DocFacts => {
+    let f = docs.get(doc)
+    if (!f) { f = { anchors: new Map(), shapes: new Set() }; docs.set(doc, f) }
+    return f
+  }
+
+  const handlePair = (pair: any, ctx: WalkCtx): void => {
+    const keyNode = fieldOf(pair, "key") ?? kids(pair)[0]
+    const valueNode = fieldOf(pair, "value") ?? kids(pair)[1]
+    const key = scalarText(keyNode)
+    if (!key) return
+    if (ctx.parentPath === ctx.document) factsOf(ctx.document).shapes.add(key)
+
+    const occurrence = (ctx.siblings.get(key) ?? 0) + 1
+    ctx.siblings.set(key, occurrence)
+    const basePath = ctx.parentPath ? `${ctx.parentPath}.${key}` : key
+    const path = occurrence === 1 ? basePath : `${basePath}#${occurrence}`
+    push("contains", ctx.parentPath, path)
+    if (occurrence > 1) push("overrides", path, occurrence === 2 ? basePath : `${basePath}#${occurrence - 1}`)
+
+    const pointerPath = `${ctx.pointerPath}/${escapePointer(key)}`
+    const content = unwrap(valueNode)
+    if (content && isContainerType(content.type)) pointerIndex.set(pointerPath, path)
+
+    // an anchor on this value is a symbol of its own, owned by this pair
+    const anchorNode = findChildType(valueNode, "anchor")
+    const anchorNameNode = anchorNode ? findChildType(anchorNode, "anchor_name") : null
+    if (anchorNode && anchorNameNode) {
+      const anchorName = unquote(String(anchorNameNode.text ?? ""))
+      if (anchorName) {
+        const anchorPath = `${path}#${anchorName}`
+        push("contains", path, anchorPath)
+        factsOf(ctx.document).anchors.set(anchorName, anchorPath)
+      }
+    }
+
+    // tags: an include-family tag names a FILE (imports); any other tag names a TYPE (references)
+    const tagNode = tagNodeOf(valueNode)
+    if (tagNode) {
+      const tagText = String(tagNode.text ?? "").replace(/^!+/, "")
+      const tagName = tagText.replace(/^<.*>$/, "").trim()
+      const includeText = scalarText(valueNode)
+      if (INCLUDE_TAGS.has(tagName)) {
+        if (includeText && !includeText.includes(" ")) push("imports", path, includeText)
+      } else if (tagName) {
+        push("references", path, tagName)
+      }
+    }
+
+    if (content && content.type === "alias") {
+      const aliasNameNode = findChildType(content, "alias_name")
+      const aliasName = aliasNameNode ? unquote(String(aliasNameNode.text ?? "")) : ""
+      if (aliasName) {
+        // A merge key inherits INTO the mapping that contains the `<<`, so the edge leaves that
+        // mapping; a plain alias edge leaves the key that carries it. One flag, two arms.
+        const merge = key === "<<"
+        const from = merge ? ctx.parentPath : path
+        pendingAliases.push({ from, name: aliasName, merge, document: ctx.document })
+      }
+    } else if (content && !isContainerType(content.type)) {
+      const v = scalarText(valueNode)
+      if (v && (key === "$ref" || isPointerText(v))) pendingRefs.push({ from: path, pointer: v })
+    }
+
+    // step-level `uses:` (imports an action) and job-level `uses:` (calls a reusable workflow)
+    if (key === "uses" && v0(valueNode)) {
+      const target = scalarText(valueNode)
+      const segs = path.split(".")
+      const jobLevel = segs.length === 4 && segs[0] === ctx.document && segs[1] === "jobs"
+      const stepLevel = /\.jobs\.[^.]+\.steps\[[0-9]+\]\.uses$/.test(path) && path.startsWith(`${ctx.document}.jobs.`)
+      if (target && (jobLevel || stepLevel)) pendingUses.push({ from: path, target, jobLevel, document: ctx.document })
+    }
+    // Ansible keyword includes name a FILE
+    if (KEYWORD_INCLUDE_KEYS.has(key)) {
+      const target = scalarText(valueNode)
+      if (target) push("imports", path, target)
+    }
+    // OpenAPI publication candidates: `<doc>.components.<container>.<name>`
+    const segsForExport = path.split(".")
+    if (segsForExport.length === 4 && segsForExport[0] === ctx.document && segsForExport[1] === "components" && EXPORT_CONTAINERS.has(segsForExport[2])) {
+      pendingExports.push({ document: ctx.document, path })
+    }
+
+    walkValue(valueNode, { parentPath: path, pointerPath, document: ctx.document, siblings: new Map() })
+  }
+
+  const v0 = (valueNode: any): boolean => !!valueNode
+  const walkValue = (node: any, ctx: WalkCtx): void => {
+    const content = unwrap(node)
+    if (!content) return
+    if (content.type === "block_mapping" || content.type === "flow_mapping") {
+      const own = new Map<string, number>()
+      sharedSiblings.set(content, own)
+      for (const child of kids(content)) {
+        if (child.type === "block_mapping_pair" || child.type === "flow_pair") handlePair(child, { ...ctx, siblings: own })
+      }
+      return
+    }
+    if (content.type === "block_sequence" || content.type === "flow_sequence") {
+      let i = 0
+      for (const child of kids(content)) {
+        if (child.type === "comment") continue
+        const itemPath = `${ctx.parentPath}[${i}]`
+        push("contains", ctx.parentPath, itemPath)
+        const itemContent = unwrap(child)
+        if (itemContent && itemContent.type === "alias") {
+          const aliasNameNode = findChildType(itemContent, "alias_name")
+          const aliasName = aliasNameNode ? unquote(String(aliasNameNode.text ?? "")) : ""
+          if (aliasName) pendingAliases.push({ from: itemPath, name: aliasName, merge: false, document: ctx.document })
+        } else {
+          walkValue(child, { parentPath: itemPath, pointerPath: `${ctx.pointerPath}/${i}`, document: ctx.document, siblings: new Map() })
+        }
+        i++
+      }
+      return
+    }
+    // a flow_node scalar reached directly (e.g. flow mapping value) — nothing further to derive
+  }
+
+  // The map is only a stack-safety detail: duplicates are tracked per mapping, and this keeps the
+  // sibling set reachable from handlePair without threading it through every signature.
+  const sharedSiblings = new Map<any, Map<string, number>>()
+
+  // --- documents ---------------------------------------------------------------------------------
+  const documents: any[] = []
+  const rootKids = kids(root)
+  for (const child of rootKids) {
+    if (child.type === "document") documents.push(child)
+  }
+  if (documents.length === 0 && rootKids.length > 0) documents.push(root) // a bare root that IS the document content
+  let docIndex = 0
+  for (const doc of documents) {
+    docIndex++
+    const documentName = docIndex === 1 ? scopedStem : `${scopedStem}#${docIndex}`
+    factsOf(documentName)
+    const body = kids(doc).find((c: any) => c.type === "block_node" || c.type === "flow_node") ?? doc
+    walkValue(body, { parentPath: documentName, pointerPath: "", document: documentName, siblings: new Map() })
+  }
+
+  // --- second pass: resolve what the walk could only collect -------------------------------------
+  const workflowShaped = (doc: string): boolean => {
+    const shapes = factsOf(doc).shapes
+    return shapes.has("jobs") && (shapes.has("on") || shapes.has("workflow_call"))
+  }
+  for (const ref of pendingRefs) {
+    const pointerPath = ref.pointer.startsWith("#") ? ref.pointer.slice(1) : ref.pointer
+    const resolved = pointerIndex.get(pointerPath)
+    push("references", ref.from, resolved ?? ref.pointer)
+  }
+  for (const alias of pendingAliases) {
+    const anchor = factsOf(alias.document).anchors.get(alias.name)
+    push(alias.merge ? "extends" : "uses", alias.from, anchor ?? alias.name)
+  }
+  for (const use of pendingUses) {
+    if (!workflowShaped(use.document)) continue
+    push(use.jobLevel ? "calls" : "imports", use.from, use.target)
+  }
+  for (const pub of pendingExports) {
+    const shapes = factsOf(pub.document).shapes
+    if (!(shapes.has("openapi") || shapes.has("swagger"))) continue
+    push("exports", pub.document, pub.path)
   }
 
   return edges

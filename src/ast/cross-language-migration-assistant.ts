@@ -1000,6 +1000,13 @@ export namespace CrossLanguageMigrationAssistant {
     relationships: MigrationSourceRelationship[]
     nameById?: Map<string, string>
     fileById?: Map<string, string>
+    /**
+     * The project's own package identity, from its manifests. Optional: a
+     * caller that has no filesystem (the fixtures in the gates) simply gets the
+     * language rule with no self-import recognition, which is exactly the old
+     * behaviour rather than a wrong answer.
+     */
+    selfImports?: ProjectSelfImport | null
   }
 
   /**
@@ -1499,7 +1506,7 @@ export namespace CrossLanguageMigrationAssistant {
     ).values()].sort((a, b) => a.id.localeCompare(b.id))
 
     // 3. Split dependencies by PROVENANCE before mapping them.
-    const { evidenced, evidencedClass, inferred, evidenceAvailable, importEvidence } = extractSourceDependencies(symbol as any, relationshipEvidence, normalizedTargetLanguage)
+    const { evidenced, evidencedClass, inferred, evidenceAvailable, importEvidence } = extractSourceDependencies(symbol as any, relationshipEvidence, normalizedTargetLanguage, source.selfImports ?? null)
 
     const dependencies: LibraryEquivalence[] = evidenced.map((lib) => toEquivalence(lib, sourceLanguage, normalizedTargetLanguage, "indexed-import", evidencedClass[lib] ?? null))
     const inferredDependencies: LibraryEquivalence[] = inferred.map((lib) => toEquivalence(lib, sourceLanguage, normalizedTargetLanguage, "name-heuristic"))
@@ -1693,6 +1700,12 @@ export namespace CrossLanguageMigrationAssistant {
               ? `Library mappings for ${sourceLanguage} → ${normalizedTargetLanguage} come from the registered dictionary.`
               : `This tool registers no library-equivalence data for ${sourceLanguage} → ${normalizedTargetLanguage}, so no mapping can be offered for any library. That is MISSING DATA, not an absence of libraries.`,
             "`inferredDependencies` holds name-based guesses that are NOT evidence and do not affect effort or risk.",
+            // Only when there is something to say: a plan with no self imports
+            // must not grow a sentence about them, because a note that is always
+            // present stops being read.
+            ...(importEvidence.selfImports > 0
+              ? [`${importEvidence.selfImports} import(s) are this project's OWN package (${importEvidence.selfImportIdentity.join("; ")}), read from its manifest and classified LOCAL rather than third-party: ${importEvidence.selfImportLibraries.join(", ")}.`]
+              : []),
           ].join(" "),
         },
         relationshipEvidence,
@@ -1866,10 +1879,65 @@ export namespace CrossLanguageMigrationAssistant {
     return null
   }
 
+  /**
+   * The project's OWN package identity, as its manifests state it.
+   *
+   * `import myapp.internal` in Go, `import package:myapp/state.dart` in Dart and
+   * `from myapp import models` in Python are all imports of the CALLER'S OWN
+   * code, and the index stores them in the same column as a third-party
+   * dependency. Without this, the dot rule classified a Go project's own module
+   * path as third-party: measured on a two-package fixture, an intra-module
+   * import was charged the 6h missing-mapping allowance and named as a library
+   * needing research, which is a fabricated work item on almost every Go project
+   * (intra-module imports are the norm, not the exception).
+   *
+   * Identity is read from the manifests at the project root, never guessed. A
+   * project with no readable manifest gets `null` fields and nothing changes.
+   */
+  export interface ProjectSelfImport {
+    /** pubspec.yaml `name:` — matched as `package:<name>/…`. */
+    dartPackage: string | null
+    /** pyproject/setup.cfg/setup.py distribution name, `-` folded to `_`. */
+    pythonImport: string | null
+    /** go.mod `module` line — matched as an exact path or a path prefix. */
+    goModule: string | null
+    /** package.json `name` — matched as an exact specifier or a subpath. */
+    npmPackage: string | null
+    /** Cargo.toml `[package] name`, `-` folded to `_`. */
+    rustCrate: string | null
+    /** `<manifest>: <name>`, one per identity found, for the plan's note. */
+    evidence: string[]
+  }
+
+  /**
+   * Is this specifier the project's OWN package, rather than a dependency?
+   *
+   * Each language has exactly one spelling for that question, and it is the same
+   * spelling its canonicalization already uses:
+   *   dart    `package:<pubspec name>/x.dart`
+   *   python  the first dotted segment equals the distribution's import name
+   *   go      the module path itself, or a path under it
+   *   js/ts   the package.json name, or a subpath of it
+   *   rust    the first `::` segment equals the crate name
+   */
+  export function isSelfImport(specifier: string, language: string | undefined, self: ProjectSelfImport | null | undefined): boolean {
+    if (!self) return false
+    const raw = String(specifier ?? "").trim().replace(/^['"]|['"]$/g, "")
+    if (!raw) return false
+    const lang = normalizeMigrationLanguage(String(language ?? "").toLowerCase())
+    if (lang === "dart") return !!self.dartPackage && raw.startsWith(`package:${self.dartPackage}/`)
+    if (lang === "python") return !!self.pythonImport && raw.split(".")[0] === self.pythonImport
+    if (lang === "go") return !!self.goModule && (raw === self.goModule || raw.startsWith(`${self.goModule}/`))
+    if (lang === "typescript" || lang === "javascript") return !!self.npmPackage && (raw === self.npmPackage || raw.startsWith(`${self.npmPackage}/`))
+    if (lang === "rust") return !!self.rustCrate && raw.split("::")[0].trim() === self.rustCrate
+    return false
+  }
+
   function extractSourceDependencies(
     symbol: { id: string; name: string; type?: string; language?: string; file?: string; line?: number | null; imports?: string[]; metadata?: any },
     relationships: MigrationRelationshipEvidence[],
     targetLanguage: string,
+    selfIdentity?: ProjectSelfImport | null,
   ): {
     evidenced: string[]
     /** The class each evidenced name was assigned, so a stdlib row does not
@@ -1887,6 +1955,17 @@ export namespace CrossLanguageMigrationAssistant {
       standardLibrary: number
       thirdParty: number
       localCrate: number
+      /**
+       * Imports of this project's OWN package, recognized from its manifest and
+       * counted INSIDE `localCrate` — they are not a fourth class, they are the
+       * local class that the language's own naming convention cannot reveal
+       * (`example.com/me/app` looks exactly like a dependency).
+       */
+      selfImports: number
+      /** Those specifiers, by name. */
+      selfImportLibraries: string[]
+      /** `<manifest>: <name>` for each identity the project's files declare. */
+      selfImportIdentity: string[]
       /** Specifiers this tool cannot classify for its language. Not zero. */
       unclassified: number
       /**
@@ -1923,6 +2002,7 @@ export namespace CrossLanguageMigrationAssistant {
   } {
     const evidenced = new Set<string>()
     const evidencedClass: Record<string, ImportClass | null> = {}
+    const selfImportLibraries = new Set<string>()
     const inferred = new Set<string>()
     const unmappedLibraries = new Set<string>()
     const stdlibWithoutRowLibraries = new Set<string>()
@@ -1959,13 +2039,25 @@ export namespace CrossLanguageMigrationAssistant {
     const supplied: string[] = Array.isArray((symbol as any)?.metadata?.imports) ? (symbol as any).metadata.imports : []
     const declared: string[] = [...new Set([...indexed.map((x) => String(x).trim()).filter(Boolean), ...supplied.map((x) => String(x).trim()).filter(Boolean)])]
     const suppliedOnly = declared.filter((specifier) => !indexed.some((row) => String(row).trim() === specifier))
-    const importCounts = { standardLibrary: 0, thirdParty: 0, localCrate: 0, unclassified: 0, mapped: 0, unmapped: 0, stdlibWithoutRow: 0, unclassifiedWithoutRow: 0, fallbackHostNames: 0 }
+    const importCounts = { standardLibrary: 0, thirdParty: 0, localCrate: 0, selfImports: 0, unclassified: 0, mapped: 0, unmapped: 0, stdlibWithoutRow: 0, unclassifiedWithoutRow: 0, fallbackHostNames: 0 }
     const sourceLang = normalizeMigrationLanguage(String(symbol?.language ?? ""))
     const targetLang = normalizeMigrationLanguage(String(targetLanguage ?? ""))
     for (const entry of declared) {
       const specifier = String(entry ?? "").trim()
       if (!specifier) continue
-      const klass = classifyImport(specifier, symbol?.language)
+      // THE PROJECT'S OWN PACKAGE IS LOCAL CODE.
+      //
+      // Checked BEFORE the language rule, because no naming convention can tell
+      // `example.com/me/app` from a dependency — only the project's own manifest
+      // can. A self import is reported as local (inside `localCrate`) and named
+      // separately, so "this file imports three things" and "this file imports
+      // three of its own packages" are distinguishable claims.
+      const self = isSelfImport(specifier, symbol?.language, selfIdentity)
+      const klass = self ? "local-crate" : classifyImport(specifier, symbol?.language)
+      if (self) {
+        importCounts.selfImports++
+        selfImportLibraries.add(specifier)
+      }
       if (klass === "standard-library") importCounts.standardLibrary++
       else if (klass === "local-crate") importCounts.localCrate++
       else if (klass === "third-party") importCounts.thirdParty++
@@ -2112,6 +2204,9 @@ export namespace CrossLanguageMigrationAssistant {
         standardLibrary: importCounts.standardLibrary,
         thirdParty: importCounts.thirdParty,
         localCrate: importCounts.localCrate,
+        selfImports: importCounts.selfImports,
+        selfImportLibraries: [...selfImportLibraries].sort(),
+        selfImportIdentity: selfIdentity?.evidence ?? [],
         unclassified: importCounts.unclassified,
         /**
          * Imports whose class could not be determined because no rule is declared for

@@ -1,8 +1,8 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 20.32,
-    "loadAvgEnd": 21.43,
+    "loadAvgStart": 23.57,
+    "loadAvgEnd": 22.42,
     "sliceCount": 1
   },
   "counts": {
@@ -1624,6 +1624,33 @@
         "avgMsPerFile": 1.8
       },
       "sampleSetHash": "c5e515b54f5e915c"
+    },
+    "tf-aws-components:hcl": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 5
+      },
+      "sampleSetHash": "1bae8a312cc9c4a2"
+    },
+    "ansible:yaml": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 24.4
+      },
+      "sampleSetHash": "c9d0e1b59b1676f8"
+    },
+    "grails-core:xml": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 18.8
+      },
+      "sampleSetHash": "ffe6839fc280fa8a"
     }
   },
   "hashes": {
@@ -1685,7 +1712,10 @@
     "otp:html": "30e4242514acef78",
     "cargo:toml": "2887280c3e2a105b",
     "sqlite:html": "3316e7bdc525d7af",
-    "ripgrep:toml": "c5e515b54f5e915c"
+    "ripgrep:toml": "c5e515b54f5e915c",
+    "tf-aws-components:hcl": "1bae8a312cc9c4a2",
+    "ansible:yaml": "c9d0e1b59b1676f8",
+    "grails-core:xml": "ffe6839fc280fa8a"
   },
   "floorMoves": {
     "solidity:solidity": {

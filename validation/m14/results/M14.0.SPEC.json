@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "7530ba616bae70ffc16580020e91e33a357d115b83e61f2c4c62467536458737",
-    "sealedAt": "2026-10-17T22:31:58.000Z"
+    "contentSha256": "227712d1956f3e19062eb959d6ac5667a5f2d7e47974f73051d5847ee6ac885f",
+    "sealedAt": "2026-10-17T23:19:36.000Z"
   },
   "checks": [
     {
@@ -2446,11 +2446,85 @@
       "id": "section-h-cross-language",
       "language": "elixir",
       "status": "pass"
+    },
+    {
+      "description": "xml: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "xml",
+      "status": "pass"
+    },
+    {
+      "description": "xml: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "xml",
+      "status": "pass"
+    },
+    {
+      "description": "xml: 5 ruled, 14 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "xml",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (xml)",
+      "detail": "53 types, 28 handled, 25 silent, 0 gaps, 19 decisions",
+      "id": "section-a-structural",
+      "language": "xml",
+      "status": "pass"
+    },
+    {
+      "description": "7 relationship kinds pinned by xml fixtures; 7 emitted and all accounted for",
+      "detail": "pinned: calls, contains, extends, imports, overrides, references, uses; emitted: calls, contains, extends, imports, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "xml",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for xml (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "xml",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "xml",
+      "status": "pass"
+    },
+    {
+      "description": "grails-core:xml at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor grails-core:xml: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "xml",
+      "status": "pass"
+    },
+    {
+      "description": "xml avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "grails-core:xml 18.8 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "xml",
+      "status": "pass"
+    },
+    {
+      "description": "xml analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/real-xml-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "xml",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "xml",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "6451567c2ff1ce9f8de37b2e84cfd8981933ed35",
-  "committedAt": "2026-10-17T18:31:58-04:00",
+  "commit": "d5be0d1cefd279f0d2d98db9c49651108bb3366f",
+  "committedAt": "2026-10-17T19:19:36-04:00",
   "data": {
     "languages": {
       "c": {
@@ -4565,6 +4639,67 @@
           }
         }
       },
+      "xml": {
+        "gaps": [],
+        "nodeTypeCount": 53,
+        "pendingDecisions": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ruledDecisions": [
+          "XML-ONTOLOGY-USES",
+          "XML-ONTOLOGY-EXTENDS",
+          "XML-ONTOLOGY-EXPORTS",
+          "XML-ONTOLOGY-IMPLEMENTS",
+          "XML-ONTOLOGY-INSTANTIATES"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "53 types, 28 handled, 25 silent, 0 gaps, 19 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, extends, imports, overrides, references, uses; emitted: calls, contains, extends, imports, overrides, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor grails-core:xml: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "grails-core:xml 18.8 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-xml-analyzer.md + head comment present",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "12 checks pass",
+            "status": "pass"
+          }
+        }
+      },
       "yaml": {
         "gaps": [
           "YAML-G1: undefined",
@@ -4773,8 +4908,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-17T18:31:58-04:00",
-  "regeneratedAtCommit": "6451567c2ff1ce9f8de37b2e84cfd8981933ed35",
+  "regeneratedAt": "2026-10-17T19:19:36-04:00",
+  "regeneratedAtCommit": "d5be0d1cefd279f0d2d98db9c49651108bb3366f",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
