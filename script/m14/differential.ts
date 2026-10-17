@@ -93,6 +93,12 @@ import { deriveErlangContainsTruth } from "./oracles/erlang-contains"
 import { derivePythonTruth } from "./oracles/python-truth"
 // M60: rust `contains` — see script/m14/oracles/rust-contains.ts for the rule.
 import { deriveRustContainsTruth } from "./oracles/rust-contains"
+// SQL-G14: the sql lane had NO branch at all, so a scoped run ended "derived ZERO truth edges" and
+// #419 sections E/F were unmeasurable for the lane (recorded in script/m14/spec/sql-completeness.json).
+// This is the FIRST HALF of the oracle — `contains` and `references`, the structural bulk — and the
+// module's header states which labels are still underived so a partial oracle is readable as partial
+// rather than as clean. It shares no helper with `real-sql-analyzer.ts`; every edge is tree-derived.
+import { deriveSqlTruth } from "./oracles/sql-truth"
 // M60 label-coverage sweep: these two oracles were BUILT (846 lines, each with
 // its rule documented) and wired to NOTHING — zero imports anywhere in the repo.
 // typescript meanwhile published `references` and `uses` edges that the allowlist
@@ -434,14 +440,17 @@ export const LANG_REPOS_SECOND: Record<string, string> = {
   bash: "fsharp",
   json: "otp",
 
+  lua: "luarocks",
 }
 export const LANG_REPOS: Record<string, string> = {
+  sql: "duckdb",
   r: "dplyr",
   // THESE THREE WERE MISSING FROM THE PRIMARY MAP, so `repoForSweep` returned null and the differential reported
   // "no corpus repo mapped in LANG_REPOS and none checked out -- declared unrun" for lanes whose repositories
   // were present. An earlier attempt inserted them into LANG_REPOS_SECOND instead: a regex written for
   // `LANG_REPOS` also matches `LANG_REPOS_SECOND` because the former is a prefix of the latter.
   nim: "nim",
+  lua: "kong",
   graphql: "gql-graphql-platform",
   protobuf: "pb-googleapis",
   // M14 #277: bash's primary corpus is `otp` — 80 tracked .sh files, the largest
@@ -23758,6 +23767,18 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "lua") {
+        // lua (2026-10-17): a NEW oracle, and its scope is DECLARED rather than implied. It derives
+        // contains, calls, imports, exports, extends and overrides from the parse tree. It does NOT
+        // derive uses, references or instantiates: those three require reproducing the analyzer's
+        // read-class exclusions (LUA-40/41) and its class-factory recognition, and a second,
+        // un-audited copy of those rules would be an oracle that agrees with the analyzer by
+        // construction. Their analyzer edges read UNEXPLAINED until they are derived; the measured
+        // mass is the backlog, not a hidden pass.
+        for (const e of deriveLuaEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "php") {
         for (const e of derivePhpEdges(root)) {
           ;(truth as any[]).push(e)
@@ -23830,6 +23851,18 @@ async function main() {
         // keeps `.ps1`, `.psm1` and `.psd1` files of the same stem distinct.
         const psModule = relPath.split("/").pop() ?? "script.ps1"
         for (const e of derivePowershellEdges(root, psModule)) {
+          ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "sql") {
+        // SQL-G14 / M14.0.F5: the oracle this lane never had. The module name is the file's basename
+        // WITH its extension, because a SQL file IS the unit of a migration (`\i` loads it, psql runs
+        // it) and that name is the file-module symbol's own identity in this lane.
+        // WIRED ONLY BECAUSE IT DERIVES: a branch that produces zero truth edges makes the harness
+        // throw "the parser or the oracle is dead, not clean" — the refusal is correct, and a partial
+        // oracle that derives 77 edges over the lane's fixtures is measurable where an unwired one is not.
+        const sqlModule = relPath.split("/").pop() ?? "schema.sql"
+        for (const e of deriveSqlTruth(root, sqlModule)) {
           ;(truth as any[]).push(e)
         }
       }
@@ -24211,6 +24244,15 @@ async function main() {
           ...(lang === "zig" ? ["contains", "imports", "exports"] : []),
           ...(lang === "erlang" ? ["contains"] : []),
           ...(lang === "rust" ? ["contains"] : []),
+          // SQL-G14 / M14.0.F5: sql joins the compared set with the TWO labels its first-half oracle
+          // derives — `contains` and `references`. THE ARM IS DELIBERATELY NARROW: the oracle's header
+          // names the labels it does NOT derive yet (calls, uses, imports, overrides, instantiates), so
+          // admitting those here would drop every one of their analyzer edges from the comparison and
+          // make the lane read cleaner than its oracle can support. When the second half of the oracle
+          // lands, the winning arm is this one plus the new labels — not a wholesale full set. This is
+          // the same "0% coverage" trap the powershell note above records: an unaudited label cannot be
+          // caught going missing even once, and a label admitted with no truth behind it is worse.
+          ...(lang === "sql" ? ["contains", "references"] : []),
           // M60: clojure's `uses` oracle existed in clojure-truth.ts with no consumer
           // in this file, so the label was unadmitted AND unmeasured — the same
           // finished-but-unconnected shape as typescript and contains.
@@ -26249,6 +26291,11 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
   // number then describes a file set that does not exist at runtime. Aligned
   // to production; the census, this lane and the fixture lane now agree.
   perl: { wasm: "tree-sitter-perl.wasm", analyzerFile: "real-perl-analyzer", className: "RealPerlAnalyzer", ext: "pm,pl,t" },
+  // lua (2026-10-17): no oracle existed, so E/F was unmeasurable. Corpus choice RECORDED, not guessed:
+  // kong carries 1,312 tracked *.lua files — the largest Lua holding in CORPUS_ROOT (next: nvim-lspconfig
+  // 863, luvit 199, luarocks 162). luarocks is the second corpus: it is the Lua package manager, so its
+  // sources are idiomatic Lua rather than editor configuration data.
+  lua: { wasm: "tree-sitter-lua.wasm", analyzerFile: "real-lua-analyzer", className: "RealLuaAnalyzer", ext: "lua" },
 
   // SQL wave (2026-09-26): sql was ABSENT from every M14 surface — no entry in
   // this map, no directory in validation/m14/fixtures/, no mutants in
@@ -26287,3 +26334,176 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
   xml: { wasm: "tree-sitter-xml.wasm", analyzerFile: "real-xml-analyzer", className: "RealXmlAnalyzer", ext: "xml,xsd,dtd,xsl,xslt,svg,rng" },
 })
 
+
+/**
+ * lua truth oracle (2026-10-17) — DErived from the PARSE TREE, never from the analyzer.
+ *
+ * SCOPE, declared: derives `contains`, `calls`, `imports`, `exports`, `extends`, `overrides`.
+ * REFUSED, with the reason: `uses` and `references` would require reproducing the analyzer's
+ * read-class exclusion set (LUA-40/41: receiver-vs-field, declaration targets, parameters,
+ * table keys) and `instantiates` its class-factory recognition — a second un-audited copy of
+ * those rules is an oracle that agrees with the analyzer by construction. They stay un-derived
+ * and their analyzer edges are honestly UNEXPLAINED until a later iteration earns them.
+ *
+ * NAMING MIRRORS THE ANALYZER'S WRITTEN PATHS because the matcher keys on `label|target`:
+ *   source of a call/use = the enclosing named declaration path as written (`util.f`), else `global`
+ *   call target          = the callee's LEAF (`table.insert` -> `insert`; `self:other` -> `other`)
+ *   import target        = the module string exactly as written (`require("a.b")` -> `a.b`)
+ *   export target        = a field name in the CHUNK-LEVEL `return { ... }` table
+ *   extends              = `setmetatable(Src, Mt)` with both sides nameable and unequal
+ *   overrides            = a written declaration path declared MORE THAN ONCE in the file
+ */
+export function deriveLuaEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, from: string, target: string) => {
+    from = String(from ?? "").trim(); target = String(target ?? "").trim()
+    if (!from || !target) return
+    const k = `${label}|${from}|${target}`
+    if (seen.has(k)) return
+    seen.add(k); edges.push({ label, from, target })
+  }
+  const stringValue = (n: any): string => {
+    const t = n?.text ?? ""
+    if (t.startsWith('"') || t.startsWith("'")) return t.slice(1, -1)
+    if (t.startsWith("[[")) return t.slice(2, -2)
+    return ""
+  }
+  const leaf = (n: any): string => {
+    if (!n) return ""
+    if (n.type === "identifier") return n.text
+    if (n.type === "string") return stringValue(n)
+    if (n.type === "dot_index_expression" || n.type === "method_index_expression" || n.type === "bracket_index_expression") {
+      const last = n.namedChildCount > 0 ? n.namedChild(n.namedChildCount - 1) : null
+      return leaf(last)
+    }
+    return ""
+  }
+  const writtenPath = (n: any): string => {
+    if (!n) return ""
+    if (n.type === "identifier") return n.text
+    if (n.type === "dot_index_expression" || n.type === "method_index_expression") {
+      const base = writtenPath(n.namedChild(0))
+      const m = leaf(n)
+      return base && m ? `${base}.${m}` : m
+    }
+    return ""
+  }
+  const declSites: { path: string; line: number }[] = []
+  const callStack: string[] = []
+  const sourceName = () => (callStack.length > 0 ? callStack[callStack.length - 1] : "global")
+
+  const children = (n: any): any[] => {
+    const out: any[] = []
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) out.push(c) }
+    return out
+  }
+  const walk = (n: any): void => {
+    if (!n) return
+    // named declaration: `function a.b.f(...)` / `function f(...)`
+    if (n.type === "function_declaration") {
+      const nameNode = n.namedChild(0)
+      const path = writtenPath(nameNode)
+      const rest = children(n).slice(1)
+      if (path) {
+        const parts = path.split(".")
+        const member = parts[parts.length - 1]
+        const owner = parts.slice(0, -1).join(".")
+        if (owner) push("contains", owner, member)
+        declSites.push({ path, line: n.startPosition.row + 1 })
+        callStack.push(path)
+        for (const c of rest) walk(c)
+        callStack.pop()
+      } else {
+        for (const c of rest) walk(c)
+      }
+      return
+    }
+    // assignment: `a.b = function ...` gives containment + a callable; `a.b = value` gives containment.
+    if (n.type === "assignment_statement") {
+      const lhs = n.namedChild(0)
+      const targets: string[] = []
+      if (lhs?.type === "variable_list") for (const v of children(lhs)) targets.push(writtenPath(v))
+      else targets.push(writtenPath(lhs))
+      const rhs = n.namedChild(1)
+      const sources = rhs ? (rhs.type === "expression_list" ? children(rhs) : [rhs]) : []
+      for (let i = 0; i < sources.length; i++) {
+        const tgt = targets[i] ?? ""
+        const src = sources[i]
+        if (!tgt || !src) { if (src) walk(src); continue }
+        const parts = tgt.split(".")
+        if (parts.length >= 2) push("contains", parts.slice(0, -1).join("."), parts[parts.length - 1])
+        if (src.type === "function_definition") {
+          declSites.push({ path: tgt, line: n.startPosition.row + 1 })
+          callStack.push(tgt)
+          walk(src)
+          callStack.pop()
+        } else {
+          walk(src)
+        }
+      }
+      return
+    }
+    // chunk-level `return { name = ... }` -> exports
+    if (n.type === "return_statement") {
+      const exprs = n.namedChildCount > 0 ? n.namedChild(n.namedChildCount - 1) : null
+      const list = exprs?.type === "expression_list" ? children(exprs) : exprs ? [exprs] : []
+      for (const ex of list) {
+        if (ex?.type !== "table_constructor") continue
+        for (const f of children(ex)) {
+          if (f.type !== "field") continue
+          const key = f.namedChild(0)
+          let nm = ""
+          if (key?.type === "identifier") nm = key.text
+          else if (key?.type === "string") nm = stringValue(key)
+          if (nm) push("exports", "global", nm)
+        }
+      }
+      return
+    }
+    // call: callee leaf + enclosing source; require/module are imports, not calls (analyzer parity)
+    if (n.type === "function_call") {
+      const fnNode = n.namedChild(0)
+      const argsNode = n.namedChild(1)
+      const argList = argsNode?.type === "arguments" ? children(argsNode) : []
+      const calleeLeaf = leaf(fnNode)
+      const source = sourceName()
+      if (calleeLeaf === "require" || calleeLeaf === "module") {
+        const mod = stringValue(argList[0])
+        if (mod) push("imports", source, mod)
+        for (const a of argList) walk(a)
+        return
+      }
+      if (calleeLeaf === "pcall" || calleeLeaf === "xpcall") {
+        if (leaf(argList[0]) === "require") {
+          const mod = stringValue(argList[1])
+          if (mod) push("imports", source, mod)
+        }
+      }
+      if (calleeLeaf) push("calls", source, calleeLeaf)
+      if (calleeLeaf === "setmetatable" && argList.length >= 2) {
+        const src = leaf(argList[0])
+        const mt = leaf(argList[1])
+        const targetIsTable = argList[0]?.type === "table_constructor"
+        if (src && mt && src !== mt && !targetIsTable) push("extends", src, mt)
+      }
+      for (const a of argList) walk(a)
+      // the callee expression can itself contain calls (e.g. `f()()`) — walk it too
+      walk(fnNode)
+      return
+    }
+    for (const c of children(n)) walk(c)
+  }
+  walk(root)
+  // overrides: a written declaration path declared more than once (the analyzer's redefinition rule)
+  const byPath = new Map<string, number>()
+  for (const d of declSites) byPath.set(d.path, (byPath.get(d.path) ?? 0) + 1)
+  for (const [p, count] of byPath) {
+    if (count < 2) continue
+    const parts = p.split(".")
+    const member = parts.pop() as string
+    const owner = parts.join(".")
+    push("overrides", owner || "global", member)
+  }
+  return edges
+}

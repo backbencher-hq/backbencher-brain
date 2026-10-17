@@ -1,8 +1,8 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 14.58,
-    "loadAvgEnd": 14.58,
+    "loadAvgStart": 20.32,
+    "loadAvgEnd": 21.43,
     "sliceCount": 1
   },
   "counts": {
