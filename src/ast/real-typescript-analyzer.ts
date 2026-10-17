@@ -4986,6 +4986,132 @@ class TypeScriptAnalysisRunner {
   }
 
   /**
+   * RECEIVER TYPES for a member call on a LOCAL variable, read off the syntax.
+   *
+   * Measured 2026-10-17 on a three-file program (src/used.ts, src/orphan.ts,
+   * src/main.ts; both classes declare `run`, and main does
+   * `const c = new UsedClass(); return c.run()`): the call published nothing but
+   * the LEAF NAME `run`, so the store's name-based binding picked
+   * `src/orphan.ts:run` — a file main never imports — at confidence 0.9, and
+   * bb_graph served it as a callee while the true `src/used.ts:run` edge was
+   * absent. `verify-patterns` caught the symptom: orphan.ts could never be
+   * reported as an orphaned file because a fabricated edge "referenced" it.
+   *
+   * The repair uses the channel the store already has. A `calls` row carrying
+   * `metadata.owner` is re-resolved by `resolveMemberTargetsByOwner` inside that
+   * class, so a WRONG name binding is replaced by the receiver's real one. This
+   * pass supplies the owner from the two syntactic forms that state it without
+   * inference:
+   *
+   *   const c = new UsedClass()        -> c: UsedClass
+   *   const c: UsedClass = make()      -> c: UsedClass
+   *
+   * Deliberately NOT included: parameter annotations, assignment after
+   * declaration, `as` casts, and factory returns. Each needs flow analysis this
+   * pass does not have, and a WRONG owner is worse than no owner — it would
+   * rewrite a binding that is currently correct. A name declared with two
+   * different types in one file is dropped for the same reason: shadowing makes
+   * the file-level answer ambiguous, so the row keeps the binding it had.
+   *
+   * MEASURED ON REAL CODE (graphql-js/src, 24,801 `calls` rows, full re-index of
+   * a fresh copy both arms, 2026-10-17): 958 rows now carry a receiver type; of
+   * the 493 whose target resolves inside a class, 493/493 agree with the receiver
+   * (owner-consistent). The cost is visible and was counted the same way: 423
+   * rows the name binding had resolved are now UNRESOLVED, and of those, 404 had
+   * landed in a DIFFERENT class than the receiver (`Array.push` bound to
+   * QueueExecutorOptions.push; `Map.get` bound to spyOn.get), 16 on a free
+   * function, and only 3 in the receiver's own class. Those 423 are built-in
+   * receivers the index does not model (Array 214, Map 107, AbortController 60,
+   * Set 48), so the honest answer for them is "no target symbol", not a stranger.
+   */
+  private collectLocalReceiverTypes(root: Node): Map<string, string> {
+    const types = new Map<string, string>()
+    const conflicted = new Set<string>()
+    const stack: Node[] = [root]
+    while (stack.length) {
+      const n = stack.pop()!
+      if (n.type === "variable_declarator") {
+        // A destructuring pattern states no single variable; `namedChild(0)` is
+        // an object_pattern/array_pattern there, which the identifier test drops.
+        // (The 3 same-class losses in the measurement above are the price of not
+        // guessing: they are rows whose member belongs to the receiver's class
+        // by name but which the pass left unresolved, and a repair there belongs
+        // in the member-owner pass, not in a wider guess here.)
+        const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
+        if (nameNode && nameNode.type === "identifier") {
+          const type = this.declaratorTypeName(n)
+          if (type) {
+            const name = nameNode.text
+            const previous = types.get(name)
+            if (previous === undefined) {
+              if (!conflicted.has(name)) types.set(name, type)
+            } else if (previous !== type) {
+              types.delete(name)
+              conflicted.add(name)
+            }
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return types
+  }
+
+  /** The class a declarator names, from `= new X(...)` or from a `: X` annotation. */
+  private declaratorTypeName(n: Node): string | null {
+    const value = n.childForFieldName("value")
+    if (value && value.type === "new_expression") {
+      const ctor = value.namedChild(0)
+      const leaf = ctor ? this.typeLeafName(ctor) : null
+      if (leaf) return leaf
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const child = n.namedChild(i)
+      if (child && child.type === "type_annotation") {
+        const inner = child.namedChild(0)
+        return inner ? this.typeLeafName(inner) : null
+      }
+    }
+    return null
+  }
+
+  /**
+   * `UsedClass`, `ns.UsedClass`, `UsedClass<T>` -> `UsedClass`.
+   * Unions, intersections and function types return null: they name no single
+   * owner, and picking one member of a union would be a guess.
+   */
+  private typeLeafName(node: Node): string | null {
+    if (node.type === "identifier" || node.type === "type_identifier") {
+      return /^[A-Za-z_$][\w$]*$/.test(node.text) ? node.text : null
+    }
+    if (node.type === "nested_identifier" || node.type === "member_expression") {
+      const property = node.childForFieldName("property") ?? node.namedChild(node.namedChildCount - 1)
+      return property && property.type === "identifier" ? this.typeLeafName(property) : null
+    }
+    if (node.type === "generic_type") {
+      const nameNode = node.childForFieldName("name") ?? node.namedChild(0)
+      return nameNode ? this.typeLeafName(nameNode) : null
+    }
+    return null
+  }
+
+  /**
+   * The owner a member call states, or undefined when the receiver is not a
+   * local variable with one known type. `this`/`super` are left alone: their
+   * rows are resolved through the SOURCE symbol's own owner, a different and
+   * already-implemented channel, and naming an owner here would double-claim.
+   */
+  private receiverOwnerType(callee: Node, types: Map<string, string>): string | undefined {
+    if (callee.type !== "member_expression") return undefined
+    const object = callee.childForFieldName("object") ?? callee.namedChild(0)
+    if (!object || object.type !== "identifier") return undefined
+    return types.get(object.text)
+  }
+
+  /**
    * ONE walk for BOTH edge kinds that need only the enclosing symbol: `calls`
    * and `instantiates`. They were two full-tree traversals that each re-resolved
    * the enclosing symbol at every node (the same `resolveRelationshipSymbol`
@@ -5003,6 +5129,10 @@ class TypeScriptAnalysisRunner {
     // See `inDecoratorPosition`: web-tree-sitter's `.parent` is a WASM descendant
     // search, so the old per-node climb was O(n x depth) of expensive calls and
     // profiled at 5.2% of the vue lane's wall clock.
+    // Read once per file, before the walk: the declaration of a receiver is not
+    // guaranteed to precede its call in every construct (hoisted function
+    // bodies, closures), so an in-walk map would miss it on order alone.
+    const receiverTypes = this.collectLocalReceiverTypes(node)
     const processNode = (
       n: Node,
       currentSymbol: ASTEngine.UniversalSymbol | null,
@@ -5082,6 +5212,10 @@ class TypeScriptAnalysisRunner {
               // Filtered builtins (console output, Object leaf methods, super)
             } else {
 
+            // The receiver's type, when the syntax states one. See
+            // collectLocalReceiverTypes for why this is the difference between
+            // a fabricated edge and the real one on `const c = new Foo(); c.m()`.
+            const ownerType = this.receiverOwnerType(callee, receiverTypes)
             relationships.push({
               source: callSource.name,
               target: targetName,
@@ -5092,6 +5226,10 @@ class TypeScriptAnalysisRunner {
               ...this.lineField(callee.type === "member_expression" ? (callee.childForFieldName("property") ?? callee) : callee),
               metadata: {
                 calleeExpression: callee.text,
+                // The receiver's declared type, when the syntax states one. The
+                // store re-resolves the row inside that class (member-owner pass),
+                // which is what stops `c.run()` binding to another file's `run`.
+                ...(ownerType ? { owner: ownerType } : {}),
                 // WHICH WRAPPER THE LEAF WAS REDUCED THROUGH, recorded only when there was
                 // one. A consumer can then tell `(foo)()` from `foo()` and `foo!()` from
                 // `foo()` without re-parsing, and an audit of `calleeLeafName`'s allowlist

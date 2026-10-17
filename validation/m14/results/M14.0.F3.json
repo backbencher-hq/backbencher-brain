@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "10e7e1c13c6999826c3f2d7c4d6b3efab5036b13786e2a896d4572c0e7b94548",
-    "sealedAt": "2026-10-17T18:21:55.000Z"
+    "contentSha256": "be56d27f2fc295e855ba21ca22e3bcb512217fdbc17ca080f08fab913d0ae733",
+    "sealedAt": "2026-10-17T19:13:27.000Z"
   },
   "checks": [
     {
@@ -19,7 +19,7 @@
     },
     {
       "description": "javascript adversarial fixtures",
-      "detail": "76/77 fixtures pass",
+      "detail": "77/78 fixtures pass",
       "id": "fixtures-javascript",
       "status": "fail"
     },
@@ -181,7 +181,7 @@
     },
     {
       "description": "yaml adversarial fixtures",
-      "detail": "36/36 fixtures pass",
+      "detail": "37/37 fixtures pass",
       "id": "fixtures-yaml",
       "status": "pass"
     },
@@ -271,13 +271,13 @@
     },
     {
       "description": "bash adversarial fixtures",
-      "detail": "34/34 fixtures pass",
+      "detail": "35/35 fixtures pass",
       "id": "fixtures-bash",
       "status": "pass"
     },
     {
       "description": "json adversarial fixtures",
-      "detail": "18/18 fixtures pass",
+      "detail": "19/19 fixtures pass",
       "id": "fixtures-json",
       "status": "pass"
     },
@@ -295,8 +295,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "0df683b360ce4f067c230d81ebcf6c7f0cbea996",
-  "committedAt": "2026-10-17T14:21:55-04:00",
+  "commit": "0d53223e1cf24b8ea983799aa1d0d37999060540",
+  "committedAt": "2026-10-17T15:13:27-04:00",
   "data": {
     "details": [
       {
@@ -1033,6 +1033,11 @@
       },
       {
         "fixture": "javascript/qualified-call-path",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/receiver-owner-from-new",
         "ok": true,
         "problems": []
       },
@@ -6860,6 +6865,11 @@
         "problems": []
       },
       {
+        "fixture": "yaml/uses-alias-nonmerge",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "yaml/value-vocabulary",
         "ok": true,
         "problems": []
@@ -8093,6 +8103,11 @@
         "problems": []
       },
       {
+        "fixture": "bash/no-instantiation",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "bash/order-independent-attribution",
         "ok": true,
         "problems": []
@@ -8244,6 +8259,11 @@
       },
       {
         "fixture": "json/manifest/package",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "json/package",
         "ok": true,
         "problems": []
       },
@@ -8506,7 +8526,7 @@
     "summary": {
       "bash": {
         "fail": 0,
-        "pass": 34
+        "pass": 35
       },
       "c": {
         "fail": 3,
@@ -8578,11 +8598,11 @@
       },
       "javascript": {
         "fail": 1,
-        "pass": 76
+        "pass": 77
       },
       "json": {
         "fail": 0,
-        "pass": 18
+        "pass": 19
       },
       "julia": {
         "fail": 0,
@@ -8690,7 +8710,7 @@
       },
       "yaml": {
         "fail": 0,
-        "pass": 36
+        "pass": 37
       },
       "zig": {
         "fail": 0,
@@ -8711,8 +8731,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-17T14:21:55-04:00",
-  "regeneratedAtCommit": "0df683b360ce4f067c230d81ebcf6c7f0cbea996",
+  "regeneratedAt": "2026-10-17T15:13:27-04:00",
+  "regeneratedAtCommit": "0d53223e1cf24b8ea983799aa1d0d37999060540",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

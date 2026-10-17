@@ -1870,6 +1870,55 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * RECEIVER TYPES for a member call on a LOCAL variable — the JavaScript twin of
+   * the TypeScript pass (`collectLocalReceiverTypes` there, where the three-file
+   * measurement and the reasoning live).
+   *
+   * JavaScript states a receiver's type in exactly one syntactic form: an
+   * initialiser. `const c = new Foo()` is the whole rule here; there are no type
+   * annotations to read, which is why this map is smaller than the TS one rather
+   * than narrower by choice. A name declared with two different constructors in
+   * one file is dropped: shadowing makes the file-level answer a guess, and a
+   * wrong owner rewrites a binding that is currently right.
+   */
+  private collectLocalReceiverTypes(root: Node): Map<string, string> {
+    const types = new Map<string, string>()
+    const conflicted = new Set<string>()
+    const stack: Node[] = [root]
+    while (stack.length) {
+      const n = stack.pop()!
+      if (n.type === "variable_declarator") {
+        const nameNode = n.childForFieldName("name")
+        const value = n.childForFieldName("value")
+        if (nameNode && nameNode.type === "identifier" && value && value.type === "new_expression") {
+          const ctor = value.childForFieldName("constructor") ?? value.namedChild(0)
+          let leaf: string | null = null
+          if (ctor?.type === "identifier") leaf = ctor.text
+          else if (ctor?.type === "member_expression") {
+            const prop = ctor.childForFieldName("property")
+            leaf = prop ? prop.text : null
+          }
+          if (leaf) {
+            const name = nameNode.text
+            const previous = types.get(name)
+            if (previous === undefined) {
+              if (!conflicted.has(name)) types.set(name, leaf)
+            } else if (previous !== leaf) {
+              types.delete(name)
+              conflicted.add(name)
+            }
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return types
+  }
+
   private extractCallRelationships(
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
@@ -1877,6 +1926,9 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     moduleName: string,
     deadSpans: { s: number; e: number }[] = [],
   ): void {
+    // Read once per file, before the walk: a declaration need not precede its use
+    // in every construct (hoisted functions, closures).
+    const receiverTypes = this.collectLocalReceiverTypes(node)
     const resolveCurrent = (n: Node, current: string | null): string | null => {
       // Current call source = enclosing function/method leaf name
       const fnName = n.childForFieldName?.("name")?.text
@@ -1975,7 +2027,20 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               // The callee LEAF — for `a.b.c()` the property node, so a chain's
               // call does not take the chain's opening line.
               ...this.lineField(fn.type === "member_expression" ? (fn.childForFieldName("property") ?? fn) : fn),
-              metadata: { calleeExpression: fullCallee },
+              metadata: {
+                calleeExpression: fullCallee,
+                // The receiver's constructed type, when the syntax states one.
+                // The store re-resolves the row inside that class (member-owner
+                // pass), which is what stops `c.run()` binding to another file's
+                // same-named method — measured on the TS twin, same shape here.
+                ...(fn.type === "member_expression"
+                  ? (() => {
+                      const object = fn.childForFieldName("object")
+                      const owner = object && object.type === "identifier" ? receiverTypes.get(object.text) : undefined
+                      return owner ? { owner } : {}
+                    })()
+                  : {}),
+              },
             })
           }
         }

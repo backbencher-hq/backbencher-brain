@@ -2662,3 +2662,54 @@ Carried forward from pass 2 and still the correctness instruments: `ontology-cen
 ## Issue
 
 M12.33 / GitHub issue #172.
+
+## #419 completeness inventory (2026-10-17) — the grammar-driven census
+
+The lane's `script/m14/spec/sql-completeness.json` is now READ by
+`script/m14/completeness-inventory.ts`, which asks the grammar-driven question the emission gates
+cannot: **every named node type the pinned `wasm/tree-sitter-sql.wasm` produces must land in exactly one
+bucket** — `handled_verified`, `internal_silent`, `gap` or `design_decision` — because silence is guilt.
+
+**MEASURED with the gate's own oracle** (web-tree-sitter `nodeTypeIsNamed`/`nodeTypeForId`,
+`_`-prefixed excluded, `ERROR`/`MISSING` added): **596 named node types**; the spec classifies
+`82 handled_verified · 478 internal_silent · 17 gaps · 25 decisions`, with **0 unclassified and 0
+stale**.
+
+**What this round added, and why it is a ruling rather than a tally.** 431 types had no bucket. 330 are
+`keyword_*` and fall under SQL-D3's class ruling ("a keyword is never a table and never a function"), so
+they are `internal_silent` — the bucket already applied to 63 keyword rows. 20 are SQL type SPELLINGS
+(`int`, `varchar`, `decimal`, …): a type token is not a declaration, and the analyzer reads the written
+type through `custom_type`/`object_reference`, so the token emits nothing. 10 are expression/operator
+nodes and 33 are statement containers or decorations (children of handled statements, or fields the
+analyzer never reads). **These are deliberate no-emission classifications, not absences.**
+
+Two families are NOT silent and were filed as gaps rather than quietly bucketed:
+
+* **SQL-G18** — six removal/refresh statements (`drop_materialized_view`, `drop_database`, `drop_role`,
+  `drop_extension`, `drop_procedure`, `refresh_materialized_view`) have no analyzer arm, while ten
+  sibling `drop_*` statements do. `drop_extension` is the sharpest: its counterpart `create_extension`
+  IS emitted as an `imports` edge (SQL-D11), so the graph can gain a dependency and never lose it.
+* **SQL-G19** — **thirteen `plpgsql_*` node types exist in the pinned grammar and the analyzer reads
+  none of them.** This corrects SQL-G7's phrasing that PL/pgSQL scaffolding is "absent from the wired
+  grammar": the types are DECLARED there; what is absent is their REACHABILITY, because
+  `do_statement`/`function_body` consume a dollar-quoted body as an opaque token.
+
+And one new ruling, **SQL-D25**: the thirteen `ALTER`/`RENAME`/`SET`/`CHANGE` statement node types emit
+nothing BY DESIGN — each MUTATES a declaration made elsewhere and none declares a new symbol. That ruling
+deliberately does not extend to `DROP`, which is why the six removals are a gap and these are not.
+
+**Grammar drift, recorded rather than deleted silently.** Fifteen rows named node types the pinned wasm
+no longer produces and were removed (`_drift_2026_10_17`); all fifteen were `internal_silent`, so no
+emission claim moved. The `error` row was a SPELLING bug, not drift — the wasm produces the universal
+`ERROR` node and never lowercase `error`; the row was replaced by `ERROR`/`MISSING` and SQL-D10's error
+channel is unchanged.
+
+**Section status through the gate itself** (config proposed, Lead-owned file): A, C, D, G, H pass;
+**B is blocked on a gate measurement artefact** — the reverse check parses every top-level non-JSON file
+in the fixtures directory, and this lane keeps ~25 `.ts`/`.mts` instruments beside its fixtures, so
+`sql-contains-oracle.mts` is parsed as TypeScript and its `exports` kind was attributed to this analyzer,
+which emits none (SQL-D16). The proposed fix is a `fixtureExtensions?: string[]` field on `LangConfig`
+(`[".sql"]` for this lane), defaulting to today's behaviour. **`exports` was NOT added to
+`requiredKinds`** — that would certify a kind the analyzer does not emit. E/F await the canonical
+baseline sweep, and E is additionally blocked by SQL-G14 (no SQL differential oracle), so the lane is
+**INVENTORY-DONE**, not CONFORMANT. Full record: `validation/m14/verification/SQL-STATE.md`.

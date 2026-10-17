@@ -17,6 +17,17 @@ import { ASTEngine } from "./engine"
  * guess: the file is holding it. What was missing was a spelling the store could bind, because a
  * bare name answers to every declaration in the project.
  */
+/**
+ * `instantiates` IS NEVER EMITTED, and round 15 (2026-10-17) made that a testable claim rather
+ * than a sentence: bash has no construction form (0 of the 280 pinned node types is a
+ * construction-of-a-declared-type node; 0 corpus sites), the spec rules it `grammar-absence`, and
+ * `fixtures/bash/no-instantiation` pins the ABSENCE with a forbid row over array literals,
+ * `declare -A`, a command literally named `new`, a factory function and command substitution.
+ * A `completeness-inventory` section-B reading of "bash EMITS instantiates" is an instrument
+ * artifact: its `emittedKinds()` parses every non-JSON file in the fixture directory, including
+ * 65 `.ts`/`.mts` helper modules, and attributes the TypeScript analyzer's `new X()` rows to this
+ * lane (43 rows measured, every one detected as `typescript`). See BASH-STATE §SECTION B.
+ */
 const BASH_REPO_ROOT = new Map<string, string>()
 function bashRepoRootOf(filePath: string): string {
   const abs = path.resolve(filePath)

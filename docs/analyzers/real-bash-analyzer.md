@@ -150,7 +150,7 @@ reason and not as a single figure.
 | `overrides` | **EMITTED** | **138** | 28 | **138 of 138 (100%)** — definitional | same |
 | `extends` | **RULED — never emitted** | 0 | 0 | n/a | instrument A, now corpus-independent — see round 14 |
 | `implements` | **RULED — never emitted** | 0 | 0 | n/a | instrument A, now corpus-independent — see round 14 |
-| `instantiates` | **RULED — never emitted** | 0 | 0 | n/a | instrument A, now corpus-independent — see round 14 |
+| `instantiates` | **RULED — never emitted** | 0 | 0 | n/a | instrument A, now corpus-independent — see round 14. **Round 15 (2026-10-17): pinned by `fixtures/bash/no-instantiation` (forbid row); a `completeness-inventory` reading of "bash EMITS instantiates" is an instrument artifact — its `emittedKinds()` parses the 65 `.ts`/`.mts` helper modules in this fixture directory, and the 43 rows all carry detected language `typescript`. The `.sh`/`.bash` sources emit exactly 7 kinds, never this one** |
 
 **Every number in this table is pinned to a corpus, and round 14 made the pin a
 value rather than a sentence.** `setHash d0c89242a59a3fa0f3aae9f4e035c3520ee07fbb9019d712f6392ad80cb00b72`

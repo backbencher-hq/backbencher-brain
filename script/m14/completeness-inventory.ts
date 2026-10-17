@@ -1081,7 +1081,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // which runs this lane over its OWN fixture sources and fails a kind that is emitted
     // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
     // expectation files, so the forward check (required => pinned) stays green.
-    requiredKinds: ["contains", "extends", "imports", "references", "calls", "exports", "overrides"],
+    requiredKinds: ["contains", "extends", "imports", "references", "calls", "exports", "overrides", "uses"],
   payloads: {
     complexity: { key: "expectComplexity", pin: "yaml/payload-complexity (addressable-subtree size per symbol, the family's complexity definition)" },
     docstring: { key: "expectDocstring", pin: "yaml/comment-attribution (a comment is documentation; attribution is positional — same or shallower column, immediately preceding)" },
@@ -1098,7 +1098,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
 // than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
 // degenerate invocation_expression subtrees) — bounded to that corpus corner.
-const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl"]
+const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl", "css"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
@@ -1249,15 +1249,43 @@ async function emittedKinds(cfg: LangConfig): Promise<Set<string>> {
   const dir = path.join(ROOT, cfg.fixturesDir)
   if (!fs.existsSync(dir)) return out
   if (!fs.existsSync(path.join(ROOT, "src", "ast", `real-${cfg.id}-analyzer.ts`))) return out
-  const sources = fs.readdirSync(dir).filter((f) => {
-    if (f.endsWith(".json")) return false
-    try { return fs.statSync(path.join(dir, f)).isFile() } catch { return false }
-  })
-  if (!sources.length) return out
-  // The lane's own sample, which is also the universe `pinned` is read from, so
-  // both halves of this section describe the same files.
+  // *** THE SOURCE UNIVERSE IS THE ONE THE EXPECTATIONS DESCRIBE, NOT EVERY FILE IN THE DIRECTORY. ***
+  //
+  // This function used to parse EVERY non-.json file in the fixtures directory. Most lane directories
+  // hold committed PROBES and CENSUS SCRIPTS next to their fixtures -- .ts/.mts/.py/.sh tools that
+  // produced the lane's own evidence -- and `ASTEngine.parseFile` routes by path, so parsing them ran a
+  // DIFFERENT LANGUAGE'S analyzer and attributed its edges to this lane. Measured 2026-10-17: 32 lanes
+  // had foreign source in their fixture directory; typescript 102 of 103 files, bash 100 of 101,
+  // dart 81 of 116, python 73 of 92, zig 70 of 87.
+  //
+  // The concrete damage, found by yaml's owner: yaml's four committed .ts probes were parsed, the
+  // TYPESCRIPT analyzer emitted 4 `instantiates` edges from them, and section B reported `instantiates`
+  // as a kind YAML emits. YAML has no such emission (`grep -c Instantiates` = 0) and its own ruling
+  // D11 declares instantiates a grammar absence -- so the gate was asking the lane to name a
+  // relationship it cannot produce, in an instrument whose whole purpose is to not do that.
+  //
+  // The pairing is already on disk: `<name>.expectation.json` describes `<name>.<ext>`, and some
+  // expectations name their fixture outright in a `fixture` field. THIS IS THE SAME UNIVERSE `pinned`
+  // IS READ FROM -- which this comment always claimed and the code did not do.
+  const sources: string[] = []
+  for (const f of fs.readdirSync(dir)) {
+    if (!f.endsWith(".expectation.json")) continue
+    const base = f.slice(0, -".expectation.json".length)
+    let declared: string | null = null
+    try {
+      const exp = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"))
+      if (typeof exp.fixture === "string") declared = path.basename(exp.fixture)
+    } catch { /* an unreadable expectation pins nothing; the forward half reports it */ }
+    if (declared && fs.existsSync(path.join(dir, declared))) { sources.push(declared); continue }
+    for (const g of fs.readdirSync(dir)) {
+      if (!g.startsWith(base + ".") || g.endsWith(".json")) continue
+      try { if (fs.statSync(path.join(dir, g)).isFile()) sources.push(g) } catch { /* ignore */ }
+    }
+  }
+  const uniqueSources = [...new Set(sources)]
+  if (!uniqueSources.length) return out
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
-  for (const f of sources) {
+  for (const f of uniqueSources) {
     let src: string
     try { src = fs.readFileSync(path.join(dir, f), "utf8") } catch { continue }
     let res: any

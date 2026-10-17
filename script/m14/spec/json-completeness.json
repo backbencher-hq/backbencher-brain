@@ -35,22 +35,55 @@
   "_authority": "f5_tree_oracle (script/m14/oracles/json.ts) — an independent walk of the tree that shares no rule table, key set, path helper or resolver with src/ast/real-json-analyzer.ts",
   "_wave": "M14 / M60 lane wave, json — 2026-09-27",
   "handled_verified": {
-    "object": "a `pair` under an `object` is contained by that object; the SOURCE is the parent SYMBOL's name, never its qualified path",
-    "pair": "the key/value unit; a value that is itself an object or array is descended into",
-    "array": "a LEAF of scalars but a CONTAINER of objects: an object element is a `class` symbol named `<array>[i]` and is contained by the array",
-    "string": "a leaf value; its `string_content` child is the name, never the quoted text",
-    "number": "a leaf value",
-    "true": "a leaf value",
-    "false": "a leaf value",
-    "null": "a leaf value",
-    "document": "the wrapper; may hold an object, an array, or SEVERAL values (concatenated documents are real input and every one is walked)",
-    "comment": "accepted and silent — a JSONC comment is a grammar construct with no identifier to name",
-    "escape_sequence": "inside `string_content`; never a symbol",
-    "string_content": "the declared NAME of a key or a value's text"
+    "_description": "Node types whose construct PRODUCES a symbol or a relationship, or whose result the analyzer CONSULTS before emitting. Re-bucketed 2026-10-17 against the completeness-inventory contract (handled_verified = emits correctly; internal_silent = container/literal/keyword correctly emitting nothing); the historic spec had all twelve named types here, including two whose own prose said they were silent — that was the bucket-as-parking-space defect this round is closing.",
+    "types": [
+      "object",
+      "pair",
+      "array",
+      "string_content",
+      "ERROR"
+    ],
+    "_perType": {
+      "object": "a `pair` under an `object` is contained by that object; the SOURCE is the parent SYMBOL's name, never its qualified path",
+      "pair": "the key/value unit; a value that is itself an object or array is descended into",
+      "array": "a LEAF of scalars but a CONTAINER of objects: an object element is a `class` symbol named `<array>[i]` and is contained by the array",
+      "string": "a leaf value; its `string_content` child is the name, never the quoted text",
+      "number": "a leaf value",
+      "true": "a leaf value",
+      "false": "a leaf value",
+      "null": "a leaf value",
+      "document": "the wrapper; may hold an object, an array, or SEVERAL values (concatenated documents are real input and every one is walked)",
+      "comment": "accepted and silent — a JSONC comment is a grammar construct with no identifier to name",
+      "escape_sequence": "inside `string_content`; never a symbol",
+      "string_content": "the declared NAME of a key or a value's text",
+      "ERROR": "the parser's recovery NODE, not a construct: the analyzer CONSULTS it to mark a document damaged (damagedFiles) and emits no relationship from it",
+      "MISSING": "the parser's INSERT-RECOVERY marker for a missing token: it is damage, never a construct, and correctly emits nothing"
+    }
   },
   "internal_silent": {
-    "_description": "Nothing in the JSON grammar is a container that carries a relationship of its own. `document`, `pair`, `string_content` and `escape_sequence` are structure: a `pair` is reached through its enclosing `object`, a `string_content` supplies the name of the `string` above it, and an `escape_sequence` is text inside a string. Each was confirmed against the grammar's node list rather than assumed.",
-    "container_inventory": "The grammar yields 12 named types and 2 fields, and they are the complete vocabulary. There is no node type that is a declaration container independent of `object`."
+    "_description": "Node types whose construct is CORRECTLY absorbed with no emission. Each is named with the construct it covers, because a bucket is a ruling, not a place to park something unlooked-at.",
+    "types": [
+      "document",
+      "string",
+      "number",
+      "true",
+      "false",
+      "null",
+      "comment",
+      "escape_sequence",
+      "MISSING"
+    ],
+    "_perType": {
+      "document": "the wrapper around one or more top-level values (concatenated documents are real input and every one is WALKED); it names nothing and emits nothing",
+      "string": "the QUOTED VALUE wrapper: its name-bearing child is `string_content`; as a bare value it is data carried by its `pair`, and the wrapper itself emits nothing",
+      "number": "a literal VALUE node: its text is data carried by its `pair`, not a declaration",
+      "true": "a literal VALUE node: data carried by its `pair`, never a name",
+      "false": "a literal VALUE node: data carried by its `pair`, never a name",
+      "null": "a literal VALUE node: data carried by its `pair`, never a name",
+      "comment": "a JSONC `// …` or `/* … */` construct: text with no identifier to name (the historic prose already said 'accepted and silent' while the spec filed it as handled — that contradiction is what this re-bucketing fixes)",
+      "escape_sequence": "a `\\\"` / `\\uXXXX` token INSIDE a string: it is spelling, never a symbol, and the emitted value carries the decoded text anyway",
+      "MISSING": "the parser's insert-recovery marker for a missing token: damage, never a construct"
+    }
   },
   "gap": {
     "description": "JSON has no names. A key is unique only WITHIN its object, and the store resolves relationship endpoints by name, so 64.54% of the lane's endpoints are ambiguous and 1.97% name no symbol. This is a property of the LANGUAGE, not a defect, and it is NOT closed by a store-side change: measured, name resolves 32.92% uniquely, qualifiedName 5.25%, and EITHER only 34.92% — the two indexes barely compose because `contains` sources are bare names while `references` sources are full paths, so the information is not present in the edge.",
@@ -79,7 +112,6 @@
       {
         "id": "JSON-G3",
         "severity": "open",
-        "node_type": "array",
         "missing": "A document whose TOP-LEVEL value is an array publishes the same qualified identity TWICE when two elements share a nested key shape: `DictionaryInference[1].rec2.1` and its child `.a` are each published twice, so the `contains` and `overrides` edges that name them are ambiguous by declaration inside one file.",
         "measured_size": "1 of 400 documents (`FSharp.Data/tests/FSharp.Data.Tests/Data/DictionaryInference.json`), 2 duplicated identities, 2 duplicated edges — and it is the WHOLE of the lane's ambiguous column at that scope: the 400-file gate reads 5 ambiguous edges (4 `contains` + 1 `overrides`), every one of them this file (`bun .tmp-probe/json-lane/json-dup-probe.mts 400`).",
         "ruling": "OPEN, and deliberately not fixed in the round that found it: the array walk is the part of this analyzer with the most recorded defect history (the bracketed-index rule, the nested-array item name, the top-level-array offset), so a late edit to it would be a change made with no fixture for the shape. The shape is now measured and named, which is what a next pass needs."

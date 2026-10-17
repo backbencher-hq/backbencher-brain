@@ -31,6 +31,7 @@
       "break_statement",
       "call_expression",
       "catch_clause",
+      "class",
       "class_body",
       "class_declaration",
       "class_heritage",

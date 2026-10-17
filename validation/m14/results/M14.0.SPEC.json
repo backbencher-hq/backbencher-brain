@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "2997f7b3e6b1f967a8fc7896b69f79b61f205cee70bec8e4c2aee35441d445d2",
-    "sealedAt": "2026-10-17T18:50:46.000Z"
+    "contentSha256": "fab6f2068fda681be296265282be965fe6697f1e0fe43136e1327c63bdfba9a8",
+    "sealedAt": "2026-10-17T19:13:27.000Z"
   },
   "checks": [
     {
@@ -373,80 +373,6 @@
       "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "typescript",
-      "status": "pass"
-    },
-    {
-      "description": "javascript: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "javascript: 9 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "javascript: 16 ruled, 14 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (javascript)",
-      "detail": "125 types, 89 handled, 20 silent, 9 gaps, 30 decisions",
-      "id": "section-a-structural",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "9 relationship kinds pinned by javascript fixtures",
-      "detail": "pinned: calls, contains, exports, extends, imports, instanceof_check, instantiates, overrides, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for javascript (5)",
-      "detail": "qualified_calls, docstrings, complexity, visibility, parameters",
-      "id": "section-c-payload-matrix",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "3 tier(s) pinned: import_based, inferred, structural",
-      "id": "section-d-evidence-tiers",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "lodash:javascript at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor lodash:javascript: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "javascript avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "lodash:javascript 193.7 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "javascript analyzer docs present and committed",
-      "detail": "docs/analyzers/javascript.md, docs/analyzers/real-javascript-analyzer.md",
-      "id": "section-g-docs",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "javascript",
       "status": "pass"
     },
     {
@@ -1558,11 +1484,233 @@
       "id": "section-h-cross-language",
       "language": "c",
       "status": "pass"
+    },
+    {
+      "description": "javascript: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript: 14 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript: 33 ruled, 19 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (javascript)",
+      "detail": "127 types, 89 handled, 19 silent, 14 gaps, 52 decisions",
+      "id": "section-a-structural",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "9 relationship kinds pinned by javascript fixtures; 9 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, extends, imports, instanceof_check, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, imports, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for javascript (5)",
+      "detail": "qualified_calls, docstrings, complexity, visibility, parameters",
+      "id": "section-c-payload-matrix",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, inferred, structural",
+      "id": "section-d-evidence-tiers",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "lodash:javascript at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor lodash:javascript: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "lodash:javascript 1724.9 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript analyzer docs present and committed",
+      "detail": "docs/analyzers/javascript.md, docs/analyzers/real-javascript-analyzer.md",
+      "id": "section-g-docs",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "css: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "css: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "css: 14 ruled, 4 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (css)",
+      "detail": "84 types, 59 handled, 7 silent, 0 gaps, 18 decisions",
+      "id": "section-a-structural",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "5 relationship kinds pinned by css fixtures; 5 emitted and all accounted for",
+      "detail": "pinned: contains, imports, overrides, references, uses; emitted: contains, imports, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for css (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "svelte:css at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor svelte:css: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "css avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "svelte:css 1.408 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "css analyzer docs present and committed",
+      "detail": "docs/analyzers/real-css-analyzer.md",
+      "id": "section-g-docs",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "yaml: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "yaml: 4 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "yaml: 8 ruled, 8 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (yaml)",
+      "detail": "163 types, 36 handled, 2 silent, 4 gaps, 16 decisions",
+      "id": "section-a-structural",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "8 relationship kinds pinned by yaml fixtures; 8 emitted and all accounted for",
+      "detail": "pinned: calls, contains, declared_type, exports, extends, imports, overrides, references, uses, yaml_action_use, yaml_action_use_unverified, yaml_alias, yaml_depends_on, yaml_duplicate_key, yaml_keyword_include, yaml_merge, yaml_resource_ref, yaml_schema_publication, yaml_tag_include, yaml_workflow_call, yaml_workflow_call_unverified; emitted: calls, contains, exports, extends, imports, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for yaml (3)",
+      "detail": "complexity, docstring, qualifiedCalls",
+      "id": "section-c-payload-matrix",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "5 tier(s) pinned: import_based, inferred, reference_qualified, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "kubernetes:yaml at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor kubernetes:yaml: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "yaml avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "kubernetes:yaml 31.459 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "yaml analyzer docs present and committed",
+      "detail": "docs/analyzers/real-yaml-analyzer.md",
+      "id": "section-g-docs",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "yaml",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "bb2db515d05b30411cf06f4fdee135f01514f92c",
-  "committedAt": "2026-10-17T14:50:46-04:00",
+  "commit": "0d53223e1cf24b8ea983799aa1d0d37999060540",
+  "committedAt": "2026-10-17T15:13:27-04:00",
   "data": {
     "languages": {
       "c": {
@@ -1741,6 +1889,66 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/real-csharp-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "12 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "css": {
+        "gaps": [],
+        "nodeTypeCount": 84,
+        "pendingDecisions": [
+          "CSS-D13",
+          "CSS-D16",
+          "CSS-D17",
+          "CSS-D18"
+        ],
+        "ruledDecisions": [
+          "CSS-D1",
+          "CSS-D10",
+          "CSS-D2",
+          "CSS-D3",
+          "CSS-D4",
+          "CSS-D5",
+          "CSS-D6",
+          "CSS-D7",
+          "CSS-D8",
+          "CSS-D9",
+          "CSS-D11",
+          "CSS-D12",
+          "CSS-D14",
+          "CSS-D15"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "84 types, 59 handled, 7 silent, 0 gaps, 18 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: contains, imports, overrides, references, uses; emitted: contains, imports, overrides, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor svelte:css: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "svelte:css 1.408 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-css-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -2111,9 +2319,14 @@
           "J6: top-level const r = x instanceof T attributes the reference to 'global' instead of r — the resolveSource walk lacks variable_declarator (TS fixed this in the same wave)",
           "J7: module-level destructured bindings (const { a } = obj / const [b] = arr) emit NO symbols — TS emits them as constants (probe-verified parity gap)",
           "J8: JSX component usage emits NOTHING — <Button/> produces no edges. JSX is native to the JS grammar (8 types in the gate enumeration), unlike TS where it is a separate tsx dialect; the analyzer's detectsJsx only sets a pattern flag",
-          "JSD-744: M49 #744 (web fix wave, java #739 family contract): member-chain ROOT identifier dropped (config.inner.deeper.leaf emitted uses inner/deeper/leaf but not config) and BARE identifier reads (return config, if (flag)) emitted nothing — only member chains were scanned. Pre-fix the F5 javascript lane could not see either gap: its analyzer-side filter compared only calls, so uses was differential-invisible."
+          "JSD-744: M49 #744 (web fix wave, java #739 family contract): member-chain ROOT identifier dropped (config.inner.deeper.leaf emitted uses inner/deeper/leaf but not config) and BARE identifier reads (return config, if (flag)) emitted nothing — only member chains were scanned. Pre-fix the F5 javascript lane could not see either gap: its analyzer-side filter compared only calls, so uses was differential-invisible.",
+          "J9: TWO defects in one label. (1) `overrides` is in the javascript comparison set and the oracle derives no `overrides` truth at all, so every analyzer override edge is unmatched — the same shape as the `imports` and `extends` gaps, and the third instance in this lane. (2) The edges are largely unfounded: the analyzer matches method NAMES across a class boundary to a base it cannot resolve, and emits `overrides` for names that cannot be members of that base.",
+          "J10: `class A extends B { get x() {} }` where `B` has an accessor `x` does override it in JavaScript — accessor pairs are prototype members and a subclass accessor shadows the base one. The lane emits no `overrides` edge for it, because the analyzer classifies an accessor as `property` (a declared contract) and the override pass considers only Methods and Constructors.",
+          "J11: a `calls` TARGET is not necessarily a NAME: the callee guard tests TOKEN MEMBERSHIP (length > 100, a newline, a backtick, `${`, and `{` / `}` / `;` / `=`), so a parenthesised, conditional, sequence or call-expression callee passes the guard and the callee's own SOURCE TEXT is published in `target` — `(fn)`, `(0, interop_1.default)`, `(cond ? a : b)`, `define()`, the quoted string, `[]`. Measured through the analyzer's own output: 31 of 31,973 `calls` rows on svelte (0.097%) and 550 of 22,210 on the materialized ts tree (2.476%), beside 123 (`svelte`) and 2 (`ts`) `#private` call targets that are CORRECT and must be preserved — `this.#x()` calls a method BY NAME.",
+          "J12: A re-indexed file's inbound edges whose target name is ambiguous in the project keep whatever symbol the writer that ran FIRST happened to pick. The insert path's `resolveTargetStmt` binds a bare name by proximity (same file, then same language, then any, id tie-break) and claims a cross even when the name has many candidates; the resolution pass refuses a name that is not unique (`_res_name.cnt = 1`). Which one touches a row first depends on batch order, so the stored edge is a function of indexing ORDER, not of the source.",
+          "JSD54: an `overrides` row's target was bound to the row's OWN method - a self-edge - instead of the base member it names, whenever the base was declared in another file or was a host global"
         ],
-        "nodeTypeCount": 125,
+        "nodeTypeCount": 127,
         "pendingDecisions": [
           "JSD-calls-oracle",
           "JSD9",
@@ -2128,7 +2341,12 @@
           "JSD18",
           "JSD29",
           "JSD30",
-          "JSD31"
+          "JSD31",
+          "JSD50",
+          "JSD51",
+          "JSD52",
+          "JSD53",
+          "JSD54"
         ],
         "ruledDecisions": [
           "D1",
@@ -2146,15 +2364,32 @@
           "JSD25",
           "JSD26",
           "JSD27",
-          "JSD28"
+          "JSD28",
+          "JSD32",
+          "JSD33",
+          "JSD34",
+          "JSD35",
+          "JSD36",
+          "JSD38",
+          "JSD39",
+          "JSD40",
+          "JSD41",
+          "JSD42",
+          "JSD43",
+          "JSD44",
+          "JSD45",
+          "JSD46",
+          "JSD47",
+          "JSD48",
+          "JSD49"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "125 types, 89 handled, 20 silent, 9 gaps, 30 decisions",
+            "detail": "127 types, 89 handled, 19 silent, 14 gaps, 52 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, contains, exports, extends, imports, instanceof_check, instantiates, overrides, references, uses",
+            "detail": "pinned: calls, contains, exports, extends, imports, instanceof_check, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, imports, instantiates, overrides, references, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
@@ -2170,7 +2405,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "lodash:javascript 193.7 ms/file",
+            "detail": "lodash:javascript 1724.9 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2906,6 +3141,69 @@
           }
         }
       },
+      "yaml": {
+        "gaps": [
+          "YAML-G1: undefined",
+          "YAML-G2: undefined",
+          "YAML-G3: undefined",
+          "YAML-G4: undefined"
+        ],
+        "nodeTypeCount": 163,
+        "pendingDecisions": [
+          "YAML-D1",
+          "YAML-D2",
+          "YAML-D3",
+          "YAML-D4",
+          "YAML-D5",
+          "YAML-D6",
+          "YAML-D7",
+          "YAML-D8"
+        ],
+        "ruledDecisions": [
+          "YAML-D9",
+          "YAML-D10",
+          "YAML-D11",
+          "YAML-D12",
+          "YAML-D13",
+          "YAML-D14",
+          "YAML-D15",
+          "YAML-D16"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "163 types, 36 handled, 2 silent, 4 gaps, 16 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, declared_type, exports, extends, imports, overrides, references, uses, yaml_action_use, yaml_action_use_unverified, yaml_alias, yaml_depends_on, yaml_duplicate_key, yaml_keyword_include, yaml_merge, yaml_resource_ref, yaml_schema_publication, yaml_tag_include, yaml_workflow_call, yaml_workflow_call_unverified; emitted: calls, contains, exports, extends, imports, overrides, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity, docstring, qualifiedCalls",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "5 tier(s) pinned: import_based, inferred, reference_qualified, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor kubernetes:yaml: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "kubernetes:yaml 31.459 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-yaml-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "12 checks pass",
+            "status": "pass"
+          }
+        }
+      },
       "zig": {
         "gaps": [
           "ZIG.GAP.1: `opaque {}` types parse cleanly but emit no symbol. Zig models runtime interfaces via opaque types + function pointers (no class inheritance), so there are no fields/extends to surface; the type is intentionally not indexed.",
@@ -2993,8 +3291,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-17T14:50:46-04:00",
-  "regeneratedAtCommit": "bb2db515d05b30411cf06f4fdee135f01514f92c",
+  "regeneratedAt": "2026-10-17T15:13:27-04:00",
+  "regeneratedAtCommit": "0d53223e1cf24b8ea983799aa1d0d37999060540",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"

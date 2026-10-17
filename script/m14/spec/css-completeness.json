@@ -349,6 +349,14 @@
       "severity": "measured, unscorable on this host",
       "measured": "Both budgets are met (1.45 s over 2 files, 6.04 s over 185) but the run was measured at loadAvg1 31-37, and a row measured on a loaded box is not scored. The load-stable comparison is userCpuMsPerFile: 149.0 ms fixtures, 15.9 ms corpus.",
       "decision": "Left `unscorable` rather than re-run until the number happened to land. The gate's own rule is that a load-stable measurement is the only scorable one, and re-rolling until a host cooperates is how a red row becomes a green one without the code changing."
+    },
+    {
+      "id": "CSS-L4",
+      "scope": "THE TAILWIND SURFACE — the owner's non-negotiable: css must cover Tailwind",
+      "severity": "declared gap, measured; NOT a silence and NOT an unclassified node",
+      "measured": "Population: 28 corpus .css files that are NAMED *tailwind* or contain @apply/@tailwind, 28 parsed, 0 failed (corpus-wide: 35 paths match *tailwind*, 15 tailwind.config.* files, 64 css-family files contain @apply/@tailwind). Token occurrences in those 28: @apply 2,939 · @tailwind 27 · theme( 2 · @screen 0 · at-rules 3,153. The analyzer DOES see the files: 1,724 symbols and 1,069 relationships over them (contains 736 · references 269 · imports 52 · uses 12). WHAT IT DOES NOT REPRESENT: the @apply utility list (2,939 occurrences) is a raw text list inside an at_rule and no edge names those utilities; @tailwind (27) and theme() (2) are directive/function spellings inside at-rules and values and carry no symbol or edge. So every Tailwind rule and selector is graphed, and the Tailwind-specific NAMES are not.",
+      "cause_breakdown": "tree-sitter-css classifies an unknown at-rule as an at_rule node with a raw keyword, and the utility names after @apply are not selector or property nodes — there is no grammar node for 'text-red-500' in '@apply text-red-500'. Publishing them needs an additive pass that reads the at-rule's text and emits a reference to each utility spelling (the utilities' DEFINITIONS live in Tailwind's generated output, outside the corpus, so an edge would be external-by-construction).",
+      "decision": "RECORDED AS A GAP, not claimed as coverage: the lane does not emit Tailwind utility references and must not be read as doing so. An additive @apply-utility pass is priced (one pass over at_rule nodes, one edge per whitespace-separated utility) and is NOT part of this lane-pass wave; the counts above are the falsifier that would prove it if implemented (~2,939 references over these 28 files)."
     }
   ],
   "gap": {
