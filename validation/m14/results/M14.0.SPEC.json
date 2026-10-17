@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "0acba792a421ca0c8e06a9a595ea4da978baf17a87548114d7d1803d7942e54a",
-    "sealedAt": "2026-10-17T23:36:37.000Z"
+    "contentSha256": "cac1dea9a9ed80e75fe19c6353ab893c15245ce26b873770dd3ad91ed6fd7910",
+    "sealedAt": "2026-10-17T23:38:24.000Z"
   },
   "checks": [
     {
@@ -595,80 +595,6 @@
       "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "java",
-      "status": "pass"
-    },
-    {
-      "description": "yaml: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "yaml",
-      "status": "pass"
-    },
-    {
-      "description": "yaml: 4 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "yaml",
-      "status": "pass"
-    },
-    {
-      "description": "yaml: 8 ruled, 8 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "yaml",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (yaml)",
-      "detail": "38 types, 36 handled, 2 silent, 4 gaps, 16 decisions",
-      "id": "section-a-structural",
-      "language": "yaml",
-      "status": "pass"
-    },
-    {
-      "description": "8 relationship kinds pinned by yaml fixtures; 8 emitted and all accounted for",
-      "detail": "pinned: calls, contains, declared_type, exports, extends, imports, overrides, references, uses, yaml_action_use, yaml_action_use_unverified, yaml_alias, yaml_depends_on, yaml_duplicate_key, yaml_keyword_include, yaml_merge, yaml_resource_ref, yaml_schema_publication, yaml_tag_include, yaml_workflow_call, yaml_workflow_call_unverified; emitted: calls, contains, exports, extends, imports, overrides, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "yaml",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for yaml (3)",
-      "detail": "complexity, docstring, qualifiedCalls",
-      "id": "section-c-payload-matrix",
-      "language": "yaml",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "5 tier(s) pinned: import_based, inferred, reference_qualified, structural, usage_contextual",
-      "id": "section-d-evidence-tiers",
-      "language": "yaml",
-      "status": "pass"
-    },
-    {
-      "description": "kubernetes:yaml at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor kubernetes:yaml: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "yaml",
-      "status": "pass"
-    },
-    {
-      "description": "yaml avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "kubernetes:yaml 31.459 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "yaml",
-      "status": "pass"
-    },
-    {
-      "description": "yaml analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-yaml-analyzer.md + head comment present",
-      "id": "section-g-docs",
-      "language": "yaml",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "yaml",
       "status": "pass"
     },
     {
@@ -2594,11 +2520,85 @@
       "id": "section-h-cross-language",
       "language": "hcl",
       "status": "pass"
+    },
+    {
+      "description": "yaml: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "yaml: 4 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "yaml: 8 ruled, 8 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (yaml)",
+      "detail": "38 types, 36 handled, 2 silent, 4 gaps, 16 decisions",
+      "id": "section-a-structural",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "8 relationship kinds pinned by yaml fixtures; 8 emitted and all accounted for",
+      "detail": "pinned: calls, contains, declared_type, exports, extends, imports, overrides, references, uses, yaml_action_use, yaml_action_use_unverified, yaml_alias, yaml_depends_on, yaml_duplicate_key, yaml_keyword_include, yaml_merge, yaml_resource_ref, yaml_schema_publication, yaml_tag_include, yaml_workflow_call, yaml_workflow_call_unverified; emitted: calls, contains, exports, extends, imports, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for yaml (3)",
+      "detail": "complexity, docstring, qualifiedCalls",
+      "id": "section-c-payload-matrix",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "5 tier(s) pinned: import_based, inferred, reference_qualified, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "kubernetes:yaml at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor kubernetes:yaml: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "yaml avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "kubernetes:yaml 31.459 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "yaml analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/real-yaml-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "yaml",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "49a31320c165ebdb7cfc317fd1bbd679ca81db7c",
-  "committedAt": "2026-10-17T19:36:37-04:00",
+  "commit": "fbacafc0ed6d7c11ddc92e552177704ccb325a3f",
+  "committedAt": "2026-10-17T19:38:24-04:00",
   "data": {
     "languages": {
       "c": {
@@ -5038,8 +5038,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-17T19:36:37-04:00",
-  "regeneratedAtCommit": "49a31320c165ebdb7cfc317fd1bbd679ca81db7c",
+  "regeneratedAt": "2026-10-17T19:38:24-04:00",
+  "regeneratedAtCommit": "fbacafc0ed6d7c11ddc92e552177704ccb325a3f",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
