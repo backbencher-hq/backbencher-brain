@@ -179,17 +179,28 @@ export namespace CrossLanguageMigrationAssistant {
         jest: { target: "testing", notes: "Use Go's built-in testing package." },
         axios: { target: "net/http", notes: "Use the standard library." },
       },
+      // A TYPESCRIPT file imports npm PACKAGES, so every key here is the
+      // specifier `canonicalPackageName` produces for one — never a display name
+      // and never a Dart package. This block used to hold the Dart keys, and the
+      // `dart -> typescript` block held these: the pair's entire table was
+      // inverted, so a real TypeScript→Dart port reported axios/zod/prisma as
+      // `unknown-library` while the rows for them sat one table over under a
+      // source language that cannot import them. The direction is now asserted
+      // through the production planner in
+      // script/m20/verify-migration-dictionary.ts (M4).
       dart: {
-        flutter: { target: "react-native", notes: "React Native + Expo is the closest cross-platform equivalent." },
-        "flutter/material": { target: "@radix-ui/react + tailwind", notes: "Material → shadcn/ui component library." },
-        bloc: { target: "zustand / redux toolkit", notes: "Zustand is the closest lightweight state manager to Cubit." },
-        cubit: { target: "zustand store", notes: "Zustand stores map closest to Cubit pattern." },
-        equatable: { target: "zod", notes: "Zod provides value equality + schema validation." },
-        freezed: { target: "zod + immer", notes: "Freezed's immutable data classes → Zod schemas + Immer." },
-        dio: { target: "axios / fetch", notes: "Dio HTTP client maps to Axios or native fetch." },
-        provider: { target: "react context + hooks", notes: "Provider pattern → React Context + useReducer." },
-        get_it: { target: "tsyringe / inversify", notes: "Service locator → DI container." },
-        mockito: { target: "jest mocks / vitest", notes: "Standard JS testing mocks." },
+        "react-native": { target: "flutter", notes: "Flutter is the Dart-native cross-platform framework." },
+        expo: { target: "flutter", notes: "Expo → Flutter for cross-platform development." },
+        zustand: { target: "cubit / bloc", notes: "Zustand stores → Cubit for state management." },
+        "redux toolkit": { target: "bloc", notes: "Redux → BLoC pattern with streams." },
+        zod: { target: "equatable / freezed", notes: "Schema validation → Equatable + Freezed." },
+        axios: { target: "dio", notes: "HTTP client → Dio package." },
+        react: { target: "provider / inherited_widget", notes: "React Context API → Provider/InheritedWidget." },
+        tailwindcss: { target: "flutter/material", notes: "Utility CSS → Material Design widgets." },
+        "shadcn/ui": { target: "flutter/material", notes: "Component library → Material/Cupertino widgets." },
+        prisma: { target: "drift / floor", notes: "ORM → Drift (SQLite) or Floor." },
+        "drizzle-orm": { target: "drift", notes: "Type-safe SQL → Drift for Dart." },
+        next: { target: "flutter web", notes: "Web framework → Flutter Web." },
       },
       javascript: {
         express: { target: "express", notes: "Same framework; remove type annotations." },
@@ -201,19 +212,21 @@ export namespace CrossLanguageMigrationAssistant {
       },
     },
     dart: {
+      // A DART file imports `package:` PACKAGES, so every key here is a pub
+      // package name. The clean split with the block above is what makes the two
+      // directions testable: `bloc` can only be reached by a Dart import
+      // (`package:bloc/bloc.dart`), `axios` only by an npm import.
       typescript: {
-        "react-native": { target: "flutter", notes: "Flutter is the Dart-native cross-platform framework." },
-        expo: { target: "flutter", notes: "Expo → Flutter for cross-platform development." },
-        "zustand": { target: "cubit / bloc", notes: "Zustand stores → Cubit for state management." },
-        "redux toolkit": { target: "bloc", notes: "Redux → BLoC pattern with streams." },
-        zod: { target: "equatable / freezed", notes: "Schema validation → Equatable + Freezed." },
-        axios: { target: "dio", notes: "HTTP client → Dio package." },
-        "react context": { target: "provider / inherited_widget", notes: "Context → Provider/InheritedWidget." },
-        tailwind: { target: "flutter/material", notes: "Utility CSS → Material Design widgets." },
-        "shadcn/ui": { target: "flutter/material", notes: "Component library → Material/Cupertino widgets." },
-        prisma: { target: "drift / floor", notes: "ORM → Drift (SQLite) or Floor." },
-        "drizzle-orm": { target: "drift", notes: "Type-safe SQL → Drift for Dart." },
-        "next.js": { target: "flutter web", notes: "Web framework → Flutter Web." },
+        flutter: { target: "react-native", notes: "React Native + Expo is the closest cross-platform equivalent." },
+        "flutter/material": { target: "@radix-ui/react + tailwind", notes: "Material → shadcn/ui component library." },
+        bloc: { target: "zustand / redux toolkit", notes: "Zustand is the closest lightweight state manager to Cubit." },
+        cubit: { target: "zustand store", notes: "Zustand stores map closest to Cubit pattern." },
+        equatable: { target: "zod", notes: "Zod provides value equality + schema validation." },
+        freezed: { target: "zod + immer", notes: "Freezed's immutable data classes → Zod schemas + Immer." },
+        dio: { target: "axios / fetch", notes: "Dio HTTP client maps to Axios or native fetch." },
+        provider: { target: "react context + hooks", notes: "Provider pattern → React Context + useReducer." },
+        get_it: { target: "tsyringe / inversify", notes: "Service locator → DI container." },
+        mockito: { target: "jest mocks / vitest", notes: "Standard JS testing mocks." },
       },
       python: {
         flutter: { target: "dash / streamlit / flet", notes: "Flet is the closest Flutter-like Python framework." },
@@ -1486,9 +1499,9 @@ export namespace CrossLanguageMigrationAssistant {
     ).values()].sort((a, b) => a.id.localeCompare(b.id))
 
     // 3. Split dependencies by PROVENANCE before mapping them.
-    const { evidenced, inferred, evidenceAvailable, importEvidence } = extractSourceDependencies(symbol as any, relationshipEvidence, normalizedTargetLanguage)
+    const { evidenced, evidencedClass, inferred, evidenceAvailable, importEvidence } = extractSourceDependencies(symbol as any, relationshipEvidence, normalizedTargetLanguage)
 
-    const dependencies: LibraryEquivalence[] = evidenced.map((lib) => toEquivalence(lib, sourceLanguage, normalizedTargetLanguage, "indexed-import"))
+    const dependencies: LibraryEquivalence[] = evidenced.map((lib) => toEquivalence(lib, sourceLanguage, normalizedTargetLanguage, "indexed-import", evidencedClass[lib] ?? null))
     const inferredDependencies: LibraryEquivalence[] = inferred.map((lib) => toEquivalence(lib, sourceLanguage, normalizedTargetLanguage, "name-heuristic"))
 
     // 4. Effort and risk, from measured quantities only.
@@ -1758,6 +1771,50 @@ export namespace CrossLanguageMigrationAssistant {
   const RUST_STDLIB = new Set(["std", "core", "alloc"])
   const RUST_LOCAL = new Set(["crate", "self", "super"])
 
+  /**
+   * Python 3's standard library, by TOP-LEVEL module name.
+   *
+   * This existed only as a stated refusal before. The refusal was right that a
+   * GUESS would be worse than nothing — but the absence had a cost that was
+   * never stated as loudly: with no rule, `import os` was classified `null`, so
+   * `toEquivalence` described `os` as "No evidence-backed equivalence is
+   * registered; custom research is required" — a Go plan said the same about
+   * `fmt`. Every Python plan therefore listed the standard library as libraries
+   * needing research. Membership here is a fact from the language's own
+   * reference, not a guess; the modules are listed by their importable
+   * top-level name (`os`, `json`, `pathlib`), which is what the index stores.
+   *
+   * A module added in a newer Python release than this list is classified
+   * third-party and charged, which is over-reporting and therefore the safe
+   * direction: it names a module for review rather than hiding one.
+   */
+  const PYTHON_STDLIB = new Set([
+    "__future__", "abc", "argparse", "array", "ast", "asynchat", "asyncio", "asyncore", "atexit",
+    "audioop", "base64", "bdb", "binascii", "bisect", "builtins", "bz2", "cProfile", "calendar",
+    "cgi", "cgitb", "chunk", "cmath", "cmd", "code", "codecs", "codeop", "collections", "colorsys",
+    "compileall", "concurrent", "configparser", "contextlib", "contextvars", "copy", "copyreg", "crypt",
+    "csv", "ctypes", "curses", "dataclasses", "datetime", "dbm", "decimal", "difflib", "dis",
+    "distutils", "doctest", "email", "encodings", "ensurepip", "enum", "errno", "faulthandler",
+    "fcntl", "filecmp", "fileinput", "fnmatch", "formatter", "fractions", "ftplib", "functools", "gc",
+    "getopt", "getpass", "gettext", "glob", "graphlib", "grp", "gzip", "hashlib", "heapq", "hmac",
+    "html", "http", "idlelib", "imaplib", "imghdr", "imp", "importlib", "inspect", "io", "ipaddress",
+    "itertools", "json", "keyword", "lib2to3", "linecache", "locale", "logging", "lzma", "mailbox",
+    "mailcap", "marshal", "math", "mimetypes", "mmap", "modulefinder", "msilib", "msvcrt",
+    "multiprocessing", "netrc", "nis", "nntplib", "ntpath", "numbers", "operator", "optparse", "os",
+    "ossaudiodev", "pathlib", "pdb", "pickle", "pickletools", "pipes", "pkgutil", "platform",
+    "plistlib", "poplib", "posix", "posixpath", "pprint", "profile", "pstats", "pty", "pwd",
+    "py_compile", "pyclbr", "pydoc", "queue", "quopri", "random", "re", "readline", "reprlib",
+    "resource", "rlcompleter", "runpy", "sched", "secrets", "select", "selectors", "shelve", "shlex",
+    "shutil", "signal", "site", "smtpd", "smtplib", "sndhdr", "socket", "socketserver", "spwd",
+    "sqlite3", "sre_compile", "sre_constants", "sre_parse", "ssl", "stat", "statistics", "string",
+    "stringprep", "struct", "subprocess", "sunau", "symtable", "sys", "sysconfig", "syslog", "tabnanny",
+    "tarfile", "telnetlib", "tempfile", "termios", "test", "textwrap", "threading", "time", "timeit",
+    "tkinter", "token", "tokenize", "tomllib", "trace", "traceback", "tracemalloc", "tty", "turtle",
+    "turtledemo", "types", "typing", "unicodedata", "unittest", "urllib", "uu", "uuid", "venv",
+    "warnings", "wave", "weakref", "webbrowser", "winreg", "winsound", "wsgiref", "xdrlib", "xml",
+    "xmlrpc", "zipapp", "zipfile", "zipimport", "zlib", "zoneinfo",
+  ])
+
   export function classifyImport(specifier: string, language: string | undefined): ImportClass | null {
     const raw = String(specifier ?? "").trim().replace(/^['"]|['"]$/g, "")
     if (!raw) return null
@@ -1776,6 +1833,36 @@ export namespace CrossLanguageMigrationAssistant {
       if (raw.startsWith("node:")) return "standard-library"
       return JS_BUILTINS.has(raw.replace(/^node:/, "").split("/")[0]) ? "standard-library" : "third-party"
     }
+    if (lang === "python") {
+      // `from .models import x` is another file in this package; a module whose
+      // first segment is in the standard library is the SDK; everything else is
+      // a distribution. Python has no other import form, and an absolute import
+      // of a module IN this project is indistinguishable from a distribution at
+      // this layer — the same limit Go's module paths already carry, and the
+      // reason a bare name is classified third-party rather than skipped.
+      if (raw.startsWith(".")) return "local-crate"
+      const first = raw.split(".")[0]
+      return PYTHON_STDLIB.has(first) ? "standard-library" : "third-party"
+    }
+    if (lang === "dart") {
+      // Dart's OWN import conventions, in the three forms the language defines:
+      //
+      //   `dart:core`           the SDK — not a dependency, and not ported
+      //   `package:x/y.dart`    a pub PACKAGE (canonicalized to `x`)
+      //   `./x.dart`, `../x`   another file in this package — a graph edge
+      //
+      // Without this rule every Dart import was `null`, so a plan over a Dart
+      // file reported `classification: "unavailable"` for a language whose
+      // convention this file already encodes in `canonicalPackageName`, and an
+      // unmapped third-party package (`package:http/http.dart` with no row) was
+      // never charged a research estimate: the missing-mapping charge exists for
+      // exactly that case and could not fire on the whole Dart side. The three
+      // forms do not overlap, so this assigns a class rather than guessing one.
+      if (raw.startsWith("dart:")) return "standard-library"
+      if (raw.startsWith("./") || raw.startsWith("../")) return "local-crate"
+      if (raw.startsWith("package:")) return "third-party"
+      return null
+    }
     return null
   }
 
@@ -1785,6 +1872,9 @@ export namespace CrossLanguageMigrationAssistant {
     targetLanguage: string,
   ): {
     evidenced: string[]
+    /** The class each evidenced name was assigned, so a stdlib row does not
+     * inherit the third-party "custom research required" note. */
+    evidencedClass: Record<string, ImportClass | null>
     inferred: string[]
     evidenceAvailable: boolean
     importEvidence: {
@@ -1832,6 +1922,7 @@ export namespace CrossLanguageMigrationAssistant {
     }
   } {
     const evidenced = new Set<string>()
+    const evidencedClass: Record<string, ImportClass | null> = {}
     const inferred = new Set<string>()
     const unmappedLibraries = new Set<string>()
     const stdlibWithoutRowLibraries = new Set<string>()
@@ -1945,6 +2036,7 @@ export namespace CrossLanguageMigrationAssistant {
       // way, and the missing-mapping charge comes from the measured count.
       const mapping = sourceLang && targetLang ? lookupEquivalence(sourceLang, targetLang, name) : null
       evidenced.add(name)
+      evidencedClass[name] = klass
       if (mapping) {
         importCounts.mapped++
       } else if (isLibrary) {
@@ -1980,7 +2072,11 @@ export namespace CrossLanguageMigrationAssistant {
     for (const relationship of relationships) {
       for (const side of [relationship.sourceFile, relationship.targetFile]) {
         const { name } = packageFromNodeModulesPath(side, symbol?.language)
-        if (name) evidenced.add(name)
+        if (name) {
+          evidenced.add(name)
+          // A node_modules endpoint is a third-party package by construction.
+          evidencedClass[name] ??= "third-party"
+        }
       }
     }
 
@@ -2002,6 +2098,7 @@ export namespace CrossLanguageMigrationAssistant {
 
     return {
       evidenced: [...evidenced],
+      evidencedClass,
       inferred: [...inferred].filter((name) => !evidenced.has(name)),
       // "Available" now means the index WAS READ and its rows classified — not that
       // a mapping happened to be found. Those are different facts and conflating
@@ -2018,10 +2115,10 @@ export namespace CrossLanguageMigrationAssistant {
         unclassified: importCounts.unclassified,
         /**
          * Imports whose class could not be determined because no rule is declared for
-         * the language. Named, LISTED in `dependencies`, and deliberately NOT charged:
-         * a Python `os` is not a third-party library needing 6h of research, and a
-         * rule that cannot tell `os` from `requests` must not guess in the direction
-         * that invents work.
+         * the language (Kotlin, Java, C#, Swift, Ruby, PHP, …). Named, LISTED in
+         * `dependencies`, and deliberately NOT charged: a rule that cannot tell a
+         * standard-library module from a distribution must not guess in the
+         * direction that invents work.
          */
         unclassifiedLibraries: [...unclassifiedLibraries].sort(),
         mapped: importCounts.mapped,
@@ -2046,6 +2143,8 @@ export namespace CrossLanguageMigrationAssistant {
     sourceLang: string,
     targetLang: string,
     provenance: "indexed-import" | "name-heuristic",
+    /** The class the import loop assigned to this name, when it is evidenced. */
+    klass: ImportClass | null = null,
   ): LibraryEquivalence {
     const mapping = lookupEquivalence(sourceLang, targetLang, lib)
     if (provenance === "name-heuristic") {
@@ -2069,6 +2168,27 @@ export namespace CrossLanguageMigrationAssistant {
     }
     if (mapping) {
       return { source: lib, target: mapping.target, confidence: 0.9, status: "supported", provenance, notes: mapping.notes }
+    }
+    // A STANDARD-LIBRARY import with no row is not a research task.
+    //
+    // It is listed in `dependencies` for visibility — the observation that the
+    // file imports `fmt` is real — but the note used to say "No evidence-backed
+    // equivalence is registered; custom research is required" for `fmt` and for
+    // Python's `os`. That is a fabricated work item: the target language has its
+    // own `fmt`, and "custom research" is not what porting `fmt` takes. A row
+    // still wins (Go's `net/http -> requests / httpx` exists exactly because a
+    // Go service does have to choose a Python HTTP client), so this branch is
+    // reached only when there is no row at all.
+    if (klass === "standard-library") {
+      return {
+        source: lib,
+        target: null,
+        confidence: 0,
+        status: "uncertain",
+        provenance,
+        unsupportedReason: "unknown-library",
+        notes: "Standard-library import: there is no package to install or research, so this is listed for visibility only and is not charged effort.",
+      }
     }
     // Reached only for an evidenced package with no registered row: the
     // name-heuristic case returned above. This branch used to re-test
