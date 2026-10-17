@@ -319,7 +319,24 @@ function macroDecoratedClassDecl(spec: Node): { name: string; nameNode: Node; bo
   //
   // A name is never read out of an ERROR that holds anything else, so a recovery
   // that parked unrelated soup here publishes nothing rather than a guess.
-  type Sibling = { node: Node; error: boolean; errorName: Node | null; hasColon: boolean; prevWasMacro: boolean; namedCount: number }
+  type Sibling = {
+    node: Node; error: boolean; errorName: Node | null; hasColon: boolean
+    /**
+     * C8, MEASURED 2026-10-18. The colon can come BEFORE the identifier inside the ERROR.
+     *
+     *   A2 (name then base)     `ERROR "ConsoleReporter : public"`              -> colon AFTER the name
+     *   C8 (macro ate the name) `ERROR ": public TestPartResultReporterInterface"`
+     *                                                                           -> colon FIRST, and its
+     *                                                                              identifier is the BASE
+     *
+     * The first cut treated both as arm 1 because both hold an identifier and a colon, so on the C8 shape it
+     * named the class after its BASE: `class GTEST_API_ ScopedFakeTestPartResultReporter : public
+     * TestPartResultReporterInterface {` published a symbol named `TestPartResultReporterInterface`, owning the
+     * derived class's members. The real name is the bare `identifier` SIBLING before the ERROR
+     * (`ScopedFakeTestPartResultReporter`), which arm 3 already knows how to find — arm 1 just has to stand aside.
+     */
+    colonFirst: boolean
+    prevWasMacro: boolean; namedCount: number }
   const siblings: Sibling[] = []
   let prevWasMacro = false
   for (let i = 0; i < parent.namedChildCount; i++) {
@@ -346,10 +363,14 @@ function macroDecoratedClassDecl(spec: Node): { name: string; nameNode: Node; bo
       // The `:` token is UNNAMED, so the colon test reads the FULL child list
       // while the name comes from the named list.
       let hasColon = false
+      let colonAt = -1
       for (let k = 0; k < c.childCount; k++) {
         const kc = c.child(k)
-        if (kc && kc.type === ":") { hasColon = true; break }
+        if (kc && kc.type === ":") { hasColon = true; colonAt = kc.startIndex; break }
       }
+      // C8: the colon BEFORE the identifier means the ERROR is `": public <base>"` — a base clause whose NAME
+      // stayed outside the ERROR. Arm 1 must stand aside so arm 3 reads the bare identifier sibling instead.
+      const colonFirst = hasColon && firstNamed !== null && colonAt >= 0 && colonAt < firstNamed.startIndex
       // The name is the ERROR's FIRST named child, and the rest of the ERROR is
       // not required to be empty: `: public LIB_EXPORT Base` puts the base's OWN
       // head marker in here too, so demanding a single named child (which the
@@ -360,18 +381,18 @@ function macroDecoratedClassDecl(spec: Node): { name: string; nameNode: Node; bo
       siblings.push({
         node: c, error: true,
         errorName: firstNamed && firstNamed.type === "identifier" ? firstNamed : null,
-        hasColon, prevWasMacro, namedCount: named,
+        hasColon, colonFirst, prevWasMacro, namedCount: named,
       })
       prevWasMacro = false
       continue
     }
-    siblings.push({ node: c, error: false, errorName: null, hasColon: false, prevWasMacro, namedCount: 0 })
+    siblings.push({ node: c, error: false, errorName: null, hasColon: false, colonFirst: false, prevWasMacro, namedCount: 0 })
     prevWasMacro = c.type === "identifier" && isMacroSpelling(c.text.trim())
   }
 
   let nameNode: Node | null = null
   const bases: Node[] = []
-  const colonArm = siblings.find((s) => s.error && s.errorName && s.hasColon)
+  const colonArm = siblings.find((s) => s.error && s.errorName && s.hasColon && !s.colonFirst)
   if (colonArm) {
     nameNode = colonArm.errorName
     const at = siblings.indexOf(colonArm)
@@ -387,6 +408,15 @@ function macroDecoratedClassDecl(spec: Node): { name: string; nameNode: Node; bo
       const names = siblings.filter((s) => !s.error && (s.node.type === "identifier" || s.node.type === "template_type"))
       const nonMacro = names.find((s) => !isMacroSpelling(s.node.text.trim()))
       nameNode = (nonMacro ?? names[0])?.node ?? null
+    }
+  }
+  // C8: a colon-first ERROR IS the base clause — the identifier inside it is a BASE, not a name. It is only
+  // collected when arm 1 stood aside, so a genuine A2 name is never also called a base.
+  if (!colonArm) for (const s of siblings) {
+    if (!s.error || !s.colonFirst) continue
+    for (let k = 0; k < s.node.namedChildCount; k++) {
+      const kc = s.node.namedChild(k)
+      if (kc && (kc.type === "identifier" || kc.type === "qualified_identifier" || kc.type === "template_type")) bases.push(kc)
     }
   }
   if (!nameNode) return null

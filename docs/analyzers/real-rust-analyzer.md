@@ -535,6 +535,7 @@ falls into (`clone`, `new`, `default` are declared all over, and `extFAIL` must 
 | `member::a::b` (workspace member) | `<member lib dir>/a/b.rs` · `<member lib dir>/a/b/mod.rs`; `member` alone → the member's `lib.rs` |
 | `crate` (root group) · `crate::Item` (root item) | `<crate source root>/lib.rs` or `main.rs` — refused when BOTH are there (`lib`+`bin` in one dir: the edge does not say which crate the file belongs to) |
 | `super` (bare word, a group of the parent's items) | the PARENT MODULE's own file: `x.rs`/`x/mod.rs` at the parent's directory |
+| `std::a::b` / `core::a::b` / `alloc::a::b` | **not a file claim** — the `languageNamespace` claim with the root (`std`/`core`/`alloc`) as its declared list; verified by the arbiter's list matcher, never by the project's declaration table |
 
 The crate source root is the nearest ancestor directory holding `lib.rs`/`main.rs`; a Cargo target
 directory (`src/bin`, `tests`, `examples`, `benches`) is a crate root of its own. The workspace
@@ -558,21 +559,33 @@ population's 1 MB cap), which is why the arbiter has never refuted one: `extFAIL
 
 **Measured, `bun run script/m14/incoming-gate.ts rust rs 400`** (same population, three readings):
 
-| axis | baseline | after internal paths | after workspace members | after crate-root/super |
-| --- | --- | --- | --- | --- |
-| `imports` unresolved | 1,660 | 1,284 | 863 | **799** |
-| `imports` extOK / extFAIL | 0 / 0 | 376 / 0 | 797 / 0 | **861 / 0** |
-| TOTAL unresolved | 23,637 | 23,261 | 22,840 | **22,776** |
-| TOTAL extOK / extFAIL | 0 / 0 | 376 / 0 | 797 / 0 | **861 / 0** |
-| TOTAL resolved / ambiguous | 9,419 / 9,874 | 9,419 / 9,874 | 9,419 / 9,874 | **9,419 / 9,874** |
-| `arbitraryTwin` (binding intent) | 13,191 | 13,191 | 13,191 | **13,191** |
+| axis | baseline | after internal paths | after workspace members | after crate-root/super | after system-crate namespace |
+| --- | --- | --- | --- | --- | --- |
+| `imports` unresolved | 1,660 | 1,284 | 863 | 799 | **565** |
+| `imports` extOK / extFAIL | 0 / 0 | 376 / 0 | 797 / 0 | 861 / 0 | **1,095 / 0** |
+| TOTAL unresolved | 23,637 | 23,261 | 22,840 | 22,776 | **22,542** |
+| TOTAL extOK / extFAIL | 0 / 0 | 376 / 0 | 797 / 0 | 861 / 0 | **1,095 / 0** |
+| TOTAL resolved / ambiguous | 9,419 / 9,874 | 9,419 / 9,874 | 9,419 / 9,874 | 9,419 / 9,874 | **9,419 / 9,874** |
+| `arbitraryTwin` (binding intent) | 13,191 | 13,191 | 13,191 | 13,191 | **13,191** |
+
+**The system-crate namespace claim.** A path rooted at `std`, `core` or `alloc` names a module that
+ships with every toolchain and in NO project's source tree, so its honest terminal state is the
+arbiter's `languageNamespace` claim: the analyzer declares the root (`["std"]`) and the arbiter
+checks the target against THAT LIST, never against the project's declaration table — so a project
+that ships a same-named symbol cannot refute it, and a target outside the list is refused rather
+than sheltered. The emission (`rustSystemNamespaceOf`) fires only when the file claim did NOT (a
+system path names no project file) and refuses a single-segment `std` (a legal project module name).
+The matcher (`namespaceMatchOf`, Lead-owned) now splits `::` as well as `.`; before that change Rust
+paths collapsed to one dotted segment and the claim was structurally unreachable. **Pre-registered
+falsifier: any `extFAIL` on the rows this reaches refutes the emission rule.** Measured: 234 claims
+(`std` 233 · `core` 1), **234 verified · 0 refuted**; imports unresolved 799 → **565**.
 
 **The instrument and its control:** `validation/m14/fixtures/rust/import-claim-census.mts` reruns
 the real analyzer over the gate's stride sample, verifies EVERY emitted claim against the gate's
-admitted-file rule (git ls-files · `.rs` · ≤ 1 MB) and exits non-zero if zero claims verify or any
-claim is refused; its row-by-row artifact is `import-claim-rows.json` (869 claim rows, 861 of them
-on unresolved edges; 8 ride edges that resolve anyway and move nothing). Result: 861 verified on
-unresolved / 0 refused, deterministic across runs.
+admitted-file rule (git ls-files · `.rs` · ≤ 1 MB) for file claims and against the arbiter's own
+segment matcher for namespace claims, and exits non-zero if zero claims verify or any claim is
+refused; its row-by-row artifact is `import-claim-rows.json` (869 file-claim rows, 861 of them on
+unresolved edges; 234 namespace rows). Result: all verified, **0 refused**, deterministic.
 
 **What this claim is not.** It resolves the import's FILE, not a symbol declaration — the honest
 terminal state for an import whose declaring file is outside the run's population. The 799 imports
@@ -588,9 +601,9 @@ so a namespace claim can only reach PATH-shaped targets, and the shared matcher 
 
 - Fixtures: `validation/m14/fixtures/rust/` (M14) and
   `validation/m12/fixtures/rust/` (M12)
-- M14 import-claim evidence: `validation/m14/fixtures/rust/import-claim-census-after5.txt`,
+- M14 import-claim evidence: `validation/m14/fixtures/rust/import-claim-census-after6.txt`,
   `import-claim-rows.json`, `gate-400-before.txt`, `gate-400-after.txt`, `gate-400-after2.txt`,
-  `gate-400-after3.txt`
+  `gate-400-after3.txt`, `gate-400-after4.txt`, `gate-whole-after.txt`
 - M14 differential evidence: `validation/m14/results/M14.0.F5.json`
 - M14 completeness evidence: `validation/m14/results/M14.0.SPEC.json`
 - M14 mutation evidence: `validation/m14/results/M14.0.F4.json`
@@ -606,3 +619,15 @@ so a namespace claim can only reach PATH-shaped targets, and the shared matcher 
 ## Issue
 
 Closes M12.18 (GitHub issue #157).
+
+
+## Namespace claims (`std::` / `core::` / `alloc::` imports) — iteration 4
+
+Import rows whose written path is rooted at a Rust SYSTEM crate carry `metadata.languageNamespace`
+(`NAMESPACE_CLAIM_KEY`, `languageNamespace`). The authority is the analyzer's own three-literal root
+list (`RUST_SYSTEM_NAMESPACES`), never the project's declaration table: a root the list does not name
+reads `externalRefuted` (extFAIL), and the internal resolution still wins first. The claim is emitted
+only where the file claim did not fire, and single-segment targets are refused. The arbiter half
+(`namespaceMatchOf` splitting `.` and `::`) is Lead-owned. Measured at cap 400: imports unresolved
+799 → 565, extOK 861 → 1,095, extFAIL 0, arbitraryTwin byte-identical at 13,191, fixtures 26/4
+unchanged.

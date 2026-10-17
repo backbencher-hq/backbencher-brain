@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "348c2b186700f035853419628317ebe170de68c72aceff1b3c244b07375e921d",
-    "sealedAt": "2026-10-16T22:43:16.000Z"
+    "contentSha256": "bd7fc5be14e8b9f1eca3a06a4934cd8e6841eded358d5b1581a1a43bfd6bec38",
+    "sealedAt": "2026-10-17T16:18:03.000Z"
   },
   "checks": [
     {
@@ -19,7 +19,7 @@
     },
     {
       "description": "javascript adversarial fixtures",
-      "detail": "74/77 fixtures pass",
+      "detail": "76/77 fixtures pass",
       "id": "fixtures-javascript",
       "status": "fail"
     },
@@ -37,13 +37,13 @@
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "96/102 fixtures pass",
+      "detail": "97/102 fixtures pass",
       "id": "fixtures-typescript",
       "status": "fail"
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "53/63 fixtures pass",
+      "detail": "59/63 fixtures pass",
       "id": "fixtures-java",
       "status": "fail"
     },
@@ -67,13 +67,13 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "43/47 fixtures pass",
+      "detail": "44/47 fixtures pass",
       "id": "fixtures-c",
       "status": "fail"
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "42/51 fixtures pass",
+      "detail": "50/51 fixtures pass",
       "id": "fixtures-cpp",
       "status": "fail"
     },
@@ -85,7 +85,7 @@
     },
     {
       "description": "python adversarial fixtures",
-      "detail": "54/54 fixtures pass",
+      "detail": "55/55 fixtures pass",
       "id": "fixtures-python",
       "status": "pass"
     },
@@ -295,8 +295,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "fb93f6f18dc095338a02a11fe137fa0a719d72d7",
-  "committedAt": "2026-10-16T18:43:16-04:00",
+  "commit": "94493a5fd06a6347974de521918ac8ed35b65bdb",
+  "committedAt": "2026-10-17T12:18:03-04:00",
   "data": {
     "details": [
       {
@@ -1043,14 +1043,8 @@
       },
       {
         "fixture": "javascript/reexport-forms",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"(file)\",\"target\":\"./m:*\",\"confidence\":0.6,\"line_number\":1,\"meta.unresolved\":true,\"note\":\"namespace binding: no member name is written\"}; got: imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->fs:*]@0.6; imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->./m:*]@0.6; exports[reexport-forms->D]@1; exports[reexport-forms->read]@1; exports[reexport-forms->c]@1; uses[reexport-forms->ns]@0.6",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"(file)\",\"target\":\"./m:default\",\"confidence\":1,\"line_number\":2,\"meta.declaredName\":\"default\",\"meta.exportedAs\":\"D\",\"note\":\"member first, alias second\"}; got: imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->fs:*]@0.6; imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->./m:*]@0.6; exports[reexport-forms->D]@1; exports[reexport-forms->read]@1; exports[reexport-forms->c]@1; uses[reexport-forms->ns]@0.6",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"(file)\",\"target\":\"fs:readFile\",\"confidence\":1,\"line_number\":3,\"meta.exportedAs\":\"read\",\"note\":\"the edge is about the member the SOURCE module exports\"}; got: imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->fs:*]@0.6; imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->./m:*]@0.6; exports[reexport-forms->D]@1; exports[reexport-forms->read]@1; exports[reexport-forms->c]@1; uses[reexport-forms->ns]@0.6",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"(file)\",\"target\":\"./m:*\",\"confidence\":0.6,\"line_number\":4,\"meta.unresolved\":true,\"note\":\"empty clause: dependency taken, no member named\"}; got: imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->fs:*]@0.6; imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->./m:*]@0.6; exports[reexport-forms->D]@1; exports[reexport-forms->read]@1; exports[reexport-forms->c]@1; uses[reexport-forms->ns]@0.6",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"(file)\",\"target\":\"./m:a-b\",\"confidence\":1,\"line_number\":5,\"meta.declaredName\":\"a-b\",\"note\":\"a string-literal member name, unquoted\"}; got: imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->fs:*]@0.6; imports[reexport-forms->./m:*]@0.6; imports[reexport-forms->./m:*]@0.6; exports[reexport-forms->D]@1; exports[reexport-forms->read]@1; exports[reexport-forms->c]@1; uses[reexport-forms->ns]@0.6"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "javascript/require-default-flag",
@@ -1064,11 +1058,8 @@
       },
       {
         "fixture": "javascript/star-reexport",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"(file)\",\"target\":\"./m:*\",\"confidence\":0.6,\"line_number\":1,\"meta.unresolved\":true,\"meta.isReExport\":true,\"meta.starForm\":\"all\",\"note\":\"a bare star: every member of ./m is redistributed, and no member name is written\"}; got: imports[star-reexport->./m:*]@0.6; imports[star-reexport->./m:*]@0.6; uses[star-reexport->ns]@0.6",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"(file)\",\"target\":\"./m:*\",\"confidence\":0.6,\"line_number\":2,\"meta.unresolved\":true,\"meta.isReExport\":true,\"meta.starForm\":\"namespace\",\"meta.namespaceName\":\"ns\",\"note\":\"the namespace form: ONE name bound in this module, nothing redistributed — which is what the resolver's star route must NOT follow\"}; got: imports[star-reexport->./m:*]@0.6; imports[star-reexport->./m:*]@0.6; uses[star-reexport->ns]@0.6"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "javascript/static-block",
@@ -1774,13 +1765,8 @@
       },
       {
         "fixture": "typescript/calls-callee-shape-reduction",
-        "ok": false,
-        "problems": [
-          "expected 1 relationship(s) {\"type\":\"calls\",\"target\":\"readNegated\"}; got 0",
-          "expected relationship not found: {\"type\":\"calls\",\"from\":\"runParen\",\"target\":\"readNegated\"}; got: calls[readNegated->get]@0.9; calls[runNonNull->run]@0.9; calls[runNonNull->maybe]@0.9; calls[runParen->(readNegated)]@0.9; calls[runIIFE->factory()]@0.9; calls[runIIFE->factory]@0.9; calls[runAwait->fetchIt]@0.9; calls[runAnonymousBody->get]@0.9; references[readNegated->state]@0.8; references[runNonNull->maybe]@0.8; references[runParen->readNegated]@0.8; references[runIIFE->factory]@0.8; references[runAwait->fetchIt]@0.8; references[runAnonymousBody->state]@0.8; exports[calls-callee-shape-reduction->readNegated]@1; exports[calls-callee-shape-reduction->runNonNull]@1; exports[calls-callee-shape-reduction->runParen]@1; exports[calls-callee-shape-reduction->runIIFE]@1; exports[calls-callee-shape-reduction->runAwait]@1; exports[calls-callee-shape-reduction->runAnonymousBody]@1; references[runAwait->Promise]@0.95",
-          "forbidden relationship present: {\"type\":\"calls\",\"target\":\"factory()\"} (found calls[runIIFE->factory()]@0.9)",
-          "forbidden relationship present: {\"type\":\"calls\",\"target\":\"(readNegated)\"} (found calls[runParen->(readNegated)]@0.9)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "typescript/callsite-lines-825",
@@ -2287,12 +2273,8 @@
       },
       {
         "fixture": "java/anonymous-and-multihop-overrides",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"BlackVal.val\",\"target\":\"val\"}; got: imports[Service->java.util.Comparator]@1; references[Service->java.util.Comparator]@0.9; imports[com.acme.jvm->java.util.Comparator]@1; references[Service->Comparator]@0.95; references[Service->String]@0.95; instantiates[Service->Comparator]@0.95; references[compare->String]@0.95; references[compare->String]@0.95; calls[compare->helper]@0.7; references[Service->Runnable]@0.95; instantiates[Service->Runnable]@0.95; calls[run->staticHelper]@0.7; references[helper->String]@0.95; references[helper->String]@0.95; calls[helper->length]@0.7; calls[helper->length]@0.7; references[Node->Object]@0.95; references[Node->Object]@0.95; extends[Black->Node]@1; extends[BlackVal->Black]@1; references[BlackVal->Object]@0.95; extends[BlackBranch->Black]@1; references[BlackBranch->Object]@0.95; extends[BlackBranchVal->BlackBranch]@1; references[BlackBranchVal->Object]@0.95; references[handle->String]@0.95; references[Service->Handler]@0.95; instantiates[Service->Handler]@0.95; references[handle->String]@0.95; calls[handle->length]@0.7",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"BlackBranch.left\",\"target\":\"left\"}; got: imports[Service->java.util.Comparator]@1; references[Service->java.util.Comparator]@0.9; imports[com.acme.jvm->java.util.Comparator]@1; references[Service->Comparator]@0.95; references[Service->String]@0.95; instantiates[Service->Comparator]@0.95; references[compare->String]@0.95; references[compare->String]@0.95; calls[compare->helper]@0.7; references[Service->Runnable]@0.95; instantiates[Service->Runnable]@0.95; calls[run->staticHelper]@0.7; references[helper->String]@0.95; references[helper->String]@0.95; calls[helper->length]@0.7; calls[helper->length]@0.7; references[Node->Object]@0.95; references[Node->Object]@0.95; extends[Black->Node]@1; extends[BlackVal->Black]@1; references[BlackVal->Object]@0.95; extends[BlackBranch->Black]@1; references[BlackBranch->Object]@0.95; extends[BlackBranchVal->BlackBranch]@1; references[BlackBranchVal->Object]@0.95; references[handle->String]@0.95; references[Service->Handler]@0.95; instantiates[Service->Handler]@0.95; references[handle->String]@0.95; calls[handle->length]@0.7",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"anonymous_Handler.handle\",\"target\":\"handle\"}; got: imports[Service->java.util.Comparator]@1; references[Service->java.util.Comparator]@0.9; imports[com.acme.jvm->java.util.Comparator]@1; references[Service->Comparator]@0.95; references[Service->String]@0.95; instantiates[Service->Comparator]@0.95; references[compare->String]@0.95; references[compare->String]@0.95; calls[compare->helper]@0.7; references[Service->Runnable]@0.95; instantiates[Service->Runnable]@0.95; calls[run->staticHelper]@0.7; references[helper->String]@0.95; references[helper->String]@0.95; calls[helper->length]@0.7; calls[helper->length]@0.7; references[Node->Object]@0.95; references[Node->Object]@0.95; extends[Black->Node]@1; extends[BlackVal->Black]@1; references[BlackVal->Object]@0.95; extends[BlackBranch->Black]@1; references[BlackBranch->Object]@0.95; extends[BlackBranchVal->BlackBranch]@1; references[BlackBranchVal->Object]@0.95; references[handle->String]@0.95; references[Service->Handler]@0.95; instantiates[Service->Handler]@0.95; references[handle->String]@0.95; calls[handle->length]@0.7"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/anonymous-field-member",
@@ -2351,10 +2333,8 @@
       },
       {
         "fixture": "java/declaration-lines-825",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Annotated.label\",\"target\":\"label\",\"line_number\":27}; got: imports[Base->java.io.Serializable]@1; references[Base->java.io.Serializable]@0.9; imports[lines->java.io.Serializable]@1; references[Base->String]@0.95; extends[Annotated->Base]@1; implements[Annotated->Marker]@1; implements[Annotated->Serializable]@1; references[Annotated->String]@0.95; overrides[Annotated.label->Base.label]@1; contains[Base->label]@1; contains[Annotated->legacy]@1; contains[Annotated->label]@1; exports[lines->Base]@0.6; exports[lines->Marker]@0.6; exports[lines->Annotated]@0.6"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/default-package-exports",
@@ -2427,10 +2407,8 @@
       },
       {
         "fixture": "java/implicit-overrides",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"source\":\"DerivedThing.total\",\"target\":\"total\",\"meta.reasonCode\":\"exact-in-file\",\"meta.evidenceClass\":\"structural\"}; got: references[BaseThing->Object]@0.95; references[BaseThing->Object]@0.95; extends[DerivedThing->BaseThing]@1; references[DerivedThing->Object]@0.95; references[find->String]@0.95; overrides[DerivedThing.total->BaseThing.total]@1; contains[BaseThing->total]@1; contains[BaseThing->find]@1; contains[BaseThing->secret]@1; contains[DerivedThing->total]@1; contains[DerivedThing->find]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/import-dependency-edges",
@@ -2551,30 +2529,18 @@
       },
       {
         "fixture": "java/overload-arity-varargs-multicatch",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"VarSub.foo\",\"target\":\"foo\"}; got: extends[VarSub->ArrBase]@1; extends[ArrSub->VarBase]@1; references[process->String]@0.95; calls[run->process]@0.7; calls[run->process]@0.7; references[run->ArrBase]@0.95; instantiates[run->ArrBase]@0.95; calls[run->foo]@0.7; calls[risky->process]@0.7; references[risky->java.lang.IllegalArgumentException]@0.95; references[risky->java.lang.IllegalStateException]@0.95; calls[risky->getMessage]@0.7; overrides[VarSub.foo->ArrBase.foo]@1; overrides[ArrSub.bar->VarBase.bar]@1; contains[ArrBase->foo]@1; contains[VarSub->foo]@1; contains[VarBase->bar]@1; contains[ArrSub->bar]@1; contains[OverloadUser->process]@1; contains[OverloadUser->process]@1; contains[OverloadUser->run]@1; contains[OverloadUser->risky]@1; uses[risky->out]@0.6; exports[com.acme.m49->ArrBase]@0.6; exports[com.acme.m49->VarSub]@0.6; exports[com.acme.m49->VarBase]@0.6; exports[com.acme.m49->ArrSub]@0.6; exports[com.acme.m49->OverloadUser]@0.6",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"ArrSub.bar\",\"target\":\"bar\"}; got: extends[VarSub->ArrBase]@1; extends[ArrSub->VarBase]@1; references[process->String]@0.95; calls[run->process]@0.7; calls[run->process]@0.7; references[run->ArrBase]@0.95; instantiates[run->ArrBase]@0.95; calls[run->foo]@0.7; calls[risky->process]@0.7; references[risky->java.lang.IllegalArgumentException]@0.95; references[risky->java.lang.IllegalStateException]@0.95; calls[risky->getMessage]@0.7; overrides[VarSub.foo->ArrBase.foo]@1; overrides[ArrSub.bar->VarBase.bar]@1; contains[ArrBase->foo]@1; contains[VarSub->foo]@1; contains[VarBase->bar]@1; contains[ArrSub->bar]@1; contains[OverloadUser->process]@1; contains[OverloadUser->process]@1; contains[OverloadUser->run]@1; contains[OverloadUser->risky]@1; uses[risky->out]@0.6; exports[com.acme.m49->ArrBase]@0.6; exports[com.acme.m49->VarSub]@0.6; exports[com.acme.m49->VarBase]@0.6; exports[com.acme.m49->ArrSub]@0.6; exports[com.acme.m49->OverloadUser]@0.6"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/override-guess-tier",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"target\":\"getOrder\",\"meta.reasonCode\":\"first-parent-guess\"}; got: imports[OverrideGuessTier->io.micronaut.core.order.Ordered]@1; references[OverrideGuessTier->io.micronaut.core.order.Ordered]@0.9; imports[root->io.micronaut.core.order.Ordered]@1; implements[OverrideGuessTier->Ordered]@1; overrides[OverrideGuessTier.getOrder->Ordered.getOrder]@0.5; contains[OverrideGuessTier->getOrder]@1; contains[OverrideGuessTier->getOrder]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/override-key-parameter-lists",
-        "ok": false,
-        "problems": [
-          "expected 1 relationship(s) {\"type\":\"overrides\",\"from\":\"Builder.query\",\"target\":\"query\"}; got 0",
-          "expected 1 relationship(s) {\"type\":\"overrides\",\"from\":\"Builder.remember\",\"target\":\"remember\"}; got 0",
-          "expected 1 relationship(s) {\"type\":\"overrides\",\"from\":\"Builder.last\",\"target\":\"last\"}; got 0",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Builder.query\",\"target\":\"query\"}; got: references[query->Entity]@0.95; references[query->Outer.Criterion]@0.95; references[query->StringBuilder]@0.95; references[remember->java.util.Map.Entry]@0.95; references[remember->String]@0.95; references[remember->Boolean]@0.95; references[last->Outer.Criterion]@0.95; implements[Builder->Query]@1; references[query->Entity]@0.95; references[query->Outer.Criterion]@0.95; references[query->StringBuilder]@0.95; references[remember->java.util.Map.Entry]@0.95; references[remember->String]@0.95; references[remember->Boolean]@0.95; references[last->Outer.Criterion]@0.95; overrides[Builder.query->Query.query]@1; overrides[Builder.remember->Query.remember]@1; overrides[Builder.last->Query.last]@1; contains[Outer->Criterion]@1; contains[Outer->Query]@1; contains[Query->query]@1; contains[Query->remember]@1; contains[Query->last]@1; contains[Outer->Builder]@1; contains[Builder->query]@1; contains[Builder->remember]@1; contains[Builder->last]@1; exports[com.acme.jvm->Entity]@0.6; exports[com.acme.jvm->Outer]@0.6",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Builder.remember\",\"target\":\"remember\"}; got: references[query->Entity]@0.95; references[query->Outer.Criterion]@0.95; references[query->StringBuilder]@0.95; references[remember->java.util.Map.Entry]@0.95; references[remember->String]@0.95; references[remember->Boolean]@0.95; references[last->Outer.Criterion]@0.95; implements[Builder->Query]@1; references[query->Entity]@0.95; references[query->Outer.Criterion]@0.95; references[query->StringBuilder]@0.95; references[remember->java.util.Map.Entry]@0.95; references[remember->String]@0.95; references[remember->Boolean]@0.95; references[last->Outer.Criterion]@0.95; overrides[Builder.query->Query.query]@1; overrides[Builder.remember->Query.remember]@1; overrides[Builder.last->Query.last]@1; contains[Outer->Criterion]@1; contains[Outer->Query]@1; contains[Query->query]@1; contains[Query->remember]@1; contains[Query->last]@1; contains[Outer->Builder]@1; contains[Builder->query]@1; contains[Builder->remember]@1; contains[Builder->last]@1; exports[com.acme.jvm->Entity]@0.6; exports[com.acme.jvm->Outer]@0.6",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Builder.last\",\"target\":\"last\"}; got: references[query->Entity]@0.95; references[query->Outer.Criterion]@0.95; references[query->StringBuilder]@0.95; references[remember->java.util.Map.Entry]@0.95; references[remember->String]@0.95; references[remember->Boolean]@0.95; references[last->Outer.Criterion]@0.95; implements[Builder->Query]@1; references[query->Entity]@0.95; references[query->Outer.Criterion]@0.95; references[query->StringBuilder]@0.95; references[remember->java.util.Map.Entry]@0.95; references[remember->String]@0.95; references[remember->Boolean]@0.95; references[last->Outer.Criterion]@0.95; overrides[Builder.query->Query.query]@1; overrides[Builder.remember->Query.remember]@1; overrides[Builder.last->Query.last]@1; contains[Outer->Criterion]@1; contains[Outer->Query]@1; contains[Query->query]@1; contains[Query->remember]@1; contains[Query->last]@1; contains[Outer->Builder]@1; contains[Builder->query]@1; contains[Builder->remember]@1; contains[Builder->last]@1; exports[com.acme.jvm->Entity]@0.6; exports[com.acme.jvm->Outer]@0.6"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/overrides",
@@ -4020,12 +3986,8 @@
       },
       {
         "fixture": "c/instantiates-allocator-register-989",
-        "ok": false,
-        "problems": [
-          "expected 3 relationship(s) {\"type\":\"instantiates\"}; got 1",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"c989_wrapped\",\"target\":\"Table\",\"meta.evidenceClass\":\"structural\",\"comment\":\"THE PINNED ROW. A PROJECT's allocator wrapper, cast spelling. This is ext/fts3/fts3.c's `sqlite3_malloc64((sqlite3_int64)sizeof(Fts3Table))` shape: 82 recoverable sites on this corpus through this one name, all of them invisible before.\"}; got: references[global->Node]@0.8; references[c989_standard->Node]@0.8; calls[c989_standard->malloc]@1; instantiates[c989_standard->Node]@1; references[global->Table]@0.8; references[c989_wrapped->Table]@0.8; calls[c989_wrapped->sqlite3_malloc64]@1; references[global->Seg]@0.8; references[c989_wrapped_sizeof_only->Seg]@0.8; calls[c989_wrapped_sizeof_only->sqlite3_realloc64]@1; calls[c989_untyped->sqlite3_malloc]@1; calls[c989_cross_file_target->sqlite3_malloc]@1; calls[c989_frees->sqlite3_free]@1; calls[c989_frees->c989_untyped]@1; contains[Node->value]@1; contains[Table->n]@1; contains[Seg->n]@1",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"c989_wrapped_sizeof_only\",\"target\":\"Seg\",\"comment\":\"The sizeof-ONLY spelling through the wrapper: no cast at all, so the type is recovered from the argument list. This row is why the wrapper case needs the sizeof path and not only the cast one -- 23 sites on this corpus are `sqlite3_realloc64`, whose argument is the OLD pointer, so the cast is usually absent.\"}; got: references[global->Node]@0.8; references[c989_standard->Node]@0.8; calls[c989_standard->malloc]@1; instantiates[c989_standard->Node]@1; references[global->Table]@0.8; references[c989_wrapped->Table]@0.8; calls[c989_wrapped->sqlite3_malloc64]@1; references[global->Seg]@0.8; references[c989_wrapped_sizeof_only->Seg]@0.8; calls[c989_wrapped_sizeof_only->sqlite3_realloc64]@1; calls[c989_untyped->sqlite3_malloc]@1; calls[c989_cross_file_target->sqlite3_malloc]@1; calls[c989_frees->sqlite3_free]@1; calls[c989_frees->c989_untyped]@1; contains[Node->value]@1; contains[Table->n]@1; contains[Seg->n]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "c/layout-bitfields-unions-945",
@@ -4179,19 +4141,13 @@
       },
       {
         "fixture": "cpp/cross-file-override",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"fromEndsWith\":\"ExternalDerived.step\",\"target\":\"step\",\"meta.reasonCode\":\"override-keyword+companion-declares-method\",\"meta.overrideSpecifier\":\"override\",\"confidenceMin\":0.9,\"note\":\"THE POSITION. `ExternalInterface` is declared in a different compilation unit and is visible ONLY through the companion, so without `crossFileOverride` this file emits nothing for it. Two independent facts establish the edge: the keyword (the author asserts an override) and the companion (the base declares the method).\",\"meta.overriddenOwner\":\"ExternalInterface\"}; got: extends[ExternalDerived->ExternalInterface]@1; extends[LocalDerived->LocalBase]@1; overrides[ExternalDerived.step->ExternalInterface.step]@0.95; overrides[LocalDerived.act->LocalBase.act]@1; contains[ExternalDerived->step]@1; contains[ExternalDerived->tune]@1; contains[ExternalDerived->probe]@1; contains[LocalBase->act]@1; contains[LocalBase->hide]@1; contains[LocalDerived->act]@1; contains[LocalDerived->hide]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"fromEndsWith\":\"LocalDerived.act\",\"target\":\"act\",\"meta.reasonCode\":\"override-keyword+signature-match\",\"confidenceMin\":1,\"note\":\"THE CONTROL, in-file base: the signature check applies, the companion is irrelevant, and with the keyword the edge is a FACT at 1.0 rather than a 0.9 inference.\",\"meta.overriddenOwner\":\"LocalBase\"}; got: extends[ExternalDerived->ExternalInterface]@1; extends[LocalDerived->LocalBase]@1; overrides[ExternalDerived.step->ExternalInterface.step]@0.95; overrides[LocalDerived.act->LocalBase.act]@1; contains[ExternalDerived->step]@1; contains[ExternalDerived->tune]@1; contains[ExternalDerived->probe]@1; contains[LocalBase->act]@1; contains[LocalBase->hide]@1; contains[LocalDerived->act]@1; contains[LocalDerived->hide]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "cpp/ctor-and-overload-regressions",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Derived.f\",\"target\":\"f\",\"meta.overriddenOwner\":\"Base\"}; got: calls[constructor->start]@1; calls[constructor->warm]@1; calls[run->aFn]@1; calls[run->bFn]@1; extends[Derived->Base]@1; calls[drive->func]@1; calls[drive->apply]@1; overrides[Derived.f->Base.f]@1; overrides[Derived.g->Base.g]@1; contains[Engine->constructor]@1; contains[Engine->start]@1; contains[Engine->warm]@1; contains[Alpha->run]@1; contains[Beta->run]@1; contains[Base->f]@1; contains[Base->g]@1; contains[Derived->f]@1; contains[Derived->g]@1; contains[ns->func]@1; contains[Gadget->apply]@1; contains[Gadget->operator()]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Derived.g\",\"target\":\"g\",\"meta.overriddenOwner\":\"Base\"}; got: calls[constructor->start]@1; calls[constructor->warm]@1; calls[run->aFn]@1; calls[run->bFn]@1; extends[Derived->Base]@1; calls[drive->func]@1; calls[drive->apply]@1; overrides[Derived.f->Base.f]@1; overrides[Derived.g->Base.g]@1; contains[Engine->constructor]@1; contains[Engine->start]@1; contains[Engine->warm]@1; contains[Alpha->run]@1; contains[Beta->run]@1; contains[Base->f]@1; contains[Base->g]@1; contains[Derived->f]@1; contains[Derived->g]@1; contains[ns->func]@1; contains[Gadget->apply]@1; contains[Gadget->operator()]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "cpp/declaration-vs-definition-612",
@@ -4215,10 +4171,8 @@
       },
       {
         "fixture": "cpp/exports-marker-910",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Reporter.compute\",\"target\":\"compute\",\"note\":\"the consequence of the base clause: a `classBases` entry is what makes an override resolvable at all, and pre-fix this pair did not resolve.\",\"meta.overriddenOwner\":\"Base\"}; got: exports[Shutdown->LIB_EXPORT]@1; exports[Counter->LIB_EXPORT]@1; exports[Base->LIB_EXPORT]@1; extends[Reporter->Base]@1; exports[Reporter->LIB_EXPORT]@1; exports[Sealed->LIB_EXPORT]@1; exports[Thing->LIB_EXPORT]@1; calls[join->to_string]@1; overrides[Reporter.compute->Base.compute]@1; contains[global->LIB_EXPORT]@1; contains[global->LIB_API]@1; contains[global->LIB_ALWAYS_INLINE]@1; contains[global->LIB_INTERNAL]@1; contains[lib->Base]@1; contains[Base->~Base]@1; contains[Base->compute]@1; contains[lib->Reporter]@1; contains[Reporter->compute]@1; contains[lib->Sealed]@1; contains[Sealed->compute]@1; contains[lib->Thing]@1; contains[Thing->compute]@1; contains[lib->Hidden]@1; contains[Hidden->compute]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "cpp/exports-visibility-attribute",
@@ -4227,11 +4181,8 @@
       },
       {
         "fixture": "cpp/extends-self-base-958",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Circle.area\",\"target\":\"area\",\"note\":\"the override chain still resolves through a real base — the D2 gate must not break virtual dispatch.\",\"meta.overriddenOwner\":\"Shape\"}; got: imports[global->type_traits]@1; extends[proxy->char_traits]@1; calls[label->name]@1; extends[Circle->Shape]@1; extends[Box->Shape]@1; extends[Poly->Vec2]@1; extends[Mixed->Shape]@1; extends[Mixed->priority_tag]@1; calls[use_all->area]@1; calls[use_all->area]@1; calls[use_all->area]@1; calls[use_all->area]@1; overrides[Circle.area->Shape.area]@1; overrides[Box.area->Shape.area]@1; overrides[Mixed.area->Shape.area]@1; implements[Circle->Shape]@1; implements[Box->Shape]@1; implements[Mixed->Shape]@1; contains[vendor->char_traits]@1; contains[char_traits->name]@1; contains[proxy->label]@1; contains[lib->Shape]@1; contains[Shape->~Shape]@1; contains[Shape->area]@1; contains[lib->Vec2]@1; contains[Vec2->x]@1; contains[Circle->area]@1; contains[Box->area]@1; contains[Poly->area]@1; contains[Mixed->area]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Box.area\",\"target\":\"area\",\"meta.overriddenOwner\":\"Shape\"}; got: imports[global->type_traits]@1; extends[proxy->char_traits]@1; calls[label->name]@1; extends[Circle->Shape]@1; extends[Box->Shape]@1; extends[Poly->Vec2]@1; extends[Mixed->Shape]@1; extends[Mixed->priority_tag]@1; calls[use_all->area]@1; calls[use_all->area]@1; calls[use_all->area]@1; calls[use_all->area]@1; overrides[Circle.area->Shape.area]@1; overrides[Box.area->Shape.area]@1; overrides[Mixed.area->Shape.area]@1; implements[Circle->Shape]@1; implements[Box->Shape]@1; implements[Mixed->Shape]@1; contains[vendor->char_traits]@1; contains[char_traits->name]@1; contains[proxy->label]@1; contains[lib->Shape]@1; contains[Shape->~Shape]@1; contains[Shape->area]@1; contains[lib->Vec2]@1; contains[Vec2->x]@1; contains[Circle->area]@1; contains[Box->area]@1; contains[Poly->area]@1; contains[Mixed->area]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "cpp/friend-definition-body-owner",
@@ -4351,27 +4302,13 @@
       },
       {
         "fixture": "cpp/pure-virtual-abstract-919",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"DecoratedDerived.begin\",\"target\":\"begin\",\"meta.overriddenOwner\":\"DecoratedReporter\"}; got: exports[DecoratedReporter->SINK_EXPORT]@1; extends[DecoratedDerived->DecoratedReporter]@1; exports[DecoratedDerived->SINK_EXPORT]@1; uses[counted->zeroMember]@1; extends[FileChannel->Channel]@1; extends[NullChannel->Channel]@1; overrides[DecoratedDerived.begin->DecoratedReporter.begin]@1; overrides[DecoratedDerived.end->DecoratedReporter.end]@1; overrides[FileChannel.open->Channel.open]@1; overrides[FileChannel.close->Channel.close]@1; overrides[FileChannel.sync->Channel.sync]@1; overrides[NullChannel.open->Channel.open]@1; overrides[NullChannel.close->Channel.close]@1; overrides[NullChannel.sync->Channel.sync]@1; implements[FileChannel->Channel]@1; implements[NullChannel->Channel]@1; contains[Channel->~Channel]@1; contains[Channel->open]@1; contains[Channel->close]@1; contains[Channel->sync]@1; contains[Channel->flush]@1; contains[Channel->Helper]@1; contains[Sink->~Sink]@1; contains[Sink->deliver]@1; contains[global->SINK_EXPORT]@1; contains[global->DecoratedReporter]@1; contains[DecoratedReporter->begin]@1; contains[DecoratedReporter->end]@1; contains[global->DecoratedDerived]@1; contains[DecoratedDerived->begin]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"DecoratedDerived.end\",\"target\":\"end\",\"meta.overriddenOwner\":\"DecoratedReporter\"}; got: exports[DecoratedReporter->SINK_EXPORT]@1; extends[DecoratedDerived->DecoratedReporter]@1; exports[DecoratedDerived->SINK_EXPORT]@1; uses[counted->zeroMember]@1; extends[FileChannel->Channel]@1; extends[NullChannel->Channel]@1; overrides[DecoratedDerived.begin->DecoratedReporter.begin]@1; overrides[DecoratedDerived.end->DecoratedReporter.end]@1; overrides[FileChannel.open->Channel.open]@1; overrides[FileChannel.close->Channel.close]@1; overrides[FileChannel.sync->Channel.sync]@1; overrides[NullChannel.open->Channel.open]@1; overrides[NullChannel.close->Channel.close]@1; overrides[NullChannel.sync->Channel.sync]@1; implements[FileChannel->Channel]@1; implements[NullChannel->Channel]@1; contains[Channel->~Channel]@1; contains[Channel->open]@1; contains[Channel->close]@1; contains[Channel->sync]@1; contains[Channel->flush]@1; contains[Channel->Helper]@1; contains[Sink->~Sink]@1; contains[Sink->deliver]@1; contains[global->SINK_EXPORT]@1; contains[global->DecoratedReporter]@1; contains[DecoratedReporter->begin]@1; contains[DecoratedReporter->end]@1; contains[global->DecoratedDerived]@1; contains[DecoratedDerived->begin]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"FileChannel.open\",\"target\":\"open\",\"note\":\"the override chain THROUGH the newly-flagged abstract base: `Channel::open` has to be registered in the virtual registry for this row to exist, and the registry is keyed on the member, so this is the assertion that D9's member-level fix reaches the edge.\",\"meta.overriddenOwner\":\"Channel\"}; got: exports[DecoratedReporter->SINK_EXPORT]@1; extends[DecoratedDerived->DecoratedReporter]@1; exports[DecoratedDerived->SINK_EXPORT]@1; uses[counted->zeroMember]@1; extends[FileChannel->Channel]@1; extends[NullChannel->Channel]@1; overrides[DecoratedDerived.begin->DecoratedReporter.begin]@1; overrides[DecoratedDerived.end->DecoratedReporter.end]@1; overrides[FileChannel.open->Channel.open]@1; overrides[FileChannel.close->Channel.close]@1; overrides[FileChannel.sync->Channel.sync]@1; overrides[NullChannel.open->Channel.open]@1; overrides[NullChannel.close->Channel.close]@1; overrides[NullChannel.sync->Channel.sync]@1; implements[FileChannel->Channel]@1; implements[NullChannel->Channel]@1; contains[Channel->~Channel]@1; contains[Channel->open]@1; contains[Channel->close]@1; contains[Channel->sync]@1; contains[Channel->flush]@1; contains[Channel->Helper]@1; contains[Sink->~Sink]@1; contains[Sink->deliver]@1; contains[global->SINK_EXPORT]@1; contains[global->DecoratedReporter]@1; contains[DecoratedReporter->begin]@1; contains[DecoratedReporter->end]@1; contains[global->DecoratedDerived]@1; contains[DecoratedDerived->begin]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"FileChannel.close\",\"target\":\"close\",\"meta.overriddenOwner\":\"Channel\"}; got: exports[DecoratedReporter->SINK_EXPORT]@1; extends[DecoratedDerived->DecoratedReporter]@1; exports[DecoratedDerived->SINK_EXPORT]@1; uses[counted->zeroMember]@1; extends[FileChannel->Channel]@1; extends[NullChannel->Channel]@1; overrides[DecoratedDerived.begin->DecoratedReporter.begin]@1; overrides[DecoratedDerived.end->DecoratedReporter.end]@1; overrides[FileChannel.open->Channel.open]@1; overrides[FileChannel.close->Channel.close]@1; overrides[FileChannel.sync->Channel.sync]@1; overrides[NullChannel.open->Channel.open]@1; overrides[NullChannel.close->Channel.close]@1; overrides[NullChannel.sync->Channel.sync]@1; implements[FileChannel->Channel]@1; implements[NullChannel->Channel]@1; contains[Channel->~Channel]@1; contains[Channel->open]@1; contains[Channel->close]@1; contains[Channel->sync]@1; contains[Channel->flush]@1; contains[Channel->Helper]@1; contains[Sink->~Sink]@1; contains[Sink->deliver]@1; contains[global->SINK_EXPORT]@1; contains[global->DecoratedReporter]@1; contains[DecoratedReporter->begin]@1; contains[DecoratedReporter->end]@1; contains[global->DecoratedDerived]@1; contains[DecoratedDerived->begin]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"FileChannel.sync\",\"target\":\"sync\",\"note\":\"and through a DEFAULTED parameter in the base — the default is not part of the signature, so the two-parameter derived declaration matches the three-parameter base one.\",\"meta.overriddenOwner\":\"Channel\"}; got: exports[DecoratedReporter->SINK_EXPORT]@1; extends[DecoratedDerived->DecoratedReporter]@1; exports[DecoratedDerived->SINK_EXPORT]@1; uses[counted->zeroMember]@1; extends[FileChannel->Channel]@1; extends[NullChannel->Channel]@1; overrides[DecoratedDerived.begin->DecoratedReporter.begin]@1; overrides[DecoratedDerived.end->DecoratedReporter.end]@1; overrides[FileChannel.open->Channel.open]@1; overrides[FileChannel.close->Channel.close]@1; overrides[FileChannel.sync->Channel.sync]@1; overrides[NullChannel.open->Channel.open]@1; overrides[NullChannel.close->Channel.close]@1; overrides[NullChannel.sync->Channel.sync]@1; implements[FileChannel->Channel]@1; implements[NullChannel->Channel]@1; contains[Channel->~Channel]@1; contains[Channel->open]@1; contains[Channel->close]@1; contains[Channel->sync]@1; contains[Channel->flush]@1; contains[Channel->Helper]@1; contains[Sink->~Sink]@1; contains[Sink->deliver]@1; contains[global->SINK_EXPORT]@1; contains[global->DecoratedReporter]@1; contains[DecoratedReporter->begin]@1; contains[DecoratedReporter->end]@1; contains[global->DecoratedDerived]@1; contains[DecoratedDerived->begin]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"NullChannel.open\",\"target\":\"open\",\"note\":\"CONTROL: the same-signature arm, so a matcher that ignored parameter types entirely would also produce it and the `Helper` forbid below would be the only thing distinguishing the two behaviours.\",\"meta.overriddenOwner\":\"Channel\"}; got: exports[DecoratedReporter->SINK_EXPORT]@1; extends[DecoratedDerived->DecoratedReporter]@1; exports[DecoratedDerived->SINK_EXPORT]@1; uses[counted->zeroMember]@1; extends[FileChannel->Channel]@1; extends[NullChannel->Channel]@1; overrides[DecoratedDerived.begin->DecoratedReporter.begin]@1; overrides[DecoratedDerived.end->DecoratedReporter.end]@1; overrides[FileChannel.open->Channel.open]@1; overrides[FileChannel.close->Channel.close]@1; overrides[FileChannel.sync->Channel.sync]@1; overrides[NullChannel.open->Channel.open]@1; overrides[NullChannel.close->Channel.close]@1; overrides[NullChannel.sync->Channel.sync]@1; implements[FileChannel->Channel]@1; implements[NullChannel->Channel]@1; contains[Channel->~Channel]@1; contains[Channel->open]@1; contains[Channel->close]@1; contains[Channel->sync]@1; contains[Channel->flush]@1; contains[Channel->Helper]@1; contains[Sink->~Sink]@1; contains[Sink->deliver]@1; contains[global->SINK_EXPORT]@1; contains[global->DecoratedReporter]@1; contains[DecoratedReporter->begin]@1; contains[DecoratedReporter->end]@1; contains[global->DecoratedDerived]@1; contains[DecoratedDerived->begin]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "cpp/pure-virtual-signature-910",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Same.ReportContext\",\"target\":\"ReportContext\",\"meta.reasonCode\":\"signature-match\",\"note\":\"the control: identical spelling throughout, so a matcher that ignored types would also produce this row. It is here so a future 'fix' that over-matches is caught by the same fixture.\",\"meta.overriddenOwner\":\"Base\"}; got: extends[Same->Base]@1; extends[Renamed->Base]@1; extends[Hidden->Base]@1; uses[ReportContext->a]@0.9; uses[ReportRuns->b]@0.9; uses[ReportRuns->a]@0.9; exports[Decorated->IFACE_EXPORT]@1; extends[Impl->Decorated]@1; exports[Impl->IFACE_EXPORT]@1; overrides[Same.ReportContext->Base.ReportContext]@1; overrides[Same.ReportRuns->Base.ReportRuns]@1; overrides[Renamed.ReportRuns->Base.ReportRuns]@1; overrides[Renamed.ReportContext->Base.ReportContext]@1; overrides[Impl.tick->Decorated.tick]@1; overrides[Impl.flush->Decorated.flush]@1; implements[Same->Base]@1; implements[Renamed->Base]@1; implements[Hidden->Base]@1; contains[Context->a]@1; contains[Run->b]@1; contains[Base->~Base]@1; contains[Base->ReportContext]@1; contains[Base->ReportRuns]@1; contains[Base->Weighted]@1; contains[Base->Helper]@1; contains[Same->ReportContext]@1; contains[Same->ReportRuns]@1; contains[Renamed->ReportRuns]@1; contains[Renamed->ReportContext]@1; contains[Hidden->ReportRuns]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Same.ReportRuns\",\"target\":\"ReportRuns\",\"meta.overriddenOwner\":\"Base\"}; got: extends[Same->Base]@1; extends[Renamed->Base]@1; extends[Hidden->Base]@1; uses[ReportContext->a]@0.9; uses[ReportRuns->b]@0.9; uses[ReportRuns->a]@0.9; exports[Decorated->IFACE_EXPORT]@1; extends[Impl->Decorated]@1; exports[Impl->IFACE_EXPORT]@1; overrides[Same.ReportContext->Base.ReportContext]@1; overrides[Same.ReportRuns->Base.ReportRuns]@1; overrides[Renamed.ReportRuns->Base.ReportRuns]@1; overrides[Renamed.ReportContext->Base.ReportContext]@1; overrides[Impl.tick->Decorated.tick]@1; overrides[Impl.flush->Decorated.flush]@1; implements[Same->Base]@1; implements[Renamed->Base]@1; implements[Hidden->Base]@1; contains[Context->a]@1; contains[Run->b]@1; contains[Base->~Base]@1; contains[Base->ReportContext]@1; contains[Base->ReportRuns]@1; contains[Base->Weighted]@1; contains[Base->Helper]@1; contains[Same->ReportContext]@1; contains[Same->ReportRuns]@1; contains[Renamed->ReportRuns]@1; contains[Renamed->ReportContext]@1; contains[Hidden->ReportRuns]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Renamed.ReportRuns\",\"target\":\"ReportRuns\",\"note\":\"(2) THE CASE. `const std::vector<Run>& report` in the base and `const std::vector<Run>& reports` in the derived are the SAME C++ signature — names are not part of it. Pre-fix this produced no edge at all, and the pre-fix `reporter.h` count was 2 of 4 with both survivors being the zero-argument methods, which is exactly the population where 'no parameters' accidentally agrees with 'parameters whose names happen to match'.\",\"meta.overriddenOwner\":\"Base\"}; got: extends[Same->Base]@1; extends[Renamed->Base]@1; extends[Hidden->Base]@1; uses[ReportContext->a]@0.9; uses[ReportRuns->b]@0.9; uses[ReportRuns->a]@0.9; exports[Decorated->IFACE_EXPORT]@1; extends[Impl->Decorated]@1; exports[Impl->IFACE_EXPORT]@1; overrides[Same.ReportContext->Base.ReportContext]@1; overrides[Same.ReportRuns->Base.ReportRuns]@1; overrides[Renamed.ReportRuns->Base.ReportRuns]@1; overrides[Renamed.ReportContext->Base.ReportContext]@1; overrides[Impl.tick->Decorated.tick]@1; overrides[Impl.flush->Decorated.flush]@1; implements[Same->Base]@1; implements[Renamed->Base]@1; implements[Hidden->Base]@1; contains[Context->a]@1; contains[Run->b]@1; contains[Base->~Base]@1; contains[Base->ReportContext]@1; contains[Base->ReportRuns]@1; contains[Base->Weighted]@1; contains[Base->Helper]@1; contains[Same->ReportContext]@1; contains[Same->ReportRuns]@1; contains[Renamed->ReportRuns]@1; contains[Renamed->ReportContext]@1; contains[Hidden->ReportRuns]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Renamed.ReportContext\",\"target\":\"ReportContext\",\"note\":\"same, for the reference parameter: `const Context& context` vs `const Context& ctx`. The name lives under a `reference_declarator` as a plain named child, which is the case the FIELD-chain lookup could not see at all.\",\"meta.overriddenOwner\":\"Base\"}; got: extends[Same->Base]@1; extends[Renamed->Base]@1; extends[Hidden->Base]@1; uses[ReportContext->a]@0.9; uses[ReportRuns->b]@0.9; uses[ReportRuns->a]@0.9; exports[Decorated->IFACE_EXPORT]@1; extends[Impl->Decorated]@1; exports[Impl->IFACE_EXPORT]@1; overrides[Same.ReportContext->Base.ReportContext]@1; overrides[Same.ReportRuns->Base.ReportRuns]@1; overrides[Renamed.ReportRuns->Base.ReportRuns]@1; overrides[Renamed.ReportContext->Base.ReportContext]@1; overrides[Impl.tick->Decorated.tick]@1; overrides[Impl.flush->Decorated.flush]@1; implements[Same->Base]@1; implements[Renamed->Base]@1; implements[Hidden->Base]@1; contains[Context->a]@1; contains[Run->b]@1; contains[Base->~Base]@1; contains[Base->ReportContext]@1; contains[Base->ReportRuns]@1; contains[Base->Weighted]@1; contains[Base->Helper]@1; contains[Same->ReportContext]@1; contains[Same->ReportRuns]@1; contains[Renamed->ReportRuns]@1; contains[Renamed->ReportContext]@1; contains[Hidden->ReportRuns]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Impl.tick\",\"target\":\"tick\",\"note\":\"and the override through it — the base's own pure virtual has to be published AND registered before a derived override of it can resolve.\",\"meta.overriddenOwner\":\"Decorated\"}; got: extends[Same->Base]@1; extends[Renamed->Base]@1; extends[Hidden->Base]@1; uses[ReportContext->a]@0.9; uses[ReportRuns->b]@0.9; uses[ReportRuns->a]@0.9; exports[Decorated->IFACE_EXPORT]@1; extends[Impl->Decorated]@1; exports[Impl->IFACE_EXPORT]@1; overrides[Same.ReportContext->Base.ReportContext]@1; overrides[Same.ReportRuns->Base.ReportRuns]@1; overrides[Renamed.ReportRuns->Base.ReportRuns]@1; overrides[Renamed.ReportContext->Base.ReportContext]@1; overrides[Impl.tick->Decorated.tick]@1; overrides[Impl.flush->Decorated.flush]@1; implements[Same->Base]@1; implements[Renamed->Base]@1; implements[Hidden->Base]@1; contains[Context->a]@1; contains[Run->b]@1; contains[Base->~Base]@1; contains[Base->ReportContext]@1; contains[Base->ReportRuns]@1; contains[Base->Weighted]@1; contains[Base->Helper]@1; contains[Same->ReportContext]@1; contains[Same->ReportRuns]@1; contains[Renamed->ReportRuns]@1; contains[Renamed->ReportContext]@1; contains[Hidden->ReportRuns]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Impl.flush\",\"target\":\"flush\",\"note\":\"`flush(bool hard)`: a single ordinary parameter, so the two halves of the signature key are exercised with nothing else in play.\",\"meta.overriddenOwner\":\"Decorated\"}; got: extends[Same->Base]@1; extends[Renamed->Base]@1; extends[Hidden->Base]@1; uses[ReportContext->a]@0.9; uses[ReportRuns->b]@0.9; uses[ReportRuns->a]@0.9; exports[Decorated->IFACE_EXPORT]@1; extends[Impl->Decorated]@1; exports[Impl->IFACE_EXPORT]@1; overrides[Same.ReportContext->Base.ReportContext]@1; overrides[Same.ReportRuns->Base.ReportRuns]@1; overrides[Renamed.ReportRuns->Base.ReportRuns]@1; overrides[Renamed.ReportContext->Base.ReportContext]@1; overrides[Impl.tick->Decorated.tick]@1; overrides[Impl.flush->Decorated.flush]@1; implements[Same->Base]@1; implements[Renamed->Base]@1; implements[Hidden->Base]@1; contains[Context->a]@1; contains[Run->b]@1; contains[Base->~Base]@1; contains[Base->ReportContext]@1; contains[Base->ReportRuns]@1; contains[Base->Weighted]@1; contains[Base->Helper]@1; contains[Same->ReportContext]@1; contains[Same->ReportRuns]@1; contains[Renamed->ReportRuns]@1; contains[Renamed->ReportContext]@1; contains[Hidden->ReportRuns]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "cpp/qualified-declarator-name-924",
@@ -4380,13 +4317,8 @@
       },
       {
         "fixture": "cpp/reason-code-4",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Silent.sides\",\"target\":\"sides\",\"line_number\":63,\"confidence\":0.9,\"meta.reasonCode\":\"signature-match\",\"meta.overrideSpecifier\":null,\"note\":\"NO keyword: a same-name/same-parameter coincidence is indistinguishable from a real override on this evidence, so the edge is an inference.\",\"meta.overriddenOwner\":\"Shape\"}; got: imports[global->vector]@1; imports[global->string]@1; references[global->std::string]@0.9; references[global->std::pair]@0.9; uses[bump->count]@1; uses[readMember->count]@0.9; extends[Silent->Shape]@1; extends[Asserted->Shape]@1; uses[construct->field]@0.9; overrides[Silent.sides->Shape.sides]@0.9; overrides[Silent.area->Shape.area]@0.9; overrides[Asserted.sides->Shape.sides]@1; overrides[Asserted.area->Shape.area]@1; implements[Silent->Shape]@1; implements[Asserted->Shape]@1; contains[Counter->count]@1; contains[Counter->bump]@1; contains[Shape->~Shape]@1; contains[Shape->sides]@1; contains[Shape->area]@1; contains[Silent->sides]@1; contains[Silent->area]@1; contains[Asserted->sides]@1; contains[Asserted->area]@1; contains[Widget->field]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Silent.area\",\"target\":\"area\",\"line_number\":64,\"confidence\":0.9,\"meta.reasonCode\":\"signature-match\",\"meta.overriddenOwner\":\"Shape\"}; got: imports[global->vector]@1; imports[global->string]@1; references[global->std::string]@0.9; references[global->std::pair]@0.9; uses[bump->count]@1; uses[readMember->count]@0.9; extends[Silent->Shape]@1; extends[Asserted->Shape]@1; uses[construct->field]@0.9; overrides[Silent.sides->Shape.sides]@0.9; overrides[Silent.area->Shape.area]@0.9; overrides[Asserted.sides->Shape.sides]@1; overrides[Asserted.area->Shape.area]@1; implements[Silent->Shape]@1; implements[Asserted->Shape]@1; contains[Counter->count]@1; contains[Counter->bump]@1; contains[Shape->~Shape]@1; contains[Shape->sides]@1; contains[Shape->area]@1; contains[Silent->sides]@1; contains[Silent->area]@1; contains[Asserted->sides]@1; contains[Asserted->area]@1; contains[Widget->field]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Asserted.sides\",\"target\":\"sides\",\"line_number\":68,\"confidence\":1,\"meta.reasonCode\":\"override-keyword+signature-match\",\"meta.overrideSpecifier\":\"override\",\"meta.evidenceClass\":\"structural\",\"note\":\"THE ASSERTED ARM, and the one that makes the pair meaningful: the author wrote `override`, so this is a fact at 1.0 rather than a 0.9 inference.\",\"meta.overriddenOwner\":\"Shape\"}; got: imports[global->vector]@1; imports[global->string]@1; references[global->std::string]@0.9; references[global->std::pair]@0.9; uses[bump->count]@1; uses[readMember->count]@0.9; extends[Silent->Shape]@1; extends[Asserted->Shape]@1; uses[construct->field]@0.9; overrides[Silent.sides->Shape.sides]@0.9; overrides[Silent.area->Shape.area]@0.9; overrides[Asserted.sides->Shape.sides]@1; overrides[Asserted.area->Shape.area]@1; implements[Silent->Shape]@1; implements[Asserted->Shape]@1; contains[Counter->count]@1; contains[Counter->bump]@1; contains[Shape->~Shape]@1; contains[Shape->sides]@1; contains[Shape->area]@1; contains[Silent->sides]@1; contains[Silent->area]@1; contains[Asserted->sides]@1; contains[Asserted->area]@1; contains[Widget->field]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Asserted.area\",\"target\":\"area\",\"line_number\":69,\"confidence\":1,\"meta.reasonCode\":\"override-keyword+signature-match\",\"meta.overrideSpecifier\":\"override\",\"meta.overriddenOwner\":\"Shape\"}; got: imports[global->vector]@1; imports[global->string]@1; references[global->std::string]@0.9; references[global->std::pair]@0.9; uses[bump->count]@1; uses[readMember->count]@0.9; extends[Silent->Shape]@1; extends[Asserted->Shape]@1; uses[construct->field]@0.9; overrides[Silent.sides->Shape.sides]@0.9; overrides[Silent.area->Shape.area]@0.9; overrides[Asserted.sides->Shape.sides]@1; overrides[Asserted.area->Shape.area]@1; implements[Silent->Shape]@1; implements[Asserted->Shape]@1; contains[Counter->count]@1; contains[Counter->bump]@1; contains[Shape->~Shape]@1; contains[Shape->sides]@1; contains[Shape->area]@1; contains[Silent->sides]@1; contains[Silent->area]@1; contains[Asserted->sides]@1; contains[Asserted->area]@1; contains[Widget->field]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "cpp/recovered-declared-name-960",
@@ -4420,10 +4352,8 @@
       },
       {
         "fixture": "cpp/virtual-override-resolution",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"fromEndsWith\":\"Derived.run\",\"target\":\"run\",\"confidence\":1,\"meta.reasonCode\":\"override-keyword+signature-match\",\"meta.overrideSpecifier\":\"override\",\"note\":\"M14-HONESTY-CONTRACT §4: an edge at 1.0 needs no reason code for the confidence itself, but the reason code records HOW it was established, and `overrideSpecifier` records that the author wrote the keyword. Both are the difference between this edge and the 0.9 inference its predecessor was.\",\"meta.overriddenOwner\":\"Base\"}; got: extends[Derived->Base]@1; overrides[Derived.run->Base.run]@1; contains[Base->run]@1; contains[Derived->run]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "cpp/wrapped-declarator-names-612",
@@ -4714,6 +4644,11 @@
       },
       {
         "fixture": "python/import-alias-is-published-as-a-binding",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/import-evidence-is-an-external-claim",
         "ok": true,
         "problems": []
       },
@@ -8590,8 +8525,8 @@
         "pass": 34
       },
       "c": {
-        "fail": 4,
-        "pass": 43
+        "fail": 3,
+        "pass": 44
       },
       "clean": {
         "fail": 0,
@@ -8602,8 +8537,8 @@
         "pass": 72
       },
       "cpp": {
-        "fail": 9,
-        "pass": 42
+        "fail": 1,
+        "pass": 50
       },
       "csharp": {
         "fail": 3,
@@ -8654,12 +8589,12 @@
         "pass": 18
       },
       "java": {
-        "fail": 10,
-        "pass": 53
+        "fail": 4,
+        "pass": 59
       },
       "javascript": {
-        "fail": 3,
-        "pass": 74
+        "fail": 1,
+        "pass": 76
       },
       "json": {
         "fail": 0,
@@ -8711,7 +8646,7 @@
       },
       "python": {
         "fail": 0,
-        "pass": 54
+        "pass": 55
       },
       "r": {
         "fail": 0,
@@ -8754,8 +8689,8 @@
         "pass": 10
       },
       "typescript": {
-        "fail": 6,
-        "pass": 96
+        "fail": 5,
+        "pass": 97
       },
       "vb": {
         "fail": 3,
@@ -8792,8 +8727,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-16T18:43:16-04:00",
-  "regeneratedAtCommit": "fb93f6f18dc095338a02a11fe137fa0a719d72d7",
+  "regeneratedAt": "2026-10-17T12:18:03-04:00",
+  "regeneratedAtCommit": "94493a5fd06a6347974de521918ac8ed35b65bdb",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

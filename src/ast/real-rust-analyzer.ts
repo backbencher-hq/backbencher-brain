@@ -239,6 +239,36 @@ export function rustModuleFileCandidates(
  * member with no library root (a binary-only crate) cannot be imported by name and is absent from
  * the map, which refuses the claim rather than guessing.
  */
+/**
+ * THE NAMESPACE CLAIM (`languageNamespace`, `NAMESPACE_CLAIM_KEY` in script/m14/incoming-rule.ts).
+ *
+ * An import path rooted at one of Rust's SYSTEM crates — `std`, `core`, `alloc` — names a module
+ * that ships with every toolchain and in NO project's source tree. The arbiter verifies the claim
+ * against a LIST THE ANALYZER DECLARES (not the project's declaration table), so:
+ *   - a path under a declared root is `externalVerified`;
+ *   - a path NOT under a declared root is `externalRefuted`, i.e. `extFAIL` — the claim cannot
+ *     shelter anything it did not name;
+ *   - it can never refute a name the project declares (the internal resolution wins first).
+ *
+ * PRE-REGISTERED FALSIFIER, agreed with the Lead before the arbiter half landed: **any `extFAIL` on
+ * the rows this reaches REFUTES this emission rule.** The roots are exactly the three system crates;
+ * adding a fourth name to this list without a measurement is the laundering this claim exists to
+ * prevent. The `::`-separator matcher this needs is Lead-owned (`script/m14/incoming-rule.ts`):
+ * without it `std::fs` read as ONE dotted segment and the claim was structurally unreachable.
+ *
+ * A single-segment target (`std` alone) is refused on purpose: `std` is also a legal project module
+ * name, so a root-only claim would be a name claim, not a namespace claim.
+ */
+const RUST_SYSTEM_NAMESPACES = ["std", "core", "alloc"] as const
+
+export function rustSystemNamespaceOf(modulePath: string): string | null {
+  if (!modulePath.includes("::")) return null
+  for (const root of RUST_SYSTEM_NAMESPACES) {
+    if (modulePath.startsWith(root + "::")) return root
+  }
+  return null
+}
+
 const RUST_WORKSPACE_CRATES = new Map<string, Map<string, string>>()
 
 function isFile(p: string): boolean {
@@ -309,7 +339,21 @@ function expandMemberPattern(workspaceDir: string, pattern: string): string[] {
   return bases
 }
 
+/** Workspace discovery is per DIRECTORY, cached: every file of a crate asks the same question. */
+const RUST_WORKSPACE_DIRS = new Map<string, string | null>()
+
 function findWorkspaceDir(filePath: string, projectRoot: string): string | null {
+  const startDir = path.dirname(filePath)
+  const cacheKey = `${projectRoot}\u0000${startDir}`
+  const cached = RUST_WORKSPACE_DIRS.get(cacheKey)
+  if (cached !== undefined) return cached
+  const found = findWorkspaceDirUncached(filePath, projectRoot)
+  if (RUST_WORKSPACE_DIRS.size > 4096) RUST_WORKSPACE_DIRS.clear()
+  RUST_WORKSPACE_DIRS.set(cacheKey, found)
+  return found
+}
+
+function findWorkspaceDirUncached(filePath: string, projectRoot: string): string | null {
   const stop = path.resolve(projectRoot)
   let dir = path.dirname(filePath)
   let nearestPackageDir: string | null = null
@@ -1474,6 +1518,15 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
               // has, and it is the right terminal state for an import whose declaring file is
               // outside the run's population (the 400-file sample, or a build target).
               ...(projectFile !== null ? { importProjectFile: projectFile } : {}),
+              // THE NAMESPACE CLAIM (`NAMESPACE_CLAIM_KEY`), emitted only where the file claim did
+              // NOT fire: a path rooted at a system crate names no project file, and before the
+              // `::` separator landed in the arbiter's matcher this class was unclaimable. The
+              // authority is the analyzer's own declared-root list above, so a root the list does
+              // not name reads `externalRefuted` — the pre-registered falsifier is any extFAIL
+              // here, which is why the list is three literals and not a pattern.
+              ...(projectFile === null && rustSystemNamespaceOf(row.module) !== null
+                ? { languageNamespace: [rustSystemNamespaceOf(row.module) as string] }
+                : {}),
             },
           })
         }

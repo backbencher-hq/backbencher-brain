@@ -156,6 +156,30 @@ const JAVA_FRAMEWORK_PRIORITY = [
   "spring_data", "spring_mvc", "spring_core", "spring", "jpa", "hibernate",
   "mybatis", "quarkus", "micronaut", "jackson", "slf4j",
 ]
+
+/**
+ * JAVA RESERVED WORDS — the one exclusion `markExternalTargets`' project-scope rule needs.
+ *
+ * `markExternalTargets` may now claim a plain identifier external when a COMPLETE project index does not
+ * declare it (task-172). A reserved word must never take that claim: the statement "the project declares no
+ * `super`" is true and says nothing, and a marker that turns a NON-NAME into an external claim is the
+ * laundering class this programme refuses. `this`/`super` reach the relationship stream as call/reference
+ * leaves (`this()` constructor chaining, `super.method()` roots), so the exclusion is load-bearing rather
+ * than defensive.
+ *
+ * The list is JLS §3.9's reserved words plus the literals (`true`/`false`/`null`); `var`, `yield`, `record`
+ * and `sealed` are restricted identifiers, not reserved, but they are listed too because a bare target with
+ * one of those spellings is a construct, not a name. `_` is a keyword since Java 9.
+ */
+const JAVA_RESERVED: ReadonlySet<string> = new Set([
+  "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", "const",
+  "continue", "default", "do", "double", "else", "enum", "extends", "final", "finally", "float",
+  "for", "goto", "if", "implements", "import", "instanceof", "int", "interface", "long", "native",
+  "new", "package", "private", "protected", "public", "return", "short", "static", "strictfp",
+  "super", "switch", "synchronized", "this", "throw", "throws", "transient", "try", "void",
+  "volatile", "while", "true", "false", "null", "_", "var", "yield", "record", "sealed", "permits",
+  "non-sealed",
+])
 function pickJavaFramework(frameworks: string[]): string | undefined {
   for (let i = 0; i < JAVA_FRAMEWORK_PRIORITY.length; i++) {
     if (inArray(frameworks, JAVA_FRAMEWORK_PRIORITY[i])) return JAVA_FRAMEWORK_PRIORITY[i]
@@ -2345,7 +2369,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // incoming gate counts them as a declared exception instead of an unresolved edge. Same
     // principle as the typescript lane's marker (real-typescript-analyzer.ts:4030), on a Java
     // vocabulary and with a narrower proof set — see the method for what is NOT marked.
-    this.markExternalTargets(relationships, symbols, imports)
+    this.markExternalTargets(relationships, symbols, imports, context)
 
     return {
       symbols,
@@ -3968,6 +3992,7 @@ currentPackage,
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
     imports: ASTEngine.ImportInfo[],
+    context?: ASTEngine.AnalyzeContext,
   ): number {
     const JVM_ROOTS = ["java.", "javax.", "jakarta.", "jdk.", "sun.", "com.sun.", "kotlin.", "kotlinx."]
     const isJvmModule = (name: string): boolean => JVM_ROOTS.some((r) => name.startsWith(r))
@@ -4042,7 +4067,51 @@ currentPackage,
         md.externalReceiver = root
         md.externalSpecifier = module
         marked++
+        continue
       }
+
+      // ── A PLAIN IDENTIFIER THE WHOLE PROJECT DOES NOT DECLARE IS PLATFORM CODE (task-172) ──
+      //
+      // THE RULING THIS REPLACES, AND WHY IT IS NOW OBSOLETE. `JAVA-RESIDUAL.md` §4 ruled the largest
+      // cause NOT DOABLE with this file's own earlier reasoning quoted back:
+      //   *"`String`, `Object`, `System`… are **probably** the platform types, and 'probably' is what this
+      //   marker must not say: an unproven marker hides a genuine unresolved edge behind a claim the file
+      //   cannot make. They stay counted against the lane until a rule can prove them."*
+      // That refusal was RIGHT about a per-file analyzer, which has no project key space. It became
+      // WRONG on 2026-10-17 when the Lead landed `ProjectIndex.complete` — the index can now state that
+      // it saw the project's WHOLE admitted file set, which turns "the project declares no such name"
+      // from a guess into a statement a claim may rest on.
+      //
+      // THE TEST IS `=== true`, NEVER OBJECT TRUTHINESS. `complete` is optional and FAIL-CLOSED: every
+      // constructor leaves it undefined, `deserializeProjectIndex` reads an absent field as `false`, and
+      // a SAMPLED run (`maxFiles > 0`) stamps false over even a cached whole-run payload. A sampled index
+      // is not the project: a declaration in an unsampled file of the SAME repository would refute the
+      // claim, raising `extFAIL` — the must-not-rise column. So a sampled or legacy index adds NOTHING
+      // here, and the no-`--index` arm stays byte-identical to its pre-change value.
+      //
+      // SCOPE, DELIBERATELY NARROW:
+      //  * PLAIN identifier only (`/^[A-Za-z_$][A-Za-z0-9_$]*$/`). Dotted and qualified targets keep
+      //    their existing paths above: `imports` module paths belong to the arbiter's `importPath` claim
+      //    (`incoming-rule.ts`, landed in `JAVA-AND-BASH-OWED.md` ITEM 1) and the binding family is
+      //    untouched — the proposal's own constraint.
+      //  * Reserved words are NOT names: `this`/`super`/`int`/`class`… are refused rather than claimed,
+      //    because "the project declares no `super`" is true and says nothing. A marker that launders a
+      //    non-name into an external claim is the class this programme refuses.
+      //  * A name THIS file declares never reaches here (`declared.has(target)` above), and a name the
+      //    PROJECT declares is refused by `symbolNames` — that second check is the CONTROL: a two-file
+      //    repository that declares its own `Map` is not marked, and the claim would flip to refuted if
+      //    this test were dropped.
+      if (md.isExternalTarget === true) continue
+      if (context?.projectIndex?.complete !== true) continue
+      if (String(r?.type ?? "") === "imports" || String(r?.type ?? "") === "brain_import") continue
+      const PLAIN_JAVA_IDENT = /^[A-Za-z_$][A-Za-z0-9_$]*$/
+      if (!PLAIN_JAVA_IDENT.test(target)) continue
+      if (JAVA_RESERVED.has(target)) continue
+      if (context.projectIndex.symbolNames.has(target)) continue
+      md.isExternalTarget = true
+      md.externalReason = "project-scope-bare-name"
+      md.externalProof = `ProjectIndex.complete === true; symbolNames has no "${target}"`
+      marked++
     }
     return marked
   }

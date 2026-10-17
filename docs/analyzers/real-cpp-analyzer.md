@@ -1738,3 +1738,5 @@ made. Each item states the measurement that makes the need specific.
   754 include sites. Making both honour `BB_CORPUS_ROOT` (as `differential.ts`
   already does) is a one-line change left undone deliberately: both files are
   shared across four lanes.
+
+- **C8 (2026-10-18): a macro-decorated class WITH a base clause is named by its real sibling identifier, not by its base.** `class GTEST_API_ Derived : public Base {…}` parses as `class_specifier` (name field = the MACRO) + a bare `identifier` sibling (the real name) + an `ERROR` holding `": public Base"`. Arm 1 used to fire on any ERROR holding an identifier and a colon, so it named the class after its BASE and lost the class and its `extends` edge. `colonFirst` now decides: the colon before the identifier means the ERROR is the base clause, arm 3 reads the sibling name, and the ERROR's identifiers are collected as bases. Verified on the C8 shape and on A2/A1 controls (`.tmp-f48/probes/c8-verify.mts`).

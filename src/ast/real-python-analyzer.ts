@@ -1,12 +1,21 @@
-// Real Python Intelligence Engine
-// AST analysis for Python — pure Tree-sitter extraction, no regex fallbacks.
-// M12.27 rewrite: scripting-family contract (JS/TS precedent) — module-level
-// symbols ownerless (Python has no module declaration), class → member
-// contains, leaf-target calls with a Python builtin filter, uppercase-head
-// calls → instantiates, extends from the base-class argument list, imports
-// as `imports module -> path:item`, exports from __all__, overrides via the
-// harness companion index.
-
+// Real Python Intelligence Engine — Author: Muhammad Ishaq Khan
+// WHAT THIS FILE IS. The production AST analyzer for python (.py, .pyi, .pyw): tree-sitter-python
+// in, UniversalSymbols + UniversalRelationships out, pure AST extraction, no regex fallback. IT
+// COVERS ALL TEN RELATIONSHIP TYPES — calls, uses, contains, imports, references, exports, extends,
+// implements, overrides, instantiates — each pinned by validation/m14/fixtures/python/ (declaration
+// of record: script/m14/spec/python-completeness.json).
+// WHERE ITS CONTRACT LIVES. docs/analyzers/real-python-analyzer.md (long form), validation/m14/
+// verification/PYTHON-FIX.md + PYTHON-STATE.md (measured rounds), the instruments under script/m14/
+// (python-endpoint-resolution, python-ontology-census, python-endpoint-defects) and the fixtures'
+// *.mts probes. Incoming resolution is arbitrated by script/m14/incoming-gate.ts under the rule in
+// script/m14/incoming-rule.ts — READ THAT FIRST when adding a claim: a claim is read ONLY where the
+// target names nothing, is verified against the project key space, and never raises `resolved`.
+// WHEN THIS FILE CHANGES, ALSO EDIT the fixture(s) pinning the shape, the contract section of the
+// lane doc, and PYTHON-STATE.md. A new metadata KEY the arbiter reads lives in
+// script/m14/incoming-rule.ts, which is SHARED and Lead-owned: propose, never edit it from a lane.
+// GRAMMAR: tree-sitter-python. Module-level symbols are ownerless, class members ride `contains`,
+// call/use endpoints are LEAVES with the written chain in metadata.qualified (eight fixtures pin it),
+// imports are `module:item`, exports come from `__all__`.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
@@ -799,6 +808,11 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // THE IMPORT-EVIDENCE BINDINGS, before the walk: `certifyImportEvidenceClaims` needs every
     // module-level import this file makes, including the ones written BELOW the name's first use.
     ctx.moduleImportBindings = this.collectModuleImportBindings(rootNode)
+    // A NAME THIS FILE REBINDS AT MODULE SCOPE IS NOT THE IMPORT'S ANY MORE. `import os` then
+    // `os = build_client()` leaves the import statement in the file and the name bound to a VALUE —
+    // the exact shape a rule keyed on the import list would certify. `collectGlobalWriteNames`
+    // already covers `global os; os = …` inside a function.
+    for (const nm of this.collectModuleRebindings(rootNode)) ctx.moduleImportBindings.delete(nm)
 
     // PY-D14 (round 7): the local binding set of every function, computed before the walk for the
     // same reason the two pre-passes above are — a bare-name callee's scope is a fact about the
@@ -4203,6 +4217,73 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (c) stack.push(c)
       }
     }
+    return out
+  }
+
+  /**
+   * THE NAMES THIS FILE REBINDS AT MODULE SCOPE — the subtraction that keeps the import-evidence
+   * claim truthful when the import statement is still in the file but no longer the binding.
+   *
+   *     import os
+   *     os = build_client()          # module scope: `os` is a value now
+   *     os.getenv("X")               # a member call on the client, NOT on the module
+   *
+   * The shapes are the module-level binding forms python has: assignment / augmented assignment,
+   * `for` targets, `with … as` and `except … as` targets, walrus targets, `del`, and — through
+   * `collectGlobalWriteNames`, which PY-D18 already wrote for the module-namespace question — a
+   * `global X; X = …` inside a function. A `def`/`class` binding is covered by the certifier's
+   * `declaredHere` guard instead, because those ARE published symbols.
+   *
+   * POSITION IS NOT CONSULTED, deliberately: a rebinding written ABOVE the import is overwritten by
+   * the import at runtime, so subtracting it under-claims (the safe direction) rather than risking a
+   * claim about a name whose final binding the map cannot order without storing every import line.
+   */
+  private collectModuleRebindings(rootNode: Node): Set<string> {
+    const out = new Set<string>()
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "function_definition" || n.type === "class_definition" || n.type === "lambda" ||
+          n.type === "list_comprehension" || n.type === "set_comprehension" ||
+          n.type === "dictionary_comprehension" || n.type === "generator_expression") continue
+      switch (n.type) {
+        case "assignment":
+        case "augmented_assignment": {
+          const left = n.childForFieldName("left") ?? n.namedChild(0)
+          this.addPatternTargets(left, out)
+          break
+        }
+        case "for_statement": {
+          const left = n.childForFieldName("left") ?? n.namedChild(0)
+          this.addPatternTargets(left, out)
+          break
+        }
+        case "with_item":
+        case "except_clause": {
+          this.addPatternTargets(this.asBindingTarget(n), out)
+          break
+        }
+        case "named_expression": {
+          const target = n.childForFieldName("name") ?? n.namedChild(0)
+          this.addPatternTargets(target, out)
+          break
+        }
+        case "delete_statement": {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c?.type === "identifier") out.add(c.text)
+          }
+          break
+        }
+        default:
+          break
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    for (const nm of this.collectGlobalWriteNames(rootNode).keys()) out.add(nm)
     return out
   }
 

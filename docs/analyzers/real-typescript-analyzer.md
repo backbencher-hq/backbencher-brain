@@ -80,20 +80,20 @@ file this lane does not own:
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | ✅ | `call_expression` → callee leaf name (member expressions reduce to leaf: `obj.method()` → `method`); source = enclosing function/method leaf name; builtins filtered (console.*, Object leaf methods); `super()` filtered (language keyword); `this.x()` → leaf `x` | 1.0 |
-| extends | ✅ | `class_heritage` `extends_clause` → base class leaf name | 1.0 |
-| implements | ✅ | `implements_clause` → each interface leaf name | 1.0 |
+| calls | ✅ | `call_expression` → callee LEAF by `calleeLeafName()` (identifier; member → property, private `#` kept; `(foo)()` → `foo`; call-of-call / subscript / `super` / anonymous / `await`-wrapped member → NO edge); source = enclosing function/method leaf; builtins filtered (console.*, Object leaf methods); `super()` filtered (language keyword) | 0.9 |
+| extends | ✅ | `class_heritage` `extends_clause` → base class name (verbatim: a qualified base stays qualified) | 1.0 |
+| implements | ✅ | `implements_clause` → each interface LEAF name (`heritageBaseName` strips `<...>` AND the qualifier) | 1.0 |
 | instantiates | ✅ | `new_expression` → constructor leaf name (with `contains: owner → constructor` complement) | 1.0 |
-| uses | ✅ | type-reference usage inside type positions → referenced type leaf | 1.0 |
+| uses | ✅ | a VALUE/MEMBER READ in expression position: field access, template interpolation, JSX tag. Type MENTIONS are `references` (the DERIV_TS one-label ruling), EXCEPT predicates/constraints which keep both labels | 0.85–0.9 |
 | imports | ✅ | `import_statement`/`import` specifiers → source = module leaf name, target = `<module>:<name>` (named + default + namespace imports); side-effect-only and `require` forms publish `<module>:*` | 1.0 |
 | imports — type-only marker | ✅ | `metadata.isTypeOnly` — `true` for `import type {…}` (anonymous `type` child of the statement) and for the inline TS 4.5+ form `import { type A, B }` (anonymous `type` child of the `import_specifier`); `false` otherwise. Metadata only: no edge added, removed, or re-pointed | 1.0 |
 | exports | ✅ | `export` statements → source = module leaf, target = exported name; `export default` handled | 1.0 |
 | overrides | ✅ | method in derived class whose name matches a base-class method (base resolved via extends heritage) → `Derived.method → Base.method` | 1.0 |
-| references | ✅ | `identifier` usage resolution within the file → referenced symbol leaf | 1.0 |
+| references | ✅ | a TYPE mention → referenced type name, with `metadata.relationshipType` naming the position (`declared_type`, `return_type`, `type_alias`, `cast_target`, `type_argument`, `satisfies_target`, `type_parameter_constraint`, `type_predicate_target`) | 0.95 |
 | contains | ✅ | namespace → member; class/interface/enum → member; type alias → member; computed from `ownerName` on symbols (single-pass, no per-symbol scan) | 1.0 |
 | depends | — | not emitted (covered by imports) | — |
 | field_access | — | folded into `uses`/`references` (family contract) | — |
-| JSX element usage | ✅ | `jsx_self_closing_element`/`jsx_opening_element` → `uses` relationship to the component function/class | 1.0 |
+| JSX element usage | ✅ | `jsx_self_closing_element`/`jsx_opening_element` → `uses` relationship to the component function/class (`metadata.jsxElement`; only capitalized tags) | 0.9 |
 
 ## Supported constructs
 
@@ -273,3 +273,80 @@ file. Neither is measured by a gate, because M60 still records this analyzer as
 ## Issue
 
 Closes M12.09 (GitHub issue #148).
+
+---
+
+## 2026-10-17 — marking, callee shape, heritage leaf, constraint refs, and the React/TSX boundary
+
+Measured on the 400-file stride (`bun run script/m14/incoming-gate.ts typescript ts 400`,
+population 400 of 13,830 `.ts` files across 39 repos, 0 parse failures). Full evidence, per-revision
+mtime and artifact list: `validation/m14/verification/TYPESCRIPT-STATE.md`.
+
+### External marking now has a THIRD proof: the file's own import specifier
+
+`markExternalTargets` already claimed a name was outside the corpus when the file neither declares
+nor imports it and the name is in a pinned table (runtime globals, test-runner globals, lib types).
+It now ALSO claims a name the file DOES bind when the binding's own `imports` edge names a pinned
+test-framework package (`TS_TEST_FRAMEWORK_MODULES`: `@jest/globals`, `@jest/expect`, `jest`,
+`vitest`, `@vitest/*`, `mocha`, `chai`, `ava`, `tap`, `uvu`, `jasmine`, `sinon`, `expect`,
+`node:test`, `bun:test`, `cypress`, `@playwright/test`, `playwright`, `@testing-library/jest-dom`,
+`supertest`; matched by WHOLE SEGMENT). The file's own import is the evidence, and a name the file
+DECLARES is never marked; the incoming gate still refutes any claim the project publishes
+(`extFAIL` 0). Measured: **+764 verified external claims, −795 unresolved**, every other column flat.
+
+Directly-imported matchers work too: `expect(x).toEqual(y)` marks `toEqual` with
+`externalReceiver: "expect"`. A matcher reached through a LONGER chain (`expect(x).to.equal(y)`)
+does not mark yet — the receiver-head proof only handles a receiver that is itself a call.
+
+### `calls` targets are callee LEAVES by an allowlist, not callee TEXT
+
+`calleeLeafName()` reduces `(foo)()` → `foo`, an identifier to itself, and a member expression to
+its property (private members keep `#`: `this.#step()` → `#step`). Every other callee shape
+publishes NO edge: a call of a call (`f()(x)` — the inner call publishes its own), a subscript,
+`super`, an anonymous function, and `await`/`!`/`as` wrappers around a member. The wrapper rule is
+deliberately narrow and was MEASURED: reducing `await this.request<X>({...})` through `await` emits
+the leaf `request`, which a project can (and one does) declare as an unrelated constant in another
+file — 17 such edges moved into the gate's file-crossing class and the wide version was reverted.
+Measured net effect: all 51 non-identifier `calls` targets are gone; resolved, collRes, ambiguous
+and the file-crossing class are unchanged. `metadata.calleeShape` names the wrapper when one was
+reduced through.
+
+### Heritage leaf and type-parameter constraint references
+
+* `implements Ns.Shape<number>` → `implements Shape` (leaf). A namespace-imported base's stored
+  `qualified_name` is `<module>.<Type>`, never `<alias>.<Type>`, so the dotted spelling could not
+  join; the leaf can. CLASS `extends` still publishes its base verbatim (no fixture pins it).
+* `<T extends C>` publishes `references owner -> C` with
+  `metadata.relationshipType: "type_parameter_constraint"`. The type parameter's OWN name is not a
+  child of `constraint`, so it is never leaked as a type reference.
+* `x is Foo` / `asserts x is Foo` publishes `references owner -> Foo` with
+  `metadata.relationshipType: "type_predicate_target"`, and its `uses` row is exempted from
+  `dropDuplicateTypeMentionLabels` (the one-label ruling applies to ordinary annotations only).
+  The predicate writer's cost/benefit is measured in TYPESCRIPT-STATE.md §R2 — including the one
+  `references` edge it adds to the gate's cross-file class, which the gate's own documentation calls
+  the NORMAL shape for `references`.
+
+### Fixtures: 98 pass / 4 fail (from 96/6)
+
+Fixed: `calls-callee-shape-reduction`, `heritage-parameterized-leaves`. Remaining, each named:
+`re-export-empty-clause`, `re-export-module-dependency` (the re-export emitter is not written), and
+two type-position fixtures. `type-predicate-and-constraint-refs` now fails on exactly ONE row, and
+that row CONTRADICTS `usage-references`: the first REQUIRES `uses takesShape -> Shape` (parameter
+annotation of an in-file type), the second FORBIDS `uses greet -> User` for the same construct.
+`type-reference-uses-surfaces` requires a `meta.declaredTypeRole` key no analyzer emits. Those two
+need a fixture/design RULING, not a quiet patch; do not disable `dropDuplicateTypeMentionLabels`
+wholesale (733 overlapping `uses` pairs measured on microsoft/TypeScript).
+
+### The React / TSX boundary, measured
+
+`.tsx` routes to language id `tsx`, uses `tree-sitter-tsx.wasm`, and runs THIS analyzer — but the
+headline gate invocation is `typescript ts`, so `.tsx` is excluded from every number above.
+Measured on the corpus: **3,377 tracked `.tsx` files** (= the gate's own `git ls-files` population;
+the often-quoted 2,932 excludes the `repositories/proxicall -> ~/ProxiCall` symlink, 445 files),
+17 repos, **none named `react`**. Textual: JSX 3,165 (93.7%), `react`/`react-dom` import 1,811
+(53.6%), `className=` 1,804, `props`/`Props` 1,580, hook calls 618 (`useState` 303, `useEffect` 333).
+Analyzer on a 374-file tsx stride: 374/374 parsed, **1,782 `uses` edges carrying `jsxElement` over
+284 files, 613 distinct component targets, 508 hook calls over 130 files**. A separate `tsx` gate run
+reads 17,083 edges with 0 extFAIL. The corpus is real React but 84% concentrated in 4 repos; the
+proposal `validation/m14/proposals/typescript-react-corpus-widening.md` asks that the lane's gate
+invocation become `typescript ts,tsx 400` so React is inside the measured population at all.

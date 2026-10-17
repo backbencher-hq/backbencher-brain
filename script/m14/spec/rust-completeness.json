@@ -44,11 +44,11 @@
       "visibility_modifier",
       "where_clause",
       "where_predicate",
-      "while_expression"
-    ,
-      "ERROR"],
+      "while_expression",
+      "ERROR"
+    ],
     "_notes": {
-      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-rust-analyzer.ts:244-248), and `error-file-payload.rs` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
+      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-rust-analyzer.ts:244-248), and `error-file-payload.rs` is a committed fixture whose parse tree contains one \u2014 the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
     }
   },
   "internal_silent": {
@@ -173,11 +173,11 @@
       "use_list",
       "use_wildcard",
       "variadic_parameter",
-      "yield_expression"
-    ,
-      "MISSING"],
+      "yield_expression",
+      "MISSING"
+    ],
     "_notes": {
-      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-rust-analyzer.ts:248); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain \u2014 a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-rust-analyzer.ts:248); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
     }
   },
   "gap": {
@@ -504,9 +504,9 @@
     ],
     "excluded": [],
     "corpusUnexercised": [],
-    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. WHOLE admitted population on the production path (`npx tsx script/m14/residual-gate.ts --lane rust`): 2,532 parsed of 2,532 admitted .rs files across 9 repos, 0 parse failures; artifact validation/m14/measurements/task105/rust-whole-population-gate.txt. ALL TEN types fire, each measured with its own count: calls 178,084 · uses 28,019 · contains 21,702 · imports 11,685 · references 38,648 · exports 4,571 · extends 29 · implements 1,793 · overrides 2,169 · instantiates 6,019 — TOTAL 292,719, exactly the sum of the ten rows. THE RUN IS A LOWER BOUND AND SAYS SO, which is the part that must not be smoothed: of the 303 files returning no symbols and no relationships, 253 hold NO CONTENT AT ALL (0 bytes or whitespace — the run missed nothing) and 50 HOLD CONTENT AND RETURNED NOTHING, named in the artifact (cargo's `cargo-test-support` container stubs, `rustfix` no_main fixtures, `cargo_add` fixtures). The gate explicitly REFUSES to decide whether those 50 are parse failures or content that cannot declare anything, and this block does not decide for it. ONE file was DEGRADED (regex fallback) and one analyzer TIMEOUT was logged and aborted (`ripgrep/crates/core/flags/defs.rs`, engine timeout, basic parse result). Every count above is therefore a FLOOR over the files the run could measure, not a ceiling. NO TYPE IS EXCLUDED: the language expresses all ten and the whole admitted population fires all ten, so there is no grammar-absence claim to make and no zero-sites entry to file. ARITHMETIC: 10 implemented + 0 corpus-unexercised + 0 gaps = 10 applicable = 10 − 0 grammar-absence − 0 unclassified. THE 120-FILE FIRING LOG AGREES HERE rather than being refuted — validation/m14/results/firing-laptop-b.current.log line 6-7 reads `RUST 10 types fired 110/110 parsed` with every type counted — and the earlier lane measurement in RUST-D14 (7 labels, 74,584 relationships over 450 files, 2026-09-29) is a SAMPLE whose counts this whole-population run is not comparable with. Every implemented type carries its own `_implemented_measured` count, so the per-type silence attribution has a pointer for each of the ten.",
+    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. WHOLE admitted population on the production path (`npx tsx script/m14/residual-gate.ts --lane rust`): 2,532 parsed of 2,532 admitted .rs files across 9 repos, 0 parse failures; artifact validation/m14/measurements/task105/rust-whole-population-gate.txt. ALL TEN types fire, each measured with its own count: calls 178,084 \u00b7 uses 28,019 \u00b7 contains 21,702 \u00b7 imports 11,685 \u00b7 references 38,648 \u00b7 exports 4,571 \u00b7 extends 29 \u00b7 implements 1,793 \u00b7 overrides 2,169 \u00b7 instantiates 6,019 \u2014 TOTAL 292,719, exactly the sum of the ten rows. THE RUN IS A LOWER BOUND AND SAYS SO, which is the part that must not be smoothed: of the 303 files returning no symbols and no relationships, 253 hold NO CONTENT AT ALL (0 bytes or whitespace \u2014 the run missed nothing) and 50 HOLD CONTENT AND RETURNED NOTHING, named in the artifact (cargo's `cargo-test-support` container stubs, `rustfix` no_main fixtures, `cargo_add` fixtures). The gate explicitly REFUSES to decide whether those 50 are parse failures or content that cannot declare anything, and this block does not decide for it. ONE file was DEGRADED (regex fallback) and one analyzer TIMEOUT was logged and aborted (`ripgrep/crates/core/flags/defs.rs`, engine timeout, basic parse result). Every count above is therefore a FLOOR over the files the run could measure, not a ceiling. NO TYPE IS EXCLUDED: the language expresses all ten and the whole admitted population fires all ten, so there is no grammar-absence claim to make and no zero-sites entry to file. ARITHMETIC: 10 implemented + 0 corpus-unexercised + 0 gaps = 10 applicable = 10 \u2212 0 grammar-absence \u2212 0 unclassified. THE 120-FILE FIRING LOG AGREES HERE rather than being refuted \u2014 validation/m14/results/firing-laptop-b.current.log line 6-7 reads `RUST 10 types fired 110/110 parsed` with every type counted \u2014 and the earlier lane measurement in RUST-D14 (7 labels, 74,584 relationships over 450 files, 2026-09-29) is a SAMPLE whose counts this whole-population run is not comparable with. Every implemented type carries its own `_implemented_measured` count, so the per-type silence attribution has a pointer for each of the ten.",
     "_implemented_measured": {
-      "_unit": "edges published through the production path over the WHOLE admitted 2,532-file rust population (9 repos, 0 parse failures, 1 degraded, 50 content-bearing files returning nothing — so a LOWER BOUND) — CLOSURE block of validation/m14/measurements/task105/rust-whole-population-gate.txt, whose ten per-type rows sum to its own TOTAL of 292,719",
+      "_unit": "edges published through the production path over the WHOLE admitted 2,532-file rust population (9 repos, 0 parse failures, 1 degraded, 50 content-bearing files returning nothing \u2014 so a LOWER BOUND) \u2014 CLOSURE block of validation/m14/measurements/task105/rust-whole-population-gate.txt, whose ten per-type rows sum to its own TOTAL of 292,719",
       "calls": {
         "edges": 178084
       },
@@ -544,8 +544,29 @@
         "key": "importProjectFile",
         "kind": "projectFile",
         "rule": "crate::a::b -> <crate source root>/a/b.rs | a/b/mod.rs; bare `crate` (root group) and `crate::Item` (upper-case root item / wildcard) -> the crate root file (lib.rs or main.rs, refused when BOTH exist); bare `super` (a group of the parent's items) -> the parent module's own file; self::a and super::a at FILE SCOPE -> the same file forms under the module's own / parent's directory. The crate source root is the nearest ancestor with lib.rs or main.rs; src/bin, tests, examples and benches are crate roots of their own. A bare root that is a member of THIS FILE'S WORKSPACE (members list of the nearest ancestor [workspace] manifest; package name with - -> _; lib root from [lib] path or src/lib.rs) -> that member's lib.rs, or its a/b.rs | a/b/mod.rs. Membership rather than any manifest under the project is load-bearing: a whole-tree manifest walk found a test-fixture crate named serde (tests/testsuite/cargo_remove/gc_keep_used_patch/out/serde) and would have claimed 11 real use serde edges. Refused: one-segment non-members, std::/core::/alloc:: roots, self::/super:: inside an inline mod, two-segment crate::Foo, a same-named local module in the importing crate, and any candidate the filesystem does not confirm.",
-        "measured": "cap-400 stride population (bun run script/m14/incoming-gate.ts rust rs 400, 2026-10-17, four readings): imports 1,751 edges / 1,660 unresolved BEFORE -> 1,284 + 376 extOK (internal paths) -> 863 + 797 extOK (workspace members) -> 799 + 861 extOK (crate root and bare super), extFAIL 0 at every reading; TOTAL unresolved 23,637 -> 23,261 -> 22,840 -> 22,776, resolved 9,419 unchanged, ambiguous 9,874 unchanged, arbitraryTwin 13,191 BYTE-IDENTICAL. Census control: validation/m14/fixtures/rust/import-claim-census.mts reports 861 emitted (on unresolved edges), 861 verified against the gate's admitted-file rule, 0 refused, and exits non-zero if either control fails. Row-by-row: validation/m14/fixtures/rust/import-claim-rows.json.",
-        "not_claimed": "The 799 imports still unresolved: 342 one-segment (311 external crate names and 31 bare crate/super/self words), 233 std:: paths, 101 crate:: paths whose module file did not exist in the sample, 34 super::x whose leaf is an item, and 89 external-crate-rooted paths whose crate is not a workspace member. A ::-aware languageNamespace claim for std/core/alloc is a proposal (validation/m14/proposals/), not an emission: the shared matcher is dot-segment-based and Rust spells paths with ::."
+        "measured": "cap-400 stride population (bun run script/m14/incoming-gate.ts rust rs 400, 2026-10-17, four readings): imports 1,751 edges / 1,660 unresolved BEFORE -> 1,284 + 376 extOK (internal paths) -> 863 + 797 extOK (workspace members) -> 799 + 861 extOK (crate root and bare super), extFAIL 0 at every reading; TOTAL unresolved 23,637 -> 23,261 -> 22,840 -> 22,776 -> 22,542 (the last step is the namespace claim, below), resolved 9,419 unchanged, ambiguous 9,874 unchanged, arbitraryTwin 13,191 BYTE-IDENTICAL. Census control: validation/m14/fixtures/rust/import-claim-census.mts reports 861 emitted (on unresolved edges), 861 verified against the gate's admitted-file rule, 0 refused, and exits non-zero if either control fails. Row-by-row: validation/m14/fixtures/rust/import-claim-rows.json.",
+        "not_claimed": "The 565 imports still unresolved: 342 one-segment (311 external crate names and 31 bare crate/super/self words), 101 crate:: paths whose module file did not exist in the sample, 34 super::x whose leaf is an item, 2 self::x, and 86 external-crate-rooted paths whose crate is not a workspace member."
+      },
+      "iteration4_namespace": {
+        "kind": "languageNamespace",
+        "key": "NAMESPACE_CLAIM_KEY",
+        "roots": [
+          "std",
+          "core",
+          "alloc"
+        ],
+        "emittedOn": "imports rows whose written module path is rooted at a system crate and carried no file claim",
+        "authority": "the analyzer's declared root list, not the project's declaration table",
+        "falsifier": "any extFAIL on the rows this reaches refutes the emission rule (pre-registered with the Lead)",
+        "measured": "cap 400: imports unresolved 799 -> 565, extOK 861 -> 1,095, extFAIL 0, arbitraryTwin byte-identical 13,191, fixtures 26/4",
+        "from": "iteration 4, 2026-10-17; arbiter half `namespaceMatchOf` split on `.` and `::` (Lead-owned)"
+      },
+      "systemNamespace": {
+        "key": "languageNamespace",
+        "kind": "namespace",
+        "rule": "An imports target whose ROOT is one of Rust's system crates (std, core, alloc) carries metadata.languageNamespace = [that root]. The arbiter checks the target against the analyzer's declared list (namespaceMatchOf, split on `.` or `::`, longest entry first), never against the project's declaration table, so a project symbol of the same spelling cannot refute it and a target outside the list is refused. Refused: single-segment `std` (a legal project module name) and any root outside the three literals.",
+        "measured": "cap-400 stride population (2026-10-17): 234 claims emitted (std 233, core 1), 234 verified, 0 refuted; imports unresolved 799 -> 565, imports extOK 861 -> 1,095, TOTAL unresolved 22,776 -> 22,542, resolved 9,419 and ambiguous 9,874 unchanged, arbitraryTwin 13,191 unchanged. Census control: validation/m14/fixtures/rust/import-claim-census.mts (namespaceRows in import-claim-rows.json) reproduces the arbiter's segment matcher and exits non-zero on any refuted claim. Whole population (maxFiles 0, 2,532 files): imports 11,703 edges / 234 resolved / 796 ambiguous / 4,794 unresolved / 5,879 extOK / 0 extFAIL; TOTAL extOK 5,879, extFAIL 0.",
+        "falsifier": "any extFAIL on a row this claim reaches refutes the emission rule; the list is three literals and may not grow without a measurement."
       }
     }
   }

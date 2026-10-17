@@ -100,7 +100,13 @@ export const EXTERNAL_KEYS = [
  * would be guessing at what the analyzer meant.
  */
 export type ExternalClaim =
-  | { kind: "owner" | "projectFacts" | "binding" }
+  /**
+   * THE `owner` CLAIM MAY CARRY ITS SPECIFIER, because a specifier is what makes the claim CHECKABLE against
+   * the project's own module space. Analyzers were already publishing `metadata.externalSpecifier` on these
+   * edges and NOTHING read it — so a claim true of the symbol key space could be false of the project, which
+   * is exactly the hole this field closes (see `projectModuleNames`).
+   */
+  | { kind: "owner"; specifier?: string } | { kind: "projectFacts" } | { kind: "binding" }
   // THE FILE CLAIM — "this target names an admitted FILE", checked against the project's own file
   // list. `candidates` is every spelling the loader's conventions produce, because which one the
   // loader will use is a property of the loader and not of the source (see `FILE_CLAIM_KEY`).
@@ -452,7 +458,10 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
       // conflict is visible in bucket 3's own column; the conflict flag is what the rule
       // refutes on, and it is refuted BEFORE the count is read (see `classifyEdge`).
       if (hasCause) return { kind: "cause", base: cause, conflict: true }
-      return { kind: "owner" }
+      return {
+        kind: "owner",
+        specifier: typeof (md as any).externalSpecifier === "string" ? String((md as any).externalSpecifier) : undefined,
+      }
     }
   }
   if (hasCause) return { kind: "cause", base: cause, conflict: false }
@@ -1039,6 +1048,44 @@ function claimDispositionOnAmbiguous(
  * THE ONE RULE. Measurement and control both call this, because two copies of a counting
  * rule are two rules, and the copy the control runs is the one that stays correct.
  */
+/**
+ * THE PROJECT'S OWN MODULE NAMES — every directory basename and every file stem in the admitted file list.
+ *
+ * WHY THIS EXISTS, AND WHY IT IS NOT A `ProjectIndex` LOOKUP. A claim verified against the SYMBOL key space is
+ * making a statement about DECLARATIONS, and a package/directory name is not a declaration. So this is true and
+ * still wrong: "the project key space does not answer `grace_generated_openapi_probe`" — because that name is a
+ * DIRECTORY, the symbols live inside it, and the edge is labelled external while it imports the project's OWN
+ * generated code. Measured by python's lane over 10,649 claimed edges: **1,131 (10.6%) are this shape**, and the
+ * first form of its falsifier returned 0 only because the sample repos had no top-level package — A ZERO OVER AN
+ * EMPTY SET IS NOT A ZERO.
+ *
+ * LANGUAGE-AGNOSTIC ON PURPOSE. The same shape exists elsewhere (java's `org.`/`com.` where "in a multi-module
+ * build `com.acme` IS project source"). Deriving from the FILE LIST rather than a manifest means the check needs
+ * no per-language fact source and covers every lane at once.
+ *
+ * CACHED ON THE FACTS OBJECT because `classifyEdge` runs once per edge and a fleet has ~10^6 of them; rebuilding
+ * this set per call would be O(files) per edge. `ProjectFacts` is stable for a run, so a WeakMap is exact.
+ */
+const MODULE_NAMES_CACHE = new WeakMap<ProjectFacts, Set<string>>()
+function projectModuleNames(facts: ProjectFacts): Set<string> {
+  const hit = MODULE_NAMES_CACHE.get(facts)
+  if (hit) return hit
+  const names = new Set<string>()
+  for (const f of facts.files) {
+    const slash = f.lastIndexOf("/")
+    const base = slash >= 0 ? f.slice(slash + 1) : f
+    const dot = base.lastIndexOf(".")
+    if (dot > 0) names.add(base.slice(0, dot))
+    if (slash > 0) {
+      const dir = f.slice(0, slash)
+      const dSlash = dir.lastIndexOf("/")
+      names.add(dSlash >= 0 ? dir.slice(dSlash + 1) : dir)
+    }
+  }
+  MODULE_NAMES_CACHE.set(facts, names)
+  return names
+}
+
 export function classifyEdge(
   declCount: Map<string, number>,
   kinds: Map<string, Set<string>>,
@@ -1184,7 +1231,16 @@ export function classifyEdge(
     // `facts` IS PASSED THROUGH: it is what lets a path-shaped target be ANSWERED (case 1 = the file is
     // in the project, so the external marker is provably wrong) instead of only refused. Where the
     // caller built no file list, the verdict is the old refusal — unchanged, never quietly accepted.
-    const outcome = verifyExternalClaim(declCount, tgt, facts)
+    let outcome = verifyExternalClaim(declCount, tgt, facts)
+    // THE PROJECT-ABSOLUTE REFINER. A claim can be TRUE of the symbol key space and FALSE of the project: a
+    // package/module root is a DIRECTORY, not a declaration, so the key space cannot answer it and the claim
+    // verifies while the edge names the project's own code. FAIL-CLOSED, NEVER REFUTED — the verdict becomes
+    // `externalUnverified` (`ext?`), so `extFAIL` cannot rise by construction and a claim that later proves
+    // wrong is visible as unverified rather than laundering a gap into a verified external.
+    if (outcome === "externalVerified" && facts && claim.kind === "owner" && claim.specifier) {
+      const root = claim.specifier.split(/[.:/\\]/)[0]
+      if (root.length > 0 && projectModuleNames(facts).has(root)) outcome = "externalUnverified"
+    }
     // WHICH MECHANISM CONFIRMED IT, kept apart on purpose. A dotted target is verified
     // through its OWNER; a bare identifier through the TARGET itself (see
     // verifyExternalClaim). Sharing one label would let a control for one mechanism pass

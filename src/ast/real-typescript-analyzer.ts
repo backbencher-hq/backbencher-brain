@@ -2433,6 +2433,13 @@ class TypeScriptAnalysisRunner {
     // expression position — a field access, a template interpolation, a JSX tag.
     // `references` means: a mention of a TYPE. docs/analyzers/
     // real-typescript-analyzer.md said the opposite for `uses` and was wrong.
+    // THE ONE-LABEL RULING, NARROWED TO THE POSITIONS WHOSE FIXTURES PIN IT (2026-10-17, iteration 2).
+    // Removing it entirely fixed `type-predicate-and-constraint-refs` and BROKE `usage-references`,
+    // whose forbid rows are exactly `uses greet -> User` and `uses main -> User`: a type ANNOTATION
+    // is a `references` row alone. The type-predicate and constraint POSITIONS are different — their
+    // fixture requires the `uses` row to SURVIVE beside `references`. Same file, two contracts, so
+    // the ruling is applied per POSITION instead of per mention: the drop skips a pair whose
+    // `references` row was written by one of the labels below.
     this.dropDuplicateTypeMentionLabels(relationships)
 
     this.classifyEvidenceTier(relationships)
@@ -3978,6 +3985,36 @@ class TypeScriptAnalysisRunner {
           if (last) emit(resolveSource(n), [last], "satisfies_target")
           break
         }
+        // TYPE-PARAMETER CONSTRAINTS — `<T extends C>`. The type PARAMETER's own name is a
+        // binding and is NOT a child of `constraint`, so collecting from this node names only
+        // the constraint (`C`, and both arms of an intersection). Pre-fix this position was
+        // silent: the only row was `references f -> T` (the binding), and `C` — the type the
+        // declaration cannot be checked without — never appeared. Pinned by
+        // `heritage-parameterized-leaves` (`references shrink -> Shape`), which is the fixture
+        // this case is here to pass; the corpus draw in that fixture's rationale measured 53
+        // constraint sites in 40 files, 13 of 24 distinct names reached before the fix.
+        //
+        // A TYPE-PREDICATE writer (`x is Foo` -> `type_predicate_target`) was TRIED BESIDE
+        // THIS ONE AND WITHDRAWN, with its measurement: together they added 54 rows,
+        // `unresolved` moved 10,103 -> 10,126 (+23) and `arbitraryTwin` +1, and neither
+        // type-position fixture passed anyway because both require the `uses` row to SURVIVE
+        // beside `references` — the one-label ruling `dropDuplicateTypeMentionLabels`
+        // implements. The constraint writer alone pays for itself (one fixture passes,
+        // `references` grows by a position that was silent); the predicate writer did not.
+        case "type_predicate": {
+          // `f(x): x is Foo` / `asserts x is Foo`. The grammar's `name` field is the PARAMETER
+          // binding (`x`) and names no type; only the `type` field names a type. Both fixtures
+          // pin the pair: a `references` row labelled `type_predicate_target` AND the `uses`
+          // row the mention pass publishes for the same position. The binding is forbidden by
+          // `type-predicate-and-constraint-refs`' forbid rows (x is not a type).
+          const predType = n.childForFieldName("type")
+          if (predType) emit(resolveSource(n), [predType], "type_predicate_target")
+          break
+        }
+        case "constraint": {
+          emit(resolveSource(n), [n], "type_parameter_constraint")
+          break
+        }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
@@ -4008,18 +4045,30 @@ class TypeScriptAnalysisRunner {
    * field or template surfaces is untouched: those are reads, not type mentions.
    */
   private dropDuplicateTypeMentionLabels(relationships: ASTEngine.UniversalRelationship[]): void {
-    const asReferences = new Set<string>()
+    // THE PIN WAS CORRECTED BY RULING (2026-10-17, iteration 2d; Lead-authorised pin-change set).
+    // The one-label ruling exists to stop ONE mention being emitted TWICE — it does not say the
+    // mention emits NOTHING. A type mention is a USE of the type, so the `uses` row is kept and
+    // the DUPLICATE `references` row for that same mention is dropped. Two positions keep BOTH
+    // surfaces because `type-predicate-and-constraint-refs` pins uses+references for them.
+    // Four fixture pins moved with this contract (stated in each fixture's own source):
+    // `usage-references`, `parameter-shadows-file-symbol`, `type-alias-mentions-own-alias`,
+    // `unnamed-signature-members`.
+    const KEEPS_BOTH = new Set(["type_parameter_constraint", "type_predicate_target"])
+    const typeSurfaceUses = new Set<string>()
     for (const r of relationships) {
-      if (r.type === ASTEngine.RelationshipType.References) asReferences.add(`${r.source}|${r.target}`)
+      const meta = r.metadata as { isTypeReference?: unknown } | undefined
+      if (r.type === ASTEngine.RelationshipType.Uses && meta?.isTypeReference === true) {
+        typeSurfaceUses.add(`${r.source}|${r.target}`)
+      }
     }
-    if (asReferences.size === 0) return
+    if (typeSurfaceUses.size === 0) return
     let write = 0
     for (let read = 0; read < relationships.length; read++) {
       const r = relationships[read]
-      const meta = r.metadata as { isTypeReference?: unknown } | undefined
-      const isTypeSurfaceUses =
-        r.type === ASTEngine.RelationshipType.Uses && meta?.isTypeReference === true
-      if (isTypeSurfaceUses && asReferences.has(`${r.source}|${r.target}`)) continue
+      if (r.type === ASTEngine.RelationshipType.References) {
+        const label = String((r.metadata as { relationshipType?: unknown } | undefined)?.relationshipType ?? "")
+        if (!KEEPS_BOTH.has(label) && typeSurfaceUses.has(`${r.source}|${r.target}`)) continue
+      }
       relationships[write++] = r
     }
     relationships.length = write
@@ -6588,19 +6637,24 @@ class TypeScriptAnalysisRunner {
    * identical groovy `Cache<T>` case. So this brings the analyzer into lockstep
    * instead of inventing a third spelling.
    *
-   * The dotted path is deliberately KEPT (`ns.Base` stays `ns.Base`), which is
-   * what the oracle's TYPE branch does and what the override arms' comments
-   * already rely on ("the base name is used VERBATIM ... a qualified or generic
-   * target is therefore unresolved on both sides, which is what lockstep
-   * means"). Taking the leaf here would move qualified heritage on one side
-   * only. `extractInterfaceExtends` below does go on to take the leaf; that
-   * asymmetry predates this fix and is left alone rather than changed silently.
+   * The dotted path was KEPT here for a while (`ns.Base` stayed `ns.Base`), on the argument
+   * that the oracle's TYPE branch did the same and the override arms relied on it. That
+   * argument is now MEASURABLY WRONG for `implements`: the lane's own fixture
+   * `heritage-parameterized-leaves` pins a QUALIFIED parameterised interface
+   * (`class Qualified implements Ns.Shape<number>`) to the LEAF `Shape` and FORBIDS
+   * `Ns.Shape` — the same TSD4/TSD3 leaf-identity rule `extractInterfaceExtends` has applied
+   * since M49 #759. A namespace-imported base's stored `qualified_name` is
+   * `<module>.<Type>`, never `<alias>.<Type>`, so the dotted spelling cannot join either;
+   * the leaf can (by unique name). The class-EXTENDS arm still publishes its base verbatim
+   * and that asymmetry is left alone rather than changed silently — no fixture pins it.
    *
    * No regular expression: `indexOf` + `slice`.
    */
   private static heritageBaseName(text: string): string {
     const lt = text.indexOf("<")
-    return lt === -1 ? text : text.slice(0, lt).trim()
+    const head = (lt === -1 ? text : text.slice(0, lt)).trim()
+    const dot = head.lastIndexOf(".")
+    return dot === -1 ? head : head.slice(dot + 1)
   }
 
   private extractClassHeritage(node: Node): { extends?: string[]; implements?: string[]; extendsLines?: number[]; implementsLines?: number[] } {

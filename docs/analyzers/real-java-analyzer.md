@@ -93,6 +93,23 @@ direction; the full before/after tables and the intent census are in
    unchanged 263. The gate indexes 4,020 qualifiedName aliases, so `pkg.Type` already reaches the
    declaration's qualified name while a leaf can collide by name. The re-spelling was reverted, with the
    measurement at the emission site.
+3. **A PLAIN IDENTIFIER the WHOLE project does not declare is an external claim — and only then.**
+   `markExternalTargets` marks a target external when it is a plain Java identifier
+   (`/^[A-Za-z_$][A-Za-z0-9_$]*$/`), this file does not declare it, and
+   **`context.projectIndex?.complete === true`** and the complete index's `symbolNames` does not contain
+   it. The test is `=== true`, never object truthiness: `complete` is optional and fail-closed (absent =
+   false; a sampled run is stamped false; a cached whole-run payload reused by a sampled run is
+   re-stamped false by the caller), because a claim resting on a SAMPLED index is refuted by a
+   declaration in an unsampled file of the same repository — the must-not-rise column. **Scope is
+   deliberately narrow:** reserved words are refused (`JAVA_RESERVED`), `imports`/`brain_import` are
+   excluded (their module paths are the arbiter's `importPath` claim, ruling 2 above), and the family
+   binding spelling is untouched. **This retires the earlier "NOT DOABLE" ruling** in
+   `validation/m14/verification/JAVA-RESIDUAL.md` §4: that ruling was right about a per-file analyzer
+   and wrong once the project index could state its own completeness. The control that makes the rule
+   meaningful is a two-file project that declares its own `Map`: complete=true, `symbolNames` contains
+   `Map`, so nothing is marked; drop the `symbolNames` test and the claim flips to refuted. Arms
+   measured: declared+complete → 0 marked · undeclared+complete → 2 marked · undeclared+complete=false
+   → 0 · undeclared+absent → 0. Before/after gate columns are in `JAVA-STATE.md` §11.
 
 ## Supported constructs
 

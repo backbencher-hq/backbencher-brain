@@ -11,6 +11,14 @@
 // Relationship types covered: calls, uses, contains, imports, references,
 // exports, overrides, instantiates. `extends`/`implements` are RULED OUT —
 // C-D1: C has no inheritance grammar; a census showing either is a defect here.
+// `exports` has THREE emission forms and its FALSE edges are ranked above missing
+// ones: a macro is a linkage marker only if EVERY definition of it opens with
+// `extern` and none names `dllimport` (so a platform-varied marker whose arms
+// disagree publishes NOTHING, and an import boundary publishes nothing), a marker
+// on a declaration inside a `compound_statement` publishes nothing, and the
+// attribute path never reads an attribute spelling out of a `#define` line.
+// Pinned by fixtures/c/export-linkage-marker-989 and exports-attribute-989 CONTROL 7;
+// record from iteration 2 in validation/m14/verification/C-STATE.md §0.
 // Where its scripts/validations live: script/m14/spec/c-completeness.json, and
 // validation/m14/fixtures/c/**. Run: script/m14/run-fixtures.ts --lang c;
 // script/m14/incoming-gate.ts c c 400. State + residual: C-FIX.md, C-STATE.md.
@@ -1872,6 +1880,21 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // no file in the corpus defines `SQLITE_API`, so C-D2 applies to the definition
     // exactly as it does to every other cross-file fact. Recorded, not published.
     const linkageMarkerNames = new Set<string>()
+    // #989 false-edge half (iteration 2): the linkage verdict is taken over ALL of a macro's
+    // definitions, not the first one. Two false-edge classes live in the difference, and both are
+    // pinned by fixtures that were AUTHORED for the rule and failed without it:
+    //   (a) `#define CFX_IMPORT extern __declspec(dllimport)` — an IMPORT boundary whose replacement
+    //       list nevertheless OPENS with `extern`. Keying on the first token alone calls it an export
+    //       and inverts the consuming side of a build (c/export-linkage-marker-989, forbidden row).
+    //   (b) `PLATFORM_EXPORT` defined four times — `extern __declspec(dllexport)`, `extern
+    //       __declspec(dllimport)`, `extern`, `extern` — in mutually exclusive platform arms. Only
+    //       one survives preprocessing, so which spelling is in effect depends on the build's -D set
+    //       (C-D2). The boundary holds only where EVERY spelling agrees; keyed on the first
+    //       definition 161 real markers are refused, keyed on ANY 161 edges are false for every
+    //       non-Windows build (c/exports-attribute-989 CONTROL 7, forbidden row).
+    // So a name enters `linkageMarkerNames` iff it has at least one definition, EVERY definition
+    // opens with `extern`, and NO definition names `dllimport`.
+    const linkageVerdicts = new Map<string, { defs: number; allExtern: boolean; anyImport: boolean }>()
     // #989 `overrides`, second shape: the `#undef` + `#define` redefinition of one
     // macro, in source order. Filled by the same pre-pass.
     const macroRedefinitions: Array<{ name: string; row: number; undef: boolean }> = []
@@ -1897,6 +1920,16 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             // consumer of `macroDefOffsets` and exactly wrong here: after an `#undef`
             // the later `#define` is the live one, and the chain is the whole fact.
             preprocOrder.push({ idx: n.startIndex, name: key, row: n.startPosition.row + 1, undef: false })
+            // #989 false-edge half: record EVERY definition's linkage verdict, not the first.
+            // A definition whose replacement is absent (`#define CFX_EMPTY`) decides nothing, so it
+            // cannot be part of an agreement that says "export".
+            {
+              const verdict = linkageVerdicts.get(key) ?? { defs: 0, allExtern: true, anyImport: false }
+              verdict.defs++
+              if (!(val && firstWordOf(val.text) === "extern")) verdict.allExtern = false
+              if (val && stringIncludes(val.text, "dllimport")) verdict.anyImport = true
+              linkageVerdicts.set(key, verdict)
+            }
             if (!macroDefOffsets.has(key)) {
               macroDefOffsets.set(key, {
                 at: nm.startIndex,
@@ -1909,13 +1942,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               // treating that as a value is how a "dimension" turns into a number
               // nobody wrote.
               if (n.type === "preproc_def" && val && !macroValueTexts.has(key)) macroValueTexts.set(key, val.text)
-              // #989: a replacement list whose FIRST TOKEN is the linkage keyword.
-              // `extern` on its own (`#define X extern`) and `extern` with a calling
-              // convention or an attribute behind it (`#define X extern
-              // __declspec(dllexport)`) are the same fact about the macro, and both
-              // are read here. The token test is a character scan on the value node's
-              // own text -- no pattern (lane gate P11).
-              if (val && firstWordOf(val.text) === "extern") linkageMarkerNames.add(key)
+              // #989: the LINKAGE verdict is no longer taken here — see `linkageVerdicts` above
+              // and the agreement rule applied after the walk. The first-token test this line used
+              // to run was the false-edge cause: it read `extern __declspec(dllimport)` as an
+              // export and a platform-disagreeing macro as an export.
             }
           }
         } else if (n.type === "preproc_call") {
@@ -1934,6 +1964,12 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       preprocOrder.sort((a, b) => a.idx - b.idx)
       macroRedefinitions.push(...preprocOrder)
+      // #989 false-edge half: THE AGREEMENT RULE, applied after the walk so EVERY definition has
+      // been seen. A name is a linkage export marker only when its definitions all say the same
+      // thing — at least one definition, every one opening with `extern`, none naming `dllimport`.
+      for (const [name, v] of linkageVerdicts) {
+        if (v.defs > 0 && v.allExtern && !v.anyImport) linkageMarkerNames.add(name)
+      }
     }
 
     // #934: the AST pre-pass above is NOT the whole macro inventory, and the gap
@@ -2380,7 +2416,15 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (
                 marker &&
                 (inArray(EXPORT_MACROS, marker) || linkageMarkerNames.has(marker)) &&
-                node.childForFieldName("declarator")
+                node.childForFieldName("declarator") &&
+                // #989 false-edge half: A MARKER ON A LOCAL DECLARATION IS NOT AN EXPORT.
+                // `CFX_EXPORT int local = 0;` inside a function body publishes an edge to the
+                // interface of a module the symbol is not part of — a FALSE edge, which this
+                // family ranks worse than a missing one. The rule is C's own: an export belongs
+                // to the translation unit's interface, so a BLOCK intervening between the
+                // declaration and file scope disqualifies it. Measured pin:
+                // c/export-linkage-marker-989's forbidden row (it failed without this line).
+                !this.hasInterveningBlock(node)
               ) {
                 const idNode = this.exportedDeclarationName(node)
                 // The exported NAME can never be the marker itself; a recovery-split
@@ -3762,6 +3806,35 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * #989 false-edge half: does a BLOCK intervene between this declaration and file scope?
+   *
+   * The export boundary is a statement about a module's interface, so it only applies to
+   * declarations at file scope. A declaration inside a function body is a local variable, and a
+   * marker on it publishes an edge that asserts a module interface entry for a symbol that has none.
+   * The measured case is `c/export-linkage-marker-989`'s forbidden row:
+   *
+   *     void cfx_holder(void) {
+   *         CFX_EXPORT int cfx_local_not_exported = 0;   <- must publish NOTHING
+   *     }
+   *
+   * `compound_statement` is the C grammar's block: a function body, a bare block, or the body of a
+   * control statement. Walking UP rather than testing the immediate parent is deliberate — `for`/
+   * `if` bodies wrap the block in an extra node, so the immediate parent is not the block.
+   * File-scope declarations reach `translation_unit` with no block on the path, and a declaration
+   * inside a `#ifdef` has only `preproc_if`/`preproc_ifdef` ancestors, so conditional compilation
+   * is NOT mistaken for a block (the two are different facts and this test must not conflate them).
+   */
+  private hasInterveningBlock(node: Node): boolean {
+    let p: Node | null = node.parent
+    while (p) {
+      if (p.type === "compound_statement") return true
+      if (p.type === "translation_unit") return false
+      p = p.parent
+    }
+    return false
+  }
+
+  /**
    * #989: `exports` from the ATTRIBUTE spelling of the boundary.
    *
    * Two forms, both measured on the C-routed sqlite corpus before this existed
@@ -3894,7 +3967,54 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   private preprocGuardAttributeInTree(block: Node): string {
     const marker = this.findExportAttributeNode(block, 0)
     if (marker) return collapseWhitespace(marker.text)
-    return exportAttributeTextIn(block.text)
+    return exportAttributeTextIn(RealCAnalyzer.attributeTextOutsideMacroDefinitions(block.text))
+  }
+
+  /**
+   * Form C reads a GUARD, and a guard holds two different things that must not be conflated:
+   * a BARE attribute written on its own line (`#ifdef _WIN32` / `__declspec(dllexport)` / `#endif`
+   * before `int f(void)` — what Form C exists for), and a `#define` whose replacement list
+   * happens to SPELL an attribute. The second is a MACRO DEFINITION: its export meaning is the
+   * linkage rule's decision, which refuses a macro whose arms disagree, and it is NOT an attribute
+   * written on this declaration. Reading it here re-published a marker the linkage rule had just
+   * refused — measured false edge: `c/exports-attribute-989` CONTROL 7, now pinned:
+   *
+   *   #ifdef PLATFORM_IS_WIN32
+   *   #define PLATFORM_EXPORT extern __declspec(dllexport)     <- definition, not an attribute
+   *   #elif defined(PLATFORM_IS_WIN64)
+   *   #define PLATFORM_EXPORT extern __declspec(dllimport)     <- and an arm that says IMPORT
+   *   #else
+   *   #define PLATFORM_EXPORT extern
+   *   #endif
+   *   PLATFORM_EXPORT void *platform_marker(int n);             <- must publish NOTHING
+   *
+   * A character scan, not a pattern: this file's P11 property forbids new regex literals, and the
+   * test is one directive word at a line start. The filter removes only WHOLE `#define` LINES, so
+   * the bare-attribute shape survives it and a declaration inside the guard cannot be reached by
+   * this path at all (the adjacency check above rejects it before the text is read).
+   */
+  private static attributeTextOutsideMacroDefinitions(text: string): string {
+    const lines = text.split("\n")
+    const kept: string[] = []
+    for (const line of lines) {
+      let i = 0
+      while (i < line.length && (line[i] === " " || line[i] === "\t")) i++
+      let isDefine = false
+      if (line[i] === "#") {
+        i++
+        while (i < line.length && (line[i] === " " || line[i] === "\t")) i++
+        const word = "define"
+        isDefine = true
+        for (let k = 0; k < word.length; k++) {
+          if (line[i + k] !== word[k]) {
+            isDefine = false
+            break
+          }
+        }
+      }
+      if (!isDefine) kept.push(line)
+    }
+    return kept.join("\n")
   }
 
   /**
@@ -3927,7 +4047,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     if (blockStart < 0) return ""
-    return exportAttributeTextIn(lines.slice(blockStart, blockEnd + 1).join("\n"))
+    // #989 false-edge half: a `#define` inside the guard is a MACRO DEFINITION, not an attribute
+    // written on this declaration — see `attributeTextOutsideMacroDefinitions` for the measured case.
+    const guardText = RealCAnalyzer.attributeTextOutsideMacroDefinitions(lines.slice(blockStart, blockEnd + 1).join("\n"))
+    return exportAttributeTextIn(guardText)
   }
 
   /** The export attribute INSIDE a preprocessor block, or null. Bounded by depth, never enters a body. */

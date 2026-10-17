@@ -88,6 +88,14 @@ function extensionFor(lane) {
 
 function resolution(lane) {
   const ext = extensionFor(lane)
+  // INCREMENTAL CACHE: a 48-lane sequential run competes with the agent fleet for the box and has already
+  // been killed by load once. Each lane's reading is written to disk the moment it is measured, so a kill
+  // costs the lane in flight rather than the whole run, and a re-run resumes instead of restarting.
+  const CACHE = path.join(ROOT, ".tmp-lead/matrix-cache.json")
+  let cache = {}
+  try { cache = JSON.parse(fs.readFileSync(CACHE, "utf8")) } catch { cache = {} }
+  const stamp = cache[lane]
+  if (stamp && stamp.cap === CAP && Date.now() - stamp.at < 6 * 3600 * 1000 && stamp.rows) return stamp.rows
   let out = {}
   try {
     const txt = execFileSync("bun", ["run", "script/m14/incoming-gate.ts", lane, ext, CAP], { cwd: ROOT, encoding: "utf8", timeout: 600000 })
@@ -100,6 +108,8 @@ function resolution(lane) {
     }
     if (!Object.keys(out).length) out.__error = `no table for ext "${ext}"`
   } catch (e) { out = { __error: String(e.message).slice(0, 80) } }
+  cache[lane] = { cap: CAP, at: Date.now(), rows: out }
+  try { fs.mkdirSync(path.dirname(CACHE), { recursive: true }); fs.writeFileSync(CACHE, JSON.stringify(cache)) } catch {}
   return out
 }
 

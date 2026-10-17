@@ -1360,6 +1360,90 @@ snapshots and restores every target, and gained `--only <substr>` for iteration 
 the record. The three new mutants: `round18/row-id-per-statement-restored` (checked by the seam pin),
 `round18/module-item-skipped-by-text-restored`, `round18/future-import-dispatch-dropped`.
 
+## INCOMING round 19 — the import-evidence external claim (2026-10-17)
+
+**The defect, in the lane's own words.** `python-endpoint-resolution.ts` has always binned an endpoint
+whose name "binds to a name this file IMPORTED and to nothing in the corpus" as `EXTERNAL` — its own
+axis, its own docstring. The analyzer published no marker for those edges, so `incoming-gate.ts`
+counted every one as `unresolved`: the fleet's finding (a), second instance on this lane. The claim
+now published is `metadata.isExternalTarget` (the arbiter's recognised external key) with two audit
+fields — `externalReason` and `externalSpecifier` — the spelling `real-java-analyzer.ts:4029-4040`
+established for the same job.
+
+**Two shapes, because a python name reaches a module two ways.**
+
+| shape | example | evidence |
+|---|---|---|
+| TARGET-BOUND | `from pathlib import Path` -> `references f -> Path` | the target IS a name this file's module scope binds by a non-relative import |
+| ROUTE-BOUND | `import os` -> `calls f -> getenv`, route `os.getenv` | the target is a member and `metadata.qualified`'s root is such a binding |
+
+`collectModuleImportBindings` reads the bindings (module first segment for `import a.b`, the alias for
+`import a.b as c`, the item/alias for `from m import X [as Y]`); relative imports are skipped because
+they name this project, and `__future__` imports because they bind no name (PY-D19). `dottedChainRoot`
+accepts only a pure dotted identifier chain as route evidence, so `re.sub(...).strip` — whose member
+belongs to the CALL RESULT — is refused while `re.sub` itself is certified. `collectFunctionScopes`
+answers "is this name a LOCAL at the edge's own line?" positionally (LEGB); a file-wide shadow test
+was measured wrong by the lane's own fixture, where one `def f(os)` stripped every other function's
+`os.*` claims.
+
+**It is additive and it is neither a resolution nor a type inference.** The target is never rewritten —
+the leaf endpoint contract eight fixtures pin stands. The arbiter reads an external claim ONLY where
+the target names nothing, so `resolved`, `amb(decl)` and `collRes` cannot move; the claim can only
+re-label an edge that was already a gap as a stated, refutable external dependency. The guards are:
+claim type ∈ {calls, uses, references, extends, implements} · one claim per edge (the builtin
+namespace claim keeps its own) · the file does not DECLARE the target · the reason code does not say
+the name is bound in this file · the target/route-root is not a local at the edge line.
+
+**Fixture and mutation.** `validation/m14/fixtures/python/import-evidence-is-an-external-claim`
+pins 11 positive rows (six modules, both shapes, the `import numpy as np` alias) and 7 forbid rows
+(relative import, declared name, local binding, local receiver, unbound bare callee, expression
+receiver, parameter-shadowed module root). Each guard was removed in turn and the fixture failed on
+exactly one intended row: relative-import -> `LocalBase`, `declaredHere` -> `uses_declared`, the
+pure-chain test -> `expression.strip`, the line-scoped shadow test -> `shadowed_root.getenv`.
+
+**Independent audit.** `validation/m14/fixtures/python/audit-import-claims.py` re-derives the
+file-level evidence with CPython's own `ast` (module-level imports and their bound modules, declared
+names, def/lambda/comprehension scopes with line ranges) and asks every claim back: is the name
+imported, does `externalSpecifier` match CPython's import, is the target declared, is the name a
+local at the edge line. On the first 150 admitted files: **10,649 claims checked, 0
+name-not-imported, 0 specifier-mismatch, 0 shadowed-at-line**; 9 rows hit the audit's deliberately
+generous "declared" set, every one a function-local assignment the analyzer does not publish as a
+symbol (`pad = 4`, `match = None`, `path = os.path.join(...)`), and for route-bound claims the name
+checked is the route root, not the member leaf.
+
+**Measured, 400-cap gate (same stride population):**
+
+| | edges | resolved | collRes | amb(decl) | unresolved | extOK | ext? | extFAIL |
+|---|---|---|---|---|---|---|---|---|
+| before | 44,440 | 11,183 | 2,313 | 5,337 | 27,656 | 264 | 0 | 0 |
+| after | 44,440 | 11,183 | 2,313 | 5,337 | 20,172 | 7,748 | 0 | 0 |
+
+`calls` +5,224 extOK · `uses` +1,206 · `references` +969 · `extends` +349. Binding intent every row
+identical (calls arbitraryTwin 4,182 and nothingAnywhere 11,874, unchanged).
+
+**Measured, whole population (`python py 0`, 11,466 `.py` files, 1,292,855 edges):**
+
+| | resolved | collRes | amb(decl) | unresolved | extOK | residual |
+|---|---|---|---|---|---|---|
+| before | 439,236 | 95,335 | 547,735 | 297,485 | 8,399 | 845,220 · 65.38% |
+| after | 439,236 | 95,335 | 547,735 | 187,889 | 117,995 | 735,624 · 56.90% |
+
+`resolved`, `collRes` and `amb` are byte-identical on 1,292,855 edges — the claim cannot move a name,
+so unresolved → collRes is unreachable by construction and the measurement agrees. `arbitraryTwin`
+did not move (759,326 both runs); `ext?`/`extFAIL` 0; 71,633 claim-carrying ambiguous edges are all
+`ownFileSilent` (another file declares the name — reported, not charged). Per type, unresolved
+before → after: calls 162,352 → 97,009 · uses 45,370 → 24,307 · references 21,708 → 1,998 ·
+extends 3,387 → 44 · implements 140 → 3; `imports` is unchanged at 64,462 (see the proposal).
+
+**What this does NOT claim.** The dynamic class — `self.m()` / `recv.m()`, the target leaf whose
+dispatch class is not in the file — keeps NO claim; the receiver's runtime type is in neither the
+grammar nor the corpus, and `PYTHON-FIX.md` §3 proved a declared-cause relabel is REFUTED for a bare
+leaf (`targetOwner` is null). `imports` targets (`pathlib:Path`, `os:*`) are also NOT claimed: every
+claim kind refuses the colon shape, and fixing that needs a rule change in the Lead-owned
+`script/m14/incoming-rule.ts` — priced in
+`validation/m14/proposals/python-imports-module-namespace-claim.md` (3,554 of 6,661 imports edges on
+the first-400 slice name a stdlib module; ≈53,000 at whole population, 17.8% of the residual).
+
 ## Census
 
 - Baseline (M12 issue #166): 5 census regex entries in `real-python-analyzer.ts`.

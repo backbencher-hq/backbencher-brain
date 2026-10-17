@@ -338,11 +338,27 @@ import { isJsBuiltin, jsBuiltinHasMember } from "./js-builtin-prototypes"
  * admitted files declare a symbol whose name EQUALS their module basename
  * (measured in the lost lineage this constant was recovered from).
  *
- * PRE-SCOPE, stated: this constant is used by the RE-EXPORT rows only in this
- * round, because their fixtures (`reexport-forms`, `star-reexport`) are the ones
- * that pin the sentinel. The other file-level sites (imports/exports/uses) still
- * spell `moduleName`; adopting the sentinel everywhere is the next step and needs
- * the store-side re-run, not a silent partial spelling.
+ * PRE-SCOPE, stated: this constant is used by the RE-EXPORT and EXPORT rows only in
+ * this round, because their fixtures (`reexport-forms`, `star-reexport`, `cjs-export-methods`)
+ * are the ones that pin the sentinel. The other file-level sites (plain/dynamic imports,
+ * top-level calls/instantiates, field-access uses, instanceof refs) still spell `moduleName`.
+ *
+ * ATTEMPTED AND REVERTED IN ITERATION 2, with the measurement recorded here so the next
+ * attempt does not rediscover it: adopting the sentinel at those five sites changed 22,139
+ * of 42,637 rows' SOURCE spelling on the 400-file stride (calls 15,610 · uses 4,746 ·
+ * imports 1,399 · instantiates 358 · references 13) and every fixture was re-baselinable —
+ * but it DID NOT preserve the row population. It surfaced **17 additional rows on the draw**
+ * (42,637 → 42,654), because the field-access/callee dedupe key is `${source}.${seg}`: with
+ * the basename as source, `source="a.b", seg="c"` and `source="a", seg="b.c"` collide on the
+ * key `a.b.c` and one row is silently dropped; `(file)` cannot collide that way, so the
+ * dropped DISTINCT rows reappear. On the arbiter that is **+11 edges (54,582 → 54,593) and
+ * `uses` arbitraryTwin 3,943 → 3,945**, which trips the lane's standing rule ("if
+ * arbitraryTwin rises, REVERT") — so the change was reverted whole, fixtures included. The
+ * rate is unchanged (16.03% either way: the 2 new file-crossing rows are among the 11 newly
+ * surfaced ones, and no pre-existing edge changed class) — but the rule is absolute and the
+ * decision belongs to the owner. THE PATH TO LAND IT: make the dedupe key unambiguous
+ * (`${source}\u0000${seg}`, or key on the owning symbol's identity), THEN adopt the sentinel.
+ * That ordering preserves the population and the axis while recovering the 17 facts.
  *
  * `(` and `)` cannot appear in a JavaScript identifier, so no declaration can be
  * named `(file)` and the store's name lookup cannot attach one of these rows to a
