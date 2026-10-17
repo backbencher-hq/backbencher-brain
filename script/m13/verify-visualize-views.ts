@@ -98,7 +98,11 @@ const studioFor = async (view: string): Promise<{ html: string; payload: Record<
   harness.negative("html: the three documents are distinct (no slot is a duplicate of another)", lengths.size === 3, JSON.stringify([...lengths]))
   harness.check("html: the requested view is the one mounted", html.includes('mount("codemap")'), (html.match(/mount\("\w+"\)/g) ?? []).join(","))
   harness.negative("html: and no other view is mounted in its place", !html.includes('mount("graph")') && !html.includes('mount("class")'), (html.match(/mount\("\w+"\)/g) ?? []).join(","))
-  harness.check("html: the status line names the mounted view", html.includes("Code map view loaded"), "status missing")
+  // THE LABEL IS PINNED, and it is "Symbol map" on purpose: the view drew one rectangle per
+  // symbol and called itself "Code map", which is the name of a different artifact. The negative
+  // twin keeps the retired word from drifting back into the chrome.
+  harness.check("html: the status line names the mounted view", html.includes("Symbol map view loaded"), "status missing")
+  harness.negative("html: and the retired label is gone from the studio chrome", !html.includes("Code map view loaded") && !html.includes(">Code</span>"), "the old label is still in the shell")
 
   const graphStudio = await studioFor("graph")
   harness.check("html: view=graph mounts the map", graphStudio.html.includes('mount("graph")') && !graphStudio.html.includes('mount("codemap")'), (graphStudio.html.match(/mount\("\w+"\)/g) ?? []).join(","))

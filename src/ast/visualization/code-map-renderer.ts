@@ -191,8 +191,9 @@ export const CODE_MAP_BODY = assemble([
 <div id="zoomhint">scroll to zoom &middot; drag to pan &middot; click a file or symbol for its stored facts</div>
 <div id="side">
   <div id="hud">
-    <h1>Code Map</h1>
-    <div class="sub">bb_visualize &middot; one rectangle per SYMBOL, sized by its lines</div>
+    <h1>Symbol map</h1>
+    <div class="sub">bb_visualize &middot; area = the LINES each SYMBOL spans, nested directory › file › symbol</div>
+    <div class="sub">this is a SYMBOL map, not a token-level code map: the index stores line spans, not tokens</div>
     <div id="stats"></div>
     <div class="note" id="excluded"></div>
   </div>
@@ -914,7 +915,7 @@ export function renderCodeMapDocument(o: {
     "<head>",
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    "<title>Backbencher Code Map</title>",
+    "<title>Backbencher Symbol Map</title>",
     "<style>",
     CODE_MAP_CSS,
     "</style>",

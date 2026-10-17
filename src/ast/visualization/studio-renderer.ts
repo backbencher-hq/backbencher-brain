@@ -77,7 +77,11 @@ export function renderVisualizationStudio(documents: {
       var rail = document.getElementById("rail");
       var status = document.getElementById("status");
       var buttons = Array.prototype.slice.call(document.querySelectorAll(".mode"));
-      var labels = { graph: "Graph", codemap: "Code map", class: "UML" };
+      // The labels name what is DRAWN. "Code map" is the name of a different artifact (Sourcegraph's
+      // Chromium map draws every TOKEN of every file); this view draws one rectangle per SYMBOL,
+      // sized by the lines it spans. "UML" promised attributes, methods, cardinalities and
+      // visibility; this view draws types and three relationship kinds and nothing else.
+      var labels = { graph: "Graph", codemap: "Symbol map", class: "Type diagram" };
       // WHICH DOCUMENT IS IN THE FRAME, read from the document itself.
       //
       // The styling used to branch on \`frame.dataset.mode\` — the slot the studio
@@ -170,10 +174,10 @@ export function renderVisualizationStudio(documents: {
     '<button id="toggle" type="button" aria-label="Open visualization menu" aria-expanded="false">＋</button>',
     '<div id="modes" role="tablist" aria-label="Visualization mode">',
     '<button class="mode active" type="button" role="tab" data-mode="graph" aria-selected="true"><span class="glyph">◌</span><span class="label">Graph</span></button>',
-    '<button class="mode" type="button" role="tab" data-mode="codemap" aria-selected="false"><span class="glyph">▦</span><span class="label">Code</span></button>',
-    '<button class="mode" type="button" role="tab" data-mode="class" aria-selected="false"><span class="glyph">◇</span><span class="label">UML</span></button>',
+    '<button class="mode" type="button" role="tab" data-mode="codemap" aria-selected="false" title="one rectangle per SYMBOL, area = the lines it spans — not a token-level code map"><span class="glyph">▦</span><span class="label">Symbol map</span></button>',
+    '<button class="mode" type="button" role="tab" data-mode="class" aria-selected="false" title="types with inheritance, implementation and containment only — no attributes, methods, cardinalities or visibility, because the index stores none"><span class="glyph">◇</span><span class="label">Type diagram</span></button>',
     "</div>",
-    '<div id="status" aria-live="polite">' + ({ graph: "Graph", codemap: "Code map", class: "UML" }[initial]) + " view loaded</div>",
+    '<div id="status" aria-live="polite">' + ({ graph: "Graph", codemap: "Symbol map", class: "Type diagram" }[initial]) + " view loaded</div>",
     "</nav></main>",
     '<script id="bb-studio-data" type="application/json">', payload, "</script>",
     "<script>", script, "</script></body></html>",

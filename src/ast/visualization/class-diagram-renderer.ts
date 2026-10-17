@@ -134,7 +134,8 @@ export const CLASS_BODY = assemble([
   </defs><g id="edges"></g></svg>
 </div>
 <div class="panel" id="hud">
-  <h1>Class Diagram</h1>
+  <h1>Type diagram</h1>
+  <div class="sub" style="margin-top:4px">inheritance, implementation and containment only &middot; no attributes, methods, cardinalities or visibility, because the index does not store them</div>
   <div class="sub">bb_visualize &middot; types and relationships the index actually stores</div>
   <div id="stats"></div>
   <div id="warn"></div>
@@ -963,7 +964,7 @@ export function renderClassDocument(o: {
     "<head>",
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    "<title>Backbencher Class Diagram</title>",
+    "<title>Backbencher Type Diagram</title>",
     "<style>",
     CLASS_CSS,
     "</style>",
