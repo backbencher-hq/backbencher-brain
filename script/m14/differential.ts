@@ -433,8 +433,16 @@ export const LANG_REPOS_SECOND: Record<string, string> = {
   perl: "mojo",
   bash: "fsharp",
   json: "otp",
+
 }
 export const LANG_REPOS: Record<string, string> = {
+  // THESE THREE WERE MISSING FROM THE PRIMARY MAP, so `repoForSweep` returned null and the differential reported
+  // "no corpus repo mapped in LANG_REPOS and none checked out -- declared unrun" for lanes whose repositories
+  // were present. An earlier attempt inserted them into LANG_REPOS_SECOND instead: a regex written for
+  // `LANG_REPOS` also matches `LANG_REPOS_SECOND` because the former is a prefix of the latter.
+  nim: "nim",
+  graphql: "gql-graphql-platform",
+  protobuf: "pb-googleapis",
   // M14 #277: bash's primary corpus is `otp` — 80 tracked .sh files, the largest
   // bash holding in CORPUS_ROOT, and hand-written build/install tooling rather
   // than machine output. The M12 pin (`fsharp`, 32 files) is retained as the
