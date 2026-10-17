@@ -45,6 +45,7 @@ import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
 import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 import { visualizeProject } from "../../src/intelligence/visualization/visualization-engine"
+import { BrainDatabase } from "../../src/brain/database"
 import { Harness } from "./harness"
 
 const harness = new Harness({
@@ -270,6 +271,43 @@ harness.check("control: default patterns are the documented twelve", JSON.string
   harness.negative("offset: a valid cursor is NOT reported as adjusted", (p1.truncation.boundsAdjusted ?? []).length === 0, JSON.stringify(p1.truncation.boundsAdjusted ?? null))
 }
 
+
+// ── overlays: an annotation is a fact about a symbol, not a separate page ────
+//
+// The review's capability gap #6: the index already holds agent annotations, security findings
+// and orphan findings, and a map that cannot carry ANY of them is a map of one layer. The layer
+// is declared even when it is empty — "no note on these symbols" is a fact about the answer,
+// and silence is not the same reply. The match is on NAME **and** PATH, because the store keys
+// notes that way and a name is not an identity: a note written against `parse` in one directory
+// must never appear on `parse` in another.
+{
+  const db = await BrainDatabase.getRawInstance(projectId)
+  const annotate = (id: string, name: string, symbolPath: string | null, body: string, authorClass = "agent"): void => {
+    db.prepare(
+      "INSERT INTO brain_annotation (id, project_id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated) VALUES (?,?,?,?,?,?,?,?,?)",
+    ).run(id, projectId, name, symbolPath, authorClass, "verify-visualize-options", body, Date.now(), Date.now())
+  }
+  const parseNode = (base.nodes as any[]).find((node) => node.name === "parse")
+  harness.check("annotations: the control answer declares an EMPTY layer rather than silence", base.considered?.overlays?.annotations?.notes === 0 && base.considered?.overlays?.annotations?.items?.length === 0, JSON.stringify(base.considered?.overlays?.annotations))
+  harness.check("annotations: and the rule says how a note is attributed", String(base.considered?.overlays?.annotations?.rule ?? "").includes("NAME and PATH"), String(base.considered?.overlays?.annotations?.rule ?? ""))
+  annotate("note-1", "parse", "src/api/parse.ts", "parsing is the hot path; keep it allocation-free")
+  annotate("note-2", "parse", "src/elsewhere/parse.ts", "this note is about ANOTHER parse and must not be attached")
+  annotate("note-3", "vendoredThing", "vendor/lib.ts", "a note on a symbol this page does not contain")
+  const noted = await run({})
+  const layer = noted.considered?.overlays?.annotations
+  harness.check("annotations: the note on the returned symbol is attached", layer?.notes === 1 && layer?.nodes === 1, JSON.stringify(layer))
+  harness.check("annotations: and attributed to the NODE it was written on", parseNode && layer?.items?.[0]?.node === parseNode.id && layer.items[0].body.includes("hot path"), `item=${JSON.stringify(layer?.items?.[0])} parseNode=${parseNode?.id}`)
+  harness.check("annotations: the author class is carried", layer?.items?.[0]?.author === "agent", JSON.stringify(layer?.items?.[0]))
+  harness.check("annotations: a note on the same NAME at another path is counted, not attached", layer?.notesOnOtherPaths === 1, JSON.stringify({ notes: layer?.notes, other: layer?.notesOnOtherPaths }))
+  harness.negative("annotations: a note on a symbol this page does not return is not counted", (layer?.notes ?? 0) + (layer?.notesOnOtherPaths ?? 0) === 2, JSON.stringify(layer))
+  const notedText = (await handlers.bb_visualize({ scope: "project", format: "text" }, ctx)).content[0].text as string
+  harness.check("annotations: the DEFAULT text format states the layer", /^annotations: 1 agent note\(s\) on 1 of the returned symbols/m.test(notedText), notedText.split("\n").find((line) => line.startsWith("annotations:")) ?? "(no annotations line)")
+  harness.check("annotations: and names the notes it refused to attach", notedText.includes("another path and are NOT attached"), notedText.split("\n").find((line) => line.startsWith("annotations:")) ?? "")
+  db.prepare("DELETE FROM brain_annotation WHERE project_id=? AND id IN ('note-1','note-2','note-3')").run(projectId)
+  const cleaned = await run({})
+  harness.check("annotations: removing the notes empties the layer again", cleaned.considered?.overlays?.annotations?.notes === 0, JSON.stringify(cleaned.considered?.overlays?.annotations?.notes))
+  harness.negative("annotations: the layer is not a constant — it moved twice", base.considered?.overlays?.annotations?.notes === 0 && layer?.notes === 1, `${base.considered?.overlays?.annotations?.notes} -> ${layer?.notes}`)
+}
 
 // ── view (F4a: the text format names the picture it describes) ───────────────
 {

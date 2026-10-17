@@ -146,6 +146,33 @@ export interface VisualizationResult {
     /** The same, by language — the question "how much of this project is TypeScript" was
      *  answerable only by opening the HTML artifact. */
     languageCensus: Record<string, number>
+    /** The index's OTHER facts about the nodes this answer returned, as a declared layer.
+     *
+     *  MEASURED as a gap in the review's capability list: a picture that carries only nodes and
+     *  edges is a map of ONE layer, while the same index already holds agent annotations
+     *  (`bb_annotate`), security findings and orphan findings. A note written on a symbol is a
+     *  fact about that symbol, and the map that cannot show it is the one a reader trusts less
+     *  than they should.
+     *
+     *  Annotations are matched by (symbol name, symbol path), which is how the store keys them
+     *  rather than by symbol id — so a note whose path does not match any returned symbol is
+     *  COUNTED (`notesOnOtherPaths`) instead of silently attached to a same-named symbol
+     *  elsewhere in the project. A name is not an identity. */
+    overlays?: {
+      annotations: {
+        /** Notes matched to a RETURNED node. */
+        notes: number
+        /** How many of the returned nodes carry at least one. */
+        nodes: number
+        /** Notes whose symbol name matched but whose path did not — not attached. */
+        notesOnOtherPaths: number
+        /** The notes themselves, bounded, with the node each is attributed to. */
+        items: { node: string; name: string; author: string; body: string; updated: string }[]
+        /** True when `items` was cut; `notes` is always the true count. */
+        capped: boolean
+        rule: string
+      }
+    }
     /** WHICH PAGE this answer is, stated rather than left to be inferred by subtracting
      *  the other numbers in the reply.
      *
@@ -1005,6 +1032,49 @@ export async function visualizeProject(projectId: string, request: Visualization
   // from being mistaken for the end.
   const cursor = offset + nodes.length
   const nextOffset = moreRowsExist && nodes.length > 0 && cursor < totalNodesAvailable ? cursor : null
+  // ── the annotation layer ────────────────────────────────────────────────────
+  // The store keys a note by (project, symbol_name, symbol_path), so the match is on those two
+  // fields and never on the id: two symbols can share a name, and a note written against one of
+  // them must not appear on the other. Read in one query bounded by the returned node ids' own
+  // names, then attributed in memory so a path mismatch is counted rather than guessed.
+  const annotationOverlay = (() => {
+    const names = [...new Set((nodes as any[]).map((node) => String(node.name ?? "")).filter((name) => name.length > 0))]
+    const empty = { notes: 0, nodes: 0, notesOnOtherPaths: 0, items: [] as any[], capped: false, rule: "notes are matched to a returned symbol by NAME and PATH, never by name alone: a note whose path matches no returned symbol is counted on notesOnOtherPaths instead of being attached to a same-named symbol elsewhere" }
+    if (names.length === 0) return empty
+    const placeholders = names.map(() => "?").join(",")
+    const rows = raw
+      .prepare(`SELECT symbol_name, symbol_path, author_class, body, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name IN (${placeholders}) ORDER BY time_updated DESC`)
+      .all(projectId, ...names) as any[]
+    if (rows.length === 0) return empty
+    const byName = new Map<string, any[]>()
+    for (const node of nodes as any[]) {
+      const key = String(node.name ?? "")
+      if (!byName.has(key)) byName.set(key, [])
+      byName.get(key)!.push(node)
+    }
+    const items: any[] = []
+    const hitNodes = new Set<string>()
+    let notes = 0
+    let notesOnOtherPaths = 0
+    for (const row of rows) {
+      const candidates = byName.get(String(row.symbol_name ?? "")) ?? []
+      const wantPath = row.symbol_path == null ? null : String(row.symbol_path)
+      const target = candidates.find((node) => wantPath == null || String(node.filePath ?? "") === wantPath || String(node.filePath ?? "").endsWith(`/${wantPath}`))
+      if (!target) { notesOnOtherPaths++; continue }
+      notes++
+      hitNodes.add(String(target.id))
+      if (items.length < 50) {
+        items.push({
+          node: String(target.id),
+          name: String(target.name ?? ""),
+          author: String(row.author_class ?? "unknown"),
+          body: String(row.body ?? "").slice(0, 280),
+          updated: new Date(Number(row.time_updated ?? 0)).toISOString(),
+        })
+      }
+    }
+    return { notes, nodes: hitNodes.size, notesOnOtherPaths, items, capped: notes > items.length, rule: empty.rule }
+  })()
   const page = {
     offset,
     limit: maxNodes,
@@ -1015,7 +1085,7 @@ export async function visualizeProject(projectId: string, request: Visualization
     nextOffset,
     rule: `the same total order the ranking uses — ${nodeSelectionNote}${offset > 0 ? `, after the first ${offset}` : ", from the first"}`,
   }
-  return { scope, target: target || null, format: request.format ?? "text", view: request.view ?? "graph", nodes, links, classMembers, excluded: graph.excluded, declaredAbsent, absenceNote, totalNodesAvailable, provenance: { source: "canonical-graph-engine", indexedProject: projectId, linksOmittedWithNodeCut, linksOmittedByBudget }, considered: { relationshipsBetweenSelectedNodes, relationshipSelection: `every relationship connecting two of the ${nodeIds.size} returned nodes — complete for this node set, not a slice of the relationship table${ownerCascade.rowsFolded > 0 ? `, including ${ownerCascade.rowsFolded} row(s) stored on members of selected classes and folded onto the owner (marked ownerCascade)` : ""}`, relationshipSetTruncated, nodeSelection: nodeSelectionNote, languagesConsidered: request.languages?.length ? request.languages : null, relationshipTypesConsidered: request.relationshipTypes?.length ? request.relationshipTypes : null, symbolKindsConsidered: request.symbolKinds?.length ? request.symbolKinds : null, kindCensus, languageCensus, page, ownerCascade: { ...ownerCascade, rule: "a relationship stored on a member of a SELECTED class-like symbol is attributed to that symbol; the edge is marked ownerCascade with the member it came through (matchedMembers), the member itself keeps its exact edge when it is also in the node set, and the symbol at the other end is added to the node set so the folded edge can be drawn at all — the stored row is never modified" } }, truncation: { truncated, originalNodes, originalLinks, maxNodes, maxLinks, reason: truncated ? "output limits" : null, totalNodesAvailable, offset, nextOffset: page.nextOffset, ...(boundsAdjusted.length ? { boundsAdjusted } : {}) } }
+  return { scope, target: target || null, format: request.format ?? "text", view: request.view ?? "graph", nodes, links, classMembers, excluded: graph.excluded, declaredAbsent, absenceNote, totalNodesAvailable, provenance: { source: "canonical-graph-engine", indexedProject: projectId, linksOmittedWithNodeCut, linksOmittedByBudget }, considered: { relationshipsBetweenSelectedNodes, relationshipSelection: `every relationship connecting two of the ${nodeIds.size} returned nodes — complete for this node set, not a slice of the relationship table${ownerCascade.rowsFolded > 0 ? `, including ${ownerCascade.rowsFolded} row(s) stored on members of selected classes and folded onto the owner (marked ownerCascade)` : ""}`, relationshipSetTruncated, nodeSelection: nodeSelectionNote, languagesConsidered: request.languages?.length ? request.languages : null, relationshipTypesConsidered: request.relationshipTypes?.length ? request.relationshipTypes : null, symbolKindsConsidered: request.symbolKinds?.length ? request.symbolKinds : null, kindCensus, languageCensus, page, overlays: { annotations: annotationOverlay }, ownerCascade: { ...ownerCascade, rule: "a relationship stored on a member of a SELECTED class-like symbol is attributed to that symbol; the edge is marked ownerCascade with the member it came through (matchedMembers), the member itself keeps its exact edge when it is also in the node set, and the symbol at the other end is added to the node set so the folded edge can be drawn at all — the stored row is never modified" } }, truncation: { truncated, originalNodes, originalLinks, maxNodes, maxLinks, reason: truncated ? "output limits" : null, totalNodesAvailable, offset, nextOffset: page.nextOffset, ...(boundsAdjusted.length ? { boundsAdjusted } : {}) } }
 }
 
 export function formatVisualization(result: VisualizationResult): string {
@@ -1072,7 +1142,17 @@ export function formatVisualization(result: VisualizationResult): string {
     }
     if (languages.length) {
       lines.push(`returned languages: ${languages.map(([language, n]) => `${language} ${n}`).join(", ")}`)}
-    if (result.considered.ownerCascade?.rowsFolded) {
+    // The annotation layer is stated even when it is empty, for the same reason `excluded` is:
+    // silence and zero must not be the same reply. "No agent has annotated these symbols" is a
+    // fact about the answer; "nobody looked" is not.
+    if (result.considered.overlays?.annotations) {
+      const a = result.considered.overlays.annotations
+      lines.push(
+        a.notes > 0
+          ? `annotations: ${a.notes} agent note(s) on ${a.nodes} of the returned symbols, matched by name AND path${a.notesOnOtherPaths > 0 ? ` (${a.notesOnOtherPaths} note(s) name a symbol of this scope at another path and are NOT attached)` : ""}${a.capped ? `, ${a.items.length} carried` : ""}`
+          : `annotations: none on the returned symbols${a.notesOnOtherPaths > 0 ? ` (${a.notesOnOtherPaths} note(s) name a symbol of this scope at another path and are NOT attached)` : ""} — the index's agent notes were read, and none matches this page`,
+      )
+    }    if (result.considered.ownerCascade?.rowsFolded) {
       const c = result.considered.ownerCascade
       lines.push(`owner cascade: ${c.rowsFolded} relationship(s) stored on members of selected classes are attributed to the class (marked ownerCascade${c.nodesAdded ? `, ${c.nodesAdded} connected symbol(s) drawn so the folded edges have ends` : ""}${c.nodesDropped ? `, ${c.nodesDropped} of them fell outside the node budget` : ""}${c.capped ? ", capped" : ""})`)
     }
