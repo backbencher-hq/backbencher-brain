@@ -77,24 +77,62 @@ const LIB = path.posix.join(ROOT, "script/lib/lock.ts")
 const EV = path.posix.join(ROOT, "script/lib/evidence.ts")
 
 // --- child helpers ------------------------------------------------------------
-// A holder: takes the lock, announces it, sleeps, releases.
+// A holder: takes the lock, announces it, HOLDS until released, then releases.
 // Children signal through FILES, not stdout: this suite polls with a sync
 // wait (Atomics.wait), which blocks the event loop — stdout callbacks cannot
 // run while polling, so a stdout-based handshake would deadlock the check.
+//
+// The hold is COOPERATIVE, not a fixed sleep. See startHolder() below for the
+// measurement that forced it.
 const holderChild = path.join(tmp, "holder-child.ts")
 writeFileSync(
   holderChild,
   `import { acquireLock } from ${JSON.stringify(LIB)}\n` +
-    `import { writeFileSync } from "node:fs"\n` +
+    `import { existsSync, writeFileSync } from "node:fs"\n` +
     `import path from "node:path"\n` +
     `const [dir, holdMs] = process.argv.slice(2)\n` +
     `const h = acquireLock(dir, { gate: "holder-child" })\n` +
     `writeFileSync(path.join(dir, "held.marker"), String(process.pid))\n` +
-    `const t = Number(holdMs)\n` +
-    `Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, t)\n` +
+    `const cap = Date.now() + Number(holdMs)\n` +
+    `const flag = path.join(dir, "release.flag")\n` +
+    `while (Date.now() < cap && !existsSync(flag)) {\n` +
+    `  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25)\n` +
+    `}\n` +
     `h.release()\n` +
     `writeFileSync(path.join(dir, "released.marker"), "1")\n`,
 )
+
+/** Start a holder and wait until it PROVABLY holds the lock.
+ *
+ * Every contention check used to spawn the holder, poll for the lock file for
+ * at most 5s, and let the holder sleep a fixed 1.5–2s. A cold `npx tsx` boot
+ * was measured at >6s on this machine (the manual holder took longer to print
+ * LOCKED than a 6s shell sleep), so the poll expired before the child had even
+ * imported the library. L5 then wrote unopposed and reported "it wrote
+ * anyway", and the M1/M5 can-fail probes passed VACUOUSLY — there was no
+ * contender to refuse them. A gate reporting the machine's load instead of the
+ * write path is the class M61 exists to make extinct, so the handshake is now
+ * cooperative and the caller must assert `started` before trusting a verdict. */
+function startHolder(dir: string, holdMs = 120_000): { started: boolean; release: () => Promise<void> } {
+  const proc = spawn("npx", ["tsx", holderChild, dir, String(holdMs)], { stdio: "ignore" })
+  // 60s, not 5s: the boot budget is about the box, not the property under test.
+  const started = waitFor(path.join(dir, "held.marker"), 60_000) && existsSync(path.join(dir, LOCK_FILE))
+  let stopped = false
+  const release = async (): Promise<void> => {
+    if (stopped) return
+    stopped = true
+    writeFileSync(path.join(dir, "release.flag"), "1")
+    const exited = await Promise.race([
+      new Promise<boolean>((resolve) => proc.on("exit", () => resolve(true))),
+      new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 20_000)),
+    ])
+    if (!exited) {
+      proc.kill()
+      await new Promise((resolve) => proc.on("exit", resolve))
+    }
+  }
+  return { started, release }
+}
 
 // A writer: 100 locked read-modify-write cycles on ONE shared file, recording
 // the sequence it committed INSIDE the critical section.
@@ -130,9 +168,12 @@ try {
   // --- L1: bounded wait, loud refusal ------------------------------------------
   console.log("L1: bounded wait and loud refusal (real second process)")
   const dir1 = path.join(tmp, "dir1")
-  const holder = spawn("npx", ["tsx", holderChild, dir1, "2500"], { stdio: "ignore" })
-  const announced = waitFor(path.join(dir1, "held.marker"), 10_000)
-  check("L1: the holder process announced the lock (marker + lock file)", announced && existsSync(path.join(dir1, LOCK_FILE)), `announced=${announced}`)
+  const holder = startHolder(dir1)
+  check(
+    "L1: the holder process announced the lock (marker + lock file)",
+    holder.started,
+    `held.marker=${existsSync(path.join(dir1, "held.marker"))} lock=${existsSync(path.join(dir1, LOCK_FILE))}`,
+  )
 
   let entered = false
   let refusal: GateLockError | null = null
@@ -152,7 +193,8 @@ try {
   )
   check("L1: the refusal is not a steal — the holder's lock is untouched", existsSync(path.join(dir1, LOCK_FILE)))
 
-  // Wait for the holder to finish, then the lock must be free.
+  // Release the holder, then the lock must be free.
+  await holder.release()
   const released = waitFor(path.join(dir1, "released.marker"), 10_000)
   check("L1: the holder released (marker + lock file gone)", released && !existsSync(path.join(dir1, LOCK_FILE)), `released=${released} lockStillThere=${existsSync(path.join(dir1, LOCK_FILE))}`)
 
@@ -254,8 +296,8 @@ try {
   // --- L5: the ONE write path takes the lock -------------------------------------
   console.log("L5: writeSealed contends on the dir lock (the write path is serialized)")
   const dir5 = path.join(tmp, "dir5")
-  const holder5 = spawn("npx", ["tsx", holderChild, dir5, "2000"], { stdio: ["ignore", "pipe", "inherit"] })
-  check("L5: holder acquired the dir5 lock", waitFor(path.join(dir5, LOCK_FILE)))
+  const holder5 = startHolder(dir5)
+  check("L5: holder acquired the dir5 lock", holder5.started, `held.marker=${existsSync(path.join(dir5, "held.marker"))} lock=${existsSync(path.join(dir5, LOCK_FILE))}`)
   const contendedPath = path.join(dir5, "write-under-contention.json")
   let writeRefusal: GateLockError | null = null
   try {
@@ -266,9 +308,11 @@ try {
   }
   check("L5: writeSealed refuses under contention instead of writing unlocked", writeRefusal !== null, writeRefusal?.reason ?? "it wrote anyway!")
   check("L5: nothing was written while the lock was held", !existsSync(contendedPath))
-  holder5.kill()
-  await new Promise((r) => holder5.on("exit", r))
-  rmSync(path.join(dir5, LOCK_FILE), { force: true }) // holder was killed before release
+  // Cooperative release, then assert the release actually cleared the lock —
+  // the old version killed the child and deleted the lock file itself, which
+  // made the teardown look like a release that never happened.
+  await holder5.release()
+  check("L5: the holder released its lock after the refusal", !existsSync(path.join(dir5, LOCK_FILE)))
 
   // --- L4: adoption audit ---------------------------------------------------------
   console.log("L4: lane adoption (evidence writes go through the one write path)")
@@ -286,7 +330,52 @@ try {
     "script/m25/verify-auto-index.ts", // consent store — declared out of D-1 scope
     "script/m25/verify-install-docs.ts", // transient vscode-test results.json (harness output, not a record)
     "script/m61/verify-governance.ts", // G1's tampered-record fixture (written to a temp path, then removed)
+    "script/m55/verify-relations.ts", // R5's fixture workspace: a package.json for the INDEXER to read, not a record
+    "script/m61/verify-seal-audit.ts", // A5's tamper fixtures (edited/stripped/malformed copies in a temp dir, removed after) — the same shape as verify-sealing and verify-governance above
   ])
+
+  /** Evidence-shaped writes that are NOT under the declared lock.
+   *
+   * The rule is "the write holds the lock", not "the file never calls
+   * writeFileSync" — so a write inside a `withLock(...)` callback is ADOPTED and
+   * is not reported. Without that distinction the register's single write path
+   * (script/m61/seal_register.ts, which locks the dir around its bare write)
+   * reported as the offender it had just stopped being. Brace depth is tracked
+   * so the region ends where the callback ends.
+   */
+  function bareEvidenceWrites(src: string): string[] {
+    const out: string[] = []
+    const regions: { startDepth: number; opened: boolean }[] = []
+    let depth = 0
+    for (const line of src.split("\n")) {
+      if (regions.length === 0 && /writeFileSync\(/.test(line) && /JSON\.stringify\(/.test(line)) {
+        out.push(line.trim().slice(0, 80))
+      }
+      if (/withLock\(/.test(line)) regions.push({ startDepth: depth, opened: false })
+      depth += (line.match(/\{/g) ?? []).length - (line.match(/\}/g) ?? []).length
+      for (const r of regions) if (depth > r.startDepth) r.opened = true
+      while (regions.length > 0 && regions[regions.length - 1]!.opened && depth <= regions[regions.length - 1]!.startDepth) {
+        regions.pop()
+      }
+    }
+    return out
+  }
+
+  // The scanner must be able to say YES. Same two snippets, same rule: a bare
+  // write is reported, the identical write inside withLock is not. A scanner
+  // that reported nothing at all would pass the leg above for the wrong reason.
+  const canaryBare = ["writeFileSync(p, JSON.stringify({ a: 1 }))"]
+  const canaryAdopted = ["withLock(dir, () => {", "  writeFileSync(p, JSON.stringify({ a: 1 }))", "})"]
+  const canaryOk =
+    bareEvidenceWrites(canaryBare.join("\n")).length === 1 && bareEvidenceWrites(canaryAdopted.join("\n")).length === 0
+  check(
+    "L4: the adoption scanner can fail (a bare write is reported; the same write under withLock is not)",
+    canaryOk,
+    canaryOk
+      ? ""
+      : `bare=${JSON.stringify(bareEvidenceWrites(canaryBare.join("\n")))} adopted=${JSON.stringify(bareEvidenceWrites(canaryAdopted.join("\n")))}`,
+  )
+
   const offenders: string[] = []
   for (const d of ["m24", "m25", "m26", "m27", "m28", "m29", "m42", "m44", "m53", "m55", "m61"]) {
     const dirAbs = path.join(ROOT, "script", d)
@@ -295,10 +384,7 @@ try {
       if (!/\.(ts|mts)$/.test(f)) continue
       const rel = `script/${d}/${f}`
       if (DECLARED_EXCLUSIONS.has(rel)) continue
-      const src = readFileSync(path.join(dirAbs, f), "utf8")
-      for (const line of src.split("\n")) {
-        if (/writeFileSync\(/.test(line) && /JSON\.stringify\(/.test(line)) offenders.push(`${rel}: ${line.trim().slice(0, 80)}`)
-      }
+      for (const line of bareEvidenceWrites(readFileSync(path.join(dirAbs, f), "utf8"))) offenders.push(`${rel}: ${line}`)
     }
   }
   check(
@@ -347,8 +433,7 @@ try {
   // real contender can show the defect.
   {
     const dir = path.join(tmp, "m1b")
-    const holderProc = spawn("npx", ["tsx", holderChild, dir, "1500"], { stdio: "ignore" })
-    waitFor(path.join(dir, LOCK_FILE))
+    const holderProc = startHolder(dir)
     const mutantPath = path.join(ROOT, "script/m61", ".mutant-lock-no-refusal.ts")
     writeFileSync(mutantPath, lockSource.replace("if (now() >= deadline) {", "if (false) {"))
     try {
@@ -361,11 +446,14 @@ try {
       } catch {
         proceeded = false
       }
-      check("M: no-refusal (a disabled timeout branch lets a second PROCESS proceed)", proceeded === true, "the mutant still refused — anchor is wrong")
+      check(
+        "M: no-refusal (a disabled timeout branch lets a second PROCESS proceed)",
+        holderProc.started && proceeded === true,
+        holderProc.started ? "the mutant still refused — anchor is wrong" : "no contender held the lock, so this probe proved nothing",
+      )
     } finally {
       rmSync(mutantPath, { force: true })
-      holderProc.kill()
-      await new Promise((r) => holderProc.on("exit", r))
+      await holderProc.release()
     }
   }
 
@@ -424,8 +512,7 @@ try {
   )
   {
     const dir = path.join(tmp, "m5b")
-    const holderProc = spawn("npx", ["tsx", holderChild, dir, "1500"], { stdio: "ignore" })
-    waitFor(path.join(dir, LOCK_FILE))
+    const holderProc = startHolder(dir)
     const mutated = evSource.replace("return withLock(dir, () => {", "return (() => {").replace("  }, lock)", "  })()")
     const mutantPath = path.join(ROOT, "script/lib", ".mutant-lock-write-unlocked.ts")
     writeFileSync(mutantPath, mutated)
@@ -438,11 +525,14 @@ try {
       } catch {
         wrote = false
       }
-      check("M: write-unlocked (a lock-less write path writes while the lock is held)", wrote === true, "the mutant still refused — anchor is wrong")
+      check(
+        "M: write-unlocked (a lock-less write path writes while the lock is held)",
+        holderProc.started && wrote === true,
+        holderProc.started ? "the mutant still refused — anchor is wrong" : "no contender held the lock, so this probe proved nothing",
+      )
     } finally {
       rmSync(mutantPath, { force: true })
-      holderProc.kill()
-      await new Promise((r) => holderProc.on("exit", r))
+      await holderProc.release()
     }
   }
 

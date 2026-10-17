@@ -27,13 +27,22 @@
 // Usage: npx tsx script/m61/refresh-stale-seals.ts --why "<why>" <path> [<path>...]
 // Exit 0 = every given path was refreshed or already valid; 1 = any refusal.
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import path from "node:path"
 
-import { SEAL_KEY, readEvidence, refreshStaleSeal } from "../lib/evidence.ts"
+import { SEAL_KEY, readEvidence, refreshStaleSeal, sealLegacyFile } from "../lib/evidence.ts"
+// The register's row shape, its ONE-ROW-PER-PATH folding, and its single
+// locked write path live in seal_register.ts. This file used to carry its own
+// copies of the first two and a bare writeFileSync for the third — the L4
+// adoption audit (M61.V2) named it as an evidence-shaped bare write, and a
+// duplicated coalescing rule is the kind of copy that drifts silently.
+import { coalesceRows, writeRegister, type RegisterEntry } from "./seal_register.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..")
 const DEFAULT_REGISTER = "validation/m61/seal-refresh-register.json"
+
+const REGISTER_PURPOSE =
+  "M61 stale-seal refreshes: every record whose bbSeal envelope had to be recomputed because a producer rewrote its content after sealing. A row here is the written reason for that refresh — old digest, new digest, why, when. Written only by script/m61/refresh-stale-seals.ts, and CHECKED by script/m61/verify-seal-audit.ts (each row's newDigest must equal the file's current seal, so the register cannot outlive the fact it records)."
 
 const argv = process.argv.slice(2)
 function flagValue(name: string): string | undefined {
@@ -41,6 +50,24 @@ function flagValue(name: string): string | undefined {
   return i >= 0 && i + 1 < argv.length ? argv[i + 1] : undefined
 }
 const why = flagValue("--why")
+// Two repair modes beyond the stale-envelope repair, each for a state the
+// register can record but refreshStaleSeal refuses BY DESIGN:
+//
+//   --re-record  the seal VERIFIES but is not the digest the register names,
+//                because the owning gate legitimately re-ran and moved content
+//                and seal together. Nothing is rewritten; the ROW moves to the
+//                digest the file now carries (the row is a claim about the
+//                file, so the claim is re-stated, not deleted — A4 checks every
+//                row, so a stale row cannot be left behind and a second row for
+//                the same path would fail too).
+//
+//   --seal-lost  the seal is ABSENT: a producer that stamped raw JSON dropped it
+//                (the defect M61.A1's A4 measures). The file is sealed IN PLACE
+//                through sealLegacyFile — every field preserved — and the row is
+//                re-recorded. Fixing the producer is the owner's job; this only
+//                restores the envelope the register already claims.
+const RE_RECORD = argv.includes("--re-record")
+const SEAL_LOST = argv.includes("--seal-lost")
 const registerArg = flagValue("--register") ?? DEFAULT_REGISTER
 // An ABSOLUTE --register must stay absolute: `path.join(ROOT, "/tmp/x.json")`
 // silently becomes `<root>/tmp/x.json` and the write dies with ENOENT (found by
@@ -79,21 +106,96 @@ export function withoutEnvelope(raw: string): string {
   return [...lines.slice(0, start), ...lines.slice(end + 1)].join("\n")
 }
 
-interface RegisterEntry {
-  path: string
-  oldDigest: string
-  newDigest: string
-  why: string
-  at: string
-  tool: string
-  /** false = the record was re-serialized canonically beyond its envelope (measured). */
-  envelopeOnly: boolean
-}
-
 const entries: RegisterEntry[] = []
+/** Rows MOVED in place (one per path — see --re-record above), keyed by path. */
+const moved = new Map<string, RegisterEntry>()
 let refreshed = 0
 let alreadyValid = 0
 let refused = 0
+let reRecorded = 0
+let sealLost = 0
+
+/** The register as it stands, read once: --re-record needs the row it moves. */
+const readRegister = (): RegisterEntry[] => {
+  if (!existsSync(registerPath)) return []
+  try {
+    return (JSON.parse(readFileSync(registerPath, "utf8")) as { entries?: RegisterEntry[] }).entries ?? []
+  } catch {
+    return []
+  }
+}
+
+if ((RE_RECORD || SEAL_LOST) && why && paths.length > 0) {
+  const existing = readRegister()
+  for (const arg of paths) {
+    const rel = path.isAbsolute(arg) ? path.relative(ROOT, arg) : arg
+    const file = path.isAbsolute(arg) ? arg : path.join(ROOT, arg)
+    const before = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>
+    const seal = before[SEAL_KEY] as { contentSha256?: string } | undefined
+    const rowIndex = existing.findIndex((e) => e.path === rel)
+    if (rowIndex === -1) {
+      console.error(`REFUSED    ${rel} — no register row to move (this mode re-records an existing row)`)
+      refused++
+      continue
+    }
+    const row = existing[rowIndex] as RegisterEntry
+    let current = seal?.contentSha256
+    if (SEAL_LOST) {
+      if (current !== undefined) {
+        console.error(`REFUSED    ${rel} — a seal is present (${current.slice(0, 8)}); --seal-lost is for a record whose envelope was dropped`)
+        refused++
+        continue
+      }
+      const newSeal = sealLegacyFile(file)
+      if (newSeal === null) {
+        console.error(`REFUSED    ${rel} — sealLegacyFile refused (seal appeared between the read and the write)`)
+        refused++
+        continue
+      }
+      current = newSeal.contentSha256
+      sealLost++
+    } else {
+      if (current === undefined) {
+        console.error(`REFUSED    ${rel} — the seal is ABSENT; use --seal-lost (this mode re-records a VERIFYING seal)`)
+        refused++
+        continue
+      }
+      const back = readEvidence<Record<string, unknown>>(file)
+      if (!back.ok) {
+        console.error(`REFUSED    ${rel} — the seal does not verify (${back.reason}); a stale envelope is repaired by the default mode`)
+        refused++
+        continue
+      }
+      if (current === row.newDigest) {
+        console.log(`valid      ${rel} (register row already names ${current.slice(0, 8)} — untouched)`)
+        continue
+      }
+      reRecorded++
+    }
+    moved.set(rel, {
+      path: rel,
+      oldDigest: row.newDigest,
+      newDigest: current,
+      why: `${row.why.trim()} | ${why.trim()}`,
+      at: new Date().toISOString(),
+      tool: "script/m61/refresh-stale-seals.ts (--re-record)",
+      envelopeOnly: true,
+    })
+    console.log(`re-recorded  ${rel}  row ${row.newDigest.slice(0, 8)} -> seal ${current.slice(0, 8)}`)
+  }
+  const all = coalesceRows(existing.map((e) => moved.get(e.path) ?? e))
+  // Written when a row moved OR when the register still carries duplicates from
+  // an older append-style refresh (the coalescing above is the repair).
+  if (moved.size > 0 || all.length !== existing.length) {
+    const written = writeRegister(registerPath, all)
+    console.log(
+      `register   ${path.relative(ROOT, registerPath)}: ${moved.size} row(s) re-recorded, ${existing.length - written.length} duplicate row(s) folded`,
+    )
+  }
+  console.log(`refresh-stale-seals: ${reRecorded} re-recorded, ${sealLost} seal-lost repaired, ${refused} refused (of ${paths.length} given)`)
+  process.exit(refused > 0 ? 1 : 0)
+}
+
 
 for (const arg of paths) {
   const file = path.isAbsolute(arg) ? arg : path.join(ROOT, arg)
@@ -150,15 +252,9 @@ if (entries.length > 0) {
   const existing = existsSync(registerPath)
     ? (JSON.parse(readFileSync(registerPath, "utf8")) as { entries?: RegisterEntry[] })
     : {}
-  const all = [...(existing.entries ?? []), ...entries]
-  const register = {
-    schemaVersion: 1,
-    purpose:
-      "M61 stale-seal refreshes: every record whose bbSeal envelope had to be recomputed because a producer rewrote its content after sealing. A row here is the written reason for that refresh — old digest, new digest, why, when. Written only by script/m61/refresh-stale-seals.ts, and CHECKED by script/m61/verify-seal-audit.ts (each row's newDigest must equal the file's current seal, so the register cannot outlive the fact it records).",
-    entries: all,
-  }
-  writeFileSync(registerPath, `${JSON.stringify(register, null, 2)}\n`)
-  console.log(`register   ${path.relative(ROOT, registerPath)} now carries ${all.length} entr${all.length === 1 ? "y" : "ies"}`)
+  const all = coalesceRows([...(existing.entries ?? []), ...entries])
+  const written = writeRegister(registerPath, all)
+  console.log(`register   ${path.relative(ROOT, registerPath)} now carries ${written.length} entr${written.length === 1 ? "y" : "ies"} (one per path)`)
 }
 
 const reSerialized = entries.filter((e) => !e.envelopeOnly)

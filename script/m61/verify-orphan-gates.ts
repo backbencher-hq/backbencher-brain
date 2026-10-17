@@ -53,6 +53,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { withLock } from "../lib/lock.ts"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const RESULTS = path.join(ROOT, "validation/m61/results")
@@ -565,7 +566,12 @@ function main(): void {
     sourceNamedUnwired: declaredSourceNamed,
   }
   mkdirSync(path.dirname(BASELINE), { recursive: true })
-  writeFileSync(BASELINE, `${JSON.stringify(inventory, null, 2)}\n`)
+  // M61.V2's L4 rule: an evidence-shaped write holds the declared lock. The
+  // baseline is a published catalogue of the census, so two concurrent runs in
+  // this repo would otherwise interleave their temp-free write.
+  withLock(path.dirname(BASELINE), () => {
+    writeFileSync(BASELINE, `${JSON.stringify(inventory, null, 2)}\n`)
+  })
 
   console.log(`\nM61.V5: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
   console.log(`  census: ${verifiers.length} verifiers, ${wired.size} wired, ${orphans.length} unwired (${Object.keys(declared).length} declared)`)
