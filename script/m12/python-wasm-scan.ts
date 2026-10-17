@@ -7,6 +7,9 @@
 // cache for both scans).
 import { parseFile } from "../../src/ast/pool-worker"
 
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+
 const CORPUS = "$HOME/fixtures/repositories/cython"
 
 const sample = (() => {

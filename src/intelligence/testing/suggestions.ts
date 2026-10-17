@@ -10,7 +10,13 @@ import path from "node:path"
 import { BrainDatabase } from "../../brain/database"
 import type { ProjectID } from "../../project/schema"
 import { graphTraversal } from "../graph/graph-engine"
-import { testImpact } from "./test-intel"
+import { EVIDENCE_CONFIDENCE, testImpact } from "./test-intel"
+// The DEPENDENCY rule, imported from its owner rather than restated. Impact
+// (§ src/lsp/impact.ts) already measured why an all-kinds set is wrong for a
+// "what does this break" question (`GraphQLList` declared 57 reverse
+// dependencies of which 8 are dependency rows) and publishes the rule on every
+// answer; a second literal here is how the two would drift.
+import { IMPACT_REL_TYPES } from "../../lsp/impact"
 import type {
   AffectedTestEntry,
   TestSuggestionActionItem,
@@ -92,7 +98,7 @@ export async function testSuggestions(
     if (ch.kind === "deleted") {
       const impact = await testImpact(projectId, ch.name, { maxDepth: options.maxDepth ?? 4 }).catch(() => null)
       const dangling = impact && impact.found ? [...impact.directTests, ...impact.indirectTests] : []
-      for (const t of dangling) affectedEntries.push({ testSymbol: t.testSymbol, testFile: t.testFile, depth: t.depth, changedSymbol: ch.name })
+      for (const t of dangling) affectedEntries.push({ testSymbol: t.testSymbol, testFile: t.testFile, depth: t.depth, changedSymbol: ch.name, relationshipType: t.relationshipType, evidence: t.evidence })
       changedOut.push({
         symbolId: sym?.id ?? "",
         symbolName: ch.name,
@@ -103,7 +109,11 @@ export async function testSuggestions(
         actions: dangling.length
           ? [{
               action: "review_deleted_symbol_coverage",
-              evidence: { evidenceKind: "reference", confidence: 0.6, testFile: dangling[0].testFile },
+              // The row's own tier, not a hard-coded `reference`: the residual
+              // edge may be a `calls` row (a test that calls a deleted symbol
+              // is a stronger signal than one that references it), and the
+              // classifier already decided which.
+              evidence: { evidenceKind: dangling[0].evidence, confidence: EVIDENCE_CONFIDENCE[dangling[0].evidence], testFile: dangling[0].testFile },
               targetBasis: "dangling_impact_edge",
               priority: "high",
               estimatedEffort: "medium",
@@ -127,10 +137,20 @@ export async function testSuggestions(
       continue
     }
 
-    // blast radius via shared graph engine (caller closure)
+    // Blast radius via the shared graph engine, over the DECLARED dependency
+    // kinds. The label here has always been "caller closure" and the walk used
+    // to be the all-kinds default, so the number feeding `priorityFor` counted
+    // `contains` rows — the class that CONTAINS the changed member, which is
+    // membership, not dependence — plus lexical `uses`/`references` and
+    // module-level `imports`/`exports`. A priority raised by structure rather
+    // than by dependents is a priority nobody can audit.
     let blastRadius = 0
     try {
-      const g = await graphTraversal(projectId, sym.name, { direction: "callers", maxDepth: options.maxDepth ?? 4 })
+      const g = await graphTraversal(projectId, sym.name, {
+        direction: "callers",
+        maxDepth: options.maxDepth ?? 4,
+        relationshipTypes: [...IMPACT_REL_TYPES],
+      })
       const callers = new Set(g.callers.map((e) => g.nodes[e.from]).filter((n) => n && !n.isExternal).map((n) => n.id))
       blastRadius = callers.size
     } catch {
@@ -140,7 +160,7 @@ export async function testSuggestions(
     // existing affected tests (evidence-first)
     const impact = await testImpact(projectId, sym.name, { maxDepth: options.maxDepth ?? 4 }).catch(() => null)
     const existingTests = impact && impact.found ? [...impact.directTests, ...impact.indirectTests] : []
-    for (const t of existingTests) affectedEntries.push({ testSymbol: t.testSymbol, testFile: t.testFile, depth: t.depth, changedSymbol: sym.name })
+    for (const t of existingTests) affectedEntries.push({ testSymbol: t.testSymbol, testFile: t.testFile, depth: t.depth, changedSymbol: sym.name, relationshipType: t.relationshipType, evidence: t.evidence })
 
     const actions: TestSuggestionActionItem[] = []
     let namingFallback = false
@@ -149,7 +169,11 @@ export async function testSuggestions(
       for (const t of existingTests.slice(0, 4)) {
         actions.push({
           action: "extend_existing_test",
-          evidence: { evidenceKind: t.depth === 0 ? "direct_call" : "reference", confidence: t.depth === 0 ? 0.85 : 0.6, testFile: t.testFile, testSymbol: t.testSymbol },
+          // The TIER the row itself carries, not one inferred from `depth`: depth
+          // 0 says the row names the target, and only the kind says whether the
+          // test calls it, references it, or merely imports it (M9.11 evidence
+          // vocabulary). The confidence is the classifier's declared weight.
+          evidence: { evidenceKind: t.evidence, confidence: EVIDENCE_CONFIDENCE[t.evidence], testFile: t.testFile, testSymbol: t.testSymbol },
           targetBasis: "existing_test_ref",
           priority: priorityFor(sym.complexity, blastRadius, ch.kind),
           estimatedEffort: effortFor(sym.complexity, existingTests.length),

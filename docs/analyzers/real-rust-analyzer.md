@@ -631,3 +631,15 @@ only where the file claim did not fire, and single-segment targets are refused. 
 (`namespaceMatchOf` splitting `.` and `::`) is Lead-owned. Measured at cap 400: imports unresolved
 799 → 565, extOK 861 → 1,095, extFAIL 0, arbitraryTwin byte-identical at 13,191, fixtures 26/4
 unchanged.
+
+
+## Item-leaf module paths — iteration 5
+
+An upper-case leaf is an ITEM, not a module: `crate::diagnostics::Applicability` and `super::GraceClient`
+depend on the PREFIX module's file, so `rustModuleFileCandidates` drops the item leaf before resolving
+candidates (2-segment `crate::Item` keeps the crate-root rule from iteration 3). Lower-case leaves and
+`self::Item` stay refused (ambiguity; a self-confirming claim is not evidence). The file claim is the
+correct terminal state for an internal-dependency row; `arbitraryTwin` is untouched because the edge
+identity is untouched. Measured cap 400: imports unresolved 565 → 548, extOK 1,095 → 1,112, extFAIL 0,
+census 886 claims / 878 verified / 0 refuted, internal unresolved without a claim 166 → 149, fixtures
+26/4.

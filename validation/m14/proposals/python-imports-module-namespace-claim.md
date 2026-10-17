@@ -100,3 +100,84 @@ The lane's gate rows would move `imports` unresolved → `extOK` (verified), wit
 and the binding-intent columns untouched by construction. The exact numbers are NOT claimed here:
 they require the rule change first, and a proposal that predicts its own effect without the
 instrument is the shape this programme refuses.
+
+---
+
+# ADDENDUM (direction-matrix, 2026-10-17) — THE EXACT DIFF, RE-BASED ON THE LANDED REFINER AND ON THE LEAD'S FIVE CONDITIONS
+
+**This supersedes §3's verification design.** §3 proposed a narrow, refutable STDLIB-LIST claim. The Lead's
+conditions 3 and 4 supersede it: **keep the broad shape** (third-party is as external as stdlib) and **verify
+against the SAME file-derived project module space the landed refiner uses** — not a stdlib list, not
+`ProjectIndex.complete`. The landed refiner (`8def4a5d5`) already provides the two primitives this needs:
+`projectModuleNames(facts)` (`incoming-rule.ts:1070`) and `externalSpecifier` captured on the claim
+(`incoming-rule.ts:463`).
+
+## A · ANALYZER HALF (mine — `src/ast/real-python-analyzer.ts`, additive metadata, target untouched)
+
+A post-pass over the emitted `imports` edges (same shape as java's `markExternalTargets`):
+
+```ts
+// MODULE-NAMESPACE IMPORT CLAIM. An `imports` edge whose target is `module:item` names a package/module
+// this file imports; the target's colon is the lane's pinned contract and is NOT rewritten. The claim
+// says "the PROJECT'S OWN FACTS do not answer this module" — verified by the arbiter against the project
+// module space, never against a stdlib list (a third-party root is as external as a stdlib one).
+// GUARDS: non-relative module (no leading '.'), non-empty module and item, no path separator, not
+// `__future__`, and the file itself must not declare a symbol named the module's first segment.
+const MODULE_ITEM = /^([A-Za-z_][A-Za-z0-9_.]*):([^:\\/]+)$/
+for (const rel of relationships) {
+  if (rel.type !== ASTEngine.RelationshipType.Imports) continue
+  const m = MODULE_ITEM.exec(String(rel.target ?? "")); if (!m) continue
+  const module = m[1], root = module.split(".")[0]
+  if (root === "__future__" || declaredInFile.has(root)) continue
+  const md = (rel.metadata ??= {} as any)
+  md.isExternalTarget = true
+  md.externalReason = "module-namespace"
+  md.externalSpecifier = module          // the SAME field the landed refiner reads
+}
+```
+
+## B · RULE HALF (Lead-owned `script/m14/incoming-rule.ts`) — extend the landed refiner block
+
+The refiner already runs on `owner` claims carrying a specifier (`incoming-rule.ts:1242`). **One branch is
+added inside it, before the existing downgrade:** a claim whose reason is `module-namespace` verifies the
+MODULE (the part before the FIRST colon) against the project module space.
+
+```ts
+// ... in the external-claim branch, where `claim.kind === "owner"` and `specifier` is in scope:
+if ((md as any)?.externalReason === "module-namespace") {
+  // SPLIT AT THE FIRST COLON. `pathlib:Path` -> module `pathlib`; `xml.sax.handler:ContentHandler` ->
+  // `xml.sax.handler`, root `xml`. The colon is why the ordinary verifier can only return ext?
+  // (`pathLikeTarget` + URI_SCHEME match), so this branch IS the verification path for this claim.
+  const colon = tgt.indexOf(":")
+  const module = colon > 0 ? tgt.slice(0, colon) : ""
+  const root = module.split(".")[0] ?? ""
+  // VERIFY, NEVER REFUTE (Lead condition 1): absent from the project's module space -> verified;
+  // present -> ext?; empty/odd spelling -> ext?. extFAIL cannot rise by construction.
+  const inProject = root.length > 0 && projectModuleNames(facts).has(root)
+  return {
+    outcome: inProject || root.length === 0 ? "externalUnverified" : "externalVerified",
+    decls, kinds: kindText,
+    verifiedBy: inProject || root.length === 0 ? undefined : "module",
+  }
+}
+// ... then the existing project-absolute downgrade for `owner` claims follows unchanged.
+```
+
+**Why no stdlib list is needed (condition 4):** the claim's statement is *"the project's own facts do not
+answer this module"* — for `pathlib` (stdlib), `torch` (third-party) and a sibling package alike, the
+verification is the same lookup in the project's module space. **A project's own module is caught by the same
+check that caught the 3,744 mislabels**, so this class cannot repeat the project-absolute hole.
+
+## C · ACCEPTANCE AXES (measured after the Lead lands B; analyzer half A is mine)
+
+```
+imports unresolved (whole)  64,462 -> extOK by the share whose module root is NOT in the project's module
+                                      space (stdlib half + third-party half; the shape census measured
+                                      53.4% stdlib on the first-400 slice — RE-MEASURED, not assumed)
+resolved / collRes / arbitraryTwin   BYTE-IDENTICAL   (a claim never resolves)
+extFAIL                      0 -> 0                    (never refutes, by construction)
+ext?                         rises only for project-absolute module roots — the honest outcome
+```
+**Materials ready on my side:** the analyzer half is a ~20-line additive post-pass; the measurement plan is a
+cap-400 stride then ONE whole-population run with both file mtimes recorded. **Nothing here is applied until
+the Lead lands B.**

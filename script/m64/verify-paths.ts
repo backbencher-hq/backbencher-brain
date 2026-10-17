@@ -30,6 +30,7 @@ const harness = new Harness({
   tool: "bb_health",
   title: "bb_health paths: five states, no fabrication, no mixed scope, no silent omission",
   layers: ["integration"],
+  milestone: "M64",
   decisions: {
     states: "fresh | stale | gone | not-indexed | absent — a boolean would destroy the last three",
     scope: "a separate self-describing block; project-wide counts are untouched so the two cannot be merged",

@@ -50,7 +50,19 @@ try {
   const deps = await getFileDependencies(projectId, {})
   check("dependencies return entries", deps.length >= 1)
   check("dependency paths are strings, not raw file IDs", deps.every((d) => d.dependencies.every((x) => typeof x.path === "string")))
-  check("dependents carry both path and fileId", deps.every((d) => d.dependents.every((x) => typeof x.path === "string" && typeof x.fileId === "string")))
+  // WAS "dependents carry both path and fileId", asserting a payload this engine
+  // no longer returns — by DECISION, not by accident: `FileDependency.dependents`
+  // is `Array<{ path: string }>` in src/intelligence/contracts.ts, and the
+  // builder states the measurement that removed the id (a file id embeds the
+  // project id AND the relative path, so 506 edges carried 506 copies of the
+  // path beside them — 56,540 of 121,340 bytes on a 20-file page). The stale
+  // half was the ASSERTION, not the payload; what it was reaching for is the
+  // paired defect, so it now pins the shape the contract declares AND the
+  // leak that shape makes possible: `path` must be a path, never the
+  // `<40-hex-project-id>:<relative path>` id that `fileById.get(id) ?? id`
+  // would hand over when a lookup fails.
+  const idLeaks = deps.flatMap((d) => d.dependents.filter((x) => typeof x.path !== "string" || /^[0-9a-f]{40}:/.test(x.path)).map((x) => `${d.file} <- ${String(x.path)}`))
+  check("dependents carry a PATH, never a raw file id", idLeaks.length === 0, idLeaks.slice(0, 3).join(" | "))
   const serviceEntry = deps.find((d) => d.file.includes("service.ts"))
   check("service.ts has a dependent (consumer.ts)", !!serviceEntry && serviceEntry.dependents.some((x) => x.path.includes("consumer.ts")))
 

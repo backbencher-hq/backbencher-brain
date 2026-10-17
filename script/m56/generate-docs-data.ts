@@ -88,7 +88,13 @@ function parseFlags(help: string): Flag[] {
       const parts = line.trim().split(/\s{2,}/)
       const spec = parts[0]!
       const description = parts.slice(1).join(" ").trim()
-      const names = [...spec.matchAll(/-{1,2}[a-z][a-z0-9-]*/g)].map((m) => m[0])
+      // Flag NAMES come from the spec with its argument placeholders removed.
+      // `bb upgrade --to <dist-tag-or-range>` renders that spec as
+      // `--to <dist-tag-or-range>`, and a placeholder is not a flag: matching the
+      // whole spec made this parser report `-tag-or-range` as a name, which then
+      // disagreed with the declaration (`--to`) and failed the generator. The
+      // placeholder is captured separately, one line below.
+      const names = [...spec.replace(/[<[][^>\]]*[>\]]/g, " ").matchAll(/-{1,2}[a-z][a-z0-9-]*/g)].map((m) => m[0])
       if (names.length === 0) continue
       if (names.includes("--help") || names.includes("-h")) {
         current = null
@@ -129,9 +135,16 @@ function parseExamples(help: string): string[] {
 }
 
 function parseRootHelp(help: string): { commands: string[]; summary: string; globalFlags: Flag[] } {
+  // `help` is KEPT. This used to filter it out as commander's built-in, but the
+  // CLI now registers it explicitly (`program.command("help")` with a variadic
+  // `[command...]` argument, so `bb help setup show` descends), it is advertised
+  // in `bb --help`'s Commands block, and generated site truth counts it — so
+  // dropping it here made the declarations (14) and the parsed help (13)
+  // disagree and the generator failed outright. The reference documents the
+  // commands a reader can type, and `bb help` is one of them.
   const commands = blockOf(help, "Commands")
     .map((l) => /^ {2}([a-z][a-z0-9-]*)(?=\s|$|\[|<)/.exec(l)?.[1])
-    .filter((c): c is string => Boolean(c) && c !== "help")
+    .filter((c): c is string => Boolean(c))
   const usageIdx = help.split("\n").findIndex((l) => l.startsWith("Usage:"))
   const summary = (help.split("\n")[usageIdx + 2] ?? "").trim()
   return { commands, summary, globalFlags: parseFlags(help) }

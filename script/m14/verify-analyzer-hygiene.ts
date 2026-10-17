@@ -276,6 +276,28 @@ export function findBareNodeIdentityComparisons(src: string, lang: string, findi
     const cmp = line.match(/([A-Za-z_][\w?]*)\s*(===|!==)\s*([A-Za-z_][\w?]*)/)
     if (cmp && !PRIMITIVE.test(line) && !/["'`]/.test(line) && !/\bnull\b|\bundefined\b|\d/.test(line)) {
       const [, left, , right] = cmp
+      // A comparison of an identifier WITH ITSELF is not a two-node identity
+      // test, and this detector cannot honestly claim what it claims about one.
+      //
+      // MEASURED FALSE POSITIVE (2026-10-16): real-elixir-analyzer.ts's
+      // `isAliasPath` compares a CHARACTER to its own case —
+      // `if (c !== c.toUpperCase() || c === c.toLowerCase()) return false`,
+      // where `c = seg.charAt(0)` is a string. The regex trims both sides to
+      // the bare name `c`, and the identifier `c` IS a Node elsewhere in that
+      // 2,900-line file (`const c = node.child(i)`, `(c: Node) => …`), so the
+      // any-initializer resolution below called a string a node and the gate
+      // reported "object identity never matches" about an expression that
+      // compares no two objects at all. A file-wide resolution cannot see
+      // scope, so the only sound thing to do with a same-name pair is decline
+      // to judge it.
+      //
+      // NOT A WEAKENING OF THE KAD2 CLASS: every defect this detector was
+      // written for compares TWO names (`nameField === n` in the TSD2 shape,
+      // `sibling === node` in the KAD2 one), and the accessor rule above still
+      // convicts the fresh-wrapper forms whatever the names are. A tautology
+      // like `a === a` would be a different bug (an always-true condition), and
+      // its note would be wrong here rather than right.
+      if (left === right) continue
       if (isNodeIsh(left, offset) && isNodeIsh(right, offset)) {
         findings.push({
           lang,
@@ -425,6 +447,47 @@ export function selftest(): number {
     },
   ]
 
+  // The bare-node-identity rule carries its own batch, and it needs one. The
+  // `left === right` exclusion added 2026-10-16 makes the rule DECLINE a
+  // same-name pair (measured false positive: elixir's
+  // `c !== c.toUpperCase() || c === c.toLowerCase()` on a `seg.charAt(0)`
+  // result, with `c` a Node elsewhere in the same 2,900-line file), and a
+  // changed detector whose only test is "does it still fire" cannot tell a
+  // tightening from a rule that has stopped matching. So the two-name shape it
+  // exists for is pinned here beside the shape it must now refuse.
+  const nodeCases: { name: string; src: string; expect: number }[] = [
+    {
+      name: "two DISTINCT node identifiers compared (the KAD2 shape) — must still fire",
+      src: [
+        "function f(n: Node, sibling: Node) {",
+        '  const nameField = n.parent.childForFieldName("name")',
+        "  if (sibling === n) return",
+        "  return nameField",
+        "}",
+        "",
+      ].join("\n"),
+      expect: 1,
+    },
+    {
+      name: "an identifier compared to ITSELF is not a two-node identity test (the elixir FP)",
+      src: [
+        "function isAliasPath(txt: string) {",
+        "  const seg = txt",
+        "  const c = seg.charAt(0)",
+        "  if (c !== c.toUpperCase() || c === c.toLowerCase()) return false",
+        "}",
+        "function walk(n: Node) { for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) visit(c) } }",
+        "",
+      ].join("\n"),
+      expect: 0,
+    },
+    {
+      name: "a comparison where only ONE side is node-ish is not this defect",
+      src: ["function g(n: Node, label: string) {", "  if (n === label) return", "  return n", "}", ""].join("\n"),
+      expect: 0,
+    },
+  ]
+
   let bad = 0
   for (const c of cases) {
     const found: Finding[] = []
@@ -437,16 +500,27 @@ export function selftest(): number {
         (ok ? "" : ` (${noops.map((f) => f.snippet.replace(/\s+/g, " ")).join(" | ")})`),
     )
   }
+  for (const c of nodeCases) {
+    const found: Finding[] = []
+    findBareNodeIdentityComparisons(c.src, "selftest", found)
+    const hits = found.filter((f) => f.kind === "bare-node-identity-comparison")
+    const ok = hits.length === c.expect
+    if (!ok) bad++
+    console.log(
+      `${ok ? "ok  " : "FAIL"} ${c.name}: expected ${c.expect}, got ${hits.length}` +
+        (ok ? "" : ` (${hits.map((f) => f.snippet.replace(/\s+/g, " ")).join(" | ")})`),
+    )
+  }
   // The negative cases are only meaningful if the detector works at all, so a
   // run that reports nothing anywhere is a failure, not a pass.
-  const positive = cases.filter((c) => c.expect > 0).length
+  const positive = cases.filter((c) => c.expect > 0).length + nodeCases.filter((c) => c.expect > 0).length
   if (positive === 0) {
     bad++
     console.log("FAIL self-test is vacuous: no positive case to discriminate against")
   }
   console.log(
     bad === 0
-      ? `\nanalyzer-hygiene selftest: ${cases.length} case(s) meet expectation`
+      ? `\nanalyzer-hygiene selftest: ${cases.length + nodeCases.length} case(s) meet expectation`
       : `\nanalyzer-hygiene selftest: ${bad} case(s) failed`,
   )
   return bad === 0 ? 0 : 1

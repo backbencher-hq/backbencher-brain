@@ -314,10 +314,89 @@ const NOT_OUR_CODE = new Set([
   ".perf-out",
 ])
 
-import { readdirSync, statSync } from "node:fs"
+import { execFileSync } from "node:child_process"
+import { lstatSync, readdirSync } from "node:fs"
 import path from "node:path"
 
+/** Source extensions the scan treats as code. */
+const SOURCE_EXT = /\.(ts|mts|cts|js|mjs|cjs)$/
+
+/**
+ * Directories the walk refused to enter, each with the reason.
+ *
+ * A SKIPPED DIRECTORY IS PRINTED, NEVER SILENT — the same contract as the
+ * comment exclusion. An exclusion that reports is a scoping decision; an
+ * exclusion that is silent is a blind spot.
+ */
+export const SKIPPED_DIRS: string[] = []
+
+/**
+ * Directories that are not the repository's own code.
+ *
+ * WHY THIS LIST EXISTS AT ALL, AND WHY IT IS NOT A CONVENIENCE. The walk used to
+ * descend into every directory it could stat, and this checkout proved what that
+ * costs: three parked snapshots of the repository (`.tmp-head-verify/`,
+ * `.tmp-r178-head/`, `.tmp-verify/`) each contain a SYMLINK to
+ * `script/m14/tmp/elixir-274`, so `statSync` reported the same tree as a directory
+ * three more times over. The gate therefore counted 45 defects where the working
+ * tree has 15, and the 30 phantom ones live in files that are not part of the
+ * repository. Those directories are gitignored; git would never hand them back as
+ * source, and neither should this walk.
+ *
+ * So when `root` is a git work tree the file list comes from GIT — tracked files
+ * plus untracked-but-not-ignored ones. That is the definition of "this repository's
+ * code", it costs one process launch, and it cannot drift from `.gitignore`.
+ */
+function gitSourceFiles(root: string): string[] | null {
+  try {
+    const top = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim()
+    // Only when `root` IS the work tree. A caller scanning some subdirectory or a
+    // temp dir expects that subtree, not the whole repository.
+    if (path.resolve(top) !== path.resolve(root)) return null
+  } catch {
+    return null
+  }
+  const run = (args: string[]): string[] => {
+    try {
+      const out = execFileSync("git", args, {
+        cwd: root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+        maxBuffer: 64 * 1024 * 1024,
+      })
+      return out.split("\0").filter((s) => s.length > 0)
+    } catch {
+      return []
+    }
+  }
+  const paths = [
+    ...run(["ls-files", "-z"]),
+    ...run(["ls-files", "-z", "--others", "--exclude-standard"]),
+  ]
+  const out: string[] = []
+  for (const rel of paths) {
+    if (!SOURCE_EXT.test(rel)) continue
+    const abs = path.join(root, rel)
+    try {
+      // A tracked symlink or a stale entry (deleted but still in the index) is not
+      // code this walk can read. Skipping it silently is fine here and only here:
+      // it is not code at all.
+      if (!lstatSync(abs).isFile()) continue
+    } catch {
+      continue
+    }
+    out.push(abs)
+  }
+  return out
+}
+
 export function walkSourceFiles(root: string): string[] {
+  const viaGit = gitSourceFiles(root)
+  if (viaGit !== null) return viaGit
   const out: string[] = []
   walk(root, out)
   return out
@@ -352,12 +431,21 @@ function walk(dir: string, out: string[] = []): string[] {
     const p = path.join(dir, e)
     let st
     try {
-      st = statSync(p)
+      // lstatSync, NOT statSync: statSync FOLLOWS symlinks, so a parked snapshot
+      // whose `script/m14/tmp/elixir-274` is a link re-walked that tree (and every
+      // `.ts` in it) once per snapshot. It also lets a symlink out of the repository
+      // make the walk read files that are not ours, and a link cycle would not
+      // terminate. A symlink is neither code here nor a directory to enter.
+      st = lstatSync(p)
     } catch {
       continue
     }
+    if (st.isSymbolicLink()) {
+      SKIPPED_DIRS.push(`${p} (symlink, not followed)`)
+      continue
+    }
     if (st.isDirectory()) walk(p, out)
-    else if (/\.(ts|mts|cts|js|mjs|cjs)$/.test(e)) out.push(p)
+    else if (st.isFile() && SOURCE_EXT.test(e)) out.push(p)
   }
   return out
 }

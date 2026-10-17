@@ -100,6 +100,18 @@ try {
     (raw.prepare(`SELECT COUNT(*) c FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id WHERE r.project_id = ? AND t.file_id = ?`).get(pid, `${pid}:src/hub0.ts`) as any).c
   const E0 = edgesIntoHub()
   check("A2: full index has edges into hub0", E0 >= 1999, `E0=${E0}`)
+  // The INBOUND population, measured before the incremental run: rows that
+  // target hub0's symbols and whose SOURCE lives in another file. These are the
+  // rows the store used to DELETE on a re-store (`deleteFileRelationshipsByTarget`)
+  // — unrecoverable on any run that does not re-parse their own file, because
+  // only the touched file is re-parsed. The store now leaves them alive (the FK
+  // clears the pointer, `ON DELETE SET NULL`) and the bounded repair re-points
+  // them from the pre-parse snapshot; this is the population that check asserts.
+  const inboundQuery = `SELECT COUNT(*) c FROM brain_relationship r
+      JOIN brain_symbol t ON t.id = r.target_symbol_id
+      JOIN brain_symbol ss ON ss.id = r.source_symbol_id
+     WHERE r.project_id = ? AND t.file_id = ? AND ss.file_id != ?`
+  const inboundBefore = (raw.prepare(inboundQuery).get(pid, `${pid}:src/hub0.ts`, `${pid}:src/hub0.ts`) as any).c
   check("A2: fixture is edge-dense (≥25K edges)", totalEdges0 >= 25000, String(totalEdges0))
 
   // 1b. WARM full pass = the fair timing baseline. The first full run pays
@@ -169,9 +181,28 @@ try {
   // preservation check, not an enrichment one. The edited file's OWN file-level
   // rows are excluded: they are re-emitted by the re-parse, not restored, and
   // the row's own id carries the emitting file (`…:file:src/hub0.ts:…`).
-  const fileLevelPop = (raw.prepare(`SELECT COUNT(*) c FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id WHERE r.project_id = ? AND t.file_id = ? AND r.source_symbol_id IS NULL AND r.id LIKE '%:file:%' AND r.id NOT LIKE ?`).get(pid, `${pid}:src/hub0.ts`, `%:file:src/hub0.ts:%`) as any).c
-  const fileLevelEnriched = (raw.prepare(`SELECT COUNT(*) c FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id WHERE r.project_id = ? AND t.file_id = ? AND r.source_symbol_id IS NULL AND r.id LIKE '%:file:%' AND r.id NOT LIKE ? AND r.metadata IS NOT NULL`).get(pid, `${pid}:src/hub0.ts`, `%:file:src/hub0.ts:%`) as any).c
-  check("A2: restored FILE-LEVEL in-edges keep their metadata", fileLevelPop > 0 && fileLevelEnriched >= Math.floor(fileLevelPop * 0.9), `fileLevelEnriched=${fileLevelEnriched} of ${fileLevelPop} file-level in-edges (the population the <module>:<item> resolver restores)`)
+  // ── the inbound population SURVIVES the re-store ──────────────────────────
+  // REWRITTEN (2026-10-14). The check this replaces counted rows whose id carried
+  // a `:rel:file:<path>:` anchor and required that population to be non-empty —
+  // but NO writer on this branch produces that id shape: measured on this
+  // repository's own index, `SELECT COUNT(*) … WHERE id LIKE '%:rel:file:%'` is
+  // 0, and on the fixture it was 0 too, so `fileLevelPop > 0` could never hold.
+  // A gate that cannot pass is not evidence, so the assertion now measures the
+  // property the pass exists for: the inbound rows are still there, and their
+  // payload survived. Before the store fix this read 0 of 11,998 restored
+  // (script/m65/probe-a2-shape.ts: 117 of 120 lost) — the defect the rewrite names.
+  const inboundAfter = (raw.prepare(inboundQuery).get(pid, `${pid}:src/hub0.ts`, `${pid}:src/hub0.ts`) as any).c
+  const inboundEnriched = (raw.prepare(`${inboundQuery} AND r.metadata IS NOT NULL`).get(pid, `${pid}:src/hub0.ts`, `${pid}:src/hub0.ts`) as any).c
+  check(
+    "A2: inbound rows into the edited file SURVIVE the re-store",
+    inboundBefore > 0 && inboundAfter >= Math.floor(inboundBefore * 0.9),
+    `inboundBefore=${inboundBefore} inboundAfter=${inboundAfter} (rows from other files targeting the re-stored file; the store used to delete every one of them)`,
+  )
+  check(
+    "A2: surviving inbound rows keep their metadata",
+    inboundAfter > 0 && inboundEnriched >= Math.floor(inboundAfter * 0.9),
+    `inboundEnriched=${inboundEnriched} of ${inboundAfter} surviving inbound rows`,
+  )
 
   // 4. gravity restoration: re-parsed symbols must have non-zero scores again
   const g = (raw.prepare(`SELECT COUNT(*) c FROM brain_symbol WHERE project_id = ? AND file_id = ? AND gravity_score > 0`).get(pid, `${pid}:src/hub0.ts`) as any).c

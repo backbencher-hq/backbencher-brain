@@ -38,6 +38,7 @@
  */
 import { readFileSync, existsSync } from "node:fs"
 import { resolve, dirname } from "node:path"
+import { fileURLToPath } from "node:url"
 import { execFileSync } from "node:child_process"
 // THE SINGLE SOURCE OF TRUTH for lane -> extension: `src/ast/language-detection.ts` already publishes
 // extension -> language, and this gate DERIVES from it instead of keeping a second hand-written list.
@@ -46,7 +47,7 @@ import { execFileSync } from "node:child_process"
 // python 0`, found no `*.python` files, and printed an all-zero table with `NaN%` at exit 0. Silent.
 import { EXTENSION_LANGUAGE } from "../../src/ast/language-detection.ts"
 
-const HERE: string = (import.meta as any).dir ?? dirname(new URL(import.meta.url).pathname)
+const HERE: string = (import.meta as any).dir ?? dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, "..", "..")
 const INCOMING_LOG = process.env.BB_BOARD_INCOMING ?? "validation/m14/results/incoming-laptop-b.current.log"
 

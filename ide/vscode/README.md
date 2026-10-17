@@ -44,11 +44,12 @@ floors behind this table.
 | I3 | IN-EDITOR VERIFIED — I2 plus the feature exercised inside a pinned editor version with machine evidence |
 | I4 | CROSS-EDITOR VERIFIED — I3 plus a pinned run in a non-VS Code editor (fork) |
 
-Currently shipped claims are I1 (protocol level) everywhere; in-editor I3 runs
-exist for VS Code 1.85.0 and fork I4 runs for Cursor 3.18.9 and Antigravity
-1.107.0 on Linux — see the evidence files under `validation/` in the
-repository. Any editor or platform without a pinned run is declared unverified
-here, not claimed.
+Currently shipped claims are I1 (protocol level) everywhere. **No editor run is
+recorded as verified**: the VS Code 1.85.0 in-editor run is a known-gap (90/91
+checks — the live debounced reindex never landed), and Cursor 3.18.9,
+Antigravity 1.107.0 and Windsurf have no completed pinned run on this machine —
+see the evidence files under `validation/` in the repository. An editor or
+platform with no pinned, passing run is declared unverified here, not claimed.
 
 ## Editor verification matrix
 
@@ -57,11 +58,11 @@ from per-fork evidence and drift-gated by the D1 verifier:
 
 | Editor | Claim | Evidence |
 |--------|-------|----------|
-| VS Code | I3 — in-editor verified (pinned 1.85.0, Linux) | `validation/m25/results/E5.json` |
-| Cursor | I4 — cross-editor verified (pinned 3.18.9, Linux) | `validation/m25/results/F-CURSOR.json` |
-| Antigravity | I4 — cross-editor verified (pinned 1.107.0, Linux) | `validation/m25/results/F-ANTIGRAVITY.json` |
+| VS Code | known-gap — an in-editor run at 1.85.0 recorded 90/91 checks; the live debounced reindex never landed (stale: true, status: "missing") | `validation/m25/results/E5.json` |
+| Cursor | blocked — no pinned run on this machine (cursor not found) | `validation/m25/results/F-CURSOR.json` |
+| Antigravity | known-gap — pinned version 1.107.0, but no run completed on this machine | `validation/m25/results/F-ANTIGRAVITY.json` |
 | Windsurf | blocked — no pinned run on this machine | `validation/m25/results/F-WINDSURF.json` |
-| macOS / Windows | not verified — no OS-matrix run recorded yet | M25.E7 pending |
+| macOS / Windows | blocked — only the Linux leg is verified (E7-linux); macOS and Windows have no passing run | `validation/m25/results/E7-darwin.json` |
 
 ## Complement stance (contract §7)
 
@@ -83,13 +84,15 @@ rust-analyzer, tsserver, jdtls, …) and never competes with them:
 - **Five launch languages only** (Java, Groovy, Kotlin, Scala, TypeScript).
   Other languages are declared absent — the server reports no declared claim
   level and offers no features for them rather than guessing.
-- **Claim level I1 on the shipped surface.** The features pass protocol and
-  runtime verifiers and in-editor/fork runs exist as recorded evidence, but the
-  shipped trust labels reflect the drift-gated chain, not aspiration.
-- **Cross-platform unverified.** Every recorded run to date is Linux. macOS and
-  Windows claims wait on the E7 OS matrix; paths and `BB_DATA_DIR` handling are
-  expected to need platform-specific fixes there (that expectation is why E7
-  exists, not a claim that they work).
+- **Claim level I1 on the shipped surface.** The features pass the protocol and
+  runtime verifiers, and in-editor and fork runs exist as recorded evidence — but
+  none of those runs is verified, so the shipped trust labels stop at I1 and the
+  matrix above names each editor's recorded state instead of a level.
+- **Cross-platform unverified.** Only the Linux leg of the E7 OS matrix is
+  verified; the macOS and Windows legs are blocked records, and the one recorded
+  in-editor run (VS Code 1.85.0) ran on macOS without passing. Paths and
+  `BB_DATA_DIR` handling are expected to need platform-specific fixes there
+  (that expectation is why E7 exists, not a claim that they work).
 - **Freshness has a declared policy, not magic.** Edits are debounced (300 ms)
   before reindex; between an edit and the reindex landing, the UI shows the
   staleness badge rather than silently serving the old graph.

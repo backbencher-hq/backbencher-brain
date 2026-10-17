@@ -20,6 +20,9 @@ import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel, type ParallelIndexingStats } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+
 const ROOT = path.resolve(process.cwd())
 const RESULTS = path.join(ROOT, "validation/mA/results")
 const REPOS = ["rake", "vue-core", "element-plus"]

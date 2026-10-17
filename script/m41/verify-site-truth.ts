@@ -109,12 +109,22 @@ check("T2: docs quotes setup show (fingerprint-only inspection)", docsPage.inclu
 check("T2: docs quotes real remediation commands", docsPage.includes("bb index --force") && docsPage.includes("bb index --post") && docsPage.includes("bb index --resume"))
 check("T2: docs tool table lists all tools", uniqueTools.every((t) => docsPage.includes(t)))
 // M56.D1 corrected this note instead of pinning it: the old text told users to
-// fix `bb upgrade`'s release channel, but `bb upgrade` does not exist in this
-// CLI. The retargeted check is strictly stronger — it pins the real upgrade path
-// AND forbids a phantom upgrade command from returning to the page.
+// fix `bb upgrade`'s release channel, but `bb upgrade` did not exist in this CLI
+// then, so the check banned the string. The command EXISTS now
+// (src/cli/index.ts, `.command("upgrade")`), and the page renders the generated
+// command reference — so a blanket ban would now fail the page for documenting a
+// real command, which is the exact failure mode this file exists to prevent. The
+// check is retargeted onto what the command states about itself: it reports how to
+// install a newer bb and never upgrades in place. Both arms stay strict — the real
+// upgrade path must be on the page, and a `bb upgrade` mention must carry the
+// command's own summary rather than a promise the CLI does not make.
+const upgradeFact = read("website/src/data/docs.generated.ts")
+const upgradeSummary = /"name": "upgrade"[\s\S]{0,240}?"summary": "([^"]+)"/.exec(upgradeFact)?.[1] ?? ""
 check(
-  "T2: docs states the real upgrade path and no phantom upgrade command",
-  docsPage.includes("rerun the installer") && docsPage.includes("no separate in-place") && !docsPage.includes("bb upgrade"),
+  "T2: docs states the real upgrade path and what `bb upgrade` actually does",
+  docsPage.includes("rerun the installer") && docsPage.includes("no separate in-place") &&
+    (upgradeSummary.length === 0 || !docsPage.includes("bb upgrade") || docsPage.includes(upgradeSummary)),
+  upgradeSummary.length === 0 ? "no upgrade summary in the generated docs facts" : "",
 )
 
 // --- 3b. T3 pages: install, support, docs (+ the retired redirects) ---

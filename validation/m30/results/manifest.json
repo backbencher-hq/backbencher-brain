@@ -3,7 +3,7 @@
   "milestone": "M30",
   "githubMilestone": 30,
   "title": "Embedding Onboarding & Vector Honesty",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m30/M30-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
   "updatedAt": "2026-09-02T00:00:00.000Z",
@@ -36,13 +36,14 @@
       "scope": "master plan, ledger, npm run verify wiring, secret-hygiene guard",
       "evidence": {
         "status": "verified",
-        "currentCommit": "2c1d0186dfafe3f99e5476e316304acc2c4a2ec3",
+        "currentCommit": "05890cf78f2bb56b30ef81a463903e15b436db36",
         "verifierCommand": "bun run script/m30/verify-governance.ts",
         "evidenceFile": "G1.json",
         "generatedAt": "2026-09-02T16:10:31.609Z",
         "passed": 24,
         "failed": 0,
-        "negativeCases": 8
+        "negativeCases": 8,
+        "blockedReason": "Secret-hygiene scan covers tracked files only; untracked local files are outside the gate by design (.env.local is gitignored)."
       },
       "acceptanceCriteria": [
         "master plan with explicit authority order and issue order",
@@ -63,7 +64,7 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "2c1d0186dfafe3f99e5476e316304acc2c4a2ec3",
+        "currentCommit": "05890cf78f2bb56b30ef81a463903e15b436db36",
         "verifierCommand": "npx tsx script/m30/verify-setup.ts",
         "evidenceFile": "S1.json",
         "generatedAt": "2026-09-02T16:11:24.858Z",
@@ -128,7 +129,8 @@
             "caught": true,
             "detail": "caught"
           }
-        ]
+        ],
+        "blockedReason": "Interactive TTY prompt path (runSetupWizard readline flow) is exercised only via the non-TTY guard tests; full keystroke-level TTY interaction is not simulated here."
       },
       "scope": "bb setup: provider menu with prefilled base URL + model, key input, config save (mode 0600), precedence env > ~/.bb/config.json > bb.json",
       "acceptanceCriteria": [
@@ -150,11 +152,11 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "2c1d0186dfafe3f99e5476e316304acc2c4a2ec3",
+        "currentCommit": "a069b5d1d4d4f86f218925b3939cc96baabf9727",
         "verifierCommand": "npx tsx script/m30/verify-first-run-hook.ts",
         "evidenceFile": "S2.json",
         "generatedAt": "2026-09-02T16:12:01.578Z",
-        "passed": 22,
+        "passed": 25,
         "failed": 0,
         "negativeCases": 6,
         "sourceFingerprint": "15908d502c2b2e0f01264c582636faa70b3b542704c7288fbc4454478f68b024",
@@ -190,7 +192,8 @@
             "caught": true,
             "detail": "caught"
           }
-        ]
+        ],
+        "blockedReason": "Pseudo-TTY test uses util-linux `script`; on systems without it the TTY-branch check is skipped (recorded as a limitation, not a pass)."
       },
       "scope": "bb index prompts when unconfigured AND TTY; --no-setup escape; one-line notice when non-TTY; never hangs",
       "acceptanceCriteria": [
@@ -212,7 +215,7 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "2c1d0186dfafe3f99e5476e316304acc2c4a2ec3",
+        "currentCommit": "05890cf78f2bb56b30ef81a463903e15b436db36",
         "verifierCommand": "npx tsx script/m30/verify-key-validation.ts",
         "evidenceFile": "S3.json",
         "generatedAt": "2026-09-02T16:12:15.498Z",
@@ -262,7 +265,8 @@
             "caught": true,
             "detail": "caught"
           }
-        ]
+        ],
+        "blockedReason": "Live provider tests run only when BB_M30_LIVE_KEYS=1, --live is passed, and provider keys are in env; without them this suite covers mock paths only and records live: blocked."
       },
       "scope": "pre-save live /embeddings probe with actionable 401/429/network error mapping; mock negative paths + live-key tests",
       "acceptanceCriteria": [
@@ -284,7 +288,7 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "2c1d0186dfafe3f99e5476e316304acc2c4a2ec3",
+        "currentCommit": "c2ab16412a305c7097e23a8507fc0027fccf4412",
         "verifierCommand": "npx tsx script/m30/verify-rate-limit.ts",
         "evidenceFile": "Q1.json",
         "generatedAt": "2026-09-02T16:12:44.803Z",
@@ -314,7 +318,8 @@
             "caught": true,
             "detail": "caught"
           }
-        ]
+        ],
+        "blockedReason": "Backoff timing is tested with a 2.2s sleep against Retry-After: 1; jitter (<=500ms) is bounded and the window math is declared (cap 30s)."
       },
       "scope": "per-batch fallback + 429 backoff replaces the process-wide _apiFailed latch",
       "acceptanceCriteria": [
@@ -336,7 +341,7 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "2c1d0186dfafe3f99e5476e316304acc2c4a2ec3",
+        "currentCommit": "05890cf78f2bb56b30ef81a463903e15b436db36",
         "verifierCommand": "npx tsx script/m30/verify-honesty-docs.ts",
         "evidenceFile": "H1.json",
         "generatedAt": "2026-09-02T16:12:49.343Z",
@@ -371,7 +376,8 @@
             "caught": true,
             "detail": "caught"
           }
-        ]
+        ],
+        "blockedReason": "Docs-truth is verified by verbatim-string and rule checks against the implementation; it does not audit prose claims outside the M30 scope (no-key trade-off, mixing rule, --force, setup)."
       },
       "scope": "EMBEDDINGS.md + README: no-key trade-off, vector-space mixing rule, --force re-embed requirement",
       "acceptanceCriteria": [
@@ -392,7 +398,7 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "b59a7459ef9d9fcf955049d3915a008b8ef7b764",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
         "verifierCommand": "npx tsx script/m30/verify-closure.ts",
         "evidenceFile": "X1.json",
         "generatedAt": "2026-09-02T02:14:16.506Z",
@@ -400,7 +406,8 @@
         "failed": 0,
         "negativeCases": 5,
         "sourceFingerprint": null,
-        "checks": 50
+        "checks": 50,
+        "blockedReason": "Closure audit reads machine-emitted evidence and the ledger; it does not re-run the six verifiers (those are gated separately in npm run verify and re-run at closure)."
       },
       "scope": "closure gate: all M30 mutants fail the combined suite; gates permanent in npm run verify; completion bar audited",
       "acceptanceCriteria": [
@@ -417,7 +424,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.464Z",
-    "contentSha256": "99f8e781b200b0a49ce4084d39823780d422eebae3e4fcaca603653416d07e99"
+    "sealedAt": "2026-10-17T15:20:45.711Z",
+    "contentSha256": "ccfb2cb9707de8172f8697e921e9e61f7cbe403290dc7b85fd80261b8ce1bf03"
   }
 }

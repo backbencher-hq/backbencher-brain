@@ -21,9 +21,23 @@
 //         site (measured: the YAML `contains` groups are 15 distinct keypaths,
 //         not copies of one fact), and check D pins that exemption.
 //
+// WHAT IS COUNTED, AND WHY IT IS THE `calls` SUBSET. The traversal's default
+// covers every stored kind (graph-engine.ts DEFAULT_REL_TYPES), and this
+// analyzer stores MORE THAN ONE row per mention — `await callee()` writes a
+// `calls` row and a `references` row for the same identifier on the same line,
+// so a correct default answer carries one edge per row. Checks B/C/D/E assert
+// CALL-SITE facts, so they count `calls` edges; check G then pins that every
+// non-call callee is a stored row of this project and that an explicit
+// `relationshipTypes:["calls"]` scope returns the identical call set, so the
+// scoping cannot be used to hide an extra CALL edge.
+//
 // Mutations (the gate must be able to fail):
 //   C  inserts a same-site/different-spelling row — the tool MUST still emit one
 //      edge; removing the site-collapse guard makes this check red.
+//   D  a NULL-line same-target row must NOT collapse (two call edges expected).
+//   G  has no collapse to exercise, so it fails on a count change instead: it
+//      ties the emitted call set to an independently scoped traversal and ties
+//      every other edge to a stored row, so a fabricated or dropped edge is red.
 //   F  asserts the dedupe guards exist in the shipped engine source — reverting
 //      either fix turns this red even if behavior masks it.
 //
@@ -86,16 +100,30 @@ async function main() {
     const traverse = async () =>
       graphTraversal(pid, "site", { direction: "callees", maxDepth: 2 } as any)
 
+    // THE CALLEE SET IS NOT THE CALL-SITE SET. A default traversal covers every
+    // stored kind, and this analyzer emits MORE THAN ONE row per mention: an
+    // `await callee()` stores a `calls` row AND a `references` row for the same
+    // identifier on the same line. So the answer carries one edge per row by
+    // design, and the old checks — written against "edges" while reading as
+    // "call sites" — compared 3 edges (1 call + 2 references) to a 1-row store and
+    // failed on a traversal that had collapsed the call exactly right. The claim
+    // under test is about CALL SITES, so the counts below are scoped to `calls`.
+    // The other edges are asserted, not ignored: check G pins that every non-call
+    // callee is a stored row of this project and that an explicit calls-only scope
+    // returns the identical call set (so an extra CALL edge cannot hide in them).
+    const callCallees = (t: any) => (t.callees ?? []).filter((e: any) => e.relationshipType === "calls")
+
     // ── B: the #895 invariant on a live traversal ────────────────────────────
     const t0 = await traverse()
     const allEdges = [...t0.callers, ...t0.callees]
     const rowIds = allEdges.map((e) => e.rowId)
     const uniqueRowIds = new Set(rowIds).size === rowIds.length
+    const kinds = [...new Set(t0.callees.map((e: any) => e.relationshipType))]
     check(
       "B-rowid-uniqueness-invariant",
-      uniqueRowIds && t0.callees.length === 1,
+      uniqueRowIds && callCallees(t0).length === 1,
       uniqueRowIds
-        ? `traversal emitted ${allEdges.length} edge(s), all distinct rowIds; callees=${t0.callees.length}`
+        ? `traversal emitted ${allEdges.length} edge(s), all distinct rowIds; ${callCallees(t0).length} of ${t0.callees.length} callee edge(s) are \`calls\` (kinds: ${JSON.stringify(kinds)})`
         : `the same rowId was emitted more than once (${rowIds.length - new Set(rowIds).size} repeat(s)) — this is the #895 defect shape`,
     )
 
@@ -125,10 +153,10 @@ async function main() {
     const t1RowIds = t1Edges.map((e) => e.rowId)
     check(
       "C-spelling-variant-collapses-to-one-edge",
-      afterRows.length === 2 && t1.callees.length === 1 && new Set(t1RowIds).size === t1RowIds.length,
-      `store holds ${afterRows.length} same-site rows (2 spellings); tool emitted ${t1.callees.length} edge(s) — ` +
-        (t1.callees.length === 1
-          ? `collapsed, declared spellingVariantsCollapsed=${t1.summary.dedupedAtToolLayer.spellingVariantsCollapsed}; first spelling wins (rowId=${t1.callees[0]?.rowId})`
+      afterRows.length === 2 && callCallees(t1).length === 1 && new Set(t1RowIds).size === t1RowIds.length,
+      `store holds ${afterRows.length} same-site rows (2 spellings); tool emitted ${callCallees(t1).length} \`calls\` callee edge(s) — ` +
+        (callCallees(t1).length === 1
+          ? `collapsed, declared spellingVariantsCollapsed=${t1.summary.dedupedAtToolLayer.spellingVariantsCollapsed}; first spelling wins (rowId=${callCallees(t1)[0]?.rowId})`
           : `NOT collapsed — the site-collapse guard is missing or broken (this is how #854 inflates agent-visible counts)`),
     )
 
@@ -155,8 +183,8 @@ async function main() {
     const t2 = await traverse()
     check(
       "D-null-line-rows-are-not-collapsed",
-      t2.callees.length === 2,
-      `with a NULL-line same-target row present, the tool emits ${t2.callees.length} edge(s) (expected 2) — a NULL line cannot prove two rows name one site, so they pass through untouched; spellingVariantsCollapsed=${t2.summary.dedupedAtToolLayer.spellingVariantsCollapsed} (the line-3 pair still collapsed exactly once)`,
+      callCallees(t2).length === 2,
+      `with a NULL-line same-target row present, the tool emits ${callCallees(t2).length} \`calls\` callee edge(s) (expected 2) — a NULL line cannot prove two rows name one site, so they pass through untouched; spellingVariantsCollapsed=${t2.summary.dedupedAtToolLayer.spellingVariantsCollapsed} (the line-3 pair still collapsed exactly once)`,
     )
 
     // ── E: cleanup law — the counters track the store, no caching lies ──────
@@ -164,8 +192,29 @@ async function main() {
     const t3 = await traverse()
     check(
       "E-removing-rows-restores-the-baseline",
-      rowsFor().length === 1 && t3.callees.length === 1 && t3.summary.dedupedAtToolLayer.spellingVariantsCollapsed === 0,
-      `after deleting the inserted rows: store=1, tool emits ${t3.callees.length}, collapsed=0 — the declared numbers track the store`,
+      rowsFor().length === 1 && callCallees(t3).length === 1 && t3.summary.dedupedAtToolLayer.spellingVariantsCollapsed === 0,
+      `after deleting the inserted rows: store=1, tool emits ${callCallees(t3).length} \`calls\` callee edge(s), collapsed=0 — the declared numbers track the store`,
+    )
+
+    // ── G: the non-call edges are the store's own rows, and the scoped answer
+    //       is exactly the call set (an extra CALL edge cannot ride along) ────
+    const scoped = (await graphTraversal(pid, "site", {
+      direction: "callees",
+      maxDepth: 2,
+      relationshipTypes: ["calls"],
+    } as any)) as any
+    const scopedIds = scoped.callees.map((e: any) => e.rowId)
+    const callIds = callCallees(t0).map((e: any) => e.rowId)
+    const nonCalls = t0.callees.filter((e: any) => e.relationshipType !== "calls")
+    const storeHasEveryNonCallRow = nonCalls.every((e: any) => {
+      const row = db.prepare(`SELECT relationship_type AS t FROM brain_relationship WHERE id = ?`).get(e.rowId) as any
+      return !!row && row.t === e.relationshipType
+    })
+    check(
+      "G-non-call-callees-are-stored-rows-and-scoping-agrees",
+      nonCalls.length > 0 && storeHasEveryNonCallRow && scopedIds.join(",") === callIds.join(","),
+      `${nonCalls.length} non-call callee edge(s) ${JSON.stringify([...new Set(nonCalls.map((e: any) => e.relationshipType))])} — every one resolves to a stored row of the matching type (${storeHasEveryNonCallRow}); ` +
+        `an explicit relationshipTypes:["calls"] scope returns the same ${scopedIds.length} rowId(s) as the default answer's \`calls\` subset`,
     )
 
     // ── F: MUTATION — the guards must exist in the shipped engine ───────────

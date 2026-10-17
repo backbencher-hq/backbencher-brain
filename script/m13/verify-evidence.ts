@@ -11,15 +11,31 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { Harness } from "./harness"
+import { EVIDENCE_LAYERS, Harness, resultsDirFor } from "./harness"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const RESULTS_DIR = resolve(root, "validation", "m13", "results")
 
 type Evidence = Record<string, any>
 
+/**
+ * Which milestone's corpus is being validated.
+ *
+ * The validator was M13-literal (`milestone must be M13`, issue `^M13\.\d+$`)
+ * while script/m64 emitted through the same harness, so M64's documents could
+ * only ever be rejected by it. The defaults below are M13's exact rules, so every
+ * existing caller is unchanged; a milestone that reuses the harness passes its
+ * own identity and issue shape (script/m64/verify-evidence.ts).
+ */
+export interface EvidenceValidationOptions {
+  milestone?: string
+  issuePattern?: RegExp
+}
+
 /** Structural validator. Returns a list of errors; empty means valid. */
-export function validateEvidence(doc: Evidence): string[] {
+export function validateEvidence(doc: Evidence, options: EvidenceValidationOptions = {}): string[] {
+  const milestone = options.milestone ?? "M13"
+  const issuePattern = options.issuePattern ?? /^M13\.\d+$/
   const errors: string[] = []
   if (!doc || typeof doc !== "object" || Array.isArray(doc)) return ["evidence must be a JSON object"]
   const required = [
@@ -29,13 +45,22 @@ export function validateEvidence(doc: Evidence): string[] {
   ]
   for (const k of required) if (doc[k] === undefined) errors.push(`missing required field: ${k}`)
   if (doc.schemaVersion !== 1) errors.push("schemaVersion must be 1")
-  if (doc.milestone !== "M13") errors.push("milestone must be M13")
-  if (typeof doc.issue !== "string" || !/^M13\.\d+$/.test(doc.issue)) errors.push("issue must match M13.NN")
+  // A document carries ONE identity. A foreign milestone's document in this
+  // corpus is reported for what it is (it belongs to another lane's results
+  // directory) rather than as a nameless schema failure.
+  if (doc.milestone !== milestone) {
+    errors.push(
+      typeof doc.milestone === "string" && doc.milestone !== milestone
+        ? `milestone must be ${milestone} — this document declares ${doc.milestone} and belongs in ${resultsDirFor(doc.milestone)}`
+        : `milestone must be ${milestone}`,
+    )
+  }
+  if (typeof doc.issue !== "string" || !issuePattern.test(doc.issue)) errors.push(`issue must match ${milestone}.NN`)
   if (!doc.code || typeof doc.code !== "string" || !doc.tool || typeof doc.tool !== "string" || !doc.title || typeof doc.title !== "string") {
     errors.push("code/tool/title must be non-empty strings")
   }
   if (!["verified", "partial", "known-gap", "untested"].includes(doc.verifiedState)) errors.push("verifiedState must be a valid state")
-  if (!Array.isArray(doc.layers) || doc.layers.length < 1 || !doc.layers.every((l: any) => ["unit", "integration", "e2e", "corpus"].includes(l))) {
+  if (!Array.isArray(doc.layers) || doc.layers.length < 1 || !doc.layers.every((l: any) => EVIDENCE_LAYERS.includes(l))) {
     errors.push("layers must be a non-empty array of valid layers")
   }
   if (!Array.isArray(doc.checks) || doc.checks.length < 1) {
@@ -83,6 +108,23 @@ function loadRealEvidence(): Array<{ file: string; doc: Evidence }> {
   return names.map((f) => ({ file: f, doc: JSON.parse(readFileSync(resolve(RESULTS_DIR, f), "utf8")) }))
 }
 
+/**
+ * Documents in this directory that belong to another milestone.
+ *
+ * This census reads EVERY *.json in validation/m13/results, so a reuse of the
+ * shared harness by a later milestone used to land in it: script/m64's eight
+ * bb_health verifiers emitted here with `milestone: "M13"` stamped on them and
+ * `issue: "M64"` inside, and the census reported eight schema failures whose real
+ * cause — "these documents are not M13's" — appeared in no message. Naming the
+ * misfile is the fix; moving the documents to their own results directory is the
+ * other half, and the check below is what keeps a future misfile loud.
+ */
+function foreignMilestoneDocs(docs: Array<{ file: string; doc: Evidence }>, milestone: string): string[] {
+  return docs
+    .filter(({ doc }) => doc?.milestone !== milestone)
+    .map(({ file, doc }) => `${file} declares milestone ${doc?.milestone ?? "<none>"} — that lane's corpus is ${typeof doc?.milestone === "string" ? resultsDirFor(doc.milestone) : "its own results directory"}`)
+}
+
 // The B2/B3 main body runs only when this file is executed directly, so other
 // verifiers can import validateEvidence() without triggering process.exit.
 if (import.meta.main) {
@@ -96,7 +138,7 @@ const b2 = new Harness({
   layers: ["unit"],
   decisions: {
     authority: "script/m13/harness.ts (Harness) + validation/m13/schemas/evidence.schema.json",
-    enforcement: "script/m13/verify-evidence.ts validates every validation/m13/results/*.json",
+    enforcement: "script/m13/verify-evidence.ts validates every validation/m13/results/*.json AND asserts that every one of them declares M13 — a harness reuse by a later milestone writes to its own corpus (script/m64/verify-evidence.ts), never into this one",
     verifiedDefinition: "all checks pass AND >=1 negative case AND evidence is schema-valid",
   },
   limitations: [
@@ -109,6 +151,12 @@ const real = loadRealEvidence()
 if (real.length === 0) {
   b2.check("at least one committed evidence document exists", false, "expected b1.json (M13.01) to exist")
 } else {
+  const foreign = foreignMilestoneDocs(real, "M13")
+  b2.check(
+    "every document in validation/m13/results declares the M13 milestone",
+    foreign.length === 0,
+    foreign.length ? `${foreign.length} misfiled: ${foreign.join("; ")}` : `${real.length} documents`,
+  )
   for (const { file, doc } of real) {
     const errors = validateEvidence(doc)
     b2.check(`${file} is schema-valid`, errors.length === 0, errors.join("; "))
@@ -126,7 +174,17 @@ expectErrors(b2, "non-object evidence rejected", null, "must be a JSON object")
 expectErrors(b2, "missing required field rejected", { schemaVersion: 1 }, "missing required field")
 expectErrors(b2, "bad issue format rejected", { ...b2.document(), issue: "M12.1" }, "issue must match M13")
 expectErrors(b2, "bad verifiedState rejected", { ...b2.document(), verifiedState: "done" }, "verifiedState must be a valid state")
-expectErrors(b2, "verified with failed>0 rejected", { ...b2.document(), checks: [{ name: "x", pass: false }], summary: { total: 1, passed: 0, failed: 1 } }, "verified claim has failed>0")
+// The doc is MADE to claim verified here rather than inheriting whatever state
+// this census is in. Spreading `b2.document()` left the claim to b2's own
+// `verifiedState`, so while the census was red the mutant below claimed
+// `known-gap` with failed>0 — internally consistent, so nothing rejected it and
+// the check that says it tests "verified with failed>0" passed no errors back.
+// A negative has to build the exact document it names.
+expectErrors(b2, "verified with failed>0 rejected", { ...b2.document(), verifiedState: "verified", checks: [{ name: "x", pass: false }], summary: { total: 1, passed: 0, failed: 1 } }, "verified claim has failed>0")
+// The misfile rule is a check, so it needs its own adversarial case: a document
+// that declares another milestone must be refused by the validator too.
+expectErrors(b2, "a document declaring another milestone is rejected in the M13 corpus", { ...b2.document(), milestone: "M64" }, "this document declares M64")
+expectErrors(b2, "a document with no milestone is rejected in the M13 corpus", { ...b2.document(), milestone: undefined }, "milestone must be M13")
 
 b2.write()
 

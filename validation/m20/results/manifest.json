@@ -25,7 +25,7 @@
       "code": "C1",
       "githubIssue": 428,
       "tool": "governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "authority, ledger, closure gate",
       "acceptanceCriteria": [
         "machine-readable ledger",
@@ -38,16 +38,17 @@
         "document limitations"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "fc744b9aa9bc378b560e0e0e11b52f4c6fbe5831",
+        "status": "known-gap",
+        "currentCommit": "dffea7f764b8d396f953bbd2e24734744589943e",
         "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-governance.ts",
         "evidenceFile": "C1.json",
         "generatedAt": "2026-08-28T01:02:55.102Z",
-        "passed": 15,
-        "failed": 0,
-        "negativeCases": 5
+        "passed": 14,
+        "failed": 1,
+        "negativeCases": 5,
+        "blockedReason": "This gate validates governance metadata and mutation response; it does not verify the four tool implementations."
       }
     },
     {
@@ -68,7 +69,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "dc3bcf6697240013ee704044ad66b9c93a31be75",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
         "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-corpus-registry.ts",
@@ -76,7 +77,8 @@
         "generatedAt": "2026-08-28T00:44:24.366Z",
         "passed": 20,
         "failed": 0,
-        "negativeCases": 3
+        "negativeCases": 3,
+        "blockedReason": "This registry checks reproducible repository identity and availability; it does not parse every source file."
       }
     },
     {
@@ -97,7 +99,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "currentCommit": "daea1878182e97e8bd05abeea58fd51a01df83c1",
         "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-migration-order.ts",
@@ -105,14 +107,15 @@
         "generatedAt": "2026-08-28T00:36:43.825Z",
         "passed": 13,
         "failed": 0,
-        "negativeCases": 3
+        "negativeCases": 3,
+        "blockedReason": "This verifier proves deterministic ordering of the available resolved symbol graph; it does not prove that analyzers resolved every real-world dependency."
       }
     },
     {
       "code": "M2",
       "githubIssue": 431,
       "tool": "bb_migrate",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "structured effort methodology",
       "acceptanceCriteria": [
         "typed relationship evidence",
@@ -125,8 +128,8 @@
         "graph mutation"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "status": "known-gap",
+        "currentCommit": "daea1878182e97e8bd05abeea58fd51a01df83c1",
         "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-migration-methodology.ts",
@@ -134,14 +137,15 @@
         "generatedAt": "2026-08-28T00:36:44.385Z",
         "passed": 17,
         "failed": 0,
-        "negativeCases": 3
+        "negativeCases": 3,
+        "blockedReason": "This gate proves methodology arithmetic and relationship evidence boundaries; it does not prove that the analyzer resolved every real-world relationship."
       }
     },
     {
       "code": "M3",
       "githubIssue": 432,
       "tool": "bb_migrate",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "mapping and uncertainty boundaries",
       "acceptanceCriteria": [
         "normalized targets",
@@ -154,8 +158,8 @@
         "removed-mapping mutation"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "status": "known-gap",
+        "currentCommit": "daea1878182e97e8bd05abeea58fd51a01df83c1",
         "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-migration-mappings.ts",
@@ -163,14 +167,15 @@
         "generatedAt": "2026-08-28T00:36:44.967Z",
         "passed": 15,
         "failed": 0,
-        "negativeCases": 5
+        "negativeCases": 5,
+        "blockedReason": "Mappings are advisory equivalence guidance, not translated source or proof of semantic compatibility."
       }
     },
     {
       "code": "P1",
       "githubIssue": 433,
       "tool": "bb_patterns",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "complete parameter candidate scan",
       "acceptanceCriteria": [
         "all candidates evaluated",
@@ -183,23 +188,24 @@
         "scan-bound mutation"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "status": "known-gap",
+        "currentCommit": "unknown",
         "sourceFingerprint": "38292221c0b119e4438b154e940216c775d76a17bf1f5eeeb8b6c5a790cf282f",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-patterns-parameter-scan.ts",
         "evidenceFile": "P1.json",
         "generatedAt": "2026-08-28T00:36:46.391Z",
-        "passed": 6,
+        "passed": 7,
         "failed": 0,
-        "negativeCases": 1
+        "negativeCases": 1,
+        "blockedReason": "Fixture-level parameter-scan coverage; real-repository corpus coverage is owned by M20.X2."
       }
     },
     {
       "code": "P2",
       "githubIssue": 434,
       "tool": "bb_patterns",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "orphan and dynamic-use semantics",
       "acceptanceCriteria": [
         "ordinary and dynamic cases",
@@ -212,23 +218,24 @@
         "unknown dynamic cases"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "status": "known-gap",
+        "currentCommit": "unknown",
         "sourceFingerprint": "38292221c0b119e4438b154e940216c775d76a17bf1f5eeeb8b6c5a790cf282f",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-patterns-orphan-semantics.ts",
         "evidenceFile": "P2.json",
         "generatedAt": "2026-08-28T00:36:47.729Z",
-        "passed": 6,
-        "failed": 0,
-        "negativeCases": 1
+        "passed": 4,
+        "failed": 2,
+        "negativeCases": 1,
+        "blockedReason": "Fixture-level orphan and dynamic-use coverage; dynamic/reflection wiring remains uncertain by design."
       }
     },
     {
       "code": "P3",
       "githubIssue": 435,
       "tool": "bb_patterns",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "pagination, history, and transport parity",
       "acceptanceCriteria": [
         "full-set statistics",
@@ -241,23 +248,24 @@
         "tamper checks"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "status": "known-gap",
+        "currentCommit": "unknown",
         "sourceFingerprint": "38292221c0b119e4438b154e940216c775d76a17bf1f5eeeb8b6c5a790cf282f",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-patterns-pagination-history.ts",
         "evidenceFile": "P3.json",
         "generatedAt": "2026-08-28T00:36:52.303Z",
-        "passed": 8,
+        "passed": 9,
         "failed": 0,
-        "negativeCases": 1
+        "negativeCases": 1,
+        "blockedReason": "Fixture-level pagination/history/transport coverage; real-repository corpus coverage is owned by M20.X2."
       }
     },
     {
       "code": "S1",
       "githubIssue": 436,
       "tool": "bb_security",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "flow evidence and heuristic boundary",
       "acceptanceCriteria": [
         "endpoint states",
@@ -270,23 +278,24 @@
         "analyzer dependency list"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "7d853553932f9675f3cb2440673d9e627ba36279",
+        "status": "known-gap",
+        "currentCommit": "c523d2ceface59fda83298416b4a59dc30f30d68",
         "sourceFingerprint": "5990abe80cbc10d8def2b6ccfd25ee9248eb9341ec767a53439176b80e2c3b65",
         "workingTreeRelevantChanges": [],
-        "verifierCommand": "bun run script/m20/verify-security-flow-boundary.ts",
+        "verifierCommand": "npx tsx script/m20/verify-security-flow-boundary.ts",
         "evidenceFile": "S1.json",
         "generatedAt": "2026-08-27T00:21:10.714Z",
-        "passed": 8,
+        "passed": 22,
         "failed": 0,
-        "negativeCases": 3
+        "negativeCases": 4,
+        "blockedReason": "Fixture-level endpoint-state and evidence coverage; static taint remains heuristic and is not a runtime exploit proof."
       }
     },
     {
       "code": "S2",
       "githubIssue": 437,
       "tool": "bb_security",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "behavioral adversarial verification",
       "acceptanceCriteria": [
         "no unconditional assertions",
@@ -299,23 +308,24 @@
         "persisted output"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "7d853553932f9675f3cb2440673d9e627ba36279",
+        "status": "known-gap",
+        "currentCommit": "c523d2ceface59fda83298416b4a59dc30f30d68",
         "sourceFingerprint": "5990abe80cbc10d8def2b6ccfd25ee9248eb9341ec767a53439176b80e2c3b65",
         "workingTreeRelevantChanges": [],
-        "verifierCommand": "bun run script/m20/verify-security-adversarial.ts",
+        "verifierCommand": "npx tsx script/m20/verify-security-adversarial.ts",
         "evidenceFile": "S2.json",
         "generatedAt": "2026-08-27T00:21:12.554Z",
-        "passed": 21,
+        "passed": 56,
         "failed": 0,
-        "negativeCases": 7
+        "negativeCases": 15,
+        "blockedReason": "Policy matrix and real-behavior fixtures cover classification, calibration, dedup, filters, and mutation response; they do not prove real-world taint recall."
       }
     },
     {
       "code": "S3",
       "githubIssue": 438,
       "tool": "bb_security",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "history state persistence",
       "acceptanceCriteria": [
         "live observations visible",
@@ -328,23 +338,24 @@
         "CLI/MCP parity"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "7d853553932f9675f3cb2440673d9e627ba36279",
+        "status": "known-gap",
+        "currentCommit": "c523d2ceface59fda83298416b4a59dc30f30d68",
         "sourceFingerprint": "5990abe80cbc10d8def2b6ccfd25ee9248eb9341ec767a53439176b80e2c3b65",
         "workingTreeRelevantChanges": [],
-        "verifierCommand": "bun run script/m20/verify-security-history.ts",
+        "verifierCommand": "npx tsx script/m20/verify-security-history.ts",
         "evidenceFile": "S3.json",
         "generatedAt": "2026-08-27T00:21:16.722Z",
-        "passed": 13,
+        "passed": 35,
         "failed": 0,
-        "negativeCases": 3
+        "negativeCases": 5,
+        "blockedReason": "Deterministic fixture-level history matrix; real-repository history parity is owned by M20.X2."
       }
     },
     {
       "code": "D1",
       "githubIssue": 439,
       "tool": "bb_doc",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "mode and option contract",
       "acceptanceCriteria": [
         "mode matrix",
@@ -357,23 +368,24 @@
         "JSON/Markdown parity"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "7d853553932f9675f3cb2440673d9e627ba36279",
+        "status": "known-gap",
+        "currentCommit": "unknown",
         "sourceFingerprint": "facc53938f38e632dc575d3f304140d3e9c09b9cb8c26920ed4e7fc8c6060bf6",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-doc-modes.ts",
         "evidenceFile": "D1.json",
         "generatedAt": "2026-08-27T00:21:51.440Z",
-        "passed": 24,
+        "passed": 25,
         "failed": 0,
-        "negativeCases": 1
+        "negativeCases": 1,
+        "blockedReason": "Fixture-level mode/contract matrix; real-repository documentation coverage is owned by M20.X2."
       }
     },
     {
       "code": "D2",
       "githubIssue": 440,
       "tool": "bb_doc",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "citation resolution and freshness",
       "acceptanceCriteria": [
         "resolvable citations",
@@ -386,8 +398,8 @@
         "mutation evidence"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "7d853553932f9675f3cb2440673d9e627ba36279",
+        "status": "known-gap",
+        "currentCommit": "unknown",
         "sourceFingerprint": "facc53938f38e632dc575d3f304140d3e9c09b9cb8c26920ed4e7fc8c6060bf6",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-doc-citations.ts",
@@ -395,14 +407,15 @@
         "generatedAt": "2026-08-27T00:21:52.638Z",
         "passed": 10,
         "failed": 0,
-        "negativeCases": 3
+        "negativeCases": 3,
+        "blockedReason": "Fixture-level citation/freshness matrix; real-repository documentation coverage is owned by M20.X2."
       }
     },
     {
       "code": "D3",
       "githubIssue": 441,
       "tool": "bb_doc",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "source-backed examples and diagrams",
       "acceptanceCriteria": [
         "cited examples",
@@ -415,8 +428,8 @@
         "tampered-edge negative"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "7d853553932f9675f3cb2440673d9e627ba36279",
+        "status": "known-gap",
+        "currentCommit": "unknown",
         "sourceFingerprint": "facc53938f38e632dc575d3f304140d3e9c09b9cb8c26920ed4e7fc8c6060bf6",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-doc-examples-diagrams.ts",
@@ -424,7 +437,8 @@
         "generatedAt": "2026-08-27T00:21:53.772Z",
         "passed": 10,
         "failed": 0,
-        "negativeCases": 3
+        "negativeCases": 3,
+        "blockedReason": "Fixture-level examples/diagrams honesty and tamper response; real-repository documentation coverage is owned by M20.X2."
       }
     },
     {
@@ -445,7 +459,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
         "sourceFingerprint": "6d38c8eedca197d908e530dd6761326797e56149b1cb3c4bf43da19ba2c8582a",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-cross-tool-parity.ts",
@@ -453,14 +467,15 @@
         "generatedAt": "2026-08-28T00:37:12.065Z",
         "passed": 12,
         "failed": 0,
-        "negativeCases": 4
+        "negativeCases": 4,
+        "blockedReason": "Fixture-level transport parity and read-only proof; real-repository parity is owned by M20.X2."
       }
     },
     {
       "code": "X2",
       "githubIssue": 443,
       "tool": "cross-tool",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "real repositories and complexity ledger",
       "acceptanceCriteria": [
         "revisioned corpus runs",
@@ -473,23 +488,24 @@
         "blocked states visible"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "52dee4c14d3e2e456d25992260e6bcfc3bbf184c",
+        "status": "known-gap",
+        "currentCommit": "unknown",
         "sourceFingerprint": "6d38c8eedca197d908e530dd6761326797e56149b1cb3c4bf43da19ba2c8582a",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-real-repo-ledger.ts",
         "evidenceFile": "X2.json",
         "generatedAt": "2026-08-28T00:40:04.157Z",
-        "passed": 12,
+        "passed": 10,
         "failed": 0,
-        "negativeCases": 1
+        "negativeCases": 1,
+        "blockedReason": "Wall-clock measurements are environment-dependent (concurrent co-agent indexing may inflate times); they prove completion and scale, not a performance guarantee."
       }
     },
     {
       "code": "C3",
       "githubIssue": 444,
       "tool": "governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "final docs, claims, and closure",
       "acceptanceCriteria": [
         "all issue evidence current",
@@ -502,22 +518,23 @@
         "unresolved claims"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "fc744b9aa9bc378b560e0e0e11b52f4c6fbe5831",
+        "status": "known-gap",
+        "currentCommit": "dffea7f764b8d396f953bbd2e24734744589943e",
         "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-closure-C3.ts",
         "evidenceFile": "C3.json",
         "generatedAt": "2026-08-28T01:03:13.543Z",
-        "passed": 21,
-        "failed": 0,
-        "negativeCases": 2
+        "passed": 17,
+        "failed": 4,
+        "negativeCases": 2,
+        "blockedReason": "Closure audit reads persisted tool evidence; it does not re-run tool verifiers."
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.378Z",
-    "contentSha256": "93050469cfb0ff4b1b296d6ad6f89c783045d4f6cc82f770b48d192a79bac26f"
+    "sealedAt": "2026-10-17T15:20:45.559Z",
+    "contentSha256": "f9ce969d0d0b00c48c495fad781d72c9702769fb6d2dc6e1a6f9e4de0b0fc883"
   }
 }

@@ -77,27 +77,110 @@ const callers = walkSourceFiles(path.join(ROOT, "script")).map((f) => path.relat
 // passed in an options object to the indexer must be declared by it.
 const SUSPECT_OPTIONS = ["conflictMode", "replaceOnConflict", "overwrite", "forceReindex"]
 
+// AN OPTION ONLY COUNTS WHEN IT IS INSIDE A CALL TO THE INDEXER.
+//
+// The first version of this gate regexed the whole file for `<option>:` and called every
+// hit an indexer option. Measured 2026-10-16: 65 hits, and NONE of them was one —
+// `overwrite` is a `bb_edit` write-mode option, so the 54 occurrences in script/m13 (and
+// the ones in script/m71) were the editor's option being attributed to the indexer. The
+// gate's claim is about options passed TO THE INDEXER, so the measurement has to be
+// scoped to the indexer's call sites; an unscoped text scan is a different claim wearing
+// the same headline, and it is unfalsifiable in both directions (it cannot tell the
+// option that matters from the one that is fine).
+//
+// The call span is found by bracket balance, not by "to the end of the line": many of
+// the real call sites are multi-line object literals, and a line-based span would both
+// miss options placed on later lines and swallow options belonging to a sibling call.
+const INDEXER_CALLS = ["indexProjectParallel", "reindexFilesParallel", "indexProject", "persistParseResult"]
+
+/** Spans of every indexer call's argument list, in file order. */
+function indexerCallSpans(text: string): Array<{ start: number; end: number }> {
+  const spans: Array<{ start: number; end: number }> = []
+  for (const name of INDEXER_CALLS) {
+    const re = new RegExp(`(?<![\\w$.])${name}\\s*\\(`, "g")
+    for (const m of text.matchAll(re)) {
+      const open = text.indexOf("(", m.index)
+      let depth = 0
+      let i = open
+      for (; i < text.length; i++) {
+        const c = text[i]
+        if (c === "(") depth++
+        else if (c === ")") {
+          depth--
+          if (depth === 0) break
+        }
+      }
+      spans.push({ start: open, end: i })
+    }
+  }
+  return spans.sort((a, b) => a.start - b.start)
+}
+
+/** Undeclared suspect options inside indexer call spans of one blanked source text. */
+function undeclaredInIndexerCalls(text: string): Array<{ opt: string; line: number }> {
+  const out: Array<{ opt: string; line: number }> = []
+  for (const { start, end } of indexerCallSpans(text)) {
+    const span = text.slice(start, end)
+    for (const opt of SUSPECT_OPTIONS) {
+      if (declared.has(opt)) continue
+      const re = new RegExp(`\\b${opt}\\s*:`, "g")
+      for (const m of span.matchAll(re)) {
+        out.push({ opt, line: text.slice(0, start + m.index).split("\n").length })
+      }
+    }
+  }
+  return out
+}
+
+// THE DETECTOR MUST BE SHOWN ABLE TO DO BOTH THINGS: find a real indexer option, and NOT
+// blame a different tool's option that shares a name. Both directions were wrong in
+// production, so both are pinned here — a scoped scan that finds nothing because it is
+// broken looks exactly like one that finds nothing because the tree is clean.
+{
+  const plantedIndexer = blankCommentsAndStrings(
+    `await indexProjectParallel(pid, root, { files: [f], skipDiscovery: true, conflictMode: "replace" })\n`,
+    { keepStrings: true },
+  )
+  const hits = undeclaredInIndexerCalls(plantedIndexer)
+  check(
+    "SELF-TEST: an undeclared option passed to the indexer is found",
+    hits.length === 1 && hits[0]!.opt === "conflictMode",
+    `${hits.length} hit(s)${hits[0] ? ` (${hits[0].opt} @ line ${hits[0].line})` : ""} — 0 would mean the scoped scan sees nothing`,
+  )
+  const nested = blankCommentsAndStrings(
+    `await indexProjectParallel(pid, root, { files: [a, b(x)], forceReindex: true })\n`,
+    { keepStrings: true },
+  )
+  check(
+    "SELF-TEST: bracket balancing survives a nested call inside the option object",
+    undeclaredInIndexerCalls(nested).length === 1,
+    `${undeclaredInIndexerCalls(nested).length} hit(s) — the span must close at the CALL's paren, not the inner one`,
+  )
+  const editCall = blankCommentsAndStrings(
+    `await executeEdit(root, pid, { mode: "write", filePath: "src/a.ts", content: "x", overwrite: true })\n`,
+    { keepStrings: true },
+  )
+  check(
+    "SELF-TEST: `overwrite` on a bb_edit call is NOT reported as an indexer option",
+    undeclaredInIndexerCalls(editCall).length === 0,
+    `${undeclaredInIndexerCalls(editCall).length} hit(s) — the 65-hit false-positive class this scoping exists to end`,
+  )
+}
+
 const offenders: Array<{ file: string; opt: string; line: number }> = []
 for (const f of callers) {
   const raw = readFileSync(path.join(ROOT, f), "utf8")
   // Blank comments, KEEP string literals — an option name in code is a string, and a
   // string inside a comment is prose that must not count.
   const text = blankCommentsAndStrings(raw, { keepStrings: true })
-  for (const opt of SUSPECT_OPTIONS) {
-    const re = new RegExp(`\\b${opt}\\s*:`, "g")
-    for (const m of text.matchAll(re)) {
-      // Skip the file that DECLARES it, if any.
-      if (declared.has(opt)) continue
-      offenders.push({ file: f, opt, line: text.slice(0, m.index).split("\n").length })
-    }
-  }
+  for (const h of undeclaredInIndexerCalls(text)) offenders.push({ file: f, opt: h.opt, line: h.line })
 }
 
 check(
   "every indexer option passed by a gate script is DECLARED by the indexer",
   offenders.length === 0,
   offenders.length === 0
-    ? `${SUSPECT_OPTIONS.length} option name(s) checked across ${callers.length} script(s)`
+    ? `${SUSPECT_OPTIONS.length} option name(s) checked inside the indexer call sites of ${callers.length} script(s)`
     : `*** ${offenders.length} call site(s) pass an option the indexer does not accept, so it is silently ignored: ${offenders
         .slice(0, 6)
         .map((o) => `${o.file}:${o.line} (${o.opt})`)
@@ -107,9 +190,9 @@ check(
 // The finding, stated whether or not the above passes, so the gate's own output
 // carries the decision rather than only a count.
 console.log(
-  `\n  ${offenders.length} undeclared indexer option(s) in gate scripts.` +
+  `\n  ${offenders.length} undeclared indexer option(s) inside indexer call sites.` +
     (offenders.length > 0
-      ? "\n  Either the gates draw conclusions from a guarantee the indexer never gave them (delete the\n  option and re-derive those conclusions), or `conflictMode` is a real product gap (bb index has\n  no way to say \"replace what you had\"). This gate stays red until one is chosen."
+      ? "\n  Either the gates draw conclusions from a guarantee the indexer never gave them (delete the\n  option and re-derive those conclusions), or the option is a real product gap (bb index has no\n  way to say \"replace what you had\"). This gate stays red until one is chosen. For `conflictMode`\n  that decision was already made and measured: script/m62/verify-reindex-replaces.ts shows the\n  indexer DOES replace a file's rows, so the option was a broken attempt at a guarantee that\n  already holds, and it was removed from the sites that carried it."
       : ""),
 )
 

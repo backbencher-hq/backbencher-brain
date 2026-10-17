@@ -30,8 +30,8 @@
       "caught": true
     }
   ],
-  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
-  "sourceFingerprint": "df461e1f9fd355639234b72d8e42ee8ad2ebf65d69790fad647456c7d05f7fee",
+  "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
+  "sourceFingerprint": "c34597c11873fcfbd37847a6789b05e6bb47bc8c19238f5fa40512825e1d2e7c",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m28/verify-annotation-ui.ts",
@@ -41,14 +41,14 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-annotation-ui.ts",
   "evidenceFile": "A2.json",
-  "generatedAt": "2026-10-05T22:34:11.527Z",
+  "generatedAt": "2026-10-15T07:48:48.968Z",
   "claimLevel": "verified — annotations render in the real editor hover (author-labeled) and ride bb/graph; component rules mutation-gated",
   "failures": [
     "A2: nvim provisioned — .tools/nvim-linux-x86_64/bin/nvim missing"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:34:11.527Z",
-    "contentSha256": "57fb46b59539643f454ce31b84578850c6aaf76bad85fa44159da3a88dca329a"
+    "sealedAt": "2026-10-15T07:48:48.968Z",
+    "contentSha256": "9ea8fd91ed79333520701d18f2c5e6301fda4ec777b26260aade0b4eba15a7aa"
   }
 }

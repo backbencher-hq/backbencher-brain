@@ -47,7 +47,15 @@ const CORPUS_ROOT = resolveCorpusRoot(process.cwd()) ?? "CORPUS_ROOT_UNRESOLVED"
 const EVIDENCE = path.join(ROOT, "validation", "m14", "results", "M14.0.F8.json")
 const CENSUS_FILES = process.argv.includes("--files") ? parseInt(process.argv[process.argv.indexOf("--files") + 1]) : 60
 
-const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
+// `repo` is a LIST of accepted spellings, because the spelling is a property of the
+// corpus ROOT and not of this file. Go is the language that proves it: the corpus on
+// the root this repo resolves is `go-tools` WITH A HYPHEN, and `go_tools` does not
+// exist there — which is why script/m14/differential.ts (the sibling that hit the same
+// directory) already carries the measured ruling. A single hardcoded name made this
+// gate print `SKIP (corpus repo missing: go_tools)` and count go as a blind spot while
+// the corpus sat on disk the whole time. The first spelling that EXISTS wins, and the
+// one that was measured is printed and recorded.
+const GATED: Record<string, { wasm: string; ext: string[]; repo: string | string[] }> = {
   // M14 (#288): html joins the census. This gate is the one that finds a node type
   // the CORPUS actually produces which the analyzer AND the oracle both skip — the
   // blind-spot class no fixture can see, because a fixture is written from what its
@@ -93,7 +101,16 @@ const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
   //  measured. script/m13/verify-analyze-e2e-corpus.ts reported exactly this once the
   //  corpus root was fixed: "corpus go-tools/go/analysis/passes (Go): present … missing".
   //  Verified against the corpus on disk, which lists go_tools.
-  go: { wasm: "tree-sitter-go.wasm", ext: [".go"], repo: "go_tools" },
+  //
+  // MEASURED on this root, 2026-10-16, and the note above is FALSE here: `ls
+  // fixtures/repositories | grep -i go` lists `go-tools` (hyphen) and `go_tools` does
+  // not exist, so the underscore form this entry asked for made the leg print
+  // `SKIP (corpus repo missing: go_tools)` and count go as a blind spot while the
+  // corpus sat on disk. script/m14/differential.ts already ruled it — "THE CORRECT
+  // SPELLING IS A PROPERTY OF THE CORPUS ROOT, NOT OF THE FILE". With the hyphen this
+  // leg reads 60 files, 0 parse errors, 93 occurring node types, 0 blind spots. Both
+  // spellings are declared; the first that exists is the one measured and recorded.
+  go: { wasm: "tree-sitter-go.wasm", ext: [".go"], repo: ["go-tools", "go_tools"] },
   zig: { wasm: "tree-sitter-zig.wasm", ext: [".zig"], repo: "zig" },
   csharp: { wasm: "tree-sitter-c_sharp.wasm", ext: [".cs"], repo: "powershell" },
   dart: { wasm: "tree-sitter-dart.wasm", ext: [".dart"], repo: "proxicall" },
@@ -119,6 +136,8 @@ const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
 
 interface LangResult {
   language: string
+  /** The directory actually read, so the record names what was measured. */
+  repo: string | null
   filesScanned: number
   parseErrors: number
   occurring: number
@@ -214,12 +233,15 @@ async function main() {
       }
     }
 
-    const repoPath = path.join(CORPUS_ROOT, cfg.repo)
-    if (!fs.existsSync(repoPath)) {
-      console.log(`${lang.padEnd(12)} SKIP (corpus repo missing: ${cfg.repo})`)
-      results.push({ language: lang, filesScanned: 0, parseErrors: 0, occurring: 0, classified: 0, blindSpots: [`corpus missing: ${cfg.repo}`], pass: false })
+    const spellings = Array.isArray(cfg.repo) ? cfg.repo : [cfg.repo]
+    const repoUsed = spellings.find((s) => fs.existsSync(path.join(CORPUS_ROOT, s))) ?? null
+    if (repoUsed === null) {
+      const named = spellings.join(" or ")
+      console.log(`${lang.padEnd(12)} SKIP (corpus repo missing: ${named})`)
+      results.push({ language: lang, repo: null, filesScanned: 0, parseErrors: 0, occurring: 0, classified: 0, blindSpots: [`corpus missing: ${named}`], pass: false })
       continue
     }
+    const repoPath = path.join(CORPUS_ROOT, repoUsed)
     const files = collectFiles(repoPath, cfg.ext, CENSUS_FILES)
     const langWasm = await L.load(fs.readFileSync(path.join(WASM_DIR, cfg.wasm)))
     const parser = new P()
@@ -254,9 +276,9 @@ async function main() {
     // this gate governs.
     const blindSpots = [...occurring].filter((t) => !classified.has(t) && t !== "ERROR").sort()
     const pass = blindSpots.length === 0 && files.length > 0
-    results.push({ language: lang, filesScanned: files.length, parseErrors, occurring: occurring.size, classified: classified.size, blindSpots, pass })
+    results.push({ language: lang, repo: repoUsed, filesScanned: files.length, parseErrors, occurring: occurring.size, classified: classified.size, blindSpots, pass })
     const status = pass ? "PASS" : "FAIL"
-    console.log(`${lang.padEnd(12)} ${status}  files=${files.length} err=${parseErrors} types=${occurring.size} blind=${blindSpots.length}`)
+    console.log(`${lang.padEnd(12)} ${status}  files=${files.length} err=${parseErrors} types=${occurring.size} blind=${blindSpots.length} repo=${repoUsed}`)
     if (blindSpots.length > 0) {
       for (const b of blindSpots.slice(0, 12)) console.log(`             BLIND: ${b}`)
       if (blindSpots.length > 12) console.log(`             ... +${blindSpots.length - 12} more`)
@@ -278,12 +300,16 @@ async function main() {
   // Two fields beyond the harness's `Check` ride on each row, and the committed artifact
   // records both per language (24 of each in M14.0.F8.json) — so they are declared here
   // rather than dropped by typing the array as `Check[]`.
-  const checks: Array<{ id: string; description: string; status: "pass" | "fail"; filesScanned: number; blindSpots: number }> = results.map((r) => ({
+  const checks: Array<{ id: string; description: string; status: "pass" | "fail"; filesScanned: number; blindSpots: number; repo: string | null }> = results.map((r) => ({
     id: `corpus-census-${r.language}`,
-    description: `every parse-tree node type occurring in ${r.filesScanned} real corpus files is classified in the spec (blind spots: ${r.blindSpots.length})`,
+    // The directory read rides in the claim as well as in the row, because the go leg's
+    // history is exactly a directory-name disagreement: a record that names the corpus it
+    // measured cannot silently measure a different one on the next root.
+    description: `every parse-tree node type occurring in ${r.filesScanned} real corpus files is classified in the spec (blind spots: ${r.blindSpots.length}; corpus: ${r.repo ?? "missing"})`,
     status: r.pass ? "pass" : "fail",
     filesScanned: r.filesScanned,
     blindSpots: r.blindSpots.length,
+    repo: r.repo,
   }))
   emitEvidence({
     issueId: "M14.0.F8",

@@ -649,13 +649,16 @@ negative("N7b: a real commit reachable from NO ref is NOT landed (covers m56/ver
 negative("N7b-detail: unreferenced control sha was created", anchorPlantCreated)
 
 console.log(`  checks: ${passed}/${checks} passed, ${negatives} negative cases`)
-if (!ok) {
-  console.log("VERDICT: FAIL")
-  for (const f of failures) console.log(`  - ${f}`)
-  process.exit(1)
-}
-console.log("VERDICT: PASS")
+console.log(`VERDICT: ${ok ? "PASS" : "FAIL"}`)
+if (!ok) for (const f of failures) console.log(`  - ${f}`)
 
+// THE ARTIFACT IS WRITTEN ON A RED RUN TOO — see the same note in verify-governance.ts. X1's
+// ledger entry is a citation like every other, and while the gate exited before writing, an
+// artifact pinned at a commit the history no longer resolves could never be replaced except by
+// a run that both passed AND read a ledger that already cited a reachable commit: a deadlock,
+// since the ledger is derived from this very file. status is "failed" unless every check passed,
+// and when the batch commit cannot be established the file records "unknown" rather than a
+// fabricated sha, so the recorded citation is always honest. Exit code is unchanged.
 mkdirSync(M56, { recursive: true })
 
 
@@ -663,17 +666,18 @@ const evidence = {
   issue: "M56.X1",
   code: "X1",
   milestone: "M56",
-  status: "verified",
+  status: ok ? "verified" : "failed",
   checks,
   passed,
   failed: checks - passed,
   negativeCases: negatives,
+  failures: ok ? [] : failures.slice(0, 25),
   // currentCommit is the BATCH commit, not HEAD-at-run-time. The ledger records
   // this entry and the governance gate compares it byte-for-byte against this
   // file, so a gate that wrote HEAD here would make its own re-run (and any
   // later `npm run verify` at the evidence commit) disagree with the ledger it
   // just satisfied. The batch is what X1 asserts; when it ran is generatedAt.
-  currentCommit: H,
+  currentCommit: H ?? head,
   batchCommit: H,
   foldIn: {
     milestone: "M41",
@@ -702,4 +706,5 @@ const evidence = {
   ],
 }
 writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")
-console.log(`  evidence: validation/m56/results/X1.json`)
+console.log(`  evidence: validation/m56/results/X1.json${ok ? "" : " (FAILED run recorded, not a verdict)"}`)
+process.exit(ok ? 0 : 1)

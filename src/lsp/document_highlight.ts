@@ -96,6 +96,53 @@ interface EdgeRow {
   target_symbol_id: string
 }
 
+/**
+ * PARSE CACHE — why this exists, and its exact bound.
+ *
+ * Measured 2026-10-17: a highlight request re-parses the file from disk on
+ * EVERY call, and the parse (`parseForSafety`: tree-sitter parse plus six
+ * extracted collections) is the dominant per-request cost on the shipped
+ * server — the M25.E7 linux leg measured its p95 warm at 29.5 ms against the
+ * 25 ms cursor-rest budget (§12.7) while the same leg's other ops sat at
+ * 7-18 ms. Highlight is re-requested on every cursor move within a file, so
+ * the waste is the common case, not the corner.
+ *
+ * The cache is keyed by PATH and validated by CONTENT EQUALITY, which is the
+ * whole correctness argument: a hit is only served when the bytes on disk are
+ * byte-identical to the bytes the cached parse was built from. An edited file
+ * misses (the content differs) and is re-parsed; a deleted file misses at
+ * readFileSync above and never reaches the cache. Nothing here is keyed on
+ * mtime or on the client's notion of a document, so there is no window in
+ * which a highlight could be drawn from a previous revision of the file.
+ *
+ * The cache is bounded (LRU, 8 files) and stores only what parseForSafety
+ * RETURNS — the tree itself was already deleted inside that call, so this
+ * holds occurrence/mask arrays, not syntax trees. Bounded memory, bounded
+ * staleness risk (none by construction), and it cannot change which tier a
+ * response reports: the absence paths below do not consult it.
+ */
+const SAFETY_CACHE_LIMIT = 8
+const safetyCache = new Map<string, { content: string; safety: Awaited<ReturnType<typeof parseForSafety>> }>()
+
+function cachedSafety(filePath: string, content: string): Awaited<ReturnType<typeof parseForSafety>> | null {
+  const hit = safetyCache.get(filePath)
+  if (!hit || hit.content !== content) return null
+  // LRU refresh: the most recently used file is the last to be evicted.
+  safetyCache.delete(filePath)
+  safetyCache.set(filePath, hit)
+  return hit.safety
+}
+
+function rememberSafety(filePath: string, content: string, safety: Awaited<ReturnType<typeof parseForSafety>>): void {
+  safetyCache.delete(filePath)
+  safetyCache.set(filePath, { content, safety })
+  while (safetyCache.size > SAFETY_CACHE_LIMIT) {
+    const oldest = safetyCache.keys().next().value
+    if (oldest === undefined) break
+    safetyCache.delete(oldest)
+  }
+}
+
 export async function documentHighlight(
   raw: CoreDatabase,
   request: HighlightRequest,
@@ -132,11 +179,15 @@ export async function documentHighlight(
   // was ever made about this file's language, where `not_indexed` would blame
   // the index for a file the router never routed. A surface cannot honestly
   // report "no occurrences here" for a file it could not read at all.
-  let safety: Awaited<ReturnType<typeof parseForSafety>>
-  try {
-    safety = await parseForSafety(request.filePath, content)
-  } catch {
-    return absence("unsupported_language")
+  let safety = cachedSafety(request.filePath, content)
+  if (safety === null) {
+    try {
+      const parsed = await parseForSafety(request.filePath, content)
+      rememberSafety(request.filePath, content, parsed)
+      safety = parsed
+    } catch {
+      return absence("unsupported_language")
+    }
   }
 
   // --- Occurrence-first cursor resolution (the H1 law) ----------------------

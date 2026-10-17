@@ -16,8 +16,8 @@ import path from "node:path"
 import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
-import { TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
-import { validateToolArguments } from "../../src/mcp/tool-validation"
+import { TOOL_DESCRIPTORS, toMcpToolList } from "../../src/mcp/tool-registry"
+import { EDIT_OPTIONS_BY_MODE, validateToolArguments } from "../../src/mcp/tool-validation"
 import { Harness } from "./harness"
 
 const harness = new Harness({
@@ -101,6 +101,229 @@ harness.rejects("refactor rejects mode-irrelevant position", () => validateToolA
 // ── shared negatives ──────────────────────────────────────────────────────
 harness.rejects("bb_edit rejects unknown fields", () => validateToolArguments(editDescriptor, { mode: "write", filePath: "a", content: "x", bogus: true }), "unknown or irrelevant options")
 harness.rejects("bb_edit rejects invalid mode", () => validateToolArguments(editDescriptor, { mode: "explode" }), "mode must be one of")
+
+// ── M71.D10: the WHOLE mode × option matrix, in both directions ───────────
+// The block above pins one refusal per mode. This pins every CELL: for each mode,
+// each schema option it accepts must pass the boundary, and each option it does
+// not accept must be refused BY NAME with the accepted set spelled out — the
+// message that used to state only what was wrong (`bb_edit update mode does not
+// accept: position`) and left the mode contract in the documentation.
+//
+// Both directions matter, and they fail differently: a table that wrongly
+// ACCEPTS an option silently ignores what the caller sent, and a table that
+// wrongly REFUSES one makes a valid call impossible. The sets are read from
+// `EDIT_OPTIONS_BY_MODE`, the constant the rejection itself throws from, so this
+// cannot pass against a copy of the contract that differs from the enforced one.
+{
+  const base: Record<string, Record<string, unknown>> = {
+    write: { mode: "write", filePath: "src/matrix.ts", content: "export const matrix = 1\n" },
+    update: { mode: "update", symbolName: "boundaryTarget", newContent: "export function boundaryTarget() { return 'x' }\n" },
+    insert: { mode: "insert", targetSymbolName: "boundaryTarget", newContent: "const inserted = true" },
+    delete: { mode: "delete", symbolName: "boundaryTarget" },
+    refactor: { mode: "refactor", symbolName: "boundaryTarget", newName: "matrixRenamed" },
+    // M71.D13: `batch` is a mode in the same matrix, so both directions are
+    // pinned for it too — every option it accepts must pass, and every option it
+    // does not accept must be refused BY NAME with its own accepted set stated.
+    // Its base carries one entry and no `files`, so the fan-out form can be added
+    // on top (`files` supplies filePath, so the base entry deliberately omits it).
+    batch: { mode: "batch", edits: [{ mode: "update", symbolName: "boundaryTarget", newContent: "export function boundaryTarget() { return 'x' }\n" }] },
+  }
+  const sample: Record<string, unknown> = {
+    dryRun: true, filePath: "src/a.ts", symbolName: "boundaryTarget", lineStart: 1,
+    content: "x", newContent: "x", targetSymbolName: "boundaryTarget", position: "after",
+    newName: "n", force: true, format: false, overwrite: true,
+    edits: [{ mode: "update", symbolName: "boundaryTarget", newContent: "export function boundaryTarget() { return 'x' }\n" }],
+    files: ["src/app.ts"],
+  }
+  const schemaOptions = Object.keys(editDescriptor.inputSchema.properties ?? {})
+  let acceptedCells = 0
+  let refusedCells = 0
+  for (const [mode, accepted] of Object.entries(EDIT_OPTIONS_BY_MODE)) {
+    for (const option of accepted) {
+      if (option === "mode") continue
+      acceptedCells++
+      const error = errOf({ ...base[mode], [option]: sample[option] })
+      harness.check(`matrix: ${mode} accepts ${option}`, error === "", error.slice(0, 140))
+    }
+    for (const option of schemaOptions) {
+      if (accepted.includes(option)) continue
+      refusedCells++
+      const error = errOf({ ...base[mode], [option]: sample[option] })
+      harness.check(
+        `matrix: ${mode} refuses ${option} by name AND names the accepted set`,
+        error.includes(`does not accept: ${option}`) && error.includes(`— accepted for ${mode}: ${accepted.join(", ")}`),
+        error.slice(0, 220),
+      )
+    }
+  }
+  // `mode` is the discriminator: it is in every accepted set, and it is the one
+  // option the accepted-side loop skips (adding it to itself proves nothing).
+  const modes = Object.keys(EDIT_OPTIONS_BY_MODE)
+  const declaredCells = Object.values(EDIT_OPTIONS_BY_MODE).reduce((n, options) => n + options.length, 0)
+  const expectedAccepted = declaredCells - modes.length
+  const expectedRefused = modes.length * schemaOptions.length - declaredCells
+  harness.check(
+    "matrix: every mode × schema-option cell is covered",
+    acceptedCells === expectedAccepted && refusedCells === expectedRefused,
+    `accepted=${acceptedCells}/${expectedAccepted} refused=${refusedCells}/${expectedRefused}`,
+  )
+  // An "accepted" option that is not in the schema is unreachable — it would be
+  // refused earlier by the unknown-option check, so the set would advertise an
+  // option no caller can use in that mode.
+  const phantom = Object.values(EDIT_OPTIONS_BY_MODE).flat().filter((option) => !schemaOptions.includes(option))
+  harness.check("matrix: the accepted sets name only real schema options", phantom.length === 0, phantom.join(","))
+  // The hint: a misplaced option that exactly one other mode accepts says which
+  // (this is the round-trip the message exists to save)…
+  const misplaced = errOf({ ...base.update, position: "after" })
+  harness.check("matrix: a misplaced option names the mode that accepts it (update + position)",
+    misplaced.includes("(position is accepted for insert)"), misplaced.slice(0, 220))
+  // …and is WITHHELD when several modes accept it, rather than implying one home.
+  const ambiguousHome = errOf({ ...base.write, lineStart: 1 })
+  harness.negative("matrix: no hint is invented when several modes accept the option (write + lineStart)",
+    !ambiguousHome.includes("lineStart is accepted for"), ambiguousHome.slice(0, 220))
+}
+
+// ── M71.D7: `overwrite` is a write-only option, and a typed one ───────────
+// The guard itself is engine behavior (E7 measures it against real files); this
+// block pins the boundary half: the option belongs to exactly one mode, it is
+// refused by name elsewhere WITH the mode that takes it, and a non-boolean value
+// is refused rather than coerced — `overwrite: "yes"` must not read as false and
+// silently mean "create-only".
+{
+  harness.check("overwrite: write accepts overwrite:true (replace whatever is there)",
+    ok({ mode: "write", filePath: "src/a.ts", content: "x", overwrite: true }))
+  harness.check("overwrite: write accepts overwrite:false (create-only)",
+    ok({ mode: "write", filePath: "src/a.ts", content: "x", overwrite: false }))
+  harness.check("overwrite: write accepts it on a dry run (the guard is reported by the plan)",
+    ok({ mode: "write", dryRun: true, filePath: "src/a.ts", content: "x", overwrite: true }))
+  const wrongType = errOf({ mode: "write", filePath: "src/a.ts", content: "x", overwrite: "yes" })
+  harness.rejects("overwrite: a non-boolean overwrite is refused, not coerced",
+    () => validateToolArguments(editDescriptor, { mode: "write", filePath: "src/a.ts", content: "x", overwrite: "yes" }),
+    "overwrite must be boolean")
+  harness.negative("overwrite: the refusal does not read as an accepted write", !wrongType.includes("does not accept"), wrongType.slice(0, 200))
+  const misplacedOverwrite = errOf({ mode: "refactor", symbolName: "a", newName: "b", overwrite: true })
+  harness.check("overwrite: another mode refuses it by name and names the mode that takes it",
+    misplacedOverwrite.includes("does not accept: overwrite") && misplacedOverwrite.includes("(overwrite is accepted for write)"),
+    misplacedOverwrite.slice(0, 220))
+}
+
+// ── M71.D13: `batch` — the mode contract for entries and for the batch itself
+// A batch is validated by the SAME per-mode rule as the single call it mirrors
+// (`validateBatchArguments` calls this function on each entry), so the checks
+// here and the checks above cannot disagree: an entry's accepted set IS its
+// mode's accepted set.
+{
+  const entry = (extra: Record<string, unknown> = {}): Record<string, unknown> => ({
+    mode: "batch",
+    edits: [{ mode: "update", symbolName: "boundaryTarget", newContent: "export function boundaryTarget() { return 'x' }\n", ...extra }],
+  })
+  harness.check("batch: accepts a list of entries with no files (each names its own target)",
+    ok(entry()), "")
+  harness.check("batch: accepts the fan-out form (files supplies filePath)",
+    ok({ mode: "batch", edits: [{ mode: "update", symbolName: "boundaryTarget", newContent: "x" }], files: ["src/app.ts", "src/b.ts"] }), "")
+  harness.check("batch: accepts a dry run of the whole call", ok({ ...entry(), dryRun: true, format: false }), "")
+  harness.check("batch: accepts a write entry (no index needed by that ENTRY's plan)",
+    ok({ mode: "batch", edits: [{ mode: "write", filePath: "src/new.ts", content: "export const n = 1\n" }] }), "")
+  harness.rejects("batch: rejects a missing edits array", () => validateToolArguments(editDescriptor, { mode: "batch" }), "requires a non-empty")
+  harness.rejects("batch: rejects an empty edits array", () => validateToolArguments(editDescriptor, { mode: "batch", edits: [] }), "requires a non-empty")
+  harness.rejects("batch: rejects an entry with no mode (it would pass every per-mode branch silently)",
+    () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ symbolName: "x", newContent: "y" }] }), "batch entry 0 requires a mode of")
+  harness.rejects("batch: rejects a nested batch",
+    () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ mode: "batch", edits: [] }] }), "must not itself be a batch")
+  harness.rejects("batch: rejects a per-entry dryRun (the batch previews ONCE)",
+    () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ mode: "update", symbolName: "x", newContent: "y", dryRun: true }] }), "must not set dryRun")
+  harness.rejects("batch: rejects a per-entry format (the batch formats ONCE)",
+    () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ mode: "update", symbolName: "x", newContent: "y", format: false }] }), "must not set format")
+  harness.rejects("batch: rejects an entry naming its own filePath while files supplies them",
+    () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ mode: "write", filePath: "a.ts", content: "x" }], files: ["b.ts"] }), "must not also name one")
+  harness.rejects("batch: rejects a repeated path in files",
+    () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ mode: "update", symbolName: "x", newContent: "y" }], files: ["a.ts", "a.ts"] }), "repeats a.ts")
+  harness.rejects("batch: rejects a top-level symbolName (a batch carries no per-file options)",
+    () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ mode: "update", symbolName: "x", newContent: "y" }], symbolName: "x" }), "does not accept: symbolName")
+  harness.rejects("batch: rejects a top-level content",
+    () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ mode: "update", symbolName: "x", newContent: "y" }], content: "x" }), "does not accept: content")
+  // An entry is refused by the SAME per-mode rule, and the refusal carries the
+  // entry index — otherwise a caller with six entries has to bisect their own list.
+  const entryIrrelevant = errOf({ mode: "batch", edits: [{ mode: "update", symbolName: "x", newContent: "y", position: "after" }] })
+  harness.check("batch: an entry's irrelevant option is refused BY NAME, with the entry index",
+    entryIrrelevant.includes("batch entry 0") && entryIrrelevant.includes("does not accept: position"), entryIrrelevant.slice(0, 220))
+  harness.rejects("batch: an entry missing a field its own mode requires is refused (write needs content)",
+    () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ mode: "write", filePath: "a.ts" }] }), "requires content or newContent")
+  harness.negative("batch: the entry-index refusal does not read as a top-level mode error",
+    !/^bb_edit batch mode requires/.test(entryIrrelevant), entryIrrelevant.slice(0, 160))
+  // And the fan-out satisfies the entry's own filePath requirement: `files` IS
+  // the filePath, so a `write` entry with no filePath is valid while fanned out —
+  // and refused when it is not.
+  harness.check("batch: a write entry with no filePath is valid under files",
+    ok({ mode: "batch", edits: [{ mode: "write", content: "export const n = 1\n" }], files: ["src/n.ts"] }), "")
+  harness.rejects("batch: the same write entry without files is refused (its mode requires filePath)",
+    () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ mode: "write", content: "x" }] }), "requires filePath")
+}
+
+// ── M71.D6: the sentence a CLIENT is shown, not only the ones in the docs ──
+// The registry description is the only part of this contract an MCP client sees
+// before it has a schema or a documentation page — `toMcpToolList` publishes
+// exactly {name, description, inputSchema}. A mode-aware gate whose rule appears
+// nowhere in that string is a rule the caller has to discover by being refused.
+{
+  const published: any = toMcpToolList(TOOL_DESCRIPTORS).find((tool) => tool.name === "bb_edit")
+  const description = String(published?.description ?? "")
+  harness.check(
+    "wire description: the published description states the per-mode index rule",
+    /`write` plans from the request and the disk, resolves no symbol/.test(description),
+    description.slice(-200),
+  )
+  harness.check(
+    "wire description: and names the modes that DO resolve through the index",
+    /`update`, `insert`, `delete` and `refactor` resolve their target through the index/.test(description),
+    description.slice(-200),
+  )
+  // M71.D7: the guard is part of the contract a caller must know BEFORE it is
+  // refused — the same argument as the index rule above. A client that cannot see
+  // it in the published description discovers the guard by losing a write to it.
+  harness.check(
+    "wire description: the published description states the overwrite guard",
+    /a replacement that removes at least half of a file's lines \(and at least 5 lines\) is refused as a probable mistake unless `overwrite: true` is passed/.test(description),
+    description.slice(-260),
+  )
+  harness.check(
+    "wire description: and states what `overwrite: false` means",
+    /`overwrite: false` makes the write create-only/.test(description),
+    description.slice(-200),
+  )
+  // M71.D9: the plan-to-commit re-check, which is the difference between refusing
+  // a moved file and silently overwriting content the plan never read.
+  harness.check(
+    "wire description: the published description states the plan-to-commit pre-image check",
+    /bytes each target had when the edit was PLANNED are re-checked immediately before the write/.test(description),
+    description.slice(-300),
+  )
+  // M71.D13: batch is a capability a client must be able to discover from the
+  // published description: that several edits (or one across several files) go in
+  // one atomic call, that the two-on-one-file case is refused, and that the answer
+  // is per file. Each of those is a rule a caller would otherwise meet by being
+  // refused, or — worse, for the duplicate case — never meet at all.
+  harness.check(
+    "wire description: the published description states what `batch` does and that it is atomic",
+    /`batch` applies several edits, or one edit across several files, as ONE atomic call/.test(description),
+    description.slice(-420),
+  )
+  harness.check(
+    "wire description: …that a refusal anywhere writes nothing",
+    /every entry is planned before anything is written \(so a refusal anywhere writes nothing\)/.test(description),
+    description.slice(-420),
+  )
+  harness.check(
+    "wire description: …that two entries on one file are refused",
+    /Two entries may not resolve to the same file/.test(description),
+    description.slice(-420),
+  )
+  harness.check(
+    "wire description: …and that the answer is per file (the envelope)",
+    /Every answer carries a per-file `envelope`/.test(description),
+    description.slice(-420),
+  )
+}
 
 // ── wiring: one validation path for both transports ───────────────────────
 const serverSrc = readFileSync(path.resolve("src/mcp/server.ts"), "utf8")

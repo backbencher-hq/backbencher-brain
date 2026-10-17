@@ -16,7 +16,7 @@ highest-gravity symbol (exact match, then fuzzy `LIKE`), then traverses.
 | --- | --- | --- |
 | `direction` | `"both"` (adapter-dependent) | `callers`, `callees`, or `both` |
 | `maxDepth` | 5 (max 10) | Transitive traversal depth |
-| `relationshipTypes` | `calls, instantiates, extends, implements` | Edge types to follow |
+| `relationshipTypes` | **every kind the index stores**: `calls`, `extends`, `implements`, `uses`, `instantiates`, `overrides`, `contains`, `references`, `imports`, `exports` | Edge types to follow. Deliberately NOT narrowed: `contains` is the parent→member edge, so excluding it stops a traversal rooted at a class from reaching that class's own methods. The consequence a reader must know is composition — a `callers` set is "who has a stored edge INTO this", not only who calls it (measured on this engine's own answers: lodash `baseConvert` 99 `calls` rows of 230 edges, cobra `getCompletions` 36 of 65, rake `standard_rake_options` 72 of 76). A consumer whose claim is about ONE kind must pass a filter — `["calls"]` for the pure call graph, or the declared dependency rule `["calls", "instantiates", "extends", "implements"]` for "what breaks" — and the kinds a run actually searched come back in `summary.relationshipTypesUsed` |
 | `includeCrossLanguage` | include all | `false` excludes cross-language edges |
 | `callerBudget` / `calleeBudget` | 50 each | Independent fan-out budgets per direction |
 
@@ -26,7 +26,9 @@ highest-gravity symbol (exact match, then fuzzy `LIKE`), then traverses.
 - `callers` / `callees`: arrays of `GraphEdge`.
 - `nodes`: id → `GraphNode` map (deduplicated).
 - `summary`: `totalCallers`, `totalCallees`, `maxDepthReached`,
-  `crossLanguageEdges`, `truncated`, `truncationReason`.
+  `crossLanguageEdges`, `truncated`, `truncationReason`, and
+  `relationshipTypesUsed` (the kinds this run actually searched, so the filter
+  behind an answer is never a restatement of a default that may have moved).
 
 ### GraphNode
 

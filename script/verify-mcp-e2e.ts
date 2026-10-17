@@ -1,6 +1,6 @@
 // verify-mcp-e2e.ts — full end-to-end acceptance of the MCP surface.
 // Spawns the REAL compiled CLI (`bb mcp --dir …`), does the handshake, lists
-// tools, then calls ALL 15 tools and asserts each one responds.
+// tools, then calls each read/write tool and asserts it responds.
 //   bun run script/verify-mcp-e2e.ts        (or: npx tsx script/verify-mcp-e2e.ts)
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
@@ -8,6 +8,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "fs"
 import { tmpdir } from "os"
 import path from "path"
 import { execSync } from "child_process"
+import { PUBLIC_TOOL_DESCRIPTORS } from "../src/mcp/tool-registry"
 
 let failures = 0
 function check(label: string, cond: boolean, detail = "") {
@@ -96,8 +97,29 @@ try {
 
   const tools = await client.listTools()
   const names = tools.tools.map((t: any) => t.name)
-  const EXPECTED = ["bb_search", "bb_ask", "bb_analyze", "bb_patterns", "bb_security", "bb_doc", "bb_visualize", "bb_migrate", "bb_edit", "bb_health"]
-  check("tools/list exposes exactly 10 public tools", names.length === 10 && EXPECTED.every((t) => names.includes(t)), `got ${names.length}: ${names.join(",")}`)
+  // The expected surface is DERIVED from the registry, never spelled out here. A
+  // hardcoded list is a count that goes stale the moment the surface grows: this
+  // check read "exactly 10 public tools" while the registry declared 16, so it had
+  // been red — and it compared only one direction, so a tool LEAKING onto the wire
+  // (an internal descriptor exposed by mistake) was the half nothing asserted.
+  // Both directions are asserted now. Non-vacuity: a derived set that shrank to
+  // nothing would make the comparison pass, so the floor is stated.
+  const EXPECTED = PUBLIC_TOOL_DESCRIPTORS.map((d) => d.name)
+  const wire = new Set(names)
+  const missing = EXPECTED.filter((t) => !wire.has(t))
+  const extra = names.filter((t) => !EXPECTED.includes(t))
+  check(
+    "tools/list exposes exactly the registry's public surface — no tool missing, none leaked",
+    EXPECTED.length >= 10 && names.length === EXPECTED.length && missing.length === 0 && extra.length === 0,
+    `wire=${names.length} declared=${EXPECTED.length}` +
+      (missing.length ? ` missing: ${missing.join(",")}` : "") +
+      (extra.length ? ` extra: ${extra.join(",")}` : ""),
+  )
+  check(
+    "the wire surface carries the core read and write tools",
+    wire.has("bb_search") && wire.has("bb_health") && wire.has("bb_edit"),
+    `search=${wire.has("bb_search")} health=${wire.has("bb_health")} edit=${wire.has("bb_edit")}`,
+  )
 
   // ---- read-only tools ----
   let r = await call("bb_search", { query: "handleRequest", limit: 5 })
@@ -183,5 +205,5 @@ rmSync(root, { recursive: true, force: true })
 const { BrainDatabase } = await import("../src/brain/database")
 const { getProjectId } = await import("../src/cli/index")
 rmSync(path.dirname(BrainDatabase.getDbPath(getProjectId(root))), { recursive: true, force: true })
-console.log(failures === 0 ? "\nMCP E2E: 10 PUBLIC TOOLS PASS" : `\nMCP E2E: ${failures} FAILURES`)
+console.log(failures === 0 ? `\nMCP E2E: ${PUBLIC_TOOL_DESCRIPTORS.length} PUBLIC TOOLS PASS` : `\nMCP E2E: ${failures} FAILURES`)
 process.exit(failures > 0 ? 1 : 0)

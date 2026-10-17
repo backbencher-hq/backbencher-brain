@@ -1,6 +1,36 @@
 import * as fs from "fs"
-import { execSync } from "child_process"
+import { execFile } from "child_process"
 import * as path from "path"
+
+/**
+ * D5: what the formatter step actually DID, as opposed to what was asked for.
+ *
+ * `formatted` in an EditResult used to be `request.format !== false` — a claim
+ * about the request, not the file. Measured before this type existed
+ * (script/m71/probe-format-truth.ts): it was `true` for a `.rb` file, which has no
+ * mapping at all; `true` on a machine with no prettier, where the step spent
+ * 1573ms on an npx that could not install one; and `true` for a formatter that
+ * exited 3, with `warnings: []`. Every caller who trusted the field was told a
+ * file had been formatted while the bytes on disk were whatever the splice left.
+ *
+ * This is the measurement instead: whether a formatter process started at all,
+ * which one, and whether it exited 0.
+ */
+export interface FormatOutcome {
+  /** The formatter this extension maps to — and the one that ran, when one did.
+   *  null means the extension has no formatter mapping at all, which is why
+   *  `no formatter mapped for .rb` and `prettier not found` are different facts. */
+  formatter: string | null
+  /** True when a formatter process was actually started. */
+  ran: boolean
+  /** True when that process exited 0. False when it failed, timed out, or never ran. */
+  ok: boolean
+  /** One line explaining a non-ok outcome. */
+  reason?: string
+}
+
+/** The formatter step's own budget. A formatter that has not returned by then is killed. */
+const FORMAT_TIMEOUT_MS = 1500
 
 export class BrainSurgicalPatcher {
   static async patch(
@@ -98,67 +128,129 @@ export class BrainSurgicalPatcher {
 
     fs.writeFileSync(absolutePath, patchedContent, "utf8")
 
-    // Auto-Format
+    // Auto-Format (best-effort: this legacy entry point has no caller to report to).
     if (format) {
-      BrainSurgicalPatcher.tryAutoFormat(absolutePath)
+      void BrainSurgicalPatcher.tryAutoFormat(absolutePath)
     }
 
     return true
   }
 
-  static async tryAutoFormat(absolutePath: string): Promise<void> {
-    return new Promise((resolve) => {
+  /**
+   * D5: the extension → formatter mapping, as data rather than a built shell string.
+   *
+   * It used to be an if-chain that interpolated the path into a command line:
+   * `exec(\`npx prettier --write "${absolutePath}"\`)`. Two consequences, both
+   * measured before the rewrite (script/m71/probe-format-truth.ts):
+   *
+   *   1. `npx` without a local install is an INSTALL attempt. On a machine with no
+   *      prettier it hit the network and was killed by the 1500ms timeout —
+   *      1573ms of wall time per edited file, on a tool whose performance claim is
+   *      "only affected files are written", with the result saying
+   *      `formatted: true` regardless.
+   *   2. A filename is not trusted input. `resolveSafeEditPath` validates
+   *      containment, not characters, so a file NAMED `inj$(touch pwned).ts` is a
+   *      legal in-project path — and the shell expanded the substitution. The
+   *      marker file appeared; that is command execution triggered by the name of
+   *      a file being formatted, through the public edit path.
+   *
+   * So the binary is resolved explicitly (nearest node_modules/.bin walking up from
+   * the file, then PATH) and invoked with execFile: an argv array, no shell, and
+   * nothing in the path can be expanded.
+   */
+  private static readonly FORMATTERS: ReadonlyArray<{ ext: string[]; candidates: ReadonlyArray<{ name: string; args: string[] }> }> = [
+    { ext: [".ts", ".tsx", ".js", ".jsx", ".json", ".html", ".css", ".md"], candidates: [{ name: "prettier", args: ["--write"] }] },
+    { ext: [".rs"], candidates: [{ name: "rustfmt", args: [] }] },
+    { ext: [".go"], candidates: [{ name: "gofmt", args: ["-w"] }] },
+    { ext: [".c", ".cpp", ".h", ".hpp"], candidates: [{ name: "clang-format", args: ["-i"] }] },
+    { ext: [".py"], candidates: [{ name: "black", args: [] }, { name: "ruff", args: ["format"] }] },
+  ]
+
+  /** Executable `<name>` in the nearest node_modules/.bin at or above `startDir`. */
+  private static resolveInNodeModules(startDir: string, name: string): string | null {
+    let dir = startDir
+    for (;;) {
+      const candidate = path.join(dir, "node_modules", ".bin", name)
       try {
-        const ext = path.extname(absolutePath)
-        const cwd = path.dirname(absolutePath)
+        fs.accessSync(candidate, fs.constants.X_OK)
+        return candidate
+      } catch { /* not here; keep walking up */ }
+      const parent = path.dirname(dir)
+      if (parent === dir) return null
+      dir = parent
+    }
+  }
 
-        // M66: keep the file's OWN line ending. These formatters are invoked with
-        // their defaults, and the defaults are LF: prettier's `endOfLine` defaults
-        // to "lf", so `prettier --write` on a CRLF file rewrote EVERY line ending
-        // to LF. bb_edit's splice was already fixed to emit the file's line ending,
-        // but the formatter ran afterwards and undid it — so a CRLF file still
-        // came back LF-only, and (before the splice fix) mixed. A formatter is
-        // supposed to normalise style, not to rewrite a whole file's line endings
-        // behind the caller's back.
-        //
-        // The fix is per-formatter, and each is passed the detected ending:
-        //   prettier  --end-of-line auto  → prettier keeps the file's first line
-        //                                  ending rather than forcing "lf".
-        //   black/ruff already preserve the ending they read; nothing to pass.
-        //   gofmt / rustfmt / clang-format preserve endings natively.
-        let endOfLine = ""
-        try {
-          const head = fs.readFileSync(absolutePath).subarray(0, 4096).toString("utf8")
-          const crlf = (head.match(/\r\n/g) ?? []).length
-          const lf = (head.match(/(?<!\r)\n/g) ?? []).length
-          if (crlf > lf) endOfLine = " --end-of-line crlf"
-          else if (crlf > 0 && lf === 0) endOfLine = " --end-of-line crlf"
-        } catch { /* cannot read: leave the formatter default, it is best-effort */ }
+  /** Executable `<name>` on PATH. */
+  private static resolveOnPath(name: string): string | null {
+    for (const dir of (process.env.PATH ?? "").split(path.delimiter)) {
+      if (!dir) continue
+      const candidate = path.join(dir, name)
+      try {
+        fs.accessSync(candidate, fs.constants.X_OK)
+        return candidate
+      } catch { /* not here */ }
+    }
+    return null
+  }
 
-        let cmd = ""
-        if ([".ts", ".tsx", ".js", ".jsx", ".json", ".html", ".css", ".md"].includes(ext)) {
-          cmd = `npx prettier --write${endOfLine} "${absolutePath}"`
-        } else if (ext === ".rs") {
-          cmd = `rustfmt "${absolutePath}"`
-        } else if (ext === ".go") {
-          cmd = `gofmt -w "${absolutePath}"`
-        } else if ([".c", ".cpp", ".h", ".hpp"].includes(ext)) {
-          cmd = `clang-format -i "${absolutePath}"`
-        } else if (ext === ".py") {
-          cmd = `black "${absolutePath}" || ruff format "${absolutePath}"`
-        }
+  static async tryAutoFormat(absolutePath: string): Promise<FormatOutcome> {
+    const ext = path.extname(absolutePath)
+    const mapping = BrainSurgicalPatcher.FORMATTERS.find((m) => m.ext.includes(ext))
+    if (!mapping) return { formatter: null, ran: false, ok: false, reason: `no formatter mapped for ${ext}` }
+    const names = mapping.candidates.map((candidate) => candidate.name)
 
-        if (!cmd) return resolve()
+    // M66: keep the file's OWN line ending. These formatters are invoked with
+    // their defaults, and the defaults are LF: prettier's `endOfLine` defaults
+    // to "lf", so `prettier --write` on a CRLF file rewrote EVERY line ending
+    // to LF. bb_edit's splice was already fixed to emit the file's line ending,
+    // but the formatter ran afterwards and undid it — so a CRLF file still
+    // came back LF-only, and (before the splice fix) mixed. A formatter is
+    // supposed to normalise style, not to rewrite a whole file's line endings
+    // behind the caller's back.
+    //
+    // The fix is per-formatter, and each is passed the detected ending:
+    //   prettier  --end-of-line crlf → prettier keeps the file's line ending
+    //                                  rather than forcing "lf".
+    //   black/ruff already preserve the ending they read; nothing to pass.
+    //   gofmt / rustfmt / clang-format preserve endings natively.
+    let endOfLine: string[] = []
+    try {
+      const head = fs.readFileSync(absolutePath).subarray(0, 4096).toString("utf8")
+      const crlf = (head.match(/\r\n/g) ?? []).length
+      const lf = (head.match(/(?<!\r)\n/g) ?? []).length
+      if (crlf > lf || (crlf > 0 && lf === 0)) endOfLine = ["--end-of-line", "crlf"]
+    } catch { /* cannot read: leave the formatter default, it is best-effort */ }
 
-        import("child_process").then(({ exec }) => {
-          // Timeout after 1.5s to prevent hanging
-          const child = exec(cmd, { cwd, timeout: 1500 }, () => {
-            resolve()
-          })
+    let firstFailure: FormatOutcome | null = null
+    for (const candidate of mapping.candidates) {
+      const bin = BrainSurgicalPatcher.resolveInNodeModules(path.dirname(absolutePath), candidate.name)
+        ?? BrainSurgicalPatcher.resolveOnPath(candidate.name)
+      if (!bin) continue
+      const args = [...candidate.args, ...(candidate.name === "prettier" ? endOfLine : []), absolutePath]
+      const outcome = await new Promise<FormatOutcome>((resolve) => {
+        execFile(bin, args, { cwd: path.dirname(absolutePath), timeout: FORMAT_TIMEOUT_MS, windowsHide: true }, (error, _stdout, stderr) => {
+          if (!error) return resolve({ formatter: candidate.name, ran: true, ok: true })
+          if (error.killed || error.signal) {
+            return resolve({ formatter: candidate.name, ran: true, ok: false, reason: `${candidate.name} timed out after ${FORMAT_TIMEOUT_MS}ms` })
+          }
+          const code = error.code
+          const detail = String(stderr ?? "").split("\n").map((line) => line.trim()).filter(Boolean)[0] ?? error.message
+          const how = typeof code === "number" ? `exited ${code}` : code === "ENOENT" ? "could not be started" : "failed"
+          resolve({ formatter: candidate.name, ran: true, ok: false, reason: `${candidate.name} ${how}: ${detail.slice(0, 160)}` })
         })
-      } catch (err) {
-        resolve()
-      }
-    })
+      })
+      if (outcome.ok) return outcome
+      // `black || ruff` semantics are preserved: a candidate that RAN and failed
+      // does not stop the list, but the FIRST real failure is what gets reported
+      // when nothing succeeds — a later "not found" is not the interesting fact.
+      if (!firstFailure) firstFailure = outcome
+    }
+    return firstFailure ?? {
+      formatter: names[0] ?? null,
+      ran: false,
+      ok: false,
+      reason: `no formatter found: tried ${names.join(", ")} in node_modules/.bin (walking up from the file) and on PATH`,
+    }
   }
 }

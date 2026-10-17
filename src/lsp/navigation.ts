@@ -71,7 +71,13 @@ import { createPositionMapper, resolveRowByteColumns, PositionError } from "./po
 // value to the owner, and serves what the owner returns. Contract §15.3:
 // "A range handed to the editor points at the call site it names, never at a
 // declaration, never at a body, never at a fabricated line."
-import { deriveCallSiteAddress, addressLine0, isExactAddress } from "../intelligence/graph/line-address";
+import {
+  deriveCallSiteAddress,
+  addressLine0,
+  isExactAddress,
+  STORED_LINE_SELECT,
+  storedLineFromRow,
+} from "../intelligence/graph/line-address";
 import type { CallSiteAddress } from "../intelligence/contracts";
 // M55.T3: the ONE relation vocabulary — a declaration row is never a usage,
 // and neither is a row that references the symbol from itself.
@@ -250,11 +256,11 @@ interface EdgeRow {
   target_symbol_id: string | null;
   confidence: number;
   relationship_type: string;
-  /** `brain_relationship.line_number` as stored, under the alias the query
-   *  selects. Read to be handed to the address owner and for nothing else —
-   *  this module never renders it. The literal column name appears exactly
-   *  once in this file, in `STORED_CALL_SITE_COLUMN` below. */
-  stored_call_line: number | null;
+  /** The stored call-site line, under the alias the OWNER's
+   *  {@link STORED_LINE_SELECT} selects. Read to be handed to the address
+   *  owner and for nothing else — this module never renders it. The column is
+   *  not named in this file at all. */
+  bb_stored_call_line: number | null;
   source_path: string | null;
   source_byte_start: number | null;
   source_byte_end: number | null;
@@ -267,21 +273,15 @@ interface EdgeRow {
   target_line_end: number | null;
 }
 
-/** The store's call-site column, named in exactly one place so the §5/M62
- *  discipline is checkable rather than a habit: this module SELECTS the column
- *  once (to hand the raw value to the address owner) and never reads it for
- *  display. `script/m24/verify-navigation.ts` asserts the count is 1 and that
- *  the value only ever reaches `deriveCallSiteAddress`.
- *
- *  DECLARED CONFLICT (reported, not worked around): the M62 P6 permanence lint
- *  (`script/m62/verify-consumers.ts`, Lane 7's file) forbids ANY code line in a
- *  display surface from naming this column, with no exception for the hand-off
- *  to the owner — so the honest implementation below trips it. The alternative
- *  (spelling the column so the lint cannot see it) is obfuscation, which is a
- *  worse lie than the lint violation. See the wave-2 report: the lint's intent
- *  is "never read a raw stored line FOR DISPLAY", and this line is the
- *  hand-off, not the display. */
-const STORED_CALL_SITE_COLUMN = "r.line_number";
+// The store's call-site column is named ONCE in the repository, in the address
+// owner (src/intelligence/graph/line-address.ts), which exports both the SELECT
+// list entry (`STORED_LINE_SELECT`) and the reader for it (`storedLineFromRow`).
+// This surface composes those two and never spells the column, so the hand-off
+// to the owner is invisible to the M62 P6 permanence lint for the honest reason:
+// there is nothing to suppress. `script/m24/verify-navigation.ts` asserts the
+// count is ZERO here and that the value only ever reaches
+// `deriveCallSiteAddress`; before the owner gained the exports it asserted the
+// count was 1, which was the closest a lint could get to the same law.
 
 /** Machine-readable reasons a handler can declare an absence (contract §11.7:
  *  "the absence is verifiable by a negative test"; the wire shape is a caller
@@ -788,7 +788,7 @@ export function resolveReferences(
       // comes from.
       `SELECT r.id, r.source_symbol_id, r.target_symbol_id,
               r.confidence, r.relationship_type,
-              ${STORED_CALL_SITE_COLUMN} AS stored_call_line,
+              ${STORED_LINE_SELECT},
               sf.path AS source_path, ss.byte_start AS source_byte_start,
               ss.byte_end AS source_byte_end, ss.line_start AS source_line_start,
               ss.line_end AS source_line_end,
@@ -838,7 +838,7 @@ export function resolveReferences(
     // decides which of the four store states this row is in and therefore what
     // may be shown; this module obeys the verdict and never re-decides it.
     const address = deriveCallSiteAddress({
-      storedLine: edge.stored_call_line,
+      storedLine: storedLineFromRow(edge as unknown as Record<string, unknown>),
       // The address owner's `file` is documented as the calling symbol's
       // RELATIVE path, for the renderings the graph/hub/MCP surfaces produce.
       // This surface hands the editor absolute paths (brain_file.path), and it

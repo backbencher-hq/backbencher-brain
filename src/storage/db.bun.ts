@@ -19,6 +19,39 @@ export interface CoreDatabase {
   readonly: boolean
 }
 
+/**
+ * bun:sqlite binds `@name` from a key spelled `@name`; better-sqlite3 — whose surface this
+ * adapter exists to mirror — binds it from a key spelled `name`.
+ *
+ * The difference is not an error on either side, which is what makes it dangerous: bun:sqlite
+ * IGNORES the un-prefixed key and leaves the placeholder NULL, so the statement runs, returns
+ * zero rows, and reports success. MEASURED (2026-10-16, bun 1.3.14): the same statement with
+ * `{projectId, t0…}` returns `[]` while `{'@projectId', '@t0'…}` returns the row, and a bind
+ * object carrying BOTH spellings returns the row — so the translation below cannot change what
+ * a statement already bound correctly.
+ *
+ * It blinded `src/intelligence/patterns/orphans.ts` (its whole usage filter binds by name):
+ * `usedIds`, the refusal counters and `referencedFiles` all came back empty, so every function
+ * with a perfectly good call edge pointing at it was reported as orphaned and nothing looked
+ * broken — the numbers were internally consistent. Measured on the three-function fixture the
+ * patterns e2e gate uses: 3 candidates reported where the same query, bound positionally,
+ * clears 1 of them.
+ *
+ * Only keys the statement actually names are translated, and only when the un-prefixed spelling
+ * is the one present, so an existing `@`/`:`/`$`-style caller is passed through untouched.
+ */
+function bindable(sql: string, params: unknown[]): unknown[] {
+  if (params.length !== 1) return params
+  const p = params[0]
+  if (!p || typeof p !== "object" || Array.isArray(p)) return params
+  const out: Record<string, unknown> = { ...(p as Record<string, unknown>) }
+  for (const [k, v] of Object.entries(out)) {
+    if (k.startsWith("@") || k.startsWith(":") || k.startsWith("$")) continue
+    if (sql.includes(`@${k}`)) out[`@${k}`] = v
+  }
+  return [out]
+}
+
 export function openDatabase(path: string, options: { readonly?: boolean } = {}): CoreDatabase {
   // bun:sqlite throws SQLITE_MISUSE when readonly:false is passed explicitly.
   const db = options.readonly ? new Database(path, { readonly: true }) : new Database(path)
@@ -59,10 +92,10 @@ export function openDatabase(path: string, options: { readonly?: boolean } = {})
     prepare(sql: string): CoreStatement {
       const stmt = db.prepare(sql)
       return {
-        get: (...params) => stmt.get(...(params as never[])) as unknown,
-        all: (...params) => stmt.all(...(params as never[])) as unknown[],
+        get: (...params) => stmt.get(...(bindable(sql, params) as never[])) as unknown,
+        all: (...params) => stmt.all(...(bindable(sql, params) as never[])) as unknown[],
         run: (...params) => {
-          const r = stmt.run(...(params as never[]))
+          const r = stmt.run(...(bindable(sql, params) as never[]))
           return { changes: Number(r.changes ?? 0), lastInsertRowid: r.lastInsertRowid ?? 0 }
         },
       }
@@ -78,7 +111,7 @@ export function openDatabase(path: string, options: { readonly?: boolean } = {})
       return (...args: any[]) => run(...args)
     },
     run(sql: string, ...params: unknown[]) {
-      const r = db.prepare(sql).run(...(params as never[]))
+      const r = db.prepare(sql).run(...(bindable(sql, params) as never[]))
       return { changes: Number(r.changes ?? 0), lastInsertRowid: Number(r.lastInsertRowid ?? 0) }
     },
     readonly: options.readonly ?? false,

@@ -28,6 +28,12 @@ import { execFileSync } from "node:child_process"
 import os from "node:os"
 import path from "node:path"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
+// bb_graph review D11: the LSP door is a DIFFERENT function from the MCP one.
+// This gate compares the engine directly, so it asserts edge/tier agreement and
+// never the identity of the ROOT the two doors walked — a member-name question
+// could resolve to one symbol at the editor and another at the agent with every
+// assertion here still green. R2c below closes that by calling the real door.
+import { handleGraphRequest, GRAPH_SCHEMA_VERSION } from "../../src/lsp/graph_request"
 // M28.U2 / §15.1: the IDE-side tier expectation is anchored to the ONE owner
 // (src/lsp/evidence_tier.ts). It used to be `ideTier` below — a COPY of the agent
 // door's own COPY, so the two agreed by construction and this gate was
@@ -225,6 +231,76 @@ async function main(): Promise<void> {
 
   check("U1: graph cross-language edge count identical", mcpGraph?.summary?.crossLanguageEdges === ideGraph.summary?.crossLanguageEdges, `${mcpGraph?.summary?.crossLanguageEdges} vs ${ideGraph.summary?.crossLanguageEdges}`)
   check("U1: graph truncation declaration identical", mcpGraph?.summary?.truncated === (ideGraph.summary?.truncated === true))
+
+  // --- R2c: ROOT IDENTITY through the REAL LSP door (bb_graph review D11) ------
+  //
+  // Everything above compares two ways of WALKING from a root, on symbols whose
+  // name the engine resolves the same way in both doors. Neither door re-resolves
+  // a MEMBER name here, so the documented divergence — the editor roots a member
+  // question at its OWNING declaration, the agent roots it at the member — was
+  // covered by no assertion at all. It is covered now, and the assertion pins the
+  // divergence rather than assuming agreement: if either door silently changes
+  // which symbol it walked, this fails.
+  //
+  // The fixture rows are SEEDED (a declared step on a throwaway index, like the
+  // derived-tier leg above): a Java field is not guaranteed to be emitted as an
+  // owned symbol by every analyzer, and a gate that depends on an analyzer's
+  // choice of symbol kind would be testing the analyzer, not the doors.
+  {
+    const ownerFile = raw.prepare("SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path LIKE '%Inventory.java'").get(projectId) as { id: string; relative_path: string } | undefined
+    check("D11 fixture: the seeded member/owner rows ride a REAL indexed file (so the engine's INNER JOIN can see them)", !!ownerFile, JSON.stringify(ownerFile ?? null))
+    if (ownerFile) {
+      raw.prepare(
+        "INSERT INTO brain_symbol (id, project_id, file_id, name, symbol_type, line_start, line_end, byte_start, byte_end, owner_symbol_id, gravity_score) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+      ).run("u1-shelf-owner", projectId, ownerFile.id, "Shelf", "class", 1, 40, 1, 900, null, 1)
+      raw.prepare(
+        "INSERT INTO brain_symbol (id, project_id, file_id, name, symbol_type, line_start, line_end, byte_start, byte_end, owner_symbol_id, gravity_score) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+      ).run("u1-shelf-slots", projectId, ownerFile.id, "shelfSlots", "field", 5, 5, 60, 70, "u1-shelf-owner", 1)
+      const seeded = raw.prepare("SELECT name, symbol_type AS symbolType, owner_symbol_id AS ownerId FROM brain_symbol WHERE id = 'u1-shelf-slots'").get() as { name: string; symbolType: string; ownerId: string | null } | undefined
+      // Non-vacuity: the member must be a kind the engine's traversal whitelist
+      // EXCLUDES, or the two doors would agree and this section would prove
+      // nothing.
+      const TRAVERSABLE = ["function", "method", "class", "interface", "trait", "struct", "enum", "macro"]
+      check(
+        "D11 fixture: the seeded member is a NON-traversable kind with an owner (otherwise both doors agree and the check is vacuous)",
+        !!seeded && !TRAVERSABLE.includes(seeded.symbolType) && seeded.ownerId === "u1-shelf-owner",
+        JSON.stringify(seeded ?? null),
+      )
+
+      const mcpMember = (await callMcp("bb_graph", { symbol: "shelfSlots", maxDepth: 3 })).data
+      const lspMember = await handleGraphRequest(raw as any, projectId, { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "shelfSlots", maxDepth: 3 })
+      const lspRoot = (lspMember as any)?.root
+      const lspRecord = (lspMember as any)?.resolution
+      check(
+        "D11: the AGENT door roots the member question at the MEMBER, and declares the kind it cannot traverse",
+        mcpMember?.root?.name === "shelfSlots" && mcpMember?.root?.match === "exact-any-kind",
+        JSON.stringify({ root: mcpMember?.root?.name, match: mcpMember?.root?.match }),
+      )
+      check(
+        "D11: the EDITOR door roots the same question at the OWNING declaration, and declares the substitution",
+        lspRoot?.name === "Shelf" && lspRecord?.through === "owning-declaration" && lspRecord?.ownerName === "Shelf",
+        JSON.stringify({ root: lspRoot?.name, record: lspRecord ?? null }),
+      )
+      check(
+        "D11: the two doors' ROOT IDENTITIES really are different (the pinned divergence, not an assumed one)",
+        !!mcpMember?.root?.id && !!lspRoot?.id && mcpMember.root.id !== lspRoot.id,
+        JSON.stringify({ mcp: mcpMember?.root?.id, ide: lspRoot?.id }),
+      )
+      // Both channels must NAME the thing they did, not merely differ: a
+      // divergence an agent cannot see is the same failure as a silent relabel.
+      // The editor's record is the shape `memberResolutionRecord` owns
+      // (`through`, `memberName`, `ownerName`, and `memberFile` only when a file
+      // hint was given).
+      check(
+        "D11: neither door is SILENT about it — the agent declares the untraversable kind, the editor names the owning declaration and the member it stands in for",
+        String(mcpMember?.root?.match ?? "") === "exact-any-kind" &&
+          lspRecord?.through === "owning-declaration" &&
+          lspRecord?.memberName === "shelfSlots" &&
+          lspRecord?.ownerName === "Shelf",
+        JSON.stringify({ mcpMatch: mcpMember?.root?.match, lspRecord: lspRecord ?? null }),
+      )
+    }
+  }
 
   // --- R3: impact union ------------------------------------------------------------
   const mcpImpact = (await callMcp("bb_impact", { symbol: "count" })).data

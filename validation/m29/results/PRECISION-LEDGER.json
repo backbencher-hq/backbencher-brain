@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "cef0b3e87097532c05561ab254e96a4d6e402c83",
+  "inputsHash": "4350826b1c59071c2491580fc968e5ee6aa6197d",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
@@ -25,10 +25,10 @@
   "languages": [
     {
       "language": "java",
-      "claim": "I3",
+      "claim": "I0",
       "conformance": {
-        "conformant": true,
-        "detail": "8/8 sections pass"
+        "conformant": false,
+        "detail": "language java absent from the #419 SPEC ledger"
       },
       "features": {
         "capabilities": true,
@@ -54,11 +54,11 @@
         "budgetViolations": []
       },
       "analyzerPrecision": {
-        "differentialFloor": "grails-core",
-        "differentialMissing": 0,
-        "differentialUnexplained": 0,
-        "msPerFile": 2.6,
-        "evidenceTiersPinned": 2,
+        "differentialFloor": null,
+        "differentialMissing": null,
+        "differentialUnexplained": null,
+        "msPerFile": null,
+        "evidenceTiersPinned": null,
         "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
       },
       "evidence": {
@@ -75,10 +75,10 @@
     },
     {
       "language": "python",
-      "claim": "I3",
+      "claim": "I0",
       "conformance": {
-        "conformant": true,
-        "detail": "8/8 sections pass"
+        "conformant": false,
+        "detail": "language python absent from the #419 SPEC ledger"
       },
       "features": {
         "capabilities": true,
@@ -104,11 +104,11 @@
         "budgetViolations": []
       },
       "analyzerPrecision": {
-        "differentialFloor": "cython",
-        "differentialMissing": 0,
-        "differentialUnexplained": 0,
-        "msPerFile": 35.2,
-        "evidenceTiersPinned": 5,
+        "differentialFloor": null,
+        "differentialMissing": null,
+        "differentialUnexplained": null,
+        "msPerFile": null,
+        "evidenceTiersPinned": null,
         "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
       },
       "evidence": {
@@ -125,10 +125,10 @@
     },
     {
       "language": "typescript",
-      "claim": "I3",
+      "claim": "I0",
       "conformance": {
-        "conformant": true,
-        "detail": "8/8 sections pass"
+        "conformant": false,
+        "detail": "language typescript absent from the #419 SPEC ledger"
       },
       "features": {
         "capabilities": true,
@@ -154,11 +154,11 @@
         "budgetViolations": []
       },
       "analyzerPrecision": {
-        "differentialFloor": "vue-core",
-        "differentialMissing": 0,
-        "differentialUnexplained": 0,
-        "msPerFile": 46.9,
-        "evidenceTiersPinned": 3,
+        "differentialFloor": null,
+        "differentialMissing": null,
+        "differentialUnexplained": null,
+        "msPerFile": null,
+        "evidenceTiersPinned": null,
         "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
       },
       "evidence": {
@@ -175,10 +175,10 @@
     },
     {
       "language": "javascript",
-      "claim": "I3",
+      "claim": "I0",
       "conformance": {
-        "conformant": true,
-        "detail": "8/8 sections pass"
+        "conformant": false,
+        "detail": "language javascript absent from the #419 SPEC ledger"
       },
       "features": {
         "capabilities": true,
@@ -204,11 +204,11 @@
         "budgetViolations": []
       },
       "analyzerPrecision": {
-        "differentialFloor": "lodash",
-        "differentialMissing": 0,
-        "differentialUnexplained": 0,
-        "msPerFile": 193.7,
-        "evidenceTiersPinned": 3,
+        "differentialFloor": null,
+        "differentialMissing": null,
+        "differentialUnexplained": null,
+        "msPerFile": null,
+        "evidenceTiersPinned": null,
         "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
       },
       "evidence": {
@@ -225,10 +225,10 @@
     },
     {
       "language": "kotlin",
-      "claim": "I3",
+      "claim": "I0",
       "conformance": {
-        "conformant": true,
-        "detail": "8/8 sections pass"
+        "conformant": false,
+        "detail": "language kotlin absent from the #419 SPEC ledger"
       },
       "features": {
         "capabilities": true,
@@ -254,11 +254,11 @@
         "budgetViolations": []
       },
       "analyzerPrecision": {
-        "differentialFloor": "Exposed",
-        "differentialMissing": 0,
-        "differentialUnexplained": 0,
-        "msPerFile": 39.3,
-        "evidenceTiersPinned": 3,
+        "differentialFloor": null,
+        "differentialMissing": null,
+        "differentialUnexplained": null,
+        "msPerFile": null,
+        "evidenceTiersPinned": null,
         "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
       },
       "evidence": {
@@ -275,10 +275,10 @@
     },
     {
       "language": "scala",
-      "claim": "I3",
+      "claim": "I0",
       "conformance": {
-        "conformant": true,
-        "detail": "8/8 sections pass"
+        "conformant": false,
+        "detail": "language scala absent from the #419 SPEC ledger"
       },
       "features": {
         "capabilities": true,
@@ -304,11 +304,11 @@
         "budgetViolations": []
       },
       "analyzerPrecision": {
-        "differentialFloor": "scala3",
-        "differentialMissing": 0,
-        "differentialUnexplained": 0,
-        "msPerFile": 12.8,
-        "evidenceTiersPinned": 3,
+        "differentialFloor": null,
+        "differentialMissing": null,
+        "differentialUnexplained": null,
+        "msPerFile": null,
+        "evidenceTiersPinned": null,
         "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
       },
       "evidence": {

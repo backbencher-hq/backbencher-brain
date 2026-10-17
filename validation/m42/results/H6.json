@@ -8,8 +8,8 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "d09fc99e0306e829aba50cf42ab776cd95445587",
-  "sourceFingerprint": "bd65ad07115616864cbfb23b137a127a6fb2bb86b75af8e7387d3385c33ff7aa",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "sourceFingerprint": "98d015436ddbd14075ca551b960d3ff1c37efa1c9045349e7fd6f16a2346e5d9",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m42/verify-hub-navigation.ts",
@@ -21,7 +21,7 @@
   ],
   "verifierCommand": "npx tsx script/m42/verify-hub-navigation.ts",
   "evidenceFile": "H6.json",
-  "generatedAt": "2026-10-11T00:15:56.774Z",
+  "generatedAt": "2026-10-17T17:26:22.183Z",
   "docDriftGate": "docs/m42/HUB-PROTOCOL.md byte-identical to a fresh generation from src/lsp/hub_protocol.ts",
   "limitations": [
     "The full webview round trip (real acquireVsCodeApi postMessage in a live webview) is exercised in the E5 editor leg; this suite drives the SAME handler code headless with a stub editor.",
@@ -29,7 +29,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-11T00:15:56.777Z",
-    "contentSha256": "133e97ae754c82f39f24794bb487157894e6bf9ca801543209ef7c72caee14fc"
+    "sealedAt": "2026-10-17T17:26:22.184Z",
+    "contentSha256": "9b9dcdec29c1a5689873a2c7b482b9c518458043fa480afefe87566be174e9fd"
   }
 }

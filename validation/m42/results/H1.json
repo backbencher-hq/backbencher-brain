@@ -2,13 +2,15 @@
   "issue": "649",
   "code": "H1",
   "milestone": "M42",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 25,
-  "passed": 25,
-  "failed": 0,
-  "failures": [],
+  "passed": 24,
+  "failed": 1,
+  "failures": [
+    "H1/R5: warm p95 <= 25ms over 200 individually-timed requests (a real p95, not a mean): p95=30.54ms p50=10.48ms max=40.83ms over n=200"
+  ],
   "verdict": {
-    "realComponentFailures": 0,
+    "realComponentFailures": 1,
     "mutantsCaught": 8,
     "mutantsTotal": 8,
     "ok": true
@@ -17,7 +19,7 @@
     "planned": 8
   },
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h1-fixture",
+    "root": "$HOME/mcp/backbencher-brain/.tools/m42-h1-fixture",
     "file": "src/main/java/com/demo/Highlight.java",
     "expectations": {
       "declarationLine": 5,
@@ -41,10 +43,23 @@
   "budgets": {
     "highlightP95Ms": 25
   },
-  "currentCommit": "38ff3264156f48e09247a09551849faad37ceceb",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "sourceFingerprint": "2666051bade29b676a4d8f427bca2d1270f8ea7c8acb8d0e51c260625801b9a8",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m42/verify-highlight.ts",
+    "src/ast/safety-primitives.ts",
+    "src/brain/database.ts",
+    "src/brain/freshness.ts",
+    "src/lsp/document_highlight.ts",
+    "src/lsp/hover.ts",
+    "src/lsp/positions.ts",
+    "script/m42/h1-fixture.ts",
+    "script/m42/parse-guard-scan.ts"
+  ],
   "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-10-05T16:14:20.173Z",
+  "generatedAt": "2026-10-17T17:23:38.060Z",
   "limitations": [
     "Lane 6: the warm budget is now a REAL p95 — ${WARM_SAMPLES} individually-timed requests, sorted, nearest-rank 95th percentile, no interpolation, compared against §12.7's 25 ms. The pre-lane check computed a MEAN over 40 and compared it against that p95 budget while naming itself 'warm p95', which is the substitution §3 forbids; it survived three waves because it was honestly recorded as a limitation rather than fixed. The mean is still reported alongside, for contrast only. The full E5 editor leg re-measures with the shared harness.",
     "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface.",
@@ -53,7 +68,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T16:14:20.176Z",
-    "contentSha256": "4d89587711d0b739935aa25a3c5abc42e499e45df89abb862aa60d2fabd29d8c"
+    "sealedAt": "2026-10-17T17:23:38.064Z",
+    "contentSha256": "99e1f63bd7f3001992df11db7e07403d40073e74b583224cfac024e0dfa47a69"
   }
 }

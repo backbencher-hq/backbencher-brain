@@ -37,6 +37,7 @@ import { execFileSync } from "node:child_process"
 import { pathToFileURL } from "node:url"
 
 import {
+  canFailFromChecks,
   SEAL_KEY,
   readEvidence,
   readEvidenceAllowingLegacy,
@@ -304,6 +305,13 @@ try {
   // --- R12: dogfood — this verifier's own evidence is sealed ------------------------------
   const evidencePath = path.join(RESULTS, "V1.json")
   const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
+  // The can-fail proof is DERIVED from this run's own check list (M61.V4's
+  // convention: a mutant check is named `M: …`, a negative case says so). The
+  // record previously carried neither count, so the ledger-truth gate read this
+  // gate's `verified` as having no can-fail proof at all (V7.G3b, measured
+  // 2026-10-17: negativeCases=absent mutantsCaught=absent/absent) — the proof was
+  // in the RUN, not in the RECORD, where nothing downstream could see it.
+  const canFail = canFailFromChecks(checks)
   const evidence = {
     issue: "M61.V1 evidence sealing (issue #842)",
     code: "V1",
@@ -313,6 +321,10 @@ try {
     passed,
     failed,
     realFailed: failed,
+    negativeCases: canFail.negatives,
+    mutantsCaught: canFail.mutants,
+    mutantsTotal: canFail.mutants,
+    canFail,
     failures,
     checks,
     currentCommit: commit,

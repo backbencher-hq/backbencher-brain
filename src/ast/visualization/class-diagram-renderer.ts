@@ -135,8 +135,8 @@ export const CLASS_BODY = assemble([
 </div>
 <div class="panel" id="hud">
   <h1>Type diagram</h1>
-  <div class="sub" style="margin-top:4px">inheritance, implementation and containment only &middot; no attributes, methods, cardinalities or visibility, because the index does not store them</div>
   <div class="sub">bb_visualize &middot; types and relationships the index actually stores</div>
+  <div class="sub" style="margin-top:4px">inheritance, implementation and containment only &middot; no attributes, methods, cardinalities or visibility, because the index does not store them</div>
   <div id="stats"></div>
   <div id="warn"></div>
 </div>

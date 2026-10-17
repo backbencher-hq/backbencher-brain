@@ -28,8 +28,9 @@
  */
 import { readFileSync } from "node:fs"
 import { resolve, dirname } from "node:path"
+import { fileURLToPath } from "node:url"
 
-const HERE: string = (import.meta as any).dir ?? dirname(new URL(import.meta.url).pathname)
+const HERE: string = (import.meta as any).dir ?? dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, "..", "..")
 
 /** The router is the source of truth: extension -> language. */

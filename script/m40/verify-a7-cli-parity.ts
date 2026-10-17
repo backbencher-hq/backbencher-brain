@@ -117,6 +117,21 @@ try {
     check("A7: MCP file mode rejects a nonexistent path", mNoFile.isError || /no such|not found|error/i.test(mNoFile.text), mNoFile.text.slice(0, 120), true)
     const helpContent = runCli(["search", "--help"], proj)
     check("A7: help does not advertise a semantic mode (bb_ask owns it)", !/--mode\s+semantic/.test(helpContent.out), helpContent.out.slice(0, 200), true)
+    // The frozen CLI contract in docs/data/m10-baseline.json carried
+    // `required: ["query"]` until the M71 audit re-freeze. That is no longer the
+    // contract: `--symbol-name` and `--file-path` may stand in for the
+    // positional (the help's own example passes none), so the argument is
+    // OPTIONAL and the guarantee moved from commander's required-argument check
+    // to the action's refusal. Asserted HERE, where the CLI really runs, so that
+    // making the argument optional cannot quietly turn "nothing to search for"
+    // into a zero-result answer that reads like "the symbol is absent".
+    const nothingAsked = runCli(["search", "--dir", proj], proj)
+    check(
+      "A7: a search with no query, --symbol-name or --file-path is refused and names the remedies",
+      nothingAsked.code !== 0 && /nothing to search for/i.test(nothingAsked.out) && /symbol-name/.test(nothingAsked.out) && /file-path/.test(nothingAsked.out),
+      `code=${nothingAsked.code} out=${nothingAsked.out.slice(0, 180)}`,
+      true,
+    )
   }
 
   // ── 5. help/docs honesty ──

@@ -69,9 +69,47 @@ export interface BodyRange {
   nodeType: string
 }
 
+/**
+ * A name INTRODUCED by a declaration node, taken from the grammar's own `name`
+ * field rather than from a text pattern.
+ *
+ * M71: bb_edit's `update` mode has to answer "is this new content the symbol's
+ * own declaration, or a fragment to splice into its body?". It used to answer
+ * with two regexes that required a keyword (`function`, `def`, `fn`, …) or a
+ * modifier (`public`, `static`, …) IMMEDIATELY before the symbol name. Kotlin's
+ * `fun`, a C-family return type between the modifier and the name, a Haskell
+ * binding with no keyword at all and a bare class method fragment all failed
+ * that test, so a FULL declaration was spliced into the old body as if it were a
+ * body fragment — measured: Kotlin, C# and Dart got a nested duplicate
+ * declaration and `validated: true` (script/m71/probe-edit-review.ts).
+ *
+ * This is the structural half of the replacement: every node that is a
+ * declaration CONTAINER and exposes its declared name through a `name` field
+ * contributes one entry here, whatever the grammar calls its identifier node
+ * (PHP names it `name`, Kotlin `simple_identifier`, Haskell `variable` — the
+ * occurrence extractor sees none of those, the name field sees all of them).
+ */
+export interface DeclaredName {
+  /** The declared identifier's exact text. */
+  text: string
+  /** Byte range of the NAME node itself. */
+  startIndex: number
+  endIndex: number
+  /** The declaration container's node type (function_declaration, method_definition, …). */
+  declarationType: string
+  /** Byte range of the whole DECLARATION node. */
+  declarationStart: number
+  declarationEnd: number
+}
+
 export interface SafetyParse {
   /** M24.L9: comment sites read from the tree before it is released. */
   commentSites: CommentSite[]
+
+  /** M71: names the fragment/file DECLARES, from each declaration's `name` field. */
+  declaredNames: DeclaredName[]
+  /** M71: tree-sitter reported an ERROR node anywhere in the tree. */
+  hasSyntaxError: boolean
 
   language: string
   content: string
@@ -322,6 +360,86 @@ export function buildSyntaxMask(tree: any, contentLength: number): Uint8Array {
   return buildMaskFromRanges(masked, code, contentLength)
 }
 
+/**
+ * Node types that DECLARE a name in their `name` field.
+ *
+ * Deliberately not `isBindingParentType`, which is built for the opposite
+ * question ("is this occurrence a binding?") and whose substring rules include
+ * `parameter`, `catch_clause` and `import`: a fragment `catch (target) {}` or a
+ * parameter list must never be read as a declaration of `target`. This list is
+ * measured on the fragments the update path must recognise — see
+ * script/m71/probe-declaration-shapes.ts, which prints the node type each
+ * language uses for a top-level declaration.
+ */
+export function isDeclarationContainerType(type: string): boolean {
+  const t = type.toLowerCase()
+  return (
+    t.includes("declarator") || // C/C++ function_declarator; JS/TS variable_declarator
+    t.includes("declaration") || // function_declaration, method_declaration, function_declaration_left (F#)
+    t.includes("definition") || // function_definition (Python/PHP/Scala), method_definition (TS/JS)
+    t.includes("signature") || // Dart function_signature
+    t.endsWith("_item") || // Rust function_item
+    t.endsWith("_spec") || // Go type_spec
+    t === "function" || // Haskell top-level binding
+    t === "function_clause" || // Erlang
+    // C#: a bare `int Target() { … }` fragment is not inside a class, so the
+    // grammar parses it as a LOCAL FUNCTION. Measured shape; without this entry
+    // a full C# method declaration is invisible to the structural detector.
+    t === "local_function_statement" ||
+    t === "method" || // Ruby `def`
+    t === "class" || // Ruby class (bare `class` node)
+    t === "module" || // Ruby module
+    t === "constructor"
+  )
+}
+
+/**
+ * Every name introduced by a declaration node in the tree.
+ *
+ * The `name` field is required to be a LEAF: a container (scoped_identifier,
+ * qualified_name, generic_type) is not a declared name and descending into it
+ * would report a fragment of a type expression as a declaration.
+ */
+export function collectDeclaredNames(tree: any): DeclaredName[] {
+  const out: DeclaredName[] = []
+  for (const node of walkNodes(tree.rootNode)) {
+    if (!node.isNamed) continue
+    if (!isDeclarationContainerType(node.type)) continue
+    const named = typeof node.childForFieldName === "function" ? node.childForFieldName("name") : null
+    let nameNode = named && named.namedChildCount === 0 ? named : null
+    if (nameNode === null && named === null) {
+      // A grammar may declare the name in a direct child WITHOUT a `name` field.
+      // MEASURED: tree-sitter-kotlin's `fun target(): Int { … }` — the name is a
+      // `simple_identifier` child with no field, so the field lookup returns null
+      // and the whole detector misses Kotlin (which is how a full Kotlin
+      // declaration was spliced into its own body). The declared name is the
+      // first direct child that is an identifier-like LEAF: keywords are
+      // anonymous, and a container (type_parameters, scoped_identifier) is not a
+      // leaf, so the name is what is left.
+      nameNode =
+        (node.children ?? []).find(
+          (child: any) =>
+            child &&
+            child.isNamed &&
+            child.namedChildCount === 0 &&
+            isIdentifierNodeType(String(child.type)),
+        ) ?? null
+    }
+    if (!nameNode) continue
+    const text = String(nameNode.text ?? "")
+    if (text.length === 0) continue
+    out.push({
+      text,
+      startIndex: nameNode.startIndex,
+      endIndex: nameNode.endIndex,
+      declarationType: node.type,
+      declarationStart: node.startIndex,
+      declarationEnd: node.endIndex,
+    })
+  }
+  return out
+}
+
 /** Collect every body-block byte range (see isBodyNodeType) in source order. */
 export function collectBodyRanges(tree: any): BodyRange[] {
   const out: BodyRange[] = []
@@ -447,7 +565,9 @@ export async function parseForSafety(filePath: string, content: string): Promise
       maskedRanges: masked,
       codeRanges: code,
       bodyRanges: collectBodyRanges(tree),
-        commentSites: extractCommentSites(tree),
+      commentSites: extractCommentSites(tree),
+      declaredNames: collectDeclaredNames(tree),
+      hasSyntaxError: Boolean(tree?.rootNode?.hasError),
     }
   } finally {
     try {

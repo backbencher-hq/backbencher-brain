@@ -66,6 +66,12 @@
 // only places either surface legitimately differs from another, and both say
 // so on the wire.
 
+import {
+  STORED_LINE_COLUMN,
+  STORED_LINE_IS_ABSENT_SQL,
+  STORED_LINE_IS_EXACT_SQL,
+} from "../intelligence/graph/line-address"
+
 /** Relationship kinds that declare a symbol rather than refer to it. Both
  *  spellings the index carries (`contains` is written by every analyzer;
  *  `exports` by the container/module rows). */
@@ -237,7 +243,7 @@ export function countUsageSites(db: UsageCountDb, symbolId: string): number {
       `SELECT COUNT(*) AS c FROM (
          SELECT DISTINCT
             f.path || ':' ||
-            (CASE WHEN ${STORED_LINE_IS_EXACT_SQL} THEN r.line_number ELSE o.line_start END) || ':' ||
+            (CASE WHEN ${STORED_LINE_IS_EXACT_SQL} THEN ${STORED_LINE_COLUMN} ELSE o.line_start END) || ':' ||
             (CASE WHEN ${STORED_LINE_IS_EXACT_SQL} THEN 0 ELSE o.byte_start END) AS site
          FROM brain_relationship r
          JOIN brain_symbol o ON o.id = r.source_symbol_id
@@ -254,17 +260,12 @@ export function countUsageSites(db: UsageCountDb, symbolId: string): number {
   return row?.c ?? 0
 }
 
-/** The stored call-site line IS an exact address: a real integer position.
- *  `typeof` is in the predicate on purpose — SQLite orders numbers before
- *  text, so a corrupted TEXT column would satisfy `> 0` on its own, and the
- *  owner classifies every non-integer as `unusable` (a store-contract
- *  violation it refuses to substitute for). */
-const STORED_LINE_IS_EXACT_SQL = "typeof(r.line_number) = 'integer' AND r.line_number > 0"
-
-/** The store's two DECLARED unknown states: never stored, and the legacy `0`
- *  literal. These are the only states for which a substitute is permitted. */
-const STORED_LINE_IS_ABSENT_SQL =
-  "(r.line_number IS NULL OR (typeof(r.line_number) = 'integer' AND r.line_number = 0))"
+// The store's column and its two predicates live in the OWNER of the address
+// (src/intelligence/graph/line-address.ts), not here: L6 says the column name
+// is spelled in exactly one file, and this module used to spell it three times
+// (the count query and both predicates). The SQL is imported, not restated, so
+// the count cannot drift from the classifier the surfaces actually use — and the
+// A2 permanence lint stops being a conflict this surface has to declare.
 
 /** The substitute the owner is permitted to serve, and only when the caller's
  *  own declaration line is itself a position. */

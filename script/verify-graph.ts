@@ -93,11 +93,17 @@ try {
   // Call-site correctness: a callee edge's call site file must be the SOURCE
   // file (where the call is written), i.e. beta's file — not gamma's.
   //
-  // M59.A6: for TypeScript the LINE half is recorded, not asserted, because the
-  // analyzer emits none of the 17 languages still at 0 lines per relationship
-  // (#825) and the tool renders the absent value as the number 0 (#823 owns
-  // making "unknown" a first-class state). Recording it here keeps the file
-  // check from reading as line certification, and gives #823 a per-run witness.
+  // M59.A6: for TypeScript the LINE half is recorded, not asserted — the check
+  // above is about the FILE. Recording it keeps the file check from reading as
+  // line certification.
+  //
+  // THE NOTE USED TO LIE ABOUT THE TOOL (bb_graph review D9). It read "its
+  // analyzer emits no line, and 0 is not the call's line" — measured at HEAD on
+  // 2026-10-14, the reported line IS the call's line (4 on this fixture), so the
+  // analyzer emits it and no 0 is involved. A note that contradicts the same
+  // run's own measurement is the class of stale prose this review was written
+  // about, so the note now states the measured value and whether it equals the
+  // call's line instead of carrying a story that a later lane made false.
   const gammaEdge = betaGraph.callees.find((e) => betaGraph.nodes[e.to]?.name === "gamma")
   check(
     "callee edge call site names the SOURCE file (this is NOT a line claim — see the recorded observation below)",
@@ -106,9 +112,16 @@ try {
   check("callee edge preserves relationship type", !!gammaEdge && gammaEdge.relationshipType === "calls")
   check("callee edge preserves confidence", !!gammaEdge && typeof gammaEdge.confidence === "number")
 
-  console.log(
-    `  note (#823/#825): TypeScript's call site line is reported as ${JSON.stringify(gammaEdge?.callSite.line)} — its analyzer emits no line, and 0 is not the call's line (which is ${lineOfCall(TS_CHAIN, "gamma")})`,
-  )
+  {
+    const tsCallLine = lineOfCall(TS_CHAIN, "gamma")
+    const reported = gammaEdge?.callSite.line
+    console.log(
+      `  note (M59.A6): TypeScript's call site line is reported as ${JSON.stringify(reported)} (${gammaEdge?.callSite.kind ?? "no address"}); the call is written on ${tsCallLine}` +
+        (reported === tsCallLine
+          ? " — equal, so this analyzer's stored line is exact here"
+          : " — NOT equal; see the language lane's line coverage"),
+    )
+  }
 
   // ── M59.A6: the LINE, exactly, over a real index, for the languages whose
   // analyzers emit one.
@@ -158,16 +171,19 @@ try {
         `tool reported ${JSON.stringify(wrongLine)} for a call written on ${expected}`,
       )
 
-      // Control B — an UNKNOWN line must not be turned into a plausible one.
-      // MEASURED at this HEAD: with the stored line NULL the tool reports 0 —
-      // neither the call's line nor a stated unknown. (#823's issue text names a
-      // `row.lineNumber || node.line` substitution in graph-engine; the effect
-      // observed here, on a real index, is 0, and the note above records it per
-      // run. Either way the predicate rejects it, and #823 owns the fix.)
+      // Control B — with the stored line NULL the tool must not present a
+      // substitute AS the call site.
+      //
+      // MEASURED at HEAD (2026-10-14): the value is the calling symbol's own
+      // DECLARATION line, delivered as a labelled `declaration` address
+      // (src/intelligence/graph/line-address.ts) — not the 0 that this note used
+      // to report, and not the call's line. The predicate below is the same one
+      // for both worlds: whatever the tool says must not equal the call line, so
+      // the control is about the CLAIM, not about which substitute is chosen.
       db.run("UPDATE brain_relationship SET line_number = NULL WHERE id = ?", [rowId])
       const substituted = await traversalLine()
       console.log(
-        `  note (#823): with the stored line NULL the tool reports ${JSON.stringify(substituted)} for a call written on ${expected} — the substitution this control refuses to accept`,
+        `  note (M59.A6): with the stored line NULL the tool reports ${JSON.stringify(substituted)} for a call written on ${expected} — a LABELLED substitute (the caller's own declaration) or an explicit unknown, never the call line; this control refuses a substitute presented AS the call site`,
       )
       check(
         "control B: an absent line is not presented as the call site",
@@ -203,6 +219,124 @@ try {
 
   // Truncation metadata present and false on a tiny graph.
   check("truncated flag present and false for small graph", betaGraph.summary.truncated === false)
+
+  // ── D5 (bb_graph review) — a FILTER is not a BOUND.
+  //
+  // `relationshipTypes` is a subset the CALLER asked for, so it must not set
+  // `truncated`: that boolean has to keep answering "did a declared bound stop
+  // the walk?". The gate above cannot see the difference — 0 edges passes for
+  // an empty store and for a filter that matched nothing — so these checks
+  // require the two channels to say which one happened, and the negative control
+  // below proves they are not both hardcoded true.
+  check(
+    "D5: a type-narrowed traversal is NOT reported as truncated",
+    filtered.summary.truncated === false && !filtered.summary.truncationReason,
+    `truncated=${filtered.summary.truncated} reason=${JSON.stringify(filtered.summary.truncationReason)}`,
+  )
+  check(
+    "D5: the filter declares itself in its OWN channel (filterNarrowed + filterReason)",
+    filtered.summary.filterNarrowed === true && String(filtered.summary.filterReason ?? "").includes("relationshipTypes:implements"),
+    `filterNarrowed=${filtered.summary.filterNarrowed} filterReason=${filtered.summary.filterReason}`,
+  )
+  check(
+    "D5 negative control: an un-narrowed traversal claims no filter",
+    betaGraph.summary.filterNarrowed === false && betaGraph.summary.filterReason === null,
+    `filterNarrowed=${betaGraph.summary.filterNarrowed} filterReason=${betaGraph.summary.filterReason}`,
+  )
+
+  // ── D6 (bb_graph review) — `maxEdges` below `edgeLimit` is honored.
+  const squeezed = await graphTraversal(projectId, "alpha", { direction: "callees", maxDepth: 3, maxEdges: 1 })
+  const squeezedEdges = squeezed.callers.length + squeezed.callees.length
+  check(
+    "D6: maxEdges below edgeLimit bounds the answer (1 requested, 1 returned)",
+    squeezedEdges === 1 && squeezed.summary.maxEdges === 1,
+    `edges=${squeezedEdges} maxEdges=${squeezed.summary.maxEdges} edgeLimit=${squeezed.summary.edgeLimit}`,
+  )
+  check(
+    "D6: honoring that bound is DECLARED as a bound (not silent)",
+    squeezed.summary.totalEdgeLimitReached === true && String(squeezed.summary.truncationReason ?? "").includes("total-edge-limit"),
+    `reached=${squeezed.summary.totalEdgeLimitReached} reason=${squeezed.summary.truncationReason}`,
+  )
+  check(
+    "D6: the un-asked-for case is unchanged (no maxEdges -> the default, not 1)",
+    betaGraph.summary.maxEdges === 1000 && betaGraph.summary.totalEdgeLimitReached === false,
+    `maxEdges=${betaGraph.summary.maxEdges} reached=${betaGraph.summary.totalEdgeLimitReached}`,
+  )
+
+  // ── D10 — the reasons as data, not only as a joined string.
+  check(
+    "D10: truncationReasons is a list whose join is exactly truncationReason",
+    Array.isArray(squeezed.summary.truncationReasons) &&
+      squeezed.summary.truncationReasons.join("+") === String(squeezed.summary.truncationReason),
+    `reasons=${JSON.stringify(squeezed.summary.truncationReasons)} joined=${JSON.stringify(squeezed.summary.truncationReason)}`,
+  )
+  check(
+    "D10: an unbounded answer reports an EMPTY list, never a placeholder reason",
+    Array.isArray(betaGraph.summary.truncationReasons) && betaGraph.summary.truncationReasons.length === 0,
+    `reasons=${JSON.stringify(betaGraph.summary.truncationReasons)}`,
+  )
+
+  // ── D7 (bb_graph review) — the default answer is a function of the DATA.
+  //
+  // The review's finding was not that a clock bound existed; it was that the
+  // DEFAULT asked for one, so two identical questions could get 200 edges and
+  // 509 edges (measured on this repository's own index: four of five identical
+  // default calls of `push` at depth 3 answered 200 edges in 2,489-16,635 ms
+  // while the unbounded walk answered 509 in 2,854-4,755 ms with byte-identical
+  // shapes) — and a paragraph in the docs is not a bound. These checks make the
+  // policy load-bearing, and each one FAILS if the default is put back:
+  //  · a default call publishes `timeBudgetMs: 0` (the applied bound is what the
+  //    answer reports, so this reads the engine's decision, not a comment);
+  //  · two identical default calls agree edge for edge, and agree with the same
+  //    question asked explicitly unbounded;
+  //  · a ceiling the CALLER sets is published as asked, and when it fires the
+  //    answer declares a sample rather than a complete set;
+  //  · a sampled answer is never LARGER than the complete one (the negative
+  //    control that keeps the first checks from passing on a truncated answer).
+  const edgeKeys = (r: Awaited<ReturnType<typeof graphTraversal>>): string[] =>
+    [...r.callers, ...r.callees]
+      // The edge no longer carries a bare `lineNumber`: M62.A1 moved every published
+      // position into the address owner, so the key compares the ADDRESS. Reading the
+      // removed field yielded `undefined` for every edge, which made this key blind to
+      // exactly the difference (two rows on different call sites) it exists to see.
+      .map((e) => `${e.relationshipType}|${e.from}->${e.to}|${e.callSite.kind}:${e.callSite.line ?? "null"}|${e.rowId ?? ""}`)
+      .sort()
+  const defaultA = await graphTraversal(projectId, "beta", { direction: "both", maxDepth: 3 })
+  const defaultB = await graphTraversal(projectId, "beta", { direction: "both", maxDepth: 3 })
+  const unbounded = await graphTraversal(projectId, "beta", { direction: "both", maxDepth: 3, timeBudgetMs: 0 })
+  check(
+    "D7: the DEFAULT asks for no clock bound (the applied budget is 0)",
+    defaultA.summary.timeBudgetMs === 0 && defaultA.summary.timeBudgetExhausted === false,
+    `summary.timeBudgetMs=${defaultA.summary.timeBudgetMs} exhausted=${defaultA.summary.timeBudgetExhausted}`,
+  )
+  check(
+    "D7: two identical default calls agree edge for edge (reproducible without asking)",
+    JSON.stringify(edgeKeys(defaultA)) === JSON.stringify(edgeKeys(defaultB)),
+    `${edgeKeys(defaultA).length} vs ${edgeKeys(defaultB).length} edge(s)`,
+  )
+  check(
+    "D7 negative control: the default is the SAME answer as asking for no bound explicitly",
+    JSON.stringify(edgeKeys(defaultA)) === JSON.stringify(edgeKeys(unbounded)),
+    `${edgeKeys(defaultA).length} vs ${edgeKeys(unbounded).length} edge(s)`,
+  )
+  const capped = await graphTraversal(projectId, "beta", { direction: "both", maxDepth: 3, timeBudgetMs: 1 })
+  const cappedReasons = capped.summary.truncationReasons ?? []
+  check(
+    "D7: a ceiling the caller sets is published as asked, not silently raised",
+    capped.summary.timeBudgetMs === 1,
+    `requested 1 -> summary.timeBudgetMs=${capped.summary.timeBudgetMs}`,
+  )
+  check(
+    "D7: a walk that hits its ceiling DECLARES a sample (truncated + the reason)",
+    capped.summary.timeBudgetExhausted !== true ||
+      (capped.summary.truncated === true && cappedReasons.includes("walk-time-budget-exhausted")),
+    `fired=${capped.summary.timeBudgetExhausted} truncated=${capped.summary.truncated} reasons=${JSON.stringify(cappedReasons)} edges=${capped.callers.length + capped.callees.length}`,
+  )
+  check(
+    "D7: a sampled answer is a SUBSET, never larger than the unbounded one",
+    capped.callers.length + capped.callees.length <= unbounded.callers.length + unbounded.callees.length,
+    `capped=${capped.callers.length + capped.callees.length} unbounded=${unbounded.callers.length + unbounded.callees.length}`,
+  )
 
   // Not-found throws
   let threw = false

@@ -7,7 +7,7 @@ import { BrainDatabase } from "../brain/database"
 import { getProjectId } from "../util/project-id"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
 import { createToolHandlers, type ToolContext } from "./tool-handlers"
-import { TOOL_DESCRIPTORS, PUBLIC_TOOL_DESCRIPTORS, toMcpToolList } from "./tool-registry"
+import { TOOL_DESCRIPTORS, PUBLIC_TOOL_DESCRIPTORS, toMcpToolList, type ToolDescriptor } from "./tool-registry"
 import { validateToolArguments } from "./tool-validation"
 
 const handlers = createToolHandlers()
@@ -24,6 +24,49 @@ async function ensureIndexed(context: ToolContext): Promise<string | null> {
   } catch {
     return `No index found for ${context.projectPath}. Run: bb index "${context.projectPath}".`
   }
+}
+
+/**
+ * M71.D6: the index gate is per MODE, not per tool.
+ *
+ * `requiresIndex` is a tool-level boolean, and for bb_edit that was a refusal
+ * with no work behind it: the server blocked EVERY call on a project with no
+ * index — including `write`, which resolves no symbol, plans from the request
+ * and the disk, and reindexes the file it wrote. Measured before the fix: all
+ * five modes answered "No index found" over the wire while the engine below
+ * would have created the file and indexed it, so an agent could not create the
+ * first file of a new project with the tool that exists to create files.
+ *
+ * The rule is the registered one (`indexFreeModes`), not a list kept here:
+ *   - a mode the registry marks index-free passes the gate;
+ *   - a call with no `mode` at all (or an unregistered one — validateToolArguments
+ *     rejects those) is still treated as needing the index, which is the old
+ *     behavior and the conservative direction;
+ *   - a tool with no free modes answers exactly as before.
+ *
+ * The refusal is also a refusal now. It used to be returned with no `isError`,
+ * so an MCP client that branches on that flag saw a successful tool result whose
+ * text happened to say the tool did not run — for a WRITE tool, a false success
+ * is the worst possible reading. `isError: true` is the same shape every handler
+ * refusal already uses.
+ */
+async function indexRequirementRefusal(
+  context: ToolContext,
+  descriptor: ToolDescriptor,
+  args: Record<string, unknown>,
+): Promise<string | null> {
+  if (!descriptor.requiresIndex) return null
+  const free = descriptor.indexFreeModes ?? []
+  const mode = typeof args.mode === "string" ? args.mode : undefined
+  if (mode !== undefined && free.includes(mode)) return null
+  const notIndexed = await ensureIndexed(context)
+  if (notIndexed === null) return null
+  if (free.length === 0) return notIndexed
+  // A caller blocked from `update` should learn that `write` works, not only
+  // that they cannot proceed — the refusal names both halves of the rule.
+  const blocked = descriptor.modes.filter((m) => !free.includes(m))
+  const names = (modes: readonly string[]): string => modes.map((m) => `\`${m}\``).join(", ")
+  return `${notIndexed} ${descriptor.name} needs that index for ${names(blocked)}; ${names(free)} ${free.length === 1 ? "does" : "do"} not need an index and ${free.length === 1 ? "works" : "work"} now.`
 }
 
 export async function startMcpServer(projectPath: string): Promise<void> {
@@ -52,10 +95,8 @@ export async function startMcpServer(projectPath: string): Promise<void> {
 
     try {
       const argumentsObject = validateToolArguments(descriptor, request.params.arguments ?? {})
-      if (descriptor.requiresIndex) {
-        const notIndexed = await ensureIndexed(context)
-        if (notIndexed) return { content: [{ type: "text", text: notIndexed }] }
-      }
+      const notIndexed = await indexRequirementRefusal(context, descriptor, argumentsObject)
+      if (notIndexed !== null) return { content: [{ type: "text", text: notIndexed }], isError: true }
       const result = await handler(argumentsObject, context)
       return result
     } catch (error: any) {

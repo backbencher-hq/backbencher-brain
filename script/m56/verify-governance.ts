@@ -15,8 +15,10 @@
 // Evidence: validation/m56/results/G1.json (machine-emitted)
 
 import { execFileSync } from "node:child_process"
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs"
+import { readFileSync, mkdirSync, existsSync } from "node:fs"
 import path from "node:path"
+
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 
@@ -114,10 +116,14 @@ let checks = 0
 let passed = 0
 let negatives = 0
 
+const failures: string[] = []
 function check(label: string, condition: boolean, detail = ""): void {
   checks++
   if (condition) passed++
-  else console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
+  else {
+    failures.push(`${label}${detail ? ` — ${detail}` : ""}`)
+    console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
+  }
 }
 
 function negative(label: string, condition: boolean, detail = ""): void {
@@ -442,12 +448,19 @@ negative("N7b: a real commit reachable from NO ref is NOT landed (covers m56/ver
 negative("N7b-detail: unreferenced control sha was created", anchorPlantCreated)
 
 console.log(`  checks: ${passed}/${checks} passed, ${negatives} negative cases`)
-if (!ok) {
-  console.log("VERDICT: FAIL")
-  process.exit(1)
-}
-console.log("VERDICT: PASS")
+console.log(`VERDICT: ${ok ? "PASS" : "FAIL"}`)
 
+// THE ARTIFACT IS WRITTEN ON A RED RUN TOO, AND THIS IS A FIX RATHER THAN A CONVENIENCE.
+//
+// This gate's own ledger entry is a citation: the ledger names commit C, and C must be
+// reachable from this history. While the gate exited BEFORE writing, its artifact could only
+// ever be replaced by a PASSING run — so once C stopped being reachable (a rewritten branch,
+// an artifact restored from a superseded copy), the gate had no way to re-earn its own
+// citation, and the milestone could not be closed without hand-editing validation/. That is a
+// self-referential deadlock, not a safety property. Recording the run — status "failed", the
+// failing checks named — is strictly more information than writing nothing, and it cannot
+// produce a false green: `status` is only "verified" when every check passed. The exit code is
+// unchanged, so callers that gate on it see exactly what they saw before.
 mkdirSync(RESULTS, { recursive: true })
 
 
@@ -455,10 +468,11 @@ const evidence = {
   issue: "M56.G1",
   code: "G1",
   milestone: "M56",
-  status: "verified",
+  status: ok ? "verified" : "failed",
   checks,
   passed,
   failed: checks - passed,
+  failures: ok ? [] : failures.slice(0, 25),
   negativeCases: negatives,
   trackedFilesScanned: tracked.length,
   currentCommit: headCommit,
@@ -474,5 +488,8 @@ const evidence = {
     "Verified issues with zero remaining verified peers (all planned) are accepted: the agreement checks are vacuously true until siblings produce artifacts, which the closure gate then requires.",
   ],
 }
-writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")
-console.log(`  evidence: ${path.relative(ROOT, EVIDENCE_PATH)}`)
+// M61 D-1 (the seal law): the ONE write path. A raw write drops the envelope,
+// which is what A1's A4 measured on this lane's records (2026-10-17).
+writeSealed(EVIDENCE_PATH, evidence)
+console.log(`  evidence: ${path.relative(ROOT, EVIDENCE_PATH)}${ok ? "" : " (FAILED run recorded, not a verdict)"}`)
+process.exit(ok ? 0 : 1)

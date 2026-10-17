@@ -30,9 +30,10 @@
 // not admissible either.
 import { readdirSync, statSync, readFileSync } from "node:fs"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 const REPO = (import.meta as any).dir
   ? path.resolve(path.join((import.meta as any).dir, "..", ".."))
-  : path.resolve(path.join(path.dirname(new URL(import.meta.url).pathname), "..", ".."))
+  : path.resolve(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".."))
 const CR = "$HOME/fixtures/repositories"
 const ASTEngine: any = (await import(`${REPO}/src/ast/engine.ts`)).ASTEngine
 const rule: any = await import(`${REPO}/script/m14/incoming-rule.ts`)

@@ -12,6 +12,11 @@
 import * as fs from "fs"
 import * as path from "path"
 
+import { createRequire } from "node:module"
+import { fileURLToPath } from "node:url"
+const require = createRequire(import.meta.url)
+const __dirname = fileURLToPath(new URL(".", import.meta.url)).replace(/[\\/]+$/, "")
+
 const ROOT = path.join(__dirname, "..", "..")
 const args = process.argv.slice(2)
 const lang = args.includes("--lang") ? args[args.indexOf("--lang") + 1] : "svelte"

@@ -93,7 +93,9 @@
           "freshness",
           "sampleSize",
           "integrity",
-          "includeAnalysisRuns"
+          "includeAnalysisRuns",
+          "paths",
+          "checkUnindexed"
         ],
         "defaults": {
           "verbose": false,
@@ -132,7 +134,7 @@
           "includeOrphaned": true,
           "includeFramework": true,
           "includeAntiPatterns": true,
-          "confidenceThreshold": 0.6,
+          "confidenceThreshold": 0,
           "history": false,
           "recordRun": false
         }
@@ -172,7 +174,12 @@
           "maxNodes",
           "maxLinks",
           "relationshipTypes",
+          "symbolKinds",
           "languages",
+          "excludePatterns",
+          "includeTests",
+          "view",
+          "layout",
           "format"
         ],
         "defaults": {
@@ -194,6 +201,8 @@
         "properties": [
           "symbolName",
           "symbolNames",
+          "paths",
+          "symbolIds",
           "targetLanguage",
           "format"
         ],
@@ -255,7 +264,8 @@
           "includeDiagrams",
           "includeTests",
           "limit",
-          "maxTokens"
+          "maxTokens",
+          "refresh"
         ],
         "defaults": {
           "format": "markdown",
@@ -276,7 +286,8 @@
           "update",
           "insert",
           "delete",
-          "refactor"
+          "refactor",
+          "batch"
         ],
         "required": [
           "mode"
@@ -293,7 +304,10 @@
           "position",
           "newName",
           "force",
-          "format"
+          "format",
+          "overwrite",
+          "edits",
+          "files"
         ],
         "defaults": {
           "dryRun": false,
@@ -332,10 +346,17 @@
         ],
         "properties": [
           "symbol",
-          "maxDepth"
+          "maxDepth",
+          "direction",
+          "relationshipTypes",
+          "includeCrossLanguage",
+          "timeBudgetMs",
+          "maxEdges",
+          "edgeLimit"
         ],
         "defaults": {
-          "maxDepth": 3
+          "maxDepth": 3,
+          "direction": "both"
         }
       },
       "bb_impact": {
@@ -348,7 +369,9 @@
           "symbol"
         ],
         "properties": [
-          "symbol"
+          "symbol",
+          "relationshipTypes",
+          "refresh"
         ],
         "defaults": {}
       },
@@ -362,9 +385,12 @@
           "symbol"
         ],
         "properties": [
-          "symbol"
+          "symbol",
+          "limit"
         ],
-        "defaults": {}
+        "defaults": {
+          "limit": 200
+        }
       },
       "bb_annotate": {
         "mutability": "write",
@@ -393,7 +419,9 @@
         "required": [],
         "properties": [
           "symbol",
-          "limit"
+          "path",
+          "limit",
+          "includeNameLevel"
         ],
         "defaults": {
           "limit": 50
@@ -404,16 +432,19 @@
       "bb_index": "added M22 (8b71297) — was missing from this frozen baseline until repaired under M35.E1",
       "bb_visualize.modes": "scope-only since M13.44 (859c0b0) — baseline had stale pre-M13.44 modes until repaired under M35.E1",
       "aliases": "bb_reindex alias removed under M35.E1 (zero references, zero-alias policy)",
-      "M50.A5 re-freeze (#768)": "re-froze toolNames/descriptors/commands from the live registry so verify-contract-diff + verify-m10-baseline compare against the real surface (M28 graph/impact/cross-language/annotate tools and the M43 bb_search `refresh` option were missing)"
+      "M50.A5 re-freeze (#768)": "re-froze toolNames/descriptors/commands from the live registry so verify-contract-diff + verify-m10-baseline compare against the real surface (M28 graph/impact/cross-language/annotate tools and the M43 bb_search `refresh` option were missing)",
+      "M71 audit re-freeze": "re-cut every descriptor's properties/defaults/modes from the live registry. Growth since the M50.A5 cut: bb_health paths+checkUnindexed (788647abc, M64), bb_visualize symbolKinds/excludePatterns/includeTests+view+layout (M48/M13.44/codemap+class+regions), bb_migrate paths+symbolIds (16d789d78), bb_doc refresh, bb_impact refresh+relationshipTypes, bb_graph relationshipTypes/edgeLimit/maxEdges/timeBudgetMs (7aec61416)/direction/includeCrossLanguage plus the `direction` default, bb_cross_language limit plus its default, bb_annotations includeNameLevel+path (fb2c4b715), bb_patterns' confidenceThreshold default 0.6 -> 0, and bb_edit's overwrite/edits/files plus the `batch` mode (M13.E13/M71.D9). The CLI `search` contract is a human decision and stays hand-maintained: `[query]` is optional now (--symbol-name/--file-path may stand in) and the action refuses a search that supplies neither, so its frozen `required` is empty and that refusal is asserted behaviorally in script/m40/verify-a7-cli-parity.ts."
     }
   },
   "cli": {
     "commands": [
+      "help",
       "tool",
       "index",
       "setup",
       "show",
       "doctor",
+      "upgrade",
       "stats",
       "status",
       "projects",
@@ -434,9 +465,8 @@
         ]
       },
       "search": {
-        "required": [
-          "query"
-        ],
+        "required": [],
+        "requiredNote": "`[query]` is OPTIONAL since the M43/M71 read path: `--symbol-name` and `--file-path` may stand in for it (the help's own `bb search --mode symbol --symbol-name handleRequest` example passes no positional at all, and with a required argument it exited 1). The action refuses a search that supplies none of the three, so the guarantee is preserved as BEHAVIOR — asserted by script/m40/verify-a7-cli-parity.ts — rather than by commander's required-argument check.",
         "options": [
           "dir",
           "limit",

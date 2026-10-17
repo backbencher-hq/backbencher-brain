@@ -22,14 +22,22 @@ const MANIFEST_PATH = join(RESULTS, "manifest.json")
 
 let checks = 0
 let passed = 0
-let failures = 0
 let negatives = 0
+// §8.3 demands the record STATE WHY it is not verified, and the thing a reader
+// needs is the failing check's NAME. This file used integers: `let failures = 0`
+// plus `failures++`, so the evidence it wrote carried `failures: 11` — a count
+// where every sibling gate writes the labels, and a record from which nobody
+// could tell what failed (measured 2026-10-17 by the ledger-truth gate's
+// reason rule, which reads the failing checks as the reason: m27.X1 "status=
+// known-gap with no recorded reason"). The labels and the count are now
+// written under their own names.
+const failureLabels: string[] = []
 
 function check(label: string, ok: boolean, detail = ""): void {
   checks++
   if (ok) passed++
   else {
-    failures++
+    failureLabels.push(label)
     console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
   }
 }
@@ -39,7 +47,7 @@ function negative(label: string, ok: boolean, detail = ""): void {
   checks++
   if (ok) passed++
   else {
-    failures++
+    failureLabels.push(`[negative] ${label}`)
     console.log(`  FAIL(negative): ${label}${detail ? ` — ${detail}` : ""}`)
   }
 }
@@ -332,7 +340,8 @@ const result = {
   checks,
   passed,
   failed,
-  failures,
+  failures: failureLabels,
+  failureCount: failureLabels.length,
   negativeCases: negatives,
   currentCommit,
   verifierCommand: "npx tsx script/m27/verify-closure.ts",

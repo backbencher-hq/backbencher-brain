@@ -73,34 +73,74 @@ const BARE = /(?<!["'`\w])\b(__dirname|__filename)\b(?![\w])/g
 // with `ReferenceError: require is not defined in ES module scope` after 300 lines.
 const REQUIRE = /(?<![."'\w])require\s*\(/g
 
+// STRINGS ARE BLANKED, and that is the fix to this detector rather than a shortcut.
+//
+// The previous version kept string bodies and then tried to win them back with two
+// heuristics — a quote lookbehind for `__dirname`, and a "count the quotes on this line"
+// test for `require(`. Both were repairs for the same mistake: text inside a string
+// literal is DATA. It cannot execute, so `analyze("cjs", 'const m = require("./m.js")')`
+// is a fixture, not a defect, and a template holding a snippet is a snippet. The
+// heuristics also missed the cases they were built for: this gate flagged ITSELF
+// (`__dirname,__filename,require()` in its own self-test snippets) because a template's
+// content is not preceded by a quote the lookbehind can see.
+//
+// Blanking strings removes all of it at the source. A `require(` CALL still survives
+// because only its ARGUMENT is inside the string; and an INTERPOLATED template
+// (`${require("x")}`) is code and is still seen, which the self-tests below assert in
+// both directions.
 function bareGlobals(src: string): string[] {
-  const code = blankCommentsAndStrings(src, { keepStrings: true })
+  const code = blankCommentsAndStrings(src)
   const found = new Set<string>()
+  // A file that DECLARES the binding has fixed its own defect: every later reference
+  // resolves to that local const, never to a CommonJS global. `src/util/wasm.ts`
+  // builds both bindings from `import.meta.url` at line 8 and then uses them 200
+  // lines later, and the detector reported the USE as a defect — demanding the file
+  // stop naming the variable it had just defined.
+  const declared = new Set<string>()
+  for (const m of code.matchAll(/(?:^|\n)\s*(?:const|let|var)\s+(__dirname|__filename)\b/g)) declared.add(m[1]!)
   for (const m of code.matchAll(BARE)) {
-    // A quoted occurrence is data. Check the character right before the match.
-    const at = m.index!
-    if (at > 0 && /["'`]/.test(code[at - 1]!)) continue
+    if (declared.has(m[1]!)) continue
+    // A DECLARATION is not a use. `src/util/wasm.ts` and
+    // `script/m14/protobuf-runner-probe.mts` both BUILD the missing global for
+    // themselves (`const __dirname = dirname(fileURLToPath(import.meta.url))`),
+    // which is the fix this gate asks for, spelled as a local binding. Flagging the
+    // binding made the gate demand that a file stop naming the variable it had just
+    // defined — an unsatisfiable ask, and the same class of self-reference as a lint
+    // that matches its own pattern.
+    const lineStart = code.lastIndexOf("\n", m.index!) + 1
+    if (/^\s*(?:const|let|var)\s+$/.test(code.slice(lineStart, m.index!))) continue
     found.add(m[1]!)
+  }
+  // A `require(` is bound when the file WIRED one: `const require = createRequire(...)`.
+  // The first version of this check only looked 40 characters back for the word
+  // `createRequire`, which reported two correct files: src/ast/parallel-indexer.ts
+  // binds `require` once at module scope and uses it 1,400 lines later, and
+  // src/setup/doctor.ts binds it INSIDE the function that needs it. Both are the fix
+  // this gate asks for; neither is a CommonJS global.
+  //
+  // Scope is approximated by BRACE DEPTH: a binding is in scope for a use at the same
+  // or DEEPER depth that comes after it (a top-level binding is depth 0 and covers the
+  // module). That over-accepts a use in a SIBLING block at
+  // the same depth (documented, not hidden) and under-accepts nothing that matters here
+  // — a top-level binding has depth 0 and covers the module.
+  const depthAt = (index: number): number => {
+    let depth = 0
+    for (let i = 0; i < index; i++) {
+      if (code[i] === "{") depth++
+      else if (code[i] === "}") depth--
+    }
+    return depth
+  }
+  const bindings: Array<{ at: number; depth: number }> = []
+  for (const m of code.matchAll(/const\s+require\s*=\s*createRequire\s*\(/g)) {
+    bindings.push({ at: m.index!, depth: depthAt(m.index!) })
   }
   for (const m of code.matchAll(REQUIRE)) {
     const at = m.index!
     // `createRequire(import.meta.url)` builds one legitimately; a bare `require(` does not.
     if (code.slice(Math.max(0, at - 40), at).includes("createRequire")) continue
-    // A require() INSIDE A STRING is a test fixture, not a call. Two real cases, both in
-    // `npm run verify`, both of which run fine today:
-    //   script/m14/verify-js-census.ts:473     analyze("cjs", 'const m = require("./m.js") …')
-    //   script/m15/verify-security-deep.ts:149 "  const { exec } = require('child_process')\n"
-    // Both are handing a CJS sample to an analyzer to prove the CJS lane works. The
-    // gate reported them anyway, and a gate that flags correct fixtures teaches people
-    // to ignore it — the same lesson verify-indexer-option-contract.ts learned.
-    //
-    // The discriminator: walk BACK to the enclosing quote. A require() with an unclosed
-    // quote before it on the same construct is string content.
-    const before = code.slice(0, at)
-    const lineStart = before.lastIndexOf("\n") + 1
-    const line = before.slice(lineStart)
-    const opensQuote = (line.match(/["'`]/g) ?? []).length % 2 === 1
-    if (opensQuote) continue
+    const depth = depthAt(at)
+    if (bindings.some((b) => b.at < at && b.depth <= depth)) continue
     found.add("require()")
   }
   return [...found]
@@ -130,6 +170,30 @@ check(
   "a bare require() inside a function body is reported",
 )
 
+// The two halves of the string rule. A snippet in a template is data; an interpolation
+// in the same template is code. Both were measured on this gate's own source: with
+// strings kept, the gate reported ITSELF for its own fixtures.
+check(
+  "the detector does NOT fire on a global written inside a template's text",
+  bareGlobals("const planted = `const h = path.resolve(__dirname, '.')`").length === 0,
+  `${bareGlobals("const planted = `const h = path.resolve(__dirname, '.')`").length} hit(s) for template text`,
+)
+check(
+  "the detector SEES a global inside a template INTERPOLATION (that part runs)",
+  bareGlobals("const p = `${__dirname}/x`").length === 1,
+  `${bareGlobals("const p = `${__dirname}/x`").length} hit(s) for an interpolation`,
+)
+
+check(
+  "the detector does NOT fire on a require() bound at module scope far above the use",
+  bareGlobals('import { createRequire } from "node:module"\nconst require = createRequire(import.meta.url)\nfunction f() { return require("fs") }').length === 0,
+  `${bareGlobals('import { createRequire } from "node:module"\nconst require = createRequire(import.meta.url)\nfunction f() { return require("fs") }').length} hit(s) for a module-scope binding`,
+)
+check(
+  "…and still fires on a require() in a file with NO binding",
+  bareGlobals('function f() { return require("fs") }').length === 1,
+  `${bareGlobals('function f() { return require("fs") }').length} hit(s) with no binding`,
+)
 check(
   "the detector does NOT fire on createRequire(import.meta.url), which is the correct ESM idiom",
   bareGlobals(`import { createRequire } from "node:module"; const require = createRequire(import.meta.url)`).length === 0,
@@ -140,6 +204,20 @@ check(
   "the detector does NOT fire on a mention in a comment",
   bareGlobals(`// the old code used __dirname here\nconst x = 1`).length === 0,
   `${bareGlobals(`// the old code used __dirname here\nconst x = 1`).length} hit(s) for a comment`,
+)
+
+// The ESM fix itself: a file that DEFINES the missing binding has fixed the defect
+// it would otherwise be reported for. Both directions, so a skip cannot widen into
+// "any line mentioning const".
+check(
+  "the detector does NOT fire on a file that DEFINES the binding it is missing",
+  bareGlobals('const __dirname = dirname(fileURLToPath(import.meta.url))\nconst __filename = fileURLToPath(import.meta.url)').length === 0,
+  `${bareGlobals('const __dirname = dirname(fileURLToPath(import.meta.url))\nconst __filename = fileURLToPath(import.meta.url)').length} hit(s) for a definition`,
+)
+check(
+  "…but a USE on the same line as a declaration is still seen",
+  bareGlobals("const here = __dirname + \"/x\"").length === 1,
+  `${bareGlobals("const here = __dirname + \"/x\"").length} hit(s) for a use with the declaration keyword earlier on the line`,
 )
 
 // --- the sweep -----------------------------------------------------------------

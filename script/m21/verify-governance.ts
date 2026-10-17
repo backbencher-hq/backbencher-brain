@@ -1,9 +1,11 @@
 // script/m21/verify-governance.ts — M21.C1
 // Governance-only gate. Planned issues are intentionally not treated as verified.
 
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs"
+import { readFileSync, mkdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+
+import { writeSealed } from "../lib/evidence.ts"
 
 type Issue = {
   code: string
@@ -95,7 +97,11 @@ const result = {
   limitations: ["C1 validates governance and evidence policy only; it does not verify indexing performance or production behavior."],
 }
 mkdirSync(path.dirname(RESULT), { recursive: true })
-writeFileSync(RESULT, JSON.stringify(result, null, 2) + "\n")
+// M61 D-1 (the seal law): both the record and the ledger are written through
+// the ONE write path. This gate stamped RAW JSON, so every run dropped the
+// envelope on its ledger and its own record (the m21 lazy-seal defect M61.A1's
+// A2/A4 measured on this tree, 2026-10-17).
+writeSealed(RESULT, result as unknown as Record<string, unknown>)
 
 // Self-update: persist C1's own ledger entry so the C1/X3 pair converges
 // without manual syncing. The ledger block records an empty working-tree
@@ -117,7 +123,7 @@ if (c1Entry) {
     failed: checks - passed,
     negativeCases: negatives,
   }
-  writeFileSync(LEDGER, JSON.stringify(ledger, null, 2) + "\n")
+  writeSealed(LEDGER, ledger as unknown as Record<string, unknown>)
 }
 console.log(`C1: ${result.status.toUpperCase()} (${result.passed}/${result.checks}, ${result.negativeCases} negative)`)
 process.exit(result.status === "verified" ? 0 : 1)

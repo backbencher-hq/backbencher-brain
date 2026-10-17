@@ -123,14 +123,20 @@ const code = (html: string): string =>
       { id: "test/a.test.ts:t", name: "t", symbol_type: "function", file: "test/a.test.ts", line: 1 },
     ]
     const unitExcluded = DependencyGraphVisualizer.generateGraphData(crafted, [], { includeTests: false }).excluded!
-    const unitAttributed = Object.values(unitExcluded.byPattern).reduce((a, b) => a + Number(b), 0) + Object.values(unitExcluded.byRule).reduce((a, b) => a + Number(b), 0)
+    // Both maps are optional on the payload. Defaulting them ONCE keeps the four
+    // reads below honest without four separate `?.` sites and without pretending a
+    // missing map is an empty one at the assertion level: a missing map still fails
+    // the attribution check, because 0 attributed !== 5 dropped.
+    const unitByPattern = unitExcluded.byPattern ?? {}
+    const unitByRule = unitExcluded.byRule ?? {}
+    const unitAttributed = Object.values(unitByPattern).reduce((a, b) => a + Number(b), 0) + Object.values(unitByRule).reduce((a, b) => a + Number(b), 0)
     harness.check("unit attribution: five crafted symbols are dropped", unitExcluded.symbols === 5, JSON.stringify(unitExcluded))
-    harness.check("unit attribution: every one is attributed (the old block attributed ONE)", unitAttributed === unitExcluded.symbols, `attributed=${unitAttributed} symbols=${unitExcluded.symbols} byPattern=${JSON.stringify(unitExcluded.byPattern)} byRule=${JSON.stringify(unitExcluded.byRule)}`)
-    harness.check("unit attribution: the three suffixes are counted under the suffix rule", Object.keys(unitExcluded.byRule).filter((k) => k.startsWith("build-suffix")).length === 3, JSON.stringify(unitExcluded.byRule))
-    harness.check("unit attribution: the test rule is counted under its own name", (unitExcluded.byRule["test-sources"] ?? 0) === 1, JSON.stringify(unitExcluded.byRule))
-    harness.check("unit attribution: the segment rule still names the segment", (unitExcluded.byPattern.vendor ?? 0) === 1, JSON.stringify(unitExcluded.byPattern))
+    harness.check("unit attribution: every one is attributed (the old block attributed ONE)", unitAttributed === unitExcluded.symbols, `attributed=${unitAttributed} symbols=${unitExcluded.symbols} byPattern=${JSON.stringify(unitByPattern)} byRule=${JSON.stringify(unitByRule)}`)
+    harness.check("unit attribution: the three suffixes are counted under the suffix rule", Object.keys(unitByRule).filter((k) => k.startsWith("build-suffix")).length === 3, JSON.stringify(unitByRule))
+    harness.check("unit attribution: the test rule is counted under its own name", (unitByRule["test-sources"] ?? 0) === 1, JSON.stringify(unitByRule))
+    harness.check("unit attribution: the segment rule still names the segment", (unitByPattern.vendor ?? 0) === 1, JSON.stringify(unitByPattern))
     const withTests = DependencyGraphVisualizer.generateGraphData(crafted, [], {}).excluded!
-    harness.negative("unit attribution: with tests included the test rule does not fire", (withTests.byRule["test-sources"] ?? 0) === 0 && withTests.symbols === 4, JSON.stringify(withTests))
+    harness.negative("unit attribution: with tests included the test rule does not fire", (withTests.byRule?.["test-sources"] ?? 0) === 0 && withTests.symbols === 4, JSON.stringify(withTests))
   }
 
   // The option the caller set is now visible in the block it changed, not only in a flag.
@@ -185,7 +191,20 @@ const code = (html: string): string =>
   const flatClass = code(classDoc)
   harness.check("first paint: the code map lays out before it fits", flatMap.includes("draw() fitWorld()"), "load path not in the expected order")
   harness.negative("first paint: it does not fit a world that has not been laid out yet", !flatMap.includes("fitWorld() draw()"), "still fitting before the first draw")
-  harness.check("first paint: the zoom pill asks the fit scale whether the map is whole", flatMap.includes("var shown = view.k >= fitScale() - 1e-6"), "pill still comparing pixel extents")
+  // THIS LINE USED TO PIN THE DEFECT IN PLACE, and that is worth recording where it stood.
+  // The check required the text `var shown = view.k >= fitScale() - 1e-6`, which is true at the
+  // fit AND at every scale ABOVE it -- so the pill said "whole map \u00b7 scroll to zoom in" while
+  // the map was at 338% with three quarters of it off the frame, and because the class that
+  // displays the pill is set when the whole map is NOT on screen, the pill was never displayed
+  // at any zoom. MEASURED in a real browser on the emitted src/ document: three wheel notches
+  // took the published zoom from 0.8 to 3.377 and the pill's own text did not move. A gate that
+  // pins an expression instead of the behaviour the expression is meant to produce keeps the
+  // bug it was written next to. The comparison is now read in the other direction, and the
+  // BEHAVIOUR is asserted where it can actually be driven: V11
+  // (script/m13/verify-visualize-codemap.ts) delivers a wheel to the artifact's OWN listener
+  // and checks both states -- "whole map" hidden at the fit, "338% \u00b7 drag to pan, scroll to
+  // zoom" shown after the gesture -- with a negative that fails on the old predicate.
+  harness.check("first paint: the zoom pill asks the fit scale whether the map is whole", flatMap.includes("var wholeMapOnScreen = view.k <= fitScale() + 1e-6"), "the pill no longer asks the shared fit scale for the answer")
   harness.check("first paint: the fit and the readout share one scale function", flatMap.includes("function fitScale()") && flatMap.includes("view.k = fitScale()"), "fitScale() not shared")
   harness.check("first paint: the codemap still ships its save control", flatMap.includes("bb-code-map.html"), "")
   harness.check("first paint: the class view hides its detail panel until something is selected", flatClass.includes("#detail{right:16px;bottom:16px") && flatClass.includes("display:none") && flatClass.includes("#detail.on{display:block}"), "")

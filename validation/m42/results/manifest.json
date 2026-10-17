@@ -26,21 +26,20 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "d8dad6ebbf971c5f724e18275fbd97eb624e7d42",
+        "currentCommit": "d3a84d5eff9a2f02a7125a3f9a7a7ccfd0195aff",
         "verifierCommand": "npx tsx script/m42/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 23,
+        "passed": 28,
         "failed": 2,
-        "realFailed": 0,
         "negativeCases": 7,
-        "blockedReason": "2 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: M29 bar — M29 governance gate exits 0 at HEAD (spawned) — the relevant tree was clean at measure time"
+        "blockedReason": "2 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: M29 bar — M29 governance gate exits 0 at HEAD (spawned) - relevant uncommitted files at measure time: package.json"
       }
     },
     {
       "code": "H1",
       "githubIssue": 649,
       "tool": "lsp-document-highlight",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Semantic in-file DocumentHighlight from the index; staleness-labeled; lexical matching banned",
       "acceptanceCriteria": [
         "fixture-first: comment/string tokens must NOT highlight, real references must (RED then GREEN)",
@@ -53,16 +52,16 @@
         "editor leg evidence with wake-up path"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
+        "status": "known-gap",
+        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
         "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
         "evidenceFile": "H1.json",
-        "passed": 16,
-        "failed": 0,
+        "passed": 24,
+        "failed": 1,
         "blockedReason": "Lane 6: the warm budget is now a REAL p95 — ${WARM_SAMPLES} individually-timed requests, sorted, nearest-rank 95th percentile, no interpolation, compared against §12.7's 25 ms. The pre-lane check computed a MEAN over 40 and compared it against that p95 budget while naming itself 'warm p95', which is the substitution §3 forbids; it survived three waves because it was honestly recorded as a limitation rather than fixed. The mean is still reported alongside, for contrast only. The full E5 editor leg re-measures with the shared harness.",
-        "realFailed": 0,
-        "mutantsCaught": 4,
-        "mutantsTotal": 4
+        "realFailed": 1,
+        "mutantsCaught": 8,
+        "mutantsTotal": 8
       }
     },
     {
@@ -84,23 +83,23 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
         "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
         "evidenceFile": "H2.json",
-        "passed": 39,
-        "failed": 1,
+        "passed": 69,
+        "failed": 2,
         "editorLeg": "E5 43/43 (shared H2 assertions + bb.openUsage/openDefinition clicks in real VS Code)",
         "blockedReason": "A usage link opens the index-stored CALL SITE when brain_relationship.line_number holds a real line, and the referencing symbol's DECLARATION when it does not — every such row states which, in its own label and in the usages header. The store carries no call-site BYTE COLUMN, so a call-site link opens at character 0: the line is exact, the column is not stored.",
-        "realFailed": 1,
-        "mutantsCaught": 6,
-        "mutantsTotal": 6
+        "realFailed": 2,
+        "mutantsCaught": 7,
+        "mutantsTotal": 7
       }
     },
     {
       "code": "H3",
       "githubIssue": 651,
       "tool": "lsp-enrichment-surface",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Single owner for enrichment reads (src/lsp/enrichment.ts); hover + graph render stored role/pattern/layerFlow/criticality/frequency, labeled as enrichment; presence-gated",
       "acceptanceCriteria": [
         "fixture-first: enriched + un-enriched rows, expected output authored before the code (RED then GREEN)",
@@ -114,15 +113,15 @@
         "graph badge vocabulary extended without tier semantic change"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+        "status": "known-gap",
+        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
         "verifierCommand": "npx tsx script/m42/verify-enrichment-surface.ts",
         "evidenceFile": "H3.json",
-        "passed": 29,
-        "failed": 0,
+        "passed": 28,
+        "failed": 1,
         "editorLeg": "E5 46/46 (shared H3 assertions over the enriched fixture in real VS Code); W4 19/19, V1 26/26 (5/5 mutants)",
         "blockedReason": "Enrichment presence depends on the index enrichment pass running (bb index runs it); an index built with enrichment disabled would show honest absence.",
-        "realFailed": 0,
+        "realFailed": 1,
         "mutantsCaught": 5,
         "mutantsTotal": 5
       }
@@ -131,7 +130,7 @@
       "code": "H4",
       "githubIssue": 652,
       "tool": "lsp-hover-actions",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Command URIs (open in graph, impact, call hierarchy) in the hover; server-side symbol resolution; honest error surface",
       "acceptanceCriteria": [
         "fixture-first: exact command + argument contract authored before implementation (RED then GREEN)",
@@ -145,15 +144,15 @@
         "docs drift gate green"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+        "status": "known-gap",
+        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
         "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
         "evidenceFile": "H4.json",
-        "passed": 31,
-        "failed": 0,
+        "passed": 32,
+        "failed": 1,
         "editorLeg": "E5 57/57 (actions row + real clicks through bb.openGraph/openImpact/showCallHierarchy in VS Code; impact panel over the real client)",
         "blockedReason": "editor leg (link clicks, panel surfaces) is proven in E5 over the shared core; this gate proves the server-side contract + renderer laws headless",
-        "realFailed": 0,
+        "realFailed": 1,
         "negativeCases": 5,
         "mutantsCaught": 5,
         "mutantsTotal": 5
@@ -163,7 +162,7 @@
       "code": "H5",
       "githubIssue": 653,
       "tool": "webview-hub",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Hub = usage/connections center over bb/graph: list<->tree toggle, grouping by file/caller/call-tree, evidence badges, declared truncation; ONE renderer core",
       "acceptanceCriteria": [
         "fixture-first: expected list + tree renderings authored before the renderer change (RED then GREEN)",
@@ -177,12 +176,12 @@
         "declared truncation on every bounded view"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+        "status": "verified",
+        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
         "verifierCommand": "npx tsx script/m42/verify-hub.ts",
         "evidenceFile": "H5.json",
-        "passed": 34,
-        "failed": 6,
+        "passed": 43,
+        "failed": 0,
         "mutantsCaught": 5,
         "mutantsTotal": 5,
         "editorLeg": "E5 63/63 (hub opens from bb.openGraph; list/tree views render over the real client; unknown symbol fails loudly)",
@@ -208,10 +207,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
         "verifierCommand": "npx tsx script/m42/verify-hub-navigation.ts",
         "evidenceFile": "H6.json",
-        "passed": 38,
+        "passed": 39,
         "failed": 0,
         "mutantsCaught": 5,
         "mutantsTotal": 5,
@@ -237,11 +236,11 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "726fd632ff2fedf92d7d3d60a31b214a0cd4055b",
+        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
         "verifierCommand": "npx tsx script/m42/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 21,
-        "failed": 12,
+        "passed": 19,
+        "failed": 14,
         "negativeCases": 7,
         "note": "full-ladder audit M24-M42 green at HEAD; launch record audited; owner spot-check pack prepared (verdict stays with the owner)",
         "blockedReason": "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run."
@@ -250,7 +249,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T15:35:51.690Z",
-    "contentSha256": "47fac27c1e0d2df24e1a2caf6accbd445ce6ab1a3630f1731025f470ebb4dda1"
+    "sealedAt": "2026-10-17T16:32:19.716Z",
+    "contentSha256": "45f8bdc29140fd6ef6126fbb06da29ca3552835c46537ba02ce4004eeea08f4b"
   }
 }

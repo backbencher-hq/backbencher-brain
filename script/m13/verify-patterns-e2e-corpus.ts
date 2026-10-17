@@ -160,21 +160,34 @@ async function indexAndRunPatterns(rootDir: string): Promise<string> {
 // Routed through script/lib/corpus-root.ts, which searches the declared candidates in
 // order and names them all when none exists.
 const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
-const SAMPLE: Array<[string, string, string]> = [
+// A corpus name may be a LIST of accepted spellings, because the spelling is a
+// property of the ROOT and not of this file.
+//
+// Go is the case that proves it, and this entry was on the wrong side of it:
+// `script/m14/differential.ts` measured the root this repo resolves —
+// `fixtures/repositories` lists `go-tools` (hyphen) and `go_tools` does not exist —
+// and the finding is recorded in
+// `validation/m14/verification/A-PORT-BROKE-THE-LEG-IT-CLAIMED-TO-FIX.md`. This leg
+// asked for the underscore, so it printed `skip: corpus go_tools/go/analysis/passes
+// (Go) not present …` and the gate went green having measured NOTHING of the Go
+// family. A disclosed skip is still an absence of evidence; declaring both spellings
+// and indexing the one that exists is what makes the leg run. Measured here after the
+// change: the Go corpus is indexed and its checks are recorded.
+const SAMPLE: Array<[string | string[], string, string]> = [
   ["rake", "lib/rake", "Ruby"],
   ["graphql-js", "src", "TypeScript"],
   ["rebar3", "apps", "Erlang"],
-  // The corpus directory is go_tools (underscore), not go-tools. Every gate that
-  //  asked for the hyphen form was reading a directory that has never existed on any
-  //  machine, so the corpus leg passed VACUOUSLY — no error, no finding, nothing
-  //  measured. script/m13/verify-analyze-e2e-corpus.ts reported exactly this once the
-  //  corpus root was fixed: "corpus go-tools/go/analysis/passes (Go): present … missing".
-  //  Verified against the corpus on disk, which lists go_tools.
-  ["go_tools", "go/analysis/passes", "Go"],
+  [["go-tools", "go_tools"], "go/analysis/passes", "Go"],
   ["cabal", "Cabal/src", "Haskell"],
 ]
 
-for (const [repo, subPath, family] of SAMPLE) {
+for (const [repoSpec, subPath, family] of SAMPLE) {
+  const spellings = Array.isArray(repoSpec) ? repoSpec : [repoSpec]
+  const repo = spellings.find((r) => existsSync(path.join(REPO_ROOT, r)))
+  if (repo === undefined) {
+    console.log(`  skip: corpus ${spellings.join(" or ")}/${subPath} (${family}) not present under ${REPO_ROOT} (set BB_CORPUS_ROOT to run this lane)`)
+    continue
+  }
   const indexRoot = path.join(REPO_ROOT, repo, subPath)
   if (!existsSync(indexRoot)) {
     console.log(`  skip: corpus ${repo}/${subPath} (${family}) not present at ${indexRoot} (set BB_CORPUS_ROOT to run this lane)`)

@@ -68,7 +68,7 @@
     "rule": "no LSP-lane harness may spawn a binary absent on a supported OS, use a GNU-only command form, or read a Linux-only path",
     "scope": "script/m24, m25, m26, m27, m28, m29, m42, m44, m45, m55 + src/lsp",
     "measuredOs": {
-      "platform": "darwin",
+      "platform": "linux",
       "release": "node",
       "arch": "x64"
     },
@@ -80,10 +80,10 @@
       "win32"
     ],
     "filesScanned": 184,
-    "spawnSitesJudged": 564,
+    "spawnSitesJudged": 680,
     "spawnSitesByReach": {
-      "directCallSitesResolvedByName": 239,
-      "localWrapperCallSitesArgumentScanned": 277,
+      "directCallSitesResolvedByName": 272,
+      "localWrapperCallSitesArgumentScanned": 360,
       "commandComputedAtRuntimeNotJudgedByName": 48
     },
     "findings": [],
@@ -162,9 +162,9 @@
       }
     ],
     "plantedDefectExecution": {
-      "os": "darwin",
-      "expected": "spawn sha256sum dies with ENOENT",
-      "observed": "ENOENT (the defect reproduces here)",
+      "os": "linux",
+      "expected": "spawn sha256sum succeeds and agrees with node:crypto",
+      "observed": "digest matches sha256File()",
       "ok": true
     },
     "outOfLaneFindings": [
@@ -183,6 +183,22 @@
         "matched": "nproc",
         "api": "execSync",
         "reason": "GNU coreutils CPU counter; absent on macOS, which also has no /proc/cpuinfo."
+      },
+      {
+        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/lua/incoming-split.mts",
+        "line": 637,
+        "kind": "non-portable-binary",
+        "matched": "sha256sum",
+        "api": "execFileSync",
+        "reason": "GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT."
+      },
+      {
+        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/powershell/incoming-split.mts",
+        "line": 780,
+        "kind": "non-portable-binary",
+        "matched": "sha256sum",
+        "api": "execFileSync",
+        "reason": "GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT."
       },
       {
         "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/sql/hang-isolate.mts",
@@ -259,7 +275,7 @@
     ],
     "ok": true
   },
-  "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
   "sourceFingerprint": "8f156b68257952e2e20aa72585047fe6348c926646522ea0eb7e08a2899e1ed9",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -270,7 +286,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-10-12T18:57:10.896Z",
+  "generatedAt": "2026-10-17T17:00:02.530Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -284,7 +300,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T18:57:10.897Z",
-    "contentSha256": "6ba28e2a535243281f685bae25130858be47f999e06e66dfedda9b883f5b4085"
+    "sealedAt": "2026-10-17T17:00:02.543Z",
+    "contentSha256": "126bce92cc32394a2b989cc19beeab87872b00935c19bf96e4d2fa0057b03c9b"
   }
 }

@@ -150,13 +150,19 @@ function sectionLines(help: string, heading: string): string[] {
   }
   return out
 }
-const flagsIn = (help: string) => [...new Set([...sectionLines(help, "Options").join(" ").matchAll(/--[a-z][a-z0-9-]*/g)].map((m) => m[0]!).filter((f) => f !== "--help"))]
+// Argument placeholders are removed before matching, so a value like
+// `<dist-tag-or-range>` cannot contribute a `-tag-or-range` "flag" of its own.
+const flagsIn = (help: string) => [...new Set([...sectionLines(help, "Options").join(" ").replace(/[<[][^>\]]*[>\]]/g, " ").matchAll(/--[a-z][a-z0-9-]*/g)].map((m) => m[0]!).filter((f) => f !== "--help"))]
 
 const generatedCommands: string[] = D.cli.commands.map((c: any) => c.name)
 const rootHelp = helpFor(["--help"])
+// `help` is NOT filtered out: the CLI registers it explicitly (with a variadic
+// `[command...]` argument), advertises it in this very block, and generated site
+// truth counts it. Excluding it here made this side 13 against the reference's
+// 14 and reported a command drift that did not exist.
 const cliCommands = sectionLines(rootHelp, "Commands")
   .map((l) => /^ {2}([a-z][a-z0-9-]*)(?=\s|$|\[|<)/.exec(l)?.[1])
-  .filter((c): c is string => Boolean(c) && c !== "help")
+  .filter((c): c is string => Boolean(c))
 check(
   "D1: the CLI's own command list matches the generated reference exactly",
   JSON.stringify([...cliCommands].sort()) === JSON.stringify([...generatedCommands].sort()),

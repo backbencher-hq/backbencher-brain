@@ -43,6 +43,8 @@ import {
   addressLine0,
   deriveCallSiteAddress,
   isExactAddress,
+  STORED_LINE_SELECT,
+  storedLineFromRow,
 } from "../intelligence/graph/line-address"
 import type { CallSiteAddress } from "../intelligence/contracts"
 import { enrichmentIsStale, hasDisplayableEnrichment, describeEnrichment, parseEnrichment, type Enrichment } from "./enrichment"
@@ -454,7 +456,7 @@ export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSit
   const rows = raw
     .prepare(
       `SELECT r.id, r.relationship_type, r.confidence, r.metadata, r.time_updated,
-              r.source_symbol_id, r.target_symbol_id, r.line_number,
+              r.source_symbol_id, r.target_symbol_id, ${STORED_LINE_SELECT},
               ss.name AS src_name, ss.symbol_type AS src_type,
               ss.byte_start AS src_bs, ss.byte_end AS src_be,
               ss.line_start AS src_ls, ss.line_end AS src_le, sf.path AS src_path,
@@ -477,7 +479,7 @@ export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSit
     confidence: number | null
     source_symbol_id: string | null
     target_symbol_id: string | null
-    line_number: number | null
+    bb_stored_call_line: number | null
     src_name: string | null
     src_type: string | null
     src_bs: number | null
@@ -538,7 +540,7 @@ export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSit
     // The stored call-site line, classified by the ONE owner
     // (src/intelligence/graph/line-address.ts). Never re-derived here.
     const address = deriveCallSiteAddress({
-      storedLine: row.line_number,
+      storedLine: storedLineFromRow(row as unknown as Record<string, unknown>),
       file: other.rel ?? "",
       callerDeclaration: { line: other.decl },
     })

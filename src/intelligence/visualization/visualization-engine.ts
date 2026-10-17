@@ -10,6 +10,19 @@ export type VisualizationFormat = "text" | "json" | "html"
  *  every view is available in every delivery form. */
 export type VisualizationView = "graph" | "codemap" | "class"
 
+/** HOW the graph view arranges its nodes.
+ *
+ *  `regions` groups every node into the DIRECTORY it lives in, anchors each region
+ *  and draws it as a named pod, so the picture is a map of the repository's parts.
+ *  `force` ignores directories completely: one force-directed layout, no pods and no
+ *  region links, every stored edge drawn as itself — which is the graph as it looked
+ *  before the regions arrived, and which some readers want back for a connected
+ *  project whose parts do not fall along directory lines.
+ *
+ *  It is a CHOICE rather than a replacement: the reader asked for the earlier graph
+ *  to remain available, selectable in the sidebar and from the tool call. */
+export type VisualizationLayout = "regions" | "force"
+
 /** What each view draws, in the words of the DEFAULT text format.
  *
  *  The text answer used to be identical for every view — `view` rode the JSON as
@@ -22,7 +35,20 @@ export type VisualizationView = "graph" | "codemap" | "class"
 const VIEW_NOTE: Record<VisualizationView, string> = {
   graph: "the force-directed dependency map \u2014 nodes are symbols, sized by the index's own gravity",
   codemap: "a symbol-level code map \u2014 one rectangle per symbol, sized by the lines it spans",
-  class: "a UML-style class diagram \u2014 boxes for class-like symbols, with inheritance, implementation and containment edges",
+  class: "a type diagram in UML's box-and-line idiom \u2014 boxes for class-like symbols with inheritance, implementation and containment edges, and no attributes, methods, visibility or cardinalities, because the index stores none of them",
+}
+
+/** What each graph layout draws, in the words of the DEFAULT text format.
+ *
+ *  Both layouts are force-directed; the difference is what the nodes are grouped
+ *  INTO, and therefore what an edge between two groups can be. `regions` has named
+ *  parts to summarise between, `force` has none, so a summary there would have
+ *  nothing to summarise. The text answer says which one the HTML will draw, because
+ *  a caller choosing `layout: "force"` and receiving `regions` would otherwise have
+ *  no way to tell except by opening the file. */
+const LAYOUT_NOTE: Record<VisualizationLayout, string> = {
+  regions: "nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one dotted region link per pair (the reader can switch this at runtime in the generated page)",
+  force: "no directories: one force layout, no region pods and no region links \u2014 every stored edge drawn as itself, capped at a zoom-dependent count with the readout naming the cap",
 }
 
 export interface VisualizationRequest {
@@ -30,6 +56,9 @@ export interface VisualizationRequest {
   target?: string
   format?: VisualizationFormat
   view?: VisualizationView
+  /** The graph view's arrangement: `regions` (default) or `force`. Ignored by the
+   *  codemap and class views, whose shape is not a force layout at all. */
+  layout?: VisualizationLayout
   maxNodes?: number
   maxLinks?: number
   /** How many symbols of the SAME total order the ranking uses to SKIP before this page
@@ -68,6 +97,10 @@ export interface VisualizationResult {
   target: string | null
   format: VisualizationFormat
   view: VisualizationView
+  /** The layout the graph view was drawn with. Carried even when the view is not the
+   *  graph, so a caller reading JSON never has to infer which picture an html request
+   *  would have produced; the text format names it only where it applies. */
+  layout: VisualizationLayout
   nodes: any[]
   links: any[]
   /** Stored fields, methods, and enum members grouped by class-like symbol. */
@@ -443,7 +476,7 @@ function renderCodeMap(result: VisualizationResult): string {
 }
 
 /**
- * The UML-style CLASS view.
+ * The CLASS view: a TYPE DIAGRAM in UML's box-and-line idiom, not a UML model.
  *
  * Boxes for the class-like symbols the index actually has -- class, interface,
  * struct, enum -- with inheritance, implementation and containment edges. UML is
@@ -1021,6 +1054,9 @@ export async function visualizeProject(projectId: string, request: Visualization
         ? `offset ${offset} holds no drawable symbol, and the fetch had no rows of its own left to offer — this is an empty PAGE, not an empty project: ${totalNodesAvailable} symbol(s) match, so restart at an offset below ${totalNodesAvailable}`
         : `${totalNodesAvailable} symbol(s) match this query but none survived the projection — absence declared, never guessed`)
     : null
+  // The page, declared. `totalNodesAvailable` is the size of the whole ordered scope and
+  // this says where in it the answer sits, so "200 nodes" can never be read as "the project
+  // has 200 symbols" — the failure mode paging exists to close.
   // Did the fetch run out of rows below its window? That — not `totalNodesAvailable` — is the
   // fact that says whether another page exists, because `totalNodesAvailable` counts symbols the
   // projection may not draw (noise, unlinked locals). Using the total here would mint a cursor
@@ -1085,7 +1121,7 @@ export async function visualizeProject(projectId: string, request: Visualization
     nextOffset,
     rule: `the same total order the ranking uses — ${nodeSelectionNote}${offset > 0 ? `, after the first ${offset}` : ", from the first"}`,
   }
-  return { scope, target: target || null, format: request.format ?? "text", view: request.view ?? "graph", nodes, links, classMembers, excluded: graph.excluded, declaredAbsent, absenceNote, totalNodesAvailable, provenance: { source: "canonical-graph-engine", indexedProject: projectId, linksOmittedWithNodeCut, linksOmittedByBudget }, considered: { relationshipsBetweenSelectedNodes, relationshipSelection: `every relationship connecting two of the ${nodeIds.size} returned nodes — complete for this node set, not a slice of the relationship table${ownerCascade.rowsFolded > 0 ? `, including ${ownerCascade.rowsFolded} row(s) stored on members of selected classes and folded onto the owner (marked ownerCascade)` : ""}`, relationshipSetTruncated, nodeSelection: nodeSelectionNote, languagesConsidered: request.languages?.length ? request.languages : null, relationshipTypesConsidered: request.relationshipTypes?.length ? request.relationshipTypes : null, symbolKindsConsidered: request.symbolKinds?.length ? request.symbolKinds : null, kindCensus, languageCensus, page, overlays: { annotations: annotationOverlay }, ownerCascade: { ...ownerCascade, rule: "a relationship stored on a member of a SELECTED class-like symbol is attributed to that symbol; the edge is marked ownerCascade with the member it came through (matchedMembers), the member itself keeps its exact edge when it is also in the node set, and the symbol at the other end is added to the node set so the folded edge can be drawn at all — the stored row is never modified" } }, truncation: { truncated, originalNodes, originalLinks, maxNodes, maxLinks, reason: truncated ? "output limits" : null, totalNodesAvailable, offset, nextOffset: page.nextOffset, ...(boundsAdjusted.length ? { boundsAdjusted } : {}) } }
+  return { scope, target: target || null, format: request.format ?? "text", view: request.view ?? "graph", layout: request.layout === "force" ? "force" : "regions", nodes, links, classMembers, excluded: graph.excluded, declaredAbsent, absenceNote, totalNodesAvailable, provenance: { source: "canonical-graph-engine", indexedProject: projectId, linksOmittedWithNodeCut, linksOmittedByBudget }, considered: { relationshipsBetweenSelectedNodes, relationshipSelection: `every relationship connecting two of the ${nodeIds.size} returned nodes — complete for this node set, not a slice of the relationship table${ownerCascade.rowsFolded > 0 ? `, including ${ownerCascade.rowsFolded} row(s) stored on members of selected classes and folded onto the owner (marked ownerCascade)` : ""}`, relationshipSetTruncated, nodeSelection: nodeSelectionNote, languagesConsidered: request.languages?.length ? request.languages : null, relationshipTypesConsidered: request.relationshipTypes?.length ? request.relationshipTypes : null, symbolKindsConsidered: request.symbolKinds?.length ? request.symbolKinds : null, kindCensus, languageCensus, page, overlays: { annotations: annotationOverlay }, ownerCascade: { ...ownerCascade, rule: "a relationship stored on a member of a SELECTED class-like symbol is attributed to that symbol; the edge is marked ownerCascade with the member it came through (matchedMembers), the member itself keeps its exact edge when it is also in the node set, and the symbol at the other end is added to the node set so the folded edge can be drawn at all — the stored row is never modified" } }, truncation: { truncated, originalNodes, originalLinks, maxNodes, maxLinks, reason: truncated ? "output limits" : null, totalNodesAvailable, offset, nextOffset: page.nextOffset, ...(boundsAdjusted.length ? { boundsAdjusted } : {}) } }
 }
 
 export function formatVisualization(result: VisualizationResult): string {
@@ -1095,7 +1131,7 @@ export function formatVisualization(result: VisualizationResult): string {
     // therefore one entry here rather than three new format values.
     if (result.view === "codemap") return renderCodeMap(result)
     if (result.view === "class") return renderClassDiagram(result)
-    return DependencyGraphVisualizer.generateHTML({ nodes: result.nodes, links: result.links, excluded: result.excluded })
+    return DependencyGraphVisualizer.generateHTML({ nodes: result.nodes, links: result.links, excluded: result.excluded }, { layout: result.layout })
   }
 
   // The DEFAULT format is what every caller gets unless they think to ask for JSON,
@@ -1107,6 +1143,12 @@ export function formatVisualization(result: VisualizationResult): string {
   lines.push(`graph: ${result.nodes.length} nodes, ${result.links.length} links`)
   lines.push(`scope: ${result.scope}${result.target ? ` (${result.target})` : ""}`)
   lines.push(`view: ${result.view} — ${VIEW_NOTE[result.view]}`)
+  // The layout is stated only where it MEANS something. Printing "layout: regions"
+  // for a code map would describe a force layout the code map does not have, and a
+  // reader reconciling the reply with the picture would be told about a choice that
+  // was never theirs. For the graph it is always stated, including when it is the
+  // default, because "the reader's choice" must be visible in the answer.
+  if (result.view === "graph") lines.push(`layout: ${result.layout} — ${LAYOUT_NOTE[result.layout]}`)
   if (result.declaredAbsent) {
     lines.push(`absent: ${result.absenceNote ?? "this query matches nothing"}`)
   } else {
@@ -1152,7 +1194,8 @@ export function formatVisualization(result: VisualizationResult): string {
           ? `annotations: ${a.notes} agent note(s) on ${a.nodes} of the returned symbols, matched by name AND path${a.notesOnOtherPaths > 0 ? ` (${a.notesOnOtherPaths} note(s) name a symbol of this scope at another path and are NOT attached)` : ""}${a.capped ? `, ${a.items.length} carried` : ""}`
           : `annotations: none on the returned symbols${a.notesOnOtherPaths > 0 ? ` (${a.notesOnOtherPaths} note(s) name a symbol of this scope at another path and are NOT attached)` : ""} — the index's agent notes were read, and none matches this page`,
       )
-    }    if (result.considered.ownerCascade?.rowsFolded) {
+    }
+    if (result.considered.ownerCascade?.rowsFolded) {
       const c = result.considered.ownerCascade
       lines.push(`owner cascade: ${c.rowsFolded} relationship(s) stored on members of selected classes are attributed to the class (marked ownerCascade${c.nodesAdded ? `, ${c.nodesAdded} connected symbol(s) drawn so the folded edges have ends` : ""}${c.nodesDropped ? `, ${c.nodesDropped} of them fell outside the node budget` : ""}${c.capped ? ", capped" : ""})`)
     }

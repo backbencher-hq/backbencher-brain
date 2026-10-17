@@ -77,13 +77,20 @@ const LSP_SRC_DIR = path.join(ROOT, "src/lsp")
  */
 const GUARD_ANCHOR = {
   from: [
-    "  let safety: Awaited<ReturnType<typeof parseForSafety>>",
-    "  try {",
-    "    safety = await parseForSafety(request.filePath, content)",
-    "  } catch {",
-    '    return absence("unsupported_language")',
+    "  let safety = cachedSafety(request.filePath, content)",
+    "  if (safety === null) {",
+    "    try {",
+    "      const parsed = await parseForSafety(request.filePath, content)",
+    "      rememberSafety(request.filePath, content, parsed)",
+    "      safety = parsed",
+    "    } catch {",
+    '      return absence("unsupported_language")',
+    "    }",
     "  }",
   ].join("\n"),
+  // The mutation still plants the defect this case exists for — the UNGUARDED
+  // call, whose parser throw reaches the wire as -32603 — and it deliberately
+  // also bypasses the parse cache, so a cache hit cannot mask the mutation.
   to: "  const safety = await parseForSafety(request.filePath, content)",
 }
 /** The fixture's brain.db, opened read-only for the component-layer legs. */

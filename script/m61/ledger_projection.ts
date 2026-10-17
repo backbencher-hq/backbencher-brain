@@ -94,14 +94,31 @@ const str = (v: unknown): string | undefined => (typeof v === "string" && v.leng
 
 /** The reason a record gives for being non-verified. Gates spell this several
  *  ways (`blockedReason` for an unavailable platform/editor, `reason` for an
- *  unavailable fork, `limitations` for a scoped claim); all three are read, and
- *  the first non-empty wins. An entry that projects to a non-verified status
- *  and carries none of these is a hollow claim — see `hollowBlocked`. */
+ *  unavailable fork, `limitations` for a scoped claim, `failures` for a gate
+ *  whose checks fell short); all of them are read, and the first non-empty wins.
+ *  An entry that projects to a non-verified status and carries none of these is
+ *  a hollow claim — see `hollowBlocked`.
+ *
+ *  `failures` IS A REASON, and reading it is the difference between an honest
+ *  record and one that only LOOKS reasonless. Measured 2026-10-17: five
+ *  non-verified entries were reported as "no recorded reason" because the rule
+ *  knew three spellings while the records named their failing checks under a
+ *  fourth (`failures: ["X1: W3 verifier passes at HEAD", …]` — which is the
+ *  reason, in the most useful form: the check that did not hold). Only the
+ *  LABELS count: several gates keep a numeric `failures` counter in the same
+ *  slot (m27's closure gate did until the same day), and a count is not a
+ *  reason — it is a number where the failure's name belongs. `details` is the
+ *  same fact under the m29 spelling (its verify gates collect the failing
+ *  checks there). */
 export function reasonFromRecord(record: Record<string, unknown>): string | undefined {
+  const firstLabel = (value: unknown): string | undefined =>
+    Array.isArray(value) ? value.find((f): f is string => typeof f === "string" && f.length > 0) : undefined
   return (
     str(record.blockedReason) ??
     str(record.reason) ??
-    (Array.isArray(record.limitations) ? record.limitations.find((l) => typeof l === "string" && l.length > 0) : undefined)
+    (Array.isArray(record.limitations) ? record.limitations.find((l) => typeof l === "string" && l.length > 0) : undefined) ??
+    firstLabel(record.failures) ??
+    firstLabel(record.details)
   )
 }
 
@@ -214,8 +231,22 @@ export function projectEntry(
   if (commit !== undefined) derived.currentCommit = commit
   // §8.4: the reason travels with the status. A blocked/known-gap entry that
   // does not carry one is a claim with no stated ground.
+  //
+  // A reason the entry did not carry (or carried differently) is a CHANGE, and
+  // it is reported as one: without this line the projection would silently
+  // repair a hollow entry, and its "N entries changed" count would understate
+  // what it did (measured 2026-10-17: m27's X1 entry gained its reason while
+  // the projection reported 0 entries changed).
   const reason = reasonFromRecord(record)
-  if (reason !== undefined) derived.blockedReason = reason
+  if (reason !== undefined) {
+    // Reported for the statuses that REQUIRE it (§8.3 is about non-verification).
+    // A `verified` entry carries no reason requirement, so adding one there is
+    // not a repair to announce.
+    if (recordStatus !== "verified" && ev.blockedReason !== reason) {
+      changed.push(`blockedReason: ledger=${JSON.stringify(ev.blockedReason)} derived=${JSON.stringify(reason)}`)
+    }
+    derived.blockedReason = reason
+  }
 
   return { entry: { ...entry, status: recordStatus, evidence: derived }, changed }
 }

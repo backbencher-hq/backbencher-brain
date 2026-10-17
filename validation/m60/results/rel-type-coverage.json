@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-14T00:24:37.542Z",
+  "at": "2026-10-17T17:31:25.790Z",
   "enumValues": [
     "calls",
     "contains",
@@ -142,6 +142,7 @@
         "exports",
         "extends",
         "implements",
+        "imports",
         "instantiates",
         "overrides",
         "references",
@@ -614,6 +615,7 @@
         "exports",
         "extends",
         "implements",
+        "imports",
         "instantiates",
         "overrides",
         "references",
@@ -868,6 +870,7 @@
         "exports",
         "extends",
         "implements",
+        "imports",
         "instantiates",
         "overrides",
         "references",
@@ -952,6 +955,7 @@
       "lang": "toml",
       "emitted": [
         "contains",
+        "exports",
         "imports",
         "references"
       ],
@@ -1046,7 +1050,8 @@
         "extends",
         "imports",
         "overrides",
-        "references"
+        "references",
+        "uses"
       ],
       "audited": [
         "extends",
@@ -1156,6 +1161,11 @@
       "check": "DERIVATION",
       "lang": "csharp",
       "detail": "emits `exports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"references\",\"uses\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "csharp",
+      "detail": "emits `imports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"references\",\"uses\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
@@ -1450,6 +1460,11 @@
     {
       "check": "DERIVATION",
       "lang": "objective-c",
+      "detail": "emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "objective-c",
       "detail": "emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
@@ -1569,6 +1584,11 @@
     },
     {
       "check": "DERIVATION",
+      "lang": "solidity",
+      "detail": "emits `imports` but the differential audits [\"calls\",\"contains\",\"exports\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
       "lang": "sql",
       "detail": "emits `calls` but the differential audits [\"contains\"] — the type is stored and compared against nothing"
     },
@@ -1634,6 +1654,11 @@
     },
     {
       "check": "DERIVATION",
+      "lang": "toml",
+      "detail": "emits `exports` but the differential audits [\"contains\",\"extends\",\"implements\",\"imports\",\"instantiates\",\"overrides\",\"references\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
       "lang": "typescript",
       "detail": "emits `exports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
     },
@@ -1684,6 +1709,11 @@
     },
     {
       "check": "DERIVATION",
+      "lang": "xml",
+      "detail": "emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
       "lang": "yaml",
       "detail": "emits `calls` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
@@ -1716,7 +1746,7 @@
   "inputErrors": [],
   "inputErrorLanes": [],
   "baseline": {
-    "recorded": 120,
+    "recorded": 125,
     "regressions": 0,
     "repaid": 0,
     "regressionsDetail": []

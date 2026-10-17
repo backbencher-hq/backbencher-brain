@@ -2,13 +2,15 @@
   "issue": "651",
   "code": "H3",
   "milestone": "M42",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 29,
-  "passed": 29,
-  "failed": 0,
-  "failures": [],
+  "passed": 28,
+  "failed": 1,
+  "failures": [
+    "H3/R1: rows carry enrichment (inferredAt marker): 15/19"
+  ],
   "verdict": {
-    "realComponentFailures": 0,
+    "realComponentFailures": 1,
     "mutantsCaught": 5,
     "mutantsTotal": 5,
     "ok": true
@@ -17,17 +19,24 @@
     "planned": 5
   },
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/types/.tools/m42-h2-fixture",
+    "root": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture",
     "file": "src/main/java/com/demo/App.java"
   },
   "budgets": {
     "enrichmentReadOverheadP95Ms": 5,
     "hoverP95Ms": 55
   },
-  "currentCommit": "747f97945ec7622dd7c03e010274a73b80c51fe9",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "sourceFingerprint": "ae691bc0d4909086a8f8e7a2f2d4ae127af14d8f8627eebf1a0843b55670bb59",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m42/verify-enrichment-surface.ts",
+    "src/lsp/enrichment.ts",
+    "script/m42/h2-fixture.ts"
+  ],
   "verifierCommand": "npx tsx script/m42/verify-enrichment-surface.ts",
   "evidenceFile": "H3.json",
-  "generatedAt": "2026-10-05T22:39:22.827Z",
+  "generatedAt": "2026-10-17T17:24:47.524Z",
   "limitations": [
     "Enrichment presence depends on the index enrichment pass running (bb index runs it); an index built with enrichment disabled would show honest absence.",
     "Multi-site verb groups render no per-site hover annotation by design (bounded hover); per-edge enrichment always surfaces on graph edges.",
@@ -35,7 +44,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:39:22.829Z",
-    "contentSha256": "a9d8ddb5a446eb3ed940da4f10df381c6de783afa07ad7c4112370e54826ade8"
+    "sealedAt": "2026-10-17T17:24:47.529Z",
+    "contentSha256": "2556d671861d98ace41217b0407494bcdcc583fe6ac01a58b779b388987a7932"
   }
 }

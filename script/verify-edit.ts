@@ -54,11 +54,48 @@ try {
 
   await rejects("overloaded/same-name symbol requires disambiguation", () => executeEdit(root, projectId, { mode: "update", symbolName: "duplicate", newContent: "export function duplicate() { return 3 }" }), "ambiguous")
 
-  writeFileSync(appPath, readFileSync(appPath, "utf8") + "\n// external stale change\n")
-  await rejects("stale byte bounds rejected", () => executeEdit(root, projectId, { mode: "update", symbolName: "caller", filePath: "src/app.ts", newContent: "export function caller() { return 2 }" }), "stale index bounds")
-  await indexProjectParallel(projectId, root, {})
+  // A delete with live callers is still refused — checked HERE, while `caller`
+  // really does call `target`. It used to sit after the stale step and depended
+  // on that step being REFUSED; now that the step applies (the current contract,
+  // see below) it would have been asserting a precondition the previous line had
+  // already destroyed.
+  // The refusal's wording moved with the M68/M70 delete guard: it names the
+  // INDEXED caller count, the live reference that would survive the deletion
+  // (with its line and kind) and the `force=true` escape hatch, where it used to
+  // say only "active references". The guarantee is unchanged, and asserting it by
+  // the old phrase tested the old sentence rather than the property — so the
+  // property is asserted directly: refused by default, evidence included.
+  let deleteRefusal = ""
+  try { await executeEdit(root, projectId, { mode: "delete", symbolName: "target", filePath: "src/app.ts" }) } catch (error) { deleteRefusal = String(error) }
+  check("delete with callers is blocked", deleteRefusal.includes("cannot delete target"), deleteRefusal.slice(0, 200) || "the delete was NOT refused")
+  check("and the refusal names the caller evidence and the override", /\d+ indexed caller\(s\)/.test(deleteRefusal) && /force=true/.test(deleteRefusal), deleteRefusal.slice(0, 200))
 
-  await rejects("delete with callers is blocked", () => executeEdit(root, projectId, { mode: "delete", symbolName: "target", filePath: "src/app.ts" }), "active references")
+  // Stale byte bounds: change the file on disk so the indexed rows no longer
+  // match, then edit. This block used to assert the edit is REFUSED with "stale
+  // index bounds".
+  //
+  // THAT CONTRACT IS SUPERSEDED (M59.A11 / #889). Every other read tool refreshes
+  // a stale file within budget (BB_NO_AUTO_REFRESH); editing refused instead,
+  // which made the FIRST symbol edit after ANY external change — another tool, a
+  // git pull, a person — a hard stop, even when the external change did not touch
+  // the symbol. Refusing was not the safer behaviour: the bounds were never the
+  // problem. The engine now reindexes that one file, re-resolves the symbol and
+  // applies the edit to the CURRENT bytes, disclosing the refresh in `warnings` —
+  // so the property worth asserting is the stronger one: the write lands on the
+  // bytes on disk, at the offset they now have, and nothing else in the file is
+  // disturbed.
+  //
+  // The four external-change shapes (body changed, lines inserted, symbol
+  // renamed, symbol removed) are owned by script/m13/verify-edit-freshness.ts;
+  // this legacy gate keeps the one that used to be here.
+  writeFileSync(appPath, readFileSync(appPath, "utf8") + "// external stale change\n")
+  const staleEdit = await executeEdit(root, projectId, { mode: "update", symbolName: "target", filePath: "src/app.ts", newContent: "export function target(value: number): number { return 99 }", format: false })
+  const afterStale = readFileSync(appPath, "utf8")
+  check("an edit on a stale file refreshes it and lands on the bytes on disk", afterStale.includes("return 99"), afterStale.split("\n").slice(0, 3).join(" | "))
+  check("and the external change is not discarded by it", afterStale.includes("// external stale change"), afterStale.slice(-60).replace(/\n/g, "\\n"))
+  check("the refresh is disclosed in warnings", (staleEdit.warnings ?? []).some((w) => /refresh/i.test(w)), JSON.stringify(staleEdit.warnings ?? []))
+  check("and a call site outside the edited span is untouched", afterStale.includes("return target(1)"), afterStale.split("\n").find((line) => line.includes("target(1)")) ?? "missing")
+  await indexProjectParallel(projectId, root, {})
 
   const beforeInvalid = readFileSync(appPath, "utf8")
   await rejects("invalid update rolls back", () => executeEdit(root, projectId, { mode: "update", symbolName: "caller", filePath: "src/app.ts", newContent: "export function caller( {", format: false }), "validation failed")

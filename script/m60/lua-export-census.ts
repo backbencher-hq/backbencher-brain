@@ -18,6 +18,9 @@ import path, { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { readFileSync } from "node:fs"
 
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+
 // Derived from this file's own location. Hardcoding the main checkout made this
 // script unreadable from a lane worktree.
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")

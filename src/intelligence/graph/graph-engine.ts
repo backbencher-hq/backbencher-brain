@@ -46,39 +46,74 @@ const DEFAULT_REL_TYPES = [
   "calls", "extends", "implements", "uses", "instantiates", "overrides",
   "contains", "references", "imports", "exports",
 ]
-/** Records an ACTIVE caller-supplied type filter in the result's reason set, so a
- * filtered traversal is never mistaken for a complete one. The default is NOT
- * recorded: with the default now covering every type, there is nothing to
- * disclose. */
-function noteRelationshipFilter(note: (reason: string) => void, relTypes: string[]): void {
-  note(`relationshipTypes:${[...relTypes].sort().join("|")}`)
+/**
+ * NAMES an ACTIVE caller-supplied type filter, so a filtered traversal is never
+ * mistaken for a complete one. The default is NOT named: with the default now
+ * covering every type, there is nothing to disclose.
+ *
+ * This used to feed the reason set through `noteReason`, which set
+ * `truncated = true` — so asking for a SUBSET marked the answer truncated, and a
+ * consumer that wanted to know whether the answer was complete FOR THE SCOPE IT
+ * ASKED FOR could not tell a filter from a bound (bb_graph review D5: measured
+ * `relationshipTypes:["calls"]` → 7 edges with `truncated: true, reason="relationshipTypes:calls"`,
+ * and `["implements"]` → 0 edges with `truncated: true`, an empty subset
+ * announced as a clipped answer). A filter is a REQUEST; a bound is a LIMIT.
+ * They now travel in separate fields: this string names the request, and
+ * `truncated`/`truncationReasons` keep describing bounds only.
+ */
+function relationshipFilterReason(relTypes: string[]): string {
+  return `relationshipTypes:${[...relTypes].sort().join("|")}`
 }
 
 const DEFAULT_MAX_DEPTH = 5
 const DEFAULT_BUDGET = 50
 
 /**
- * Wall-clock budget for one walk, in milliseconds.
+ * Wall-clock budget for one walk, in milliseconds. **DISABLED by default (0).**
  *
- * The other bounds on a traversal are in NODES, and a node is not a unit of
- * work. Measured on backbencher-brain/src (7,196 symbols, 40,557
- * relationships): the caller query for `push` matches 2,436 stored rows, and
- * the `ORDER BY f.relative_path, r.line_number, r.id` that makes the answer
- * reproducible (M59.A12) costs 85.8 ms of the 87.8 ms — a 43x multiplier over
- * the same query without it. SQLite sorts BEFORE applying the LIMIT, so the
- * per-query `edgeLimit` of 200 does not bound it. At a 50-node budget that is
- * ~4.4 s for one symbol, and the recursion multiplies it: measured
- * `bb_analyze mode=callers target=push` at 417 ms on a warm cache and over
- * 25 s cold, and `mode=trace target=push` at 613 SECONDS.
+ * WHY A CLOCK BOUND EXISTED AT ALL. The other bounds on a traversal are in
+ * NODES, and a node is not a unit of work. Measured on backbencher-brain/src
+ * (7,196 symbols, 40,557 relationships): the caller query for `push` matches
+ * 2,436 stored rows, and the `ORDER BY f.relative_path, r.line_number, r.id`
+ * that makes the answer reproducible (M59.A12) costs 85.8 ms of the 87.8 ms —
+ * a 43x multiplier over the same query without it. SQLite sorts BEFORE
+ * applying the LIMIT, so the per-query `edgeLimit` of 200 does not bound it.
+ * At a 50-node budget that is ~4.4 s for one symbol, and the recursion
+ * multiplies it: measured `bb_analyze mode=callers target=push` at 417 ms on a
+ * warm cache and over 25 s cold, and `mode=trace target=push` at 613 SECONDS.
+ * A 2,000 ms default was added for that, and it stopped those walks.
  *
- * So a bound that is declared but does not bound is the defect. This one
- * does: when the clock runs out the walk stops and says so through
- * `truncationReason: "walk-time-budget-exhausted"`, which is the same contract
- * every other bound here obeys. A caller who needs the whole set raises
- * `timeBudgetMs` (or lowers the fan-in they are asking about) and can see that
- * they did.
+ * WHY IT IS OFF BY DEFAULT (bb_graph review D7). Measured on this repository's
+ * own index (5,651 files, 257,991 symbols, 631,139 stored relationships), five
+ * identical default calls of `{symbol: "push", direction: "both", maxDepth: 3}`
+ * interleaved with the same call at `timeBudgetMs: 0`, so the two arms shared
+ * one cache state:
+ *
+ *     budget 2000  ->  200 / 200 / 200 / 200 / 509 edges, 2,489-16,635 ms,
+ *                      `timeBudgetExhausted: true` on 4 of the 5 runs
+ *     budget 0     ->  509 / 509 / 509 edges, byte-identical edge shapes,
+ *                      2,854-4,755 ms
+ *
+ * The bound bought no latency and cost most of the answer. A statement already
+ * in flight cannot be interrupted (SQLite would have to be), so the runs that
+ * hit the deadline spent MORE wall time than the complete walk did while
+ * returning 39% of its edges — and which of the two answers a caller received
+ * was decided by the clock, not by the data. The 4-of-5 sample is not a tail
+ * case either: `walk-time-budget-exhausted` is what the DEFAULT asked for on
+ * the busiest symbol of a real index.
+ *
+ * Every remaining bound here is a function of the DATA — the per-query site
+ * limit, the fan-out budget, the whole-answer cap, the depth — so its answer is
+ * reproducible: two identical questions on an unchanged index agree exactly.
+ * That is the default contract now. A caller who wants a wall-clock ceiling
+ * passes `timeBudgetMs` and accepts a SAMPLE of the set: the walk then stops
+ * between statements, `timeBudgetExhausted: true` and
+ * `truncationReason: "walk-time-budget-exhausted"` say so, and every surface
+ * that sets one (bb_analyze's call-graph modes; bb_impact's own counting-walk
+ * ceiling) names it in its own published docs rather than inheriting it from
+ * here.
  */
-const DEFAULT_WALK_TIME_BUDGET_MS = 2_000
+const DEFAULT_WALK_TIME_BUDGET_MS = 0
 
 /**
  * Which relationship kinds survive a cap first, and why.
@@ -326,6 +361,52 @@ function cascadeBounds(symbolId: string): { prefix: string; upper: string } {
   return { prefix, upper: prefix + ";" }
 }
 
+/**
+ * Rows that NAME this symbol (or one of its owner-cascade members) but cannot be
+ * traversed in either direction, per direction — the JOIN's blind spot, counted.
+ *
+ * Zero is a measurement; `null` is the absence of one. A count that could not be
+ * taken must not publish a zero, because zero is exactly the value a reader
+ * interprets as "there are none of these" — the misreading this whole field
+ * exists to end.
+ */
+function countUnattributedRows(
+  db: unknown,
+  projectId: string,
+  rootId: string,
+  relTypes: string[],
+): { callers: number; callees: number } | null {
+  try {
+    const { prefix, upper } = cascadeBounds(rootId)
+    const cascade =
+      "SELECT ? AS id UNION ALL SELECT m.id FROM brain_symbol m WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ? AND m.project_id = ?"
+    const relPlaceholders = relTypes.map(() => "?").join(",")
+    // Caller side: the row TARGETS the symbol (or a cascade member) and its
+    // SOURCE did not resolve — the `JOIN brain_symbol ON s.id = r.source_symbol_id`
+    // in the caller query has nothing to attach it to.
+    const callersRow = prepared(
+      db,
+      `SELECT COUNT(*) AS c FROM brain_relationship r
+        JOIN (${cascade}) casc ON casc.id = r.target_symbol_id
+       WHERE r.project_id = ? AND r.relationship_type IN (${relPlaceholders})
+         AND r.source_symbol_id IS NULL`,
+    ).all(rootId, prefix, upper, projectId, projectId, ...relTypes)[0] as any
+    // Callee side: the row is SOURCED from the symbol (or a cascade member) and
+    // its target is NULL with no name either — a named unresolved target is
+    // already visible as an `ext:<name>` node, this is the unnamed remainder.
+    const calleesRow = prepared(
+      db,
+      `SELECT COUNT(*) AS c FROM brain_relationship r
+        JOIN (${cascade}) casc ON casc.id = r.source_symbol_id
+       WHERE r.project_id = ? AND r.relationship_type IN (${relPlaceholders})
+         AND r.source_symbol_id IS NOT NULL AND r.target_symbol_id IS NULL AND r.target_external IS NULL`,
+    ).all(rootId, prefix, upper, projectId, projectId, ...relTypes)[0] as any
+    return { callers: Number(callersRow?.c ?? 0), callees: Number(calleesRow?.c ?? 0) }
+  } catch {
+    return null
+  }
+}
+
 /** Parse the stored metadata JSON into the declared pass-through shape.
  *  Malformed or foreign metadata degrades to undefined — never throws, never
  *  invents fields (a row with unreadable metadata still renders, tierless). */
@@ -409,6 +490,19 @@ export async function traverseGraph(
   nodes: Record<string, GraphNode>
   truncated: boolean
   truncationReason?: string
+  /** The same reasons as DATA (bb_graph review D10). `truncationReason` is a
+   *  `+`-joined string: parseable, but a reason that itself contains `+` reads
+   *  as two, and every consumer that needs the set has to split a string. This
+   *  is the list the string was joined from, in insertion order. */
+  truncationReasons: string[]
+  /** The caller's `relationshipTypes` filter narrowed the QUESTION — a request,
+   *  not a bound. Kept OUT of `truncated` (bb_graph review D5), so that boolean
+   *  keeps meaning "a declared bound bit" and a consumer can ask the two
+   *  questions separately: "is this the whole store?" and "is this the whole of
+   *  what I asked for?". `filterReason` names the narrowing; both are absent /
+   *  false when the default kind set ran. */
+  filterNarrowed: boolean
+  filterReason: string | null
   maxDepthReached: number
   /** The depth cap this run enforced. Paired with `maxDepthReached` it is the
    *  only way a reader can tell "the walk finished" from "the walk stopped". */
@@ -422,6 +516,27 @@ export async function traverseGraph(
   /** Stored rows the noise policy removed, per direction. See the public
    *  `GraphTraversalResult.noiseFiltered` for why this is not a bound. */
   noiseFiltered: { callers: number; callees: number }
+  /** DEPTH 0 ONLY. Stored rows that NAME this symbol — or a member of its owner
+   *  cascade — but cannot appear in either direction because the JOIN on the
+   *  SOURCE side has nothing to join to (`source_symbol_id IS NULL`): the caller
+   *  query's `JOIN brain_symbol s ON s.id = r.source_symbol_id` drops them, and
+   *  the callee query's `JOIN (cascade) casc ON casc.id = r.source_symbol_id`
+   *  drops them too, so they are invisible BOTH WAYS. Counted here because
+   *  nothing else counted them: not truncation, not the noise filter, not
+   *  provenance.
+   *
+   *  Measured on this repository's index (2026-10-14): 69,171 of 631,139 rows
+   *  (11.0%) carry no source symbol, 62,698 of them target a stored symbol, and
+   *  2,099 symbols answered `callers: []` while the store held incoming rows.
+   *  Worked example: `script/m13/harness.ts:rejects:93` had 40 stored `calls`
+   *  rows and the tool answered `callers: 3` with
+   *  `truncationReason: "caller-depth-cap-reached"` — a reason that points at a
+   *  bound while 95% of the stored evidence was dropped by a JOIN. */
+  unattributed: { callers: number; callees: number } | null
+  /** Rows the `includeCrossLanguage: false` scope option removed, per direction.
+   *  A filter, like `noiseFiltered`, and counted for the same reason: without it
+   *  the answer reads as the whole set when it is a subset BY REQUEST. */
+  crossLanguageExcluded: { callers: number; callees: number }
   /** M59.A12 (#888): the declared per-query site limit in force for this run. */
   edgeLimit: number
   /** The total-edge bound in force for this run, and whether it was reached.
@@ -508,10 +623,18 @@ export async function traverseGraph(
   const callerFiltered = !!options.relationshipTypes?.length
   const relPlaceholders = relTypes.map(() => "?").join(",")
   const edgeLimit = Math.max(1, Math.min(Math.floor(options.edgeLimit ?? DEFAULT_EDGE_QUERY_LIMIT), MAX_EDGE_QUERY_LIMIT))
-  const maxEdges = Math.max(
-    edgeLimit,
-    Math.min(Math.floor(options.maxEdges ?? DEFAULT_MAX_TOTAL_EDGES), MAX_TOTAL_EDGES),
-  )
+  // HONORED, not raised to `edgeLimit` (bb_graph review D6). This used to be
+  // `Math.max(edgeLimit, min(requested, MAX_TOTAL_EDGES))`, so any request below
+  // the per-query cap was a silent no-op — while the registry description tells
+  // callers to "lower it for a quick shape check". Measured at HEAD:
+  // `{symbol:"push", maxEdges:5}` returned 200 edges with `maxEdges: 200` in the
+  // summary (the request was answered with a different number, declared, but the
+  // caller's own bound was ignored). Now the answer stops at the requested edge
+  // budget and says it did: `totalEdgeLimitReached: true`,
+  // `truncationReason: "total-edge-limit"`. Cost is unchanged — one bounded
+  // `edgeLimit` query per symbol, the same as before — because the bound is
+  // enforced by the emit loop, not by the SQL.
+  const maxEdges = Math.max(1, Math.min(Math.floor(options.maxEdges ?? DEFAULT_MAX_TOTAL_EDGES), MAX_TOTAL_EDGES))
   // Set once the answer is full, and consulted before every further emit, so the
   // traversal stops rather than continuing to expand symbols whose edges can no
   // longer be returned.
@@ -537,16 +660,24 @@ export async function traverseGraph(
   // root query itself is not interruptible (SQLite would have to be), so the
   // floor on a single call is one query — measured at 88 ms on the corpus that
   // produced the 613 s figure, and 2 ms on a small one.
+  //
+  // 0 means NO clock bound, which is the default (D7): the walk then stops only
+  // at the data bounds, so its answer is reproducible. `outOfTime()` is false
+  // for the whole walk in that case, which is also why the declared-total
+  // counting scan below is reachable on a default call.
   const timeBudgetMs = Math.max(0, Math.floor(options.timeBudgetMs ?? DEFAULT_WALK_TIME_BUDGET_MS))
   const deadline = Date.now() + timeBudgetMs
   let timeBudgetExhausted = false
   const outOfTime = (): boolean => timeBudgetMs > 0 && Date.now() >= deadline
-  // An ACTIVE filter is a declared subset, so it goes through `noteReason` rather
-  // than straight into the set. Adding the reason alone would produce
-  // `truncated: false` beside a `truncationReason`, which is worse than either
-  // state on its own: a consumer that reads the boolean gets "complete" and a
-  // consumer that reads the string gets "filtered", and they disagree.
-  if (callerFiltered) noteRelationshipFilter(noteReason, relTypes)
+  // An ACTIVE filter is a declared subset — but a subset BY REQUEST, which is
+  // not a bound, so it gets its OWN field rather than a truncation reason
+  // (bb_graph review D5). The two ways this could go wrong are both avoided:
+  // funnelling it through `noteReason` made `truncated: true` mean "a subset was
+  // requested" (so a reader could not ask whether the walk finished), and
+  // putting the string in `truncationReason` alone would leave
+  // `truncated: false` beside a non-empty reason — two channels disagreeing.
+  // `filterNarrowed` + `filterReason` say it once, in the channel that means it.
+  const filterReason = callerFiltered ? relationshipFilterReason(relTypes) : null
   let maxDepthReached = 0
   let cappedQueries = 0
   let totalCallersIfKnown: number | null = null
@@ -572,6 +703,13 @@ export async function traverseGraph(
   // is the defect this whole review exists to remove.
   let noiseFilteredCallers = 0
   let noiseFilteredCallees = 0
+  // Rows the cross-language scope option removed. Same doctrine as the noise
+  // counters above: a filter that leaves no number behind lets an answer read as
+  // complete when it is not — `includeCrossLanguage: false` on `parseFile`
+  // dropped 29 of 270 edges with nothing in the payload saying so (bb_graph
+  // review D4b).
+  let crossLangExcludedCallers = 0
+  let crossLangExcludedCallees = 0
 
   const survivesFilters = (row: EdgeRow, name: string | null, includeCrossLanguage: boolean): boolean => {
     if (!name || AnalysisExclusions.isNoiseSymbolName(name)) return false
@@ -764,7 +902,17 @@ export async function traverseGraph(
       // The root's true total is the number an agent actually asks for, and it
       // is countable in one bounded scan. Deeper symbols report the cap itself
       // (cappedQueries) rather than a total nobody could cheaply compute.
-      if (depth === 0 && totalCallersIfKnown === null) {
+      // bb_graph review D7: the declared-total scan is the most expensive
+      // remaining work when a cap fires, and it used to start even after the
+      // walk was already out of time — spending budget the walk had just
+      // declared exhausted. It is now skipped past the deadline and the total is
+      // reported as `null`, which the contract already defines as "not counted",
+      // never zero. Measured on this repository's index, `push` at depth
+      // 3 with a 2,000 ms budget (the default at the time): one cold call spent 22,518 ms and
+      // answered 200 edges while four identical calls answered 509 in
+      // 1,425-1,725 ms — the un-interruptible work is the query, and this stops
+      // the walk from adding a second un-interruptible statement on top of it.
+      if (depth === 0 && totalCallersIfKnown === null && !outOfTime()) {
         // Same ordering as the capped query, so the declared total and the
         // returned rows are computed over one list rather than two.
         totalCallersIfKnown = countSurviving(callerSql + " ORDER BY " + CALLER_ORDER, callerParams, (r) => r.symName)
@@ -775,7 +923,7 @@ export async function traverseGraph(
     for (const row of rows) {
       if (!row.symName || AnalysisExclusions.isNoiseSymbolName(row.symName)) { noiseFilteredCallers++; continue }
       if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) { noiseFilteredCallers++; continue }
-      if (options.includeCrossLanguage === false && row.isCrossLang) continue
+      if (options.includeCrossLanguage === false && row.isCrossLang) { crossLangExcludedCallers++; continue }
       // The bound on the WHOLE answer, as distinct from the per-query site
       // limit. Checked BEFORE any bookkeeping for this row, so `emittedCallerRows`
       // means "emitted" and does not claim a row the bound then discarded — the
@@ -989,7 +1137,11 @@ export async function traverseGraph(
       if (capped) {
         cappedQueries++
         noteReason(depth === 0 ? "callee-site-limit" : "callee-site-limit-at-depth")
-        if (depth === 0 && totalCalleesIfKnown === null) {
+        // Same D7 rule as the caller side: past the deadline the walk does not
+        // start another un-interruptible counting statement; the total is
+        // reported as "not counted" (`null`) rather than paid for after the
+        // budget it belongs to has already been spent.
+        if (depth === 0 && totalCalleesIfKnown === null && !outOfTime()) {
           totalCalleesIfKnown = countSurviving(calleeSql + calleeOrder, calleeParams, (r) => r.symName || r.extName)
         }
       }
@@ -1000,7 +1152,7 @@ export async function traverseGraph(
       const targetName = row.symName || row.extName || ""
       if (!targetName || AnalysisExclusions.isNoiseSymbolName(targetName)) { noiseFilteredCallees++; continue }
       if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) { noiseFilteredCallees++; continue }
-      if (options.includeCrossLanguage === false && row.isCrossLang) continue
+      if (options.includeCrossLanguage === false && row.isCrossLang) { crossLangExcludedCallees++; continue }
       // Before the dedupe bookkeeping, for the same reason as the callers side:
       // the emitted-row set must describe what was emitted.
       if (callers.length + callees.length >= maxEdges) {
@@ -1104,11 +1256,16 @@ export async function traverseGraph(
     nodes,
     truncated,
     truncationReason: reasons.size > 0 ? [...reasons].join("+") : undefined,
+    truncationReasons: [...reasons],
+    filterNarrowed: filterReason !== null,
+    filterReason,
     maxDepthReached,
     maxDepth,
     timeBudgetMs,
     timeBudgetExhausted,
     noiseFiltered: { callers: noiseFilteredCallers, callees: noiseFilteredCallees },
+    unattributed: countUnattributedRows(raw, projectId, root.id, relTypes),
+    crossLanguageExcluded: { callers: crossLangExcludedCallers, callees: crossLangExcludedCallees },
     edgeLimit,
     maxEdges,
     totalEdgeLimitReached: totalLimitReached,
@@ -1271,11 +1428,16 @@ export async function graphTraversal(
     nodes,
     truncated,
     truncationReason,
+    truncationReasons,
+    filterNarrowed,
+    filterReason,
     maxDepthReached,
     maxDepth,
     timeBudgetMs,
     timeBudgetExhausted,
     noiseFiltered,
+    unattributed,
+    crossLanguageExcluded,
     edgeLimit,
     maxEdges,
     totalEdgeLimitReached: totalLimitReached,
@@ -1317,11 +1479,31 @@ export async function graphTraversal(
       engineVersion: "m10.02",
       projectId,
       source: "brain_relationship",
-      limitations: ["Traversal is bounded and unresolved external nodes cannot be recursively traversed."],
+      limitations: [
+        "Traversal is bounded and unresolved external nodes cannot be recursively traversed.",
+        // WHY the whole answer is `inferred` while single edges can be
+        // `structural` — stated, not left to convention (bb_graph review D10).
+        // The provenance class describes the ANSWER, and the answer is a
+        // construction over stored rows: the root is picked by a gravity
+        // tie-break (or a containment fallback), the owner cascade attributes
+        // member rows to an owner, a noise policy removes rows, and any cap
+        // makes the edge set a prefix. The class of a construction is the
+        // weakest part of it, so `inferred` is correct here and the per-row
+        // evidence class lives on each edge's own `tier`/`confidence`.
+        "provenance.evidenceClass is `inferred` for the ANSWER, not for every edge: root resolution, the owner cascade, the noise policy and any cap are constructions over stored rows, so the whole object cannot claim `structural` even when each returned edge carries a stored row. Per-row evidence is on `edge.tier` (a stored `calls` row is `structural`).",
+      ],
       truncated,
       unknowns: [
         ...(noiseFiltered.callers + noiseFiltered.callees > 0
           ? [`noise-policy: ${noiseFiltered.callers} caller and ${noiseFiltered.callees} callee stored rows were removed because they live in a vendored, generated, fixture, snapshot, dist or build path, or carry a generated name. They are excluded by POLICY, not absent: an empty edge set here does not mean nothing references this symbol. Applies to bb_search, bb_impact and the test-intelligence modes too, and NOT to mode "complexity", which applies no noise filter — so the same symbol can be unmeasurable there and unmentioned here.`]
+          : []),
+        ...(unattributed == null
+          ? [`unattributed-source: the count of stored rows naming this symbol with no resolvable SOURCE could not be taken, so this answer cannot say whether such rows exist. It is NOT zero — the field is null for that reason.`]
+          : unattributed.callers + unattributed.callees > 0
+            ? [`unattributed-source: ${unattributed.callers} caller and ${unattributed.callees} callee stored rows name this symbol (or a member of its owner cascade) but carry no source symbol, so no traversal can show them in either direction. They are counted, not listed — the rows exist and name this symbol; treating the edge sets above as the whole set would understate it. Depth-0 only: deeper symbols report their own edges, not their own unattributed rows. Remediation, if the count matters: a full re-index (the bb index command) is what re-attributes sources; a changed-only run does not re-parse the files those rows came from.`]
+            : []),
+        ...(crossLanguageExcluded.callers + crossLanguageExcluded.callees > 0
+          ? [`cross-language-scope: ${crossLanguageExcluded.callers} caller and ${crossLanguageExcluded.callees} callee stored rows were removed because this call passed includeCrossLanguage: false. The rows are stored and resolvable; they are excluded BY REQUEST, so this answer is a subset rather than the whole set. Re-run with includeCrossLanguage: true (the default) for the complete edge sets.`]
           : []),
       ],
     }),
@@ -1336,9 +1518,27 @@ export async function graphTraversal(
       // before any bound applied. Non-zero means the edge sets above are
       // smaller than the store's, BY POLICY — not because nothing was found.
       noiseFiltered,
+      // The JOIN's blind spot, counted: rows naming this symbol with no source to
+      // attach them to. `null` = not counted, never zero. See the field's own
+      // comment on `GraphTraversalSummary`.
+      unattributed,
+      // Rows the includeCrossLanguage scope option removed. A REQUEST, not a
+      // policy or a bound, and now a number rather than an inference from
+      // `crossLanguageEdges: 0`.
+      crossLanguageExcluded,
       crossLanguageEdges,
       truncated,
       truncationReason,
+      // D10: the reasons as data, beside the `+`-joined string. Both are
+      // published: the string is what existing consumers parse, and the list is
+      // what a reason containing `+` cannot corrupt.
+      truncationReasons,
+      // D5: the filter, in its own channel. `truncated` above now means ONLY
+      // "a declared bound bit", so `truncated: false` beside
+      // `filterNarrowed: true` reads correctly: the walk finished, and the
+      // question it answered was a subset the caller asked for.
+      filterNarrowed,
+      filterReason,
       // M59.A12 (#888): `totalCallers`/`totalCallees` above are the RETURNED
       // counts. These fields say so explicitly and add the true root count when
       // a cap was hit and it was computable — a floor can no longer be read as a

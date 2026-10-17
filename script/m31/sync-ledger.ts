@@ -6,6 +6,9 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs"
 import path from "node:path"
 
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const LEDGER_PATH = path.join(ROOT, "validation/m31/ledger.json")
 const RESULTS_DIR = path.join(ROOT, "validation/m31/results")

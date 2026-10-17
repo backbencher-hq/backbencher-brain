@@ -30,13 +30,13 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "2cd1896802d2be3eca5d7866e2e5a9b7d339125d",
+        "currentCommit": "8c6d5da1f14e5c0df184134276cbfb994c780dc7",
         "verifierCommand": "npx tsx script/m28/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 70,
         "failed": 4,
-        "realFailed": 0,
-        "negativeCases": 14
+        "negativeCases": 14,
+        "blockedReason": "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify MCP tools or annotations."
       }
     },
     {
@@ -56,14 +56,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "d5c265b3a9a185d0927d2167e0cc562f5092d6e9",
+        "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
         "verifierCommand": "npx tsx script/m28/verify-mcp-tools.ts",
         "evidenceFile": "T1.json",
         "passed": 24,
         "failed": 0,
-        "realFailed": 0,
-        "mutantsCaught": 5,
-        "mutantsTotal": 5
+        "mutantsCaught": 2,
+        "mutantsTotal": 2,
+        "blockedReason": "Fixture is java+scala (the M26.A1 polyglot pair); cross-language absence asserted on Warehouse (scala-side symbol with no stored incoming rows)."
       }
     },
     {
@@ -85,11 +85,12 @@
         "status": "verified",
         "verifierCommand": "npx tsx script/m28/verify-union.ts",
         "evidenceFile": "U1.json",
-        "passed": 24,
+        "passed": 30,
         "failed": 0,
-        "mutantsCaught": 4,
-        "mutantsTotal": 4,
-        "currentCommit": "d5c265b3a9a185d0927d2167e0cc562f5092d6e9"
+        "mutantsCaught": 6,
+        "mutantsTotal": 6,
+        "currentCommit": "df6bc516b51bf4b33f734faf5bf2d99587af4ad2",
+        "blockedReason": "Differential equality asserted on the polyglot fixture (graph, impact, cross-language, absence); the fixture is shared with T1's evidence."
       }
     },
     {
@@ -114,7 +115,8 @@
         "passed": 22,
         "failed": 0,
         "mutantsCaught": 4,
-        "mutantsTotal": 4
+        "mutantsTotal": 4,
+        "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400"
       }
     },
     {
@@ -138,10 +140,11 @@
         "evidenceFile": "A2.json",
         "passed": 12,
         "failed": 1,
-        "mutantsCaught": 4,
-        "mutantsTotal": 4,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5,
         "inEditorLeg": "headless Neovim (N1 pattern) asserted author-labeled hover + bb/graph payload",
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
+        "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
+        "blockedReason": "A2: nvim provisioned — .tools/nvim-linux-x86_64/bin/nvim missing"
       }
     },
     {
@@ -167,7 +170,8 @@
         "failed": 1,
         "mutantsCaught": 2,
         "mutantsTotal": 2,
-        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8"
+        "currentCommit": "ca6c232165a6a77ccc11a5ac8ddd209d20a9097c",
+        "blockedReason": "V1: union claim cites the real U1 numbers —  verified via [U1.json](../../validation/m28/results/U1.json) (30/30 checks, 4/4 mutants).\n\n## Annotations (D-3/D-6)\n\nProvenance is schema-enforced (`author_cla"
       }
     },
     {
@@ -189,17 +193,18 @@
         "status": "known-gap",
         "verifierCommand": "npx tsx script/m28/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 22,
-        "failed": 9,
+        "passed": 26,
+        "failed": 5,
         "negativeCases": 4,
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
+        "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
+        "blockedReason": "X1: A2 verifier passes at HEAD — exit=1"
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:34:59.310Z",
-    "contentSha256": "558d6aab24661b73802a2359579d51b1a41f10adb6eb1ac1141d0569d363e538"
+    "sealedAt": "2026-10-17T17:23:10.180Z",
+    "contentSha256": "84ebb656621e33e5c7595b3016f3d5612ac2aab78cf5ddb369cee2b3a6768492"
   },
-  "updatedAt": "2026-10-05T22:34:59.310Z"
+  "updatedAt": "2026-10-17T17:23:10.180Z"
 }

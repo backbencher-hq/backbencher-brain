@@ -48,6 +48,7 @@ const harness = new Harness({
   tool: "bb_health",
   title: "bb_health embedding coverage: the per-symbol EXISTS must probe entity_id, and must still be project-scoped",
   layers: ["integration", "performance"],
+  milestone: "M64",
   decisions: {
     why: "a default call took >15 minutes on a real 6,507-file index because the per-symbol EXISTS re-filtered project_id and so scanned every embedding once per symbol",
     fix: "drop the redundant project_id predicate; entity_id is minted as `${projectId}:...` for both brain_symbol.id and brain_semantic_embedding.entity_id, so the predicate cannot change the answer",

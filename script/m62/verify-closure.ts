@@ -375,12 +375,25 @@ async function main(): Promise<void> {
   // shape fails. Both halves are asserted so the reader cannot silently narrow.
   // (The lane bars themselves are the live proof that the positive half passes:
   // m24/m26/m42/m44 declare negative cases, and R3 reads them green above.)
-  const liveDeps = { isAncestor, laneChanged: laneChangedSince }
+  // The synthetic positives use STUBBED freshness, and that is a fix rather than a
+  // convenience.
+  //
+  // Measured 2026-10-17: with `liveDeps` (the real `laneChangedSince`) and
+  // `currentCommit`, this check went red on a tree whose lane sources had
+  // UNCOMMITTED edits — the synthetic record was "stale" for the same reason a
+  // real one would be, so the rule's own self-test was reporting on the working
+  // tree instead of on the rule. A self-test that tracks the tree cannot
+  // distinguish "the rule rejects the house shapes" from "someone is mid-edit",
+  // and the reader is told the wrong one. The freshness rule has its own checks
+  // above (R3 per lane) and its own negatives below; what THIS check asserts is
+  // that the proof half of the rule accepts both house shapes and rejects a
+  // proof-less record, so the freshness inputs are pinned to known values.
+  const proofDeps = { isAncestor: () => true, laneChanged: () => [] as string[] }
   check(
     "R3: the proof rule accepts the house shapes (mutants OR declared negatives) and rejects a proof-less record",
-    laneBarFindings({ status: "verified", passed: 40, mutantsCaught: 5, currentCommit }, liveDeps).length === 0 &&
-      laneBarFindings({ status: "verified", passed: 40, negativeCases: 6, currentCommit }, liveDeps).length === 0 &&
-      laneBarFindings({ status: "verified", passed: 40, currentCommit }, liveDeps).some((f) => f.includes("no can-fail proof")),
+    laneBarFindings({ status: "verified", passed: 40, mutantsCaught: 5, currentCommit: "0".repeat(39) + "1" }, proofDeps).length === 0 &&
+      laneBarFindings({ status: "verified", passed: 40, negativeCases: 6, currentCommit: "0".repeat(39) + "1" }, proofDeps).length === 0 &&
+      laneBarFindings({ status: "verified", passed: 40, currentCommit: "0".repeat(39) + "1" }, proofDeps).some((f) => f.includes("no can-fail proof")),
   )
 
   // --- R4: the claim, re-checked on a real index -------------------------------------------

@@ -23,6 +23,9 @@ import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs"
 import path from "node:path"
 import os from "node:os"
 
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+
 const ROOT = path.resolve(import.meta.dirname, "..", "..")
 const TMP = path.join(os.tmpdir(), `m54-gate-${Date.now()}`)
 mkdirSync(TMP, { recursive: true })
@@ -304,14 +307,16 @@ console.log(`\n=== M54.P1 GATE: ${pass} pass, ${fail} fail ===`)
 {
   const { execSync } = await import("node:child_process")
   const commit = execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim()
-  const { mkdirSync, writeFileSync } = await import("node:fs")
-  mkdirSync(path.join(ROOT, "validation/m54/results"), { recursive: true })
-  writeFileSync(path.join(ROOT, "validation/m54/results/P1.json"), JSON.stringify({
+  // M61 D-1 (the seal law): the ONE write path. This gate stamped RAW JSON, so
+  // every run dropped the envelope the M61 seal register names (measured
+  // 2026-10-17 by M61.A1's A4: seal ABSENT against a registered digest).
+  const { writeSealed } = await import("../lib/evidence.ts")
+  writeSealed(path.join(ROOT, "validation/m54/results/P1.json"), {
     gate: "M54.P1", issue: 727, milestone: "M54", at: new Date().toISOString(), commit,
     checks: pass + fail, passed: pass, failed: fail,
     verifierCommand: "bun run script/m54/verify-p1-fk.ts",
     status: fail === 0 ? "verified" : "known-gap",
     policy: { fkOnAtOpen: true, runtimes: ["bun", "node"], readonlyUniform: true, escapeHatch: "BB_FK_ENFORCE=0" },
-  }, null, 2) + "\n")
+  })
 }
 if (fail > 0) { console.log(failures.map(f => `  ✗ ${f}`).join("\n")); process.exit(1) }

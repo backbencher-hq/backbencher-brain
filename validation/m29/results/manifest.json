@@ -31,21 +31,20 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "d8dad6ebbf971c5f724e18275fbd97eb624e7d42",
+        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 64,
-        "failed": 6,
-        "realFailed": 0,
+        "passed": 66,
+        "failed": 4,
         "negativeCases": 10,
-        "blockedReason": "6 check(s) failed: G1: all 9 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — closure-gate evidence verified at an ancestor-or-equal commit … — the relevant tree was clean at measure time"
+        "blockedReason": "4 check(s) failed: G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — closure-gate evidence verified at an ancestor-or-equal commit; G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: docs/m29/PRECISION-LEDGER.md, package.json, script/m29/verify-giant-repo.ts, script/m29/verify-precision-ledger.ts, src/ast/brain-surgical-patcher.ts, src/ast/dependency-graph-visualizer.ts"
       }
     },
     {
       "code": "R1",
       "githubIssue": 536,
       "tool": "wave-protocol",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Document and mechanize the onboarding protocol: analyzer #419 conformance -> position gate -> freshness gate -> IDE fixtures -> mutants -> latency budget -> claim-level assignment. One command runs the full checklist for a candidate language (contract §9 binding enforced mechanically: IDE claim level <= analyzer evidence level).",
       "acceptanceCriteria": [
         "Wave gate runner script; per-step pass/fail output",
@@ -58,12 +57,12 @@
         "Limitations declared"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "status": "known-gap",
+        "currentCommit": "d684cf37d71e7cc2c33e866258386f8c77ad2b3d",
         "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
         "evidenceFile": "R1.json",
-        "passed": 36,
-        "failed": 0,
+        "passed": 33,
+        "failed": 3,
         "mutantsCaught": 7,
         "mutantsTotal": 7,
         "blockedReason": "S5 (per-language server leg) and S6 (in-editor leg) are R2 execution work; in the dry-run they are declared blockers that cap at I1."
@@ -73,7 +72,7 @@
       "code": "R2",
       "githubIssue": 537,
       "tool": "wave-1-execution",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Execute R1 for the next language(s) chosen by the #419 ledger at execution time (candidates: javascript INVENTORY-DONE, vue NOT-STARTED; actual set owner-approved). End-to-end: gates, fixtures, mutants, budgets, claim levels, IDE matrix updated.",
       "acceptanceCriteria": [
         "Wave gate green for the onboarded language(s)",
@@ -86,12 +85,12 @@
         "Owner spot-check scheduled"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "status": "known-gap",
+        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
         "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
         "evidenceFile": "R2.json",
-        "passed": 261,
-        "failed": 0,
+        "passed": 92,
+        "failed": 15,
         "mutantsCaught": 5,
         "mutantsTotal": 5,
         "approvalRecord": "validation/m29/results/wave-1-approval.json",
@@ -111,7 +110,7 @@
       "code": "R3",
       "githubIssue": 538,
       "tool": "giant-repo-budgets",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Hover/navigation latency on M19-scale corpora (intellij-community subsets etc.) through the IDE stack where feasible; results recorded with machine + corpus revision. Any budget miss is a filed defect, not a footnote.",
       "acceptanceCriteria": [
         "Measured percentiles on named corpora + revisions",
@@ -124,12 +123,13 @@
         "Limitations declared"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "status": "known-gap",
+        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
         "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
         "evidenceFile": "R3-verify.json",
-        "passed": 28,
-        "failed": 0
+        "passed": 20,
+        "failed": 7,
+        "blockedReason": "R1: corpus manifest exists and declares a synthetic kind"
       }
     },
     {
@@ -150,7 +150,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
         "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
         "evidenceFile": "R4-verify.json",
         "passed": 19,
@@ -178,7 +178,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
         "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
         "evidenceFile": "R5-verify.json",
         "passed": 20,
@@ -192,7 +192,7 @@
       "code": "V1",
       "githubIssue": 541,
       "tool": "verifier-harness",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "The R1 runner and R4 generator as permanent, wired, fail-able tools.",
       "acceptanceCriteria": [
         "Runner + generator wired into verify",
@@ -205,15 +205,15 @@
         "Limitations declared"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "status": "known-gap",
+        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
         "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
         "evidenceFile": "V1-verify.json",
-        "passed": 14,
-        "failed": 0,
+        "passed": 11,
+        "failed": 3,
         "blockedReason": "W2/W3 execute the runner and drift gates only; the nvim-dependent editor legs (S6) and giant-index legs (R3) are covered by their own verifiers and are out of scope here.",
-        "realFailed": 0,
-        "mutantsCaught": 5,
+        "realFailed": 3,
+        "mutantsCaught": 4,
         "mutantsTotal": 5
       }
     },
@@ -221,7 +221,7 @@
       "code": "D1",
       "githubIssue": 542,
       "tool": "docs",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "The published precision ledger (docs + listing) and the wave protocol documentation.",
       "acceptanceCriteria": [
         "Both artifacts generated from evidence, drift-gated",
@@ -234,14 +234,14 @@
         "Limitations declared"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "status": "known-gap",
+        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
         "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
         "evidenceFile": "D1-verify.json",
-        "passed": 13,
-        "failed": 0,
+        "passed": 12,
+        "failed": 1,
         "blockedReason": "The listing's shipped claim table is intentionally at the conservative I1 floor (M25's drift gate owns it); D1 checks it never rises above the machine ledger, not that it equals it.",
-        "realFailed": 0,
+        "realFailed": 1,
         "mutantsCaught": 3,
         "mutantsTotal": 3
       }
@@ -250,7 +250,7 @@
       "code": "X1",
       "githubIssue": 543,
       "tool": "closure-gate",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Program-level closure: every version's completion bar (M24-M29) re-verified at current HEAD; every claim level re-checked; every limitation still declared; owner spot-checks recorded. The program is closed only on this evidence — the owner declares the idea achieved, per the spot-check ritual.",
       "acceptanceCriteria": [
         "Ladder audit: M24-M29 bars green at current HEAD, machine-checked",
@@ -263,12 +263,12 @@
         "Ledger clean across M24-M29"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "status": "known-gap",
+        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
         "verifierCommand": "npx tsx script/m29/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 32,
-        "failed": 0,
+        "passed": 20,
+        "failed": 12,
         "note": "28/28 at HEAD; owner spot-check pack prepared in X1.json (the achieved/not-achieved verdict is the owner's, §8.5)",
         "negativeCases": 3,
         "blockedReason": "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run."
@@ -277,7 +277,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T15:35:51.619Z",
-    "contentSha256": "5808d9e58408da1f9e1dda89f1e4d8c20be7c21a970f5ba23d446b3363dc8e07"
+    "sealedAt": "2026-10-17T17:23:14.701Z",
+    "contentSha256": "8bf2a419a927a7bda1961e8406f4b9e2583dd68f0bc984f584a43049363819ff"
   }
 }

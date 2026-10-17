@@ -4,27 +4,31 @@
   "milestone": "M25",
   "status": "known-gap",
   "checks": 91,
-  "passed": 90,
-  "failed": 1,
+  "passed": 87,
+  "failed": 4,
   "negativeCases": 21,
-  "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "workingTreeRelevantChanges": [
+    "ide/vscode/README.md",
+    "package.json",
+    "script/m25/verify-cross-platform.ts"
+  ],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-12T19:10:13.250Z",
+  "generatedAt": "2026-10-17T17:22:58.033Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
-    "ledgerStatus": "closed",
-    "m24GateExit": 0
+    "ledgerStatus": "open",
+    "m24GateExit": 1
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M24 bar; it does not verify extension features.",
     "A run with relevant uncommitted M25 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit - the relevant tree was clean at measure time",
+  "blockedReason": "4 check(s) failed: G1: M24 bar — ledger closed with all 11 issues verified (mechanical); G1: M24 bar — M24 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: E6 capability matrix matches its evidence files (no drift, no hand-edited claims) - relevant uncommitted files at measure time: ide/vscode/README.md, package.json, script/m25/verify-cross-platform.ts",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T19:10:13.264Z",
-    "contentSha256": "f67cbaea763fa710204e0ed1faab1e29776b229c44dfe000593f847ea394ad6f"
+    "sealedAt": "2026-10-17T17:22:58.204Z",
+    "contentSha256": "3d78cd9c22822b9e63057b24c98d6d836ef36dd001472771ac5a5ac19fa02f43"
   }
 }

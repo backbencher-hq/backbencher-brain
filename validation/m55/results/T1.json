@@ -10,7 +10,7 @@
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "negatives": 0,
-  "currentCommit": "4ab4019155f10f6395ab644c694bda960b68b992",
+  "currentCommit": "8c6d5da1f14e5c0df184134276cbfb994c780dc7",
   "sourceFingerprint": "8004eee3ef5d3415dee41af5e9758194bde3520808b2d020ec7e61310cea0a13",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -22,18 +22,14 @@
     "script/m55/lsp-wire.ts",
     "script/m55/t1-fixture.ts"
   ],
-  "workingTreeRelevantChanges": [
-    "script/m26/graph-core.ts",
-    "script/m55/verify-identity.ts",
-    "script/m55/verify-relations.ts"
-  ],
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-identity.ts",
   "evidenceFile": "T1.json",
-  "generatedAt": "2026-10-12T18:46:01.641Z",
+  "generatedAt": "2026-10-17T14:36:04.996Z",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T18:46:01.644Z",
-    "contentSha256": "af64c5c1dd0653fe9535904c4135d2b580401b3e7ef92c873e6f77f8197784d4"
+    "sealedAt": "2026-10-17T14:36:04.997Z",
+    "contentSha256": "996756d766cd7e4371741c47f0429fb6eaff220a3289feeb7b9866d8329ebdfa"
   }
 }

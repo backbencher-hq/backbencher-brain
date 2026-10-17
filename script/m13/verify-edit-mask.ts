@@ -73,7 +73,13 @@ const auditLangs: AuditLang[] = [
   { lang: "sql", file: "a.sql", code: `-- zzzL\n/* zzzB */\nSELECT 'zzzS';\n`, ghosts: ["zzzL", "zzzB", "zzzS"] },
   { lang: "bash", file: "a.sh", code: `# zzzL\nx="zzzS"\ncat <<EOF\nzzzH\nEOF\n`, ghosts: ["zzzL", "zzzS", "zzzH"] },
   { lang: "powershell", file: "a.ps1", code: `# zzzL\n<# zzzB #>\n$x = "zzzS"\n`, ghosts: ["zzzL", "zzzB", "zzzS"] },
-  { lang: "hcl", file: "a.tf", code: `# zzzL\n// zzzS\n/* zzzB */\nx = 1\n`, ghosts: ["zzzL", "zzzS", "zzzB"] },
+  // M71: the fixture used `a.tf`, whose language is `terraform` by design
+  // (src/ast/language-detection.ts: `tf: "terraform"`, so `--language terraform`
+  // and the lane named after what the files are). The assertion below checks the
+  // detected language equals `l.lang`, so the fixture asked for `hcl` and got
+  // `terraform` — a red gate for a fixture spelling, not for the mask. `a.hcl`
+  // exercises the same HCL grammar with the language the label claims.
+  { lang: "hcl", file: "a.hcl", code: `# zzzL\n// zzzS\n/* zzzB */\nx = 1\n`, ghosts: ["zzzL", "zzzS", "zzzB"] },
   { lang: "objective-c", file: "a.m", code: `// zzzL\n/* zzzB */\nNSString *s = @"zzzS";\n`, ghosts: ["zzzL", "zzzB", "zzzS"] },
   { lang: "toml", file: "a.toml", code: `# zzzL\nx = "zzzS"\n`, ghosts: ["zzzL", "zzzS"] },
   { lang: "xml", file: "a.xml", code: `<!-- zzzC -->\n<root>zzzS</root>\n`, ghosts: ["zzzC"] },

@@ -1,29 +1,41 @@
 {
-  "status": "verified",
-  "passed": 13,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 12,
+  "failed": 1,
   "negatives": {
     "planned": 3
   },
   "verdict": {
-    "realComponentFailures": 0,
+    "realComponentFailures": 1,
     "mutantsCaught": 3,
     "mutantsTotal": 3,
     "ok": true
   },
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
   "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
+  "sourceFingerprint": "eb95eac45e021ab44023e911583bb65a85bc9230c7cc8c95b999be20595c2d31",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m29/verify-m29-docs.ts",
+    "docs/m29/PRECISION-LEDGER.md",
+    "docs/m29/WAVE-PROTOCOL.md",
+    "ide/vscode/README.md",
+    "script/m29/generate-precision-ledger.ts",
+    "script/m29/generate-wave-doc.ts"
+  ],
   "evidenceFile": "D1-verify.json",
-  "generatedAt": "2026-09-20T02:47:12.523Z",
+  "generatedAt": "2026-10-17T17:01:01.844Z",
   "limitations": [
     "The listing's shipped claim table is intentionally at the conservative I1 floor (M25's drift gate owns it); D1 checks it never rises above the machine ledger, not that it equals it.",
     "Vocabulary lint is pattern-based; novel overclaim phrasings are caught by review and the owner spot-check, not by this lint.",
     "The wave doc's registry list is generated from WAVE_LANGUAGES; adding a language to the registry regenerates the doc (drift gate enforces regeneration)."
   ],
-  "details": [],
+  "details": [
+    "D3: listing table carries no claim above the machine ledger: | java      | I1    | I1         | I1         | I1      | I1             |; | kotlin    | I1    | I1         | I1         | I1      | I1             |; | scala     | I1    | I1         | I1         | I1      | I1             |; | typescript| I1    | I1         | I1         | I1      | I1             |; | javascript| I1    | I1         | I1         | I1      | I1             |; | python    | I1    | I1         | I1         | I1      | I1             |"
+  ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:47:12.523Z",
-    "contentSha256": "8c8b26aa7304af1a71be398d8831fb67503a660e27fd28cec81d14387a067162"
+    "sealedAt": "2026-10-17T17:01:01.845Z",
+    "contentSha256": "598bc940e554737a74fdd6f43ecef9698079ff7785ff4476b3b3515756f6078e"
   }
 }

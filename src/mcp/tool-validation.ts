@@ -1,4 +1,5 @@
 import type { ToolDescriptor, JsonSchemaProperty } from "./tool-registry"
+import { expandBatchRequest, type BatchEntry, type EditRequest } from "../intelligence/edit/edit-engine"
 
 /**
  * M50.A2 (#764): accepted parameter aliases.
@@ -238,19 +239,108 @@ function validateModeSpecificArguments(tool: string, args: Record<string, unknow
  * `mode` and `position` enum membership are already enforced by validateProperty
  * against the registry schema; this layer enforces the per-mode contract.
  */
+/**
+ * bb_edit's mode → accepted-option contract (M71.D10).
+ *
+ * Exported, and single: the rejection below, the generated tool page
+ * (`script/verify-tool-docs.ts` renders it) and the gates that pin the whole
+ * mode × option matrix (`script/m13/verify-edit-boundary.ts`) all read THIS
+ * object. The old private copy was a contract stated in three places — an error
+ * message, a hand-written bullet, and the page — which is three chances to
+ * describe the tool differently from how the tool behaves.
+ *
+ * Every entry here is honored by the engine, which was verified rather than
+ * assumed: `write` reads `content ?? newContent` and no symbol; the four symbol
+ * modes all resolve through the same `uniqueSymbol(projectId, name, filePath,
+ * lineStart, …)`, so `filePath` and `lineStart` are real disambiguators for each
+ * of them; `position` and `targetSymbolName` are read only by `insert`; `force`
+ * only by `delete`; `newName` only by `refactor`; `format` and `dryRun` by all
+ * five; `overwrite` only by `write`, which is the one mode that replaces a whole
+ * file (`edit-engine.ts` writeGuardMessage, M71.D7).
+ */
+export const EDIT_OPTIONS_BY_MODE: Record<string, readonly string[]> = {
+  write: ["mode", "dryRun", "filePath", "content", "newContent", "format", "overwrite"],
+  update: ["mode", "dryRun", "filePath", "symbolName", "lineStart", "content", "newContent", "format"],
+  insert: ["mode", "dryRun", "filePath", "targetSymbolName", "position", "lineStart", "content", "newContent", "format"],
+  delete: ["mode", "dryRun", "filePath", "symbolName", "lineStart", "force", "format"],
+  refactor: ["mode", "dryRun", "filePath", "symbolName", "lineStart", "newName", "format"],
+  // M71.D13: a batch is its own mode rather than a flag on the five. Its options
+  // are the batch-wide ones plus the entries; every per-file option is the
+  // entry's own business, which is why none of them appear here — `batch` accepts
+  // no `filePath`, no `symbolName`, and no `content` at the top level, and a
+  // caller who passes one is told so rather than having it silently ignored.
+  batch: ["mode", "dryRun", "edits", "files", "format"],
+}
+
+/**
+ * M71.D13: a batch's entries are held to the SAME per-mode rule the single modes
+ * get — `validateEditArguments` is called on the entry, so an entry cannot carry
+ * an option its mode does not accept, cannot omit a field its mode requires, and
+ * cannot smuggle in an unknown key. Nothing about the mode contract is restated
+ * for batches.
+ *
+ * The shape rules (a non-empty `edits`, an entry mode, no nesting, no per-entry
+ * `dryRun`/`format`, `files` as the filePath supplier, no repeated path, the cap)
+ * are the ENGINE's own expansion, `expandBatchRequest`, called here rather than
+ * reimplemented. Two implementations of one contract is how the boundary and the
+ * engine come to disagree — the boundary admitting a batch the engine refuses, or
+ * the reverse — and this repository has paid for that lesson more than once.
+ */
+function validateBatchArguments(args: Record<string, unknown>): void {
+  // The SHAPE rules — a non-empty `edits`, an entry mode, no nesting, no per-entry
+  // `dryRun`/`format`, `files` as the filePath supplier, no repeated path, the cap —
+  // are the engine's own `expandBatchRequest`, imported rather than restated. A
+  // second copy here would be a second contract, and the one failure worse than a
+  // refusal no caller can act on is two refusals that disagree about the same
+  // request: the boundary would admit a batch the engine refuses, or refuse one it
+  // would have expanded. The message is passed through unchanged; it already names
+  // what is wrong and what the request should say instead.
+  let entries: BatchEntry[]
+  try {
+    entries = expandBatchRequest(args as unknown as EditRequest)
+  } catch (e) {
+    throw new Error(`bb_edit ${(e as Error).message ?? String(e)}`)
+  }
+  // Each entry is then held to the SAME per-mode contract as the single call it
+  // mirrors — same function, same accepted set, same required fields — with the
+  // entry index prefixed so a caller with six entries is not left bisecting their
+  // own list to find the one that is wrong.
+  for (const entry of entries) {
+    try {
+      validateEditArguments(entry.request)
+    } catch (e) {
+      throw new Error(`bb_edit batch entry ${entry.entry}: ${String((e as Error).message).replace(/^bb_edit (?:batch entry \d+: )?/, "")}`)
+    }
+  }
+}
+
 function validateEditArguments(args: Record<string, unknown>): void {
   const mode = args.mode
-  const relevantByMode: Record<string, readonly string[]> = {
-    write: ["mode", "dryRun", "filePath", "content", "newContent", "format"],
-    update: ["mode", "dryRun", "filePath", "symbolName", "lineStart", "content", "newContent", "format"],
-    insert: ["mode", "dryRun", "filePath", "targetSymbolName", "position", "lineStart", "content", "newContent", "format"],
-    delete: ["mode", "dryRun", "filePath", "symbolName", "lineStart", "force", "format"],
-    refactor: ["mode", "dryRun", "filePath", "symbolName", "lineStart", "newName", "format"],
-  }
-  const allowed = relevantByMode[String(mode)]
+  const allowed = EDIT_OPTIONS_BY_MODE[String(mode)]
   if (allowed) {
     const irrelevant = Object.keys(args).filter((key) => !allowed.includes(key))
-    if (irrelevant.length > 0) throw new Error(`bb_edit ${String(mode)} mode does not accept: ${irrelevant.join(", ")}`)
+    if (irrelevant.length > 0) {
+      // D10: the rejection NAMES the accepted set, the way bb_search's does. The
+      // old message (`bb_edit update mode does not accept: position`) stated
+      // what was wrong and nothing about what would be right, and the mode
+      // contract lived only in the documentation — so the one place a caller
+      // looks when they are wrong was the one place that did not teach. An
+      // option that is accepted by exactly ONE other mode is named with it
+      // (`position` on `update` means they wanted `insert`), which is the
+      // round-trip this message exists to save; when several modes accept it, no
+      // hint is offered rather than implying a single home.
+      const hints = irrelevant
+        .map((option) => {
+          const homes = Object.entries(EDIT_OPTIONS_BY_MODE)
+            .filter(([other, options]) => other !== String(mode) && options.includes(option))
+            .map(([other]) => other)
+          return homes.length === 1 ? ` (${option} is accepted for ${homes[0]})` : ""
+        })
+        .join("")
+      throw new Error(
+        `bb_edit ${String(mode)} mode does not accept: ${irrelevant.join(", ")}${hints} — accepted for ${String(mode)}: ${allowed.join(", ")}`,
+      )
+    }
   }
 
   if (mode === "write") {
@@ -267,6 +357,8 @@ function validateEditArguments(args: Record<string, unknown>): void {
   } else if (mode === "refactor") {
     if (typeof args.symbolName !== "string" || args.symbolName.trim().length === 0) throw new Error("bb_edit refactor mode requires symbolName")
     if (typeof args.newName !== "string" || args.newName.trim().length === 0) throw new Error("bb_edit refactor mode requires newName")
+  } else if (mode === "batch") {
+    validateBatchArguments(args)
   }
 }
 

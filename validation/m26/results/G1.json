@@ -4,16 +4,21 @@
   "milestone": "M26",
   "status": "known-gap",
   "checks": 70,
-  "passed": 67,
-  "failed": 3,
+  "passed": 65,
+  "failed": 5,
   "negativeCases": 10,
-  "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
   "workingTreeRelevantChanges": [
-    "script/m26/verify-governance.ts"
+    "ide/vscode/README.md",
+    "package.json",
+    "src/lsp/document_highlight.ts",
+    "src/lsp/navigation.ts",
+    "src/lsp/relations.ts",
+    "src/lsp/rich_hover.ts"
   ],
   "verifierCommand": "npx tsx script/m26/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-08T18:14:23.106Z",
+  "generatedAt": "2026-10-17T17:23:07.032Z",
   "ledger": "validation/m26/results/manifest.json",
   "m25Bar": {
     "ledgerStatus": "open",
@@ -25,7 +30,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T18:14:23.110Z",
-    "contentSha256": "d355675b1fc3c0f8c309cdbaa187b7aef43b9ba466b2dac4f897c9580bf784dc"
+    "sealedAt": "2026-10-17T17:23:07.038Z",
+    "contentSha256": "6a4afc394b649204500fe1f80e47f40eabcf92cce7eb402de79bb0197f8e0f98"
   }
 }

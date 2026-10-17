@@ -58,6 +58,14 @@ next.runtimeMcp.postBaselineRepairs = {
   ...(baseline.runtimeMcp.postBaselineRepairs ?? {}),
   "M50.A5 re-freeze (#768)":
     "re-froze toolNames/descriptors/commands from the live registry so verify-contract-diff + verify-m10-baseline compare against the real surface (M28 graph/impact/cross-language/annotate tools and the M43 bb_search `refresh` option were missing)",
+  // The M50.A5 cut refreshed toolNAMES and COMMANDS but left each descriptor's
+  // property/default list where M9/M10 had left it, so the two frozen-baseline
+  // gates were RED again at HEAD: verify-m10-baseline (14 failures) and
+  // verify-contract-diff (12). A re-freeze is the mechanism this file uses for
+  // that (M50.A5 above, M35.E1 before it) — the entries below name what moved so
+  // the cut is auditable rather than a silent "live == live".
+  "M71 audit re-freeze":
+    "re-cut every descriptor's properties/defaults/modes from the live registry. Growth since the M50.A5 cut: bb_health paths+checkUnindexed (788647abc, M64), bb_visualize symbolKinds/excludePatterns/includeTests+view+layout (M48/M13.44/codemap+class+regions), bb_migrate paths+symbolIds (16d789d78), bb_doc refresh, bb_impact refresh+relationshipTypes, bb_graph relationshipTypes/edgeLimit/maxEdges/timeBudgetMs (7aec61416)/direction/includeCrossLanguage plus the `direction` default, bb_cross_language limit plus its default, bb_annotations includeNameLevel+path (fb2c4b715), bb_patterns' confidenceThreshold default 0.6 -> 0, and bb_edit's overwrite/edits/files plus the `batch` mode (M13.E13/M71.D9). The CLI `search` contract is a human decision and stays hand-maintained: `[query]` is optional now (--symbol-name/--file-path may stand in) and the action refuses a search that supplies neither, so its frozen `required` is empty and that refusal is asserted behaviorally in script/m40/verify-a7-cli-parity.ts.",
 }
 
 const before = JSON.stringify(baseline, null, 2)

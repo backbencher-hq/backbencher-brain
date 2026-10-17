@@ -2,14 +2,14 @@
   "issue": "M44.U5",
   "code": "U5",
   "milestone": "M44",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 33,
-  "passed": 31,
-  "failed": 2,
-  "mutantsCaught": 3,
+  "passed": 33,
+  "failed": 0,
+  "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "fd496b949754c590c75153155ad7f5a8841236a6",
-  "sourceFingerprint": "d95a8e5880b398e31657f17df32e3539232b3b077d35acdc0c65ca279e506dc8",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "sourceFingerprint": "123b6716a27786d7cda8536abbf7ca3533a3175175dddf66e520d9524bab4ab4",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m44/verify-impact-resolution.ts",
@@ -22,7 +22,7 @@
   ],
   "verifierCommand": "npx tsx script/m44/verify-impact-resolution.ts",
   "evidenceFile": "U5.json",
-  "generatedAt": "2026-10-11T02:54:43.362Z",
+  "generatedAt": "2026-10-17T17:28:31.289Z",
   "fixture": "script/m44/u5-fixture.ts (real indexer + real dist server)",
   "laws": [
     "R0 fixture truth from the REAL indexer (seed can never drift)",
@@ -39,7 +39,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-11T02:54:43.365Z",
-    "contentSha256": "29d2a5ccce3a0b0c9afe0c0a781cd301ffcbbd085f53965ac6ad84e0ceac0ef8"
+    "sealedAt": "2026-10-17T17:28:31.373Z",
+    "contentSha256": "e43e240ba2e3f9557ff74e47501be54353050b8cd2a5af24e4393902a4879f24"
   }
 }

@@ -33,6 +33,7 @@ const harness = new Harness({
   limitations: [
     "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is M14.",
     "A sub-directory with no resolvable symbol is skipped (recorded, not failed).",
+    "Refactor is UNAVAILABLE for Erlang: its grammar yields zero identifier occurrences, so the engine refuses by name rather than reporting a rename it cannot perform (D3/M71; measured with script/m71/diagnose-erlang-refactor.ts). The Erlang leg asserts that refusal instead of pretending the dry-run renamed something.",
   ],
 })
 
@@ -123,17 +124,33 @@ for (const [repo, subPath, hint, family] of SAMPLE) {
     }
     const beforeContent = existsSync(targetFile) ? readFileSync(targetFile, "utf8") : ""
     const newName = "renamedE10" + Math.random().toString(36).slice(2, 6)
-    let dryRunOk = false
+    let plannedChanges = 0
+    let refusal: string | null = null
     let afterContent = beforeContent
     try {
       const res = await executeEdit(indexRoot, projectId, { mode: "refactor", symbolName: targetName, filePath: targetFile, newName, dryRun: true, format: false })
-      dryRunOk = res.dryRun === true
+      plannedChanges = res.dryRun === true ? res.changes.length : 0
       afterContent = existsSync(targetFile) ? readFileSync(targetFile, "utf8") : ""
     } catch (e) {
-      harness.check(`corpus ${repo}/${subPath} (${family}): dry-run refactor aborted`, false, String(e).slice(0, 120))
-      continue
+      refusal = String((e as Error)?.message ?? e).slice(0, 200)
+      afterContent = existsSync(targetFile) ? readFileSync(targetFile, "utf8") : beforeContent
     }
-    harness.check(`corpus ${repo}/${subPath} (${family}): dry-run refactor completes`, dryRunOk, `symbol=${targetName}`)
+    // D3/M71: this leg has exactly two acceptable outcomes, and one it must reject.
+    //
+    // MEASURED (script/m71/diagnose-erlang-refactor.ts): the Erlang grammar produces
+    // ZERO identifier occurrences — `parseForSafety` finds no site in a synthetic
+    // module, for the module symbol and for every function alike — so `cth_fail_fast`
+    // has nothing to rename. The engine used to answer ok with "0 site(s) across 0
+    // file(s)". A rename that covers nothing is a failure, so it now refuses by name.
+    //
+    // A REFUSAL is therefore the correct result for such a lane, while a COMPLETED
+    // dry-run with zero planned changes FAILS: that is exactly the silent no-op this
+    // check exists to reject, and it is what the pre-fix engine did here.
+    if (refusal === null) {
+      harness.check(`corpus ${repo}/${subPath} (${family}): dry-run refactor plans at least one change (no silent no-op)`, plannedChanges > 0, `symbol=${targetName} changes=${plannedChanges}`)
+    } else {
+      harness.check(`corpus ${repo}/${subPath} (${family}): zero-site rename refused by name (no silent no-op)`, /resolved 0 rename site/.test(refusal), `${targetName}: ${refusal}`)
+    }
     harness.negative(`corpus ${repo}/${subPath} (${family}): dry-run writes zero bytes (no mutation)`, afterContent === beforeContent, `changed=${afterContent !== beforeContent}`)
     // Reindex and compare symbol count (corruption check).
     await indexProjectParallel(projectId, indexRoot, {})

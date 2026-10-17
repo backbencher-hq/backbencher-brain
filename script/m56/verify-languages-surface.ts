@@ -74,41 +74,64 @@ const site = (rel: string): string => readFileSync(path.join(SITE, rel), "utf8")
 
 // --- the registry -------------------------------------------------------------------
 
-// A JS object literal keeps the LAST value for a repeated key, so the parser must
-// do the same. SUPPORTED_LANGUAGES currently declares `nim` twice — the dedicated
-// `tree-sitter-nim` at src/ast/engine.ts:282 and `__generic__` at :301 — so a
-// line-counting parser would publish 51 languages and put `nim` in the name list
-// twice, while the engine resolves 50 keys. Counting a shadowed declaration is
-// the same failure as reading the first of two CSS custom properties: it
-// certifies a value nothing uses.
-function registryLanguages(): Map<string, string> {
+// A JS object literal keeps the LAST value for a repeated key, so the resolved
+// map below must do the same — but the parser also keeps every declaration, in
+// order, because last-wins is how a shadowed key hides a real one. It did:
+// `nim` was declared twice (`tree-sitter-nim`, then `__generic__`), the later key
+// won, and the registry claimed nim had no parser while the wasm switch, the
+// vendored grammar and a pinned fixture set all said otherwise. That history is
+// recorded at src/ast/engine.ts:338 and the duplicate is gone; the declaration
+// list is kept so the L1 check below fails if one ever comes back. Counting a
+// shadowed declaration is the same failure as reading the first of two CSS
+// custom properties: it certifies a value nothing uses.
+function registryLanguages(): { values: Map<string, string>; declarations: string[] } {
   const src = read("src/ast/engine.ts")
   const start = src.indexOf("const SUPPORTED_LANGUAGES = {")
   if (start < 0) throw new Error("SUPPORTED_LANGUAGES not found")
   const block = src.slice(start, src.indexOf("\n  } as const", start))
-  const out = new Map<string, string>()
+  const values = new Map<string, string>()
+  const declarations: string[] = []
   for (const line of block.split("\n")) {
     const m = line.match(/^\s*(?:"([^"]+)"|([a-z0-9_-]+)):\s*"([^"]+)",\s*$/)
-    if (m) out.set(m[1] ?? m[2]!, m[3]!)
+    if (!m) continue
+    declarations.push(m[1] ?? m[2]!)
+    values.set(m[1] ?? m[2]!, m[3]!)
   }
-  return out
+  return { values, declarations }
 }
 
 const registry = registryLanguages()
-const registryNames = [...registry.keys()]
-const genericNames = [...registry].filter(([, g]) => g === "__generic__").map(([n]) => n)
+const registryNames = [...registry.values.keys()]
+const genericNames = [...registry.values].filter(([, g]) => g === "__generic__").map(([n]) => n)
 const dedicatedCount = registryNames.length - genericNames.length
 
 // The snapshot. An engine change must be reflected here deliberately: this is
 // the line that turns "the site drifted" into "someone changed the contract".
-const EXPECTED = { languages: 50, dedicatedParsers: 49, families: 47, analyzers: 48 }
+//
+// Re-cut 2026-10-16 against the live tree. The previous cut (50/49/47/48) was
+// taken when the registry resolved 50 keys with `nim` shadowed to `__generic__`
+// and the dataset carried 47 families. Three engine changes moved it, not site
+// drift: `solidity` — which already had an analyzer and a pinned grammar but no
+// registry key, so nothing could route to it — joined SUPPORTED_LANGUAGES (50→51
+// languages, 47→48 families, +1 dedicated grammar); and the shadowing
+// `nim: "__generic__"` declaration was deleted, so nim now resolves to its real
+// grammar (49→51 dedicated: nim, plus the arrivals above).
+const EXPECTED = { languages: 51, dedicatedParsers: 51, families: 48, analyzers: 48 }
 
 check(
   `L1: the registry declares ${EXPECTED.languages} languages with ${EXPECTED.dedicatedParsers} dedicated grammars`,
   registryNames.length === EXPECTED.languages && dedicatedCount === EXPECTED.dedicatedParsers,
   `languages=${registryNames.length} dedicated=${dedicatedCount} generic=[${genericNames.join(",")}]`,
 )
-check("L1: no registry language is declared twice", new Set(registryNames).size === registryNames.length)
+// Not `new Set(registryNames).size === registryNames.length` — that compares the
+// map's keys with themselves and passes no matter what the source says. The
+// duplicate that matters is in the SOURCE, so it is counted there.
+const shadowed = registry.declarations.filter((k, i) => registry.declarations.indexOf(k) !== i)
+check(
+  "L1: no registry language is declared twice",
+  shadowed.length === 0,
+  `shadowed=[${[...new Set(shadowed)].join(",")}] declarations=${registry.declarations.length} resolved=${registryNames.length}`,
+)
 
 // --- the analyzers, and what they can construct -------------------------------------
 

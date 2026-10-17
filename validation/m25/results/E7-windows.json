@@ -4,15 +4,15 @@
   "milestone": "M25",
   "os": "win32",
   "status": "blocked",
-  "blockedReason": "No Windows hardware or runner on this machine (process.platform is darwin); the OS-matrix workflow (.github/workflows/os-matrix.yml) executes the Windows native leg on its GitHub-hosted runner and uploads the E7-win32.json artifact for the owner to persist. Recorded blocked locally, never claimed.",
+  "blockedReason": "No Windows hardware or runner on this machine (process.platform is linux); the OS-matrix workflow (.github/workflows/os-matrix.yml) executes the Windows native leg on its GitHub-hosted runner and uploads the E7-win32.json artifact for the owner to persist. Recorded blocked locally, never claimed.",
   "runnableInstead": "npx tsx script/m25/verify-cross-platform.ts (on the target OS runner)",
-  "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
   "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
   "evidenceFile": "E7-windows.json",
-  "generatedAt": "2026-10-12T19:09:45.661Z",
+  "generatedAt": "2026-10-17T17:13:37.574Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T19:09:45.661Z",
-    "contentSha256": "3ac6b31a55d89b1d0169b450fdcbebc8fb99a44f5836332b34c6130f3949d356"
+    "sealedAt": "2026-10-17T17:13:37.578Z",
+    "contentSha256": "f74173927f5d4d3d61e9027eb528db93dd0e17b50d0da370ecb3f5e5e3d863ca"
   }
 }

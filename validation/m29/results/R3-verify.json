@@ -1,14 +1,14 @@
 {
   "status": "known-gap",
-  "passed": 21,
-  "failed": 6,
+  "passed": 20,
+  "failed": 7,
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
-  "relevantInputsHash": "8e9b880e58f3c8508bf4b53652787a3b2f593de2",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "relevantInputsHash": "9c94a6f1c39ffab8ef6603feee851bfafcc1ab7a",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
-  "sourceFingerprint": "ac490dc839b4b199089b1ff6b12dd780696c4d6f258cc150fc87f7291873617b",
+  "sourceFingerprint": "764e2554eaa8fbfad0025e904f5b0669c6d7ae136961d41474bb0adb61927b9c",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-giant-repo.ts",
@@ -20,17 +20,19 @@
     "script/m29/giant-repo-budget.ts"
   ],
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-10-05T22:40:18.512Z",
+  "generatedAt": "2026-10-17T16:57:55.795Z",
   "details": [
+    "R1: corpus manifest exists and declares a synthetic kind",
     "R1: corpus meets the M19 giant-scale bar (files >= 50k): undefined",
     "R1: corpus on disk matches the manifest: disk=0 manifest=undefined",
-    "R2: relevant inputs unchanged since the evidence run: evidence=49b428d28e42965e261aa89e2bd731849fdf741b vs current=8e9b880e58f3c8508bf4b53652787a3b2f593de2 — re-run giant-repo-budget.ts --reuse to refresh",
+    "R2: evidence commit is an ancestor of HEAD: c6fbdf4f vs HEAD 5d60bc57",
+    "R2: relevant inputs unchanged since the evidence run: evidence=49b428d28e42965e261aa89e2bd731849fdf741b vs current=9c94a6f1c39ffab8ef6603feee851bfafcc1ab7a — re-run giant-repo-budget.ts --reuse to refresh",
     "R2: evidence indexed counts agree with the manifest: 59000 vs undefined",
     "R6: live probe skipped (no persistent index — run --index-only first): declared skip, not a silent pass"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:40:18.514Z",
-    "contentSha256": "527cae2c1e9f9f94d7af170cd8a210c8aaa2fd9f45223db9f6e860f6e2ff8435"
+    "sealedAt": "2026-10-17T16:57:55.796Z",
+    "contentSha256": "36c3e380ba846f7995e07fce933e00b83f3249b6e42592a53655566a93cad9e4"
   }
 }

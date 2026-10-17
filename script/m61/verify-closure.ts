@@ -305,7 +305,16 @@ if (!ledgerRead.ok) {
   const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T
   {
     const forged = clone(ledger)
-    forged.issues.find((i) => i.code === "V2")!.evidence = undefined
+    // THE MUTANT MUST MUTATE THE RULE, NOT THE LIVE STATE. Both closure mutants
+    // used to corrupt only the evidence block and then require a `hollow-verified:`
+    // finding — but V2/V3 are `known-gap` in this ledger, and a known-gap entry is
+    // judged on its `blockedReason`, not on its evidence. The corruption therefore
+    // changed nothing and the mutant reported "not caught", which read as a weak
+    // rule while the rule was fine. So the mutant PROMOTES the entry to verified
+    // first: only then does `isClosable` decide, which is the rule under test.
+    const v2 = forged.issues.find((i) => i.code === "V2")!
+    v2.status = "verified"
+    v2.evidence = undefined
     mutant("a verified issue with no evidence block passes the ledger", validateLedger(forged, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS).some((e) => e.startsWith("hollow-verified:V2")))
   }
   {
@@ -328,7 +337,9 @@ if (!ledgerRead.ok) {
     // caught while the auditor's own entry is exempted.
     const leaked = clone(ledger)
     const v3 = leaked.issues.find((i) => i.code === "V3")!
-    v3.evidence = { ...v3.evidence, failed: 4, realFailed: 4 }
+    // Same reason as the V2 mutant above: promote first, then make the proof fail.
+    v3.status = "verified"
+    v3.evidence = { ...v3.evidence, status: "verified", failed: 4, realFailed: 4 }
     mutant(
       "the self-owned exemption leaks to a projected entry",
       validateLedger(leaked, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS, SELF_OWNED_CODES.filter((c) => c !== "G1")).some((e) => e.startsWith("hollow-verified:V3")),

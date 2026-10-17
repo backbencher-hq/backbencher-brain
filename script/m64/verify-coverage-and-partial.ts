@@ -16,7 +16,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { Harness } from "../m13/harness"
 import { getProjectId } from "../../src/util/project-id"
-import { indexProjectParallel } from "../../src/ast/parallel-indexer"
+import { indexProjectParallel, flushBackgroundEmbeddings } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { runIndexHealthCheck, checkEmbeddingCoverage } from "../../src/brain/brain-index-health"
 import { getUnifiedHealth, formatUnifiedHealth } from "../../src/intelligence/health/health-provider"
@@ -30,6 +30,7 @@ const harness = new Harness({
   tool: "bb_health",
   title: "bb_health round 2: embedding coverage arithmetic, the half-built index, refresh concurrency, and selection cost at scale",
   layers: ["unit", "integration"],
+  milestone: "M64",
   decisions: {
     embeddingCoverage: "measured over the population the embedder can act on (the symbol kinds that appear in the embedding table), counting DISTINCT entities",
     partialIndex: "indexed_files < total_files in brain_index_status is the one incompleteness signal that survives the writing process dying",
@@ -51,6 +52,13 @@ async function fixture(n: number, dirs = ["src"]) {
   for (let i = 0; i < n; i++) writeFileSync(path.join(root, dirs[i % dirs.length], `f${String(i).padStart(4, "0")}.ts`), `export function fn${i}(): number {\n  return ${i}\n}\n`)
   const pid = getProjectId(root)
   await indexProjectParallel(pid as any, root, {})
+  // The embedding queue is BACKGROUND work: indexProjectParallel returns before
+  // the vectors are written (measured: 0 rows immediately after it, 30 after
+  // the flush). Every check below reads the embedding table, so without this the
+  // gate asserted on a table that was still empty — the battery reported an
+  // ERROR-severity "Embedding Coverage" and the coverage arithmetic was read off
+  // zero vectors. This is a determinism fix, not a tolerance.
+  await flushBackgroundEmbeddings()
   return { root, pid }
 }
 const drop = (root: string, pid: string) => {

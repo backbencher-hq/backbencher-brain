@@ -408,7 +408,14 @@ function main(): void {
   // what is scoped here is only the "your generator must project" obligation.
   console.log("\nG1: every in-scope lane's governance gate projects its ledger from the shared owner")
   const projection: Array<{ lane: string; gate: string | null; importsOwner: boolean; status: string; inScope: boolean }> = []
-  for (const lane of lanes) {
+  // A NON-CLAIM ledger is out of this census: the M14-era `issues[].closed`
+  // shape states no status union, so it makes no claim a projection could keep
+  // or break — there is nothing for a generator to project. G0 already names
+  // these lanes as a declared exclusion, which is where their absence from the
+  // rules is recorded; counting them here as "undeclared residual" asked a
+  // lane to own a generator for a ledger that is not a claim (found live
+  // 2026-10-17: undeclared=[m17, m18, m19] — the three lanes G0 excludes).
+  for (const lane of lanes.filter((l) => !excluded.includes(l))) {
     const p = projectsItsLedger(lane, ROOT)
     projection.push({
       lane,
@@ -457,22 +464,62 @@ function main(): void {
     // lane's results dir is a fork leg. A hardcoded list would let a fourth fork
     // (or a renamed one) fall out of the census silently — the exact omission
     // §8.3 bans.
-    const forks = existsSync(m25Dir) ? readdirSync(m25Dir).filter((f) => f.startsWith("F-") && f.endsWith(".json")).sort() : []
+    // SUPERSEDED COPIES ARE NOT LEGS. A `.superseded-<sha>.json` file is a
+    // preserved previous revision of a fork record (`M61`'s replacement rule
+    // keeps the old artifact beside the new one instead of deleting history).
+    // Counting them made this census ask a HISTORICAL record to satisfy today's
+    // rule: measured 2026-10-17, three of the six rows were `*.superseded-*`
+    // copies of the three real legs, each reported as a fork leg — the census
+    // double-counted every fork and could never pass while a superseded copy
+    // existed. The live leg is the one whose name is the record's own; the
+    // copies are enumerated here as excluded, never silently dropped.
+    const isSuperseded = (f: string): boolean => f.includes(".superseded-")
+    const forks = existsSync(m25Dir) ? readdirSync(m25Dir).filter((f) => f.startsWith("F-") && f.endsWith(".json") && !isSuperseded(f)).sort() : []
+    const supersededForkCopies = existsSync(m25Dir) ? readdirSync(m25Dir).filter((f) => f.startsWith("F-") && f.endsWith(".json") && isSuperseded(f)).sort() : []
+    console.log(`      fork census: ${forks.length} live leg(s), ${supersededForkCopies.length} superseded cop${supersededForkCopies.length === 1 ? "y" : "ies"} excluded: ${supersededForkCopies.join(", ") || "none"}`)
     check("G5: the fork census is not empty (a zero-fork census would pass vacuously)", forks.length > 0, `forks=${forks.length}`)
-    const forkRows: Array<{ file: string; status: string; reason: string; os: string }> = []
+    const forkRows: Array<{ file: string; status: string; reason: string; os: string; editor: string }> = []
     for (const f of forks) {
       const rec = trustedRecord(m25Dir, f)
+      const editor = rec?.editor as { name?: unknown; version?: unknown } | undefined
       forkRows.push({
         file: f,
         status: typeof rec?.status === "string" ? rec.status : "(no record)",
         reason: rec ? (reasonFromRecord(rec) ?? "") : "",
         os: typeof rec?.os === "string" ? rec.os : "",
+        editor: typeof editor?.name === "string" && typeof editor?.version === "string" ? `${editor.name} ${editor.version}` : "",
       })
     }
+    // THE RULE, restated to match the contract's own vocabulary rather than a
+    // two-word subset of it.
+    //
+    // It used to accept exactly `verified` or `blocked`, which is not the
+    // contract's status set: a leg that RAN and fell short is `known-gap`, the
+    // word every other gate in this program uses for that fact (§8.3 names
+    // three non-verified states: planned, known-gap, blocked). Under the
+    // two-word rule a measured-red leg could only be recorded by writing
+    // something FALSE — "blocked" for an editor that was present and ran, or
+    // "verified" for a run that failed — so the rule's cost was a lie, and the
+    // measured case is on disk: `F-ANTIGRAVITY.json=known-gap(reason)`, the
+    // antigravity 1.107.0 leg that launched on this machine, collected no suite
+    // result within its 420 s deadline, and said so.
+    //
+    // What the rule protects is unchanged and is still enforced: SILENCE IS THE
+    // FAILURE. A non-verified leg must carry a reason (§8.3), and a `verified`
+    // leg is held to the pin the label names — the editor's name AND version and
+    // the OS, which is more than the old rule checked on that arm (it read only
+    // the free-text reason). A leg that is verified without a pinned run, or
+    // non-verified without a reason, still fails.
+    // A verified leg needs its PIN (the run's basis) and no reason; a clean run
+    // has nothing to explain, and demanding a `limitations` sentence from a
+    // green leg is how a rule manufactures prose. A non-verified leg needs the
+    // reason. Both arms still refuse silence.
     check(
-      "G5: every fork leg is either verified WITH a pinned run (editor name + version + OS), or blocked WITH a reason (never omitted, never assumed)",
-      forkRows.every((r) => (r.status === "verified" ? r.reason !== "" : r.status === "blocked" && r.reason.length > 0)),
-      forkRows.map((r) => `${r.file}=${r.status}${r.reason ? "(reason)" : "(NO REASON)"}`).join(", "),
+      "G5: every fork leg is EITHER verified with a pinned run (editor name + version + OS), OR non-verified WITH a recorded reason — never omitted, never assumed",
+      forkRows.every((r) =>
+        r.status === "verified" ? r.editor !== "" && r.os !== "" : r.status !== "(no record)" && r.reason.length > 0,
+      ),
+      forkRows.map((r) => `${r.file}=${r.status}${r.reason ? "(reason)" : "(NO REASON)"}${r.status === "verified" ? `[${r.editor || "NO EDITOR PIN"} · ${r.os || "NO OS"}]` : ""}`).join(", "),
     )
     // §10: an evidence record without an OS field is invalid for an I3+ claim.
     // The editor/platform-scoped legs are exactly those claims. Discovered the
@@ -711,12 +758,24 @@ function main(): void {
         hollowBlocked(bare) !== null && hollowBlocked(withReason) === null && hollowBlocked({ code: "A", status: "verified" }) === null,
       )
     }
-    // M8: the reason is read from all three spellings a gate uses.
+    // M8: the reason is read from every spelling a gate uses — including the
+    // failing check's NAME (`failures: [...]`), which five real records carried
+    // while the rule knew only the other three and called them reasonless. A
+    // numeric `failures` (a count) is NOT accepted as a reason: m27's closure
+    // gate kept an integer in that slot, and a count names nothing.
     {
       const a = reasonFromRecord({ blockedReason: "no editor" })
       const b = reasonFromRecord({ reason: "no fork" })
       const c = reasonFromRecord({ limitations: ["scoped claim"] })
-      mutant("M8: the non-verified reason is read from blockedReason / reason / limitations alike", a === "no editor" && b === "no fork" && c === "scoped claim", JSON.stringify([a, b, c]))
+      const d = reasonFromRecord({ failures: ["X1: W3 verifier passes at HEAD"] })
+      const e = reasonFromRecord({ failures: 11 })
+      const f = reasonFromRecord({ details: ["R2: evidence commit is an ancestor of HEAD"] })
+      mutant(
+        "M8: the non-verified reason is read from blockedReason / reason / limitations / failures / details alike (and a numeric failures is not a reason)",
+        a === "no editor" && b === "no fork" && c === "scoped claim" && d === "X1: W3 verifier passes at HEAD" && e === undefined &&
+          f === "R2: evidence commit is an ancestor of HEAD",
+        JSON.stringify([a, b, c, d, e, f]),
+      )
     }
     // M9: the projection is a FIXPOINT — re-projecting an already-projected
     // ledger reports NO change. Without this, the gate would "heal" forever and

@@ -58,7 +58,14 @@ try {
     check(`${contract.name} required fields frozen`, JSON.stringify(required) === JSON.stringify(expectedRequired), `got ${required.join(",")}`)
   }
 
-  check("target surface has ten unique tools", contracts.length === 10 && new Set(contracts.map((tool) => tool.name)).size === 10)
+  // The count comes from `deriveToolContracts()` (live registry), and the
+  // live-list comparison above is the contract that matters. The literal `10`
+  // that used to stand here rotted when the surface grew to 16 (M22 added
+  // bb_index; M28 added graph/impact/cross-language/annotate/annotations), and a
+  // check that fails on a legitimate addition is a check nobody reads. What this
+  // line is FOR is uniqueness — one contract per tool, no duplicate names.
+  const contractNames = contracts.map((tool) => tool.name)
+  check("every derived tool contract is unique", new Set(contractNames).size === contractNames.length, `${contracts.length} contracts, ${new Set(contractNames).size} distinct`)
 
   let result: any = await client.callTool({ name: "bb_search", arguments: { query: "duplicateName", limit: 1 } })
   const firstPage = textOf(result)
@@ -75,8 +82,22 @@ try {
   check("bb_health default output includes counts and freshness", /files=\d+ symbols=\d+ relationships=\d+ imports=\d+/.test(textOf(result)) && textOf(result).includes("freshness:"), textOf(result).slice(0, 180))
 
   writeFileSync(fixture.sourceFile, `${readFileSync(fixture.sourceFile, "utf8")}\n// stale marker\n`)
+  // M43/M71 changed this contract: a read now AUTO-REFRESHES the stale files it
+  // is about to answer from (within budget, BB_NO_AUTO_REFRESH), so the default
+  // answer has nothing stale left to mark and `[STALE]` moved to the opt-out
+  // door. Asserting `[STALE]` on the default path asserted the pre-M43 behaviour
+  // — and it could not have passed since; the property it was protecting is
+  // asserted in the second leg, where the marker still exists.
   result = await client.callTool({ name: "bb_search", arguments: { query: "handleRequest" } })
-  check("bb_search reports stale indexed files", textOf(result).includes("[STALE]"), textOf(result).slice(0, 180))
+  const autoText = textOf(result)
+  check("bb_search refreshes a stale file before answering", /auto-refreshed \d+ files?/.test(autoText), autoText.slice(0, 200))
+  check("and therefore reports no [STALE] marker for it", autoText.includes("handleRequest") && !autoText.includes("[STALE]"), autoText.slice(0, 200))
+
+  writeFileSync(fixture.sourceFile, `${readFileSync(fixture.sourceFile, "utf8")}\n// stale marker again\n`)
+  result = await client.callTool({ name: "bb_search", arguments: { query: "handleRequest", refresh: false } })
+  const optOutText = textOf(result)
+  check("bb_search reports stale indexed files when refresh is opted out", optOutText.includes("[STALE]"), optOutText.slice(0, 200))
+  check("and names the opt-out as the reason it did not refresh", /auto-refresh disabled \(BB_NO_AUTO_REFRESH or refresh=false\)/.test(optOutText), optOutText.slice(-200))
 
   result = await client.callTool({ name: "bb_health", arguments: { refresh: true, wait: true } })
   check("bb_health refreshes before canonical mutation", !result.isError && /symbols=\d+/.test(textOf(result)), textOf(result).slice(0, 180))

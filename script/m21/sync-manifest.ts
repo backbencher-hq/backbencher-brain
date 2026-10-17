@@ -12,8 +12,12 @@
 // dirty tree is a pre-commit state and the committed manifest must reflect the
 // clean post-commit state.
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs"
+import { readFileSync, existsSync } from "node:fs"
 import path from "node:path"
+
+import { writeSealed } from "../lib/evidence.ts"
+import { reasonFromRecord } from "../m61/ledger_projection.ts"
+import { reRecordRegisterRow } from "../m61/seal_register.ts"
 
 const ROOT = path.resolve(process.cwd())
 const MANIFEST = path.join(ROOT, "validation/m21/results/manifest.json")
@@ -49,6 +53,14 @@ for (const issue of ledger.issues as any[]) {
     failed: ev.failed,
     negativeCases: ev.negativeCases,
   }
+  // §8.3: the reason travels with a non-verified status. This block used to
+  // copy only the counts, so every sync silently STRIPPED the reason the
+  // projection had derived — measured 2026-10-17: three m21 entries read
+  // `known-gap with no recorded reason` immediately after this helper ran.
+  // The reason is read through the ONE owner of that rule, so the sync and the
+  // projection cannot spell it differently.
+  const reason = reasonFromRecord(ev as Record<string, unknown>)
+  if (reason !== undefined) block.blockedReason = reason
   // Sanity: the evidence and ledger status must agree, else the sync is a lie.
   if (ev.status !== issue.status) {
     throw new Error(`status mismatch: ${issue.code} ledger=${issue.status} file=${ev.status}`)
@@ -57,5 +69,15 @@ for (const issue of ledger.issues as any[]) {
   updated++
 }
 ledger.updatedAt = new Date().toISOString()
-writeFileSync(MANIFEST, JSON.stringify(ledger, null, 2) + "\n")
+// M61 D-1 (the seal law): the manifest is a RECORD and is written through the
+// ONE write path. This helper stamped RAW JSON, so every projection left the
+// previous run's envelope sitting over new bytes — the stale seal M61.A1's A2
+// measured on this file (2026-10-17, sealed 2026-10-08 while rewritten since).
+writeSealed(MANIFEST, ledger)
+// A registered ledger that was just resealed must MOVE ITS REGISTER ROW, or
+// M61.A1's A4 fails on the digest this write just changed.
+{
+  const moved = reRecordRegisterRow(ROOT, MANIFEST, "m21 ledger re-synced from its evidence files by script/m21/sync-manifest.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged")
+  if (moved.ok) console.log(`register: ${moved.path} row moved ${moved.oldDigest.slice(0, 8)} -> ${moved.newDigest.slice(0, 8)}`)
+}
 console.log(`synced ${updated} evidence blocks; missing files: ${missing.length ? missing.join(",") : "none"}`)

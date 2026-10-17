@@ -4,6 +4,9 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs"
 import { parseFile } from "../../src/ast/pool-worker"
 
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+
 const ROOT = "$HOME/mcp/backbencher-brain"
 const CORPUS = "$HOME/fixtures/repositories/rebar3"
 const PINNED = `${ROOT}/wasm/tree-sitter-erlang.wasm`

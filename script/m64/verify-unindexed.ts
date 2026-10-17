@@ -30,6 +30,7 @@ const harness = new Harness({
   tool: "bb_health",
   title: "bb_health completeness: files on disk that the index does not contain, computed with the indexer's own rules",
   layers: ["integration"],
+  milestone: "M64",
   decisions: {
     computed: "the gap is computed by walking, never derived from the last run's total_files - indexed_files, which is a false clean",
     rules: "the walk is the indexer's own discoverIndexableFiles, extracted as an additive mode — not a second copy of discovery",

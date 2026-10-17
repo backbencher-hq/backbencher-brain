@@ -209,11 +209,13 @@ async function main(): Promise<void> {
    *  silently capped page as "the shapes I could see" — is what keeps the probe
    *  honest: a shape the surface never renders is not agreement, and a gate that
    *  treats it as agreement is the CL5 anti-pattern. */
-  const graphOfEveryShape = async (symbol: string, kinds?: string[]): Promise<{ edges: any[]; truncated: boolean; edgeLimit: number | null; kindsUsed: string[] }> => {
+  const graphOfEveryShape = async (symbol: string, kinds?: string[]): Promise<{ edges: any[]; truncated: boolean; filterNarrowed: boolean; edgeLimit: number | null; kindsUsed: string[] }> => {
     const g = await callJson("bb_graph", { symbol, maxDepth: 3, edgeLimit: 5000, maxEdges: 5000, timeBudgetMs: 0, ...(kinds ? { relationshipTypes: kinds } : {}) })
     return {
       edges: [...(g?.callers ?? []), ...(g?.callees ?? [])],
       truncated: g?.summary?.truncated === true,
+      // The filter channel, separate from truncation (bb_graph review D5).
+      filterNarrowed: g?.summary?.filterNarrowed === true,
       edgeLimit: g?.summary?.edgeLimit ?? null,
       kindsUsed: g?.summary?.scope?.relationshipTypes ?? [],
     }
@@ -319,22 +321,26 @@ async function main(): Promise<void> {
   // and takes the default silently loses shapes the probe believes it seeded —
   // the same "absence over-claimed" shape as CL1 defect B, in a gate.
   const seedKinds = [...new Set([...indexKinds, ...OWNER_KINDS])]
-  const seedPages: Array<{ n: string; edges: any[]; truncated: boolean; edgeLimit: number | null; kindsUsed: string[] }> = []
+  const seedPages: Array<{ n: string; edges: any[]; truncated: boolean; filterNarrowed: boolean; edgeLimit: number | null; kindsUsed: string[] }> = []
   if (seeded.length > 0) for (const n of seedSymbolNames) seedPages.push({ n, ...(await graphOfEveryShape(n, seedKinds)) })
   const seedEdges = seedPages.flatMap((p) => p.edges)
   const seedParity = shippedTierParity("U2 P2 (bb_graph over the seeded shape corpus)", seedEdges)
   const seedShapeCount = seeded.length
   const seedReturned = seedEdges.length
   // Reachability is measured by the ROW IDs the payload carries, not by the
-  // tool's `truncated` boolean: `truncated: true` with
-  // `truncationReason: "relationshipTypes: …"` is the tool DECLARING the filter
-  // the probe asked for, not a shape lost. Conversely a page that is not
-  // truncated but is missing a seeded row is an unreachable shape, and an
-  // unreachable shape is never counted as agreement.
+  // tool's `truncated` boolean. Until bb_graph review D5 the filter this probe
+  // asks for showed up as `truncated: true, truncationReason:
+  // "relationshipTypes: …"`, so "the tool declaring the filter I passed" and "a
+  // shape lost to a bound" were the same signal here; the filter now reports
+  // through `filterNarrowed`/`filterReason` and `truncated` means a bound. Both
+  // are still reported below, and the REACHABILITY claim itself stays on row
+  // ids: a page that is not truncated but is missing a seeded row is an
+  // unreachable shape, and an unreachable shape is never counted as agreement.
   const returnedRowIds = new Set(seedEdges.map((e: any) => `${projectHash}:rel:${String(e.rowId)}`))
   const unreachable = seeded.filter((x) => !returnedRowIds.has(x.id))
-  const declaredFilterPages = seedPages.filter((p) => p.truncated).length
-  notes.push(`seed reachability: ${seedReturned} rows returned for ${seeded.length} seeded; ${declaredFilterPages} of ${seedPages.length} pages declared a filter in truncationReason (the filter the probe asked for)`)
+  const declaredFilterPages = seedPages.filter((p) => p.filterNarrowed).length
+  const boundPages = seedPages.filter((p) => p.truncated).length
+  notes.push(`seed reachability: ${seedReturned} rows returned for ${seeded.length} seeded; ${declaredFilterPages} of ${seedPages.length} pages declared the requested filter (filterNarrowed), ${boundPages} declared a bound (truncated)`)
   check("U2: every seeded shape is REACHABLE — each seeded stored row id appears in some bb_graph answer (an unreachable shape is not agreement)", seeded.length > 0 && unreachable.length === 0, `seeded=${seeded.length} returnedRows=${returnedRowIds.size} unreachable=${unreachable.length}${unreachable.length ? `; first missing: ${unreachable[0]!.id}` : ""}`)
 
   // The owner must not be order-dependent: calling it twice over the seeded

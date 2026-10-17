@@ -6,6 +6,9 @@ import { ASTEngine } from "../../src/ast/engine"
 import { readFileSync } from "node:fs"
 import { execSync } from "node:child_process"
 
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+
 const ROOT = "$HOME/fixtures/repositories/zig"
 const SAMPLE_LIMIT = Number(process.env.C_SAMPLE_LIMIT || 400)
 const MIN_BYTES = Number(process.env.C_MIN_BYTES || 1024)

@@ -34,6 +34,9 @@ import { ASTEngine } from "../../src/ast/engine"
 import { loadWebTreeSitter } from "../../src/util/wasm"
 import { RealObjectiveCAnalyzer } from "../../src/ast/real-objective-c-analyzer"
 
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const CORPUS_ROOT = "$HOME/fixtures/repositories"
 const OUT = path.join(ROOT, "validation/m60/results/objc-wasm-ab.json")

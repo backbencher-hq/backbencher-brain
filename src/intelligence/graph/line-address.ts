@@ -61,6 +61,22 @@ export const STORED_LINE_ALIAS = "bb_stored_call_line" as const
  *  column (§ L6). */
 export const STORED_LINE_SELECT = `${STORED_LINE_COLUMN} AS ${STORED_LINE_ALIAS}` as const
 
+/** The SQL predicate "this stored line IS an exact address" — a real integer
+ *  position. `typeof` is in the predicate on purpose: SQLite orders numbers
+ *  before text, so a corrupted TEXT column would satisfy `> 0` on its own, and
+ *  {@link classifyStoredLine} calls every non-integer `unusable`.
+ *
+ *  It lives HERE, with the column, for the same reason {@link STORED_LINE_SELECT}
+ *  does: a surface that needs to COUNT or FILTER by the stored line would
+ *  otherwise spell the column a second time (src/lsp/relations.ts did, until the
+ *  A2 permanence lint counted it). One name, one owner, every consumer composes. */
+export const STORED_LINE_IS_EXACT_SQL = `typeof(${STORED_LINE_COLUMN}) = 'integer' AND ${STORED_LINE_COLUMN} > 0` as const
+
+/** The store's two DECLARED unknown states: never stored, and the legacy `0`
+ *  literal. These are the only states for which a substitute is permitted. */
+export const STORED_LINE_IS_ABSENT_SQL =
+  `(${STORED_LINE_COLUMN} IS NULL OR (typeof(${STORED_LINE_COLUMN}) = 'integer' AND ${STORED_LINE_COLUMN} = 0))` as const
+
 /** Read the stored line out of a row fetched with {@link STORED_LINE_SELECT}.
  *
  *  Returns the value UNCHANGED — including `null` and `undefined`, which are

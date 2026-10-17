@@ -19,7 +19,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { Harness } from "../m13/harness"
 import { getProjectId } from "../../src/util/project-id"
-import { indexProjectParallel } from "../../src/ast/parallel-indexer"
+import { indexProjectParallel, flushBackgroundEmbeddings } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { runIndexHealthCheck } from "../../src/brain/brain-index-health"
 import { getUnifiedHealth, formatUnifiedHealth } from "../../src/intelligence/health/health-provider"
@@ -30,6 +30,9 @@ const harness = new Harness({
   tool: "bb_health",
   title: "bb_health actionability: which integrity check failed, which language is searchable, and what this call cost",
   layers: ["integration"],
+  // M64 is the milestone this document belongs to; without it the shared harness
+  // stamps M13 and stores the file in M13's corpus (see script/m64/verify-evidence.ts).
+  milestone: "M64",
   decisions: {
     A1: "the integrity one-liner names the non-ok checks and carries each check's own first sentence of remediation",
     A1_bound: "healthy adds nothing; a pathological project names 3 and counts the rest",
@@ -61,6 +64,13 @@ async function mixed() {
   for (let i = 0; i < 3; i++) writeFileSync(path.join(root, "rb", `f${i}.rb`), `class Rb#{i}\n  def m\n  end\nend\n`)
   const pid = getProjectId(root)
   await indexProjectParallel(pid as any, root, {})
+  // The embedding queue runs in the BACKGROUND (measured: 0 vectors right after
+  // indexProjectParallel, all of them after the flush). This gate's healthy-case
+  // checks read the battery's score, and an index whose vectors had not been
+  // written yet scores 92% with an ERROR-severity Embedding Coverage check — so
+  // the gate was measuring the queue's timing, not the reporting it exists to
+  // pin. Determinism fix; no assertion was relaxed.
+  await flushBackgroundEmbeddings()
   return { root, pid }
 }
 
@@ -97,7 +107,17 @@ async function mixed() {
 
     // The score itself must be unaffected by the extra lines.
     const rep = await getUnifiedHealth(pid, root, { integrity: true })
-    harness.check("the report object still carries all 13 checks", rep.integrity!.checks.length === 13, `${rep.integrity!.checks.length} checks`)
+    // 14 since f0d436fa7 ("health reported 92% on an empty index and the same
+    // 92% on a partial one") added the scored `Index Completeness` check to the
+    // 12 that existed when this gate was written: 13 scored + 1 informational.
+    // The count is part of the published surface, so it is re-stated only when
+    // the battery deliberately grows — and the names below are asserted too, so
+    // a silently swapped check fails as a NAME mismatch rather than sliding past
+    // an unchanged total.
+    harness.check("the report object still carries all 14 checks", rep.integrity!.checks.length === 14, `${rep.integrity!.checks.length} checks`)
+    for (const name of ["Byte Bounds Coverage", "Embedding Coverage", "Hash Drift (Stale Files)", "Orphan Owner References", "Index Completeness"]) {
+      harness.check(`the battery still contains the \`${name}\` check`, rep.integrity!.checks.some((c) => c.name === name), rep.integrity!.checks.map((c) => c.name).join(", ").slice(0, 140))
+    }
     harness.check("and the orphan check is now non-ok", rep.integrity!.checks.find((c) => c.name === "Orphan Owner References")!.status !== "ok", `status=${rep.integrity!.checks.find((c) => c.name === "Orphan Owner References")!.status} with 15 orphans (threshold is >10 to warn)`)
 
     // A check whose description contains a decimal must not be truncated at the

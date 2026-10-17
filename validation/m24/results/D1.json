@@ -1,8 +1,8 @@
 {
   "issue": "496",
   "code": "D1",
-  "status": "verified",
-  "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
+  "status": "known-gap",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
   "sourceFingerprint": "850c2bddcfb2f2a630e57338e97c5e6c0dc5666ee05b8aa8c7f34509b21bbad1",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -11,14 +11,16 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-docs.ts",
   "evidenceFile": "D1.json",
-  "generatedAt": "2026-10-12T19:00:18.650Z",
-  "passed": 47,
-  "failed": 0,
-  "failures": [],
+  "generatedAt": "2026-10-17T17:07:02.134Z",
+  "passed": 46,
+  "failed": 1,
+  "failures": [
+    "G2: claim table cites verified evidence for L2"
+  ],
   "negativeCases": 6,
   "verdict": {
-    "realComponentFailures": 0,
-    "ok": true,
+    "realComponentFailures": 1,
+    "ok": false,
     "note": "doc fingerprint is the committed TOOL-DOC.md; regeneration byte-identity is the drift gate."
   },
   "claimSources": [
@@ -26,21 +28,23 @@
       "code": "L2",
       "evidenceFile": "validation/m24/results/L2.json",
       "read": "ok",
-      "status": "verified",
-      "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
-      "generatedAt": "2026-10-12T18:59:48.110Z",
-      "passed": 58,
-      "failed": 0,
-      "upstreamFailures": [],
-      "verdictOk": true
+      "status": "known-gap",
+      "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+      "generatedAt": "2026-10-17T17:03:27.827Z",
+      "passed": 57,
+      "failed": 1,
+      "upstreamFailures": [
+        "G6: p95 warm hover under 50ms budget"
+      ],
+      "verdictOk": false
     },
     {
       "code": "L3",
       "evidenceFile": "validation/m24/results/L3.json",
       "read": "ok",
       "status": "verified",
-      "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
-      "generatedAt": "2026-10-12T18:59:59.448Z",
+      "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+      "generatedAt": "2026-10-17T17:03:55.252Z",
       "passed": 122,
       "failed": 0,
       "upstreamFailures": [],
@@ -51,8 +55,8 @@
       "evidenceFile": "validation/m24/results/L4.json",
       "read": "ok",
       "status": "verified",
-      "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
-      "generatedAt": "2026-10-12T19:00:01.169Z",
+      "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+      "generatedAt": "2026-10-17T17:04:16.237Z",
       "passed": 50,
       "failed": 0,
       "upstreamFailures": [],
@@ -63,8 +67,8 @@
       "evidenceFile": "validation/m24/results/L5.json",
       "read": "ok",
       "status": "verified",
-      "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
-      "generatedAt": "2026-10-12T19:00:03.559Z",
+      "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+      "generatedAt": "2026-10-17T17:04:52.708Z",
       "passed": 97,
       "failed": 0,
       "upstreamFailures": [],
@@ -79,7 +83,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T19:00:18.650Z",
-    "contentSha256": "54ccaacbe3b439e783e659f49e623cdf8eacf1cace4413e6d19c337a25487ac0"
+    "sealedAt": "2026-10-17T17:07:02.134Z",
+    "contentSha256": "fa4dce6968bb68d6ef975cced7c3d5a33fadeccf6c81701a8e0486d41ad6443a"
   }
 }

@@ -501,28 +501,29 @@ negative("X1: unreachable evidence commit is rejected", !isAncestor("0".repeat(4
 const ok = failures.length === 0
 console.log("")
 console.log(`  checks: ${passed}/${checks} passed, ${negatives} negative cases`)
-if (!ok) {
-  console.log("VERDICT: FAIL")
-  for (const f of failures) console.log(`  - ${f}`)
-  process.exit(1)
-}
-console.log("VERDICT: PASS")
+console.log(`VERDICT: ${ok ? "PASS" : "FAIL"}`)
+if (!ok) for (const f of failures) console.log(`  - ${f}`)
 
+// A RED RUN RECORDS ITS ARTIFACT TOO — see the same note in script/m56/verify-governance.ts.
+// The ledger derives this entry's commit from this file, so exiting before writing left the
+// artifact pinned to a commit the history no longer resolves with no way to replace it that did
+// not already require a reachable citation. status is "verified" only when every check passed.
 mkdirSync(M41, { recursive: true })
 const evidence = {
   issue: "M41.X1",
   code: "X1",
   milestone: "M41",
-  status: "verified",
+  status: ok ? "verified" : "failed",
   checks,
   passed,
   failed: checks - passed,
   negativeCases: negatives,
+  failures: ok ? [] : failures.slice(0, 25),
   // currentCommit is the BATCH commit, not HEAD-at-run-time: the ledger records
   // this entry and the governance gate compares it byte-for-byte against this
   // file, so writing HEAD here would make the gate's own re-run (or a later
   // `npm run verify` at the evidence commit) disagree with the ledger.
-  currentCommit: H,
+  currentCommit: H ?? head,
   batchCommit: H,
   deployGated: { code: "S2", commit: s2Commit, status: "pass at ancestor commit; owner re-runs post-deploy" },
   liveReruns: { truthPipeline: tp.code, governance: gov.code },
@@ -546,4 +547,5 @@ const evidence = {
   ],
 }
 writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")
+process.exit(ok ? 0 : 1)
 console.log(`  evidence: validation/m41/results/X1.json`)

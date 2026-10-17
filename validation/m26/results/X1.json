@@ -11,8 +11,8 @@
     "X1: W3 regeneration run passes"
   ],
   "negativeCases": 3,
-  "currentCommit": "69bb9592a8b534f82ff03c6a32d445b59717a2c9",
-  "sourceFingerprint": "5a1026bcbe6c0e58a22e42bb379b46d88c62aeaac369e566fd8fc618b900c5c1",
+  "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
+  "sourceFingerprint": "0963f4adabb87387de51f72d657cd8ffd9dd48697421b157eb88d1395ad8686e",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m26/verify-closure.ts",
@@ -253,10 +253,10 @@
       }
     ]
   },
-  "generatedAt": "2026-10-08T17:31:50.271Z",
+  "generatedAt": "2026-10-15T07:46:17.775Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T17:31:50.274Z",
-    "contentSha256": "f605be75d4c9132950dea03470b183af80ffc8eb95e537b03705e347ddf0e075"
+    "sealedAt": "2026-10-15T07:46:17.776Z",
+    "contentSha256": "1eb712518d380d5f0fbf1888dd965e0f85a2cd63937a40d9f79084a5473aa328"
   }
 }

@@ -56,6 +56,7 @@ const harness = new Harness({
     level: "through createToolHandlers(), because the options were dropped in the handler while the engine honoured them",
     causality: "every option assertion carries a control run without the option",
     vocabulary: "languages/relationshipTypes are echoed in considered, so the applied filter is visible",
+    layout: "the graph's arrangement is an option rather than a replacement: it rides the JSON, it is declared on the document the caller opens, it changes no data, and it is never claimed for a view that has no force layout",
   },
   limitations: [
     "The vocabulary assertions are made through the handler against a fixture whose stored values are known; a value the index would hold in another project is not enumerated here.",
@@ -217,6 +218,7 @@ harness.check("control: default patterns are the documented twelve", JSON.string
   const nodeCeiling = await run({ maxNodes: 2000 })
   harness.check("maxNodes: the ceiling itself is ACCEPTED", nodeCeiling.truncation?.maxNodes === 2000, JSON.stringify(nodeCeiling.truncation))
 }
+
 // ── offset: a scope bigger than one page can be WALKED ───────────────────────
 //
 // MEASURED as a gap, not a defect: `maxNodes` selects the top-N and there was no
@@ -271,7 +273,6 @@ harness.check("control: default patterns are the documented twelve", JSON.string
   harness.negative("offset: a valid cursor is NOT reported as adjusted", (p1.truncation.boundsAdjusted ?? []).length === 0, JSON.stringify(p1.truncation.boundsAdjusted ?? null))
 }
 
-
 // ── overlays: an annotation is a fact about a symbol, not a separate page ────
 //
 // The review's capability gap #6: the index already holds agent annotations, security findings
@@ -319,6 +320,40 @@ harness.check("control: default patterns are the documented twelve", JSON.string
     const parsed = await run({ view })
     harness.check(`view: json carries ${view}`, parsed.view === view, String(parsed.view))
   }
+}
+
+// ── layout (the graph's arrangement is a choice, and it reaches the document) ──
+//
+// MEASURED in the reader's report of the artifact: the directory map was a real
+// improvement, and the reader still wanted the picture it replaced AVAILABLE. So the
+// option has to do three things or it is decoration: change the JSON the caller reads,
+// change the DOCUMENT the caller opens, and refuse a value it does not know. The third
+// is the generic enum check in tool-validation; the first two are asserted here.
+{
+  const declared = (html: string): string => (html.match(/<html[^>]*data-bb-layout="(\w+)"/) ?? ["", "none"])[1]
+  const asHtml = async (args: Record<string, unknown>): Promise<string> =>
+    (await handlers.bb_visualize({ scope: "project", view: "graph", format: "html", ...args }, ctx)).content[0].text as string
+  const graphOf = (html: string): string => {
+    const m = html.match(/<script id="bb-studio-data" type="application\/json">([\s\S]*?)<\/script>/)
+    return m ? ((JSON.parse(m[1]) as Record<string, string>).graph ?? "") : ""
+  }
+  const defaultJson = await run({ view: "graph" })
+  const forceJson = await run({ view: "graph", layout: "force" })
+  harness.check("layout: the default is the region map", defaultJson.layout === "regions", String(defaultJson.layout))
+  harness.check("layout: json carries the other arrangement", forceJson.layout === "force", String(forceJson.layout))
+  harness.negative("layout: and the two answers are distinguishable", defaultJson.layout !== forceJson.layout, `${defaultJson.layout} vs ${forceJson.layout}`)
+  harness.check("layout: the data is the SAME either way (it is a picture, not a filter)", forceJson.nodes.length === defaultJson.nodes.length && forceJson.links.length === defaultJson.links.length, `${forceJson.nodes.length}/${forceJson.links.length} vs ${defaultJson.nodes.length}/${defaultJson.links.length}`)
+  const regionsDoc = graphOf(await asHtml({}))
+  const forceDoc = graphOf(await asHtml({ layout: "force" }))
+  harness.check("layout: the region document declares itself", declared(regionsDoc) === "regions", declared(regionsDoc))
+  harness.check("layout: and the force document declares itself", declared(forceDoc) === "force", declared(forceDoc))
+  harness.negative("layout: the two documents really differ", regionsDoc !== forceDoc, regionsDoc === forceDoc ? "byte-identical" : `${regionsDoc.length} vs ${forceDoc.length} chars`)
+  // The layout is a graph option. A code map has no force layout to arrange, so the
+  // reply must not claim one -- silence about an inapplicable option beats a line that
+  // describes a choice the picture does not have.
+  const codemapText = (await handlers.bb_visualize({ scope: "project", view: "codemap", format: "text" }, ctx)).content[0].text as string
+  harness.negative("layout: a code map is not told it has a force layout", !codemapText.includes("layout:"), codemapText.split("\n").find((l) => l.startsWith("layout:")) ?? "")
+  harness.check("layout: but json still records what the graph would draw", (await run({ view: "codemap" })).layout === "regions", "no layout in a codemap answer")
 }
 
 // ── structural: no published option can be accepted and ignored ──────────────

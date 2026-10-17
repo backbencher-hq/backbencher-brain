@@ -34,9 +34,11 @@
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
-import { pathToFileURL } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 import { join, resolve } from "node:path"
 import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
+
+const __filename = fileURLToPath(import.meta.url)
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const AUTO_INDEX_SRC = join(ROOT, "ide/vscode/src/auto-index.ts")

@@ -1,4 +1,11 @@
 import { graphTraversal } from "../graph/graph-engine"
+// The DEPENDENCY rule, imported from its owner (see IMPACT_REL_TYPES). This
+// legacy unit counted every stored kind as a reverse dependency, which is the
+// defect the canonical surface measured and fixed (`GraphQLList` declared 57
+// reverse dependencies of which 8 are dependency rows); a deprecated calculator
+// is still a calculator, and leaving it measuring a different set would make the
+// M15 gate's reachability proof a proof about a number nothing else agrees with.
+import { IMPACT_REL_TYPES } from "../../lsp/impact"
 import type { ProjectID } from "../../project/schema"
 import type { ImpactReport } from "../contracts"
 import { makeProvenance } from "../evidence"
@@ -15,7 +22,13 @@ const ENGINE_VERSION = "m10.04"
 // it into a tool handler; the M48.P2 gate fails if a handler imports it.
 
 // Change impact: who is affected when the target changes. Built over the shared
-// graph engine (callers direction). Distinguishes direct (depth 0), transitive
+// graph engine (callers direction) under the DECLARED dependency rule
+// (IMPACT_REL_TYPES: calls, instantiates, extends, implements) — the same rule
+// the canonical surface walks, so `directSymbols` is a count of dependents and
+// not of rows. `contains` is what that excludes and why it matters: it is the
+// parent -> member edge, so under the all-kinds default a class reported its own
+// methods as symbols affected by a change to it, and a changed method counted
+// the class that merely holds it. Distinguishes direct (depth 0), transitive
 // (depth > 0), and global (full traversal). Reports cross-language and
 // unresolved edges. Makes NO test-coverage claims (that belongs to M9.10).
 export async function analyzeImpact(
@@ -28,7 +41,11 @@ export async function analyzeImpact(
 
   let graph
   try {
-    graph = await graphTraversal(projectId, target, { direction: "callers", maxDepth })
+    graph = await graphTraversal(projectId, target, {
+      direction: "callers",
+      maxDepth,
+      relationshipTypes: [...IMPACT_REL_TYPES],
+    })
   } catch {
     return {
       target,

@@ -9,6 +9,9 @@
 // Output: one JSON line with p50 latency and a SHA-256 digest of the findings
 // payload (sorted fingerprint list) so parity is proven, not asserted.
 
+
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
 const ROOT = "$HOME/mcp/backbencher-brain"
 const mode = process.argv.includes("--dist") ? "dist" : "src"
 const ROUNDS = Number(process.env.BB_M57_ROUNDS ?? 3)

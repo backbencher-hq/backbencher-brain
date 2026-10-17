@@ -61,6 +61,9 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { LANGS, runLang } from "./run-fixtures"
 
+import { fileURLToPath } from "node:url"
+const __dirname = fileURLToPath(new URL(".", import.meta.url)).replace(/[\\/]+$/, "")
+
 const ROOT = path.resolve(__dirname, "..", "..")
 const FIXTURES_REL = "validation/m14/fixtures"
 

@@ -23,20 +23,20 @@ replies with an honest not-indexed/not-launch response, never a guess.
 
 | Language | L2 | L3 | L4 | L5 |
 | --- | --- | --- | --- | --- |
-| java | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| groovy | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| kotlin | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| scala | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| typescript | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| javascript | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| python | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| zig | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| go | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| rust | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| c | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| cpp | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| vue | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| svelte | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
+| java | — | I1 ✓ | I1 ✓ | I1 ✓ |
+| groovy | — | I1 ✓ | I1 ✓ | I1 ✓ |
+| kotlin | — | I1 ✓ | I1 ✓ | I1 ✓ |
+| scala | — | I1 ✓ | I1 ✓ | I1 ✓ |
+| typescript | — | I1 ✓ | I1 ✓ | I1 ✓ |
+| javascript | — | I1 ✓ | I1 ✓ | I1 ✓ |
+| python | — | I1 ✓ | I1 ✓ | I1 ✓ |
+| zig | — | I1 ✓ | I1 ✓ | I1 ✓ |
+| go | — | I1 ✓ | I1 ✓ | I1 ✓ |
+| rust | — | I1 ✓ | I1 ✓ | I1 ✓ |
+| c | — | I1 ✓ | I1 ✓ | I1 ✓ |
+| cpp | — | I1 ✓ | I1 ✓ | I1 ✓ |
+| vue | — | I1 ✓ | I1 ✓ | I1 ✓ |
+| svelte | — | I1 ✓ | I1 ✓ | I1 ✓ |
 
 - **I1 (protocol-passed)**: the feature passes the reference LSP client
   harness (`script/m24/lsp_harness.ts`, wired into `npm run verify`) with
@@ -48,7 +48,7 @@ replies with an honest not-indexed/not-launch response, never a guess.
 
 ## Feature status
 
-- **L2 — Hover (signature + usage count + evidence tier + stale marker)**: `verified` (evidence `validation/m24/results/L2.json`)
+- **L2 — Hover (signature + usage count + evidence tier + stale marker)**: `missing evidence — not claimed` (evidence `validation/m24/results/L2.json`)
 - **L3 — Definition + references**: `verified` (evidence `validation/m24/results/L3.json`)
 - **L4 — Document + workspace symbols**: `verified` (evidence `validation/m24/results/L4.json`)
 - **L5 — Call hierarchy (prepare / incoming / outgoing)**: `verified` (evidence `validation/m24/results/L5.json`)

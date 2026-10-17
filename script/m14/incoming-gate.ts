@@ -1994,12 +1994,17 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
         // behaves as this run's --index-less arm does, while `.proto` IS in the table since
         // 2026-10-11 and its --index population IS production's. A header that is wrong about which
         // languages are indexed is the population rule applied to the instrument itself.
-        `THE TABLE (src/ast/parallel-indexer.ts PROJECT_INDEX_EXTENSIONS) carries ` +
-        `\`.sol\`, \`.fs\` and \`.proto\`: ` +
-        `for SOLIDITY, FSHARP and PROTOBUF this population IS production's, and for every other ` +
-        `language — DART included, whose spec exists in project-index.ts but is unreachable because ` +
-        `\`.dart\` was never added — the analyzer is parsed with no context and behaves as this ` +
-        `run's --index-less arm does. Its counts are not comparable to a --index-less run.`,
+        // DERIVED FROM `INDEX_SPECS`, NOT HAND-LISTED. The previous text named `.sol`, `.fs` and
+        // `.proto` only, and went stale the moment SCSS, DART and JAVA gained entries: java's lane
+        // measured against a header that told it the arm it was using did not exist for its language.
+        // A hand-written list of what an instrument covers is a claim about the instrument, so it
+        // drifts exactly like any other — this one now reads its own table.
+        `THE GATE'S PROJECT-INDEX POPULATION is ${Object.keys(INDEX_SPECS).sort().join(", ")} ` +
+        `(the languages \`INDEX_SPECS\` can build an index for). For those, this population IS ` +
+        `production's; for every other language the analyzer is parsed with NO context and behaves ` +
+        `as this run's --index-less arm does, so its counts are not comparable to a --index-less run. ` +
+        `Production's own list is PROJECT_INDEX_EXTENSIONS in src/ast/parallel-indexer.ts; a language ` +
+        `in that list with no INDEX_SPECS entry here is a gap in THIS instrument, not in production.`,
   )
   console.log(
     `excluded from that population: ${rep.excluded.absent} tracked-but-absent/unreadable + ` +

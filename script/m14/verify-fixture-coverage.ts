@@ -34,8 +34,15 @@
 
 import * as fs from "fs"
 import * as path from "path"
+// UNION (main, ported delta): `__dirname` DOES NOT EXIST in an ES module and package.json declares
+// `"type": "module"`, so line 38 threw `ReferenceError: __dirname is not defined in ES module scope`
+// AT LOAD — the gate printed a stack trace, ran no check at all, and sat inside `npm run verify`
+// contributing nothing. Main fixed exactly this; VERIFIED HERE BY RUNNING (unpiped exit 1 with that
+// ReferenceError before, no crash after). The rest of the file is THIS branch's.
+import { fileURLToPath } from "node:url"
 
-const ROOT = path.resolve(__dirname, "..", "..")
+const HERE = path.dirname(fileURLToPath(import.meta.url))
+const ROOT = path.resolve(HERE, "..", "..")
 const SPEC_DIR = path.join(ROOT, "script", "m14", "spec")
 const FIXTURE_DIR = path.join(ROOT, "validation", "m14", "fixtures")
 const WASM_DIR = path.join(ROOT, "wasm")

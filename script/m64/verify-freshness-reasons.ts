@@ -32,6 +32,7 @@ const harness = new Harness({
   tool: "bb_health",
   title: "bb_health freshness reasons: every category reachable, distinguishable, and reconciling with the headline",
   layers: ["unit", "integration"],
+  milestone: "M64",
   decisions: {
     vocabulary: "RowFreshnessReason is exported and typed at the resolver; a tally cannot be published without it",
     freshSplit: "hash-match and metadata-fast-path are reported apart — one read the bytes, one did not",

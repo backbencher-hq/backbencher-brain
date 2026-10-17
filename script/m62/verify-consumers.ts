@@ -556,18 +556,29 @@ const fixtureFileByLanguage: Map<string, string> = new Map(
   LANGUAGE_FIXTURE.map((e) => [e.language, `lang_${e.language}.${e.ext}`]),
 )
 
-/** The commit the previous A2 record was sealed at — before the M63.T2 impact
- *  fix that read the raw stored column. R8's negative drives the drift law with
- *  this commit to show it notices. Resolved rather than pasted so the probe does
- *  not rot into a 40-hex literal that means nothing. */
-const STALE_PROBE_COMMIT = "8130996ed"
-
-/** Resolve a short sha to a full one, or return "" when it does not exist. An
- *  unresolvable probe commit is reported as an unresolved probe, never as a
- *  pass. */
-function resolveCommit(short: string): string {
+/** A commit from which the drift law MUST report a surface change, DERIVED from
+ *  this clone rather than pasted.
+ *
+ *  The first version named a literal (`8130996ed`), a commit from the machine the
+ *  lane was written on. It does not exist here — `git rev-parse` fails — so the
+ *  negative reported `P9(record-commit-unreadable)` and A2 could never close on
+ *  any clone that did not share that history. A probe that only works on one
+ *  machine is a foreign fact, the exact class the M62 D-series is about.
+ *
+ *  The derivation is constructive, not heuristic: take the most recent commit
+ *  that touched ANY declared display surface, and seal the probe at its PARENT.
+ *  That surface's last change is then provably after the probe commit, so the
+ *  drift law has one change it must report. If the tree has no such commit (a
+ *  single-commit clone) the probe is "" and the check FAILS as a declared
+ *  limitation — never as a pass. */
+function staleProbeCommit(): string {
   try {
-    return execFileSync("git", ["rev-parse", short], { cwd: ROOT, encoding: "utf8" }).trim()
+    const last = execFileSync("git", ["log", "-1", "--format=%H", "--", ...DISPLAY_SURFACES], {
+      cwd: ROOT,
+      encoding: "utf8",
+    }).trim()
+    if (!/^[0-9a-f]{40}$/.test(last)) return ""
+    return execFileSync("git", ["rev-parse", `${last}^`], { cwd: ROOT, encoding: "utf8" }).trim()
   } catch {
     return ""
   }
@@ -1147,11 +1158,16 @@ async function main(): Promise<void> {
     // broke the R5 law), and it must report `src/lsp/impact.ts` as having
     // changed since. A probe that could not demonstrate the law on the tree it
     // is running against would be declared rather than counted as a pass.
-    const staleRecordProbe = staleRecordViolations(resolveCommit(STALE_PROBE_COMMIT))
+    const probeCommit = staleProbeCommit()
+    const staleRecordProbe = probeCommit === "" ? [] : staleRecordViolations(probeCommit)
     check(
       "R8-negative: the drift law reports a surface that changed after the record",
-      staleRecordProbe.some((v) => v.includes("src/lsp/impact.ts")),
-      staleRecordProbe.length > 0 ? staleRecordProbe.join(", ") : `no drift reported for a record sealed at ${STALE_PROBE_COMMIT}`,
+      probeCommit.length === 40 && staleRecordProbe.some((v) => v.includes("P9(record-older-than-surface")),
+      probeCommit.length === 40
+        ? staleRecordProbe.length > 0
+          ? staleRecordProbe.join(", ")
+          : `no drift reported for a record sealed at ${probeCommit.slice(0, 9)}, derived from the last surface change`
+        : "no probe commit could be derived from this clone (a single-commit history?) — the law is UNPROVEN here",
     )
 
     console.log("\nM: mutation suite (the suite can fail)")

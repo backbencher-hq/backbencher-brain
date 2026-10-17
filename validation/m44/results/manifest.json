@@ -26,14 +26,14 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "97b1bcae9d2e4b1fba0a1323fa93826cacb87684",
+        "currentCommit": "d3a84d5eff9a2f02a7125a3f9a7a7ccfd0195aff",
         "verifierCommand": "npx tsx script/m44/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 24,
         "failed": 2,
         "realFailed": 0,
         "negativeCases": 9,
-        "blockedReason": "2 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: M42 bar — M42 governance gate exits 0 at HEAD (spawned) — the relevant tree was clean at measure time"
+        "blockedReason": "2 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: M42 bar — M42 governance gate exits 0 at HEAD (spawned) — relevant uncommitted files at measure time: package.json"
       }
     },
     {
@@ -54,7 +54,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+        "currentCommit": "4d0d44a0e4747f2fa01b598ecf9f8023b372faba",
         "verifierCommand": "npx tsx script/m44/verify-usages-groups.ts",
         "evidenceFile": "U1.json",
         "passed": 20,
@@ -101,7 +101,7 @@
       "code": "U3",
       "githubIssue": 690,
       "tool": "hub-tree",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "renderHubTree rework in the ONE renderer core: expandable tree with per-node occurrence counts, declared expansion, clickable leaves (H6 reveal), truncation declared in-tree",
       "acceptanceCriteria": [
         "DOM harness positive/negative on the fixture tree (nesting depth, counts, clickable leaves, truncation marker)",
@@ -114,14 +114,14 @@
         "in-editor navigation leg evidence"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+        "status": "verified",
+        "currentCommit": "4d0d44a0e4747f2fa01b598ecf9f8023b372faba",
         "verifierCommand": "npx tsx script/m44/verify-hub-tree.ts",
         "evidenceFile": "U3.json",
-        "passed": 27,
-        "failed": 2,
-        "mutantsCaught": 6,
-        "mutantsTotal": 6,
+        "passed": 32,
+        "failed": 0,
+        "mutantsCaught": 9,
+        "mutantsTotal": 9,
         "blockedReason": "The traversal recursion (not a cascade fold) produces this fixture's nesting; the cascade fold (depth-0 rows toward root's class members) is asserted at the harness level in V1."
       }
     },
@@ -143,7 +143,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+        "currentCommit": "4d0d44a0e4747f2fa01b598ecf9f8023b372faba",
         "verifierCommand": "npx tsx script/m44/verify-legend.ts",
         "evidenceFile": "U4.json",
         "passed": 25,
@@ -172,7 +172,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+        "currentCommit": "4d0d44a0e4747f2fa01b598ecf9f8023b372faba",
         "verifierCommand": "npx tsx script/m44/verify-impact-resolution.ts",
         "evidenceFile": "U5.json",
         "passed": 33,
@@ -189,7 +189,7 @@
       "code": "U6",
       "githubIssue": 693,
       "tool": "references-fallback",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "show-all-usages opens OUR usages list when the editor's native references surface is unavailable or throws; native handoff stays primary; fallback declared and tested",
       "acceptanceCriteria": [
         "headless: command-level test with a stubbed editor whose referencesTrigger throws → fallback surface opens, no message-only return",
@@ -202,17 +202,17 @@
         "E5 in-editor leg evidence"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
         "evidenceFile": "U6.json",
-        "passed": 24,
-        "failed": 1,
-        "mutantsCaught": 4,
-        "mutantsTotal": 4,
+        "passed": 31,
+        "failed": 0,
+        "mutantsCaught": 6,
+        "mutantsTotal": 6,
         "negativeCases": 2,
         "inEditor": "E5 88/88 (E5-U6 click leg: declared surface + data landing + identity + legacy reveal floor)",
         "docs": "docs/m44/M44-MASTER-PLAN.md U6 decision",
-        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+        "currentCommit": "6a19b00cc00e1cd2ed8d38b1fd4dd54499f4c067",
         "blockedReason": "The vscode command handler cannot execute headlessly; its wiring is pinned structurally (R3) and executed live by the E5 in-editor leg (click show-all-usages → native peek OR usages fallback, never a bare message)."
       }
     },
@@ -237,13 +237,13 @@
         "verifierCommand": "npx tsx script/m44/verify-closure.ts",
         "evidenceFile": "X1.json",
         "passed": 36,
-        "failed": 13,
+        "failed": 17,
         "negativeCases": 8,
         "editorLegs": "E5 88/88 + forks (cursor, antigravity) 88/88 each with the M44 hub legs; windsurf blocked-with-reason",
         "launchRecord": "docs/m44/LAUNCH-RECORD.md (12 machine-audited rows)",
         "knownGaps": "validation/m44/results/KNOWN-GAPS.json (machine-compiled, none silent)",
         "spotCheckPack": "validation/m44/results/SPOT-CHECK-PACK.md",
-        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+        "currentCommit": "4d0d44a0e4747f2fa01b598ecf9f8023b372faba",
         "note": "see X1.json currentCommit — the evidence is re-pinned to the closure HEAD by the standing sweep procedure before governance runs",
         "blockedReason": "Pass 0 deliberately deviates from the M42 pass order: this closure edits an m25-relevant file (run-fork-e2e.mts), so the editor legs re-run and re-stamp BEFORE the ladder freshness-judges them."
       }
@@ -252,7 +252,7 @@
   "closedAt": "2026-09-09",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:46:01.639Z",
-    "contentSha256": "11719af20b393fb9d1be57da25bc23bc9a2cf21861ac44ecdc506b52fed8e108"
+    "sealedAt": "2026-10-15T23:51:38.456Z",
+    "contentSha256": "e895aaa4b91310d3cd65838954e952f43f9478fdb5f41813b198db7f69a2ff27"
   }
 }

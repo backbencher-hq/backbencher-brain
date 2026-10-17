@@ -44,6 +44,9 @@
 import { readdirSync, readFileSync, statSync } from "node:fs"
 import * as path from "node:path"
 
+import { fileURLToPath } from "node:url"
+const __dirname = fileURLToPath(new URL(".", import.meta.url)).replace(/[\\/]+$/, "")
+
 const ROOT = process.env.BB_M14_ROOT
   ? path.resolve(process.env.BB_M14_ROOT)
   : path.resolve((import.meta as any).dirname ?? __dirname, "..", "..")

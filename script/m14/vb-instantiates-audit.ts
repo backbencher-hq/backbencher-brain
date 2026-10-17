@@ -37,6 +37,9 @@ import { join } from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 import { getParser } from "../../src/ast/engine"
 
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+
 const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const REPO = process.env.VB_CORPUS ?? "roslyn-vb"
 const DIR = join(CORPUS_ROOT, REPO)

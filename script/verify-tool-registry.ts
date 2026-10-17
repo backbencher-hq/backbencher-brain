@@ -111,6 +111,19 @@ expectValidationFailure(
 )
 expectValidationFailure("duplicate modes rejected", [{ ...base, name: "invalid-modes", modes: ["symbols", "symbols"] }], "duplicate modes")
 expectValidationFailure("duplicate aliases rejected", [{ ...base, name: "invalid-aliases", aliases: ["old", "old"] }], "duplicate aliases")
+// M71.D6: the per-mode index exemption is a rule, not a comment. A mode that is
+// not executable, a duplicated mode, and the declaration on a tool that needs no
+// index at all are each rejected where the registry is validated — so
+// `indexFreeModes` cannot become a field that is merely present and unread.
+expectValidationFailure("index-free modes that are not executable modes rejected", [{ ...base, name: "invalid-free-modes", indexFreeModes: ["write"] }], "index-free modes not in executable modes")
+expectValidationFailure("duplicate index-free modes rejected", [{ ...base, name: "invalid-free-dupes", indexFreeModes: ["symbols", "symbols"] }], "duplicate index-free modes")
+expectValidationFailure("an index-free declaration on a tool requiring no index rejected", [{ ...base, name: "invalid-free-contradiction", requiresIndex: false, indexFreeModes: ["symbols"] }], "meaningless when requiresIndex is false")
+// …and the rule has a real user, so it is not vacuous:
+check(
+  "the exemption is declared exactly where it is true (bb_edit write)",
+  TOOL_DESCRIPTORS.find((descriptor) => descriptor.name === "bb_edit")?.indexFreeModes?.join(",") === "write",
+  `bb_edit indexFreeModes=[${TOOL_DESCRIPTORS.find((descriptor) => descriptor.name === "bb_edit")?.indexFreeModes?.join(",") ?? "(none)"}], declared by: ${TOOL_DESCRIPTORS.filter((descriptor) => (descriptor.indexFreeModes ?? []).length > 0).map((descriptor) => descriptor.name).join(",") || "(nobody)"}`,
+)
 expectValidationFailure("deprecated tools require replacements", [{ ...base, name: "invalid-deprecated", deprecated: true, replacement: undefined }], "deprecated tools require a replacement")
 
 console.log(failures === 0 ? "\nTOOL REGISTRY: PASS" : `\nTOOL REGISTRY: ${failures} FAILURES`)

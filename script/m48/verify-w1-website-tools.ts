@@ -8,6 +8,8 @@ import { readFileSync, existsSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 
+import { writeSealed } from "../lib/evidence.ts"
+
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT, "validation/m48/results")
 const READ_ONLY = process.env.BB_M48_READ_ONLY === "1"
@@ -120,9 +122,11 @@ async function main() {
     console.log(`M48 W1 WEBSITE DOC: ${ok ? "PASS" : "FAIL"} (${passed} passed, ${failed} failed, ${negatives} negatives)`)
     if (!ok) for (const f of failures) console.log(`  W1-FAIL: ${f.slice(0, 300)}`)
     if (ok && !READ_ONLY) {
-      const { mkdirSync, writeFileSync } = require("node:fs")
-      mkdirSync(RESULTS_DIR, { recursive: true })
-      writeFileSync(path.join(RESULTS_DIR, "W1.json"), JSON.stringify({
+      // M61 D-1 (the seal law): the ONE write path. This gate stamped RAW JSON,
+      // so its own re-run dropped the envelope the M61 seal register names
+      // (measured 2026-10-17: seal ABSENT against a registered digest, and
+      // M61.A1's A4 failed on it). The verdict is unchanged.
+      writeSealed(path.join(RESULTS_DIR, "W1.json"), {
         status: "verified",
         currentCommit: gitHead,
         verifierCommand: "bun run script/m48/verify-w1-website-tools.ts",
@@ -131,7 +135,7 @@ async function main() {
         passed, failed, negativeCases: negatives, failures,
         exercised: regNames,
         summary: { toolsDocumented: sections.length, phantomsAudited: PHANTOMS.length, bytes: doc.length },
-      }, null, 2) + "\n")
+      })
     }
     process.exit(ok ? 0 : 1)
   }

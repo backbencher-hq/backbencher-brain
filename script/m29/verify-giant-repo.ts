@@ -71,13 +71,18 @@ function check(name: string, ok: boolean, detail?: string): void {
   if (ok) passed++
   else failed++
   console.log(`  ${ok ? "PASS" : "FAIL"}: ${name}${detail ? ` — ${detail}` : ""}`)
-  if (!ok && detail) details.push(`${name}: ${detail}`)
+  // §8.3: the record must NAME what failed. A failing check that carries no
+  // detail used to push nothing, so the evidence could say `known-gap` with
+  // an empty `details` and no reader could tell why (measured 2026-10-17 on
+  // m29.R4-verify: `details: []` beside `verdict.realComponentFailures: 1`).
+  // The check's NAME is always recorded; the detail is added when there is one.
+  if (!ok) details.push(detail ? `${name}: ${detail}` : name)
 }
 function negative(name: string, caught: boolean, detail?: string): void {
   if (caught) passed++
   else failed++
   console.log(`  ${caught ? "CAUGHT" : "ESCAPED"}: ${name}${detail ? ` — ${detail}` : ""}`)
-  if (!caught && detail) details.push(`${name}: ${detail}`)
+  if (!caught) details.push(detail ? `${name}: ${detail}` : name)
 }
 
 function gitCommit(): string {

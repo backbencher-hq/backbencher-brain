@@ -2,16 +2,16 @@
   "issue": "M27.V1",
   "code": "V1",
   "milestone": "M27",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 14,
-  "passed": 14,
-  "failed": 0,
-  "mutantsCaught": 5,
+  "passed": 13,
+  "failed": 1,
+  "mutantsCaught": 4,
   "mutantsTotal": 5,
   "mutantRecords": [
     {
       "name": "V1 mutant: forged evidence (stripped blockedLegs) produces a lying I3 row and fails the byte-gate",
-      "caught": true
+      "caught": false
     },
     {
       "name": "V1 mutant: a missing evidence file degrades the row to unset and says the file is missing",
@@ -30,8 +30,8 @@
       "caught": true
     }
   ],
-  "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
-  "sourceFingerprint": "c0c44ffdba3bf8b88636b937a5df6c2cf977e3e9b2168168b79c31a8ad0127e2",
+  "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+  "sourceFingerprint": "b36a3589ddb08520e5e815fcf85c2064d0273db91c8c4b795afae98192f49796",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m27/verify-matrix.ts",
@@ -40,7 +40,7 @@
   ],
   "verifierCommand": "npx tsx script/m27/verify-matrix.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-10-08T18:13:30.013Z",
+  "generatedAt": "2026-10-17T15:38:55.973Z",
   "claimLevel": "n/a — this issue produces a truth table, not a claim",
   "limitations": [
     "The matrix's editor/column shape is declared (4 adapters + the VS Code baseline); every VALUE is generated from the ledger and evidence files.",
@@ -48,7 +48,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T18:13:30.015Z",
-    "contentSha256": "eccaf7161ae0286968668caa0e7a4cf8f5142cc6b236b2742b6181b3fb72ef0d"
+    "sealedAt": "2026-10-17T15:38:55.977Z",
+    "contentSha256": "ebd989bd003873377bc3df222bd1596965c04606bc593a6d982f08cdc8b2ed25"
   }
 }

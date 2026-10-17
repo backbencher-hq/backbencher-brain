@@ -97,14 +97,14 @@ await indexProjectParallel(projectId, root, {})
   harness.check("node cut: the loss is attributed to the node cut", nodeCut.provenance.linksOmittedWithNodeCut > 0, JSON.stringify(nodeCut.provenance))
   harness.negative(
     "node cut: `maxLinks` cut nothing, so the set is NOT reported truncated by it",
-    nodeCut.considered.relationshipSetTruncated === false,
-    `truncated=${nodeCut.considered.relationshipSetTruncated} budget=${nodeCut.provenance.linksOmittedByBudget} maxLinks=5000`,
+    nodeCut.considered !== undefined && nodeCut.considered.relationshipSetTruncated === false,
+    `truncated=${String(nodeCut.considered?.relationshipSetTruncated)} budget=${nodeCut.provenance.linksOmittedByBudget} maxLinks=5000`,
   )
   const budgetCut = await visualizeProject(projectId, { scope: "project", maxNodes: 100, maxLinks: 1, format: "json" })
   harness.check(
     "budget cut: a link budget below the edge set IS reported as a relationship cut",
-    budgetCut.provenance.linksOmittedByBudget > 0 && budgetCut.considered.relationshipSetTruncated === true,
-    JSON.stringify({ provenance: budgetCut.provenance, truncated: budgetCut.considered.relationshipSetTruncated }),
+    budgetCut.provenance.linksOmittedByBudget > 0 && budgetCut.considered?.relationshipSetTruncated === true,
+    JSON.stringify({ provenance: budgetCut.provenance, truncated: budgetCut.considered?.relationshipSetTruncated }),
   )
   harness.negative(
     "budget cut: the two counters are not the same number",

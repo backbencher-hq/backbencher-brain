@@ -22,6 +22,10 @@ import { generateDocumentation, formatDocumentation, buildProse, explainEmptyReq
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
 import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 import { docSourceFingerprint, docRelevantWorkingTreeChanges } from "../../src/intelligence/documentation/evidence"
+// The owner's own marker, imported rather than spelled: the check below pins
+// that a parameter the index holds no type for renders THAT string and no
+// other, so a change to the marker must move this assertion with it.
+import { UNRESOLVED_TYPE } from "../../src/lsp/signature"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 
@@ -961,17 +965,54 @@ try {
     }
     const typedFacts = (await factsOf("typedParams"))
     const untypedFacts = (await factsOf("untypedParams"))
-    check("T31: a recorded parameter type is rendered, and an absent one is not invented",
-      typedFacts.some((statement) => statement.includes("alpha: Alpha") && statement.includes("beta: Beta[]") && statement.includes("optional"))
-        && untypedFacts.some((statement) => statement.includes("gamma, delta"))
-        && !untypedFacts.some((statement) => statement.includes("gamma:") || statement.includes("delta:")),
-      `typed: ${typedFacts[0]?.slice(0, 120) ?? "(absent)"}; untyped: ${untypedFacts[0]?.slice(0, 120) ?? "(absent)"} — a type that the index does not record must not appear, and optionality is stated in words because \`name?: type\` is TypeScript syntax and would be wrong in a Go document`)
-    const showsType = (statement: string, parameter: string): boolean => statement.includes(`${parameter}: `)
-    negative("T31 the type-rendering predicate convicts both defect shapes",
-      showsType("function f(alpha: Alpha) is defined in a.ts.", "alpha") === true
-        && showsType("function f(alpha) is defined in a.ts.", "alpha") === false
-        && showsType("function f(alpha: Alpha) is defined in a.ts.", "beta") === false,
-      "a type the index records is shown; a parameter with no recorded type gets none; and a type is never attached to a parameter that does not have one")
+    // ── what this check is allowed to demand, and why it changed ────────────
+    // It used to require the BARE NAMES for the untyped symbol (`gamma, delta`,
+    // with no colon anywhere) and the WORD "optional" for the typed one. Both
+    // were true of the private renderer this engine had when T31 was written,
+    // and neither is true of the surface that ships now: bb_doc delegates its
+    // signature and its prose clause to src/lsp/signature.ts
+    // (script/m28/verify-surface-parity.ts U2, verified 39/39), whose declared
+    // rule — and the IDE honesty contract §15.4's — is that a type the index
+    // never resolved renders the DECLARED unknown marker rather than nothing,
+    // and that optionality is rendered in the notation the language HAS (`?` in
+    // TS/JS) rather than in words that would be wrong in a Go document.
+    //
+    // So the assertion was the stale half, and it is now pinned to the rule the
+    // owner declares, in BOTH directions: a recorded type is rendered, the
+    // untyped parameter shows the owner's exported marker and NOTHING else (a
+    // fabricated `gamma: string` is still convicted), and the marker is present
+    // rather than dropped (a rendering that hides the absence is convicted too,
+    // which the bare-name form was).
+    // The type text a set of facts shows for one parameter: everything after
+    // `name:`/`name?:` up to the delimiter that ends the type slot. The
+    // `takes … and returns …` fact carries no closing delimiter after its last
+    // parameter, so that clause's own tail is cut here rather than counted as
+    // part of the type — measured on the untyped fixture, where the raw capture
+    // read `unknown and returns void.`
+    const shownTypes = (facts: string[], parameter: string): string[] =>
+      facts.flatMap((statement) =>
+        [...statement.matchAll(new RegExp(`\\b${parameter}\\s*\\??\\s*:\\s*([^,);]+)`, "g"))].map((m) =>
+          m[1].replace(/\s+and\s+returns\b[\s\S]*$/, "").trim(),
+        ),
+      )
+    const showsOnlyDeclaredMarker = (facts: string[], parameter: string): boolean => {
+      const types = shownTypes(facts, parameter)
+      return types.length > 0 && types.every((t) => t === UNRESOLVED_TYPE)
+    }
+    check("T31: a recorded parameter type is rendered, and an absent one renders the DECLARED marker",
+      shownTypes(typedFacts, "alpha").includes("Alpha")
+        && shownTypes(typedFacts, "beta").includes("Beta[]")
+        && typedFacts.some((statement) => statement.includes("beta?") || /optional/i.test(statement))
+        && showsOnlyDeclaredMarker(untypedFacts, "gamma")
+        && showsOnlyDeclaredMarker(untypedFacts, "delta")
+        && !typedFacts.some((statement) => shownTypes([statement], "gamma").length > 0),
+      `typed: ${typedFacts[0]?.slice(0, 140) ?? "(absent)"} types=${JSON.stringify([shownTypes(typedFacts, "alpha"), shownTypes(typedFacts, "beta")])}; untyped: ${untypedFacts[0]?.slice(0, 140) ?? "(absent)"} types=${JSON.stringify([shownTypes(untypedFacts, "gamma"), shownTypes(untypedFacts, "delta")])} marker="${UNRESOLVED_TYPE}" — a type the index does not record must not appear as itself, and optionality is the language's notation where the language has one (\`name?: type\` in TS/JS; the word \`optional\` where it does not, because \`name?: type\` is TS syntax and would be wrong in a Go document)`)
+    negative("T31 the marker predicate convicts a fabricated type AND a hidden absence",
+      showsOnlyDeclaredMarker([`function f(gamma: ${UNRESOLVED_TYPE}) is defined in a.ts.`], "gamma") === true
+        && showsOnlyDeclaredMarker(["function f(gamma: string) is defined in a.ts."], "gamma") === false
+        && showsOnlyDeclaredMarker(["function f(gamma) is defined in a.ts."], "gamma") === false
+        && showsOnlyDeclaredMarker([`function f(range: ${UNRESOLVED_TYPE}) is defined in a.ts.`], "gamma") === false,
+      "the declared marker passes; a type the row never held fails; a rendering that does not show the absence at all fails; and a parameter that is not in the statement is never counted as one that is")
     for (const symId of ["gate-pt-typed", "gate-pt-untyped"]) raw.prepare("DELETE FROM brain_symbol WHERE id=?").run(symId)
   }
 

@@ -1,55 +1,56 @@
 {
   "status": "verified",
-  "currentCommit": "062b4d9dac1a6ab0509d0f3dd7f0676311b0964e",
+  "currentCommit": "449074bf72b41270f1a0636ca298d38f3a17626d",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m40/verify-a2-bounded-post.ts",
-  "generatedAt": "2026-10-12T14:24:06.237Z",
-  "passed": 26,
+  "generatedAt": "2026-10-16T16:49:27.906Z",
+  "passed": 27,
   "failed": 0,
   "negativeCases": 3,
   "bounded": {
     "repairedInEdges": 15994,
-    "importResolvedInEdges": 3998,
+    "purgedDeletedFiles": 0,
+    "touchedSymbols": 3,
+    "resolvedStoredEdges": 4008,
     "stillUnresolvedInEdges": 0,
     "healedZeroLines": 0,
-    "resolvedStoredEdges": 2,
-    "purgedDeletedFiles": 0,
-    "touchedSymbols": 3
+    "importResolvedInEdges": 0
   },
   "timing": {
-    "boundedMs": 969,
-    "fullMs": 28833,
+    "boundedMs": 1500,
+    "fullMs": 9211,
     "refreshedRows": 1,
     "totalEdges0": 45980,
     "boundedSamples": [
-      1034,
-      969,
-      989
+      1994,
+      2019,
+      1500
     ],
     "fullSamples": [
-      36987,
-      30492,
-      28833
+      11892,
+      9211,
+      10863
     ]
   },
   "mutation": "not-run (control)",
   "checks": [
-    "ok: A2: full index succeeds — errors=0 wall=171107ms",
+    "ok: A2: full index succeeds — errors=0 wall=77427ms",
     "ok: A2: full run reports derivedPass=full — full",
     "ok: A2: full index has edges into hub0 — E0=15994",
     "ok: A2: fixture is edge-dense (≥25K edges) — 45980",
     "ok: A2: warm full pass succeeds — errors=0 derived=full",
     "ok: A2: incremental run succeeds — errors=0",
     "ok: A2: incremental run reports derivedPass=bounded — bounded",
-    "ok: A2: exactly 1 file newly parsed — {\"totalCandidates\":2001,\"newlyParsed\":1,\"unchanged\":2000,\"skipped\":0,\"symbolLoss\":0,\"errors\":0,\"timeouts\":0,\"cancelled\":0,\"derivedPass\":\"bounded\",\"parseMode\":\"worker-pool\",\"unresolvedRelationships\":0,\"embedModels\":[{\"model\":\"local-word-vectors-v3\",\"dimension\":50,\"count\":3499}],\"embeddingIntegrity\":{\"total\":3499,\"models\":[{\"model\":\"local-word-vectors-v3\",\"rows\":3499,\"dimensions\":[50]}],\"mixed\":false,\"dimensionMismatches\":0,\"malformedVectors\":0,\"unusableEmbeddings\":0,\"scanned\":3499,\"truncated\":false},\"embedOutcome\":{\"queued\":23994,\"embedded\":15117,\"failed\":0,\"skipped\":0,\"dropped\":0,\"invalid\":0}}",
-    "ok: A2: bounded telemetry present — {\"repairedInEdges\":15994,\"importResolvedInEdges\":3998,\"stillUnresolvedInEdges\":0,\"healedZeroLines\":0,\"resolvedStoredEdges\":2,\"purgedDeletedFiles\":0,\"touchedSymbols\":3}",
+    "ok: A2: exactly 1 file newly parsed — {\"totalCandidates\":2001,\"newlyParsed\":1,\"unchanged\":2000,\"skipped\":0,\"symbolLoss\":0,\"errors\":0,\"timeouts\":0,\"cancelled\":0,\"derivedPass\":\"bounded\",\"parseMode\":\"worker-pool\",\"storeFailures\":0,\"storeFailureFiles\":0,\"missingAfterRecovery\":0,\"unresolvedRelationships\":0,\"embedModels\":[{\"model\":\"nvidia/nemotron-3-embed-1b\",\"dimension\":2048,\"count\":1681}],\"embeddingIntegrity\":{\"total\":1681,\"models\":[{\"model\":\"nvidia/nemotron-3-embed-1b\",\"rows\":1681,\"dimensions\":[2048]}],\"mixed\":false,\"dimensionMismatches\":0,\"malformedVectors\":0,\"unusableEmbeddings\":0,\"scanned\":1681,\"truncated\":false},\"embedOutcome\":{\"queued\":23994,\"embedded\":3231,\"failed\":0,\"skipped\":0,\"dropped\":0,\"invalid\":0}}",
+    "ok: A2: bounded telemetry present — {\"repairedInEdges\":15994,\"purgedDeletedFiles\":0,\"touchedSymbols\":3,\"resolvedStoredEdges\":4008,\"stillUnresolvedInEdges\":0,\"healedZeroLines\":0,\"importResolvedInEdges\":0}",
     "ok: A2: caller edges into edited file RESTORED — E1=15997 vs E0=15994",
     "ok: A2: restored edges are resolved — 0",
     "ok: A2: edges sourced from edited file are enriched — 1",
     "ok: A2: restored in-edges keep their enrichment metadata — restoredEnriched=11994 of 11994 symbol-sourced in-edges (E1=15997)",
-    "ok: A2: restored FILE-LEVEL in-edges keep their metadata — fileLevelEnriched=3998 of 3998 file-level in-edges (the population the <module>:<item> resolver restores)",
+    "ok: A2: inbound rows into the edited file SURVIVE the re-store — inboundBefore=11994 inboundAfter=11994 (rows from other files targeting the re-stored file; the store used to delete every one of them)",
+    "ok: A2: surviving inbound rows keep their metadata — inboundEnriched=11994 of 11994 surviving inbound rows",
     "ok: A2: re-parsed symbols' gravity recomputed — 3/3",
-    "ok: A2: untouched hub1 keeps its incoming edges — 9998",
+    "ok: A2: untouched hub1 keeps its incoming edges — 9997",
     "ok: A2: untouched leaf keeps its outgoing edges — 14",
     "ok: A2: deleted file's rows purged — 0",
     "ok: A2: no orphan edges after purge — 0",
@@ -57,14 +58,14 @@
     "ok: A2: bounded pass did NOT touch untouched hub1 edges (scope honesty) — 0",
     "ok: A2: deleted file leaves zero symbols (absence proof) — 0",
     "ok: A2: bounded telemetry touches only the edited file's symbols (≤ fixture file symbol count) — touched=3",
-    "ok: A2: full post-pass time recorded — 28833",
-    "ok: A2: bounded post-pass time recorded — 969",
-    "ok: A2: bounded pass faster than full pass (min-of-3 interleaved) — bounded=969ms (samples 1034,969,989) full=28833ms (samples 36987,30492,28833)"
+    "ok: A2: full post-pass time recorded — 9211",
+    "ok: A2: bounded post-pass time recorded — 1500",
+    "ok: A2: bounded pass faster than full pass (min-of-3 interleaved) — bounded=1500ms (samples 1994,2019,1500) full=9211ms (samples 11892,9211,10863)"
   ],
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T14:24:06.238Z",
-    "contentSha256": "54b5651a7aae5d1f4b08e6a7e3b8eee0ab05e7f9bb076e94f11a4839279a953d"
+    "sealedAt": "2026-10-16T16:49:27.907Z",
+    "contentSha256": "709b6139648dfd462b6c681abb540e793b883beb8f184feeae3403f031b9c462"
   }
 }

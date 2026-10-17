@@ -4,14 +4,36 @@
   "milestone": "M29",
   "status": "known-gap",
   "checks": 75,
-  "passed": 67,
-  "failed": 8,
+  "passed": 71,
+  "failed": 4,
   "negativeCases": 10,
-  "currentCommit": "d8dad6ebbf971c5f724e18275fbd97eb624e7d42",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "workingTreeRelevantChanges": [
+    "docs/m29/PRECISION-LEDGER.md",
+    "package.json",
+    "script/m29/verify-giant-repo.ts",
+    "script/m29/verify-precision-ledger.ts",
+    "src/ast/brain-surgical-patcher.ts",
+    "src/ast/dependency-graph-visualizer.ts",
+    "src/ast/engine.ts",
+    "src/ast/real-c-analyzer.ts",
+    "src/ast/real-javascript-analyzer.ts",
+    "src/ast/real-python-analyzer.ts",
+    "src/ast/real-rust-analyzer.ts",
+    "src/ast/real-typescript-analyzer.ts",
+    "src/ast/safety-primitives.ts",
+    "src/ast/visualization/class-diagram-renderer.ts",
+    "src/ast/visualization/code-map-renderer.ts",
+    "src/ast/visualization/map-renderer.ts",
+    "src/ast/visualization/studio-renderer.ts",
+    "src/lsp/document_highlight.ts",
+    "src/lsp/navigation.ts",
+    "src/lsp/relations.ts",
+    "src/lsp/rich_hover.ts"
+  ],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-05T15:35:51.605Z",
+  "generatedAt": "2026-10-17T17:23:14.607Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
     "ledgerStatus": "open",
@@ -21,10 +43,10 @@
     "This gate validates governance metadata, mutation response, and the M28 bar; it does not verify the wave protocol, giant-repo budgets, or the precision ledger.",
     "A run with relevant uncommitted M29 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "8 check(s) failed: G1: all 9 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — closure-gate evidence verified at an ancestor-or-equal commit ... - the relevant tree was clean at measure time",
+  "blockedReason": "4 check(s) failed: G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — closure-gate evidence verified at an ancestor-or-equal commit; G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit - relevant uncommitted files at measure time: docs/m29/PRECISION-LEDGER.md, package.json, script/m29/verify-giant-repo.ts, script/m29/verify-precision-ledger.ts, src/ast/brain-surgical-patcher.ts, src/ast/dependency-graph-visualizer.ts",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T15:35:51.623Z",
-    "contentSha256": "6dd1be5b023c073dd5cdc498210433499ab43ad38b7f87098f674fd372da61a2"
+    "sealedAt": "2026-10-17T17:23:14.719Z",
+    "contentSha256": "5fecee770ce97f6c2c7bcbbe64f4e19f5c9df3dd123c169f0cedf30373f6fa98"
   }
 }

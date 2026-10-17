@@ -29,15 +29,44 @@ const bb = path.resolve("bin/bb")
 const MODES = ["callers","callees","trace","dependencies","stats","complexity","impact","test_mapping","test_gaps","test_impact","test_quality"]
 const KNOWN = new Set(MODES)
 
+/**
+ * PER-MODE TARGET, because the published contract makes `target` mean different
+ * things per mode: a SYMBOL NAME for callers/callees/trace/impact/test_impact,
+ * and a project-relative FILE PATH for complexity. That distinction is in
+ * docs/tools/bb_analyze.md's input schema, and this gate predated it: every
+ * mode was asked for the symbol `alpha`, so complexity's correct refusal
+ * ("no indexed file matches \"alpha\" — pass a project-relative file path")
+ * was scored as a crash and the lane sat at 36/37 for a behaviour the tool had
+ * deliberately changed. Measured 2026-10-17: the refusal is the CONTRACT, not
+ * the defect — asking complexity for a symbol is the one thing it must refuse.
+ */
+const TARGET_FOR: Record<string, string> = { complexity: "src/app.ts" }
+const runMode = (mode: string, target: string): string => {
+  try { return execFileSync("node", [bb, "tool", "bb_analyze", "--dir", root, "--args",
+    JSON.stringify({ mode, target })], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
+  } catch (e: any) { return e.stdout || e.stderr || "" }
+}
+
 for (const mode of MODES) {
-  const out = (() => {
-    try { return execFileSync("node", [bb, "tool", "bb_analyze", "--dir", root, "--args",
-      JSON.stringify({ mode, target: "alpha" })], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
-    } catch (e: any) { return e.stdout || e.stderr || "" }
-  })()
+  const out = runMode(mode, TARGET_FOR[mode] ?? "alpha")
   harness.check("mode: "+mode+" returns output", out.length > 0, "len="+String(out.length))
   harness.negative("mode: "+mode+" does not crash or error", !out.includes("Error:") && !out.includes("error:"), out.slice(0, 80))
 }
+
+// Complexity's OTHER half of the contract: a symbol name is REFUSED, and the
+// refusal names the shape it wanted. Locked here so the gate cannot be made
+// green again by re-widening complexity to accept symbol names silently.
+const complexitySymbol = runMode("complexity", "alpha")
+harness.negative(
+  "mode: complexity refuses a symbol target and names the file-path contract",
+  /file path/i.test(complexitySymbol) && complexitySymbol.includes("alpha"),
+  complexitySymbol.slice(0, 120),
+)
+harness.negative(
+  "mode: complexity symbol-target refusal offers a remediation, not a bare error",
+  complexitySymbol.length > 80 && !/^Error:/.test(complexitySymbol.trim()),
+  complexitySymbol.slice(0, 120),
+)
 
 // Invalid mode negative
 const badOut = (() => {

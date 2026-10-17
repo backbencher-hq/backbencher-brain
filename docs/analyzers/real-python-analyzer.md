@@ -1401,7 +1401,7 @@ receiver, parameter-shadowed module root). Each guard was removed in turn and th
 exactly one intended row: relative-import -> `LocalBase`, `declaredHere` -> `uses_declared`, the
 pure-chain test -> `expression.strip`, the line-scoped shadow test -> `shadowed_root.getenv`.
 
-**Independent audit.** `validation/m14/fixtures/python/audit-import-claims.py` re-derives the
+**Independent audit.** `validation/m14/fixtures/python/audit-import-claims.py.tool` re-derives the
 file-level evidence with CPython's own `ast` (module-level imports and their bound modules, declared
 names, def/lambda/comprehension scopes with line ranges) and asks every claim back: is the name
 imported, does `externalSpecifier` match CPython's import, is the target declared, is the name a
@@ -1430,10 +1430,24 @@ identical (calls arbitraryTwin 4,182 and nothingAnywhere 11,874, unchanged).
 
 `resolved`, `collRes` and `amb` are byte-identical on 1,292,855 edges — the claim cannot move a name,
 so unresolved → collRes is unreachable by construction and the measurement agrees. `arbitraryTwin`
-did not move (759,326 both runs); `ext?`/`extFAIL` 0; 71,633 claim-carrying ambiguous edges are all
-`ownFileSilent` (another file declares the name — reported, not charged). Per type, unresolved
-before → after: calls 162,352 → 97,009 · uses 45,370 → 24,307 · references 21,708 → 1,998 ·
-extends 3,387 → 44 · implements 140 → 3; `imports` is unchanged at 64,462 (see the proposal).
+did not move (759,326 both runs); 71,633 claim-carrying ambiguous edges are all `ownFileSilent`
+(another file declares the name — reported, not charged). Per type, unresolved before → after:
+calls 162,352 → 97,009 · uses 45,370 → 24,307 · references 21,708 → 1,998 · extends 3,387 → 44 ·
+implements 140 → 3; `imports` is unchanged at 64,462 (see the proposal).
+
+**THE PROJECT-ABSOLUTE REFINER, AND WHAT IT CHANGED (commit `8def4a5d5`, 2026-10-17).** A per-file
+analyzer cannot tell `from grace_generated_openapi_probe.x import Y` (the project's own code, imported
+absolutely) from `from pydantic import BaseModel` (outside it). The Lead's refiner reads
+`metadata.externalSpecifier` — the field this claim was already publishing — and turns a verified
+claim into `externalUnverified` (ext?) when the specifier's root names a module the PROJECT ships (a
+directory basename or file stem of the admitted list). It is fail-closed: a claim changes LABEL, never
+outcome, so `extFAIL` cannot rise and `resolved`/`collRes`/`amb` cannot move. Re-measured at cap 400:
+`extOK 4,003 · ext? 3,744 · extFAIL 0 · unresolved 20,173` — residual 32,993 → 29,254 (−3,739,
+−11.3%); the 3,744 are counted exactly as failures, not as wins. The whole-population `extOK 117,995`
+above is the PRE-refiner split; the refiner moves part of it to `ext?` (a whole-population re-run is
+recorded in PYTHON-STATE.md §5a1). The remaining lever on that class is project knowledge (a
+`ProjectIndex.complete`-gated claim, the Java pattern), which is exactly why the claim carries the
+specifier rather than a bare boolean.
 
 **What this does NOT claim.** The dynamic class — `self.m()` / `recv.m()`, the target leaf whose
 dispatch class is not in the file — keeps NO claim; the receiver's runtime type is in neither the

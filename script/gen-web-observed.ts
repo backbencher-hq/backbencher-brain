@@ -31,11 +31,15 @@ for (const rel of fixtures) {
   try {
     const p = await parseFile(abs, root)
     for (const s of p.symbols) {
+      // `p.symbols` is a union of two symbol shapes and only one carries `range`.
+      // Narrow once, here, instead of leaving a property access that does not
+      // typecheck on the other member of the union.
+      const pos = s as { range?: { startLine?: number }; startLine?: number }
       symbols.push({
         file: rel.split("/").pop(),
         name: s.name,
         kind: s.kind,
-        start_line: s.range?.startLine ?? s.startLine ?? 0,
+        start_line: pos.range?.startLine ?? pos.startLine ?? 0,
       })
     }
   } catch (e: any) {

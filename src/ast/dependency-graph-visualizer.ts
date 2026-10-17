@@ -334,7 +334,7 @@ export namespace DependencyGraphVisualizer {
    * endpoint is a hollow ring, node size follows the index's own gravity, and
    * every node and edge keeps the facts needed to reach the source.
    */
-  export function generateHTML(graphData: GraphData, options?: { title?: string; viewLabel?: string }): string {
+  export function generateHTML(graphData: GraphData, options?: { title?: string; viewLabel?: string; layout?: "regions" | "force" }): string {
     // The renderer lives in its own module as real source. It used to be a ~600-line
     // template literal nested inside this function, which is a nesting hazard with a
     // demonstrated cost: a backtick in a COMMENT terminated the string and broke the
@@ -348,6 +348,10 @@ export namespace DependencyGraphVisualizer {
       title: options?.title ?? "Backbencher Architecture Map",
       viewLabel: options?.viewLabel ?? "Architecture Map",
       script,
+      // The layout is written onto the document itself, like its view, so the file
+      // declares how it is drawn wherever it is opened. A document that describes
+      // itself is described correctly by whatever mounts it.
+      layout: options?.layout ?? "regions",
     })
   }
 

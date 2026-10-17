@@ -3,7 +3,7 @@
   "milestone": "M33",
   "githubMilestone": 33,
   "title": "CLI Discoverability",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m33/M33-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
   "updatedAt": "2026-09-02T00:00:00.000Z",
@@ -51,13 +51,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "42d9c218b43e89e09de77be4aca25c72808fe08b",
+        "currentCommit": "d3a84d5eff9a2f02a7125a3f9a7a7ccfd0195aff",
         "verifierCommand": "npx tsx script/m33/verify-governance.ts",
         "evidenceFile": "G1.json",
         "generatedAt": "2026-09-02T15:54:36.055Z",
         "passed": 25,
         "failed": 0,
-        "negativeCases": 8
+        "negativeCases": 8,
+        "blockedReason": "Secret-hygiene scan covers tracked files only; untracked local files are outside the gate by design (.env.local is gitignored)."
       }
     },
     {
@@ -77,13 +78,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "42d9c218b43e89e09de77be4aca25c72808fe08b",
+        "currentCommit": "05890cf78f2bb56b30ef81a463903e15b436db36",
         "verifierCommand": "npx tsx script/m33/verify-version.ts",
         "evidenceFile": "S1.json",
         "generatedAt": "2026-09-02T15:55:03.069Z",
         "passed": 10,
         "failed": 0,
-        "negativeCases": 3
+        "negativeCases": 3,
+        "blockedReason": "Mutant probes run the mutated component in a child process (npx tsx); a broken tsx runtime would surface as survivor, not as a false pass."
       }
     },
     {
@@ -103,13 +105,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "42d9c218b43e89e09de77be4aca25c72808fe08b",
+        "currentCommit": "05890cf78f2bb56b30ef81a463903e15b436db36",
         "verifierCommand": "npx tsx script/m33/verify-unknown-command.ts",
         "evidenceFile": "S2.json",
         "generatedAt": "2026-09-02T15:55:27.872Z",
         "passed": 17,
         "failed": 0,
-        "negativeCases": 3
+        "negativeCases": 3,
+        "blockedReason": "Suggestion quality is commander's Levenshtein implementation (v12.1.0); the gate pins that near-misses suggest and far-misses do not, not the exact algorithm."
       }
     },
     {
@@ -129,13 +132,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "42d9c218b43e89e09de77be4aca25c72808fe08b",
+        "currentCommit": "05890cf78f2bb56b30ef81a463903e15b436db36",
         "verifierCommand": "npx tsx script/m33/verify-man-page.ts",
         "evidenceFile": "S3.json",
         "generatedAt": "2026-09-02T15:56:01.131Z",
         "passed": 40,
         "failed": 0,
-        "negativeCases": 4
+        "negativeCases": 4,
+        "blockedReason": "Rendering is checked with groff -man -Tascii -ww and man -l (both present in this environment); a CI host without groff would surface the B checks as failures, not silent passes."
       }
     },
     {
@@ -155,13 +159,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "42d9c218b43e89e09de77be4aca25c72808fe08b",
+        "currentCommit": "f6af04875c05dae44f3b43bcb150ae8bf09cef4f",
         "verifierCommand": "npx tsx script/m33/verify-help-parity.ts",
         "evidenceFile": "S4.json",
         "generatedAt": "2026-09-02T15:56:58.113Z",
-        "passed": 84,
+        "passed": 121,
         "failed": 0,
-        "negativeCases": 4
+        "negativeCases": 4,
+        "blockedReason": "The ASCII-Turkish vocabulary list is a curated denylist, not a translator; a NEW Turkish word outside the list would pass the vocabulary check (the diacritic check still applies to accented spellings)."
       }
     },
     {
@@ -181,13 +186,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "42d9c218b43e89e09de77be4aca25c72808fe08b",
+        "currentCommit": "05890cf78f2bb56b30ef81a463903e15b436db36",
         "verifierCommand": "npx tsx script/m33/verify-honesty-docs.ts",
         "evidenceFile": "H1.json",
         "generatedAt": "2026-09-02T15:57:04.535Z",
         "passed": 25,
         "failed": 0,
-        "negativeCases": 5
+        "negativeCases": 5,
+        "blockedReason": "Doc mutants are string-level probes on the document text, not full re-runs of the docs gate; the verbatim pins double-check the same claims."
       }
     },
     {
@@ -208,19 +214,20 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "42d9c218b43e89e09de77be4aca25c72808fe08b",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
         "verifierCommand": "npx tsx script/m33/verify-closure.ts",
         "evidenceFile": "X1.json",
         "generatedAt": "2026-09-02T15:58:13.034Z",
         "passed": 64,
         "failed": 0,
-        "negativeCases": 6
+        "negativeCases": 6,
+        "blockedReason": "Closure audit reads machine-emitted evidence and the ledger; it does not re-run the six verifiers (those are gated separately in npm run verify and re-run at closure)."
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.473Z",
-    "contentSha256": "a5ce3cbf042781823d700e41bbf46375de962542feab6e22bae5f14bd4178011"
+    "sealedAt": "2026-10-17T15:20:45.744Z",
+    "contentSha256": "5f1715921d1feba6f707352da24929c864dde43dbbee8a392e778a69207aaf1b"
   }
 }

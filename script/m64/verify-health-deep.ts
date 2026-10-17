@@ -12,7 +12,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { Harness } from "../m13/harness"
 import { getProjectId } from "../../src/util/project-id"
-import { indexProjectParallel } from "../../src/ast/parallel-indexer"
+import { indexProjectParallel, flushBackgroundEmbeddings } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { runIndexHealthCheck, checkEmbeddingCoverage } from "../../src/brain/brain-index-health"
 import { getUnifiedHealth, formatUnifiedHealth } from "../../src/intelligence/health/health-provider"
@@ -26,6 +26,7 @@ const harness = new Harness({
   tool: "bb_health",
   title: "bb_health: reporting honesty, the integrity battery, and the option surface",
   layers: ["unit", "integration"],
+  milestone: "M64",
   decisions: {
     sample: "covered by verify-sample-coverage.ts; this file pins everything else",
     refreshSafety: "covered by verify-refresh-integrity.ts",
@@ -47,6 +48,13 @@ async function fixture(n: number, prefix = "f") {
   for (let i = 0; i < n; i++) writeFileSync(path.join(root, "src", `${prefix}${String(i).padStart(4, "0")}.ts`), `export function fn${i}(): number {\n  return ${i}\n}\n`)
   const pid = getProjectId(root)
   await indexProjectParallel(pid as any, root, {})
+  // The embedding queue is BACKGROUND work that returns before it writes
+  // (measured: 0 vectors immediately after indexProjectParallel, 30 after the
+  // flush). Two blocks below (8's `embedded kinds:` line and 4's healthy-case
+  // score) read the result of that queue, so without the flush they asserted on
+  // an index whose vectors had not been written yet — a timing race, not a
+  // reporting defect. Determinism fix; no assertion was relaxed.
+  await flushBackgroundEmbeddings()
   return { root, pid }
 }
 const drop = (root: string, pid: string) => {
@@ -97,7 +105,45 @@ const drop = (root: string, pid: string) => {
     const sampled = await drift("sample")
     harness.check("the sampled mode (the indexer's hot path) declares itself an ESTIMATE", /ESTIMATE/.test(sampled.description), sampled.description.slice(0, 90))
     harness.check("and is still reproducible", (await drift("sample")).value === sampled.value, `${sampled.value} both times`)
-    harness.check("the sampled mode is still unbiased (within 2% of the true rate)", Math.abs((sampled.value / sampled.total) * 100 - (comp.freshness.stale / comp.freshness.total) * 100) <= 2, `sampled ${((sampled.value / sampled.total) * 100).toFixed(1)}% vs true ${((comp.freshness.stale / comp.freshness.total) * 100).toFixed(1)}%`)
+    // UNBIASEDNESS IS NOT A SINGLE-DRAW PROPERTY, and the old assertion here was
+    // a single draw: `|sampled - true| <= 2pp` on a 200-file sample whose
+    // binomial standard error at a 20% rate is 2.83pp. The band was under ONE
+    // standard error, so it failed roughly half the time on an unbiased
+    // selector — and this fixture, which stales every 5th file, made it fail
+    // every time: measured `sampled 22.5% vs true 20.0%`. A gate that fails at
+    // random (or at a fixture's period) trains people to ignore it, and the
+    // property it names is asserted properly by verify-sample-coverage.ts: 300
+    // independent draws, the MEAN within 0.5pp of the truth, and periods
+    // 3/7/10/25 to prove the selector is not fitted to one stride.
+    //
+    // What one draw can prove is kept, and it is what the indexer's hot path
+    // depends on: the estimate is within three standard errors of the exact
+    // rate, its verdict does not contradict the exact scan's, and the
+    // extrapolated total is the sample's own arithmetic rather than a second
+    // number invented beside it.
+    // `total` is optional on the payload. `?? NaN` keeps the four checks below
+    // running (they fail, visibly, with NaN in the detail) instead of throwing a
+    // TypeError that would abort the whole gate at line 124.
+    const sampledTotal = sampled.total ?? Number.NaN
+    const sampledRate = (sampled.value / sampledTotal) * 100
+    const trueRate = (comp.freshness.stale / comp.freshness.total) * 100
+    const standardError = Math.sqrt((trueRate / 100) * (1 - trueRate / 100) / sampledTotal) * 100
+    harness.check(
+      "the sampled mode is within 3 standard errors of the exact rate",
+      Math.abs(sampledRate - trueRate) <= 3 * standardError,
+      `sampled ${sampledRate.toFixed(1)}% vs true ${trueRate.toFixed(1)}% (3 SE = ${(3 * standardError).toFixed(1)}pp at n=${sampledTotal}; the old +/-2pp band was under 1 SE, so it failed at random)`,
+    )
+    harness.check(
+      "and its verdict on a drifting project agrees with the exact scan's",
+      (sampled.status === "error") === (trueRate > 10),
+      `sampled=${sampled.status} at ${sampledRate.toFixed(1)}%, exact=${c.status} at ${trueRate.toFixed(1)}% (threshold: >10% is an error)`,
+    )
+    const estimated = Number((sampled.description.match(/estimated (\d+) total/) ?? [])[1])
+    harness.check(
+      "it extrapolates the sample's own rate to the population, and says so",
+      Number.isFinite(estimated) && estimated === Math.round((sampled.value / sampledTotal) * comp.freshness.total),
+      `description states estimated ${estimated} total; ${sampled.value}/${sampledTotal} of ${comp.freshness.total} is ${Math.round((sampled.value / sampledTotal) * comp.freshness.total)}`,
+    )
 
     const missing = (await runIndexHealthCheck(pid as any, { diskScan: "complete" })).checks.find((x) => x.name.includes("Missing from Disk"))!
     harness.check("Files Missing from Disk describes its own method honestly", /EXACT|ESTIMATE/.test(missing.description), missing.description.slice(0, 110))
@@ -191,8 +237,8 @@ const drop = (root: string, pid: string) => {
     harness.check("the real option works", /6\/6 checked, complete/.test(text(real)), text(real).split("\n").find((l) => l.startsWith("freshness:")) ?? "")
 
     // The destructive option is labelled as destructive where it is declared.
-    harness.check("force is declared destructive in its own schema description", /DESTRUCTIVE/.test(desc.inputSchema.properties.force.description), desc.inputSchema.properties.force.description.slice(0, 100))
-    harness.check("wait=false declares that the next call reports the outcome", /NEXT call reports/.test(desc.inputSchema.properties.wait.description), desc.inputSchema.properties.wait.description.slice(0, 100))
+    harness.check("force is declared destructive in its own schema description", /(?:DESTRUCTIVE)/.test(desc.inputSchema.properties.force.description ?? ""), (desc.inputSchema.properties.force.description ?? "").slice(0, 100))
+    harness.check("wait=false declares that the next call reports the outcome", /NEXT call reports/.test(desc.inputSchema.properties.wait.description ?? ""), (desc.inputSchema.properties.wait.description ?? "").slice(0, 100))
     harness.negative("the integrity check count is no longer asserted in the description", !/\b12-point\b/.test(desc.description), "the count is derived and printed as `N checks`")
   } finally { drop(root, pid) }
 }

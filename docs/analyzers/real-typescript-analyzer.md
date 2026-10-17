@@ -84,12 +84,12 @@ file this lane does not own:
 | extends | ✅ | `class_heritage` `extends_clause` → base class name (verbatim: a qualified base stays qualified) | 1.0 |
 | implements | ✅ | `implements_clause` → each interface LEAF name (`heritageBaseName` strips `<...>` AND the qualifier) | 1.0 |
 | instantiates | ✅ | `new_expression` → constructor leaf name (with `contains: owner → constructor` complement) | 1.0 |
-| uses | ✅ | a VALUE/MEMBER READ in expression position: field access, template interpolation, JSX tag. Type MENTIONS are `references` (the DERIV_TS one-label ruling), EXCEPT predicates/constraints which keep both labels | 0.85–0.9 |
+| uses | ✅ | a VALUE/MEMBER READ in expression position (field access, template interpolation, JSX tag) AND a type MENTION (`isTypeReference`, label-per-position). **RULING 2026-10-17 (`8def4a5d5`): the type-mention `uses` row SURVIVES and the duplicate `references` row for the same (source, target) is dropped** — the reverse of the earlier one-label survivor; predicates/constraints and every other type position keep `uses`, the duplicate is what goes | 0.85–0.9 |
 | imports | ✅ | `import_statement`/`import` specifiers → source = module leaf name, target = `<module>:<name>` (named + default + namespace imports); side-effect-only and `require` forms publish `<module>:*` | 1.0 |
 | imports — type-only marker | ✅ | `metadata.isTypeOnly` — `true` for `import type {…}` (anonymous `type` child of the statement) and for the inline TS 4.5+ form `import { type A, B }` (anonymous `type` child of the `import_specifier`); `false` otherwise. Metadata only: no edge added, removed, or re-pointed | 1.0 |
 | exports | ✅ | `export` statements → source = module leaf, target = exported name; `export default` handled | 1.0 |
 | overrides | ✅ | method in derived class whose name matches a base-class method (base resolved via extends heritage) → `Derived.method → Base.method` | 1.0 |
-| references | ✅ | a TYPE mention → referenced type name, with `metadata.relationshipType` naming the position (`declared_type`, `return_type`, `type_alias`, `cast_target`, `type_argument`, `satisfies_target`, `type_parameter_constraint`, `type_predicate_target`) | 0.95 |
+| references | ✅ | a TYPE mention that does NOT also have a `uses` row for the same (source, target) → referenced type name, with `metadata.relationshipType` naming the position (`declared_type`, `return_type`, `type_alias`, `cast_target`, `type_argument`, `satisfies_target`). `type_parameter_constraint` / `type_predicate_target` are the two positions that keep BOTH surfaces | 0.95 |
 | contains | ✅ | namespace → member; class/interface/enum → member; type alias → member; computed from `ownerName` on symbols (single-pass, no per-symbol scan) | 1.0 |
 | depends | — | not emitted (covered by imports) | — |
 | field_access | — | folded into `uses`/`references` (family contract) | — |
@@ -320,22 +320,27 @@ reduced through.
   `metadata.relationshipType: "type_parameter_constraint"`. The type parameter's OWN name is not a
   child of `constraint`, so it is never leaked as a type reference.
 * `x is Foo` / `asserts x is Foo` publishes `references owner -> Foo` with
-  `metadata.relationshipType: "type_predicate_target"`, and its `uses` row is exempted from
-  `dropDuplicateTypeMentionLabels` (the one-label ruling applies to ordinary annotations only).
-  The predicate writer's cost/benefit is measured in TYPESCRIPT-STATE.md §R2 — including the one
-  `references` edge it adds to the gate's cross-file class, which the gate's own documentation calls
-  the NORMAL shape for `references`.
+  `metadata.relationshipType: "type_predicate_target"` AND keeps the `uses` row for the same
+  (source, target) — the predicate/constraint positions keep BOTH surfaces.
+* **RULING (2026-10-17, commit `8def4a5d5`, Lead-authorised pin-change set):** the DERIV_TS
+  one-label ruling was REVERSED. For every OTHER type position the `uses` row now survives and the
+  duplicate `references` row is dropped. Four fixture pins moved with the ruling
+  (`usage-references`, `parameter-shadows-file-symbol`, `type-alias-mentions-own-alias`,
+  `unnamed-signature-members`). Measured effect on the 400-file gate: totals UNCHANGED
+  (23,558 / 6,965 / 1,364 / 10,126 / 5,103) while `references` 3,346 → 2,888 and `uses`
+  944 → 1,402 — a relabel of 458 edges, not a resolution change.
+  See `validation/m14/verification/TYPESCRIPT-STATE.md` “RULING UPDATE (14:00)”.
 
-### Fixtures: 98 pass / 4 fail (from 96/6)
+### Fixtures: 99 pass / 3 fail (from 96/6 at the start of the iteration)
 
-Fixed: `calls-callee-shape-reduction`, `heritage-parameterized-leaves`. Remaining, each named:
+Fixed this iteration: `calls-callee-shape-reduction` (narrow reducer),
+`heritage-parameterized-leaves` (leaf + constraint refs),
+`type-predicate-and-constraint-refs` (the ruling keeps both surfaces for predicates/constraints).
+The four re-pinned type-mention fixtures pass against the ruling. Remaining:
 `re-export-empty-clause`, `re-export-module-dependency` (the re-export emitter is not written), and
-two type-position fixtures. `type-predicate-and-constraint-refs` now fails on exactly ONE row, and
-that row CONTRADICTS `usage-references`: the first REQUIRES `uses takesShape -> Shape` (parameter
-annotation of an in-file type), the second FORBIDS `uses greet -> User` for the same construct.
-`type-reference-uses-surfaces` requires a `meta.declaredTypeRole` key no analyzer emits. Those two
-need a fixture/design RULING, not a quiet patch; do not disable `dropDuplicateTypeMentionLabels`
-wholesale (733 overlapping `uses` pairs measured on microsoft/TypeScript).
+`type-reference-uses-surfaces` (requires `uses` rows for declaration-owned type mentions — interface
+property type, type-alias RHS, module-level variable annotation — with `meta.declaredTypeRole`; the
+usage pass does not emit uses for those owners).
 
 ### The React / TSX boundary, measured
 

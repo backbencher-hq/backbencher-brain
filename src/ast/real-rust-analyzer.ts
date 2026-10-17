@@ -177,6 +177,19 @@ export function rustModuleFileCandidates(
   const parts = module.split("::").filter((p) => p.length > 0)
   if (parts.length === 0) return null
   const rootWord = parts[0]
+  // AN ITEM-SHAPED LEAF IS AN ITEM, NOT A MODULE. `crate::diagnostics::Applicability` and
+  // `super::GraceClient` name an item declared by the PREFIX module, so the file the import
+  // depends on is the prefix module's file — dropping the leaf IS the arithmetic. (The 2-segment
+  // `crate::Filter` case below predates this and stays.) The claim this enables is a
+  // FILE-DEPENDENCY claim, verified against the project's admitted list; it says "this names an
+  // admitted file", which is true, and it does NOT respell the edge — the edge's target and
+  // identity are untouched, which is what keeps `arbitraryTwin` byte-identical.
+  //
+  // `self::Item` is REFUSED by the self branch below (eff.length < 2): the prefix is this very
+  // file, and a claim that confirms itself is not evidence. Lower-case leaves are never treated
+  // as items here — a lower-case leaf can be a module or an item and the path does not say which.
+  const leafIsItem = parts.length >= 2 && /^[A-Z]/.test(parts[parts.length - 1])
+  const eff = leafIsItem ? parts.slice(0, -1) : parts
   if (rootWord === "crate" || rootWord === "self" || rootWord === "super") {
     if (rootWord !== "crate" && !atFileScope) return null
     const dir = path.dirname(filePath)
@@ -187,25 +200,25 @@ export function rustModuleFileCandidates(
       // wildcard) both depend on the CRATE ROOT FILE — that is where a `crate::` path resolves.
       // It is claimed only when exactly one of `lib.rs`/`main.rs` sits there: with both, which
       // crate the importing file belongs to is a fact this edge does not state, so it is refused.
-      if (parts.length === 1 || (parts.length === 2 && /^[A-Z]/.test(parts[1]))) {
+      if (eff.length === 1 || (eff.length === 2 && /^[A-Z]/.test(eff[1]))) {
         return crateRootFileCandidates(base)
       }
-      const stem = path.join(base, ...parts.slice(1))
+      const stem = path.join(base, ...eff.slice(1))
       return [`${stem}.rs`, path.join(stem, "mod.rs")]
     }
     const isModRs = path.basename(filePath) === "mod.rs"
     if (rootWord === "self") {
       // `use self::{…}` names THIS module, whose file is the edge's own file. The claim would be
       // circular (it would confirm itself), so it is refused rather than counted.
-      if (parts.length < 2) return null
-      const stem = path.join(dir, ...parts.slice(1))
+      if (eff.length < 2) return null
+      const stem = path.join(dir, ...eff.slice(1))
       return [`${stem}.rs`, path.join(stem, "mod.rs")]
     }
     // `super`: the parent module's directory for a child, or the parent module's OWN file when
     // the path is the bare word `super` (`use super::{…}` — a group of the parent's items).
     const base = isModRs ? path.dirname(dir) : dir
-    if (parts.length === 1) return [`${base}.rs`, path.join(base, "mod.rs")]
-    const stem = path.join(base, ...parts.slice(1))
+    if (eff.length === 1) return [`${base}.rs`, path.join(base, "mod.rs")]
+    const stem = path.join(base, ...eff.slice(1))
     return [`${stem}.rs`, path.join(stem, "mod.rs")]
   }
   if (rootWord === "std" || rootWord === "core" || rootWord === "alloc") return null

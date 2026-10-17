@@ -34,7 +34,14 @@ export function noNanSimilarity(row: { similarity?: unknown }): boolean {
   return typeof row.similarity === "number" ? Number.isFinite(row.similarity) : row.similarity === null
 }
 
-export type EvidenceLayer = "unit" | "integration" | "e2e" | "corpus"
+// The layer vocabulary is SHARED by every milestone that emits through this
+// harness. `wire` and `performance` were added when the M64 bb_health battery
+// arrived (script/m64/verify-wire.ts drives the real MCP stdio path;
+// script/m64/verify-embed-scan.ts asserts cost bounds) — a document may not name
+// a layer outside this closed set, and a layer name classifies WHERE the checks
+// ran rather than claiming what they covered, which is `checks`/`summary`'s job.
+export type EvidenceLayer = "unit" | "integration" | "e2e" | "corpus" | "wire" | "performance"
+export const EVIDENCE_LAYERS: readonly EvidenceLayer[] = ["unit", "integration", "e2e", "corpus", "wire", "performance"]
 export type EvidenceState = "verified" | "partial" | "known-gap" | "untested"
 
 export interface EvidenceCheck {
@@ -53,11 +60,24 @@ export interface EvidenceMeta {
   layers: EvidenceLayer[]
   decisions?: Record<string, unknown>
   limitations?: string[]
+  /**
+   * Which milestone's identity this document carries (default "M13").
+   *
+   * It exists because a LATER milestone reuses this harness: script/m64's eight
+   * bb_health verifiers emit through it. Without a way to declare their identity
+   * the harness stamped every one of them `milestone: "M13"` while their `issue`
+   * said `M64`, and wrote them into `validation/m13/results/` — so M13's evidence
+   * census read eight foreign documents, each internally contradictory, and
+   * rejected all eight (correctly) for belonging to someone else.
+   */
+  milestone?: string
+  /** Where write()/emit() put the document. Defaults to validation/<milestone>/results. */
+  resultsDir?: string
 }
 
 export interface EvidenceDocument {
   schemaVersion: 1
-  milestone: "M13"
+  milestone: string
   issue: string
   code: string
   tool: string
@@ -70,6 +90,17 @@ export interface EvidenceDocument {
   decisions: Record<string, unknown>
   limitations: string[]
   generatedAt: string
+}
+
+/**
+ * The results directory for a milestone: `validation/<milestone>/results`.
+ *
+ * One function rather than a literal per caller, so a reusing milestone (M64)
+ * cannot keep writing into another milestone's corpus by accident — which is
+ * exactly the misfile this replaced.
+ */
+export function resultsDirFor(milestone: string): string {
+  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "validation", milestone.toLowerCase(), "results")
 }
 
 export class Harness {
@@ -156,7 +187,7 @@ export class Harness {
     }
     return {
       schemaVersion: 1,
-      milestone: "M13",
+      milestone: this.meta.milestone ?? "M13",
       issue: this.meta.issue,
       code: this.meta.code,
       tool: this.meta.tool,
@@ -172,16 +203,11 @@ export class Harness {
     }
   }
 
-  /** Write evidence JSON to validation/m13/results/<code>.json (no exit). */
+  /** Write evidence JSON to validation/<milestone>/results/<code>.json (no exit). */
   write(codeOverride?: string): EvidenceDocument {
     const doc = this.document()
     const outPath = resolve(
-      dirname(fileURLToPath(import.meta.url)),
-      "..",
-      "..",
-      "validation",
-      "m13",
-      "results",
+      this.meta.resultsDir ?? resultsDirFor(doc.milestone),
       `${(codeOverride ?? this.meta.code).toLowerCase()}.json`,
     )
     mkdirSync(dirname(outPath), { recursive: true })

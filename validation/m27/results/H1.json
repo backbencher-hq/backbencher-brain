@@ -26,7 +26,7 @@
       "caught": true
     }
   ],
-  "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
+  "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
   "sourceFingerprint": "be13908249d54a474fff2d951c29baab3c854ad15bc73a497971ed58b1988008",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -37,7 +37,7 @@
   ],
   "verifierCommand": "npx tsx script/m27/verify-helix.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-10-08T18:13:41.283Z",
+  "generatedAt": "2026-10-17T15:38:09.706Z",
   "claimLevel": "I2 — configuration verified against the real server's advertised capabilities; no driven hx session on this machine (D-7)",
   "blockedLegs": [
     {
@@ -51,7 +51,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T18:13:41.286Z",
-    "contentSha256": "fc9a8fa2daea36ad40f2d646d1098ef6925ae5c4eed7b60fdf6c4744ec6b27f8"
+    "sealedAt": "2026-10-17T15:38:09.708Z",
+    "contentSha256": "5d996d6b52159f02afba5ef51c08ed47e5ee8b8fe0a89deefcb4ac6890e59537"
   }
 }

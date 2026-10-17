@@ -139,15 +139,51 @@ async function main() {
   console.log("\n=== through the real tool path (graphTraversal — bb_graph's engine) ===")
   try {
     const t = await graphTraversal(pid, "target", {})
-    const sites = t.callers.map((e: any) => e.callSite?.line ?? null)
+    // THE CALL SITES ARE THE `calls` EDGES, and this gate used to count every
+    // kind. A default traversal covers all ten stored kinds, so the caller set
+    // also carries STRUCTURE — here the class's own `contains` rows, which is the
+    // documented owner relationship (a class contains its methods) and is also
+    // the documented range-fold: the cascade covers the whole container, so
+    // `Multi contains caller` is folded onto the traced member `target` as well.
+    // Counting those as call sites made this gate read "6 edges on 6 lines where
+    // the source has 4 calls" and fail on a store that keeps all four sites
+    // correctly (the DB rows above are 4/4 on lines 4-7). The claim under test is
+    // about CALL SITES, so the count is scoped to them — and the other edges are
+    // not ignored, they are asserted separately below (every one must be a stored
+    // `contains` row that traces to its own rowId).
+    const callEdges = t.callers.filter((e: any) => e.relationshipType === "calls")
+    const otherEdges = t.callers.filter((e: any) => e.relationshipType !== "calls")
     for (const e of t.callers) {
-      console.log(`  caller=${String(e.from).split(":").slice(-2).join(":")} line=${JSON.stringify(e.callSite?.line)} file=${e.callSite?.file}`)
+      console.log(`  ${String(e.relationshipType).padEnd(9)} caller=${String(e.from).split(":").slice(-2).join(":")} line=${JSON.stringify(e.callSite?.line)} file=${e.callSite?.file}`)
     }
+    const sites = callEdges.map((e: any) => e.callSite?.line ?? null)
     const knownSites = sites.filter((l: number | null) => typeof l === "number" && l > 0)
     check(
       "tool-reports-every-call-site",
-      t.callers.length >= javaExpected && new Set(knownSites).size === javaExpected,
-      `${t.callers.length} caller edges, ${new Set(knownSites).size} distinct lines (expected ${javaExpected} sites) — this is the answer an agent gets`,
+      callEdges.length >= javaExpected && new Set(knownSites).size === javaExpected,
+      `${callEdges.length} \`calls\` caller edge(s) on ${new Set(knownSites).size} distinct line(s) for ${javaExpected} true call sites` +
+        ` (the answer also carries ${otherEdges.length} non-call edge(s): ${JSON.stringify([...new Set(otherEdges.map((e: any) => e.relationshipType))])})`,
+    )
+    // The non-call edges are structure, and structure must trace to the store.
+    // Without this, an EXTRA CALL edge could hide inside the "other kinds" a
+    // looser count would tolerate.
+    const storedContains = Number(
+      (raw
+        .prepare(
+          `SELECT COUNT(*) c FROM brain_relationship r JOIN brain_symbol ts ON ts.id = r.target_symbol_id
+            WHERE r.project_id = ? AND r.relationship_type = 'contains'
+              AND (ts.name = 'target' OR ts.qualified_name LIKE '%target')`,
+        )
+        .get(pid) as any).c,
+    )
+    const otherRowIdsResolve = otherEdges.every((e: any) => {
+      const row = raw.prepare(`SELECT id FROM brain_relationship WHERE id = ?`).get(e.rowId) as any
+      return !!row && e.relationshipType === "contains"
+    })
+    check(
+      "non-call-callers-are-stored-structure",
+      otherEdges.length >= storedContains && otherRowIdsResolve,
+      `${otherEdges.length} non-call edge(s) against ${storedContains} stored \`contains\` row(s) naming the traced member; every one is a \`contains\` rowId present in the store: ${otherRowIdsResolve}`,
     )
   } catch (e: any) {
     check("tool-reports-every-call-site", false, `graphTraversal threw: ${e?.message}`)

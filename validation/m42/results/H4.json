@@ -3,30 +3,48 @@
   "code": "H4",
   "milestone": "M42",
   "status": "verified",
-  "checks": 31,
-  "passed": 31,
+  "checks": 33,
+  "passed": 33,
   "failed": 0,
   "failures": [],
   "verdict": {
     "realComponentFailures": 0,
     "mutantsCaught": 5,
-    "mutantsTotal": 5
+    "mutantsTotal": 5,
+    "mutantsUnloaded": 0,
+    "unloadedMutants": []
   },
   "negatives": 5,
   "fixture": "script/m42/h2-fixture.ts (real indexer + real dist server)",
   "budgets": {
     "impactWarmP95Ms": 300
   },
-  "currentCommit": "747f97945ec7622dd7c03e010274a73b80c51fe9",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "sourceFingerprint": "5fc5655b1bff54f020b80be6ce9ec3fd6c84ffa564d4c856963b770c671ad7a4",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m42/verify-hover-actions.ts",
+    "ide/vscode/README.md",
+    "ide/vscode/package.json",
+    "ide/vscode/src/hover-commands.ts",
+    "src/brain/database.ts",
+    "src/lsp/enrichment.ts",
+    "src/lsp/impact.ts",
+    "src/lsp/impact_request.ts",
+    "src/lsp/navigation.ts",
+    "src/lsp/rich_hover.ts",
+    "script/m26/graph-core.ts",
+    "script/m42/h2-fixture.ts"
+  ],
   "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
   "evidenceFile": "H4.json",
-  "generatedAt": "2026-10-05T22:39:28.659Z",
+  "generatedAt": "2026-10-17T17:25:36.456Z",
   "limitations": [
     "editor leg (link clicks, panel surfaces) is proven in E5 over the shared core; this gate proves the server-side contract + renderer laws headless"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:39:28.661Z",
-    "contentSha256": "f3078489a4d3adfbe9fd45e2bacedf8781fe4764a864b711dde39fdda0d5faf4"
+    "sealedAt": "2026-10-17T17:25:36.457Z",
+    "contentSha256": "9f2dc970a460e110b914d40a09fe0c5666dbb8005520a80c91107c4947acb6d9"
   }
 }

@@ -36,8 +36,9 @@
  */
 import { readFileSync, existsSync, readdirSync } from "node:fs"
 import { resolve, dirname } from "node:path"
+import { fileURLToPath } from "node:url"
 
-const HERE: string = (import.meta as any).dir ?? dirname(new URL(import.meta.url).pathname)
+const HERE: string = (import.meta as any).dir ?? dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, "..", "..")
 const SPEC_DIR = "script/m14/spec"
 const FIRING_LOG = "validation/m14/results/firing-laptop-b.current.log"

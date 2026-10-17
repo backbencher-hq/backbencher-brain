@@ -27,6 +27,10 @@ import { execFileSync } from "node:child_process"
 import { writeSealed } from "../lib/evidence.ts"
 import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { noInlinePositionArithmetic } from "./no-inline-position-arithmetic.ts"
+// The owner's row alias, imported rather than restated: the fixture double must
+// publish the stored line under the SAME name the production query selects, or the
+// differential compares a row the surface never read (measured 2026-10-17).
+import { STORED_LINE_ALIAS } from "../../src/intelligence/graph/line-address.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const COMPONENT_REL = "src/lsp/navigation.ts"
@@ -132,9 +136,17 @@ interface FixtureRel {
 
 /** The aliases the double serves the stored call-site line under, so a mutant
  *  cannot pass by reading a name the fixture happens not to populate. The
- *  production query selects ONE of them (`stored_call_line`); the others are
- *  decoys carrying the identical value. */
-const STORED_LINE_ALIASES = ["stored_call_line", "line_number", "lineNumber", "call_line"] as const
+ *  production query selects ONE of them — the OWNER's alias, imported below so
+ *  this list cannot drift from `STORED_LINE_SELECT` — and the others are decoys
+ *  carrying the identical value.
+ *
+ *  MEASURED 2026-10-17: the production surface moved from a local
+ *  `AS stored_call_line` to the owner's `STORED_LINE_SELECT`, which publishes the
+ *  row under `bb_stored_call_line`. The double did not serve that name, so the
+ *  surface read `undefined` for every row, classified all of them `not-stored`,
+ *  and two U5 checks went red — the differential caught a fixture that had
+ *  stopped modelling production, which is what it is for. */
+const STORED_LINE_ALIASES = [STORED_LINE_ALIAS, "stored_call_line", "line_number", "lineNumber", "call_line"] as const
 
 // --- §2 CALL-SITE FIXTURE (M62 §2) -----------------------------------------
 //
@@ -1282,15 +1294,23 @@ async function testCallSiteMigration(): Promise<void> {
       /isExactAddress\(/.test(source),
     source.split("\n").filter((l) => /line-address|deriveCallSiteAddress|addressLine0|isExactAddress/.test(l)).join(" | "),
   )
+  // U8's law moved when the OWNER started exporting the SELECT. The surface can
+  // still reach a call site — it composes `STORED_LINE_SELECT` and
+  // `storedLineFromRow` — but it no longer has to name the column to do it, so
+  // the count's meaning changed from "exactly one hand-off" to "zero, because the
+  // hand-off is the owner's". Both halves are asserted: zero literals AND the two
+  // owner exports are present, or "zero occurrences" would also be satisfied by a
+  // surface that had simply stopped reading call sites.
+  const composesOwner = /STORED_LINE_SELECT/.test(source) && /storedLineFromRow\(/.test(source)
   check(
-    "U8: the stored column appears in navigation.ts EXACTLY ONCE, as the hand-off to the owner (zero would mean the surface cannot reach a call site; two would mean the read is not confined to the hand-off)",
-    countColumnLiterals(source) === 1,
-    `${countColumnLiterals(source)} occurrence(s) of the column name in code`,
+    "U8: the stored column is named ZERO times in navigation.ts and the surface reads it through the owner's exported SELECT/reader",
+    countColumnLiterals(source) === 0 && composesOwner,
+    `${countColumnLiterals(source)} occurrence(s) of the column name in code; composes the owner's SELECT/reader: ${composesOwner}`,
   )
   check(
-    "U8: the stored column is never rendered into a location field directly (no `line:` assigned from the row's own column)",
-    !/line:\s*[^,\n]*stored_call_line/.test(source),
-    source.split("\n").filter((l) => /line:\s*[^,\n]*stored_call_line/.test(l)).join(" | "),
+    "U8: the stored column is never rendered into a location field directly (no `line:` assigned from the raw stored value)",
+    !/line:\s*[^,\n]*(bb_)?stored_call_line/.test(source),
+    source.split("\n").filter((l) => /line:\s*[^,\n]*(bb_)?stored_call_line/.test(l)).join(" | "),
   )
 
   cleanupDir(dir)
@@ -1306,8 +1326,10 @@ async function testCallSiteMigration(): Promise<void> {
 const NOT_SERVEABLE_BY_DESIGN = ["rel-u-past-eof"] as const
 
 /** How many times navigation.ts names the store's call-site column in CODE (not
- *  in prose). Zero would mean the surface cannot reach a call site at all; more
- *  than one means the read is not confined to the hand-off to the owner. */
+ *  in prose). Zero is the target: the owner exports the SELECT list entry and the
+ *  reader, so a display surface has no reason to spell the column. The check that
+ *  uses this pairs the count with the owner composition, because a count of zero
+ *  is also what a surface that stopped reading call sites would produce. */
 function countColumnLiterals(source: string): number {
   let n = 0
   source.split("\n").forEach((line) => {
@@ -2257,7 +2279,7 @@ async function main(): Promise<void> {
     },
     declaredConflictsWithOtherGates: {
       M62_P6_permanence_lint:
-        "script/m62/verify-consumers.ts's P6 lint flags ANY code line in a display surface that names brain_relationship.line_number, with no exception for the hand-off to the address owner. §2 REQUIRES this surface to select the column — the store's line is the only place a call site is recorded — so the honest implementation trips it: A2 now reports TWO P6 findings (src/lsp/navigation.ts:252 and the pre-existing src/lsp/impact.ts:1242) where it reported one. A2's STATUS is unchanged (known-gap, 15/16, before and after), but the finding count rose by one and that is the correct outcome rather than a regression: the alternative was to spell the column so the regex cannot see it, which is obfuscation and a worse lie than the lint violation. Recommended resolution for the lint's owner: narrow P6 to reads that do not feed deriveCallSiteAddress, and pin that exception with its own planted mutant so it cannot widen silently.",
+        "RESOLVED, not suppressed. This surface used to declare a conflict: the M62 P6 permanence lint forbids a display surface from naming brain_relationship.line_number, while §2 requires this surface to select it, so the honest implementation tripped the lint and the conflict was recorded here. The resolution is the one the owner's L6 always described — the column, its SELECT list entry (STORED_LINE_SELECT) and its reader (storedLineFromRow) are exported by src/intelligence/graph/line-address.ts, and this surface now composes them. navigation.ts names the column ZERO times (U8 asserts both the zero and the composition, so 'zero' cannot be reached by not reading call sites at all), and the lint has nothing to flag. No exception was added to the lint and no mutant was weakened.",
     },
     limitations: [
       "index-sourced only; no compiler-backed go-to-definition (complement stance)",

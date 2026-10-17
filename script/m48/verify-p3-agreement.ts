@@ -53,7 +53,29 @@ async function main() {
     if (r?.isError) return null
     try { return JSON.parse(r.content[0].text) } catch { return null }
   }
-  const nameSet = (rows: Array<{ from: string }>) => new Set((rows ?? []).map((e) => e.from))
+  /**
+   * The caller's NAME from either door's own endpoint spelling.
+   *
+   * The two doors answer the same question with DIFFERENT shapes, and this gate
+   * did not account for it: it mapped `e.from` on both sides, but `bb_graph`
+   * inlines each endpoint as a descriptor (`from: { id, name, symbolType, file,
+   * line, isExternal }` — its node map is not published), so the graph side
+   * produced ONE distinct value, the string `"[object Object]"`, while
+   * `bb_analyze` returns the engine's edges verbatim (`from` = the stored symbol
+   * id, with `nodes` published beside them). Every caller-set check therefore
+   * FAILED on a disagreement that did not exist — an instrument reporting a
+   * defect in the tools when the defect was in the comparison. Normalising to the
+   * NAME is what "the two doors agree on who calls this" means for a reader, and
+   * it is the only field both payloads publish per endpoint.
+   */
+  const nameOf = (payload: any) => (e: any): string | null => {
+    const endpoint = e?.from
+    if (endpoint === null || endpoint === undefined) return null
+    if (typeof endpoint === "string") return payload?.nodes?.[endpoint]?.name ?? endpoint
+    return endpoint.name ?? (endpoint.id !== undefined ? payload?.nodes?.[endpoint.id]?.name ?? null : null)
+  }
+  const nameSet = (payload: any, rows: any[]) =>
+    new Set((rows ?? []).map(nameOf(payload)).filter((n): n is string => typeof n === "string" && n.length > 0))
 
   for (const root of ["leaf", "Service", "c1"]) {
     const gr = await call("bb_graph", { symbol: root })
@@ -62,12 +84,17 @@ async function main() {
     const tr = await call("bb_analyze", { mode: "trace", target: root })
     check(`P3: bb_graph + bb_analyze resolve ${root}`, !!gr && !!ca && !!ce && !!tr, "")
     if (!gr || !ca || !ce) continue
-    const gCallers = nameSet(gr.callers)
-    const gCallees = nameSet(gr.callees)
-    const aCallers = nameSet(ca.callers)
-    const aCallees = nameSet(ce.callers) // callees mode returns the same shape with callers[] = targets of root? use engine direction semantics
+    const gCallers = nameSet(gr, gr.callers)
+    const aCallers = nameSet(ca, ca.callers)
     check(`P3: caller set identical (${root})`, gCallers.size === aCallers.size && [...gCallers].every((n) => aCallers.has(n)), `graph=${[...gCallers].join(",")} analyze=${[...aCallers].join(",")}`)
-    check(`P3: bb_graph totalCallers == bb_analyze (${root})`, gr.summary?.totalCallers === ca.summary?.totalCallers, `${gr.summary?.totalCallers} vs ${ca.summary?.totalCallers}`)
+    // Both sides must HAVE published the count: undefined === undefined used to
+    // satisfy this predicate, so a rename on either payload would have been
+    // reported as agreement rather than as a shape change.
+    check(
+      `P3: bb_graph totalCallers == bb_analyze (${root})`,
+      typeof gr.summary?.totalCallers === "number" && gr.summary.totalCallers === ca.summary?.totalCallers,
+      `${gr.summary?.totalCallers} vs ${ca.summary?.totalCallers}`,
+    )
     check(`P3: truncation flags agree (${root})`, (gr.summary?.truncated ?? false) === (ca.summary?.truncated ?? false), "")
     check(`P3: trace resolves ${root}`, !!tr && (tr.summary?.totalCallers ?? tr.callers?.length ?? 0) >= 0, "")
   }
@@ -105,11 +132,20 @@ async function main() {
     check("P3: bb_cross_language returns a declared-absent result (no invented facts)", !!cl && Array.isArray(cl.facts) && cl.facts.length === 0 && (cl.declaredAbsent === true || (cl.absenceNote ?? "").length > 0), JSON.stringify(cl).slice(0, 160))
   }
 
-  // negatives: predicates must be able to refuse
+  // negatives: predicates must be able to refuse. Built from the REAL payload
+  // shapes, because the vacuity this gate had was a shape mistake: a negative
+  // written with two identical string endpoints cannot detect a comparison that
+  // never reads a name.
   {
+    const gShape = { callers: [{ from: { id: "p:src/a.ts:f:1", name: "alpha" } }], nodes: undefined }
+    const aShape = { callers: [{ from: "p:src/b.ts:g:1" }], nodes: { "p:src/b.ts:g:1": { name: "beta" } } }
+    const gNames = nameSet(gShape, gShape.callers)
+    const aNames = nameSet(aShape, aShape.callers)
+    negative("a disagreeing caller set would fail the agreement predicate", !([...gNames].length === [...aNames].length && [...gNames].every((n) => aNames.has(n))), `graph=[${[...gNames]}] analyze=[${[...aNames]}]`)
+    negative("a MISSING caller count on either side would fail the totals predicate", !(typeof undefined === "number" && undefined === 2), "")
+    negative("an inline-object endpoint resolves to its NAME (the shape that used to read as one value)", gNames.has("alpha") && gNames.size === 1, `graph=[${[...gNames]}]`)
     const ga = { callers: [{ from: "x" }], callees: [], summary: { totalCallers: 1, truncated: false } }
     const aa = { callers: [{ from: "y" }], callees: [], summary: { totalCallers: 2, truncated: false } }
-    negative("a disagreeing caller set would fail the agreement predicate", !(new Set(["x"]).size === new Set(["y"]).size && [...new Set(["x"])].every((n) => new Set(["y"]).has(n))), "")
     negative("disagreeing totals would fail the totals predicate", !(ga.summary.totalCallers === aa.summary.totalCallers), "")
     const hollowCl = { facts: [], declaredAbsent: false, absenceNote: null }
     // Detection predicate (mirror of the real check): empty facts must carry a

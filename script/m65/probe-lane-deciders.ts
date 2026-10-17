@@ -40,7 +40,7 @@ async function main() {
     for (const [rel, content] of Object.entries(fx.files)) {
       const abs = path.join(dir, rel)
       mkdirSync(path.dirname(abs), { recursive: true })
-      writeFileSync(abs, content)
+      writeFileSync(abs, typeof content === "string" ? content : String(content))
     }
     const pid = getProjectId(dir) as string
     const consoleLog = console.log

@@ -22,6 +22,9 @@ import { execSync, spawn, spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
 const REPO = "$HOME/fixtures/repositories/cabal"
 const DATA = "/tmp/m21r3-verify-" + Date.now()

@@ -45,7 +45,10 @@ function check(name: string, ok: boolean, detail?: string): void {
   if (ok) passed++
   else failed++
   console.log(`  ${ok ? "PASS" : "FAIL"}: ${name}${detail ? ` — ${detail}` : ""}`)
-  if (!ok && detail) details.push(`${name}: ${detail}`)
+  // §8.3: the record must NAME what failed — see the same repair in
+  // script/m29/verify-giant-repo.ts. A failing check with no detail used to be
+  // dropped entirely, leaving `details: []` on a `known-gap` record.
+  if (!ok) details.push(detail ? `${name}: ${detail}` : name)
 }
 const mutants = { caught: 0, total: 0 }
 function negative(name: string, caught: boolean, detail?: string): void {
@@ -55,7 +58,7 @@ function negative(name: string, caught: boolean, detail?: string): void {
     passed++
   } else failed++
   console.log(`  ${caught ? "CAUGHT" : "ESCAPED"}: ${name}${detail ? ` — ${detail}` : ""}`)
-  if (!caught && detail) details.push(`${name}: ${detail}`)
+  if (!caught) details.push(detail ? `${name}: ${detail}` : name)
 }
 function gitCommit(): string {
   try {
@@ -202,8 +205,23 @@ check("G4: giant-scale row cites R3 evidence", recorded?.giantScale?.present ===
 // M1-M4: mutation proofs
 // ---------------------------------------------------------------------------
 // M1: a hand-edited claim in the JSON fails byte-identical regeneration.
-const tamperedJson = onDiskJson.replace('"claim": "I3"', '"claim": "I4"')
-negative("M1: hand-edited claim (I3 -> I4) breaks regeneration", tamperedJson !== onDiskJson && tamperedJson !== fresh.json)
+//
+// The needle is DERIVED from the published ledger, not hardcoded: the literal
+// `"claim": "I3"` this mutant used to look for stopped existing when the
+// recorded claims moved on, `replace` then did nothing, and the mutant
+// ESCAPED — reporting a can-fail proof that no longer tested anything
+// (measured 2026-10-17: R4 `details: ["M1: hand-edited claim (I3 -> I4)
+// breaks regeneration"]`). This is the same escape M2's comment records for the
+// precision number, so the rule is stated once: mutate what the artifact
+// actually contains, and FAIL when there is nothing to mutate.
+const claimNeedle = /"claim": "(I[0-4])"/.exec(onDiskJson)
+const claimReplacement = claimNeedle ? (claimNeedle[1] === "I4" ? "I3" : "I4") : ""
+const tamperedJson = claimNeedle ? onDiskJson.replace(claimNeedle[0], `"claim": "${claimReplacement}"`) : onDiskJson
+negative(
+  "M1: hand-edited claim breaks regeneration (needle derived from the published ledger)",
+  claimNeedle !== null && tamperedJson !== onDiskJson && tamperedJson !== fresh.json,
+  claimNeedle ? `${claimNeedle[1]} -> ${claimReplacement}` : "no claim field found to mutate",
+)
 
 // M2: a hand-edited precision number fails regeneration. The needle is
 // derived from the fresh build (a hardcoded literal goes stale whenever the

@@ -1080,8 +1080,17 @@ export function selftest(): number {
       expectExit: 0,
     },
     {
+      // THE FIXTURE USED TO CLAIM `calls` WHILE THE SOURCE EMITTED ONLY
+      // `contains`. That made the case a second thing as well as the thing it
+      // names: the doc's `calls | ✅` row is a FALSE_POSITIVE (nothing emits
+      // `calls`), so the case was measured as [FALSE_POSITIVE, UNDOCUMENTED]
+      // and exit 1 — the battery was red on a correctly-working gate, which is
+      // the same shape as the `started` flag that skipped a body row: the
+      // expected verdict was reached, so nothing looked wrong. The doc row now
+      // claims the kind the source DOES emit, which isolates the rule this case
+      // exists for: a live kind with NO row is UNDOCUMENTED and is not fatal.
       name: "an emitted kind with no row at all is UNDOCUMENTED, not fatal",
-      src: ["relationships.push({ type: ASTEngine.RelationshipType.Contains })"].join("\n"),
+      src: ["relationships.push({ type: ASTEngine.RelationshipType.Contains })", "relationships.push({ type: ASTEngine.RelationshipType.Calls })"].join("\n"),
       doc: tableDoc([["calls", "✅", "`m` → callee", "0.7"]]),
       expect: ["UNDOCUMENTED"],
       expectExit: 0,

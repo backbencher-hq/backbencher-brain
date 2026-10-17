@@ -11,6 +11,9 @@ import { indexProjectParallel, calculateGravityScores, flushBackgroundEmbeddings
 import { BrainDatabase } from "../../src/brain/database"
 import { runIndexHealthCheck } from "../../src/brain/brain-index-health"
 
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const root = mkdtempSync(path.join(tmpdir(), "bb-m21-r2-"))
 let checks = 0

@@ -1,8 +1,8 @@
 {
   "issue": "491",
   "code": "L2",
-  "status": "verified",
-  "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
+  "status": "known-gap",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
   "sourceFingerprint": "c7d921cbae0dcf42b6d9818aefdcffed5a79ea9a8490978e5ccb024d2c93b8ad",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -13,13 +13,15 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-hover.ts",
   "evidenceFile": "L2.json",
-  "generatedAt": "2026-10-12T18:59:48.110Z",
-  "passed": 58,
-  "failed": 0,
-  "failures": [],
+  "generatedAt": "2026-10-17T17:03:27.827Z",
+  "passed": 57,
+  "failed": 1,
+  "failures": [
+    "G6: p95 warm hover under 50ms budget"
+  ],
   "negativeCases": 14,
   "verdict": {
-    "realComponentFailures": 0,
+    "realComponentFailures": 1,
     "mutantsCaught": 6,
     "mutantsTotal": 6,
     "mutantsByComponent": {
@@ -34,7 +36,7 @@
         "anchorDrift": 0
       }
     },
-    "ok": true,
+    "ok": false,
     "anchorDrift": 0,
     "anchorDriftNote": "A mutant whose anchor no longer exists, or whose module fails to load, no longer tests what this gate names. It is reported as NOT-CAUGHT and forces known-gap — §8.3: silence is guilt, and a skip is not a pass.",
     "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
@@ -50,7 +52,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T18:59:48.110Z",
-    "contentSha256": "0dc03dd06dc6924fb80e8ba9187d51b0bc2ee784254cbc59278863754d8bc56e"
+    "sealedAt": "2026-10-17T17:03:27.828Z",
+    "contentSha256": "0bc7b5f37381b7d3c38743fd2797f151c4d06d4d47c9b3cec8a3a09879003ecf"
   }
 }

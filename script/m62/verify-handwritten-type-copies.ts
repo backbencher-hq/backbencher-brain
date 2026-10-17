@@ -154,6 +154,9 @@ check(
         `buildWebviewHtml's missing styles?: boolean is exactly what this must prevent ***`,
 )
 
+/** Product modules a cast was pointed at that export NO type — reported, not hidden. */
+const unanchoredProductModules = new Set<string>()
+
 type Offender = { file: string; line: number; productModule: string; fn: string; form: string }
 
 /** Find `await import(<src module>) as { <name>: ... }` casts in one file. */
@@ -242,6 +245,22 @@ function findHandwrittenCopies(rel: string, abs: string, text: string, census: M
     // in structural form is a SNAPSHOT. It stays green through any product change.
     // Only those are offenders.
     const productTypeNames = census.get(productModule)!
+    //
+    // A MODULE THAT EXPORTS NO TYPE CANNOT BE ANCHORED, SO A CAST OVER IT IS NOT A COPY.
+    //
+    // MEASURED 2026-10-17: script/m14/tmp/protobuf/probe/extraction-ab.mts imports
+    // src/ast/real-protobuf-analyzer.ts for its CLASS, then casts a JSON manifest as
+    // `{ corpora: any[] }`. The analyzer exports zero interfaces and zero types, so
+    // there is nothing to import instead and `anchors` was necessarily empty — the gate
+    // reported a "hand-written product type copy" whose prescribed remedy ("import the
+    // real type") cannot be carried out, because no such type exists. An unsatisfiable
+    // ask is the same defect as a lint that matches its own documentation.
+    //
+    // The exclusion is COUNTED and printed below, so it cannot silently widen.
+    if (productTypeNames.size === 0) {
+      unanchoredProductModules.add(productModule)
+      return
+    }
     const anchors = [...productTypeNames].filter((n) => new RegExp(`\\b${n}\\b`).test(body))
     if (anchors.length > 0) return
     //
@@ -358,6 +377,14 @@ console.log(
       ? "\n  Each is a snapshot of a shape the product still honours at RUNTIME — the gate keeps passing while\n  its type says fields that really exist do not. Import the real type so drift becomes a type error."
       : ""),
 )
+// The exclusion above is REPORTED. A cast over a module that exports no type cannot be
+// anchored to anything, so it is neither a copy nor fixable by the remedy this gate names.
+if (unanchoredProductModules.size > 0) {
+  console.log(
+    `\n  ${unanchoredProductModules.size} module(s) were imported by a cast but export NO type, so the cast cannot be anchored and is not reported:`,
+  )
+  for (const m of [...unanchoredProductModules].sort()) console.log(`    ${path.relative(ROOT, m)}`)
+}
 
 const failed = checks.filter((c) => !c.ok).length
 console.log(`\nHANDWRITTEN TYPE COPIES: ${failed === 0 ? "PASS" : `FAILED (${failed}) — see above`}`)

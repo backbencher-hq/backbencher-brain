@@ -45,8 +45,9 @@
 import { readFileSync, statSync, existsSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { resolve, dirname } from "node:path"
+import { fileURLToPath } from "node:url"
 
-const HERE: string = (import.meta as any).dir ?? (import.meta as any).dirname ?? dirname(new URL(import.meta.url).pathname)
+const HERE: string = (import.meta as any).dir ?? (import.meta as any).dirname ?? dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, "..", "..")
 // The four inputs. The env overrides exist ONLY so a reviewer can point the board at a missing or
 // malformed artefact and watch the degradation (the board never writes a fixture of its own); the

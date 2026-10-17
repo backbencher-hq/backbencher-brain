@@ -45,6 +45,7 @@ const harness = new Harness({
   tool: "bb_health",
   title: "bb_health over the wire: the five additions reachable by an agent, and the schema that guides it",
   layers: ["integration", "wire"],
+  milestone: "M64",
   decisions: {
     why: "the eight existing gates call the provider directly, so they cannot see the registry schema, the validation function, or the handler argument map — where two real defects lived",
     surface: "the text block the agent READS, not the internal report shape",

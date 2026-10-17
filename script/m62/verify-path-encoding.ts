@@ -44,17 +44,18 @@
 // anything swallowed is printed with its file and line, so a wrong guess is
 // visible on the gate's own output instead of silently green.
 
-import { readFileSync, readdirSync, statSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import path from "node:path"
 import {
   PATTERN,
+  SKIPPED_DIRS,
   UNREADABLE_DIRS,
   blankCommentsAndStrings,
   findCodeHits,
   findRawHits,
   walkSourceFiles,
 } from "./path_encoding_scan.ts"
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 
 type Check = { name: string; ok: boolean; detail: string }
@@ -228,6 +229,23 @@ const backlogHits = codeHits.filter((h) => !h.shipping)
     check("the walk FINDS a defect planted in a real directory", planted === 1, `${planted} hit(s) in planted.ts`)
     check("the walk does not flag a comment that only mentions the idiom", mentioned === 0, `${mentioned} hit(s) in mention-only.ts`)
     check("the walk ignores files that are not source", !walked.some((f) => f.endsWith("notes.md")), "notes.md was not walked as source")
+
+    // THE WALK MUST NOT FOLLOW A SYMLINK, AND THIS IS A MEASURED REGRESSION.
+    // This checkout parks three snapshots of itself, each holding a link to
+    // `script/m14/tmp/elixir-274`. `statSync` follows links, so the same files were
+    // walked four times over and the gate reported 45 defects in a tree that has 15.
+    // A duplicated hit is not a duplicate count, it is a false one: the extra 30 sites
+    // are files that are not part of the repository at all.
+    const linkDir = path.join(dir, "linked")
+    mkdirSync(linkDir, { recursive: true })
+    writeFileSync(path.join(linkDir, "real.ts"), "export const y = 1\n", "utf8")
+    symlinkSync(linkDir, path.join(dir, "alias"), "dir")
+    const symWalked = walkSourceFiles(dir).filter((f) => f.endsWith("real.ts"))
+    check(
+      "the walk does not count a symlinked directory twice",
+      symWalked.length === 1,
+      `${symWalked.length} source path(s) for one file — 2 means the link was followed`,
+    )
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -235,18 +253,46 @@ const backlogHits = codeHits.filter((h) => !h.shipping)
 
 // --- the defect is live in THIS checkout, not hypothetical -------------------
 {
-  const repoHasSpace = / /.test(ROOT)
-  check(
-    "this checkout's path contains a space, so the defect can actually fire here",
-    repoHasSpace,
-    repoHasSpace ? ROOT : `*** NO SPACE in ${ROOT} — the defect cannot fire and this gate proves nothing ***`,
-  )
-  const encoded = new URL(`file://${ROOT}`).pathname
-  check(
-    "the encoded form really differs from the real path (the mechanism, shown)",
-    encoded !== ROOT && encoded.includes("%20"),
-    `real=${ROOT}  encoded=${encoded}`,
-  )
+  // THE MECHANISM MUST BE SHOWN ON A PATH THAT ACTUALLY CARRIES A SPACE — AND IT MUST NOT
+  // REQUIRE THIS CHECKOUT TO BE ONE.
+  //
+  // The first version asserted `/ /.test(ROOT)`: "this checkout's path contains a space, so the
+  // defect can actually fire here". That is a property of the MACHINE, not of the code, and it
+  // made the gate un-passable on every clone whose path has no space (measured on the Linux host:
+  // NO SPACE in $HOME/mcp/backbencher-brain, exit 1 with a clean tree). A gate that
+  // fails on a host where nothing is wrong teaches people to ignore it — the failure mode this
+  // file's own comments keep naming.
+  //
+  // What the leg was trying to establish is real, so it is kept: the percent-encoding mechanism
+  // is DEMONSTRATED, on a path built for the purpose, and the demonstration runs everywhere.
+  // The checkout's own path is still printed — as a fact, not a verdict — because on the owner's
+  // machine ("…/Default Project/…") it is the live case and worth seeing in the output.
+  {
+    const probeDir = mkdtempSync(path.join(ROOT, ".tmp-gate-selftest-space-"))
+    const spacy = path.join(probeDir, "Default Project", "repo", "src")
+    mkdirSync(spacy, { recursive: true })
+    writeFileSync(path.join(spacy, "probe.ts"), "export const x = 1\n", "utf8")
+    try {
+      const encoded = new URL(`file://${spacy}`).pathname
+      const differentlyDecoded = decodeURIComponent(encoded)
+      check(
+        "the encoding really changes a path that contains a space (the mechanism, shown on a path built for it)",
+        encoded !== spacy && encoded.includes("%20"),
+        `real=${spacy.replace(ROOT, "<repo>")}  encoded=${encoded.replace(ROOT, "<repo>")}`,
+      )
+      check(
+        "…and the undecoded form names a directory that does NOT exist, which is the defect",
+        !existsSync(encoded) && decodeURIComponent(encoded) === spacy && existsSync(spacy),
+        `existsSync(encoded)=${existsSync(encoded)}  the decoded form is the real directory`,
+      )
+      console.log(`  note: this checkout's own path ${/ /.test(ROOT) ? "CONTAINS" : "contains no"} space (${ROOT}) — ` +
+        (/ /.test(ROOT)
+          ? "the defect is live here as well as demonstrated."
+          : "the defect is latent here; it fires on any clone under a path with a space."))
+    } finally {
+      rmSync(probeDir, { recursive: true, force: true })
+    }
+  }
 }
 
 // THE REPOSITORY-SCOPED ASSERTION MUST BE SHOWN ABLE TO FAIL. The self-tests above
@@ -254,11 +300,17 @@ const backlogHits = codeHits.filter((h) => !h.shipping)
 // red for one, inside the repository rather than in a temp directory — which is the
 // scope at which the previous version wrongly reported green.
 {
-  const dir = path.join(ROOT, `.tmp-gate-selftest-${process.pid}`)
-  mkdirSync(dir, { recursive: true })
+  // THE PLANT MUST LIVE WHERE THE WALK LOOKS, AND THAT CHANGED WHEN THE WALK BECAME
+  // GIT-SCOPED. This leg used to plant in `.tmp-gate-selftest-<pid>/`, which happens to
+  // be GITIGNORED — so once the file list came from git, the planted file was never a
+  // candidate and the leg failed with "the walk missed it". That failure is the gate
+  // working: a scoped walk must still reach an untracked, non-ignored plant, or the
+  // verdict it certifies is vacuous. The plant therefore sits inside `script/m62/`,
+  // untracked and not ignored, which is exactly the state a developer's new file is in.
+  const dir = path.join(ROOT, "script", "m62")
+  const plantedPath = path.join(dir, `planted-verdict-${process.pid}.ts`)
   try {
-    writeFileSync(path.join(dir, "planted.ts"), "const h = new URL(import.meta.url).pathname\n", "utf8")
-    const plantedPath = path.join(dir, "planted.ts")
+    writeFileSync(plantedPath, "const h = new URL(import.meta.url).pathname\n", "utf8")
     const plantedHits = findCodeHits(readFileSync(plantedPath, "utf8")).length
     check(
       "a defect planted INSIDE the repository is detected (the verdict can go red)",
@@ -268,7 +320,7 @@ const backlogHits = codeHits.filter((h) => !h.shipping)
     const walksIt = walkSourceFiles(ROOT).includes(plantedPath)
     check("…and the repository walk reaches the planted file", walksIt, walksIt ? "walked" : "*** the walk missed it ***")
   } finally {
-    rmSync(dir, { recursive: true, force: true })
+    rmSync(plantedPath, { force: true })
   }
 }
 
@@ -283,6 +335,12 @@ check(
   UNREADABLE_DIRS.length === 0,
   UNREADABLE_DIRS.length === 0 ? "no directory failed to list" : `*** ${UNREADABLE_DIRS.length}: ${UNREADABLE_DIRS.slice(0, 3).join("; ")} ***`,
 )
+// Not an assertion — a receipt. Anything the walk refused to enter is named, so the
+// reader can judge the scope instead of trusting a count.
+if (SKIPPED_DIRS.length > 0) {
+  console.log(`  note: ${SKIPPED_DIRS.length} symlinked path(s) not followed (reported, not hidden):`)
+  for (const s of SKIPPED_DIRS.slice(0, 5)) console.log(`    ${path.relative(ROOT, s.split(" (")[0]!)}`)
+}
 
 // THE GATE FAILS ON A DEFECT ANYWHERE, NOT ONLY WHERE IT SHIPS.
 //

@@ -78,6 +78,53 @@ const check = (name: string, passed: boolean, detail: string, negative = false) 
   console.log(`  ${passed ? "PASS" : "FAIL"}  ${name}  ${detail}`)
 }
 
+/** How many symbols carry a lane's target NAME (not one arbitrary id).
+ *
+ * A lane may legitimately publish more than one symbol under the name its fixture
+ * declares. Objective-C's fixture is the case: `+ (int)refTargetObjc:(int)x;` is
+ * DECLARED in `A.h` and IMPLEMENTED in `A.m`, so both files carry a symbol named
+ * `refTargetObjc:`, while the message send in `B.m` binds to exactly one of them.
+ * Measured over 8 fresh indexes of that fixture (script/m65/tmp-objc-probe.ts):
+ * 2 symbols named `refTargetObjc:`, and the `calls` row bound CROSS-FILE to the
+ * declaration in 8/8 — the lane never lost its reach. Only the predicate did: with
+ * `WHERE name = ? LIMIT 1` (no ORDER BY) the lookup returned the A.m sibling in 5 of
+ * those 8 indexes, so `boundBefore` read 0 on a lane that had bound its call every
+ * time. Multiplicity is published in the evidence below rather than averaged away. */
+function symbolsNamed(raw: any, projectId: string, name: string): number {
+  return (raw.prepare(`SELECT COUNT(*) c FROM brain_symbol WHERE project_id = ? AND name = ?`).get(projectId, name) as any).c as number
+}
+
+/** Bound `calls` rows for a lane's target NAME — the reach question is "did this lane
+ *  bind a cross-file call", and a lane binds to a name, not to whichever sibling a
+ *  `LIMIT 1` happened to return. */
+function boundCallRowsByName(raw: any, projectId: string, name: string): number {
+  return (raw
+    .prepare(
+      `SELECT COUNT(*) c FROM brain_relationship r
+        WHERE r.project_id = ? AND r.relationship_type = 'calls'
+          AND r.target_symbol_id IN (SELECT id FROM brain_symbol WHERE project_id = ? AND name = ?)`,
+    )      .get(projectId, projectId, name) as any).c as number
+}
+
+/** The FILES of the symbols that bound `calls` rows actually point to.
+ *
+ * A declaration/definition pair is TWO symbols (measured: c, cpp and objective-c publish
+ * 2, java and csharp 1), and which sibling an edge lands on is the LANE's deterministic
+ * choice — the DEFINITION for c/cpp, the DECLARATION for objective-c. One entry here is
+ * that rule being followed; two entries would be a pair that SPLIT a caller set, which a
+ * reader has to see rather than have averaged into a count. */
+function boundSiblingFiles(raw: any, projectId: string, name: string): string[] {
+  return (raw
+    .prepare(
+      `SELECT DISTINCT f.relative_path AS file FROM brain_relationship r
+         JOIN brain_symbol s ON s.id = r.target_symbol_id
+         JOIN brain_file f ON f.id = s.file_id
+        WHERE r.project_id = ? AND r.relationship_type = 'calls' AND s.name = ?
+        ORDER BY f.relative_path`,
+    )
+    .all(projectId, name) as any[]).map((r) => String(r.file))
+}
+
 /**
  * THE CORPUS — 48 lanes, one per analyzer — lives in `script/m65/lane-fixtures.ts`, and the lane
  * SET is read from the fleet (`src/ast/real-*-analyzer.ts`) rather than typed here. Two failure
@@ -125,8 +172,20 @@ const EXERCISED_CALLS = new Set([
  * index of the edited source) and enforced in both directions: declared here but
  * not measured fails, measured but not declared fails.
  */
+// objective-c joined this set on 2026-10-16, and the measurement is why it was not
+// there before. At the previous revision the fixture stored NO `exports` rows at all
+// (`rowTypes: ["calls=1", "contains=2", "extends=1", "imports=2", "references=2",
+// "uses=1"]`, HEAD's own evidence), because an unattributed row's id carried no file
+// component and the three `exports` rows (A.h and A.m both export `A` at line 3; B.m
+// exports its own function) collapsed onto ONE id each time two files agreed on
+// (target, type, line) — `INSERT OR IGNORE` kept one and discarded the rest. That is the
+// same collision that made cpp/objective-c `refresh-parity` alternate between runs. With
+// the identity carrying the emitting file the rows are all stored — measured now: 3
+// `exports`, 3 `imports`, 3 `references`, parity identical to a full index of the same
+// source, and 2 unattributed rows targeting the edited file, which is precisely the
+// population this set declares.
 const EXERCISED_FILE_LEVEL = new Set([
-  "fsharp", "graphql", "java", "javascript", "lua", "r", "ruby", "rust", "scala", "typescript", "vb", "zig",
+  "fsharp", "graphql", "java", "javascript", "lua", "objective-c", "r", "ruby", "rust", "scala", "typescript", "vb", "zig",
 ])
 
 /** Languages whose analyzer emits nothing this gate can exercise for the shape;
@@ -283,20 +342,35 @@ async function main() {
     const targetA = raw
       .prepare(`SELECT id FROM brain_symbol WHERE project_id = ? AND name = ? LIMIT 1`)
       .get(pidA, symbolName) as any
-    const boundBefore = targetA
-      ? ((raw
-          .prepare(
-            `SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND relationship_type = 'calls' AND target_symbol_id = ?`,
-          )
-          .get(pidA, targetA.id) as any).c as number)
-      : 0
+    const symbolsWithTargetName = symbolsNamed(raw, pidA, symbolName)
+    const boundBefore = targetA ? boundCallRowsByName(raw, pidA, symbolName) : 0
     // A lane whose ontology has no callable declaration (`targetName === ""`) has no
     // symbol to ask about: the traversal would throw on the empty name, which is the
     // door's declared error rather than a finding about the store.
+    //
+    // THE TRAVERSAL IS ALLOWED TO FAIL HERE, and the failure is REPORTED rather than
+    // thrown. It used to throw: a full-fleet run died at the `c` lane with the engine's
+    // `Symbol 'ref_target_c' not found` escaping `main`, which took the other 47 lanes'
+    // measurements with it and left the run's evidence file half-written. The same
+    // fixture answers fine on its own, so the shape being reported was not "lane c lost
+    // its reach" but "this WORLD's store holds no symbol of that name" — a fixture/world
+    // failure, which `fixture-declares-the-target` below diagnoses with the census. A
+    // run must never lose 578 measurements to one broken world.
+    // THE CALL WALK: one rule object, used by both traversals below.
+    // `relationshipTypes: ["calls"]` because that is what this gate is about — a
+    // stored CALL row surviving a refresh. The engine's default covers every kind
+    // (documented, and right for a general graph question), so an unscoped walk
+    // would let a `references` or `contains` row the same edit introduced satisfy
+    // `>= callersBefore + 1` while the call row was still lost — a check that can
+    // pass for the wrong reason. Scoped, the tool-side assertion is about the
+    // same rows the store-side one (`boundCallRowsByName`) counts.
+    const callWalk = { direction: "callers" as const, maxDepth: 2, relationshipTypes: ["calls"] }
     const callersBefore =
       fx.targetName === ""
         ? null
-        : (await graphTraversal(pidA, fx.targetName, { direction: "callers", maxDepth: 2 })).callers.length
+        : await graphTraversal(pidA, fx.targetName, callWalk)
+            .then((r) => r.callers.length)
+            .catch(() => null)
 
     // ── fixture fidelity: did the analyzer even SEE this shape? ──────────────
     const symbolsA = (raw
@@ -401,23 +475,30 @@ async function main() {
 
     if (boundBefore > 0) {
       // ── the tool's own answer: both call sites, not one ───────────────────
-      const boundAfter = (raw
-        .prepare(
-          `SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND relationship_type = 'calls' AND target_symbol_id = ?`,
-        )
-        .get(pidA, targetA!.id) as any).c as number
-      const graph = await graphTraversal(pidA, fx.targetName, { direction: "callers", maxDepth: 2 })
+      const boundAfter = boundCallRowsByName(raw, pidA, symbolName)
+      const graph = await graphTraversal(pidA, fx.targetName, callWalk).catch(() => null)
       check(
         `graph-shows-both-call-sites: ${fx.language}`,
-        boundAfter === boundBefore + 1 && graph.callers.length >= callersBefore + 1,
-        `bound rows ${boundBefore} -> ${boundAfter}, bb_graph callers ${callersBefore} -> ${graph.callers.length} (expected one more stored row; the traversal may also gain the new caller's own edges)`,
+        callersBefore !== null && graph !== null && boundAfter === boundBefore + 1 && graph.callers.length >= callersBefore + 1,
+        graph === null || callersBefore === null
+          ? `the agent door could not root '${fx.targetName}' in the refreshed world, so this check could not run — the world's own census is ${rowTypesA.join(" ") || "(no rows at all)"} over ${symbolsA} symbol(s) (see fixture-declares-the-target above)`
+          : `bound rows ${boundBefore} -> ${boundAfter}, \`calls\` caller edges ${callersBefore} -> ${graph.callers.length} (expected one more stored row; the traversal may also gain the new caller's own edges)`,
       )
 
       // ── the detector's own test: a detached target must be REPORTED ───────
       if (fx.language === "typescript") {
-        raw.run(`UPDATE brain_relationship SET target_symbol_id = NULL WHERE id IN (
-                   SELECT id FROM brain_relationship WHERE project_id = ? AND relationship_type = 'calls' AND target_symbol_id = ? LIMIT 1
-                 )`, [pidA, targetA!.id])
+        // Name-scoped for the same reason as the reach predicate: detaching a row of one
+        // arbitrary sibling can detach nothing at all, which would report a live
+        // predicate as vacuous.
+        const victim = raw
+          .prepare(
+            `SELECT r.id AS id, r.target_symbol_id AS target FROM brain_relationship r
+              WHERE r.project_id = ? AND r.relationship_type = 'calls'
+                AND r.target_symbol_id IN (SELECT id FROM brain_symbol WHERE project_id = ? AND name = ?)
+              LIMIT 1`,
+          )
+          .get(pidA, pidA, symbolName) as { id: string; target: string } | undefined
+        if (victim) raw.run(`UPDATE brain_relationship SET target_symbol_id = NULL WHERE id = ?`, [victim.id])
         const mutated = multisetDiff(edgeState(raw, pidA), stateB)
         check(
           `mutation-detected: ${fx.language}`,
@@ -425,8 +506,9 @@ async function main() {
           `with one target detached the parity predicate reports ${mutated.onlyA.length + mutated.onlyB.length} differing row(s) — it is not vacuous`,
           true,
         )
-        // restore, so the evidence record describes the fixed state
-        raw.run(`UPDATE brain_relationship SET target_symbol_id = ? WHERE project_id = ? AND relationship_type = 'calls' AND target_symbol_id IS NULL AND target_external = ?`, [targetA!.id, pidA, fx.targetName])
+        // restore the EXACT row and the EXACT target it had, so the evidence record
+        // describes the fixed state rather than a re-spelled one
+        if (victim) raw.run(`UPDATE brain_relationship SET target_symbol_id = ? WHERE id = ?`, [victim.target, victim.id])
       }
     } else {
       check(
@@ -444,11 +526,18 @@ async function main() {
       symbols: symbolsA,
       targetName: fx.targetName,
       targetSymbolName: symbolName,
+      symbolsWithTargetName,
+      // Which sibling the edges landed on: `["A.h"]` here, `["a.cpp"]` for cpp. Two
+      // entries would mean a declaration/definition pair SPLIT a caller set.
+      boundSiblingFiles: targetA ? boundSiblingFiles(raw, pidA, symbolName) : null,
       targetIsSymbol: fx.targetName === "" ? null : !!targetA,
       boundCallRowsBefore: boundBefore,
       callersBefore,
       rowTypes: rowTypesA,
-      boundCallRowsAfter: !targetA ? null : ((raw.prepare(`SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND relationship_type = 'calls' AND target_symbol_id = ?`).get(pidA, targetA.id) as any).c as number),
+      // Name-scoped like the predicate itself: this field is PRINTED beside the lane and sealed
+      // into the evidence, so an id-scoped count here re-introduces the ambiguity the fix above
+      // removed — it read `1 -> 0` on runs where the call had in fact bound to the sibling.
+      boundCallRowsAfter: !targetA ? null : boundCallRowsByName(raw, pidA, symbolName),
       parity: diff.onlyA.length + diff.onlyB.length === 0,
       undeclaredDecidableRows: undeclared,
       unattributedRowsOnEditedFile: fileLevelBound,

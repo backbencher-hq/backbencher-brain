@@ -13,7 +13,7 @@ import { detectOrphans } from "../src/intelligence/patterns/orphans"
 import { graphTraversal } from "../src/intelligence/graph/graph-engine"
 import { analyzeImpact } from "../src/intelligence/analysis/impact"
 import { analyzeComplexity } from "../src/intelligence/analysis/complexity"
-import { getFileDependencies } from "../src/intelligence/analysis/dependencies"
+import { getFileDependencies, dependencyProvenance, dependencyPageProvenance } from "../src/intelligence/analysis/dependencies"
 import { getProjectStats } from "../src/intelligence/analysis/project-stats"
 import { testMapping, testGaps, testImpact } from "../src/intelligence/testing/test-intel"
 import { testQuality } from "../src/intelligence/testing/quality"
@@ -51,9 +51,21 @@ try {
   createContractFixture(root)
   await indexProjectParallel(projectId, root, {})
 
-  // 1) Correctness: exactly 10 tools, same names as baseline.
+  // 1) Correctness: the tool surface is exactly what the baseline declares.
+  //
+  // WAS `exactly 10 registered tools`, and the literal 10 was the M10-era
+  // surface: it went stale the moment the registry grew, so this gate — the one
+  // place a reader should learn the number from — was the last place still
+  // asserting ten. The expectation now comes from the SAME baseline the name
+  // check below reads (docs/data/m10-baseline.json, runtimeMcp.toolNames), so a
+  // tool added or dropped fails here against a governed artifact instead of
+  // against a number this file remembers, and the message prints both counts.
   const actualTools = TOOL_DESCRIPTORS.map((t: any) => t.name).sort()
-  check("exactly 10 registered tools", TOOL_DESCRIPTORS.length === 10)
+  check(
+    "registered tool count matches the baseline",
+    TOOL_DESCRIPTORS.length === runtimeTools.length,
+    `baseline=${runtimeTools.length} actual=${TOOL_DESCRIPTORS.length}`,
+  )
   check("tool names match baseline descriptors", actualTools.join(",") === runtimeTools.join(","), `expected=${runtimeTools.join(",")} actual=${actualTools.join(",")}`)
 
   // 2) Library exports exact match (name presence).
@@ -94,7 +106,21 @@ try {
 
   await record("bb_ask_semantic", budgets.bb_ask_semantic, async () => {
     const result = await quickAnswer(projectId, "handleRequest")
-    check("quickAnswer semantic evidenceClass is semantic_candidate or unknown", ["semantic_candidate", "unknown"].includes(result.provenance.evidenceClass))
+    // WAS `["semantic_candidate", "unknown"].includes(evidenceClass)`. The query
+    // names a symbol exactly, and the exact-name branch that intercepts it now
+    // answers `indexed` — with a limitation stating why that is the honest
+    // class: "Identity of the symbol is exact; its behaviour is not described
+    // and no similarity ranking decided this result." The old assertion was
+    // written when every non-stat query came back from the semantic ranker, so
+    // it counted a correct, better-justified answer as a failure. What it was
+    // reaching for is the correspondence pinned here: the evidence class must
+    // be the one the RETRIEVAL METHOD justifies.
+    const expectation = result.retrieval?.method === "exact-name" ? "indexed" : "semantic_candidate"
+    check(
+      `quickAnswer evidenceClass matches its retrieval method (${result.retrieval?.method ?? "no retrieval"})`,
+      result.provenance.evidenceClass === expectation || result.provenance.evidenceClass === "unknown",
+      `route=${result.route} method=${result.retrieval?.method} evidenceClass=${result.provenance.evidenceClass} expected=${expectation} (unknown is always allowed: a ranker that could not answer says so)`,
+    )
     return result
   })
 
@@ -126,7 +152,24 @@ try {
 
   await record("bb_analyze_dependencies", budgets.bb_analyze_graph, async () => {
     const deps = await getFileDependencies(projectId, {})
-    check("getFileDependencies carries provenance on each row", deps.every((d) => d.provenance.evidenceClass === "inferred"))
+    // WAS `deps.every((d) => d.provenance.evidenceClass === "inferred")`, which
+    // reads a field the rows no longer carry: M-r2 moved provenance OFF the rows
+    // and onto the report — one engine, one evidence class, one set of
+    // limitations, and at 20 rows the per-row copy was roughly a third of the
+    // payload. The rows are asserted for the shape the contract declares
+    // (src/intelligence/contracts.ts FileDependency) and the page provenance is
+    // built here through the same two exported builders the handler uses, so
+    // the class the consumer reads is still measured rather than assumed.
+    const page = dependencyPageProvenance(dependencyProvenance(projectId), {
+      projectId,
+      shown: deps.length,
+      total: deps.length,
+    })
+    check(
+      "getFileDependencies rows carry the contract's shape",
+      deps.every((d) => typeof d.file === "string" && typeof d.fileId === "string" && Array.isArray(d.dependents) && d.dependents.every((x) => typeof x.path === "string")),
+    )
+    check("dependency page provenance is inferred", page.evidenceClass === "inferred", page.evidenceClass)
     return deps
   })
 

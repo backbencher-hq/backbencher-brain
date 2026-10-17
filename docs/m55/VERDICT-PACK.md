@@ -5,7 +5,7 @@ fails unless the file is byte-identical to a fresh generation, except for exactl
 two declared lines — the `Audit HEAD` line (it moves on every committed run) and
 the owner's verdict line (preserved verbatim, §8.5).
 
-Audit HEAD: `a0ed9eade7008de7ce93a312f6b0bd7e182a43a9`  ·  capture run: `live-22`
+Audit HEAD: `5d60bc57e31c62eb15801cbba8e7608a21bd81a8`  ·  capture run: `owner-test-2026-09-21`
 
 ## The verdict is the owner's
 
@@ -17,48 +17,48 @@ behind them, and the verdict line at the end stays for the owner to write.
 
 | Issue | GitHub | Evidence | Status | Passed | Mutants |
 |---|---|---|---|---|---|
-| G1 | [#773](https://github.com/backbencher-hq/backbencher-brain/issues/773) | `G1.json` | verified | 14 | null/null |
+| G1 | [#773](https://github.com/backbencher-hq/backbencher-brain/issues/773) | `G1.json` | known-gap | 14 | — |
 | T1 | [#770](https://github.com/backbencher-hq/backbencher-brain/issues/770) | `T1.json` | verified | 38 | 5/5 |
-| T2 | [#771](https://github.com/backbencher-hq/backbencher-brain/issues/771) | `T2.json` | verified | 39 | 5/5 |
-| T3 | [#772](https://github.com/backbencher-hq/backbencher-brain/issues/772) | `T3.json` | verified | 52 | null/null |
-| T4 | [#774](https://github.com/backbencher-hq/backbencher-brain/issues/774) | `T4.json` | verified | 67 | null/null |
-| T5 | [#775](https://github.com/backbencher-hq/backbencher-brain/issues/775) | `T5.json` | verified | 68 | null/null |
+| T2 | [#771](https://github.com/backbencher-hq/backbencher-brain/issues/771) | `T2.json` | verified | 64 | 9/9 |
+| T3 | [#772](https://github.com/backbencher-hq/backbencher-brain/issues/772) | `T3.json` | verified | 87 | — |
+| T4 | [#774](https://github.com/backbencher-hq/backbencher-brain/issues/774) | `T4.json` | verified | 67 | — |
+| T5 | [#775](https://github.com/backbencher-hq/backbencher-brain/issues/775) | `T5.json` | verified | 72 | — |
 | P1 | [#776](https://github.com/backbencher-hq/backbencher-brain/issues/776) | `P1.json` | verified | 25 | 4/4 |
-| V1 | [#777](https://github.com/backbencher-hq/backbencher-brain/issues/777) | `V1.json` | verified | 94 | null/null |
-| X1 | [#778](https://github.com/backbencher-hq/backbencher-brain/issues/778) | `X1.json` | verified | 40 | null/null |
+| V1 | [#777](https://github.com/backbencher-hq/backbencher-brain/issues/777) | `V1.json` | known-gap | 35 | — |
+| X1 | [#778](https://github.com/backbencher-hq/backbencher-brain/issues/778) | `X1.json` | known-gap | 30 | — |
 
 ## 2. Every claim, and the frame behind it
 
 | Claim | Source | Frame |
 |---|---|---|
-| the hover actions answer a palette invocation as well as a hover link | component gate V1-action-args (47/47, 7/7 mutants) | `validation/m55/frames/live-22/4-open-in-graph.png` + `validation/m55/frames/live-22/5-impact.png` |
-| the status facts render on a readable surface, once each, with provenance | component gate V1-status-panel (42/42, 11/11 mutants) | `validation/m55/frames/live-22/7-status.png` |
-| hover at a declaration and at a call site resolve the same identity | probe F1 + F2 | `validation/m55/frames/live-22/2-hover-declaration.png` + `validation/m55/frames/live-22/3-hover-call-site.png` |
-| one tier story per symbol, in the legend's vocabulary | probe F1–F4 provenance.evidenceClass + evidenceTiers | `validation/m55/frames/live-22/2-hover-declaration.png` |
-| the card renders a human signature and no serialization | probe F1–F4 signature + card text | `validation/m55/frames/live-22/2-hover-declaration.png` |
-| the hub rows agree with the one classifier on the real index | probe F7 + F8 rows (owner vs core) | `validation/m55/frames/live-22/4-open-in-graph.png` |
-| the panel opens without stealing the editor column | frame read: editor region text rows | `validation/m55/frames/live-22/4-open-in-graph.png` |
-| the three surfaces are distinct views | frame diffs: hub vs impact vs call hierarchy | `validation/m55/frames/live-22/4-open-in-graph.png` + `validation/m55/frames/live-22/5-impact.png` + `validation/m55/frames/live-22/6-call-hierarchy.png` |
+| the hover actions answer a palette invocation as well as a hover link | component gate V1-action-args (47/47, 7/7 mutants) | `validation/m55/frames/owner-test-2026-09-21/4-open-in-graph.png` + `validation/m55/frames/owner-test-2026-09-21/5-impact.png` |
+| the status facts render on a readable surface, once each, with provenance | component gate V1-status-panel (42/42, 11/11 mutants) | `validation/m55/frames/owner-test-2026-09-21/7-status.png` |
+| hover at a declaration and at a call site resolve the same identity | probe F1 + F2 | `validation/m55/frames/owner-test-2026-09-21/2-hover-declaration.png` + `validation/m55/frames/owner-test-2026-09-21/3-hover-call-site.png` |
+| one tier story per symbol, in the legend's vocabulary | probe F1–F4 provenance.evidenceClass + evidenceTiers | `validation/m55/frames/owner-test-2026-09-21/2-hover-declaration.png` |
+| the card renders a human signature and no serialization | probe F1–F4 signature + card text | `validation/m55/frames/owner-test-2026-09-21/2-hover-declaration.png` |
+| the hub rows agree with the one classifier on the real index | probe F7 + F8 rows (owner vs core) | `validation/m55/frames/owner-test-2026-09-21/4-open-in-graph.png` |
+| the panel opens without stealing the editor column | frame read: editor region text rows | `validation/m55/frames/owner-test-2026-09-21/4-open-in-graph.png` |
+| the three surfaces are distinct views | frame diffs: hub vs impact vs call hierarchy | `validation/m55/frames/owner-test-2026-09-21/4-open-in-graph.png` + `validation/m55/frames/owner-test-2026-09-21/5-impact.png` + `validation/m55/frames/owner-test-2026-09-21/6-call-hierarchy.png` |
 | a symbol that does not exist is a declared error, not an empty result | probe F11 | wire-only — no frame; the source above is the evidence |
-| every frame is about the bundle built at this HEAD | R3 bundle-hash comparison | every frame of `live-22` |
+| every frame is about the bundle built at this HEAD | R3 bundle-hash comparison | every frame of `owner-test-2026-09-21` |
 | a missing fixture is a declared blocked session with a reason, never a green run | R7 + validation/m55/results/V1-blocked-path.json | wire-only — no frame; the source above is the evidence |
-| the hub header's counts are the group counts and account for every listed row (F7) | R8 over the real F7/F8 responses rendered by the ONE core | `validation/m55/frames/live-22/4-open-in-graph.png` |
+| the hub header's counts are the group counts and account for every listed row (F7) | R8 over the real F7/F8 responses rendered by the ONE core | `validation/m55/frames/owner-test-2026-09-21/4-open-in-graph.png` |
 
-## 3. The frames of the audit run (`live-22`)
+## 3. The frames of the audit run (`owner-test-2026-09-21`)
 
 | Flow | Frame | sha256 (16) |
 |---|---|---|
-| base | `validation/m55/frames/live-22/1-base.png` | `a324bbe4d444ec58` |
-| hover-declaration | `validation/m55/frames/live-22/2-hover-declaration.png` | `85faf6f9a116329c` |
-| hover-call-site | `validation/m55/frames/live-22/3-hover-call-site.png` | `795b8b1f8bfe051d` |
-| open-in-graph | `validation/m55/frames/live-22/4-open-in-graph.png` | `e544cebe0a920f9f` |
-| impact | `validation/m55/frames/live-22/5-impact.png` | `1c42390f91572195` |
-| call-hierarchy | `validation/m55/frames/live-22/6-call-hierarchy.png` | `5a183cbddc82c96e` |
-| status | `validation/m55/frames/live-22/7-status.png` | `3bbbe2c9326c01c5` |
-| ctor-hover-declaration | `validation/m55/frames/live-22/8-ctor-hover-declaration.png` | `ab5ebf7b9330cf88` |
-| ctor-open-in-graph | `validation/m55/frames/live-22/9-ctor-open-in-graph.png` | `3c3c874326b99eba` |
-| hover-zero-usages | `validation/m55/frames/live-22/10-hover-zero-usages.png` | `8622cc3abea83a2d` |
-| call-hierarchy-click | `validation/m55/frames/live-22/11-call-hierarchy-click.png` | `116a4ede0ac71fb8` |
+| base | `validation/m55/frames/owner-test-2026-09-21/1-base.png` | `ee7e4976347a5007` |
+| hover-declaration | `validation/m55/frames/owner-test-2026-09-21/2-hover-declaration.png` | `9e5720dfd6f2a421` |
+| hover-call-site | `validation/m55/frames/owner-test-2026-09-21/3-hover-call-site.png` | `8c828995d62ed746` |
+| open-in-graph | `validation/m55/frames/owner-test-2026-09-21/4-open-in-graph.png` | `d66129becee0d2f5` |
+| impact | `validation/m55/frames/owner-test-2026-09-21/5-impact.png` | `fbef17d007acffeb` |
+| call-hierarchy | `validation/m55/frames/owner-test-2026-09-21/6-call-hierarchy.png` | `1a008e8366699196` |
+| status | `validation/m55/frames/owner-test-2026-09-21/7-status.png` | `3b7ddb957469662e` |
+| ctor-hover-declaration | `validation/m55/frames/owner-test-2026-09-21/8-ctor-hover-declaration.png` | `6d9a225763732f46` |
+| ctor-open-in-graph | `validation/m55/frames/owner-test-2026-09-21/9-ctor-open-in-graph.png` | `cb32b98d3897f4d4` |
+| hover-zero-usages | `validation/m55/frames/owner-test-2026-09-21/10-hover-zero-usages.png` | `96fa3b55e28318bc` |
+| call-hierarchy-click | `validation/m55/frames/owner-test-2026-09-21/11-call-hierarchy-click.png` | `c2fb457449ce4029` |
 
 ## 4. Known-not-done (declared, not softened)
 

@@ -2105,10 +2105,62 @@ function makeResult(args: MakeResultArgs): DocResult {
   // 12-of-24 documentation map reported "18 more dropped" — 36 accounted for
   // out of 24. A cap message that does not add up is worse than no message,
   // because a reader who checks it concludes the whole quality block is wrong.
+  // ── the notes the budget pass writes are part of the document it measures ──
+  //
+  // MEASURED DEFECT (2026-10-16, found by script/m20/verify-doc-truth.ts): the
+  // `N more item(s) were dropped` notes were appended AFTER this loop broke, and
+  // the final build-and-measure then judged the LARGER object — so a document
+  // the loop had already accepted shipped over its own budget with
+  // `budget.passed: false`. Measured on that gate's fixture: 4 004 tokens
+  // against a 4 000 default, and the 100 characters between the two numbers
+  // were exactly the drop note itself ("11 more dependencies item(s) were
+  // dropped…"), which the loop had never seen. The same shape as the earlier
+  // off-by-one in this function: the verdict was taken on one object and
+  // reported for another. Rebuilt here, once per pass, so every measurement
+  // describes the object the caller receives.
+  const rebuildBudgetNotes = (): void => {
+    for (let i = result.unknowns.length - 1; i >= 0; i--) {
+      const unknown = result.unknowns[i]
+      if (unknown.reason === "output-budget" && /item\(s\) were dropped to stay inside/.test(unknown.statement)) result.unknowns.splice(i, 1)
+    }
+    for (const [id, record] of droppedPerSection) {
+      result.unknowns.push({ statement: `${record.dropped} more ${record.heading.toLowerCase()} item(s) were dropped to stay inside the ${maxTokens}-token budget.`, reason: "output-budget", affectedSection: id })
+    }
+  }
+  // ── the evidence bounds are part of the document the loop measures ────────
+  //
+  // MEASURED (same fixture, same run): the bounds block was built ONCE, after
+  // the loop, and `writeQuality` preserves it (`bounds: result.quality.bounds`)
+  // — so a first-pass object carried no `bounds` key at all, the loop's
+  // measurements were 432 characters (≈108 tokens) SHORT of the object it
+  // returned, and the last thing it decided was therefore decided on a document
+  // nothing would ever ship. Rebuilt per pass for the same reason the notes are:
+  // `emitted` is read back off each section, so the block changes whenever the
+  // trim does.
+  //
+  // The bounds, as numbers. `emitted` is read back off the section rather than
+  // carried forward, so the identity below is a check and not a restatement.
+  const availableById = new Map(args.availableCounts.map((record) => [record.id, record.available]))
+  const rebuildBounds = (): void => {
+    result.quality.bounds = {
+      perSection: args.perSection,
+      sections: result.sections.map((section) => {
+        const available = availableById.get(section.id) ?? section.facts.length
+        const capped = Math.min(available, args.perSection)
+        const droppedForBudget = droppedPerSection.get(section.id)?.dropped ?? 0
+        return { id: section.id, available, capped, droppedForBudget, emitted: section.facts.length }
+      }),
+    }
+  }
   for (let pass = 0; pass < 12; pass++) {
     // Build the whole quality block FIRST, then measure the finished object.
     // Measuring before the block exists under-counted by 40% (2 646 tokens
     // reported for a 4 405-token payload).
+    // `rebuildBudgetNotes` runs first for the same reason: `writeQuality`
+    // mirrors every unknown into `quality.warnings`, so a note added after the
+    // measurement grows the object in two places at once.
+    rebuildBudgetNotes()
+    rebuildBounds()
     writeQuality(ESTIMATE_PLACEHOLDER)
     const estimated = measure()
     writeQuality(estimated)
@@ -2129,9 +2181,9 @@ function makeResult(args: MakeResultArgs): DocResult {
     victim.prose = buildProse({ id: victim.id, heading: victim.heading, required: true, audience: "all", facts: victim.facts, lead: victim.prose.includes("Read from the index") ? "Read from the index and, where the index has none, from the comment block above the definition on disk." : undefined }, citations, result.unknowns)
     trimmedSections++
   }
-  for (const [id, record] of droppedPerSection) {
-    result.unknowns.push({ statement: `${record.dropped} more ${record.heading.toLowerCase()} item(s) were dropped to stay inside the ${maxTokens}-token budget.`, reason: "output-budget", affectedSection: id })
-  }
+  // The notes are already in place (the loop keeps them current); this makes the
+  // object the shortfall decision reads identical to the one it hands out.
+  rebuildBudgetNotes()
   if (!result.quality.budget.passed) {
     result.unknowns.push({ statement: `The required sections cannot fit inside ${maxTokens} tokens: the smallest honest rendering is ${result.quality.budget.estimatedTokens} tokens. Raise maxTokens (hard maximum ${MAX_TOKEN_BUDGET}) or narrow the target.`, reason: "output-budget", affectedSection: result.sections[0].id })
   }
@@ -2143,18 +2195,9 @@ function makeResult(args: MakeResultArgs): DocResult {
   // the placeholder, so leaving it there reported `budget.passed: false` on a
   // 3 763-of-4 000-token document. Both writes hold a 6-digit number, so the
   // second changes no length and the measurement still holds.
-  // The bounds, as numbers. `emitted` is read back off the section rather than
-  // carried forward, so the identity below is a check and not a restatement.
-  const availableById = new Map(args.availableCounts.map((record) => [record.id, record.available]))
-  result.quality.bounds = {
-    perSection: args.perSection,
-    sections: result.sections.map((section) => {
-      const available = availableById.get(section.id) ?? section.facts.length
-      const capped = Math.min(available, args.perSection)
-      const droppedForBudget = droppedPerSection.get(section.id)?.dropped ?? 0
-      return { id: section.id, available, capped, droppedForBudget, emitted: section.facts.length }
-    }),
-  }
+  // Current for the state that ships, and the identity is CHECKED here rather
+  // than in the loop: a transient miscount is not a shipped one.
+  rebuildBounds()
   const miscounted = result.quality.bounds.sections.filter((row) => row.emitted + row.droppedForBudget !== row.capped)
   if (miscounted.length > 0) {
     throw new Error(`bb_doc: evidence bounds do not account for every fact in ${miscounted.length} section(s), first "${miscounted[0].id}": ${miscounted[0].emitted} emitted + ${miscounted[0].droppedForBudget} dropped != ${miscounted[0].capped} capped of ${miscounted[0].available} available`)

@@ -2,26 +2,50 @@
   "issue": "622",
   "code": "X1",
   "milestone": "M27",
-  "status": "verified",
-  "checks": 34,
-  "passed": 34,
-  "failed": 0,
-  "failures": 0,
+  "status": "known-gap",
+  "checks": 35,
+  "passed": 24,
+  "failed": 11,
+  "failures": [
+    "X1: N1 verifier passes at HEAD",
+    "X1: Z1 verifier passes at HEAD",
+    "X1: V1 verifier passes at HEAD",
+    "X1: N1 evidence carries a per-mutant record",
+    "X1: V1 named record count agrees with the evidence aggregate",
+    "X1: V1 every mutant caught (0/1)",
+    "X1: v3 completion bar audited item-by-item — zero violations",
+    "[negative] X1: negative — a leg honestly blocked WITH a reason is NOT reported as a leg violation",
+    "X1: N1 regeneration run passes",
+    "X1: Z1 regeneration run passes",
+    "X1: V1 regeneration run passes"
+  ],
+  "failureCount": 11,
   "negativeCases": 6,
-  "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
+  "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
   "verifierCommand": "npx tsx script/m27/verify-closure.ts",
-  "barViolations": [],
+  "barViolations": [
+    "bar1: an adapter leg is neither verified nor blocked-with-reason (Z1=known-gap)",
+    "bar1-declared-absence: N1 is blocked with a reason — nvim not provisioned in .tools/ (D-7 portable layout)",
+    "bar1: capability subset proofs not all present",
+    "bar2: no I3 leg (N1 is the declared slot)",
+    "bar3: capability matrix not verified"
+  ],
   "perMutantRecords": {
     "N1": [],
     "J1": [],
     "Z1": [],
     "H1": [],
-    "V1": []
+    "V1": [
+      {
+        "name": "V1 mutant: forged evidence (stripped blockedLegs) produces a lying I3 row and fails the byte-gate",
+        "caught": false
+      }
+    ]
   },
-  "generatedAt": "2026-10-08T18:13:27.456Z",
+  "generatedAt": "2026-10-17T15:38:56.410Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T18:13:27.458Z",
-    "contentSha256": "a3e8229fbf563b4efc345e2e541db13c67ae124cec48d4394fa8118c1918c406"
+    "sealedAt": "2026-10-17T15:38:56.415Z",
+    "contentSha256": "6c3d5b90b9195bcba2e7846a265f0b066d460ffd2c472520a9c16ccacb35de7e"
   }
 }

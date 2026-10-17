@@ -21,7 +21,35 @@ const DIRECT_TYPES = new Set(["calls", "instantiates"])
 const REFERENCE_TYPES = new Set(["references", "uses", "extends", "implements"])
 const IMPORT_TYPES = new Set(["imports"])
 
-const EVIDENCE_CONFIDENCE: Record<TestEvidenceKind, number> = {
+/** The kinds the TEST-IMPACT walk is allowed to see: exactly the kinds
+ *  `classify` can name, DERIVED from those same three sets rather than restated,
+ *  so the walk and the classifier cannot drift apart.
+ *
+ *  WHY THE WALK NEEDS A KIND FILTER AT ALL. The graph engine's default covers
+ *  every stored kind, and for a general question that is right (its own docs
+ *  say so). For this question it published a claim nobody made: `testImpact`
+ *  reads the caller set, keeps the rows that come from test files, and calls a
+ *  depth-0 row a DIRECT test — without asking what kind of row it was. So a test
+ *  class that CONTAINS the symbol under test answered as a test that depends on
+ *  it, and `testSuggestions` labelled that `direct_call` at 0.85 confidence.
+ *  `contains` is the one kind that INVERTS the relation: it runs parent → member,
+ *  so an inbound `contains` row says the target is a member of the source — the
+ *  opposite of "the source depends on the target". It is excluded here along
+ *  with every other kind `classify` cannot name (`exports`); `uses` and
+ *  `references` are KEPT, because a test that reads a symbol's constant or
+ *  references its type does depend on it, at the lower tiers the classifier
+ *  already declares. */
+export const TEST_IMPACT_KINDS: readonly string[] = [
+  ...DIRECT_TYPES,
+  ...REFERENCE_TYPES,
+  ...IMPORT_TYPES,
+]
+
+/** The confidence each evidence tier carries. Exported because the tier is the
+ *  fact and this is its declared weight: a second copy in a consumer is how the
+ *  two drift, and one consumer (testSuggestions) was choosing its tier from
+ *  `depth` alone — the defect TEST_IMPACT_KINDS closes on the walk side. */
+export const EVIDENCE_CONFIDENCE: Record<TestEvidenceKind, number> = {
   direct_call: 0.85,
   reference: 0.6,
   import: 0.4,
@@ -412,7 +440,14 @@ export async function testImpact(projectId: ProjectID, target: string, options: 
 
   let graph
   try {
-    graph = await graphTraversal(projectId, target, { direction: "callers", maxDepth: options.maxDepth ?? 4 })
+    graph = await graphTraversal(projectId, target, {
+      direction: "callers",
+      maxDepth: options.maxDepth ?? 4,
+      // The declared rule (see TEST_IMPACT_KINDS): the walk sees only kinds this
+      // engine can classify, so `contains` membership is never read as a test
+      // dependency and every entry below can name its own tier.
+      relationshipTypes: [...TEST_IMPACT_KINDS],
+    })
   } catch {
     return { target, found: false, directTests: [], indirectTests: [], affectedTestFiles: [], truncated: false, provenance: makeProvenance({ evidenceClass: "unknown", engine: "test-impact@intelligence", engineVersion: "m10.02", projectId, source: "graph-resolution", limitations: ["The target could not be resolved in the indexed graph."], unknowns: ["target-not-found"] }), runtimeCoverage: { available: false } }
   }
@@ -427,8 +462,20 @@ export async function testImpact(projectId: ProjectID, target: string, options: 
     const fileId = symbolFile.get(node.id)
     if (!fileId || !testFileIds.has(fileId)) continue
     const testFile = fileRel.get(fileId) ?? node.file
+    // A kind this engine cannot classify is not test evidence, whatever the walk
+    // was asked for: the classifier is the ONE vocabulary (see its sets above),
+    // and `classify` returning null means "no tier to report" — never a tier
+    // guessed from the depth.
+    const kind = classify(String(edge.relationshipType))
+    if (!kind) continue
     affected.add(testFile)
-    const entry = { testSymbol: node.name, testFile, depth: edge.depth }
+    const entry = {
+      testSymbol: node.name,
+      testFile,
+      depth: edge.depth,
+      relationshipType: String(edge.relationshipType),
+      evidence: kind,
+    }
     if (edge.depth === 0) direct.push(entry)
     else indirect.push(entry)
   }

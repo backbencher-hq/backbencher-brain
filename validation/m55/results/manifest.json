@@ -36,13 +36,12 @@
         "status": "known-gap",
         "verifierCommand": "npx tsx script/m55/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 15,
+        "passed": 14,
         "failed": 0,
-        "realFailed": 0,
-        "mutantsCaught": null,
-        "mutantsTotal": null,
+        "realFailed": 1,
         "negativeCases": 8,
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+        "blockedReason": "The bar re-audit runs the M53 R1 ladder (m24->m44 gate chain, including both closures) as subprocesses; under heavy machine load those gates' latency budgets can miss, which this gate reports as a failed bar rather than retrying silently."
       }
     },
     {
@@ -68,17 +67,17 @@
         "evidenceFile": "T1.json",
         "passed": 38,
         "failed": 0,
-        "realFailed": 0,
         "mutantsCaught": 5,
         "mutantsTotal": 5,
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
+        "currentCommit": "8c6d5da1f14e5c0df184134276cbfb994c780dc7",
+        "negativeCases": 0
       }
     },
     {
       "code": "T2",
       "githubIssue": 771,
       "tool": "lsp-call-hierarchy-truth",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "call hierarchy on the same relationship truth as the hub: call-site ranges, no self-references, expand never errors, declared depth/cycle policy",
       "acceptanceCriteria": [
         "fixture-first: a fixture with a mutual pair, a self-recursive method and a 3-deep chain is authored before the change",
@@ -93,22 +92,23 @@
         "the previous -32603 expand error reproduced as a permanent mutant"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
         "evidenceFile": "T2.json",
-        "passed": 37,
+        "passed": 64,
         "failed": 0,
         "realFailed": 0,
-        "mutantsCaught": 5,
-        "mutantsTotal": 5,
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
+        "mutantsCaught": 9,
+        "mutantsTotal": 9,
+        "currentCommit": "554f889a5617ddf2f72c4c8bd2abab3b701f0bde",
+        "blockedReason": "the analyzer stores relationship line_number = 0 for every row today; the call-site positions here are derived from the caller's own source, which is why they are exact. The stored-value path (a future analyzer change) is exercised only as a declared fallback."
       }
     },
     {
       "code": "T3",
       "githubIssue": 772,
       "tool": "lsp-usage-vocabulary",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "ONE relation vocabulary: 'usages' means stored usage sites; hover count, hover list, bb/graph callers/references and textDocument/references agree or each state their declared filter",
       "acceptanceCriteria": [
         "fixture-first: a fixture with a symbol having zero callers, a callee, an owning class and multiple call sites",
@@ -123,16 +123,15 @@
         "no lane violations"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "verifierCommand": "npx tsx script/m55/verify-relations.ts",
         "evidenceFile": "T3.json",
-        "passed": 50,
-        "failed": 2,
+        "passed": 87,
+        "failed": 0,
         "realFailed": 0,
-        "mutantsCaught": null,
-        "mutantsTotal": null,
-        "negativeCases": 3,
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
+        "negativeCases": 7,
+        "currentCommit": "4ab4019155f10f6395ab644c694bda960b68b992",
+        "blockedReason": "The analyzers of the confirmatory languages DID stop storing line_number = 0 for call rows: measured on a real `bb index` run of this repository's own sources, every TypeScript call row carries a real call-site line (rows for `main`, `twiceOneLine`, `twiceTwoLines` stored lines 4, 10, 13 and 14). The prior limitation text ('verified on the demo index: every TypeScript/Java usage row carries 0') is STALE and is corrected here. Per-language coverage of a real call-site line is M59.A7's claim; on the five real indexes read for this integration, real lines dominate (e.g. 765,602 of 766,227 rows on 818db37d; 99c211a1 is 160,007 of 160,007) but NULL lines exist (625 on 818db37d, 384 on 6f461b7b) and are what the labelled-declaration-substitute branch is for."
       }
     },
     {
@@ -159,10 +158,9 @@
         "passed": 67,
         "failed": 0,
         "realFailed": 0,
-        "mutantsCaught": null,
-        "mutantsTotal": null,
         "negativeCases": 4,
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
+        "currentCommit": "dffea7f764b8d396f953bbd2e24734744589943e",
+        "blockedReason": "No analyzer on this machine writes a rest/variadic FLAG (isRest/rest/variadic) or isImplicit for anything but a receiver — the fixture declares the flag form AND the stored-name form (`...rest`, `*rest`) and the gate exercises both. The flag is the declared contract for analyzers; the name marker is the fallback the renderer honors today."
       }
     },
     {
@@ -186,13 +184,12 @@
         "status": "verified",
         "verifierCommand": "npx tsx script/m55/verify-tiers.ts",
         "evidenceFile": "T5.json",
-        "passed": 68,
+        "passed": 72,
         "failed": 0,
         "realFailed": 0,
-        "mutantsCaught": null,
-        "mutantsTotal": null,
         "negativeCases": 7,
-        "currentCommit": "9d53dc8f3d900e24276fc2837b1bf8122a0ce70a"
+        "currentCommit": "428658b04fa05de756ca8afff490a20dea94eec9",
+        "blockedReason": "The fixture's RED proof is the M2 mutant (the pre-T5 rule reintroduced → the gate fails) plus the issue's own step-zero wire probe; the pre-fix build is not replayed because the owner module is new (authored with the fix), so the RED form is reproduced by planting the old rule rather than by reverting code."
       }
     },
     {
@@ -219,17 +216,17 @@
         "evidenceFile": "P1.json",
         "passed": 25,
         "failed": 0,
-        "realFailed": 0,
         "mutantsCaught": 4,
         "mutantsTotal": 4,
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
+        "currentCommit": "428658b04fa05de756ca8afff490a20dea94eec9",
+        "negativeCases": 0
       }
     },
     {
       "code": "V1",
       "githubIssue": 777,
       "tool": "m55-live-surface-gate",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "the filing rig promoted to script/m55: screenshot-protocol.ts (build+install isolated, drive the declared flows, capture frames + manifest), wire-probe (the stdio truth), verify-live-surface.ts (differential + pixel reads-back), wired into the verify chains",
       "acceptanceCriteria": [
         "wired into the npm verify chain and the CI verify:fast chain (machine-read from package.json)",
@@ -243,16 +240,15 @@
         "G1's truth-rule 5 enforcement reads this gate's frames"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
         "evidenceFile": "V1.json",
-        "passed": 94,
-        "failed": 0,
-        "realFailed": 0,
-        "mutantsCaught": null,
-        "mutantsTotal": null,
-        "negativeCases": 17,
-        "currentCommit": "0a613abadfafecb33045b6f66c41f49a29c45fd0"
+        "passed": 35,
+        "failed": 20,
+        "realFailed": 20,
+        "negativeCases": 14,
+        "currentCommit": "02d330054f994b9e6f0c391343ee80e49487497b",
+        "blockedReason": "The frames leg depends on the declared EXTERNAL fixture ($HOME/bb-demo-hub), its owner index in ~/.bb, and the display tooling — by owner decision the fixture is not vendored into the repo, so on a machine without it the leg is BLOCKED-WITH-REASON, never green."
       }
     },
     {
@@ -276,20 +272,19 @@
         "status": "known-gap",
         "verifierCommand": "npx tsx script/m55/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 37,
-        "failed": 4,
-        "realFailed": 0,
-        "mutantsCaught": null,
-        "mutantsTotal": null,
+        "passed": 30,
+        "failed": 11,
+        "realFailed": 11,
         "negativeCases": 5,
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
+        "currentCommit": "ddaf8bf36cf287bd15de0369b9a3144c8c7149c2",
+        "blockedReason": "X1 is the auditor, so its own evidence pin is self-consistency (written at the audit HEAD by this run) rather than a pre-existing pin: requiring the latter would make the gate un-passable at a fresh HEAD. The eight other issues ARE pin-checked."
       },
       "handoffIssue": 816
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:56:57.394Z",
-    "contentSha256": "75047ee48f65c55c86ccb47000d20107f89cc048661c1b1cc294d79ead0cd5a4"
+    "sealedAt": "2026-10-17T15:20:45.815Z",
+    "contentSha256": "7e393932f37de0deea30ebaf38cc9e23e510ff17d0b2be27adabdc976980b5af"
   }
 }

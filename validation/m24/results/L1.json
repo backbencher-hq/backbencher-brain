@@ -2,7 +2,7 @@
   "issue": "490",
   "code": "L1",
   "status": "verified",
-  "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
   "sourceFingerprint": "1b2d41b65b452b3dcb2e3b7e600e83340c4a69a444e63b3fa58cef5e99a35cab",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -12,7 +12,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-server.ts",
   "evidenceFile": "L1.json",
-  "generatedAt": "2026-10-12T18:59:36.445Z",
+  "generatedAt": "2026-10-17T17:02:45.269Z",
   "passed": 142,
   "failed": 0,
   "failures": [],
@@ -32,7 +32,7 @@
     "note": "LSP 3.18 mandates Location|null for definition and Location[] for references, so there is NO field on those results a reason could ride. The standard result shapes are UNCHANGED; the reason travels out of band. An empty standard result on these methods must not be read as 'nothing found'.",
     "componentContractRead": "navigation.ts exposes evidenceTier at this commit, NOT Lane 4's richer absence record (that commit 04d56ab75 is not an ancestor of this branch — see limitations). The reason is derived from the launch set through its single owner, and the vocabulary matches what Lane 4 publishes, so the seam is correct today and still correct when that field lands."
   },
-  "os": "darwin x64 (v22.14.0)",
+  "os": "linux x64 (v22.22.1)",
   "canFail": {
     "mutants": 35,
     "negatives": 25
@@ -99,7 +99,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T18:59:36.445Z",
-    "contentSha256": "5a6a1f5b809650b77d620c8f0d97273bd8186ff06230f7563bc9aa7787cb15a1"
+    "sealedAt": "2026-10-17T17:02:45.270Z",
+    "contentSha256": "9b513ca8932a43cc5cb8994cb9e88511c6272374d9d88e2fd70c50c754d71790"
   }
 }

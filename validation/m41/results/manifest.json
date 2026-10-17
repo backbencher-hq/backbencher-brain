@@ -3,10 +3,10 @@
   "milestone": "M41",
   "githubMilestone": 41,
   "title": "Website Truth, SEO & Design",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-10-03T00:05:28.860Z",
+  "updatedAt": "2026-10-16T18:51:42.683Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -50,14 +50,16 @@
         "document limitations"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "ba14aa18a616211fa5374488e5ad201866ae4e8d",
-        "verifierCommand": "npx tsx script/m41/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-10-03T00:02:40.002Z",
+        "status": "verified",
+        "currentCommit": "dffea7f764b8d396f953bbd2e24734744589943e",
+        "generatedAt": "2026-10-16T18:51:05.278Z",
         "passed": 32,
         "failed": 0,
-        "negativeCases": 11
+        "negativeCases": 11,
+        "checks": 32,
+        "verifierCommand": "npx tsx script/m41/verify-governance.ts",
+        "blockedReason": "Secret-hygiene scan covers tracked files only; untracked local files are outside the gate by design."
       }
     },
     {
@@ -77,14 +79,16 @@
         "evidence at current commit with negative cases"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "2d68fe592486728fef8622a4dabe2e5b6370723f",
-        "verifierCommand": "npx tsx script/m41/verify-truth-pipeline.ts",
         "evidenceFile": "T1.json",
-        "generatedAt": "2026-10-02T23:07:59.640Z",
+        "status": "verified",
+        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
+        "generatedAt": "2026-10-16T18:00:13.214Z",
         "passed": 21,
         "failed": 0,
-        "negativeCases": 4
+        "negativeCases": 4,
+        "checks": 21,
+        "verifierCommand": "npx tsx script/m41/verify-truth-pipeline.ts",
+        "blockedReason": "Inventory 'Site claims' column is a T1-baseline snapshot (pre-T2); truth-side verdicts are verified live, claim-side columns are historical by design."
       }
     },
     {
@@ -104,14 +108,16 @@
         "evidence at current commit with negative cases"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "2d68fe592486728fef8622a4dabe2e5b6370723f",
-        "verifierCommand": "npx tsx script/m41/verify-site-truth.ts",
         "evidenceFile": "T2.json",
-        "generatedAt": "2026-10-02T23:17:18.783Z",
+        "status": "verified",
+        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
+        "generatedAt": "2026-10-16T18:19:05.258Z",
         "passed": 58,
         "failed": 0,
-        "negativeCases": 3
+        "negativeCases": 3,
+        "checks": 58,
+        "verifierCommand": "npx tsx script/m41/verify-site-truth.ts",
+        "blockedReason": "Gate covers the eight navigation-linked prerendered routes in EXPECTED_ROUTES; /demos is covered by M45.T1's embed gate, and /privacy and /terms by S1's disk-derived route parity + head checks."
       }
     },
     {
@@ -131,14 +137,16 @@
         "evidence at current commit with negative cases"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "2d68fe592486728fef8622a4dabe2e5b6370723f",
-        "verifierCommand": "npx tsx script/m41/verify-site-truth.ts --label T3",
         "evidenceFile": "T3.json",
-        "generatedAt": "2026-10-02T23:27:24.170Z",
+        "status": "verified",
+        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
+        "generatedAt": "2026-10-16T18:24:19.333Z",
         "passed": 58,
         "failed": 0,
-        "negativeCases": 3
+        "negativeCases": 3,
+        "checks": 58,
+        "verifierCommand": "npx tsx script/m41/verify-site-truth.ts",
+        "blockedReason": "Gate covers the eight navigation-linked prerendered routes in EXPECTED_ROUTES; /demos is covered by M45.T1's embed gate, and /privacy and /terms by S1's disk-derived route parity + head checks."
       }
     },
     {
@@ -158,14 +166,16 @@
         "evidence at current commit with negative cases"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "2d68fe592486728fef8622a4dabe2e5b6370723f",
-        "verifierCommand": "npx tsx script/m41/verify-seo.ts",
         "evidenceFile": "S1.json",
-        "generatedAt": "2026-10-02T23:36:51.844Z",
+        "status": "verified",
+        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
+        "generatedAt": "2026-10-16T18:11:44.790Z",
         "passed": 67,
         "failed": 0,
-        "negativeCases": 11
+        "negativeCases": 11,
+        "checks": 67,
+        "verifierCommand": "npx tsx script/m41/verify-seo.ts",
+        "blockedReason": "Keyword checks verify presence in rendered content; ranking outcomes are S2 (search-engine onboarding) scope and depend on external engines."
       }
     },
     {
@@ -195,7 +205,8 @@
         "passed": 15,
         "failed": 0,
         "negativeCases": 5,
-        "deployGate": "Deploy-gated by construction: S2 probes the LIVE deployment (dns.google + backbencher.cc) and cannot be re-run from the repository working tree. It is accepted PASS-with-negatives at this ancestor commit; the owner re-runs the gate after the Vercel deploy, which records deployLag (open -> closed) and re-pins S2 onto the batch commit. M56.X1 and M41.X1 both refuse to close on an unstated lag state."
+        "deployGate": "Deploy-gated by construction: S2 probes the LIVE deployment (dns.google + backbencher.cc) and cannot be re-run from the repository working tree. It is accepted PASS-with-negatives at this ancestor commit; the owner re-runs the gate after the Vercel deploy, which records deployLag (open -> closed) and re-pins S2 onto the batch commit. M56.X1 and M41.X1 both refuse to close on an unstated lag state.",
+        "blockedReason": "Dashboard states (GSC/Bing/Brave) are external and can change after verification; the live checks prove the site half, the owner-confirmation file records the dashboard half as of its dates."
       }
     },
     {
@@ -215,23 +226,16 @@
         "gates re-run at redesign commit"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "2d68fe592486728fef8622a4dabe2e5b6370723f",
-        "verifierCommand": "npx tsx script/m41/verify-design.ts",
         "evidenceFile": "D1.json",
-        "generatedAt": "2026-10-02T23:36:58.597Z",
+        "status": "verified",
+        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
+        "generatedAt": "2026-10-16T18:11:48.836Z",
         "passed": 17,
         "failed": 0,
         "negativeCases": 3,
-        "screenshots": [
-          "validation/m41/results/D1-evidence/01-home.png",
-          "validation/m41/results/D1-evidence/02-tools.png",
-          "validation/m41/results/D1-evidence/03-docs.png",
-          "validation/m41/results/D1-evidence/04-install.png",
-          "validation/m41/results/D1-evidence/05-faq.png",
-          "validation/m41/results/D1-evidence/06-troubleshooting.png",
-          "validation/m41/results/D1-evidence/07-contact.png"
-        ]
+        "checks": 17,
+        "verifierCommand": "npx tsx script/m41/verify-design.ts",
+        "blockedReason": "Visual quality is asserted by screenshots plus owner review, not by pixel heuristics."
       }
     },
     {
@@ -252,20 +256,22 @@
         "real GitHub issue numbers wired (placeholders rejected)"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "2d68fe592486728fef8622a4dabe2e5b6370723f",
-        "verifierCommand": "npx tsx script/m41/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "generatedAt": "2026-10-03T00:02:40.076Z",
+        "status": "verified",
+        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
+        "generatedAt": "2026-10-16T18:42:14.583Z",
         "passed": 36,
         "failed": 0,
-        "negativeCases": 13
+        "negativeCases": 13,
+        "checks": 36,
+        "verifierCommand": "npx tsx script/m41/verify-closure.ts",
+        "blockedReason": "X1 proves the batch was produced at one commit and that the wiring, deploy contract and owner confirmations hold. It does not re-run the seven site gates itself; their evidence is what the batch is made of."
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T00:38:12.247Z",
-    "contentSha256": "fb7b99e3f36beddce93ad2a9a8abcba4833be2c623e7c9819150d984b7ade160"
+    "sealedAt": "2026-10-17T15:31:56.927Z",
+    "contentSha256": "8c0ad11c251dc957d124a06a25a8cfc3f8e5977fce097ab7a54f65ddff83e0fa"
   }
 }

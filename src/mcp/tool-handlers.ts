@@ -19,7 +19,7 @@ import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
 import { getAnalysisHistory, executeAnalysis } from "../intelligence/analysis/run-history"
 import { generateDocumentation, formatDocumentation, type DocRequest } from "../intelligence/documentation/doc-engine"
-import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationResult, type VisualizationScope, type VisualizationView } from "../intelligence/visualization/visualization-engine"
+import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationResult, type VisualizationScope, type VisualizationView, type VisualizationLayout } from "../intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../intelligence/migration/migration-engine"
 import { graphTraversal } from "../intelligence/graph/graph-engine"
 // M28.T1 (issue #624): the agent door reuses the EXACT components the IDE
@@ -83,6 +83,25 @@ export const SECURITY_SUSPICIOUS_WINDOW = 5
 export const SECURITY_SCAN_CAP = 500
 /** Cap for the recording scan — large enough that a real project is not truncated. */
 export const SECURITY_RECORD_RUN_CENSUS_CAP = 50_000
+
+/**
+ * Wall-clock ceiling on `bb_analyze`'s call-graph walks (`callers`, `callees`,
+ * `trace`) — THIS MODE'S OWN BOUND, not an inherited engine default.
+ *
+ * The engine applies no clock bound unless a caller asks for one (bb_graph
+ * review D7: at 2,000 ms by default it sampled hub answers without bounding
+ * their latency — measured, four of five identical default calls returned 200
+ * edges in 2,489-16,635 ms while the complete walk took 2,854-4,755 ms and
+ * returned 509). This ceiling is kept here because `mode=trace` on a hub is the
+ * walk that motivated a clock bound in the first place: the engine's own
+ * measurement records it at 613 s before one existed. It is declared on the
+ * answer — when it fires, the graph summary carries
+ * `timeBudgetExhausted: true` and `walk-time-budget-exhausted` among its
+ * `truncationReasons` — so a sampled answer says so instead of reading as
+ * complete. Values are the value the engine defaulted to: unchanged behaviour
+ * for these three modes, made explicit here so no other door inherits it.
+ */
+export const ANALYZE_GRAPH_WALK_CEILING_MS = 2_000
 
 export interface ToolContext {
   projectPath: string
@@ -936,7 +955,21 @@ const handlers: Record<string, ToolHandler> = {
       // for all five, and the key set does not change with the result.
       let result
       try {
-        result = await graphTraversal(projectId as any, target, { direction: mode === "trace" ? "both" : mode, maxDepth: 3 })
+        // M48/D7: this walk keeps a wall-clock ceiling EXPLICITLY, because the
+        // engine's default no longer applies one (graph-engine's
+        // DEFAULT_WALK_TIME_BUDGET_MS is 0 since the bb_graph review's D7: the
+        // bound sampled the default answer without bounding its latency).
+        // `mode=trace` on a hub is the walk that motivated a clock bound at
+        // all — measured at 613 s before one existed — so the ceiling stays
+        // here, at this mode's own declared value, instead of being inherited by
+        // every other door from a constant they never asked for. When it fires
+        // the answer carries `timeBudgetExhausted: true` in its graph summary,
+        // so the sample is declared rather than silent.
+        result = await graphTraversal(projectId as any, target, {
+          direction: mode === "trace" ? "both" : mode,
+          maxDepth: 3,
+          timeBudgetMs: ANALYZE_GRAPH_WALK_CEILING_MS,
+        })
       } catch {
         return withFreshness(
           {
@@ -1571,7 +1604,7 @@ const handlers: Record<string, ToolHandler> = {
     // symbol in the answer, and `includeTests:false` still returned
     // test/app.test.ts with `includesTestFiles:true`. A filter the caller believes
     // is scoping results, and which does not, is worse than a rejection.
-    const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", view: ["graph", "codemap", "class"].includes(String(args.view)) ? args.view : "graph", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), offset: args.offset == null ? undefined : Number(args.offset), relationshipTypes: relationshipFilter.folded, languages: languageFilter.folded, symbolKinds: symbolKindFilter.folded, excludePatterns: Array.isArray(args.excludePatterns) ? args.excludePatterns.map(String) : undefined, includeTests: typeof args.includeTests === "boolean" ? args.includeTests : undefined }
+    const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", view: ["graph", "codemap", "class"].includes(String(args.view)) ? args.view : "graph", layout: ["regions", "force"].includes(String(args.layout)) ? (String(args.layout) as VisualizationLayout) : "regions", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), offset: args.offset == null ? undefined : Number(args.offset), relationshipTypes: relationshipFilter.folded, languages: languageFilter.folded, symbolKinds: symbolKindFilter.folded, excludePatterns: Array.isArray(args.excludePatterns) ? args.excludePatterns.map(String) : undefined, includeTests: typeof args.includeTests === "boolean" ? args.includeTests : undefined }
     const result = await visualizeProject(projectId, request)
     // M13.F4 (#701): every studio slot carries the document of ITS OWN view.
     //
@@ -1822,7 +1855,7 @@ const handlers: Record<string, ToolHandler> = {
 
   bb_edit: async (args, { projectId, projectPath }) => {
     const request = args as EditRequest
-    if (!(["write", "update", "insert", "delete", "refactor"] as const).includes(request.mode as any)) return textResult("bb_edit requires mode: write|update|insert|delete|refactor", true)
+    if (!(["write", "update", "insert", "delete", "refactor", "batch"] as const).includes(request.mode as any)) return textResult("bb_edit requires mode: write|update|insert|delete|refactor|batch", true)
     try {
       const result = await executeEdit(projectPath, projectId, request)
       return textResult(JSON.stringify(result, null, 2))
@@ -1852,6 +1885,11 @@ const handlers: Record<string, ToolHandler> = {
         error: e?.message ?? String(e),
         rolledBack: rollbackFailures.length === 0,
         ...(rollbackFailures.length > 0 ? { rollbackFailures } : {}),
+        // M71.D13: the per-file answer to "is my working tree back?". The engine
+        // attaches it to the error, measured from disk after the restore loop; a
+        // single boolean over a batch of files cannot answer it, and this is the
+        // field a caller holding a half-applied batch needs first.
+        ...(e?.envelope ? { envelope: e.envelope } : {}),
       }, null, 2), true)
     }
   },
@@ -2236,8 +2274,42 @@ const handlers: Record<string, ToolHandler> = {
         // depth 2" — which is the distinction the engine added this field for.
         maxDepth: result.summary?.maxDepth ?? null,
         crossLanguageEdges: result.summary?.crossLanguageEdges ?? 0,
+        // ── the two filters that leave a number, not just a prose note ─────
+        // The engine has counted both of these for a while; the handler
+        // published neither, so the machine-readable side of the answer said
+        // `truncated: false` beside a provenance note that said 1 caller row
+        // was removed by policy (measured: a fixture with one caller in
+        // `vendor/` answered `callers: 0 · truncated: false` with a
+        // `noise-policy:` unknown — two channels disagreeing).
+        noiseFiltered: result.summary?.noiseFiltered ?? { callers: 0, callees: 0 },
+        // Rows that name this symbol but carry no source symbol, so no
+        // traversal can show them in either direction. `null` = not counted
+        // (never zero — see the engine's field comment). Published because
+        // before this the answer was a three-row list with a depth-bound reason
+        // and no field at all for the 38 stored rows a JOIN had dropped.
+        unattributed: result.summary?.unattributed ?? null,
+        crossLanguageExcluded: result.summary?.crossLanguageExcluded ?? { callers: 0, callees: 0 },
+        // A DECLARED BOUND, and nothing else (bb_graph review D5). A caller's
+        // `relationshipTypes` filter no longer sets this: measured at HEAD,
+        // `relationshipTypes:["calls"]` answered 7 edges with
+        // `truncated: true, truncationReason: "relationshipTypes:calls"`, so a
+        // consumer could not tell "the walk stopped" from "a subset was
+        // requested" — and an empty subset (`["implements"]`, 0 edges) was
+        // announced as a clipped answer. The filter now reports itself in the
+        // two fields directly below.
         truncated: result.summary?.truncated === true,
         truncationReason: result.summary?.truncationReason ?? null,
+        // D10: the same reasons as data, beside the `+`-joined string.
+        truncationReasons: result.summary?.truncationReasons ?? [],
+        // D5: the scope the caller ASKED for, in its own channel. TRUE means the
+        // edge sets are the whole of the requested scope; FALSE with
+        // `truncated: true` means the store itself clipped them.
+        filterNarrowed: result.summary?.filterNarrowed === true,
+        filterReason: result.summary?.filterReason ?? null,
+        // The bound on the WHOLE answer. From bb_graph review D6 a requested
+        // `maxEdges` below the per-query cap is HONORED rather than raised to
+        // it, so this field is now the number the caller asked for whenever they
+        // asked for one — and when it bites, `totalEdgeLimitReached` says so.
         edgeLimit: result.summary?.edgeLimit ?? null,
         // The bound on the WHOLE answer. Without it a caller could compute the
         // ceiling of an answer (per-query limit x fan-out budget x 2) but not

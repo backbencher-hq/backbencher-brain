@@ -130,17 +130,32 @@ export function lintBanned(text: string): string[] {
  * satisfied by honest work at all.
  */
 export function claimFields(a: any): string[] {
+  // A payload's SHAPE must never decide whether the lint runs. Every list below is
+  // read as a list or not read at all: `validation/m14/fixtures/xml/residual-true-population.json`
+  // carries `limitations` as an object map (name -> prose), and
+  // `(... ?? []).flatMap` on it is a TypeError that killed the honesty gate
+  // outright — a crash, not a verdict, so the gate said nothing at all about the
+  // 2,133 files it exists to read. A non-array limitation is now flattened to the
+  // strings it holds (more prose linted, never less), and the two other lists are
+  // guarded so a future fixture cannot re-create the same death.
+  const list = (v: unknown): any[] => (Array.isArray(v) ? v : [])
   return [
     a?.title ?? "",
-    ...(a?.checks ?? []).map((c: any) => `${c?.description ?? ""} ${c?.detail ?? ""}`),
+    ...list(a?.checks).map((c: any) => `${c?.description ?? ""} ${c?.detail ?? ""}`),
     // A string limitation is prose and therefore a claim: lint it as itself, not
     // as an object with no fields (which read as the empty string and was
     // invisible to the lint). Measured before this change: 0 of the 69 harness
     // artifacts that carry string limitations trip a banned term, so tightening
     // the lint here changes no existing verdict.
-    ...(a?.limitations ?? []).flatMap((l: any) =>
-      typeof l === "string" ? [l] : [l?.description ?? "", l?.justification ?? ""]),
-    ...(a?.mutationLog ?? []).map((m: any) => `${m?.description ?? ""} ${m?.detail ?? ""}`),
+    ...(Array.isArray(a?.limitations)
+      ? a.limitations.flatMap((l: any) =>
+          typeof l === "string" ? [l] : [l?.description ?? "", l?.justification ?? ""])
+      : a?.limitations && typeof a.limitations === "object"
+        ? collectStrings(a.limitations)
+        : a?.limitations === undefined || a?.limitations === null
+          ? []
+          : [String(a.limitations)]),
+    ...list(a?.mutationLog).map((m: any) => `${m?.description ?? ""} ${m?.detail ?? ""}`),
   ]
 }
 function collectStrings(v: unknown, out: string[] = []): string[] {

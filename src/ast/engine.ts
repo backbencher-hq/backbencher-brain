@@ -12,6 +12,8 @@ import { detectLanguageFromPath } from "./language-detection"
 // therefore never ran for any row that needed it. See the call site.
 import { decodeSourceText } from "../util/source-text"
 
+const __dirname = fileURLToPath(new URL(".", import.meta.url)).replace(/[\\/]+$/, "")
+
 const require = createRequire(import.meta.url)
 
 

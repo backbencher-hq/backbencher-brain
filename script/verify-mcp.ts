@@ -64,7 +64,18 @@ try {
 
   const tools = await client.listTools()
   const names = tools.tools.map((t: any) => t.name)
-  check("tools/list exposes ten public tools", names.length === 10 && ["bb_search","bb_ask","bb_analyze","bb_patterns","bb_security","bb_doc","bb_visualize","bb_migrate","bb_edit","bb_health"].every((t) => names.includes(t)), `got ${names.join(",")}`)
+  // The advertised list is a CONTRACT, so it is compared against the registry the
+  // server builds it from rather than against a hand-written literal. The literal
+  // here said "ten" and listed ten names long after the surface had grown to 16
+  // (M22 added bb_index; M28 added graph/impact/cross-language/annotate/
+  // annotations), so the check failed on the very list it existed to protect.
+  const { PUBLIC_TOOL_DESCRIPTORS } = await import("../src/mcp/tool-registry")
+  const registryNames = PUBLIC_TOOL_DESCRIPTORS.map((t) => t.name)
+  check(
+    "tools/list advertises exactly the registered public tools",
+    names.length === registryNames.length && registryNames.every((t) => names.includes(t)),
+    `advertised ${names.length} (${names.join(",")}) vs ${registryNames.length} registered`,
+  )
 
   const searchRes: any = await client.callTool({ name: "bb_search", arguments: { query: "handleRequest", limit: 5 } })
   const searchText = (searchRes.content ?? []).map((c: any) => c.text ?? "").join("\n")

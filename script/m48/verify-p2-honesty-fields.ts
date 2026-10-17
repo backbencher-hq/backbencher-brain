@@ -24,6 +24,8 @@ import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
+import { writeSealed } from "../lib/evidence.ts"
+
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT, "validation/m48/results")
 const READ_ONLY = process.env.BB_M48_READ_ONLY === "1"
@@ -179,7 +181,12 @@ async function main() {
     buildersAudited: BUILDER_FILES.length,
   }
   mkdirSync(RESULTS_DIR, { recursive: true })
-  if (!READ_ONLY) writeFileSync(path.join(RESULTS_DIR, "P2.json"), JSON.stringify(evidence, null, 2) + "\n")
+  // M61 D-1 (the seal law): every record is written through the ONE write path.
+  // This gate stamped RAW JSON, so its own run dropped the envelope the M61
+  // seal register names (measured 2026-10-17: seal ABSENT against a registered
+  // digest, and M61.A1's A4 failed on it). The verdict is unchanged; the writer
+  // now moves the digest WITH the content.
+  if (!READ_ONLY) writeSealed(path.join(RESULTS_DIR, "P2.json"), evidence)
   console.log(`M48 P2 HONESTY FIELDS: ${ok ? "PASS" : "FAIL"} (${passed} passed, ${failed} failed, ${negatives} negatives)`)
   process.exit(ok ? 0 : 1)
 }

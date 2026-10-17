@@ -29,6 +29,10 @@ type Issue = {
   goal: string
   acceptance: string[]
   evidence?: string
+  /** A correction recorded BESIDE the issue, not in its acceptance criteria: why this
+   *  entry exists, or an id that used to point at a different issue. Rendered by
+   *  `bodyOf` — a note nobody can read is not a note. */
+  note?: string
 }
 
 function bodyOf(issue: Issue): string {
@@ -50,6 +54,10 @@ function bodyOf(issue: Issue): string {
     ``,
     `## Definition of done`,
     `All criteria pass; evidence committed; gate wired into \`npm run verify\`. Targets \`verified\` for this unit only — not a claim about any other tool or the analyzers.`,
+    // The note is rendered, not stored and forgotten: it records a correction the
+    // issue needs its reader to know (e.g. an id that used to denote another issue),
+    // and a note that only exists in the source file is not on the issue at all.
+    ...(issue.note === undefined ? [] : [``, `## Note`, issue.note]),
   ].join("\n")
 }
 
@@ -216,6 +224,18 @@ const ISSUES: Issue[] = [
       "Evidence JSON committed and passing",
       "Release gate blocks 'verified' unless E1-E11 all pass",
     ],
+  },
+  { id: "M13.66", code: "E13", tool: "bb_edit", priority: "p1-high",
+    title: "bb_edit: batch mode — one plan, one cycle, one rollback envelope",
+    goal: "A batch of edits must be one plan, one formatting/validation/reindex cycle and one per-file rollback envelope — not N single edits wearing one answer.",
+    acceptance: [
+      "every entry is planned into ONE plan with a shared pre-image record, and the commit runs the same commitPlan the single modes use",
+      "formatting, validation and reindexing run once for the whole call, and the answer reports one cycle",
+      "a plan-phase failure writes nothing; a post-write failure is rolled back per file and reported per file in the envelope (planned/committed/restored)",
+      "two entries resolving to one file are refused by entry index, and an entry is validated by the same per-mode rule as the single-mode call it mirrors",
+      "`batch` requires an index at the MCP gate, and the entry cap bounds the answer"
+    ],
+    note: "The ledger entry for this issue was missing while the gate existed: verify-edit-batch.ts wrote `issue: M13.18`, which the ledger assigns to bb_search's S1. A record whose issue id denotes a different issue is the exact defect the evidence governance refuses, so the id is M13.66.",
   },
 
   // ── bb_search ───────────────────────────────────────────────────────
@@ -520,6 +540,33 @@ const ISSUES: Issue[] = [
       "the text reply declares the fold with the same count as considered.ownerCascade, and the description's claim matches the code",
     ],
   },
+  { id: "M13.64", code: "V10", tool: "bb_visualize", priority: "p1-high",
+    title: "bb_visualize: the artifact driven in a real browser — layouts, the picked-item box, the pixels",
+    goal: "Open, click and drag the generated artifact in a real browser, because the defects that matter are not in its text.",
+    acceptance: [
+      "the artifact loads with ink on the canvas and publishes the state its checks read",
+      "a real click on a region link selects it and the box names both regions",
+      "collapsing the box keeps the selection and still names it; the X is what clears",
+      "the box docks to either side, by its control and by dragging its heading",
+      "the sidebar's layout switch re-draws the mounted document, and the force layout publishes no region links",
+      "no uncaught exception or console error across the session",
+    ],
+    note: "Needs a chromium binary (BB_VISUALIZE_CHROME, CHROME_PATH, playwright's cache, or the system names), so it runs as `npm run verify:viz-browser` rather than from the `verify` chain: a check that cannot run must never read as one that passed.",
+  },
+  { id: "M13.65", code: "V11", tool: "bb_visualize", priority: "p1-high",
+    title: "bb_visualize: the code map publishes what the one sidebar renders",
+    goal: "The code map must stop painting its own chrome and publish the census, the filters, the key and the data port the sidebar draws — and its language must come from the field the projection actually carries.",
+    acceptance: [
+      "the emitted document draws the map, the search, the readout that changes and the picked-item box, and no panel of its own",
+      "window.__bbView publishes the census, the note, the legend, the encoding key, the filters, the two arrangements, the live rows, the data port, fit/reset/saveHtml and the hint",
+      "the census counts the payload the document carries, and BOTH cuts (the noise filter's exclusions and the node budget's) are rows rather than discoveries",
+      "a file's language is the projection's own field (`group`), with the fallback only where that field is absent — the grouping, the legend and the picked-item box cannot disagree",
+      "a filter MUTES a band rather than removing it: the areas stay true, the census keeps every row and the data port keeps every symbol",
+      "collapsing the picked-item box keeps the pick and still names it; the X is what clears it",
+      "the shell renders the VIEW's own rows and hint, and switches each download on the port it has — a view with no edges cannot hand out an empty CSV",
+    ],
+    note: "Behavioural rather than textual: the emitted document is executed against a stub DOM resolved from its own markup, so an id the document no longer carries resolves to null. That is what caught two defects while this pass was written — `applyView(world)` reading a browser's implicit global from id=\"world\" (the first draw/fit threw in a context without one), and a group-label collision test that compared vertical bands only, so of two side-by-side groups just one was ever named.",
+  },
   { id: "M13.63", code: "V9", tool: "bb_visualize", priority: "p1-high",
     title: "bb_visualize: the exclusions, the freshness text and the first paint say what is true",
     goal: "Every excluded symbol must name the rule that removed it, a remediation must name an interface the tool has, and a picture must be framed against the layout it actually drew.",
@@ -626,11 +673,15 @@ const ISSUES: Issue[] = [
   },
 ]
 
-if (ISSUES.length !== 58) {
-  throw new Error(`expected 58 issues, got ${ISSUES.length}`)
+// The count is a tripwire, not a bound: adding an entry means updating it here
+// deliberately. It sat at 58 while the array had grown to 65 (the M13.59-M13.65
+// verifier issues for the visualize work), which made `--plan`/`--create` throw
+// "expected 58 issues, got 65" — the ledger script's own modes were un-runnable.
+if (ISSUES.length !== 66) {
+  throw new Error(`expected 66 issues, got ${ISSUES.length}`)
 }
 const ids = new Set(ISSUES.map((i) => i.id))
-if (ids.size !== 58) throw new Error("duplicate issue ids")
+if (ids.size !== ISSUES.length) throw new Error("duplicate issue ids")
 
 const MODE = process.argv.includes("--create") ? "create" : process.argv.includes("--plan") ? "plan" : null
 if (!MODE) {

@@ -9,8 +9,10 @@
 // Evidence: validation/m41/results/G1.json (machine-emitted)
 
 import { execFileSync } from "node:child_process"
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs"
+import { readFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
+
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 
@@ -102,10 +104,14 @@ let checks = 0
 let passed = 0
 let negatives = 0
 
+const failures: string[] = []
 function check(label: string, condition: boolean, detail = ""): void {
   checks++
   if (condition) passed++
-  else console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
+  else {
+    failures.push(`${label}${detail ? ` — ${detail}` : ""}`)
+    console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
+  }
 }
 
 function negative(label: string, condition: boolean, detail = ""): void {
@@ -397,21 +403,23 @@ negative("G1: planned-with-evidence fabrication is rejected", validateLedger(fab
 const ok = passed === checks
 console.log("")
 console.log(`  checks: ${passed}/${checks} passed, ${negatives} negative cases`)
-if (!ok) {
-  console.log("VERDICT: FAIL")
-  process.exit(1)
-}
-console.log("VERDICT: PASS")
+console.log(`VERDICT: ${ok ? "PASS" : "FAIL"}`)
 
+// A RED RUN RECORDS ITS ARTIFACT TOO — see the same note in script/m56/verify-governance.ts.
+// This gate's ledger entry is a citation, so exiting before writing made its own commit
+// unrefreshable once history was rewritten: the artifact could only be replaced by a run that
+// already read a ledger citing a reachable commit, and the ledger is derived from this file.
+// status is "verified" only when every check passed; a failed run names its failing checks.
 const evidence = {
   issue: "M41.G1",
   code: "G1",
   milestone: "M41",
-  status: "verified",
+  status: ok ? "verified" : "failed",
   checks,
   passed,
   failed: checks - passed,
   negativeCases: negatives,
+  failures: ok ? [] : failures.slice(0, 25),
   trackedFilesScanned: tracked.length,
   currentCommit: headCommit,
   verifierCommand: "npx tsx script/m41/verify-governance.ts",
@@ -427,5 +435,8 @@ const evidence = {
   ],
 }
 mkdirSync(RESULTS, { recursive: true })
-writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")
-console.log(`  evidence: ${path.relative(ROOT, EVIDENCE_PATH)}`)
+// M61 D-1 (the seal law): the ONE write path. A raw write drops the envelope,
+// which is what A1's A4 measured on this lane's records (2026-10-17).
+writeSealed(EVIDENCE_PATH, evidence)
+console.log(`  evidence: ${path.relative(ROOT, EVIDENCE_PATH)}${ok ? "" : " (FAILED run recorded, not a verdict)"}`)
+process.exit(ok ? 0 : 1)

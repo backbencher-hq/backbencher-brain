@@ -2,18 +2,18 @@
   "issue": "M62.A2",
   "code": "A2",
   "milestone": "M62",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 33,
-  "passed": 31,
-  "failed": 2,
+  "passed": 33,
+  "failed": 0,
   "realFailed": 0,
   "negativeCases": 8,
   "mutantsCaught": 8,
   "mutantsTotal": 8,
-  "currentCommit": "b5ea6a8b6ff3fc27d67cadba9083ed8bce0da271",
+  "currentCommit": "c963bb3a86002ca4160c0e162a4ce5c327ebf416",
   "verifierCommand": "npx tsx script/m62/verify-consumers.ts",
   "evidenceFile": "A2.json",
-  "generatedAt": "2026-10-05T17:59:03.758Z",
+  "generatedAt": "2026-10-17T17:44:51.498Z",
   "schemaVersion": 1,
   "laws": [
     "P1 engine-derives-address",
@@ -38,8 +38,8 @@
     "scope": "one purpose-built file per routed extension, indexed fresh by the real indexer at this commit; source-side stored relationship rows only (the side a call-site line describes)",
     "denominator": {
       "languages": 22,
-      "sourceSideRows": 80,
-      "storedRealLines": 80,
+      "sourceSideRows": 86,
+      "storedRealLines": 86,
       "storedNullLines": 0,
       "storedLegacyZeroLines": 0
     },
@@ -106,15 +106,15 @@
       },
       {
         "language": "elixir",
-        "relRows": 3,
-        "storedReal": 3,
+        "relRows": 5,
+        "storedReal": 5,
         "storedNull": 0,
         "storedZero": 0,
         "usageRows": 1,
         "usageRealLine": 1,
         "usageOnMarkedLine": 1,
         "outOfFile": 0,
-        "callSite": 3,
+        "callSite": 5,
         "declaration": 0,
         "unknown": 0,
         "invocationLine": 7
@@ -136,15 +136,15 @@
       },
       {
         "language": "fsharp",
-        "relRows": 3,
-        "storedReal": 3,
+        "relRows": 7,
+        "storedReal": 7,
         "storedNull": 0,
         "storedZero": 0,
         "usageRows": 1,
         "usageRealLine": 1,
         "usageOnMarkedLine": 1,
         "outOfFile": 0,
-        "callSite": 3,
+        "callSite": 7,
         "declaration": 0,
         "unknown": 0,
         "invocationLine": 6
@@ -407,7 +407,6 @@
       "script/m27/verify-nvim.ts",
       "script/m28/verify-annotation-ui.ts",
       "script/m29/verify-wave-execution.ts",
-      "script/m44/verify-hub-tree.ts",
       "script/m55/verify-identity.ts",
       "script/m62/verify-closure.ts"
     ],
@@ -434,7 +433,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T17:59:03.760Z",
-    "contentSha256": "d61ec3b0451fee07d4933fa3e8f67e753953dd70fa2762ba7c92d464b226309f"
+    "sealedAt": "2026-10-17T17:44:51.500Z",
+    "contentSha256": "6a5320d2c2953df0046a0652093e39708b9e6b5cab7779adb4d521bf0585b4ad"
   }
 }

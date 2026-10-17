@@ -181,10 +181,19 @@ const evidence = {
   issue: "M45.X1",
   code: "X1",
   milestone: "M45",
-  status: ok ? "verified" : "failed",
+  // A RED RUN IS `known-gap`, NOT `failed`. The status union the whole program
+  // reads is planned/verified/known-gap/blocked (ledger_projection.ts), and an
+  // invented fifth word is not a stricter claim — it is an untranslatable one:
+  // the lane's ledger entry cannot be projected from it, so it kept the stale
+  // `verified` it happened to hold and the drift census read the pair as a lie
+  // (measured 2026-10-17: M61's G5, `m45.X1: ledger=verified record=failed`).
+  // The failing checks are named below, so `known-gap` loses no information.
+  status: ok ? "verified" : "known-gap",
   checks: passed + failed,
   passed,
   failed,
+  ...(ok ? {} : { blockedReason: failures.length > 0 ? `${failures.length} check(s) failed: ${failures.slice(0, 4).join("; ")}${failures.length > 4 ? " …" : ""}` : "the closure run did not pass" }),
+  failures,
   negativeCases: negatives,
   currentCommit: head,
   workingTreeRelevantChanges: dirty,

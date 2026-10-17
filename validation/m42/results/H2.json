@@ -2,17 +2,20 @@
   "issue": "650",
   "code": "H2",
   "milestone": "M42",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 71,
-  "passed": 71,
-  "failed": 0,
-  "failures": [],
+  "passed": 69,
+  "failed": 2,
+  "failures": [
+    "H2/R5: warm hover p95 <= 50ms with rich sections (a real p95, not a mean): p95=91.62ms over 200 samples (p50 20.08ms, max 259.27ms)",
+    "H2/M: the mutant oracle HOLDS on the real component — every predicate true, so no mutant can be marked caught for free (the pre-fix `contains` predicate asserted the connected summary has ONE group, which the all-relationships verb table made false on a correct component): {\"position\":false,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":false,\"label\":false} — oracle saw {\"collected\":[{\"name\":\"main\",\"kind\":\"calls\",\"reversed\":true,\"path\":\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:12:23\",\"callSite\":{\"kind\":\"declaration\",\"file\":\"src/main/java/com/demo/App.java\",\"line\":13,\"note\":\"this is the calling symbol's declaration, not the call site\"}},{\"name\":\"main\",\"kind\":\"calls\",\"reversed\":true,\"path\":\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:3:23\",\"callSite\":{\"kind\":\"declaration\",\"file\":\"src/main/java/com/demo/Main2.java\",\"line\":4,\"note\":\"this is the calling symbol's declaration, not the call site\"}},{\"name\":\"Greeter\",\"kind\":\"contains\",\"reversed\":true,\"path\":\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:5:6\",\"callSite\":{\"kind\":\"declaration\",\"file\":\"src/main/java/com/demo/App.java\",\"line\":6,\"note\":\"this is the calling symbol's declaration, not the call site\"}},{\"name\":\"App\",\"kind\":\"uses\",\"reversed\":true,\"path\":\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\",\"callSite\":{\"kind\":\"declaration\",\"file\":\"src/main/java/com/demo/App.java\",\"line\":12,\"note\":\"this is the calling symbol's declaration, not the call site\"}}],\"headerCount\":3,\"renderedRows\":3,\"linkTargets\":[\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:12:23\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:3:23\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"refTargets\":[\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:12:23\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:3:23\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"labels\":[\"main — App.java:13 _(this is the calling symbol's declaration, not the call site)_\",\"main — Main2.java:4 _(this is the calling symbol's declaration, not the call site)_\",\"App — App.java:12 _(this is the calling symbol's declaration, not the call site)_\"],\"expectedCallSites\":[\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0\"],\"groups\":[{\"verb\":\"called by\",\"names\":[\"main\",\"main\"]},{\"verb\":\"used by\",\"names\":[\"App\"]}],\"cardBlocks\":{\"connected\":[\"main -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:12:23\",\"main — Main2.java:4 _(this is the calling symbol's declaration, not the call site)_ -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:3:23\",\"App -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"usages\":[\"main — App.java:13 _(this is the calling symbol's declaration, not the call site)_ -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:12:23\",\"main — Main2.java:4 _(this is the calling symbol's declaration, not the call site)_ -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:3:23\",\"App — App.java:12 _(this is the calling symbol's declaration, not the call site)_ -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"contained\":[\"Greeter -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:5:6\"]},\"doubleGrounds\":[{\"id\":\"r-app\",\"kind\":\"calls\",\"declaration\":false,\"branch\":\"stored-line\",\"key\":\"App.java:14:0\"},{\"id\":\"r-main2\",\"kind\":\"calls\",\"declaration\":false,\"branch\":\"stored-line\",\"key\":\"Main2.java:5:0\"},{\"id\":\"r-greeter\",\"kind\":\"contains\",\"declaration\":true,\"branch\":\"stored-line\",\"key\":\"App.java:5:0\"},{\"id\":\"r-legacy\",\"kind\":\"uses\",\"declaration\":false,\"branch\":\"declaration-substitute\",\"key\":\"App.java:11:13\"}],\"section\":\"**usages** — 3 stored references (usage sites only; declaration and callees excluded) — the index stores no call-site line for these, so each opens the referencing declaration _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\\n1. [main — App.java:13 _(this is the calling symbol's declaration, not the call site)_](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2F.tools%2Fm42-h2-fixture%2Fsrc%2Fmain%2Fjava%2Fcom%2Fdemo%2FApp.java%22%2C%22line%22%3A12%2C%22character%22%3A23%7D%5D)\\n2. [main — Main2.java:4 _(this is the calling symbol's declaration, not the call site)_](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2F.tools%2Fm42-h2-fixture%2Fsrc%2Fmain%2Fjava%2Fcom%2Fdemo%2FMain2.java%22%2C%22line%22%3A3%2C%22character%22%3A23%7D%5D)\\n3. [App — App.java:12 _(this is the calling symbol's declaration, not the call site)_](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2F.tools%2Fm42-h2-fixture%2Fsrc%2Fmain%2Fjava%2Fcom%2Fdemo%2FApp.java%22%2C%22line%22%3A11%2C%22character%22%3A13%7D%5D)\"}"
+  ],
   "verdict": {
-    "realComponentFailures": 0,
+    "realComponentFailures": 2,
     "mutantsCaught": 7,
     "mutantsTotal": 7,
     "mutantsNotJudged": 0,
-    "ok": true
+    "ok": false
   },
   "mutants": {
     "caught": 7,
@@ -21,38 +24,38 @@
     "verdicts": [
       {
         "name": "M1: wrong position — the link opens a line adjacent to the stored call site (±1)",
-        "caughtBy": "position, containmentInItsOwnBlock, sectionUsage, sectionConnected, sectionContainment",
-        "detail": "{\"position\":false,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":false,\"label\":true}"
+        "caughtBy": "position, containmentInItsOwnBlock, sectionUsage, sectionConnected, sectionContainment, label",
+        "detail": "{\"position\":false,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":false,\"label\":false}"
       },
       {
         "name": "M2: wrong count — the usages header is one more than the list it headlines",
-        "caughtBy": "count",
-        "detail": "{\"position\":true,\"count\":false,\"edge\":true,\"containmentInItsOwnBlock\":true,\"sectionUsage\":true,\"sectionConnected\":true,\"sectionContainment\":true,\"label\":true}"
+        "caughtBy": "position, count, containmentInItsOwnBlock, sectionUsage, sectionConnected, sectionContainment, label",
+        "detail": "{\"position\":false,\"count\":false,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":false,\"label\":false}"
       },
       {
         "name": "M3: dropped edge — the last collected row never reaches the section",
-        "caughtBy": "position, count, edge, label",
-        "detail": "{\"position\":false,\"count\":false,\"edge\":false,\"containmentInItsOwnBlock\":true,\"sectionUsage\":true,\"sectionConnected\":true,\"sectionContainment\":true,\"label\":false}"
+        "caughtBy": "position, count, edge, containmentInItsOwnBlock, sectionUsage, sectionConnected, sectionContainment, label",
+        "detail": "{\"position\":false,\"count\":false,\"edge\":false,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":false,\"label\":false}"
       },
       {
         "name": "M4: a declaration containment leaks into the connected summary (re-anchored on the declaration-class guard, which is the line that decides this law today — the pre-fix `verb === null` anchor is a DEAD guard and its plant was a no-op)",
-        "caughtBy": "containmentInItsOwnBlock, sectionConnected",
-        "detail": "{\"position\":true,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":true,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":true}"
+        "caughtBy": "position, containmentInItsOwnBlock, sectionUsage, sectionConnected, sectionContainment, label",
+        "detail": "{\"position\":false,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":false,\"label\":false}"
       },
       {
         "name": "M5: undeclared substitution — the row label drops the caveat that says which position it opens",
-        "caughtBy": "label",
-        "detail": "{\"position\":true,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":true,\"sectionUsage\":true,\"sectionConnected\":true,\"sectionContainment\":true,\"label\":false}"
+        "caughtBy": "position, containmentInItsOwnBlock, sectionUsage, sectionConnected, sectionContainment, label",
+        "detail": "{\"position\":false,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":false,\"label\":false}"
       },
       {
         "name": "M6: section swap — the **usages** block renders the declaration-containment row (a `contains` row offered as a usage, the exact defect relations.ts exists to prevent)",
-        "caughtBy": "position, count, containmentInItsOwnBlock, sectionUsage",
-        "detail": "{\"position\":false,\"count\":false,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":true,\"sectionContainment\":true,\"label\":true}"
+        "caughtBy": "position, count, containmentInItsOwnBlock, sectionUsage, sectionConnected, sectionContainment, label",
+        "detail": "{\"position\":false,\"count\":false,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":false,\"label\":false}"
       },
       {
         "name": "M7: section swap — the **contained** block renders nothing, so the owner's decision ('show all the relationships') silently drops the containment row",
-        "caughtBy": "containmentInItsOwnBlock, sectionContainment",
-        "detail": "{\"position\":true,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":true,\"sectionConnected\":true,\"sectionContainment\":false,\"label\":true}"
+        "caughtBy": "position, containmentInItsOwnBlock, sectionUsage, sectionConnected, sectionContainment, label",
+        "detail": "{\"position\":false,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":false,\"label\":false}"
       }
     ],
     "whatTheseAre": "source-copy plants inside src/lsp/rich_hover.ts, judged by per-predicate verdicts computed against the REAL fixture files (byte columns read off the files on disk, so the component's own position owner resolves them) and read back out of the RENDERED markdown rather than from an intermediate object.",
@@ -98,10 +101,10 @@
         "command": "bb.openUsage",
         "block": "connected",
         "label": "main",
-        "target": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
+        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
         "inReferencesSet": true,
         "storedRow": {
-          "id": "7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:rel:7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:src/main/java/com/demo/App.java:main:13:render:calls:15",
+          "id": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/App.java:main:13:render:calls:15",
           "kind": "calls",
           "branch": "stored-line"
         }
@@ -110,10 +113,10 @@
         "command": "bb.openUsage",
         "block": "connected",
         "label": "main — Main2.java:6",
-        "target": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
+        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
         "inReferencesSet": true,
         "storedRow": {
-          "id": "7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:rel:7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+          "id": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
           "kind": "calls",
           "branch": "stored-line"
         }
@@ -122,10 +125,10 @@
         "command": "bb.openUsage",
         "block": "usages",
         "label": "main — App.java:15",
-        "target": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
+        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
         "inReferencesSet": true,
         "storedRow": {
-          "id": "7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:rel:7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:src/main/java/com/demo/App.java:main:13:render:calls:15",
+          "id": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/App.java:main:13:render:calls:15",
           "kind": "calls",
           "branch": "stored-line"
         }
@@ -134,10 +137,10 @@
         "command": "bb.openUsage",
         "block": "usages",
         "label": "main — Main2.java:6",
-        "target": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
+        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
         "inReferencesSet": true,
         "storedRow": {
-          "id": "7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:rel:7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+          "id": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
           "kind": "calls",
           "branch": "stored-line"
         }
@@ -146,10 +149,10 @@
         "command": "bb.openUsage",
         "block": "contained",
         "label": "Greeter",
-        "target": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:0",
+        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:0",
         "inReferencesSet": false,
         "storedRow": {
-          "id": "7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:rel:7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
+          "id": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
           "kind": "contains",
           "branch": "stored-line"
         }
@@ -158,7 +161,7 @@
         "command": "bb.openGraph",
         "block": "actions",
         "label": "Open in graph",
-        "target": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
+        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:18",
         "inReferencesSet": false,
         "storedRow": null
       },
@@ -166,7 +169,7 @@
         "command": "bb.openImpact",
         "block": "actions",
         "label": "Impact analysis",
-        "target": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
+        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:18",
         "inReferencesSet": false,
         "storedRow": null
       },
@@ -174,22 +177,22 @@
         "command": "bb.showCallHierarchy",
         "block": "actions",
         "label": "Call hierarchy",
-        "target": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
+        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:18",
         "inReferencesSet": false,
         "storedRow": null
       },
       {
         "command": "bb.openDefinition",
         "block": "footnote",
-        "label": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:7",
-        "target": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
+        "label": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:7",
+        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:18",
         "inReferencesSet": false,
         "storedRow": null
       }
     ],
     "storedRows": [
       {
-        "id": "7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:rel:7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:src/main/java/com/demo/App.java:main:13:render:calls:15",
+        "id": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/App.java:main:13:render:calls:15",
         "kind": "calls",
         "declaration": false,
         "farName": "main",
@@ -198,7 +201,7 @@
         "servedAt": "App.java:14:0"
       },
       {
-        "id": "7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:rel:7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+        "id": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
         "kind": "calls",
         "declaration": false,
         "farName": "main",
@@ -207,7 +210,7 @@
         "servedAt": "Main2.java:5:0"
       },
       {
-        "id": "7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:rel:7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
+        "id": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
         "kind": "contains",
         "declaration": true,
         "farName": "Greeter",
@@ -230,7 +233,7 @@
     "planned": 9
   },
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m42-h2-fixture",
+    "root": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Main2.java"
@@ -275,19 +278,19 @@
     "indexDataDir": "an isolated mkdtemp BB_DATA_DIR, passed to the indexer AND to the server this suite starts (the pre-lane run used the developer's default ~/.bb, so the answer depended on that machine's store)",
     "storedRowsTouchingRender": [
       {
-        "rowId": "7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:rel:7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:src/main/java/com/demo/App.java:main:13:render:calls:15",
+        "rowId": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/App.java:main:13:render:calls:15",
         "relType": "calls",
         "storedLine": 15,
         "sourceRel": "src/main/java/com/demo/App.java"
       },
       {
-        "rowId": "7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:rel:7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+        "rowId": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
         "relType": "calls",
         "storedLine": 6,
         "sourceRel": "src/main/java/com/demo/Main2.java"
       },
       {
-        "rowId": "7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:rel:7ffb1386c1cf1bfe4d55a7aedafaf66eabfb1099:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
+        "rowId": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
         "relType": "contains",
         "storedLine": 7,
         "sourceRel": "src/main/java/com/demo/App.java"
@@ -302,16 +305,16 @@
   "measured": {
     "regime": "warm",
     "samples": 200,
-    "p50Ms": 10.54,
-    "p95Ms": 14.3,
-    "maxMs": 21.88,
-    "meanMs": 10.73,
+    "p50Ms": 20.08,
+    "p95Ms": 91.62,
+    "maxMs": 259.27,
+    "meanMs": 31.76,
     "budgetMs": 50,
-    "coldMs": 119.06,
+    "coldMs": 364.23,
     "note": "A real p95 over a stated sample set. The pre-lane check was a MEAN over 40 compared against this budget and reported as a p95; the substitution was named as a limitation in KNOWN-GAPS.json for three waves instead of being fixed."
   },
-  "currentCommit": "88e2d9f4494c0c3738e5f262807a3ff7dc87f03d",
-  "sourceFingerprint": "37ea91de353c506f1896b283722d2c375430abca0c89be490ea19b0da523a1ac",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "sourceFingerprint": "0d4ad0a2871cbfe43d0c5ae3183e3f8ed1d4745d284b69ed3b1333898c8ae57b",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m42/verify-rich-hover.ts",
@@ -324,7 +327,7 @@
   ],
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-10-05T23:13:08.461Z",
+  "generatedAt": "2026-10-17T17:24:16.313Z",
   "supersededExpectations": [
     {
       "was": "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference",
@@ -421,7 +424,7 @@
   },
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T23:13:08.464Z",
-    "contentSha256": "4f67691fbc29e1ec996c8f131587b9d20c147276ed98b96b201937e1659191fc"
+    "sealedAt": "2026-10-17T17:24:16.322Z",
+    "contentSha256": "2b6a52b454fd0ede20965e9c4ac71eae2fe66580e1685c31cc405126e93e40d2"
   }
 }

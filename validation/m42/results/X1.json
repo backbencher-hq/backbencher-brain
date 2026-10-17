@@ -7,18 +7,18 @@
   "passed": 21,
   "failed": 12,
   "failures": [
-    "X1: M24 ladder run green at HEAD: exit=1",
-    "X1: M25 ladder run green at HEAD: exit=1",
-    "X1: M26 ladder run green at HEAD: exit=1",
-    "X1: M27 ladder run green at HEAD: exit=1",
-    "X1: M28 ladder run green at HEAD: exit=1",
-    "X1: M29 ladder run green at HEAD: exit=1",
-    "X1: M42-H1 ladder run green at HEAD: exit=1",
-    "X1: M42-H2 ladder run green at HEAD: exit=1",
-    "X1: M42-H5 ladder run green at HEAD: exit=1",
-    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified; pre2:ladder leg M24 failed (exit=1); pre2:ladder leg M25 failed (exit=1); pre2:ladder leg M26 failed (exit=1); pre2:ladder leg M27 failed (exit=1); pre2:ladder leg M28 failed (exit=1); pre2:ladder leg M29 failed (exit=1); pre2:ladder leg M42-H1 failed (exit=1); pre2:ladder leg M42-H2 failed (exit=1); pre2:ladder leg M42-H5 failed (exit=1); pre5:E7 linux leg not verif",
-    "X1: E7 cross-platform verifier runs clean at HEAD (this host's leg + blocked records): exit=1",
-    "X1: the darwin leg is green at this HEAD (a known-gap host leg is a real platform finding, and names why): darwin leg is known-gap — 2 check(s) failed on macOS (process.platform=darwin): G2: H2: usage link is clickable with an index-backed file:line target — ```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and calle"
+    "X1: M24 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — L2:persisted-failed,V1:persisted-failed,D1:persisted-failed  (exit=1)",
+    "X1: M25 ladder run green at HEAD: FAIL: G1: E6 capability matrix matches its evidence files (no drift, no hand-edited claims) — antigravity:row-claims-without-evidence  (exit=1)",
+    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (65/70 passed, 10 negative)  (exit=1)",
+    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (70/75 passed, 13 negative)  (exit=1)",
+    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (75/79 passed, 17 negative)  (exit=1)",
+    "X1: M29 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — R1:persisted-failed,R1:stale-commit,R2:persisted-failed,R3:persisted-failed,V1:persisted-failed,D1:persisted-failed,X1:persisted-failed  (exit=1)",
+    "X1: M42-H1 ladder run green at HEAD: H1: KNOWN-GAP (24/25 passed, 8/8 mutants)  (exit=1)",
+    "X1: M42-H2 ladder run green at HEAD: H2: KNOWN-GAP (69/71 passed, 7/7 mutants caught, 0 not judged)  (exit=1)",
+    "X1: M42-H3 ladder run green at HEAD: H3: KNOWN-GAP (28/29 passed, 5/5 mutants)  (exit=1)",
+    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified; pre1:H1 not evidence-verified; pre1:H2 not evidence-verified; pre1:H3 not evidence-verified; pre1:H4 not evidence-verified; pre2:ladder leg M24 failed (exit=1); pre2:ladder leg M25 failed (exit=1); pre2:ladder leg M26 failed (exit=1); pre2:ladder leg M27 failed (exit=1); pre2:ladder leg M28 failed (exit=1); pre2:ladder leg M29 failed (exit=1); pre2:ladder leg M42-H1 ",
+    "X1: E7 cross-platform verifier runs clean at HEAD (this host's leg + blocked records): G4 — platform mutation suite on ide/vscode/src/auto-index.ts  (exit=1)",
+    "X1: the linux leg is green at this HEAD (a known-gap host leg is a real platform finding, and names why): linux leg is known-gap — 2 check(s) failed on Linux (process.platform=linux): G2: warm p95 budgets met on this OS — hover:172.5ms>=50ms; definition:70.6ms>=50ms; references:62.8ms>=50ms; documentSymbol:61.1ms>=50ms; callHierarchyExpand:150.0ms>="
   ],
   "negativeCases": 7,
   "suiteExits": {
@@ -30,12 +30,12 @@
     "M29": 1,
     "M42-H1": 1,
     "M42-H2": 1,
-    "M42-H3": 0,
+    "M42-H3": 1,
     "M42-H4": 0,
-    "M42-H5": 1,
+    "M42-H5": 0,
     "M42-H6": 0
   },
-  "currentCommit": "726fd632ff2fedf92d7d3d60a31b214a0cd4055b",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
   "verifierCommand": "npx tsx script/m42/verify-closure.ts",
   "evidenceFile": "X1.json",
   "launchBar": {
@@ -50,7 +50,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-10-05T14:31:49.279Z",
+  "generatedAt": "2026-10-17T17:14:26.398Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run.",
     "The launch bar's owner-held items (OpenVSX publish token, the §8.5 verdict, darwin/win CI execution on GitHub-hosted runners) are recorded with reasons — this gate machine-checks the record's honesty, it cannot execute owner-held credentials.",
@@ -58,7 +58,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:31:49.281Z",
-    "contentSha256": "3394e239fe0f0fd90983394755e9ff9a1cb53a5fa92473ac0bd8b6392ad5eb7d"
+    "sealedAt": "2026-10-17T17:14:26.414Z",
+    "contentSha256": "49c3f2a237414d814fd6c7141ea1e2c2f2b4cce6c7c1396f007a20db915e291f"
   }
 }

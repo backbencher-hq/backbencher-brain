@@ -2,8 +2,8 @@
   "issue": "492",
   "code": "L3",
   "status": "verified",
-  "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
-  "sourceFingerprint": "e2711beffe8fd6b8f31c136b24a582690855a5874039ad80c07d5fb5692eadaf",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "sourceFingerprint": "f255b7fc56a17ce7186c5cf82269f779ac8435cd3f385a1588ec1f73458fd4d6",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m24/verify-navigation.ts",
@@ -12,7 +12,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
   "evidenceFile": "L3.json",
-  "generatedAt": "2026-10-12T18:59:59.448Z",
+  "generatedAt": "2026-10-17T17:03:55.252Z",
   "passed": 122,
   "failed": 0,
   "failures": [],
@@ -82,7 +82,7 @@
     ]
   },
   "declaredConflictsWithOtherGates": {
-    "M62_P6_permanence_lint": "script/m62/verify-consumers.ts's P6 lint flags ANY code line in a display surface that names brain_relationship.line_number, with no exception for the hand-off to the address owner. §2 REQUIRES this surface to select the column — the store's line is the only place a call site is recorded — so the honest implementation trips it: A2 now reports TWO P6 findings (src/lsp/navigation.ts:252 and the pre-existing src/lsp/impact.ts:1242) where it reported one. A2's STATUS is unchanged (known-gap, 15/16, before and after), but the finding count rose by one and that is the correct outcome rather than a regression: the alternative was to spell the column so the regex cannot see it, which is obfuscation and a worse lie than the lint violation. Recommended resolution for the lint's owner: narrow P6 to reads that do not feed deriveCallSiteAddress, and pin that exception with its own planted mutant so it cannot widen silently."
+    "M62_P6_permanence_lint": "RESOLVED, not suppressed. This surface used to declare a conflict: the M62 P6 permanence lint forbids a display surface from naming brain_relationship.line_number, while §2 requires this surface to select it, so the honest implementation tripped the lint and the conflict was recorded here. The resolution is the one the owner's L6 always described — the column, its SELECT list entry (STORED_LINE_SELECT) and its reader (storedLineFromRow) are exported by src/intelligence/graph/line-address.ts, and this surface now composes them. navigation.ts names the column ZERO times (U8 asserts both the zero and the composition, so 'zero' cannot be reached by not reading call sites at all), and the lint has nothing to flag. No exception was added to the lint and no mutant was weakened."
   },
   "limitations": [
     "index-sourced only; no compiler-backed go-to-definition (complement stance)",
@@ -105,7 +105,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T18:59:59.449Z",
-    "contentSha256": "5d2f7a07b0e29b69c70d619313b14e973e79e0e552ea4a4061c442b91557b3bc"
+    "sealedAt": "2026-10-17T17:03:55.263Z",
+    "contentSha256": "67ce4e377ed4f4c850a2158b0ef90b5aeb5d5bbd6fdd6b4e7008df403877b549"
   }
 }

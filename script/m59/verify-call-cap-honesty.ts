@@ -162,9 +162,16 @@ async function main() {
   check("uncapped: answers all sites", coldEdges.length === storedCold.n && storedCold.n === COLD_CALLS, `edges=${coldEdges.length} stored=${storedCold.n}`)
   check("uncapped: no total is invented", cs.callersIfUncapped === null && cs.calleesIfUncapped === null, `callersIfUncapped=${cs.callersIfUncapped}`)
   check("uncapped: zero capped queries", cs.cappedQueries === 0, `cappedQueries=${cs.cappedQueries}`)
-  // The filter is a declared narrowing, so the completeness flag is not the
-  // right assertion HERE — it belongs to the un-narrowed call below.
-  check("uncapped: the filter that scoped this answer is declared", String(cs.truncationReason ?? "").includes("relationshipTypes:calls"), `reason=${cs.truncationReason}`)
+  // The filter is a declared narrowing in its OWN channel (bb_graph review D5).
+  // It used to be funnelled through `truncationReason`, which set
+  // `truncated: true` for a request — so this gate's own scoping argument
+  // ("the filter is why the expectation is calls-only") was expressed in the
+  // same field as a real cap, and the completeness flag became unreadable.
+  check(
+    "uncapped: the filter that scoped this answer is declared as a FILTER, not as truncation",
+    cs.filterNarrowed === true && String(cs.filterReason ?? "").includes("relationshipTypes:calls") && cs.truncated === false,
+    `filterNarrowed=${cs.filterNarrowed} filterReason=${cs.filterReason} truncated=${cs.truncated} reason=${cs.truncationReason}`,
+  )
 
   // ── 2b. the DEFAULT filter: every stored kind, checked against the store ───
   const defaultCold = await call("bb_graph", { symbol: "cold" })

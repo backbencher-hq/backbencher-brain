@@ -18,6 +18,9 @@
 // positive assertions and negative (disproof) assertions in separate counters,
 // and fails loudly when a gated block is skipped.
 
+
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
 export interface CheckOutcome {
   passed: boolean
   detail: string

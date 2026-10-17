@@ -138,11 +138,27 @@ const LANE_SCOPE = [
   "ide/vscode/src/",
 ]
 
+/** A git command that cannot answer is NOT an empty answer.
+ *
+ *  MEASURED, 2026-10-17: the closure run died with an uncaught
+ *  `Command failed: git diff --name-only a0ed9eade...HEAD` — a pin from the
+ *  machine this lane was audited on, absent from this clone. The gate did not
+ *  report a stale pin; it crashed, which is worse: a crash reads as "the audit is
+ *  broken" while a finding reads as "this record cannot be checked here". The
+ *  same trap sits under a `catch { return [] }` version, so the failure comes back
+ *  as an ENTRY: an empty list would say "nothing changed since that commit", and
+ *  that is precisely the false PASS the anchor rule exists to prevent. */
+const GIT_DIAG = "(git-could-not-answer)"
 function gitLines(args: string[]): string[] {
-  return execFileSync("git", args, { cwd: ROOT, encoding: "utf8" })
-    .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l !== "")
+  try {
+    return execFileSync("git", args, { cwd: ROOT, encoding: "utf8" })
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l !== "")
+  } catch (err) {
+    const message = err instanceof Error ? err.message.split("\n")[0] : String(err)
+    return [`${GIT_DIAG} git ${args.join(" ")} — ${message}`]
+  }
 }
 function isAncestor(commit: string): boolean {
   // Shape A: exists AND (HEAD-ancestor OR preserved ref).
@@ -154,7 +170,13 @@ function changedSince(commit: string, files: string[]): string[] {
 }
 /** Files under the lane's own source/test scope changed since `commit`. */
 function laneChangedSince(commit: string): string[] {
-  return gitLines(["diff", "--name-only", `${commit}..HEAD`]).filter((f) => LANE_SCOPE.some((p) => f.startsWith(p)))
+  const raw = gitLines(["diff", "--name-only", `${commit}..HEAD`])
+  // A diagnostic never starts with a lane prefix. It is returned before the
+  // scope filter, so an unanswerable pin cannot be filtered back into a clean
+  // "no changes" answer.
+  const diags = raw.filter((l) => l.startsWith(GIT_DIAG))
+  if (diags.length > 0) return diags
+  return raw.filter((f) => LANE_SCOPE.some((p) => f.startsWith(p)))
 }
 
 /** C1: an issue is closable — verified, and its evidence fresh by RELEVANCE

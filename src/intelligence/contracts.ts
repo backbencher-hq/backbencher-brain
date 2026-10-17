@@ -446,9 +446,46 @@ export interface GraphTraversalResult {
      *  a filter means it finished and removed rows, and `truncated` must not mean
      *  both. */
     noiseFiltered: { callers: number; callees: number }
+    /** DEPTH 0 ONLY. Stored rows that NAME this symbol (or a member of its owner
+     *  cascade) but carry no source symbol, per direction — invisible to both
+     *  traversal arms because each joins the SOURCE side. They are invisible to
+     *  the tool for a reason it cannot see, which is exactly why they are
+     *  COUNTED here instead of left out: measured on this repository's index
+     *  (2026-10-14), 11.0% of stored rows (69,171 of 631,139) carry no source
+     *  symbol and 2,099 symbols answered `callers: []` while the store held
+     *  incoming rows. `null` means the count could not be taken — never zero. */
+    unattributed: { callers: number; callees: number } | null
+    /** Rows the `includeCrossLanguage: false` scope option removed, per
+     *  direction. A filter (like `noiseFiltered`), not a bound: it records what
+     *  the caller's own request excluded, so `crossLanguageEdges: 0` is no
+     *  longer the only trace of a 29-of-270-edge exclusion. */
+    crossLanguageExcluded: { callers: number; callees: number }
     crossLanguageEdges: number
+    /** A DECLARED BOUND bit — the walk stopped early. That is the whole claim:
+     *  a filter that narrowed the question does NOT set this (see
+     *  `filterNarrowed`), so `truncated: false` now reads as "no bound fired".
+     *  Before bb_graph review D5 it also meant "the caller asked for a
+     *  subset", which made the boolean unable to answer either question. */
     truncated: boolean
+    /** Which bounds fired, `+`-joined. Bounds only — filters report through
+     *  `filterNarrowed`/`noiseFiltered`/`crossLanguageExcluded`. */
     truncationReason?: string
+    /** The same reasons as a LIST (bb_graph review D10). `truncationReason` is
+     *  what existing consumers parse; this is the set it was joined from, so a
+     *  future reason containing `+` cannot be read as two reasons. */
+    truncationReasons: string[]
+    /** The caller's `relationshipTypes` argument narrowed the question: a
+     *  REQUEST, not a bound. TRUE means the edge sets are the whole of what was
+     *  ASKED FOR, possibly not the whole of what the store holds — the opposite
+     *  reading from `truncated`, and the reason the two are separate fields
+     *  (measured: `relationshipTypes:["implements"]` on a symbol with no
+     *  implements edges answered 0 edges with `truncated: true`, i.e. an empty
+     *  subset presented as a clipped answer). */
+    filterNarrowed: boolean
+    /** The narrowing in words, e.g. `relationshipTypes:calls|uses`, or `null`
+     *  when the default kind set ran. Names the filter so a reader does not have
+     *  to diff `scope.relationshipTypes` against the default to find out. */
+    filterReason: string | null
     /** M59.A12 (#888): the declared per-query site limit that was in force. */
     edgeLimit: number
     /** The bound on the WHOLE answer. `edgeLimit` and the fan-out budgets bound
@@ -888,8 +925,20 @@ export interface TestGapReport {
 export interface TestImpactReport {
   target: string
   found: boolean
-  directTests: Array<{ testSymbol: string; testFile: string; depth: number }>
-  indirectTests: Array<{ testSymbol: string; testFile: string; depth: number }>
+  /** A test-file symbol that reaches the target, with HOW it reaches it.
+   *
+   *  `relationshipType` is the stored kind and `evidence` is its classified tier
+   *  — the same pair `TestLink` carries, for the same reason. `depth` alone is
+   *  not the fact a reader needs: depth 0 means the row names the target itself,
+   *  and the walk that produced these entries used to see EVERY stored kind, so
+   *  `testSuggestions` published depth 0 as `direct_call` at 0.85 confidence
+   *  whether the row behind it was a `calls` row or a `contains` row — and
+   *  `contains` runs parent → member, so a test class that CONTAINS the target
+   *  was reported as a direct test dependency of it. The walk now sees only the
+   *  kinds this engine can classify (`TEST_IMPACT_KINDS`), and each entry names
+   *  the kind it was found through rather than leaving the reader to infer it. */
+  directTests: Array<{ testSymbol: string; testFile: string; depth: number; relationshipType: string; evidence: TestEvidenceKind }>
+  indirectTests: Array<{ testSymbol: string; testFile: string; depth: number; relationshipType: string; evidence: TestEvidenceKind }>
   affectedTestFiles: string[]
   truncated: boolean
   provenance: EvidenceProvenance
@@ -990,6 +1039,12 @@ export interface AffectedTestEntry {
   testFile: string
   depth: number
   changedSymbol: string
+  /** The kind the test reaches the changed symbol through, and its classified
+   *  tier — carried through from `TestImpactReport` so an "affected test" row is
+   *  auditable without a second call (see that type's comment for why depth
+   *  alone was not enough to say how). */
+  relationshipType: string
+  evidence: TestEvidenceKind
 }
 
 export interface TestSuggestionsReport {

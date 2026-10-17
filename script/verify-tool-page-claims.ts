@@ -497,8 +497,8 @@ async function main(): Promise<void> {
   const markers = freshnessMarkers(analyzeText)
   negative("C4 sees the freshness markers this repo's read tools really emit", markers.length > 0, `markers=${markers.join(",")}`)
   negative("C4 catches a page that denies reporting the surface its reply shows", freshnessFindings("This tool does not report per-file index staleness.", analyzeText, remediationDir).length > 0)
-  negative("C4 catches a denying page that quotes the auto-refresh remediation", freshnessFindings(`The answer is not refreshed: this tool does not auto-refresh. Remediation: ${remediationDir}`, graphPayloads, remediationDir).length > 0)
-  negative("C4 leaves a denying page alone when the reply shows nothing", freshnessFindings("This tool does not report per-file index staleness and does not auto-refresh.", replies.get("bb_graph")!.texts[0], remediationDir).length === 0)
+  negative("C4 catches a denying page that quotes the auto-refresh remediation", freshnessFindings(`The answer is not refreshed: this tool does not auto-refresh. Remediation: ${remediationDir}`, graphPayload ?? "", remediationDir).length > 0)
+  negative("C4 leaves a denying page alone when the reply shows nothing", freshnessFindings("This tool does not report per-file index staleness and does not auto-refresh.", replies.get("bb_graph")!.texts[0] ?? "", remediationDir).length === 0)
   negative("C4 leaves a page that claims the surface alone", freshnessFindings("Staleness surfaces as: a `freshness` block.", analyzeText, remediationDir).length === 0)
   negative(
     "C4 does not read a truthful \"does not auto-refresh\" as a denial of REPORTING staleness",

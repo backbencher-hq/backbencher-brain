@@ -13,6 +13,8 @@
 
 import { spawnSync, execFileSync } from "node:child_process"
 import { readFileSync, existsSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
+
+import { writeSealed } from "../lib/evidence.ts"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..")
@@ -111,14 +113,15 @@ check("X1.downstream-m52-V1", v1.ok, v1.detail)
 // ── stamp ───────────────────────────────────────────────────────────────────
 {
   const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
-  mkdirSync(path.join(ROOT, "validation/m54/results"), { recursive: true })
-  writeFileSync(path.join(ROOT, "validation/m54/results/X1.json"), JSON.stringify({
+  // M61 D-1 (the seal law): the ONE write path — see the same repair in
+  // script/m54/verify-p1-fk.ts. A raw write drops the envelope on every re-run.
+  writeSealed(path.join(ROOT, "validation/m54/results/X1.json"), {
     gate: "M54.X1", issue: 729, milestone: "M54", at: new Date().toISOString(), commit,
     checks: pass + fail, passed: pass, failed: fail,
     verifierCommand: "npx tsx script/m54/verify-closure.ts",
     status: fail === 0 ? "verified" : "known-gap",
     downstream: { "m21.D2": d2.ok, "m51.A1": a1.ok, "m51.A2": a2.ok, "m13.H3": h3.ok, "m21.R2": r2.ok, "m52.V1": v1.ok },
-  }, null, 2) + "\n")
+  })
 }
 
 console.log(`\n=== M54.X1 CLOSURE: ${pass} pass, ${fail} fail ===`)

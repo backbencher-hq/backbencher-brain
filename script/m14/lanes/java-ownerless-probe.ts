@@ -30,6 +30,9 @@ import { join, relative } from "node:path"
 import { getParser } from "../../../src/ast/engine"
 import { RealJavaAnalyzer } from "../../../src/ast/real-java-analyzer"
 
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+
 const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const REPO_DIR = process.env.BB_REPO ?? "java-lib"
 const LANE_NFILES = Number(process.env.LANE_NFILES ?? 0)

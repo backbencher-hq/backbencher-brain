@@ -1,29 +1,43 @@
 {
-  "status": "verified",
-  "passed": 14,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 11,
+  "failed": 3,
   "negatives": {
     "planned": 3
   },
   "verdict": {
-    "realComponentFailures": 0,
-    "mutantsCaught": 5,
+    "realComponentFailures": 3,
+    "mutantsCaught": 4,
     "mutantsTotal": 5,
-    "ok": true
+    "ok": false
   },
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
   "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
+  "sourceFingerprint": "32735e1e9f0e551f62a89256708dbef30e534c3a255fb14de88cde6b89b05885",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m29/verify-wave-harness.ts",
+    "docs/m29/PRECISION-LEDGER.md",
+    "script/m29/verify-giant-repo.ts",
+    "script/m29/verify-precision-improvements.ts",
+    "script/m29/verify-precision-ledger.ts",
+    "script/m29/verify-wave-protocol.ts"
+  ],
   "evidenceFile": "V1-verify.json",
-  "generatedAt": "2026-09-20T02:47:11.684Z",
+  "generatedAt": "2026-10-17T17:00:42.117Z",
   "limitations": [
     "W2/W3 execute the runner and drift gates only; the nvim-dependent editor legs (S6) and giant-index legs (R3) are covered by their own verifiers and are out of scope here.",
     "Tamper proofs restore artifacts from a temp backup; a crash mid-tamper could leave a tampered artifact — the drift gate itself would then fail loudly until regenerated.",
     "The wiring proof reads package.json at run time; a chain edit that renames the script keys ('verify', 'verify:fast') would need this gate updated."
   ],
-  "details": [],
+  "details": [
+    "W2: R1 runner gate exits 0 (green): exit=1   FAIL: R2: real java reads conformant — language java absent from the #419 SPEC ledger\n",
+    "W3: hand-edited ledger claim makes the drift gate FAIL (exit != 0): exit=0",
+    "W3: restored SPEC makes the runner gate green again: exit=1"
+  ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:47:11.685Z",
-    "contentSha256": "b9351a866e587678ccbf6ba79298c6323b5d2397ea301afec8222921e5eacc50"
+    "sealedAt": "2026-10-17T17:00:42.127Z",
+    "contentSha256": "eb90fb0bf65ccd26d524a7425d70c1b1a2a2295ed6f6c823c074e3a249cceb31"
   }
 }

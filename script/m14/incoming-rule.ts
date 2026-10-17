@@ -106,7 +106,23 @@ export type ExternalClaim =
    * edges and NOTHING read it — so a claim true of the symbol key space could be false of the project, which
    * is exactly the hole this field closes (see `projectModuleNames`).
    */
-  | { kind: "owner"; specifier?: string } | { kind: "projectFacts" } | { kind: "binding" }
+  | { kind: "owner"; specifier?: string }
+  /**
+   * THE `module:item` CLAIM — a language whose import spelling names a MODULE and an ITEM with a colon
+   * (`pathlib:Path`, `xml.sax.handler:ContentHandler`), which no existing kind can verify: `namespace`
+   * needs dots, `owner` hits the colon, `importPath` needs a dotted capitalised leaf.
+   *
+   * IT IS `moduleNamespace` AND NOT A FLAG ON `owner` because the VERIFICATION DIFFERS: where an `owner`
+   * claim is answered through the TARGET, this one is answered through a MODULE PATH — a directory/file
+   * space, not a declaration space. Sharing a kind would let a control for one pass while the other broke.
+   *
+   * THE VERDICT IS A PURE FUNCTION OF THE PROJECT'S ADMITTED FILE LIST and can therefore be refuted by a
+   * run — the property that decides whether a claim may exist at all. It is nonetheless VERIFY-NEVER-REFUTE
+   * in production: the module present in the project's module space becomes `externalUnverified` (`ext?`),
+   * so `extFAIL` cannot rise by construction and a project-absolute import can never be laundered external.
+   */
+  | { kind: "moduleNamespace"; module: string }
+  | { kind: "projectFacts" } | { kind: "binding" }
   // THE FILE CLAIM — "this target names an admitted FILE", checked against the project's own file
   // list. `candidates` is every spelling the loader's conventions produce, because which one the
   // loader will use is a property of the loader and not of the source (see `FILE_CLAIM_KEY`).
@@ -458,6 +474,13 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
       // conflict is visible in bucket 3's own column; the conflict flag is what the rule
       // refutes on, and it is refuted BEFORE the count is read (see `classifyEdge`).
       if (hasCause) return { kind: "cause", base: cause, conflict: true }
+      // A `module:item` claim is read BEFORE the generic owner claim: its verification is against a MODULE
+      // PATH, not a declaration, so it must not fall through to `verifyExternalClaim`.
+      if (md.externalReason === "module-namespace") {
+        const spec = typeof (md as any).externalSpecifier === "string" ? String((md as any).externalSpecifier) : ""
+        const mod = spec.length > 0 ? spec : String(md[FILE_CLAIM_KEY] ?? "").split(":")[0]
+        if (mod.length > 0) return { kind: "moduleNamespace", module: mod }
+      }
       return {
         kind: "owner",
         specifier: typeof (md as any).externalSpecifier === "string" ? String((md as any).externalSpecifier) : undefined,
@@ -1218,6 +1241,19 @@ export function classifyEdge(
       if (!facts) return { outcome: "externalUnverified", decls, kinds: kindText }
       const outcome = verifyImportClaim(facts, tgt)
       return { outcome, decls, kinds: kindText, verifiedBy: outcome === "externalVerified" ? "projectFacts" : undefined }
+    }
+    if (claim.kind === "moduleNamespace") {
+      // NO FACTS MEANS NO CHECK, exactly as the projectFile branch states: an unchecked claim is never clean.
+      if (!facts) return { outcome: "externalUnverified", decls, kinds: kindText }
+      // THE ROOT, not the whole module path: `xml.sax.handler` is contained in `xml`. Splitting on `.` as well
+      // as `/` is what makes a dotted module findable in a directory space; the FIRST segment is the root.
+      const root = claim.module.split(/[./\\]/)[0]
+      const present = root.length > 0 && projectModuleNames(facts).has(root)
+      return {
+        outcome: present ? "externalUnverified" : "externalVerified",
+        decls, kinds: kindText,
+        verifiedBy: present ? undefined : "projectFacts",
+      }
     }
     if (claim.kind === "projectFile") {
       // NO FACTS MEANS NO CHECK, and an unchecked claim is never clean — the same rule the
