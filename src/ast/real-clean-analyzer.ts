@@ -1,3 +1,24 @@
+// Author: Muhammad Ishaq Khan
+// WHAT THIS FILE IS: the Clean analyzer — pure tree-sitter AST extraction over modules,
+//   data/type declarations, class & instance declarations, signatures, functions and the
+//   expression language; symbols and relationships only, never a regex over source text.
+// RELATIONSHIP SURFACE: calls, uses, contains, imports, references, exports, implements,
+//   overrides, instantiates. `extends` is a RULED grammar absence (no supertype slot; two
+//   instruments in script/m14/clean-ruled.ts) and is NOT emitted.
+// DOCS: docs/analyzers/clean.md and docs/analyzers/real-clean-analyzer.md.
+// SPEC + FIXTURES: script/m14/spec/clean-completeness.json (102 handled, 32 silent, 1 gap
+//   CL-G1, 6 decisions over 143 grammar slots incl. the universal ERROR/MISSING pair) ·
+//   validation/m14/fixtures/clean/ (14 expectation-paired .icl/.dcl sources).
+// CO-EDIT LIST — edit these when this file changes: both docs above; the completeness spec's
+//   buckets AND its coverage block; every affected expectation under the fixtures dir;
+//   script/m14/clean-ruled.ts (the RULED table the arbiter reads); script/m14/clean-census.ts
+//   (the membership census); script/m14/clean-completeness-gate.ts; and the clean seat in
+//   script/m14/differential.ts (primary corpus Clyde, second clean-stdlib).
+// GRAMMAR: `tree-sitter-clean.wasm`, pinned v1.2.7 (sha256 001361f6…, 6,791,209 B; a local
+//   rebuild of tclem/tree-sitter-clean v1.2.7 with NO patches — pin in
+//   validation/m14/grammar-pins.json, lanes.clean). Surface: 290 ids, 143 named ids / 141
+//   unique names, 29 fields; `module` headers are optional and a hyphen in a module name
+//   breaks the whole file's parse.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { fileClaimForTarget } from "./file-claim"

@@ -410,6 +410,98 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     payloads: {},
     title: "fsharp wave (#419; E/F green on fsharp:csharp)",
   },
+  // graphql ENTERS AT 6/8 (E/F await a corpus row): 76 section-A types = 74 grammar-named + ERROR/MISSING,
+  // 0 unclassified and 0 stale after a REBUILD. The spec was a prose/working-list record the gate could not
+  // read -- `internal_silent` stored no `types` array and the gap records' `node_type` fields held sentences --
+  // so 21 of 76 types sat in no bucket. The five `*TypeExtension` kinds are folded through the analyzer's
+  // EXTENSION_TO_DEFINITION map and InlineFragment emits a `uses` edge for its type condition, so all six moved
+  // to handled_verified; the value literals, ObjectField, the Selection wrappers, comma, comment, source_file
+  // and the universal pair are silent with their construct named.
+  // AND ITS GQ-G5 "THIS LANE HAS NO COMMITTED FIXTURES" WAS FALSE -- five committed fixture/expectation pairs
+  // exist. The stale claim is kept as the RECORD OF THE FALSIFICATION rather than deleted.
+  graphql: {
+    id: "graphql",
+    wasm: "tree-sitter-graphql.wasm",
+    classification: "graphql-completeness.json",
+    fixturesDir: "validation/m14/fixtures/graphql",
+    docs: ["docs/analyzers/real-graphql-analyzer.md"],
+    perfKey: "gql-graphql-platform:graphql",
+    requiredKinds: ["contains", "references", "uses", "implements", "exports", "imports", "extends", "overrides"],
+    payloads: {
+      parameters: { key: "expectParameters", pin: "graphql/payload-and-complexity" },
+      docstrings: { key: "expectDocstring", pin: "graphql/payload-and-complexity" },
+    },
+    title: "graphql wave (#419 sections A-D, G, H; E/F await a corpus row)",
+  },
+  // elixir ENTERS AT 8/8. Its oracle (`deriveElixirEdges`) exists and is WIRED, and the baseline already carries
+  // elixir:elixir 0/0 at 31.4 ms -- so E/F were green before the config existed. The lane's real work was that its
+  // FIXTURE SUITE WAS RED: 71 pass / 11 fail on committed expectations WHILE THE ANALYZER WAS RIGHT. All eleven
+  // pinned a contract the lane had already retired (the analyzer header's 2026-10-10 owner ruling replaced the
+  // per-construct evidence classes with the corpus tier set -- 30 rows), or that two committed fixtures disagreed
+  // about (one forbade a nested-module export another REQUIRED; the docs broke the tie). Re-baselined with a
+  // `rebaselineNote` naming the ruling and date on every file, no analyzer change, fixtures 71/11 -> 82/0.
+  elixir: {
+    id: "elixir",
+    wasm: "tree-sitter-elixir.wasm",
+    classification: "elixir-completeness.json",
+    fixturesDir: "validation/m14/fixtures/elixir",
+    docs: ["docs/analyzers/real-elixir-analyzer.md"],
+    differentialCheck: "differential-elixir",
+    perfKey: "elixir:elixir",
+    requiredKinds: ["calls","contains","exports","implements","imports","instantiates","overrides","references","uses"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "elixir (branch/arm count; 5 fixtures pin it)" },
+      parameters: { key: "expectParameters", pin: "elixir (parameter list + defaults; 2 fixtures pin it)" },
+    },
+    title: "elixir pass (#419)",
+  },
+  // protobuf ENTERS AT 6/8 (E/F await a corpus row): 132 slots = 50 named + 82 anonymous, 52 with the universal
+  // pair -> 35 handled / 11 silent / 2 gaps / 22 decisions, 0 unclassified and 0 stale.
+  // THE BLOCKER WAS THE SCHEMA, not the classification: the spec was in the PRE-GATE shape (kind names and prose
+  // where loadSpec reads type strings), so it read as an EMPTY classification and every named type would have been
+  // unclassified. Converted with every prose record preserved as data.
+  // AND ITS HEAD COMMENT WAS STALE -- it claimed references/calls/extends/implements; the analyzer emits only
+  // imports/exports/uses/overrides/contains and the spec rules the rest grammar-absence.
+  protobuf: {
+    id: "protobuf",
+    wasm: "tree-sitter-protobuf.wasm",
+    classification: "protobuf-completeness.json",
+    fixturesDir: "validation/m14/fixtures/protobuf",
+    docs: ["docs/analyzers/real-protobuf-analyzer.md"],
+    perfKey: "pb-googleapis:protobuf",
+    requiredKinds: ["contains", "exports", "imports", "overrides", "uses"],
+    payloads: {
+      imports: { key: "expectImports", pin: "protobuf/payload-and-ranges" },
+      symbolRanges: { key: "expectSymbolRanges", pin: "protobuf/payload-and-ranges" },
+    },
+    title: "protobuf wave (#419 sections A-D, G, H; E/F await a corpus row)",
+  },
+  // clean ENTERS AT 6/8 (E/F await a corpus row): 143 slots (141 unique named + the universal pair) ->
+  // 102 handled / 32 silent / 1 gap (CL-G1 index_access, 307 corpus sites) / 6 decisions, 0 unclassified, 0 stale.
+  // ITS SELF-INVENTORY SAID THE PARTITION WAS COMPLETE -- `_population_check` read 141/141 -- and it was complete
+  // over the 141 UNIQUE NAMES and incomplete over the gate's 143: ERROR and MISSING were in NO bucket. That is
+  // the blind spot a self-written inventory has by construction.
+  // AND `instantiates` was DECLARED in coverage while NO fixture exercised the construct -- the "declared but
+  // unpinned" class. A new pin (constructor-instantiation.icl) exercises it: a constructor declared in this file
+  // and applied in BODY position instantiates, in PATTERN position it is a match and emits uses, and another
+  // module's constructor is declined and counted.
+  clean: {
+    id: "clean",
+    wasm: "tree-sitter-clean.wasm",
+    classification: "clean-completeness.json",
+    fixturesDir: "validation/m14/fixtures/clean",
+    docs: ["docs/analyzers/clean.md", "docs/analyzers/real-clean-analyzer.md"],
+    differentialCheck: "differential-clean",
+    perfKey: "Clyde:clean",
+    requiredKinds: ["calls","contains","exports","imports","instantiates","overrides","references","uses","extends"],
+    payloads: {
+      exports: { key: "expectExports", pin: "clean/exports-surface" },
+      imports: { key: "expectImports", pin: "clean/imports-surface" },
+      parameters: { key: "expectParameters", pin: "clean/expression-shapes" },
+      complexity: { key: "expectComplexity", pin: "clean/expression-shapes (cyclomaticComplexity 18)" },
+    },
+    title: "clean wave (#419 sections A-D, G, H; E/F await a corpus row)",
+  },
   swift: {
     id: "swift",
     wasm: "tree-sitter-swift.wasm",
@@ -1228,7 +1320,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
 // than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
 // degenerate invocation_expression subtrees) — bounded to that corpus corner.
-const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl", "css", "toml", "markdown", "julia", "solidity", "scss", "yaml", "clojure", "erlang", "html", "fsharp"]
+const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl", "css", "toml", "markdown", "julia", "solidity", "scss", "yaml", "clojure", "erlang", "html", "fsharp", "elixir"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")

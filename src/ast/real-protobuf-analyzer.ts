@@ -1,20 +1,22 @@
-// Protobuf Intelligence Engine — Author: Muhammad Ishaq Khan
-// What this file is: the pure-AST analyzer for Protobuf (.proto, routed by
-// src/ast/language-detection.ts); it produces the symbols and relationships the graph engine stores.
-// Relationship types covered: contains, references, imports, uses, calls, extends, implements,
-// overrides — per-type rulings and emission sites in script/m14/spec/protobuf-completeness.json; lane
-// doc docs/analyzers/real-protobuf-analyzer.md.
+// PROTOBUF LANE — the pure-AST analyzer for Protobuf schemas (.proto).
+// Author: Muhammad Ishaq Khan
+// What this file is: parses the pinned tree-sitter-proto grammar and publishes the schema lane's
+// symbols (finite messages, enums, services, rpcs, fields, oneofs, ranges) and the FIVE relationship
+// types it actually emits: contains, imports, uses, exports and overrides. `calls`, `extends`,
+// `implements` and `instantiates` are RULED grammar-absence for a schema language (a .proto declares
+// declarations only) — see the spec's coverage.excluded block; a census showing any of them is a defect.
 // THE `sourcePath` CLAIM KIND EXISTS PARTLY BECAUSE OF THIS LANE: its 581 unresolved MODULE PATHS were
-// one of the three independent cases that forced that claim kind into existence. A path is a FILE, not
-// a namespace — so this lane's path-shaped targets are answered by the `sourcePath` claim
-// (src/ast/*-claim modules / the claim kinds in script/m14/incoming-rule.ts). A NAMESPACE claim cannot
-// reach them; do not add one here expecting these edges to resolve.
-// Where its scripts and validations live: script/m14/spec/protobuf-completeness.json · fixtures
-// validation/m14/fixtures/protobuf/** · docs/analyzers/real-protobuf-analyzer.md.
-// WHEN THIS FILE CHANGES, EDIT THESE TOO (the co-edit list): docs/analyzers/real-protobuf-analyzer.md,
-// the spec JSON's emission sites, and the fixtures/expectations pinning a changed edge.
-// Grammar: tree-sitter-proto (wasm/tree-sitter-proto.wasm).
-
+// one of the three independent cases that forced that claim kind into existence — a path is a FILE, not
+// a namespace, so a namespace claim cannot reach them. MEASURED after the claim landed (whole admitted
+// .proto population, incoming gate): 2,923 claims verified, 997 of them against the project's own file
+// list, with ext? = 0 and extFAIL = 0 — every path-shaped target is verified, none unreachable.
+// Grammar: tree-sitter-proto, pinned as wasm/tree-sitter-protobuf.wasm.
+// Docs / spec / fixtures / validations: docs/analyzers/real-protobuf-analyzer.md ·
+// script/m14/spec/protobuf-completeness.json · validation/m14/fixtures/protobuf/** ·
+// validation/m14/verification/PROTOBUF-STATE.md.
+// CO-EDIT LIST — when this file changes, review in the SAME pass: the docs above, the spec's node-type
+// buckets + emission sites, the fixtures/expectations pinning a changed edge, and PROTOBUF-STATE.md.
+// Shared registration/routing: src/ast/engine.ts (getAnalyzer) and src/ast/language-detection.ts.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import * as path from "node:path"

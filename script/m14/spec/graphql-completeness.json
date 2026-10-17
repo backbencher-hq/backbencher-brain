@@ -224,10 +224,10 @@
       },
       {
         "id": "GQ-G5",
-        "severity": "OPEN",
+        "severity": "CLOSED — FALSIFIED (the claim was stale, the fixtures exist)",
         "relationship_type": "(fixtures)",
-        "missing": "THIS LANE HAS NO COMMITTED FIXTURES. Every claim in this file is therefore measured but unpinned: `validation/m14/fixtures/graphql/` contains the census instrument and its output, and no fixture/expectation pair exists. A regression in this analyzer would be caught by the firing instrument's counts changing, not by an assertion about which edge is wrong.",
-        "next_step": "Write fixtures for the four firing types with the shapes the census says are commonest — an object type with fields (`contains`), an interface implementation (`implements`), a field type reference (`uses`), an enum value reference (`references`) — each in both directions, before any behaviour is changed."
+        "missing": "[HISTORICAL, corrected 2026-10-17] THIS LANE HAS NO COMMITTED FIXTURES … A regression would be caught only by the firing instrument's counts.",
+        "next_step": "FALSIFIED at HEAD: `validation/m14/fixtures/graphql/` carries FIVE committed fixture/expectation pairs — declaration-lines-and-extensions, executable-and-descriptions, ontology-file-imports, ontology-heritage-and-surface, unnamed-operations — the fixture suite reads 5 pass / 0 fail, and each pins symbols, ranges, relationships and forbid rows (e.g. the imports fixture pins all four `#import` forms with `meta.importForm`, and the heritage fixture pins `implements`/`extends`/`overrides` both by kind and by endpoint). The claim was written before the fixtures landed and was never re-read; it is kept as the record of the falsification rather than deleted."
       },
       {
         "id": "GQ-G6",

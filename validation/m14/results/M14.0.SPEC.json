@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "9b9ee36a2e4d72e7adc17b2dae37f82b10a95412df88ba0bddad041fb6a1a4c2",
-    "sealedAt": "2026-10-17T22:17:21.000Z"
+    "contentSha256": "7530ba616bae70ffc16580020e91e33a357d115b83e61f2c4c62467536458737",
+    "sealedAt": "2026-10-17T22:31:58.000Z"
   },
   "checks": [
     {
@@ -2372,11 +2372,85 @@
       "id": "section-h-cross-language",
       "language": "javascript",
       "status": "pass"
+    },
+    {
+      "description": "elixir: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "elixir: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "elixir: 27 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (elixir)",
+      "detail": "47 types, 22 handled, 25 silent, 0 gaps, 27 decisions",
+      "id": "section-a-structural",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "9 relationship kinds pinned by elixir fixtures; 9 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, implements, imports, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for elixir (2)",
+      "detail": "complexity, parameters",
+      "id": "section-c-payload-matrix",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "5 tier(s) pinned: import_based, reference_qualified, struct_field_read, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "elixir:elixir at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor elixir:elixir: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "elixir avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "elixir:elixir 31.4 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "elixir analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/real-elixir-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "elixir",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "12c1764c4a17c0850e4b9596c4736027a0993ef4",
-  "committedAt": "2026-10-17T18:17:21-04:00",
+  "commit": "6451567c2ff1ce9f8de37b2e84cfd8981933ed35",
+  "committedAt": "2026-10-17T18:31:58-04:00",
   "data": {
     "languages": {
       "c": {
@@ -2780,6 +2854,74 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/real-dart-analyzer.md + head comment present",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "12 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "elixir": {
+        "gaps": [],
+        "nodeTypeCount": 47,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "EX-D1",
+          "EX-D2",
+          "EX-D3",
+          "EX-D4",
+          "EX-D5",
+          "EX-D6",
+          "EX-D7",
+          "EX-D8",
+          "EX-D9",
+          "EX-D10",
+          "EX-D11",
+          "EX-D12",
+          "EX-D13",
+          "EX-D14",
+          "EX-D15",
+          "EX-D16",
+          "EX-D17",
+          "EX-D18",
+          "EX-D19",
+          "EX-D20",
+          "EX-D21",
+          "EX-D22",
+          "EX-D23",
+          "EX-D24",
+          "EX-D25",
+          "EX-D26",
+          "EX-D27"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "47 types, 22 handled, 25 silent, 0 gaps, 27 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, exports, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity, parameters",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "5 tier(s) pinned: import_based, reference_qualified, struct_field_read, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor elixir:elixir: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "elixir:elixir 31.4 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-elixir-analyzer.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4631,8 +4773,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-17T18:17:21-04:00",
-  "regeneratedAtCommit": "12c1764c4a17c0850e4b9596c4736027a0993ef4",
+  "regeneratedAt": "2026-10-17T18:31:58-04:00",
+  "regeneratedAtCommit": "6451567c2ff1ce9f8de37b2e84cfd8981933ed35",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
