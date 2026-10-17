@@ -1,14 +1,9 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 41.85,
-    "loadAvgEnd": 39.16,
-    "sliceCount": 1,
-    "solidityRow": {
-      "loadAvg1AtPerf": 14.75,
-      "perfIsQualified": false,
-      "why": "M60: a perFileMs measured above loadAvg1 ~8 is contention, not a lane budget. A sibling lane's artifact published 228 -> 246 -> 91 ms/file across three runs of an UNCHANGED analyzer, and nothing recorded the machine, so a reader could not tell. This row's 5.3 ms/file is therefore recorded WITH its load and flagged unqualified; the number is a measurement, not a budget, and the surface measure's own perfIsQualified carries the same verdict for the 389-file corpus draw."
-    }
+    "loadAvgStart": 19.83,
+    "loadAvgEnd": 19.83,
+    "sliceCount": 1
   },
   "counts": {
     "java": {
@@ -1591,8 +1586,44 @@
       "unexplained": 434,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 722.0
+        "avgMsPerFile": 722
       }
+    },
+    "otp:html": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 4.8
+      },
+      "sampleSetHash": "30e4242514acef78"
+    },
+    "cargo:toml": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 1.3
+      },
+      "sampleSetHash": "2887280c3e2a105b"
+    },
+    "sqlite:html": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 4.1
+      },
+      "sampleSetHash": "3316e7bdc525d7af"
+    },
+    "ripgrep:toml": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 1.8
+      },
+      "sampleSetHash": "c5e515b54f5e915c"
     }
   },
   "hashes": {
@@ -1650,7 +1681,11 @@
     "kubernetes:markdown": "850beced0f7f393d",
     "element-plus:scss": "dd6619b1d6986840",
     "solidity:solidity": "e9708e750546e983",
-    "julia:julia": "0b7c135add6ea602"
+    "julia:julia": "0b7c135add6ea602",
+    "otp:html": "30e4242514acef78",
+    "cargo:toml": "2887280c3e2a105b",
+    "sqlite:html": "3316e7bdc525d7af",
+    "ripgrep:toml": "c5e515b54f5e915c"
   },
   "floorMoves": {
     "solidity:solidity": {

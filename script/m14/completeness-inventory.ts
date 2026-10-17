@@ -1012,7 +1012,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     unexplained: 21,
     ruling: "SOL-SCOPE",
   },
-  requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports"],
+  requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
   payloads: {
     complexity: { key: "expectComplexity", pin: "solidity/branches-sol (every branch construct in the language, so a branch set that loses one drops the number below 12 and fails)" },
   },
@@ -1036,7 +1036,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     unexplained: 3,
     ruling: "SCSS-D1",
   },
-  requiredKinds: ["uses", "references", "contains", "imports"],
+  requiredKinds: ["uses", "references", "contains", "imports", "calls", "exports", "extends", "overrides"],
   payloads: {
     complexity: { key: "expectComplexity", pin: "scss (mixin/function parameters, control-flow conditions, variable expressions)" },
     parameters: { key: "expectParameters", pin: "scss/module-system-and-mixins, functions-return-and-undeclared-uses" },
@@ -1098,19 +1098,31 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
 // than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
 // degenerate invocation_expression subtrees) — bounded to that corpus corner.
-const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl", "css"]
+const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl", "css", "toml", "markdown", "julia", "solidity", "scss"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
   const P = wts.Parser ?? wts.default ?? wts
   const L = wts.Language ?? wts.default?.Language
   await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const g = await L.load(fs.readFileSync(path.join(ROOT, "wasm", cfg.wasm)))
+  // A LANE MAY PIN MORE THAN ONE WASM, and `companionWasm` is how the config says so. THREE DO:
+  // markdown loads markdown + markdown_inline, julia and typescript each load a second grammar too.
+  // This loader read only `cfg.wasm`, so every node type that lives in the COMPANION grammar was
+  // invisible to section A and its correctly-classified row read as "no longer produced by the wasm
+  // (grammar drift?)". Measured on markdown: 19 rows accused of drift, ALL 19 real and produced by the
+  // inline grammar -- against the union of both pinned wasms the stale count is 0 and the unclassified
+  // count is 0. The proper fix is never to delete the correct row; it is to read the grammar the row
+  // came from. `companionWasm` was declared on the config at :61 and never consulted.
+  const wasms = [cfg.wasm, ...(cfg.companionWasm ?? [])]
   const named: string[] = []
-  for (let i = 0; i < g.nodeTypeCount; i++) {
-    if (!g.nodeTypeIsNamed(i)) continue
-    const n = g.nodeTypeForId(i)
-    if (n && !n.startsWith("_")) named.push(n)
+  const seenNamed = new Set<string>()
+  for (const w of wasms) {
+    const g = await L.load(fs.readFileSync(path.join(ROOT, "wasm", w)))
+    for (let i = 0; i < g.nodeTypeCount; i++) {
+      if (!g.nodeTypeIsNamed(i)) continue
+      const n = g.nodeTypeForId(i)
+      if (n && !n.startsWith("_") && !seenNamed.has(n)) { seenNamed.add(n); named.push(n) }
+    }
   }
   // ERROR and MISSING are produced by every tree-sitter parser but are NOT
   // listed by `nodeTypeForId` in the wasm ABI. F1 handles this with an explicit

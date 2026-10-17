@@ -1,9 +1,14 @@
 {
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "eb370157b4e0f3b6fa9ea18b47f47a761dec0646e4330df90f89beb611a4f30e",
+    "sealedAt": "2026-10-17T19:27:14.000Z"
+  },
   "checks": [
     {
-      "description": "every reference-shaped (tag@attr) pair in 4000 corpus files carries a ruling (23 pairs, 366389 occurrences)",
+      "description": "every reference-shaped (tag@attr) pair in 4000 corpus files carries a ruling (149 pairs, 127913 occurrences)",
       "id": "census-pairs-ruled",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "all 38 claimed carriers emit an edge whose target carries the probe's marker",
@@ -17,20 +22,176 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "86c3582aebb8f9196c37bb3b57c219ce0ae9c631",
-  "committedAt": "2026-10-11T19:42:52-04:00",
+  "commit": "f8d6f8bc6dfdbe68c0ee4e23a9f971fa54b9903f",
+  "committedAt": "2026-10-17T15:27:14-04:00",
   "data": {
     "claimedCarriersBroken": [],
     "claimedCarriersProbed": 38,
     "conditionalCarriers": 2,
     "conditionalCarriersBroken": [],
-    "distinctPairs": 23,
+    "distinctPairs": 149,
     "files": 4000,
-    "occurrencesRuled": 366389,
-    "pairsRuled": 23,
-    "referenceShapedOccurrences": 366389,
-    "repos": 97,
-    "unreviewedPairs": []
+    "occurrencesRuled": 127613,
+    "pairsRuled": 118,
+    "referenceShapedOccurrences": 127913,
+    "repos": 199,
+    "unreviewedPairs": [
+      {
+        "count": 50,
+        "pair": "table@itemtype",
+        "sample": "\"http://schema.org/Offer\""
+      },
+      {
+        "count": 50,
+        "pair": "tbody@itemtype",
+        "sample": "\"http://schema.org/Product\""
+      },
+      {
+        "count": 50,
+        "pair": "tr@itemtype",
+        "sample": "\"http://schema.org/Offer\""
+      },
+      {
+        "count": 39,
+        "pair": "img@imgurl",
+        "sample": "\"http://thumbs4.ebaystatic.com/d/l225/m/mLKLVG953-92EynMMtzGvWA.jpg\""
+      },
+      {
+        "count": 23,
+        "pair": "div@itemtype",
+        "sample": "\"http://schema.org/Organization\""
+      },
+      {
+        "count": 20,
+        "pair": "a@itemtype",
+        "sample": "\"http://schema.org/ImageObject\""
+      },
+      {
+        "count": 11,
+        "pair": "base@href",
+        "sample": "\"/\""
+      },
+      {
+        "count": 10,
+        "pair": "li@itemtype",
+        "sample": "\"http://schema.org/Residence\""
+      },
+      {
+        "count": 10,
+        "pair": "span@itemtype",
+        "sample": "\"http://schema.org/PostalAddress\""
+      },
+      {
+        "count": 10,
+        "pair": "p@itemtype",
+        "sample": "\"http://schema.org/RealEstateAgent\""
+      },
+      {
+        "count": 3,
+        "pair": "form@%}enctype",
+        "sample": "\"multipart/form-data\""
+      },
+      {
+        "count": 2,
+        "pair": "head@prefix",
+        "sample": "\"og: http://ogp.me/ns#\""
+      },
+      {
+        "count": 2,
+        "pair": "html@xmlns:fb",
+        "sample": "\"http://www.facebook.com/2008/fbml\""
+      },
+      {
+        "count": 2,
+        "pair": "html@xmlns:og",
+        "sample": "\"http://opengraphprotocol.org/schema/\""
+      },
+      {
+        "count": 2,
+        "pair": "include@import",
+        "sample": "\"package:analyzer_plugin/protocol/protocol_common.dart\""
+      },
+      {
+        "count": 1,
+        "pair": "button@%}data-workflow-action-modal-url",
+        "sample": "\"{% url 'wagtailadmin_pages:collect_workflow_action_data' page.id name"
+      },
+      {
+        "count": 1,
+        "pair": "input@accept",
+        "sample": "\"image/*\""
+      },
+      {
+        "count": 1,
+        "pair": "svg@xmlns:xlink",
+        "sample": "\"http://www.w3.org/1999/xlink\""
+      },
+      {
+        "count": 1,
+        "pair": "svg@xmlns:serif",
+        "sample": "\"http://www.serif.com/\""
+      },
+      {
+        "count": 1,
+        "pair": "nav@{{",
+        "sample": "\"{{#translate}}{{site_nav}}{{/translate}}\""
+      },
+      {
+        "count": 1,
+        "pair": "html@xmlns:https",
+        "sample": "\"http://www.w3.org/1999/xhtml\""
+      },
+      {
+        "count": 1,
+        "pair": "progress@value",
+        "sample": "\"{{ forloop.index | times: 10 }}\""
+      },
+      {
+        "count": 1,
+        "pair": "strong@xmlns:dct",
+        "sample": "\"http://purl.org/dc/terms/\""
+      },
+      {
+        "count": 1,
+        "pair": "strong@href",
+        "sample": "\"http://purl.org/dc/dcmitype/Text\""
+      },
+      {
+        "count": 1,
+        "pair": "a@xmlns:cc",
+        "sample": "\"http://creativecommons.org/ns#\""
+      },
+      {
+        "count": 1,
+        "pair": "body@itemtype",
+        "sample": "\"http://schema.org/SearchResultsPage\""
+      },
+      {
+        "count": 1,
+        "pair": "header@itemtype",
+        "sample": "\"http://schema.org/WPHeader\""
+      },
+      {
+        "count": 1,
+        "pair": "footer@itemtype",
+        "sample": "\"http://schema.org/WPFooter\""
+      },
+      {
+        "count": 1,
+        "pair": "td@background",
+        "sample": "\"/bwx_drop_shadow_900_300.gif\""
+      },
+      {
+        "count": 1,
+        "pair": "applet@codebase",
+        "sample": "\"/applet\""
+      },
+      {
+        "count": 1,
+        "pair": "include@path",
+        "sample": "\"../../../analyzer_plugin/tool/spec/common_types_spec.html\""
+      }
+    ]
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
   "issueId": "M14.0.CENSUS",
@@ -48,9 +209,9 @@
       "description": "the corpus is the pinned fixtures repositories and rotates as a pool; the census reports what those files contain, not what the HTML specification permits, so a carrier that no corpus exercises is outside its reach and is covered only by CARRIER_PROBES"
     }
   ],
-  "regeneratedAt": "2026-10-12T11:50:02.568Z",
-  "regeneratedAtCommit": "86c3582aebb8f9196c37bb3b57c219ce0ae9c631",
-  "runtime": "node v26.3.0",
+  "regeneratedAt": "2026-10-17T15:27:14-04:00",
+  "regeneratedAtCommit": "f8d6f8bc6dfdbe68c0ee4e23a9f971fa54b9903f",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "html carrier census"
 }

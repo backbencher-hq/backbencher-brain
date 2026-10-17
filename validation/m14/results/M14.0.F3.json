@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "be56d27f2fc295e855ba21ca22e3bcb512217fdbc17ca080f08fab913d0ae733",
-    "sealedAt": "2026-10-17T19:13:27.000Z"
+    "contentSha256": "9a8a184a4d7cd8ce66faff55200d01d8d971fbd59d165e78e68b0518d0f52219",
+    "sealedAt": "2026-10-17T19:27:14.000Z"
   },
   "checks": [
     {
@@ -37,7 +37,7 @@
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "99/102 fixtures pass",
+      "detail": "100/103 fixtures pass",
       "id": "fixtures-typescript",
       "status": "fail"
     },
@@ -187,7 +187,7 @@
     },
     {
       "description": "xml adversarial fixtures",
-      "detail": "32/32 fixtures pass",
+      "detail": "33/33 fixtures pass",
       "id": "fixtures-xml",
       "status": "pass"
     },
@@ -265,7 +265,7 @@
     },
     {
       "description": "scss adversarial fixtures",
-      "detail": "13/13 fixtures pass",
+      "detail": "14/14 fixtures pass",
       "id": "fixtures-scss",
       "status": "pass"
     },
@@ -295,8 +295,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "0d53223e1cf24b8ea983799aa1d0d37999060540",
-  "committedAt": "2026-10-17T15:13:27-04:00",
+  "commit": "f8d6f8bc6dfdbe68c0ee4e23a9f971fa54b9903f",
+  "committedAt": "2026-10-17T15:27:14-04:00",
   "data": {
     "details": [
       {
@@ -2141,6 +2141,11 @@
           "expected relationship not found: {\"type\":\"imports\",\"from\":\"re-export-module-dependency\",\"target\":\"delta\",\"line_number\":33}; got: imports[re-export-module-dependency->zeta]@1; exports[re-export-module-dependency->alpha]@1; exports[re-export-module-dependency->renamedBeta]@1; exports[re-export-module-dependency->gammaNs]@1; exports[re-export-module-dependency->delta]@1; exports[re-export-module-dependency->Epsilon]@1",
           "expected relationship not found: {\"type\":\"imports\",\"from\":\"re-export-module-dependency\",\"target\":\"Epsilon\",\"line_number\":34,\"note\":\"`export type { … } from` — a TYPE-only re-export is still a module dependency: the type cannot be checked without the module\"}; got: imports[re-export-module-dependency->zeta]@1; exports[re-export-module-dependency->alpha]@1; exports[re-export-module-dependency->renamedBeta]@1; exports[re-export-module-dependency->gammaNs]@1; exports[re-export-module-dependency->delta]@1; exports[re-export-module-dependency->Epsilon]@1"
         ]
+      },
+      {
+        "fixture": "typescript/receiver-owner-from-new",
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "typescript/satisfies-ref",
@@ -6940,6 +6945,11 @@
         "problems": []
       },
       {
+        "fixture": "xml/five-kind-boundary-172",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "xml/imports-target-class",
         "ok": true,
         "problems": []
@@ -7958,6 +7968,11 @@
         "problems": []
       },
       {
+        "fixture": "scss/import-statement-emits-imports-edge",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scss/invocation-and-inheritance-labels",
         "ok": true,
         "problems": []
@@ -8670,7 +8685,7 @@
       },
       "scss": {
         "fail": 0,
-        "pass": 13
+        "pass": 14
       },
       "solidity": {
         "fail": 0,
@@ -8694,7 +8709,7 @@
       },
       "typescript": {
         "fail": 3,
-        "pass": 99
+        "pass": 100
       },
       "vb": {
         "fail": 3,
@@ -8706,7 +8721,7 @@
       },
       "xml": {
         "fail": 0,
-        "pass": 32
+        "pass": 33
       },
       "yaml": {
         "fail": 0,
@@ -8731,8 +8746,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-17T15:13:27-04:00",
-  "regeneratedAtCommit": "0d53223e1cf24b8ea983799aa1d0d37999060540",
+  "regeneratedAt": "2026-10-17T15:27:14-04:00",
+  "regeneratedAtCommit": "f8d6f8bc6dfdbe68c0ee4e23a9f971fa54b9903f",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

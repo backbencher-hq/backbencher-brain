@@ -1,4 +1,9 @@
 {
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "c570c34a5bc9007fc3f3624c6b4ba9425e55962c97be683c62f53f300947e557",
+    "sealedAt": "2026-10-17T19:27:14.000Z"
+  },
   "checks": [
     {
       "description": "every declared node type (21) is either claimed by the analyzer or ruled silent with a stated reason",
@@ -12,24 +17,24 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "480cc9bf7ba6dc3bd155fb99c616c32948440db8",
-  "committedAt": "2026-10-11T18:24:06+02:00",
+  "commit": "f8d6f8bc6dfdbe68c0ee4e23a9f971fa54b9903f",
+  "committedAt": "2026-10-17T15:27:14-04:00",
   "data": {
     "claimedTypes": [
       {
-        "n": 50481,
+        "n": 34788,
         "type": "bare_key"
       },
       {
-        "n": 2000,
+        "n": 1576,
         "type": "document"
       },
       {
-        "n": 6739,
+        "n": 6883,
         "type": "dotted_key"
       },
       {
-        "n": 36803,
+        "n": 20060,
         "type": "pair"
       },
       {
@@ -37,62 +42,62 @@
         "type": "quoted_key"
       },
       {
-        "n": 6543,
+        "n": 5900,
         "type": "table"
       },
       {
-        "n": 638,
+        "n": 2124,
         "type": "table_array_element"
       }
     ],
     "declaredTypes": 21,
-    "files": 2000,
-    "filesWithParseErrors": 38,
+    "files": 1576,
+    "filesWithParseErrors": 18,
     "observedTypes": 20,
-    "repos": 48,
+    "repos": 199,
     "ruledSilentTypes": [
       {
-        "n": 66,
+        "n": 211,
         "type": "ERROR",
         "why": "reported as a ParseError; the structure is not modelled — a fabricated tree for a mis-nested document is a guess dressed as a fact"
       },
       {
-        "n": 2383,
+        "n": 2324,
         "type": "array",
         "why": "a value is DATA — its elements are data, not symbols"
       },
       {
-        "n": 5077,
+        "n": 2738,
         "type": "boolean",
         "why": "a value is DATA"
       },
       {
-        "n": 2385,
+        "n": 2547,
         "type": "comment",
         "why": "not an identity; TOML has no block-comment form"
       },
       {
-        "n": 18,
+        "n": 132,
         "type": "escape_sequence",
         "why": "TOML-D1: decoded from the PARENT'S text in pure-String, never walked — equivalent by construction"
       },
       {
-        "n": 4,
+        "n": 30,
         "type": "float",
         "why": "a value is DATA"
       },
       {
-        "n": 6472,
+        "n": 1345,
         "type": "inline_table",
         "why": "a value is DATA — its keys ride on the enclosing key's metadata.inlineKeys"
       },
       {
-        "n": 317,
+        "n": 370,
         "type": "integer",
         "why": "a value is DATA"
       },
       {
-        "n": 2,
+        "n": 1,
         "type": "local_date",
         "why": "a value is DATA"
       },
@@ -107,18 +112,18 @@
         "why": "a value is DATA"
       },
       {
-        "n": 192,
+        "n": 10,
         "type": "offset_date_time",
         "why": "a value is DATA — one of TOML's four date/time forms"
       },
       {
-        "n": 26954,
+        "n": 18817,
         "type": "string",
         "why": "a value is DATA — recorded as metadata.valueType on its key, never a symbol"
       }
     ],
     "shapesRuled": 6,
-    "skippedEntries": 0,
+    "skippedEntries": 2,
     "unaccountedTypes": [],
     "unseenTypes": [
       "MISSING"
@@ -140,9 +145,9 @@
       "description": "the corpus is the pinned fixtures repositories and rotates as a pool, so a construct no corpus exercises is reported as NOT SEEN rather than unaccounted — `MISSING` is in that state today, handled and pinned by fixture instead"
     }
   ],
-  "regeneratedAt": "2026-10-11T16:45:54.369Z",
-  "regeneratedAtCommit": "480cc9bf7ba6dc3bd155fb99c616c32948440db8",
-  "runtime": "node v22.14.0",
+  "regeneratedAt": "2026-10-17T15:27:14-04:00",
+  "regeneratedAtCommit": "f8d6f8bc6dfdbe68c0ee4e23a9f971fa54b9903f",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "toml construct census"
 }

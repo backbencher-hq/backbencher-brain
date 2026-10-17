@@ -121,6 +121,7 @@ types carrying a falsifiable ruling (next section).
 | Label | Emitted for | Confidence | Tier |
 |---|---|---|---|
 | `contains` | the module → its top-level tables and root keys; a table → its keys and sub-tables | 1.0 | `structural` |
+| `imports` | a Cargo `path` dependency: the manifest itself writes a file/directory path, which `dependencyFileClaim` checks against the project's admitted files and `sourcePathClaim` covers for the refuted remainder | 1.0 | `import_based` |
 
 There is no second type, and inventing one would be worse than a thin graph.
 
@@ -190,7 +191,7 @@ files; every count is production `parseFile`.
 | **3. Correct** — an independent oracle agrees | `deriveTomlEdges`: `cargo` 60-file draw **416/416 (100%), MISSING 0, unexplained 0**; `cargo` at 657-file depth **5,515/5,515 (100%), MISSING 0, unexplained 0**; `ripgrep` 13-file draw **344/344 (100%), MISSING 0, unexplained 0**. **The oracle is a second walker over the same grammar, so a grammar bug shared by both paths is invisible to it** — the limit is declared here and in the oracle's own header | Conforms on every draw; the declared limitation stands |
 | **4. Labelled** — the right type, not a neighbour | 19,087 of 19,087 are `contains`. Zero edges carry any other label. The lane's declared confusions (`uses` vs `references` vs `calls`, `extends` vs `implements`) cannot arise: those labels are emitted nowhere | One label, no confusion to check |
 | **5. Resolved** — both endpoints bind to real symbols | **19,087 / 19,087 = 100.0%** at both ends. 0 unresolved sources, 0 unresolved targets, 0 endpoints equal to the literal `unknown`. Against the CSS `references` reference point of 66.8%, this is a containment graph with nothing dangling in it | 100% |
-| **6. Confident** — `evidenceClass` and confidence are right | 19,087 / 19,087 carry `confidence: 1.0` and `evidenceClass: "structural"`. **Heuristic edges (confidence < 0.7): 0.** 0 edges with `line_number <= 0`; 0 self-edges; 0 empty symbol names; 0 empty `SymbolKind`s; 0 files with a duplicate symbol name | All deterministic, none countable as a guess |
+| **6. Confident** — `evidenceClass` and confidence are right | 19,087 / 19,087 carry `confidence: 1.0`; every edge carries a `structural` tier EXCEPT the path-dependency `imports` edges, which carry `import_based` — the tier vocabulary's class for a FILE target the document itself writes (`script/m14/audit-analyzer-grammar.ts:146`), corrected 2026-10-17; section D of the completeness inventory now pins both tiers. **Heuristic edges (confidence < 0.7): 0.** 0 edges with `line_number <= 0`; 0 self-edges; 0 empty symbol names; 0 empty `SymbolKind`s; 0 files with a duplicate symbol name | All deterministic, none countable as a guess |
 
 ### DERIVATION findings
 
@@ -836,7 +837,7 @@ have found a wrong edge.
 | **3. Correct** | F5 re-run: `cargo:toml` **657 files, truth 5,515, covered 5,515 (100%), MISSING 0, unexplained 0, heuristic 0**, hash `ac01cb0308e4af04`; `ripgrep:toml` **13 files, 344/344, MISSING 0, unexplained 0**, hash `c5e515b54f5e915c` — **the ripgrep hash is byte-identical to pass 1's**, which is the A/B that nothing moved | Conforms on both draws; the oracle's declared limitation stands |
 | **4. Labelled** | **NEW: 19,087 of 19,087 edges name a target symbol whose own `ownerName` is the edge's `source` — 0 disagreements.** This is the check pass 1's census could not make: it compares an edge against the symbol it points at, so a `contains` edge with the wrong SOURCE (defect D1's class) fails it and a symbol assertion does not | One label, and it agrees with the symbol graph on every edge |
 | **5. Resolved** | Within a file: **19,087/19,087 = 100.0%** at both ends (pass 1). **NEW: within the file's own REPOSITORY only 4,669/19,087 = 24.5% of edge target names are published by exactly one file; 14,418 = 75.5% are published by 2 or more** — `cargo` 5,127 of 5,725 ambiguous, `traefik` 4,448 of 6,509, `graphql-nim` 2,457 of 2,520. And **1,142 published symbols have no incoming `contains` edge: 1,141 modules (by design — nothing contains a file) and 1 property**, `project.urls."CI: Azure Pipelines"` in `ansible/pyproject.toml`, which is defect D3 seen from the symbol side | 100% per file; **24.5% per repository** — see limitation 10 |
-| **6. Confident** | 19,087/19,087 carry `confidence: 1.0` and `evidenceClass: "structural"`; **edges below 0.7: 0**; 0 `line_number <= 0`; 0 self-edges | No heuristic edge exists to count |
+| **6. Confident** | 19,087/19,087 carry `confidence: 1.0`; `structural` except the path-dependency `imports` rows, which are `import_based` (see the tier table above); **edges below 0.7: 0**; 0 `line_number <= 0`; 0 self-edges | No heuristic edge exists to count |
 
 **Where `contains` is still wrong.** One known case, unchanged and not fixable in
 this lane: D3, 1 of 19,088 analyzer edges, dropped by

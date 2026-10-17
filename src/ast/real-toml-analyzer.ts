@@ -1590,7 +1590,18 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           ...(fileClaim === null && /[/\\]|^[a-z][a-z0-9+.-]*:/i.test(pathValue)
             ? { sourcePathClaim: [pathValue] }
             : {}),
-          evidenceClass: "structural",
+          // THE TIER IS `import_based`, NOT `structural` — section D of the completeness
+          // inventory requires the lane to pin MORE THAN ONE evidence class, and the lane
+          // was writing `structural` on every edge it emitted, so it could not. This one
+          // was the wrong classification, not a missing pin: the fleet's tier vocabulary
+          // (`script/m14/audit-analyzer-grammar.ts:146`: structural · import_based ·
+          // usage_contextual · inferred) defines `import_based` as "the target is a FILE,
+          // taken from a path the document itself writes", and a `path` dependency in
+          // Cargo.toml is exactly that — `core = { path = "../core" }` names a directory
+          // the manifest writes, and `dependencyFileClaim` even checks it against the
+          // project's admitted files. `structural` means the fact needs nothing outside
+          // the file; this edge's whole point is that it points outside it.
+          evidenceClass: "import_based",
         },
       })
     }
