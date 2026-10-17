@@ -4,10 +4,16 @@
 //   Symbols: namespace, module, class, interface, enum, enum_member,
 //            property, method, function, constructor (named "constructor").
 //            NO locals, NO lambda params, NO synthetic members.
-//   Relationships: contains, extends, implements, calls (source = enclosing
-//            function/method/constructor, target = leaf name), instantiates,
-//            overrides (qualified Owner.method -> Parent.method), references
-//            (open -> module paths). NO uses (C# family emits none).
+//   Relationships: all TEN the ontology declares — contains, exports, extends,
+//            implements, overrides, instantiates, calls, uses, references,
+//            imports. MEASURED over the 13 expectation-paired fixture sources
+//            (2026-10-17): contains 175, calls 104, exports 93, references 39,
+//            imports 19, uses 13, overrides 10, implements 8, extends 7,
+//            instantiates 2. THIS PARAGRAPH SAID "NO uses (C# family emits
+//            none)" until this inventory: that was true when the lane mirrored
+//            the C# family and stopped being true when the exports/uses wave
+//            landed without updating the header. The fixture suite pins all ten,
+//            and `docs/analyzers/fsharp.md` carries the surface table.
 //
 // Pure AST: no regex on source text; override/default/member keywords are read
 // from tree-sitter token nodes. Builtins (console output, Object leaf methods)
@@ -2797,6 +2803,14 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // in-corpus edge is a false statement counted against the lane — and only one of those two
     // errors can be laundered.
 
+    // #419-D, ADDED 2026-10-17 (lane inventory). Every relationship carries the EVIDENCE TIER
+    // of the rule that produced it — the fleet convention (real-c-analyzer.ts's
+    // classifyEvidenceTier, real-bash-analyzer.ts's evidenceClassFor, xml's EVIDENCE_TIER).
+    // Section D of the lane contract asks for >=2 distinct tiers PINNED by fixtures; before
+    // this pass the analyzer published NONE, so that section could only fail. The mapping is
+    // a property of the RULE, not of the edge: see the method below.
+    this.classifyEvidenceTier(relationships)
+
     return {
       language: "fsharp",
       symbols,
@@ -2812,6 +2826,59 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         hasFrameworkIntelligence: true,
         hasTypeInference: true,
       },
+    }
+  }
+
+  /**
+   * #419-D — THE EVIDENCE TIER OF EVERY RELATIONSHIP, AS A PROPERTY OF ITS RULE.
+   *
+   * The tier answers WHY the target spelling can be trusted, which is a different question
+   * from whether this run resolved it. The vocabulary and the mapping follow the fleet's two
+   * shipped tables (`real-c-analyzer.ts:classifyEvidenceTier`, `real-bash-analyzer.ts`'s
+   * `evidenceClassFor`) so the same edge class carries the same tier in every lane:
+   *
+   *   structural           the parse tree STATES the relation — a declaration body, a heritage
+   *                        clause, a `new` construction: contains / exports / extends /
+   *                        implements / instantiates.
+   *   import_based         the source writes a module/file dependency: `imports` (open
+   *                        directives, #r resources) and every `references` row that is an
+   *                        `open` rather than a written type.
+   *   reference_qualified  the target is a WRITTEN TYPE matched as a name (`references` with
+   *                        `relationshipType: declared_type`), or an override whose base member
+   *                        is qualified `Owner.member` (`overrides`).
+   *   usage_contextual     the target is inferred from how the source USES the name — a call's
+   *                        callee, a read: calls / uses.
+   *
+   * No tier is `inferred`: this analyzer refuses the shapes it cannot classify at the emit site
+   * (FS-D11's type queries, FS-A4's dead branches, the withdrawn external claims) rather than
+   * publishing an unclassified edge, so the fallback is `usage_contextual` — a true statement
+   * about how the name was reached, never a guess about where it resolves.
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = (r.metadata ?? (r.metadata = {})) as Record<string, any>
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? "")
+      if (t === "contains" || t === "exports" || t === "extends" || t === "implements" || t === "instantiates") {
+        md.evidenceClass = "structural"
+        continue
+      }
+      if (t === "imports") {
+        md.evidenceClass = "import_based"
+        continue
+      }
+      if (t === "references") {
+        // TWO RULES SHIP THE SAME KIND: an `open` directive names a module path (import-based),
+        // a written type names a type (qualified). The rule that produced the row is carried on
+        // it as `relationshipType`, so the tier is read from the row rather than assumed.
+        md.evidenceClass = md.relationshipType === "declared_type" ? "reference_qualified" : "import_based"
+        continue
+      }
+      if (t === "overrides") {
+        md.evidenceClass = "reference_qualified"
+        continue
+      }
+      md.evidenceClass = "usage_contextual"
     }
   }
 

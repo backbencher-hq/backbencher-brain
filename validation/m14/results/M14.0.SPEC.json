@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "3b247d544dd3a4eb0809ae6a97eadd4e8fd1a84f5763009247af7f997510d57c",
-    "sealedAt": "2026-10-17T21:38:03.000Z"
+    "contentSha256": "78a63f00dc526fe5e6d79fcb503a24ce2b0e4d802547992e0212ef15823c262a",
+    "sealedAt": "2026-10-17T21:41:12.000Z"
   },
   "checks": [
     {
@@ -1928,11 +1928,233 @@
       "id": "section-h-cross-language",
       "language": "yaml",
       "status": "pass"
+    },
+    {
+      "description": "html: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "html",
+      "status": "pass"
+    },
+    {
+      "description": "html: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "html",
+      "status": "pass"
+    },
+    {
+      "description": "html: 1 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "html",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (html)",
+      "detail": "21 types, 14 handled, 6 silent, 0 gaps, 1 decisions",
+      "id": "section-a-structural",
+      "language": "html",
+      "status": "pass"
+    },
+    {
+      "description": "9 relationship kinds pinned by html fixtures; 9 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, extends, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, imports, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "html",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for html (2)",
+      "detail": "complexity, visibility",
+      "id": "section-c-payload-matrix",
+      "language": "html",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "html",
+      "status": "pass"
+    },
+    {
+      "description": "otp:html at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor otp:html: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "html",
+      "status": "pass"
+    },
+    {
+      "description": "html avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "otp:html 4.8 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "html",
+      "status": "pass"
+    },
+    {
+      "description": "html analyzer docs present and committed",
+      "detail": "docs/analyzers/html.md, docs/analyzers/real-html-analyzer.md",
+      "id": "section-g-docs",
+      "language": "html",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "html",
+      "status": "pass"
+    },
+    {
+      "description": "clojure: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "clojure",
+      "status": "pass"
+    },
+    {
+      "description": "clojure: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "clojure",
+      "status": "pass"
+    },
+    {
+      "description": "clojure: 30 ruled, 1 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "clojure",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (clojure)",
+      "detail": "37 types, 16 handled, 21 silent, 0 gaps, 31 decisions",
+      "id": "section-a-structural",
+      "language": "clojure",
+      "status": "pass"
+    },
+    {
+      "description": "10 relationship kinds pinned by clojure fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "clojure",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for clojure (2)",
+      "detail": "complexity, parameters",
+      "id": "section-c-payload-matrix",
+      "language": "clojure",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: inferred, reference_qualified, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "clojure",
+      "status": "pass"
+    },
+    {
+      "description": "clj-kondo:clojure at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor clj-kondo:clojure: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "clojure",
+      "status": "pass"
+    },
+    {
+      "description": "clojure avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "clj-kondo:clojure 4.4 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "clojure",
+      "status": "pass"
+    },
+    {
+      "description": "clojure analyzer docs present and committed",
+      "detail": "docs/analyzers/real-clojure-analyzer.md",
+      "id": "section-g-docs",
+      "language": "clojure",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "clojure",
+      "status": "pass"
+    },
+    {
+      "description": "erlang: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "erlang",
+      "status": "pass"
+    },
+    {
+      "description": "erlang: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "erlang",
+      "status": "pass"
+    },
+    {
+      "description": "erlang: 40 ruled, 1 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "erlang",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (erlang)",
+      "detail": "134 types, 104 handled, 30 silent, 0 gaps, 41 decisions",
+      "id": "section-a-structural",
+      "language": "erlang",
+      "status": "pass"
+    },
+    {
+      "description": "8 relationship kinds pinned by erlang fixtures; 8 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, implements, imports, instantiates, references, uses; emitted: calls, contains, exports, implements, imports, instantiates, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "erlang",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for erlang (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "erlang",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "erlang",
+      "status": "pass"
+    },
+    {
+      "description": "rebar3:erlang at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor rebar3:erlang: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "erlang",
+      "status": "pass"
+    },
+    {
+      "description": "erlang avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "rebar3:erlang 8 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "erlang",
+      "status": "pass"
+    },
+    {
+      "description": "erlang analyzer docs present and committed",
+      "detail": "docs/analyzers/real-erlang-analyzer.md",
+      "id": "section-g-docs",
+      "language": "erlang",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "erlang",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "c3bd2cbf8c9e35de30bc785430addb547d1b5afc",
-  "committedAt": "2026-10-17T17:38:03-04:00",
+  "commit": "b3410bd55c2ff6ad76780e373111f63dc44ee3b9",
+  "committedAt": "2026-10-17T17:41:12-04:00",
   "data": {
     "languages": {
       "c": {
@@ -1993,6 +2215,79 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/real-c-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "12 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "clojure": {
+        "gaps": [],
+        "nodeTypeCount": 37,
+        "pendingDecisions": [
+          "CLJ-M60"
+        ],
+        "ruledDecisions": [
+          "CLJ-D1",
+          "CLJ-D2",
+          "CLJ-D3",
+          "CLJ-D4",
+          "CLJ-D5",
+          "CLJ-D6",
+          "CLJ-D7",
+          "CLJ-D8",
+          "CLJ-D9",
+          "CLJ-D10",
+          "CLJ-D11",
+          "CLJ-D12",
+          "CLJ-D13",
+          "CLJ-D14",
+          "CLJ-D15",
+          "CLJ-D16",
+          "CLJ-D17",
+          "CLJ-D18",
+          "CLJ-D19",
+          "CLJ-D20",
+          "CLJ-D21",
+          "CLJ-D21b",
+          "CLJ-D22",
+          "CLJ-D23",
+          "CLJ-D24",
+          "CLJ-D25",
+          "CLJ-D26",
+          "CLJ-D27",
+          "CLJ-D28",
+          "CLJ-D29"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "37 types, 16 handled, 21 silent, 0 gaps, 31 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity, parameters",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: inferred, reference_qualified, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor clj-kondo:clojure: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "clj-kondo:clojure 4.4 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-clojure-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -2265,6 +2560,89 @@
           }
         }
       },
+      "erlang": {
+        "gaps": [],
+        "nodeTypeCount": 134,
+        "pendingDecisions": [
+          "ER-D7"
+        ],
+        "ruledDecisions": [
+          "ER-D1",
+          "ER-D2",
+          "ER-D3",
+          "ER-D4",
+          "ER-D5",
+          "ER-D6",
+          "ER-D8",
+          "ER-D9",
+          "ER-D10",
+          "ER-D11",
+          "ER-D12",
+          "ER-D13",
+          "ER-D14",
+          "ER-D15",
+          "ER-D16",
+          "ER-D17",
+          "ER-D18",
+          "ER-D19",
+          "ER-D20",
+          "ER-D21",
+          "ER-D22",
+          "ER-D23",
+          "ER-D24",
+          "ER-D25",
+          "ER-D26",
+          "ER-D27",
+          "ER-D28",
+          "ER-D29",
+          "ER-D30",
+          "ER-D31",
+          "ER-D32",
+          "ER-D33",
+          "ER-D34",
+          "ER-D35",
+          "ER-D36",
+          "ER-D37",
+          "ER-D38",
+          "ER-D39",
+          "ER-D40",
+          "ER-D41"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "134 types, 104 handled, 30 silent, 0 gaps, 41 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, exports, implements, imports, instantiates, references, uses; emitted: calls, contains, exports, implements, imports, instantiates, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor rebar3:erlang: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "rebar3:erlang 8 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-erlang-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "12 checks pass",
+            "status": "pass"
+          }
+        }
+      },
       "go": {
         "gaps": [],
         "nodeTypeCount": 107,
@@ -2452,6 +2830,48 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/real-haskell-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "12 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "html": {
+        "gaps": [],
+        "nodeTypeCount": 21,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "HTML-D1"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "21 types, 14 handled, 6 silent, 0 gaps, 1 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, exports, extends, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, imports, instantiates, overrides, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity, visibility",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor otp:html: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "otp:html 4.8 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/html.md, docs/analyzers/real-html-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3679,8 +4099,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-17T17:38:03-04:00",
-  "regeneratedAtCommit": "c3bd2cbf8c9e35de30bc785430addb547d1b5afc",
+  "regeneratedAt": "2026-10-17T17:41:12-04:00",
+  "regeneratedAtCommit": "b3410bd55c2ff6ad76780e373111f63dc44ee3b9",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"

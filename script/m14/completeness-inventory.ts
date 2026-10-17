@@ -288,6 +288,104 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "dart managed-OO wave (#264)",
   },
+  // sql ENTERS THE INVENTORY: 596 named node types enumerated from the pinned wasm, 82 handled,
+  // 478 silent, 17 gaps, 25 decisions -- and section A reads 0 unclassified / 0 stale. Its owner refused
+  // to fabricate a section-B row for a kind the lane does not emit (the `exports` failure was the gate's
+  // reader parsing a `.ts` oracle beside the fixtures, now fixed), which is the standard this file wants.
+  // E IS UNMEASURABLE FOR THIS LANE AND NAMED AS SUCH: differential.ts carries 68 per-language derive
+  // functions and none is SQL's, so a scoped SQL differential derives ZERO truth edges. The perfKey is
+  // declared so section E fails with a PRECISE reason -- SQL-G14 -- instead of hiding the lane. DO NOT
+  // read the floor as met.
+  // json JOINS THE INVENTORY: 14 types (12 public named + ERROR/MISSING), 5 handled, 9 silent each with its
+  // construct named, 0 gaps, 0 node-type decisions. Its owner found that the historic spec filed all 12 named
+  // types as handled while two said in their own prose they were SILENT -- a bucket contradicting its own row,
+  // which is the parking-space defect -- and re-bucketed rather than deleting the prose.
+  // E IS BLOCKED ON A REAL DEFECT: terraform:json measures missing=6206 unexplained=0, and a lane carrying its
+  // own `missing` is never pinned -- a floor row records a RESIDUAL, never a defect. The samples are `contains`
+  // edges over Terraform embedded in YAML testdata. That is the lane's next question, not a corpus gap.
+  json: {
+    id: "json",
+    wasm: "tree-sitter-json.wasm",
+    classification: "json-completeness.json",
+    fixturesDir: "validation/m14/fixtures/json",
+    docs: ["docs/analyzers/json.md", "docs/analyzers/real-json-analyzer.md"],
+    perfKey: "terraform:json",
+    requiredKinds: ["calls", "contains", "exports", "extends", "implements", "imports", "overrides", "references", "uses"],
+    payloads: {},
+    title: "JSON / JSONC / JSON-Schema wave (M14 #419, BD-ontology)",
+  },
+  sql: {
+    id: "sql",
+    wasm: "tree-sitter-sql.wasm",
+    classification: "sql-completeness.json",
+    fixturesDir: "validation/m14/fixtures/sql",
+    docs: ["docs/analyzers/sql.md", "docs/analyzers/real-sql-analyzer.md"],
+    perfKey: "duckdb:sql",
+    requiredKinds: ["contains", "uses", "references", "calls", "imports", "overrides", "instantiates"],
+    payloads: {},
+    title: "sql schema wave (#419 sections A, C, D, G, H; B blocked on the gate's reverse check; E/F await an oracle)",
+  },
+  // clojure ENTERS THE INVENTORY AT 8/8: 73 node-type slots = 35 named + 38 anonymous; the gate adds the
+  // implicit ERROR/MISSING pair -> 37 to classify, and the split is 16 handled / 21 silent / 0 gaps /
+  // 31 decisions with 0 unclassified and 0 stale. Its E/F need NO sweep -- clj-kondo:clojure is already
+  // pinned (missing 0, unexplained 0, 4.4 ms/file), which makes this the first lane where a config
+  // application alone buys conformance.
+  // lua JOINS THE INVENTORY: 137 wasm slots = 54 named = 46 unique named + 80 ANONYMOUS keyword/punctuation
+  // tokens; the gate adds ERROR/MISSING -> 48 section-A types. THE 80 ANONYMOUS ARE NOT ROWS -- classifying
+  // them would manufacture the false-drift reports haskell just cleaned up. Final split: 16 handled /
+  // 32 silent / 0 unclassified / 0 stale.
+  // THE 46KB SPEC WAS NEVER A CLASSIFICATION: handled_verified and internal_silent were EMPTY and the
+  // gap/decision records' `node_type` fields held PROSE ("(incoming resolution -- sample reach)",
+  // "function_call (callee shape)") which the gate comma-splits into nothing, so 46 of 48 types sat in no
+  // bucket. Re-cut from the wasm with all 16 finding records preserved.
+  // E/F await a sweep-owned row; the perfKey is declared so they fail with a precise reason.
+  lua: {
+    id: "lua",
+    wasm: "tree-sitter-lua.wasm",
+    classification: "lua-completeness.json",
+    fixturesDir: "validation/m14/fixtures/lua",
+    docs: ["docs/analyzers/real-lua-analyzer.md"],
+    perfKey: "lua",
+    requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports", "extends", "overrides", "instantiates"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "lua/loop-bindings (fileEquals 6 = 1 + four loop decision points + one or)" },
+    },
+    title: "lua wave (#419 sections A-D, G, H; E/F await a pinned corpus row)",
+  },
+  clojure: {
+    id: "clojure",
+    wasm: "tree-sitter-clojure.wasm",
+    classification: "clojure-completeness.json",
+    fixturesDir: "validation/m14/fixtures/clojure",
+    docs: ["docs/analyzers/real-clojure-analyzer.md"],
+    differentialCheck: "differential-clojure",
+    perfKey: "clj-kondo:clojure",
+    requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "clojure/payload-and-complexity" },
+      parameters: { key: "expectParameters", pin: "clojure/payload-and-complexity" },
+    },
+    title: "clojure wave (#419 sections A-H)",
+  },
+  // erlang ENTERS AT 8/8: 134 types (132 distinct named grammar types + the universal ERROR/MISSING pair;
+  // the wasm registers 137 entries and four names repeat) -> 104 handled / 30 silent / 0 gap / 41 decisions.
+  // TWO failures its owner found and fixed were the "record was right, consumer disagrees" shape:
+  // (1) the spec deliberately excluded ERROR/MISSING with a grammar-true, gate-WRONG reason -- the gate adds
+  //     the F1 universal pair, so they were reported in NO bucket;
+  // (2) the analyzer stamped NO evidenceClass at all, so no tier could be pinned. Both corrected, fixtures 29/0.
+  // E/F need no sweep: rebar3:erlang is already pinned (missing 0, unexplained 0, 8 ms/file).
+  erlang: {
+    id: "erlang",
+    wasm: "tree-sitter-erlang.wasm",
+    classification: "erlang-completeness.json",
+    fixturesDir: "validation/m14/fixtures/erlang",
+    docs: ["docs/analyzers/real-erlang-analyzer.md"],
+    differentialCheck: "differential-erlang",
+    perfKey: "rebar3:erlang",
+    requiredKinds: ["calls", "contains", "exports", "implements", "imports", "instantiates", "references", "uses"],
+    payloads: { complexity: { key: "expectComplexity", pin: "erlang (function-clause/branch count per declaration; 4 fixtures pin it)" } },
+    title: "erlang pass (#419)",
+  },
   swift: {
     id: "swift",
     wasm: "tree-sitter-swift.wasm",
@@ -1104,7 +1202,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
 // than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
 // degenerate invocation_expression subtrees) — bounded to that corpus corner.
-const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl", "css", "toml", "markdown", "julia", "solidity", "scss", "yaml"]
+const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl", "css", "toml", "markdown", "julia", "solidity", "scss", "yaml", "clojure", "erlang", "html"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")

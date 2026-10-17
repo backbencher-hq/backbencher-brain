@@ -1,12 +1,76 @@
 {
   "language": "fsharp",
-  "grammar": "tree-sitter-fsharp.wasm sha256 16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e, 12,613,928 B — a local rebuild of ionide/tree-sitter-fsharp v0.3.11 plus exactly `module_val_declaration` and `nullable_type` (pin: validation/m14/grammar-pins.json; round: reviews/functional-family/m60-grammar-pins.md). The surfaces below were measured, not read off the grammar: validation/m14/results/fsharp-shape-census.json (a deterministic 120-file draw of .fs/.fsi >= 1KB under the fsharp corpus, every node type counted, subtree shapes dumped for the constructs the oracle must read).",
+  "grammar": "tree-sitter-fsharp.wasm sha256 16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e, 12,613,928 B \u2014 a local rebuild of ionide/tree-sitter-fsharp v0.3.11 plus exactly `module_val_declaration` and `nullable_type` (pin: validation/m14/grammar-pins.json; round: reviews/functional-family/m60-grammar-pins.md). The surfaces below were measured, not read off the grammar: validation/m14/results/fsharp-shape-census.json (a deterministic 120-file draw of .fs/.fsi >= 1KB under the fsharp corpus, every node type counted, subtree shapes dumped for the constructs the oracle must read).",
+  "_reclassified": "2026-10-17 (lane inventory, task-230). THREE corrections, each measured against the pinned wasm (sha256 16cb8779..., unchanged): (1) handled_verified.types was a list of OBJECTS while the completeness gate reads a list of STRINGS \u2014 under the gate every row was invisible and all 61 would have read unclassified; the rich rows are preserved under handled_verified.rows. (2) FOUR stale rows named node types this wasm never produces: source_file -> the root node type is `file`; `block` and `match` -> the grammar spells them block_comment/block_comment_content and match_expression (both classified); the silent row 'prefixed_expression (except the `new` prefix, FSD8)' was prose in a type list \u2014 prefixed_expression is HANDLED and its `new`-only rule is FSD8, recorded there. (3) The 115 node types in NO bucket were classified from the measured census (validation/m14/results/fsharp-shape-census.json, 120-file draw, 298 node type counts) and from the analyzer's own node-type constants (TYPE_WRAPPER_NODES, TYPE_CLAUSE_TYPES, and the declared-type reference walk): 13 types moved INTO handled (the written-type wrapper family emits declared_type references; the old list named only simple_type/generic_type of the 14 in TYPE_WRAPPER_NODES), 89 into internal_silent (grouped with reasons below), 5 into design_decision (record labels, constructor params, inactive preproc, interpolation holes, extern). The bucket split now covers every one of the 198 named types + ERROR/MISSING.",
   "handled_verified": {
-    "_description": "Every node type this lane reads, with the census count that proves the rule is LIVE (a rule for a type the grammar never emits is a claim nobody can falsify). The column that matters is 'times seen in 120 files': the lane was authored with six dead branches (see gap FS-A1) and this list is what retired the guesswork. Fixtures are OWED (the lane has none yet); until they exist this block's evidence is the census artifact, named here rather than implied.",
+    "_description": "Node types whose walk emits symbols or relationships. `types` is the GATE-READ list (array of strings); `rows` carries the census count and what the node is used for.",
     "_evidence": "validation/m14/results/fsharp-shape-census.json",
     "types": [
+      "file",
+      "namespace",
+      "named_module",
+      "module_defn",
+      "type_definition",
+      "type_name",
+      "record_type_defn",
+      "record_field",
+      "union_type_defn",
+      "union_type_case",
+      "enum_type_defn",
+      "enum_type_case",
+      "anon_type_defn",
+      "interface_type_defn",
+      "delegate_type_defn",
+      "type_abbrev_defn",
+      "class_inherits_decl",
+      "interface_implementation",
+      "member_defn",
+      "member_signature",
+      "method_or_prop_defn",
+      "property_or_ident",
+      "additional_constr_defn",
+      "value_declaration",
+      "function_or_value_defn",
+      "value_declaration_left",
+      "function_declaration_left",
+      "argument_patterns",
+      "identifier_pattern",
+      "paren_pattern",
+      "application_expression",
+      "dot_expression",
+      "infix_expression",
+      "prefixed_expression",
+      "long_identifier_or_op",
+      "long_identifier",
+      "identifier",
+      "object_expression",
+      "active_pattern",
+      "exception_definition",
+      "type_extension",
+      "attribute",
+      "import_decl",
+      "compiler_directive_decl",
+      "module_val_declaration",
+      "simple_type",
+      "generic_type",
+      "ERROR",
+      "postfix_type",
+      "type_declaration",
+      "atomic_type",
+      "paren_type",
+      "function_type",
+      "compound_type",
+      "struct_type",
+      "list_type",
+      "byref_type",
+      "static_type",
+      "flexible_type",
+      "types",
+      "nullable_type"
+    ],
+    "rows": [
       {
-        "type": "source_file",
+        "type": "file",
         "count": 120,
         "used_for": "root"
       },
@@ -228,7 +292,7 @@
       {
         "type": "module_val_declaration",
         "count": 203,
-        "used_for": "signature-file `val X : T` symbols (FSD9 — NOT yet emitted by the analyzer, see gap FS-A3)"
+        "used_for": "signature-file `val X : T` symbols (FSD9 \u2014 NOT yet emitted by the analyzer, see gap FS-A3)"
       },
       {
         "type": "simple_type",
@@ -244,11 +308,220 @@
         "type": "ERROR",
         "count": 43,
         "used_for": "defensive error-path check"
+      },
+      {
+        "type": "postfix_type",
+        "count": null,
+        "used_for": "postfix type wrapper (`int list`); the outermost-wrapper rule emits a declared_type reference (TYPE_WRAPPER_NODES)"
+      },
+      {
+        "type": "type_declaration",
+        "count": null,
+        "used_for": "FS-D8 forward declaration / type-clause group member (TYPE_CLAUSE_TYPES)"
+      },
+      {
+        "type": "atomic_type",
+        "count": null,
+        "used_for": "TYPE_WRAPPER_NODES: a written type's outermost wrapper emits a declared_type `references` edge (measured: a `:? Foo` type test emits references to Foo)"
+      },
+      {
+        "type": "paren_type",
+        "count": null,
+        "used_for": "TYPE_WRAPPER_NODES: parenthesized written type; outermost emits the declared_type reference"
+      },
+      {
+        "type": "function_type",
+        "count": null,
+        "used_for": "TYPE_WRAPPER_NODES: `A -> B` written type; outermost emits the declared_type reference"
+      },
+      {
+        "type": "compound_type",
+        "count": null,
+        "used_for": "TYPE_WRAPPER_NODES: tuple/struct written type; outermost emits the declared_type reference"
+      },
+      {
+        "type": "struct_type",
+        "count": null,
+        "used_for": "TYPE_WRAPPER_NODES: `struct (...)` written type; outermost emits the declared_type reference"
+      },
+      {
+        "type": "list_type",
+        "count": null,
+        "used_for": "TYPE_WRAPPER_NODES: `T list` written type; outermost emits the declared_type reference"
+      },
+      {
+        "type": "byref_type",
+        "count": null,
+        "used_for": "TYPE_WRAPPER_NODES: byref written type; outermost emits the declared_type reference"
+      },
+      {
+        "type": "static_type",
+        "count": null,
+        "used_for": "TYPE_WRAPPER_NODES: SRTP/typeof wrapper; the typeof/unbox query refusal reads it (FS-D11)"
+      },
+      {
+        "type": "flexible_type",
+        "count": null,
+        "used_for": "TYPE_WRAPPER_NODES: `#T` subsumption type; outermost emits the declared_type reference"
+      },
+      {
+        "type": "types",
+        "count": null,
+        "used_for": "TYPE_WRAPPER_NODES: type-list wrapper; outermost emits the declared_type reference"
+      },
+      {
+        "type": "nullable_type",
+        "count": null,
+        "used_for": "TYPE_WRAPPER_NODES: nullable type annotation; outermost emits the declared_type reference (0 observed in the 120-file draw)"
       }
     ]
   },
   "internal_silent": {
     "_description": "Structural wrappers, literals and type-tree internals that correctly emit nothing in this lane's contract.",
+    "_groups": [
+      {
+        "group": "literal and token nodes",
+        "types": [
+          "int",
+          "xint",
+          "bool",
+          "char",
+          "string",
+          "verbatim_string",
+          "triple_quoted_string",
+          "format_triple_quoted_string",
+          "bytearray",
+          "verbatim_bytearray",
+          "ieee32",
+          "ieee64",
+          "bignum",
+          "decimal",
+          "float",
+          "sbyte",
+          "byte",
+          "int16",
+          "uint16",
+          "int32",
+          "uint32",
+          "int64",
+          "uint64",
+          "nativeint",
+          "unativeint",
+          "op_identifier",
+          "literal_expression",
+          "format_string",
+          "format_string_eval"
+        ],
+        "why": "A literal/token publishes nothing by construction. The builtin-type spellings (int, string, bool, ...) are LITERAL node types in this grammar: a type POSITION is a simple_type -> long_identifier -> identifier chain, so the analyzer's BUILTIN_TYPE table (real-fsharp-analyzer.ts:3545) classifies the TEXT of a written type rather than emitting from these nodes."
+      },
+      {
+        "group": "comments",
+        "types": [
+          "block_comment",
+          "block_comment_content"
+        ],
+        "why": "A comment is not a declaration or a reference. line_comment and xml_doc were already silent."
+      },
+      {
+        "group": "preprocessor containers",
+        "types": [
+          "preproc_line",
+          "preproc_if",
+          "preproc_else",
+          "preproc_if_not_expression",
+          "preproc_if_and_expression",
+          "preproc_if_or_expression"
+        ],
+        "why": "Containers around conditional compilation: the ACTIVE region is walked normally and emits; the INACTIVE region is a design decision below. compiler_directive_decl is handled (macro symbols)."
+      },
+      {
+        "group": "units of measure",
+        "types": [
+          "measure",
+          "measure_atom",
+          "measure_power",
+          "measure_product",
+          "measure_quotient"
+        ],
+        "why": "Units-of-measure expressions are type-level arithmetic, not declarations; a measure annotation is emitted through its TYPE_WRAPPER_NODES ancestor."
+      },
+      {
+        "group": "type scaffolds and wrappers",
+        "types": [
+          "type_attribute",
+          "type_attributes",
+          "type_argument_constraints",
+          "constraint",
+          "trait_member_constraint",
+          "named_static_parameter",
+          "static_parameter_value",
+          "anon_record_type",
+          "class_as_reference",
+          "delegate_signature",
+          "union_type_field",
+          "union_type_fields",
+          "union_type_cases",
+          "record_fields",
+          "enum_type_cases",
+          "constrained_type"
+        ],
+        "why": "Wrappers/containers around a written type or constraint list. The name is emitted from the inner wrapper when it is outermost (TYPE_WRAPPER_NODES) or from the declaration node; the container itself is silent so one written type cannot earn two edges."
+      },
+      {
+        "group": "expression containers",
+        "types": [
+          "do",
+          "do_expression",
+          "if_expression",
+          "elif_expression",
+          "while_expression",
+          "for_expression",
+          "try_expression",
+          "match_expression",
+          "function_expression",
+          "mutate_expression",
+          "index_expression",
+          "array_expression",
+          "range_expression",
+          "paren_expression",
+          "begin_end_expression",
+          "anon_record_expression",
+          "with_field_expression",
+          "typecast_expression",
+          "srtp_call_expression",
+          "generic_new_expression",
+          "slice_ranges",
+          "slice_range",
+          "and_bang",
+          "ce_expression",
+          "short_comp_expression",
+          "rule",
+          "rules"
+        ],
+        "why": "The analyzer walks THROUGH an expression to the names it contains; the expression node itself is not a target. rule/rules are match CLAUSES (2,648/834 in the 120-file draw): match_expression is the container and each rule a clause; neither is a reference. MEASURED that the mechanism still emits: `x.Foo()` on an SRTP emits calls (the srtp_call_expression contains the application_expression) and a `:? Foo` test emits a declared_type reference to Foo; record-construction labels are a ruling (design_decision)."
+      },
+      {
+        "group": "binding/pattern scaffolds",
+        "types": [
+          "type_check_pattern",
+          "as_pattern",
+          "cons_pattern",
+          "conjunct_pattern",
+          "typed_const_pattern",
+          "active_pattern_op_name",
+          "wildcard_active_pattern_op"
+        ],
+        "why": "Pattern syntax attaches names the identifier_pattern/argument_patterns walks already publish; the pattern operator tokens are labels. The TYPE in a type-check pattern is emitted by its written-type wrapper (measured)."
+      },
+      {
+        "group": "accessors and error-recovery markers",
+        "types": [
+          "property_accessor",
+          "MISSING"
+        ],
+        "why": "property_accessor is the `with get()/set()` wrapper around a member's body \u2014 the member symbol is emitted from member_defn/method_or_prop_defn; MISSING is tree-sitter's error-recovery marker, which the analyzer never emits from (the universal pair audit-analyzer-grammar.ts:93 documents)."
+      }
+    ],
     "types": [
       "xml_doc",
       "line_comment",
@@ -261,13 +534,11 @@
       "argument_spec",
       "argument_name_spec",
       "access_modifier",
-      "block",
       "brace_expression",
       "field_initializers",
       "field_initializer",
       "declaration_expression",
       "fun_expression",
-      "match",
       "sequential_expression",
       "const",
       "unit",
@@ -283,20 +554,113 @@
       "array_pattern",
       "infix_op",
       "prefix_op",
-      "postfix_type",
       "type_extension_elements",
       "typed_expression",
-      "prefixed_expression (except the `new` prefix, FSD8)"
+      "int",
+      "xint",
+      "bool",
+      "char",
+      "string",
+      "verbatim_string",
+      "triple_quoted_string",
+      "format_triple_quoted_string",
+      "bytearray",
+      "verbatim_bytearray",
+      "ieee32",
+      "ieee64",
+      "bignum",
+      "decimal",
+      "float",
+      "sbyte",
+      "byte",
+      "int16",
+      "uint16",
+      "int32",
+      "uint32",
+      "int64",
+      "uint64",
+      "nativeint",
+      "unativeint",
+      "op_identifier",
+      "literal_expression",
+      "format_string",
+      "format_string_eval",
+      "block_comment",
+      "block_comment_content",
+      "preproc_line",
+      "preproc_if",
+      "preproc_else",
+      "preproc_if_not_expression",
+      "preproc_if_and_expression",
+      "preproc_if_or_expression",
+      "measure",
+      "measure_atom",
+      "measure_power",
+      "measure_product",
+      "measure_quotient",
+      "type_attribute",
+      "type_attributes",
+      "type_argument_constraints",
+      "constraint",
+      "trait_member_constraint",
+      "named_static_parameter",
+      "static_parameter_value",
+      "anon_record_type",
+      "class_as_reference",
+      "delegate_signature",
+      "union_type_field",
+      "union_type_fields",
+      "union_type_cases",
+      "record_fields",
+      "enum_type_cases",
+      "constrained_type",
+      "do",
+      "do_expression",
+      "if_expression",
+      "elif_expression",
+      "while_expression",
+      "for_expression",
+      "try_expression",
+      "match_expression",
+      "function_expression",
+      "mutate_expression",
+      "index_expression",
+      "array_expression",
+      "range_expression",
+      "paren_expression",
+      "begin_end_expression",
+      "anon_record_expression",
+      "with_field_expression",
+      "typecast_expression",
+      "srtp_call_expression",
+      "generic_new_expression",
+      "slice_ranges",
+      "slice_range",
+      "and_bang",
+      "ce_expression",
+      "short_comp_expression",
+      "rule",
+      "rules",
+      "type_check_pattern",
+      "as_pattern",
+      "cons_pattern",
+      "conjunct_pattern",
+      "typed_const_pattern",
+      "active_pattern_op_name",
+      "wildcard_active_pattern_op",
+      "property_accessor",
+      "MISSING"
     ]
   },
   "gap": {
     "_description": "Named worklists, not hidden ones. Each count is from the 120-file shape census unless the entry says otherwise.",
+    "_node_type_naming": "FS-A1/FS-A4's node_type entries name the ANALYZER'S BRANCH names (app_expression, open_statement, open_decl, val_property_defn, fsi_directive_decl, prefixed_expression), not wasm node types: those branches are DEAD because the wired grammar spells these nodes application_expression/import_decl/module_val_declaration/prefixed_expression. They are gaps, not stale rows, and the gate does not drift-check gap entries.",
     "gaps": [
       {
         "id": "FS-A1",
         "severity": "medium",
         "node_type": "app_expression, open_statement, open_decl, module_abbrev, val_property_defn, fsi_directive_decl",
-        "missing": "SIX rules the analyzer dispatches on that the pinned grammar never emits (measured 0 occurrences across 363,609 nodes). They are the dead-rule class the family sweep found in three lanes: `open` is `import_decl` (558), calls are `application_expression` (16,316), `#if` is `compiler_directive_decl` (5). None of them silently drops an edge — `import_decl` and `application_expression` carry the work — but they must be retired so the next reader does not mistake the list for a surface."
+        "missing": "SIX rules the analyzer dispatches on that the pinned grammar never emits (measured 0 occurrences across 363,609 nodes). They are the dead-rule class the family sweep found in three lanes: `open` is `import_decl` (558), calls are `application_expression` (16,316), `#if` is `compiler_directive_decl` (5). None of them silently drops an edge \u2014 `import_decl` and `application_expression` carry the work \u2014 but they must be retired so the next reader does not mistake the list for a surface."
       },
       {
         "id": "FS-A2",
@@ -308,7 +672,7 @@
         "id": "FS-A3",
         "severity": "medium",
         "node_type": "module_val_declaration",
-        "missing": "203 `val X : T` declarations in the draw — every one in a .fsi — publish no symbol at all: the analyzer has no branch for the node the lane's own grammar patch added. Decision FSD9 rules what they should be; the analyzer work is owed."
+        "missing": "203 `val X : T` declarations in the draw \u2014 every one in a .fsi \u2014 publish no symbol at all: the analyzer has no branch for the node the lane's own grammar patch added. Decision FSD9 rules what they should be; the analyzer work is owed."
       },
       {
         "id": "FS-A4",
@@ -320,7 +684,7 @@
         "id": "FS-A5",
         "severity": "high",
         "node_type": "ERROR",
-        "missing": "14 of 120 files in this draw parse with an error tree (11.7%) — the corpus-scale figure the sweep measured is 15.9% on its own draw. The pin round showed the vendored grammar repairs 9 files unpatched 0.3.11 damages and damages 1; the six grammar-rejected constructs of the sweep's §2d are the remaining, patchable-in-tree work."
+        "missing": "14 of 120 files in this draw parse with an error tree (11.7%) \u2014 the corpus-scale figure the sweep measured is 15.9% on its own draw. The pin round showed the vendored grammar repairs 9 files unpatched 0.3.11 damages and damages 1; the six grammar-rejected constructs of the sweep's \u00a72d are the remaining, patchable-in-tree work."
       }
     ]
   },
@@ -346,14 +710,14 @@
         "node_type": "class_inherits_decl",
         "status": "RULED (RETIRES a heuristic)",
         "question": "is `inherit X` always an extends edge?",
-        "resolution": "Yes, always. F# implements interfaces with `interface ... with` (FSD4); an `inherit` names a base class, so the four-line guess the analyzer uses today — 'the target starts with I followed by an uppercase letter, therefore implements' — is retired. A base class that happens to be named `IThing` is currently mislabelled implements and a genuine interface declaration is labelled by luck."
+        "resolution": "Yes, always. F# implements interfaces with `interface ... with` (FSD4); an `inherit` names a base class, so the four-line guess the analyzer uses today \u2014 'the target starts with I followed by an uppercase letter, therefore implements' \u2014 is retired. A base class that happens to be named `IThing` is currently mislabelled implements and a genuine interface declaration is labelled by luck."
       },
       {
         "id": "FSD4",
         "node_type": "interface_implementation, object_expression",
         "status": "RULED",
         "question": "what implements what?",
-        "resolution": "interface_implementation -> implements(type, the interface named by the first long_identifier/identifier inside it). object_expression (`{ new IFoo with ... }`) -> one class symbol named `new IFoo` owned by the enclosing scope AND implements(that enclosing scope, IFoo) — the C# family's anonymous-class precedent."
+        "resolution": "interface_implementation -> implements(type, the interface named by the first long_identifier/identifier inside it). object_expression (`{ new IFoo with ... }`) -> one class symbol named `new IFoo` owned by the enclosing scope AND implements(that enclosing scope, IFoo) \u2014 the C# family's anonymous-class precedent."
       },
       {
         "id": "FSD5",
@@ -374,7 +738,7 @@
         "node_type": "method_or_prop_defn",
         "status": "RULED (retires the misclassification)",
         "question": "method or property?",
-        "resolution": "The grammar's `args:` FIELD decides: present (paren_pattern, identifier_pattern, argument_patterns, const unit) -> Method; absent -> the member's body follows the name, so Property. This replaces a scan of named children that recognised two of the four arg shapes and therefore filed 73 of the draw's 604 members under the wrong kind — and dropped their calls with them."
+        "resolution": "The grammar's `args:` FIELD decides: present (paren_pattern, identifier_pattern, argument_patterns, const unit) -> Method; absent -> the member's body follows the name, so Property. This replaces a scan of named children that recognised two of the four arg shapes and therefore filed 73 of the draw's 604 members under the wrong kind \u2014 and dropped their calls with them."
       },
       {
         "id": "FSD8",
@@ -388,7 +752,7 @@
         "node_type": "module_val_declaration",
         "status": "RULED (work owed)",
         "question": "what does `val X : T` publish?",
-        "resolution": "A Function symbol named by its first identifier, owned by the enclosing module/type scope, marked metadata.isDeclaration — a .fsi declares the surface, and a later .fs definition is the SAME entity (the Clean `.dcl`/`.icl` merge precedent). Not yet implemented (gap FS-A3)."
+        "resolution": "A Function symbol named by its first identifier, owned by the enclosing module/type scope, marked metadata.isDeclaration \u2014 a .fsi declares the surface, and a later .fs definition is the SAME entity (the Clean `.dcl`/`.icl` merge precedent). Not yet implemented (gap FS-A3)."
       },
       {
         "id": "FSD10",
@@ -402,7 +766,7 @@
         "node_type": "long_identifier_or_op",
         "status": "RULED (shared language fact)",
         "question": "which calls are filtered?",
-        "resolution": "Console output (`printfn`/`printf`/`eprintf*`/`fprintf*`, `Console.Write*`, `Console.Error.*`) and the Object leaf methods (ToString, GetHashCode, Equals, GetType, ReferenceEquals). This is a name list shared with the analyzer — a transcription hazard the differential cannot catch — while every RULE around it is derived independently."
+        "resolution": "Console output (`printfn`/`printf`/`eprintf*`/`fprintf*`, `Console.Write*`, `Console.Error.*`) and the Object leaf methods (ToString, GetHashCode, Equals, GetType, ReferenceEquals). This is a name list shared with the analyzer \u2014 a transcription hazard the differential cannot catch \u2014 while every RULE around it is derived independently."
       },
       {
         "id": "FSD12",
@@ -414,17 +778,17 @@
       {
         "id": "FSD13",
         "node_type": "named_module, module_defn, type_definition, module_val_declaration, exception_definition",
-        "status": "RULED AND EMITTED (2026-10-09 — the `exports` ruling OVERTURNED)",
+        "status": "RULED AND EMITTED (2026-10-09 \u2014 the `exports` ruling OVERTURNED)",
         "question": "what does this file PUBLISH, and is that a relationship?",
-        "resolution": "The FS-D8 importable-unit set, emitted as one `exports` edge per unit (analyzer name: FS-D13; the payload channel is unchanged). TARGET = the symbol's published identity (`metadata.fqn`, the same spelling `contains` uses); SOURCE = the publishing scope's published identity, or `Global` for the file's own top-level unit, which has no owner (FS-D10's file-scope spelling — no module name is invented from the filename). Metadata: `exportForm: module-surface`, `declaredKind`, `visibility`, `publishedBy` (enclosing-scope | file-scope), `sourceResolution` (the same three-valued class `contains` writes), `targetResolution: published-identity`. THE OLD RULING IS OVERTURNED, and the correction is the point of this entry: it rested on INSTRUMENT A (no export-declaration node type exists — still true: 0 of 177 node types on a 288-file draw, and none of the six candidates), and instrument A cannot settle a surface that is expressed by ORDINARY declarations plus visibility. `script/m14/lua-ruled.ts` records that exact error as json's `exports` ruling. INSTRUMENT B, counted on the tree over a deterministic 288-file draw of the 6,619-file population (`bun .tmp-probe/fsharp-lane/fs-exports-census.mts 300`): **2,535 importable names in 245 of 288 files (85.1%)**, restricted by `access_modifier` (internal 120, private 70, public 10); all six export-declaration candidates 0. THE OVERLAP, priced and not hidden: of the 2,143 OWNED surface entries, **2,143 (100.00%)** are pairs `contains` already carries, and the remaining 392 (15.47%) are the file's own module/namespace headers, which `contains` cannot carry at all (no parent). That overlap does NOT make the label a duplicate: `contains` is MEMBERSHIP (type members, record fields, DU cases, private/internal lets) while `exports` is the IMPORTABLE-UNIT SET, and the programme's own M14 #49 invariant states the asymmetry in those words (`script/m14/run-fixtures.ts:1471` admits module-owned symbols as exports and refuses type-owned members with \"membership rides Contains\"). Measured effect: the firing instrument reads 10/10 with `exports:1109` on the corrected even-stride 120-file sample, against 9/10 and SILENT in a HEAD worktree with the same instrument; the incoming gate at 60 files reads 847 exports edges, **820 resolved (96.8%), 27 ambiguous, 0 unresolved**, moving the lane from `2961 resolved / 380 amb / 4871 unresolved` to `3781 / 407 / 4871`. OVERTURN AGAIN IF: a non-zero count of the six export-declaration node types (an explicit export list would supersede this rule), or a measurement showing the `exports` pairs are NOT the importable-unit set (a `.fsi`-restricted surface this per-file rule publishes beyond)."
+        "resolution": "The FS-D8 importable-unit set, emitted as one `exports` edge per unit (analyzer name: FS-D13; the payload channel is unchanged). TARGET = the symbol's published identity (`metadata.fqn`, the same spelling `contains` uses); SOURCE = the publishing scope's published identity, or `Global` for the file's own top-level unit, which has no owner (FS-D10's file-scope spelling \u2014 no module name is invented from the filename). Metadata: `exportForm: module-surface`, `declaredKind`, `visibility`, `publishedBy` (enclosing-scope | file-scope), `sourceResolution` (the same three-valued class `contains` writes), `targetResolution: published-identity`. THE OLD RULING IS OVERTURNED, and the correction is the point of this entry: it rested on INSTRUMENT A (no export-declaration node type exists \u2014 still true: 0 of 177 node types on a 288-file draw, and none of the six candidates), and instrument A cannot settle a surface that is expressed by ORDINARY declarations plus visibility. `script/m14/lua-ruled.ts` records that exact error as json's `exports` ruling. INSTRUMENT B, counted on the tree over a deterministic 288-file draw of the 6,619-file population (`bun .tmp-probe/fsharp-lane/fs-exports-census.mts 300`): **2,535 importable names in 245 of 288 files (85.1%)**, restricted by `access_modifier` (internal 120, private 70, public 10); all six export-declaration candidates 0. THE OVERLAP, priced and not hidden: of the 2,143 OWNED surface entries, **2,143 (100.00%)** are pairs `contains` already carries, and the remaining 392 (15.47%) are the file's own module/namespace headers, which `contains` cannot carry at all (no parent). That overlap does NOT make the label a duplicate: `contains` is MEMBERSHIP (type members, record fields, DU cases, private/internal lets) while `exports` is the IMPORTABLE-UNIT SET, and the programme's own M14 #49 invariant states the asymmetry in those words (`script/m14/run-fixtures.ts:1471` admits module-owned symbols as exports and refuses type-owned members with \"membership rides Contains\"). Measured effect: the firing instrument reads 10/10 with `exports:1109` on the corrected even-stride 120-file sample, against 9/10 and SILENT in a HEAD worktree with the same instrument; the incoming gate at 60 files reads 847 exports edges, **820 resolved (96.8%), 27 ambiguous, 0 unresolved**, moving the lane from `2961 resolved / 380 amb / 4871 unresolved` to `3781 / 407 / 4871`. OVERTURN AGAIN IF: a non-zero count of the six export-declaration node types (an explicit export list would supersede this rule), or a measurement showing the `exports` pairs are NOT the importable-unit set (a `.fsi`-restricted surface this per-file rule publishes beyond)."
       },
       {
         "id": "FSD14",
-        "node_type": "(incoming resolution — the unresolved column: whose project declares the target)",
-        "status": "RULED — cause #1 of the unresolved column is the EXTERNAL LIBRARY SURFACE (instrument scope), not broken edges",
+        "node_type": "(incoming resolution \u2014 the unresolved column: whose project declares the target)",
+        "status": "RULED \u2014 cause #1 of the unresolved column is the EXTERNAL LIBRARY SURFACE (instrument scope), not broken edges",
         "question": "The lane brief carries 1,199,871 edges / 276,097 ambiguous / 370,867 unresolved / 53.9% residual and reads unresolved > ambiguous as 'targets that name nothing'. Which instrument, and whose project declares those 370,867 targets?",
-        "measurement": "WHOLE POPULATION, two instruments, both completed (no run was killed; both under .bb-heavy-v2.lock). (1) `npx tsx script/m14/residual-gate.ts --lane fsharp`, whole admitted population, production scope: edges 1,307,442 · resolved 549,197 · amb(decl) 385,465 · unresolved 372,780 · residual 58.0% · extFAIL 0 · bindFAIL 0 · causeFAIL 0 — artifact validation/m14/fixtures/fsharp/measurements/residual-gate-fsharp.txt. (2) `bun validation/m14/fixtures/fsharp/fs-unresolved-split.mts 0` reproduces the ARBITER's columns exactly (REPLICA edges 1,199,871 · resolved 552,907 · amb 276,097 · unresolved 370,867; parsed 10,138 .fs files, 0 failed, 0 degraded) — artifact measurements/fs-unresolved-split-full.log. (3) The 370,867 bucketed by WHOSE project declares the target's exact spelling, against a key space built from every admitted file of every repository (11,807 dumped files, 121,369 distinct names, 181,553 distinct qualified names): measurements/fs-unresolved-same-project-split.txt, instrument validation/m14/fixtures/fsharp/fs-unresolved-same-project-split.py.",
-        "resolution": "THE BRIEF'S PREMISE IS REVERSED AT THE CURRENT TREE, and the two instruments disagree by more than a rounding: edges 1,307,442 vs 1,199,871 (+107,571), amb(decl) 385,465 vs 276,097 (+109,368). At the residual gate — the instrument the brief told this lane to start with — ambiguity EXCEEDS unresolved (385,465 > 372,780), so 'the dominant question is not collisions' does not hold for that instrument. `contains` is settled and confirms the brief's note: after fa2dc27e8 it reads 208,677 edges / 208,668 resolved / 0 ambiguous / 9 unresolved, residual 0.0%. CAUSE #1, NAMED AND COUNTED: THE EXTERNAL LIBRARY SURFACE. Of the 370,867 unresolved, by whose project declares the target: cross-project-exact 201,618 (54.4%) · in-corpus-owner 84,857 (22.9%) · nowhere-in-corpus 60,836 (16.4%) · in-corpus-leaf-only 14,507 (3.9%) · SAME-PROJECT-EXACT 9,049 (2.4%). The top targets are FSharp.Core, xUnit and FsUnit vocabulary — cross-project-exact is led by should 14,390 · Fact 11,655 · Some 8,013 · Test 5,974 · Extension 5,733 · not 5,449 · ignore 4,613 · shouldEqual 4,080 · Seq.map 3,790 · List.map 3,694, and nowhere-in-corpus by Theory 3,061 · InlineData 1,996 · System.Threading.Tasks 1,424 · Does.Contain 595. They are 'in corpus' at all only because the corpus CONTAINS THE COMPILER: `fsharp` is 6,626 of the 11,807 dumped files and ships FSharp.Core's own sources and its test idioms, so `ignore`, `Some`, `Seq.map` and `shouldEqual` are declared somewhere in the union of 26 projects. For Argu, Grace, Paket, Deedle or Fantomas they are OUTSIDE the project, and production resolves PER PROJECT. RULING: LEGITIMATE — instrument scope, not a defect. 286,475 of 370,867 (77.3%) sit in the two 'declared somewhere else' buckets and 347,311 (93.7%) name something the edge's own project does not declare; an edge inside project P naming a declaration P does not publish is correctly unresolved for that edge. Same shape as LUA-G6 in the lua lane, at 2.7x the share. NO EXTERNAL MARKER IS EMITTED AND THAT IS THE LANE'S OWN MEASURED DECISION: FS-P8 shipped one and was RETIRED 2026-10-09 after the blanket rule measured 28.0% verified / 72% refuted, and a bare identifier target has no owner for the gate's owner-lookup, so the claim would land in `ext?` (unverified) and block a pass without reducing the column. THE ACTIONABLE REMAINDER IS same-project-exact, 9,049 edges (2.4%): calls 5,615 · uses 1,619 · references 1,227 · imports 377 · implements 156 · extends 28 · instantiates 14 · contains 9 · overrides 2 · exports 2; by the analyzer's own resolution class bare-external 4,068 · external-type-or-module 2,103 · external-type 1,034 · external-namespace 754 · receiver-value 479 · local-binding 363 · module-member 120 · call-chain-receiver 121 · published-identity 11 · base-member-external 2. TWO SHAPES IN IT ARE ALREADY VISIBLY WRONG and are named for the next pass: `published-identity` 11 (`contains JS.this`, `exports Module.this`, `contains new T.this` — a member identity whose final segment is the keyword `this`), and `local-binding` 363, which is the class real-fsharp-analyzer.md §19.3 prices: the fix requires the target spelling `<callable>#<binding>` because `verifyBindingClaim` REFUTES a marked edge whose target carries no separator, and it is DELIBERATELY NOT TAKEN because the differential's oracle (script/m14/fsharp-truth-oracle.ts) derives the bare spelling and is outside this lane's write scope — taking it would convert this lane's own differential rows into MISSING-plus-fabrication.",
+        "measurement": "WHOLE POPULATION, two instruments, both completed (no run was killed; both under .bb-heavy-v2.lock). (1) `npx tsx script/m14/residual-gate.ts --lane fsharp`, whole admitted population, production scope: edges 1,307,442 \u00b7 resolved 549,197 \u00b7 amb(decl) 385,465 \u00b7 unresolved 372,780 \u00b7 residual 58.0% \u00b7 extFAIL 0 \u00b7 bindFAIL 0 \u00b7 causeFAIL 0 \u2014 artifact validation/m14/fixtures/fsharp/measurements/residual-gate-fsharp.txt. (2) `bun validation/m14/fixtures/fsharp/fs-unresolved-split.mts 0` reproduces the ARBITER's columns exactly (REPLICA edges 1,199,871 \u00b7 resolved 552,907 \u00b7 amb 276,097 \u00b7 unresolved 370,867; parsed 10,138 .fs files, 0 failed, 0 degraded) \u2014 artifact measurements/fs-unresolved-split-full.log. (3) The 370,867 bucketed by WHOSE project declares the target's exact spelling, against a key space built from every admitted file of every repository (11,807 dumped files, 121,369 distinct names, 181,553 distinct qualified names): measurements/fs-unresolved-same-project-split.txt, instrument validation/m14/fixtures/fsharp/fs-unresolved-same-project-split.py.",
+        "resolution": "THE BRIEF'S PREMISE IS REVERSED AT THE CURRENT TREE, and the two instruments disagree by more than a rounding: edges 1,307,442 vs 1,199,871 (+107,571), amb(decl) 385,465 vs 276,097 (+109,368). At the residual gate \u2014 the instrument the brief told this lane to start with \u2014 ambiguity EXCEEDS unresolved (385,465 > 372,780), so 'the dominant question is not collisions' does not hold for that instrument. `contains` is settled and confirms the brief's note: after fa2dc27e8 it reads 208,677 edges / 208,668 resolved / 0 ambiguous / 9 unresolved, residual 0.0%. CAUSE #1, NAMED AND COUNTED: THE EXTERNAL LIBRARY SURFACE. Of the 370,867 unresolved, by whose project declares the target: cross-project-exact 201,618 (54.4%) \u00b7 in-corpus-owner 84,857 (22.9%) \u00b7 nowhere-in-corpus 60,836 (16.4%) \u00b7 in-corpus-leaf-only 14,507 (3.9%) \u00b7 SAME-PROJECT-EXACT 9,049 (2.4%). The top targets are FSharp.Core, xUnit and FsUnit vocabulary \u2014 cross-project-exact is led by should 14,390 \u00b7 Fact 11,655 \u00b7 Some 8,013 \u00b7 Test 5,974 \u00b7 Extension 5,733 \u00b7 not 5,449 \u00b7 ignore 4,613 \u00b7 shouldEqual 4,080 \u00b7 Seq.map 3,790 \u00b7 List.map 3,694, and nowhere-in-corpus by Theory 3,061 \u00b7 InlineData 1,996 \u00b7 System.Threading.Tasks 1,424 \u00b7 Does.Contain 595. They are 'in corpus' at all only because the corpus CONTAINS THE COMPILER: `fsharp` is 6,626 of the 11,807 dumped files and ships FSharp.Core's own sources and its test idioms, so `ignore`, `Some`, `Seq.map` and `shouldEqual` are declared somewhere in the union of 26 projects. For Argu, Grace, Paket, Deedle or Fantomas they are OUTSIDE the project, and production resolves PER PROJECT. RULING: LEGITIMATE \u2014 instrument scope, not a defect. 286,475 of 370,867 (77.3%) sit in the two 'declared somewhere else' buckets and 347,311 (93.7%) name something the edge's own project does not declare; an edge inside project P naming a declaration P does not publish is correctly unresolved for that edge. Same shape as LUA-G6 in the lua lane, at 2.7x the share. NO EXTERNAL MARKER IS EMITTED AND THAT IS THE LANE'S OWN MEASURED DECISION: FS-P8 shipped one and was RETIRED 2026-10-09 after the blanket rule measured 28.0% verified / 72% refuted, and a bare identifier target has no owner for the gate's owner-lookup, so the claim would land in `ext?` (unverified) and block a pass without reducing the column. THE ACTIONABLE REMAINDER IS same-project-exact, 9,049 edges (2.4%): calls 5,615 \u00b7 uses 1,619 \u00b7 references 1,227 \u00b7 imports 377 \u00b7 implements 156 \u00b7 extends 28 \u00b7 instantiates 14 \u00b7 contains 9 \u00b7 overrides 2 \u00b7 exports 2; by the analyzer's own resolution class bare-external 4,068 \u00b7 external-type-or-module 2,103 \u00b7 external-type 1,034 \u00b7 external-namespace 754 \u00b7 receiver-value 479 \u00b7 local-binding 363 \u00b7 module-member 120 \u00b7 call-chain-receiver 121 \u00b7 published-identity 11 \u00b7 base-member-external 2. TWO SHAPES IN IT ARE ALREADY VISIBLY WRONG and are named for the next pass: `published-identity` 11 (`contains JS.this`, `exports Module.this`, `contains new T.this` \u2014 a member identity whose final segment is the keyword `this`), and `local-binding` 363, which is the class real-fsharp-analyzer.md \u00a719.3 prices: the fix requires the target spelling `<callable>#<binding>` because `verifyBindingClaim` REFUTES a marked edge whose target carries no separator, and it is DELIBERATELY NOT TAKEN because the differential's oracle (script/m14/fsharp-truth-oracle.ts) derives the bare spelling and is outside this lane's write scope \u2014 taking it would convert this lane's own differential rows into MISSING-plus-fabrication.",
         "evidence": [
           "validation/m14/fixtures/fsharp/measurements/residual-gate-fsharp.txt",
           "validation/m14/fixtures/fsharp/measurements/fs-unresolved-split-full.log",
@@ -432,7 +796,32 @@
           "validation/m14/fixtures/fsharp/fs-unresolved-same-project-split.py",
           "docs/analyzers/fsharp.md"
         ],
-        "falsifier": "The bucketing rests on one membership test — is the target's exact spelling declared in the edge's OWN repository — and the instrument asserts the test can answer BOTH ways before it prints: a name the compiler repo really declares IS in its set, a fabricated name is in NO repo's set, and a BCL name carried only by the compiler repo (`should`) is NOT declared by `Argu`. All three hold (CONTROL PASSES, in the artifact); had any failed the split refuses to report. If a later run shows same-project-exact growing far beyond 2.4%, this ruling is REFUTED and the external-surface reading becomes the wrong one."
+        "falsifier": "The bucketing rests on one membership test \u2014 is the target's exact spelling declared in the edge's OWN repository \u2014 and the instrument asserts the test can answer BOTH ways before it prints: a name the compiler repo really declares IS in its set, a fabricated name is in NO repo's set, and a BCL name carried only by the compiler repo (`should`) is NOT declared by `Argu`. All three hold (CONTROL PASSES, in the artifact); had any failed the split refuses to report. If a later run shows same-project-exact growing far beyond 2.4%, this ruling is REFUTED and the external-surface reading becomes the wrong one."
+      },
+      {
+        "node_type": "named_field, named_field_pattern, field_pattern, record_pattern",
+        "status": "RULED",
+        "decision": "A record CONSTRUCTION label (`{ A = 1 }`) and a record PATTERN label (`| { A = a } |`) are NOT reference edges. The label names a member of the record type; for a type from another assembly that is a SYSTEM member no project declares, so a references edge would carry a target nothing can ever resolve, and the field's own declaration already carries its contains edge. MEASURED in the 120-file draw (validation/m14/results/fsharp-shape-census.json): named_field 376, named_field_pattern 249, field_pattern 11, record_pattern 6. Reopen only if a corpus case names a PROJECT-declared record."
+      },
+      {
+        "node_type": "primary_constr_args",
+        "status": "RULED",
+        "decision": "Primary-constructor arguments are PARAMETERS, and this lane publishes no parameters (symbol contract: NO locals, NO lambda params, NO synthetic members). 107 occurrences in the 120-file draw. A contains edge would publish a symbol the store's symbol contract forbids; the type's contains edges are its members."
+      },
+      {
+        "node_type": "preproc_inactive",
+        "status": "RULED",
+        "decision": "Code inside an INACTIVE preprocessor region emits NOTHING: the compiler does not see it, so a symbol or edge from it would be a fact about a program that is not being built \u2014 the same class as FS-A4's dead branches. 24 occurrences in the 120-file draw. The ACTIVE region is walked normally; the preproc_* containers are silent above."
+      },
+      {
+        "node_type": "format_string_eval",
+        "status": "RULED",
+        "decision": "An interpolation HOLE is not a declaration reference: the captured value is a runtime value mention, not a call, type or module reference, and this lane's calls/references come from application_expression and written type nodes \u2014 a hole has no callee and no written type. 90 occurrences in the 120-file draw."
+      },
+      {
+        "node_type": "extern_binding, extern_param",
+        "status": "RULED",
+        "decision": "Extern (P/Invoke and signature-file extern) declarations are NOT published: this lane's symbol contract mirrors the C# family (types, members, functions, variables, namespaces, modules) and an extern binding is a runtime import with no body. 0 occurrences in the 120-file draw \u2014 if a corpus case appears this decision reopens rather than staying a silent absence."
       }
     ]
   },
@@ -441,74 +830,74 @@
     "declared_gaps": [
       {
         "label": "contains",
-        "reason": "An oracle EXISTS (script/m14/oracles/fsharp-contains.ts) and is deliberately NOT wired. Measured on a 40-file fsharp draw it derives 1,178 truth rows of which 1,021 agree (86.7%), leaving 1,563 analyzer rows with no truth and 157 truth rows the analyzer does not publish. Admitting the label with that oracle would replace \"not compared\" with \"compared against an oracle wrong in both directions\", which is strictly less honest — the erlang and dart oracles were only wired after reaching ZERO disagreement in both directions. The known misses are members of `type ... as this` classes and of .fsi signature files, and a `let` with a return-type annotation whose name extraction falls through to raw node text.",
+        "reason": "An oracle EXISTS (script/m14/oracles/fsharp-contains.ts) and is deliberately NOT wired. Measured on a 40-file fsharp draw it derives 1,178 truth rows of which 1,021 agree (86.7%), leaving 1,563 analyzer rows with no truth and 157 truth rows the analyzer does not publish. Admitting the label with that oracle would replace \"not compared\" with \"compared against an oracle wrong in both directions\", which is strictly less honest \u2014 the erlang and dart oracles were only wired after reaching ZERO disagreement in both directions. The known misses are members of `type ... as this` classes and of .fsi signature files, and a `let` with a return-type annotation whose name extraction falls through to raw node text.",
         "closes_when": "the oracle reaches zero analyzer-only and truth-only rows, then wire it with its allowlist entry"
       },
       {
         "label": "exports",
-        "reason": "FS-D13 (2026-10-09) OVERTURNED the old ruling, so the label FIRES — 1109 edges on the corrected even-stride 120-file firing sample, 847 on the 60-file incoming stride — and this is an EMITTED-but-UNAUDITED declaration, not the 'admitted and compared' one that stood in `declared_no_truth`. That text was false in both directions: `script/m14/differential.ts` does not admit `exports` for this lane (its fsharp expression is the base four plus `calls`, `references` and `contains`), and nothing derived truth for the label. `npx tsx script/m14/verify-label-coverage.ts` reads fsharp `5471 | 5018` with `exports (85), imports (265), uses (188)` unaudited on its 25-file sample. Closes when an `exports` oracle exists in `script/m14/fsharp-truth-oracle.ts` AND the label is admitted on its own physical line in the differential's fsharp expression — the pair, in that order, because admitting without truth converts these rows into unexplained fabrications.",
+        "reason": "FS-D13 (2026-10-09) OVERTURNED the old ruling, so the label FIRES \u2014 1109 edges on the corrected even-stride 120-file firing sample, 847 on the 60-file incoming stride \u2014 and this is an EMITTED-but-UNAUDITED declaration, not the 'admitted and compared' one that stood in `declared_no_truth`. That text was false in both directions: `script/m14/differential.ts` does not admit `exports` for this lane (its fsharp expression is the base four plus `calls`, `references` and `contains`), and nothing derived truth for the label. `npx tsx script/m14/verify-label-coverage.ts` reads fsharp `5471 | 5018` with `exports (85), imports (265), uses (188)` unaudited on its 25-file sample. Closes when an `exports` oracle exists in `script/m14/fsharp-truth-oracle.ts` AND the label is admitted on its own physical line in the differential's fsharp expression \u2014 the pair, in that order, because admitting without truth converts these rows into unexplained fabrications.",
         "closes_when": "an exports oracle exists for this language AND the differential's allowlist admits the label; then the two readings meet"
       },
       {
         "label": "imports",
-        "reason": "CORRECTION (2026-10-09, FS-D13 round): the `_closed` entry below claims this label 'was admitted to this lane's compared set in `script/m14/differential.ts`, on its own physical line'. RE-MEASURED AND REFUTED — no such line exists at this HEAD, in the f-sharp worktree (d712fa260), or in any commit of any branch (`git log --all -S'\"imports\", \"uses\"' -- script/m14/differential.ts` is empty), and `npx tsx script/m14/verify-label-coverage.ts` reads fsharp with `imports (265)` UNAUDITED. The oracle does exist (`script/m14/fsharp-truth-oracle.ts`, a real second implementation — that half of the claim stands), so the honest state is the one this entry declares: EMITTED, oracle present, allowlist does not admit it, rows unaudited. Closes when the admission line actually lands, at which point this entry moves to `_closed` with the differential's own reading as evidence.",
+        "reason": "CORRECTION (2026-10-09, FS-D13 round): the `_closed` entry below claims this label 'was admitted to this lane's compared set in `script/m14/differential.ts`, on its own physical line'. RE-MEASURED AND REFUTED \u2014 no such line exists at this HEAD, in the f-sharp worktree (d712fa260), or in any commit of any branch (`git log --all -S'\"imports\", \"uses\"' -- script/m14/differential.ts` is empty), and `npx tsx script/m14/verify-label-coverage.ts` reads fsharp with `imports (265)` UNAUDITED. The oracle does exist (`script/m14/fsharp-truth-oracle.ts`, a real second implementation \u2014 that half of the claim stands), so the honest state is the one this entry declares: EMITTED, oracle present, allowlist does not admit it, rows unaudited. Closes when the admission line actually lands, at which point this entry moves to `_closed` with the differential's own reading as evidence.",
         "closes_when": "the differential's allowlist admits `imports` for fsharp on its own physical line, and verify-label-coverage reads the label in the audited column"
       },
       {
         "label": "uses",
-        "reason": "CORRECTION (2026-10-09, FS-D13 round): same as the `imports` entry above — the `_closed` text claims an allowlist admission that does not exist at this HEAD, in the f-sharp worktree, or in any branch's history, while the oracle half is true (`script/m14/fsharp-truth-oracle.ts` derives `uses` from `attribute`). `npx tsx script/m14/verify-label-coverage.ts` reads fsharp with `uses (188)` UNAUDITED. Declared here rather than left as a closed claim, because a false 'closed' is the one state the instrument cannot see: it prints the label as a gap either way, and only the spec says otherwise.",
+        "reason": "CORRECTION (2026-10-09, FS-D13 round): same as the `imports` entry above \u2014 the `_closed` text claims an allowlist admission that does not exist at this HEAD, in the f-sharp worktree, or in any branch's history, while the oracle half is true (`script/m14/fsharp-truth-oracle.ts` derives `uses` from `attribute`). `npx tsx script/m14/verify-label-coverage.ts` reads fsharp with `uses (188)` UNAUDITED. Declared here rather than left as a closed claim, because a false 'closed' is the one state the instrument cannot see: it prints the label as a gap either way, and only the spec says otherwise.",
         "closes_when": "the differential's allowlist admits `uses` for fsharp on its own physical line, and verify-label-coverage reads the label in the audited column"
       }
     ],
     "declared_no_truth": [
       {
         "label": "calls",
-        "reason": "`calls` is admitted for this lane and compared, but no calls oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a calls oracle exists for this language.",
+        "reason": "`calls` is admitted for this lane and compared, but no calls oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced \u2014 and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a calls oracle exists for this language.",
         "closes_when": "a calls oracle exists for this language; then admit it and reconcile"
       },
       {
         "label": "contains",
-        "reason": "`contains` is admitted for this lane and compared, but no contains oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a contains oracle exists for this language.",
+        "reason": "`contains` is admitted for this lane and compared, but no contains oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced \u2014 and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a contains oracle exists for this language.",
         "closes_when": "a contains oracle exists for this language; then admit it and reconcile"
       },
       {
         "label": "references",
-        "reason": "`references` is admitted for this lane and compared, but no references oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a references oracle exists for this language.",
+        "reason": "`references` is admitted for this lane and compared, but no references oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced \u2014 and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a references oracle exists for this language.",
         "closes_when": "a references oracle exists for this language; then admit it and reconcile"
       },
       {
         "label": "instantiates",
-        "reason": "`instantiates` is admitted for this lane and compared, but no instantiates oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a instantiates oracle exists for this language.",
+        "reason": "`instantiates` is admitted for this lane and compared, but no instantiates oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced \u2014 and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a instantiates oracle exists for this language.",
         "closes_when": "a instantiates oracle exists for this language; then admit it and reconcile"
       },
       {
         "label": "overrides",
-        "reason": "`overrides` is admitted for this lane and compared, but no overrides oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a overrides oracle exists for this language.",
+        "reason": "`overrides` is admitted for this lane and compared, but no overrides oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced \u2014 and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a overrides oracle exists for this language.",
         "closes_when": "a overrides oracle exists for this language; then admit it and reconcile"
       },
       {
         "label": "extends",
-        "reason": "`extends` is admitted for this lane and compared, but no extends oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a extends oracle exists for this language.",
+        "reason": "`extends` is admitted for this lane and compared, but no extends oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced \u2014 and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a extends oracle exists for this language.",
         "closes_when": "a extends oracle exists for this language; then admit it and reconcile"
       },
       {
         "label": "implements",
-        "reason": "`implements` is admitted for this lane and compared, but no implements oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a implements oracle exists for this language.",
+        "reason": "`implements` is admitted for this lane and compared, but no implements oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced \u2014 and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a implements oracle exists for this language.",
         "closes_when": "a implements oracle exists for this language; then admit it and reconcile"
       },
       {
         "label": "uses",
-        "reason": "`uses` is admitted for this lane and compared, but no uses oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a uses oracle exists for this language.",
+        "reason": "`uses` is admitted for this lane and compared, but no uses oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced \u2014 and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a uses oracle exists for this language.",
         "closes_when": "a uses oracle exists for this language; then admit it and reconcile"
       },
       {
         "label": "imports",
-        "reason": "`imports` is admitted for this lane and compared, but no imports oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a imports oracle exists for this language.",
+        "reason": "`imports` is admitted for this lane and compared, but no imports oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced \u2014 and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a imports oracle exists for this language.",
         "closes_when": "a imports oracle exists for this language; then admit it and reconcile"
       },
       {
         "label": "exports",
-        "reason": "`exports` is admitted for this lane and compared, but no exports oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a exports oracle exists for this language.",
+        "reason": "`exports` is admitted for this lane and compared, but no exports oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced \u2014 and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a exports oracle exists for this language.",
         "closes_when": "a exports oracle exists for this language; then admit it and reconcile"
       }
     ],
@@ -516,13 +905,13 @@
       {
         "label": "imports",
         "closed": "2026-10-09",
-        "was": "`imports` is admitted for this lane and compared, but no imports oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a imports oracle exists for this language.",
-        "now": "The oracle exists and is compared. `script/m14/fsharp-truth-oracle.ts` derives `imports` from the language's three import forms: `import_decl` (`open X` / `open type X` — the same node for both spellings; the target is the written module path VERBATIM, because the leaf rule that governs every other label in this lane does not apply to a module, whose leaf is not the module), `module_abbrev` (`module X = Y` — the RIGHT-hand path; the left-hand name is the alias this very file introduces, and naming it makes every alias a self-dependency), and `fsi_directive_decl` with keyword `#r`/`#load`/`#I` (target = the specifier's string CONTENT; the node's other three keywords are REPL controls that name nothing outside the file, so the keyword is read off the tree rather than the node type being trusted). `imports` was admitted to this lane's compared set in `script/m14/differential.ts`, on its own physical line and with the stale reason that kept it out REWRITTEN rather than left beside it. Measured, not asserted: `verify-label-coverage.ts` reads fsharp `5386 | 5386` with an EMPTY un-audited column — it read `4933 | 4933` with `imports (265), uses (188)` before, and 5386 - 4933 = 453 = 265 + 188 exactly, so the movement is the two labels and nothing else; `script/m60/rel-type-coverage-gate.ts` now prints NO fsharp row in CHECK 1 and no `DERIVATION|fsharp|` line; and the differential reads 99.9% covered with neither label in `unexplained-by-label` on two draws (60 files: MISSING 3, unexplained 66, calls=65 references=1; 200 files: MISSING 15, unexplained 234, calls=231 references=3 — every residual row in another label). The check is LIVE rather than decorative, which is the part worth keeping: disabling the arm alone makes the harness's own guard fire — `COMPARED WITH NO TRUTH: imports (115 comparable, 0 truth), uses (44 comparable, 0 truth)` — and on that draw 159 of the 214 `unexplained` rows ARE these two labels (115 + 44) — with no truth behind them every comparable edge of the label is counted as a fabrication, which is the size of the population the audit covers on 60 files. The two clean readings are 66 (60 files, `calls=65 references=1`) and 234 (200 files, `calls=231 references=3`), and no before/after DELTA on one draw is claimed: the cold pool advances between runs, so the mutated and clean readings are different file sets by construction, and the claim is the population and the guard rather than a difference. NOT claimed: that the arms agree on constructs the draw did not contain (a nested `module A.B = C` path, a verbatim specifier containing a doubled quote — of which no corpus specifier has one, measured over all 193 directive nodes). The guard is a HARD FAILURE rather than a warning: a second mutated draw reads `imports (190 comparable, 0 truth), uses (74 comparable, 0 truth)` with `unexplained=335 (6.5%)` — 264 of them these two labels' whole comparable population — and the harness EXITS 6, while the clean run of the same command exits 0."
+        "was": "`imports` is admitted for this lane and compared, but no imports oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced \u2014 and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a imports oracle exists for this language.",
+        "now": "The oracle exists and is compared. `script/m14/fsharp-truth-oracle.ts` derives `imports` from the language's three import forms: `import_decl` (`open X` / `open type X` \u2014 the same node for both spellings; the target is the written module path VERBATIM, because the leaf rule that governs every other label in this lane does not apply to a module, whose leaf is not the module), `module_abbrev` (`module X = Y` \u2014 the RIGHT-hand path; the left-hand name is the alias this very file introduces, and naming it makes every alias a self-dependency), and `fsi_directive_decl` with keyword `#r`/`#load`/`#I` (target = the specifier's string CONTENT; the node's other three keywords are REPL controls that name nothing outside the file, so the keyword is read off the tree rather than the node type being trusted). `imports` was admitted to this lane's compared set in `script/m14/differential.ts`, on its own physical line and with the stale reason that kept it out REWRITTEN rather than left beside it. Measured, not asserted: `verify-label-coverage.ts` reads fsharp `5386 | 5386` with an EMPTY un-audited column \u2014 it read `4933 | 4933` with `imports (265), uses (188)` before, and 5386 - 4933 = 453 = 265 + 188 exactly, so the movement is the two labels and nothing else; `script/m60/rel-type-coverage-gate.ts` now prints NO fsharp row in CHECK 1 and no `DERIVATION|fsharp|` line; and the differential reads 99.9% covered with neither label in `unexplained-by-label` on two draws (60 files: MISSING 3, unexplained 66, calls=65 references=1; 200 files: MISSING 15, unexplained 234, calls=231 references=3 \u2014 every residual row in another label). The check is LIVE rather than decorative, which is the part worth keeping: disabling the arm alone makes the harness's own guard fire \u2014 `COMPARED WITH NO TRUTH: imports (115 comparable, 0 truth), uses (44 comparable, 0 truth)` \u2014 and on that draw 159 of the 214 `unexplained` rows ARE these two labels (115 + 44) \u2014 with no truth behind them every comparable edge of the label is counted as a fabrication, which is the size of the population the audit covers on 60 files. The two clean readings are 66 (60 files, `calls=65 references=1`) and 234 (200 files, `calls=231 references=3`), and no before/after DELTA on one draw is claimed: the cold pool advances between runs, so the mutated and clean readings are different file sets by construction, and the claim is the population and the guard rather than a difference. NOT claimed: that the arms agree on constructs the draw did not contain (a nested `module A.B = C` path, a verbatim specifier containing a doubled quote \u2014 of which no corpus specifier has one, measured over all 193 directive nodes). The guard is a HARD FAILURE rather than a warning: a second mutated draw reads `imports (190 comparable, 0 truth), uses (74 comparable, 0 truth)` with `unexplained=335 (6.5%)` \u2014 264 of them these two labels' whole comparable population \u2014 and the harness EXITS 6, while the clean run of the same command exits 0."
       },
       {
         "label": "uses",
         "closed": "2026-10-09",
-        "was": "`uses` is admitted for this lane and compared, but no uses oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a uses oracle exists for this language.",
+        "was": "`uses` is admitted for this lane and compared, but no uses oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced \u2014 and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a uses oracle exists for this language.",
         "now": "The oracle exists and is compared. `script/m14/fsharp-truth-oracle.ts` derives `uses` from `attribute`, which is the one F# construct a `uses` edge is FOR: it NAMES a type, applies it as a marker and never invokes it, so it is not a call (no application), not a reference (no written annotation), not a base, not an implementation and not a construction. The target is the attribute type's LEAST segment (`[<Xunit.Fact>]` names `Fact`, which is the spelling a consumer binds by) EXCEPT where this file declares a symbol under that name, when the target is that declaration's qualified name, because the written name is then provably the file's own identity rather than a same-named type from elsewhere. Two refusals are stated as rules rather than left to the read: the `target` FIELD is skipped (`[<return: Struct>]` attaches the attribute to the return, and reading the keyword as the dependency cost 11 edges in a 200-file draw), and an attribute's ARGUMENT is never read (`[<Obsolete(\"x\")>]` names `Obsolete` and nothing inside `\"x\"`). Admitted to the compared set beside `imports`, with the same measurement behind it (`5386 | 5386` un-audited-empty; no fsharp row in the coverage gate; neither label in `unexplained-by-label` across two draws; and the COMPARED-WITH-NO-TRUTH guard firing at 44 comparable `uses` edges when the arm is disabled)."
       }
     ]

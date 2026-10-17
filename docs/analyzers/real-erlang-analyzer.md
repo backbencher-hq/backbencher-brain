@@ -684,6 +684,27 @@ exists (`src/ast/override-companion-pass.ts`). So the plumbing gap is a real con
 the label's correctness, not an excuse — but it is a constraint about **this repository**,
 and a GAP is the verdict it produces, not a RULED one.
 
+## Evidence tiers (M14 section D)
+
+Every relationship this analyzer emits states its `metadata.evidenceClass`. The model is the BEAM
+sibling's (`real-elixir-analyzer.ts`) with one adaptation — Erlang writes the module qualifier with a
+colon where Elixir writes a dot:
+
+| tier | rows | why |
+|---|---|---|
+| `structural` | `contains`, `exports`, `implements`, `instantiates` | the claim IS the syntax (a declaration's member list, an `-export` entry, a `-behaviour` name) |
+| `import_based` | `imports` (`-import`, `-include`, `-include_lib`) | a module dependency; this is the fall-through-bug class every lane has paid for (an import reported as usage) |
+| `reference_qualified` | every `references` row, and a `calls` edge whose target keeps its module qualifier (`mod:fn`, ER-D1) | the callee/type was NAMED with its module — a reference resolved by spelling |
+| `usage_contextual` | a bare `calls` target (`f(...)`), and `uses` | resolved against this module's declared set, i.e. context-dependent |
+
+**MEASURED 2026-10-17: before this wave the analyzer stamped NOTHING** — every row carried no
+`evidenceClass` at all (probe over every fixture source), so section D could not be satisfied and the
+tier was left to the consumer's fall-through. The stamping is a terminal pass and additive: a site that
+sets its own class keeps it. Pinned by fixtures: `attrs-er3` (all four tiers across one file — import,
+include reference, remote call, local call, contains) and `arity-distinct-calls` (remote calls
+`reference_qualified` vs local calls `usage_contextual`, at the same arity-distinct call sites it
+already pins).
+
 ## DERIVATION: the two labels that were emitted and compared against nothing
 
 `script/m60/rel-type-coverage-gate.ts` CHECK 1 (DERIVATION) reports, at HEAD and
@@ -1047,6 +1068,18 @@ references would stop being dropped — and that removed the only thing suppress
 wreckage, because an undefined source makes `pushRel` a no-op. Nothing noticed for a
 full corpus run. A fix can open a hole as easily as close one, and it will not come
 with a boundary unless someone writes one.
+
+### ERROR and MISSING are `internal_silent` — the universal pair (M14 section A ruling)
+
+The grammar's table never lists them (`nodeTypeForId` does not return the recovery nodes), and this
+spec originally left them out on exactly that basis. **That reasoning is true about the grammar and
+wrong about the consumer**: the completeness gate adds the pair it reuses from F1
+(`script/m14/audit-analyzer-grammar.ts`: "ERROR and MISSING are produced by every tree-sitter parser
+but are NOT listed by `nodeTypeForId`"), so a spec that omits them fails section A with
+`2 node type(s) in NO bucket: ERROR, MISSING` — measured 2026-10-17, and the same shape the gate's own
+header records for F1. They are classified **internal_silent**: the analyzer publishes no symbol and no
+relationship for either, and reports every one on the `ParseResult.errors` channel — which is exactly
+what the rest of this section describes.
 
 ## Complexity model
 

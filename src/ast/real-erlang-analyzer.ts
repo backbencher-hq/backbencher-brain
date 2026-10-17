@@ -196,6 +196,46 @@ interface ErlangContext {
   grammarDamaged: boolean
 }
 
+// ============================================================================
+// M14 SECTION D — THE EVIDENCE TIER, stated by the analyzer rather than left to
+// the consumer's fall-through.
+//
+// Measured 2026-10-17 (`.tmp-erlang-lane/tier-probe.ts`, every fixture source):
+// **every row this analyzer emitted carried NO `metadata.evidenceClass`** — the
+// tier was left to whatever the reader guessed, which is the "silence is guilt"
+// shape section D exists to catch. The model below is the BEAM sibling's
+// (`real-elixir-analyzer.ts`): a table for the kinds whose tier is fixed by the
+// CONSTRUCT, plus one split a table cannot express — a `calls` edge whose target
+// is module-qualified (`mod:fn`, ER-D1's kept spelling) is a RESOLVED reference,
+// while a bare `f(...)` is context-dependent usage. Erlang writes the qualifier
+// with a colon where Elixir writes a dot, which is the only adaptation.
+//
+// The vocabulary is the fleet's four (`script/m14/audit-analyzer-grammar.ts:146`:
+// structural / import_based / usage_contextual / inferred) plus
+// `reference_qualified`, the same fifth value elixir publishes and the fleet
+// already gates on.
+// ============================================================================
+const DEFAULT_EVIDENCE_CLASS: Record<string, string> = {
+  contains: "structural",
+  exports: "structural",
+  implements: "structural",
+  instantiates: "structural",
+  overrides: "structural",
+  extends: "structural",
+  imports: "import_based",
+  references: "reference_qualified",
+  calls: "usage_contextual",
+  uses: "usage_contextual",
+}
+
+function evidenceClassFor(type: ASTEngine.RelationshipType | undefined, confidence: number, target: string): string {
+  const t = String(type ?? "")
+  // ER-D1: a remote call's target keeps `mod:fn`, so the colon is the signal that
+  // the callee was named WITH its module — a reference resolved by spelling.
+  if (t === "calls") return target.indexOf(":") !== -1 ? "reference_qualified" : "usage_contextual"
+  return DEFAULT_EVIDENCE_CLASS[t] ?? (confidence >= 0.85 ? "structural" : "inferred")
+}
+
 export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: ErlangContext = {
@@ -514,6 +554,18 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const pa: string[] = []
     for (const k in ctx.patterns) pa.push(k)
+
+    // SECTION D: stamp every relationship that does not already state its tier.
+    // Additive — a row that carries its own `evidenceClass` keeps it, so a
+    // construct with a deliberate site-specific class (a resolved reference, an
+    // inferred macro row) is never overwritten by this fall-through.
+    for (const rel of ctx.relationships) {
+      const md = (rel.metadata ?? {}) as Record<string, unknown>
+      if (typeof md.evidenceClass !== "string" || md.evidenceClass.length === 0) {
+        md.evidenceClass = evidenceClassFor(rel.type, Number(rel.confidence), String(rel.target ?? ""))
+        rel.metadata = md
+      }
+    }
 
     return {
       language: "erlang",

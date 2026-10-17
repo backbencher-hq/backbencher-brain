@@ -2671,7 +2671,9 @@ cannot: **every named node type the pinned `wasm/tree-sitter-sql.wasm` produces 
 bucket** — `handled_verified`, `internal_silent`, `gap` or `design_decision` — because silence is guilt.
 
 **MEASURED with the gate's own oracle** (web-tree-sitter `nodeTypeIsNamed`/`nodeTypeForId`,
-`_`-prefixed excluded, `ERROR`/`MISSING` added): **596 named node types**; the spec classifies
+`_`-prefixed excluded, duplicate spellings deduped, `ERROR`/`MISSING` added): **592 named node types**
+(the wasm enumerates 594 with 4 duplicate spellings — `dollar_quote`, `cast`, `field`, `from` — so 590
+unique plus the universal pair); the spec classifies
 `82 handled_verified · 478 internal_silent · 17 gaps · 25 decisions`, with **0 unclassified and 0
 stale**.
 
@@ -2704,12 +2706,21 @@ emission claim moved. The `error` row was a SPELLING bug, not drift — the wasm
 `ERROR` node and never lowercase `error`; the row was replaced by `ERROR`/`MISSING` and SQL-D10's error
 channel is unchanged.
 
-**Section status through the gate itself** (config proposed, Lead-owned file): A, C, D, G, H pass;
-**B is blocked on a gate measurement artefact** — the reverse check parses every top-level non-JSON file
-in the fixtures directory, and this lane keeps ~25 `.ts`/`.mts` instruments beside its fixtures, so
-`sql-contains-oracle.mts` is parsed as TypeScript and its `exports` kind was attributed to this analyzer,
-which emits none (SQL-D16). The proposed fix is a `fixtureExtensions?: string[]` field on `LangConfig`
-(`[".sql"]` for this lane), defaulting to today's behaviour. **`exports` was NOT added to
-`requiredKinds`** — that would certify a kind the analyzer does not emit. E/F await the canonical
-baseline sweep, and E is additionally blocked by SQL-G14 (no SQL differential oracle), so the lane is
-**INVENTORY-DONE**, not CONFORMANT. Full record: `validation/m14/verification/SQL-STATE.md`.
+**Section status, all eight** (measured with the CURRENT gate and only the proposed `LANG_CONFIG`
+injected — the config itself is a Lead-owned file): **A, B, C, D, G, H pass; E and F are DECLARED
+ABSENT.** Section B was the one false positive and the gate fixed it at the root: its reverse check used
+to parse every top-level non-JSON file in a fixtures directory, and this lane keeps ~25 `.ts`/`.mts`
+instruments beside its fixtures, so `sql-contains-oracle.mts` was parsed as TypeScript and its `exports`
+kind attributed to this analyzer (which emits none, SQL-D16). The corrected reader parses only the
+sources each `<name>.expectation.json` describes, and the lane now reads **pinned 7, emitted 7, all
+accounted for**. **`exports` was never added to `requiredKinds`** — that would have certified a kind the
+analyzer does not emit.
+
+**E and F cannot be satisfied today and are not papered over: the lane has no differential ORACLE.**
+SQL-G14: `script/m14/differential.ts` carries 34 `derive*Edges` functions and none derives SQL, so a
+scoped SQL run ends "derived ZERO truth edges" — there is no truth side from which to compute a
+missing/unexplained floor (E) or an `avgMsPerFile` (F). The oracle is scoped in
+`validation/m14/verification/SQL-STATE.md` §6 (6-8 modules, ~800-1,500 lines, following julia's six
+oracle files) and is its own task in `script/m14/**`. **The lane is INVENTORY-DONE at 6 of 8, not
+CONFORMANT**, and `GATED_LANGS` must not receive `sql` until E/F are settled. Full record:
+`validation/m14/verification/SQL-STATE.md`.

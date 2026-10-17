@@ -598,3 +598,16 @@ was 2 (`/\.$/` constructor tests), both eliminated in the M12.04 grammar rewrite
 last, `/^%(\d+|&)?$/`, was removed in the M60 deep round with the equivalence proof above
 (CLJ-D20). Every remaining string surgery in the file is a char scan or a `Set` lookup, and the
 conversions carry their equivalence argument inline.
+
+## Evidence tiers (M14.0.SPEC section D) — added 2026-10-17
+
+Before this date the lane set `metadata.evidenceClass` on exactly three emission sites (exports, imports, overrides
+— all `structural`), so there was no second tier for a fixture to pin and every other relationship carried none.
+A final pass, `classifyEvidenceTier`, now assigns the family convention (copied from
+`src/ast/real-typescript-analyzer.ts` rather than invented): `contains`/`exports` → `structural`, `imports` →
+`import_based`, `references` → `reference_qualified`, `extends`/`implements` → `structural` when confidence is 1
+else `inferred`, `overrides` → `structural`/`usage_contextual`/`inferred` by confidence, `instantiates` →
+`structural` at ≥0.9 else `usage_contextual`, everything else `usage_contextual`. **It is metadata only: no
+relationship is added, removed or retargeted** — clojure fixtures pass 72/72 before and after. Measured on the 72
+expectation-described fixture sources (1,017 relationships): all rows now carry a tier, and the fixtures pin
+`inferred`, `usage_contextual` and `reference_qualified` on rows the analyzer emits with exactly those values.
