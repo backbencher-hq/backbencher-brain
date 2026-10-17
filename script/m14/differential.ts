@@ -436,6 +436,7 @@ export const LANG_REPOS_SECOND: Record<string, string> = {
 
 }
 export const LANG_REPOS: Record<string, string> = {
+  r: "dplyr",
   // THESE THREE WERE MISSING FROM THE PRIMARY MAP, so `repoForSweep` returned null and the differential reported
   // "no corpus repo mapped in LANG_REPOS and none checked out -- declared unrun" for lanes whose repositories
   // were present. An earlier attempt inserted them into LANG_REPOS_SECOND instead: a regex written for
@@ -960,6 +961,10 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // `markdown`). A lane that measured one and is routed for two would be measured
   // on a different file set than it is served — the cpp `.cpp` defect.
   markdown: { wasm: "tree-sitter-markdown.wasm", analyzerFile: "real-markdown-analyzer", className: "RealMarkdownAnalyzer", ext: "md,markdown" },
+
+  // r HAS AN ORACLE AND WAS NEVER REGISTERED, so `--lang r` could not measure it: the registry is what binds a
+  // lane to its wasm, its analyzer and its derive function, and the derive function alone does nothing.
+  r: { wasm: "tree-sitter-r.wasm", analyzerFile: "real-r-analyzer", className: "RealRAnalyzer", ext: "r,R" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
