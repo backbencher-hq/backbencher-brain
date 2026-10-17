@@ -1507,6 +1507,16 @@ const handlers: Record<string, ToolHandler> = {
     if (nodeRefusal) return textResult(nodeRefusal, true)
     const linkRefusal = boundRefusal("maxLinks", args.maxLinks, VIZ_MAX_LINKS, 5000)
     if (linkRefusal) return textResult(linkRefusal, true)
+    // A PAGE CURSOR is held to the same rule as a bound: whole and non-negative, refused
+    // rather than normalised. A page that is not the page the caller asked for is the exact
+    // defect `offset` exists to remove — and on a project larger than one page it is also how
+    // a caller silently re-reads page 1 while believing they advanced.
+    if (args.offset != null) {
+      const asked = Number(args.offset)
+      if (!Number.isInteger(asked) || asked < 0) {
+        return textResult(`bb_visualize: offset must be a whole number >= 0 (received ${JSON.stringify(args.offset)}) — a page must mean the page that was asked for; omit offset to start at the first symbol`, true)
+      }
+    }
 
     // M13.F6/F7 (#701): a filter VALUE is checked against the index, and folded.
     //
@@ -1561,7 +1571,7 @@ const handlers: Record<string, ToolHandler> = {
     // symbol in the answer, and `includeTests:false` still returned
     // test/app.test.ts with `includesTestFiles:true`. A filter the caller believes
     // is scoping results, and which does not, is worse than a rejection.
-    const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", view: ["graph", "codemap", "class"].includes(String(args.view)) ? args.view : "graph", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), relationshipTypes: relationshipFilter.folded, languages: languageFilter.folded, symbolKinds: symbolKindFilter.folded, excludePatterns: Array.isArray(args.excludePatterns) ? args.excludePatterns.map(String) : undefined, includeTests: typeof args.includeTests === "boolean" ? args.includeTests : undefined }
+    const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", view: ["graph", "codemap", "class"].includes(String(args.view)) ? args.view : "graph", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), offset: args.offset == null ? undefined : Number(args.offset), relationshipTypes: relationshipFilter.folded, languages: languageFilter.folded, symbolKinds: symbolKindFilter.folded, excludePatterns: Array.isArray(args.excludePatterns) ? args.excludePatterns.map(String) : undefined, includeTests: typeof args.includeTests === "boolean" ? args.includeTests : undefined }
     const result = await visualizeProject(projectId, request)
     // M13.F4 (#701): every studio slot carries the document of ITS OWN view.
     //

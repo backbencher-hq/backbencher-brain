@@ -44,6 +44,7 @@ import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
 import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
+import { visualizeProject } from "../../src/intelligence/visualization/visualization-engine"
 import { Harness } from "./harness"
 
 const harness = new Harness({
@@ -215,6 +216,60 @@ harness.check("control: default patterns are the documented twelve", JSON.string
   const nodeCeiling = await run({ maxNodes: 2000 })
   harness.check("maxNodes: the ceiling itself is ACCEPTED", nodeCeiling.truncation?.maxNodes === 2000, JSON.stringify(nodeCeiling.truncation))
 }
+// ── offset: a scope bigger than one page can be WALKED ───────────────────────
+//
+// MEASURED as a gap, not a defect: `maxNodes` selects the top-N and there was no
+// `offset`, no `startAfter` and no id list, so on a project larger than the default
+// page a symbol past the cut could not be asked for at all — while `bb_search` has
+// `offset` and `bb_migrate` has `symbolIds`. The property that makes paging real is
+// not "offset changes something"; it is that consecutive pages TILE the same order:
+// page 1 followed by page 2 is exactly the first two pages' worth of the unpaged
+// answer, with nothing repeated and nothing skipped. An order with ties cannot do
+// that, which is why every ORDER BY in the engine now ends with `s.id`.
+{
+  const ids = (result: any): string[] => (result.nodes as any[]).map((node) => String(node.id))
+  const whole = await run({ maxNodes: 4 })
+  const p1 = await run({ maxNodes: 2 })
+  const p2 = await run({ maxNodes: 2, offset: 2 })
+  harness.check("offset: the page block declares where this answer sits", p1.considered?.page?.offset === 0 && p1.considered?.page?.number === 1 && p1.considered?.page?.limit === 2 && p1.considered?.page?.returned === 2, JSON.stringify(p1.considered?.page))
+  harness.check("offset: the answer names the NEXT page instead of leaving it to arithmetic", p1.considered?.page?.nextOffset === 2, JSON.stringify(p1.considered?.page))
+  harness.check("offset: page 2 begins where page 1 ended", ids(p2).every((id, index) => ids(whole)[index + 2] === id), `whole=${ids(whole).join(",")} p2=${ids(p2).join(",")}`)
+  harness.negative("offset: the cursor is what moved (page 2 is not page 1 again)", JSON.stringify(ids(p1)) !== JSON.stringify(ids(p2)), `p1=${ids(p1).join(",")} p2=${ids(p2).join(",")}`)
+  harness.check("offset: consecutive pages TILE the unpaged answer — nothing repeated, nothing skipped", JSON.stringify([...ids(p1), ...ids(p2)]) === JSON.stringify(ids(whole)), `p1+p2=${[...ids(p1), ...ids(p2)].join(",")} whole=${ids(whole).join(",")}`)
+  harness.check("offset: paging does not change the denominator", p1.considered?.page?.total === whole.considered?.page?.total && p2.considered?.page?.total === whole.considered?.page?.total, `${p1.considered?.page?.total} / ${p2.considered?.page?.total} / ${whole.considered?.page?.total}`)
+  harness.check("offset: truncation carries the cursor too", p2.truncation?.offset === 2 && p2.truncation?.nextOffset === 4, JSON.stringify(p2.truncation))
+  // The LAST page must say it is the last one. The fixture projects seven symbols (`vendor/`
+  // is excluded by the default segment rule), so offset 6 is the final one.
+  const last = await run({ maxNodes: 2, offset: 6 })
+  harness.check("offset: the last page reports nextOffset null", last.considered?.page?.nextOffset === null && last.considered?.page?.returned === 1, JSON.stringify(last.considered?.page))
+  harness.check("offset: and it is not reported as absent", last.declaredAbsent === false, String(last.declaredAbsent))
+  // An empty PAGE is not an empty project — the distinction the whole tool is built on.
+  const past = await run({ maxNodes: 2, offset: 8 })
+  harness.check("offset: a page past the end is declared an empty PAGE", past.declaredAbsent === true && String(past.absenceNote ?? "").includes("empty PAGE"), String(past.absenceNote ?? ""))
+  harness.negative("offset: and it does NOT claim the project has no symbols", !String(past.absenceNote ?? "").includes("no indexed symbol matches"), String(past.absenceNote ?? ""))
+  // The DEFAULT text format has to say it too, or the reply a caller gets without asking is
+  // the one that cannot be walked.
+  const pagedText = (await handlers.bb_visualize({ scope: "project", maxNodes: 2, offset: 2, format: "text" }, ctx)).content[0].text as string
+  harness.check("offset: the text format states the page and the next cursor", /^page: symbols 3-4 .*offset 2.*next page: offset=4$/m.test(pagedText), pagedText.split("\n").find((line) => line.startsWith("page:")) ?? "(no page line)")
+  const pastText = (await handlers.bb_visualize({ scope: "project", offset: 8, format: "text" }, ctx)).content[0].text as string
+  harness.check("offset: the text format calls an out-of-range page empty rather than absent", pastText.includes("empty PAGE") && !pastText.includes("no indexed symbol matches"), pastText.split("\n").find((line) => line.startsWith("absent:")) ?? pastText.slice(0, 120))
+  // A page cursor is not a budget and is not normalised: it is refused, like every other
+  // parameter whose silent reinterpretation would hand the caller a different page.
+  const negativeOffset = await raw({ offset: -2 })
+  harness.check("offset: a negative cursor is refused", negativeOffset.isError === true && negativeOffset.text.includes("whole number >= 0"), negativeOffset.text.slice(0, 200))
+  const fractionalOffset = await raw({ offset: 1.5 })
+  harness.check("offset: a fractional cursor is refused", fractionalOffset.isError === true && fractionalOffset.text.includes("whole number >= 0"), fractionalOffset.text.slice(0, 200))
+  harness.negative("offset: a refusal is not answered with a page", !fractionalOffset.text.includes("\"nodes\""), fractionalOffset.text.slice(0, 120))
+  // The handler is one door; the engine is the other one (the CLI and every gate call it
+  // directly). Neither may hand a caller a different page without saying so, and the engine's
+  // door is where a normalisation would otherwise be silent.
+  const directNegative = await visualizeProject(projectId, { scope: "project", offset: -3, maxNodes: 2 })
+  harness.check("offset: a direct engine caller is TOLD its cursor was normalised", directNegative.considered?.page?.offset === 0 && (directNegative.truncation.boundsAdjusted ?? []).some((note) => note.includes("offset")), JSON.stringify(directNegative.truncation.boundsAdjusted ?? null))
+  const directFractional = await visualizeProject(projectId, { scope: "project", offset: 1.5, maxNodes: 2 })
+  harness.check("offset: and a fractional one is normalised the same way, with the note", directFractional.considered?.page?.offset === 0 && (directFractional.truncation.boundsAdjusted ?? []).some((note) => note.includes("offset")), JSON.stringify(directFractional.truncation.boundsAdjusted ?? null))
+  harness.negative("offset: a valid cursor is NOT reported as adjusted", (p1.truncation.boundsAdjusted ?? []).length === 0, JSON.stringify(p1.truncation.boundsAdjusted ?? null))
+}
+
 
 // ── view (F4a: the text format names the picture it describes) ───────────────
 {

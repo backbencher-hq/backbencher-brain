@@ -32,6 +32,17 @@ export interface VisualizationRequest {
   view?: VisualizationView
   maxNodes?: number
   maxLinks?: number
+  /** How many symbols of the SAME total order the ranking uses to SKIP before this page
+   *  begins.
+   *
+   *  MEASURED as a gap, not a defect: `maxNodes` selects the top-N, and on a project the
+   *  default 200 is a slice of tens of thousands — there was no `offset`, no `startAfter`
+   *  and no id list, so symbol 201 of a scope could not be asked for at all. `bb_search`
+   *  has `offset` and `bb_migrate` has `symbolIds`; the tool whose whole answer is about
+   *  declared bounds was the one that could only ever show the first page. A page is a
+   *  page: `considered.page` states which one this is, and the order carries a final
+   *  tiebreaker so page k+1 begins where page k ended. */
+  offset?: number
   relationshipTypes?: string[]
   languages?: string[]
   /** Symbol kinds to KEEP (`class`, `function`, `method`, `constant`, ...), matched
@@ -135,6 +146,35 @@ export interface VisualizationResult {
     /** The same, by language — the question "how much of this project is TypeScript" was
      *  answerable only by opening the HTML artifact. */
     languageCensus: Record<string, number>
+    /** WHICH PAGE this answer is, stated rather than left to be inferred by subtracting
+     *  the other numbers in the reply.
+     *
+     *  A page is only meaningful if the order it was cut from is TOTAL: gravity and line
+     *  numbers tie constantly on a real index, and an order with ties lets page k+1 repeat
+     *  rows page k already showed while silently dropping others. That is why every ORDER BY
+     *  in this engine ends with `s.id` — the tiebreaker exists for this field, not for looks. */
+    page: {
+      offset: number
+      limit: number
+      returned: number
+      /** How many symbols the scope and filters match — `totalNodesAvailable`, repeated here so a
+       *  caller reading only the page block has the denominator. */
+      total: number
+      /** What `total` counts, because a page is cut from the PROJECTION order and the two are
+       *  not the same set: the projection drops build noise and unlinked locals, so a page can
+       *  be short of `limit` while `total` still counts them. Stated rather than left to be
+       *  discovered by dividing. */
+      totalBasis: string
+      /** 1-based page number, so `offset:0` is page 1 and not page 0. */
+      number: number
+      /** Where the next page starts, or null when this one reached the end.
+       *
+       *  Computed from whether the FETCH ran out of rows, not from `total`: the arithmetic must
+       *  be exact, and `total` counts symbols the projection may not draw. A caller walks pages
+       *  by following this cursor until it reads null. */
+      nextOffset: number | null
+      rule: string
+    }
     /** The owner-cascade fold, whenever a class-like symbol was selected. Present
      *  even when it folded nothing, so "no folded edges" and "the fold never ran"
      *  are distinguishable. */
@@ -183,6 +223,11 @@ export interface VisualizationResult {
     maxLinks: number
     reason: string | null
     totalNodesAvailable: number
+    /** The page cursor this answer was cut with, and where the next one starts (null when
+     *  this is the last page). Carried in `truncation` as well as `considered.page` because
+     *  a caller reconciling "how much is there" with "what did I get" reads this block. */
+    offset: number
+    nextOffset: number | null
     /** Present ONLY when a bound had to be adjusted, naming what was asked for and what was
      *  applied.
      *
@@ -518,9 +563,9 @@ const CLASS_LIKE_TYPES = new Set([
 
 function importanceOrder(view: VisualizationView | undefined): string {
   if (view === "class") {
-    return `CASE WHEN s.symbol_type IN ('class','struct','interface','enum','trait','type','protocol','object') THEN 0 ELSE 1 END, s.gravity_score DESC, s.line_start`
+    return `CASE WHEN s.symbol_type IN ('class','struct','interface','enum','trait','type','protocol','object') THEN 0 ELSE 1 END, s.gravity_score DESC, s.line_start, s.id`
   }
-  return "s.gravity_score DESC, s.line_start"
+  return "s.gravity_score DESC, s.line_start, s.id"
 }
 
 /**
@@ -534,8 +579,11 @@ function importanceOrder(view: VisualizationView | undefined): string {
  * and leaves room beside them.
  */
 function scopedOrder(view: VisualizationView | undefined, base: string): string {
-  if (view !== "class") return base
-  return `CASE WHEN s.symbol_type IN ('class','struct','interface','enum','trait','type','protocol','object') THEN 0 ELSE 1 END, ${base}`
+  // `s.id` is the final tiebreaker in EVERY order this engine cuts a page from: two
+  // symbols can share a gravity score and a line number, and an order with ties cannot
+  // be paged without repeating one row and dropping another.
+  if (view !== "class") return `${base}, s.id`
+  return `CASE WHEN s.symbol_type IN ('class','struct','interface','enum','trait','type','protocol','object') THEN 0 ELSE 1 END, ${base}, s.id`
 }
 
 export async function visualizeProject(projectId: string, request: VisualizationRequest = {}): Promise<VisualizationResult> {
@@ -546,7 +594,22 @@ export async function visualizeProject(projectId: string, request: Visualization
   const linkBound = applyBound("maxLinks", request.maxLinks, 5000, 20000)
   const maxNodes = nodeBound.value
   const maxLinks = linkBound.value
-  const boundsAdjusted = [nodeBound.adjusted, linkBound.adjusted].filter((note): note is string => note !== null)
+  // The OFFSET is a page cursor, not a budget, and it is normalised with a note rather than
+  // silently: the tool door refuses a non-integer or a negative (the validation layer calls
+  // `offset` an integer parameter), but the ENGINE is called directly by the CLI and by
+  // every gate, and a direct caller must not be handed a different page than it asked for
+  // without being told.
+  const requestedOffset = request.offset
+  const offset = typeof requestedOffset === "number" && Number.isInteger(requestedOffset) && requestedOffset >= 0 ? requestedOffset : 0
+  const offsetNote = requestedOffset != null && offset !== requestedOffset
+    ? `offset ${JSON.stringify(requestedOffset)} is not a non-negative whole number; 0 applied`
+    : null
+  const boundsAdjusted = [nodeBound.adjusted, linkBound.adjusted, offsetNote].filter((note): note is string => note !== null)
+  // The fetch is a WINDOW, not the whole table. It must reach far enough to serve this page
+  // plus the 2x headroom the node cut has always drawn from — the class view's widening and
+  // the owner cascade both spend it — so the headroom travels with the offset instead of
+  // shrinking to nothing on page 2.
+  const fetchLimit = offset + maxNodes * 2
   // The language filter is applied in SQL, BEFORE the LIMIT — see languageClause above for
   // what that costs when it is applied afterwards instead.
   const lang = languageClause(request)
@@ -555,11 +618,11 @@ export async function visualizeProject(projectId: string, request: Visualization
   const stripped = target.replace(/\/$/, "")
   const leaf = stripped.split("/").pop() ?? stripped
   const needle = `%${escapeLike(target.toLowerCase())}%`
-  if (scope === "file") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where}${kind.where} AND (f.relative_path=? OR f.path=? OR f.relative_path LIKE ?${LIKE_ESCAPE}) ORDER BY ${scopedOrder(request.view, "s.line_start")} LIMIT ?`).all(projectId, ...lang.params, ...kind.params, target, target, segmentPrefix(stripped), maxNodes * 2) as any[]
-  else if (scope === "module") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where}${kind.where} AND (f.relative_path LIKE ?${LIKE_ESCAPE} OR f.relative_path LIKE ?${LIKE_ESCAPE}) ORDER BY ${scopedOrder(request.view, "f.relative_path,s.line_start")} LIMIT ?`).all(projectId, ...lang.params, ...kind.params, segmentPrefix(stripped), segmentPrefix(leaf), maxNodes * 2) as any[]
-  else if (scope === "symbol") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where}${kind.where} AND (s.name=? OR s.qualified_name=?) ORDER BY ${scopedOrder(request.view, "s.line_start")} LIMIT ?`).all(projectId, ...lang.params, ...kind.params, target, target, maxNodes * 2) as any[]
-  else if (scope === "feature") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where}${kind.where} AND (lower(s.name) LIKE ?${LIKE_ESCAPE} OR lower(COALESCE(s.docstring,'')) LIKE ?${LIKE_ESCAPE}) ORDER BY ${importanceOrder(request.view)} LIMIT ?`).all(projectId, ...lang.params, ...kind.params, needle, needle, maxNodes * 2) as any[]
-  else symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where}${kind.where} ORDER BY ${importanceOrder(request.view)} LIMIT ?`).all(projectId, ...lang.params, ...kind.params, maxNodes * 2) as any[]
+  if (scope === "file") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where}${kind.where} AND (f.relative_path=? OR f.path=? OR f.relative_path LIKE ?${LIKE_ESCAPE}) ORDER BY ${scopedOrder(request.view, "s.line_start")} LIMIT ?`).all(projectId, ...lang.params, ...kind.params, target, target, segmentPrefix(stripped), fetchLimit) as any[]
+  else if (scope === "module") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where}${kind.where} AND (f.relative_path LIKE ?${LIKE_ESCAPE} OR f.relative_path LIKE ?${LIKE_ESCAPE}) ORDER BY ${scopedOrder(request.view, "f.relative_path,s.line_start")} LIMIT ?`).all(projectId, ...lang.params, ...kind.params, segmentPrefix(stripped), segmentPrefix(leaf), fetchLimit) as any[]
+  else if (scope === "symbol") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where}${kind.where} AND (s.name=? OR s.qualified_name=?) ORDER BY ${scopedOrder(request.view, "s.line_start")} LIMIT ?`).all(projectId, ...lang.params, ...kind.params, target, target, fetchLimit) as any[]
+  else if (scope === "feature") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where}${kind.where} AND (lower(s.name) LIKE ?${LIKE_ESCAPE} OR lower(COALESCE(s.docstring,'')) LIKE ?${LIKE_ESCAPE}) ORDER BY ${importanceOrder(request.view)} LIMIT ?`).all(projectId, ...lang.params, ...kind.params, needle, needle, fetchLimit) as any[]
+  else symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where}${kind.where} ORDER BY ${importanceOrder(request.view)} LIMIT ?`).all(projectId, ...lang.params, ...kind.params, fetchLimit) as any[]
   // A class diagram whose boxes are the types INSIDE the scope, but whose arrows
   // point at types OUTSIDE it, is the same picture as no diagram at all.
   //
@@ -581,7 +644,7 @@ export async function visualizeProject(projectId: string, request: Visualization
   let classWidening = 0
   if (request.view === "class" && scope !== "project" && symbols.length > 0) {
     const already = new Set(symbols.map((symbol) => symbol.id))
-    const budget = Math.max(0, maxNodes * 2 - symbols.length)
+    const budget = Math.max(0, fetchLimit - symbols.length)
     if (budget > 0) {
       const extra = raw
         .prepare(
@@ -738,7 +801,7 @@ export async function visualizeProject(projectId: string, request: Visualization
     // Draw the counterparts the folded edges need. Budgeted like everything else,
     // and a cut is declared rather than silently dropping the edge again.
     let nodesAdded = 0
-    const budget = Math.max(0, maxNodes * 2 - symbols.length)
+    const budget = Math.max(0, fetchLimit - symbols.length)
     const wanted = [...counterpartIds].filter((id) => !ids.has(id))
     const chosen = wanted.slice(0, budget)
     if (wanted.length > chosen.length) capped = true
@@ -826,10 +889,16 @@ export async function visualizeProject(projectId: string, request: Visualization
       const at = CLASS_LIKE_TYPES.has(String(a.type)) ? 0 : 1
       const bt = CLASS_LIKE_TYPES.has(String(b.type)) ? 0 : 1
       if (at !== bt) return at - bt
-      return (b.gravity ?? 0) - (a.gravity ?? 0)
+      const bg = (b.gravity ?? 0) - (a.gravity ?? 0)
+      // Total order, for the same reason the SQL carries `s.id`: a page cut from an order
+      // with ties repeats one row and drops another.
+      if (bg !== 0) return bg
+      const bl = (a.line ?? 0) - (b.line ?? 0)
+      if (bl !== 0) return bl
+      return String(a.id).localeCompare(String(b.id))
     })
   }
-  const nodes = ordered.slice(0, maxNodes)
+  const nodes = ordered.slice(offset, offset + maxNodes)
   const nodeIds = new Set(nodes.map((node) => node.id))
   // A counterpart that the node budget cut is a folded edge the reader will not
   // see, so the count is declared rather than left to be discovered.
@@ -915,12 +984,38 @@ export async function visualizeProject(projectId: string, request: Visualization
   // plausible empty project. Measured: relationshipTypes:["not_a_real_type"]
   // produced {nodes:[],links:[]} indistinguishable from an empty repository.
   const declaredAbsent = nodes.length === 0
+  // An empty PAGE is not an empty project. Without this branch, `offset` past the end
+  // returned `declaredAbsent` with the "none survived the projection" wording, which
+  // describes a defect in the projection rather than a caller who walked off the end.
   const absenceNote = declaredAbsent
     ? (totalNodesAvailable === 0
       ? `no indexed symbol matches scope=${scope}${target ? ` target="${target}"` : ""}${request.languages?.length ? ` languages=[${request.languages.join(",")}]` : ""}${request.relationshipTypes?.length ? ` relationshipTypes=[${request.relationshipTypes.join(",")}]` : ""}${request.symbolKinds?.length ? ` symbolKinds=[${request.symbolKinds.join(",")}]` : ""} — absence declared, never guessed`
-      : `${totalNodesAvailable} symbol(s) match this query but none survived the projection — absence declared, never guessed`)
+      : offset > 0
+        ? `offset ${offset} holds no drawable symbol, and the fetch had no rows of its own left to offer — this is an empty PAGE, not an empty project: ${totalNodesAvailable} symbol(s) match, so restart at an offset below ${totalNodesAvailable}`
+        : `${totalNodesAvailable} symbol(s) match this query but none survived the projection — absence declared, never guessed`)
     : null
-  return { scope, target: target || null, format: request.format ?? "text", view: request.view ?? "graph", nodes, links, classMembers, excluded: graph.excluded, declaredAbsent, absenceNote, totalNodesAvailable, provenance: { source: "canonical-graph-engine", indexedProject: projectId, linksOmittedWithNodeCut, linksOmittedByBudget }, considered: { relationshipsBetweenSelectedNodes, relationshipSelection: `every relationship connecting two of the ${nodeIds.size} returned nodes — complete for this node set, not a slice of the relationship table${ownerCascade.rowsFolded > 0 ? `, including ${ownerCascade.rowsFolded} row(s) stored on members of selected classes and folded onto the owner (marked ownerCascade)` : ""}`, relationshipSetTruncated, nodeSelection: nodeSelectionNote, languagesConsidered: request.languages?.length ? request.languages : null, relationshipTypesConsidered: request.relationshipTypes?.length ? request.relationshipTypes : null, symbolKindsConsidered: request.symbolKinds?.length ? request.symbolKinds : null, kindCensus, languageCensus, ownerCascade: { ...ownerCascade, rule: "a relationship stored on a member of a SELECTED class-like symbol is attributed to that symbol; the edge is marked ownerCascade with the member it came through (matchedMembers), the member itself keeps its exact edge when it is also in the node set, and the symbol at the other end is added to the node set so the folded edge can be drawn at all — the stored row is never modified" } }, truncation: { truncated, originalNodes, originalLinks, maxNodes, maxLinks, reason: truncated ? "output limits" : null, totalNodesAvailable, ...(boundsAdjusted.length ? { boundsAdjusted } : {}) } }
+  // Did the fetch run out of rows below its window? That — not `totalNodesAvailable` — is the
+  // fact that says whether another page exists, because `totalNodesAvailable` counts symbols the
+  // projection may not draw (noise, unlinked locals). Using the total here would mint a cursor
+  // past the last drawable symbol and hand the caller an empty page that looks like an end.
+  const moreRowsExist = symbols.length >= fetchLimit
+  // The cursor stops when EITHER the fetch ran out of rows OR it has reached the scope's own
+  // count. The second test is what keeps a scope whose row count lands exactly on the window
+  // from minting one empty page; the first is what keeps a short page (noise, unlinked locals)
+  // from being mistaken for the end.
+  const cursor = offset + nodes.length
+  const nextOffset = moreRowsExist && nodes.length > 0 && cursor < totalNodesAvailable ? cursor : null
+  const page = {
+    offset,
+    limit: maxNodes,
+    returned: nodes.length,
+    total: totalNodesAvailable,
+    totalBasis: "symbols matching this scope and these filters, counted before the noise filter and every output bound; pages are cut from the projection order, so a page can be shorter than `limit` and the numbers need not divide",
+    number: maxNodes > 0 ? Math.floor(offset / maxNodes) + 1 : 1,
+    nextOffset,
+    rule: `the same total order the ranking uses — ${nodeSelectionNote}${offset > 0 ? `, after the first ${offset}` : ", from the first"}`,
+  }
+  return { scope, target: target || null, format: request.format ?? "text", view: request.view ?? "graph", nodes, links, classMembers, excluded: graph.excluded, declaredAbsent, absenceNote, totalNodesAvailable, provenance: { source: "canonical-graph-engine", indexedProject: projectId, linksOmittedWithNodeCut, linksOmittedByBudget }, considered: { relationshipsBetweenSelectedNodes, relationshipSelection: `every relationship connecting two of the ${nodeIds.size} returned nodes — complete for this node set, not a slice of the relationship table${ownerCascade.rowsFolded > 0 ? `, including ${ownerCascade.rowsFolded} row(s) stored on members of selected classes and folded onto the owner (marked ownerCascade)` : ""}`, relationshipSetTruncated, nodeSelection: nodeSelectionNote, languagesConsidered: request.languages?.length ? request.languages : null, relationshipTypesConsidered: request.relationshipTypes?.length ? request.relationshipTypes : null, symbolKindsConsidered: request.symbolKinds?.length ? request.symbolKinds : null, kindCensus, languageCensus, page, ownerCascade: { ...ownerCascade, rule: "a relationship stored on a member of a SELECTED class-like symbol is attributed to that symbol; the edge is marked ownerCascade with the member it came through (matchedMembers), the member itself keeps its exact edge when it is also in the node set, and the symbol at the other end is added to the node set so the folded edge can be drawn at all — the stored row is never modified" } }, truncation: { truncated, originalNodes, originalLinks, maxNodes, maxLinks, reason: truncated ? "output limits" : null, totalNodesAvailable, offset, nextOffset: page.nextOffset, ...(boundsAdjusted.length ? { boundsAdjusted } : {}) } }
 }
 
 export function formatVisualization(result: VisualizationResult): string {
@@ -947,6 +1042,17 @@ export function formatVisualization(result: VisualizationResult): string {
   } else {
     lines.push(
       `available: ${result.totalNodesAvailable} symbol(s) match, ${result.truncation.originalNodes} reached the projection, ${result.nodes.length} returned — limits ${result.truncation.maxNodes} nodes / ${result.truncation.maxLinks} links`,
+    )
+  }
+  // WHICH PAGE, always — including when it is the only page and including when it is empty.
+  // A paged tool that does not say where the page sits in the scope is a tool whose caller
+  // believes it has seen everything.
+  if (result.considered?.page) {
+    const p = result.considered.page
+    lines.push(
+      p.returned > 0
+        ? `page: symbols ${p.offset + 1}-${p.offset + p.returned} (offset ${p.offset}, limit ${p.limit}, page ${p.number}; ${p.total} symbol(s) match this scope)${p.nextOffset != null ? ` — next page: offset=${p.nextOffset}` : " — this is the LAST page"}`
+        : `page: offset ${p.offset} holds no drawable symbol — ${p.total} symbol(s) match this scope, so this is an empty PAGE, not an empty project`,
     )
   }
   if (result.considered) {
