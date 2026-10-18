@@ -98,7 +98,8 @@
       "uri",
       "void_type",
       "while_statement",
-      "ERROR"
+      "ERROR",
+      "library_name"
     ],
     "error_node_note": "ERROR — the wasm ABI's parse-error node, and this analyzer CONSULTS it rather than declining to see it: `rootNode.hasError` drives the error-collection pass (src/ast/real-dart-analyzer.ts:715-730) that reports every ERROR node inside a damaged region as a syntax warning, and ERROR is on the type-mention SKIP list (line 243, rationale at line 3439) because nothing inside a parse-error region is a fact about a well-formed program. Classified handled_verified for that reason, and because java, javascript, kotlin and bash record the identical pair the same way. Added 2026-10-12: `completeness-inventory.loadNamedNodeTypes` forces the ABI pair into every lane's type list, so leaving it unclassified failed section A on a node type the analyzer demonstrably rules on.",
     "corpus_verified": {
@@ -115,7 +116,8 @@
     ],
     "fixture_only_note": "Master review 3 (reviews/dart/master-review-3.md, F4): these 6 are claimed handled_verified and occur ZERO times in 1,294 ProxiCall/lib files, so their verification rests entirely on fixtures that construct them. `new_expression` is instructive: modern Dart makes `new` optional, so `Foo()` is a type_identifier and the node appears only under an explicit `new` — a legitimate reason for absence, but it means the claim is untested against how the corpus actually writes code. DARTD11's question (are these realizable by any Dart source in the pinned grammar?) is still open for all six. Counted toward handled, but marked here so the total is not read as 93 equally evidenced.",
     "_notes": {
-      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-dart-analyzer.ts:369-373 (with the module-level type set at :135)), and `extension-type.dart` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
+      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-dart-analyzer.ts:369-373 (with the module-level type set at :135)), and `extension-type.dart` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive).",
+      "library_name": "RULED 2026-10-18 (DARTGAP5): the node is READ — `RealDartAnalyzer.libraryName` takes the module symbol's name from it (direct child of program, three measured forms: no directive 2,882/3,000 files, `library;` 101, `library X;` 17; the DOTTED names are why the node is read and no regex over text is). No relationship is owed beyond the module symbol it names, whose name the import/export/part edges already carry. Fixtures: library-implicit, library-unnamed, library-source-pins; instruments library-directive-census.ts + empty-library-name.ts."
     }
   },
   "internal_silent": {
@@ -226,14 +228,17 @@
       "uri_test",
       "yield_each_statement",
       "yield_statement",
-      "MISSING"
+      "MISSING",
+      "record_literal",
+      "record_field"
     ],
     "missing_node_note": "MISSING — the wasm ABI's node type for a token the parser INSERTED. This analyzer consults the CONDITION (`n.isMissing`, the same error loop at src/ast/real-dart-analyzer.ts:720) and publishes no symbol, no edge and no payload of its own for the TYPE: a phantom token is not a fact about the source. That split — condition handled, type silent — is exactly what internal_silent records, and it is the same split java, javascript, kotlin and bash record for this pair (java checks both type strings at real-java-analyzer.ts:435 and still files MISSING here). The string `MISSING` appears nowhere in real-dart-analyzer.ts; the condition does.",
     "corpus_silent_rationale": "function_expression (767 corpus files) and lambda_expression (17) are silent per DARTD2 — local functions, lambdas and function expressions are not module-level symbols. They were never LISTED, which is what left them unclassified rather than unaudited.",
     "constructor_initializer_note": "initializer_list_entry / field_initializer / initializers are the `<this>.field = value` list a CONSTRUCTOR writes. They emit no symbol of their own because DARTD3 rules Dart constructors have no distinct NAME — the FIELD each entry initializes is the symbol, and DARTD13's post-pass already binds its declared type. Master review 3 (F2) removed these from the GAP list, where they had been asking for a symbol the family ruled out, and bucketed them here instead.",
     "_notes": {
       "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-dart-analyzer.ts:373); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
-    }
+    },
+    "record_literal_note": "RULED 2026-10-18 (DARTGAP4): a record literal is a VALUE and declares nothing. Its fields are positions (`$1`, `$2`) or names (`count`), neither of which is a declaration, so the literal emits no symbol and no `contains`. The reads of its fields ARE published (`rec.$1` -> uses -> $1 at 0.9 with `receiverCause: receiverTypeUnknown` — correct, because a record literal writes no owner TYPE NAME at the site), and validation/m14/fixtures/dart/record-literal pins the reads plus the absences (no record symbol, no contains, no fabricated owner). Measured: 249 record_literal nodes in 54 files of ProxiCall/lib."
   },
   "gap": {
     "_description": "Re-scoped by master review 3 (reviews/dart/master-review-3.md, F2) against the LIVE ProxiCall corpus. The previous grouping was by NODE TYPE FAMILY, which made the work unplannable: one row lumped eight record types under 'record type/literal symbols' and another lumped nine pattern types under 'destructuring pattern variables as symbols', and those are very different amounts of work. Rows are now one per DEFERRABLE UNIT, ranked by live occurrence count, and the two rows that were never gaps at all are gone (see removed_from_gaps). Occurrence counts are measured over 1,294 ProxiCall/lib files.",
@@ -266,29 +271,6 @@
         "live_files": 38,
         "missing": "PARTIALLY CLOSED. The type-FIDELITY half is done: a `record_type` is now accepted by all three type extractors (parameter, return, field), which had a fixed five-node allowlist (type_identifier, function_type, nullable_type, void_type) and silently dropped every Dart 3 record. Measured over ProxiCall/lib: 27 return types and 1 parameter regained their declared record type, 0 relationships changed, 0 unexplained payload changes. What REMAINS is the CONTAINMENT half and it is a different, bigger question: a `typedef` over a record type (`typedef Pair = (int, String)`) emits NO `contains` edges for the record's fields, and neither does a typedef over a plain object type (`typedef Cfg = {int count}`) — so this is a CROSS-LANGUAGE family question, not a Dart-record one. The family precedent exists: the typescript-contains oracle's rule 5 rules a type alias over an object literal to be a CONTAINER, adopted there because it was that oracle's single largest disagreement source on real files. Dart's contains comes from the generic differential walker, which does not mirror a typedef-body rule, so landing this requires an ANALYZER change AND a matching change in the dart tree-truth oracle — editing differential.ts, which several lanes share. Named fields keep their names; positional fields are Dart's own `$1`/`$2`, which the corpus already reads (`rec.$1`). Do not build the analyzer half without the oracle half.\n\n[STATUS 2026-10-18] UNCHANGED AND STILL BLOCKED ON THE PAIRED differential.ts CHANGE (Lead-owned), exactly as this row states.",
         "effort": "fidelity half: DONE. containment half: medium, and BLOCKED on a paired differential.ts change rather than on the Dart analyzer"
-      },
-      {
-        "id": "DARTGAP4",
-        "severity": "medium",
-        "node_type": "record_literal, record_field",
-        "live_occurrences": 249,
-        "live_files": 54,
-        "missing": "a record LITERAL is a value, not a declaration, so the question is whether it yields a symbol at all or only its field reads as `uses`. The corpus reads `rec.$1` positionally and the analyzer already publishes those reads, so the open question is narrow and should be SETTLED before any work.",
-        "effort": "unknown until the question is settled"
-      },
-      {
-        "id": "DARTGAP5",
-        "severity": "low",
-        "node_type": "library_name",
-        "missing": "a `library;` directive names the library. Present in most files and low value for a graph, so it is listed last deliberately rather than because it is small.",
-        "effort": "small, low value"
-      },
-      {
-        "id": "DARTGAP6",
-        "severity": "low",
-        "node_type": "constructor_tearoff",
-        "missing": "a constructor TEAR-OFF (`WidgetState<State<MyState>>.new`) is a distinct construct from a named constructor, and DARTD3 rules that Dart constructors have no distinct NAME — so whether a tear-off is a symbol or only an `instantiates` edge is an open question, not a missing extractor. Listed so it is not lost; it was dropped in the first re-scope pass, which is how it was found.\n\n[STATUS 2026-10-18] The CONSTRUCTOR-TEAR-OFF member spelling is handled (a `.new` tear-off publishes `instantiates` to the class — see the const-pattern-constructor-head fixture); the SYMBOL-vs-EDGE question in this row stays a decision and is not claimed closed.",
-        "effort": "decision first"
       }
     ],
     "removed_from_gaps": [
@@ -296,6 +278,21 @@
         "node_type": "initializer_list_entry, field_initializer, initializers",
         "was": "listed under 'record type/literal symbols and typed fields'",
         "why_removed": "NEVER A GAP — they are a constructor's initializer list, and DARTD3 already ruled that Dart constructors have no distinct name, so the row asked for a symbol the family has ruled out. They occur 25+ times each in the live corpus and ARE handled: the field each entry initializes is a real symbol with a real type. Now in internal_silent with the reasoning recorded there. Reviewer error, recorded rather than silently dropped."
+      },
+      {
+        "node_type": "record_literal, record_field",
+        "was": "DARTGAP4 — 'a record LITERAL is a value, not a declaration, so the question is whether it yields a symbol at all or only its field reads as uses'",
+        "why_removed": "RULED 2026-10-18: a record literal DECLARES NOTHING. Dart records are structural — a field is a position (`$1`, `$2`) or a name (`count`), and neither is a declaration a store key space can hold — so no symbol and no `contains` is owed, and the owed surface is the READS of the fields, which the member-read arm already publishes (`rec.$1` -> uses -> $1, `named.count` -> uses -> count at 0.9, with `receiverCause: receiverTypeUnknown` firing correctly because a record literal writes no owner TYPE NAME at the site). Measured population: 249 `record_literal` nodes in 54 files of ProxiCall/lib (this spec's `measurement` block). Pinned by validation/m14/fixtures/dart/record-literal: the reads, the absence of any record symbol, the absence of `contains`, and the absence of a fabricated `owner`. The two node types move to internal_silent with this reasoning."
+      },
+      {
+        "node_type": "library_name",
+        "was": "DARTGAP5 — 'a `library;` directive names the library. Present in most files and low value for a graph'",
+        "why_removed": "RULED 2026-10-18: `library_name` is ALREADY READ — the module node's name comes from it (`RealDartAnalyzer.libraryName`, the ONE function feeding both the published module symbol and every import/export/part edge source). It was never silent; it was merely unlisted in the type census. The counting was already done and is quoted by the analyzer at that site: over a 3,000-file sample, 2,882 files have NO library directive (implicit library = file stem), 101 carry `library;` (a declared EMPTY name, also the stem by convention but recorded as `kind: \"unnamed\"`), and 17 carry `library X;` (a declared name, frequently DOTTED — `_fe_analyzer_shared.scanner.characters` — which is why the reader takes the node, never a first-token regex). Instruments: validation/m14/fixtures/dart/library-directive-census.ts + empty-library-name.ts; fixtures library-implicit, library-unnamed, library-source-pins. No relationship is owed: the library's name is the module SYMBOL's name, and the edges that name it already point at it. `library_name` moves to handled_verified."
+      },
+      {
+        "node_type": "constructor_tearoff",
+        "was": "DARTGAP6 — 'whether a tear-off is a symbol or only an `instantiates` edge is an open question, not a missing extractor'",
+        "why_removed": "RULED 2026-10-18: a tear-off is NOT a symbol. DARTD3 rules that a Dart constructor has no distinct name (every constructor symbol is published as `constructor` with the named segment in metadata), and a tear-off names a constructor as a VALUE, not a new declaration. Both realizable spellings already publish their owed edge and are fixture-pinned: in EXPRESSION position (`final f = Holder<int>.new;`) the type mention is `references -> Holder` with `meta.typePosition: \"constructor_tearoff\"` (pinned by const-pattern-constructor-head, expressionForm row, which also forbids `uses -> Holder<int>.new` and the old refuted claim), and in a CONST PATTERN the same spelling is a construction (`instantiates -> Holder` with `isConstructorReference`, pinned by the same fixture's 6 shapes incl. nested generic arguments and `.new`). So there is no missing extractor and no missing edge class — the open question is answered by the two pinned behaviours."
       }
     ],
     "measurement": {
@@ -597,7 +594,7 @@
     ],
     "lastUpdated": "2026-09-24 (M60 dart lane: DARTD20-DARTD22) · 2026-10-12 (dart lane: DT-EXP, the whole-corpus override-exposure watchdog)"
   },
-  "lastUpdated": "2026-10-18 (dart lane: canonical vocabulary relabel DARTD23, DARTGAP2 + rest-pattern implementation, annotation references, receiver owner metadata; corpus counts owed in the cap-50 gate pair queued under the box memory hold)",
+  "lastUpdated": "2026-10-18 (dart lane: DARTGAP4/5/6 RULED by counted measurement + fixtures; DARTGAP1 rest half + DARTGAP2 implemented+fixture-pinned pending corpus gate pair; DARTD23 vocabulary relabel; annotation references; receiver owner metadata)",
   "label_coverage": {
     "_description": "Which relationship labels this lane actually COMPARES. script/m14/verify-label-coverage.ts reads the differential allowlist, runs this analyzer over a corpus sample, and reports every label the analyzer EMITS that the allowlist DROPS: such a label is compared by nothing while the lane still prints a percentage. `contains` left this list when the M60 oracle landed.",
     "declared_gaps": [
