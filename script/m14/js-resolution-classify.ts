@@ -369,6 +369,9 @@ function classifyEdge(
   // `isExternalTarget` is counted in extOK, so this census reports it in its own bucket and
   // never inside a "needs work" class. The claim's stated reason travels with the count.
   if (meta?.isExternalTarget === true) {
+    reconciled.claims++
+    const reason = String(meta?.externalReason ?? "external")
+    reconciled.claimsByReason.set(reason, (reconciled.claimsByReason.get(reason) ?? 0) + 1)
     if (label === "imports" && typeof meta?.externalSpecifier === "string") {
       // REPRODUCE THE ARBITER'S OWN CHECK for a module-namespace claim, so the census says which
       // claims verify (`extOK`) and which read "no check can reach" (`ext?`, which BLOCKS a pass):
@@ -616,7 +619,12 @@ for (const abs of files) {
 }
 
 // ---- resolve, then classify the non-resolved ----
-const totals: Record<string, { edges: number; resolved: number; unresolved: number; emptyTarget?: number }> = {}
+const totals: Record<string, { edges: number; resolved: number; unresolved: number; emptyTarget?: number; declsOne?: number; declsMany?: number }> = {}
+// GATE-RECONCILED SPLIT. The gate's verdict has THREE declaration classes and this census must be
+// comparable to it: decls===1 is the gate's `resolved`, decls>1 is its `amb(decl)`, decls===0 is its
+// `unresolved`. The census's own `resolved` above deliberately counts decls>=1 (it is used to find
+// the non-resolved population); the two extra counters are what reconcile the two instruments.
+const reconciled = { resolvedUnique: 0, ambiguous: 0, unresolved: 0, claims: 0, claimsByReason: new Map<string, number>() }
 // OWNER COVERAGE — the store channel `metadata.owner` + the evidence class in
 // `metadata.ownerEvidence` ({new, assignment, this, jsdoc}). Counted here, and NEVER reported
 // as resolved: the arbiter resolves targets, not owners; this is production-resolution metadata.
@@ -669,6 +677,9 @@ for (const r of rows) {
     continue
   }
   const decls = (p.names.get(r.target) ?? 0) + (p.quals.get(r.target) ?? 0)
+  if (decls === 1) { totals[r.label].declsOne = (totals[r.label].declsOne ?? 0) + 1; reconciled.resolvedUnique++ }
+  else if (decls > 1) { totals[r.label].declsMany = (totals[r.label].declsMany ?? 0) + 1; reconciled.ambiguous++ }
+  else reconciled.unresolved++
   if (decls >= 1) { totals[r.label].resolved++; if (decls > 1) heldAmbiguous++; continue }
   totals[r.label].unresolved++
   if (r.label === "calls" && ownerValue.length > 0) {
@@ -716,6 +727,12 @@ for (const label of labelOrder) {
   const claimed = [...b.entries()].filter(([k]) => k.startsWith("CLAIMED-")).reduce((a, [, n]) => a + n, 0)
   if (claimed > 0) console.log(`\n${label}: ${claimed} edge(s) carry an EXTERNAL CLAIM (gate extOK column) — not resolved, not merged`)
 }
+console.log("\n=== GATE-RECONCILED SPLIT (decls===1 · decls>1 · decls===0) ===")
+console.log(`edges ${rows.length} · resolved-unique ${reconciled.resolvedUnique} · ambiguous ${reconciled.ambiguous} · unresolved ${reconciled.unresolved}`)
+console.log(`claims ${reconciled.claims} by reason: ${[...reconciled.claimsByReason.entries()].sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k}=${n}`).join(" · ") || "(none)"}`)
+console.log("NOTE: this census parses with RealJavaScriptAnalyzer via parseFile, so a pool-worker")
+console.log("      identifier-sanitizer row is absent here and present in the gate; the difference is")
+console.log("      printed above as the edge total and MUST be quoted beside the gate's 1,467,637.")
 console.log("\n=== RECEIVER-TYPE COVERAGE (metadata.owner + ownerEvidence; METADATA, never a resolution claim) ===")
 for (const [label, c] of [...coverage.entries()].sort()) {
   if (label === "calls") {
