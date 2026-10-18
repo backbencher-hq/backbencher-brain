@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-18T06:48:19.833Z",
+  "generatedAt": "2026-10-18T18:12:59.984Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 34,
+  "totalRegexUsages": 32,
   "analyzersScanned": 48,
   "byClassification": {
-    "needs_review": 33,
+    "needs_review": 31,
     "unavoidable": 1
   },
   "byReceiverCategory": {
-    "other": 11,
+    "other": 9,
     "identifier": 22,
     "string_literal": 1
   },
@@ -301,34 +301,6 @@
           "operation": "replace",
           "receiver": "normalised",
           "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-c-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-c-analyzer.ts",
-          "line": 4034,
-          "column": 45,
-          "source": "/^\\s*#\\s*endif\\b/",
-          "operation": "test",
-          "receiver": "lines[i]",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-c-analyzer.ts",
-          "line": 4038,
-          "column": 11,
-          "source": "/^\\s*#\\s*(if|ifdef|ifndef)\\b/",
-          "operation": "test",
-          "receiver": "lines[j]",
-          "receiverCategory": "other",
           "classification": "needs_review",
           "justification": ""
         }
