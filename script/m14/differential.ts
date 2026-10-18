@@ -7566,6 +7566,14 @@ export function deriveCInstantiates(root: any, sourceText?: string): { label: st
   const typeNameOf = (n: any, depth = 0): string | null => {
     if (!n || depth > 3) return null
     if (n.type === "type_identifier") return n.text?.trim() ?? null
+    // A BARE IDENTIFIER CAN BE A TYPE NAME. `sizeof(<typedef>)` parses as
+    // `sizeof_expression -> parenthesized_expression -> identifier`, because the parser cannot know the name is a
+    // typedef — and this walker refused it, so 21 whole-sqlite and 5 sqlite-60 instantiate rows had NO truth
+    // (tt3_stress.c:313 Stress2Ctx, test_intarray.c:93 intarray_vtab, test_rtree.c:83 Circle, …). The analyzer's
+    // own `typeNameOf` has exactly this branch behind the same `declared()` gate (its #989 fix) — every call site
+    // here passes the result through `declared(...)`, which only admits struct/union/enum tags with a body or a
+    // typedef alias, so a bare VALUE identifier can never become an instantiate target. Mirror, not sympathy.
+    if (n.type === "identifier") return n.text?.trim() ?? null
     if (n.type === "struct_specifier" || n.type === "union_specifier" || n.type === "enum_specifier")
       return n.childForFieldName("name")?.text?.trim() ?? null
     if (n.type === "type_descriptor") return typeNameOf(n.childForFieldName("type"), depth + 1)
