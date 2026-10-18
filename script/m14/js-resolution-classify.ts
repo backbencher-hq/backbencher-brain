@@ -593,13 +593,51 @@ for (const abs of files) {
 
 // ---- resolve, then classify the non-resolved ----
 const totals: Record<string, { edges: number; resolved: number; unresolved: number; emptyTarget?: number }> = {}
+// OWNER COVERAGE — the store channel `metadata.owner` + the evidence class in
+// `metadata.ownerEvidence` ({new, assignment, this, jsdoc}). Counted here, and NEVER reported
+// as resolved: the arbiter resolves targets, not owners; this is production-resolution metadata.
+type Cov = {
+  edges: number
+  memberReceiverCalls: number
+  withOwner: number
+  byEvidence: Map<string, number>
+  unresolvedWithOwner: number
+  unresolvedByEvidence: Map<string, number>
+  usesEdges: number
+  usesWithOwner: number
+  usesUnresolvedWithOwner: number
+  usesByEvidence: Map<string, number>
+}
+const coverage = new Map<string, Cov>()
 const buckets: Record<string, Map<Bucket, number>> = {}
 const examples: Record<string, Record<string, string[]>> = {}
 let heldAmbiguous = 0
 for (const r of rows) {
   const p = projOf(r.repo, projects)
+  let cov = coverage.get(r.label)
+  if (!cov) {
+    cov = { edges: 0, memberReceiverCalls: 0, withOwner: 0, byEvidence: new Map(), unresolvedWithOwner: 0, unresolvedByEvidence: new Map(), usesEdges: 0, usesWithOwner: 0, usesUnresolvedWithOwner: 0, usesByEvidence: new Map() }
+    coverage.set(r.label, cov)
+  }
+  const ownerValue = typeof r.meta?.owner === "string" ? r.meta.owner : ""
+  const evidenceValue = typeof r.meta?.ownerEvidence === "string" ? r.meta.ownerEvidence : "(none)"
   if (!totals[r.label]) { totals[r.label] = { edges: 0, resolved: 0, unresolved: 0, emptyTarget: 0 }; buckets[r.label] = new Map() }
   totals[r.label].edges++
+  if (r.label === "calls") {
+    cov.edges++
+    const callee = typeof r.meta?.calleeExpression === "string" ? r.meta.calleeExpression : ""
+    if (callee.length > 0 && callee !== r.target) cov.memberReceiverCalls++
+    if (ownerValue.length > 0) {
+      cov.withOwner++
+      cov.byEvidence.set(evidenceValue, (cov.byEvidence.get(evidenceValue) ?? 0) + 1)
+    }
+  } else if (r.label === "uses") {
+    cov.usesEdges++
+    if (ownerValue.length > 0) {
+      cov.usesWithOwner++
+      cov.usesByEvidence.set(evidenceValue, (cov.usesByEvidence.get(evidenceValue) ?? 0) + 1)
+    }
+  }
   if (r.target.length === 0) {
     totals[r.label].emptyTarget = (totals[r.label].emptyTarget ?? 0) + 1
     totals[r.label].unresolved++
@@ -609,6 +647,12 @@ for (const r of rows) {
   const decls = (p.names.get(r.target) ?? 0) + (p.quals.get(r.target) ?? 0)
   if (decls >= 1) { totals[r.label].resolved++; if (decls > 1) heldAmbiguous++; continue }
   totals[r.label].unresolved++
+  if (r.label === "calls" && ownerValue.length > 0) {
+    cov.unresolvedWithOwner++
+    cov.unresolvedByEvidence.set(evidenceValue, (cov.unresolvedByEvidence.get(evidenceValue) ?? 0) + 1)
+  } else if (r.label === "uses" && ownerValue.length > 0) {
+    cov.usesUnresolvedWithOwner++
+  }
   const b = fileBindings.get(r.file) ?? EMPTY_BINDINGS
   const bucket = classifyEdge(r, p, b, (abs) => relByAbs.get(abs) ?? abs)
   bump(buckets[r.label], bucket)
@@ -648,4 +692,21 @@ for (const label of labelOrder) {
   const claimed = [...b.entries()].filter(([k]) => k.startsWith("CLAIMED-")).reduce((a, [, n]) => a + n, 0)
   if (claimed > 0) console.log(`\n${label}: ${claimed} edge(s) carry an EXTERNAL CLAIM (gate extOK column) — not resolved, not merged`)
 }
+console.log("\n=== RECEIVER-TYPE COVERAGE (metadata.owner + ownerEvidence; METADATA, never a resolution claim) ===")
+for (const [label, c] of [...coverage.entries()].sort()) {
+  if (label === "calls") {
+    console.log(`calls: ${c.edges} edges · ${c.memberReceiverCalls} member-receiver calls · ${c.withOwner} carry metadata.owner (${pct(c.withOwner, c.memberReceiverCalls)} of member-receiver calls)`)
+    for (const [ev, n] of [...c.byEvidence.entries()].sort((a, b) => b[1] - a[1])) console.log(`   ownerEvidence=${ev}: ${n}`)
+    console.log(`   of the UNRESOLVED calls: ${c.unresolvedWithOwner} carry an owner (the store channel can act on them; the gate's resolved column does not move)`)
+    for (const [ev, n] of [...c.unresolvedByEvidence.entries()].sort((a, b) => b[1] - a[1])) console.log(`      unresolved ownerEvidence=${ev}: ${n}`)
+  } else if (label === "uses") {
+    console.log(`uses: ${c.usesEdges} edges · ${c.usesWithOwner} carry metadata.owner (${pct(c.usesWithOwner, c.usesEdges)} of all uses); ${c.usesUnresolvedWithOwner} of them unresolved`)
+    for (const [ev, n] of [...c.usesByEvidence.entries()].sort((a, b) => b[1] - a[1])) console.log(`   ownerEvidence=${ev}: ${n}`)
+  }
+}
+function pct(n: number, d: number): string {
+  if (d === 0) return "n/a"
+  return `${((n * 100) / d).toFixed(1)}%`
+}
+
 if (JSON_OUT) console.log(`\njson: ${JSON_OUT}`)

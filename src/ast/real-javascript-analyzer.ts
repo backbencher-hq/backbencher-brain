@@ -403,6 +403,28 @@ import { isJsBuiltin, jsBuiltinHasMember, hostGlobalCitation, memberChainClaim }
  */
 const FILE_LEVEL_SOURCE = "(file)"
 
+/**
+ * A RECEIVER TYPE THIS FILE STATES, and the EVIDENCE CLASS that stated it — published on the
+ * edge as `metadata.owner` (the channel the store ALREADY reads: `member-owner-resolution.ts`'s
+ * `claimOwnerCarryingTargets` + `resolveMemberTargetsByOwner`, called from both resolution paths
+ * in parallel-indexer) plus `metadata.ownerEvidence`.
+ *
+ * JavaScript has no type syntax, so an owner may only be recorded from a form that genuinely
+ * states the type. The evidence vocabulary is the four forms the arbiter's model knows:
+ *
+ *   new         `const c = new Widget()`                    — the initialiser
+ *   assignment  `this.x = new Widget()`, `x = new W()`, and a class field `x = new W()`
+ *   this        `this.m()` — the enclosing class DECLARATION is the receiver type (positional)
+ *   jsdoc       `/** @type {Widget} *\/ const c = ...`, a `@param {Widget} c` in scope, or a
+ *               constructor parameter assignment `this.c = c` where `c` carries `@param {Widget}`
+ *
+ * A wrong owner is worse than none: the store WITHDRAWS the name binding for an owner-carrying
+ * row and then declines when the owner does not identify exactly one class-like symbol, so every
+ * form here is one the syntax PROVES rather than a guess from a name.
+ */
+type ReceiverType = { type: string; evidence: ReceiverEvidence }
+type ReceiverEvidence = "new" | "assignment" | "this" | "jsdoc"
+
 export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Whether the file currently being analyzed contains any `decorator` node.
@@ -1593,7 +1615,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // --- Relationship passes -------------------------------------------------
     this.addContainmentRelationships(symbols, relationships)
     this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion)
-    this.extractCallRelationships(rootNode, symbols, relationships, moduleName, deadSpans)
+    // ONE COLLECTION PER FILE: both walks consume the same receiver-type map, so a member call
+    // and a member read can never disagree about which type the file states for a receiver.
+    const receiverTypes = this.collectLocalReceiverTypes(rootNode)
+    this.extractCallRelationships(rootNode, symbols, relationships, moduleName, receiverTypes, deadSpans)
     // JD6: an export written inside a superseded duplicate body is not part of
     // the module's surface. `extractExportRelationships` runs after the walk and
     // turns the `exports` array into rows, so the filter belongs here — on the
@@ -1634,7 +1659,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     }))
 
     // Field-access uses (parity with java/groovy/kotlin collectors).
-    this.collectFieldAccessUses(rootNode, relationships, moduleName, deadSpans)
+    this.collectFieldAccessUses(rootNode, relationships, moduleName, receiverTypes, deadSpans)
 
     // Declared/checked type references (M14): JavaScript has no type
     // annotations, but instanceof checks reference a type by name — the one
@@ -1920,32 +1945,167 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
    * one file is dropped: shadowing makes the file-level answer a guess, and a
    * wrong owner rewrites a binding that is currently right.
    */
-  private collectLocalReceiverTypes(root: Node): Map<string, string> {
-    const types = new Map<string, string>()
+  private collectLocalReceiverTypes(root: Node): Map<string, ReceiverType> {
+    const types = new Map<string, ReceiverType>()
     const conflicted = new Set<string>()
+    const record = (name: string, type: string, evidence: ReceiverEvidence): void => {
+      if (name.length === 0 || type.length === 0) return
+      const previous = types.get(name)
+      if (previous === undefined) {
+        if (!conflicted.has(name)) types.set(name, { type, evidence })
+      } else if (previous.type !== type) {
+        // TWO TYPES FOR ONE NAME IN ONE FILE: shadowing makes the file-level answer a guess,
+        // and a wrong owner rewrites a binding that is currently right — drop, never pick.
+        types.delete(name)
+        conflicted.add(name)
+      }
+    }
+    /** the CONSTRUCTOR LEAF a `new` expression names (`new Foo()`, `new ns.Foo()`). */
+    const newCtorLeaf = (value: Node | null | undefined): string | null => {
+      if (!value || value.type !== "new_expression") return null
+      const ctor = value.childForFieldName("constructor") ?? value.namedChild(0)
+      if (ctor?.type === "identifier") return ctor.text
+      if (ctor?.type === "member_expression") return ctor.childForFieldName("property")?.text ?? null
+      return null
+    }
+    /** the JSDoc COMMENT directly preceding a declaration, when there is one. */
+    const precedingDoc = (node: Node): string | null => {
+      let stmt: Node = node
+      while (stmt.parent && stmt.parent.type !== "program" && stmt.parent.type !== "statement_block" &&
+             stmt.parent.type !== "class_body" && stmt.parent.type !== "switch_body") {
+        stmt = stmt.parent
+      }
+      const prev = stmt.previousSibling
+      if (!prev || prev.type !== "comment") return null
+      const text = prev.text
+      return text.startsWith("/**") ? text : null
+    }
+    /** the `@type {C}` a preceding JSDoc comment states, parsed as text — no regex. */
+    const jsdocTypeOf = (node: Node): string | null => {
+      const text = precedingDoc(node)
+      if (text === null) return null
+      const at = text.indexOf("@type")
+      if (at < 0) return null
+      const open = text.indexOf("{", at + 5)
+      if (open < 0) return null
+      const close = text.indexOf("}", open + 1)
+      if (close < 0) return null
+      const inner = text.slice(open + 1, close).trim()
+      return isPlainJsIdentifier(inner) ? inner : null
+    }
+    /** every `@param {C} name` a JSDoc block states, parsed as text — no regex, no tag guessing. */
+    const jsdocParamsOf = (node: Node): Map<string, string> => {
+      const out = new Map<string, string>()
+      const text = precedingDoc(node)
+      if (text === null) return out
+      let from = 0
+      for (;;) {
+        const at = text.indexOf("@param", from)
+        if (at < 0) break
+        from = at + 6
+        const open = text.indexOf("{", from)
+        if (open < 0) break
+        const close = text.indexOf("}", open + 1)
+        if (close < 0) break
+        const type = text.slice(open + 1, close).trim()
+        let i = close + 1
+        while (i < text.length && (text[i] === " " || text[i] === "\t")) i++
+        let end = i
+        while (end < text.length) {
+          const ch = text[end]
+          if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r" || ch === "-" || ch === "*" || ch === "/") break
+          end++
+        }
+        const name = text.slice(i, end)
+        if (isPlainJsIdentifier(type) && isPlainJsIdentifier(name)) out.set(name, type)
+        from = close + 1
+      }
+      return out
+    }
+    // THE JSDOC PARAM SCOPES, collected BEFORE the receiver walk: a `@param {C} x` types `x`
+    // only inside the function it documents, so the map is looked up by the CALL LINE and never
+    // applied file-wide (the per-file version would type another function's same-named local —
+    // python measured that class wrong and fixed it with scopes).
+    const paramScopes: Array<{ startLine: number; endLine: number; types: Map<string, string> }> = []
+    {
+      const st: Node[] = [root]
+      while (st.length > 0) {
+        const n = st.pop()!
+        if (n.type === "function_declaration" || n.type === "function_expression" ||
+            n.type === "generator_function_declaration" || n.type === "generator_function" ||
+            n.type === "arrow_function" || n.type === "method_definition") {
+          const types = jsdocParamsOf(n)
+          if (types.size > 0) {
+            paramScopes.push({ startLine: n.startPosition.row + 1, endLine: n.endPosition.row + 1, types })
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) st.push(c)
+        }
+      }
+    }
+    const jsdocParamTypeAt = (line: number, name: string): string | null => {
+      let best: { startLine: number; endLine: number; types: Map<string, string> } | null = null
+      for (const scope of paramScopes) {
+        if (line < scope.startLine || line > scope.endLine) continue
+        if (!scope.types.has(name)) continue
+        // innermost wins: ranges nest, so the widest span that contains the line is the outer
+        // function — the LAST match by span length is the tightest one
+        if (best === null || (scope.endLine - scope.startLine) < (best.endLine - best.startLine)) best = scope
+      }
+      return best === null ? null : best.types.get(name) ?? null
+    }
     const stack: Node[] = [root]
     while (stack.length) {
       const n = stack.pop()!
       if (n.type === "variable_declarator") {
         const nameNode = n.childForFieldName("name")
         const value = n.childForFieldName("value")
-        if (nameNode && nameNode.type === "identifier" && value && value.type === "new_expression") {
-          const ctor = value.childForFieldName("constructor") ?? value.namedChild(0)
-          let leaf: string | null = null
-          if (ctor?.type === "identifier") leaf = ctor.text
-          else if (ctor?.type === "member_expression") {
-            const prop = ctor.childForFieldName("property")
-            leaf = prop ? prop.text : null
+        if (nameNode && nameNode.type === "identifier") {
+          const ctor = newCtorLeaf(value)
+          if (ctor !== null) record(nameNode.text, ctor, "new")
+          else {
+            const docType = jsdocTypeOf(n)
+            if (docType !== null) record(nameNode.text, docType, "jsdoc")
           }
-          if (leaf) {
-            const name = nameNode.text
-            const previous = types.get(name)
-            if (previous === undefined) {
-              if (!conflicted.has(name)) types.set(name, leaf)
-            } else if (previous !== leaf) {
-              types.delete(name)
-              conflicted.add(name)
+        }
+      } else if (n.type === "field_definition") {
+        // CLASS FIELD INITIALISED WITH `new` — `class C { svc = new Service() }` states the
+        // type of `this.svc` exactly as the constructor assignment does.
+        const prop = n.childForFieldName("property")
+        const value = n.childForFieldName("value")
+        const ctor = newCtorLeaf(value)
+        if (prop?.type === "property_identifier" && ctor !== null) {
+          record(`this.${prop.text}`, ctor, "assignment")
+          // also readable unqualified inside instance methods in some styles; keep the
+          // this.-key only — an unqualified use is a bare local read, not a proven receiver.
+        }
+      } else if (n.type === "assignment_expression") {
+        // CONSTRUCTOR ASSIGNMENT — `this.x = new C()` (and `x = new C()` for an already
+        // declared local). The receiver key is the spelling the CALL will use: `this.x`
+        // for a `this.`-rooted member, the bare name otherwise.
+        const left = n.childForFieldName("left")
+        const right = n.childForFieldName("right")
+        const ctor = newCtorLeaf(right)
+        const line = n.startPosition.row + 1
+        if (left && ctor !== null) {
+          if (left.type === "identifier") record(left.text, ctor, "assignment")
+          else if (left.type === "member_expression") {
+            const obj = left.childForFieldName("object")
+            const prop = left.childForFieldName("property")
+            if (obj?.type === "this" && prop?.type === "property_identifier") {
+              record(`this.${prop.text}`, ctor, "assignment")
             }
+          }
+        } else if (left && right && left.type === "member_expression" && right.type === "identifier") {
+          // CONSTRUCTOR PARAMETER — `this.dep = dep` where `dep` is typed by a JSDoc `@param`
+          // in scope: the assignment carries the parameter's stated type onto `this.dep`.
+          const obj = left.childForFieldName("object")
+          const prop = left.childForFieldName("property")
+          if (obj?.type === "this" && prop?.type === "property_identifier") {
+            const paramType = jsdocParamTypeAt(line, right.text)
+            if (paramType !== null) record(`this.${prop.text}`, paramType, "jsdoc")
           }
         }
       }
@@ -1957,16 +2117,38 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     return types
   }
 
+  /**
+   * THE CLASS `this` IS BOUND TO AT A CALL SITE — `null` when the call's `this` is not a
+   * class instance (a plain function's dynamic `this`, or no class at all).
+   *
+   * PURE SYNTAX, no inference: an arrow function does not rebind `this`, so it is stepped
+   * through; a `method_definition`'s own class is found by the same walk (the class ancestor
+   * is ABOVE it), and a nested `function` expression/declaration rebinds `this`, so the walk
+   * stops there and answers null. A static method or static block answers the CLASS, which is
+   * what a class-like owner symbol is for.
+   */
+  private enclosingThisClass(n: Node): string | null {
+    let p: Node | null = n.parent
+    while (p) {
+      // ONLY a class DECLARATION: it is the shape that publishes a class-like symbol for the
+      // owner channel to bind inside. A class expression's class is not a symbol this family
+      // publishes (JD4), so naming it here would hand the store an owner it cannot verify.
+      if (p.type === "class_declaration") return p.childForFieldName("name")?.text ?? null
+      if (p.type === "function_declaration" || p.type === "function_expression" ||
+          p.type === "generator_function_declaration" || p.type === "generator_function") return null
+      p = p.parent
+    }
+    return null
+  }
+
   private extractCallRelationships(
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
     moduleName: string,
+    receiverTypes: Map<string, ReceiverType>,
     deadSpans: { s: number; e: number }[] = [],
   ): void {
-    // Read once per file, before the walk: a declaration need not precede its use
-    // in every construct (hoisted functions, closures).
-    const receiverTypes = this.collectLocalReceiverTypes(node)
     const resolveCurrent = (n: Node, current: string | null): string | null => {
       // Current call source = enclosing function/method leaf name
       const fnName = n.childForFieldName?.("name")?.text
@@ -2067,17 +2249,36 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               ...this.lineField(fn.type === "member_expression" ? (fn.childForFieldName("property") ?? fn) : fn),
               metadata: {
                 calleeExpression: fullCallee,
-                // The receiver's constructed type, when the syntax states one.
-                // The store re-resolves the row inside that class (member-owner
-                // pass), which is what stops `c.run()` binding to another file's
-                // same-named method — measured on the TS twin, same shape here.
-                ...(fn.type === "member_expression"
-                  ? (() => {
-                      const object = fn.childForFieldName("object")
-                      const owner = object && object.type === "identifier" ? receiverTypes.get(object.text) : undefined
-                      return owner ? { owner } : {}
-                    })()
-                  : {}),
+                // The receiver's stated type, on the store's EXISTING channel: `metadata.owner`
+                // is what `member-owner-resolution.ts` (claimOwnerCarryingTargets +
+                // resolveMemberTargetsByOwner) reads on BOTH production resolution paths — it
+                // re-resolves the row inside that class, which is what stops `c.run()` binding
+                // to another file's same-named method. `ownerEvidence` says WHICH syntactic
+                // proof produced the owner ({new, assignment, this, jsdoc}) so coverage is a
+                // countable number per evidence class rather than one asserted figure. NO new
+                // channel is introduced: a wrong owner is worse than none, because the store
+                // withdraws the name binding for an owner-carrying row and then declines.
+                ...(fn.type === "member_expression" ? (() => {
+                  const object = fn.childForFieldName("object")
+                  if (!object) return {}
+                  let recv: ReceiverType | undefined
+                  if (object.type === "identifier") recv = receiverTypes.get(object.text)
+                  else if (object.type === "this") {
+                    // `this.m()` — `this` is the enclosing class DECLARATION's instance by
+                    // POSITION. Only a class body binds it, and only a DECLARATION names a
+                    // symbol the owner channel can verify; a plain function's `this` is dynamic,
+                    // and a class EXPRESSION's class is not a symbol this family publishes, so
+                    // both get nothing rather than a guess.
+                    const cls = this.enclosingThisClass(fn)
+                    if (cls) recv = { type: cls, evidence: "this" }
+                  } else if (object.type === "member_expression") {
+                    // `this.x.m()` — the constructor-assignment key is spelled exactly so.
+                    const inner = object.childForFieldName("object")
+                    const prop = object.childForFieldName("property")
+                    if (inner?.type === "this" && prop) recv = receiverTypes.get(`this.${prop.text}`)
+                  }
+                  return recv ? { owner: recv.type, ownerEvidence: recv.evidence } : {}
+                })() : {}),
               },
             })
           }
@@ -2832,6 +3033,9 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
     moduleName: string,
+    // The file's stated receiver types (one collection per file, shared with the calls walk):
+    // a member READ can carry the same `metadata.owner` a member CALL does.
+    receiverTypes: Map<string, ReceiverType>,
     // JD6: this pass had no dead-span guard, so reads inside a superseded
     // duplicate body still emitted `uses` rows after the symbol they belonged to
     // was removed. Its sibling extractCallRelationships has had the guard all
@@ -3056,6 +3260,22 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 const key = seg.startsWith("#") ? `${source}.$private${seg}` : `${source}.${seg}`
                 if (!seen.has(key)) {
                   seen.add(key)
+                  // THE RECEIVER TYPE OF A MEMBER READ, when the file STATES it. The same
+                  // `metadata.owner` channel the store reads for member calls
+                  // (member-owner-resolution.ts) applies to uses rows, so a segment whose
+                  // receiver is a typed local (`const c = new Widget(); c.name` -> owner Widget)
+                  // or `this` inside a class declaration (`this.Path` -> owner <class>) carries
+                  // the owner and the evidence that produced it. NOTHING is attached otherwise:
+                  // a wrong owner is worse than none, because the store withdraws the name
+                  // binding for an owner-carrying row and then declines.
+                  const recvOwner = (() => {
+                    if (cur?.type === "identifier" && head) return receiverTypes.get(head)
+                    if (cur?.type === "this") {
+                      const cls = this.enclosingThisClass(node)
+                      return cls ? { type: cls, evidence: "this" as ReceiverEvidence } : undefined
+                    }
+                    return undefined
+                  })()
                   relationships.push({
                     source,
                     target: seg,
@@ -3067,7 +3287,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                     // (`$(el).removeClass` -> ""). It is published so the terminal claim pass can ask
                     // memberChainClaim the question the rule is defined on — the RECEIVER ROOT — without
                     // re-deriving the chain from text. Additive; consumers that do not read it are unaffected.
-                    metadata: { isFieldAccess: true, ...(cur?.type === "identifier" && head ? { receiverRoot: head } : {}) },
+                    metadata: {
+                      isFieldAccess: true,
+                      ...(cur?.type === "identifier" && head ? { receiverRoot: head } : {}),
+                      ...(recvOwner ? { owner: recvOwner.type, ownerEvidence: recvOwner.evidence } : {}),
+                    },
                   })
                 }
               }
