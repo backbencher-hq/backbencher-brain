@@ -782,6 +782,11 @@ const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> =
   // therefore could not be measured AT ALL, and a fix proven only by unit test is not measured.
   typescript: { spec: async () => (await import("../../src/ast/project-index")).TYPESCRIPT_DECLARATION_SPEC, wasm: "tree-sitter-typescript.wasm" },
   python: { spec: async () => (await import("../../src/ast/project-index")).PYTHON_DECLARATION_SPEC, wasm: "tree-sitter-python.wasm" },
+  // CPP — the lane the index instrument was PROPOSED for. Its analyzer reads the project index only
+  // behind BB_CPP_INDEX_CONSUME=1 (task-22), and the W1 wall's claim (`projectIndexDeclaration`,
+  // task-24) is verified from the index's facts; without this entry `--index` builds 0 indexes for the
+  // lane and the arm that exercises either mechanism cannot be produced at all.
+  cpp: { spec: async () => (await import("../../src/ast/project-index")).CPP_DECLARATION_SPEC, wasm: "tree-sitter-cpp/tree-sitter-cpp.wasm" },
 }
 const INDEX_CACHE = process.env.BB_INDEX_CACHE ?? "/tmp/bb-project-index"
 

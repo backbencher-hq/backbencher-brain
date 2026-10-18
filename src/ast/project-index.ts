@@ -273,6 +273,124 @@ export const SOLIDITY_DECLARATION_SPEC: DeclarationSpec = {
   baseNodes: ["inheritance_specifier"],
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────────────────────
+ * C++ (task-22). The grammar does not put a declaration's name in a `name` FIELD: it puts a
+ * DECLARATOR chain there, so this spec is mostly the `nameResolver` hook (the same shape F# needed,
+ * for a grammar that names its declarations differently). The rules below were prototyped and
+ * measured over a bounded corpus sample in the task-22 milestone-1 instruments
+ * (`script/m14/cpp-decl-proto.ts`); the SIZING evidence is in CPP-INDEX-SIZING.md.
+ *
+ * DELIBERATE OMISSIONS, each with its reason:
+ *   · MACROS (`preproc_def` / `preproc_function_def`) are NOT nameOnly declarations. The Lead ruled
+ *     (charter §18.8 B) that a `#define` name is a preprocessor name, not a declaration — the C lane
+ *     reached the same ruling for its macro-spelled wall. The resolver still reads them (one line to
+ *     enable if the ruling ever changes); the size of that block is priced in CPP-INDEX-SIZING.md.
+ *   · `.h` is not in `PROJECT_INDEX_EXTENSIONS` for this lane yet: the C/C++ header boundary is a
+ *     shared routing question (production is path-only `.h`→c, the engine content-sniffs 11,832 c /
+ *     3,711 cpp) and must be ruled for both lanes together. The extension-only population ships first.
+ *
+ * KNOWN LIMITATION, stated: an OUT-OF-LINE member definition (`void Foo::bar() { … }`) is read as the
+ * leaf `bar` under FILE scope, so it lands in `symbolNames` (the name is declared — what the
+ * resolution/claim questions need) but NOT in `typeMembers[Foo]` (no owner at that node). Inline
+ * members are attributed. Attributing out-of-line definitions is a later, additive patch.
+ * ───────────────────────────────────────────────────────────────────────────────────────────── */
+const CPP_IDENT_RE = /^[A-Za-z_$][\w$]*$/
+/** The last `::` segment of a declarator spelling, template arguments stripped, pointer/ref sigils
+ *  removed — the CPPD1 leaf rule the analyzer already applies to class/enum specialisations. */
+const cppLeafOfPath = (text: string): string => {
+  let s = text.trim()
+  const lt = s.indexOf("<")
+  if (lt > 0) s = s.slice(0, lt)
+  const cut = s.lastIndexOf("::")
+  const leaf = (cut >= 0 ? s.slice(cut + 2) : s).replace(/^[*&~\s]+/, "")
+  return CPP_IDENT_RE.test(leaf) ? leaf : ""
+}
+/** The declared name reached through a declarator chain. */
+const cppDeclaratorName = (n: Node | null, depth = 0): string => {
+  if (!n || depth > 10) return ""
+  const t = n.type
+  if (t === "identifier" || t === "field_identifier" || t === "type_identifier") return n.text.trim()
+  if (t === "qualified_identifier") return cppLeafOfPath(n.text)
+  if (t === "function_declarator" || t === "abstract_function_declarator" ||
+      t === "pointer_declarator" || t === "reference_declarator" || t === "array_declarator" ||
+      t === "init_declarator" || t === "parenthesized_declarator" || t === "attributed_declarator") {
+    return cppDeclaratorName(n.childForFieldName("declarator"), depth + 1)
+  }
+  if (t === "template_function" || t === "template_method") {
+    return cppDeclaratorName(n.childForFieldName("name"), depth + 1)
+  }
+  return ""
+}
+/** The spec's ONE name hook: the node type decides where the name lives. */
+const cppDeclaredName = (n: Node): string => {
+  const t = n.type
+  if (t === "class_specifier" || t === "struct_specifier" || t === "union_specifier" || t === "enum_specifier") {
+    const nameField = n.childForFieldName("name")
+    if (nameField) {
+      const direct = nameField.text.trim()
+      if (CPP_IDENT_RE.test(direct)) return direct
+      const leaf = cppLeafOfPath(nameField.text)
+      if (leaf !== "") return leaf
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && (c.type === "type_identifier" || c.type === "identifier")) return c.text.trim()
+    }
+    return "" // an anonymous class/struct/union names nothing — refused, not invented
+  }
+  if (t === "enumerator") {
+    const id = n.childForFieldName("name") ?? n.namedChild(0)
+    const name = id?.text.trim() ?? ""
+    return CPP_IDENT_RE.test(name) ? name : ""
+  }
+  if (t === "preproc_def" || t === "preproc_function_def") {
+    const id = n.childForFieldName("name") ?? n.namedChild(0)
+    const name = id?.text.trim() ?? ""
+    return CPP_IDENT_RE.test(name) ? name : ""
+  }
+  if (t === "alias_declaration" || t === "type_definition") {
+    return cppDeclaratorName(n.childForFieldName("declarator"))
+  }
+  // function_definition / declaration / field_declaration: the declarator carries the name.
+  return cppDeclaratorName(n.childForFieldName("declarator"))
+}
+/** `base_class_clause` -> [access_specifier] type_identifier | qualified_identifier | template_type. */
+const cppBaseNames = (n: Node): string[] => {
+  const out: string[] = []
+  for (let i = 0; i < n.namedChildCount; i++) {
+    const c = n.namedChild(i)
+    if (!c) continue
+    const t = c.type
+    if (t === "access_specifier" || t === "virtual") continue
+    const leaf = t === "type_identifier" ? c.text.trim() : cppLeafOfPath(c.text)
+    if (leaf !== "") out.push(leaf)
+  }
+  return out
+}
+
+export const CPP_DECLARATION_SPEC: DeclarationSpec = {
+  typeNodes: {
+    class_specifier: "class",
+    struct_specifier: "struct",
+    union_specifier: "union",
+    enum_specifier: "enum",
+  },
+  memberNodes: ["field_declaration", "function_definition", "declaration", "enumerator"],
+  baseNodes: ["base_class_clause"],
+  // A FUNCTION BODY IS A SCOPE. Without this, a local declared inside a body would be recorded as a
+  // PROJECT declaration — the fleet rule is that a local is not a project declaration (PY-7's closure
+  // correction). `function_definition` is also a member/nameOnly node: the node's OWN name is read
+  // with the OUTER scope count and only its children see the increment, which is exactly the
+  // behaviour `indexTree` documents for python.
+  scopeNodes: ["function_definition", "lambda_expression"],
+  // Free functions/prototypes and aliases are NAMES the index must carry; they get no DeclarationKind
+  // (the union has no "function" kind and inventing one is a vocabulary decision, not this patch).
+  nameOnlyNodes: ["function_definition", "declaration", "alias_declaration", "type_definition"],
+  nameOnlyIdentifierShaped: true,
+  nameResolver: cppDeclaredName,
+  baseResolver: cppBaseNames,
+}
+
 /**
  * The python declaration shapes, as the GRAMMAR names them.
  *

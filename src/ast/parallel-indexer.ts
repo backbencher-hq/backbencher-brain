@@ -1668,7 +1668,13 @@ export async function processWithWorkerPool(
     // the lane and its fail-closed module claims could never verify. Added together with the spec below
     // and the gate's INDEX_SPECS entry — all three halves in one change, because a half-wire reads as
     // covered and measures nothing (see the `.scss`/`.groovy` notes).
-    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java", ".dart": "dart", ".py": "python", ".ts": "typescript", ".tsx": "typescript", ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript" }
+    // CPP (task-22): `.cpp/.cc/.cxx/.c++` are translation units, `.hpp/.hxx/.ipp/.inl` are headers-by-
+    // extension (already admitted by the analyzer's population), `.cu` is a CUDA translation unit the
+    // cpp grammar reads. `.h` is DELIBERATELY ABSENT: that boundary is shared with the C lane
+    // (production path-only .h->c vs the engine's content sniff) and is priced in
+    // CPP-INDEX-PROPOSAL.md §1b; adding it here would silently answer a crossover question one lane
+    // cannot settle alone.
+    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java", ".dart": "dart", ".py": "python", ".ts": "typescript", ".tsx": "typescript", ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript", ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".c++": "cpp", ".hpp": "cpp", ".hxx": "cpp", ".ipp": "cpp", ".inl": "cpp", ".cu": "cpp" }
     // THE THREE NEW EXTENSIONS BUILD ONLY ON A COMPLETE WALK (see `indexScope`). The five pre-existing
     // lanes consume the index for RESOLUTION and tolerate an incomplete one — behaviour that must not
     // change — while python/typescript have no consumer yet and their index exists only to support a
@@ -1709,6 +1715,8 @@ export async function processWithWorkerPool(
           // The wasm each ANALYZER loads, not the nearest filename: `wasm/typescript.wasm` also
           // exists, and the analyzer's head comment pins `tree-sitter-typescript.wasm`.
           python: path.join(repoRoot, "wasm", "tree-sitter-python.wasm"),
+          // The cpp grammar the engine loads (engine.ts case "cpp": tree-sitter-cpp/tree-sitter-cpp.wasm).
+          cpp: path.join(repoRoot, "wasm", "tree-sitter-cpp.wasm"),
           typescript: path.join(repoRoot, "wasm", "tree-sitter-typescript.wasm"),
           // Same rule for dart: `wasm/dart.wasm` also exists (same bytes today), but the dart
           // analyzer's head comment pins `tree-sitter-dart.wasm` (grammar line 20).
@@ -1745,6 +1753,9 @@ export async function processWithWorkerPool(
           // JAVASCRIPT: the spec's member/nameOnly/base rules are what make `class A extends B`,
           // `export { item } from` and a bare `import { item }` provable across project files.
           javascript: mod.JAVASCRIPT_DECLARATION_SPEC,
+          // CPP, wired with its extension entries and wasm in the same change — all three halves, for
+          // the `.scss`/`.groovy` reason: a spec without its entry indexes nothing and measures less.
+          cpp: mod.CPP_DECLARATION_SPEC,
           // DART, wired with its entry and wasm in the same change (see the block comment above
           // PROJECT_INDEX_EXTENSIONS). The spec is the whole point here: `baseResolver` and
           // `memberNodes` are what make `class A extends B` / `with M` / `implements I` resolvable
