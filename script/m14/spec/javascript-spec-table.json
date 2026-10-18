@@ -229,7 +229,32 @@
         "receiver_member_rows": 38559,
         "sum": 124029,
         "note": "receiver-member rows name the member leaf and are NOT claimed by the contract (never-claim (b)); a receiver-position claim is a possible extension needing the Lead's arbiter field."
-      }
+      },
+      "measured_whole_pop_arm": {
+        "source": "Lead's numbers of record (charter §18.11), incoming-gate javascript js,jsx,mjs,cjs 0 --dump, 12,374 files / 95 repos, self-test PASS",
+        "bindOK_before": 407881,
+        "bindOK_after": 503409,
+        "bindOK_imported_increment": 95528,
+        "resolved_before": 155712,
+        "resolved_after": 137437,
+        "amb_before": 207144,
+        "amb_after": 180195,
+        "unresolved_before": 592286,
+        "unresolved_after": 541982,
+        "edges": 1467640,
+        "extOK": 104617,
+        "arbitraryTwin": "534,894 UNCHANGED (not risen)",
+        "verifiedClass": "45.5% -> 50.8%",
+        "arithmetic": "18,275 + 26,949 + 50,304 = 95,528 exactly",
+        "per_type_imported_increment": {
+          "calls": 71579,
+          "uses": 18246,
+          "instantiates": 3987,
+          "renders": 1635,
+          "references": 81
+        }
+      },
+      "claimable_target_is_binding_rows_whole_pop_note": "CORRECTED: 46,598 is a LOWER BOUND (census projection of the NON-RESOLVED classes only). The measured arm verifies 95,528 imported-binding claims because imported bindings are program-scope published names: their bare rows can also sit in resolved (18,275 decoys) or ambiguous (26,949) by the name model. The arm is the record."
     }
   }
 }
