@@ -639,6 +639,11 @@ export const CPP_ORACLE_CONTRACT: readonly string[] = [
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+// SOL-21's shared index fact, reused here for the cpp consumption flag (task-22). The helper is the
+// same one the Solidity analyzer reads, so two lanes cannot compute the inheritance-closed member view
+// differently; it is cheap (a map build over the index) and only invoked when the flag + a complete
+// index are both present.
+import { buildResolutionTables } from "./project-index"
 
 /**
  * #919: a MACRO-DECLARED BODY — a call-shaped macro standing as the whole
@@ -1493,6 +1498,66 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     // however many times it is declared (an in-class declaration and an out-of-line
     // definition are two nodes stating one export).
     const pendingExports: Array<{ name: string; owner: string | null; line: number; spelling: string }> = []
+
+    // ═══════════════════════════════════════════════════════════════════════════════════════════
+    // PROJECT-INDEX CONSUMPTION (task-22), flag-gated and FAIL-CLOSED.
+    //
+    // WHY A FLAG: the accepted CPP D1–D6 verdict was measured with this analyzer publishing exactly
+    // these rows; a lane must not silently change under a verdict. With `BB_CPP_INDEX_CONSUME` unset
+    // every addition below is an empty object spread, so the analyzer's output is byte-identical.
+    //
+    // WHY `complete === true`: an index built from a cap/stride sample is not the project. The fleet's
+    // rule (java/javascript/public-lane comments in project-index.ts) is that a claim or a settlement
+    // verified against a fragment is refuted by the first unsampled sibling file — so this consumes
+    // NOTHING from an incomplete index, and says so by leaving metadata absent rather than guessing.
+    //
+    // WHAT IT DOES: metadata only. It attaches the index's DECLARATION FACTS to rows the analyzer
+    // already emits — provenance on `calls`, the settled KIND on heritage rows, and the
+    // inheritance-closed declaring base on `overrides`. It does not emit or suppress a single row,
+    // which is what keeps the population invariant the arms depend on.
+    // ═══════════════════════════════════════════════════════════════════════════════════════════
+    const INDEX_CONSUME = process.env.BB_CPP_INDEX_CONSUME === "1"
+    const indexCandidate: any = INDEX_CONSUME ? (context as any)?.projectIndex : undefined
+    const indexUsable = !!indexCandidate && indexCandidate.complete === true
+    const indexSymbols: Set<string> = indexUsable && indexCandidate.symbolNames instanceof Set ? indexCandidate.symbolNames : new Set()
+    const indexCounts: Map<string, number> = indexUsable && indexCandidate.symbolCounts instanceof Map ? indexCandidate.symbolCounts : new Map()
+    const indexTypeKinds: Map<string, unknown> = indexUsable && indexCandidate.typeKinds instanceof Map ? indexCandidate.typeKinds : new Map()
+    const indexTypeBases: Map<string, string[]> = indexUsable && indexCandidate.typeBases instanceof Map ? indexCandidate.typeBases : new Map()
+    let indexResolution: { memberOwners: Map<string, Set<string>>; allMembers: Map<string, Set<string>> } | null = null
+    if (indexUsable) {
+      try {
+        indexResolution = buildResolutionTables(indexCandidate)
+      } catch {
+        // A malformed index is treated as NO index: metadata stays absent (fail-closed), and the
+        // analyzer's own rows are untouched. Silence here is not a swallowed error — the absence of
+        // the metadata IS the report a consumer reads.
+        indexResolution = null
+      }
+    }
+    /** The index's declaration facts for a CALL target, or {} when there is no usable index. */
+    const indexCallFacts = (targetName: string): Record<string, unknown> => {
+      if (!indexUsable) return {}
+      const out: Record<string, unknown> = {}
+      if (indexSymbols.has(targetName)) out.declaredInProject = true
+      const count = indexCounts.get(targetName)
+      if (count !== undefined) out.indexDeclarationCount = count
+      const owners = indexResolution?.memberOwners.get(targetName)
+      if (owners && owners.size === 1) out.memberOfProjectType = [...owners][0]
+      return out
+    }
+    /** The settled KIND of a heritage target (class/struct/union/enum), or {} without an index. */
+    const indexBaseFacts = (targetName: string): Record<string, unknown> => {
+      if (!indexUsable) return {}
+      const kind = indexTypeKinds.get(targetName)
+      return kind === undefined ? {} : { indexBaseKind: String(kind) }
+    }
+    /** Does the index's inheritance-closed member view say this base declares `method`? */
+    const indexOverridesFacts = (base: string, method: string): Record<string, unknown> => {
+      if (!indexUsable || indexResolution === null) return {}
+      const declares = indexResolution.memberOwners.get(method)?.has(base) === true
+      return declares ? { indexDeclaresMethod: true } : {}
+    }
+    void indexTypeBases
 
     // CP1 (cpp review) bare-read resolution sets. C++ has no runtime —
     // every bare `identifier` that names a file-visible VALUE is a Uses
@@ -2954,7 +3019,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
                 type: ASTEngine.RelationshipType.Extends,
                 confidence: 1.0,
                 line_number: this.nameLine(b),
-                metadata: { nodeType: b.type, macroDecoratedHead: true },
+                metadata: { nodeType: b.type, macroDecoratedHead: true, ...indexBaseFacts(target) },
               })
             }
             classBases.set(decorated.name, decorBases)
@@ -3188,7 +3253,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
                 // line of the names inside it (a specifier starts at its
                 // KEYWORD) — `nameLine` prefers the grammar's `name` field.
                 line_number: this.nameLine(typeNode),
-                metadata: { nodeType: typeNode.type },
+                metadata: { nodeType: typeNode.type, ...indexBaseFacts(target) },
               })
               // The `implements` candidate is recorded HERE, with the line the
               // base name is written on, and adjudicated after the walk once
@@ -4414,7 +4479,9 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
               // node would make "the row's line" ambiguous again, which is what
               // #873 was about. Base stays 1-based (R6).
               line_number: this.nodeLine(calleeSite),
-              metadata: { line: this.nodeLine(calleeSite), qualified: qualifiedName },
+              // task-22 (flag-gated): the project index's declaration facts for this callee. Empty
+              // object = flag off / incomplete index, so the row is byte-identical to the verdict.
+              metadata: { line: this.nodeLine(calleeSite), qualified: qualifiedName, ...indexCallFacts(targetName) },
             })
             // #383 payload: qualified path WITHOUT argument text (C++ keeps
             // :: separators), attributed to the enclosing function/method
@@ -4756,6 +4823,9 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
               // (`meta.overriddenOwner`), and it is the machine-readable answer to "which
               // declaration did the resolver intend" when the leaf alone is ambiguous.
               overriddenOwner: hit.base,
+              // task-22 (flag-gated): does the INDEX's inheritance-closed member view confirm this
+              // base declares the method? Absent when there is no complete index.
+              ...indexOverridesFacts(hit.base, pend.method),
               // M14-HONESTY-CONTRACT §4: any edge under 1.0 carries a
               // machine-readable reason code, and `override`/`final` is
               // recorded so a reader can tell an asserted override from an
@@ -4803,6 +4873,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
             reasonCode: "pure-virtual-base",
             pureVirtuals: [...pure],
             pureVirtualCount: pure.size,
+            ...indexBaseFacts(pend.base),
           },
         })
       }
