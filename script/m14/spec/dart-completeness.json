@@ -599,33 +599,32 @@
   "lastUpdated": "2026-10-18 (dart lane: DARTGAP3 RULED -> zero open gaps in the completeness census except DARTGAP1/2 whose corpus counts need the cap-0 arm; canonical vocabulary DARTD23; annotations incl. library/typedef/scoped forms; receiver owner channel restricted to class-like/unknown kinds; part_of truth walk + named form; cap-50 pair, references corpus arm (100%) and inventory 8/8 all green)",
   "label_coverage": {
     "_description": "Which relationship labels this lane actually COMPARES. script/m14/verify-label-coverage.ts reads the differential allowlist, runs this analyzer over a corpus sample, and reports every label the analyzer EMITS that the allowlist DROPS: such a label is compared by nothing while the lane still prints a percentage. `contains` left this list when the M60 oracle landed.",
-    "declared_gaps": [
-      {
-        "label": "overrides",
-        "reason": "The allowlist omits `overrides` for dart (with csharp, swift, cpp) and carries no note saying why; the analyzer emits it and the oracle (`script/m14/oracles/dart-overrides.ts`, wired as `deriveDartOverridesTruth` since the M60 label-coverage sweep) derives it, but nothing in this file says the label is compared by nothing. Measured: 90,352 overrides edges on a 2,735-file stride sample across 5 repositories (production `parseFile`, `BB_DART_CONC=1`, `validation/m14/fixtures/dart/census.ts`), and `script/m60/rel-type-coverage-gate.ts` reports it as a DERIVATION finding for this lane.",
-        "closes_when": "the differential allowlist admits `overrides` for dart, which the oracle already supports. One term in the filter expression at script/m14/differential.ts:23153 (`lang !== \"dart\"` in the overrides arm)."
-      },
-      {
-        "label": "references",
-        "reason": "Emitted now (M14 ontology wave): a declaration that MENTIONS a type in a type position publishes `references` to that type when the name resolves to a type the run can see. Measured on the same 2,735-file sample: 5,265 edges, 100.0% of targets resolving to a symbol declared in the same file by construction, 97.9% of sources, 0 edges under confidence 0.7 (all at exactly 0.95). Independently derived over 799 corpus files at 1,203/1,203 rows agreed, 0 missing, 0 unexplained. The allowlist drops the label, so those edges are compared by nothing until the harness admits it. The rule is independently derived by `script/m14/oracles/dart-references.ts` and pinned shape-by-shape by `script/m14/verify-dart-references.ts`, so what is missing is the WIRING, not the truth.",
-        "closes_when": "`deriveDartReferencesTruth` is pushed in differential.ts's dart branch next to `deriveDartEdges`, and `references` is added to the dart arm of the compared-label allowlist (script/m14/differential.ts:23186 area). Both halves are required: truth without the allowlist entry reads as a fabricated MISSING, and the allowlist entry without the truth reads every row as unexplained."
-      },
-      {
-        "label": "part_of",
-        "reason": "Lane-emitted for both roles (URI and NAMED forms) since 2026-10-18 (DARTD23), and the independent truth walk exists in script/m14/oracles/dart-part-of.ts with a 7-case contract check (script/m14/dart-part-of-verify.ts), but `part_of` is NOT admitted to the differential's compared set: the Lead deliberately refused to admit a label whose truth is not wired, because a truth-less admitted label charges every analyzer row as a fabrication. The wiring point is differential.ts's dart arm (push deriveDartPartOfTruth next to deriveDartImportsTruth) plus the dart allowlist term.",
-        "closes_when": "deriveDartPartOfTruth is pushed in differential.ts's dart branch and `part_of` is added to the dart arm of the compared-label allowlist, in the same commit."
-      },
-      {
-        "label": "mixes_in",
-        "reason": "Lane-emitted since 2026-10-18 (DARTD23) for every with-clause. The diff truth is now derived at all three with-clause sites by the Lead's f5c5cb9c4 wiring and ADMITTED, so this label should be REMOVED from declared gaps once the first differential run over a corpus confirms agreement — recorded here rather than assumed fixed.",
-        "closes_when": "a differential run over at least one corpus reports mixes_in rows agreed (0 missing, 0 unexplained) and this entry is deleted in that commit."
-      }
-    ],
+    "declared_gaps": [],
     "_closed_gaps": [
       {
         "label": "imports",
         "was": "Emitted by the analyzer (65 edges per 15 files on proxicall) and dropped by the allowlist. There is no imports oracle for this lane, so admitting the label today would turn invisible edges into UNEXPLAINED ones rather than into a measurement — the #910 shape in reverse.",
         "closed": "The oracle exists and the label is admitted: `script/m14/oracles/dart-imports.ts` is pushed as `deriveDartImportsTruth` and `imports` is in the dart arm of the allowlist (script/m14/differential.ts:23186). Recorded here rather than deleted, because a gap that closes silently is indistinguishable from one that was never there."
+      },
+      {
+        "label": "part_of",
+        "was": "Lane-emitted for both roles since 2026-10-18 but NOT compared: the Lead refused to admit a label whose truth was not wired (a truth-less admitted label charges every analyzer row as a fabrication).",
+        "closed": "The independent truth walk landed in script/m14/oracles/dart-part-of.ts (lane-owned; own tree walk, own pubspec/name reader, package:/dart:/relative rules, both refusals, and the NAMED-library branch a path-only walk misses) with a 7-case contract check script/m14/dart-part-of-verify.ts (truth AND analyzer agree). The Lead wired it (differential.ts commit e4d62d8f5) and admitted `part_of` to the dart compared set. FIRST CORPUS CONFIRMATION still to be quoted: a differential run over a corpus reporting part_of agreed / 0 missing / 0 unexplained is what moves this from 'wired' to 'measured'."
+      },
+      {
+        "label": "mixes_in",
+        "was": "Lane-emitted from 2026-10-18 (with-clause rows, all three heritage sites incl. the mixin-application class) but not compared in the first hours after the relabel.",
+        "closed": "The Lead's differential wiring (commit f5c5cb9c4) derives mixes_in truth at all three with-clause sites and ADMITTED it to the compared set in the same commit; the dart allowlist term and the truth flip landed together, which is the only shape that does not fabricate MISSING/unexplained rows. First corpus differential confirmation still to be quoted alongside part_of."
+      },
+      {
+        "label": "overrides",
+        "was": "The dart allowlist omitted `overrides` (the largest class: 90,352 edges on a 2,735-file sample) so the label was compared by nothing while the lane printed a percentage; the oracle script/m14/oracles/dart-overrides.ts existed and was wired but the filter term did not.",
+        "closed": "The filter term is present in the dart arm of the compared-label allowlist (script/m14/differential.ts, 2026-10-18 HEAD: `...(lang === \"dart\" ? [\"overrides\"] : [])`), so the oracle's rows reach the comparison. FIRST CORPUS DIFFERENTIAL FIGURE still to be quoted by the lane's next differential arm."
+      },
+      {
+        "label": "references",
+        "was": "The allowlist dropped `references`, so the type-mention + annotation + mixin-on rows were compared by nothing (the oracle derived them).",
+        "closed": "The term is admitted in the dart arm (`...(lang === \"dart\" ? [\"references\"] : [])`), and the oracle was extended on 2026-10-18 for the annotation positions (16 shapes, incl. the library annotation and the type-qualified vs alias-qualified split) and the mixin-on constraint. Independent check already green: script/m14/verify-dart-references.ts --corpus -> 211 files / 814 rows / 814 agreed, 0 missing, 0 unexplained (100.0%). The DIFFERENTIAL arm over a corpus is still the confirmation owed for the admit half."
       }
     ]
   },
