@@ -45,6 +45,11 @@ const jsonOut = (() => {
   const i = process.argv.indexOf("--json")
   return i >= 0 ? process.argv[i + 1] : null
 })()
+/** `--pricing-only`: run ONLY the EXT? PRICING pass (dump rows + project module names from the dumped
+ *  paths). Skips the per-file re-parse both heavy loops need, so it is a light pass and can run while
+ *  another lane holds the box. The report records `mode: "pricing-only"` so the missing cause table
+ *  can never be mistaken for a classification run. */
+const PRICING_ONLY = process.argv.includes("--pricing-only")
 
 type Bucket = { count: number; samples: string[] }
 const labels = new Map<string, { rows: number; buckets: Map<string, Bucket> }>()
@@ -242,6 +247,7 @@ function collectAstFacts(root: any, facts: FileFacts) {
   }
 }
 
+if (!PRICING_ONLY) {
 for (const file of [...files].sort()) {
   const rel = file.startsWith(CORPUS) ? file.slice(CORPUS.length + 1) : file
   const repo = path.join(CORPUS, rel.split(path.sep)[0]!)
@@ -297,6 +303,7 @@ for (const file of [...files].sort()) {
   }
 }
 
+}
 function classifyModule(spec: string, repo: string): string {
   if (spec.startsWith(".") || spec.startsWith("/")) return "relative-or-absolute"
   const bare = spec.replace(/^node:/, "")
@@ -346,6 +353,7 @@ function classifyReceiver(facts: FileFacts, repo: string, root: string): string 
 // ─────────────────────────────────────────────────────────────────────────────────────────
 // Classification, per dumped row.
 // ─────────────────────────────────────────────────────────────────────────────────────────
+if (!PRICING_ONLY) {
 for (const row of rows) {
   const facts = fileFacts.get(row.file)
   const rel = row.file.startsWith(CORPUS) ? row.file.slice(CORPUS.length + 1) : row.file
@@ -443,6 +451,7 @@ for (const row of rows) {
   bucket(row.label, "unclassified-label", sample)
 }
 
+}
 // ─────────────────────────────────────────────────────────────────────────────────────────
 // EXT? PRICING — the module-space wall, priced from the dump (D7: "price ext? so the Lead can
 // decide module-space facts"). A claim is `externalUnverified` (ext?) when no check the arbiter
@@ -472,10 +481,14 @@ for (const file of files) {
 const extPricing = {
   total: 0,
   byClaimKind: {} as Record<string, number>,
+  byLabel: {} as Record<string, number>,
   targetClass: {} as Record<string, number>,
   rootCollidesWithProjectName: 0,
   rootNoCollision: 0,
   rootExamples: [] as string[],
+  collideRootCounts: {} as Record<string, number>,
+  noCollisionRootCounts: {} as Record<string, number>,
+  bareTargetExamples: [] as string[],
 }
 const moduleOfImportsTarget = (target: string): string | null => {
   // import dependency spellings: `module:item`, and the whole-module binding `<leaf>\0<module>:*`
@@ -491,11 +504,13 @@ for (const row of rows) {
   extPricing.total++
   const kind = row.claimKind || "-"
   extPricing.byClaimKind[kind] = (extPricing.byClaimKind[kind] ?? 0) + 1
+  extPricing.byLabel[row.label] = (extPricing.byLabel[row.label] ?? 0) + 1
   const rel = row.file.startsWith(CORPUS) ? row.file.slice(CORPUS.length + 1) : row.file
   const repo = rel.split(path.sep)[0] ?? rel.split("/")[0] ?? ""
   const module = row.label === "imports" ? moduleOfImportsTarget(row.target) : null
   if (!module) {
     extPricing.targetClass["bare-target (dump names no specifier)"] = (extPricing.targetClass["bare-target (dump names no specifier)"] ?? 0) + 1
+    if (extPricing.bareTargetExamples.length < 8) extPricing.bareTargetExamples.push(`${row.label} ${row.target} @ ${rel}:${row.line} [kind ${kind}]`)
     continue
   }
   const root = module.includes("/") ? module.slice(0, module.indexOf("/")) : module
@@ -503,19 +518,21 @@ for (const row of rows) {
   if (names.has(root)) {
     extPricing.rootCollidesWithProjectName++
     extPricing.targetClass["module-root collides with a project file/dir name"] = (extPricing.targetClass["module-root collides with a project file/dir name"] ?? 0) + 1
+    extPricing.collideRootCounts[root] = (extPricing.collideRootCounts[root] ?? 0) + 1
     if (extPricing.rootExamples.length < 8) extPricing.rootExamples.push(`${root} @ ${rel}`)
   } else {
     extPricing.rootNoCollision++
     extPricing.targetClass["module-root does NOT collide"] = (extPricing.targetClass["module-root does NOT collide"] ?? 0) + 1
+    extPricing.noCollisionRootCounts[root] = (extPricing.noCollisionRootCounts[root] ?? 0) + 1
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────────────
 // Report
 // ─────────────────────────────────────────────────────────────────────────────────────────
-const report: any = { dump: dumpPath, population: { rows: rows.length, files: files.size, parseFailures: parseFailures.length, failureReasons: Object.fromEntries(parseFailureReasons) }, labels: {} }
+const report: any = { dump: dumpPath, mode: PRICING_ONLY ? "pricing-only" : "classification", population: { rows: rows.length, files: files.size, parseFailures: parseFailures.length, failureReasons: Object.fromEntries(parseFailureReasons) }, labels: {} }
 let total = 0
-console.log(`TS UNRESOLVED CENSUS — ${path.basename(dumpPath)}`)
+console.log(`TS UNRESOLVED CENSUS — ${path.basename(dumpPath)}${PRICING_ONLY ? " (PRICING-ONLY: cause classification skipped by flag)" : ""}`)
 console.log(`population: ${rows.length} dumped non-resolved rows over ${files.size} source file(s); re-parsed with the gate's own entry; unreadable/fallback: ${parseFailures.length}`)
 if (parseFailureReasons.size > 0) console.log(`failure reasons: ${[...parseFailureReasons.entries()].sort((a, b) => b[1] - a[1]).map(([m, n]) => `${n}x ${m}`).join(" | ")}`)
 for (const [label, l] of [...labels.entries()].sort((a, b) => b[1].rows - a[1].rows)) {
@@ -542,6 +559,11 @@ if (extPricing.total > 0) {
   console.log(`\nEXT? PRICING (module-space wall, priced; NOT folded into the claim bucket above):`)
   console.log(`  ext? total: ${extPricing.total}`)
   console.log(`  by claim kind: ${Object.entries(extPricing.byClaimKind).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join(" · ")}`)
+  console.log(`  by label: ${Object.entries(extPricing.byLabel).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join(" · ")}`)
+  const topRoots = (m: Record<string, number>) => Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([r, n]) => `${r}:${n}`).join(" · ")
+  if (Object.keys(extPricing.collideRootCounts).length > 0) console.log(`  colliding module roots (top): ${topRoots(extPricing.collideRootCounts)}`)
+  if (Object.keys(extPricing.noCollisionRootCounts).length > 0) console.log(`  non-colliding module roots (top): ${topRoots(extPricing.noCollisionRootCounts)}`)
+  for (const ex of extPricing.bareTargetExamples) console.log(`      bare e.g. ${ex}`)
   for (const [k, n] of Object.entries(extPricing.targetClass).sort((a, b) => b[1] - a[1])) console.log(`    ${String(n).padStart(7)}  ${k}`)
   for (const ex of extPricing.rootExamples) console.log(`      e.g. ${ex}`)
   report.extUnverifiedPricing = extPricing
