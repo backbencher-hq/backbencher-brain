@@ -214,7 +214,15 @@ console.log("")
 console.log(`calls edges                      ${totalTally.calls}`)
 console.log(`  of which member calls          ${totalTally.memberCalls}   (callee contains a dot — the class the 54.1% wall was measured on)`) 
 console.log(`  carrying metadata.owner        ${totalTally.owner}   (${report.owner_share_of_all_calls} of all calls · ${report.owner_share_of_member_calls} of member calls)`)
-const order = ["assignment", "annotation", "param", "this", "(unrecorded)"]
+// THE EVIDENCE CLASSES THIS LANE PUBLISHES. The four original forms plus the eight D7
+// receiver-typing classes (assignment now covers the post-declaration `x = new T()` flow as well as
+// `const x = new T()`); a value outside this list is reported as UNRECOGNISED rather than silently
+// folded into a known class, so a new or mistyped evidence string cannot hide inside the total.
+const order = [
+  "assignment", "annotation", "param", "this",
+  "destructured", "element", "generic", "factory", "cast", "enum", "class-static",
+  "(unrecorded)",
+]
 for (const k of order) {
   const n = totalTally.byEvidence[k] ?? 0
   if (n === 0 && k === "(unrecorded)") continue

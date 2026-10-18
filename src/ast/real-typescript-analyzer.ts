@@ -2223,10 +2223,28 @@ function extractFrameworkPatterns(symbols: ASTEngine.UniversalSymbol[], content:
 /** The syntax-stated receiver facts one file yields, in one walk. `typeMembers` is
  *  typeName -> memberName -> the member's own declared type, so `cfg.worker.run()` can be
  *  typed one hop beyond the root's annotation. */
+type ReceiverTypeHint = { type: string; evidence: string }
 type ReceiverFacts = {
-  locals: Map<string, { type: string; evidence: string }>
-  classFields: Map<string, { type: string; evidence: string }>
+  locals: Map<string, ReceiverTypeHint>
+  classFields: Map<string, ReceiverTypeHint>
   typeMembers: Map<string, Map<string, string>>
+  /** D7 RECEIVER-TYPING CLASSES (each is syntax-proven, unit-pinned, and counted in the gate's
+   *  owner channel by `metadata.ownerEvidence`): */
+  /** C2 DESTRUCTURED ELEMENT TYPES — `const { worker } = cfg` where `cfg` is a typed local/param. */
+  /** C3 ARRAY/COLLECTION ELEMENT TYPES — annotation `T[]`/`Array<T>`/`Set<T>`, `new Array<T>()`; the
+   *  receiver is `items[0]` (subscript) or a `for (const item of items)` binding. */
+  elementTypes: Map<string, string>
+  /** C4 GENERIC TYPE-ARGUMENT PROPAGATION — instantiated type args per local/field (`Box<Widget>`) and
+   *  the declared type parameters per class (`Box<T>`), so a member typed `T` resolves to `Widget`. */
+  localTypeArgs: Map<string, string[]>
+  typeParams: Map<string, string[]>
+  /** C5 FACTORY-RETURN TYPING — callable name -> annotated return-type leaf, same file. */
+  returnTypes: Map<string, string>
+  /** C7 ENUM-MEMBER RECEIVERS — enum name -> member set; a local/field initialised `Status.Active`. */
+  enumMembers: Map<string, Set<string>>
+  /** C8 CLASS-STATIC RECEIVERS — class name -> member names declared in its body, so `Cls.staticM()`
+   *  names an owner only when the class actually declares that member. */
+  classMemberNames: Map<string, Set<string>>
 }
 
 class TypeScriptAnalysisRunner {
@@ -5397,21 +5415,40 @@ class TypeScriptAnalysisRunner {
    * honest answer for them is "no target symbol", not a stranger.
    */
   private collectLocalReceiverTypes(root: Node): ReceiverFacts {
-    const locals = new Map<string, { type: string; evidence: string }>()
-    const classFields = new Map<string, { type: string; evidence: string }>()
+    const locals = new Map<string, ReceiverTypeHint>()
+    const classFields = new Map<string, ReceiverTypeHint>()
     const typeMembers = new Map<string, Map<string, string>>()
+    const elementTypes = new Map<string, string>()
+    const localTypeArgs = new Map<string, string[]>()
+    const typeParams = new Map<string, string[]>()
+    const returnTypes = new Map<string, string>()
+    const enumMembers = new Map<string, Set<string>>()
+    const classMemberNames = new Map<string, Set<string>>()
     const conflictedLocals = new Set<string>()
     const conflictedFields = new Set<string>()
-    /** DESTRUCTURED bindings with an annotated type: `function f({ worker }: Settings)` and
-     *  `const { worker }: Settings = …`. Their binding's type is the TYPE MEMBER's type, which is
-     *  known only after the class/interface walk has recorded `typeMembers`, so they are resolved
-     *  after the walk rather than guessed during it. */
+    /** DESTRUCTURED bindings: `function f({ worker }: Settings)` / `const { worker } = cfg`. Their
+     *  binding's type is the TYPE MEMBER's type, which is known only after the class/interface walk
+     *  has recorded `typeMembers`, so they are resolved after the walk rather than guessed during it. */
     const pendingPatterns: { pattern: Node; ownerType: string; evidence: string }[] = []
+    /**
+     * TWO-PHASE COLLECTION. Several of the D7 classes read facts DECLARED ELSEWHERE IN THE FILE — a
+     * factory's annotated return type (`makeWidget(): Widget` may be declared after the call), an
+     * enum's members, a class's type parameters, a typed source for a destructuring. A single
+     * in-order walk resolves them against whatever it has seen so far, so which classes fire depends
+     * on source order: measured on the class fixtures, `const w = makeWidget()` carried NO owner when
+     * the factory was declared below it and DID when above. Phase 1 collects the declaration facts;
+     * phase 2 (below) re-reads the deferred sites in source order against the COMPLETE fact set.
+     */
+    const pendingDeclarators: Node[] = []
+    const pendingFields: Node[] = []
+    const pendingAssignments: Node[] = []
+    const pendingForIn: Node[] = []
+    const pendingDestructured: { pattern: Node; sourceName: string }[] = []
     /** First declaration wins; a second declaration with a DIFFERENT type drops the name from
      *  the map entirely (shadowing makes the file-level answer ambiguous, and a wrong owner is
      *  worse than none — see the docstring). */
     const record = (
-      into: Map<string, { type: string; evidence: string }>,
+      into: Map<string, ReceiverTypeHint>,
       conflicted: Set<string>,
       name: string,
       type: string,
@@ -5425,49 +5462,86 @@ class TypeScriptAnalysisRunner {
         conflicted.add(name)
       }
     }
+    // ── PHASE 1: declaration facts that do not depend on other deferred facts ──────────────────
     const stack: Node[] = [root]
     while (stack.length) {
       const n = stack.pop()!
       if (n.type === "variable_declarator") {
-        // A destructuring pattern states no single variable; `namedChild(0)` is an
-        // object_pattern/array_pattern there, which the identifier test drops. (The 3 same-class
-        // losses in the measurement above are the price of not guessing.)
+        pendingDeclarators.push(n)
+      } else if (n.type === "public_field_definition" || n.type === "property_signature") {
+        pendingFields.push(n)
+      } else if (n.type === "assignment_expression") {
+        pendingAssignments.push(n)
+      } else if (n.type === "for_in_statement") {
+        pendingForIn.push(n)
+      } else if (
+        n.type === "function_declaration" || n.type === "generator_function_declaration" ||
+        n.type === "method_definition" || n.type === "method_signature" || n.type === "function_signature"
+      ) {
+        // C5: the annotated RETURN type of a same-file callable, so `const w = makeWidget()` can be
+        // typed by its factory. Every callable declaration kind that can carry `: T` is read.
         const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
-        if (nameNode && nameNode.type === "identifier") {
-          const value = n.childForFieldName("value")
-          const isNew = value !== null && value.type === "new_expression"
-          const type = this.declaratorTypeName(n)
-          if (type) record(locals, conflictedLocals, nameNode.text, type, isNew ? "assignment" : "annotation")
-        } else if (nameNode && nameNode.type === "object_pattern") {
-          const ownerType = this.annotationTypeName(n)
-          if (ownerType) pendingPatterns.push({ pattern: nameNode, ownerType, evidence: "annotation" })
+        const ret = n.childForFieldName("return_type")
+        const retLeaf = ret ? this.typeLeafName(ret.namedChild(0) ?? ret) : null
+        if (nameNode && retLeaf && (nameNode.type === "identifier" || nameNode.type === "property_identifier")) {
+          if (!returnTypes.has(nameNode.text)) returnTypes.set(nameNode.text, retLeaf)
+        }
+        // C8: a class's declared member names — the proof that `Cls.staticM()` names THIS class's
+        // member rather than a same-named thing elsewhere.
+        if (nameNode && (nameNode.type === "property_identifier" || nameNode.type === "identifier")) {
+          const owner = this.enclosingTypeName(n)
+          if (owner) {
+            const members = classMemberNames.get(owner) ?? new Set<string>()
+            members.add(nameNode.text)
+            classMemberNames.set(owner, members)
+          }
+        }
+      } else if (
+        n.type === "class_declaration" || n.type === "abstract_class_declaration" || n.type === "interface_declaration"
+      ) {
+        const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
+        // C4: the class's declared TYPE PARAMETERS, in order, so an instantiated `Box<Widget>` can
+        // substitute `T -> Widget` for members typed `T`.
+        const tp = this.childOfType(n, "type_parameters")
+        if (nameNode && tp) {
+          const names: string[] = []
+          for (let i = 0; i < tp.namedChildCount; i++) {
+            const c = tp.namedChild(i)
+            if (!c || c.type !== "type_parameter") continue
+            const nm = c.childForFieldName("name") ?? c.namedChild(0)
+            if (nm) names.push(nm.text)
+          }
+          if (names.length > 0 && !typeParams.has(nameNode.text)) typeParams.set(nameNode.text, names)
+        }
+        if (nameNode && !classMemberNames.has(nameNode.text)) classMemberNames.set(nameNode.text, new Set())
+      } else if (n.type === "enum_declaration") {
+        // C7: enum name -> declared member names, so an enum-valued local/field names the enum type.
+        const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
+        const body = n.childForFieldName("body") ?? n.namedChild(n.namedChildCount - 1)
+        if (nameNode && body) {
+          const members = enumMembers.get(nameNode.text) ?? new Set<string>()
+          for (let i = 0; i < body.namedChildCount; i++) {
+            const m = body.namedChild(i)
+            if (!m) continue
+            const nm = m.type === "enum_assignment" ? (m.childForFieldName("name") ?? m.namedChild(0)) : m
+            if (nm && (nm.type === "property_identifier" || nm.type === "identifier")) members.add(nm.text)
+          }
+          enumMembers.set(nameNode.text, members)
         }
       } else if (n.type === "required_parameter" || n.type === "optional_parameter") {
         const pattern = n.childForFieldName("pattern") ?? n.childForFieldName("name") ?? n.namedChild(0)
         if (pattern && pattern.type === "identifier") {
           const type = this.annotationTypeName(n)
           if (type) record(locals, conflictedLocals, pattern.text, type, "param")
+          // C3: a parameter annotated `Widget[]` names its ELEMENT type, so `items[0].m()` is typed.
+          const ann = this.typeAnnotationNode(n)
+          const elementType = ann ? this.elementTypeOfAnnotation(ann) : null
+          if (elementType) elementTypes.set(pattern.text, elementType)
+          const args = ann ? this.typeArgsOfAnnotation(ann) : null
+          if (args && args.length > 0) localTypeArgs.set(pattern.text, args)
         } else if (pattern && pattern.type === "object_pattern") {
           const ownerType = this.annotationTypeName(n)
           if (ownerType) pendingPatterns.push({ pattern, ownerType, evidence: "param" })
-        }
-      } else if (n.type === "public_field_definition" || n.type === "property_signature") {
-        // `private inner: UsedClass` — the type a `this.inner.m()` call is made through. A field
-        // initialised with `new X()` states the type just as plainly as an annotation, and it is
-        // still the SAME evidence class (`this`): the receiver is a property of the enclosing
-        // class. The field's type is also recorded into `typeMembers` so a member access ON it
-        // (`this.inner.helper.m()`) can be typed one more hop.
-        const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
-        if (nameNode && (nameNode.type === "property_identifier" || nameNode.type === "identifier")) {
-          const type = this.annotationTypeName(n) ?? this.initialiserNewType(n)
-          if (type) record(classFields, conflictedFields, nameNode.text, type, "this")
-        }
-        const ownerType = this.enclosingTypeName(n)
-        const memberType = this.annotationTypeName(n) ?? this.initialiserNewType(n)
-        if (ownerType && memberType && nameNode) {
-          const byMember = typeMembers.get(ownerType) ?? new Map<string, string>()
-          if (!byMember.has(nameNode.text)) byMember.set(nameNode.text, memberType)
-          typeMembers.set(ownerType, byMember)
         }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
@@ -5475,12 +5549,118 @@ class TypeScriptAnalysisRunner {
         if (child) stack.push(child)
       }
     }
+
+    // ── PHASE 2: the deferred sites, in SOURCE ORDER, against the complete fact set ────────────
+    const order = (nodes: Node[]) => nodes.slice().sort((a, b) => a.startIndex - b.startIndex)
+    // (a) FIELDS — annotation, `new X()`, or an enum member; and the type-member table every
+    // destructured/one-hop class reads.
+    for (const n of order(pendingFields)) {
+      const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
+      if (!nameNode || (nameNode.type !== "property_identifier" && nameNode.type !== "identifier")) continue
+      const value = n.childForFieldName("value")
+      const enumType = value ? this.enumMemberType(value, enumMembers) : null
+      const type = this.annotationTypeName(n) ?? this.initialiserNewType(n) ?? enumType
+      if (type) record(classFields, conflictedFields, nameNode.text, type, enumType ? "enum" : "this")
+      const fieldAnn = this.typeAnnotationNode(n)
+      const fieldElement = fieldAnn ? this.elementTypeOfAnnotation(fieldAnn) : value && value.type === "new_expression" ? this.elementTypeOfNew(value) : null
+      if (fieldElement) elementTypes.set(nameNode.text, fieldElement)
+      const fieldArgs = fieldAnn ? this.typeArgsOfAnnotation(fieldAnn) : value && value.type === "new_expression" ? this.typeArgsOfNew(value) : null
+      if (fieldArgs && fieldArgs.length > 0) localTypeArgs.set(nameNode.text, fieldArgs)
+      const ownerType = this.enclosingTypeName(n)
+      if (ownerType && type) {
+        const byMember = typeMembers.get(ownerType) ?? new Map<string, string>()
+        if (!byMember.has(nameNode.text)) byMember.set(nameNode.text, type)
+        typeMembers.set(ownerType, byMember)
+      }
+    }
+    // (b) DECLARATORS — the C1/C2/C3/C4/C6/C7 initialiser and annotation classes.
+    for (const n of order(pendingDeclarators)) {
+      const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
+      const value = n.childForFieldName("value")
+      if (nameNode && nameNode.type === "identifier") {
+        // C6 THE `as`-CAST CLASS — `const w = x as Widget`: the cast states the type, and it is
+        // the strongest same-line evidence available (`x` itself may be an untyped union).
+        const castType = value ? this.castTypeName(value) : null
+        // C5 FACTORY-RETURN TYPING — `const w = makeWidget()` where `makeWidget` is declared in
+        // this file with a return annotation. A call whose callee has no annotated return type
+        // states nothing; the initializer's own later members would be a guess.
+        const factoryType = value && value.type === "call_expression" ? this.factoryReturnType(value, returnTypes) : null
+        // C7 ENUM-MEMBER RECEIVERS — `const status = Status.Active`: the initialiser names a
+        // declared enum's declared member, so the local's type is the ENUM.
+        const enumType = value ? this.enumMemberType(value, enumMembers) : null
+        const isNew = value !== null && value.type === "new_expression"
+        // PRECEDENCE: an EXPLICIT annotation is the binding's declared type and beats every
+        // inferred form (`const d: Widget = make()` is an `annotation`, not a `factory` row); a cast
+        // and an enum member initialiser are explicit statements about the VALUE; a same-file
+        // factory's return annotation and a `new` are the remaining proofs of the value's type.
+        // The evidence class records WHICH statement produced the owner, so the order is part of the
+        // published contract rather than an accident of evaluation.
+        const annotated = this.annotationTypeName(n)
+        if (annotated) record(locals, conflictedLocals, nameNode.text, annotated, isNew ? "assignment" : "annotation")
+        else if (castType) record(locals, conflictedLocals, nameNode.text, castType, "cast")
+        else if (factoryType) record(locals, conflictedLocals, nameNode.text, factoryType, "factory")
+        else if (enumType) record(locals, conflictedLocals, nameNode.text, enumType, "enum")
+        else {
+          const declaredType = this.declaratorTypeName(n)
+          if (declaredType) record(locals, conflictedLocals, nameNode.text, declaredType, isNew ? "assignment" : "annotation")
+        }
+        // C3/C4: element type and generic instantiation arguments stated by the declaration.
+        const ann = this.typeAnnotationNode(n)
+        const elementType = ann ? this.elementTypeOfAnnotation(ann) : value && value.type === "new_expression" ? this.elementTypeOfNew(value) : null
+        if (elementType) elementTypes.set(nameNode.text, elementType)
+        const args = ann ? this.typeArgsOfAnnotation(ann) : value && value.type === "new_expression" ? this.typeArgsOfNew(value) : null
+        if (args && args.length > 0) localTypeArgs.set(nameNode.text, args)
+      } else if (nameNode && nameNode.type === "object_pattern") {
+        const ownerType = this.annotationTypeName(n)
+        if (ownerType) pendingPatterns.push({ pattern: nameNode, ownerType, evidence: "annotation" })
+        else if (value && value.type === "identifier") pendingDestructured.push({ pattern: nameNode, sourceName: value.text })
+      }
+    }
+    // (c) C2 DESTRUCTURED ELEMENT TYPES FROM A TYPED SOURCE — `const { worker } = cfg` where `cfg`
+    // is a typed local/param: the binding's type is the MEMBER's declared type, one hop. The
+    // evidence class is DESTRUCTURING (the type was inferred from a VALUE), not the source's own.
+    for (const { pattern, sourceName } of pendingDestructured) {
+      const sourceHint = locals.get(sourceName)
+      if (sourceHint) pendingPatterns.push({ pattern, ownerType: sourceHint.type, evidence: "destructured" })
+    }
+    // (d) C1 ASSIGNMENT-PROVEN LOCAL TYPES — `x = new Widget()` (a later assignment, not the
+    // declarator initialiser). An ANNOTATION on the declaration is authoritative and is never
+    // overwritten: `let x: Base; x = new Derived()` is a `Base` receiver, and re-typing it from the
+    // assignment would be a guess that the store then acts on.
+    for (const n of order(pendingAssignments)) {
+      const left = n.childForFieldName("left")
+      const right = n.childForFieldName("right")
+      if (!left || left.type !== "identifier" || !right || locals.has(left.text)) continue
+      const assigned = this.initialiserTypeName(right, returnTypes)
+      if (assigned) record(locals, conflictedLocals, left.text, assigned, "assignment")
+    }
+    // (e) C3 ELEMENT BINDING — `for (const item of items)` types `item` as `items`' element type.
+    for (const n of order(pendingForIn)) {
+      const right = n.childForFieldName("right") ?? n.namedChild(n.namedChildCount - 1)
+      const elem = right ? (right.type === "identifier" ? elementTypes.get(right.text) ?? null : this.elementTypeOfNew(right)) : null
+      if (!elem) continue
+      const left = n.childForFieldName("left") ?? n.namedChild(0)
+      if (!left) continue
+      const binders: string[] = []
+      if (left.type === "identifier") binders.push(left.text)
+      else {
+        for (let i = 0; i < left.namedChildCount; i++) {
+          const c = left.namedChild(i)
+          if (!c) continue
+          if (c.type === "variable_declarator") {
+            const nm = c.childForFieldName("name") ?? c.namedChild(0)
+            if (nm && nm.type === "identifier") binders.push(nm.text)
+          } else if (c.type === "identifier") binders.push(c.text)
+        }
+      }
+      for (const b of binders) record(locals, conflictedLocals, b, elem, "element")
+    }
     // ── DESTRUCTURED BINDINGS, typed from the TYPE MEMBER they name ──────────────────────────
     // `function f({ worker }: Settings)` with `Settings { worker: Widget }` makes `worker.other()`
     // a call on a Widget: the binding's type is the MEMBER's declared type, one hop, read off the
-    // file's own interface/class declaration. Evidence class is the ANNOTATION's position — the
-    // chain's root is the parameter (`param`) or the local (`annotation`) — and only the member's
-    // OWN type is used; a member whose type is unknown stays unowned rather than guessed.
+    // file's own interface/class declaration. Evidence class is the source's (annotation on the
+    // pattern, the parameter, or the VALUE the binding was destructured from); only the member's
+    // OWN type is used — a member whose type is unknown stays unowned rather than guessed.
     for (const { pattern, ownerType, evidence } of pendingPatterns) {
       const byMember = typeMembers.get(ownerType)
       if (!byMember) continue
@@ -5503,7 +5683,10 @@ class TypeScriptAnalysisRunner {
         if (memberType) record(locals, conflictedLocals, binding.text, memberType, evidence)
       }
     }
-    return { locals, classFields, typeMembers }
+    return {
+      locals, classFields, typeMembers,
+      elementTypes, localTypeArgs, typeParams, returnTypes, enumMembers, classMemberNames,
+    }
   }
 
   /** The name of the class/interface a member declaration belongs to, walking up to the body. */
@@ -5571,6 +5754,168 @@ class TypeScriptAnalysisRunner {
     return null
   }
 
+  // ── D7 RECEIVER-TYPING HELPERS ──────────────────────────────────────────────────────────────
+  // Each helper reads ONE syntax shape and returns the NAME it states, or null. A shape that names
+  // no single type (unions, function types, untyped initialisers) returns null rather than a guess:
+  // a wrong owner is worse than none (the store acts on it), which is the rule this pass started
+  // with and every class below keeps.
+
+  /** The type_annotation node a declaration carries (`: T`), either as the `type` field or a child. */
+  private typeAnnotationNode(n: Node): Node | null {
+    const ty = n.childForFieldName?.("type")
+    if (ty) {
+      if (ty.type === "type_annotation") return ty
+      return ty
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const child = n.namedChild(i)
+      if (child && child.type === "type_annotation") return child
+    }
+    return null
+  }
+
+  /** The first named child of the given type (type_parameters, type_arguments, ...). */
+  private childOfType(n: Node, type: string): Node | null {
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const child = n.namedChild(i)
+      if (child && child.type === type) return child
+    }
+    return null
+  }
+
+  /** C6: the type a cast states. `x as T` / `<T>x`; unions give null (no single owner). */
+  private castTypeName(value: Node): string | null {
+    if (value.type === "as_expression") {
+      const right = value.namedChild(value.namedChildCount - 1)
+      return right ? this.typeLeafName(right) : null
+    }
+    if (value.type === "type_assertion") {
+      const right = value.namedChild(value.namedChildCount - 1)
+      return right ? this.typeLeafName(right) : null
+    }
+    return null
+  }
+
+  /** C5: the annotated return type of a same-file callable the call names, if the callee is a bare
+   *  identifier (a member call's return type is not this class's evidence). */
+  private factoryReturnType(call: Node, returnTypes: Map<string, string>): string | null {
+    if (call.type !== "call_expression") return null
+    const callee = call.namedChild(0)
+    if (!callee || callee.type !== "identifier") return null
+    return returnTypes.get(callee.text) ?? null
+  }
+
+  /** C1: the type a right-hand side states for an existing local: `= new T()`, `= x as T`,
+   *  `= factory()` with an annotated same-file return. */
+  private initialiserTypeName(value: Node, returnTypes: Map<string, string>): string | null {
+    if (value.type === "new_expression") {
+      const ctor = value.namedChild(0)
+      return ctor ? this.typeLeafName(ctor) : null
+    }
+    const cast = this.castTypeName(value)
+    if (cast) return cast
+    return this.factoryReturnType(value, returnTypes)
+  }
+
+  /** C7: `Status.Active` names the ENUM type when the root is a declared enum and the member is one
+   *  of its declared members; otherwise null. */
+  private enumMemberType(expr: Node, enumMembers: Map<string, Set<string>>): string | null {
+    if (expr.type !== "member_expression") return null
+    const root = expr.childForFieldName("object") ?? expr.namedChild(0)
+    const member = expr.childForFieldName("property") ?? expr.namedChild(expr.namedChildCount - 1)
+    if (!root || !member || root.type !== "identifier") return null
+    const members = enumMembers.get(root.text)
+    if (!members || !members.has(member.text)) return null
+    return root.text
+  }
+
+  /** C3: the ELEMENT type an annotation states: `T[]`, `Array<T>`, `ReadonlyArray<T>`, `Set<T>`. */
+  private elementTypeOfAnnotation(ann: Node): string | null {
+    const inner = ann.type === "type_annotation" ? (ann.namedChild(0) ?? ann) : ann
+    if (inner.type === "array_type") {
+      const el = inner.namedChild(inner.namedChildCount - 1)
+      return el ? this.typeLeafName(el) : null
+    }
+    if (inner.type === "generic_type") {
+      const base = this.typeLeafName(inner.childForFieldName("name") ?? inner.namedChild(0) ?? inner)
+      const args = this.childOfType(inner, "type_arguments")
+      if (base && args && (base === "Array" || base === "ReadonlyArray" || base === "Set" || base === "ReadonlySet")) {
+        const first = args.namedChild(0)
+        return first ? this.typeLeafName(first) : null
+      }
+    }
+    return null
+  }
+
+  /** C3/C4: type arguments instantiated by `new Foo<A, B>()` and whether the constructor is a
+   *  collection whose first argument is its ELEMENT type. */
+  private typeArgsOfNew(value: Node): string[] | null {
+    if (value.type !== "new_expression") return null
+    const args = this.childOfType(value, "type_arguments")
+    if (!args) return null
+    const out: string[] = []
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const c = args.namedChild(i)
+      if (!c) continue
+      const leaf = this.typeLeafName(c)
+      if (leaf) out.push(leaf)
+    }
+    return out.length > 0 ? out : null
+  }
+
+  private elementTypeOfNew(value: Node): string | null {
+    if (value.type !== "new_expression") return null
+    const ctor = value.namedChild(0)
+    const base = ctor ? this.typeLeafName(ctor) : null
+    if (!base || (base !== "Array" && base !== "Set")) return null
+    const args = this.typeArgsOfNew(value)
+    return args && args[0] ? args[0] : null
+  }
+
+  /** C3: the element type a CONSTRUCTION states (`new Array<Widget>()`); the identifier case is read
+   *  against the collector's own element-types map at the call site. */
+  private elementTypeOfExpression(expr: Node | null): string | null {
+    if (!expr) return null
+    return this.elementTypeOfNew(expr)
+  }
+
+  /** C4: the declared type arguments a type annotation instantiates (`Box<Widget>` -> ["Widget"]). */
+  private typeArgsOfAnnotation(ann: Node): string[] | null {
+    const inner = ann.type === "type_annotation" ? (ann.namedChild(0) ?? ann) : ann
+    const args = this.childOfType(inner, "type_arguments")
+    if (!args) return null
+    const out: string[] = []
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const c = args.namedChild(i)
+      if (!c) continue
+      const leaf = this.typeLeafName(c)
+      if (leaf) out.push(leaf)
+    }
+    return out.length > 0 ? out : null
+  }
+
+  /**
+   * C4: resolve a MEMBER's declared type through the receiver's instantiated type arguments —
+   * `class Box<T> { value: T }` + `const b = new Box<Widget>()` makes `b.value` a Widget. Only a
+   * member whose declared type IS one of the class's type parameters is substituted, and only when
+   * the receiver's own type arguments are known; anything else is returned as declared.
+   */
+  private substituteMemberType(
+    facts: ReceiverFacts,
+    receiverName: string,
+    receiverType: string,
+    memberType: string,
+  ): { type: string; substituted: boolean } {
+    const params = facts.typeParams.get(receiverType)
+    const args = facts.localTypeArgs.get(receiverName)
+    if (!params || !args) return { type: memberType, substituted: false }
+    const idx = params.indexOf(memberType)
+    if (idx < 0) return { type: memberType, substituted: false }
+    const arg = args[idx]
+    if (!arg) return { type: memberType, substituted: false }
+    return { type: arg, substituted: true }
+  }
+
   /**
    * The owner a member call states, plus the evidence class that stated it, or undefined when
    * the syntax states neither. `super` is left alone (no type in the syntax); a bare `this.m()`
@@ -5582,7 +5927,32 @@ class TypeScriptAnalysisRunner {
     if (callee.type !== "member_expression") return undefined
     const object = callee.childForFieldName("object") ?? callee.namedChild(0)
     if (!object) return undefined
-    if (object.type === "identifier") return facts.locals.get(object.text)
+    if (object.type === "identifier") {
+      const hint = facts.locals.get(object.text)
+      if (hint) return hint
+      // C8 CLASS-STATIC RECEIVERS — `Cls.staticM()`: the receiver root names a CLASS, and the owner
+      // is stated only when the class's own body declares that member (the proof that this is the
+      // class's member and not a same-named thing elsewhere). A class with no such member keeps no
+      // owner: precision over coverage, because the store acts on the owner.
+      const members = facts.classMemberNames.get(object.text)
+      if (members) {
+        const prop = callee.childForFieldName("property") ?? callee.namedChild(callee.namedChildCount - 1)
+        if (prop && (prop.type === "property_identifier" || prop.type === "identifier") && members.has(prop.text)) {
+          return { type: object.text, evidence: "class-static" }
+        }
+      }
+      return undefined
+    }
+    // C3 ELEMENT RECEIVERS — `items[0].m()` where `items` states its element type (`Widget[]`,
+    // `Array<Widget>`, `new Array<Widget>()`). The subscript states the element, one hop.
+    if (object.type === "subscript_expression") {
+      const base = object.childForFieldName("object") ?? object.namedChild(0)
+      if (base && base.type === "identifier") {
+        const elem = facts.elementTypes.get(base.text)
+        if (elem) return { type: elem, evidence: "element" }
+      }
+      return undefined
+    }
     if (object.type === "member_expression") {
       // CLASS MEMBER ACCESS THROUGH A TYPED LOCAL/PARAM (`cfg.worker.run()`): the receiver chain's
       // ROOT is a local whose type the syntax states, and the FIRST hop is a member whose type the
@@ -5596,11 +5966,15 @@ class TypeScriptAnalysisRunner {
       ) {
         const rootHint = facts.locals.get(root.text)
         if (rootHint) {
-          const memberType = facts.typeMembers.get(rootHint.type)?.get(firstProperty.text)
-          if (memberType) {
-            // The evidence class is the ROOT's own (the chain is reached through that param/local);
-            // the OWNER is the member's type, which is the class whose method is called.
-            return { type: memberType, evidence: rootHint.evidence }
+          const declaredMemberType = facts.typeMembers.get(rootHint.type)?.get(firstProperty.text)
+          if (declaredMemberType) {
+            // C4 GENERIC PROPAGATION: when the member's declared type IS the class's type parameter
+            // and the receiver instantiates it (`Box<Widget>`), the owner is the ARGUMENT (Widget),
+            // and the evidence class records that the type came through the arguments.
+            const resolved = this.substituteMemberType(facts, root.text, rootHint.type, declaredMemberType)
+            return resolved.substituted
+              ? { type: resolved.type, evidence: "generic" }
+              : { type: declaredMemberType, evidence: rootHint.evidence }
           }
         }
       }
