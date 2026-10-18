@@ -92,6 +92,14 @@ specifier unconditionally and MEASURED `ext?` 0 → 19 at cap 50: the roots were
 names created by Jest mocks of real packages (`__mocks__/fs-extra.js`), so the claim read as one the
 project could not reach. It is now index-gated (python twin's `applyProjectIndexFacts` precedent).
 
+**PREPARED, NOT IMPLEMENTED — the local-binding claim class** (365,748 whole-population rows:
+local/parameter/catch/destructured reads and calls, `new` of a local constructor, `instanceof`,
+heritage, locally-bound JSX targets). The family mechanism is the `BINDING_SEP` target spelling +
+`metadata.localBinding`, which lands in the arbiter's `bindOK` column and never in `resolved`; it
+needs a positional lexical-scope model in this analyzer and the Lead-owned differential audit of the
+class. The full contract (mechanism, scope rules, never-claimed list, per-site counts, oracle
+requirement, fixture plan) is `validation/m14/verification/JAVASCRIPT-LOCAL-BINDING-CONTRACT.md`.
+
 **Deliberately NOT claimed, with their cap-50 triage counts** (they are the open classes in
 `validation/m14/verification/JAVASCRIPT-RESOLUTION-CLASSIFICATION.md`): MEMBERS of the runtime and
 test-runner globals (`jest.fn`, `process.argv.slice`, `expect(x).toBe` — the leaf may be a genuine

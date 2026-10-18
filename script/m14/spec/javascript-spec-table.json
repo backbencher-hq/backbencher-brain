@@ -118,6 +118,45 @@
   "_notes": [
     "Family contract: 1 + decision points; short-circuit operators count; else never adds.",
     "JS has NO type system — the only named-type usage is instanceof (references).",
-    "JSX is native to the javascript grammar (8 types) — unlike TS where it lives in the tsx dialect."
-  ]
+    "JSX is native to the javascript grammar (8 types) — unlike TS where it lives in the tsx dialect.",
+    "2026-10-18: `claims.local_binding` is PREPARED documentation for the family binding claim (365,748 whole-population rows measured by js-resolution-classify.ts 0 --stream). No emission exists yet; the Lead owns the differential-oracle half and the lane implements the scope model when the oracle lands."
+  ],
+  "claims": {
+    "local_binding": {
+      "status": "PREPARED, NOT IMPLEMENTED (2026-10-18) — Lead-owned differential-oracle unblocker; contract: validation/m14/verification/JAVASCRIPT-LOCAL-BINDING-CONTRACT.md",
+      "mechanism": "family spelling: target = `${edge.source}<BINDING_SEP U+0000>${bindingName}` + metadata.localBinding=true; arbiter verifyBindingClaim -> bindingVerified in the gate's bindOK column; NEVER folded into resolved/amb. Shared with php/dart/java/fsharp/haskell (types.ts BINDING_SEP).",
+      "sites": [
+        "uses — bare read of a local/parameter/catch/destructured binding (and the call-receiver root read)",
+        "calls — bare callee that is a local binding",
+        "instantiates — new of a local/parameter-held constructor",
+        "references — instanceof over a local binding",
+        "extends — class heritage naming a local binding",
+        "renders — JSX component target bound locally"
+      ],
+      "scope_model_required": "positional lexical scopes: program / function forms / block (let,const) / class body / catch; var hoists to function, let/const are block-scoped; formal parameters (required/optional/default/rest/destructured) and the arrow single-parameter form; destructuring pattern binding sides; inner binding shadows outer; SAME-SCOPE redeclaration keeps one name.",
+      "never_claimed": [
+        "this",
+        "super",
+        "arguments",
+        "undefined",
+        "labels",
+        "object/property keys",
+        "JSX tag names",
+        "#private names",
+        "import bindings (separate Lead-owned imported-binding claim class)",
+        "a name that is also a real in-file declaration visible at the site"
+      ],
+      "whole_population_counts_2026_10_18": {
+        "uses_bare_read": 231987,
+        "uses_call_receiver_root": 32538,
+        "calls_local_callee": 92680,
+        "instantiates_local_ctor": 7941,
+        "references_local": 470,
+        "extends_local": 85,
+        "renders_local": 47,
+        "total": 365748
+      },
+      "oracle_requirement": "differential.ts (Lead-owned) must audit the class: compare the part AFTER the last BINDING_SEP on the analyzer side before normTarget (both match directions), leaving truth oracles deriving the bare name. Without it every binding row falls to UNEXPLAINED/heuristic — a label compared against nothing."
+    }
+  }
 }
