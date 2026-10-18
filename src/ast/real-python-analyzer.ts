@@ -324,6 +324,19 @@ interface PythonContext {
    * positional; so is this.
    */
   functionScopes: Array<{ startLine: number; endLine: number; bound: Set<string> }>
+  /**
+   * THE RECEIVER-TYPED OWNER LOOKUP — "what class-like type does this receiver name have AT
+   * THIS LINE", from static evidence only, or nothing.
+   *
+   * This EXTENDS the owner channel (`metadata.owner`, read by `src/ast/member-owner-resolution.ts`)
+   * beyond the implicit `self`/`cls` parameter without inventing a second channel: the value
+   * published on the edge is the same `owner` key the store's resolution already treats as
+   * authoritative, and `ownerEvidence` says which class of syntax proved it so each can be priced
+   * separately. Absent on every file where nothing is proven — a missing owner is a name-strategy
+   * row, which is exactly today's behaviour; a WRONG owner is worse, because the store withdraws
+   * the name binding and then declines (see the Lead's ruling).
+   */
+  receiverTypeOwner?: (receiverName: string, line: number) => { owner: string; evidence: "annotation" | "assignment" } | undefined
   seenRels: Set<string>
   // (class\u001fattr) — one Property per instance attribute per class (PYD1)
   instanceAttrs: Set<string>
@@ -1022,6 +1035,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // see an empty map — which is exactly how the first version of this guard passed a negative
     // it was written to refuse.
     ctx.functionScopes = this.collectFunctionScopes(rootNode, ctx.functionLocals)
+
+    // RECEIVER TYPING from static evidence, BEFORE the walk: the owner channel's extension
+    // (`metadata.owner` for receivers whose type the source writes down). The lookup is lexical
+    // and line-addressed, so it has to exist before any call/read site is walked; it also reads
+    // `context.projectIndex` (only a COMPLETE index, fail-closed) so a project-declared class can
+    // be proven class-like rather than guessed at from capitalisation.
+    this.collectReceiverTypeHints(rootNode, ctx, context)
 
     // #748 (M49 dup-key family ruling, Option A — the same rule js/ts/vue
     // pinned): python binds the LAST definition of a name in one container
@@ -3031,20 +3051,22 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         ? "local-callee"
         : "bare-name-callee"
     // The relation-level OWNER CHANNEL — published on the SAME narrow shape the reason is
-    // (`self.m()` / `cls.m()`, one dot), so the store can resolve the member through the class
-    // that declares it. `self.store.save` and `recv.m` carry NO owner: the first's receiver is
-    // a VALUE whose type is unknown, the second is not the implicit parameter. See
-    // `memberOwnerOf` for why that boundary is load-bearing rather than tidy.
+    // (`receiver.member`, one dot), so the store can resolve the member through the class that
+    // declares it. The receiver's type must be PROVEN: the implicit `self`/`cls` (`memberOwnerOf`),
+    // a parameter annotation, or a single `x = Foo(...)` binding (`collectReceiverTypeHints`).
+    // `self.store.save` carries NO owner: its receiver is a VALUE whose type this parse does not
+    // know, and labelling it with the enclosing class would let the store bind `save` to a member
+    // of the OUTER class. `ownerEvidence` prices which evidence class set the key.
     const dotIdx = fullCallee.indexOf(".")
     const receiverName = dotIdx > 0 && fullCallee.indexOf(".", dotIdx + 1) === -1
       ? fullCallee.slice(0, dotIdx)
       : undefined
-    const memberOwner = this.memberOwnerOf(receiverName, ctx.currentClass)
+    const ownerInfo = this.memberOwnerInfo(receiverName, ctx.currentClass, ctx, this.nodeLine(calleeLeaf) ?? 0)
     this.pushRel(ctx, caller, targetName, ASTEngine.RelationshipType.Calls, 0.9, {
       pythonSpecific: true,
       qualified: fullCallee,
       reasonCode: dispatchClass,
-      ...(memberOwner ? { owner: memberOwner } : {}),
+      ...(ownerInfo ? { owner: ownerInfo.owner, ownerEvidence: ownerInfo.evidence } : {}),
     }, this.nodeLine(calleeLeaf))
   }
 
@@ -3140,12 +3162,15 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
             const qualified = recvName && ctx.declaredTypes.has(recvName)
               ? qualifyReservedEndpoint(leaf.text, recvName)
               : leaf.text
-            // The relation-level OWNER CHANNEL, published only when the receiver is EXACTLY
-            // `self`/`cls` (the identifier form the enclosing class is the value of). The same
-            // narrow boundary as `calls`: a receiver the store cannot name (`table.num_rows`,
+            // The relation-level OWNER CHANNEL, published only when the receiver's TYPE IS
+            // PROVEN: the implicit `self`/`cls` (the identifier form the enclosing class is the
+            // value of), a parameter annotation, or a single `x = Foo(...)` binding. The same
+            // boundary as `calls`: a receiver the store cannot type (`table.num_rows`,
             // `self.svc.inner`) carries NO owner, so the store leaves the row to the name
-            // strategies rather than binding the member to the wrong class. See `memberOwnerOf`.
-            const memberOwner = this.memberOwnerOf(recvName, cls)
+            // strategies rather than binding the member to the wrong class. `ownerEvidence`
+            // prices which class of syntax set the key. See `memberOwnerOf` /
+            // `collectReceiverTypeHints`.
+            const ownerInfo = this.memberOwnerInfo(recvName, cls, ctx, this.nodeLine(leaf) ?? 0)
             // PY-25 / INCOMING_PY — the read's ROUTE, which is the whole subject of a member
             // read in python: `self.stash` and a bare `stash` are the same leaf and two
             // different facts, and the lane was publishing them identically.
@@ -3164,7 +3189,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
               qualified: n.text,
               reasonCode: "member-read",
               ...(qualified !== leaf.text ? { qualifiedTarget: true, receiver: recvName } : {}),
-              ...(memberOwner ? { owner: memberOwner } : {}),
+              ...(ownerInfo ? { owner: ownerInfo.owner, ownerEvidence: ownerInfo.evidence } : {}),
             }, this.nodeLine(leaf))
           }
         }
@@ -3716,6 +3741,32 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   private memberOwnerOf(receiverName: string | undefined, enclosingClass: string | undefined): string | undefined {
     if (!enclosingClass || !receiverName) return undefined
     return receiverName === "self" || receiverName === "cls" ? enclosingClass : undefined
+  }
+
+  /**
+   * THE OWNER CHANNEL, with the evidence class that set it — one helper for both emission sites
+   * (`calls` and member-read `uses`), because the two must never answer "whose type is this
+   * receiver" differently: they are the same fact about the same expression, read from two
+   * grammatical positions.
+   *
+   * PRECEDENCE IS THE IMPLICIT PARAMETER FIRST: `self`/`cls` inside a class body is the enclosing
+   * class even if an outer scope happens to have a module variable of the same spelling (a python
+   * method cannot rebind `self` as a local without shadowing the parameter, which is a different
+   * program). Then `ctx.receiverTypeOwner`, which only ever contains PROVEN types.
+   *
+   * `line` is the line of the member's own leaf, so the lexical lookup answers for the scope the
+   * RECEIVER is read in, not for some other occurrence of the name.
+   */
+  private memberOwnerInfo(
+    receiverName: string | undefined,
+    enclosingClass: string | undefined,
+    ctx: PythonContext,
+    line: number,
+  ): { owner: string; evidence: "self" | "annotation" | "assignment" } | undefined {
+    const implicit = this.memberOwnerOf(receiverName, enclosingClass)
+    if (implicit !== undefined) return { owner: implicit, evidence: "self" }
+    if (!receiverName || !ctx.receiverTypeOwner) return undefined
+    return ctx.receiverTypeOwner(receiverName, line)
   }
 
   /**
@@ -4391,6 +4442,203 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return out
+  }
+
+  /**
+   * RECEIVER TYPING FROM STATIC EVIDENCE — the analyzer half of the owner channel's extension.
+   *
+   * THE CHANNEL ALREADY EXISTS AND IS AUTHORITATIVE IN PRODUCTION:
+   * `src/ast/member-owner-resolution.ts` (`claimOwnerCarryingTargets` + `resolveMemberTargetsByOwner`,
+   * called from both resolution paths in `parallel-indexer.ts`) reads `metadata.owner`, requires it to
+   * name exactly one class-like symbol, resolves the member from that owner's candidates with a
+   * per-type kind filter, walks the owner's ancestors through `brain_symbol.super_types`, and
+   * WITHDRAWS the name-based binding for owner-carrying rows. This lane already publishes that key
+   * for `self.m()` / `cls.m()`; this pass publishes it for the receivers whose type the SOURCE writes
+   * down, so the same store rule can narrow those rows too.
+   *
+   * THREE EVIDENCE CLASSES, and each is emitted only where the syntax PROVES the type:
+   *
+   *   self        `self` / `cls` — the enclosing class. Already published; tagged here so the
+   *               evidence column can price the pre-existing emission beside the new ones.
+   *   annotation  a PARAMETER annotation that is a single bare identifier (`def f(x: Foo)` ->
+   *               `x.m()` is a member of Foo). A dotted/aliased/subscripted annotation proves no
+   *               single class name and is refused rather than guessed at.
+   *   assignment  a SINGLE binding `x = Foo(...)` (or `with Foo() as x`) in one lexical scope, where
+   *               Foo is class-like — and NO other binding of `x` in that scope (a second assignment,
+   *               a for/with/except target, a walrus, a del or a global/nonlocal declaration all
+   *               make the receiver's type a maybe, and a maybe is not an owner). A second
+   *               assignment could legally produce the same type; refusing it is the conservative
+   *               direction, because the store WITHDRAWS the name binding for an owner-carrying row.
+   *
+   * WHAT "CLASS-LIKE" MEANS HERE, exactly: a class this file DECLARES (`ctx.declaredTypes`), or —
+   * only on a `complete === true` project index — a name the index records as `typeNodes: "class"`.
+   * A name that is merely capitalised is not evidence: the channel's rule is "the owner names
+   * exactly one class-like symbol", and a wrong owner is worse than a missing one (Lead's ruling).
+   *
+   * SCOPING IS LEXICAL, not file-wide: hints are collected per function body (nested functions
+   * excluded — their bindings are theirs) with line ranges, and looked up from the INNERMOST
+   * containing scope outward, then the module. A name declared at module scope is visible everywhere
+   * unless shadowed; a parameter is visible only in its own body. Under-claiming is deliberate: the
+   * fixture pins that a name rebound in the same body gets NO owner rather than the first type.
+   */
+  private collectReceiverTypeHints(rootNode: Node, ctx: PythonContext, context?: ASTEngine.AnalyzeContext): void {
+    const index = context?.projectIndex
+    const classLike = (name: string): boolean => {
+      if (name === "") return false
+      if (ctx.declaredTypes.has(name)) return true
+      return index?.complete === true && index.typeKinds?.get(name) === "class"
+    }
+    type Hint = { owner: string; evidence: "annotation" | "assignment" }
+    type Scope = { startLine: number; endLine: number; hints: Map<string, Hint> }
+    const scopes: Scope[] = []
+
+    /** The simple identifier an annotation names, or undefined. `type` wraps it on this grammar. */
+    const simpleTypeName = (typeNode: Node | null): string | undefined => {
+      if (!typeNode) return undefined
+      let n: Node = typeNode
+      if (n.type === "type") {
+        if (n.namedChildCount !== 1) return undefined
+        const inner = n.namedChild(0)
+        if (!inner) return undefined
+        n = inner
+      }
+      return n.type === "identifier" ? n.text : undefined
+    }
+    /** `Foo(...)` -> `Foo` when Foo is class-like; an await-wrapped call is unwrapped once. */
+    const constructorOwner = (value: Node | null): string | undefined => {
+      if (!value) return undefined
+      let v: Node = value
+      if (v.type === "await") {
+        const inner = v.namedChild(0)
+        if (!inner) return undefined
+        v = inner
+      }
+      if (v.type !== "call") return undefined
+      const fn = v.childForFieldName("function") ?? v.namedChild(0)
+      if (!fn || fn.type !== "identifier") return undefined
+      return classLike(fn.text) ? fn.text : undefined
+    }
+
+    /** Bindings of one lexical body, with the single-binding guard applied at the end. */
+    const collectBody = (body: Node | null, parameters: Node | null): Map<string, Hint> => {
+      const seen = new Map<string, { count: number; owner?: string; evidence?: "annotation" | "assignment" }>()
+      const bump = (name: string, owner?: string, evidence?: "annotation" | "assignment") => {
+        if (name === "") return
+        const e = seen.get(name) ?? { count: 0 }
+        e.count++
+        if (owner !== undefined && e.owner === undefined) {
+          e.owner = owner
+          e.evidence = evidence
+        }
+        seen.set(name, e)
+      }
+      if (parameters) {
+        for (let i = 0; i < parameters.namedChildCount; i++) {
+          const p = parameters.namedChild(i)
+          if (!p) continue
+          if (p.type === "identifier") { bump(p.text); continue }
+          if (p.type === "typed_parameter" || p.type === "typed_default_parameter") {
+            const nameNode = p.childForFieldName("name") ?? this.findChildByType(p, "identifier")
+            const typeNode = p.childForFieldName("type") ?? this.findChildByType(p, "type")
+            const owner = simpleTypeName(typeNode)
+            if (nameNode) bump(nameNode.text, owner && classLike(owner) ? owner : undefined, "annotation")
+            continue
+          }
+          if (p.type === "default_parameter") {
+            const nameNode = p.childForFieldName("name") ?? this.findChildByType(p, "identifier")
+            if (nameNode) bump(nameNode.text)
+            continue
+          }
+          if (p.type === "list_splat_pattern" || p.type === "dictionary_splat_pattern") {
+            for (const t of this.patternTargetNodes(p)) bump(t.text)
+          }
+        }
+      }
+      const walk = (n: Node): void => {
+        // A nested function/lambda/class has its OWN bindings; its uses are closure reads of THIS
+        // scope, which the outer hint legitimately answers — so stop descending, do not skip the
+        // name entirely.
+        if (n.type === "function_definition" || n.type === "lambda" || n.type === "class_definition") return
+        if (n.type === "assignment") {
+          const owner = constructorOwner(n.childForFieldName("right"))
+          for (const t of this.patternTargetNodes(n.childForFieldName("left"))) bump(t.text, owner, "assignment")
+        } else if (n.type === "augmented_assignment") {
+          for (const t of this.patternTargetNodes(n.childForFieldName("left"))) bump(t.text)
+        } else if (n.type === "named_expression") {
+          const nameNode = n.childForFieldName("name")
+          if (nameNode?.type === "identifier") bump(nameNode.text)
+        } else if (n.type === "for_statement") {
+          for (const t of this.patternTargetNodes(n.childForFieldName("left"))) bump(t.text)
+        } else if (n.type === "for_in_clause") {
+          for (const t of this.patternTargetNodes(n.childForFieldName("left"))) bump(t.text)
+        } else if (n.type === "with_item") {
+          const target = this.asBindingTarget(n)
+          if (target) {
+            // THE GRAMMAR SPELLS THE CONTEXT EXPRESSION ONE LEVEL DOWN when there is an `as`:
+            // `with_item value -> as_pattern -> (call, as_pattern_target)`. `asBindingTarget`
+            // already knows that (round 10 measured it), so the call is the as_pattern's first
+            // named child; without the unwrap, `with Widget() as w2` bumps a binding with NO
+            // owner and the receiver stays untyped for a type the source plainly writes.
+            const rawValue = n.childForFieldName("value")
+            const contextExpr = rawValue?.type === "as_pattern" ? rawValue.namedChild(0) : rawValue
+            const owner = constructorOwner(contextExpr)
+            for (const t of this.patternTargetNodes(target)) bump(t.text, owner, "assignment")
+          }
+        } else if (n.type === "except_clause") {
+          const target = this.asBindingTarget(n)
+          if (target) for (const t of this.patternTargetNodes(target)) bump(t.text)
+        } else if (n.type === "global_statement" || n.type === "nonlocal_statement") {
+          for (const t of this.patternTargetNodes(n)) bump(t.text)
+        }
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) walk(c)
+        }
+      }
+      if (body) walk(body)
+      const hints = new Map<string, Hint>()
+      for (const [name, e] of seen) {
+        // EXACTLY ONE binding event and it is the typed/constructed one. Two events — even two of
+        // the same owner — refuse the hint: the receiver is a value whose type the file does not
+        // pin down to a single declaration.
+        if (e.count === 1 && e.owner !== undefined && e.evidence !== undefined) hints.set(name, { owner: e.owner, evidence: e.evidence })
+      }
+      return hints
+    }
+
+    // Every function body is a scope; the module is the fallback scope.
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "function_definition") {
+        const hints = collectBody(n.childForFieldName("body") ?? this.findChildByType(n, "block"), this.findChildByType(n, "parameters"))
+        if (hints.size > 0) {
+          scopes.push({ startLine: n.startPosition.row + 1, endLine: n.endPosition.row + 1, hints })
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    const moduleHints = collectBody(rootNode, null)
+
+    ctx.receiverTypeOwner = (receiverName: string, line: number): Hint | undefined => {
+      if (receiverName === "" || line <= 0) return undefined
+      // INNERMOST containing scope outward — LEGB. A parameter's annotation is not visible from a
+      // sibling function, and a module-level hint is shadowed by a local binding (the local one
+      // simply has no hint when it is not provable, which is the honest absence).
+      const containing = scopes.filter((s) => line >= s.startLine && line <= s.endLine)
+      containing.sort((a, b) => (a.endLine - a.startLine) - (b.endLine - b.startLine))
+      for (const s of containing) {
+        const hit = s.hints.get(receiverName)
+        if (hit) return hit
+        // A name this scope BINDS but cannot type shadows the outer hint: the receiver here is
+        // that binding, whose type is unknown, so no owner — not the outer type.
+        if (ctx.functionScopes.some((fs) => fs.startLine === s.startLine && fs.endLine === s.endLine && fs.bound.has(receiverName))) return undefined
+      }
+      return moduleHints.get(receiverName)
+    }
   }
 
   /**
