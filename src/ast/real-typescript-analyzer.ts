@@ -2299,6 +2299,24 @@ class TypeScriptAnalysisRunner {
     const declaredOnce = (name: string) => counts.get(name) === 1
     /** Local binding -> the EXTERNAL module it is imported from. Built by pass 1, read by pass 2. */
     const externalBindings = new Map<string, string>()
+    /**
+     * THE DOWNSTREAM CLAIM (calls/uses/references/instantiates/… whose target is a binding imported
+     * from an external module). It is deliberately NOT a `module-namespace` claim: that kind is
+     * verified by looking the module's ROOT up in the project's module-name space, and a project
+     * DIRECTORY can share a bare package's spelling (`packages/utils/__tests__/vue/…` makes "vue" a
+     * project module name) — measured on element-plus: 3,134 calls claims became `ext?` for that
+     * reason alone. The claim that IS checkable here is the bare-name one: the target names
+     * something the COMPLETE project index does not declare, and the edge's own metadata says which
+     * external module the binding came from. The arbiter verifies a bare name against its key space
+     * and never refuses to look at it.
+     */
+    const claimExternalBinding = (md: Record<string, any>, module: string) => {
+      if (md.isExternalTarget === true) return
+      md.isExternalTarget = true
+      md.externalReason = "imported-from-external-module"
+      md.externalSpecifier = module
+      md.externalProof = `ProjectIndex.complete === true; the binding is imported from ${JSON.stringify(module)}, which is outside the project's own package/module space`
+    }
     const claimModuleNamespace = (md: Record<string, any>, module: string) => {
       if (md.isExternalTarget === true) return
       md.isExternalTarget = true
@@ -2378,7 +2396,7 @@ class TypeScriptAnalysisRunner {
         }
       }
       if (module === undefined) continue
-      claimModuleNamespace(md, module)
+      claimExternalBinding(md, module)
     }
   }
 
