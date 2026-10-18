@@ -1193,6 +1193,19 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       patterns: [{ type: "usage", detected: true, description: p }],
     }))
 
+    // THE EMPTY-ENDPOINT GUARD — measured on the whole-population arm (cap 0, 33,738 files):
+    // 23 of 3,748,617 edges carried an EMPTY TARGET. That is the incoming gate's `unclassed`
+    // class, whose declared ceiling is 0: the gate cannot classify an edge with no target, so
+    // such a row is neither resolved nor a named gap and would sit outside D3's partition. The
+    // rows are zero-width MISSING/ERROR token texts inside damaged parse regions
+    // (`type_identifier`.text === "" there) — no rule can bind a name that is not written. The
+    // guard lives in ONE place so no emission site can reintroduce the class by forgetting it.
+    for (let i = relationships.length - 1; i >= 0; i--) {
+      const r = relationships[i]
+      const target = String(r.target ?? "")
+      const source = String(r.source ?? "")
+      if (target.length === 0 || source.length === 0) relationships.splice(i, 1)
+    }
     return {
       language: "dart",
       symbols,
