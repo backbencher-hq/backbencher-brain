@@ -101,7 +101,7 @@ function annotationName(ann: any): string | null {
  * Returns "" when no name can be derived (a malformed node) — callers skip an empty target, because
  * an edge with no endpoint names nothing and the harness's own truth-side guard drops it too.
  */
-function baseTypeName(n: any): string {
+export function javaOracleBaseTypeName(n: any): string {
   if (!n) return ""
   const t = String(n.type ?? "")
   if (t === "type_identifier" || t === "identifier") return String(n.text ?? "")
@@ -111,7 +111,7 @@ function baseTypeName(n: any): string {
   if (t === "generic_type") {
     for (const c of namedChildren(n)) {
       if (c?.type === "type_identifier" || c?.type === "scoped_type_identifier" || c?.type === "generic_type") {
-        const b = baseTypeName(c)
+        const b = javaOracleBaseTypeName(c)
         if (b) return b
       }
     }
@@ -122,7 +122,7 @@ function baseTypeName(n: any): string {
     for (const c of namedChildren(n)) {
       if (!c) continue
       if (c.type === "annotation" || c.type === "marker_annotation") continue
-      const b = baseTypeName(c)
+      const b = javaOracleBaseTypeName(c)
       if (b) parts.push(b)
     }
     return parts.join(".")
@@ -131,14 +131,14 @@ function baseTypeName(n: any): string {
     for (const c of namedChildren(n)) {
       if (!c) continue
       if (c.type === "annotation" || c.type === "marker_annotation") continue
-      const b = baseTypeName(c)
+      const b = javaOracleBaseTypeName(c)
       if (b) return b
     }
     return ""
   }
   if (t === "array_type") {
     const el = typeof n.childForFieldName === "function" ? n.childForFieldName("element") : null
-    return baseTypeName(el ?? namedChildren(n)[0])
+    return javaOracleBaseTypeName(el ?? namedChildren(n)[0])
   }
   return ""
 }
@@ -197,7 +197,7 @@ export function deriveJavaTypeParameterBoundReferencesTruth(root: any): JavaOrac
     if (!n) return
     const t = String(n.type ?? "")
     if (t === "type_identifier" || t === "scoped_type_identifier") {
-      const b = baseTypeName(n)
+      const b = javaOracleBaseTypeName(n)
       if (b) push(b)
       // a scoped type's chain is nested type_identifiers; baseTypeName already joined it, so do
       // not descend (descending would push every qualifier segment as a separate target).
@@ -247,7 +247,7 @@ export function deriveJavaRecordPatternReferencesTruth(root: any): JavaOracleEdg
       // (not text offsets) keeps this independent of grammar child ordering.
       for (const c of namedChildren(n)) {
         if (!c || c.type === "record_pattern_body") continue
-        const b = baseTypeName(c)
+        const b = javaOracleBaseTypeName(c)
         if (b) push(b)
         break // one type per record_pattern node; nested patterns are their own nodes
       }
