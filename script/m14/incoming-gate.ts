@@ -1709,7 +1709,7 @@ function selfTest(): { ok: boolean; failures: string[] } {
     if (cNoFacts.outcome !== "bindingUnverified") failures.push("control: an imported-binding claim with no import evidence must be UNVERIFIED")
   }
   {
-    const citationClaim: ExternalClaim = { kind: "namespace", roots: ["java", "jakarta", "override"] }
+    const citationClaim: ExternalClaim = { kind: "namespace", roots: ["java", "jakarta", "override", "pathlib"] }
     const citationArms: Array<[string, Outcome, string]> = [
       ["java.util.List", "externalVerified", "a reserved-platform root must verify"],
       ["jakarta.servlet.Filter", "externalVerified", "a cited library-namespace root must verify"],
