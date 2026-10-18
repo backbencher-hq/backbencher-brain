@@ -1663,7 +1663,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 kind: ASTEngine.SymbolKind.Class,
                 fqn: anonFqn,
                 symbolRef: anonSym,
-                visibility: "package-private",
+                // A Scope's visibility union has no `package-private` member (the
+                // SYMBOL can spell it; the scope carries the enclosing declaration's
+                // visibility, exactly as the object_creation anonymous-class site does).
+                visibility: parentContext.visibility,
                 isAbstract: false,
                 isInterface: false,
                 isRecord: false,
@@ -1671,7 +1674,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 fields: [],
                 parents: [parentContext.name],
               }
-              scopeStack.push(newContext)
+              scopeStack.push(newContext as Scope)
               pushedScope = true
             }
         }
