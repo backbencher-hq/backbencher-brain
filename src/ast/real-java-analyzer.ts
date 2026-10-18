@@ -445,6 +445,57 @@ import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { findDeclaringParent, localEdgeLabel, localEdgeName } from "./override-context"
 
+// ── RECEIVER TYPING (owner contract 2026-10-18, additive) ───────────────────────────────────────
+//
+// Java is statically typed: a call's receiver has a DECLARED type written in the
+// file (field / formal parameter / local variable / a method's return type), and
+// the calls edge currently drops it — `data.find()` publishes the leaf `find` and
+// nothing else, so a consumer cannot tell which type's `find` was called. The
+// contract is ADDITIVE metadata only: `metadata.ownerType` = the declared type's
+// name as written, `metadata.ownerTypeEvidence` ∈ {field, param, local, return} =
+// WHICH declaration stated it. No target spelling changes (JD20's bare-leaf
+// contract and the differential oracle both stay), so this cannot move a
+// resolution or an ambiguity count; it only records what the syntax already says.
+//
+// WHAT IS DELIBERATELY NOT CLAIMED, each because the evidence is not in the file:
+//   * an implicit `this.method()` receiver — the enclosing type is already the
+//     edge's source, so ownerType would be a second spelling of the same fact;
+//   * a CLASS-qualified static call `Foo.bar()` — the receiver names its owner in
+//     the call expression, so the leaf target lost nothing;
+//   * `super.method()`, chained access through an untyped receiver (`a.b.c()`),
+//     `var` declarations (JLS 14.4 inference is invisible here), primitives, and
+//     any name that resolves to a FIELD OF AN INHERITED type — the file cannot
+//     state their type, and "probably" is what this metadata must not say.
+type JavaTypeEvidence = "field" | "param" | "local" | "return"
+
+/** One name a declaration binds to a written type, with the scope that binds it.
+ *  `declStart` is where the declaration is written (a local must precede its use,
+ *  JLS 6.3); `scopeStart`/`scopeEnd` are the range in which the binding is legal
+ *  (the enclosing block for a local, the whole type/body otherwise). */
+type JavaDeclaredMember = { type: string; evidence: JavaTypeEvidence; declStart: number; scopeStart: number; scopeEnd: number }
+
+/** A lexical scope's name→declared-type table. `type` scopes carry FIELDS, `method`
+ *  scopes carry parameters and locals. */
+type JavaTypeScope = { start: number; end: number; members: Map<string, JavaDeclaredMember> }
+
+/** The per-file index the receiver resolver reads. Built once per file in a
+ *  pre-pass, because a call site is visited before the declarations later in the
+ *  file are seen by the main walk (`x.foo()` above `void foo()` is the normal
+ *  shape, not the exception). */
+type JavaReceiverTypeIndex = {
+  methodScopes: JavaTypeScope[]
+  typeScopes: JavaTypeScope[]
+  /** names of types DECLARED in this file — an identifier matching one of these in
+   *  receiver position is a type (static call), not a variable */
+  typeNames: Set<string>
+  /** local names bound by a single-type import — same purpose, and the reason a
+   *  static call to an imported class is never mistaken for a variable read */
+  importSingleTypes: Set<string>
+  /** method name -> the set of declared return type names in THIS file. A name with
+   *  more than one distinct return type is an overload set and is refused. */
+  methodReturns: Map<string, Set<string>>
+}
+
 export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -508,6 +559,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     const stack: StackItem[] = [{ node: rootNode }]
+
+    // RECEIVER TYPING (see the JavaReceiverTypeIndex contract above the class): one
+    // pre-pass over the same tree the walk is about to visit, because a call site
+    // is seen before the declarations that FOLLOW it in the file. The index is read
+    // only to ADD metadata to a calls edge; it never selects a target, so it cannot
+    // move a resolution count.
+    const receiverTypes = this.collectJavaReceiverTypeIndex(rootNode)
 
     while (stack.length > 0) {
       const item = stack.pop()!
@@ -1576,6 +1634,14 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       else if (type === "method_invocation") {
          const callExpression = this.buildJavaCallExpression(node)
          if (callExpression && !this.isJavaBuiltin(callExpression)) {
+            // RECEIVER TYPING (owner contract 2026-10-18): the declared type of the
+            // receiver, when the file itself states it. Additive metadata only —
+            // see the JavaReceiverTypeIndex contract above the class for what is
+            // claimed, from which declaration, and what is deliberately refused.
+            const receiverOwner = this.javaReceiverOwnerType(node, receiverTypes)
+            const receiverMetadata = receiverOwner
+              ? { ownerType: receiverOwner.type, ownerTypeEvidence: receiverOwner.evidence }
+              : {}
             // JLS 4.12.5/15.9: Java objects are created ONLY by `new`
             // (object_creation_expression, handled separately). A
             // method_invocation is never an instantiation — PascalCase method
@@ -1620,7 +1686,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // put c on the line a.b() opened on. java, kotlin and groovy
                 // share this node shape, so this is the family pattern.
                 ...this.lineField(node.childForFieldName("name"), node),
-                metadata: { javaCallExpression: callExpression, ...(argumentCount !== undefined ? { argumentCount } : {}) },
+                metadata: { javaCallExpression: callExpression, ...(argumentCount !== undefined ? { argumentCount } : {}), ...receiverMetadata },
               })
             } else {
               // M14 #419 G4: calls outside method bodies (static/instance
@@ -1639,7 +1705,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                   confidence: 0.7,
                   // M59 (#825): same rule as the in-method branch above.
                   ...this.lineField(node.childForFieldName("name"), node),
-                  metadata: { javaCallExpression: callExpression, callSite: parentContext?.node?.type ?? node.parent?.type, inInitializer: true },
+                  metadata: { javaCallExpression: callExpression, callSite: parentContext?.node?.type ?? node.parent?.type, inInitializer: true, ...receiverMetadata },
                 })
               }
             }
@@ -3736,6 +3802,286 @@ currentPackage,
       this.findChildByType(decl, "identifier") ||
       this.findChildByType(decl, "type_identifier")
     return ownName ? [{ name: ownName.text, declKind }] : fallback
+  }
+
+  // ── RECEIVER TYPING — the pre-pass and the resolver ─────────────────────────────────────────────
+
+  /**
+   * Build the per-file receiver-type index in ONE pre-pass over the same tree.
+   *
+   * WHY A PRE-PASS. The main walk is single-pass and visits a call site before it
+   * visits declarations written BELOW it — `x.foo()` above `void foo()` is the
+   * normal shape, not the exception — and Java allows fields and methods in any
+   * order. Reading what the file states therefore has to happen before the
+   * emission that consumes it. The pre-pass visits the same tree and emits nothing.
+   *
+   * WHAT IS INDEXED, and each entry is a DECLARATION, not an inference:
+   *   * type scopes (class/interface/enum/record/@interface bodies, plus anonymous
+   *     class bodies) with their FIELDS;
+   *   * method/constructor scopes with their FORMAL PARAMETERS, and their LOCALS
+   *     (a local is recorded with its enclosing block's range, so a declaration in
+   *     a sibling block cannot bind a use outside it);
+   *   * method name -> declared return type, only when this file declares it and
+   *     the name has ONE distinct return type in the file (an overload set with
+   *     differing return types is refused, not guessed);
+   *   * type names declared in the file and single-type-import local names, which
+   *     is how a CLASS-QUALIFIED static call (`Helper.help()`) is told apart from a
+   *     variable read.
+   */
+  private collectJavaReceiverTypeIndex(rootNode: Node): JavaReceiverTypeIndex {
+    const index: JavaReceiverTypeIndex = {
+      methodScopes: [],
+      typeScopes: [],
+      typeNames: new Set(),
+      importSingleTypes: new Set(),
+      methodReturns: new Map(),
+    }
+    const TYPE_DECLARATIONS = new Set([
+      "class_declaration", "interface_declaration", "enum_declaration",
+      "record_declaration", "annotation_type_declaration",
+    ])
+    const BLOCK_NODES = new Set([
+      "block", "constructor_body", "switch_block", "for_statement", "enhanced_for_statement",
+      "try_statement", "catch_clause", "finally_clause", "synchronized_statement", "lambda_expression",
+      "static_initializer",
+    ])
+
+    const addFields = (scope: JavaTypeScope, body: Node): void => {
+      for (let i = 0; i < body.namedChildCount; i++) {
+        const child = body.namedChild(i)
+        if (!child) continue
+        // enum bodies keep their fields behind `enum_body_declarations`; descend one level.
+        if (child.type === "enum_body_declarations") {
+          for (let j = 0; j < child.namedChildCount; j++) {
+            const inner = child.namedChild(j)
+            if (inner && (inner.type === "field_declaration" || inner.type === "constant_declaration")) {
+              this.addJavaDeclaredMembers(inner, "field", scope, body)
+            }
+          }
+          continue
+        }
+        if (child.type === "field_declaration" || child.type === "constant_declaration") {
+          this.addJavaDeclaredMembers(child, "field", scope, body)
+        }
+      }
+    }
+    const makeTypeScope = (body: Node): JavaTypeScope => {
+      const scope: JavaTypeScope = { start: body.startIndex, end: body.endIndex, members: new Map() }
+      addFields(scope, body)
+      index.typeScopes.push(scope)
+      return scope
+    }
+    const makeBodyScope = (n: Node): JavaTypeScope => {
+      const body = this.findChildByType(n, "block") || this.findChildByType(n, "constructor_body")
+      const scope: JavaTypeScope = {
+        start: body ? body.startIndex : n.startIndex,
+        end: body ? body.endIndex : n.endIndex,
+        members: new Map(),
+      }
+      const params = this.findChildByType(n, "formal_parameters")
+      if (params) {
+        for (let i = 0; i < params.namedChildCount; i++) {
+          const p = params.namedChild(i)
+          if (!p) continue
+          if (p.type !== "formal_parameter" && p.type !== "spread_parameter") continue
+          const typeNode = p.childForFieldName("type")
+          const nameNode = p.childForFieldName("name") || this.findChildByType(p, "identifier")
+          const typeName = this.javaDeclaredTypeBaseName(typeNode)
+          if (typeName && nameNode) {
+            scope.members.set(nameNode.text, {
+              type: typeName, evidence: "param",
+              declStart: p.startIndex, scopeStart: scope.start, scopeEnd: scope.end,
+            })
+          }
+        }
+      }
+      index.methodScopes.push(scope)
+      return scope
+    }
+
+    const visit = (n: Node, methodScope: JavaTypeScope | null, typeScopes: JavaTypeScope[], block: Node | null): void => {
+      const t = n.type
+      let nextMethod = methodScope
+      let nextTypeScopes = typeScopes
+      const nextBlock = BLOCK_NODES.has(t) ? n : block
+      if (TYPE_DECLARATIONS.has(t)) {
+        const nameNode = n.childForFieldName("name")
+        if (nameNode) index.typeNames.add(nameNode.text)
+        const body =
+          this.findChildByType(n, "class_body") ||
+          this.findChildByType(n, "enum_body") ||
+          this.findChildByType(n, "interface_body") ||
+          this.findChildByType(n, "annotation_type_body")
+        if (body) nextTypeScopes = [...typeScopes, makeTypeScope(body)]
+      }
+      if (t === "object_creation_expression") {
+        // An anonymous class body declares real fields and methods; calls inside it
+        // must resolve against ITS fields first, not the enclosing type's.
+        const body = this.findChildByType(n, "class_body")
+        if (body) nextTypeScopes = [...typeScopes, makeTypeScope(body)]
+      }
+      if (t === "method_declaration" || t === "constructor_declaration" || t === "compact_constructor_declaration") {
+        nextMethod = makeBodyScope(n)
+        if (t === "method_declaration") {
+          const nameNode = n.childForFieldName("name")
+          const returnType = this.javaDeclaredTypeBaseName(n.childForFieldName("type"))
+          if (nameNode && returnType) {
+            const set = index.methodReturns.get(nameNode.text) ?? new Set<string>()
+            set.add(returnType)
+            index.methodReturns.set(nameNode.text, set)
+          }
+        }
+      }
+      if (t === "import_declaration") {
+        const isStatic = /^\s*import\s+static\b/.test(n.text)
+        const isWildcard = this.findChildByType(n, "asterisk") !== null
+        if (!isStatic && !isWildcard) {
+          const nameNode = this.findChildByType(n, "scoped_identifier") || this.findChildByType(n, "identifier")
+          if (nameNode) {
+            const text = nameNode.text
+            const leaf = text.slice(text.lastIndexOf(".") + 1)
+            if (leaf) index.importSingleTypes.add(leaf)
+          }
+        }
+      }
+      if (t === "local_variable_declaration" && methodScope) {
+        const scopeNode = block ?? (n.parent ?? n)
+        this.addJavaDeclaredMembers(n, "local", methodScope, scopeNode)
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        if (child) visit(child, nextMethod, nextTypeScopes, nextBlock)
+      }
+    }
+    visit(rootNode, null, [], null)
+    return index
+  }
+
+  /** Record every declarator a field/constant/local declaration binds, with the
+   *  declaration's written type and the range in which the binding is legal. A
+   *  declaration whose type is not a named type (a primitive, `var`) records
+   *  nothing: a primitive receiver has no type whose members could be resolved. */
+  private addJavaDeclaredMembers(
+    decl: Node,
+    evidence: JavaTypeEvidence,
+    scope: JavaTypeScope,
+    scopeNode: Node,
+  ): void {
+    const typeName = this.javaDeclaredTypeBaseName(decl.childForFieldName("type"))
+    if (!typeName) return
+    for (let i = 0; i < decl.namedChildCount; i++) {
+      const declarator = decl.namedChild(i)
+      if (!declarator || declarator.type !== "variable_declarator") continue
+      const nameNode = declarator.childForFieldName("name") || this.findChildByType(declarator, "identifier")
+      if (!nameNode) continue
+      scope.members.set(nameNode.text, {
+        type: typeName, evidence,
+        declStart: declarator.startIndex,
+        scopeStart: evidence === "field" ? scope.start : scopeNode.startIndex,
+        scopeEnd: evidence === "field" ? scope.end : scopeNode.endIndex,
+      })
+    }
+  }
+
+  /** The type name a declared-type node writes, or null when the node is a
+   *  primitive / `var` / malformed. `javaTypeBaseName` keeps a qualified spelling
+   *  (`java.util.List`) as written, which is what "the receiver's statically known
+   *  type" means to this lane. */
+  private javaDeclaredTypeBaseName(typeNode: Node | null): string | null {
+    if (!typeNode) return null
+    const t = typeNode.type
+    if (t === "integral_type" || t === "floating_point_type" || t === "boolean_type" || t === "void_type") return null
+    const base = javaTypeBaseName(typeNode)
+    if (!base || base === "var" || base === "void") return null
+    return base
+  }
+
+  /** The innermost scope of `scopes` whose range contains `pos` (innermost = the one
+   *  that starts latest; equal starts keep the first seen, which is deterministic
+   *  over one tree). */
+  private javaInnermostScope(scopes: JavaTypeScope[], pos: number): JavaTypeScope | null {
+    let best: JavaTypeScope | null = null
+    for (const scope of scopes) {
+      if (scope.start <= pos && pos <= scope.end) {
+        if (!best || scope.start >= best.start) best = scope
+      }
+    }
+    return best
+  }
+
+  /**
+   * The declared type of a call's receiver, from THE FILE'S OWN DECLARATIONS.
+   *
+   * Returns null — never a guess — for every receiver whose type this file does not
+   * state: an implicit `this`, a class-qualified static call (its owner is already
+   * spelled in the call expression), `super`, chained access on an untyped
+   * receiver, an inherited field, and a `var` local. The four evidence classes are
+   * the declarations the Lead's contract names: field / param / local / return.
+   */
+  private javaReceiverOwnerType(
+    callNode: Node,
+    index: JavaReceiverTypeIndex,
+  ): { type: string; evidence: JavaTypeEvidence } | null {
+    const objectNode = callNode.childForFieldName("object")
+    if (!objectNode) return null
+    const pos = callNode.startIndex
+
+    if (objectNode.type === "identifier") {
+      const name = objectNode.text
+      const methodScope = this.javaInnermostScope(index.methodScopes, pos)
+      if (methodScope) {
+        const hit = methodScope.members.get(name)
+        // A local may not be used before its declaration (JLS 6.3) and only inside
+        // its block; a parameter's scope is the whole body.
+        if (hit && hit.declStart < pos && hit.scopeStart <= pos && pos <= hit.scopeEnd) {
+          return { type: hit.type, evidence: hit.evidence }
+        }
+      }
+      // Fields: innermost enclosing type first (an inner class's field shadows an
+      // outer one, JLS 6.4.1).
+      const covering: JavaTypeScope[] = []
+      for (const scope of index.typeScopes) {
+        if (scope.start <= pos && pos <= scope.end) covering.push(scope)
+      }
+      covering.sort((a, b) => b.start - a.start)
+      for (const scope of covering) {
+        const hit = scope.members.get(name)
+        if (hit) return { type: hit.type, evidence: "field" }
+      }
+      // A receiver name that is a TYPE is a static call; its owner is already the
+      // written receiver, so there is nothing to add.
+      if (index.typeNames.has(name) || index.importSingleTypes.has(name)) return null
+      return null
+    }
+
+    if (objectNode.type === "field_access") {
+      const parts = objectNode.text.split(".")
+      if (parts.length === 2 && parts[0] === "this") {
+        const name = parts[1]
+        for (const scope of index.typeScopes) {
+          if (!(scope.start <= pos && pos <= scope.end)) continue
+          const hit = scope.members.get(name)
+          if (hit) return { type: hit.type, evidence: "field" }
+        }
+      }
+      return null
+    }
+
+    if (objectNode.type === "method_invocation") {
+      const nameNode = objectNode.childForFieldName("name")
+      const name = nameNode ? nameNode.text : null
+      if (!name || this.isJavaBuiltin(name)) return null
+      const returns = index.methodReturns.get(name)
+      // ONE distinct declared return type or nothing: an overload set with
+      // differing return types is not resolvable from the name alone.
+      if (returns && returns.size === 1) {
+        const only = [...returns][0]
+        return { type: only, evidence: "return" }
+      }
+      return null
+    }
+
+    return null
   }
 
   /**
