@@ -1,0 +1,1128 @@
+{
+ "schemaVersion": 1,
+ "language": "solidity",
+ "programme": "ALL-OUT-OF-ALL phase 2 (charter validation/m14/verification/ALL-OUT-OF-ALL-PROGRAMME.md §9.1 D1) — tier-2 lane, denominator = Solidity's OWN applicable set (10/10), never forced to a canonical ten.",
+ "purpose": "THE SOLIDITY APPLICABLE SET, machine-readable: one row per relationship type the language can express (decided from the PINNED GRAMMAR's own enumeration, never from the ten-value matrix), with the emission site in src/ast/real-solidity-analyzer.ts and at least one fixture that can go RED for it (measured by the real fixture runner with the emission removed) — plus the ruled non-applicable canonical values, the Solidity construct surface, and the value questions SOL-R1..R8 answered by measurement.",
+ "generatedBy": "script/m14/solidity-spec-table.ts (inputs named in that file's header; do not hand-edit the OWED cells without re-running)",
+ "grammar": {
+  "wasm": "wasm/tree-sitter-solidity.wasm",
+  "sha256": "07420813d7668445152a5d5d2017e0fb84cb27342257e1add3cc7462eec7f811",
+  "slotCount": 531,
+  "namedTypeCount": 121,
+  "anonymousTokenCount": 407,
+  "reconciliation": {
+   "grammarRules": 166,
+   "grammarVisibleRules": 121,
+   "grammarHiddenRules": 45,
+   "nodeTypesNamedEntries": 124,
+   "nodeTypesNamedNotInLanguageApi": [
+    "false",
+    "string",
+    "true"
+   ],
+   "languageApiNamedNotInNodeTypes": [],
+   "reading": "grammar.json declares 166 rules (121 visible + 45 hidden); node-types.json lists 124 'named' entries because it also marks the literal spellings true/false/string as named; the Language API exposes 121 unique named node types. This lane enumerates the Language API (the same surface the analyzer parses) and states the other two counts so no reader mistakes one for another."
+  },
+  "enumeration": "the pinned wasm enumerated through web-tree-sitter's Language API (nodeTypeCount / nodeTypeIsNamed / nodeTypeForId); the OTHER two counts (166 grammar rules = 121 visible + 45 hidden; 124 node-types 'named' entries incl. the literal spellings true/false/string) are reconciled in `reconciliation` so no reader mistakes one instrument for another. ERROR and MISSING are universal parser outputs, not grammar productions.",
+  "instrument": "script/m14/solidity-applicable-set.ts",
+  "command": "bun run script/m14/solidity-applicable-set.ts --out validation/m14/fixtures/solidity/measurements/applicable-set.json",
+  "artifact": "validation/m14/fixtures/solidity/measurements/applicable-set.json",
+  "artifactMeasuredAt": "2026-10-18T18:31:43.121Z"
+ },
+ "admissibilityRule": "APPLICABLE iff every construct production the value needs exists in the pinned grammar's own enumeration AND the analyzer has an emission site in the addRel shape AND at least one fixture carries a positive expectation row AND that fixture goes RED when the emission is removed. A value failing any conjunct is a finding.",
+ "canonicalVocabulary": [
+  "calls",
+  "uses",
+  "contains",
+  "imports",
+  "references",
+  "exports",
+  "extends",
+  "implements",
+  "overrides",
+  "instantiates",
+  "decorates",
+  "renders",
+  "mixes_in",
+  "part_of"
+ ],
+ "applicableValues": [
+  "calls",
+  "uses",
+  "contains",
+  "imports",
+  "references",
+  "exports",
+  "extends",
+  "implements",
+  "overrides",
+  "instantiates"
+ ],
+ "notApplicableValues": [
+  "decorates",
+  "renders",
+  "mixes_in",
+  "part_of"
+ ],
+ "notApplicableEvidence": {
+  "decorates": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "decorator",
+    "decorator_expression",
+    "annotation",
+    "annotation_declaration",
+    "marker_annotation"
+   ],
+   "productionsFound": [],
+   "reason": "no decorator/annotation production exists in the pinned grammar. It DOES have the language's annotation mechanism — `modifier_definition` + `modifier_invocation` — and that construct is ADJUDICATED here rather than ignored: applied modifiers are published as `decorators` METADATA on the decorated symbol (SOL-17) and the modifier INVOCATION emits a `calls` edge (calleeKind modifierInvocation), matching the family contract (java's annotations are references+metadata, decorates reserved for runtime callable decorators; C#/F#/Java all treat decorators as metadata on the thing they decorate). No Solidity fixture expects a `decorates` row and the analyzer emits none.",
+   "vocabularyRuling": "extended value, NOT APPLICABLE as a relationship to Solidity (adjudicated: modifiers are metadata + calls)."
+  },
+  "renders": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "jsx_element",
+    "jsx_self_closing_element",
+    "jsx_opening_element",
+    "jsx_attribute"
+   ],
+   "productionsFound": [],
+   "reason": "no JSX/element-construction production exists in the pinned grammar; Solidity never creates a component-element pair.",
+   "vocabularyRuling": "extended value (TSX/JSX), NOT APPLICABLE to Solidity."
+  },
+  "mixes_in": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "mixin",
+    "mixin_application_class",
+    "with_clause"
+   ],
+   "productionsFound": [],
+   "reason": "no mixin/with production exists in the pinned grammar. Solidity's composition construct is inheritance, carried by extends/implements; there is no separate mixin-application production to publish.",
+   "vocabularyRuling": "extended value (Dart `with`), NOT APPLICABLE to Solidity."
+  },
+  "part_of": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "part_directive",
+    "part_of_directive",
+    "part_clause"
+   ],
+   "productionsFound": [],
+   "reason": "Solidity's file-inclusion construct is `import_directive`, which IS a module edge published as `imports`; there is no part-file directive that shares one compilation unit's scope without importing (the construct `part_of` exists to distinguish).",
+   "vocabularyRuling": "extended value (Dart `part`/`part of`), NOT APPLICABLE to Solidity."
+  }
+ },
+ "constructTable": {
+  "contracts / interfaces / libraries": {
+   "grammarConstructs": [
+    "contract_declaration",
+    "interface_declaration",
+    "library_declaration",
+    "contract_body"
+   ],
+   "grammarPresent": [
+    "contract_declaration",
+    "interface_declaration",
+    "library_declaration",
+    "contract_body"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "extends",
+    "implements",
+    "exports"
+   ],
+   "ruling": "each is a published symbol contained by the file-module and (for files at the surface) exported; their ancestors are extends/implements."
+  },
+  "inheritance (`is` list)": {
+   "grammarConstructs": [
+    "inheritance_specifier"
+   ],
+   "grammarPresent": [
+    "inheritance_specifier"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "extends",
+    "implements"
+   ],
+   "ruling": "ONE heritage construct, two readings (SOL-5): non-interface ancestor = extends, in-file interface ancestor = implements. Multiple bases are a list in one specifier, so N bases = N edges."
+  },
+  "functions / constructor / receive / fallback": {
+   "grammarConstructs": [
+    "function_definition",
+    "function_body",
+    "constructor_definition",
+    "fallback_receive_definition",
+    "return_type_definition"
+   ],
+   "grammarPresent": [
+    "function_definition",
+    "function_body",
+    "constructor_definition",
+    "fallback_receive_definition",
+    "return_type_definition"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "calls",
+    "uses",
+    "references",
+    "overrides"
+   ],
+   "ruling": "each declared name is read off its leading keyword (SOL-4: constructor/receive/fallback write their literal word), contained by its contract, and is a calls/uses/references scope."
+  },
+  "state variables (public getters) / constants / immutables": {
+   "grammarConstructs": [
+    "state_variable_declaration",
+    "constant_variable_declaration",
+    "immutable"
+   ],
+   "grammarPresent": [
+    "state_variable_declaration",
+    "constant_variable_declaration",
+    "immutable"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "references",
+    "uses",
+    "exports"
+   ],
+   "ruling": "SOL-3: a public state variable is a contained member AND its compiler-synthesised getter is a published member named with its external signature (`bal()`) plus a references edge var -> getter. The getter name cannot collide with a Solidity identifier (no `(` in an identifier)."
+  },
+  "modifiers (definition + invocation)": {
+   "grammarConstructs": [
+    "modifier_definition",
+    "modifier_invocation"
+   ],
+   "grammarPresent": [
+    "modifier_definition",
+    "modifier_invocation"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "calls"
+   ],
+   "ruling": "a modifier is a contained member; its INVOCATION is a calls edge (SOL-17). Applied modifiers are `decorators` METADATA; there is no `decorates` relationship (see the ruled value)."
+  },
+  "events / custom errors / emit / revert / try-catch": {
+   "grammarConstructs": [
+    "event_definition",
+    "event_parameter",
+    "error_declaration",
+    "error_parameter",
+    "emit_statement",
+    "revert_statement",
+    "try_statement",
+    "catch_clause"
+   ],
+   "grammarPresent": [
+    "event_definition",
+    "event_parameter",
+    "error_declaration",
+    "error_parameter",
+    "emit_statement",
+    "revert_statement",
+    "try_statement",
+    "catch_clause"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "calls",
+    "uses"
+   ],
+   "ruling": "an event/error is a contained symbol with parameter members; `emit Ev(1)` is a calls edge (calleeKind eventEmission), `revert Err(2)` a calls edge (errorRevert). try/catch clauses are control flow, not relationships (the caught expression's calls/uses are emitted normally)."
+  },
+  "structs / enums / enum values": {
+   "grammarConstructs": [
+    "struct_declaration",
+    "struct_body",
+    "struct_member",
+    "enum_declaration",
+    "enum_body",
+    "enum_value",
+    "struct_expression",
+    "call_struct_argument"
+   ],
+   "grammarPresent": [
+    "struct_declaration",
+    "struct_body",
+    "struct_member",
+    "enum_declaration",
+    "enum_body",
+    "enum_value",
+    "struct_expression",
+    "call_struct_argument"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "calls",
+    "uses"
+   ],
+   "ruling": "struct/enum are contained symbols with member containment; struct CONSTRUCTION is a calls edge (both spellings, SOL-10), never instantiates."
+  },
+  "imports (plain / named / namespace / aliased)": {
+   "grammarConstructs": [
+    "import_directive"
+   ],
+   "grammarPresent": [
+    "import_directive"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "imports",
+    "references"
+   ],
+   "ruling": "the module PATH is imports; an imported BINDING (named or `* as Utils`) is references. Solidity has no export construct, so `import` never pairs with an exports keyword (see the exports ruling)."
+  },
+  "using-for / using alias": {
+   "grammarConstructs": [
+    "using_directive",
+    "using_alias"
+   ],
+   "grammarPresent": [
+    "using_directive",
+    "using_alias"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "references",
+    "calls"
+   ],
+   "ruling": "the using-dependency (library or function list) is a references edge; a call through `using X for T` is a calls edge with calleeKind inFileTypeMember (SOL-15)."
+  },
+  "object creation (`new`)": {
+   "grammarConstructs": [
+    "new_expression",
+    "user_defined_type",
+    "type_name"
+   ],
+   "grammarPresent": [
+    "new_expression",
+    "user_defined_type",
+    "type_name"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "instantiates",
+    "uses"
+   ],
+   "ruling": "`new C()` is instantiates; the type name is read in a type position (references) — instantiates is NOT template/struct construction (SOL-10)."
+  },
+  "override": {
+   "grammarConstructs": [
+    "override_specifier",
+    "virtual"
+   ],
+   "grammarPresent": [
+    "override_specifier",
+    "virtual"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "overrides"
+   ],
+   "ruling": "SOL-11 three tiers; the refusals (2+ header bases, no matching declaration) are part of the rule."
+  },
+  "Yul / inline assembly": {
+   "grammarConstructs": [
+    "assembly_statement",
+    "assembly_flags",
+    "yul_function_call",
+    "yul_function_definition",
+    "yul_identifier",
+    "yul_path",
+    "yul_variable_declaration",
+    "yul_evm_builtin",
+    "yul_block",
+    "yul_for_statement",
+    "yul_if_statement",
+    "yul_switch_statement"
+   ],
+   "grammarPresent": [
+    "assembly_statement",
+    "assembly_flags",
+    "yul_function_call",
+    "yul_function_definition",
+    "yul_identifier",
+    "yul_path",
+    "yul_variable_declaration",
+    "yul_evm_builtin",
+    "yul_block",
+    "yul_for_statement",
+    "yul_if_statement",
+    "yul_switch_statement"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "calls",
+    "uses"
+   ],
+   "ruling": "Yul is a first-class sub-language here: a yul function is a contained member, a yul function call is a calls edge (labels carrying `yul`), a yul identifier / one-segment path read is a uses edge. An EVM BUILTIN is not a user call (SOL-8)."
+  },
+  "type aliases / user-defined value types / function types": {
+   "grammarConstructs": [
+    "user_defined_type_definition",
+    "type_alias",
+    "type_name",
+    "type_cast_expression",
+    "payable_conversion_expression",
+    "meta_type_expression"
+   ],
+   "grammarPresent": [
+    "user_defined_type_definition",
+    "type_alias",
+    "type_name",
+    "type_cast_expression",
+    "payable_conversion_expression",
+    "meta_type_expression"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "references",
+    "uses"
+   ],
+   "ruling": "a type alias / user-defined value type is a contained symbol; type mentions are references (type positions) and a CONVERSION (`uint256(x)`) emits no calls edge — a conversion is not a call (SOL-15)."
+  },
+  "NatSpec comments / pragma": {
+   "grammarConstructs": [
+    "comment",
+    "pragma_directive",
+    "any_pragma_token"
+   ],
+   "grammarPresent": [
+    "comment",
+    "pragma_directive",
+    "any_pragma_token"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [],
+   "ruling": "RULED: NatSpec documentation attaches to the next declaration as `docstring`/`docTags` METADATA (SOL-16/23) — there is no second symbol to connect an edge to, so no relationship; a pragma is a compilation directive, not a relationship. Both are counted by the D2 census so the ruling is a number, not a silence."
+  }
+ },
+ "rulings": [
+  {
+   "id": "SOL-R1",
+   "question": "`implements`: is the canonical value applicable to Solidity, given there is no implements clause?",
+   "measured": "the pinned grammar has NO implements-clause production (implements_clause / class_interface_clause / super_interfaces all ABSENT — section 2 proves it). It DOES have inheritance_specifier + interface_declaration; the analyzer emits implements from (derived, in-file interface) pairs at :1726 (SOL-5), and fixtures pin the value in both directions (2 positive fixtures, 2 forbid rows).",
+   "verdict": "APPLICABLE BY ADAPTED SEMANTICS — an interface ancestor is the contract reading of the one heritage construct. Ruling it non-applicable would contradict the emission and the fixtures."
+  },
+  {
+   "id": "SOL-R2",
+   "question": "`exports`: Solidity has no export construct — is the value applicable?",
+   "measured": "no export/visibility-keyword production exists for a compilation-unit surface. The analyzer publishes the compilation-unit surface from `source_file` (SOL-12) at :2703; fixtures pin 18 positive export rows in 6 fixtures.",
+   "verdict": "APPLICABLE BY ADAPTED SEMANTICS — the value is the compilation-unit surface (contracts/interfaces/libraries/structs/enums/errors; NOT a free function), declared in the rule."
+  },
+  {
+   "id": "SOL-R3",
+   "question": "modifiers: is `decorates` applicable (the grammar HAS modifier_definition + modifier_invocation)?",
+   "measured": "the value's productions (decorator/annotation/…) are ABSENT; the modifier construct is present. Measured 2026-10-19 in-process: `function f() public onlyOwner {}` emits `calls f -> onlyOwner` with metadata.calleeKind modifierInvocation, and SOL-17 publishes applied modifiers as `decorators` METADATA on the symbol. No fixture expects a decorates row (0 rows across all 31 pairs).",
+   "verdict": "NOT APPLICABLE as a relationship — adjudicated: modifiers are METADATA + the modifier-invocation CALLS edge, matching the family contract (java annotations are references+metadata; C#/Java/F# treat decorators as metadata on the decorated thing)."
+  },
+  {
+   "id": "SOL-R4",
+   "question": "`overrides`: is the override_specifier a real applicable surface, and what does a refused override mean?",
+   "measured": "override_specifier is present in the grammar. SOL-11's three tiers are enforced in code (:2528), and the refusals are the rule: a bare `override` with 2+ header bases emits NO edge (the keyword does not say which base declares the member). Measured contract 2026-10-19: `interface I { function f() external; } contract C is I { function f() external override {} }` emits overrides.",
+   "verdict": "APPLICABLE — the grammar states the specifier, the language's compiler rejects a wrong `override(X)`, so the edge is the language's invariant; the 2+-base refusal is a declared rule, not an omission."
+  },
+  {
+   "id": "SOL-R5",
+   "question": "`uses`: are writes uses, and are parameter reads uses?",
+   "measured": "in-process 2026-10-19 on the pinned grammar: `bal = n;` emits uses f -> bal (write) and uses f -> n (parameter read); `return bal;` emits uses f -> bal; `uint256 x; x = n + 1;` emits uses f -> x and uses f -> n. So assignment LHS reads ARE uses (the family write-as-use contract) and parameter reads ARE uses by position — the unresolved mass from parameter reads is the measured binding wall (SOL-FIX §1), not a contract choice.",
+   "verdict": "APPLICABLE with the positional-read rule (SOL-2); the parameter-read class is a count, not a silence."
+  },
+  {
+   "id": "SOL-R6",
+   "question": "`imports` vs `references`: which construct carries a module dependency?",
+   "measured": "`import \"./A.sol\";` emits imports module -> ./A.sol; `import {B} from \"./B.sol\"` emits imports for the path AND references for B; `using Lib for uint256` emits references for Lib. The import target is a PATH (measured: the symbol-name guard dropped 357 of 358 imports until the pathTarget opt-out).",
+   "verdict": "imports is `import_directive` only (module path); imported bindings and using-dependencies are references."
+  },
+  {
+   "id": "SOL-R7",
+   "question": "`instantiates` vs struct construction: is `S({a:1})` an instantiation?",
+   "measured": "in-process 2026-10-19: `S memory s = S({a:1});` emits calls f -> S (struct construction, calleeKind external/inFileTypeMember shape) while `new C()` emits instantiates f -> C. SOL-10 states the two struct spellings are both calls.",
+   "verdict": "instantiates = `new_expression` only; struct construction is calls (a struct is a value type, not an object with a constructor symbol)."
+  },
+  {
+   "id": "SOL-R8",
+   "question": "the synthesised getter: is `bal()` a relationship or metadata?",
+   "measured": "`contract C { uint256 public bal; }` emits contains C -> bal() and references bal -> bal() — the getter is a PUBLISHED member (SOL-3), not metadata (measured: pool-worker drops symbol metadata at the worker boundary, so metadata would reach nothing).",
+   "verdict": "RELATIONSHIP (contains + references), named with the external signature so it cannot collide with an identifier."
+  }
+ ],
+ "evidenceRows": {
+  "_reading": "cap-50 columns are TRIAGE from a committed no-index gate log over a 50-of-421-file stride sample — never a population claim. Whole-population columns are EXPLICITLY OWED until the D2/D3 arms land (the `wholePopulation` cell says so); a number here without its command is a defect.",
+  "cap50Command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts solidity sol 50",
+  "cap50Log": "validation/m14/fixtures/solidity/measurements/gate-solidity-cap50-baseline.txt",
+  "cap50Population": {
+   "line": "population: 50 parsed of 50 sampled (corpus has 421 .sol files across 2 repos; stride sample)",
+   "sample": 50,
+   "corpusTotalSol": 421,
+   "corpusRepos": 2,
+   "exclusionLine": "excluded from that population: 0 tracked-but-absent/unreadable + 0 over the 1 MB cap",
+   "parseFailures": 0,
+   "degraded": 0,
+   "exit": "VERDICT: FAIL — CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 2074 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)  --  314 ambiguous + 1760 unresolved of 4138 edges, resolved against the file's OWN PROJECT (production's scope)",
+   "exitMeaning": "FAIL on clause 1 (unresolved/ambiguous rows on the sample) — the state being worked, not an instrument error; self-test PASS",
+   "admittedExtensionsNote": "the gate's population spelling is `.sol` (src/ast/language-detection.ts:172 `sol: \"solidity\"`), ONE spelling."
+  },
+  "TOTAL": {
+   "type": "TOTAL",
+   "edges": 4138,
+   "resolved": 2064,
+   "collRes": 221,
+   "ambDecl": 314,
+   "ambKind": 54,
+   "unresolved": 1760,
+   "extOK": 0,
+   "extUnknown": 0,
+   "extFAIL": 0,
+   "bindOK": 0,
+   "bindUnknown": 0,
+   "bindFAIL": 0,
+   "causeOK": 0,
+   "causeFAIL": 0
+  },
+  "types": {
+   "calls": {
+    "applicable": true,
+    "constructs": [
+     "call_expression",
+     "call_argument",
+     "call_struct_argument",
+     "struct_expression",
+     "modifier_invocation",
+     "emit_statement",
+     "revert_statement"
+    ],
+    "grammarProductionsPresent": [
+     "call_expression",
+     "call_argument",
+     "call_struct_argument",
+     "struct_expression",
+     "modifier_invocation",
+     "emit_statement",
+     "revert_statement"
+    ],
+    "rule": "a CALL-EXPRESSION whose callee resolves through the wrappers the grammar builds (SOL-9 stops at the first name; `t.call{value:1}(\"\")` is a call_expression under a struct_expression). The lane also emits calls for the other call-shaped constructs the language has: a MODIFIER INVOCATION (`function f() public onlyOwner` — calling a modifier IS calling it, SOL-17) with calleeKind modifierInvocation; an EVENT EMISSION (`emit Ev(1)`, calleeKind eventEmission); a CUSTOM ERROR REVERT (`revert Err(2)`, calleeKind errorRevert); and STRUCT CONSTRUCTION in both spellings `S({a:1})` / `S(1)` (SOL-10). `new` is instantiates, not calls.",
+    "implementationSites": [
+     "src/ast/real-solidity-analyzer.ts:2095",
+     "src/ast/real-solidity-analyzer.ts:2240",
+     "src/ast/real-solidity-analyzer.ts:2282",
+     "src/ast/real-solidity-analyzer.ts:2313",
+     "src/ast/real-solidity-analyzer.ts:2329",
+     "src/ast/real-solidity-analyzer.ts:2358"
+    ],
+    "fixturesCanGoRed": [
+     "solidity/all-kinds-sol",
+     "solidity/branches-sol",
+     "solidity/call-resolution-sol15",
+     "solidity/call-shapes-sol9",
+     "solidity/inheritance-sol5",
+     "solidity/modifiers-sol17",
+     "solidity/per-site-lines-sol2",
+     "solidity/yul-subset-sol"
+    ],
+    "fixtureExpectationRows": 22,
+    "fixtureForbidRows": 15,
+    "redProof": {
+     "method": "the REAL RealSolidityAnalyzer wrapped so exactly one relationship value's edges are removed; baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "32/0",
+     "mutatedPassFail": "23/9",
+     "fixturesThatWentRed": 9,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 506,
+     "resolved": 304,
+     "collRes": 0,
+     "ambDecl": 35,
+     "ambKind": 2,
+     "unresolved": 167,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "call through a FUNCTION-TYPE PARAMETER (156 unresolved at the 400-file stride: `op(store.latest(), delta)` where `op` is declared `function(...) op` — a parameter is not a published declaration); calls into the LANGUAGE NAMESPACE `abi` (66) and the forge-std `vm` cheatcode address (48; a dependency the corpus does not vendor); calls on user-defined value types whose `wrap`/`unwrap` are language builtins (107); `super.<fn>` ambiguity (184); and callee names declared more than once (1,037). Classification source: SOLIDITY-FIX.md §1 (400-file stride, closure 3,240 of 3,240).",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "uses": {
+    "applicable": true,
+    "constructs": [
+     "identifier",
+     "member_expression",
+     "assignment_expression",
+     "augmented_assignment_expression",
+     "update_expression",
+     "yul_identifier",
+     "yul_path"
+    ],
+    "grammarProductionsPresent": [
+     "identifier",
+     "member_expression",
+     "assignment_expression",
+     "augmented_assignment_expression",
+     "update_expression",
+     "yul_identifier",
+     "yul_path"
+    ],
+    "rule": "a positional READ (SOL-2): an `identifier` whose PARENT is an expression. Measured contract 2026-10-19: an assignment LHS is emitted as a uses (write-as-use, family contract); a state-variable read is a uses; a parameter/local read is a uses by position even though a parameter/local is not always a published declaration (that measured silence is the lane's binding wall — SOL-FIX §1). Yul: a yul_identifier / one-segment yul_path read is a uses; a multi-segment path's leaf is a member.",
+    "implementationSites": [
+     "src/ast/real-solidity-analyzer.ts:2115",
+     "src/ast/real-solidity-analyzer.ts:2148",
+     "src/ast/real-solidity-analyzer.ts:2379",
+     "src/ast/real-solidity-analyzer.ts:2398"
+    ],
+    "fixturesCanGoRed": [
+     "solidity/all-kinds-sol",
+     "solidity/branches-sol",
+     "solidity/call-shapes-sol9",
+     "solidity/inheritance-sol5",
+     "solidity/module-owner-sol1",
+     "solidity/per-site-lines-sol2",
+     "solidity/store-refusal-sol14",
+     "solidity/yul-subset-sol"
+    ],
+    "fixtureExpectationRows": 24,
+    "fixtureForbidRows": 7,
+    "redProof": {
+     "method": "the REAL RealSolidityAnalyzer wrapped so exactly one relationship value's edges are removed; baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "32/0",
+     "mutatedPassFail": "23/9",
+     "fixturesThatWentRed": 9,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 2317,
+     "resolved": 819,
+     "collRes": 0,
+     "ambDecl": 279,
+     "ambKind": 52,
+     "unresolved": 1219,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "bare READ of a FUNCTION-SCOPE BINDING — a parameter, a return-value name or a local (1,424 unresolved + 6,363 ambiguous at the 400-file stride; 53.3% of the lane's residual; 282 distinct names). The construct is measured and DOABLE via the fleet's binding claim (bindOK 6,504 in the reverted attempt), and parameters/locals are deliberately not published declarations; plus Yul path-segment reads (505 unresolved + 1,603 ambiguous) and EVM-builtin member reads (29).",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "contains": {
+    "applicable": true,
+    "constructs": [
+     "contract_declaration",
+     "contract_body",
+     "interface_declaration",
+     "library_declaration",
+     "struct_declaration",
+     "struct_body",
+     "struct_member",
+     "enum_declaration",
+     "enum_body",
+     "enum_value",
+     "event_definition",
+     "error_declaration",
+     "modifier_definition",
+     "function_definition",
+     "function_body",
+     "state_variable_declaration",
+     "constant_variable_declaration",
+     "variable_declaration"
+    ],
+    "grammarProductionsPresent": [
+     "contract_declaration",
+     "contract_body",
+     "interface_declaration",
+     "library_declaration",
+     "struct_declaration",
+     "struct_body",
+     "struct_member",
+     "enum_declaration",
+     "enum_body",
+     "enum_value",
+     "event_definition",
+     "error_declaration",
+     "modifier_definition",
+     "function_definition",
+     "function_body",
+     "state_variable_declaration",
+     "constant_variable_declaration",
+     "variable_declaration"
+    ],
+    "rule": "container -> member: the FILE-MODULE symbol (SOL-1: the basename WITH its extension) contains every file-scope declaration; a contract/interface/library contains its members; a struct its fields; an enum its values; an event/error its parameters; a modifier its body's locals; and a FUNCTION contains its own locals (SOL-13 — a function is a declaration container; the contract-level edge for a function-local name would be false). The public state variable's SYNTHESISED getter is a contained member named with its external signature (SOL-3).",
+    "implementationSites": [
+     "src/ast/real-solidity-analyzer.ts:1144",
+     "src/ast/real-solidity-analyzer.ts:2004"
+    ],
+    "fixturesCanGoRed": [
+     "solidity/all-kinds-sol",
+     "solidity/branches-sol",
+     "solidity/call-shapes-sol9",
+     "solidity/getter-sol3",
+     "solidity/inheritance-sol5",
+     "solidity/module-owner-sol1",
+     "solidity/per-site-lines-sol2",
+     "solidity/recovery-regions-sol6",
+     "solidity/store-refusal-sol14",
+     "solidity/yul-subset-sol"
+    ],
+    "fixtureExpectationRows": 67,
+    "fixtureForbidRows": 12,
+    "redProof": {
+     "method": "the REAL RealSolidityAnalyzer wrapped so exactly one relationship value's edges are removed; baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "32/0",
+     "mutatedPassFail": "21/11",
+     "fixturesThatWentRed": 11,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 860,
+     "resolved": 860,
+     "collRes": 221,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "none — fully resolved on this stride and at the 400-file stride (5,981/5,981); collRes sits entirely on `contains` duplicate member names and the binding-intent exact test discharges it (intended 5,981 / arbitraryTwin 0). The axis must not move.",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "imports": {
+    "applicable": true,
+    "constructs": [
+     "import_directive",
+     "source_file"
+    ],
+    "grammarProductionsPresent": [
+     "import_directive",
+     "source_file"
+    ],
+    "rule": "`import_directive` -> the module specifier as written, one edge per MODULE (`./A.sol`, `@openzeppelin/contracts/token/ERC20.sol`). The target is a PATH, not a symbol name, by construction of the type (a `pathTarget` opt-out in addRel is what makes this emission possible at all — measured: without it the symbol-name guard silently dropped 357 of 358 corpus imports). A namespace/aliased import's BINDING is a references edge, never an import.",
+    "implementationSites": [
+     "src/ast/real-solidity-analyzer.ts:2741"
+    ],
+    "fixturesCanGoRed": [
+     "solidity/all-kinds-sol"
+    ],
+    "fixtureExpectationRows": 3,
+    "redProof": {
+     "method": "the REAL RealSolidityAnalyzer wrapped so exactly one relationship value's edges are removed; baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "32/0",
+     "mutatedPassFail": "31/1",
+     "fixturesThatWentRed": 1,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 97,
+     "resolved": 0,
+     "collRes": 0,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 97,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "path-target-not-a-symbol by construction — an import path (`../Governor.sol`, `forge-std/Test.sol`) is a module specifier, never a published symbol (875 of 3,240 unresolved at the 400-file stride). The 0% resolution is the TYPE'S shape; the fixed point is the emitted rows (876 at the 400-file stride), not a resolution claim.",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "references": {
+    "applicable": true,
+    "constructs": [
+     "type_name",
+     "user_defined_type",
+     "user_defined_type_definition",
+     "type_alias",
+     "using_directive",
+     "using_alias",
+     "identifier",
+     "member_expression",
+     "meta_type_expression",
+     "payable_conversion_expression",
+     "type_cast_expression"
+    ],
+    "grammarProductionsPresent": [
+     "type_name",
+     "user_defined_type",
+     "user_defined_type_definition",
+     "type_alias",
+     "using_directive",
+     "using_alias",
+     "identifier",
+     "member_expression",
+     "meta_type_expression",
+     "payable_conversion_expression",
+     "type_cast_expression"
+    ],
+    "rule": "a TYPE mention in a type position (type_name -> user_defined_type; a user_defined_type_definition / type_alias name; `type(X)` meta-type), the USING-DIRECTIVE's dependency (SOL: `using Lib for T` names Lib), an imported BINDING name (`import {B} from ...` -> B), and the public state variable -> synthesised getter reference (SOL-3). A value identifier in a value position is `uses`; the two share the tree and are chosen by position.",
+    "implementationSites": [
+     "src/ast/real-solidity-analyzer.ts:1822",
+     "src/ast/real-solidity-analyzer.ts:2010",
+     "src/ast/real-solidity-analyzer.ts:2158",
+     "src/ast/real-solidity-analyzer.ts:2179",
+     "src/ast/real-solidity-analyzer.ts:2190",
+     "src/ast/real-solidity-analyzer.ts:2205",
+     "src/ast/real-solidity-analyzer.ts:2751",
+     "src/ast/real-solidity-analyzer.ts:2757"
+    ],
+    "fixturesCanGoRed": [
+     "solidity/all-kinds-sol",
+     "solidity/call-resolution-sol15",
+     "solidity/call-shapes-sol9",
+     "solidity/getter-sol3",
+     "solidity/inheritance-sol5",
+     "solidity/per-site-lines-sol2",
+     "solidity/yul-subset-sol"
+    ],
+    "fixtureExpectationRows": 12,
+    "fixtureForbidRows": 5,
+    "redProof": {
+     "method": "the REAL RealSolidityAnalyzer wrapped so exactly one relationship value's edges are removed; baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "32/0",
+     "mutatedPassFail": "25/7",
+     "fixturesThatWentRed": 7,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 176,
+     "resolved": 16,
+     "collRes": 0,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 160,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "type mentions of EXTERNAL/undeclared types (forge-std `Test`, `Vm`, external bases) plus imported-binding references whose declaration the corpus does not vendor; 18 of the 3,240 unresolved at the 400-file stride.",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "exports": {
+    "applicable": true,
+    "constructs": [
+     "source_file",
+     "contract_declaration",
+     "interface_declaration",
+     "library_declaration",
+     "struct_declaration",
+     "enum_declaration",
+     "error_declaration",
+     "event_definition"
+    ],
+    "grammarProductionsPresent": [
+     "source_file",
+     "contract_declaration",
+     "interface_declaration",
+     "library_declaration",
+     "struct_declaration",
+     "enum_declaration",
+     "error_declaration",
+     "event_definition"
+    ],
+    "rule": "ADAPTED SEMANTICS, declared: Solidity has NO export construct (SOL-12). The value carries the COMPILATION-UNIT SURFACE — every file-scope declaration except a free function (solc emits an ABI/abstraction for each contract/interface/library and nothing else; a free function contributes no ABI entry). One edge per file-scope declaration, from the module symbol.",
+    "adaptedSemantics": "no export production exists; the value publishes the compilation-unit surface (SOL-12)",
+    "implementationSites": [
+     "src/ast/real-solidity-analyzer.ts:2703"
+    ],
+    "fixturesCanGoRed": [
+     "solidity/all-kinds-sol",
+     "solidity/branches-sol",
+     "solidity/inheritance-sol5",
+     "solidity/module-owner-sol1",
+     "solidity/recovery-regions-sol6",
+     "solidity/store-refusal-sol14"
+    ],
+    "fixtureExpectationRows": 18,
+    "fixtureForbidRows": 1,
+    "redProof": {
+     "method": "the REAL RealSolidityAnalyzer wrapped so exactly one relationship value's edges are removed; baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "32/0",
+     "mutatedPassFail": "25/7",
+     "fixturesThatWentRed": 7,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 57,
+     "resolved": 57,
+     "collRes": 0,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "none on this stride — the compilation-unit surface resolves (module -> file-scope declaration; the module symbol is the file basename WITH its extension, SOL-1, so it cannot collide with an identifier).",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "extends": {
+    "applicable": true,
+    "constructs": [
+     "inheritance_specifier",
+     "contract_declaration",
+     "interface_declaration",
+     "library_declaration"
+    ],
+    "grammarProductionsPresent": [
+     "inheritance_specifier",
+     "contract_declaration",
+     "interface_declaration",
+     "library_declaration"
+    ],
+    "rule": "contract/interface/library -> each ancestor in its `inheritance_specifier` list. Solidity has ONE heritage construct; the KIND comes from the ancestor's own declaration (SOL-5): an ancestor that is NOT an in-file interface is `extends` (0.9/inferred + kindUnresolved + reasonCode base-not-declared-in-file when the base is declared outside the file, SOL-19).",
+    "implementationSites": [
+     "src/ast/real-solidity-analyzer.ts:1727"
+    ],
+    "fixturesCanGoRed": [
+     "solidity/call-resolution-sol15",
+     "solidity/external-override-sol11",
+     "solidity/inheritance-sol5"
+    ],
+    "fixtureExpectationRows": 5,
+    "fixtureForbidRows": 3,
+    "redProof": {
+     "method": "the REAL RealSolidityAnalyzer wrapped so exactly one relationship value's edges are removed; baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "32/0",
+     "mutatedPassFail": "28/4",
+     "fixturesThatWentRed": 4,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 60,
+     "resolved": 4,
+     "collRes": 0,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 56,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "an INHERITED BASE declared in another file the corpus does not contain (12 at the 400-file stride); the edge already carries `reasonCode: base-not-declared-in-file` + `kindUnresolved: true` (SOL-19) and the gate does not read that key — the contract is stated, the gate's key space is symbols.",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "implements": {
+    "applicable": true,
+    "constructs": [
+     "inheritance_specifier",
+     "interface_declaration",
+     "contract_declaration"
+    ],
+    "grammarProductionsPresent": [
+     "inheritance_specifier",
+     "interface_declaration",
+     "contract_declaration"
+    ],
+    "rule": "ADAPTED SEMANTICS, declared: Solidity has NO implements clause — the heritage construct is `inheritance_specifier`, one `is` list. The value carries the CONTRACT reading of that clause (SOL-5): an ancestor bound to an in-file `interface_declaration` (or settled as an interface by the project index, SOL-21) is `implements`; everything else is `extends`. One edge per (derived, interface) pair. This is not a duplicate of `extends`: 'inherits from' and 'implements this interface' are two readings of the same clause, and only the second tells a consumer the ancestor carries no state.",
+    "adaptedSemantics": "no implements-clause production exists; the value rides the interface reading of inheritance_specifier (SOL-5)",
+    "implementationSites": [
+     "src/ast/real-solidity-analyzer.ts:1726"
+    ],
+    "fixturesCanGoRed": [
+     "solidity/all-kinds-sol",
+     "solidity/inheritance-sol5"
+    ],
+    "fixtureExpectationRows": 2,
+    "fixtureForbidRows": 2,
+    "redProof": {
+     "method": "the REAL RealSolidityAnalyzer wrapped so exactly one relationship value's edges are removed; baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "32/0",
+     "mutatedPassFail": "28/4",
+     "fixturesThatWentRed": 4,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 0,
+     "resolved": 0,
+     "collRes": 0,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "no unresolved rows in the classification (7 edges at the 400-file stride, all sameFileUnproven — the interface ancestor is in the same file and the exact test cannot see a declaration at the read line; that is the intent axis, not a gap). Implements is the lane's ADAPTED value (SOL-5): an in-file interface ancestor is a contract, everything else extends.",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "overrides": {
+    "applicable": true,
+    "constructs": [
+     "override_specifier",
+     "function_definition",
+     "modifier_definition"
+    ],
+    "grammarProductionsPresent": [
+     "override_specifier",
+     "function_definition",
+     "modifier_definition"
+    ],
+    "rule": "a member carrying the `override` specifier, resolved against its base (SOL-11, three tiers): base in-file AND declaring the member -> 0.9 verified; base not in-file but NAMED by `override(X)` -> 0.75 inferred with reasonCode named-by-override-specifier; bare `override` with ONE header base -> 0.75 single-header-base; bare `override` with TWO OR MORE header bases -> NO edge (the keyword says one of them declares the member without saying which — the refusal is the rule, not an omission).",
+    "implementationSites": [
+     "src/ast/real-solidity-analyzer.ts:2528"
+    ],
+    "fixturesCanGoRed": [
+     "solidity/all-kinds-sol",
+     "solidity/external-override-sol11",
+     "solidity/inheritance-sol5"
+    ],
+    "fixtureExpectationRows": 6,
+    "fixtureForbidRows": 5,
+    "redProof": {
+     "method": "the REAL RealSolidityAnalyzer wrapped so exactly one relationship value's edges are removed; baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "32/0",
+     "mutatedPassFail": "29/3",
+     "fixturesThatWentRed": 3,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 64,
+     "resolved": 3,
+     "collRes": 0,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 61,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "the SOL-11 tier for a base outside the file: `override(X)` names the base but X is not in-file (405 arbitraryTwin + 17 sameFileUnproven + 1 nothingAnywhere at the 400-file stride). The edge is emitted at 0.75/inferred with reasonCode named-by-override-specifier; a bare override with 2+ header bases is REFUSED by rule.",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "instantiates": {
+    "applicable": true,
+    "constructs": [
+     "new_expression",
+     "user_defined_type"
+    ],
+    "grammarProductionsPresent": [
+     "new_expression",
+     "user_defined_type"
+    ],
+    "rule": "OBJECT CREATION through `new`: `new Contract()` publishes the constructed type. A struct construction (`S({a:1})` / `S(1)`) emits a `calls` edge instead (SOL-10) — a struct is a value type, not an object with a constructor symbol; `instantiates` is reserved for contract creation.",
+    "implementationSites": [
+     "src/ast/real-solidity-analyzer.ts:2344"
+    ],
+    "fixturesCanGoRed": [
+     "solidity/all-kinds-sol"
+    ],
+    "fixtureExpectationRows": 1,
+    "redProof": {
+     "method": "the REAL RealSolidityAnalyzer wrapped so exactly one relationship value's edges are removed; baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "32/0",
+     "mutatedPassFail": "31/1",
+     "fixturesThatWentRed": 1,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 1,
+     "resolved": 1,
+     "collRes": 0,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "no unresolved rows (25 edges at the 400-file stride; 14 sameFileUnproven + 11 arbitraryTwin — the constructed contract is usually declared elsewhere). `new_expression` only; struct construction is a calls edge (SOL-10).",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   }
+  },
+  "fixtureBaseline": {
+   "command": "imported runLang('solidity') from script/m14/run-fixtures.ts (the real runner)",
+   "files": 30,
+   "pass": 32,
+   "fail": 0,
+   "failingFixtures": []
+  }
+ },
+ "wholePopulationArms": {
+  "status": "OWED — filled by the D2 whole-population emission census and the D3 incoming-gate arms; the numbers will be added with their commands and scope."
+ }
+}
