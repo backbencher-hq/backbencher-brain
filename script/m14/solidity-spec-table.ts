@@ -27,6 +27,9 @@ const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
 const ARTIFACT = path.join(ROOT, "validation/m14/fixtures/solidity/measurements/applicable-set.json")
 const GATE_LOG = path.join(ROOT, "validation/m14/fixtures/solidity/measurements/gate-solidity-cap50-baseline.txt")
 const OUT = path.join(ROOT, "script/m14/spec/solidity-spec-table.json")
+const CENSUS = path.join(ROOT, "validation/m14/fixtures/solidity/measurements/solidity-emission-census-whole.json")
+const D3_NOINDEX = path.join(ROOT, "validation/m14/fixtures/solidity/measurements/solidity-d3-noindex-arm.json")
+const D3_INDEXED = path.join(ROOT, "validation/m14/fixtures/solidity/measurements/solidity-d3-indexed-arm.json")
 const CHECK = process.argv.includes("--check")
 
 interface GateRow {
@@ -80,6 +83,53 @@ const LANE_NOTES: Record<string, { cap50ResidualClass: string; wholePopulationCe
 
 const applicable = JSON.parse(fs.readFileSync(ARTIFACT, "utf8"))
 const gate = parseGateLog(fs.readFileSync(GATE_LOG, "utf8"))
+const census: any = fs.existsSync(CENSUS) ? JSON.parse(fs.readFileSync(CENSUS, "utf8")) : null
+const d3A: any = fs.existsSync(D3_NOINDEX) ? JSON.parse(fs.readFileSync(D3_NOINDEX, "utf8")) : null
+const d3B: any = fs.existsSync(D3_INDEXED) ? JSON.parse(fs.readFileSync(D3_INDEXED, "utf8")) : null
+const censusPopulation = census
+  ? {
+      command: "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-emission-census.ts --cap=0 --json",
+      artifact: "validation/m14/fixtures/solidity/measurements/solidity-emission-census-whole.json",
+      cap: census.population.cap,
+      parsed: census.population.parsed,
+      admitted: census.population.admitted,
+      repos: census.population.repos,
+      failed: census.population.failed,
+      degraded: census.population.degraded,
+      trackedButAbsent: census.population.absent,
+      overSizeCap: census.population.overCap,
+      admittedExtensions: census.population.exts,
+      totalEdges: census.closure.totalEdges,
+      constructWalked: census.closure.constructWalked,
+      constructSkipped: census.closure.constructSkipped,
+      control: census.control,
+    }
+  : null
+/** Parse one arm's TABLE 1 extract into per-type numeric rows. */
+function armTable(arm: any): Record<string, Record<string, number>> {
+  const lines: string[] = arm?.table1 ?? []
+  let hdr: string[] | null = null
+  const out: Record<string, Record<string, number>> = {}
+  for (const l of lines) {
+    const c = l.split(/\s+/).filter(Boolean)
+    if (c.length > 3 && c[0] === "type" && c.includes("edges")) { hdr = c; continue }
+    if (hdr && c.length === hdr.length && /^[a-z_]+$/.test(c[0]) && c.slice(1).every((x) => /^\d+$/.test(x))) {
+      out[c[0]] = Object.fromEntries(hdr.slice(1).map((name, i) => [name, Number(c[i + 1])]))
+    }
+  }
+  return out
+}
+const armA = armTable(d3A)
+const armB = armTable(d3B)
+const armDelta: Record<string, Record<string, number>> = {}
+for (const t of new Set([...Object.keys(armA), ...Object.keys(armB)])) {
+  const d: Record<string, number> = {}
+  for (const c of Object.keys(armA[t] ?? armB[t] ?? {})) {
+    const v = (armB[t]?.[c] ?? 0) - (armA[t]?.[c] ?? 0)
+    if (v !== 0) d[c] = v
+  }
+  if (Object.keys(d).length > 0) armDelta[t] = d
+}
 
 const types: Record<string, any> = {}
 for (const value of applicable.applicableValues) {
@@ -112,8 +162,19 @@ for (const value of applicable.applicableValues) {
           causeOK: g.causeOK, causeFAIL: g.causeFAIL,
         }
       : { status: "not present in the gate log" },
+    gateNoIndex: armA[value] ? { ...armA[value], command: d3A.command, population: { parsed: 421, admitted: 421, repos: 2, failed: 0, degraded: 0 } } : { status: "OWED — the D3 no-index arm has not landed" },
+    gateIndexed: armB[value] ? { ...armB[value], command: d3B.command, population: { parsed: 421, admitted: 421, repos: 2, failed: 0, degraded: 0 }, deltaVsNoIndex: armDelta[value] ?? "0 in every column" } : { status: "OWED — the D3 indexed arm has not landed" },
     cap50ResidualClass: LANE_NOTES[value]?.cap50ResidualClass ?? "",
-    wholePopulation: LANE_NOTES[value]?.wholePopulationCensus ?? { status: "OWED" },
+    wholePopulation: census && censusPopulation && census.perType?.[value]
+      ? {
+          status: "MEASURED",
+          command: censusPopulation.command,
+          population: { parsed: censusPopulation.parsed, admitted: censusPopulation.admitted, repos: censusPopulation.repos, failed: censusPopulation.failed, degraded: censusPopulation.degraded },
+          rows: census.perType[value].edges,
+          files: census.perType[value].files,
+          repos: census.perType[value].repos,
+        }
+      : { status: "OWED — filled by the D2 whole-population census arm" },
   }
 }
 
@@ -166,7 +227,45 @@ const spec = {
     fixtureBaseline: applicable.fixtureBaseline,
   },
   wholePopulationArms: {
-    status: "OWED — filled by the D2 whole-population emission census and the D3 incoming-gate arms; the numbers will be added with their commands and scope.",
+    status: census && d3A && d3B
+      ? `D2 census MEASURED (${census.population.parsed}/${census.population.admitted} files · ${census.population.repos} repos · ${census.closure.totalEdges} rows); D3 BOTH arms MEASURED with closure-exact classification. A->B delta: ${Object.entries(armDelta).map(([t, d]) => `${t} ${Object.entries(d).map(([c, v]) => `${c} ${v > 0 ? "+" : ""}${v}`).join("/")}`).join(" · ")} — the project index settles inheritance KINDS (SOL-21), it trades no resolutions.`
+      : "OWED — filled by the D2 whole-population emission census and the D3 incoming-gate arms.",
+    census: census && censusPopulation
+      ? {
+          ...censusPopulation,
+          perType: census.perType,
+          callPayload: census.callPayload,
+          overridePayload: census.overridePayload,
+          usesPayload: census.usesPayload,
+          referencesPayload: census.referencesPayload,
+          importsPayload: census.importsPayload,
+          exportsPayload: census.exportsPayload,
+          containsPayload: census.containsPayload,
+          constructPopulations: census.constructs,
+          parseErrors: census.parseErrors,
+        }
+      : null,
+    d3: d3A && d3B
+      ? {
+          noIndexArm: {
+            command: d3A.command, population: d3A.population, selfTest: d3A.selfTest, table1: d3A.table1,
+            bindingIntent: d3A.bindingIntent, claimCarrying: d3A.claimCarrying, verdict: d3A.verdict,
+            classifier: d3A.classifier, arbitraryTwin: d3A.classifier?.arbitraryTwin ?? null,
+            closure: d3A.classifier?.control?.closure ?? null, evidencePage: "validation/m14/verification/SOLIDITY-D3.md",
+          },
+          indexedArm: {
+            command: d3B.command, population: d3B.population, selfTest: d3B.selfTest, table1: d3B.table1,
+            bindingIntent: d3B.bindingIntent, claimCarrying: d3B.claimCarrying, verdict: d3B.verdict,
+            classifier: d3B.classifier, arbitraryTwin: d3B.classifier?.arbitraryTwin ?? null,
+            closure: d3B.classifier?.control?.closure ?? null,
+            deltaVsNoIndex: armDelta,
+            mechanism:
+              "the project index is SUPPLIED and CONSUMED here (SOL-21): the gate built 2 repo indexes over 421 files and 100 heritage edges moved from extends to implements — the ancestor's KIND settled project-wide instead of by absence of an in-file declaration. resolved/amb/unresolved columns and arbitraryTwin are UNCHANGED: this arm re-types heritage, it does not trade resolutions.",
+          },
+        }
+      : { status: "OWED — the D3 arms have not landed" },
+    noNewValueConfirmations:
+      "The constructs that carry NO relationship (or a DIFFERENT one than their spelling suggests), counted at whole population by the D2 census so the ruling is a number and not a silence: modifiers (modifier_definition/modifier_invocation sites vs `decorates` 0 — SOL-R3: metadata + calls), events/custom errors (emit/revert are calls, SOL-15), struct construction (calls, not instantiates — SOL-R7), imports' bindings (references, not imports — SOL-R6), synthesised getters (contains + references, SOL-R8), NatSpec comments and pragmas (documentation metadata / compilation directive, no relationship), inheritance (ONE construct, two readings — SOL-R5/SOL-R1).",
   },
 }
 

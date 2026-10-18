@@ -562,9 +562,67 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 6734,
+     "resolved": 3407,
+     "collRes": 0,
+     "amb(decl)": 2196,
+     "amb(kind)": 402,
+     "unresolved": 1131,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
+    "gateIndexed": {
+     "edges": 6734,
+     "resolved": 3407,
+     "collRes": 0,
+     "amb(decl)": 2196,
+     "amb(kind)": 402,
+     "unresolved": 1131,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "deltaVsNoIndex": "0 in every column"
+    },
     "cap50ResidualClass": "call through a FUNCTION-TYPE PARAMETER (156 unresolved at the 400-file stride: `op(store.latest(), delta)` where `op` is declared `function(...) op` — a parameter is not a published declaration); calls into the LANGUAGE NAMESPACE `abi` (66) and the forge-std `vm` cheatcode address (48; a dependency the corpus does not vendor); calls on user-defined value types whose `wrap`/`unwrap` are language builtins (107); `super.<fn>` ambiguity (184); and callee names declared more than once (1,037). Classification source: SOLIDITY-FIX.md §1 (400-file stride, closure 3,240 of 3,240).",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 6734,
+     "files": 322,
+     "repos": 2
     }
    },
    "uses": {
@@ -629,9 +687,67 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 17880,
+     "resolved": 4335,
+     "collRes": 0,
+     "amb(decl)": 11145,
+     "amb(kind)": 4912,
+     "unresolved": 2400,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
+    "gateIndexed": {
+     "edges": 17880,
+     "resolved": 4335,
+     "collRes": 0,
+     "amb(decl)": 11145,
+     "amb(kind)": 4912,
+     "unresolved": 2400,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "deltaVsNoIndex": "0 in every column"
+    },
     "cap50ResidualClass": "bare READ of a FUNCTION-SCOPE BINDING — a parameter, a return-value name or a local (1,424 unresolved + 6,363 ambiguous at the 400-file stride; 53.3% of the lane's residual; 282 distinct names). The construct is measured and DOABLE via the fleet's binding claim (bindOK 6,504 in the reverted attempt), and parameters/locals are deliberately not published declarations; plus Yul path-segment reads (505 unresolved + 1,603 ambiguous) and EVM-builtin member reads (29).",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 17880,
+     "files": 337,
+     "repos": 2
     }
    },
    "contains": {
@@ -718,9 +834,67 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 6531,
+     "resolved": 6531,
+     "collRes": 3491,
+     "amb(decl)": 0,
+     "amb(kind)": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
+    "gateIndexed": {
+     "edges": 6531,
+     "resolved": 6531,
+     "collRes": 3491,
+     "amb(decl)": 0,
+     "amb(kind)": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "deltaVsNoIndex": "0 in every column"
+    },
     "cap50ResidualClass": "none — fully resolved on this stride and at the 400-file stride (5,981/5,981); collRes sits entirely on `contains` duplicate member names and the binding-intent exact test discharges it (intended 5,981 / arbitraryTwin 0). The axis must not move.",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 6531,
+     "files": 408,
+     "repos": 2
     }
    },
    "imports": {
@@ -764,9 +938,67 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 932,
+     "resolved": 0,
+     "collRes": 0,
+     "amb(decl)": 0,
+     "amb(kind)": 0,
+     "unresolved": 932,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
+    "gateIndexed": {
+     "edges": 932,
+     "resolved": 0,
+     "collRes": 0,
+     "amb(decl)": 0,
+     "amb(kind)": 0,
+     "unresolved": 932,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "deltaVsNoIndex": "0 in every column"
+    },
     "cap50ResidualClass": "path-target-not-a-symbol by construction — an import path (`../Governor.sol`, `forge-std/Test.sol`) is a module specifier, never a published symbol (875 of 3,240 unresolved at the 400-file stride). The 0% resolution is the TYPE'S shape; the fixed point is the emitted rows (876 at the 400-file stride), not a resolution claim.",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 932,
+     "files": 358,
+     "repos": 2
     }
    },
    "references": {
@@ -842,9 +1074,67 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 1452,
+     "resolved": 1380,
+     "collRes": 0,
+     "amb(decl)": 33,
+     "amb(kind)": 7,
+     "unresolved": 39,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
+    "gateIndexed": {
+     "edges": 1452,
+     "resolved": 1380,
+     "collRes": 0,
+     "amb(decl)": 33,
+     "amb(kind)": 7,
+     "unresolved": 39,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "deltaVsNoIndex": "0 in every column"
+    },
     "cap50ResidualClass": "type mentions of EXTERNAL/undeclared types (forge-std `Test`, `Vm`, external bases) plus imported-binding references whose declaration the corpus does not vendor; 18 of the 3,240 unresolved at the 400-file stride.",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 1452,
+     "files": 355,
+     "repos": 2
     }
    },
    "exports": {
@@ -907,9 +1197,67 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 534,
+     "resolved": 528,
+     "collRes": 0,
+     "amb(decl)": 6,
+     "amb(kind)": 6,
+     "unresolved": 0,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
+    "gateIndexed": {
+     "edges": 534,
+     "resolved": 528,
+     "collRes": 0,
+     "amb(decl)": 6,
+     "amb(kind)": 6,
+     "unresolved": 0,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "deltaVsNoIndex": "0 in every column"
+    },
     "cap50ResidualClass": "none on this stride — the compilation-unit surface resolves (module -> file-scope declaration; the module symbol is the file basename WITH its extension, SOL-1, so it cannot collide with an identifier).",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 534,
+     "files": 408,
+     "repos": 2
     }
    },
    "extends": {
@@ -960,9 +1308,70 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 588,
+     "resolved": 550,
+     "collRes": 0,
+     "amb(decl)": 0,
+     "amb(kind)": 0,
+     "unresolved": 38,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
+    "gateIndexed": {
+     "edges": 488,
+     "resolved": 450,
+     "collRes": 0,
+     "amb(decl)": 0,
+     "amb(kind)": 0,
+     "unresolved": 38,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "deltaVsNoIndex": {
+      "edges": -100,
+      "resolved": -100
+     }
+    },
     "cap50ResidualClass": "an INHERITED BASE declared in another file the corpus does not contain (12 at the 400-file stride); the edge already carries `reasonCode: base-not-declared-in-file` + `kindUnresolved: true` (SOL-19) and the gate does not read that key — the contract is stated, the gate's key space is symbols.",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 588,
+     "files": 281,
+     "repos": 1
     }
    },
    "implements": {
@@ -1011,9 +1420,70 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 7,
+     "resolved": 7,
+     "collRes": 0,
+     "amb(decl)": 0,
+     "amb(kind)": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
+    "gateIndexed": {
+     "edges": 107,
+     "resolved": 107,
+     "collRes": 0,
+     "amb(decl)": 0,
+     "amb(kind)": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "deltaVsNoIndex": {
+      "edges": 100,
+      "resolved": 100
+     }
+    },
     "cap50ResidualClass": "no unresolved rows in the classification (7 edges at the 400-file stride, all sameFileUnproven — the interface ancestor is in the same file and the exact test cannot see a declaration at the read line; that is the intent axis, not a gap). Implements is the lane's ADAPTED value (SOL-5): an in-file interface ancestor is a contract, everything else extends.",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 7,
+     "files": 3,
+     "repos": 1
     }
    },
    "overrides": {
@@ -1062,9 +1532,67 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 423,
+     "resolved": 422,
+     "collRes": 0,
+     "amb(decl)": 0,
+     "amb(kind)": 0,
+     "unresolved": 1,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
+    "gateIndexed": {
+     "edges": 423,
+     "resolved": 422,
+     "collRes": 0,
+     "amb(decl)": 0,
+     "amb(kind)": 0,
+     "unresolved": 1,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "deltaVsNoIndex": "0 in every column"
+    },
     "cap50ResidualClass": "the SOL-11 tier for a base outside the file: `override(X)` names the base but X is not in-file (405 arbitraryTwin + 17 sameFileUnproven + 1 nothingAnywhere at the 400-file stride). The edge is emitted at 0.75/inferred with reasonCode named-by-override-specifier; a bare override with 2+ header bases is REFUSED by rule.",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 423,
+     "files": 130,
+     "repos": 1
     }
    },
    "instantiates": {
@@ -1108,9 +1636,67 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 26,
+     "resolved": 26,
+     "collRes": 0,
+     "amb(decl)": 0,
+     "amb(kind)": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
+    "gateIndexed": {
+     "edges": 26,
+     "resolved": 26,
+     "collRes": 0,
+     "amb(decl)": 0,
+     "amb(kind)": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "ext?": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bind?": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "deltaVsNoIndex": "0 in every column"
+    },
     "cap50ResidualClass": "no unresolved rows (25 edges at the 400-file stride; 14 sameFileUnproven + 11 arbitraryTwin — the constructed contract is usually declared elsewhere). `new_expression` only; struct construction is a calls edge (SOL-10).",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 421,
+      "admitted": 421,
+      "repos": 2,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 26,
+     "files": 9,
+     "repos": 2
     }
    }
   },
@@ -1123,6 +1709,1392 @@
   }
  },
  "wholePopulationArms": {
-  "status": "OWED — filled by the D2 whole-population emission census and the D3 incoming-gate arms; the numbers will be added with their commands and scope."
+  "status": "D2 census MEASURED (421/421 files · 2 repos · 35107 rows); D3 BOTH arms MEASURED with closure-exact classification. A->B delta: extends edges -100/resolved -100 · implements edges +100/resolved +100 — the project index settles inheritance KINDS (SOL-21), it trades no resolutions.",
+  "census": {
+   "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-emission-census.ts --cap=0 --json",
+   "artifact": "validation/m14/fixtures/solidity/measurements/solidity-emission-census-whole.json",
+   "cap": 0,
+   "parsed": 421,
+   "admitted": 421,
+   "repos": 2,
+   "failed": 0,
+   "degraded": 0,
+   "trackedButAbsent": 0,
+   "overSizeCap": 0,
+   "admittedExtensions": [
+    "sol"
+   ],
+   "totalEdges": 35107,
+   "constructWalked": 421,
+   "constructSkipped": {
+    "overCap": 0,
+    "parseFailed": 0,
+    "noTree": 0
+   },
+   "control": {
+    "ok": true,
+    "checked": "none (whole population)",
+    "detail": "whole-population run: no second instrument over this population; the internal control is closure (parsed+failed+degraded = admitted) and per-type sum = TOTAL"
+   },
+   "perType": {
+    "uses": {
+     "edges": 17880,
+     "files": 337,
+     "repos": 2
+    },
+    "calls": {
+     "edges": 6734,
+     "files": 322,
+     "repos": 2
+    },
+    "contains": {
+     "edges": 6531,
+     "files": 408,
+     "repos": 2
+    },
+    "references": {
+     "edges": 1452,
+     "files": 355,
+     "repos": 2
+    },
+    "imports": {
+     "edges": 932,
+     "files": 358,
+     "repos": 2
+    },
+    "extends": {
+     "edges": 588,
+     "files": 281,
+     "repos": 1
+    },
+    "exports": {
+     "edges": 534,
+     "files": 408,
+     "repos": 2
+    },
+    "overrides": {
+     "edges": 423,
+     "files": 130,
+     "repos": 1
+    },
+    "instantiates": {
+     "edges": 26,
+     "files": 9,
+     "repos": 2
+    },
+    "implements": {
+     "edges": 7,
+     "files": 3,
+     "repos": 1
+    },
+    "decorates": {
+     "edges": 0,
+     "files": 0,
+     "repos": 0
+    },
+    "renders": {
+     "edges": 0,
+     "files": 0,
+     "repos": 0
+    },
+    "mixes_in": {
+     "edges": 0,
+     "files": 0,
+     "repos": 0
+    },
+    "part_of": {
+     "edges": 0,
+     "files": 0,
+     "repos": 0
+    }
+   },
+   "callPayload": {
+    "external": {
+     "edges": 3707,
+     "files": 265,
+     "repos": 2
+    },
+    "localFunction": {
+     "edges": 1980,
+     "files": 192,
+     "repos": 2
+    },
+    "errorRevert": {
+     "edges": 455,
+     "files": 94,
+     "repos": 1
+    },
+    "namespaceBuiltin": {
+     "edges": 362,
+     "files": 127,
+     "repos": 1
+    },
+    "eventEmission": {
+     "edges": 170,
+     "files": 72,
+     "repos": 1
+    },
+    "modifierInvocation": {
+     "edges": 31,
+     "files": 12,
+     "repos": 1
+    },
+    "inFileTypeMember": {
+     "edges": 22,
+     "files": 8,
+     "repos": 1
+    },
+    "inheritedMember": {
+     "edges": 7,
+     "files": 2,
+     "repos": 1
+    }
+   },
+   "overridePayload": {
+    "inferred": {
+     "edges": 423,
+     "files": 130,
+     "repos": 1
+    }
+   },
+   "usesPayload": {
+    "variableReference": {
+     "edges": 12454,
+     "files": 326,
+     "repos": 2
+    },
+    "yulPathSegment": {
+     "edges": 2420,
+     "files": 65,
+     "repos": 1
+    },
+    "memberReference": {
+     "edges": 1967,
+     "files": 170,
+     "repos": 2
+    },
+    "(none)": {
+     "edges": 1039,
+     "files": 137,
+     "repos": 2
+    }
+   },
+   "referencesPayload": {
+    "type-or-using": {
+     "edges": 1452,
+     "files": 355,
+     "repos": 2
+    }
+   },
+   "importsPayload": {
+    "path": {
+     "edges": 931,
+     "files": 357,
+     "repos": 1
+    },
+    "namespace-import": {
+     "edges": 1,
+     "files": 1,
+     "repos": 1
+    }
+   },
+   "exportsPayload": {
+    "compilation-unit-surface": {
+     "edges": 534,
+     "files": 408,
+     "repos": 2
+    }
+   },
+   "containsPayload": {
+    "declaration": {
+     "edges": 6470,
+     "files": 408,
+     "repos": 2
+    },
+    "synthesised-getter": {
+     "edges": 61,
+     "files": 24,
+     "repos": 2
+    }
+   },
+   "constructPopulations": {
+    "identifier": {
+     "edges": 48467,
+     "files": 421,
+     "repos": 2
+    },
+    "type_name": {
+     "edges": 13520,
+     "files": 399,
+     "repos": 2
+    },
+    "call_argument": {
+     "edges": 12656,
+     "files": 314,
+     "repos": 2
+    },
+    "call_expression": {
+     "edges": 6403,
+     "files": 307,
+     "repos": 2
+    },
+    "comment": {
+     "edges": 5787,
+     "files": 421,
+     "repos": 2
+    },
+    "member_expression": {
+     "edges": 5280,
+     "files": 288,
+     "repos": 2
+    },
+    "function_definition": {
+     "edges": 3348,
+     "files": 390,
+     "repos": 2
+    },
+    "function_body": {
+     "edges": 3232,
+     "files": 348,
+     "repos": 2
+    },
+    "yul_identifier": {
+     "edges": 2936,
+     "files": 65,
+     "repos": 1
+    },
+    "yul_function_call": {
+     "edges": 2843,
+     "files": 63,
+     "repos": 1
+    },
+    "yul_evm_builtin": {
+     "edges": 2843,
+     "files": 63,
+     "repos": 1
+    },
+    "yul_path": {
+     "edges": 2729,
+     "files": 65,
+     "repos": 1
+    },
+    "variable_declaration": {
+     "edges": 2106,
+     "files": 192,
+     "repos": 2
+    },
+    "user_defined_type": {
+     "edges": 1957,
+     "files": 326,
+     "repos": 2
+    },
+    "import_directive": {
+     "edges": 932,
+     "files": 358,
+     "repos": 2
+    },
+    "assignment_expression": {
+     "edges": 911,
+     "files": 171,
+     "repos": 2
+    },
+    "virtual": {
+     "edges": 855,
+     "files": 163,
+     "repos": 1
+    },
+    "inheritance_specifier": {
+     "edges": 595,
+     "files": 283,
+     "repos": 1
+    },
+    "contract_body": {
+     "edges": 511,
+     "files": 408,
+     "repos": 2
+    },
+    "assembly_statement": {
+     "edges": 487,
+     "files": 69,
+     "repos": 1
+    },
+    "revert_statement": {
+     "edges": 472,
+     "files": 97,
+     "repos": 1
+    },
+    "event_parameter": {
+     "edges": 448,
+     "files": 71,
+     "repos": 1
+    },
+    "pragma_directive": {
+     "edges": 421,
+     "files": 421,
+     "repos": 2
+    },
+    "state_variable_declaration": {
+     "edges": 409,
+     "files": 168,
+     "repos": 2
+    },
+    "override_specifier": {
+     "edges": 408,
+     "files": 155,
+     "repos": 1
+    },
+    "contract_declaration": {
+     "edges": 371,
+     "files": 289,
+     "repos": 2
+    },
+    "error_parameter": {
+     "edges": 263,
+     "files": 71,
+     "repos": 1
+    },
+    "error_declaration": {
+     "edges": 222,
+     "files": 99,
+     "repos": 1
+    },
+    "modifier_invocation": {
+     "edges": 222,
+     "files": 89,
+     "repos": 1
+    },
+    "update_expression": {
+     "edges": 195,
+     "files": 53,
+     "repos": 2
+    },
+    "struct_member": {
+     "edges": 178,
+     "files": 34,
+     "repos": 2
+    },
+    "emit_statement": {
+     "edges": 170,
+     "files": 72,
+     "repos": 1
+    },
+    "event_definition": {
+     "edges": 167,
+     "files": 73,
+     "repos": 1
+    },
+    "augmented_assignment_expression": {
+     "edges": 134,
+     "files": 36,
+     "repos": 2
+    },
+    "constructor_definition": {
+     "edges": 132,
+     "files": 116,
+     "repos": 2
+    },
+    "using_directive": {
+     "edges": 124,
+     "files": 76,
+     "repos": 1
+    },
+    "type_alias": {
+     "edges": 120,
+     "files": 76,
+     "repos": 1
+    },
+    "yul_variable_declaration": {
+     "edges": 114,
+     "files": 21,
+     "repos": 1
+    },
+    "enum_value": {
+     "edges": 110,
+     "files": 19,
+     "repos": 2
+    },
+    "call_struct_argument": {
+     "edges": 96,
+     "files": 11,
+     "repos": 2
+    },
+    "new_expression": {
+     "edges": 89,
+     "files": 37,
+     "repos": 2
+    },
+    "yul_block": {
+     "edges": 88,
+     "files": 12,
+     "repos": 1
+    },
+    "interface_declaration": {
+     "edges": 75,
+     "files": 57,
+     "repos": 1
+    },
+    "struct_declaration": {
+     "edges": 72,
+     "files": 34,
+     "repos": 2
+    },
+    "struct_body": {
+     "edges": 72,
+     "files": 34,
+     "repos": 2
+    },
+    "library_declaration": {
+     "edges": 65,
+     "files": 65,
+     "repos": 1
+    },
+    "immutable": {
+     "edges": 43,
+     "files": 28,
+     "repos": 1
+    },
+    "yul_if_statement": {
+     "edges": 31,
+     "files": 8,
+     "repos": 1
+    },
+    "modifier_definition": {
+     "edges": 23,
+     "files": 16,
+     "repos": 1
+    },
+    "enum_declaration": {
+     "edges": 20,
+     "files": 19,
+     "repos": 2
+    },
+    "enum_body": {
+     "edges": 20,
+     "files": 19,
+     "repos": 2
+    },
+    "struct_expression": {
+     "edges": 19,
+     "files": 12,
+     "repos": 1
+    },
+    "yul_for_statement": {
+     "edges": 15,
+     "files": 4,
+     "repos": 1
+    },
+    "user_defined_type_definition": {
+     "edges": 14,
+     "files": 5,
+     "repos": 1
+    },
+    "fallback_receive_definition": {
+     "edges": 11,
+     "files": 11,
+     "repos": 1
+    },
+    "try_statement": {
+     "edges": 10,
+     "files": 7,
+     "repos": 1
+    },
+    "catch_clause": {
+     "edges": 10,
+     "files": 7,
+     "repos": 1
+    },
+    "constant_variable_declaration": {
+     "edges": 6,
+     "files": 1,
+     "repos": 1
+    },
+    "yul_switch_statement": {
+     "edges": 5,
+     "files": 4,
+     "repos": 1
+    },
+    "using_alias": {
+     "edges": 4,
+     "files": 1,
+     "repos": 1
+    },
+    "yul_function_definition": {
+     "edges": 0,
+     "files": 0,
+     "repos": 0
+    },
+    "any_pragma_token": {
+     "edges": 0,
+     "files": 0,
+     "repos": 0
+    }
+   },
+   "parseErrors": []
+  },
+  "d3": {
+   "noIndexArm": {
+    "population": [
+     "population: 421 parsed of 421 sampled (corpus has 421 .sol files across 2 repos; stride sample)",
+     "population: admitted extensions = .sol (ONE spelling — check the lane does not carry another) — PLUS a bare BASENAME equal to any of them WHEN THE ROUTER'S OWN DETECTION GIVES IT TO THIS LANE (`Makefile` has no extension to match, and an extension-only rule measured 129 files where the production router admits 697 — but the router's verdict is a LANGUAGE, not a spelling: `dart-sdk/sdk/bin/dart` is a bash script and is NOT this lane's file).",
+     "project index: NOT USED — this is the per-file population, which is NOT the one production parses (re-run with --index to measure that one)",
+     "excluded from that population: 0 tracked-but-absent/unreadable + 0 over the 1 MB cap  — above the cap the engine extracts structurally, not as an analyzer",
+     "parse failures: 0   degraded (regex fallback): 0"
+    ],
+    "selfTest": [
+     "instrument self-test: PASS (control fired)"
+    ],
+    "table1": [
+     "TABLE 1 — PER PROJECT, the scope production resolves in (this is the verdict's):",
+     "type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK   ext?    extFAIL  bindOK   bind?   bindFAIL  causeOK  causeFAIL",
+     "----------------------------------------------------------------------------------------------------------------------------------------------------",
+     "calls         6734     3407      0         2196       402        1131        0       0       0        0        0       0         0        0",
+     "uses          17880    4335      0         11145      4912       2400        0       0       0        0        0       0         0        0",
+     "contains      6531     6531      3491      0          0          0           0       0       0        0        0       0         0        0",
+     "imports       932      0         0         0          0          932         0       0       0        0        0       0         0        0",
+     "references    1452     1380      0         33         7          39          0       0       0        0        0       0         0        0",
+     "exports       534      528       0         6          6          0           0       0       0        0        0       0         0        0",
+     "extends       588      550       0         0          0          38          0       0       0        0        0       0         0        0",
+     "implements    7        7         0         0          0          0           0       0       0        0        0       0         0        0",
+     "overrides     423      422       0         0          0          1           0       0       0        0        0       0         0        0",
+     "instantiates  26       26        0         0          0          0           0       0       0        0        0       0         0        0",
+     "decorates     0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "renders       0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "mixes_in      0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "part_of       0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "---------------------------------------------------------------------------------------------",
+     "TOTAL         35107    17186     3491      13380      5327       4541        0       0       0        0        0       0         0        0",
+     "collRes = of `resolved`: the target had MORE THAN ONE declaration, so production's tie-break chose the row — the indexer measures 37,318 of 49,729 such picks as WRONG · extOK = external claim the PROJECT CONFIRMS · ext? = claim no check can reach (no identifier owner, and no project fact for it) · extFAIL = claim the project REFUTES, counted against the lane"
+    ],
+    "bindingIntent": [
+     "  type          edges    intended  sameFileUnproven arbitraryTwin            nothingAnywhere  noTarget",
+     "  calls         6734     0         2734             2870                     1130             0",
+     "  uses          17880    0         8412             7081                     2387             0",
+     "  contains      6531     6531      0                0                        0                0",
+     "  imports       932      0         0                0                        932              0",
+     "  references    1452     0         66               1347                     39               0",
+     "  exports       534      534       0                0                        0                0",
+     "  extends       588      0         30               520                      38               0",
+     "  implements    7        0         7                0                        0                0",
+     "  overrides     423      0         17               405                      1                0",
+     "  instantiates  26       0         15               11                       0                0",
+     "  TOTAL         35107    7065      11281            12234                    4527             0",
+     "  INTENT CLOSURE: every row closes — intended+sameFileUnproven+arbitraryTwin+nothingAnywhere+noTarget == edges."
+    ],
+    "claimCarrying": [
+     "CLAIM-CARRYING AMBIGUOUS EDGES — the amb(decl) column is NOT claim-aware. Its claim-carrying",
+     "share, BY CLAIM KIND: 0 of this lane's 13380 ambiguous edge(s) carry a claim — 0 VERIFIED · 0 NOT verified · 0 REFUTED · 0 CONTRADICTED · 0 OWN-FILE-SILENT · 0 n/a.",
+     "    (none of this lane's 13380 ambiguous edge(s) carries a claim — NONE OF 13380, not zero of",
+     "     a zero. A MEASURED zero of the claim-carrying class, not an absent lane.)",
+     "  A CLAIM IS NOT A RESOLUTION: the outcome is deliberately untouched, because an edge can be BOTH",
+     "  ambiguous and file-shaped, and subtracting the claim would HIDE a real collision rather than",
+     "  resolve it. Size the repairable work from the VERIFIED count, not the raw amb(decl) column."
+    ],
+    "verdict": [
+     "VERDICT: FAIL — CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 17921 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)  --  13380 ambiguous + 4541 unresolved of 35107 edges, resolved against the file's OWN PROJECT (production's scope)",
+     "  clause 1 FAIL — every edge resolves, or carries a claim the project verifies",
+     "           17921 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)",
+     "  clause 2 ok   — every ambiguous/unresolved edge classified by a NAMED cause, with a measured count",
+     "           no edge carries a declared cause (residual 17921)",
+     "  clause 3 ok   — each cause fixed over the SAME population, or ruled with a RUN FALSIFIER",
+     "           no declared cause carries a count, so there is nothing to rule",
+     "  clause 4 ok   — extFAIL / bindFAIL / causeFAIL = 0",
+     "           extFAIL 0 · bindFAIL 0 · causeFAIL 0",
+     "  (the same edges under the pooled corpus key space: 13409 ambiguous + 4527 unresolved — that number is about the CORPUS's name collisions, not about resolution as production performs it)",
+     "instrument self-test: PASS (control fired)",
+     ""
+    ],
+    "classifier": {
+     "instrument": "script/m14/solidity-dump-classify.ts",
+     "artifact": "validation/m14/fixtures/solidity/measurements/solidity-d3-classes-noindex.json",
+     "control": {
+      "ok": true,
+      "perType": {
+       "calls": {
+        "dumped": 3327,
+        "expected": 3327,
+        "unresolvedDumped": 1131,
+        "unresolvedExpected": 1131,
+        "ambDumped": 2196,
+        "ambExpected": 2196
+       },
+       "uses": {
+        "dumped": 13545,
+        "expected": 13545,
+        "unresolvedDumped": 2400,
+        "unresolvedExpected": 2400,
+        "ambDumped": 11145,
+        "ambExpected": 11145
+       },
+       "contains": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "imports": {
+        "dumped": 932,
+        "expected": 932,
+        "unresolvedDumped": 932,
+        "unresolvedExpected": 932,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "references": {
+        "dumped": 72,
+        "expected": 72,
+        "unresolvedDumped": 39,
+        "unresolvedExpected": 39,
+        "ambDumped": 33,
+        "ambExpected": 33
+       },
+       "exports": {
+        "dumped": 6,
+        "expected": 6,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 6,
+        "ambExpected": 6
+       },
+       "extends": {
+        "dumped": 38,
+        "expected": 38,
+        "unresolvedDumped": 38,
+        "unresolvedExpected": 38,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "implements": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "overrides": {
+        "dumped": 1,
+        "expected": 1,
+        "unresolvedDumped": 1,
+        "unresolvedExpected": 1,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "instantiates": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "decorates": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "renders": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "mixes_in": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "part_of": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       }
+      },
+      "join": {
+       "dumpedRows": 17921,
+       "filesReanalyzed": 381,
+       "misses": 0
+      },
+      "closure": {
+       "tableEdges": 35107,
+       "tableResolved": 17186,
+       "dumpedRows": 17921,
+       "claimRows": 0,
+       "bindingRows": 0,
+       "causeRows": 0,
+       "unclassifiedLabelRows": 0,
+       "unclassifiedOutcomeRows": 0,
+       "sumClassRows": 17921,
+       "populationIdentity": "35107 (TOTAL) == 17186 resolved + 17921 classified + 0 claims + 0 bindings + 0 causes",
+       "classesSumToClassified": true
+      }
+     },
+     "arbitraryTwin": 12234,
+     "classTotals": {
+      "W8-function-scope-binding-read": 9805,
+      "W6-yul-path-segment-read": 2275,
+      "W3-cross-file-or-unvendored-target": 2039,
+      "W7-member-or-builtin-read": 1465,
+      "W5-in-file-name-not-a-declaration": 935,
+      "W1-module-path-not-a-symbol": 932,
+      "W2-language-namespace-builtin": 344,
+      "W10-type-mention-not-in-run": 72,
+      "W4-declared-kind-not-in-run": 47,
+      "W12-export-surface-not-a-declaration": 6,
+      "W11-override-base-outside-run": 1
+     },
+     "perType": {
+      "uses": {
+       "unresolved": 2400,
+       "ambiguous": 11145,
+       "classes": [
+        {
+         "family": "variable-reference",
+         "declaredClass": "W8-function-scope-binding-read",
+         "unresolved": 1839,
+         "ambiguous": 7966,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:65: proposalNames [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:93: voter [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:96: voter [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:97: voter [undefined]"
+         ]
+        },
+        {
+         "family": "yul-path-segment",
+         "declaredClass": "W6-yul-path-segment-read",
+         "unresolved": 498,
+         "ambiguous": 1777,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:26: authority [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:26: data [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:27: immediate [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:28: delay [undefined]"
+         ]
+        },
+        {
+         "family": "member-reference",
+         "declaredClass": "W7-member-or-builtin-read",
+         "unresolved": 63,
+         "ambiguous": 1402,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:60: length [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:116: delegate [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:117: delegate [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:130: delegate [undefined]"
+         ]
+        }
+       ]
+      },
+      "calls": {
+       "unresolved": 1131,
+       "ambiguous": 2196,
+       "classes": [
+        {
+         "family": "external-target",
+         "declaredClass": "W3-cross-file-or-unvendored-target",
+         "unresolved": 1047,
+         "ambiguous": 954,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:64: push [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:85: _msgSender [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:155: _msgSender [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:183: _msgSender [undefined]"
+         ]
+        },
+        {
+         "family": "in-file-localFunction",
+         "declaredClass": "W5-in-file-name-not-a-declaration",
+         "unresolved": 0,
+         "ambiguous": 935,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:70: supportsInterface [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:93: hasRole [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:120: getRoleAdmin [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:121: _grantRole [undefined]"
+         ]
+        },
+        {
+         "family": "language-namespace",
+         "declaredClass": "W2-language-namespace-builtin",
+         "unresolved": 84,
+         "ambiguous": 260,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/Ownable2Step.sol:54: _transferOwnership [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:85: grantRole [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:95: revokeRole [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:119: renounceRole [undefined]"
+         ]
+        },
+        {
+         "family": "event-emission",
+         "declaredClass": "W4-declared-kind-not-in-run",
+         "unresolved": 0,
+         "ambiguous": 47,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:170: RoleAdminChanged [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:183: RoleGranted [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:200: RoleRevoked [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AccessManager.sol:305: RoleGranted [undefined]"
+         ]
+        }
+       ]
+      },
+      "imports": {
+       "unresolved": 932,
+       "ambiguous": 0,
+       "classes": [
+        {
+         "family": "import-path",
+         "declaredClass": "W1-module-path-not-a-symbol",
+         "unresolved": 932,
+         "ambiguous": 0,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:9: anotherFile [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:6: ../utils/Context.sol [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:7: ../utils/introspection/ERC165.sol [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:8: ./IAccessControl.sol [undefined]"
+         ]
+        }
+       ]
+      },
+      "references": {
+       "unresolved": 39,
+       "ambiguous": 33,
+       "classes": [
+        {
+         "family": "type-or-using",
+         "declaredClass": "W10-type-mention-not-in-run",
+         "unresolved": 39,
+         "ambiguous": 33,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:9: something [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:12: initializerRan() [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:13: onlyInitializingRan() [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:14: x() [undefined]"
+         ]
+        }
+       ]
+      },
+      "exports": {
+       "unresolved": 0,
+       "ambiguous": 6,
+       "classes": [
+        {
+         "family": "compilation-unit-surface",
+         "declaredClass": "W12-export-surface-not-a-declaration",
+         "unresolved": 0,
+         "ambiguous": 6,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/Panic.sol:26: Panic [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:37: AddressSlot [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:49: BooleanSlot [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:61: Bytes32Slot [undefined]"
+         ]
+        }
+       ]
+      },
+      "extends": {
+       "unresolved": 38,
+       "ambiguous": 0,
+       "classes": [
+        {
+         "family": "base-not-declared-in-file",
+         "declaredClass": "W3-cross-file-or-unvendored-target",
+         "unresolved": 38,
+         "ambiguous": 0,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/account/paymaster/PaymasterSigner.t.sol:31: Test [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/account/utils/draft-ERC7579Utils.t.sol:109: Test [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/governance/Governor.t.sol:9: Test [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/governance/extensions/GovernorSuperQuorumGreaterThanQuorum.t.sol:52: Test [undefined]"
+         ]
+        }
+       ]
+      },
+      "overrides": {
+       "unresolved": 1,
+       "ambiguous": 0,
+       "classes": [
+        {
+         "family": "external-or-single-base",
+         "declaredClass": "W11-override-base-outside-run",
+         "unresolved": 1,
+         "ambiguous": 0,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/token/ERC20/extensions/ERC4626.t.sol:23: ERC4626Test [undefined]"
+         ]
+        }
+       ]
+      }
+     },
+     "semantics": "classes are the analyzer's OWN metadata markers joined per row (calleeKind SOL-15; isVariableReference / isYulPathSegment / isMemberReference for uses; isImport for references; reasonCode/externalBase for extends/overrides), with the dump's spelling only as a named fallback. Claims/bindings/causes are their own columns and are NEVER folded into a class. W8 (function-scope binding read) is the lane's measured wall (SOL-FIX §1)."
+    },
+    "arbitraryTwin": 12234,
+    "closure": {
+     "tableEdges": 35107,
+     "tableResolved": 17186,
+     "dumpedRows": 17921,
+     "claimRows": 0,
+     "bindingRows": 0,
+     "causeRows": 0,
+     "unclassifiedLabelRows": 0,
+     "unclassifiedOutcomeRows": 0,
+     "sumClassRows": 17921,
+     "populationIdentity": "35107 (TOTAL) == 17186 resolved + 17921 classified + 0 claims + 0 bindings + 0 causes",
+     "classesSumToClassified": true
+    },
+    "evidencePage": "validation/m14/verification/SOLIDITY-D3.md"
+   },
+   "indexedArm": {
+    "population": [
+     "population: 421 parsed of 421 sampled (corpus has 421 .sol files across 2 repos; stride sample)",
+     "population: admitted extensions = .sol (ONE spelling — check the lane does not carry another) — PLUS a bare BASENAME equal to any of them WHEN THE ROUTER'S OWN DETECTION GIVES IT TO THIS LANE (`Makefile` has no extension to match, and an extension-only rule measured 129 files where the production router admits 697 — but the router's verdict is a LANGUAGE, not a spelling: `dart-sdk/sdk/bin/dart` is a bash script and is NOT this lane's file).",
+     "project index: USED — 2 repo index(es) (2 built, 0 from cache, 0 damaged) over 421 file(s) — the files THIS RUN sampled, so an index over a stride sample is not a project index (run with maxFiles 0 for the real one). Passed as { projectIndex } exactly as `pool-worker.ts` parse_batch does. INDEX-ASSISTED POPULATION, and the distinction is not academic: with the index IN, cross-file base resolution and the widened type-visibility gate are measured. THE GATE'S PROJECT-INDEX POPULATION is dart, java, javascript, protobuf, python, scss, solidity, typescript (the languages `INDEX_SPECS` can build an index for). For those, this population IS production's; for every other language the analyzer is parsed with NO context and behaves as this run's --index-less arm does, so its counts are not comparable to a --index-less run. Production's own list is PROJECT_INDEX_EXTENSIONS in src/ast/parallel-indexer.ts; a language in that list with no INDEX_SPECS entry here is a gap in THIS instrument, not in production.",
+     "excluded from that population: 0 tracked-but-absent/unreadable + 0 over the 1 MB cap  — above the cap the engine extracts structurally, not as an analyzer",
+     "parse failures: 0   degraded (regex fallback): 0"
+    ],
+    "selfTest": [
+     "instrument self-test: PASS (control fired)"
+    ],
+    "table1": [
+     "TABLE 1 — PER PROJECT, the scope production resolves in (this is the verdict's):",
+     "type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK   ext?    extFAIL  bindOK   bind?   bindFAIL  causeOK  causeFAIL",
+     "----------------------------------------------------------------------------------------------------------------------------------------------------",
+     "calls         6734     3407      0         2196       402        1131        0       0       0        0        0       0         0        0",
+     "uses          17880    4335      0         11145      4912       2400        0       0       0        0        0       0         0        0",
+     "contains      6531     6531      3491      0          0          0           0       0       0        0        0       0         0        0",
+     "imports       932      0         0         0          0          932         0       0       0        0        0       0         0        0",
+     "references    1452     1380      0         33         7          39          0       0       0        0        0       0         0        0",
+     "exports       534      528       0         6          6          0           0       0       0        0        0       0         0        0",
+     "extends       488      450       0         0          0          38          0       0       0        0        0       0         0        0",
+     "implements    107      107       0         0          0          0           0       0       0        0        0       0         0        0",
+     "overrides     423      422       0         0          0          1           0       0       0        0        0       0         0        0",
+     "instantiates  26       26        0         0          0          0           0       0       0        0        0       0         0        0",
+     "decorates     0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "renders       0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "mixes_in      0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "part_of       0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "---------------------------------------------------------------------------------------------",
+     "TOTAL         35107    17186     3491      13380      5327       4541        0       0       0        0        0       0         0        0",
+     "collRes = of `resolved`: the target had MORE THAN ONE declaration, so production's tie-break chose the row — the indexer measures 37,318 of 49,729 such picks as WRONG · extOK = external claim the PROJECT CONFIRMS · ext? = claim no check can reach (no identifier owner, and no project fact for it) · extFAIL = claim the project REFUTES, counted against the lane"
+    ],
+    "bindingIntent": [
+     "  type          edges    intended  sameFileUnproven arbitraryTwin            nothingAnywhere  noTarget",
+     "  calls         6734     0         2734             2870                     1130             0",
+     "  uses          17880    0         8412             7081                     2387             0",
+     "  contains      6531     6531      0                0                        0                0",
+     "  imports       932      0         0                0                        932              0",
+     "  references    1452     0         66               1347                     39               0",
+     "  exports       534      534       0                0                        0                0",
+     "  extends       488      0         30               420                      38               0",
+     "  implements    107      0         7                100                      0                0",
+     "  overrides     423      0         17               405                      1                0",
+     "  instantiates  26       0         15               11                       0                0",
+     "  TOTAL         35107    7065      11281            12234                    4527             0",
+     "  INTENT CLOSURE: every row closes — intended+sameFileUnproven+arbitraryTwin+nothingAnywhere+noTarget == edges."
+    ],
+    "claimCarrying": [
+     "CLAIM-CARRYING AMBIGUOUS EDGES — the amb(decl) column is NOT claim-aware. Its claim-carrying",
+     "share, BY CLAIM KIND: 0 of this lane's 13380 ambiguous edge(s) carry a claim — 0 VERIFIED · 0 NOT verified · 0 REFUTED · 0 CONTRADICTED · 0 OWN-FILE-SILENT · 0 n/a.",
+     "    (none of this lane's 13380 ambiguous edge(s) carries a claim — NONE OF 13380, not zero of",
+     "     a zero. A MEASURED zero of the claim-carrying class, not an absent lane.)",
+     "  A CLAIM IS NOT A RESOLUTION: the outcome is deliberately untouched, because an edge can be BOTH",
+     "  ambiguous and file-shaped, and subtracting the claim would HIDE a real collision rather than",
+     "  resolve it. Size the repairable work from the VERIFIED count, not the raw amb(decl) column."
+    ],
+    "verdict": [
+     "VERDICT: FAIL — CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 17921 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)  --  13380 ambiguous + 4541 unresolved of 35107 edges, resolved against the file's OWN PROJECT (production's scope)",
+     "  clause 1 FAIL — every edge resolves, or carries a claim the project verifies",
+     "           17921 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)",
+     "  clause 2 ok   — every ambiguous/unresolved edge classified by a NAMED cause, with a measured count",
+     "           no edge carries a declared cause (residual 17921)",
+     "  clause 3 ok   — each cause fixed over the SAME population, or ruled with a RUN FALSIFIER",
+     "           no declared cause carries a count, so there is nothing to rule",
+     "  clause 4 ok   — extFAIL / bindFAIL / causeFAIL = 0",
+     "           extFAIL 0 · bindFAIL 0 · causeFAIL 0",
+     "  (the same edges under the pooled corpus key space: 13409 ambiguous + 4527 unresolved — that number is about the CORPUS's name collisions, not about resolution as production performs it)",
+     "instrument self-test: PASS (control fired)",
+     ""
+    ],
+    "classifier": {
+     "instrument": "script/m14/solidity-dump-classify.ts",
+     "artifact": "validation/m14/fixtures/solidity/measurements/solidity-d3-classes-indexed.json",
+     "control": {
+      "ok": true,
+      "perType": {
+       "calls": {
+        "dumped": 3327,
+        "expected": 3327,
+        "unresolvedDumped": 1131,
+        "unresolvedExpected": 1131,
+        "ambDumped": 2196,
+        "ambExpected": 2196
+       },
+       "uses": {
+        "dumped": 13545,
+        "expected": 13545,
+        "unresolvedDumped": 2400,
+        "unresolvedExpected": 2400,
+        "ambDumped": 11145,
+        "ambExpected": 11145
+       },
+       "contains": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "imports": {
+        "dumped": 932,
+        "expected": 932,
+        "unresolvedDumped": 932,
+        "unresolvedExpected": 932,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "references": {
+        "dumped": 72,
+        "expected": 72,
+        "unresolvedDumped": 39,
+        "unresolvedExpected": 39,
+        "ambDumped": 33,
+        "ambExpected": 33
+       },
+       "exports": {
+        "dumped": 6,
+        "expected": 6,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 6,
+        "ambExpected": 6
+       },
+       "extends": {
+        "dumped": 38,
+        "expected": 38,
+        "unresolvedDumped": 38,
+        "unresolvedExpected": 38,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "implements": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "overrides": {
+        "dumped": 1,
+        "expected": 1,
+        "unresolvedDumped": 1,
+        "unresolvedExpected": 1,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "instantiates": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "decorates": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "renders": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "mixes_in": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "part_of": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       }
+      },
+      "join": {
+       "dumpedRows": 17921,
+       "filesReanalyzed": 381,
+       "misses": 0
+      },
+      "closure": {
+       "tableEdges": 35107,
+       "tableResolved": 17186,
+       "dumpedRows": 17921,
+       "claimRows": 0,
+       "bindingRows": 0,
+       "causeRows": 0,
+       "unclassifiedLabelRows": 0,
+       "unclassifiedOutcomeRows": 0,
+       "sumClassRows": 17921,
+       "populationIdentity": "35107 (TOTAL) == 17186 resolved + 17921 classified + 0 claims + 0 bindings + 0 causes",
+       "classesSumToClassified": true
+      }
+     },
+     "arbitraryTwin": 12234,
+     "classTotals": {
+      "W8-function-scope-binding-read": 9805,
+      "W6-yul-path-segment-read": 2275,
+      "W3-cross-file-or-unvendored-target": 2039,
+      "W7-member-or-builtin-read": 1465,
+      "W5-in-file-name-not-a-declaration": 935,
+      "W1-module-path-not-a-symbol": 932,
+      "W2-language-namespace-builtin": 344,
+      "W10-type-mention-not-in-run": 72,
+      "W4-declared-kind-not-in-run": 47,
+      "W12-export-surface-not-a-declaration": 6,
+      "W11-override-base-outside-run": 1
+     },
+     "perType": {
+      "uses": {
+       "unresolved": 2400,
+       "ambiguous": 11145,
+       "classes": [
+        {
+         "family": "variable-reference",
+         "declaredClass": "W8-function-scope-binding-read",
+         "unresolved": 1839,
+         "ambiguous": 7966,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:65: proposalNames [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:93: voter [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:96: voter [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:97: voter [undefined]"
+         ]
+        },
+        {
+         "family": "yul-path-segment",
+         "declaredClass": "W6-yul-path-segment-read",
+         "unresolved": 498,
+         "ambiguous": 1777,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:26: authority [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:26: data [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:27: immediate [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:28: delay [undefined]"
+         ]
+        },
+        {
+         "family": "member-reference",
+         "declaredClass": "W7-member-or-builtin-read",
+         "unresolved": 63,
+         "ambiguous": 1402,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:60: length [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:116: delegate [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:117: delegate [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:130: delegate [undefined]"
+         ]
+        }
+       ]
+      },
+      "calls": {
+       "unresolved": 1131,
+       "ambiguous": 2196,
+       "classes": [
+        {
+         "family": "external-target",
+         "declaredClass": "W3-cross-file-or-unvendored-target",
+         "unresolved": 1047,
+         "ambiguous": 954,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:64: push [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:85: _msgSender [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:155: _msgSender [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:183: _msgSender [undefined]"
+         ]
+        },
+        {
+         "family": "in-file-localFunction",
+         "declaredClass": "W5-in-file-name-not-a-declaration",
+         "unresolved": 0,
+         "ambiguous": 935,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:70: supportsInterface [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:93: hasRole [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:120: getRoleAdmin [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:121: _grantRole [undefined]"
+         ]
+        },
+        {
+         "family": "language-namespace",
+         "declaredClass": "W2-language-namespace-builtin",
+         "unresolved": 84,
+         "ambiguous": 260,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/Ownable2Step.sol:54: _transferOwnership [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:85: grantRole [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:95: revokeRole [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:119: renounceRole [undefined]"
+         ]
+        },
+        {
+         "family": "event-emission",
+         "declaredClass": "W4-declared-kind-not-in-run",
+         "unresolved": 0,
+         "ambiguous": 47,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:170: RoleAdminChanged [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:183: RoleGranted [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:200: RoleRevoked [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AccessManager.sol:305: RoleGranted [undefined]"
+         ]
+        }
+       ]
+      },
+      "imports": {
+       "unresolved": 932,
+       "ambiguous": 0,
+       "classes": [
+        {
+         "family": "import-path",
+         "declaredClass": "W1-module-path-not-a-symbol",
+         "unresolved": 932,
+         "ambiguous": 0,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:9: anotherFile [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:6: ../utils/Context.sol [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:7: ../utils/introspection/ERC165.sol [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:8: ./IAccessControl.sol [undefined]"
+         ]
+        }
+       ]
+      },
+      "references": {
+       "unresolved": 39,
+       "ambiguous": 33,
+       "classes": [
+        {
+         "family": "type-or-using",
+         "declaredClass": "W10-type-mention-not-in-run",
+         "unresolved": 39,
+         "ambiguous": 33,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:9: something [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:12: initializerRan() [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:13: onlyInitializingRan() [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:14: x() [undefined]"
+         ]
+        }
+       ]
+      },
+      "exports": {
+       "unresolved": 0,
+       "ambiguous": 6,
+       "classes": [
+        {
+         "family": "compilation-unit-surface",
+         "declaredClass": "W12-export-surface-not-a-declaration",
+         "unresolved": 0,
+         "ambiguous": 6,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/Panic.sol:26: Panic [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:37: AddressSlot [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:49: BooleanSlot [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:61: Bytes32Slot [undefined]"
+         ]
+        }
+       ]
+      },
+      "extends": {
+       "unresolved": 38,
+       "ambiguous": 0,
+       "classes": [
+        {
+         "family": "base-not-declared-in-file",
+         "declaredClass": "W3-cross-file-or-unvendored-target",
+         "unresolved": 38,
+         "ambiguous": 0,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/account/paymaster/PaymasterSigner.t.sol:31: Test [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/account/utils/draft-ERC7579Utils.t.sol:109: Test [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/governance/Governor.t.sol:9: Test [undefined]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/governance/extensions/GovernorSuperQuorumGreaterThanQuorum.t.sol:52: Test [undefined]"
+         ]
+        }
+       ]
+      },
+      "overrides": {
+       "unresolved": 1,
+       "ambiguous": 0,
+       "classes": [
+        {
+         "family": "external-or-single-base",
+         "declaredClass": "W11-override-base-outside-run",
+         "unresolved": 1,
+         "ambiguous": 0,
+         "samples": [
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/token/ERC20/extensions/ERC4626.t.sol:23: ERC4626Test [undefined]"
+         ]
+        }
+       ]
+      }
+     },
+     "semantics": "classes are the analyzer's OWN metadata markers joined per row (calleeKind SOL-15; isVariableReference / isYulPathSegment / isMemberReference for uses; isImport for references; reasonCode/externalBase for extends/overrides), with the dump's spelling only as a named fallback. Claims/bindings/causes are their own columns and are NEVER folded into a class. W8 (function-scope binding read) is the lane's measured wall (SOL-FIX §1)."
+    },
+    "arbitraryTwin": 12234,
+    "closure": {
+     "tableEdges": 35107,
+     "tableResolved": 17186,
+     "dumpedRows": 17921,
+     "claimRows": 0,
+     "bindingRows": 0,
+     "causeRows": 0,
+     "unclassifiedLabelRows": 0,
+     "unclassifiedOutcomeRows": 0,
+     "sumClassRows": 17921,
+     "populationIdentity": "35107 (TOTAL) == 17186 resolved + 17921 classified + 0 claims + 0 bindings + 0 causes",
+     "classesSumToClassified": true
+    },
+    "deltaVsNoIndex": {
+     "extends": {
+      "edges": -100,
+      "resolved": -100
+     },
+     "implements": {
+      "edges": 100,
+      "resolved": 100
+     }
+    },
+    "mechanism": "the project index is SUPPLIED and CONSUMED here (SOL-21): the gate built 2 repo indexes over 421 files and 100 heritage edges moved from extends to implements — the ancestor's KIND settled project-wide instead of by absence of an in-file declaration. resolved/amb/unresolved columns and arbitraryTwin are UNCHANGED: this arm re-types heritage, it does not trade resolutions."
+   }
+  },
+  "noNewValueConfirmations": "The constructs that carry NO relationship (or a DIFFERENT one than their spelling suggests), counted at whole population by the D2 census so the ruling is a number and not a silence: modifiers (modifier_definition/modifier_invocation sites vs `decorates` 0 — SOL-R3: metadata + calls), events/custom errors (emit/revert are calls, SOL-15), struct construction (calls, not instantiates — SOL-R7), imports' bindings (references, not imports — SOL-R6), synthesised getters (contains + references, SOL-R8), NatSpec comments and pragmas (documentation metadata / compilation directive, no relationship), inheritance (ONE construct, two readings — SOL-R5/SOL-R1)."
  }
 }
