@@ -445,6 +445,7 @@ function scopeString(scopes: JSScopeEntry[]): string {
 // ============================================================================
 
 import { isJsBuiltin, jsBuiltinHasMember, hostGlobalCitation, memberChainClaim } from "./js-builtin-prototypes"
+import { runtimeGlobalCitation, runtimeGlobalReason } from "./js-runtime-globals"
 
 /**
  * THE FILE-LEVEL ACTOR — the source spelling for an edge whose actor is the FILE,
@@ -3618,6 +3619,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!bound.has(target)) {
             citation = hostGlobalCitation(target)
             if (citation !== null) reason = "host-global-bare"
+            else {
+              // THE SECOND CLOSED LIST: the RUNTIME (Node host) and TEST-RUNNER globals, cited in
+              // js-runtime-globals.ts. Only a BARE name is claimed — a member of these globals
+              // (`jest.fn()`, `process.argv.slice`) names a leaf a project may genuinely declare.
+              citation = runtimeGlobalCitation(target)
+              if (citation !== null) reason = runtimeGlobalReason(target)
+            }
           }
         } else if (callee.length > 0 && callee.endsWith(`.${target}`)) {
           // The receiver CHAIN's root, which is what memberChainClaim is defined on:
@@ -3636,6 +3644,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!bound.has(target)) {
             citation = hostGlobalCitation(target)
             if (citation !== null) reason = "host-global-bare"
+            else {
+              citation = runtimeGlobalCitation(target)
+              if (citation !== null) reason = runtimeGlobalReason(target)
+            }
           }
         } else if (md.isFieldAccess === true) {
           const root = String(md.receiverRoot ?? "")
@@ -3682,12 +3694,17 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           }
         }
-      } else if (label === "extends" || label === "references") {
-        // A BASE or an `instanceof` type that is a cited host class (`extends Error`,
-        // `x instanceof Date`). The name is the target itself, so the bare proof applies.
-        if (!bound.has(target)) {
+      } else if (label === "extends" || label === "references" || label === "instantiates") {
+        // A BASE, an `instanceof` type or a constructed class that is a cited host/runtime class
+        // (`extends Error`, `x instanceof Date`, `new Buffer`). The name is the target itself, so
+        // the bare proof applies.
+        if (!bound.has(target) && label !== "instantiates" ) {
           citation = hostGlobalCitation(target)
           if (citation !== null) reason = label === "extends" ? "host-global-base" : "host-global-type"
+        }
+        if (citation === null && !bound.has(target)) {
+          citation = runtimeGlobalCitation(target)
+          if (citation !== null) reason = runtimeGlobalReason(target)
         }
       }
       if (reason === null || citation === null) continue
