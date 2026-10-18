@@ -538,3 +538,109 @@ them as symbols. On the 250-file store slice that produced `references -> V` **8
 `SymbolKind.Type` is not a fiction: `src/ast/types.ts:18` defines `Type = "type"`, and the
 analyzer's own evidence-class classifier at `real-java-analyzer.ts:2748` already tests
 `s.kind === SymbolKind.Type`, so the kind is reachable from this file and simply never produced.
+
+## 2026-10-18 — COMPLETE-SURFACE WAVE: the emissions added, the payloads, and what above is now STALE
+
+Owner ruling (2026-10-18): for `java`, ts, js, dart and python deliver the COMPLETE surface and
+COMPLETE resolution — every construct's owed relationship emitted, probe and fixture verified, and
+every emitted edge either resolved to one declaration or carrying a declared, cited claim. This
+section records what this lane landed under that ruling and, first, which earlier parts of this file
+the ruling made stale.
+
+### STALE ABOVE, NAMED RATHER THAN SILENTLY LEFT
+
+* **PROBE A (JPMS) and PROBE B (type parameters) in the ONTOLOGY WORKSTREAM 2026-10-05 section read
+  "GAP"** — true when written, false at HEAD. Module-info now emits a `Module` symbol, `Namespace`
+  symbols for exported packages, `exports` edges labelled `module_exports`, `imports` edges labelled
+  `module_requires` (with `fileLevel` + `reasonCode`) and `references` mentions for every directive
+  (`emitJavaModuleDeclaration`); and declared type parameters are published as `type` symbols
+  (`emitJavaTypeParameterSymbols`), so the `references -> T/K/V/E` rows the probe measured now name
+  a declaration. Three fixtures pin the module surface (`java/module-info`,
+  `java/jpms-module-exports`, `java/module-info-directives` — the last two still carry pre-two-label
+  expressions and are triaged in `validation/m14/verification/JAVA-FIXTURE-RECONCILIATION.md`).
+* **`script/m14/spec/java-completeness.json` G1–G4 read "confirmed missing emissions"** while the
+  four sites are implemented and fixture-pinned. The rows are kept (a gap closes by a counted
+  whole-population measurement, not by deletion) and now carry the fixture, the cap-50 census
+  reading and the exact closing command; see that file's `_status_2026_10_18`. G5's premise
+  ("module-info emits zero symbols and relationships") and G6's "bounds are a declared limitation"
+  are likewise stale and named there.
+
+### NEW EMISSIONS (each with the fixture that can go red)
+
+| construct | edge | metadata | fixture |
+| --- | --- | --- | --- |
+| annotation use (JLS 9.7), every position: declaration, type-use, parameter, record component, local, type parameter, enum constant, package | `references` conf 0.95, source = annotated declaration (package NAME for a package annotation), target = type AS WRITTEN (bare leaf or full path) | `relationshipType:"annotation"`, `isAnnotation:true`, `annotatedKind`, `evidenceClass:"structural"` | `java/annotation-references`, `java/package-annotation` |
+| type-parameter bound (JLS 4.4) | `references` conf 0.95, one edge per bound type, source = declaring type/method | `relationshipType:"type_parameter_bound"`, `boundFor` | `java/type-parameter-bounds` |
+| enum constant body (JLS 8.9.1) | `contains anonymous_<CONSTANT> -> member` (family noise name, never indexed), @Override inside the body resolves through the enum's hierarchy | `enumConstantBody:true`, `superTypes:[<Enum>]` | `java/enum-constant-bodies` |
+| throws clause (already emitted at HEAD; now pinned) | `references` conf 0.95 source = declaring member, target = written type | `relationshipType:"throws_type"` | `java/throws-references` |
+
+Two BARE-READ fabrications were also removed (probe before the fix: `uses R -> R` for a compact
+constructor's own name, `uses Ann -> list` for an annotation type element declaration — a name being
+DECLARED is not a member being read); fixture `java/declaration-names-are-not-reads` pins both the
+forbid and the legitimate read that must survive.
+
+### RECEIVER TYPING — `metadata.owner` on the store's own channel
+
+A `calls` edge's target is the member leaf (`paint`, `clear`), so nothing on the row names the type
+that declares it; at cap 50, 828 of 855 unresolved `calls` were exactly that shape. Java is
+statically typed, so the receiver's type is written in the file. The lane now adds, on `calls` AND on
+receiver-variable `uses` field reads:
+
+```
+metadata.owner         = the declared type name as written (List, Widget, java.util.List)
+metadata.ownerEvidence = field | param | local | return
+```
+
+`metadata.owner` is the channel production already resolves through
+(`src/ast/member-owner-resolution.ts`, `claimOwnerCarryingTargets` + `resolveMemberTargetsByOwner`);
+this lane does NOT introduce a new channel and does NOT re-spell targets. Evidence sources, each a
+declaration: an instance field, a formal parameter (including a typed lambda parameter), a local
+variable, and a method's declared return type (refused when the file's overload set has more than one
+distinct return type); the declarations a variable-shaped receiver can also come from are the
+enhanced-for variable, a try-with-resources resource and a caught exception.
+
+DELIBERATELY OWNER-LESS, because the file cannot state the type and a wrong owner is worse than a
+missing one (the store WITHDRAWS the name binding for an owner-carrying row and then declines):
+implicit `this`, class-qualified static calls (the receiver already names its owner in the call
+expression), `super`, inherited fields, `var` locals, primitives, an untyped lambda parameter, and a
+multi-catch variable (several declared types). Fixtures `java/receiver-owner-type` and
+`java/receiver-owner-evidence` pin one positive per evidence class and every one of those negatives.
+
+The gate prices the channel per run (`owner channel (production rule, modelled): N row(s) carried
+metadata.owner · resolved … · declined …`). At cap 50 the sample is a LOWER bound — each repository
+contributes ~1 file, and an owner class or member living in an unsampled file makes the channel
+decline where production would resolve.
+
+### MEASUREMENT SURFACE for all of the above
+
+```
+export BB_CORPUS_ROOT=$PWD/.corpus
+bun run script/m14/java-emission-census.ts --cap=50      # controlled: per-type totals must equal the gate's
+bun run script/m14/java-emission-census.ts --cap=0       # whole admitted population
+```
+
+The census counts, per site marker: the G1–G4 gap markers, `annotation` by `annotatedKind`,
+`throws_type`, `type_parameter_bound`, and the `metadata.owner` payload by relationship type and
+evidence class. Cap-50 reading at the 2026-10-18 wave: annotation 353 edges / 38 files · throws_type
+61 / 13 · type_parameter_bound 3 / 2 · constructor_invocation 17 / 13 · isArrayAccess 2 / 2 ·
+inInitializer 13 / 9 · record_pattern 0 / 0 (the stride holds no Java 21 record pattern). The
+whole-population counts are the ones that close the gap rows; they are QUOTED FROM THE COMMAND, never
+carried over from this sample.
+
+### LIMITATIONS THIS WAVE MEASURED (recorded, not papered over)
+
+* **The pinned tree-sitter-java wasm cannot parse a `throws` clause on an annotation type element**
+  (legal under JLS 9.6.1): probe yields one MISSING node and error recovery invents a constant named
+  after the exception. No emission can be correct until the grammar moves; the differential oracle
+  must not mirror the recovery.
+* **JLS 7.5.4 static-on-demand imports are not distinguished from JLS 7.5.3** — the emission site
+  labels both `static_member_import`, so the four JLS import forms carry three labels. Closing it
+  needs the canonical spelling ruling (recorded in the reconciliation doc); then the emission and the
+  stale `java/import-label` fixture re-author together.
+* **`super()`/`this()` constructor-delegation targets are the keywords** (`super`, `this`), which
+  name no declaration; closure needs a Lead ruling on a keyword-target claim kind or an emission
+  change (recorded in `JAVA-RESOLUTION-CLASSIFICATION.md` §5). The edge itself is emitted and
+  fixture-pinned.
+* **Generic type-variable references** (`T`, `R`, `A`, `B`) are still published as `references` at
+  their use sites and read as ambiguous; whether a type variable should be a `references` edge at all
+  is a contract ruling, not a defect this lane may unilaterally remove.
