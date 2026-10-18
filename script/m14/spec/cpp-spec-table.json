@@ -14,7 +14,7 @@
   "instrument": "script/m14/cpp-applicable-set.ts",
   "command": "bun run script/m14/cpp-applicable-set.ts --out validation/m14/fixtures/cpp/measurements/applicable-set.json",
   "artifact": "validation/m14/fixtures/cpp/measurements/applicable-set.json",
-  "artifactMeasuredAt": "2026-10-18T16:28:13.460Z"
+  "artifactMeasuredAt": "2026-10-18T16:42:03.600Z"
  },
  "admissibilityRule": "APPLICABLE iff every construct production the value needs exists in the pinned grammar's own enumeration AND the analyzer has an emission site AND at least one fixture carries a positive expectation row AND that fixture goes RED when the emission is removed. A value failing any conjunct is a finding, not a note.",
  "canonicalVocabulary": [
@@ -145,7 +145,7 @@
     "references",
     "instantiates"
    ],
-   "ruling": "a template ARGUMENT is a type mention (references); `new X<T>` strips the arguments and instantiates X. A template DECLARATION is a declaration form, not a relationship kind: its members are contained by the enclosing class/namespace, and its parameters are not symbols. `template_instantiation` is a compile-time specialization and is NOT the `instantiates` value (see rulings)."
+   "ruling": "a template ARGUMENT is a type mention (references); `new X<T>` strips the arguments and instantiates X. A template DECLARATION is a declaration form, not a relationship kind: its members are contained by the enclosing class/namespace, and its parameters are not symbols. `template_instantiation` is a compile-time specialization and is NOT the `instantiates` value (see rulings): measured 2026-10-18, `Box<int> b;` with `template <typename T> struct Box` emits the class's contains edges and NO instantiates edge — a template variable is not object creation."
   },
   "namespaces": {
    "grammarConstructs": [
@@ -234,7 +234,7 @@
     "uses",
     "references"
    ],
-   "ruling": "an operator overload is a declared member (symbol) named `operator+` etc.; it is contained by its class and appears in calls/uses positions exactly like a named method. There is no `overloads` relationship value: overload RELATIONSHIPS are not a canonical kind, and the symbol's kind/name carries the fact."
+   "ruling": "an operator overload is a declared member (symbol) named `operator+` etc.; it is contained by its class (`contains`), and a call-shaped use of it can be a calls/uses edge. Measured 2026-10-18 on the operator-EXPRESSION shape: `a + b` with `V operator+` declared in-file emits NO calls edge (the analyzer's own callee rule excludes operator-spelled targets from `calls`, a documented decision), so the expression form is a measured silence while the symbol and its containment are emitted. There is no `overloads` relationship value: overload relations are not a canonical kind, and the symbol's kind/name carries the fact."
   },
   "lambda expressions (captures)": {
    "grammarConstructs": [
@@ -251,9 +251,10 @@
    ],
    "grammarAbsent": [],
    "carriedBy": [
-    "uses"
+    "uses",
+    "calls"
    ],
-   "ruling": "a captured variable is a READ of an in-file name, so a capture is `uses` from the enclosing function/class (the family member-read contract); a capture with an initializer (`[x = y]`) reads y. A lambda expression itself publishes no symbol of its own in this lane, so no contains edge is fabricated for it."
+   "ruling": "a capture of a FILE-DECLARED name is a READ of that name and is emitted as `uses` from the enclosing function; a call INSIDE the lambda body is a `calls` edge from the enclosing function (measured 2026-10-18: `[g]() { return g; }` → uses work→g; `[](int x){ helper(x); }` → calls work→helper). A capture of a PARAMETER or local whose declaration is not published as a symbol emits no edge (parameters/locals are not symbols in this lane), and a capture with an initializer (`[b=a]`) emits no capture-list edge of its own. A lambda expression publishes no symbol, so no contains edge is fabricated for it."
   },
   "structured bindings": {
    "grammarConstructs": [
@@ -267,7 +268,7 @@
     "uses",
     "references"
    ],
-   "ruling": "a structured binding DECLARES local names (not published symbols) and READS the initializer's object; the binding names are declaration positions, so no uses edge is fabricated for them, and the referenced type is references where the type is a type mention."
+   "ruling": "a structured binding DECLARES local names (not published symbols) and READS the initializer's object: measured 2026-10-18, `P p; auto [a, b] = p;` emits `uses work→p` (the read) and NO uses edge for a/b (declaration positions). A local/parameter initializer name that is not a published symbol is a measured silence, not a fabricated edge."
   },
   "concepts / requires (C++20)": {
    "grammarConstructs": [
@@ -465,7 +466,7 @@
      "update_expression",
      "field_initializer"
     ],
-    "rule": "a READ (and, under the C-family contract pinned by #960, a WRITE) of an in-file declared name: member reads, bare value reads, lambda-capture reads; declaration positions and call callees are excluded by their own rules.",
+    "rule": "a READ of an in-file declared name: member reads (field_expression, confidence 0.9 — the receiver's type is not resolved, carried in metadata.reasonCode), bare value reads of file-declared values, and lambda-capture reads (a capture of a file-declared name is read in the body). The LHS of an assignment is a WRITE and is GATED OUT (not a read-use) — measured 2026-10-18: `int x; x = n + 1; x += 2;` emits no uses, while a member READ does; this corrects the completeness spec's CPP-D5 note that claimed writes were emitted. Declaration positions and call callees are excluded by their own rules.",
     "implementationSites": [
      "src/ast/real-cpp-analyzer.ts:4196",
      "src/ast/real-cpp-analyzer.ts:4585"

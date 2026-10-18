@@ -291,6 +291,15 @@ function deriveContains(root: Node): CppTruthEdge[] {
 
   const visit = (n: any, owner: string | null, ownerLine: number, isFunctionScope: boolean) => {
     const t = n.type
+    // A NAMED class/struct/union is itself a MEMBER of its owner (a namespace or an enclosing
+    // class), so the owning container CONTAINS it. Measured defect this closes: a namespace's
+    // classes were never derived as contained members (contract case
+    // `contains->ns.Widget` was MISSING against the analyzer), while the enum branch already
+    // pushed the enum itself — the two shapes of a nested declaration must be treated the same.
+    if (owner && (t === "class_specifier" || t === "struct_specifier" || t === "union_specifier")) {
+      const own = n.childForFieldName?.("name")?.text
+      if (own) push(owner, String(own), nameLine(n))
+    }
     if (t === "namespace_definition") {
       const nm = n.childForFieldName?.("name")?.text
       if (nm) {
@@ -310,11 +319,11 @@ function deriveContains(root: Node): CppTruthEdge[] {
         if (mt === "field_declaration" || mt === "declaration" || mt === "function_definition" || mt === "alias_declaration" || mt === "type_definition" || mt === "using_declaration") {
           const dn = declaredName(m) ?? (mt === "type_definition" ? firstNamed(m, ["type_identifier"])?.text : null)
           if (dn) { const mn = memberName(cls, String(dn)); if (mn) push(cls, mn, lineOf(m)) }
-        } else if (mt === "enum_specifier") {
-          const en = m.childForFieldName?.("name")?.text
-          const list = m.childForFieldName?.("body")
-          if (en) push(cls, String(en), nameLine(m))
-          if (list) for (const e of namedChildren(list)) if (e.type === "enumerator") push(cls, String(e.text ?? ""), lineOf(e))
+        } else if (mt === "enum_specifier" || mt === "class_specifier" || mt === "struct_specifier" || mt === "union_specifier") {
+          // A nested type is a MEMBER of this class: visit it with the class as owner so the
+          // class-level push and the nested type's OWN members are both derived (the enum branch
+          // pushes enum -> enumerator, never class -> enumerator).
+          visit(m, cls, nameLine(m), false)
         } else if (mt === "template_declaration") {
           for (const c of namedChildren(m)) visit(c, cls, nameLine(n), false)
         }
@@ -324,8 +333,13 @@ function deriveContains(root: Node): CppTruthEdge[] {
     if (t === "enum_specifier" && owner) {
       const nm = n.childForFieldName?.("name")?.text
       const list = n.childForFieldName?.("body")
+      // The enum ITSELF is contained by its owner; its ENUMERATORS are contained by the enum.
+      // Measured defect this closes: a namespace holding an enum published `ns -> enumerator`
+      // rows the analyzer never emits (unexplained contains) and missed nothing, so the
+      // namespace/enum shape had both a false positive and a false negative in one branch.
+      const container = nm ? String(nm) : owner
       if (nm) push(owner, String(nm), nameLine(n))
-      if (list) for (const e of namedChildren(list)) if (e.type === "enumerator") push(owner, String(e.text ?? ""), lineOf(e))
+      if (list) for (const e of namedChildren(list)) if (e.type === "enumerator") push(container, String(e.text ?? ""), lineOf(e))
       return
     }
     if (t === "alias_declaration" || t === "type_definition") {
