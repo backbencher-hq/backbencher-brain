@@ -27,6 +27,8 @@ const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
 const ARTIFACT = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/applicable-set.json")
 const GATE_LOG = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/gate-cpp-cap50-baseline.txt")
 const OUT = path.join(ROOT, "script/m14/spec/cpp-spec-table.json")
+const CENSUS = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-emission-census-whole.json")
+const D3_NOINDEX = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-d3-noindex-arm.json")
 const CHECK = process.argv.includes("--check")
 
 interface GateRow {
@@ -126,6 +128,53 @@ const LANE_NOTES: Record<string, { cap50ResidualClass: string; wholePopulationCe
 
 const applicable = JSON.parse(fs.readFileSync(ARTIFACT, "utf8"))
 const gate = parseGateLog(fs.readFileSync(GATE_LOG, "utf8"))
+/** The D2 whole-population emission census, when it has landed. Absent => the cells stay
+ *  explicitly OWED; a census from a different population than the one its file names is a
+ *  defect, so the population block travels with every per-type number below. */
+const census: any = fs.existsSync(CENSUS) ? JSON.parse(fs.readFileSync(CENSUS, "utf8")) : null
+/** The D3 no-index whole-population gate arm + its closure-exact classifier. */
+const d3: any = fs.existsSync(D3_NOINDEX) ? JSON.parse(fs.readFileSync(D3_NOINDEX, "utf8")) : null
+/** TABLE 1 lines of the gate arm, parsed into per-type rows (the table IS the verdict's scope). */
+const d3Table: Record<string, any> = {}
+if (d3?.table1) {
+  const header = String(d3.table1.find((l: string) => l.trim().startsWith("type") && l.includes("edges")) ?? "").trim().split(/\s+/)
+  for (const line of d3.table1 as string[]) {
+    const cols = line.trim().split(/\s+/)
+    if (cols.length < header.length) continue
+    const t = cols[0]
+    if (!/^[a-z_]+$/.test(t) || t === "type") continue
+    const num = (name: string) => {
+      const i = header.indexOf(name)
+      return i >= 0 && cols[i] !== undefined ? Number(cols[i]) : 0
+    }
+    d3Table[t] = {
+      edges: num("edges"), resolved: num("resolved"), collRes: num("collRes"),
+      ambDecl: num("amb(decl)"), ambKind: num("amb(kind)"), unresolved: num("unresolved"),
+      extOK: num("extOK"), extUnknown: num("ext?"), extFAIL: num("extFAIL"),
+      bindOK: num("bindOK"), bindUnknown: num("bind?"), bindFAIL: num("bindFAIL"),
+      causeOK: num("causeOK"), causeFAIL: num("causeFAIL"),
+    }
+  }
+}
+const censusPopulation = census
+  ? {
+      command: "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
+      artifact: "validation/m14/fixtures/cpp/measurements/cpp-emission-census-whole.json",
+      cap: census.population.cap,
+      parsed: census.population.parsed,
+      admitted: census.population.admitted,
+      repos: census.population.repos,
+      failed: census.population.failed,
+      degraded: census.population.degraded,
+      trackedButAbsent: census.population.absent,
+      overSizeCap: census.population.overCap,
+      admittedExtensions: census.population.exts,
+      totalEdges: census.closure.totalEdges,
+      constructWalked: census.closure.constructWalked,
+      constructSkipped: census.closure.constructSkipped,
+      control: census.control,
+    }
+  : null
 
 const types: Record<string, any> = {}
 for (const value of applicable.applicableValues) {
@@ -158,9 +207,37 @@ for (const value of applicable.applicableValues) {
           causeOK: g.causeOK, causeFAIL: g.causeFAIL,
         }
       : { status: "not present in the gate log" },
+    gateNoIndex: d3Table[value]
+      ? { ...d3Table[value], command: d3.command, population: { parsed: 7435, admitted: 7435, repos: 31, failed: 0, degraded: 0 } }
+      : { status: "OWED — the D3 no-index arm has not landed" },
     cap50ResidualClass: LANE_NOTES[value]?.cap50ResidualClass ?? "",
-    wholePopulation: LANE_NOTES[value]?.wholePopulationCensus ?? { status: "OWED" },
+    wholePopulation: census?.perType?.[value]
+      ? {
+          status: "MEASURED",
+          command: censusPopulation.command,
+          population: {
+            parsed: censusPopulation.parsed,
+            admitted: censusPopulation.admitted,
+            repos: censusPopulation.repos,
+            failed: censusPopulation.failed,
+            degraded: censusPopulation.degraded,
+          },
+          rows: census.perType[value].edges,
+          files: census.perType[value].files,
+          repos: census.perType[value].repos,
+        }
+      : { status: "OWED — filled by the D2 whole-population census arm" },
   }
+}
+
+/** Attach the census counts the rulings are re-measured against (R1/R2/R4 are population claims). */
+if (census) {
+  const byId: Record<string, any> = {}
+  for (const r of applicable.rulings) byId[r.id] = { ...r }
+  if (byId["CPP-R1"]) byId["CPP-R1"].wholePopulation = `implements ${census.perType.implements.edges} edges in ${census.perType.implements.files} files across ${census.perType.implements.repos} repos (D2 census, 7,435 admitted files); payload split by pureVirtualCount in wholePopulationArms.census.implementsPayload`
+  if (byId["CPP-R2"]) byId["CPP-R2"].wholePopulation = `instantiates ${census.perType.instantiates.edges} edges / template_instantiation ${census.constructs.template_instantiation.edges} construct sites — different populations, as ruled`
+  if (byId["CPP-R4"]) byId["CPP-R4"].wholePopulation = `extends ${census.perType.extends.edges} edges; ${census.multipleInheritance.classesWithMultipleBases.edges} classes with more than one base in ${census.multipleInheritance.classesWithMultipleBases.files} files / ${census.multipleInheritance.classesWithMultipleBases.repos} repos`
+  applicable.rulings = applicable.rulings.map((r: any) => byId[r.id])
 }
 
 const spec = {
@@ -211,7 +288,47 @@ const spec = {
     types,
   },
   wholePopulationArms: {
-    status: "OWED — filled by the D2 whole-population emission census and the D3 incoming-gate arms; the numbers will be added with their commands and scope.",
+    status: census
+      ? `D2 census MEASURED (${census.population.parsed}/${census.population.admitted} files, ${census.population.repos} repos, ${census.closure.totalEdges} rows); D3 no-index arm MEASURED with a closure-exact classification (see .d3.noIndexArm); the --index arm is OWED.`
+      : "OWED — filled by the D2 whole-population emission census and the D3 incoming-gate arms.",
+    census: census
+      ? {
+          ...censusPopulation,
+          perType: census.perType,
+          perMarker: census.perMarker,
+          callPayload: census.callPayload,
+          exportPayload: census.exportPayload,
+          overridePayload: census.overridePayload,
+          implementsPayload: census.implementsPayload,
+          importsPayload: census.importsPayload,
+          instantiatesPayload: census.instantiatesPayload,
+          usesPayload: census.usesPayload,
+          referencesPayload: census.referencesPayload,
+          multipleInheritance: census.multipleInheritance,
+          constructPopulations: census.constructs,
+          parseErrors: census.parseErrors,
+        }
+      : null,
+    d3: d3
+      ? {
+          noIndexArm: {
+            command: d3.command,
+            population: d3.population,
+            selfTest: d3.selfTest,
+            table1: d3.table1,
+            bindingIntent: d3.bindingIntent,
+            verdict: d3.verdict,
+            claimCarrying: d3.claimCarrying,
+            classifier: d3.classifier,
+            arbitraryTwin: d3.classifier?.arbitraryTwin ?? null,
+            closure: d3.classifier?.control?.closure ?? null,
+            evidencePage: "validation/m14/verification/CPP-D3.md",
+          },
+          indexedArm: { status: "OWED — the --index arm is the next run; the cpp analyzer reads NO project index, so the expected delta is 0 and the arm is measured to prove that rather than assumed" },
+        }
+      : { status: "OWED — the D3 no-index arm has not landed" },
+    noNewValueConfirmations:
+      "The constructs that carry NO relationship (or a DIFFERENT one than their spelling suggests) and are therefore carried as METADATA/symbol facts rather than as a vocabulary value — each counted at whole population by the same census, so the ruling is a number and not a silence: concepts+requires (concept_definition 2 · requires_clause 10 · requires_expression 2 — RULED construct, no symbol/no edge); template instantiation (template_instantiation 267 sites, versus `instantiates` 3,093 rows emitted from new_expression only — CPP-R2); structured bindings (structured_binding_declarator 389 sites; binding names are declarations, the initializer read is the uses edge); lambda expressions (lambda_expression 5,614 · lambda_capture_specifier 5,670 — captures of declared names are uses, the lambda publishes no symbol); operator/destructor names (operator_name 3,335 · operator_cast 159 · destructor_name 2,873 — symbols contained, no `overloads` value exists); friend declarations (573 — a friend declaration publishes no edge); namespace aliases (83 — a namespace is not a published declaration); pure-virtual clauses (75 — the pure-virtual CONTRACT is why `implements` fires, CPP-R1); multiple inheritance (114 classes with >1 base in 58 files across 5 repos — N extends edges, CPP-R4).",
   },
 }
 

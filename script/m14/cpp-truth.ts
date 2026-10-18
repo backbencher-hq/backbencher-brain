@@ -35,7 +35,8 @@
  *   exports    the export attribute (`__declspec(dllexport)`,
  *              `__attribute__((visibility("default")))`)
  *   overrides  a derived method against a base virtual, transitively
- *   implements  a base that declares a PURE VIRTUAL is an interface
+ *   implements  a base that declares a PURE VIRTUAL is an interface (this walker is the ONLY
+ *               cpp derivation of the label: the shared heritage walker does not emit it for cpp)
  *
  * The other five are NOT re-derived here. `calls`, `uses`, `extends`,
  * `implements` and `instantiates` already have an independent oracle in the
@@ -74,7 +75,7 @@
  * forgotten (the same standard `ruby-truth.ts` sets).
  */
 import type { Node } from "web-tree-sitter"
-import { extendsTargetName, isCppSpelledName } from "../../src/ast/real-cpp-analyzer"
+import { cppPureVirtualDeclaration, extendsTargetName, isCppSpelledName } from "../../src/ast/real-cpp-analyzer"
 import { deriveCppBareUses, deriveCppEdges, deriveTreeEdges } from "./differential"
 
 export type CppTruthLabel =
@@ -278,14 +279,16 @@ function deriveContains(root: Node): CppTruthEdge[] {
   /** Constructor is normalized to one name by the family contract, which is why
    *  the one-edge-per-pair rule exists for `contains` at all.
    *
-   *  A DESTRUCTOR is not a member at all — it is compiler-managed and the
-   *  analyzer deliberately publishes no symbol for it, so truth must not either.
-   *  Without this arm the oracle reported `Reader -> ~Reader` as a MISSING edge
-   *  on the first file it was pointed at, which is the oracle being wrong in the
-   *  opposite direction from the analyzer. An oracle that manufactures gaps is
-   *  worse than no oracle, because a gap looks like a finding. */
+   *  A DESTRUCTOR **IS** a published member — CORRECTED 2026-10-18 by measurement. The previous
+   *  rule here skipped `~X` on the claim that "the analyzer deliberately publishes no symbol for
+   *  it"; the probe on the pinned grammar shows the opposite:
+   *    symbols  [class S, constructor, method ~S, method operator=, property x]
+   *    contains [S -> constructor, S -> ~S, S -> operator=, S -> x]
+   *  so the skip made truth MANUFACTURE gaps (`system_message -> ~system_message` unexplained on
+   *  the fmt draw) exactly the failure this comment used to warn about, in the other direction.
+   *  The fixture `destructor-definition-published` pins the analyzer's behavior; truth follows it.
+   */
   const memberName = (cls: string, declared: string): string | null => {
-    if (declared.startsWith("~")) return null
     return declared === cls ? "constructor" : declared
   }
 
@@ -483,14 +486,8 @@ function deriveImplements(root: Node): CppTruthEdge[] {
         for (const m of namedChildren(body)) {
           if (m.type !== "field_declaration" && m.type !== "declaration") continue
           if (!firstNamed(m, ["function_declarator"])) continue
-          let isPure = false
-          for (let i = 0; i < m.childCount; i++) {
-            const c = m.child(i)
-            if (!c || c.isNamed || c.type !== "=") continue
-            const nxt = m.child(i + 1)
-            if (nxt && nxt.type === "number_literal" && String(nxt.text ?? "").trim() === "0") isPure = true
-          }
-          if (isPure) {
+          // Shared D23 rule (both `= 0` shapes), imported not copied — see deriveOverrides.
+          if (cppPureVirtualDeclaration(m)) {
             const fd = firstNamed(m, ["function_declarator"])
             const id = fd?.childForFieldName?.("declarator") ?? firstNamed(fd ?? m, ["field_identifier", "identifier"])
             if (id) set.add(String(id.text ?? ""))
@@ -707,17 +704,14 @@ function deriveOverrides(root: Node): CppTruthEdge[] {
     const nm = id ? String(id.text ?? "") : null
     return nm && isCppSpelledName(nm) ? nm : null
   }
-  const isPure = (decl: any): boolean => {
-    if (decl.type !== "field_declaration" && decl.type !== "declaration") return false
-    if (!firstNamed(decl, ["function_declarator"])) return false
-    for (let i = 0; i < decl.childCount; i++) {
-      const c = decl.child(i)
-      if (!c || c.isNamed || c.type !== "=") continue
-      const nxt = decl.child(i + 1)
-      if (nxt && nxt.type === "number_literal" && String(nxt.text ?? "").trim() === "0") return true
-    }
-    return false
-  }
+  // D23: a pure virtual is `= 0`, and this grammar writes the `0` in TWO places (a direct child
+  // of the declaration, or the `value` field ONE LEVEL DOWN inside an `init_declarator`). The
+  // shared rule `cppPureVirtualDeclaration` is exported by the analyzer FOR this oracle (#916:
+  // one rule, two sides — a copied rule is a second answer), so it is imported rather than
+  // re-derived. Measured before this: the local direct-children-only test saw shape 1 and could
+  // not see shape 2, so `implements`/`overrides` truth under-derived exactly the abstract bases
+  // the analyzer flagged (the 4-of-7 miss D23 records).
+  const isPure = (decl: any): boolean => cppPureVirtualDeclaration(decl)
 
   const stack: any[] = [root]
   while (stack.length) {
@@ -828,6 +822,12 @@ export function deriveCppUnadmittedTruth(root: Node): CppTruthEdge[] {
     ...references,
     ...deriveExports(root),
     ...deriveOverrides(root),
+    // `implements` was believed shared-derived (`deriveTreeEdges`); the first post-wiring draw
+    // disproved that: fmt --sample 60 reported "COMPARED WITH NO TRUTH: implements (15 comparable,
+    // 0 truth)". The lane's own pure-virtual walker is pushed here instead — the shared heritage
+    // walker does not derive this label for cpp, and the m60 coverage gate had been crediting it
+    // from `CPP_ORACLE_LABELS` (the declared set) rather than from a compared truth.
+    ...deriveImplements(root),
   ]
 }
 

@@ -231,9 +231,24 @@ let unclassifiedOutcomeRows = 0
 let table1Seen = false
 let headerCols: string[] = []
 let intentTwin: number | null = null
+let intentHeader: string[] = []
 
 const rl = createInterface({ input: createReadStream(FILE, "utf8"), crlfDelay: Infinity })
 for await (const line of rl) {
+  // BINDING INTENT table: the header row names the columns and the TOTAL row below it carries the
+  // numbers, so the twin is read by COLUMN POSITION from the TOTAL row (the header names it).
+  //   type  edges  intended  sameFileUnproven  arbitraryTwin  nothingAnywhere  noTarget
+  // Detected FIRST, because the TABLE 1 parser's per-type block consumes every later line.
+  if (line.includes("sameFileUnproven") && line.includes("arbitraryTwin") && line.includes("intended")) {
+    intentHeader = line.trim().split(/\s+/)
+    continue
+  }
+  if (intentHeader.length > 0 && line.trim().startsWith("TOTAL")) {
+    const cols = line.trim().split(/\s+/)
+    const i = intentHeader.indexOf("arbitraryTwin")
+    if (i > 0 && cols[i] !== undefined && /^\d+$/.test(cols[i])) intentTwin = Number(cols[i])
+    continue
+  }
   if (line.startsWith("DUMP\t")) {
     dumpLines++
     const parts = line.split("\t")
@@ -291,15 +306,6 @@ for await (const line of rl) {
       causeOK: num("causeOK"), causeFAIL: num("causeFAIL"),
     })
     continue
-  }
-  // intent table: "TOTAL  intended N · sameFileUnproven N · arbitraryTwin N · nothingAnywhere N · noTarget N"
-  if (intentTwin === null && line.includes("arbitraryTwin")) {
-    const i = line.indexOf("arbitraryTwin")
-    let j = i + "arbitraryTwin".length
-    while (j < line.length && (line[j] === " " || line[j] === "\t")) j++
-    let k = j
-    while (k < line.length && line[k] >= "0" && line[k] <= "9") k++
-    if (k > j) intentTwin = Number(line.slice(j, k))
   }
 }
 if (!table1Seen || table1.size === 0) {

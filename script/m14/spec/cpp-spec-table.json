@@ -330,13 +330,15 @@
    "id": "CPP-R1",
    "question": "`implements`: is the canonical value applicable to C++?",
    "measured": "the pinned grammar has NO implements-clause production (implements_clause / class_interface_clause / super_interfaces all ABSENT — section 2 proves it). It DOES have class_specifier + base_class_clause + pure_virtual_clause; the analyzer emits implements at a measured site from (derived, pure-virtual base) pairs and the corpus carries them.",
-   "verdict": "APPLICABLE BY ADAPTED SEMANTICS — a pure-virtual base is a contract. Ruling it non-applicable would contradict the emission and the fixtures; the adapted reading is declared in the value's rule and in script/m14/spec/cpp-completeness.json."
+   "verdict": "APPLICABLE BY ADAPTED SEMANTICS — a pure-virtual base is a contract. Ruling it non-applicable would contradict the emission and the fixtures; the adapted reading is declared in the value's rule and in script/m14/spec/cpp-completeness.json.",
+   "wholePopulation": "implements 375 edges in 73 files across 8 repos (D2 census, 7,435 admitted files); payload split by pureVirtualCount in wholePopulationArms.census.implementsPayload"
   },
   {
    "id": "CPP-R2",
    "question": "template_instantiation vs `instantiates`: the same word, the same value?",
    "measured": "`template_instantiation` (a compile-time type specialization, e.g. `Box<int>`) and `new_expression` (runtime object creation) are DIFFERENT productions. The `instantiates` value is emitted from new_expression only; a new of a template type strips `<>` and instantiates the base type name. No value is named after template instantiation, and no constructor-of-template edge is fabricated.",
-   "verdict": "DISTINCT — a C++ template instantiation carries no relationship; `instantiates` = object creation. Recorded so no future reader derives the value from the wrong node."
+   "verdict": "DISTINCT — a C++ template instantiation carries no relationship; `instantiates` = object creation. Recorded so no future reader derives the value from the wrong node.",
+   "wholePopulation": "instantiates 3093 edges / template_instantiation 267 construct sites — different populations, as ruled"
   },
   {
    "id": "CPP-R3",
@@ -348,7 +350,8 @@
    "id": "CPP-R4",
    "question": "Does multiple inheritance need its own value?",
    "measured": "base_class_clause's shape is a repeated list of base_class items; the analyzer iterates it and emits one extends (and, where pure virtual, one implements) per base.",
-   "verdict": "NO — multiple inheritance is N extends edges; the value set already expresses it, and the fixture pins a two-base class."
+   "verdict": "NO — multiple inheritance is N extends edges; the value set already expresses it, and the fixture pins a two-base class.",
+   "wholePopulation": "extends 4331 edges; 114 classes with more than one base in 58 files / 5 repos"
   }
  ],
  "evidenceRows": {
@@ -445,9 +448,44 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 931193,
+     "resolved": 203679,
+     "collRes": 0,
+     "ambDecl": 404969,
+     "ambKind": 160458,
+     "unresolved": 322545,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
     "cap50ResidualClass": "member-leaf calls on receivers declared outside the stride (the file's own project can answer them only when the declaring file is in the sample), plus C++ template FUNCTION heads whose callee is a template_function/qualified_identifier. The earlier whole-population residual analysis (`CPP-RESIDUAL.md`, 6,641 files) attributed 83% of the calls residual to declarations living in `.h` files the gate's discovery does not admit — a POPULATION boundary (proposal cpp-h-routing.md), declared here rather than folded into this type.",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 931193,
+     "files": 6233,
+     "repos": 27
     }
    },
    "uses": {
@@ -516,9 +554,44 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 117705,
+     "resolved": 35331,
+     "collRes": 0,
+     "ambDecl": 59583,
+     "ambKind": 21587,
+     "unresolved": 22791,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
     "cap50ResidualClass": "member reads on receivers whose class is not in the sampled project slice; bare reads of names declared in headers outside the run.",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 117705,
+     "files": 4613,
+     "repos": 22
     }
    },
    "contains": {
@@ -595,9 +668,44 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 168351,
+     "resolved": 168351,
+     "collRes": 106506,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
     "cap50ResidualClass": "none on this stride — every contains edge resolved (1,891/1,891, collRes 571 = resolved picks among duplicate member names). The whole-population collRes axis is tracked separately: it must not grow when other types are fixed.",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 168351,
+     "files": 6263,
+     "repos": 27
     }
    },
    "imports": {
@@ -653,9 +761,44 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 51143,
+     "resolved": 228,
+     "collRes": 0,
+     "ambDecl": 539,
+     "ambKind": 378,
+     "unresolved": 50376,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
     "cap50ResidualClass": "path-target-not-a-symbol (442/443 on this stride) — declared by construction: an `#include` target is a module path, not a published symbol, and the no-index per-file axis cannot resolve it. The earlier whole-population run measured 45,091/45,829 (99.5%) in this class; the .h-route proposal measures the 924/990 quoted includes that DO name a repo file.",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 51143,
+     "files": 7354,
+     "repos": 30
     }
    },
    "references": {
@@ -714,9 +857,44 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 3174,
+     "resolved": 32,
+     "collRes": 0,
+     "ambDecl": 339,
+     "ambKind": 240,
+     "unresolved": 2803,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
     "cap50ResidualClass": "qualified type mentions whose declaring file is outside the stride (type_identifier/qualified_identifier leaves).",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 3174,
+     "files": 1163,
+     "repos": 14
     }
    },
    "exports": {
@@ -773,9 +951,44 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 1528,
+     "resolved": 693,
+     "collRes": 0,
+     "ambDecl": 780,
+     "ambKind": 0,
+     "unresolved": 55,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
     "cap50ResidualClass": "no edges on this stride — the sample carries no export marker; the whole-population count is the type's evidence (the earlier residual run measured 1,527 edges / 692 resolved).",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 1528,
+     "files": 161,
+     "repos": 6
     }
    },
    "extends": {
@@ -833,9 +1046,44 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 4331,
+     "resolved": 2314,
+     "collRes": 0,
+     "ambDecl": 625,
+     "ambKind": 327,
+     "unresolved": 1392,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
     "cap50ResidualClass": "bases declared in headers outside the run (the per-file model cannot see another file); on this stride 5 of 10 extend edges resolved and 5 name an undeclared-in-run base.",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 4331,
+     "files": 1746,
+     "repos": 13
     }
    },
    "implements": {
@@ -888,9 +1136,44 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 375,
+     "resolved": 295,
+     "collRes": 0,
+     "ambDecl": 80,
+     "ambKind": 24,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
     "cap50ResidualClass": "no edges on this stride — an implements edge requires the BASE's body in the same file (in-file pure-virtual set); the whole-population count is the type's evidence (171 (derived→contract) pairs measured by the analyzer's own comment, re-measured by the D2 census).",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 375,
+     "files": 73,
+     "repos": 8
     }
    },
    "overrides": {
@@ -950,9 +1233,44 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 1884,
+     "resolved": 0,
+     "collRes": 0,
+     "ambDecl": 1884,
+     "ambKind": 358,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
     "cap50ResidualClass": "member-leaf ambiguity (3 amb on this stride) — the target is the declared member's leaf, so two classes declaring a method of that name are two declarations; the intended base rides metadata.overriddenOwner. Whole-population state in CPP-RESIDUAL.md.",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 1884,
+     "files": 125,
+     "repos": 9
     }
    },
    "instantiates": {
@@ -1002,14 +1320,1102 @@
      "causeOK": 0,
      "causeFAIL": 0
     },
+    "gateNoIndex": {
+     "edges": 3093,
+     "resolved": 725,
+     "collRes": 0,
+     "ambDecl": 596,
+     "ambKind": 452,
+     "unresolved": 1772,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     }
+    },
     "cap50ResidualClass": "constructed types declared in a header outside the run (9 unresolved / 10 on this stride).",
     "wholePopulation": {
-     "status": "OWED — filled by the D2 whole-population census arm"
+     "status": "MEASURED",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
+     "population": {
+      "parsed": 7435,
+      "admitted": 7435,
+      "repos": 31,
+      "failed": 0,
+      "degraded": 0
+     },
+     "rows": 3093,
+     "files": 587,
+     "repos": 16
     }
    }
   }
  },
  "wholePopulationArms": {
-  "status": "OWED — filled by the D2 whole-population emission census and the D3 incoming-gate arms; the numbers will be added with their commands and scope."
+  "status": "D2 census MEASURED (7435/7435 files, 31 repos, 1282777 rows); D3 no-index arm MEASURED with a closure-exact classification (see .d3.noIndexArm); the --index arm is OWED.",
+  "census": {
+   "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
+   "artifact": "validation/m14/fixtures/cpp/measurements/cpp-emission-census-whole.json",
+   "cap": 0,
+   "parsed": 7435,
+   "admitted": 7435,
+   "repos": 31,
+   "failed": 0,
+   "degraded": 0,
+   "trackedButAbsent": 2071,
+   "overSizeCap": 8,
+   "admittedExtensions": [
+    "cpp",
+    "cc",
+    "cxx",
+    "c++",
+    "hpp",
+    "hxx",
+    "ipp",
+    "inl",
+    "cu"
+   ],
+   "totalEdges": 1282777,
+   "constructWalked": 7435,
+   "constructSkipped": {
+    "overCap": 0,
+    "parseFailed": 0,
+    "noTree": 0
+   },
+   "control": {
+    "ok": true,
+    "checked": "none (whole population)",
+    "detail": "whole-population run: no second instrument over this population; the internal control is closure (parsed+failed+degraded = admitted) and per-type sum = TOTAL"
+   },
+   "perType": {
+    "calls": {
+     "edges": 931193,
+     "files": 6233,
+     "repos": 27
+    },
+    "contains": {
+     "edges": 168351,
+     "files": 6263,
+     "repos": 27
+    },
+    "uses": {
+     "edges": 117705,
+     "files": 4613,
+     "repos": 22
+    },
+    "imports": {
+     "edges": 51143,
+     "files": 7354,
+     "repos": 30
+    },
+    "extends": {
+     "edges": 4331,
+     "files": 1746,
+     "repos": 13
+    },
+    "references": {
+     "edges": 3174,
+     "files": 1163,
+     "repos": 14
+    },
+    "instantiates": {
+     "edges": 3093,
+     "files": 587,
+     "repos": 16
+    },
+    "overrides": {
+     "edges": 1884,
+     "files": 125,
+     "repos": 9
+    },
+    "exports": {
+     "edges": 1528,
+     "files": 161,
+     "repos": 6
+    },
+    "implements": {
+     "edges": 375,
+     "files": 73,
+     "repos": 8
+    },
+    "decorates": {
+     "edges": 0,
+     "files": 0,
+     "repos": 0
+    },
+    "renders": {
+     "edges": 0,
+     "files": 0,
+     "repos": 0
+    },
+    "mixes_in": {
+     "edges": 0,
+     "files": 0,
+     "repos": 0
+    },
+    "part_of": {
+     "edges": 0,
+     "files": 0,
+     "repos": 0
+    }
+   },
+   "perMarker": {
+    "field_access": {
+     "edges": 81202,
+     "files": 3718,
+     "repos": 19
+    },
+    "include_dependency": {
+     "edges": 51143,
+     "files": 7354,
+     "repos": 30
+    },
+    "identifier_usage": {
+     "edges": 36503,
+     "files": 2670,
+     "repos": 21
+    },
+    "using_dependency": {
+     "edges": 3174,
+     "files": 1163,
+     "repos": 14
+    },
+    "module_export": {
+     "edges": 1528,
+     "files": 161,
+     "repos": 6
+    }
+   },
+   "callPayload": {
+    "qualifiedPath": {
+     "qualified-path-carried": {
+      "edges": 931193,
+      "files": 6233,
+      "repos": 27
+     }
+    }
+   },
+   "exportPayload": {
+    "macros": {
+     "DART_EXPORT": {
+      "edges": 780,
+      "files": 15,
+      "repos": 1
+     },
+     "DUCKDB_API": {
+      "edges": 629,
+      "files": 128,
+      "repos": 1
+     },
+     "LZ4LIB_API": {
+      "edges": 38,
+      "files": 1,
+      "repos": 1
+     },
+     "GTEST_API_": {
+      "edges": 27,
+      "files": 1,
+      "repos": 1
+     },
+     "XXH_PUBLIC_API": {
+      "edges": 14,
+      "files": 2,
+      "repos": 1
+     },
+     "_LIBUNWIND_EXPORT": {
+      "edges": 9,
+      "files": 3,
+      "repos": 1
+     },
+     "HWY_DLLEXPORT": {
+      "edges": 8,
+      "files": 2,
+      "repos": 1
+     },
+     "UTF8PROC_DLLEXPORT": {
+      "edges": 6,
+      "files": 2,
+      "repos": 1
+     },
+     "PACKAGE_EXPORT": {
+      "edges": 4,
+      "files": 1,
+      "repos": 1
+     },
+     "ZDICTLIB_STATIC_API": {
+      "edges": 4,
+      "files": 2,
+      "repos": 1
+     },
+     "CIMGUI_API": {
+      "edges": 3,
+      "files": 1,
+      "repos": 1
+     },
+     "PROTOBUF_EXPORT_TEMPLATE_DEFINE": {
+      "edges": 3,
+      "files": 2,
+      "repos": 1
+     },
+     "LZ4LIB_STATIC_API": {
+      "edges": 2,
+      "files": 1,
+      "repos": 1
+     },
+     "PROTOBUF_EXPORT": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+     }
+    },
+    "spellings": {
+     "(none)": {
+      "edges": 1528,
+      "files": 161,
+      "repos": 6
+     }
+    }
+   },
+   "overridePayload": {
+    "reasonCodes": {
+     "override-keyword+signature-match": {
+      "edges": 1239,
+      "files": 98,
+      "repos": 6
+     },
+     "signature-match": {
+      "edges": 645,
+      "files": 54,
+      "repos": 8
+     }
+    }
+   },
+   "implementsPayload": {
+    "pure-virtual-base\u0000pureVirtuals=1": {
+     "edges": 152,
+     "files": 38,
+     "repos": 4
+    },
+    "pure-virtual-base\u0000pureVirtuals=2": {
+     "edges": 105,
+     "files": 17,
+     "repos": 6
+    },
+    "pure-virtual-base\u0000pureVirtuals=3": {
+     "edges": 76,
+     "files": 11,
+     "repos": 2
+    },
+    "pure-virtual-base\u0000pureVirtuals=4": {
+     "edges": 17,
+     "files": 7,
+     "repos": 3
+    },
+    "pure-virtual-base\u0000pureVirtuals=6": {
+     "edges": 5,
+     "files": 4,
+     "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=5": {
+     "edges": 5,
+     "files": 3,
+     "repos": 2
+    },
+    "pure-virtual-base\u0000pureVirtuals=13": {
+     "edges": 4,
+     "files": 1,
+     "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=8": {
+     "edges": 3,
+     "files": 2,
+     "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=9": {
+     "edges": 3,
+     "files": 1,
+     "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=14": {
+     "edges": 1,
+     "files": 1,
+     "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=11": {
+     "edges": 1,
+     "files": 1,
+     "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=27": {
+     "edges": 1,
+     "files": 1,
+     "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=22": {
+     "edges": 1,
+     "files": 1,
+     "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=7": {
+     "edges": 1,
+     "files": 1,
+     "repos": 1
+    }
+   },
+   "importsPayload": {
+    "includeSpelling": {
+     "quoted": {
+      "edges": 39603,
+      "files": 6719,
+      "repos": 26
+     },
+     "angle": {
+      "edges": 11540,
+      "files": 3199,
+      "repos": 29
+     }
+    }
+   },
+   "instantiatesPayload": {
+    "isNew": {
+     "edges": 3093,
+     "files": 587,
+     "repos": 16
+    }
+   },
+   "usesPayload": {
+    "field_access": {
+     "edges": 81202,
+     "files": 3718,
+     "repos": 19
+    },
+    "identifier_usage": {
+     "edges": 36503,
+     "files": 2670,
+     "repos": 21
+    }
+   },
+   "referencesPayload": {
+    "using_dependency": {
+     "edges": 3174,
+     "files": 1163,
+     "repos": 14
+    }
+   },
+   "multipleInheritance": {
+    "totalBases": {
+     "edges": 4403,
+     "files": 0,
+     "repos": 0
+    },
+    "classesWithMultipleBases": {
+     "edges": 114,
+     "files": 58,
+     "repos": 5
+    }
+   },
+   "constructPopulations": {
+    "template_type": {
+     "edges": 70898,
+     "files": 4848,
+     "repos": 21
+    },
+    "template_declaration": {
+     "edges": 12095,
+     "files": 1217,
+     "repos": 16
+    },
+    "struct_specifier": {
+     "edges": 10300,
+     "files": 2190,
+     "repos": 17
+    },
+    "namespace_definition": {
+     "edges": 10117,
+     "files": 5941,
+     "repos": 18
+    },
+    "virtual_specifier": {
+     "edges": 7462,
+     "files": 1207,
+     "repos": 10
+    },
+    "class_specifier": {
+     "edges": 7140,
+     "files": 2300,
+     "repos": 18
+    },
+    "lambda_capture_specifier": {
+     "edges": 5670,
+     "files": 1096,
+     "repos": 14
+    },
+    "lambda_expression": {
+     "edges": 5614,
+     "files": 1086,
+     "repos": 14
+    },
+    "new_expression": {
+     "edges": 5612,
+     "files": 738,
+     "repos": 18
+    },
+    "base_class_clause": {
+     "edges": 4279,
+     "files": 1755,
+     "repos": 13
+    },
+    "using_declaration": {
+     "edges": 3857,
+     "files": 1259,
+     "repos": 15
+    },
+    "operator_name": {
+     "edges": 3335,
+     "files": 542,
+     "repos": 13
+    },
+    "destructor_name": {
+     "edges": 2873,
+     "files": 1212,
+     "repos": 17
+    },
+    "enum_specifier": {
+     "edges": 1476,
+     "files": 622,
+     "repos": 12
+    },
+    "friend_declaration": {
+     "edges": 573,
+     "files": 155,
+     "repos": 6
+    },
+    "structured_binding_declarator": {
+     "edges": 389,
+     "files": 183,
+     "repos": 8
+    },
+    "template_instantiation": {
+     "edges": 267,
+     "files": 34,
+     "repos": 7
+    },
+    "operator_cast": {
+     "edges": 159,
+     "files": 54,
+     "repos": 7
+    },
+    "union_specifier": {
+     "edges": 156,
+     "files": 78,
+     "repos": 9
+    },
+    "namespace_alias_definition": {
+     "edges": 83,
+     "files": 51,
+     "repos": 4
+    },
+    "pure_virtual_clause": {
+     "edges": 75,
+     "files": 23,
+     "repos": 3
+    },
+    "requires_clause": {
+     "edges": 10,
+     "files": 4,
+     "repos": 3
+    },
+    "concept_definition": {
+     "edges": 2,
+     "files": 1,
+     "repos": 1
+    },
+    "requires_expression": {
+     "edges": 2,
+     "files": 1,
+     "repos": 1
+    }
+   },
+   "parseErrors": []
+  },
+  "d3": {
+   "noIndexArm": {
+    "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump",
+    "population": [
+     "population: 7435 parsed of 7435 sampled (corpus has 7435 .cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu files across 31 repos; stride sample)",
+     "population: admitted extensions = .cpp, .cc, .cxx, .c++, .hpp, .hxx, .ipp, .inl, .cu (both spellings admitted) — PLUS a bare BASENAME equal to any of them WHEN THE ROUTER'S OWN DETECTION GIVES IT TO THIS LANE (`Makefile` has no extension to match, and an extension-only rule measured 129 files where the production router admits 697 — but the router's verdict is a LANGUAGE, not a spelling: `dart-sdk/sdk/bin/dart` is a bash script and is NOT this lane's file).",
+     "project index: NOT USED — this is the per-file population, which is NOT the one production parses (re-run with --index to measure that one)",
+     "excluded from that population: 2071 tracked-but-absent/unreadable + 8 over the 1 MB cap (largest 5.3 MB) — above the cap the engine extracts structurally, not as an analyzer",
+     "parse failures: 0   degraded (regex fallback): 0"
+    ],
+    "selfTest": [
+     "instrument self-test: PASS (control fired)"
+    ],
+    "table1": [
+     "TABLE 1 — PER PROJECT, the scope production resolves in (this is the verdict's):",
+     "type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK   ext?    extFAIL  bindOK   bind?   bindFAIL  causeOK  causeFAIL",
+     "----------------------------------------------------------------------------------------------------------------------------------------------------",
+     "calls         931193   203679    0         404969     160458     322545      0       0       0        0        0       0         0        0",
+     "uses          117705   35331     0         59583      21587      22791       0       0       0        0        0       0         0        0",
+     "contains      168351   168351    106506    0          0          0           0       0       0        0        0       0         0        0",
+     "imports       51143    228       0         539        378        50376       0       0       0        0        0       0         0        0",
+     "references    3174     32        0         339        240        2803        0       0       0        0        0       0         0        0",
+     "exports       1528     693       0         780        0          55          0       0       0        0        0       0         0        0",
+     "extends       4331     2314      0         625        327        1392        0       0       0        0        0       0         0        0",
+     "implements    375      295       0         80         24         0           0       0       0        0        0       0         0        0",
+     "overrides     1884     0         0         1884       358        0           0       0       0        0        0       0         0        0",
+     "instantiates  3093     725       0         596        452        1772        0       0       0        0        0       0         0        0",
+     "decorates     0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "renders       0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "mixes_in      0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "part_of       0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "---------------------------------------------------------------------------------------------",
+     "TOTAL         1282777  411648    106506    469395     183824     401734      0       0       0        0        0       0         0        0",
+     "collRes = of `resolved`: the target had MORE THAN ONE declaration, so production's tie-break chose the row — the indexer measures 37,318 of 49,729 such picks as WRONG · extOK = external claim the PROJECT CONFIRMS · ext? = claim no check can reach (no identifier owner, and no project fact for it) · extFAIL = claim the project REFUTES, counted against the lane"
+    ],
+    "bindingIntent": [
+     "  type          edges    intended  sameFileUnproven arbitraryTwin            nothingAnywhere  noTarget",
+     "  calls         931193   0         173909           506343                   250941           0",
+     "  uses          117705   0         53180            51181                    13344            0",
+     "  contains      168351   166307    2044             0                        0                0",
+     "  imports       51143    0         40               3138                     47965            0",
+     "  references    3174     0         29               348                      2797             0",
+     "  exports       1528     0         555              918                      55               0",
+     "  extends       4331     0         1237             1952                     1142             0",
+     "  implements    375      0         375              0                        0                0",
+     "  overrides     1884     0         1884             0                        0                0",
+     "  instantiates  3093     0         554              923                      1616             0",
+     "  TOTAL         1282777  166307    233807           564803                   317860           0",
+     "  INTENT CLOSURE: every row closes — intended+sameFileUnproven+arbitraryTwin+nothingAnywhere+noTarget == edges."
+    ],
+    "verdict": [
+     "VERDICT: FAIL — CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 871129 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)  --  469395 ambiguous + 401734 unresolved of 1282777 edges, resolved against the file's OWN PROJECT (production's scope)",
+     "  clause 1 FAIL — every edge resolves, or carries a claim the project verifies",
+     "           871129 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)",
+     "  clause 2 ok   — every ambiguous/unresolved edge classified by a NAMED cause, with a measured count",
+     "           no edge carries a declared cause (residual 871129)",
+     "  clause 3 ok   — each cause fixed over the SAME population, or ruled with a RUN FALSIFIER",
+     "           no declared cause carries a count, so there is nothing to rule",
+     "  clause 4 ok   — extFAIL / bindFAIL / causeFAIL = 0",
+     "           extFAIL 0 · bindFAIL 0 · causeFAIL 0",
+     "  (the same edges under the pooled corpus key space: 583080 ambiguous + 317860 unresolved — that number is about the CORPUS's name collisions, not about resolution as production performs it)",
+     "instrument self-test: PASS (control fired)",
+     ""
+    ],
+    "claimCarrying": [
+     "CLAIM-CARRYING AMBIGUOUS EDGES — the amb(decl) column is NOT claim-aware. Its claim-carrying",
+     "share, BY CLAIM KIND: 0 of this lane's 469395 ambiguous edge(s) carry a claim — 0 VERIFIED · 0 NOT verified · 0 REFUTED · 0 CONTRADICTED · 0 OWN-FILE-SILENT · 0 n/a.",
+     "    (none of this lane's 469395 ambiguous edge(s) carries a claim — NONE OF 469395, not zero of",
+     "     a zero. A MEASURED zero of the claim-carrying class, not an absent lane.)",
+     "  A CLAIM IS NOT A RESOLUTION: the outcome is deliberately untouched, because an edge can be BOTH",
+     "  ambiguous and file-shaped, and subtracting the claim would HIDE a real collision rather than",
+     "  resolve it. Size the repairable work from the VERIFIED count, not the raw amb(decl) column."
+    ],
+    "classifier": {
+     "instrument": "script/m14/cpp-dump-classify.ts",
+     "artifact": "validation/m14/fixtures/cpp/measurements/cpp-d3-classes-noindex.json",
+     "control": {
+      "ok": true,
+      "perType": {
+       "calls": {
+        "dumped": 727514,
+        "expected": 727514,
+        "unresolvedDumped": 322545,
+        "unresolvedExpected": 322545,
+        "ambDumped": 404969,
+        "ambExpected": 404969
+       },
+       "uses": {
+        "dumped": 82374,
+        "expected": 82374,
+        "unresolvedDumped": 22791,
+        "unresolvedExpected": 22791,
+        "ambDumped": 59583,
+        "ambExpected": 59583
+       },
+       "contains": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "imports": {
+        "dumped": 50915,
+        "expected": 50915,
+        "unresolvedDumped": 50376,
+        "unresolvedExpected": 50376,
+        "ambDumped": 539,
+        "ambExpected": 539
+       },
+       "references": {
+        "dumped": 3142,
+        "expected": 3142,
+        "unresolvedDumped": 2803,
+        "unresolvedExpected": 2803,
+        "ambDumped": 339,
+        "ambExpected": 339
+       },
+       "exports": {
+        "dumped": 835,
+        "expected": 835,
+        "unresolvedDumped": 55,
+        "unresolvedExpected": 55,
+        "ambDumped": 780,
+        "ambExpected": 780
+       },
+       "extends": {
+        "dumped": 2017,
+        "expected": 2017,
+        "unresolvedDumped": 1392,
+        "unresolvedExpected": 1392,
+        "ambDumped": 625,
+        "ambExpected": 625
+       },
+       "implements": {
+        "dumped": 80,
+        "expected": 80,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 80,
+        "ambExpected": 80
+       },
+       "overrides": {
+        "dumped": 1884,
+        "expected": 1884,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 1884,
+        "ambExpected": 1884
+       },
+       "instantiates": {
+        "dumped": 2368,
+        "expected": 2368,
+        "unresolvedDumped": 1772,
+        "unresolvedExpected": 1772,
+        "ambDumped": 596,
+        "ambExpected": 596
+       },
+       "decorates": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "renders": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "mixes_in": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       },
+       "part_of": {
+        "dumped": 0,
+        "expected": 0,
+        "unresolvedDumped": 0,
+        "unresolvedExpected": 0,
+        "ambDumped": 0,
+        "ambExpected": 0
+       }
+      },
+      "closure": {
+       "tableEdges": 1282777,
+       "tableResolved": 411648,
+       "dumpedRows": 871129,
+       "claimRows": 0,
+       "bindingRows": 0,
+       "causeRows": 0,
+       "unclassifiedLabelRows": 0,
+       "unclassifiedOutcomeRows": 0,
+       "sumClassRows": 871129,
+       "populationIdentity": "1282777 (TOTAL) == 411648 resolved + 871129 classified + 0 claims + 0 bindings + 0 causes"
+      }
+     },
+     "arbitraryTwin": 564803,
+     "classTotals": {
+      "W1-callable-not-declared-in-run": 614081,
+      "W10-macro-defined-name": 114398,
+      "W11-member-leaf-owner-unresolved": 83169,
+      "W2-module-path-not-a-symbol": 50915,
+      "W1-type-not-declared-in-run": 4776,
+      "W4-qualified-name-not-published": 2771,
+      "W5-export-marker-not-a-declaration": 835,
+      "W9-operator-name-not-a-symbol": 180,
+      "W8-non-class-standard-type": 4
+     },
+     "table": {
+      "calls": {
+       "unresolved": 322545,
+       "ambiguous": 404969,
+       "classes": [
+        {
+         "class": "callable-leaf",
+         "declaredClass": "W1-callable-not-declared-in-run",
+         "unresolved": 239368,
+         "ambiguous": 374713,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:33: free [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:39: malloc [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:40: memcpy [unresolved]"
+         ]
+        },
+        {
+         "class": "macro-spelled",
+         "declaredClass": "W10-macro-defined-name",
+         "unresolved": 83070,
+         "ambiguous": 30250,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/main.cc:5: G_APPLICATION [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/my_application.cc:15: G_DEFINE_TYPE [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/my_application.cc:19: MY_APPLICATION [unresolved]"
+         ]
+        },
+        {
+         "class": "destructor-spelled",
+         "declaredClass": "W9-operator-name-not-a-symbol",
+         "unresolved": 105,
+         "ambiguous": 4,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/heap/marker.cc:1108: ~GCMarker [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/holistic/mode.cpp:414: ~STATE [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/include/core_functions/aggregate/quantile_state.hpp:79: ~STATE [unresolved]"
+         ]
+        },
+        {
+         "class": "non-class-standard-type",
+         "declaredClass": "W8-non-class-standard-type",
+         "unresolved": 2,
+         "ambiguous": 2,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/third_party/ska_sort/ska_sort.hpp:119: int32_t [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/third_party/ska_sort/ska_sort.hpp:129: int64_t [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/nlohmann-json/docs/mkdocs/docs/examples/value__return_type.cpp:12: uint64_t [unresolved]"
+         ]
+        }
+       ]
+      },
+      "uses": {
+       "unresolved": 22791,
+       "ambiguous": 59583,
+       "classes": [
+        {
+         "class": "member-or-value-leaf",
+         "declaredClass": "W11-member-leaf-owner-unresolved",
+         "unresolved": 22441,
+         "ambiguous": 58883,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:33: second [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:46: second [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:65: first [unresolved]"
+         ]
+        },
+        {
+         "class": "macro-spelled",
+         "declaredClass": "W10-macro-defined-name",
+         "unresolved": 345,
+         "ambiguous": 672,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/main_options.cc:472: DEFAULT_VM_SERVICE_SERVER_IP [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/main_options.cc:486: DEFAULT_VM_SERVICE_SERVER_IP [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/main_options.cc:511: DEFAULT_VM_SERVICE_SERVER_IP [ambDeclOnly]"
+         ]
+        },
+        {
+         "class": "operator-spelled",
+         "declaredClass": "W9-operator-name-not-a-symbol",
+         "unresolved": 2,
+         "ambiguous": 26,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/parquet/read_single_parquet_file.cpp:414: operator_metrics [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/common/multi_file/table_function_multi_file.cpp:752: operator_metrics [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/execution/operator/set/physical_recursive_cte_state.cpp:300: operator_type [ambDeclOnly]"
+         ]
+        },
+        {
+         "class": "destructor-spelled",
+         "declaredClass": "W9-operator-name-not-a-symbol",
+         "unresolved": 2,
+         "ambiguous": 2,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/common/vector/vector_writer.hpp:378: ~VectorWriter [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/common/vector/vector_writer.hpp:395: ~VectorWriter [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/pb-reference/src/google/protobuf/dynamic_message.cc:715: ~RepeatedField [unresolved]"
+         ]
+        },
+        {
+         "class": "qualified-name",
+         "declaredClass": "W4-qualified-name-not-published",
+         "unresolved": 1,
+         "ambiguous": 0,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/pb-reference/src/google/protobuf/repeated_field_unittest.cc:186: Robber::soo_rep_ [unresolved]"
+         ]
+        }
+       ]
+      },
+      "imports": {
+       "unresolved": 50376,
+       "ambiguous": 539,
+       "classes": [
+        {
+         "class": "include-path/subdirectory",
+         "declaredClass": "W2-module-path-not-a-symbol",
+         "unresolved": 39291,
+         "ambiguous": 0,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/cython/Cython/Utility/CppSupport.cpp:91: boost/optional.hpp [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/my_application.cc:3: flutter_linux/flutter_linux.h [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/my_application.cc:5: gdk/gdkx.h [unresolved]"
+         ]
+        },
+        {
+         "class": "include-path/bare-header",
+         "declaredClass": "W2-module-path-not-a-symbol",
+         "unresolved": 11085,
+         "ambiguous": 539,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Communicator/Communicator.cxx:1: Communicator.h [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Hello/main.cxx:1: cstdlib [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Hello/main.cxx:2: iostream [unresolved]"
+         ]
+        }
+       ]
+      },
+      "references": {
+       "unresolved": 2803,
+       "ambiguous": 339,
+       "classes": [
+        {
+         "class": "qualified-name",
+         "declaredClass": "W4-qualified-name-not-published",
+         "unresolved": 2770,
+         "ambiguous": 0,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/elf_loader.cc:422: dart::bin::elf [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/macho_loader.cc:546: dart::bin::mach_o [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/platform_win.cc:30: Microsoft::WRL::ComPtr [unresolved]"
+         ]
+        },
+        {
+         "class": "type-shaped-lowercase",
+         "declaredClass": "W1-type-not-declared-in-run",
+         "unresolved": 32,
+         "ambiguous": 292,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Communicator/Communicator.cxx:3: std [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Hello/main.cxx:5: std [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/regexp/regexp-compiler-tonode.cc:21: regexp_compiler_constants [unresolved]"
+         ]
+        },
+        {
+         "class": "type-shaped",
+         "declaredClass": "W1-type-not-declared-in-run",
+         "unresolved": 1,
+         "ambiguous": 47,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/third_party/catch/catch.hpp:3422: Matchers [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/r-Rcpp/inst/examples/Attributes/Depends.cpp:6: Rcpp [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/r-Rcpp/inst/examples/Attributes/Export.cpp:4: Rcpp [ambDeclOnly]"
+         ]
+        }
+       ]
+      },
+      "exports": {
+       "unresolved": 55,
+       "ambiguous": 780,
+       "classes": [
+        {
+         "class": "export-marker-token",
+         "declaredClass": "W5-export-marker-not-a-declaration",
+         "unresolved": 55,
+         "ambiguous": 780,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/elf_loader.cc:487: DART_EXPORT [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/entrypoints_verification_test.cc:177: DART_EXPORT [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/ffi_test/ffi_test_dynamic_library.cc:17: DART_EXPORT [ambDeclOnly]"
+         ]
+        }
+       ]
+      },
+      "extends": {
+       "unresolved": 1392,
+       "ambiguous": 625,
+       "classes": [
+        {
+         "class": "type-shaped",
+         "declaredClass": "W1-type-not-declared-in-run",
+         "unresolved": 1284,
+         "ambiguous": 510,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/macho_loader.cc:28: ValueObject [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/macho_loader.cc:57: ValueObject [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/platform_macos.cc:300: ValueObject [unresolved]"
+         ]
+        },
+        {
+         "class": "type-shaped-lowercase",
+         "declaredClass": "W1-type-not-declared-in-run",
+         "unresolved": 67,
+         "ambiguous": 112,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/cython/Cython/Utility/CppSupport.cpp:107: __Pyx_Optional_BaseType [ambBoth]",
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/function/window/window_boundaries_state.cpp:179: function [ambBoth]",
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/common/compatible_with_ipp.hpp:21: is_same [unresolved]"
+         ]
+        },
+        {
+         "class": "macro-spelled",
+         "declaredClass": "W10-macro-defined-name",
+         "unresolved": 41,
+         "ambiguous": 3,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/distributive/sum.cpp:48: BASE [ambBoth]",
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/parallel/scan_read_ahead.hpp:86: JOB_STATE [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/nlohmann-json/include/nlohmann/detail/meta/type_traits.hpp:280: B [ambDeclOnly]"
+         ]
+        }
+       ]
+      },
+      "implements": {
+       "unresolved": 0,
+       "ambiguous": 80,
+       "classes": [
+        {
+         "class": "type-shaped",
+         "declaredClass": "W1-type-not-declared-in-run",
+         "unresolved": 0,
+         "ambiguous": 71,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1079: DeserializationCluster [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1265: DeserializationCluster [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1418: DeserializationCluster [ambDeclOnly]"
+         ]
+        },
+        {
+         "class": "type-shaped-lowercase",
+         "declaredClass": "W1-type-not-declared-in-run",
+         "unresolved": 0,
+         "ambiguous": 9,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/nlohmann-json/include/nlohmann/detail/output/output_adapters.hpp:49: output_adapter_protocol [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/nlohmann-json/include/nlohmann/detail/output/output_adapters.hpp:74: output_adapter_protocol [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/nlohmann-json/include/nlohmann/detail/output/output_adapters.hpp:99: output_adapter_protocol [ambDeclOnly]"
+         ]
+        }
+       ]
+      },
+      "overrides": {
+       "unresolved": 0,
+       "ambiguous": 1884,
+       "classes": [
+        {
+         "class": "member-leaf",
+         "declaredClass": "W11-member-leaf-owner-unresolved",
+         "unresolved": 0,
+         "ambiguous": 1845,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1008: Trace [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1021: WriteAlloc [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1030: WriteFill [ambDeclOnly]"
+         ]
+        },
+        {
+         "class": "operator-spelled",
+         "declaredClass": "W9-operator-name-not-a-symbol",
+         "unresolved": 0,
+         "ambiguous": 39,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/common/extra_type_info.hpp:171: operator= [ambBoth]",
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/third_party/catch/catch.hpp:5553: operator= [ambBoth]",
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/tools/cpp/duckdb_cpp.hpp:354: operator= [ambBoth]"
+         ]
+        }
+       ]
+      },
+      "instantiates": {
+       "unresolved": 1772,
+       "ambiguous": 596,
+       "classes": [
+        {
+         "class": "type-shaped",
+         "declaredClass": "W1-type-not-declared-in-run",
+         "unresolved": 1519,
+         "ambiguous": 552,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:18: CostMatrix [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/analyze_snapshot.cc:196: IsolateGroupData [unresolved]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/dartdev.cc:146: IsolateData [unresolved]"
+         ]
+        },
+        {
+         "class": "type-shaped-lowercase",
+         "declaredClass": "W1-type-not-declared-in-run",
+         "unresolved": 240,
+         "ambiguous": 40,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/ffi_test/ffi_test_functions_vmspecific.cc:155: thread [ambBoth]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/ffi_test/ffi_test_functions_vmspecific.cc:592: thread [ambBoth]",
+          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/ffi_test/ffi_test_functions_vmspecific.cc:593: thread [ambBoth]"
+         ]
+        },
+        {
+         "class": "macro-spelled",
+         "declaredClass": "W10-macro-defined-name",
+         "unresolved": 13,
+         "ambiguous": 4,
+         "examples": [
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/holistic/mode.cpp:110: MAP_TYPE [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/holistic/mode.cpp:113: MAP_TYPE [ambDeclOnly]",
+          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/holistic/mode.cpp:139: MAP_TYPE [ambDeclOnly]"
+         ]
+        }
+       ]
+      }
+     },
+     "semantics": "each class is target SPELLING only (the gate prints the target and nothing else). The per-file-model wall is W1 (declared in a header/another file or third-party — no spelling separates them); claims are never folded into a class (cpp emits none on this arm)."
+    },
+    "arbitraryTwin": 564803,
+    "closure": {
+     "tableEdges": 1282777,
+     "tableResolved": 411648,
+     "dumpedRows": 871129,
+     "claimRows": 0,
+     "bindingRows": 0,
+     "causeRows": 0,
+     "unclassifiedLabelRows": 0,
+     "unclassifiedOutcomeRows": 0,
+     "sumClassRows": 871129,
+     "populationIdentity": "1282777 (TOTAL) == 411648 resolved + 871129 classified + 0 claims + 0 bindings + 0 causes"
+    },
+    "evidencePage": "validation/m14/verification/CPP-D3.md"
+   },
+   "indexedArm": {
+    "status": "OWED — the --index arm is the next run; the cpp analyzer reads NO project index, so the expected delta is 0 and the arm is measured to prove that rather than assumed"
+   }
+  },
+  "noNewValueConfirmations": "The constructs that carry NO relationship (or a DIFFERENT one than their spelling suggests) and are therefore carried as METADATA/symbol facts rather than as a vocabulary value — each counted at whole population by the same census, so the ruling is a number and not a silence: concepts+requires (concept_definition 2 · requires_clause 10 · requires_expression 2 — RULED construct, no symbol/no edge); template instantiation (template_instantiation 267 sites, versus `instantiates` 3,093 rows emitted from new_expression only — CPP-R2); structured bindings (structured_binding_declarator 389 sites; binding names are declarations, the initializer read is the uses edge); lambda expressions (lambda_expression 5,614 · lambda_capture_specifier 5,670 — captures of declared names are uses, the lambda publishes no symbol); operator/destructor names (operator_name 3,335 · operator_cast 159 · destructor_name 2,873 — symbols contained, no `overloads` value exists); friend declarations (573 — a friend declaration publishes no edge); namespace aliases (83 — a namespace is not a published declaration); pure-virtual clauses (75 — the pure-virtual CONTRACT is why `implements` fires, CPP-R1); multiple inheritance (114 classes with >1 base in 58 files across 5 repos — N extends edges, CPP-R4)."
  }
 }
