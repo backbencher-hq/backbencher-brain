@@ -4074,7 +4074,15 @@ currentPackage,
         }
       }
       if (t === "import_declaration") {
-        const isStatic = /^\s*import\s+static\b/.test(n.text)
+        // BOTH facts are NODE facts, not text matches: the grammar gives `static`
+        // as an unnamed keyword child and the wildcard as an `asterisk` node. The
+        // first version of this read `n.text` with a regex, which the R2 register
+        // forbids in analyzers (probe-verified: the no-regex gate counted it).
+        let isStatic = false
+        for (let ci = 0; ci < n.childCount; ci++) {
+          const childNode = n.child(ci)
+          if (childNode && childNode.type === "static") { isStatic = true; break }
+        }
         const isWildcard = this.findChildByType(n, "asterisk") !== null
         if (!isStatic && !isWildcard) {
           const nameNode = this.findChildByType(n, "scoped_identifier") || this.findChildByType(n, "identifier")
