@@ -1,0 +1,191 @@
+{
+  "language": "dart",
+  "grammar": "tree-sitter-dart.wasm (pinned; Dart 3 class modifiers — abstract/base/interface/final/sealed — parse with zero ERROR nodes on the 400-file flutter sample)",
+  "declarations": {
+    "class_definition": {
+      "symbol": "class",
+      "heritage": [
+        "superclass -> extends",
+        "interfaces -> implements",
+        "mixins -> mixes_in (canonical, 2026-10-18; one row per applied mixin)"
+      ],
+      "payloads": ["complexity", "comments", "annotations (decorators + references{isAnnotation})", "typeParameters", "modifiers (abstract/base/interface/final/sealed)"],
+      "fixtures": ["dart/object-interface-override", "dart/mixes-in", "dart/annotation-references", "dart/dedup-and-attribution"],
+      "analyzer_site": "RealDartAnalyzer symbol pass + extractClassHeritage"
+    },
+    "mixin_application_class": {
+      "symbol": "class",
+      "note": "`class A = Base with M1, M2;` — the grammar puts the name inside mixin_application_class and leaves class_definition's name field empty",
+      "heritage": ["base -> extends", "mixins -> mixes_in"],
+      "fixtures": ["dart/mixes-in"]
+    },
+    "mixin_declaration": {
+      "symbol": "mixin",
+      "heritage": [
+        "on-clause -> references{isMixinOn, typePosition: mixin_on_clause} (NOT extends, NOT mixes_in — a constraint, 2026-10-18)",
+        "interfaces -> implements"
+      ],
+      "fixtures": ["dart/mixes-in (boundary 3 + negative)", "dart/member-value-reads", "dart/dedup-and-attribution"]
+    },
+    "extension_declaration": {
+      "symbol": "extension (NAMED: its name; UNNAMED: synthesized from the on-type, and the synthesized name is published as the extension's identity)",
+      "heritage": ["on-clause -> references (named extension: M -> OnType; unnamed: suppressed, the subject is its own identity)"],
+      "payloads": ["targetType", "isUnnamedExtension"],
+      "fixtures": ["dart/type-references", "dart/unnamed-extension-name"]
+    },
+    "extension_type_declaration": {
+      "symbol": "extension_type",
+      "heritage": ["implements -> implements", "representation_declaration field -> property (owned), NAME never a read"],
+      "fixtures": ["dart/extension-type"],
+      "note": "DARTD21: before this dispatch the members surfaced as top-level symbols with no owner/contains"
+    },
+    "enum_declaration": {
+      "symbol": "enum",
+      "heritage": ["interfaces -> implements", "mixins -> mixes_in", "superclass impossible in Dart"],
+      "members": "enum_constant -> enum_member; enhanced enums also carry fields/methods/constructors in enum_body",
+      "payloads": ["complexity", "annotations"],
+      "fixtures": ["dart/object-interface-override", "dart/enum-constant-decls", "dart/mixes-in"]
+    },
+    "enum_constant": {
+      "symbol": "enum_member",
+      "note": "DARTD22: the constant NAME is a declaration, never a read of its enum; its ARGUMENTS stay ordinary reads",
+      "fixtures": ["dart/enum-constant-decls"]
+    },
+    "type_alias": {
+      "symbol": "type",
+      "types": ["the aliased type is a references position (e.g. typedef Alias = Point -> references Alias -> Point)", "record-type RHS: field types publish references through record_type_field, fields have no declaration names (DARTGAP3 ruled)"],
+      "annotations": "annotation parses INSIDE the type_alias wrapper -> references{annotatedKind: type_alias}",
+      "fixtures": ["dart/type-references", "dart/record-type-alias", "dart/annotation-references"]
+    },
+    "function_signature": {
+      "symbol": "function (top level) / method (class member, behind method_signature wrapper)",
+      "payloads": ["complexity", "parameters", "returnType (type mention -> references)", "annotations", "isAsync/generator flag"],
+      "fixtures": ["dart/value-reads", "dart/callsite-lines-825"]
+    },
+    "method_signature": {
+      "symbol": "method",
+      "note": "wrapper: members arrive as class_body > method_signature (> function_signature|getter|setter|operator|constructor)",
+      "fixtures": ["dart/_tree-probe", "dart/dedup-and-attribution"]
+    },
+    "constructor_signature": {
+      "symbol": "constructor (the family name; namedSegment in metadata, isFactory for factories)",
+      "note": "DARTD3: constructors have no distinct name; DARTD20: last duplicate declaration wins",
+      "fixtures": ["dart/dedup-and-attribution", "dart/object-interface-override (case O/P)", "dart/dup-decl-last-wins"]
+    },
+    "factory_constructor_signature": { "symbol": "constructor", "metadata": ["isFactory"], "fixtures": ["dart/dedup-and-attribution"] },
+    "constant_constructor_signature": { "symbol": "constructor", "fixtures": ["dart/extension-type"] },
+    "redirecting_factory_constructor_signature": { "symbol": "constructor", "note": "redirect target type -> instantiates (DARTD19)", "fixtures": ["dart/dedup-and-attribution"] },
+    "getter_signature": { "symbol": "property", "metadata": ["isGetter", "isTopLevelAccessor when top level"], "fixtures": ["dart/dedup-and-attribution", "dart/value-reads"] },
+    "setter_signature": { "symbol": "property", "metadata": ["isSetter"], "fixtures": ["dart/dedup-and-attribution"] },
+    "operator_signature": { "symbol": "method", "name": "synthesized `operator <token>`", "fixtures": ["dart/callsite-lines-825"] },
+    "declaration": {
+      "symbol": "property (class field) / constant|variable (top level)",
+      "types": ["the field's declared type is a references position", "multi-declarator: one symbol per name; annotation -> one row per declarator"],
+      "fixtures": ["dart/annotation-references", "dart/type-references"]
+    },
+    "static_final_declaration_list": {
+      "symbol": "property/constant",
+      "note": "`static final X = e;` is a DIFFERENT field shape from `final T x;` — DT-C1's containment oracle found 2 of 431 properties without it",
+      "fixtures": ["dart/annotation-references"]
+    },
+    "local_function_declaration": {
+      "symbol": null,
+      "note": "DARTD8: not a symbol AND not a call-source context — nested lambda_expression > function_signature; calls inside fold into the enclosing function (csharp/python/go parity)",
+      "fixtures": ["dart/value-reads (forbid localHelper call source)"]
+    },
+    "local_variable_declaration": { "symbol": null, "note": "bindings, never symbols; reads use the family binding spelling", "fixtures": ["dart/pattern-bindings", "dart/local-read"] },
+    "initialized_variable_definition": { "symbol": null, "note": "binding declarator; declaration NAME is never a read (isDartDeclaredName gate)", "fixtures": ["dart/value-reads"] },
+    "representation_declaration": { "symbol": "property (owned by the extension type)", "note": "DARTD21", "fixtures": ["dart/extension-type"] },
+    "library_name": { "symbol": "module (the file's library identity: declared name, else stem; unnamed `library;` = stem with kind unnamed)", "note": "DARTGAP5 ruled: already read; DARTGAP6 no", "fixtures": ["dart/library-implicit", "dart/library-unnamed", "dart/library-source-pins"] },
+    "library_import": { "relationship": "imports -> the project-relative file path the specifier names when the checkout can answer, else `${uri}:*`; `importOutsideProject` claim where the checkout cannot contain it", "fixtures": ["dart/import-resolution", "dart/import-resolution-sibling", "dart/part-of-roles"] },
+    "library_export": { "relationship": "exports (same target/claim shape as imports)", "fixtures": ["dart/callsite-lines-825", "dart/export-population-probe"] },
+    "part_directive": { "relationship": "part_of{partRole: library}", "fixtures": ["dart/part-of-roles"] },
+    "part_of_directive": {
+      "relationship": "part_of{partRole: part}; the NAMED form (`part of my.lib;`, no URI child) publishes the declared library NAME with isNamedLibrary:true",
+      "fixtures": ["dart/part-of", "dart/part-of-roles", "dart/part-of-named"]
+    },
+    "annotation": {
+      "relationship": "references{relationshipType: annotation, isAnnotation, annotatedKind} from the DECORATED DECLARATION (or module/library) to the annotation TYPE",
+      "positions": [
+        "child of class_definition / mixin_declaration / enum_declaration / extension_declaration / extension_type_declaration / enum_constant / formal_parameter / constructor_param / super_formal_parameter / local_variable_declaration / type_alias / library_name",
+        "sibling of the declaration inside class_body / program (modifier `*_builtin` nodes are stepped over: `@deprecated final x = 1;`)"
+      ],
+      "target_rule": "the `name` field: plain identifier as written; scoped_identifier -> LEAF when the qualifier is an IMPORT ALIAS, -> QUALIFIER when it is a type (`@TestFor.lint()` names TestFor; `@_i1.TestFor()` names TestFor)",
+      "fixtures": ["dart/annotation-references", "dart/library-annotation", "dart/verify-dart-references"]
+    }
+  },
+  "types": {
+    "type_identifier": { "relationship": "references (gated on a type the run can see — same file, or projectIndex.typeKinds)", "fixtures": ["dart/type-references"] },
+    "nullable_type": { "relationship": "references via the inner type identifier; `Widget?` is the same declaration as `Widget`", "fixtures": ["dart/type-references"] },
+    "function_type": { "relationship": "references for parameter and return element types", "fixtures": ["dart/type-references"] },
+    "record_type": { "relationship": "references for each field TYPE (record_type_field / record_type_named_field)", "note": "DARTGAP3 ruled: no contains — record fields have no declaration names", "fixtures": ["dart/record-type-alias"] },
+    "record_type_field": { "relationship": "references (the field's type)", "fixtures": ["dart/record-type-alias"] },
+    "record_type_named_field": { "relationship": "references (the field's type)", "fixtures": ["dart/record-type-alias"] },
+    "void_type": { "relationship": null, "note": "`void` is not a type declaration; no edge" },
+    "inferred_type": { "relationship": null, "note": "`var`/`final`-without-type = the absence of a written type; the initializer may CONSTRUCT one (assignment evidence for receivers), but no type mention" },
+    "type_arguments": { "relationship": "references for each argument type (`List<T>`); also the EVIDENCE for container element types used by receiver typing", "fixtures": ["dart/type-references", "dart/receiver-element-types"] },
+    "type_parameters": { "relationship": null, "note": "DECLARES type variables; the mention of a variable is refused (isTypeParameterShadowed)", "fixtures": ["dart/type-references"] },
+    "type_parameter": { "relationship": null, "note": "declaration site of a type variable — never a mention" },
+    "type_bound": { "relationship": "references (`<T extends B>` names B)", "fixtures": ["dart/type-references"] },
+    "qualified": { "relationship": "uses as a member read under a constant_pattern / object_pattern test (`case M.off:`); type_identifier leaf -> references in type positions", "fixtures": ["dart/qualified-constant-pattern-read", "dart/const-pattern-constructor-head"] },
+    "scoped_identifier": { "relationship": "annotation target spelling (alias-vs-type rule); type positions resolve to the LEAF", "fixtures": ["dart/annotation-references"] },
+    "extension on-clause": { "relationship": "references (named extension's target type)", "fixtures": ["dart/type-references"] },
+    "representation type": { "relationship": "references? — the extension type's representation type is a type mention (position table: representation_declaration)", "fixtures": ["dart/extension-type"] }
+  },
+  "expressions_requiring_uses_or_calls": {
+    "selector_with_argument_part": { "relationship": "calls -> leaf callee (chain reduces to the last link); capitalized callee -> instantiates", "fixtures": ["dart/value-reads", "dart/receiver-spelling"] },
+    "selector_without_argument_part": { "relationship": "uses member read (`obj.method` tear-off, this.count, C.total); LHS of plain `=` is a write, not a read", "fixtures": ["dart/receiver-spelling", "dart/member-value-reads"] },
+    "arguments": { "relationship": "argument values are ordinary reads", "fixtures": ["dart/value-reads"] },
+    "new_expression": { "relationship": "instantiates (grammar keeps it only under an explicit `new`)", "fixtures": ["dart/value-reads"] },
+    "const_object_expression": { "relationship": "instantiates", "fixtures": ["dart/dedup-and-attribution"] },
+    "bare_capitalized_callee": { "relationship": "instantiates (Dart has no `new`)", "fixtures": ["dart/dedup-and-attribution"] },
+    "named_constructor_invocation": { "relationship": "instantiates the class (namedSegment in metadata)", "fixtures": ["dart/dedup-and-attribution"] },
+    "constructor_tearoff": { "relationship": "references -> the type (expression position, typePosition constructor_tearoff); in a const pattern `X.new` -> instantiates with isConstructorReference", "fixtures": ["dart/const-pattern-constructor-head"] },
+    "cascade_section": { "relationship": "calls/uses per section leaf (DARTD17: b..a.b.c(1) calls c)", "fixtures": ["dart/value-reads"] },
+    "template_substitution": { "relationship": "uses per identifier inside `${...}` (member reads keep the member spelling)", "fixtures": ["dart/value-reads"] },
+    "list_literal": { "relationship": "element values are ordinary reads; a generic literal's type arguments are type mentions", "fixtures": ["dart/value-reads"] },
+    "set_or_map_literal": { "relationship": "key/value expressions are ordinary reads", "fixtures": ["dart/value-reads"] },
+    "record_literal": { "relationship": "NO symbol, NO contains; the literal's field READS publish as member reads (`rec.$1` -> uses -> $1 with receiverTypeUnknown; DARTGAP4 ruled)", "fixtures": ["dart/record-literal"] },
+    "constant_pattern": { "relationship": "uses{isConstantPattern} — qualified form (pre-existing arm); bare/null-check/null-assert/relational/collection forms -> uses{isConstantPattern,isPatternTest} (DARTGAP2)", "fixtures": ["dart/qualified-constant-pattern-read", "dart/constant-pattern-forms"] },
+    "relational_operand": { "relationship": "uses{isPatternTest} — the grammar gives the operand NO wrapper node; a bare identifier or qualified constant is the pattern test", "fixtures": ["dart/constant-pattern-forms"] },
+    "variable_pattern": { "relationship": "binding (no symbol); its reads publish uses with the family binding spelling", "fixtures": ["dart/pattern-bindings", "dart/value-reads"] },
+    "rest_pattern": { "relationship": "binding — `...rest` binds a name (DARTGAP1's real missing edge before 2026-10-18); measured zero occurrences on ProxiCall/lib, so the closure measurement names that population", "fixtures": ["dart/pattern-bindings"] },
+    "object_pattern": { "relationship": "the pattern's TYPE is a references mention; the GETTER LABELS are deliberately NOT emitted (a structural member test with no in-file declaration — named as non-emission in DARTGAP2)", "fixtures": ["dart/constant-pattern-forms"] },
+    "record_pattern": { "relationship": "structural bindings are bindings; constants inside are pattern tests", "fixtures": ["dart/pattern-bindings"] },
+    "object_pattern_getter_label": { "relationship": null, "note": "TOP-DO: a receiver-typed object-pattern test (`String(length: final len)` -> String.length) would be a NEW measured item, not a hole in DARTGAP2 as scoped" },
+    "identifier_bare_read": { "relationship": "uses — member read of the enclosing type (0.6 isBareRead), file-scope value (0.9 isGlobalRead), or local/parameter binding (binding spelling)", "fixtures": ["dart/value-reads", "dart/member-value-reads", "dart/local-read"] },
+    "interpolation_exports": { "relationship": "uses per read; local DECLARATORs suppress, PARAMETERS do not", "fixtures": ["dart/value-reads"] },
+    "assignment_expression": { "relationship": "plain `=` LHS is a write (no read); compound assignments read", "fixtures": ["dart/value-reads (forbids)"] },
+    "throw_expression": { "relationship": "the thrown value is a read; exception types of catch clauses type their bindings", "fixtures": ["dart/catch-clause-types"] },
+    "for_loop_parts_untyped": { "relationship": "the loop variable's ELEMENT type is inferred from the iterable's written type argument for the loop body (receiver typing); no written type -> no inference", "fixtures": ["dart/receiver-element-types"] }
+  },
+  "statements_affecting_complexity": {
+    "if_statement": {}, "else_clause": {}, "switch_statement_case": {}, "switch_statement_default": {},
+    "for_statement": {}, "while_statement": {}, "do_statement": {}, "catch_clause": {},
+    "conditional_expression": {}, "logical_and_expression": {}, "logical_or_expression": {},
+    "yield_statement": {}, "yield_each_statement": {}
+  },
+  "dart_only_constructs": {
+    "_description": "The constructs this task singles out — each with its emitted relationship or its RULED non-emission, and the fixture that can go RED.",
+    "with_mixin_application": { "emission": "mixes_in (all three sites: extends A with M, class A with M, class C = Base with M1, M2; enhanced enum with too)", "fixtures": ["dart/mixes-in"], "before": "uses{isMixin:true} (ad-hoc flag on the wrong label)" },
+    "mixin_on_constraint": { "emission": "references{isMixinOn, typePosition: mixin_on_clause}", "fixtures": ["dart/mixes-in", "dart/dedup-and-attribution"], "before": "extends{isMixinOn} (inheritance label on a constraint)" },
+    "part_directive": { "emission": "part_of{partRole: library}", "fixtures": ["dart/part-of-roles"], "before": "imports{isPart,isPartOf}" },
+    "part_of_directive": { "emission": "part_of{partRole: part}; NAMED form -> library name with isNamedLibrary", "fixtures": ["dart/part-of", "dart/part-of-roles", "dart/part-of-named"], "before": "imports{isPart,isPartOf}; the NAMED form emitted NOTHING" },
+    "metadata_annotations": { "emission": "references{isAnnotation, annotatedKind} from the decorated declaration/library; 16 positions", "fixtures": ["dart/annotation-references", "dart/library-annotation"], "before": "payload only, zero relationship rows" },
+    "extension_on_types": { "emission": "references (named extension's target); unnamed extension's subject is its OWN identity", "fixtures": ["dart/type-references", "dart/unnamed-extension-name"] },
+    "type_parameter_bounds": { "emission": "references (`<T extends B>` names B)", "fixtures": ["dart/type-references"] },
+    "show_hide_combinators": { "emission": null, "ruled": "NO relationship owed: a combinator names declarations in ANOTHER file (not a declaration here, not a type mention); the import/export edge already carries the dependency. Recorded rather than silently dropped.", "fixtures": ["dart/import-resolution"] },
+    "receiver_owner_channel": { "emission": "calls/uses metadata.owner + ownerEvidence{param,field,annotation,assignment}; only class-like or externally-declared types (a mixin/extension/typedef owner makes the resolver withdraw, so it is withheld)", "fixtures": ["dart/receiver-owner-metadata", "dart/catch-clause-types", "dart/receiver-element-types"], "before": "no owner metadata; store resolved by name counts only" },
+    "type_aliases": { "emission": "type symbol + references for the aliased type; typedef over record -> field-type references, not contains", "fixtures": ["dart/type-references", "dart/record-type-alias"] }
+  },
+  "_notes": {
+    "provenance": "Every entry above is implemented in src/ast/real-dart-analyzer.ts and pinned by the named fixture(s) in validation/m14/fixtures/dart/; a fixture pin is written so a regression makes it RED (positive row + at least one forbid of the superseded shape). The spec table was written from the pinned grammar (shape probes are committed: pattern-forms-probe.ts, annotation-shapes-probe.ts, _tree-probe.ts) and from the corpus-measured behaviour, not from the Dart spec alone.",
+    "matrix_columns": "The ten canonical matrix types are a SUBSET: this lane also emits mixes_in, part_of, and annotation references (the owner-ruled complete surface).",
+    "d1_status": "D1 requires every relationship type the language can express to be enumerated WITH its implementation site and a red-capable fixture: this file is that enumeration for dart. The relationship-TYPE table with implementation+fixture columns is DART-APPLICABLE-SET.md §1-§2.",
+    "known_non_emissions": [
+      "object-pattern getter labels (structural member test; would need receiver-typed pattern tests) — named, not silent",
+      "show/hide combinators (ruled: no relationship owed)",
+      "function_expression / lambda_expression bodies as symbol scopes (DARTD2/DARTD8 family contract)"
+    ]
+  }
+}
