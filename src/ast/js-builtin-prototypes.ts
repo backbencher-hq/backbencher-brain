@@ -211,3 +211,32 @@ export function hostGlobalCitation(name: string): string | null {
 export function isHostGlobal(name: string): boolean {
   return Object.prototype.hasOwnProperty.call(HOST_GLOBALS, name)
 }
+
+/**
+ * THE MEMBER-CHAIN RULE — an external claim for a member whose RECEIVER ROOT is a cited host global.
+ *
+ * WHY THIS AND NOT A MEMBER LIST. A vocabulary can answer "is this bare NAME external" (`document`, `JSON`).
+ * It CANNOT answer "is this MEMBER external" (`getElementById`, `addEventListener`), because that depends on
+ * the RECEIVER, not on the name — and a name-based member list would have to hold every method name in the DOM
+ * and would still claim `substring` on a project string, which is a FALSE statement about another repository.
+ *
+ * WHAT IT IS HONEST FROM: the syntax alone. If the receiver chain's ROOT is a cited host global, then the
+ * member is external and the claim cites the receiver's citation. That is readable from the tree with NO type
+ * inference:
+ *
+ *   document.getElementById(...)     -> claim, cites WHATWG HTML §7.3 Window
+ *   window.addEventListener(...)     -> claim, cites WHATWG HTML §7.3 Window
+ *   console.log(...)                 -> claim, cites WHATWG HTML §7.3 Window.console
+ *   x.substring(...)                 -> NO CLAIM: `x` is a local, it could be a project object.
+ *
+ * THE WALL IS STATED SO IT IS NOT "FIXED" WITH A NAME LIST: locally-received member calls (`e.target`,
+ * `me.hash`, `body.details`) cannot be claimed this way. Their route is RECEIVER TYPING — the same wall
+ * TypeScript's `calls` hit — and a name list for them would be a false claim, not a fix.
+ */
+export function memberChainClaim(receiverRoot: string | null | undefined, _member: string): string | null {
+  if (!receiverRoot) return null
+  const root = receiverRoot.trim()
+  if (!root) return null
+  const cite = hostGlobalCitation(root)
+  return cite ? `${cite} (member of a host global; receiver root \`${root}\`)` : null
+}
