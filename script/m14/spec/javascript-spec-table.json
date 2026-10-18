@@ -257,7 +257,7 @@
       "claimable_target_is_binding_rows_whole_pop_note": "CORRECTED: 46,598 is a LOWER BOUND (census projection of the NON-RESOLVED classes only). The measured arm verifies 95,528 imported-binding claims because imported bindings are program-scope published names: their bare rows can also sit in resolved (18,275 decoys) or ambiguous (26,949) by the name model. The arm is the record."
     },
     "default_export": {
-      "status": "EVIDENCE EMITTED 2026-10-18; ARBITER KIND NOT DECIDED (Lead) — contract: validation/m14/verification/JAVASCRIPT-EXPORTS-CLAIM-CONTRACT.md",
+      "status": "ARBITER KIND LANDED BY LEAD — one kind `exportSurface` (surface discriminator default|moduleExports), binding family verifiedBy:\"exportSurface\", bindOK never resolved; analyzer evidence shipped; differential oracle fabricated-name mirror fixed by Lead (JS draws 100%/0/0 after).",
       "evidence": {
         "canonical": "metadata.defaultExport = { form, localName? }",
         "flat_mirrors": [
@@ -285,10 +285,22 @@
         "expression": 17,
         "basis": "js-export-claim-probe --cap=400, 454 exports rows"
       },
-      "measurement_change": "identifier-valued `export default foo` previously published a fabricated named export (target foo) and could be counted resolved; the analyzer now publishes target default with expression+localName evidence, so the class total will RISE above 6,186. Corpus scale of the corrected form: 2,759 statements / 2,755 files (all repos). Lead-owned differential oracle fix required before an arm: differential.ts identifier branch must exclude sawDefaultToken."
+      "measurement_change": "identifier-valued `export default foo` previously published a fabricated named export (target foo) and could be counted resolved; the analyzer now publishes target default with expression+localName evidence, so the class total will RISE above 6,186. Corpus scale of the corrected form: 2,759 statements / 2,755 files (all repos). Lead-owned differential oracle fix required before an arm: differential.ts identifier branch must exclude sawDefaultToken.",
+      "measured_cap50_after_guard": {
+        "command": "incoming-gate javascript js 50 --dump",
+        "edges": 4570,
+        "resolved": 407,
+        "amb": 2,
+        "ambKind": 15,
+        "unresolved": 2490,
+        "extOK": 326,
+        "bindOK": 1332,
+        "bindFAIL": 0,
+        "bindingRefuted": 0
+      }
     },
     "module_exports": {
-      "status": "EVIDENCE EMITTED 2026-10-18; ARBITER KIND NOT DECIDED (Lead) — contract: JAVASCRIPT-EXPORTS-CLAIM-CONTRACT.md",
+      "status": "ARBITER KIND LANDED BY LEAD (same exportSurface kind); FILE-LOCAL DECLARATION GUARD shipped: marker suppressed when the file declares the target (incl. object-literal method names the analyzer symbolizes) — measured 7 refutations/ resolved 407->400 before, resolved 407 / bindFAIL 0 after.",
       "evidence": {
         "canonical": "metadata.moduleExports = { property, form }",
         "flat_mirrors": [
@@ -315,7 +327,8 @@
         "module-exports-object": 53,
         "deep-member-assignment": 1,
         "basis": "js-export-claim-probe --cap=400 (exports-object/rebind and binding/expression forms rare in the sample draw)"
-      }
+      },
+      "claimable_share_after_guard": "sample 400 files: marked CJS object rows 53 -> 23 of 454 exports rows (~43% claimable); deep-member-assignment unchanged; remainder name-model-resolvable or non-claimable per the arbiter rule."
     }
   }
 }

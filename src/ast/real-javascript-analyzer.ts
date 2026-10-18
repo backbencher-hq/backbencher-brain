@@ -1847,7 +1847,16 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // basename: the store resolves a source BY NAME, and a module basename is a
     // legal JavaScript identifier this ecosystem itself uses
     // (`visitors/Attribute.js` declaring `function Attribute`).
-    this.extractExportRelationships(exports, relationships, FILE_LEVEL_SOURCE)
+    // The FILE-LOCAL declaration set is what the export-surface claim must respect: a CJS property
+    // whose name THIS FILE declares is a name the name model can resolve honestly, so the claim is
+    // suppressed there (arbiter rule: a project declaration answering the name REFUTES the claim; the
+    // same-file case is knowable in the analyzer and must not be emitted at all).
+    this.extractExportRelationships(
+      exports,
+      relationships,
+      FILE_LEVEL_SOURCE,
+      new Set(symbols.map((sym) => String(sym?.name ?? "")).filter((n) => n.length > 0)),
+    )
     // M49 #868: decorators are metadata on the symbol they decorate, so their
     // only edge is a reference FROM that symbol, at the decorator's own line.
     this.extractDecoratorRelationships(symbols, relationships)
@@ -2586,6 +2595,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // The MODULE-SCOPE ACTOR: an export is by definition the module's surface,
     // so this pass takes no other source (see FILE_LEVEL_SOURCE).
     moduleActor: string,
+    /**
+     * NAMES THIS FILE DECLARES (its emitted symbol names). The CJS export-surface claim exists only
+     * where NO declaration answers the name — a project declaration refutes it in the arbiter, and the
+     * FILE-local half of that test is knowable here. Measured before the guard: the arbiter smoke
+     * REFUTED 7 exportSurface claims (proxicall `createWalletObligationsService`, `OPEN_*_STATUSES`)
+     * because those files declare the very function/constant they also write on `module.exports`;
+     * suppressing the marker lets the name model resolve the row (resolved 400 -> 407).
+     */
+    declaredNames: Set<string>,
   ): void {
     for (const item of exports) {
       // ---- EXPORTS CLAIM EVIDENCE (contract: validation/m14/verification/JAVASCRIPT-EXPORTS-CLAIM-CONTRACT.md)
@@ -2607,7 +2625,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         claimMarkers.defaultExportForm = defaultForm
         if (localName) claimMarkers.defaultExportLocalName = localName
         claimMarkers.defaultExport = { form: defaultForm, ...(localName ? { localName } : {}) }
-      } else if (isCjs && !item.isDefault) {
+      } else if (isCjs && !item.isDefault && !declaredNames.has(item.name)) {
+        // THE FILE-LOCAL DECLARATION GUARD: no marker when THIS FILE declares the name — the row keeps
+        // its bare property spelling so the name model may resolve it, and the arbiter never receives a
+        // claim it would refute. (Project-wide-only collisions still refute at the arbiter; those are
+        // honest bindFAIL signals that the claim population must then be narrowed around.)
         const cjsForm = typeof item.metadata?.cjsForm === "string" ? String(item.metadata.cjsForm) : "module-exports-unknown"
         claimMarkers.moduleExportsProperty = item.name
         claimMarkers.moduleExportsForm = cjsForm
