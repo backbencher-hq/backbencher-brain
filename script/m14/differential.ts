@@ -6233,7 +6233,14 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
               }
             }
           }
-        } else if (c.type === "identifier") {
+        } else if (c.type === "identifier" && !sawDefaultToken) {
+          // JD-J14 FOLLOW-UP (2026-10-19, found by the JS lane while writing the exports claim
+          // contract): `export default <identifier>` publishes the PUBLIC name "default", never the
+          // identifier — the identifier is an unreachable local binding. This oracle mirrored the
+          // analyzer's old branch (JD-J14 fixed declarations only, not the expression form), so
+          // both instruments published `exports -> foo` for `export default foo` and agreed on the
+          // fabrication. The analyzer now emits `default` with an `expression` claim; this is the
+          // oracle's half. Corpus scale: 2,759 statements / 2,755 files.
           sawNamed = true
           push("exports", c.text)
         } else if (c.type === "namespace_export") {
