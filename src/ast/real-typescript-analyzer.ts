@@ -1356,6 +1356,21 @@ function isImportRequireClause(importNode: Node): boolean {
  * whole point; `isImportRequireClause` above uses the named walk because
  * `import_require_clause` IS a named node.
  */
+/** `export type { A } from "./m"` — the statement-level TYPE-ONLY re-export. The `type` token is
+ *  an anonymous child of export_statement in the grammar (probed on tree-sitter-typescript
+ *  0.23.2), so it is read by token, not by a named-node type. */
+function isTypeOnlyExport(node: Node): boolean {
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i)
+    if (!c) continue
+    if (c.text === "type") return true
+    // Stop once the clause opens: a `type` inside the clause belongs to an individual specifier,
+    // not to the statement's `type` keyword.
+    if (c.type === "export_clause") break
+  }
+  return false
+}
+
 function isTypeOnlyImport(importNode: Node): boolean {
   for (let i = 0; i < (importNode.childCount ?? 0); i++) {
     const c = importNode.child(i)
@@ -6919,6 +6934,85 @@ class TypeScriptAnalysisRunner {
         })
       }
       return
+    }
+
+    // ── RE-EXPORTS ARE MODULE DEPENDENCIES ──────────────────────────────────────────────────────
+    // `export { a } from "./m"`, `export * from "./m"` and `export * as ns from "./m"` cannot be
+    // evaluated without `./m`: a barrel file re-exporting forty modules depends on forty. The
+    // dependency was recorded only in ParseResult.imports (the brain_import table) and NEVER as a
+    // relationship (the graph bb_graph/bb_impact/bb_migrate read), so a barrel appeared to depend
+    // on nothing. Fixture `re-export-module-dependency` (authored before this emission) pins the
+    // exact contract, including three refusals that are decisions rather than omissions:
+    //   * `export * from` publishes the DEPENDENCY (whole-module binding spelling) but NO exports
+    //     edge: `*` names no symbol, the X8/R7 unresolvable-endpoint class.
+    //   * `export {} from` publishes NOTHING — an empty binding list asserts nothing about the
+    //     module's evaluation, unlike a bare `import "./x"` (side effects ARE asserted there).
+    //   * the dependency item is the name ASKED FOR (`beta`), never the published alias
+    //     (`renamedBeta`): an alias is what THIS file calls it; asking another module for its own
+    //     alias asks it for a name it does not export.
+    if (node.type === "export_statement") {
+      let sourceNode: Node | null = null
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && c.type === "string") { sourceNode = c; break }
+      }
+      // NOT A RE-EXPORT (e.g. `export function f() {...}`) FALLS THROUGH: the subtree can carry
+      // dynamic `import(...)` calls, which the dynamic-import branch below must still see. An
+      // early return here silently deleted those edges — caught by the lane's own
+      // `imports-computed-specifier` fixture, whose literal-template rows vanished while every
+      // other row in the file stayed green.
+      if (sourceNode) {
+      const modulePath = stringContent(sourceNode)
+      if (modulePath.length === 0) return
+      const typeOnlyReExport = isTypeOnlyExport(node)
+      const localModule = modulePath.startsWith(".") || modulePath.startsWith("/")
+      const exportClause = node.namedChildren.find((c: any) => c && c.type === "export_clause")
+      if (exportClause) {
+        // An EMPTY clause is a refusal, not an omission — see the fixture's forbid row.
+        const specifiers = (exportClause.namedChildren ?? []).filter((c: any) => c && c.type === "export_specifier")
+        if (specifiers.length === 0) return
+        for (const spec of specifiers) {
+          const nameNode = spec.childForFieldName("name") ?? spec.namedChild(0)
+          const aliasNode = spec.childForFieldName("alias") ?? (spec.namedChildCount > 1 ? spec.namedChild(spec.namedChildCount - 1) : null)
+          const itemName = nameNode ? nameNode.text : ""
+          if (itemName.length === 0) continue
+          relationships.push({
+            source: this.moduleLeafName(),
+            target: localModule ? itemName : `${modulePath}:${itemName}`,
+            type: ASTEngine.RelationshipType.Imports,
+            confidence: 1.0,
+            // The ITEM's own line — the specifier, exactly where the name is written.
+            ...this.lineField(nameNode),
+            metadata: {
+              module: modulePath,
+              isReExport: true,
+              ...(aliasNode ? { alias: aliasNode.text } : {}),
+              ...(typeOnlyReExport ? { isTypeOnly: true } : {}),
+            },
+          })
+        }
+        return
+      }
+      // Star / namespace forms: the module itself is the dependency, so it takes the family's
+      // whole-module BINDING spelling (same shape a namespace or side-effect import publishes).
+      const namespaceExport = node.namedChildren.find((c: any) => c && c.type === "namespace_export")
+      const aliasNode = namespaceExport ? namespaceExport.namedChild(namespaceExport.namedChildCount - 1) : null
+      relationships.push({
+        source: this.moduleLeafName(),
+        target: `${this.moduleLeafName()}${BINDING_SEP}${modulePath}:*`,
+        type: ASTEngine.RelationshipType.Imports,
+        confidence: 1.0,
+        ...this.lineField(sourceNode),
+        metadata: {
+          module: modulePath,
+          isReExport: true,
+          localBinding: true,
+          ...(aliasNode && aliasNode.type === "identifier" ? { alias: aliasNode.text } : {}),
+          ...(typeOnlyReExport ? { isTypeOnly: true } : {}),
+        },
+      })
+      return
+      }
     }
 
     // M14 #419 T7: dynamic import('./lazy') is a module dependency identical

@@ -37,7 +37,7 @@ import { resolveWasmAsset } from "../../src/util/wasm"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const PROJECT = path.join(ROOT, "validation", "m14", "fixtures", "typescript", "project-index-imports")
-const CONSUMER = path.join(PROJECT, "consumer.ts")
+const CONSUMER = path.join(PROJECT, "src", "consumer.ts")
 
 type Outcome = { what: string; ok: boolean; detail: string }
 const outcomes: Outcome[] = []
@@ -60,7 +60,7 @@ if (tree === null) {
 const analyzer = new RealTypeScriptAnalyzer()
 
 // ── CONTROL ARM FIRST: no context at all. The pass must be a no-op. ──────────────────────────────
-const withoutIndex: any = analyzer.analyze(tree.rootNode, content, path.join("validation", "m14", "fixtures", "typescript", "project-index-imports", "consumer.ts"))
+const withoutIndex: any = analyzer.analyze(tree.rootNode, content, path.join("validation", "m14", "fixtures", "typescript", "project-index-imports", "src", "consumer.ts"))
 const ctrlRows = importsRows(withoutIndex)
 const ctrlRespelled = ctrlRows.filter((r: any) => r.metadata?.resolvedViaProjectIndex === true).length
 const ctrlClaims = ctrlRows.filter((r: any) => r.metadata?.isExternalTarget === true).length
@@ -103,7 +103,7 @@ check("index: makeWidget declared once through the name-only channel", counts.ge
 check("index: Twice declared twice", counts.get("Twice") === 2, `count=${counts.get("Twice")}`)
 check("index: missingThing not declared", (counts.get("missingThing") ?? 0) === 0, `count=${counts.get("missingThing") ?? 0}`)
 
-const withIndex: any = analyzer.analyze(tree.rootNode, content, path.join("validation", "m14", "fixtures", "typescript", "project-index-imports", "consumer.ts"), {
+const withIndex: any = analyzer.analyze(tree.rootNode, content, path.join("validation", "m14", "fixtures", "typescript", "project-index-imports", "src", "consumer.ts"), {
   projectIndex,
   projectRoot: PROJECT,
 })
