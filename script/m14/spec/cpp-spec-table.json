@@ -1,0 +1,1014 @@
+{
+ "schemaVersion": 1,
+ "language": "cpp",
+ "programme": "ALL-OUT-OF-ALL (charter validation/m14/verification/ALL-OUT-OF-ALL-PROGRAMME.md §9.1 D1)",
+ "purpose": "THE C++ APPLICABLE SET, machine-readable: one row per relationship type the C++ language can express (decided from the PINNED GRAMMAR's own enumeration, never from the ten-value matrix), with the emission site in src/ast/real-cpp-analyzer.ts and at least one fixture that can go RED for it (measured by the real fixture runner with the emission removed) — plus the ruled non-applicable canonical values, the C++ construct surface, and the C++-specific rulings the D1 handoff asked to be proved rather than assumed.",
+ "generatedBy": "script/m14/cpp-spec-table.ts (inputs named in that file's header; do not hand-edit the OWED cells without re-running)",
+ "grammar": {
+  "wasm": "wasm/tree-sitter-cpp.wasm",
+  "sha256": "0821b6f64ea5444e8c79d1f4362b1a19d3e9ba5b406a8c371082454d81a71a6b",
+  "slotCount": 548,
+  "namedTypeCount": 208,
+  "anonymousTokenCount": 286,
+  "enumeration": "the pinned wasm enumerated through web-tree-sitter's Language API (nodeTypeCount / nodeTypeIsNamed / nodeTypeForId). ERROR and MISSING are universal parser outputs, not grammar productions, and are classified separately in cpp-completeness.json.",
+  "instrument": "script/m14/cpp-applicable-set.ts",
+  "command": "bun run script/m14/cpp-applicable-set.ts --out validation/m14/fixtures/cpp/measurements/applicable-set.json",
+  "artifact": "validation/m14/fixtures/cpp/measurements/applicable-set.json",
+  "artifactMeasuredAt": "2026-10-18T16:28:13.460Z"
+ },
+ "admissibilityRule": "APPLICABLE iff every construct production the value needs exists in the pinned grammar's own enumeration AND the analyzer has an emission site AND at least one fixture carries a positive expectation row AND that fixture goes RED when the emission is removed. A value failing any conjunct is a finding, not a note.",
+ "canonicalVocabulary": [
+  "calls",
+  "uses",
+  "contains",
+  "imports",
+  "references",
+  "exports",
+  "extends",
+  "implements",
+  "overrides",
+  "instantiates",
+  "decorates",
+  "renders",
+  "mixes_in",
+  "part_of"
+ ],
+ "applicableValues": [
+  "calls",
+  "uses",
+  "contains",
+  "imports",
+  "references",
+  "exports",
+  "extends",
+  "implements",
+  "overrides",
+  "instantiates"
+ ],
+ "notApplicableValues": [
+  "decorates",
+  "renders",
+  "mixes_in",
+  "part_of"
+ ],
+ "notApplicableEvidence": {
+  "decorates": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "decorator",
+    "annotation",
+    "annotation_declaration",
+    "marker_annotation",
+    "decorator_expression"
+   ],
+   "productionsFound": [],
+   "reason": "no decorator/annotation production exists in the pinned C++ grammar. It DOES have attribute_specifier / attribute_declaration / __attribute__ (GNU and C++11 attributes), adjudicated here rather than ignored: an attribute names no callable declaration of its own (it is a keyword/macro-written specifier), and the analyzer records export attributes as the `exports` edge + symbol metadata — the same ruling the java lane applied to annotations (references+isAnnotation; decorates reserved for runtime callable decorators). No cpp fixture expects a `decorates` row and the analyzer emits none.",
+   "vocabularyRuling": "extended value, NOT APPLICABLE to C++."
+  },
+  "renders": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "jsx_element",
+    "jsx_self_closing_element",
+    "jsx_opening_element",
+    "jsx_attribute"
+   ],
+   "productionsFound": [],
+   "reason": "no JSX/element-construction production exists in the pinned C++ grammar; C++ never creates a component-element pair.",
+   "vocabularyRuling": "extended value (TSX/JSX), NOT APPLICABLE to C++."
+  },
+  "mixes_in": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "mixin",
+    "mixin_application_class",
+    "with_clause"
+   ],
+   "productionsFound": [],
+   "reason": "no mixin/with production exists in the pinned C++ grammar. Multiple inheritance expresses composition of base classes and is carried by `extends`; there is no separate mixin application construct to publish.",
+   "vocabularyRuling": "extended value (Dart `with`), NOT APPLICABLE to C++."
+  },
+  "part_of": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "part_directive",
+    "part_of_directive",
+    "part_clause"
+   ],
+   "productionsFound": [],
+   "reason": "C++'s file-inclusion construct is `#include`, which IS a module edge and is published as `imports`; there is no part-file directive that shares one scope without importing (the construct `part_of` exists to distinguish).",
+   "vocabularyRuling": "extended value (Dart `part`/`part of`), NOT APPLICABLE to C++."
+  }
+ },
+ "constructTable": {
+  "classes / structs / unions": {
+   "grammarConstructs": [
+    "class_specifier",
+    "struct_specifier",
+    "union_specifier"
+   ],
+   "grammarPresent": [
+    "class_specifier",
+    "struct_specifier",
+    "union_specifier"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "extends",
+    "overrides",
+    "implements",
+    "instantiates",
+    "references"
+   ],
+   "ruling": "a class is a symbol; its members are contains, its bases extends + implements, its virtual overrides are overrides, its constructions instantiates."
+  },
+  "templates (declaration + type arguments)": {
+   "grammarConstructs": [
+    "template_declaration",
+    "template_parameter_list",
+    "template_type",
+    "template_instantiation"
+   ],
+   "grammarPresent": [
+    "template_declaration",
+    "template_parameter_list",
+    "template_type",
+    "template_instantiation"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "references",
+    "instantiates"
+   ],
+   "ruling": "a template ARGUMENT is a type mention (references); `new X<T>` strips the arguments and instantiates X. A template DECLARATION is a declaration form, not a relationship kind: its members are contained by the enclosing class/namespace, and its parameters are not symbols. `template_instantiation` is a compile-time specialization and is NOT the `instantiates` value (see rulings)."
+  },
+  "namespaces": {
+   "grammarConstructs": [
+    "namespace_definition",
+    "nested_namespace_specifier",
+    "namespace_identifier"
+   ],
+   "grammarPresent": [
+    "namespace_definition",
+    "nested_namespace_specifier",
+    "namespace_identifier"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "references"
+   ],
+   "ruling": "namespace -> member is contains; a qualified mention of a namespace-scoped name is references. Namespaces are NOT imports (imports is #include only) and NOT exports (no marker)."
+  },
+  "namespace alias / using-declaration / using-directive": {
+   "grammarConstructs": [
+    "namespace_alias_definition",
+    "using_declaration"
+   ],
+   "grammarPresent": [
+    "namespace_alias_definition",
+    "using_declaration"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "references"
+   ],
+   "ruling": "a using-dependency is published as references (the dependency edge the early residual analysis called the 'using half' of the old single imports bucket). A namespace ALIAS names a namespace, which is not a published declaration, so it emits no edge — measured in the census."
+  },
+  "multiple inheritance": {
+   "grammarConstructs": [
+    "base_class_clause",
+    "base_class_clause_repeat1"
+   ],
+   "grammarPresent": [
+    "base_class_clause",
+    "base_class_clause_repeat1"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "extends",
+    "implements"
+   ],
+   "ruling": "one base_class_clause holds a LIST of bases (base_class_clause_repeat1), so N bases = N extends edges and (for pure-virtual bases) N implements edges. It is not a distinct relationship type."
+  },
+  "virtual / override / pure-virtual methods": {
+   "grammarConstructs": [
+    "virtual_specifier",
+    "pure_virtual_clause",
+    "override",
+    "virtual"
+   ],
+   "grammarPresent": [
+    "virtual_specifier",
+    "pure_virtual_clause",
+    "override",
+    "virtual"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "overrides",
+    "implements"
+   ],
+   "ruling": "a derived method overriding a base virtual is overrides; a base that DECLARES a pure virtual is a contract and implementing it is implements. The `override`/`final` keyword is recorded as an evidence class, never invented when absent."
+  },
+  "operator overloads": {
+   "grammarConstructs": [
+    "operator_name",
+    "operator_cast",
+    "destructor_name"
+   ],
+   "grammarPresent": [
+    "operator_name",
+    "operator_cast",
+    "destructor_name"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "calls",
+    "uses",
+    "references"
+   ],
+   "ruling": "an operator overload is a declared member (symbol) named `operator+` etc.; it is contained by its class and appears in calls/uses positions exactly like a named method. There is no `overloads` relationship value: overload RELATIONSHIPS are not a canonical kind, and the symbol's kind/name carries the fact."
+  },
+  "lambda expressions (captures)": {
+   "grammarConstructs": [
+    "lambda_expression",
+    "lambda_capture_specifier",
+    "lambda_capture_initializer",
+    "lambda_default_capture"
+   ],
+   "grammarPresent": [
+    "lambda_expression",
+    "lambda_capture_specifier",
+    "lambda_capture_initializer",
+    "lambda_default_capture"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "uses"
+   ],
+   "ruling": "a captured variable is a READ of an in-file name, so a capture is `uses` from the enclosing function/class (the family member-read contract); a capture with an initializer (`[x = y]`) reads y. A lambda expression itself publishes no symbol of its own in this lane, so no contains edge is fabricated for it."
+  },
+  "structured bindings": {
+   "grammarConstructs": [
+    "structured_binding_declarator"
+   ],
+   "grammarPresent": [
+    "structured_binding_declarator"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "uses",
+    "references"
+   ],
+   "ruling": "a structured binding DECLARES local names (not published symbols) and READS the initializer's object; the binding names are declaration positions, so no uses edge is fabricated for them, and the referenced type is references where the type is a type mention."
+  },
+  "concepts / requires (C++20)": {
+   "grammarConstructs": [
+    "concept_definition",
+    "requires_clause",
+    "requires_expression"
+   ],
+   "grammarPresent": [
+    "concept_definition",
+    "requires_clause",
+    "requires_expression"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [],
+   "ruling": "RULED: grammar-present but carrying NO relationship in this lane's model. A concept is a named constraint entity this analyzer does not publish as a symbol (publishing it would be a new symbol kind, not a relationship), and a requires_clause is a compile-time constraint, not a call/read/inheritance fact. Measured population is carried by the D2 census so this is a count, not a silence; if a future wave publishes concepts, `references` to the concept is the value they would carry."
+  },
+  "friend declarations/definitions": {
+   "grammarConstructs": [
+    "friend_declaration"
+   ],
+   "grammarPresent": [
+    "friend_declaration"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "uses",
+    "calls",
+    "references"
+   ],
+   "ruling": "a friend DEFINITION is a free function owned by no class (fixtures friend-definition-published / friend-owner-name-recovery pin this); a friend DECLARATION grants access and publishes no edge of its own."
+  },
+  "preprocessor (#include / #define / conditional arms)": {
+   "grammarConstructs": [
+    "preproc_include",
+    "preproc_def",
+    "preproc_function_def",
+    "preproc_if",
+    "preproc_ifdef"
+   ],
+   "grammarPresent": [
+    "preproc_include",
+    "preproc_def",
+    "preproc_function_def",
+    "preproc_if",
+    "preproc_ifdef"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "imports",
+    "exports",
+    "overrides"
+   ],
+   "ruling": "includes are imports; an export MARKER macro applied to a declaration is exports (the marker spelling decides); mutually exclusive conditional definitions are the ADAPTED `overrides` semantics used by the C lane as well (shape carried in metadata)."
+  }
+ },
+ "rulings": [
+  {
+   "id": "CPP-R1",
+   "question": "`implements`: is the canonical value applicable to C++?",
+   "measured": "the pinned grammar has NO implements-clause production (implements_clause / class_interface_clause / super_interfaces all ABSENT — section 2 proves it). It DOES have class_specifier + base_class_clause + pure_virtual_clause; the analyzer emits implements at a measured site from (derived, pure-virtual base) pairs and the corpus carries them.",
+   "verdict": "APPLICABLE BY ADAPTED SEMANTICS — a pure-virtual base is a contract. Ruling it non-applicable would contradict the emission and the fixtures; the adapted reading is declared in the value's rule and in script/m14/spec/cpp-completeness.json."
+  },
+  {
+   "id": "CPP-R2",
+   "question": "template_instantiation vs `instantiates`: the same word, the same value?",
+   "measured": "`template_instantiation` (a compile-time type specialization, e.g. `Box<int>`) and `new_expression` (runtime object creation) are DIFFERENT productions. The `instantiates` value is emitted from new_expression only; a new of a template type strips `<>` and instantiates the base type name. No value is named after template instantiation, and no constructor-of-template edge is fabricated.",
+   "verdict": "DISTINCT — a C++ template instantiation carries no relationship; `instantiates` = object creation. Recorded so no future reader derives the value from the wrong node."
+  },
+  {
+   "id": "CPP-R3",
+   "question": "Are `using` / namespace declarations `imports`?",
+   "measured": "`imports` is emitted from preproc_include only (site read from source). using_declaration is emitted as a references dependency (the using-half of the early residual analysis) and namespace containment as contains.",
+   "verdict": "NO — `imports` is a module-path edge (#include); a using-dependency is a symbol/type dependency (references). The census counts both separately so the mapping is a number."
+  },
+  {
+   "id": "CPP-R4",
+   "question": "Does multiple inheritance need its own value?",
+   "measured": "base_class_clause's shape is a repeated list of base_class items; the analyzer iterates it and emits one extends (and, where pure virtual, one implements) per base.",
+   "verdict": "NO — multiple inheritance is N extends edges; the value set already expresses it, and the fixture pins a two-base class."
+  }
+ ],
+ "evidenceRows": {
+  "_reading": "cap-50 columns are TRIAGE from a committed no-index gate log over a 50-of-3,425-file stride sample — never a population claim. Whole-population columns are EXPLICITLY OWED until the D2/D3 arms land (the `wholePopulation` cell says so); a number here without its command is a defect.",
+  "cap50Command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts cpp cpp 50",
+  "cap50Log": "validation/m14/fixtures/cpp/measurements/gate-cpp-cap50-baseline.txt",
+  "cap50Population": {
+   "line": "population: 50 parsed of 50 sampled (corpus has 3425 .cpp files across 22 repos; stride sample)",
+   "sample": 50,
+   "corpusTotalCpp": 3425,
+   "corpusRepos": 22,
+   "exclusionLine": "excluded from that population: 55 tracked-but-absent/unreadable + 4 over the 1 MB cap (largest 3.5 MB) — above the cap the engine extracts structurally, not as an analyzer",
+   "parseFailures": 0,
+   "degraded": 0,
+   "exit": "EXIT=1",
+   "exitMeaning": "FAIL on clause 1 (unresolved/ambiguous rows on the sample) — the state being worked, not an instrument error; self-test PASS",
+   "admittedExtensionsNote": "the gate's population spelling is `.cpp` ONLY on this command (the D2/D3 whole-population arms admit the lane's full router spelling set: cpp,cc,cxx,hpp,hxx,ipp,inl,cu; `.h` is content-routed in production and the boundary is proposal cpp-h-routing.md)."
+  },
+  "TOTAL": {
+   "type": "TOTAL",
+   "edges": 19325,
+   "resolved": 4848,
+   "collRes": 571,
+   "ambDecl": 1256,
+   "ambKind": 3,
+   "unresolved": 13221,
+   "extOK": 0,
+   "extUnknown": 0,
+   "extFAIL": 0,
+   "bindOK": 0,
+   "bindUnknown": 0,
+   "bindFAIL": 0,
+   "causeOK": 0,
+   "causeFAIL": 0
+  },
+  "types": {
+   "calls": {
+    "applicable": true,
+    "constructs": [
+     "call_expression",
+     "argument_list"
+    ],
+    "grammarProductionsPresent": [
+     "call_expression",
+     "argument_list"
+    ],
+    "rule": "call_expression whose callee is an identifier / field_expression / qualified_identifier / template_function / function-pointer; a class-type functional construction `T(x)` is a CALL in this family (cpp/call-target-name-surface-924), while `instantiates` is reserved for `new`.",
+    "implementationSites": [
+     "src/ast/real-cpp-analyzer.ts:4390"
+    ],
+    "fixturesCanGoRed": [
+     "cpp/bare-value-reads",
+     "cpp/call-target-name-surface-924",
+     "cpp/callsite-lines-825",
+     "cpp/class-scope-constructor",
+     "cpp/class-self-call-925",
+     "cpp/ctor-and-overload-regressions",
+     "cpp/declaration-vs-definition-612",
+     "cpp/keyword-names-957",
+     "cpp/macro-declared-body-919",
+     "cpp/macro-decorated-specifier",
+     "cpp/macro-function-shapes",
+     "cpp/macro-heading-owner-range",
+     "cpp/metadata-line-base-873",
+     "cpp/multiline-attribute-line-base-920",
+     "cpp/no-nested-function-def-961",
+     "cpp/one-edge-per-pair-959",
+     "cpp/preproc-has-include",
+     "cpp/system-completeness",
+     "cpp/template-declarator-name-612"
+    ],
+    "fixtureExpectationRows": 51,
+    "fixtureForbidRows": 45,
+    "redProof": {
+     "method": "the REAL RealCppAnalyzer wrapped so exactly one relationship value's edges are removed; the runner's own getParser grammar handoff is reproduced in the wrapper. baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "50/1",
+     "mutatedPassFail": "31/20",
+     "fixturesThatWentRed": 19,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 15094,
+     "resolved": 2486,
+     "collRes": 0,
+     "ambDecl": 1245,
+     "ambKind": 0,
+     "unresolved": 11363,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "member-leaf calls on receivers declared outside the stride (the file's own project can answer them only when the declaring file is in the sample), plus C++ template FUNCTION heads whose callee is a template_function/qualified_identifier. The earlier whole-population residual analysis (`CPP-RESIDUAL.md`, 6,641 files) attributed 83% of the calls residual to declarations living in `.h` files the gate's discovery does not admit — a POPULATION boundary (proposal cpp-h-routing.md), declared here rather than folded into this type.",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "uses": {
+    "applicable": true,
+    "constructs": [
+     "field_expression",
+     "identifier",
+     "assignment_expression",
+     "update_expression",
+     "field_initializer"
+    ],
+    "grammarProductionsPresent": [
+     "field_expression",
+     "identifier",
+     "assignment_expression",
+     "update_expression",
+     "field_initializer"
+    ],
+    "rule": "a READ (and, under the C-family contract pinned by #960, a WRITE) of an in-file declared name: member reads, bare value reads, lambda-capture reads; declaration positions and call callees are excluded by their own rules.",
+    "implementationSites": [
+     "src/ast/real-cpp-analyzer.ts:4196",
+     "src/ast/real-cpp-analyzer.ts:4585"
+    ],
+    "fixturesCanGoRed": [
+     "cpp/bare-macro-statements",
+     "cpp/bare-value-reads",
+     "cpp/callsite-lines-825",
+     "cpp/destructor-definition-published",
+     "cpp/friend-definition-body-owner",
+     "cpp/friend-definition-published",
+     "cpp/friend-owner-name-recovery",
+     "cpp/keyword-names-957",
+     "cpp/macro-declared-body-919",
+     "cpp/macro-decorated-specifier",
+     "cpp/multiline-attribute-line-base-920",
+     "cpp/no-nested-function-def-961",
+     "cpp/one-edge-per-pair-959",
+     "cpp/reason-code-4",
+     "cpp/recovered-declared-name-960",
+     "cpp/stateless-analyzer",
+     "cpp/template-declarator-name-612",
+     "cpp/wrapped-declarator-names-612"
+    ],
+    "fixtureExpectationRows": 48,
+    "fixtureForbidRows": 31,
+    "redProof": {
+     "method": "the REAL RealCppAnalyzer wrapped so exactly one relationship value's edges are removed; the runner's own getParser grammar handoff is reproduced in the wrapper. baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "50/1",
+     "mutatedPassFail": "33/18",
+     "fixturesThatWentRed": 17,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 1852,
+     "resolved": 462,
+     "collRes": 0,
+     "ambDecl": 6,
+     "ambKind": 3,
+     "unresolved": 1384,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "member reads on receivers whose class is not in the sampled project slice; bare reads of names declared in headers outside the run.",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "contains": {
+    "applicable": true,
+    "constructs": [
+     "class_specifier",
+     "struct_specifier",
+     "union_specifier",
+     "enum_specifier",
+     "namespace_definition",
+     "field_declaration",
+     "function_definition",
+     "declaration_list",
+     "enumerator"
+    ],
+    "grammarProductionsPresent": [
+     "class_specifier",
+     "struct_specifier",
+     "union_specifier",
+     "enum_specifier",
+     "namespace_definition",
+     "field_declaration",
+     "function_definition",
+     "declaration_list",
+     "enumerator"
+    ],
+    "rule": "container -> member: namespace/class/struct/union -> member, enum -> enumerator, and a function -> its local type. ONE edge per (owner, name) pair; overloads stay as symbols but the duplicated edge is dropped.",
+    "implementationSites": [
+     "src/ast/real-cpp-analyzer.ts:4887"
+    ],
+    "fixturesCanGoRed": [
+     "cpp/bare-macro-statements",
+     "cpp/callsite-lines-825",
+     "cpp/class-self-call-925",
+     "cpp/contains-name-line-921",
+     "cpp/destructor-definition-published",
+     "cpp/friend-definition-body-owner",
+     "cpp/friend-definition-published",
+     "cpp/friend-owner-name-recovery",
+     "cpp/macro-decorated-class",
+     "cpp/macro-decorated-specifier",
+     "cpp/multiline-attribute-line-base-920",
+     "cpp/no-nested-function-def-961",
+     "cpp/one-edge-per-pair-959",
+     "cpp/qualified-declarator-name-924",
+     "cpp/reason-code-4",
+     "cpp/recovered-declared-name-960",
+     "cpp/specifier-qualified-name-962",
+     "cpp/template-declarator-name-612",
+     "cpp/unnamed-scope-919"
+    ],
+    "fixtureExpectationRows": 73,
+    "fixtureForbidRows": 24,
+    "redProof": {
+     "method": "the REAL RealCppAnalyzer wrapped so exactly one relationship value's edges are removed; the runner's own getParser grammar handoff is reproduced in the wrapper. baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "50/1",
+     "mutatedPassFail": "32/19",
+     "fixturesThatWentRed": 18,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 1891,
+     "resolved": 1891,
+     "collRes": 571,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "none on this stride — every contains edge resolved (1,891/1,891, collRes 571 = resolved picks among duplicate member names). The whole-population collRes axis is tracked separately: it must not grow when other types are fixed.",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "imports": {
+    "applicable": true,
+    "constructs": [
+     "preproc_include",
+     "system_lib_string",
+     "string_literal"
+    ],
+    "grammarProductionsPresent": [
+     "preproc_include",
+     "system_lib_string",
+     "string_literal"
+    ],
+    "rule": "preproc_include -> the include path as the module target (`<vector>` / `\"Service.h\"`). The target is a module path, not a symbol, by construction of the type — 0% resolution is its shape, not a failure rate. Namespace aliases and `using` are NOT imports (they are references/contains, see the rulings block).",
+    "implementationSites": [
+     "src/ast/real-cpp-analyzer.ts:2801"
+    ],
+    "fixturesCanGoRed": [
+     "cpp/callsite-lines-825",
+     "cpp/imports-include-910",
+     "cpp/include-kind-imports",
+     "cpp/include-name-924",
+     "cpp/keyword-names-957",
+     "cpp/multiline-attribute-line-base-920",
+     "cpp/one-edge-per-pair-959",
+     "cpp/reason-code-4",
+     "cpp/recovered-declared-name-960",
+     "cpp/system-completeness"
+    ],
+    "fixtureExpectationRows": 18,
+    "fixtureForbidRows": 10,
+    "redProof": {
+     "method": "the REAL RealCppAnalyzer wrapped so exactly one relationship value's edges are removed; the runner's own getParser grammar handoff is reproduced in the wrapper. baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "50/1",
+     "mutatedPassFail": "40/11",
+     "fixturesThatWentRed": 10,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 443,
+     "resolved": 1,
+     "collRes": 0,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 442,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "path-target-not-a-symbol (442/443 on this stride) — declared by construction: an `#include` target is a module path, not a published symbol, and the no-index per-file axis cannot resolve it. The earlier whole-population run measured 45,091/45,829 (99.5%) in this class; the .h-route proposal measures the 924/990 quoted includes that DO name a repo file.",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "references": {
+    "applicable": true,
+    "constructs": [
+     "type_identifier",
+     "qualified_identifier",
+     "template_type",
+     "cast_expression",
+     "sizeof_expression",
+     "decltype",
+     "using_declaration"
+    ],
+    "grammarProductionsPresent": [
+     "type_identifier",
+     "qualified_identifier",
+     "template_type",
+     "cast_expression",
+     "sizeof_expression",
+     "decltype",
+     "using_declaration"
+    ],
+    "rule": "a TYPE mention in a type position, plus the using-dependency (`using ns::name;`). A value identifier in a value position is `uses`, not `references`.",
+    "implementationSites": [
+     "src/ast/real-cpp-analyzer.ts:2521"
+    ],
+    "fixturesCanGoRed": [
+     "cpp/imports-include-910",
+     "cpp/include-kind-imports",
+     "cpp/one-edge-per-pair-959",
+     "cpp/reason-code-4",
+     "cpp/system-completeness"
+    ],
+    "fixtureExpectationRows": 8,
+    "fixtureForbidRows": 16,
+    "redProof": {
+     "method": "the REAL RealCppAnalyzer wrapped so exactly one relationship value's edges are removed; the runner's own getParser grammar handoff is reproduced in the wrapper. baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "50/1",
+     "mutatedPassFail": "45/6",
+     "fixturesThatWentRed": 5,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 22,
+     "resolved": 2,
+     "collRes": 0,
+     "ambDecl": 2,
+     "ambKind": 0,
+     "unresolved": 18,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "qualified type mentions whose declaring file is outside the stride (type_identifier/qualified_identifier leaves).",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "exports": {
+    "applicable": true,
+    "constructs": [
+     "ms_declspec_modifier",
+     "attribute_specifier",
+     "attribute_declaration",
+     "linkage_specification",
+     "preproc_def",
+     "preproc_function_def"
+    ],
+    "grammarProductionsPresent": [
+     "ms_declspec_modifier",
+     "attribute_specifier",
+     "attribute_declaration",
+     "linkage_specification",
+     "preproc_def",
+     "preproc_function_def"
+    ],
+    "rule": "the author's EXPORT marker on a declaration: `__declspec(dllexport)` (MSVC) and `__attribute__((visibility(\"default\")))` (GCC/Clang). A file-scope surface list is a different question and is not this edge.",
+    "implementationSites": [
+     "src/ast/real-cpp-analyzer.ts:2972",
+     "src/ast/real-cpp-analyzer.ts:3677",
+     "src/ast/real-cpp-analyzer.ts:4826"
+    ],
+    "fixturesCanGoRed": [
+     "cpp/exports-cxx11-attribute",
+     "cpp/exports-marker-910",
+     "cpp/exports-visibility-attribute"
+    ],
+    "fixtureExpectationRows": 15,
+    "fixtureForbidRows": 22,
+    "redProof": {
+     "method": "the REAL RealCppAnalyzer wrapped so exactly one relationship value's edges are removed; the runner's own getParser grammar handoff is reproduced in the wrapper. baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "50/1",
+     "mutatedPassFail": "47/4",
+     "fixturesThatWentRed": 3,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 0,
+     "resolved": 0,
+     "collRes": 0,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "no edges on this stride — the sample carries no export marker; the whole-population count is the type's evidence (the earlier residual run measured 1,527 edges / 692 resolved).",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "extends": {
+    "applicable": true,
+    "constructs": [
+     "class_specifier",
+     "struct_specifier",
+     "base_class_clause"
+    ],
+    "grammarProductionsPresent": [
+     "class_specifier",
+     "struct_specifier",
+     "base_class_clause"
+    ],
+    "rule": "class/struct -> each base in its base_class_clause, one edge per base. MULTIPLE INHERITANCE is a LIST in one clause (base_class_clause_repeat1), so `class D : public B, private C` is two edges, not a special case.",
+    "implementationSites": [
+     "src/ast/real-cpp-analyzer.ts:2954",
+     "src/ast/real-cpp-analyzer.ts:3185"
+    ],
+    "fixturesCanGoRed": [
+     "cpp/cross-file-override",
+     "cpp/ctor-and-overload-regressions",
+     "cpp/decorated-head-return-type",
+     "cpp/exports-marker-910",
+     "cpp/extends-self-base-958",
+     "cpp/implements-pure-virtual-interface",
+     "cpp/override-signature-aware",
+     "cpp/pure-virtual-abstract-919",
+     "cpp/pure-virtual-signature-910",
+     "cpp/reason-code-4",
+     "cpp/virtual-override-resolution"
+    ],
+    "fixtureExpectationRows": 18,
+    "fixtureForbidRows": 4,
+    "redProof": {
+     "method": "the REAL RealCppAnalyzer wrapped so exactly one relationship value's edges are removed; the runner's own getParser grammar handoff is reproduced in the wrapper. baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "50/1",
+     "mutatedPassFail": "39/12",
+     "fixturesThatWentRed": 11,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 10,
+     "resolved": 5,
+     "collRes": 0,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 5,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "bases declared in headers outside the run (the per-file model cannot see another file); on this stride 5 of 10 extend edges resolved and 5 name an undeclared-in-run base.",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "implements": {
+    "applicable": true,
+    "constructs": [
+     "class_specifier",
+     "struct_specifier",
+     "base_class_clause",
+     "pure_virtual_clause",
+     "virtual_specifier"
+    ],
+    "grammarProductionsPresent": [
+     "class_specifier",
+     "struct_specifier",
+     "base_class_clause",
+     "pure_virtual_clause",
+     "virtual_specifier"
+    ],
+    "rule": "ADAPTED SEMANTICS, declared: C++ has no `implements` clause. The construct the value carries is the CONTRACT BASE — a base whose body declares a pure virtual (`virtual R f() = 0;`). One edge per (derived, base) pair where the base is in-file and declares at least one pure virtual; the edge is NOT a duplicate of `extends` (two readings of the same clause: 'inherits from' and 'implements this contract'), and it carries metadata.reasonCode pure-virtual-base + the pure-virtual member list so a consumer can re-derive it. A base with no in-file declaration, or with no pure virtual, emits NO edge (a guess here is the fabrication the workstream exists to prevent).",
+    "adaptedSemantics": "no implements-clause production exists; the value rides base_class_clause + pure_virtual_clause",
+    "implementationSites": [
+     "src/ast/real-cpp-analyzer.ts:4797"
+    ],
+    "fixturesCanGoRed": [
+     "cpp/implements-pure-virtual-interface",
+     "cpp/reason-code-4"
+    ],
+    "fixtureExpectationRows": 6,
+    "fixtureForbidRows": 7,
+    "redProof": {
+     "method": "the REAL RealCppAnalyzer wrapped so exactly one relationship value's edges are removed; the runner's own getParser grammar handoff is reproduced in the wrapper. baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "50/1",
+     "mutatedPassFail": "48/3",
+     "fixturesThatWentRed": 2,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 0,
+     "resolved": 0,
+     "collRes": 0,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "no edges on this stride — an implements edge requires the BASE's body in the same file (in-file pure-virtual set); the whole-population count is the type's evidence (171 (derived→contract) pairs measured by the analyzer's own comment, re-measured by the D2 census).",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "overrides": {
+    "applicable": true,
+    "constructs": [
+     "virtual_specifier",
+     "pure_virtual_clause",
+     "override",
+     "class_specifier",
+     "field_declaration",
+     "function_declarator"
+    ],
+    "grammarProductionsPresent": [
+     "virtual_specifier",
+     "pure_virtual_clause",
+     "override",
+     "class_specifier",
+     "field_declaration",
+     "function_declarator"
+    ],
+    "rule": "a derived class's method that overrides a base's virtual method: matched transitively through the in-file base chain by method leaf + normalized parameter-type signature, with the `override`/`final` keyword (when written) carried as an independent evidence class. The target is the DECLARED MEMBER's leaf and the intended base rides metadata.overriddenOwner.",
+    "implementationSites": [
+     "src/ast/real-cpp-analyzer.ts:4743"
+    ],
+    "fixturesCanGoRed": [
+     "cpp/cross-file-override",
+     "cpp/ctor-and-overload-regressions",
+     "cpp/exports-marker-910",
+     "cpp/extends-self-base-958",
+     "cpp/pure-virtual-abstract-919",
+     "cpp/pure-virtual-signature-910",
+     "cpp/reason-code-4",
+     "cpp/virtual-override-resolution"
+    ],
+    "fixtureExpectationRows": 24,
+    "fixtureForbidRows": 10,
+    "redProof": {
+     "method": "the REAL RealCppAnalyzer wrapped so exactly one relationship value's edges are removed; the runner's own getParser grammar handoff is reproduced in the wrapper. baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "50/1",
+     "mutatedPassFail": "42/9",
+     "fixturesThatWentRed": 8,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 3,
+     "resolved": 0,
+     "collRes": 0,
+     "ambDecl": 3,
+     "ambKind": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "member-leaf ambiguity (3 amb on this stride) — the target is the declared member's leaf, so two classes declaring a method of that name are two declarations; the intended base rides metadata.overriddenOwner. Whole-population state in CPP-RESIDUAL.md.",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   },
+   "instantiates": {
+    "applicable": true,
+    "constructs": [
+     "new_expression",
+     "new_declarator",
+     "type_identifier"
+    ],
+    "grammarProductionsPresent": [
+     "new_expression",
+     "new_declarator",
+     "type_identifier"
+    ],
+    "rule": "OBJECT CREATION through `new`: the constructed type is the target, template arguments are stripped (`new std::vector<int>` instantiates vector). A primitive (`char`), a non-class standard typedef (`uint8_t`), a keyword spelling and a template-parameter binding emit NO edge. `instantiates` is NOT template instantiation — see the rulings block.",
+    "implementationSites": [
+     "src/ast/real-cpp-analyzer.ts:4503"
+    ],
+    "fixturesCanGoRed": [
+     "cpp/callsite-lines-825",
+     "cpp/friend-owner-name-recovery",
+     "cpp/metadata-line-base-873",
+     "cpp/system-completeness"
+    ],
+    "fixtureExpectationRows": 5,
+    "fixtureForbidRows": 6,
+    "redProof": {
+     "method": "the REAL RealCppAnalyzer wrapped so exactly one relationship value's edges are removed; the runner's own getParser grammar handoff is reproduced in the wrapper. baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+     "baselinePassFail": "50/1",
+     "mutatedPassFail": "46/5",
+     "fixturesThatWentRed": 4,
+     "redProven": true
+    },
+    "cap50": {
+     "edges": 10,
+     "resolved": 1,
+     "collRes": 0,
+     "ambDecl": 0,
+     "ambKind": 0,
+     "unresolved": 9,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "bindOK": 0,
+     "bindUnknown": 0,
+     "bindFAIL": 0,
+     "causeOK": 0,
+     "causeFAIL": 0
+    },
+    "cap50ResidualClass": "constructed types declared in a header outside the run (9 unresolved / 10 on this stride).",
+    "wholePopulation": {
+     "status": "OWED — filled by the D2 whole-population census arm"
+    }
+   }
+  }
+ },
+ "wholePopulationArms": {
+  "status": "OWED — filled by the D2 whole-population emission census and the D3 incoming-gate arms; the numbers will be added with their commands and scope."
+ }
+}

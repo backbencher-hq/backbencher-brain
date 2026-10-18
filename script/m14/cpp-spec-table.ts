@@ -1,0 +1,229 @@
+/**
+ * cpp-spec-table — the D1 deliverable, GENERATED from measurements rather than typed.
+ *
+ * `script/m14/spec/cpp-spec-table.json` is the C++ applicable set as a machine-readable
+ * table (ALL-OUT-OF-ALL charter §9.1 D1): one row per canonical relationship value the C++
+ * language can express, with the PINNED-GRAMMAR constructs that justify it, the emission
+ * site read out of the analyzer source, at least one fixture that can go RED (measured by
+ * `script/m14/cpp-applicable-set.ts`, not asserted), and the cap-50 triage columns from a
+ * committed gate log — plus the ruled non-applicable values and the C++-specific
+ * construct/ruling tables the D1 handoff asked for.
+ *
+ * INPUTS (all in the tree, so the table is reproducible from a clean checkout):
+ *   validation/m14/fixtures/cpp/measurements/applicable-set.json      (the instrument)
+ *   validation/m14/fixtures/cpp/measurements/gate-cpp-cap50-baseline.txt (the gate log)
+ *
+ * WHOLE-POPULATION COLUMNS ARE EXPLICITLY OWED until the D2/D3 arms land; the generator
+ * writes `owed` rather than leaving a 0 that a reader would read as a measured zero.
+ *
+ * USAGE
+ *   bun run script/m14/cpp-spec-table.ts            # rewrite script/m14/spec/cpp-spec-table.json
+ *   bun run script/m14/cpp-spec-table.ts --check    # fail if the committed table is stale
+ */
+import * as fs from "node:fs"
+import * as path from "node:path"
+
+const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
+const ARTIFACT = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/applicable-set.json")
+const GATE_LOG = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/gate-cpp-cap50-baseline.txt")
+const OUT = path.join(ROOT, "script/m14/spec/cpp-spec-table.json")
+const CHECK = process.argv.includes("--check")
+
+interface GateRow {
+  type: string
+  edges: number
+  resolved: number
+  collRes: number
+  ambDecl: number
+  ambKind: number
+  unresolved: number
+  extOK: number
+  extUnknown: number
+  extFAIL: number
+  bindOK: number
+  bindUnknown: number
+  bindFAIL: number
+  causeOK: number
+  causeFAIL: number
+}
+
+/** Parse TABLE 1 out of the committed gate log. The parser FAILS LOUDLY on a missing table:
+ *  a spec table built from an absent measurement must not be written. */
+function parseGateLog(log: string): { population: string; exit: string; rows: Record<string, GateRow>; total: GateRow } {
+  const lines = log.split("\n")
+  const population = lines.find((l) => l.startsWith("population: ")) ?? ""
+  const exitLine = lines.find((l) => l.startsWith("EXIT=")) ?? ""
+  const parsed: Record<string, GateRow> = {}
+  let total: GateRow | null = null
+  for (const l of lines) {
+    const m = /^(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$/.exec(l)
+    if (!m) continue
+    const row: GateRow = {
+      type: m[1],
+      edges: Number(m[2]), resolved: Number(m[3]), collRes: Number(m[4]),
+      ambDecl: Number(m[5]), ambKind: Number(m[6]), unresolved: Number(m[7]),
+      extOK: Number(m[8]), extUnknown: Number(m[9]), extFAIL: Number(m[10]),
+      bindOK: Number(m[11]), bindUnknown: Number(m[12]), bindFAIL: Number(m[13]),
+      causeOK: Number(m[14]), causeFAIL: Number(m[15]),
+    }
+    if (row.type === "TOTAL") total = row
+    else parsed[row.type] = row
+  }
+  if (!total || Object.keys(parsed).length === 0) {
+    throw new Error(`cpp-spec-table: could not parse TABLE 1 out of ${path.relative(ROOT, GATE_LOG)} — refusing to write a spec table from a missing measurement`)
+  }
+  return { population, exit: exitLine, rows: parsed, total }
+}
+
+/** Lane-authored cells: the residual CLASS of the cap-50 sample per type, and the
+ *  whole-population columns the D2/D3 arms fill. Every string here cites the measurement
+ *  it rests on (the gate log's own worklist / CPP-RESIDUAL.md for the earlier whole-pop run). */
+const LANE_NOTES: Record<string, { cap50ResidualClass: string; wholePopulationCensus: Record<string, unknown> }> = {
+  calls: {
+    cap50ResidualClass:
+      "member-leaf calls on receivers declared outside the stride (the file's own project can answer them only when the declaring file is in the sample), plus C++ template FUNCTION heads whose callee is a template_function/qualified_identifier. The earlier whole-population residual analysis (`CPP-RESIDUAL.md`, 6,641 files) attributed 83% of the calls residual to declarations living in `.h` files the gate's discovery does not admit — a POPULATION boundary (proposal cpp-h-routing.md), declared here rather than folded into this type.",
+    wholePopulationCensus: { status: "OWED — filled by the D2 whole-population census arm" },
+  },
+  uses: {
+    cap50ResidualClass: "member reads on receivers whose class is not in the sampled project slice; bare reads of names declared in headers outside the run.",
+    wholePopulationCensus: { status: "OWED — filled by the D2 whole-population census arm" },
+  },
+  contains: {
+    cap50ResidualClass:
+      "none on this stride — every contains edge resolved (1,891/1,891, collRes 571 = resolved picks among duplicate member names). The whole-population collRes axis is tracked separately: it must not grow when other types are fixed.",
+    wholePopulationCensus: { status: "OWED — filled by the D2 whole-population census arm" },
+  },
+  imports: {
+    cap50ResidualClass:
+      "path-target-not-a-symbol (442/443 on this stride) — declared by construction: an `#include` target is a module path, not a published symbol, and the no-index per-file axis cannot resolve it. The earlier whole-population run measured 45,091/45,829 (99.5%) in this class; the .h-route proposal measures the 924/990 quoted includes that DO name a repo file.",
+    wholePopulationCensus: { status: "OWED — filled by the D2 whole-population census arm" },
+  },
+  references: {
+    cap50ResidualClass: "qualified type mentions whose declaring file is outside the stride (type_identifier/qualified_identifier leaves).",
+    wholePopulationCensus: { status: "OWED — filled by the D2 whole-population census arm" },
+  },
+  exports: {
+    cap50ResidualClass: "no edges on this stride — the sample carries no export marker; the whole-population count is the type's evidence (the earlier residual run measured 1,527 edges / 692 resolved).",
+    wholePopulationCensus: { status: "OWED — filled by the D2 whole-population census arm" },
+  },
+  extends: {
+    cap50ResidualClass: "bases declared in headers outside the run (the per-file model cannot see another file); on this stride 5 of 10 extend edges resolved and 5 name an undeclared-in-run base.",
+    wholePopulationCensus: { status: "OWED — filled by the D2 whole-population census arm" },
+  },
+  implements: {
+    cap50ResidualClass: "no edges on this stride — an implements edge requires the BASE's body in the same file (in-file pure-virtual set); the whole-population count is the type's evidence (171 (derived→contract) pairs measured by the analyzer's own comment, re-measured by the D2 census).",
+    wholePopulationCensus: { status: "OWED — filled by the D2 whole-population census arm" },
+  },
+  overrides: {
+    cap50ResidualClass: "member-leaf ambiguity (3 amb on this stride) — the target is the declared member's leaf, so two classes declaring a method of that name are two declarations; the intended base rides metadata.overriddenOwner. Whole-population state in CPP-RESIDUAL.md.",
+    wholePopulationCensus: { status: "OWED — filled by the D2 whole-population census arm" },
+  },
+  instantiates: {
+    cap50ResidualClass: "constructed types declared in a header outside the run (9 unresolved / 10 on this stride).",
+    wholePopulationCensus: { status: "OWED — filled by the D2 whole-population census arm" },
+  },
+}
+
+const applicable = JSON.parse(fs.readFileSync(ARTIFACT, "utf8"))
+const gate = parseGateLog(fs.readFileSync(GATE_LOG, "utf8"))
+
+const types: Record<string, any> = {}
+for (const value of applicable.applicableValues) {
+  const surface = applicable.constructSurface[value]
+  const pins = applicable.fixturePins[value]
+  const red = applicable.redProof[value]
+  const g = gate.rows[value]
+  types[value] = {
+    applicable: true,
+    constructs: surface.constructs,
+    grammarProductionsPresent: surface.present,
+    rule: surface.rule,
+    ...(surface.adaptedSemantics ? { adaptedSemantics: surface.adaptedSemantics } : {}),
+    implementationSites: surface.implementationSites,
+    fixturesCanGoRed: pins.positiveFixtures,
+    fixtureExpectationRows: pins.positiveRows,
+    ...(pins.forbidRows ? { fixtureForbidRows: pins.forbidRows } : {}),
+    redProof: {
+      method: applicable.redProofMethod,
+      baselinePassFail: `${red.baselinePass}/${red.baselineFail}`,
+      mutatedPassFail: `${red.mutatedPass}/${red.mutatedFail}`,
+      fixturesThatWentRed: red.fixturesThatWentRed.length,
+      redProven: red.redProven,
+    },
+    cap50: g
+      ? {
+          edges: g.edges, resolved: g.resolved, collRes: g.collRes, ambDecl: g.ambDecl, ambKind: g.ambKind,
+          unresolved: g.unresolved, extOK: g.extOK, extUnknown: g.extUnknown, extFAIL: g.extFAIL,
+          bindOK: g.bindOK, bindUnknown: g.bindUnknown, bindFAIL: g.bindFAIL,
+          causeOK: g.causeOK, causeFAIL: g.causeFAIL,
+        }
+      : { status: "not present in the gate log" },
+    cap50ResidualClass: LANE_NOTES[value]?.cap50ResidualClass ?? "",
+    wholePopulation: LANE_NOTES[value]?.wholePopulationCensus ?? { status: "OWED" },
+  }
+}
+
+const spec = {
+  schemaVersion: 1,
+  language: "cpp",
+  programme: "ALL-OUT-OF-ALL (charter validation/m14/verification/ALL-OUT-OF-ALL-PROGRAMME.md §9.1 D1)",
+  purpose:
+    "THE C++ APPLICABLE SET, machine-readable: one row per relationship type the C++ language can express (decided from the PINNED GRAMMAR's own enumeration, never from the ten-value matrix), with the emission site in src/ast/real-cpp-analyzer.ts and at least one fixture that can go RED for it (measured by the real fixture runner with the emission removed) — plus the ruled non-applicable canonical values, the C++ construct surface, and the C++-specific rulings the D1 handoff asked to be proved rather than assumed.",
+  generatedBy: "script/m14/cpp-spec-table.ts (inputs named in that file's header; do not hand-edit the OWED cells without re-running)",
+  grammar: {
+    wasm: applicable.grammar.wasm,
+    sha256: applicable.grammar.sha256,
+    slotCount: applicable.grammar.slotCount,
+    namedTypeCount: applicable.grammar.namedTypeCount,
+    anonymousTokenCount: applicable.grammar.anonymousTokenCount,
+    enumeration: "the pinned wasm enumerated through web-tree-sitter's Language API (nodeTypeCount / nodeTypeIsNamed / nodeTypeForId). ERROR and MISSING are universal parser outputs, not grammar productions, and are classified separately in cpp-completeness.json.",
+    instrument: "script/m14/cpp-applicable-set.ts",
+    command: "bun run script/m14/cpp-applicable-set.ts --out validation/m14/fixtures/cpp/measurements/applicable-set.json",
+    artifact: "validation/m14/fixtures/cpp/measurements/applicable-set.json",
+    artifactMeasuredAt: applicable.measuredAt,
+  },
+  admissibilityRule: applicable.admissibilityRule,
+  canonicalVocabulary: applicable.canonicalVocabulary,
+  applicableValues: applicable.applicableValues,
+  notApplicableValues: applicable.notApplicableValues,
+  notApplicableEvidence: applicable.notApplicableSurface,
+  constructTable: applicable.constructTable,
+  rulings: applicable.rulings,
+  evidenceRows: {
+    _reading:
+      "cap-50 columns are TRIAGE from a committed no-index gate log over a 50-of-3,425-file stride sample — never a population claim. Whole-population columns are EXPLICITLY OWED until the D2/D3 arms land (the `wholePopulation` cell says so); a number here without its command is a defect.",
+    cap50Command: "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts cpp cpp 50",
+    cap50Log: "validation/m14/fixtures/cpp/measurements/gate-cpp-cap50-baseline.txt",
+    cap50Population: {
+      line: gate.population,
+      sample: 50,
+      corpusTotalCpp: 3425,
+      corpusRepos: 22,
+      exclusionLine: "excluded from that population: 55 tracked-but-absent/unreadable + 4 over the 1 MB cap (largest 3.5 MB) — above the cap the engine extracts structurally, not as an analyzer",
+      parseFailures: 0,
+      degraded: 0,
+      exit: gate.exit,
+      exitMeaning: "FAIL on clause 1 (unresolved/ambiguous rows on the sample) — the state being worked, not an instrument error; self-test PASS",
+      admittedExtensionsNote:
+        "the gate's population spelling is `.cpp` ONLY on this command (the D2/D3 whole-population arms admit the lane's full router spelling set: cpp,cc,cxx,hpp,hxx,ipp,inl,cu; `.h` is content-routed in production and the boundary is proposal cpp-h-routing.md).",
+    },
+    TOTAL: gate.total,
+    types,
+  },
+  wholePopulationArms: {
+    status: "OWED — filled by the D2 whole-population emission census and the D3 incoming-gate arms; the numbers will be added with their commands and scope.",
+  },
+}
+
+const json = JSON.stringify(spec, null, 1) + "\n"
+if (CHECK) {
+  const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, "utf8") : ""
+  if (current !== json) {
+    console.error(`cpp-spec-table: STALE — ${path.relative(ROOT, OUT)} differs from what the measurements generate. Re-run without --check.`)
+    process.exit(1)
+  }
+  console.log(`cpp-spec-table: current (${path.relative(ROOT, OUT)})`)
+} else {
+  fs.writeFileSync(OUT, json)
+  console.log(`cpp-spec-table: wrote ${path.relative(ROOT, OUT)} — ${applicable.applicableValues.length} applicable · ${applicable.notApplicableValues.length} ruled · ${Object.keys(applicable.constructTable).length} constructs`)
+}
