@@ -82,6 +82,20 @@ import {
   deriveJavaRecordPatternReferencesTruth,
   deriveJavaEnumConstantBodyContainsTruth,
 } from "./oracles/java-references-truth"
+// JAVA HERITAGE/INSTANTIATES/OVERRIDES TRUTH (2026-10-18, lane-owned module committed 2bcc6d51b).
+// Java's extends/implements/instantiates/overrides were IN the compared set with NO oracle behind them —
+// the "a label compared against nothing" shape this file records for four other lanes — so every such
+// analyzer row could only be charged as unexplained. The module derives the four classes independently:
+// generic base names without arguments, array creation excluded (mirrors the analyzer's skip), and
+// overrides only where the file PROVES the ancestor declaration (JLS 8.4.8.1 private ancestors excluded,
+// anonymous classes and enum-constant bodies included); the analyzer's pass-3 GUESS rows (confidence 0.5)
+// are deliberately NOT derived — they belong in the heuristic bucket, where the harness counts them as
+// such rather than as truth.
+import {
+  deriveJavaInheritanceTruth,
+  deriveJavaInstantiatesTruth,
+  deriveJavaOverridesTruth,
+} from "./oracles/java-heritage-truth"
 import { deriveJuliaContainsTruth } from "./oracles/julia-contains"
 import { deriveJuliaExtendsTruth, deriveJuliaInstantiatesTruth } from "./oracles/julia-type-edges"
 import { deriveJuliaCallsTruth } from "./oracles/julia-calls"
@@ -24079,6 +24093,18 @@ async function main() {
           ;(truth as any[]).push(e)
         }
         for (const e of deriveJavaEnumConstantBodyContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // ── HERITAGE / CONSTRUCTION / OVERRIDES (2026-10-18) ──────────────────────────────────────
+        // The four labels the D4 bar found compared against nothing. Pushed directly: these are narrow
+        // derivations from the declaration nodes themselves, not filters over the references walk.
+        for (const e of deriveJavaInheritanceTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveJavaInstantiatesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveJavaOverridesTruth(root)) {
           ;(truth as any[]).push(e)
         }
       }
