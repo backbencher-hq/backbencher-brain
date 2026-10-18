@@ -194,6 +194,17 @@ function declarationKindName(nodeType: string): string {
   return nodeType.endsWith(suffix) ? nodeType.slice(0, nodeType.length - suffix.length) : nodeType
 }
 
+/**
+ * A heritage clause's named children include nodes that NAME nothing: `comment` and `ERROR` are
+ * named children of `extends_clause` / `extends_type_clause` / `implements_clause` in this grammar,
+ * and their TEXT was published as an extends/implements target. Measured on the whole population
+ * (13,950 admitted .ts files): `interface Hooks<D …> extends` with a comment between the clause and
+ * its base produced `extends Hooks -> "/* note *\/"`, and one zero-width comment produced
+ * `extends … -> ""` — the gate's noTarget class. Comments are trivia, not names.
+ */
+function isNameableHeritageNode(nodeType: string): boolean {
+  return nodeType !== "comment" && nodeType !== "ERROR" && nodeType !== "type_arguments"
+}
 function isPlainIdentifier(text: string): boolean {
   if (text.length === 0) return false
   const first = text[0]
@@ -4038,6 +4049,13 @@ class TypeScriptAnalysisRunner {
      * is that walk's names, the other its names plus their nodes.
      */
     const collectTypeNameNodes = (n: Node, out: Array<{ name: string; node: Node }>): void => {
+      // A NODE CAN NAME NOTHING. Tree-sitter's error recovery inserts zero-width MISSING nodes whose
+      // text is ""; when such a node sits in a type position it used to become a relationship with an
+      // EMPTY target — an edge no resolver can bind and no intent test can place (the gate now counts
+      // that class as `noTarget` and discloses it as a lane defect). Measured on
+      // redwood/packages/internal/src/__tests__/fixtures/web/src/exports.ts, a `.ts` file containing
+      // the JSX fragment `return <>Hello</>`: `myArrowFunctionExport -> ""` as a references/cast_target
+      // row. An empty target is not a weaker claim, it is not a relationship at all.
       // `typeof X` NAMES THE VALUE SYMBOL X, and its operand lexes as a plain `identifier`
       // (`nested_identifier` for `typeof ns.X`) — never a `type_identifier`, so the collector used
       // to skip the whole node. The spec-table row `type_query -> declared_type` was therefore
@@ -4053,7 +4071,7 @@ class TypeScriptAnalysisRunner {
         }
         if (operand) {
           if (operand.type === "identifier") {
-            if (!PRIMITIVES.has(operand.text) && !out.some((o) => o.name === operand!.text)) out.push({ name: operand.text, node: operand })
+            if (operand.text.length > 0 && !PRIMITIVES.has(operand.text) && !out.some((o) => o.name === operand!.text)) out.push({ name: operand.text, node: operand })
           } else {
             // The operand may be a nested_identifier (`typeof ns.X`), whose LAST identifier is the
             // name the file spells (the leaf, matching every other target rule on this lane).
@@ -4063,7 +4081,7 @@ class TypeScriptAnalysisRunner {
         return
       }
       if (n.type === "type_identifier" || n.type === "nested_type_identifier") {
-        if (!PRIMITIVES.has(n.text) && !out.some((o) => o.name === n.text)) out.push({ name: n.text, node: n })
+        if (n.text.length > 0 && !PRIMITIVES.has(n.text) && !out.some((o) => o.name === n.text)) out.push({ name: n.text, node: n })
         return
       }
       for (let i = 0; i < n.namedChildCount; i++) {
@@ -4156,6 +4174,8 @@ class TypeScriptAnalysisRunner {
           collectTypeNameNodes(r, pairs)
         }
         for (const { name: t, node: tNode } of pairs) {
+          // ERROR-RECOVERY GUARD: a zero-width MISSING node names nothing (see collectTypeNameNodes).
+          if (t.length === 0) continue
           const key = `${source}|${t}|${relType}`
           if (emitted.has(key)) continue
           // A mention the main reference pass already published under this owner
@@ -5192,6 +5212,10 @@ class TypeScriptAnalysisRunner {
         if (extendsTypes) {
           for (let i = 0; i < extendsTypes.length; i++) {
             const baseType = extendsTypes[i]
+            // A MISSING type (error recovery, `interface I extends {}`) has text "" — an includes a
+            // target that names nothing, so it is not published. The parallel line list keeps its
+            // index only for entries that are published, so a skipped name never borrows a line.
+            if (baseType === undefined || baseType.trim().length === 0) continue
             relationships.push({
               source: symbol.name,
               target: baseType,
@@ -5222,6 +5246,7 @@ class TypeScriptAnalysisRunner {
         if (implementsTypes) {
           for (let i = 0; i < implementsTypes.length; i++) {
             const iface = implementsTypes[i]
+            if (iface === undefined || iface.trim().length === 0) continue
             relationships.push({
               source: symbol.name,
               target: iface,
@@ -7464,7 +7489,7 @@ class TypeScriptAnalysisRunner {
               // type_arguments as a SEPARATE sibling node — pushing it
               // wholesale fabricated an Extends edge to "<string>". Skip
               // argument nodes; take the base type text only.
-              if (type.type === "type_arguments") continue
+              if (!isNameableHeritageNode(type.type)) continue
               // MEASURED, and the reason this call site is NOT stripped even
               // though the implements one below is: every class-extends shape
               // tree-sitter-typescript 0.23.2 produces carries its arguments as a
@@ -7490,7 +7515,7 @@ class TypeScriptAnalysisRunner {
             result.implementsLines = []
             for (let k = 0; k < heritageClause.namedChildCount; k++) {
               const type = heritageClause.namedChild(k)
-              if (!type || type.type === "type_arguments") continue
+              if (!type || !isNameableHeritageNode(type.type)) continue
               // See heritageBaseName: an implements entry written with type
               // arguments arrives as ONE `generic_type` child, so the
               // `type_arguments` skip above cannot see the arguments.
@@ -7528,7 +7553,7 @@ class TypeScriptAnalysisRunner {
     const lines: number[] = []
     for (let i = 0; i < clause.namedChildCount; i++) {
       const type = clause.namedChild(i)
-      if (!type || type.type === "type_arguments") continue
+      if (!type || !isNameableHeritageNode(type.type)) continue
       // M49 #759: `extends Readable<T>` parses with the type_arguments as a
       // SIBLING subtree folded into the text — pushing it raw emitted
       // extends Spring->"Readable<T>" while the oracle (and every consumer)
@@ -7538,7 +7563,12 @@ class TypeScriptAnalysisRunner {
       const lt = t.indexOf("<")
       if (lt !== -1) t = t.slice(0, lt).trim()
       const dot = t.lastIndexOf(".")
-      types.push(dot !== -1 ? t.slice(dot + 1) : t)
+      const name = dot !== -1 ? t.slice(dot + 1) : t
+      // ERROR-RECOVERY GUARD: `interface I extends {}` parses with a zero-width MISSING type_identifier
+      // whose text is ""; publishing it would emit an extends edge that names nothing (the gate's
+      // `noTarget` disclosure). No name, no row — and no parallel line for it either.
+      if (name.trim().length === 0) continue
+      types.push(name)
       // M59 (#825): parallel line list — the base type node's own line.
       lines.push(type.startPosition.row + 1)
     }
