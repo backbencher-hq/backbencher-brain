@@ -187,6 +187,31 @@
           "uses": 127231
         }
       }
+    },
+    "imported_binding": {
+      "status": "PREPARED, NOT SHIPPED (2026-10-18) — contract-only input for the Lead-owned claim kind (task-19); analyzer emits NO claim yet. Contract: validation/m14/verification/JAVASCRIPT-IMPORTED-BINDING-CONTRACT.md",
+      "target_rows_whole_pop": 57142,
+      "per_label": {
+        "calls_imported_callee": 22005,
+        "calls_imported_receiver": 16467,
+        "calls_require_receiver": 4525,
+        "calls_namespace_receiver": 382,
+        "uses_imported_binding": 7647,
+        "decorates_imported": 2964,
+        "renders_imported": 1069,
+        "extends_imported": 1034,
+        "instantiates_imported": 1031,
+        "references_imported": 18
+      },
+      "design_input": "claim carries the module SPECIFIER as written (import/require string) + position (binding|receiver); verification = the project's admitted module space (same projectModuleNames facts the moduleNamespace claim uses): root absent => extOK (a claim, never a resolution); root present => ext? fail-closed, never extFAIL; no project facts => claim NOT emitted (analyzer's existing fail-closed projectIndex.complete gate), so arm A's ext? stays 0.",
+      "differential_requirement": "NO target rewrite in the recommended design: the bare target stays, so the existing JS oracle comparison audits the class with unexplained 0 and analyzer-edges rising by the class. If the Lead prefers the target-rewrite alternative, differential.ts needs the same auditTarget separator normalization used for BINDING_SEP (4807ea071 precedent).",
+      "separate_module_claim_residual": {
+        "imports_unresolved_total": 14154,
+        "IMPORTS-INTERNAL-FILE-FOUND": 4655,
+        "IMPORTS-INTERNAL-FILE-MISSING": 720,
+        "IMPORTS-URL": 15,
+        "note": "projectFile claims / relative resolution, a different verification from this kind; arm B already verified 20128 imports module claims"
+      }
     }
   }
 }
