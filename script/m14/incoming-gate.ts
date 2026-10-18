@@ -691,6 +691,17 @@ type Row = {
   marks: Map<string, MarkBucket>
   /** the EXACT intent of this type's bindings — see `classifyIntent`; beside the count model */
   intent: IntentTally
+  /**
+   * EDGES OF THIS TYPE THAT CARRIED NO TARGET AT ALL. They are COUNTED into `edges` (so the identity
+   * against the table holds) but they cannot be classified by intent or resolved by any resolver —
+   * they name nothing. Until this field existed they were counted and then `continue`d, which is what
+   * left `INTENT CLOSURE` reporting "1 ROW DOES NOT CLOSE" (TS lane: references 1, extends 1) while
+   * the gate's own identity held: the row was not missing a class from the CLASSIFIER, it was missing
+   * a class from the GATE. An empty-target edge is a LANE DEFECT (the analyzer published a relationship
+   * with no operand) and it is now counted, printed, and included in the closure sum so it can neither
+   * hide in the edge count nor be mistaken for a resolution class.
+   */
+  noTarget: number
 }
 
 /**
@@ -903,7 +914,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   // is a different instrument's.
   const fallbackRows = new Map<Type, number>()
   for (const t of ALL_TYPES) {
-    rows.set(t, { type: t, edges: 0, project: emptyOutcomes(), pooled: emptyOutcomes(), marks: new Map(), intent: emptyIntent() })
+    rows.set(t, { type: t, edges: 0, project: emptyOutcomes(), pooled: emptyOutcomes(), marks: new Map(), intent: emptyIntent(), noTarget: 0 })
   }
 
   let parsed = 0
@@ -1180,7 +1191,11 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       const row = rows.get(label)!
       row.edges++
       const tgt = String(rel?.target ?? rel?.to ?? rel?.toSymbol ?? "")
-      if (tgt.length === 0) continue
+      if (tgt.length === 0) {
+        // Counted above and COUNTED HERE — the class the intent table was missing. See Row.noTarget.
+        row.noTarget++
+        continue
+      }
       const claim = externalClaimOf(rel)
       // A `projectFacts` claim is verified against the PROJECT'S OWN files, which this file
       // builds and the analyzer never sees — the claim and its evidence must not come from
@@ -2626,13 +2641,14 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   // hides that. The line test is applied ONLY where the edge line is the target symbol's own start
   // line, and the note says which types those are.
   {
-    const withIntent = [...rep.rows.values()].filter((r) => r.intent.intended + r.intent.sameFileUnproven + r.intent.arbitraryTwin + r.intent.noDeclaration > 0)
+    const withIntent = [...rep.rows.values()].filter((r) => r.intent.intended + r.intent.sameFileUnproven + r.intent.arbitraryTwin + r.intent.noDeclaration + r.noTarget > 0)
     if (withIntent.length) {
-      const intentTotals = withIntent.reduce((a, r) => ({
+      const intentTotals = withIntent.reduce((a: any, r) => ({
         intended: a.intended + r.intent.intended, sameFileUnproven: a.sameFileUnproven + r.intent.sameFileUnproven,
         arbitraryTwin: a.arbitraryTwin + r.intent.arbitraryTwin, noDeclaration: a.noDeclaration + r.intent.noDeclaration,
+        noTarget: a.noTarget + r.noTarget,
         edges: a.edges + r.edges,
-      }), { intended: 0, sameFileUnproven: 0, arbitraryTwin: 0, noDeclaration: 0, edges: 0 })
+      }), { intended: 0, sameFileUnproven: 0, arbitraryTwin: 0, noDeclaration: 0, noTarget: 0, edges: 0 })
       console.log(`BINDING INTENT — the EXACT test beside the count model's upper bound (resolvedAmongCollision):`)
       console.log(`  intended = a declaration in the edge's OWN FILE ON the edge's own line answers to the target`)
       console.log(`  (exact only where the edge line IS the target symbol's line: ${[...LINE_IS_TARGET_LINE].join(", ")}.)`)
@@ -2663,29 +2679,39 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
       // and reported on its own line, which also keeps it out of the parser's row space entirely.
       console.log(
         "  " + w("type", 14) + w("edges", 9) + w("intended", 10) + w("sameFileUnproven", 17) +
-        w("arbitraryTwin", 25) + "nothingAnywhere",
+        w("arbitraryTwin", 25) + w("nothingAnywhere", 17) + "noTarget",
       )
       const intentSum = (i: { intended: number; sameFileUnproven: number; arbitraryTwin: number; noDeclaration: number }) =>
         i.intended + i.sameFileUnproven + i.arbitraryTwin + i.noDeclaration
       const intentGaps: string[] = []
       for (const r of withIntent) {
-        if (intentSum(r.intent) !== r.edges) intentGaps.push(`${r.type} ${r.edges - intentSum(r.intent)}`)
+        if (intentSum(r.intent) + r.noTarget !== r.edges) intentGaps.push(`${r.type} ${r.edges - intentSum(r.intent) - r.noTarget}`)
         console.log(
           "  " + w(r.type, 14) + w(r.edges, 9) + w(r.intent.intended, 10) + w(r.intent.sameFileUnproven, 17) +
-          w(r.intent.arbitraryTwin, 25) + String(r.intent.noDeclaration),
+          w(r.intent.arbitraryTwin, 25) + w(r.intent.noDeclaration, 17) + String(r.noTarget),
         )
       }
       console.log(
         "  " + w("TOTAL", 14) + w(intentTotals.edges, 9) + w(intentTotals.intended, 10) +
         w(intentTotals.sameFileUnproven, 17) + w(intentTotals.arbitraryTwin, 25) +
-        String(intentTotals.noDeclaration),
+        w(intentTotals.noDeclaration, 17) + String(intentTotals.noTarget),
       )
       // THE TABLE SHOWS ITS OWN CLOSURE — the third table in this gate that did not, and the omission
       // is what let a careful lane read `noDeclaration` as the own-file class and report a 45,967-edge
       // contradiction that does not exist. A row whose four classes do not sum to its edge count is a
       // row with a class missing, and that is now printed instead of left to the reader to notice.
       if (intentGaps.length === 0) {
-        console.log(`  INTENT CLOSURE: every row closes — intended+sameFileUnproven+arbitraryTwin+nothingAnywhere == edges.`)
+        console.log(`  INTENT CLOSURE: every row closes — intended+sameFileUnproven+arbitraryTwin+nothingAnywhere+noTarget == edges.`)
+        const noTargetTotal = withIntent.reduce((a: number, r: any) => a + r.noTarget, 0)
+        if (noTargetTotal > 0) {
+          const which = withIntent.filter((r: any) => r.noTarget > 0).map((r: any) => `${r.type} ${r.noTarget}`).join(" · ")
+          console.log(
+            `  NO-TARGET EDGES: ${noTargetTotal} edge(s) carried an EMPTY target (${which}). COUNTED in the table and ` +
+            `classified here as a class, but they are a LANE DEFECT — an analyzer published a relationship that names ` +
+            `nothing, so no resolver can bind it and no intent test can place it. Lane owner fixes or rules; it is not ` +
+            `a resolution class and must never be reported as one.`,
+          )
+        }
       } else {
         console.log(
           `  INTENT CLOSURE: ** ${intentGaps.length} ROW(S) DO NOT CLOSE ** — type and the unaccounted ` +
