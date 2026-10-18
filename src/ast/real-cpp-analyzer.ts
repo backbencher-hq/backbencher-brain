@@ -2522,6 +2522,153 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
       }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════════════════════
+    // task-22 MILESTONE 5 — RECEIVER-TYPING OWNER EVIDENCE (metadata-only, flag-gated, fail-closed).
+    //
+    // The index arms moved the rows whose owner is SPELLED (`Class::method`). This block handles the
+    // three DECLARATION-BEARING receiver classes the whole-population census priced at 38,106 rows
+    // (`CPP-RECEIVER-TYPING.md`): `constructor-temp` (owner type spelled at the call site),
+    // `typed-local` (receiver's written declaration type in this function), and `implicit-this` (bare
+    // callee in a class method whose class declares the member). It attaches metadata.owner — a fact
+    // the gate's owner channel already models — and NOTHING ELSE: no row emitted, no row suppressed.
+    //
+    // EVERY emission requires ALL of: BB_CPP_INDEX_CONSUME=1 · a COMPLETE project index · the owner
+    // class-like in the index · the index's INHERITANCE-CLOSED member view declaring the leaf. The
+    // `opaque` class (chained `f().m()`, `auto`-typed receivers) gets NOTHING: the owner must be
+    // spelled or written, never guessed. The same gate discipline as the qualified-owner emission.
+    // ═══════════════════════════════════════════════════════════════════════════════════════════
+    const INDEX_CLASS_KINDS = new Set(["class", "struct", "union"])
+    const enclosingClassForOwner = (): string => {
+      for (let i = scopeStack.length - 1; i >= 0; i--) {
+        const sc = scopeStack[i]
+        if (sc.kind === ASTEngine.SymbolKind.Class || sc.kind === ASTEngine.SymbolKind.Struct || sc.kind === ASTEngine.SymbolKind.Union) return sc.name
+        if ((sc.kind === ASTEngine.SymbolKind.Function || sc.kind === ASTEngine.SymbolKind.Method || sc.kind === ASTEngine.SymbolKind.Constructor) && sc.classScope) return sc.classScope
+      }
+      return ""
+    }
+    const indexDeclaresMemberForOwner = (owner: string, leaf: string): boolean => {
+      if (!indexUsable || indexResolution === null) return false
+      const kind = indexTypeKinds.get(owner)
+      if (typeof kind !== "string" || !INDEX_CLASS_KINDS.has(kind)) return false
+      return indexResolution.allMembers.get(owner)?.has(leaf) === true
+    }
+    // The written declaration types of a function's parameters and locals. Cached per function NODE
+    // (a whole-corpus call-site scan that re-walked the body per call would be quadratic).
+    const writtenTypeCache = new Map<number, Map<string, string>>()
+    const simpleDeclName = (decl: any, depth = 0): string => {
+      if (!decl || depth > 6) return ""
+      const t = String(decl.type)
+      if (t === "identifier" || t === "field_identifier") return decl.text.trim()
+      if (t === "init_declarator" || t === "pointer_declarator" || t === "reference_declarator" ||
+          t === "array_declarator" || t === "parenthesized_declarator" || t === "attributed_declarator") {
+        // `reference_declarator`/`pointer_declarator` do NOT put the inner declarator in a `declarator`
+        // FIELD in this grammar (`B& b` -> reference_declarator[identifier b]) — probing the tree was
+        // the only way to see that, and reading the field alone silently dropped every reference
+        // parameter from the written-type table.
+        const inner = decl.childForFieldName?.("declarator") ?? decl.namedChild(Math.max(0, decl.namedChildCount - 1))
+        return simpleDeclName(inner, depth + 1)
+      }
+      return ""
+    }
+    const writtenTypesOf = (fnNode: any): Map<string, string> => {
+      const cached = writtenTypeCache.get(fnNode.id)
+      if (cached !== undefined) return cached
+      const table = new Map<string, string>()
+      const add = (typeNode: any, declNode: any) => {
+        if (!typeNode) return
+        const nm = simpleDeclName(declNode)
+        if (nm === "" || !/^[A-Za-z_$][\w$]*$/.test(nm)) return
+        if (!table.has(nm)) table.set(nm, String(typeNode.text ?? ""))
+      }
+      const scan = (n: any, depth = 0) => {
+        if (!n || depth > 30) return
+        const t = String(n.type)
+        if (t === "parameter" || t === "parameter_declaration" || t === "optional_parameter_declaration") {
+          add(n.childForFieldName?.("type"), n.childForFieldName?.("declarator"))
+          return
+        }
+        if (t === "declaration") add(n.childForFieldName?.("type"), n.childForFieldName?.("declarator"))
+        for (let i = 0; i < n.namedChildCount; i++) scan(n.namedChild(i), depth + 1)
+      }
+      const decl = fnNode.childForFieldName?.("declarator")
+      if (decl) scan(decl)
+      const body = fnNode.childForFieldName?.("body") ?? fnNode.namedChild(fnNode.namedChildCount - 1)
+      if (body) scan(body)
+      writtenTypeCache.set(fnNode.id, table)
+      return table
+    }
+    const writtenTypeOfReceiver = (name: string): string => {
+      const fnScope = enclosingFunctionScope()
+      const fnNode = (fnScope as any)?.node
+      if (!fnNode) return ""
+      return writtenTypesOf(fnNode).get(name) ?? ""
+    }
+    const typeLeafOf = (typeText: string): string => {
+      let t = String(typeText ?? "")
+      const lt = t.indexOf("<")
+      if (lt > 0) t = t.slice(0, lt)
+      for (const kw of ["const", "volatile", "static", "typename", "struct", "class", "union", "enum"]) t = t.split(kw).join(" ")
+      t = t.replace(/[*&\s]+/g, " ").trim()
+      const cut = Math.max(t.lastIndexOf("::"), t.lastIndexOf(" "))
+      const leaf = (cut >= 0 ? t.slice(cut + 1) : t).trim()
+      return /^[A-Za-z_$][\w$]*$/.test(leaf) ? leaf : ""
+    }
+    const templatePointeeOf = (typeText: string): string => {
+      const lt = typeText.indexOf("<")
+      const gt = typeText.lastIndexOf(">")
+      if (lt < 0 || gt <= lt) return ""
+      return typeLeafOf(typeText.slice(lt + 1, gt).split(",")[0] ?? "")
+    }
+    const OWNER_WRAPPER_TYPES = new Set(["unique_ptr", "shared_ptr", "weak_ptr", "auto_ptr", "optional", "reference_wrapper", "atomic"])
+    const ownerCallLeafName = (n: any, depth = 0): string => {
+      if (!n || depth > 6) return ""
+      const t = String(n.type)
+      if (t === "identifier" || t === "field_identifier" || t === "type_identifier") return n.text.trim()
+      if (t === "qualified_identifier") { const parts = String(n.text).split("::"); return parts[parts.length - 1].trim() }
+      if (t === "template_function" || t === "template_method") return ownerCallLeafName(n.namedChild(0), depth + 1)
+      if (t === "field_expression") return ownerCallLeafName(n.childForFieldName?.("field"), depth + 1)
+      return ""
+    }
+    /** The truthful owner a call's receiver evidence names, or {} — see the block comment above. */
+    const indexReceiverOwnerFacts = (callee: any, leaf: string): Record<string, unknown> => {
+      if (!indexUsable || leaf === "" || !callee) return {}
+      if (callee.type === "field_expression") {
+        const obj = callee.childForFieldName?.("argument") ?? callee.namedChild(0)
+        if (!obj) return {}
+        if (obj.type === "call_expression") {
+          const innerCallee = obj.childForFieldName?.("function") ?? obj.namedChild(0)
+          const owner = ownerCallLeafName(innerCallee)
+          return owner !== "" && indexDeclaresMemberForOwner(owner, leaf) ? { owner } : {}
+        }
+        if (obj.type === "new_expression") {
+          const typeNode = obj.childForFieldName?.("type") ?? null
+          const owner = typeNode ? typeLeafOf(String(typeNode.text ?? "")) : ""
+          return owner !== "" && indexDeclaresMemberForOwner(owner, leaf) ? { owner } : {}
+        }
+        if (obj.type === "identifier") {
+          const written = writtenTypeOfReceiver(obj.text.trim())
+          if (written === "") return {}
+          const holder = typeLeafOf(written)
+          if (OWNER_WRAPPER_TYPES.has(holder)) {
+            const pointee = templatePointeeOf(written)
+            return pointee !== "" && indexDeclaresMemberForOwner(pointee, leaf) ? { owner: pointee } : {}
+          }
+          return holder !== "" && indexDeclaresMemberForOwner(holder, leaf) ? { owner: holder } : {}
+        }
+        return {}
+      }
+      if (callee.type === "identifier") {
+        // IMPLICIT-THIS: an unqualified call inside a member function. C++ name lookup finds the
+        // class's own member first, so the enclosing class is the owner WHEN it (or an ancestor in
+        // the index's closure) declares the leaf. No enclosing function -> no emission (a class
+        // scope's recovery calls are not calls).
+        if (enclosingFunctionScope() === null) return {}
+        const enclosing = enclosingClassForOwner()
+        return enclosing !== "" && indexDeclaresMemberForOwner(enclosing, leaf) ? { owner: enclosing } : {}
+      }
+      return {}
+    }
+
     while (stack.length > 0) {
       const item = stack.pop()!
       const { node, parentContext, isExit } = item
@@ -4529,6 +4676,9 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
                 // resolve the row through it. Emitted only under the flag + a complete index + the
                 // index agreeing the class-like owner DECLARES the member.
                 ...indexOwnerFacts(qualifiedName, targetName),
+                // task-22 milestone 5: the three declaration-bearing RECEIVER classes (constructor-temp,
+                // typed-local, implicit-this). Empty for opaque receivers — the owner is never guessed.
+                ...indexReceiverOwnerFacts(funcNode, targetName),
               },
             })
             // #383 payload: qualified path WITHOUT argument text (C++ keeps
