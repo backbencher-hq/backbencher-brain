@@ -770,7 +770,50 @@ const FILE_EXTENSIONS = new Set([
   "csv", "tsv", "lock", "mod", "sum", "gradle", "sbt", "pom", "dockerfile", "editorconfig",
   "gitignore", "gitattributes", "icl", "dcl", "r", "rmd", "tex", "bib",
 ])
+/**
+ * IS THIS TARGET A `<module>:<member>` SPELLING RATHER THAN A PATH OR A URI?
+ *
+ * THE DEFECT THIS EXISTS TO FIX. `pathLikeTarget` refuses any target containing `:`, so every
+ * `<module>:<member>` target -- python's `argparse:*` and `pydantic:BaseModel`, typescript's
+ * `vue:cloneVNode`, java's `import_declaration_mention` paths -- was classified path-like and pushed to
+ * `ext?` ("a claim no check can reach") BEFORE any lookup, no matter what evidence the analyzer attached.
+ * Measured consequence: python's stdlib claims were TRUE and unreadable (117 edges in `ext?` while 268
+ * stayed unresolved), and typescript's imports read 0 resolved on 669 edges because 79% of them are
+ * spelled this way.
+ *
+ * THE SHAPE IS UNAMBIGUOUS, which is why it can be separated without guessing: the part after the LAST
+ * colon is `*` or a single identifier, and nothing that is genuinely a path or a URI produces that --
+ * a URL leaves `//host/...` (fails the identifier test), a Windows drive leaves `\path` (fails it), and
+ * a bare drive letter leaves nothing at all. A module part may contain `@`, `/` or `.` (scoped packages,
+ * dotted python modules), so the module half is NOT constrained to an identifier.
+ */
+export function moduleMemberTarget(tgt: string): boolean {
+  const i = tgt.lastIndexOf(":")
+  if (i <= 0 || i === tgt.length - 1) return false
+  const member = tgt.slice(i + 1)
+  if (member !== "*" && !/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(member)) return false
+  const mod = tgt.slice(0, i)
+  if (mod.length === 0) return false
+  // THE MODULE HALF MAY NOT ITSELF CONTAIN A COLON.
+  //
+  // The gate's own positive control caught this in the first version of this predicate, which is
+  // exactly what a control is for: the plant is `package:flutter/material.dart:*`, a Flutter ASSET URI
+  // carrying a `:*` suffix. It has a clean `*` member, so the member test alone accepted it, the target
+  // stopped being path-shaped, and it came back `externalVerified` -- a URI verified as an external
+  // module. The control failed the run rather than printing a clean lane, which is the behaviour that
+  // makes the number worth reading.
+  // A genuine `<module>:<member>` target has EXACTLY ONE colon: `argparse:*`, `pydantic:BaseModel`,
+  // `vue:cloneVNode`, `@scope/pkg:Name`. A URI (`package:…`, `dart:…/…`, `https:…`) has one in its
+  // scheme and more in the body, and its path half is not a module name. So the module half must be
+  // colon-free.
+  if (mod.includes(":")) return false
+  return true
+}
+
 export function pathLikeTarget(tgt: string): boolean {
+  // A `<module>:<member>` target is NOT a path, and refusing it on its colon sent every one of them to
+  // `ext?` before any evidence was read. See `moduleMemberTarget` above for the measured cost.
+  if (moduleMemberTarget(tgt)) return false
   // a path separator or a URI scheme needs no extension to be recognisable
   if (tgt.includes("/") || tgt.includes("\\") || tgt.includes(":")) return true
   const dot = tgt.lastIndexOf(".")
@@ -828,6 +871,26 @@ export function verifyExternalClaim(
   // longer exists. A clean bare name IS looked up directly today and cannot land in `ext?` unless it
   // carries whitespace or braces — asserted in this gate's own control at
   // `incoming-gate.ts` ("a bare identifier the key space does not publish did not verify as external").
+  // A MODULE-MEMBER CLAIM IS VERIFIABLE. The claim is "this module is not declared by this project", and
+  // there IS evidence for that: a project file carrying the module as a path segment, or a published
+  // symbol spelled as the module. Both spellings are tried because a module written `ansible.errors` is a
+  // dotted PATH convention while `@scope/pkg` is a slash one -- the rule reads the spelling, not a language.
+  if (moduleMemberTarget(tgt)) {
+    const mod = tgt.slice(0, tgt.lastIndexOf(":"))
+    if ((declCount.get(mod) ?? 0) > 0) return "externalRefuted"
+    if (facts) {
+      const variants = [mod, mod.replace(/\./g, "/")]
+      for (const v of variants) {
+        const norm = v.replace(/\\/g, "/").replace(/^\.\//, "")
+        if (norm === "") continue
+        for (const f of facts.files) {
+          const nf = f.replace(/\\/g, "/")
+          if (nf.startsWith(`${norm}/`) || nf.includes(`/${norm}/`)) return "externalRefuted"
+        }
+      }
+    }
+    return "externalVerified"
+  }
   if (pathLikeTarget(tgt)) {
     if (URI_SCHEME.test(tgt) && !WINDOWS_DRIVE.test(tgt)) return "externalUnverified"
     if (facts) return pathTargetInProject(facts, tgt) ? "externalRefuted" : "externalUnverified"
