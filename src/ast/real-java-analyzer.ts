@@ -31,6 +31,23 @@
  * verifies — `metadata.isExternal*` through `externalClaimOf`/`verifyExternalClaim`, and the
  * family binding spelling `${caller}${BINDING_SEP}${binding}` with `metadata.localBinding`.
  * `script/m14/**` is the Lead's; this file only consumes those rules.
+ *
+ * 2026-10-18 COMPLETE-SURFACE WAVE (all of it measured; see docs/analyzers/real-java-analyzer.md):
+ *   - ANNOTATION type mentions emit `references` (+ isAnnotation/annotatedKind) in every position,
+ *     including package annotations; TYPE-PARAMETER BOUNDS emit `relationshipType:
+ *     type_parameter_bound` (+ boundFor); an ENUM CONSTANT BODY is an anonymous subclass
+ *     (`anonymous_<CONSTANT>`, JLS 8.9.1) so its members stop leaking into the enum's containment.
+ *   - RECEIVER TYPING on the store's EXISTING channel: `metadata.owner` + `metadata.ownerEvidence`
+ *     in {field,param,local,return} on calls AND receiver-variable reads (field / parameter /
+ *     local / method return / typed lambda parameter / enhanced-for / try-with-resources / caught
+ *     exception). Deliberately owner-less where the file does not state the type — implicit this,
+ *     static-class receivers, super, inherited fields, var, untyped lambdas, multi-catch.
+ *   - `kotlin.`/`kotlinx.` are LIBRARY namespaces, not reserved platform ones: they are no longer
+ *     claimed external (a project may own them; the kotlinx project does). External claims are
+ *     verified in their own gate columns and never merged into resolved.
+ *   - No regex in this file: the R2 register's no-regex census lists java as clean.
+ * OUT OF SCOPE BY MEASUREMENT, not by omission: an annotation type element's `throws` clause
+ * (JLS 9.6.1) is unparseable by the pinned wasm (one MISSING node); module `opens` has no node.
  */
 function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1
