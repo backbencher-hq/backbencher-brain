@@ -19,6 +19,32 @@
 // Grammar: tree-sitter-cpp, a vendored local fork of 0.23.4 (wasm/tree-sitter-cpp.wasm), byte-pinned in
 // validation/m14/grammar-pins.json; wired in engine.ts getAnalyzer -> RealCppAnalyzer.
 
+/**
+ * task-22: the OWNER a qualified callee spelling names, when it names one at all.
+ * `StringUtil::Format(...)` names its owner syntactically; `Format(...)` does not. Returns the LAST
+ * owner segment (the spelling a class-like symbol carries) and requires a CLEAN `A::B` path whose
+ * final segment is the callee leaf — `metadata.qualified` also carries expression text at some sites
+ * (`from < (T::min)() ||`), and an owner read out of that would be fabricated.
+ */
+function qualifiedOwnerSegment(qualified: string, leaf: string): string | null {
+  if (qualified === "" || leaf === "") return null
+  let depth = 0
+  let flat = ""
+  for (let i = 0; i < qualified.length; i++) {
+    const ch = qualified[i]
+    if (ch === "<") depth++
+    else if (ch === ">") depth = Math.max(0, depth - 1)
+    else if (depth === 0) flat += ch
+  }
+  const t = flat.trim()
+  const cut = t.lastIndexOf("::")
+  if (cut <= 0) return null
+  const segs = t.split("::").map((x) => x.trim())
+  for (const seg of segs) if (!/^[A-Za-z_$][\w$]*$/.test(seg)) return null
+  if (segs[segs.length - 1] !== leaf) return null
+  return segs.length >= 2 ? segs[segs.length - 2] : null
+}
+
 function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1
 }
@@ -1550,6 +1576,20 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!indexUsable) return {}
       const kind = indexTypeKinds.get(targetName)
       return kind === undefined ? {} : { indexBaseKind: String(kind) }
+    }
+    /** The truthful owner of a QUALIFIED call, or {}: the spelling names an owner AND the index's
+     *  DIRECT member set for that class-like owner declares the leaf. The gate's owner channel then
+     *  binds through the receiver's class instead of the bare name count. Bare/member-through-object
+     *  calls get NOTHING (this lane has no receiver typing and will not invent one). */
+    const indexOwnerFacts = (qualified: string, leaf: string): Record<string, unknown> => {
+      if (!indexUsable) return {}
+      const owner = qualifiedOwnerSegment(qualified, leaf)
+      if (owner === null) return {}
+      const kind = indexTypeKinds.get(owner)
+      if (kind !== "class" && kind !== "struct" && kind !== "union") return {}
+      const ownMembers = (indexCandidate as any).typeMembers instanceof Map ? (indexCandidate as any).typeMembers.get(owner) : undefined
+      if (!(ownMembers instanceof Set) || !ownMembers.has(leaf)) return {}
+      return { owner }
     }
     /** Does the index's inheritance-closed member view say this base declares `method`? */
     const indexOverridesFacts = (base: string, method: string): Record<string, unknown> => {
@@ -4481,7 +4521,15 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
               line_number: this.nodeLine(calleeSite),
               // task-22 (flag-gated): the project index's declaration facts for this callee. Empty
               // object = flag off / incomplete index, so the row is byte-identical to the verdict.
-              metadata: { line: this.nodeLine(calleeSite), qualified: qualifiedName, ...indexCallFacts(targetName) },
+              metadata: {
+                line: this.nodeLine(calleeSite),
+                qualified: qualifiedName,
+                ...indexCallFacts(targetName),
+                // task-22: a QUALIFIED callee names its owner syntactically; the owner channel can
+                // resolve the row through it. Emitted only under the flag + a complete index + the
+                // index agreeing the class-like owner DECLARES the member.
+                ...indexOwnerFacts(qualifiedName, targetName),
+              },
             })
             // #383 payload: qualified path WITHOUT argument text (C++ keeps
             // :: separators), attributed to the enclosing function/method
