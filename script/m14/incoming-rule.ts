@@ -1249,6 +1249,20 @@ export function classifyEdge(
   }
   const kindSet = kinds.get(tgt)
   const kindText = [...(kindSet ?? [])].sort().join("|")
+  // ── THE INFERRED `importPath` CLAIM IS A LAST-RESORT, AND IT MAY NOT OUTLIVE ITS OWN PREMISE ────
+  // `externalClaimOf` synthesizes it for an `imports` edge whose target is dotted-and-capitalised when
+  // the ANALYZER claimed nothing. The inference says "this names a module path outside the project".
+  // A project whose own key space ANSWERS that path refutes the inference, and the row must then be
+  // classified on its evidence like any unclaimed edge — NOT charged as a refuted claim against a lane
+  // that never made one. MEASURED consequence of not doing this: java's whole-repository
+  // graphql-java arm (`import static graphql.Scalars.GraphQLString;`) read extFAIL 440, failing
+  // clause 4 on an inference while the lane claimed nothing at all; the same rows verified at cap-50
+  // only because the sampled project did not carry the declaration.
+  if (claim !== null && claim.kind === "importPath") {
+    const owner = targetOwner(tgt)
+    const answered = (declCount.get(tgt) ?? 0) > 0 || (owner !== null && (declCount.get(owner) ?? 0) > 0)
+    if (answered) claim = null
+  }
   // ── THE OWNER CHANNEL IS CHECKED FIRST, BEFORE EVEN THE CLAIMS, because in production it runs
   // LAST and WINS: `claimOwnerCarryingTargets` withdraws the name binding for every calls/uses row
   // carrying `metadata.owner`, then the channel re-binds it. A row it resolves therefore HAS a
