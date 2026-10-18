@@ -126,6 +126,9 @@ export type ExternalClaim =
   // THE IMPORTED-BINDING CLAIM (2026-10-19): the target is a local name bound by an import of
   // `specifier`; verified from the run's own import edges (see IMPORTED_BINDING_CLAIM_KEY).
   | { kind: "importedBinding"; specifier: string; binding: string }
+  // THE EXPORT-SURFACE CLAIM: an exports row names the export surface, not a declaration.
+  | { kind: "exportSurface"; surface: "default"; form: string; localName?: string }
+  | { kind: "exportSurface"; surface: "moduleExports"; property: string; form: string }
   // THE FILE CLAIM — "this target names an admitted FILE", checked against the project's own file
   // list. `candidates` is every spelling the loader's conventions produce, because which one the
   // loader will use is a property of the loader and not of the source (see `FILE_CLAIM_KEY`).
@@ -204,6 +207,27 @@ export const BINDING_CLAIM_KEY = "localBinding"
  * not bind that name; UNVERIFIED when no evidence was built for the run.
  */
 export const IMPORTED_BINDING_CLAIM_KEY = "importedBinding"
+
+/**
+ * THE EXPORT-SURFACE CLAIMS — `defaultExport` and `moduleExports` (2026-10-19, JS lane contract
+ * `JAVASCRIPT-EXPORTS-CLAIM-CONTRACT.md`). An `exports` row can name an export SURFACE rather than
+ * a declaration: ESM's public name is the literal `default` (`export default …`), and CommonJS's
+ * surface is the property written on `module.exports`/`exports`. Neither names a declaration, so
+ * neither can resolve by name — treating the identifier beside `export default` as a public name
+ * fabricates one (JD-J14's family; measured 2,759 statements / 2,755 files corpus-wide).
+ *
+ * The claim is verified from the EXTERNAL key space, not from the claim's own word: the target must
+ * BE `default` (or the claimed property), the form must be one the family defines, a named/alias/
+ * expression default must carry a localName the run's declarations can see, and a moduleExports
+ * property must NOT be a name the project declares (a real declaration wins). Outcomes ride the
+ * BINDING family (nothing resolves; the claim asserts a surface) with
+ * `verifiedBy: "exportSurface"` — counted in `bindOK`, NEVER in `resolved`.
+ */
+export const DEFAULT_EXPORT_CLAIM_KEY = "defaultExport"
+export const MODULE_EXPORTS_CLAIM_KEY = "moduleExports"
+/** The forms the analyzer may state; a form outside these sets is REFUTED (never a blanket excuse). */
+export const DEFAULT_EXPORT_FORMS = ["named-declaration", "export-alias", "expression", "anonymous"]
+export const MODULE_EXPORTS_FORMS = ["module-exports-object", "exports-object", "module-exports-binding", "module-exports-expression", "deep-member-assignment"]
 
 /** The marker key that means "the FILE is outside this project". Checked after the binding
  *  claim: both are specific, and an edge carrying both is verified on the binding spelling
@@ -484,6 +508,25 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
     const candidates = fileClaim.filter((c: any): c is string => typeof c === "string" && c.length > 0)
     if (candidates.length > 0) return { kind: "projectFile", candidates }
   }
+  // THE EXPORT-SURFACE CLAIMS, read before the population claims for the imported-binding claim's
+  // reason: they are specific, checkable statements about an `exports` row, and falling through to
+  // `owner` would route them to a verification that cannot see the surface evidence.
+  const defaultExp = md[DEFAULT_EXPORT_CLAIM_KEY]
+  if (defaultExp !== null && typeof defaultExp === "object" && typeof (defaultExp as any).form === "string") {
+    return {
+      kind: "exportSurface", surface: "default", form: String((defaultExp as any).form),
+      localName: typeof (defaultExp as any).localName === "string" && (defaultExp as any).localName.length > 0
+        ? String((defaultExp as any).localName) : undefined,
+    }
+  }
+  const moduleExp = md[MODULE_EXPORTS_CLAIM_KEY]
+  if (moduleExp !== null && typeof moduleExp === "object" &&
+      typeof (moduleExp as any).property === "string" && typeof (moduleExp as any).form === "string") {
+    return {
+      kind: "exportSurface", surface: "moduleExports",
+      property: String((moduleExp as any).property), form: String((moduleExp as any).form),
+    }
+  }
   // THE NAMESPACE CLAIM, read before the population claims for the file claim's own reason: it
   // makes a statement the LIST can check, and routing such an edge to the weaker `owner` marker
   // would let a lane be excused by the very mechanism this claim exists to replace.
@@ -625,6 +668,45 @@ export function verifyBindingClaim(tgt: string): Outcome {
  * A file-level lookup with a normalized fallback, because the caller's keys are absolute paths and a
  * platform separator must not decide a verdict.
  */
+/**
+ * VERIFY A DEFAULT-EXPORT SURFACE CLAIM. The public name of an ESM default export is the literal
+ * `default` — never the local identifier beside it (JD-J14's fabricated-public-name family). The
+ * claim is checked against evidence the CLAIM DOES NOT SUPPLY: the target must BE `default`, the
+ * form must be one the family defines, and every form that names a local binding (`named-declaration`
+ * / `export-alias` / `expression`) must carry a localName the run's declarations can SEE. An
+ * `anonymous` default (literal / object / call / anonymous fn) has no local binding, so its form is
+ * the whole evidence.
+ */
+export function verifyDefaultExportClaim(
+  claim: { form: string; localName?: string },
+  tgt: string,
+  declCount: Map<string, number>,
+): Outcome {
+  if (tgt !== "default") return "bindingRefuted" // a fabricated public name
+  if (!DEFAULT_EXPORT_FORMS.includes(claim.form)) return "bindingRefuted"
+  if (claim.form === "anonymous") return "bindingVerified"
+  if (!claim.localName || claim.localName.length === 0) return "bindingRefuted"
+  return (declCount.get(claim.localName) ?? 0) > 0 ? "bindingVerified" : "bindingRefuted"
+}
+
+/**
+ * VERIFY A COMMONJS EXPORT-SURFACE CLAIM. The surface is the property written on
+ * `module.exports`/`exports`; the claim is refuted when the target is not that property, when the
+ * form is not one the family defines, when the property is not a name, or when the PROJECT declares
+ * the name — a real declaration wins over a surface label. Dotted properties are allowed for
+ * `module.exports.a.b = …` (the `deep-member-assignment` form).
+ */
+export function verifyModuleExportsClaim(
+  claim: { property: string; form: string },
+  tgt: string,
+  declCount: Map<string, number>,
+): Outcome {
+  if (tgt !== claim.property) return "bindingRefuted"
+  if (!MODULE_EXPORTS_FORMS.includes(claim.form)) return "bindingRefuted"
+  if (!/^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(claim.property)) return "bindingRefuted"
+  return (declCount.get(tgt) ?? 0) > 0 ? "bindingRefuted" : "bindingVerified"
+}
+
 export function verifyImportedBindingClaim(
   claim: { specifier: string; binding: string },
   facts?: ProjectFacts,
@@ -1136,7 +1218,7 @@ export type Classified = {
   kinds: string
   /** WHICH evidence confirmed a verified external claim — reported so a lane can audit the
    *  mechanism that produced the number, not only the number. */
-  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling" | "namespace" | "sourcePath" | "ownerChannel" | "importEvidence"
+  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling" | "namespace" | "sourcePath" | "ownerChannel" | "importEvidence" | "exportSurface"
   /**
    * WHAT A CLAIM SAYS ABOUT A TARGET THAT NAMES TWO OR MORE DECLARATIONS — recorded WITH ITS KIND,
    * and deliberately NOT allowed to move the outcome. See `claimDispositionOnAmbiguous`.
@@ -1396,6 +1478,23 @@ export function classifyEdge(
   // branches (a decliner keeps its declared marker, unverified-but-stated), and the tail below reads
   // `channelDeclined` to return `unresolved` instead of a name-based `resolved`.
   const channelDeclined = ownerChannel !== undefined && ownerChannel.outcome === "declined"
+  // THE EXPORT-SURFACE CLAIMS ARE THE SOLE AUTHORITY FOR THEIR EDGES (2026-10-19): an exports row
+  // naming `default` or a CommonJS property names a SURFACE, not a declaration, so a name-model
+  // "resolution" for it would be a fabricated public name (the JD-J14 family). Verified from the
+  // run's key space + the claim's shape, never from the claim's own word alone; rides the BINDING
+  // family and NEVER raises `resolved`.
+  if (claim !== null && claim.kind === "exportSurface") {
+    const outcome = claim.surface === "default"
+      ? verifyDefaultExportClaim(claim, tgt, declCount)
+      : verifyModuleExportsClaim(claim, tgt, declCount)
+    const disposition: AmbiguousClaimDisposition =
+      outcome === "bindingVerified" ? "verified" : outcome === "bindingUnverified" ? "unverified" : "refuted"
+    return {
+      outcome, decls, kinds: kindText,
+      verifiedBy: outcome === "bindingVerified" ? "exportSurface" : undefined,
+      ...(decls > 1 ? { claimOnAmbiguous: { kind: "exportSurface", disposition } } : {}),
+    }
+  }
   // THE IMPORTED-BINDING CLAIM IS THE SOLE AUTHORITY FOR ITS EDGES (2026-10-19), and it is checked
   // BEFORE every count-based branch for the namespace claim's reason: a file-scoped import binding
   // OCCUPIES its file's name, so a same-named declaration elsewhere in the project is not the

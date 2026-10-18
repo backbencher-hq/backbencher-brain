@@ -1679,6 +1679,39 @@ function selfTest(): { ok: boolean; failures: string[] } {
   if (externalClaimOf({ metadata: { [NAMESPACE_CLAIM_KEY]: ["java", "override"] } })?.kind !== "namespace") {
     failures.push("control: `languageNamespace` did not route to the namespace citation claim")
   }
+  // EXPORT-SURFACE CLAIMS (charter §18.16, JS lane contract): `defaultExport`/`moduleExports` rows
+  // name an export SURFACE, not a declaration. Controls: a valid named default verifies; a
+  // FABRICATED PUBLIC NAME (`export default foo` -> target foo) refutes; an unknown form refutes; an
+  // unbacked localName refutes; an anonymous default verifies on its form; a CJS property name the
+  // project DECLARES refutes (a real declaration wins); a valid CJS property verifies.
+  if (externalClaimOf({ metadata: { defaultExport: { form: "named-declaration", localName: "alpha" } } })?.kind !== "exportSurface") {
+    failures.push("control: `defaultExport` did not route to the export-surface claim")
+  }
+  if (externalClaimOf({ metadata: { moduleExports: { property: "mod", form: "exports-object" } } })?.kind !== "exportSurface") {
+    failures.push("control: `moduleExports` did not route to the export-surface claim")
+  }
+  {
+    const defArms: Array<[string, ExternalClaim, Outcome, string]> = [
+      ["default", { kind: "exportSurface", surface: "default", form: "named-declaration", localName: "alpha" }, "bindingVerified", "a named default with a declared localName verifies"],
+      ["default", { kind: "exportSurface", surface: "default", form: "anonymous" }, "bindingVerified", "an anonymous default verifies on its form"],
+      ["foo", { kind: "exportSurface", surface: "default", form: "named-declaration", localName: "alpha" }, "bindingRefuted", "a FABRICATED public name (the identifier beside export default) must REFUTE"],
+      ["default", { kind: "exportSurface", surface: "default", form: "made-up-form", localName: "alpha" }, "bindingRefuted", "an unknown form must REFUTE"],
+      ["default", { kind: "exportSurface", surface: "default", form: "expression", localName: "nope" }, "bindingRefuted", "an unbacked localName must REFUTE"],
+    ]
+    for (const [t, claim, want, why] of defArms) {
+      const c = classifyEdge(declCount, kinds, t, claim)
+      if (c.outcome !== want) failures.push(`control: defaultExport target ${t} read ${c.outcome}, expected ${want} — ${why}`)
+    }
+    const cjsArms: Array<[string, ExternalClaim, Outcome, string]> = [
+      ["mod", { kind: "exportSurface", surface: "moduleExports", property: "mod", form: "module-exports-object" }, "bindingVerified", "a surface property the project does not declare verifies"],
+      ["alpha", { kind: "exportSurface", surface: "moduleExports", property: "alpha", form: "exports-object" }, "bindingRefuted", "a CJS property the PROJECT declares must REFUTE — a real declaration wins"],
+      ["mod", { kind: "exportSurface", surface: "moduleExports", property: "other", form: "exports-object" }, "bindingRefuted", "a target that is not the claimed property must REFUTE"],
+    ]
+    for (const [t, claim, want, why] of cjsArms) {
+      const c = classifyEdge(declCount, kinds, t, claim)
+      if (c.outcome !== want) failures.push(`control: moduleExports target ${t} read ${c.outcome}, expected ${want} — ${why}`)
+    }
+  }
   // IMPORTED-BINDING CLAIM (charter §18.10): verified from the RUN'S OWN import evidence, never from
   // the use edge's word. Plants: a name the file's import binds (VERIFIED), a name it does not bind
   // (REFUTED), a specifier the file does not import (REFUTED), another file's import (REFUTED), a
