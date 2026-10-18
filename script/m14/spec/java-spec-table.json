@@ -103,5 +103,500 @@
  ],
  "_corrections": {
   "note": "#419 S1 (owner ruling 2026-08-26): removed try_with_resources_statement, throw_statement, assert_statement from statements_affecting_complexity — they are not McCabe decision points and were never counted by calculateJavaMethodComplexity; keeping them in the table over-claimed. Complexity contract now matches the analyzer and the other JVM languages (CC1)."
+ },
+ "evidence_rows_2026_10_18": {
+  "_rule": "OWNER RE-ORIENTATION 2026-10-18: every APPLICABLE relationship type ends with an evidence row {implemented+fixture, whole-pop edges, resolved or claim, unresolved+why, perf, no-regex, docs}. A row with a null field is EXPLICITLY OWED, never considered done; nothing retires without its count.",
+  "_reading_as_of": "cap-50 columns were measured by the Lead's committed owner-channel gate (972297b5b) with self-test PASS, over a 50-file stride of 11,155 admitted .java files (project scope). The last three analyzer commits after that reading (uses-owner, four extra receiver evidence sources, AST static-keyword read) add METADATA only and are expected to leave edge counts unchanged; a re-pair is queued and any movement will be reported before these numbers are quoted again.",
+  "perf": {
+   "last_recorded_avgMsPerFile": {
+    "grails-core:java": 7.8,
+    "scala3:java": 3.6,
+    "cats-effect:java": 4.7,
+    "clojure:java": 13.8
+   },
+   "source": "validation/m14/differential-baseline.json (differential baseline rows, NOT this wave)",
+   "status": "OWED RE-MEASURE: this wave adds a per-file receiver-type PRE-PASS (one extra tree walk). The recorded rows predate it, so the perf row is not claimed until the differential baseline for java is regenerated.",
+   "command": "run the java differential arm / validation baseline regeneration when the box is quiet"
+  },
+  "noRegex": {
+   "result": "CLEAN — java carries ZERO regex literals; it is absent from the no-regex census list",
+   "command": "bash script/m14/no-regex-gate.sh",
+   "positiveResult": true,
+   "note": "the gate still prints FAIL fleet-wide with 11 findings, ALL other lanes (julia 1, powershell 1, python 2, scss 3, toml 1, vue 1, yaml 2); this wave removed java's single text-regex (import `static` keyword is now read from the unnamed AST token)."
+  },
+  "docs": "docs/analyzers/real-java-analyzer.md (grammar provenance + per-type emission sites + the 2026-10-18 complete-surface section incl. limitations); validation/m14/verification/JAVA-RESOLUTION-CLASSIFICATION.md (cap-50 cause table); validation/m14/verification/JAVA-FIXTURE-RECONCILIATION.md (stale fixtures, read-only)",
+  "wholePopulation": {
+   "edges": null,
+   "resolved": null,
+   "ambByDecl": null,
+   "unresolved": null,
+   "extOK": null,
+   "extUnknown": null,
+   "extFAIL": null,
+   "status": "OWED — command: BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 0 ; acceptance arm: BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 0 --index",
+   "censusCommand": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json"
+  },
+  "cap50Command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 50",
+  "censusCap50Command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=50",
+  "types": {
+   "calls": {
+    "unresolvedWhy": "828 bare member leaves on a receiver the edge does not name (implicit this, class-qualified static receivers, super, inherited fields, var locals, untyped lambda params, multi-catch vars are the shapes the receiver-typing channel REFUSES because the file does not state the type) + 17 constructor-delegation keyword targets (super/this, which name no declaration; Lead ruling owed) + JDK/library leaves. Receiver typing now carries metadata.owner on 652 calls edges at cap 50 (field 243 / param 154 / local 239 / return 16).",
+    "claims": "none at cap 50; the channel's declines are counted by the gate, not claimed",
+    "implemented": "src/ast/real-java-analyzer.ts",
+    "fixtures": [
+     "java/anonymous-field-member",
+     "java/argument-count-comment-exclusion",
+     "java/callsite-lines-825",
+     "java/chained-field-access",
+     "java/ctor-delegation",
+     "java/enum-constant-bodies",
+     "java/fq-third-party-calls",
+     "java/initializer-calls",
+     "java/interface-method-call",
+     "java/method-reference-receiver-shapes",
+     "java/overload-arity-varargs-multicatch",
+     "java/receiver-owner-evidence",
+     "java/receiver-owner-type",
+     "java/root-segment-builtin-filter",
+     "java/static-utility-call"
+    ],
+    "cap50": {
+     "edges": 1361,
+     "resolved": 257,
+     "ambByDecl": 78,
+     "unresolved": 1026,
+     "extOK": 0,
+     "extUnknown": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 50"
+    },
+    "perf": {
+     "avgMsPerFile": null,
+     "status": "owed — see top-level perf row"
+    },
+    "noRegex": {
+     "result": "CLEAN",
+     "command": "bash script/m14/no-regex-gate.sh"
+    },
+    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "wholePopulation": {
+     "edges": null,
+     "resolved": null,
+     "ambByDecl": null,
+     "unresolved": null,
+     "status": "owed"
+    }
+   },
+   "uses": {
+    "unresolvedWhy": "93 constant-shaped reads (static-imported constants of external types) + 69 member leaves + 14 type-shaped; the two bare-read fabrications found this wave (compact-ctor name, annotation-element declaration) were REMOVED, not re-classified. metadata.owner is emitted on receiver-variable field reads for the store channel.",
+    "claims": "none at cap 50",
+    "implemented": "src/ast/real-java-analyzer.ts",
+    "fixtures": [
+     "java/annotation-column-lines",
+     "java/array-access-uses",
+     "java/bare-member-read-uses",
+     "java/ctor-value-injection",
+     "java/declaration-names-are-not-reads",
+     "java/fq-jpa-entity",
+     "java/member-read-source",
+     "java/pure-field-chain",
+     "java/receiver-owner-type"
+    ],
+    "cap50": {
+     "edges": 446,
+     "resolved": 257,
+     "ambByDecl": 13,
+     "unresolved": 176,
+     "extOK": 0,
+     "extUnknown": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 50"
+    },
+    "perf": {
+     "avgMsPerFile": null,
+     "status": "owed — see top-level perf row"
+    },
+    "noRegex": {
+     "result": "CLEAN",
+     "command": "bash script/m14/no-regex-gate.sh"
+    },
+    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "wholePopulation": {
+     "edges": null,
+     "resolved": null,
+     "ambByDecl": null,
+     "unresolved": null,
+     "status": "owed"
+    }
+   },
+   "contains": {
+    "unresolvedWhy": "none — every contains edge resolves at cap 50. Enum-constant bodies now attribute members to their anonymous subclass (JLS 8.9.1) instead of leaking them into the enum.",
+    "claims": "none",
+    "implemented": "src/ast/real-java-analyzer.ts",
+    "fixtures": [
+     "java/anonymous-and-multihop-overrides",
+     "java/anonymous-field-member",
+     "java/anonymous-type-owner",
+     "java/declaration-lines-825",
+     "java/enum-constant-bodies",
+     "java/exports-top-level-types-only",
+     "java/member-read-source",
+     "java/module-exports-jpms",
+     "java/phantom-contains-lines",
+     "java/record-varargs-compact-ctor",
+     "java/type-parameter-symbols"
+    ],
+    "cap50": {
+     "edges": 632,
+     "resolved": 632,
+     "ambByDecl": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 50"
+    },
+    "perf": {
+     "avgMsPerFile": null,
+     "status": "owed — see top-level perf row"
+    },
+    "noRegex": {
+     "result": "CLEAN",
+     "command": "bash script/m14/no-regex-gate.sh"
+    },
+    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "wholePopulation": {
+     "edges": null,
+     "resolved": null,
+     "ambByDecl": null,
+     "unresolved": null,
+     "status": "owed"
+    }
+   },
+   "imports": {
+    "unresolvedWhy": "14 dotted third-party module paths the arbiter's importPath claim cannot reach (e.g. org.eclipse.swt.widgets, graphql.Assert.assertShouldNeverHappen); 724 extOK are the importPath claim (624) + JVM-root owner claim (100); 74 ext? are owner claims on a module path the project file list cannot answer.",
+    "claims": "724 verified + 74 unverified, counted in their OWN columns, never merged into resolved",
+    "implemented": "src/ast/real-java-analyzer.ts",
+    "fixtures": [
+     "java/import-dependency-edges",
+     "java/import-flag-node-types",
+     "java/import-label",
+     "java/jpms-module-exports",
+     "java/module-info-directives",
+     "java/module-info"
+    ],
+    "cap50": {
+     "edges": 812,
+     "resolved": 0,
+     "ambByDecl": 0,
+     "unresolved": 14,
+     "extOK": 724,
+     "extUnknown": 74,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 50"
+    },
+    "perf": {
+     "avgMsPerFile": null,
+     "status": "owed — see top-level perf row"
+    },
+    "noRegex": {
+     "result": "CLEAN",
+     "command": "bash script/m14/no-regex-gate.sh"
+    },
+    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "wholePopulation": {
+     "edges": null,
+     "resolved": null,
+     "ambByDecl": null,
+     "unresolved": null,
+     "status": "owed"
+    }
+   },
+   "references": {
+    "unresolvedWhy": "662 bare type-shaped names the sample declares nowhere (out-of-sample project types or library types — only a whole-population index separates them) + 342 dotted FQ type/annotation paths + 7 dotted member paths + 7 constant-shaped + 5 primitive-keyword rows (int/long in declared positions) + generic type-variable rows. New emissions this wave: annotation 353 edges/38 files, type_parameter_bound 3/2, throws_type 61/13 (all counted by the census with commands). 526 extOK = namespace (java.lang 137-name list) + JVM-root owner claims; 59 ext? unverified.",
+    "claims": "526 verified + 59 unverified in their own columns",
+    "implemented": "src/ast/real-java-analyzer.ts",
+    "fixtures": [
+     "java/annotation-references",
+     "java/declaration-lines-825",
+     "java/import-dependency-edges",
+     "java/import-edges",
+     "java/jpms-module-exports",
+     "java/method-ref-receiver-names",
+     "java/method-reference-receiver-shapes",
+     "java/modern-pattern-rules",
+     "java/module-info-directives",
+     "java/overload-arity-varargs-multicatch",
+     "java/package-annotation",
+     "java/record-pattern-refs",
+     "java/sealed-varargs",
+     "java/throws-references",
+     "java/type-endpoint-base-names",
+     "java/type-parameter-bounds",
+     "java/type-parameter-symbols",
+     "java/type-usage-graph"
+    ],
+    "cap50": {
+     "edges": 2032,
+     "resolved": 64,
+     "ambByDecl": 138,
+     "unresolved": 1245,
+     "extOK": 526,
+     "extUnknown": 59,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 50"
+    },
+    "perf": {
+     "avgMsPerFile": null,
+     "status": "owed — see top-level perf row"
+    },
+    "noRegex": {
+     "result": "CLEAN",
+     "command": "bash script/m14/no-regex-gate.sh"
+    },
+    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "wholePopulation": {
+     "edges": null,
+     "resolved": null,
+     "ambByDecl": null,
+     "unresolved": null,
+     "status": "owed"
+    }
+   },
+   "exports": {
+    "unresolvedWhy": "none unresolved; 21 ambiguous because several files in the project declare the same exported name (the arbiter counts declarations, not files).",
+    "claims": "none",
+    "implemented": "src/ast/real-java-analyzer.ts",
+    "fixtures": [
+     "java/exported-types",
+     "java/exports-public-top-level-types",
+     "java/exports-top-level-types-only",
+     "java/fq-api-endpoint",
+     "java/jpms-module-exports",
+     "java/module-exports-jpms",
+     "java/module-info"
+    ],
+    "cap50": {
+     "edges": 47,
+     "resolved": 26,
+     "ambByDecl": 21,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 50"
+    },
+    "perf": {
+     "avgMsPerFile": null,
+     "status": "owed — see top-level perf row"
+    },
+    "noRegex": {
+     "result": "CLEAN",
+     "command": "bash script/m14/no-regex-gate.sh"
+    },
+    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "wholePopulation": {
+     "edges": null,
+     "resolved": null,
+     "ambByDecl": null,
+     "unresolved": null,
+     "status": "owed"
+    }
+   },
+   "extends": {
+    "unresolvedWhy": "20 bare type names the sample does not declare (out-of-sample project types or library types); 1 ext? is a JVM-root claim no project fact can check.",
+    "claims": "1 unverified (ext?)",
+    "implemented": "src/ast/real-java-analyzer.ts",
+    "fixtures": [
+     "java/class-extends-implements",
+     "java/declaration-lines-825",
+     "java/fqn-extends",
+     "java/implicit-overrides",
+     "java/multi-interface-extends",
+     "java/phantom-contains-lines",
+     "java/sealed-varargs"
+    ],
+    "cap50": {
+     "edges": 23,
+     "resolved": 0,
+     "ambByDecl": 1,
+     "unresolved": 21,
+     "extOK": 0,
+     "extUnknown": 1,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 50"
+    },
+    "perf": {
+     "avgMsPerFile": null,
+     "status": "owed — see top-level perf row"
+    },
+    "noRegex": {
+     "result": "CLEAN",
+     "command": "bash script/m14/no-regex-gate.sh"
+    },
+    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "wholePopulation": {
+     "edges": null,
+     "resolved": null,
+     "ambByDecl": null,
+     "unresolved": null,
+     "status": "owed"
+    }
+   },
+   "implements": {
+    "unresolvedWhy": "12 bare type names the sample does not declare + 1 dotted (CommandLine.IFactory). Same out-of-sample/library class as extends.",
+    "claims": "none",
+    "implemented": "src/ast/real-java-analyzer.ts",
+    "fixtures": [
+     "java/class-extends-implements",
+     "java/declaration-lines-825",
+     "java/records-and-sealed"
+    ],
+    "cap50": {
+     "edges": 15,
+     "resolved": 2,
+     "ambByDecl": 0,
+     "unresolved": 13,
+     "extOK": 0,
+     "extUnknown": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 50"
+    },
+    "perf": {
+     "avgMsPerFile": null,
+     "status": "owed — see top-level perf row"
+    },
+    "noRegex": {
+     "result": "CLEAN",
+     "command": "bash script/m14/no-regex-gate.sh"
+    },
+    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "wholePopulation": {
+     "edges": null,
+     "resolved": null,
+     "ambByDecl": null,
+     "unresolved": null,
+     "status": "owed"
+    }
+   },
+   "overrides": {
+    "unresolvedWhy": "none unresolved. 45 ambiguous: the family contract publishes the MEMBER LEAF (JD20/JD36), so same-name members across classes collide by construction; owner-aware resolution is Lead work and the leaf-target spelling is what the differential oracle mirrors.",
+    "claims": "none",
+    "implemented": "src/ast/real-java-analyzer.ts",
+    "fixtures": [
+     "java/anonymous-and-multihop-overrides",
+     "java/declaration-lines-825",
+     "java/enum-constant-bodies",
+     "java/implicit-overrides",
+     "java/overload-arity-varargs-multicatch",
+     "java/override-guess-tier",
+     "java/override-key-parameter-lists",
+     "java/overrides"
+    ],
+    "cap50": {
+     "edges": 124,
+     "resolved": 79,
+     "ambByDecl": 45,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 50"
+    },
+    "perf": {
+     "avgMsPerFile": null,
+     "status": "owed — see top-level perf row"
+    },
+    "noRegex": {
+     "result": "CLEAN",
+     "command": "bash script/m14/no-regex-gate.sh"
+    },
+    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "wholePopulation": {
+     "edges": null,
+     "resolved": null,
+     "ambByDecl": null,
+     "unresolved": null,
+     "status": "owed"
+    }
+   },
+   "instantiates": {
+    "unresolvedWhy": "147 bare type names the sample does not declare (out-of-sample project types or library types) + 5 dotted; 20 extOK (java.lang list/JVM roots), 13 ext? unverified.",
+    "claims": "20 verified + 13 unverified in their own columns",
+    "implemented": "src/ast/real-java-analyzer.ts",
+    "fixtures": [
+     "java/anonymous-and-multihop-overrides",
+     "java/callsite-lines-825",
+     "java/fqn-instantiation",
+     "java/inner-class-instantiation",
+     "java/type-usage-graph"
+    ],
+    "cap50": {
+     "edges": 221,
+     "resolved": 18,
+     "ambByDecl": 18,
+     "unresolved": 152,
+     "extOK": 20,
+     "extUnknown": 13,
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 50"
+    },
+    "perf": {
+     "avgMsPerFile": null,
+     "status": "owed — see top-level perf row"
+    },
+    "noRegex": {
+     "result": "CLEAN",
+     "command": "bash script/m14/no-regex-gate.sh"
+    },
+    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "wholePopulation": {
+     "edges": null,
+     "resolved": null,
+     "ambByDecl": null,
+     "unresolved": null,
+     "status": "owed"
+    }
+   },
+   "decorates": {
+    "applicable": false,
+    "reason": "owner ruling: Java annotations are type mentions -> references + isAnnotation; decorates is defined for runtime callable-wrapper decorators (python/ts/js shape), which Java does not have",
+    "implemented": "n/a",
+    "fixtures": [],
+    "cap50": {
+     "edges": 0
+    },
+    "wholePopulation": {
+     "edges": null
+    },
+    "perf": {
+     "avgMsPerFile": null
+    },
+    "noRegex": {
+     "result": "CLEAN"
+    },
+    "docs": "docs/analyzers/real-java-analyzer.md"
+   },
+   "renders": {
+    "applicable": false,
+    "reason": "no JVM-language construct emits a render relationship",
+    "cap50": {
+     "edges": 0
+    },
+    "wholePopulation": {
+     "edges": null
+    }
+   },
+   "mixes_in": {
+    "applicable": false,
+    "reason": "Java implements multiple interfaces (emitted as implements) and has no mixin mechanism",
+    "cap50": {
+     "edges": 0
+    },
+    "wholePopulation": {
+     "edges": null
+    }
+   },
+   "part_of": {
+    "applicable": false,
+    "reason": "Java's containment is contains; no directive names a compilation unit part",
+    "cap50": {
+     "edges": 0
+    },
+    "wholePopulation": {
+     "edges": null
+    }
+   }
+  }
  }
 }
