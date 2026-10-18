@@ -2,27 +2,200 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-15T04:49:32.797Z",
+  "generatedAt": "2026-10-18T06:40:32.869Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 11,
+  "totalRegexUsages": 37,
   "analyzersScanned": 48,
   "byClassification": {
-    "needs_review": 11
+    "needs_review": 36,
+    "unavoidable": 1
   },
   "byReceiverCategory": {
-    "identifier": 8,
-    "other": 3
+    "other": 14,
+    "identifier": 22,
+    "string_literal": 1
   },
   "perFile": [
     {
+      "file": "real-rust-analyzer.ts",
+      "count": 10,
+      "usages": [
+        {
+          "file": "real-rust-analyzer.ts",
+          "line": 191,
+          "column": 43,
+          "source": "/^[A-Z]/",
+          "operation": "test",
+          "receiver": "parts[parts.length - 1]",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-rust-analyzer.ts",
+          "line": 203,
+          "column": 52,
+          "source": "/^[A-Z]/",
+          "operation": "test",
+          "receiver": "eff[1]",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-rust-analyzer.ts",
+          "line": 322,
+          "column": 16,
+          "source": "/\\n\\s*name\\s*=\\s*\"([A-Za-z_][A-Za-z0-9_-]*)\"/",
+          "operation": "test",
+          "receiver": "\"\\n\" + text",
+          "receiverCategory": "string_literal",
+          "classification": "unavoidable",
+          "justification": ""
+        },
+        {
+          "file": "real-rust-analyzer.ts",
+          "line": 323,
+          "column": 51,
+          "source": "/-/g",
+          "operation": "replace",
+          "receiver": "name",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-rust-analyzer.ts",
+          "line": 328,
+          "column": 22,
+          "source": "/\\[lib\\]([\\s\\S]*?)(?:\\n\\[|$)/",
+          "operation": "test",
+          "receiver": "text",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-rust-analyzer.ts",
+          "line": 329,
+          "column": 19,
+          "source": "/\\bpath\\s*=\\s*\"([^\"]+)\"/",
+          "operation": "test",
+          "receiver": "libSection",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-rust-analyzer.ts",
+          "line": 376,
+          "column": 11,
+          "source": "/^\\s*\\[workspace\\]/m",
+          "operation": "test",
+          "receiver": "readManifest(dir)",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-rust-analyzer.ts",
+          "line": 403,
+          "column": 24,
+          "source": "/(?:^|\\n)\\s*members\\s*=\\s*\\[([\\s\\S]*?)\\]/",
+          "operation": "test",
+          "receiver": "rootText",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-rust-analyzer.ts",
+          "line": 405,
+          "column": 43,
+          "source": "/[\"']([^\"']+)[\"']/g",
+          "operation": "other",
+          "receiver": "membersBlock",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-rust-analyzer.ts",
+          "line": 2144,
+          "column": 13,
+          "source": "/^[A-Za-z_][A-Za-z0-9_]*::[A-Za-z_][A-Za-z0-9_]*$/",
+          "operation": "test",
+          "receiver": "q",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
       "file": "real-scss-analyzer.ts",
-      "count": 3,
+      "count": 8,
       "usages": [
         {
           "file": "real-scss-analyzer.ts",
-          "line": 1258,
+          "line": 371,
+          "column": 7,
+          "source": "/^[a-zA-Z][a-zA-Z0-9+.-]*:/",
+          "operation": "test",
+          "receiver": "written",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-scss-analyzer.ts",
+          "line": 372,
+          "column": 7,
+          "source": "/(^|\\/)node_modules\\//",
+          "operation": "test",
+          "receiver": "written",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-scss-analyzer.ts",
+          "line": 374,
+          "column": 7,
+          "source": "/^@[A-Za-z0-9][A-Za-z0-9._-]*\\//",
+          "operation": "test",
+          "receiver": "written",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-scss-analyzer.ts",
+          "line": 399,
+          "column": 24,
+          "source": "/^\\.\\//",
+          "operation": "replace",
+          "receiver": "written",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-scss-analyzer.ts",
+          "line": 400,
+          "column": 24,
+          "source": "/^\\.\\.\\//",
+          "operation": "replace",
+          "receiver": "written",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-scss-analyzer.ts",
+          "line": 1377,
           "column": 23,
           "source": "/[\\\\/]/",
           "operation": "split",
@@ -33,7 +206,7 @@
         },
         {
           "file": "real-scss-analyzer.ts",
-          "line": 1258,
+          "line": 1377,
           "column": 59,
           "source": "/\\.(scss|sass|css)$/i",
           "operation": "replace",
@@ -44,7 +217,7 @@
         },
         {
           "file": "real-scss-analyzer.ts",
-          "line": 1258,
+          "line": 1377,
           "column": 94,
           "source": "/^_/",
           "operation": "replace",
@@ -56,28 +229,134 @@
       ]
     },
     {
-      "file": "real-python-analyzer.ts",
-      "count": 2,
+      "file": "real-svelte-analyzer.ts",
+      "count": 3,
       "usages": [
         {
-          "file": "real-python-analyzer.ts",
-          "line": 4162,
-          "column": 17,
-          "source": "/^[A-Za-z]*([\"'])([\\s\\S]*)\\1$/",
+          "file": "real-svelte-analyzer.ts",
+          "line": 1958,
+          "column": 32,
+          "source": "/\\s/",
           "operation": "test",
-          "receiver": "text",
+          "receiver": "spec",
           "receiverCategory": "identifier",
           "classification": "needs_review",
           "justification": ""
         },
         {
-          "file": "real-python-analyzer.ts",
-          "line": 4166,
-          "column": 14,
-          "source": "/^[A-Za-z_][A-Za-z0-9_]*$/",
+          "file": "real-svelte-analyzer.ts",
+          "line": 1959,
+          "column": 9,
+          "source": "/^[a-zA-Z][a-zA-Z0-9+.-]*:/",
           "operation": "test",
-          "receiver": "value",
+          "receiver": "spec",
           "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-svelte-analyzer.ts",
+          "line": 2024,
+          "column": 25,
+          "source": "/^[A-Za-z_$][A-Za-z0-9_$]*(?:\\.[A-Za-z_$][A-Za-z0-9_$]*)*$/",
+          "operation": "other",
+          "receiver": "",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-xml-analyzer.ts",
+      "count": 3,
+      "usages": [
+        {
+          "file": "real-xml-analyzer.ts",
+          "line": 3372,
+          "column": 40,
+          "source": "/\\\\/g",
+          "operation": "replace",
+          "receiver": "trimmed",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-xml-analyzer.ts",
+          "line": 3377,
+          "column": 26,
+          "source": "/^\\.\\//",
+          "operation": "replace",
+          "receiver": "normalised",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-xml-analyzer.ts",
+          "line": 3378,
+          "column": 26,
+          "source": "/^\\.\\.\\//",
+          "operation": "replace",
+          "receiver": "normalised",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-c-analyzer.ts",
+      "count": 2,
+      "usages": [
+        {
+          "file": "real-c-analyzer.ts",
+          "line": 4034,
+          "column": 45,
+          "source": "/^\\s*#\\s*endif\\b/",
+          "operation": "test",
+          "receiver": "lines[i]",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-c-analyzer.ts",
+          "line": 4038,
+          "column": 11,
+          "source": "/^\\s*#\\s*(if|ifdef|ifndef)\\b/",
+          "operation": "test",
+          "receiver": "lines[j]",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-javascript-analyzer.ts",
+      "count": 2,
+      "usages": [
+        {
+          "file": "real-javascript-analyzer.ts",
+          "line": 196,
+          "column": 35,
+          "source": "/\\\\/g",
+          "operation": "replace",
+          "receiver": "String(raw)",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-javascript-analyzer.ts",
+          "line": 224,
+          "column": 39,
+          "source": "/[?#].*$/",
+          "operation": "replace",
+          "receiver": "spec.trim()",
+          "receiverCategory": "other",
           "classification": "needs_review",
           "justification": ""
         }
@@ -89,7 +368,7 @@
       "usages": [
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 2239,
+          "line": 2370,
           "column": 34,
           "source": "/^kind:[ \\t]*[\"']?([A-Za-z][\\w.-]*)[\"']?[ \\t]*$/m",
           "operation": "match",
@@ -100,11 +379,45 @@
         },
         {
           "file": "real-yaml-analyzer.ts",
-          "line": 2243,
+          "line": 2374,
           "column": 46,
           "source": "/^[ \\t]+name:[ \\t]*[\"']?([^\"'\\n#]+?)[\"']?[ \\t]*$/m",
           "operation": "match",
           "receiver": "text.slice(meta)",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-fsharp-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-fsharp-analyzer.ts",
+          "line": 2684,
+          "column": 30,
+          "source": "/^[A-Za-z_$][A-Za-z0-9_$]*$/",
+          "operation": "other",
+          "receiver": "",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-java-analyzer.ts",
+          "line": 4978,
+          "column": 32,
+          "source": "/^[A-Za-z_$][A-Za-z0-9_$]*$/",
+          "operation": "other",
+          "receiver": "",
           "receiverCategory": "other",
           "classification": "needs_review",
           "justification": ""
@@ -117,7 +430,7 @@
       "usages": [
         {
           "file": "real-julia-analyzer.ts",
-          "line": 38,
+          "line": 58,
           "column": 15,
           "source": "/^[ \t]*name[ \t]*=[ \t]*\"([^\"]+)\"/m",
           "operation": "test",
@@ -134,7 +447,7 @@
       "usages": [
         {
           "file": "real-powershell-analyzer.ts",
-          "line": 2951,
+          "line": 2965,
           "column": 36,
           "source": "/[.:$[\\]()]/",
           "operation": "test",
@@ -146,12 +459,29 @@
       ]
     },
     {
+      "file": "real-r-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-r-analyzer.ts",
+          "line": 88,
+          "column": 24,
+          "source": "/^[A-Za-z][A-Za-z0-9.]*[A-Za-z0-9]$|^[A-Za-z]$/",
+          "operation": "other",
+          "receiver": "",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
       "file": "real-toml-analyzer.ts",
       "count": 1,
       "usages": [
         {
           "file": "real-toml-analyzer.ts",
-          "line": 1590,
+          "line": 1617,
           "column": 37,
           "source": "/[/\\\\]|^[a-z][a-z0-9+.-]*:/i",
           "operation": "test",
@@ -168,7 +498,7 @@
       "usages": [
         {
           "file": "real-vue-analyzer.ts",
-          "line": 207,
+          "line": 231,
           "column": 27,
           "source": "/[A-Z]/",
           "operation": "test",
