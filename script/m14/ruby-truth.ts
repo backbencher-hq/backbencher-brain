@@ -55,13 +55,43 @@ import type { Node } from "web-tree-sitter"
  * The value is derived from the emitter itself, not restated, so it cannot drift from
  * what the oracle actually produces.
  */
+/**
+ * RUBY-D1 + D4 WAVE (ALL-OUT-OF-ALL phase 2, 2026-10-19) — what changed in this module and why:
+ *
+ *   1. MIXINS ARE `mixes_in`, NOT implements/extends. Ruby's `include`/`prepend` compose a module into
+ *      the class's ancestor chain and `extend` composes it into the SINGLETON class; the canonical
+ *      vocabulary has exactly one value for that construct (`mixes_in`, the Dart with-clause value).
+ *      The analyzer was relabelled in the same wave (cap-50 delta: implements 17 -> 0, extends 48 -> 44,
+ *      mixes_in 0 -> 21 = 17 + 4, TABLE totals byte-identical). An oracle that kept emitting the old
+ *      adaptation would manufacture MISSING/unexplained rows at exactly the relabelled sites, which is
+ *      why this module was corrected BEFORE the differential wiring.
+ *   2. `imports` IS DERIVED. The analyzer publishes every require/require_relative/load/autoload path as
+ *      an `imports` edge beside the `references` row (one-for-one, measured 1,304 = 1,304 at whole
+ *      population). The truth row carries the specifier AS WRITTEN (`require_relative "./x"` -> `./x`):
+ *      the shared matcher now compares path-like imports exactly, so normalising here would hide a real
+ *      divergence.
+ *   3. `exports` IS DERIVED — the file-unit surface: top-level classes/modules, factory assignments
+ *      (`K = Class.new(...)`), and top-level `def`; NOT a plain constant assignment, NOT a class member,
+ *      NOT `def self.m` at file scope, and `private_constant :X` removes X. These are the analyzer's
+ *      measured refusals mirrored, not widened.
+ *
+ * The oracle remains a SECOND WALKER over the same grammar (it cannot convict the grammar). Its contract
+ * check lives in `script/m14/ruby-oracle-verify.ts` (`--selftest`): synthetic positive + REFUSAL cases
+ * per construct plus a comparator control, so the prove-instrument can itself be shown to fail.
+ */
 export const RUBY_ORACLE_LABELS: ReadonlyArray<RubyTruthEdge["label"]> = [
-  "calls", "contains", "extends", "implements", "instantiates", "overrides", "references", "uses",
+  // ALL-OUT-OF-ALL phase 2: `implements` is RULED OUT for Ruby (RUBY-D1 — the language has no
+  // interface/conformance construct; the family's previous adaptation published include/prepend as
+  // implements). Module composition is now the canonical `mixes_in`. `imports` and `exports` are the
+  // two labels this oracle did not derive; the analyzer emits both as first-class relationships
+  // (require/load facts, and the file-unit export surface), so D4 requires derivations for them.
+  "calls", "contains", "exports", "extends", "imports", "instantiates", "mixes_in", "overrides",
+  "references", "uses",
 ]
 
 /** One derived fact. `from` is set for edges that name an owner. */
 export interface RubyTruthEdge {
-  label: "calls" | "contains" | "extends" | "implements" | "instantiates" | "overrides" | "references" | "uses"
+  label: "calls" | "contains" | "exports" | "extends" | "imports" | "instantiates" | "mixes_in" | "overrides" | "references" | "uses"
   target: string
   from?: string
   line: number
@@ -769,6 +799,17 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
         // collection `.new` in a Rails controller method being reported as an
         // instantiation of the controller.
         if (recvName) push("instantiates", leafName(recvName), line)
+        // `K = Class.new(Base)` DECLARES a superclass: the analyzer emits `extends:Base` for the
+        // factory base when the receiver is `Class` and the first argument is a STATIC constant path
+        // (restricted to Class.new — Struct.new/Data.define take MEMBER NAMES there, so a general
+        // rule would fabricate `extends Car -> wheels`). Mirrored here; without it the one factory
+        // inheritance per corpus reads as UNEXPLAINED.
+        if (recvName !== null && leafName(recvName) === "Class") {
+          const args = right ? right.childForFieldName("arguments") : null
+          const first = args && args.namedChildCount > 0 ? args.namedChild(0) : null
+          const basePath = constantPath(first)
+          if (basePath && basePath.indexOf("(") < 0) push("extends", leafName(basePath), line)
+        }
         // A constant bound to a factory IS a member of the enclosing scope.
         // PROBED across all four factories: `E = Class.new`, `E = Struct.new(:a)`,
         // `E = Module.new do def go; end end` and `E = Foo.new` each publish
@@ -979,6 +1020,12 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
             const name = unquote(a.text)
             if (name.length > 0) {
               push("references", name, line, methodName === "autoload" ? "ruby-autoload" : `ruby-${methodName}`)
+              // THE LOAD-FACT PAIR: the analyzer publishes the required path as an `imports` edge AND
+              // a `references` edge (one-for-one, measured 1,304 = 1,304 at whole population). The
+              // oracle derives both from the same literal, with the path AS WRITTEN (the shared
+              // matcher now compares path-like imports exactly — a `./` prefix is part of the target
+              // and must not be normalised away here, or the audit manufactures a spelling diff).
+              push("imports", name, line)
             }
           }
         }
@@ -1011,6 +1058,10 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
         else if (recvNode !== null) {
           // A lowercase RECEIVER keeps the call; an instance variable keeps `new`.
           if (recvNode.type === "identifier") push("calls", "new", line)
+          // `self.new` inside a class constructs THAT class — the explicit spelling of the
+          // receiverless rule. PROBED on rack/builder.rb `def self.app; self.new(...)`:
+          // `instantiates:Builder`. Without this the row reads as UNEXPLAINED.
+          else if (recvNode.type === "self" && f.cls) push("instantiates", f.cls, line)
         } else {
           // A receiverless `new` constructs the ENCLOSING class (probed).
           if (f.cls) push("instantiates", f.cls, line)
@@ -1023,16 +1074,22 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
             const a = args.namedChild(i)
             if (!a) continue
             // The mixin target must be NAMEABLE. PROBED: `include M` and `include A::B`
-            // both publish (`implements:M`, `implements:B` - the LEAF, so passing the
-            // full path was the whole of the original 520 missing `extends`), but
+            // both publish (now `mixes_in:M`, `mixes_in:B` — the LEAF; before RUBY-D1 the
+            // labels were implements/extends, and passing the full path was the whole of the
+            // original 520 missing `extends`), but
             // `include local_account` publishes NOTHING - a lowercase identifier is a
             // local, and in RSpec it is almost always a `let` reference, not a mixin.
             // Accepting identifiers here published `implements:local_account`,
-            // `implements:recipient`, `implements:bot_account` for every
+            // `mixes_in:recipient`, `mixes_in:bot_account` for every
             // `.to include(x)` matcher in the corpus: 274 MISSING `implements`, all
             // invented. A mixin is named by a constant; nothing else is nameable.
             const cn = constantPath(a)
-            if (cn) push(methodName === "extend" ? "extends" : "implements", leafName(cn), line)
+            // RUBY-D1: include/prepend compose the module into the class's ancestor chain and extend
+            // composes it into the SINGLETON class — all three are MODULE MIXIN COMPOSITION, the
+            // canonical `mixes_in` (Dart's with-clause is the same value). The old adaptation
+            // (extend -> extends, include/prepend -> implements) was wrong on both axes: `implements`
+            // is conformance Ruby does not have and `extend M` is not superclass inheritance.
+            if (cn) push("mixes_in", leafName(cn), line)
           }
         }
         // NO `continue` HERE, and that is the fix for 253 UNEXPLAINED `contains`.
@@ -1272,7 +1329,12 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
     }
 
     // ------------------------------------------------------------- generic
-    const inBody = f.inBody || t === "method" || t === "singleton_method"
+    // A BLOCK body is an executable body too: the analyzer publishes `uses:@x` for an ivar read
+    // inside a `describe`/`it` block at file scope (source Global), which is the only place a spec
+    // file's `@content_type`-style reads live. Treating only method/singleton bodies as "in body"
+    // left those reads MISSING (22 on rack, every one block-bodied).
+    const inBody = f.inBody || t === "method" || t === "singleton_method" ||
+      t === "block" || t === "do_block" || t === "lambda"
     for (let i = n.namedChildCount - 1; i >= 0; i--) {
       const c = n.namedChild(i)
       if (c) {
@@ -1301,6 +1363,116 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       if (inherited.has(m)) {
         push("overrides", `${base}.${m}`, 0, `${cls}.${m}`)
       }
+    }
+  }
+  // EXTERNAL-BASE FIRST-PARENT GUESS (the analyzer's 0.5 channel): when the superclass is NOT
+  // declared in this file, the analyzer emits `overrides:Base.m` for EVERY member m of the subclass
+  // with `reasonCode: first-parent-guess` — a declared cause, not a verification claim. The oracle
+  // derives the same rows; without them, 113 of rack's 114 overrides read as UNEXPLAINED and the D4
+  // draw would call the analyzer's declared-cause channel a divergence. A base declared in the file
+  // is handled by the loop above (the analyzer emits nothing there unless the base declares the
+  // method), and a self-inheriting name is excluded exactly as the analyzer excludes it.
+  for (const [cls, base] of bases) {
+    const own = members.get(cls)
+    if (!own) continue
+    if (members.has(base)) continue
+    if (base === cls) continue
+    for (const m of own) push("overrides", `${base}.${m}`, 0, `${cls}.${m}`)
+  }
+
+  // ---------------------------------------------------------------- exports
+  // RUBY-D1 wave addition (D4): the FILE-UNIT export surface. The analyzer publishes `exports` with
+  // source = the path-derived file unit and target = the file's TOP-LEVEL names; this derives the same
+  // names from the tree, never reading analyzer output:
+  //   `class N` / `module N` at file scope                -> N (the LEAF of a qualified name)
+  //   `K = Class.new(...)` / `Struct.new` / `Data.define` -> K (the factory assignment DECLARES a
+  //        class/module symbol — probed on the analyzer: `FACTORY = Class.new` publishes
+  //        `exports -> FACTORY`, while a PLAIN constant assignment `PLAIN_CONST = 2` publishes NO
+  //        export, so the factory form is the only assignment spelling in the surface)
+  //   `def m` at file scope                               -> m
+  // NOT a class member (that is `contains`), NOT a nested type, NOT `def self.m` at file scope
+  // (main's singleton is not importable by name), and `private_constant :X` removes X from the
+  // surface. These are the analyzer's measured refusals, mirrored rather than widened: a superset here
+  // manufactures MISSING rows, and a narrower set manufactures unexplained ones — the draw measures it.
+  {
+    const exportLine = new Map<string, number>()
+    const privateNames = new Set<string>()
+    const mark = (name: string, line: number): void => {
+      const n = name.trim()
+      if (n.length === 0 || exportLine.has(n)) return
+      exportLine.set(n, line)
+    }
+    const factoryLeaf = (right: Node | null): string | null => {
+      if (!right || right.type !== "call") return null
+      const methodNode = right.childForFieldName("method")
+      const receiver = right.childForFieldName("receiver")
+      const method = methodNode ? methodNode.text.trim() : ""
+      if (method !== "new" && method !== "define") return null
+      const recv = constantPath(receiver)
+      if (!recv) return null
+      const leaf = leafName(recv)
+      return leaf === "Class" || leaf === "Struct" || leaf === "Data" || leaf === "Module" ? leaf : null
+    }
+    const walkTop = (n: Node, depth: number): void => {
+      const t = n.type
+      const line = n.startPosition.row + 1
+      if (t === "class" || t === "module") {
+        if (depth === 0) {
+          const nameNode = n.childForFieldName("name")
+          const nm = nameNode ? nameNode.text.trim() : ""
+          // `class Minitest::Spec` declares Spec as a member of Minitest, NOT an ownerless file-unit
+          // name; the analyzer refuses it (`exports` needs an ownerless symbol) — measured on rack's
+          // test/helper.rb, where the qualified declaration was the one MISSING export.
+          if (nm.length > 0 && nameNode !== null && nameNode.type !== "scope_resolution") mark(leafName(nm), line)
+        }
+        const body = n.childForFieldName("body")
+        if (body) walkTop(body, depth + 1)
+        return
+      }
+      if (t === "singleton_class") {
+        const body = n.childForFieldName("body")
+        if (body) walkTop(body, depth + 1)
+        return
+      }
+      if (depth === 0) {
+        if (t === "method") {
+          const nm = n.childForFieldName("name")
+          if (nm) mark(nm.text, line)
+          // A top-level def's BODY is not file scope — stop here rather than walking into it.
+          return
+        } else if (t === "assignment") {
+          const left = n.childForFieldName("left")
+          const right = n.childForFieldName("right")
+          if (left && right && factoryLeaf(right)) {
+            const lp = constantPath(left)
+            if (lp) mark(leafName(lp), line)
+          }
+        } else if (t === "call") {
+          const m = n.childForFieldName("method")
+          if (m && m.text === "private_constant") {
+            const args = n.childForFieldName("arguments")
+            if (args) {
+              for (let i = 0; i < args.namedChildCount; i++) {
+                const a = args.namedChild(i)
+                if (!a || a.type !== "simple_symbol") continue
+                const txt = a.text.trim()
+                let k = 0
+                while (k < txt.length && txt[k] === ":") k++
+                if (k < txt.length) privateNames.add(txt.slice(k))
+              }
+            }
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walkTop(c, depth)
+      }
+    }
+    walkTop(root, 0)
+    for (const [name, line] of exportLine) {
+      if (privateNames.has(name)) continue
+      push("exports", name, line)
     }
   }
 
