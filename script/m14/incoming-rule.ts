@@ -123,6 +123,9 @@ export type ExternalClaim =
    */
   | { kind: "moduleNamespace"; module: string }
   | { kind: "projectFacts" } | { kind: "binding" }
+  // THE IMPORTED-BINDING CLAIM (2026-10-19): the target is a local name bound by an import of
+  // `specifier`; verified from the run's own import edges (see IMPORTED_BINDING_CLAIM_KEY).
+  | { kind: "importedBinding"; specifier: string; binding: string }
   // THE FILE CLAIM — "this target names an admitted FILE", checked against the project's own file
   // list. `candidates` is every spelling the loader's conventions produce, because which one the
   // loader will use is a property of the loader and not of the source (see `FILE_CLAIM_KEY`).
@@ -184,6 +187,23 @@ export type ExternalClaim =
  * the walk classifies).
  */
 export const BINDING_CLAIM_KEY = "localBinding"
+
+/**
+ * THE IMPORTED-BINDING CLAIM — "this target is a local name bound by an import of `specifier`".
+ *
+ * A distinct claim kind from `binding`, because its EVIDENCE differs: a local binding is verified by
+ * the target's own spelling (`BINDING_SEP`), while an imported binding is verified by the RUN'S OWN
+ * IMPORT EVIDENCE — the file's import edge publishes the local names it binds
+ * (`metadata.importedBindings`), and the arbiter checks the claimed name against that list. The use
+ * edge's own word is NOT accepted as evidence (claim + evidence from one author is not a check).
+ *
+ * Outcomes are the binding family's (`bindingVerified`/`bindingRefuted`/`bindingUnverified`): an
+ * imported binding is still NOT a resolution — nothing was resolved to a declaration — so it lands in
+ * `bindOK` and never in `resolved`. REFUTED when the key space answers the name (then the import
+ * claim is false and a real resolution should have happened) and when the file's import evidence does
+ * not bind that name; UNVERIFIED when no evidence was built for the run.
+ */
+export const IMPORTED_BINDING_CLAIM_KEY = "importedBinding"
 
 /** The marker key that means "the FILE is outside this project". Checked after the binding
  *  claim: both are specific, and an edge carrying both is verified on the binding spelling
@@ -433,6 +453,17 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
   // cannot launder a gap with it — the claim is refuted outright when the target names a
   // declaration (see `classifyEdge`).
   if (md[BINDING_CLAIM_KEY] === true) return { kind: "binding" }
+  // THE IMPORTED-BINDING CLAIM, read before every generic marker for the binding claim's reason:
+  // it is a specific, checkable statement about the target (a local name bound by an import), and
+  // falling through to `owner` would route it to a verification that cannot see the evidence.
+  const impBinding = md[IMPORTED_BINDING_CLAIM_KEY]
+  if (
+    impBinding !== null && typeof impBinding === "object" &&
+    typeof (impBinding as any).specifier === "string" && (impBinding as any).specifier.length > 0 &&
+    typeof (impBinding as any).binding === "string" && (impBinding as any).binding.length > 0
+  ) {
+    return { kind: "importedBinding", specifier: String((impBinding as any).specifier), binding: String((impBinding as any).binding) }
+  }
   // The file claim is checked before the population claims, and the order is a decision: an edge
   // that says "this names an admitted file" is making a statement the project can CHECK, while
   // "this is outside the project" is the weaker, unverifiable-for-paths statement about the same
@@ -576,6 +607,34 @@ export function verifyBindingClaim(tgt: string): Outcome {
 }
 
 /**
+ * VERIFY AN IMPORTED-BINDING CLAIM from the run's own import evidence.
+ *
+ * VERIFIED   the edge's file has an import of `specifier` that publishes `binding` among the local
+ *            names it binds (the analyzer's own parse, recorded on the IMPORTS edge, not on the use
+ *            edge that makes the claim).
+ * REFUTED    the file's import evidence exists but does not bind that name (or imports nothing of
+ *            that specifier): the claim is false and the row must not be excused.
+ * UNVERIFIED no evidence was built for the run (caller without import facts) — counted, never clean.
+ *
+ * A file-level lookup with a normalized fallback, because the caller's keys are absolute paths and a
+ * platform separator must not decide a verdict.
+ */
+export function verifyImportedBindingClaim(
+  claim: { specifier: string; binding: string },
+  facts?: ProjectFacts,
+  edgeFile?: string,
+): Outcome {
+  if (!facts || !facts.importsByFile || !edgeFile || edgeFile.length === 0) return "bindingUnverified"
+  const perFile =
+    facts.importsByFile.get(edgeFile) ??
+    facts.importsByFile.get(edgeFile.replace(/\\/g, "/"))
+  if (!perFile) return "bindingRefuted"
+  const bound = perFile.get(claim.specifier)
+  if (!bound) return "bindingRefuted"
+  return bound.has(claim.binding) ? "bindingVerified" : "bindingRefuted"
+}
+
+/**
  * WHAT THE PROJECT ITSELF SAYS, for verifying an IMPORT claim.
  *
  * Built by the caller from the project's own files (never from the analyzer's opinion of
@@ -589,6 +648,15 @@ export type ProjectFacts = {
   packages: Set<string>
   files: Set<string>
   sdkLib: boolean
+  /**
+   * IMPORTED-BINDING EVIDENCE, built by the caller from the run's OWN import edges (the analyzer
+   * publishes `metadata.importedBindings` on them): file -> specifier -> local names bound.
+   * The arbiter verifies an `importedBinding` claim against THIS map rather than against the
+   * analyzer's word on the use edge — the claim and its evidence must not come from the same
+   * author. Absent means the caller built no evidence and every imported-binding claim is
+   * UNVERIFIABLE (never quietly accepted).
+   */
+  importsByFile?: Map<string, Map<string, Set<string>>>
 }
 
 /**
@@ -1062,7 +1130,7 @@ export type Classified = {
   kinds: string
   /** WHICH evidence confirmed a verified external claim — reported so a lane can audit the
    *  mechanism that produced the number, not only the number. */
-  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling" | "namespace" | "sourcePath" | "ownerChannel"
+  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling" | "namespace" | "sourcePath" | "ownerChannel" | "importEvidence"
   /**
    * WHAT A CLAIM SAYS ABOUT A TARGET THAT NAMES TWO OR MORE DECLARATIONS — recorded WITH ITS KIND,
    * and deliberately NOT allowed to move the outcome. See `claimDispositionOnAmbiguous`.
@@ -1275,6 +1343,13 @@ export function classifyEdge(
    * branch below behaves exactly as before it existed.
    */
   ownerChannel?: { outcome: "resolved" | "declined" },
+  /**
+   * THE EDGE'S OWN FILE, for claims whose evidence is FILE-SCOPED. Only the imported-binding claim
+   * reads it (the file decides whether an import of the claim's specifier binds the claim's name).
+   * `undefined` means the caller did not pass it and the claim is UNVERIFIED — never accepted from
+   * the edge's own word.
+   */
+  edgeFile?: string,
 ): Classified {
   const decls = declCount.get(tgt) ?? 0
   if (containsLike === true && decls >= 1) {
@@ -1299,6 +1374,12 @@ export function classifyEdge(
     const owner = targetOwner(tgt)
     const answered = (declCount.get(tgt) ?? 0) > 0 || (owner !== null && (declCount.get(owner) ?? 0) > 0)
     if (answered) claim = null
+  }
+  // AN IMPORTED-BINDING CLAIM ON A TARGET THE KEY SPACE ANSWERS IS FALSE: the name names a
+  // declaration, so the import claim (which says it names no declaration) is refuted and counted
+  // against the lane — the same rule the spelling-based binding claim applies.
+  if (claim !== null && claim.kind === "importedBinding" && decls > 0) {
+    return { outcome: "bindingRefuted", decls, kinds: kindText }
   }
   // ── THE OWNER CHANNEL IS CHECKED FIRST, BEFORE EVEN THE CLAIMS, because in production it runs
   // LAST and WINS: `claimOwnerCarryingTargets` withdraws the name binding for every calls/uses row
@@ -1391,6 +1472,10 @@ export function classifyEdge(
   }
   if (decls === 0) {
     if (claim === null) return { outcome: "unresolved", decls, kinds: kindText }
+    if (claim.kind === "importedBinding") {
+      const outcome = verifyImportedBindingClaim(claim, facts, edgeFile)
+      return { outcome, decls, kinds: kindText, verifiedBy: outcome === "bindingVerified" ? "importEvidence" : undefined }
+    }
     if (claim.kind === "cause") {
       // READ ONLY WHERE THE TARGET NAMES NOTHING — property 1 of `CAUSE_CLAIM_KEY`: a declared
       // cause can only re-label a gap, never turn one into a resolution, so this column cannot

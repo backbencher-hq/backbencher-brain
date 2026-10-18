@@ -1020,6 +1020,9 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     line: number | null
   }
   const pending: PendingEdge[] = []
+  /** file -> specifier -> local names bound, from the run's own IMPORT edges. The evidence the
+   *  imported-binding claim is verified against (charter §18.10). */
+  const importEvidence = new Map<string, Map<string, Map<string, Set<string>>>>()
   /** WHERE each declaration lives — see `classifyIntent`. Filled by `countKey` in both key spaces. */
   const declPos = new Map<string, { file: string; line: number }[]>()
 
@@ -1233,6 +1236,23 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // outcome travel with the edge; everything else (the counts, the marks, the name lists)
       // is written in the classification pass below, so no column can be filled from a
       // half-built key space even by accident.
+      // IMPORTED-BINDING EVIDENCE: the analyzer publishes, on every IMPORT edge, the local names
+      // that import binds (`metadata.importedBindings`). The arbiter verifies an `importedBinding`
+      // claim against THIS map, not against the use edge's own word.
+      if (label === "imports") {
+        const relMdEarly = (rel as any)?.metadata
+        const names = Array.isArray(relMdEarly?.importedBindings) ? relMdEarly.importedBindings : null
+        if (names) {
+          const repo = repoOf(f)
+          let byFile = importEvidence.get(repo)
+          if (!byFile) importEvidence.set(repo, (byFile = new Map()))
+          let bySpec = byFile.get(f)
+          if (!bySpec) byFile.set(f, (bySpec = new Map()))
+          let bindSet = bySpec.get(tgt)
+          if (!bindSet) bySpec.set(tgt, (bindSet = new Set()))
+          for (const nm of names) if (typeof nm === "string" && nm.length > 0) bindSet.add(nm)
+        }
+      }
       const edgeLine = Number((rel as any)?.line_number ?? (rel as any)?.lineNumber ?? (rel as any)?.line ?? 0) || null
       const ownerRaw = md.owner
       const owner = typeof ownerRaw === "string" && ownerRaw.length > 0 ? ownerRaw : null
@@ -1241,6 +1261,14 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     }
   }
 
+  // IMPORTED-BINDING EVIDENCE IS ATTACHED TO THE PROJECT FACTS the claims are verified against.
+  // Built from the run itself (the analyzer's parsed imports), never from the claim it verifies.
+  if (projectFacts) {
+    for (const [repo, byFile] of importEvidence) {
+      const base = projectFacts.get(repo)
+      if (base) projectFacts.set(repo, { ...base, importsByFile: byFile })
+    }
+  }
   // THE BINDING COLLAPSE, applied to the per-project count ONCE, here, where the key space is
   // complete — so `classifyEdge` and every downstream reader keep seeing a plain declaration count,
   // and no shared rule function changes. A key collapses to ONE declaration only when EVERY
@@ -1355,7 +1383,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       : undefined
     const pc = classifyEdge(
       projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares,
-      ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome },
+      ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, e.srcFile,
     )
     if (ownerVerdict !== undefined) {
       ownerRows++
@@ -1365,20 +1393,24 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // THE TWO CROSS-CHECKS THAT MAKE THIS DISCLOSURE WORTH HAVING: how many rows the channel moved
       // in each direction relative to the name model alone. Not used for any count in the table — a
       // diagnostic, so a reader can see the size of the correction instead of trusting that it is small.
-      const nameOnly = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares)
+      const nameOnly = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares, undefined, e.srcFile)
       if (ownerVerdict.outcome === "declined" && nameOnly.outcome === "resolved") ownerDeclinedButNameWouldResolve++
       if (ownerVerdict.outcome === "resolved" && (nameOnly.outcome === "ambBoth" || nameOnly.outcome === "ambDeclOnly" || nameOnly.outcome === "unresolved")) ownerResolvedButNameSaidAmbiguous++
     }
     if (BB_DUMP && pc.outcome !== "resolved" && bbDumped < BB_DUMP_LIMIT && (BB_DUMP_LABEL === "" || e.label === BB_DUMP_LABEL)) {
       bbDumped++
-      console.log(`DUMP\t${e.label}\t${pc.outcome}\t${e.tgt}\t${e.srcFile}:${e.line}\t${e.claim?.kind ?? "-"}`)
+      // THE 7TH COLUMN IS THE CLAIM'S OWN SPECIFIER (java lane's request, 2026-10-19): a lane could
+      // not name a residual class of ext? rows because the live claim's specifier was invisible; a
+      // dump that hides the claim turns a classifiable row into a mystery.
+      const claimSpec = e.claim && typeof (e.claim as any).specifier === "string" ? String((e.claim as any).specifier) : "-"
+      console.log(`DUMP\t${e.label}\t${pc.outcome}\t${e.tgt}\t${e.srcFile}:${e.line}\t${e.claim?.kind ?? "-"}\t${claimSpec}`)
     }
     tally(row.project, pc, e.tgt, e.label)
     row.intent[classifyIntent(e.tgt, e.srcFile, e.line, e.label, declPos)]++
     // The pooled table is the historical comparison key space, but the owner channel's verdict is a
     // property of the ROW, not of the key space — passing it here keeps the two tables from telling
     // different stories about the same edge.
-    tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, e.tgt, e.claim, facts, isContains, undefined, ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }), e.tgt, e.label)
+    tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, e.tgt, e.claim, facts, isContains, undefined, ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, e.srcFile), e.tgt, e.label)
     switch (pc.outcome) {
       case "resolved": marks.resolved++; break
       case "ambDeclOnly": case "ambBoth": marks.amb++; break
@@ -1640,6 +1672,35 @@ function selfTest(): { ok: boolean; failures: string[] } {
   // (Dart SDK annotation shape), and — the important one — an UNDECLARED root that must refute.
   if (externalClaimOf({ metadata: { [NAMESPACE_CLAIM_KEY]: ["java", "override"] } })?.kind !== "namespace") {
     failures.push("control: `languageNamespace` did not route to the namespace citation claim")
+  }
+  // IMPORTED-BINDING CLAIM (charter §18.10): verified from the RUN'S OWN import evidence, never from
+  // the use edge's word. Plants: a name the file's import binds (VERIFIED), a name it does not bind
+  // (REFUTED), a specifier the file does not import (REFUTED), another file's import (REFUTED), a
+  // name the key space declares (REFUTED — the claim is false there), and no facts (UNVERIFIED).
+  if (externalClaimOf({ metadata: { importedBinding: { specifier: "mod-x", binding: "foo" } } })?.kind !== "importedBinding") {
+    failures.push("control: `importedBinding` did not route to the imported-binding claim")
+  }
+  {
+    const impFacts: ProjectFacts = {
+      packages: new Set(),
+      files: new Set(["src/a.js"]),
+      sdkLib: false,
+      importsByFile: new Map([["src/a.js", new Map([["mod-x", new Set(["foo", "bar"])]])]]),
+    }
+    const impArms: Array<[string, string, string, Outcome, string]> = [
+      ["foo", "mod-x", "src/a.js", "bindingVerified", "a name the file's import binds verifies"],
+      ["baz", "mod-x", "src/a.js", "bindingRefuted", "a name the import does NOT bind refutes"],
+      ["foo", "mod-y", "src/a.js", "bindingRefuted", "a specifier the file does not import refutes"],
+      ["foo", "mod-x", "src/b.js", "bindingRefuted", "another file's import does not verify this one"],
+    ]
+    for (const [binding, specifier, file, want, why] of impArms) {
+      const c = classifyEdge(declCount, kinds, binding, { kind: "importedBinding", specifier, binding }, impFacts, undefined, undefined, undefined, file)
+      if (c.outcome !== want) failures.push(`control: imported binding ${binding} from ${specifier} in ${file} read ${c.outcome}, expected ${want} — ${why}`)
+    }
+    const cDeclared = classifyEdge(declCount, kinds, "alpha", { kind: "importedBinding", specifier: "mod-x", binding: "alpha" }, impFacts, undefined, undefined, undefined, "src/a.js")
+    if (cDeclared.outcome !== "bindingRefuted") failures.push("control: an imported-binding claim on a name the key space DECLARES must refute")
+    const cNoFacts = classifyEdge(declCount, kinds, "foo", { kind: "importedBinding", specifier: "mod-x", binding: "foo" }, undefined, undefined, undefined, undefined, "src/a.js")
+    if (cNoFacts.outcome !== "bindingUnverified") failures.push("control: an imported-binding claim with no import evidence must be UNVERIFIED")
   }
   {
     const citationClaim: ExternalClaim = { kind: "namespace", roots: ["java", "jakarta", "override"] }
