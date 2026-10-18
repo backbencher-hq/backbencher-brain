@@ -4085,9 +4085,99 @@ currentPackage,
           }
         }
       }
+      if (t === "lambda_expression") {
+        // A LAMBDA PARAMETER is a typed formal parameter and therefore one of the
+        // contract's four evidence classes. Its scope is the lambda node; the
+        // enclosing method's locals stay reachable because javaReceiverOwnerType
+        // searches EVERY covering method scope, innermost first, rather than only
+        // the innermost one.
+        const lambdaScope: JavaTypeScope = { start: n.startIndex, end: n.endIndex, members: new Map() }
+        const paramsNode = n.childForFieldName("parameters")
+        const paramChildren: any[] = paramsNode
+          ? (paramsNode.type === "identifier" ? [paramsNode] : Array.from({ length: paramsNode.namedChildCount }, (_: unknown, i: number) => paramsNode.namedChild(i)))
+          : []
+        for (const p of paramChildren) {
+          if (!p) continue
+          if (p.type !== "formal_parameter" && p.type !== "spread_parameter" && p.type !== "identifier") continue
+          const typeNode = p.type === "identifier" ? null : p.childForFieldName("type")
+          const nameNode = p.type === "identifier" ? p : (p.childForFieldName("name") || this.findChildByType(p, "identifier"))
+          const lambdaType = this.javaDeclaredTypeBaseName(typeNode)
+          if (lambdaType && nameNode) {
+            lambdaScope.members.set(nameNode.text, {
+              type: lambdaType, evidence: "param",
+              declStart: p.startIndex, scopeStart: lambdaScope.start, scopeEnd: lambdaScope.end,
+            })
+          }
+        }
+        index.methodScopes.push(lambdaScope)
+        nextMethod = lambdaScope
+      }
       if (t === "local_variable_declaration" && methodScope) {
         const scopeNode = block ?? (n.parent ?? n)
         this.addJavaDeclaredMembers(n, "local", methodScope, scopeNode)
+      }
+      if (methodScope && t === "catch_formal_parameter") {
+        // JLS 14.20: the caught variable is DECLARED with a type (a union type is
+        // multi-typed and is refused by javaDeclaredTypeBaseName, which is correct —
+        // the receiver's type would be a guess). Its scope is the catch clause.
+        const typeNode = n.childForFieldName("type") || this.findChildByType(n, "catch_type")
+        const nameNode = n.childForFieldName("name") || this.findChildByType(n, "identifier")
+        // The grammar gives a catch parameter a `catch_type` node, not a `type`
+        // field, and javaDeclaredTypeBaseName cannot reduce that node — so the
+        // caught variable's type is read with the type-NAME walk the declared_type
+        // emission already uses. A MULTI-CATCH (`catch (A | B e)`, JLS 14.20) is
+        // more than one name and is refused: the receiver's declared type would be
+        // a guess, and a wrong owner is worse than none.
+        const catchNames = typeNode && typeNode.type === "catch_type" ? this.collectJavaTypeNames(typeNode) : []
+        const catchType = catchNames.length === 1 ? catchNames[0].name : this.javaDeclaredTypeBaseName(typeNode)
+        if (catchType && nameNode) {
+          // The binding's scope is the CATCH CLAUSE (the parameter node itself ends
+          // before the body, so a call in the handler would fall outside it).
+          let catchScopeNode: Node = n
+          let catchClimb: Node | null = n.parent
+          let catchGuard = 0
+          while (catchClimb && catchGuard++ < 8) {
+            if (catchClimb.type === "catch_clause") { catchScopeNode = catchClimb; break }
+            catchClimb = catchClimb.parent
+          }
+          methodScope.members.set(nameNode.text, {
+            type: catchType, evidence: "local",
+            declStart: n.startIndex, scopeStart: catchScopeNode.startIndex, scopeEnd: catchScopeNode.endIndex,
+          })
+        }
+      }
+      if (methodScope && t === "enhanced_for_statement") {
+        // JLS 14.14.2: the enhanced-for variable carries a DECLARED type.
+        const typeNode = n.childForFieldName("type")
+        const nameNode = n.childForFieldName("name")
+        const forType = this.javaDeclaredTypeBaseName(typeNode)
+        if (forType && nameNode) {
+          methodScope.members.set(nameNode.text, {
+            type: forType, evidence: "local",
+            declStart: n.startIndex, scopeStart: n.startIndex, scopeEnd: n.endIndex,
+          })
+        }
+      }
+      if (methodScope && t === "resource") {
+        // JLS 14.20.3: a try-with-resources resource with a TYPE declares a variable.
+        // The second grammar shape (`existingVar = ...`) has no `type` field and
+        // therefore records nothing — it declares no type either.
+        const typeNode = n.childForFieldName("type")
+        const nameNode = n.childForFieldName("name") || this.findChildByType(n, "identifier")
+        const resType = this.javaDeclaredTypeBaseName(typeNode)
+        if (resType && nameNode) {
+          let scopeNode: Node = n
+          let climb: Node | null = n.parent
+          let guard = 0
+          while (climb && guard++ < 8) {
+            if (climb.type === "try_statement" || climb.type === "try_with_resources_statement") { scopeNode = climb; break }
+            climb = climb.parent
+          }
+          methodScope.members.set(nameNode.text, {
+            type: resType, evidence: "local",
+            declStart: n.startIndex, scopeStart: scopeNode.startIndex, scopeEnd: scopeNode.endIndex,
+          })
+        }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const child = n.namedChild(i)
@@ -4169,8 +4259,15 @@ currentPackage,
 
     if (objectNode.type === "identifier") {
       const name = objectNode.text
-      const methodScope = this.javaInnermostScope(index.methodScopes, pos)
-      if (methodScope) {
+      // Innermost method/lambda scope first, then every enclosing one: a lambda's
+      // typed parameter is the nearest binding, while a local of the ENCLOSING
+      // method is still visible inside the lambda and is stated by the same file.
+      const coveringMethods: JavaTypeScope[] = []
+      for (const scope of index.methodScopes) {
+        if (scope.start <= pos && pos <= scope.end) coveringMethods.push(scope)
+      }
+      coveringMethods.sort((a, b) => b.start - a.start)
+      for (const methodScope of coveringMethods) {
         const hit = methodScope.members.get(name)
         // A local may not be used before its declaration (JLS 6.3) and only inside
         // its block; a parameter's scope is the whole body.
