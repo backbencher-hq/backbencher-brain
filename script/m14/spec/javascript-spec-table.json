@@ -298,7 +298,35 @@
         "bindFAIL": 0,
         "bindingRefuted": 0
       },
-      "arm_progression": "7,137 verified + 245 refuted (cross-file rule, an arbiter error) -> after removal 24 refuted (default localName-declaration rule, also an arbiter error) -> both rules removed; cap-50 bindOK 1,332 / bindFAIL 0 / resolved 407; FINAL ARM expected bindOK ~510,791 (407,881 local + 95,528 imported + ~7,382 exportSurface), clause 4 0, arbitraryTwin 534,890 (fell 4) - Lead §18.17 is the number of record."
+      "arm_progression": "7,137 verified + 245 refuted (cross-file rule, an arbiter error) -> after removal 24 refuted (default localName-declaration rule, also an arbiter error) -> both rules removed; cap-50 bindOK 1,332 / bindFAIL 0 / resolved 407; FINAL ARM expected bindOK ~510,791 (407,881 local + 95,528 imported + ~7,382 exportSurface), clause 4 0, arbitraryTwin 534,890 (fell 4) - Lead §18.17 is the number of record.",
+      "final_arm": {
+        "source": "Lead §18.17 FINAL (commit 621c2ac91) — clause 4 GREEN",
+        "edges": 1467642,
+        "resolved": 134116,
+        "amb": 176120,
+        "unresolved": 515109,
+        "extOK": 104617,
+        "bindOK": 537680,
+        "bindFail": 0,
+        "extFail": 0,
+        "causeFail": 0,
+        "arbitraryTwin": 534890,
+        "bindOK_decomposition": {
+          "local_spelling": 407881,
+          "imported_target": 95528,
+          "export_surface": 7381,
+          "imported_receiver": 26890
+        },
+        "movement_vs_export_arm": {
+          "resolved": -2929,
+          "amb": -3770,
+          "unresolved": -20190,
+          "bindOK": 26890,
+          "closure": "2,929+3,770+20,190 = 26,889 + the recovered refuted row = 26,890"
+        },
+        "verified_class": "50.79% -> 51.27% (export) -> 52.90% (receiver); cumulative from §12's 22.0% -> 52.90%",
+        "clause4": "GREEN (bindFAIL 0)"
+      }
     },
     "module_exports": {
       "status": "ARBITER LANDED (same exportSurface kind); FILE-LOCAL DECLARATION GUARD shipped; FULL ARM: 7,137 verified / 245 refuted (all 245 decoys: the cross-file declaration rule was an arbiter error and is REMOVED - JS modules are file-scoped).",
@@ -355,21 +383,32 @@
       ],
       "value_rebind_excluded_note": "VALUE REBINDS (`exports = X`, `exports = function(){}`; forms exports-binding/exports-expression/module-exports-binding|expression) are NOT claimable: they replace the surface value and put no property named after the value on the export object. Measured instance: require.js:908 (`exports = factory`) was the FINAL ARM's one refuted row (bindFAIL 1, clause 4 failing by that row); fixed by the claimable-form gate, row now emits no markers; expected re-run 7,382 verified / bindFAIL 0 / bindOK 510,791.",
       "final_arm": {
-        "command": "Lead's final arm (charter §18.17 record)",
+        "source": "Lead §18.17 FINAL (commit 621c2ac91) — clause 4 GREEN",
         "edges": 1467642,
-        "resolved": 137045,
-        "amb": 179890,
-        "unresolved": 535299,
+        "resolved": 134116,
+        "amb": 176120,
+        "unresolved": 515109,
         "extOK": 104617,
-        "bindOK": 510790,
-        "exportSurfaceVerified": 7381,
-        "bindFAIL": 1,
-        "oneRefutedRow": "dart-sdk/third_party/requirejs/require.js:908 exports factory (moduleExports form exports-binding; value rebind -> claim semantically false; emission fixed)",
-        "expected_after_fix": {
-          "bindOK": 510791,
-          "exportSurfaceVerified": 7382,
-          "bindFAIL": 0
-        }
+        "bindOK": 537680,
+        "bindFail": 0,
+        "extFail": 0,
+        "causeFail": 0,
+        "arbitraryTwin": 534890,
+        "bindOK_decomposition": {
+          "local_spelling": 407881,
+          "imported_target": 95528,
+          "export_surface": 7381,
+          "imported_receiver": 26890
+        },
+        "movement_vs_export_arm": {
+          "resolved": -2929,
+          "amb": -3770,
+          "unresolved": -20190,
+          "bindOK": 26890,
+          "closure": "2,929+3,770+20,190 = 26,889 + the recovered refuted row = 26,890"
+        },
+        "verified_class": "50.79% -> 51.27% (export) -> 52.90% (receiver); cumulative from §12's 22.0% -> 52.90%",
+        "clause4": "GREEN (bindFAIL 0)"
       }
     },
     "receiver_position": {
@@ -404,7 +443,18 @@
       ],
       "fixture": "javascript/receiver-position-claims (5 positives / 5 negatives incl. RELATIVE receiver unmarked)",
       "expected_claimable_recomputed": "~26,000-27,400 after external-only exclusion (sample 839 external receiver claims per 400 files: x12374/400 ~25,950; ratio 839/2931 x 95,528 ~27,350); census 38,559 upper bound.",
-      "receiver_exclusion": "relative/absolute/workspace (and file:/link:/windows-absolute) specifiers excluded at emission - project-internal members are project-resolvable and a claim would launder a resolvable edge."
+      "receiver_exclusion": "relative/absolute/workspace (and file:/link:/windows-absolute) specifiers excluded at emission - project-internal members are project-resolvable and a claim would launder a resolvable edge.",
+      "final_arm": {
+        "source": "Lead §18.17 FINAL (commit 621c2ac91)",
+        "imported_receiver_verified": 26890,
+        "projection": "inside the recomputed ≈26,000–27,400",
+        "bindFail": 0,
+        "clause4": "GREEN",
+        "verified_class": "51.27% -> 52.90%",
+        "cumulative_class": "22.0% -> 52.90%",
+        "deferred": "project-relative receiver class — contingent on a future index-resolution arm, NOT this campaign phase",
+        "arbiter": "importedBinding kind + position discriminator ('target' | 'receiver'), evidence = the run's own file-import rows, receiver refutations (target===binding, non-name spelling); chain purity is the analyzer's emission duty"
+      }
     }
   }
 }
