@@ -5853,8 +5853,17 @@ class TypeScriptAnalysisRunner {
       // means we just entered one; siblings restore their own set via the
       // parameter (automatic on recursion return).
       if (currentSymbol && currentSymbol !== prevSymbol && (currentSymbol.kind === ASTEngine.SymbolKind.Function || currentSymbol.kind === ASTEngine.SymbolKind.Method)) {
-        locals = new Set()
-        refShadowed = new Set()
+        // LEXICAL SCOPE IS INHERITED, NOT RESET — a nested function reads its ENCLOSING function's
+        // locals, so those names must stay shadowed inside it. The first version reset both sets,
+        // and a nested `compileCode` read of the enclosing handler's `let lastSuccessfulCode`
+        // published a name-resolved `references` edge to a name that is not a file declaration at
+        // all (the differential classified it UNEXPLAINED, 196 rows over two draws). The enclosing
+        // PARAMETERS are carried into `refShadowed` for the same reason; they are deliberately not
+        // put in `locals`, because the template-interpolation emitter WANTS `uses` edges to
+        // parameters (interp-uses pins `greet -> name`).
+        locals = new Set(locals)
+        refShadowed = new Set(refShadowed)
+        for (const b of parameterNamesOf(prevSymbol)) refShadowed.add(b)
       }
 
       // M14 #419 T6: record destructuring bindings (object_pattern /
