@@ -8311,9 +8311,27 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           //
           // A local VARIABLE of the same name still shadows, via fnLocals at the read
           // site. Measured cost of the stale gate: 97 unexplained `uses` edges.
-          const isEnumeratorMember = n.parent?.type === "enumerator"
-            && n.parent?.parent?.type === "enumerator_list"
-            && n.parent?.parent?.parent?.type === "enum_specifier"
+          // AN ENUMERATOR IS AN ENUMERATOR EVEN INSIDE PREPROCESSOR WRAPPING. The direct
+          // enumerator->enumerator_list->enum_specifier chain fails for jq's function-local
+          // `enum { #ifdef … emin = … #endif }` (src/jv_dtoa.c:1629), where preproc_ifdef/preproc_else
+          // (and an ERROR from the missing-token recovery) sit BETWEEN the enumerator and its list —
+          // so `emin` was never admitted as a declared name and the read at :1858 produced a `uses`
+          // edge with no truth (1 unexplained row on the jq draw, exactly the row the lane named).
+          // Walk up through preprocessor wrappers to the list; a nearest declaration/function/
+          // translation-unit boundary means it is NOT an enumerator. The analyzer publishes these
+          // members owner-qualified whatever the enum sits inside (#961 contract), so the exclusion of
+          // function-local declarations does not apply to them — see the admission disjunct below.
+          const isEnumeratorMember = (() => {
+            if (n.parent?.type !== "enumerator") return false
+            let up: any = n.parent?.parent
+            for (let hops = 0; up && hops < 8; hops++) {
+              if (up.type === "enumerator_list") return up.parent?.type === "enum_specifier"
+              if (up.type === "enum_specifier") return false
+              if (up.type === "declaration" || up.type === "function_definition" || up.type === "translation_unit") return false
+              up = up.parent
+            }
+            return false
+          })()
           const isFileScopeEnumerator = isEnumeratorMember
             && !isFunctionLocal(n)
           const varDeclSuppressed = !fnNameDecl && !isFileScopeEnumerator && isSuppressedErrorDecl(n)
