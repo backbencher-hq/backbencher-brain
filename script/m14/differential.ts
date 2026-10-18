@@ -5659,6 +5659,101 @@ export function deriveJavaScriptExtends(root: any): { label: string; from: strin
   return edges
 }
 
+/**
+ * TYPESCRIPT RENDERS TRUTH (canonical vocabulary, 2026-10-18).
+ *
+ * The tsx analyzer emits `renders` for a JSX element whose opening tag is a capitalized component name
+ * (`identifier` or `nested_identifier` — `Foo.Bar` is one name here, and its first CHARACTER decides the
+ * component test, exactly the analyzer's rule). This oracle re-derives it from the language: one row per
+ * ELEMENT (a paired `<Panel>…</Panel>` is one render, taken at the jsx_element, never once per
+ * opening/closing tag), lowercase intrinsics / fragments / namespaced tags / strings silent. Written
+ * independently of the analyzer's own walk, so a match means two implementations agreed.
+ */
+export function deriveTypeScriptRendersTruth(root: any): { label: string; from: string; target: string }[] {
+  const out: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const st: any[] = [root]
+  while (st.length > 0) {
+    const n = st.pop()!
+    if (n.type === "jsx_element" || n.type === "jsx_self_closing_element") {
+      const opening = n.type === "jsx_self_closing_element" ? n : n.namedChild(0)
+      if (opening && (opening.type === "jsx_self_closing_element" || opening.type === "jsx_opening_element")) {
+        const id = opening.namedChild(0)
+        if (id && (id.type === "identifier" || id.type === "nested_identifier")) {
+          const t = String(id.text ?? "")
+          const c = t[0]
+          if (c && c === c.toUpperCase() && c !== c.toLowerCase() && !seen.has(t)) {
+            seen.add(t)
+            out.push({ label: "renders", from: "(expr)", target: t })
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) st.push(c)
+    }
+  }
+  return out
+}
+
+/** The decorator's NAME as the source writes it: `@sealed` -> "sealed", `@lib.inject` -> "lib.inject",
+ *  `@lib.inject(x)` -> "lib.inject". Re-derived from the grammar, not imported from the analyzer's
+ *  `extractDecoratorName` — sharing that helper would couple truth to the implementation under test. */
+function tsDecoratorNameTruth(dec: any): string {
+  const strip = (v: string) => (v.startsWith("@") ? v.slice(1) : v)
+  const first = dec.namedChild(0)
+  if (!first) return strip(String(dec.text ?? ""))
+  if (first.type === "identifier") return String(first.text ?? "")
+  if (first.type === "call_expression") {
+    const callee = first.namedChild(0)
+    if (callee) return String(callee.text ?? "")
+  }
+  if (first.type === "member_expression") return String(first.text ?? "")
+  return strip(String(first.text ?? ""))
+}
+
+/**
+ * TYPESCRIPT DECORATES TRUTH (canonical vocabulary, 2026-10-18). Source = the DECORATED declaration,
+ * target = the decorator's name. Derived from the declarations that PUBLISH A SYMBOL (a class, an
+ * abstract class, a class member, a class expression) plus the `export_statement` wrapper, which is
+ * where `@sealed export class A {}` puts the decorator. Parameter decorators emit nothing (parameters
+ * are not published symbols in this lane), and a decorator's ARGUMENTS are never rows.
+ */
+export function deriveTypeScriptDecoratorTruth(root: any): { label: string; from: string; target: string }[] {
+  const DECORATABLE = new Set([
+    "class_declaration", "abstract_class_declaration", "class",
+    "method_definition", "public_field_definition", "abstract_method_signature",
+  ])
+  const out: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (target: string) => {
+    if (!target || seen.has(target)) return
+    seen.add(target)
+    out.push({ label: "decorates", from: "(expr)", target })
+  }
+  const st: any[] = [root]
+  while (st.length > 0) {
+    const n = st.pop()!
+    if (DECORATABLE.has(n.type)) {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "decorator") push(tsDecoratorNameTruth(c))
+      }
+    } else if (n.type === "export_statement") {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "decorator") push(tsDecoratorNameTruth(c))
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) st.push(c)
+    }
+  }
+  return out
+}
+
 export function deriveJavaScriptEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -23604,6 +23699,16 @@ async function main() {
         for (const e of deriveTypeScriptEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // CANONICAL VOCABULARY (2026-10-18): the tsx analyzer publishes `renders` (capitalized JSX
+        // component elements) and `decorates` (decorator application on published declarations). Both
+        // are derived here from the language's own rules and admitted to the compared set below; one
+        // without the other is the two-sided failure this file records for c-imports #910 / groovy G7.
+        for (const e of deriveTypeScriptRendersTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveTypeScriptDecoratorTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "javascript") {
         // M37.21 #611: wire the dedicated JS calls oracle into the plain
@@ -24867,6 +24972,9 @@ async function main() {
           // dropped. A label in neither the oracle nor this list is the DERIVATION-debt shape this
           // file already records for imports/exports ("stored and compared against nothing").
           ...(lang === "javascript" ? ["decorates", "renders"] : []),
+          // TYPESCRIPT: its own decorates/renders derivation is pushed in the ts truth block; admit the
+          // labels or the oracle compares nothing (the mirror failure the same paragraph records).
+          ...(lang === "typescript" ? ["decorates", "renders"] : []),
           ...(lang === "javascript" ? ["contains", "exports", "references", "imports"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
