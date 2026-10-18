@@ -13,6 +13,31 @@
 - Language detection: extension `.dart` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealDartAnalyzer`
 
+### Canonical vocabulary + complete-surface update (2026-10-18)
+
+This document predates the owner ruling that made Dart's applicable surface "all out of all". The
+following deltas are COMMITTED CODE with fixtures and instruments; where the older tables below
+disagree with this block, this block is the current state and the older rows are history:
+
+| construct | now emits | pinned by |
+|---|---|---|
+| `with` mixin application (`extends A with M`, `class B with M`, `class C = Base with M1, M2`, enhanced enum `with`) | **`mixes_in`** (was `uses{isMixin:true}`), one row per mixin, `metadata.isMixin`, `evidenceClass: structural` | `validation/m14/fixtures/dart/mixes-in` |
+| mixin `on` constraint (`mixin M on Base`) | **`references{isMixinOn, typePosition: "mixin_on_clause"}`** (was `extends{isMixinOn}` — an `on` clause inherits nothing) | `dart/mixes-in` boundary 3 |
+| `part 'x.dart'` / `part of 'lib.dart'` / **named `part of my.lib;`** | **`part_of{partRole: "library"|"part", isNamedLibrary?}`** (was `imports{isPart,isPartOf}`; the named form emitted NOTHING); target is the resolved project-relative path, or the declared library NAME for the named form; an unresolvable specifier publishes no row | `dart/part-of-roles`, `dart/part-of-named`, `dart/part-of`; truth walk `script/m14/oracles/dart-part-of.ts` (+ 7-case contract check `script/m14/dart-part-of-verify.ts`, NOT yet admitted to the differential) |
+| every annotation (`@override`, `@JsonKey(...)`, `@TestOn() library x;`) | **`references{relationshipType:"annotation", isAnnotation:true, annotatedKind}`** from the annotated DECLARATION to the annotation TYPE; 16 probed positions incl. multi-declarator fields, parameters, locals, enum constants, top-level vars/functions, and the library annotation (a child of `library_name`) | `dart/annotation-references`, `dart/library-annotation`; independent oracle in `script/m14/oracles/dart-references.ts` + `script/m14/verify-dart-references.ts` cases |
+| constant-pattern tests (bare constant, `?`, `!`, relational, list/map/record collection forms) | **`uses{isConstantPattern, isPatternTest}`** (was silent unless the constant was declared in the same file) | `dart/constant-pattern-forms` (8 probed shapes) |
+| pattern bindings incl. `...rest` | binding-spelled `uses` — a binding is NOT a gap (DARTGAP1 convention); `rest_pattern` was a real missing edge and now binds | `dart/pattern-bindings` |
+| record literal / record type | RULED: a literal declares nothing (no symbol, no `contains`; reads already published); the typedef-containment half is DARTGAP3, BLOCKED on the paired `differential.ts` change | `dart/record-literal`; `script/m14/spec/dart-completeness.json` DARTGAP4 |
+| receiver ownership | **`metadata.owner`** (exact class-like type the receiver is statically known to have) + **`metadata.ownerEvidence` ∈ {param, field, annotation, assignment}** on `calls`/`uses` — the channel `src/ast/member-owner-resolution.ts` resolves through; additive, target spelling unchanged | `dart/receiver-owner-metadata`, `dart/catch-clause-types` |
+| typed catch clause (`on MyErr catch (e)`) | records the written exception type for every bound name, so `e.mark()` spells `MyErr.mark` instead of a bare leaf | `dart/catch-clause-types` |
+
+The pinned grammar has exactly ONE annotation node (`annotation`); references to `marker_annotation`
+elsewhere in this file are Java's node and are history. The relationship counts in the tables below
+were measured before this wave and are NOT updated by it; the current cap-50 baseline and the
+per-type cause classification live in `validation/m14/verification/DART-RESOLUTION-CLASSIFICATION.md`
+and `DART-APPLICABLE-SET.md`.
+
+
 ## Symbol contract
 
 | Field | Supported? | How extracted (AST node/field) |
@@ -23,10 +48,10 @@
 | range (start/end line + column) | ✅ | `node.startPosition`/`endPosition` via `nodeToRange`; methods extend to the sibling `function_body` |
 | parameters | ✅ | `formal_parameter_list` → `formal_parameter`/`optional_formal_parameter`/`named_formal_parameter`/`default_formal_parameter`/`constructor_param` (`this.x` → `x`) — recorded, never symbols |
 | returnType | ✅ | `return_type` field / `void_type` / first `type_identifier` before the name field (`Future<void>` → `Future`) |
-| documentation/comments | ✅ | preceding `documentation_comment`/`comment` nodes, skipping `annotation`/`marker_annotation` siblings between the doc comment and the declaration; markers stripped via pure-String helpers |
+| documentation/comments | ✅ | preceding `documentation_comment`/`comment` nodes, skipping `annotation` siblings between the doc comment and the declaration (the pinned grammar has no `marker_annotation` — that node is Java's); markers stripped via pure-String helpers |
 | complexity metrics | ✅ | `complexity` on methods/functions (branching nodes counted iteratively) |
 | syntax errors | ✅ | ERROR/missing nodes surfaced by the engine pipeline; reported as `parseErrors` in the differential |
-| decorators/attributes | ✅ | `annotation`/`marker_annotation` siblings → `decorators` metadata |
+| decorators/attributes | ✅ | `annotation` nodes → `decorators` payload metadata, AND a `references{isAnnotation}` relationship to the annotation type (three positions: child of the declaration, sibling inside `class_body`/`program`, child of `library_name`) |
 | generics | ✅ | `type_parameters` on classes → `genericParameters` metadata; `List<int>`, `Map<String, int>.from` parsed via `type_arguments`/`constructor_invocation` |
 
 ## Relationship ontology
@@ -58,12 +83,12 @@ so the loss is a failed parse inside the WASM parser, not arithmetic in the cens
 | Relationship type | Emitted? | What it means in Dart | How resolved | Count (2,735 files) | BEFORE | Confidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | calls | ✅ | an EXPRESSION was invoked | `selector` + `argument_part` → leaf callee (selector chains reduce to the last identifier: `obj.method()` → `method`; `Future.delayed(...)` → `delayed`); source = enclosing function/method/constructor leaf name (derived from the signature that precedes the `function_body` sibling); cascade calls (`..increment()`) → cascade selector leaf; global builtins filtered (`print`, `assert`, `identical`); Object-leaf methods filtered (`toString`, `hashCode`, `runtimeType`, `noSuchMethod`) | 43,042 | 43,044 (−2, R7 rows) | 0.9 |
-| uses | ✅ | a VALUE was read — four distinct surfaces, not one | (1) MIXIN — `mixins` child → each `type_identifier`, 1.0. (2) FIELD / MEMBER READ — a `selector` WITHOUT its own `argument_part` (`obj.method` tear-off, `this.count`, `C.total`, `a?.value`), 0.9; a CALLED member is a `calls` edge, not a field read. A `qualified` name under a `constant_pattern` (`case WalletOperationType.recipientLookup:`) is the SAME read parsed the other way round and is read too, 0.9, `isConstantPattern`. (3) BARE IDENTIFIER — `return count;` on a declared member of the enclosing type, gated on resolution AND on the name not being locally bound, 0.6, `isBareRead`. (4) TEMPLATE INTERPOLATION — each identifier in `${…}`, 0.9, `isLocalRead`; a local DECLARATOR suppresses it, a PARAMETER does not | 110,679 | 110,762 (−83, R7 rows) | 0.6–1.0 by surface |
+| uses | ✅ | a VALUE was read — distinct surfaces, not one | (1) MIXIN — moved to the canonical `mixes_in` label 2026-10-18 (was `mixins` child → each `type_identifier`, 1.0 here). (2) FIELD / MEMBER READ — a `selector` WITHOUT its own `argument_part` (`obj.method` tear-off, `this.count`, `C.total`, `a?.value`), 0.9; a CALLED member is a `calls` edge, not a field read. A `qualified` name under a `constant_pattern` (`case WalletOperationType.recipientLookup:`) is the SAME read parsed the other way round and is read too, 0.9, `isConstantPattern`. (3) BARE IDENTIFIER — `return count;` on a declared member of the enclosing type, gated on resolution AND on the name not being locally bound, 0.6, `isBareRead`. (4) TEMPLATE INTERPOLATION — each identifier in `${…}`, 0.9, `isLocalRead`; a local DECLARATOR suppresses it, a PARAMETER does not | 110,679 | 110,762 (−83, R7 rows) | 0.6–1.0 by surface |
 | contains | ✅ | a declaration is a member of a container | computed from `ownerName` on symbols (single pass) — class/mixin/extension/enum members | 119,515 | 119,534 (−19, R7 rows) | 1.0 |
-| imports | ✅ | this file REACHES FOR a module | `import_specification` / `part_directive` → module leaf → `${uri}:*` | 10,657 | 10,657 | 1.0 |
+| imports | ✅ | this file REACHES FOR a module | `import_specification` → the project-relative FILE path the specifier names when the checkout can answer, else `${uri}:*` (pre-2026-10-18 count: 10,657; `part`/`part of` directives moved to `part_of`) | 10,657 | 10,657 | 1.0 |
 | references | ✅ **(new)** | this declaration NAMES A TYPE in a type position | every `type_identifier` outside the positions another label already publishes, gated on the name binding to a type this run can see — same file always, `projectIndex.typeKinds` when an index is supplied | **5,265** | **0** | 0.95, `isTypeMention` + `typePosition` + `isIndexResolved` |
 | exports | ✅ | this library PUBLISHES a module | `library_export` → module leaf → exported uri | 302 | 302 | 1.0 |
-| extends | ✅ | a type INHERITS a base type | `superclass` → first `type_identifier`; a mixin `on`-base is the same edge (DARTD14) | 4,730 | 4,730 | 1.0 |
+| extends | ✅ | a type INHERITS a base type | `superclass` → first `type_identifier` (a mixin `on`-base is `references{isMixinOn}` since 2026-10-18, NOT this edge) | 4,730 | 4,730 | 1.0 |
 | implements | ✅ | a type SATISFIES an interface | `interfaces` → each `type_identifier` | 758 | 758 | 1.0 |
 | overrides | ✅ | a member REPLACES one it inherits | derived method matching base-class method name; base resolved via extends + the cross-file companion | 90,352 | 90,352 | 0.8 |
 | instantiates | ✅ | an object of a type was CONSTRUCTED | capitalized identifier + `argument_part` selector (Dart has no `new`: `Counter(1)` → instantiates Counter — types are capitalized); `constructor_invocation` (`List<int>.filled(...)`) → the constructed `type_identifier`; redirecting factory (`factory X.y() = X.z;`) → the redirect target type | 18,374 | 18,374 | 0.95 |
