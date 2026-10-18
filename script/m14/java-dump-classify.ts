@@ -15,8 +15,9 @@
  * HOW TO PRODUCE THE INPUT (and the command a reader must run to reproduce every number here):
  *
  *   export BB_CORPUS_ROOT=$PWD/.corpus
- *   BB_DUMP_LIMIT=100000 bun run script/m14/incoming-gate.ts java java 50 --dump > dump.txt
+ *   BB_DUMP_LIMIT=3000000 bun run script/m14/incoming-gate.ts java java 0 --dump > dump.txt
  *
+ * (a cap-50 dump works identically for the triage table: `... java java 50 --dump`.)
  * The gate dumps one TSV line per NON-RESOLVED edge:
  *   DUMP <label> <outcome> <target> <srcFile>:<line> <claimKind-or-->
  * and the same stdout carries TABLE 1. This classifier PARSES TABLE 1 OUT OF THE SAME FILE and
@@ -25,19 +26,26 @@
  *     dumped rows of type == edges - resolved
  *     dumped unresolved  == TABLE 1 unresolved
  *     dumped ambiguous   == TABLE 1 amb(decl)
- *     dumped external    == TABLE 1 extOK + ext?
+ *     dumped external rows == TABLE 1 extOK + ext? + extFAIL
  *
  * A `BB_DUMP_LIMIT` smaller than the population truncates the dump, every one of those checks fails,
  * and this instrument exits 3 instead of printing a family table over a cut population. That is the
  * control: it can fail, and it fails on the exact defect (a bound applied before a filter) that the
- * gate's own header names.
+ * gate's own header names. A whole-population dump is ~1M rows / ~200 MB, so the file is STREAMED
+ * (readline) and the aggregates are bounded — the dump rows precede TABLE 1 in the gate's output,
+ * so the table is filled in the same single pass and the control runs after it.
  *
  * WHAT A FAMILY IS. Each family is decided by the TARGET'S SPELLING alone, because that is what the
  * gate prints and therefore what can be counted without re-parsing the corpus. Its interpretive
- * limit is stated beside it: `type-shaped` is "a bare Capitalised name the sampled key space does
- * not declare", which at a SAMPLE is either an out-of-sample project type or a library type, and no
- * spelling can tell those apart. Families are for ordering work, and the whole-population gate run
- * is what turns them into resolutions.
+ * limit is stated beside it: `type-shaped` is "a bare Capitalised name the run's key space does not
+ * declare", which is either an out-of-sample project type (at a SAMPLE) or a library type (at WHOLE
+ * population) and no spelling can tell those apart by itself — the population size does. Families
+ * are for ordering work; the whole-population gate is what turns them into resolutions.
+ *
+ * THE CLAIM COLUMN IS CLASSIFIED TOO, because the owner's D3 bar requires every ext? (a claim no
+ * check can reach) to be a NAMED cause: for every external outcome the dump's claim-kind column is
+ * tallied beside the target family, so "12,231 ext?" becomes "N owner claims on dotted module paths,
+ * M namespace claims on bare names, …".
  *
  * THE ONE LIST THIS FILE READS FROM ELSEWHERE. `java-lang-name` needs the JDK `java.lang` closed
  * vocabulary, which lives as `JAVA_LANG_TYPES` in the analyzer itself. It is EXTRACTED from that
@@ -51,8 +59,9 @@
  * EXIT: 0 classified · 2 environment/usage (no dump, unreadable) · 3 CONTROL DID NOT FIRE — the dump
  *       is not the population TABLE 1 describes (truncated dump, or a schema change in the gate).
  */
-import { readFileSync } from "node:fs"
+import { createReadStream, readFileSync } from "node:fs"
 import * as path from "node:path"
+import { createInterface } from "node:readline"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
 const ANALYZER = path.join(ROOT, "src/ast/real-java-analyzer.ts")
@@ -64,46 +73,17 @@ if (!FILE) {
   process.exit(2)
 }
 
-// ── TABLE 1, parsed out of the gate's own report ────────────────────────────────────────────────
 const ALL_TYPES = [
   "calls", "uses", "contains", "imports", "references",
   "exports", "extends", "implements", "overrides", "instantiates",
+  "decorates", "renders", "mixes_in", "part_of",
 ] as const
 type Type = (typeof ALL_TYPES)[number]
+const KNOWN_TYPES = new Set<string>(ALL_TYPES)
 
 type Table1 = {
   edges: number; resolved: number; ambDecl: number; unresolved: number
   extOK: number; extUnknown: number; extFAIL: number
-}
-let raw: string
-try {
-  raw = readFileSync(FILE, "utf8")
-} catch (e) {
-  console.error(`cannot read dump file ${FILE}: ${(e as Error).message}`)
-  process.exit(2)
-}
-
-const table1 = new Map<Type, Table1>()
-let inTable = false
-for (const line of raw.split("\n")) {
-  if (line.startsWith("TABLE 1")) { inTable = true; continue }
-  if (!inTable) continue
-  if (line.startsWith("-----")) continue
-  const cols = line.trim().split(/\s+/)
-  if (cols.length < 8) continue
-  const t = cols[0]
-  if (!(ALL_TYPES as readonly string[]).includes(t)) continue
-  // type edges resolved collRes amb(decl) amb(kind) unresolved extOK ext? extFAIL ...
-  table1.set(t as Type, {
-    edges: Number(cols[1]), resolved: Number(cols[2]), ambDecl: Number(cols[4]),
-    unresolved: Number(cols[6]), extOK: Number(cols[7]), extUnknown: Number(cols[8]),
-    extFAIL: Number(cols[9]),
-  })
-}
-if (table1.size !== ALL_TYPES.length) {
-  console.error(`CONTROL DID NOT FIRE: parsed ${table1.size} of ${ALL_TYPES.length} rows of TABLE 1 from ${FILE}.`)
-  console.error("The dump file must be the gate's full stdout (table + DUMP rows).")
-  process.exit(3)
 }
 
 // ── the java.lang closed vocabulary, extracted from the analyzer's own source ────────────────────
@@ -113,45 +93,11 @@ const analyzerSrc = (() => {
 const JAVA_LANG: Set<string> = (() => {
   const m = analyzerSrc.match(/const JAVA_LANG_TYPES: ReadonlySet<string> = new Set\(\[([\s\S]*?)\]\)/)
   if (!m) return new Set()
-  const names = [...m[1].matchAll(/"([A-Za-z0-9_$]+)"/g)].map((x) => x[1])
-  return new Set(names)
+  return new Set([...m[1].matchAll(/"([A-Za-z0-9_$]+)"/g)].map((x) => x[1]))
 })()
 if (JAVA_LANG.size < 100) {
   console.error(`CONTROL DID NOT FIRE: extracted ${JAVA_LANG.size} java.lang names from ${ANALYZER}.`)
   console.error("Expected the lane's 137-name JAVA_LANG_TYPES set; the extraction is stale, refusing to classify.")
-  process.exit(3)
-}
-
-// ── the dump rows ───────────────────────────────────────────────────────────────────────────────
-type Row = { label: Type; outcome: string; target: string; site: string; claim: string }
-const rows: Row[] = []
-for (const line of raw.split("\n")) {
-  if (!line.startsWith("DUMP\t")) continue
-  const p = line.split("\t")
-  if (p.length < 6) continue
-  rows.push({ label: p[1] as Type, outcome: p[2], target: p[3], site: p[4], claim: p[5] })
-}
-
-// ── THE CONTROL: the dump must be the population TABLE 1 describes ─────────────────────────────
-const isAmb = (o: string) => o === "ambDeclOnly" || o === "ambiguousByDecl" || o === "ambBoth" || o === "ambiguous"
-const isExt = (o: string) => o === "externalVerified" || o === "externalUnverified" || o === "externalRefuted"
-const failures: string[] = []
-for (const t of ALL_TYPES) {
-  const tc = table1.get(t)!
-  const mine = rows.filter((r) => r.label === t)
-  const nonResolved = tc.edges - tc.resolved
-  const unres = mine.filter((r) => !isAmb(r.outcome) && !isExt(r.outcome)).length
-  const amb = mine.filter((r) => isAmb(r.outcome)).length
-  const ext = mine.filter((r) => isExt(r.outcome)).length
-  if (mine.length !== nonResolved) failures.push(`${t}: dumped ${mine.length} rows, TABLE 1 non-resolved = edges ${tc.edges} - resolved ${tc.resolved} = ${nonResolved}`)
-  if (unres !== tc.unresolved) failures.push(`${t}: dumped unresolved ${unres} != TABLE 1 ${tc.unresolved}`)
-  if (amb !== tc.ambDecl) failures.push(`${t}: dumped ambiguous ${amb} != TABLE 1 amb(decl) ${tc.ambDecl}`)
-  if (ext !== tc.extOK + tc.extUnknown) failures.push(`${t}: dumped external ${ext} != TABLE 1 extOK+ext? = ${tc.extOK + tc.extUnknown}`)
-}
-if (failures.length > 0) {
-  console.error("CONTROL DID NOT FIRE: the dump is not the population TABLE 1 describes.")
-  for (const f of failures.slice(0, 20)) console.error("  " + f)
-  console.error(`${failures.length} mismatch(es) — a truncated dump (BB_DUMP_LIMIT too small) prints a family table over a cut population and this instrument refuses to.`)
   process.exit(3)
 }
 
@@ -166,8 +112,8 @@ function family(t: string): string {
   if (s.length === 0) return "empty"
   if (RESERVED.has(s)) return "keyword-spelled"
   if (/[/\\]/.test(s) || /^[A-Za-z]:/.test(s)) return "path-shaped"
-  if (JVM_ROOT.test(s)) return "platform-qualified"
   if (s.includes(":")) return "module-qualified"
+  if (JVM_ROOT.test(s)) return "platform-qualified"
   if (!s.includes(".")) {
     // ALL_CAPS is tested BEFORE the Capitalised test: `FILL_HORIZONTAL` matches both character
     // classes, and a constant read counted as a type name would put a receiver-less field read in
@@ -183,82 +129,157 @@ function family(t: string): string {
   }
   const segs = s.split(".")
   const last = segs[segs.length - 1]
-  const first = segs[0]
   if (/^[A-Z][A-Za-z0-9_$]*$/.test(last)) return "dotted-type"
   if (/^[A-Z][A-Z0-9_$]*$/.test(last)) return "dotted-constant"
-  if (/^[a-z_$][A-Za-z0-9_$]*$/.test(last)) {
-    if (JVM_ROOT.test(s) || /^(org|com|net|io|edu|gov)\./.test(first)) return "dotted-member-path"
-    return "dotted-member-path"
-  }
+  if (/^[a-z_$][A-Za-z0-9_$]*$/.test(last)) return "dotted-member-path"
   return "other"
 }
 
-const key = (t: Type, outcome: "unresolved" | "ambiguous") => `${t}\u0000${outcome}`
-const fam = new Map<string, { occurrences: number; names: Map<string, number> }>()
-for (const r of rows) {
-  const outcome = isAmb(r.outcome) ? "ambiguous" : isExt(r.outcome) ? null : "unresolved"
-  if (outcome === null) continue
-  let f = family(r.target)
-  // A `calls`/`overrides` target IS a member leaf by construction (the analyzer publishes
-  // `callExpression.split(".").pop()`), so a Capitalised one is a PascalCase METHOD name
-  // (`GetDC()` in JNA code), not a type reference. Spelling alone cannot say that; the label can.
-  if ((r.label === "calls" || r.label === "overrides") && (f === "type-shaped" || f === "java-lang-name")) f = "member-leaf-pascal"
-  const k = key(r.label, outcome) + "\u0000" + f
-  const cur = fam.get(k) ?? { occurrences: 0, names: new Map() }
-  cur.occurrences++
-  cur.names.set(r.target, (cur.names.get(r.target) ?? 0) + 1)
-  fam.set(k, cur)
+/** A bucket aggregate. Names are kept bounded per bucket so a whole-population dump (1M rows,
+ *  hundreds of thousands of distinct targets) does not grow memory without bound: the top 8 by
+ *  occurrence are enough to make a bucket walkable in the report, and the FULL distinct-name count
+ *  is kept separately as a number. */
+type Fam = { occurrences: number; names: Map<string, number>; distinct: number }
+const mkFam = (): Fam => ({ occurrences: 0, names: new Map(), distinct: 0 })
+function addTo(m: Map<string, Fam>, key: string, name: string): void {
+  let f = m.get(key)
+  if (!f) { f = mkFam(); m.set(key, f) }
+  f.occurrences++
+  if (!f.names.has(name)) {
+    f.distinct++
+    if (f.names.size < 8) f.names.set(name, 0)
+  }
+  const c = f.names.get(name)
+  if (c !== undefined) f.names.set(name, c + 1)
 }
 
-// claim-bearing non-resolved rows (the "own column" of declared claims), by type and claim kind
-const claims = new Map<string, number>()
-for (const r of rows) {
-  if (r.claim === "-") continue
-  const k = `${r.label}\u0000${r.outcome}\u0000${r.claim}`
-  claims.set(k, (claims.get(k) ?? 0) + 1)
+const isAmb = (o: string) => o === "ambDeclOnly" || o === "ambBoth" || o === "ambiguous"
+const isExt = (o: string) => o === "externalVerified" || o === "externalUnverified" || o === "externalRefuted"
+
+// Aggregates filled in ONE streaming pass (the dump rows come before TABLE 1 in the gate's output).
+const fam = new Map<string, Fam>()                 // `${type}|${outcome}|${family}`
+const claims = new Map<string, Fam>()              // `${type}|${outcome}|${claimKind}` for external rows
+const rowCount = new Map<string, { total: number; unresolved: number; amb: number; ext: number; extFAIL: number }>()
+for (const t of ALL_TYPES) rowCount.set(t, { total: 0, unresolved: 0, amb: 0, ext: 0, extFAIL: 0 })
+
+const table1 = new Map<Type, Table1>()
+{
+  const rl = createInterface({ input: createReadStream(FILE, { encoding: "utf8" }), crlfDelay: Infinity })
+  let inTable = false
+  for await (const line of rl) {
+    if (line.startsWith("TABLE 1")) { inTable = true; continue }
+    if (inTable) {
+      if (line.startsWith("-----")) continue
+      const cols = line.trim().split(/\s+/)
+      if (cols.length >= 8 && KNOWN_TYPES.has(cols[0])) {
+        table1.set(cols[0] as Type, {
+          edges: Number(cols[1]), resolved: Number(cols[2]), ambDecl: Number(cols[4]),
+          unresolved: Number(cols[6]), extOK: Number(cols[7]), extUnknown: Number(cols[8]),
+          extFAIL: Number(cols[9]),
+        })
+      } else if (line.startsWith("TOTAL")) {
+        inTable = false
+      }
+      continue
+    }
+    if (!line.startsWith("DUMP\t")) continue
+    const p = line.split("\t")
+    if (p.length < 6) continue
+    const type = p[1]
+    if (!KNOWN_TYPES.has(type)) continue
+    const outcome = p[2]
+    const target = p[3]
+    const claim = p[5]
+    const rc = rowCount.get(type)!
+    rc.total++
+    // EXTERNAL ROWS ARE KEYED BY THEIR EXACT OUTCOME, not one `external` bucket: the owner's D3
+    // bar requires every ext? (externalUnverified) to be a NAMED cause, and a verified claim and an
+    // unverifiable one are different facts about different verification mechanisms.
+    let outcomeClass: string = "other"
+    if (isAmb(outcome)) { outcomeClass = "ambiguous"; rc.amb++ }
+    else if (isExt(outcome)) { outcomeClass = outcome; rc.ext++; if (outcome === "externalRefuted") rc.extFAIL++ }
+    else if (outcome === "unresolved") { outcomeClass = "unresolved"; rc.unresolved++ }
+    if (outcomeClass === "other") continue
+    let f = family(target)
+    // A `calls`/`overrides` target IS a member leaf by construction (the analyzer publishes
+    // `callExpression.split(".").pop()`), so a Capitalised one is a PascalCase METHOD name
+    // (`GetDC()` in JNA code), not a type reference. Spelling alone cannot say that; the label can.
+    if ((type === "calls" || type === "overrides") && (f === "type-shaped" || f === "java-lang-name")) f = "member-leaf-pascal"
+    addTo(fam, `${type}\u0000${outcomeClass}\u0000${f}`, target)
+    if (isExt(outcome)) addTo(claims, `${type}\u0000${outcome}\u0000${claim}`, target)
+  }
 }
 
-const famRows: { type: string; outcome: string; family: string; occurrences: number; distinct: number; examples: string[] }[] = []
-for (const [k, v] of fam) {
-  const [t, outcome, f] = k.split("\u0000")
-  const names = [...v.names.entries()].sort((a, b) => b[1] - a[1])
-  famRows.push({ type: t, outcome, family: f, occurrences: v.occurrences, distinct: v.names.size, examples: names.slice(0, 6).map(([n, c]) => `${n}(${c})`) })
+// ── THE CONTROL: the dump must be the population TABLE 1 describes ─────────────────────────────
+if (table1.size < 10) {
+  console.error(`CONTROL DID NOT FIRE: parsed ${table1.size} rows of TABLE 1 from ${FILE}.`)
+  console.error("The dump file must be the gate's full stdout (table + DUMP rows).")
+  process.exit(3)
 }
-famRows.sort((a, b) => (a.type === b.type ? (a.outcome === b.outcome ? b.occurrences - a.occurrences : a.outcome < b.outcome ? -1 : 1) : ALL_TYPES.indexOf(a.type as Type) - ALL_TYPES.indexOf(b.type as Type)))
+const failures: string[] = []
+for (const t of ALL_TYPES) {
+  const tc = table1.get(t)
+  if (!tc) continue // a type the gate's table does not carry at all (not printed) is not comparable
+  const mine = rowCount.get(t)!
+  const nonResolved = tc.edges - tc.resolved
+  if (mine.total !== nonResolved) failures.push(`${t}: dumped ${mine.total} rows, TABLE 1 non-resolved = edges ${tc.edges} - resolved ${tc.resolved} = ${nonResolved}`)
+  if (mine.unresolved !== tc.unresolved) failures.push(`${t}: dumped unresolved ${mine.unresolved} != TABLE 1 ${tc.unresolved}`)
+  if (mine.amb !== tc.ambDecl) failures.push(`${t}: dumped ambiguous ${mine.amb} != TABLE 1 amb(decl) ${tc.ambDecl}`)
+  if (mine.ext !== tc.extOK + tc.extUnknown + tc.extFAIL) failures.push(`${t}: dumped external ${mine.ext} != TABLE 1 extOK+ext?+extFAIL = ${tc.extOK + tc.extUnknown + tc.extFAIL}`)
+}
+if (failures.length > 0) {
+  console.error("CONTROL DID NOT FIRE: the dump is not the population TABLE 1 describes.")
+  for (const f of failures.slice(0, 20)) console.error("  " + f)
+  console.error(`${failures.length} mismatch(es) — a truncated dump (BB_DUMP_LIMIT too small) prints a family table over a cut population and this instrument refuses to.`)
+  process.exit(3)
+}
+
+const sortedFams = (m: Map<string, Fam>) => [...m.entries()].sort((a, b) => b[1].occurrences - a[1].occurrences)
 
 if (JSON_OUT) {
-  console.log(JSON.stringify({
+  const out: any = {
     input: path.relative(ROOT, path.resolve(FILE)),
     control: { ok: true, dumpIsPopulationOfTable1: true },
     table1: Object.fromEntries([...table1.entries()]),
-    families: famRows,
-    claimBearing: Object.fromEntries([...claims.entries()].sort()),
-  }, null, 2))
+    families: sortedFams(fam).map(([k, v]) => {
+      const [type, outcome, f] = k.split("\u0000")
+      return { type, outcome, family: f, occurrences: v.occurrences, distinct: v.distinct, top: [...v.names.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8) }
+    }),
+    externalClaims: sortedFams(claims).map(([k, v]) => {
+      const [type, outcome, claimKind] = k.split("\u0000")
+      return { type, outcome, claimKind, occurrences: v.occurrences, distinct: v.distinct }
+    }),
+  }
+  console.log(JSON.stringify(out, null, 2))
 } else {
-  const tot = (o: string) => famRows.filter((r) => r.outcome === o).reduce((n, r) => n + r.occurrences, 0)
+  const tot = (o: string) => sortedFams(fam).filter(([k]) => k.split("\u0000")[1] === o).reduce((n, [, v]) => n + v.occurrences, 0)
   console.log(`java dump classifier — input ${path.relative(ROOT, path.resolve(FILE))}`)
-  console.log(`control: PASS — every per-type dumped count equals TABLE 1 (edges-resolved, unresolved, amb(decl), extOK+ext?)`)
-  console.log(`rows classified: ${rows.length} non-resolved edges (unresolved ${tot("unresolved")} · ambiguous ${tot("ambiguous")})`)
+  console.log(`control: PASS — every per-type dumped count equals TABLE 1 (edges-resolved, unresolved, amb(decl), external incl. refuted)`)
+  console.log(`rows classified: unresolved ${tot("unresolved")} · ambiguous ${tot("ambiguous")} · external ${tot("external")}`)
   console.log()
   for (const t of ALL_TYPES) {
-    const mine = famRows.filter((r) => r.type === t)
+    const mine = sortedFams(fam).filter(([k]) => k.split("\u0000")[0] === t)
     if (mine.length === 0) continue
-    const tc = table1.get(t)!
-    console.log(`${t} — ${tc.edges} edges · resolved ${tc.resolved} · amb(decl) ${tc.ambDecl} · unresolved ${tc.unresolved} · extOK ${tc.extOK} · ext? ${tc.extUnknown} · extFAIL ${tc.extFAIL}`)
-    for (const outcome of ["unresolved", "ambiguous"]) {
-      const rs = mine.filter((r) => r.outcome === outcome)
+    const tc = table1.get(t)
+    console.log(`${t} — ${tc?.edges ?? "?"} edges · resolved ${tc?.resolved ?? "?"} · amb(decl) ${tc?.ambDecl ?? "?"} · unresolved ${tc?.unresolved ?? "?"} · extOK ${tc?.extOK ?? "?"} · ext? ${tc?.extUnknown ?? "?"} · extFAIL ${tc?.extFAIL ?? "?"}`)
+    for (const outcome of ["unresolved", "ambiguous", "externalVerified", "externalUnverified", "externalRefuted"]) {
+      const rs = mine.filter(([k]) => k.split("\u0000")[1] === outcome)
       if (rs.length === 0) continue
       console.log(`  ${outcome}`)
-      for (const r of rs) console.log(`    ${String(r.occurrences).padStart(6)}  ${r.family.padEnd(20)} ${String(r.distinct).padStart(5)} names  e.g. ${r.examples.join(", ")}`)
+      for (const [k, v] of rs) {
+        const f = k.split("\u0000")[2]
+        const top = [...v.names.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([n, c]) => `${n}(${c})`).join(", ")
+        console.log(`    ${String(v.occurrences).padStart(7)}  ${f.padEnd(20)} ${String(v.distinct).padStart(6)} names  e.g. ${top}`)
+      }
     }
   }
   console.log()
-  console.log("CLAIM-BEARING NON-RESOLVED ROWS (the declared-claim column, never merged into resolved)")
-  console.log("-".repeat(78))
-  const claimKeys = [...claims.entries()].sort((a, b) => b[1] - a[1])
-  if (claimKeys.length === 0) console.log("  (none — every non-resolved edge carries no claim)")
-  for (const [k, n] of claimKeys) {
-    const [t, outcome, kind] = k.split("\u0000")
-    console.log(`  ${String(n).padStart(6)}  ${t.padEnd(13)} ${outcome.padEnd(20)} claim.kind=${kind}`)
+  console.log("EXTERNAL-CLAIM CAUSES (type | outcome | claim kind — the named class an ext? belongs to)")
+  console.log("-".repeat(86))
+  const cs = sortedFams(claims)
+  if (cs.length === 0) console.log("  (none — no non-resolved edge carries a claim)")
+  for (const [k, v] of cs) {
+    const [type, outcome, kind] = k.split("\u0000")
+    console.log(`  ${String(v.occurrences).padStart(7)}  ${type.padEnd(13)} ${outcome.padEnd(22)} claim.kind=${kind.padEnd(18)} ${v.distinct} distinct target(s)`)
   }
 }
