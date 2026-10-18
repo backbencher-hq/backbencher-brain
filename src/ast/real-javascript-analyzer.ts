@@ -1310,6 +1310,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   // The module path argument is the name this edge is about.
                   ...this.lineField(arg),
                   metadata: {
+                    // THE EVIDENCE KEY for the arbiter's import facts: the module specifier as written.
+                    // The ES-import rows already carried `module`; the require/import() rows did not, and
+                    // the first arbiter smoke measured the cost exactly: SIX importedBinding claims were
+                    // REFUTED because their evidence edge had no `module` to key file->specifier->bindings
+                    // with (every one of the six was a require() binding: fs, path, an absolute pg path,
+                    // ../utils/logger, ../../services/...). The claim's `specifier` and this field must be
+                    // the SAME spelling — both come from stringContent() on the written argument.
+                    module: reqPath,
                     isRequire: !isDynamic,
                     isDynamicImport: isDynamic,
                     unresolved: true,
