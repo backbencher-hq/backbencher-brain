@@ -1,6 +1,13 @@
 /**
  * c-header-scan — D7 sizing instrument for the C per-file wall (task-21, charter §18).
  *
+ * TWO REPORTS, ONE DUMP, ONE POPULATION:
+ *   I1 (header split)  — for every class target, is the name a token in a project header?
+ *   I2 (in-file macro pre-check) — for every macro-spelled row, is the macro defined in the ROW'S OWN
+ *        file? A hit would be a DEFECT of the in-file macro symbol path (the "macro declared in-file"
+ *        candidate from the task brief), reported rather than smoothed. Text-level `#define NAME`
+ *        detection, stated limit, parse-verified follow-up.
+ *
  * WHAT THIS ANSWERS. §15's classification leaves the biggest C wall as one named class,
  * `name-not-in-run-key-space` (calls 84,927 unresolved / 18,301 ambiguous; uses 47,812 / 52,887),
  * plus `macro-spelled` (calls 42,316 / 18,294; uses 168 / 2,505) and the `type-shaped` half of
@@ -257,6 +264,65 @@ for (const repo of repoRoots) {
   }
 }
 
+// ── I2: the in-file macro pre-check (a DEFECT screen, not a resolution) ─────────────────────────
+// A macro-spelled call/uses row whose macro is `#define`d in the ROW'S OWN file is a defect of the
+// in-file macro symbol path (the analyzer publishes those symbols; an invocation of them should bind).
+// Text-level detection of `#define NAME` / `#define NAME(...)`: token scan over the row's own file.
+// LIMIT: a `#define` split by continuations is still found (the token follows the directive token), but
+// a macro defined under a DIFFERENT name passed through `#undef`/replacement is not modelled — the flag
+// is a screen for a parse-verified follow-up, never a conviction on its own.
+const macroRows: Array<{ file: string; target: string; label: string }> = []
+{
+  const rl = createInterface({ input: createReadStream(FILE, "utf8"), crlfDelay: Infinity })
+  for await (const line of rl) {
+    if (!line.startsWith("DUMP\t")) continue
+    const parts = line.split("\t")
+    if (parts.length < 6) continue
+    const label = parts[1]
+    if (label !== "calls" && label !== "uses") continue
+    if (!OUTCOMES_UNRESOLVED.has(parts[2]) && !OUTCOMES_AMBIG.has(parts[2])) continue
+    const target = String(parts[3]).trim()
+    if (family(label, target) !== "macro-spelled") continue
+    const where = String(parts[4] ?? "")
+    const cut = where.lastIndexOf(":")
+    if (cut <= 0) continue
+    macroRows.push({ file: where.slice(0, cut), target, label })
+  }
+}
+const definedInOwnFile = new Set<string>()
+{
+  const byFile = new Map<string, Set<string>>()
+  for (const row of macroRows) {
+    const set = byFile.get(row.file) ?? new Set<string>()
+    set.add(row.target)
+    byFile.set(row.file, set)
+  }
+  const DIR = path.join(ROOT, ".corpus")
+  for (const [file, names] of byFile) {
+    let text = ""
+    try { text = readFileSync(path.join(DIR, file), "utf8") } catch { continue }
+    const tokens: string[] = []
+    scanTokens(text, (tok) => tokens.push(tok))
+    for (let i = 0; i + 1 < tokens.length; i++) {
+      if (tokens[i] !== "define") continue
+      let j = i + 1
+      while (j < tokens.length && (tokens[j] === "define" || tokens[j] === "#")) j++
+      if (j < tokens.length && names.has(tokens[j])) definedInOwnFile.add(`${file}\u0000${tokens[j]}`)
+    }
+  }
+}
+const i2Rows = macroRows.length
+const i2Hits = macroRows.filter((r) => definedInOwnFile.has(`${r.file}\u0000${r.target}`)).length
+const i2 = {
+  what: "I2 in-file macro pre-check: macro-spelled rows whose macro is `#define`d in the row's OWN file (a hit = suspected DEFECT of the in-file macro symbol path, not a disposition)",
+  rowsChecked: i2Rows,
+  uniqueMacroTargets: new Set(macroRows.map((r) => r.target)).size,
+  uniqueFiles: new Set(macroRows.map((r) => r.file)).size,
+  definedInOwnFileRows: i2Hits,
+  definedInOwnFileSamples: macroRows.filter((r) => definedInOwnFile.has(`${r.file}\u0000${r.target}`)).slice(0, 10).map((r) => `${r.file}: ${r.label} -> ${r.target}`),
+  limit: "text-level `#define NAME` detection over the row's own file; a hit is a SCREEN for a parse-verified defect check, never a conviction",
+}
+
 // ── the split table (row-weighted: one target spelling can carry many rows) ─────────────────────
 const rowWeight = new Map<string, number>() // `${type}\0${family}\0${target}` -> rows
 {
@@ -329,6 +395,7 @@ const result = {
     note: "CONTROL 1: every family total this instrument re-derived equals the §15 published class table (a drifting copy fails loudly). CONTROL 2: the identifier tokenizer is self-checked on a synthetic string, including a negative for $-prefixed runs.",
   },
   split: splitRows,
+  inFileMacroPreCheck: i2,
   totals: { rows: rowsHeader + rowsAbsent, headerDeclaredRows: rowsHeader, absentFromHeadersRows: rowsAbsent },
 }
 
@@ -346,4 +413,6 @@ if (JSON_OUT) {
     if (v.absentTargetSamples.length) console.log(`  e.g. absent:    ${v.absentTargetSamples.slice(0, 4).join(", ")}`)
   }
   console.log(`\nTOTAL split rows: header-declared ${rowsHeader} · absent-from-headers ${rowsAbsent}`)
+  console.log(`\nI2 in-file macro pre-check: ${i2.rowsChecked} macro-spelled rows over ${i2.uniqueFiles} files, ${i2.uniqueMacroTargets} unique targets → defined in the row's OWN file: ${i2.definedInOwnFileRows} row(s) ${i2.definedInOwnFileRows === 0 ? "(no defect — the in-file macro path is clean on this population)" : "(SUSPECTED DEFECTS, named above)"}`)
+  for (const sample of i2.definedInOwnFileSamples.slice(0, 5)) console.log(`  DEFECT CANDIDATE ${sample}`)
 }
