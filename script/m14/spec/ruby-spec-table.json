@@ -695,7 +695,14 @@
       "specTable": "script/m14/spec/ruby-spec-table.json (this file) + ruby-completeness.json",
       "noRegex": "M49.R2 preserved: this wave added no regex literal to the analyzer; all predicate tests are indexOf/char scans",
       "typecheck": "whole-project tsc names ONLY src/ast/real-python-analyzer.ts(5060,25) (python lane own break); no ruby file",
-      "perf": "NOT MEASURED this wave \u2014 declared, not claimed"
+      "perf": "NOT MEASURED this wave \u2014 declared, not claimed",
+      "inventory": {
+        "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/completeness-inventory.ts --lang ruby",
+        "result": "exit 0 \u00b7 ruby: 136 types classified \u00b7 lane-pass 8/8 (A-H)",
+        "sectionB": "section-b-relationship-kinds GREEN after the contract row moved from the pre-RUBY-D1 list [\"calls\",\"extends\",\"implements\",\"instantiates\",\"uses\",\"contains\",\"exports\",\"imports\",\"overrides\",\"references\"] to [\"calls\",\"extends\",\"mixes_in\",\"instantiates\",\"uses\",\"contains\",\"exports\",\"imports\",\"overrides\",\"references\"]",
+        "staleRowFinding": "the reverse check failed while the row carried implements (no fixture pins it after RUBY-D1) and omitted mixes_in (the analyzer emits it and mixes-in-modules pins it RED) \u2014 published output no contract row accounted for",
+        "artifact": "validation/m14/fixtures/ruby/measurements/inventory-ruby-after-ruby-d1.txt"
+      }
     },
     "d6": {
       "status": "HOLDS",

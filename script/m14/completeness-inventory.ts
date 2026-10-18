@@ -535,7 +535,14 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "exports", "imports", "overrides", "references"],
+    // RUBY-D1 (ALL-OUT-OF-ALL phase 2, 2026-10-19): the contract row follows the emitted set after the
+    // mixin relabel — `implements` is DROPPED (the pinned grammar has no interface/conformance
+    // production; include/prepend/extend are MODULE MIXIN COMPOSITION, not conformance) and `mixes_in`
+    // is ADDED (source = composing class/module, target = mixin, metadata.mixinType = include|prepend|
+    // extend; pinned RED by validation/m14/fixtures/ruby/mixes-in-modules). Section B's reverse check
+    // caught this row still carrying the superseded label: the analyzer emitted mixes_in while the row
+    // did not name it, which is exactly the drift this check exists to fail.
+    requiredKinds: ["calls", "extends", "mixes_in", "instantiates", "uses", "contains", "exports", "imports", "overrides", "references"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "ruby/payload-and-complexity" },
     },
