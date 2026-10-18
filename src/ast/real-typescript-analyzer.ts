@@ -2218,26 +2218,41 @@ class TypeScriptAnalysisRunner {
   /**
    * THE PROJECT-INDEX PASS — the analyzer side of the `complete === true` capability.
    *
-   * FAIL-CLOSED BY CONSTRUCTION: with no `context.projectIndex`, or any `complete !== true`, this
-   * returns before touching an edge, so every sampled / index-less run is byte-identical to the
-   * behaviour before this method existed. The whole file's output is unchanged whenever the index is
-   * absent — that is the contract the wiring states (`ProjectIndex.complete`, "a reader must test
+   * FAIL-CLOSED BY CONSTRUCTION: with no `context.projectIndex`, or any `complete !== true`, or a
+   * payload that predates `symbolCounts`/`modules`, this returns before touching an edge. Every
+   * sampled / index-less run is therefore byte-identical to the behaviour before this method
+   * existed — that is the contract the wiring states (`ProjectIndex.complete`, "a reader must test
    * `=== true`, never truthiness").
    *
-   * TWO OPERATIONS, and their difference is the difference between a resolution and a claim:
+   * TWO OPERATIONS, and their difference is the difference between a resolution and a claim.
    *
-   *   · RESOLUTION — an `imports` edge whose written binding is `module:name` names a name the
-   *     COMPLETE index declares; re-spelling it to the bare name gives the resolver a target it can
-   *     join. The bound is the INDEX'S OWN API, stated rather than papered over: `ProjectIndex`
-   *     exposes `typeKinds`/`typeMembers`/`typeBases`/`symbolNames`, NOT a module -> file map, so
-   *     specifier-to-file resolution is not available from here and the bare-name re-spelling is the
-   *     strongest resolution this capability supports.
+   *   · RESOLUTION — an `imports` edge written `module:name` where the SPECIFIER is the project's
+   *     own module space (a relative/absolute path, or a package the project's own
+   *     `package.json` `workspaces` list declares) and the index says the name is declared
+   *     EXACTLY ONCE project-wide. Re-spelling to the bare name gives the resolver a target it can
+   *     join (`_res_name.cnt = 1`, production's own strategy). The "exactly once" test is the
+   *     difference between a resolution and a gamble and it is what `symbolCounts` exists for: the
+   *     first version of this pass tested `symbolNames.has()` and therefore re-spelled an
+   *     external-package item that merely SHARED a name with a project class — the measured
+   *     false-binding class (432 ts + 276 js external items) — and could not tell one declaration
+   *     from two.
    *
-   *   · CLAIM — an edge whose name the COMPLETE index does NOT declare can carry the external-target
-   *     claim, with its reason and its proof recorded on the metadata. `symbolNames.has()` IS the
-   *     refutation test that matters here: on this lane 53 claim candidates were measured to be
-   *     REFUTABLE (50 of them target `h`), and this check refuses exactly those. A claim is not a
+   *   · CLAIM — an `imports` edge whose module is NOT in the project's module space names something
+   *     outside it. The claim is `externalReason: "module-namespace"` + `externalSpecifier`, which
+   *     the gate verifies against the project's own module space and can never REFUTE (it degrades
+   *     to unverified), so it cannot launder a project-module import: a module root the project
+   *     publishes is refused HERE as well (`projectIndexModuleShadowed`) rather than claimed.
+   *     The same claim is then attached to every other edge whose target — or whose receiver ROOT
+   *     — is a binding imported from that external module: `computed(…)` imported from `vue`,
+   *     `path.join(…)` from `node:path`, a type mention of `Ref` from `vue`. A claim is not a
    *     resolution and nothing here reports it as one.
+   *
+   * WHAT IS DELIBERATELY NOT CLAIMED: a bare name is never claimed merely because the index does
+   * not list it. `symbolNames` under `TYPESCRIPT_DECLARATION_SPEC` covers declared TYPES and their
+   * MEMBERS; a free function or a module-scope binding is not in it, so absence from the index is
+   * not evidence of externality. The earlier version of this pass did exactly that for `calls`
+   * (one measured claim candidate was `h`, the most frequent callee in the sample) and a claim on
+   * a local function's name would be a false statement about another file.
    */
   private applyProjectIndexClaims(
     relationships: ASTEngine.UniversalRelationship[],
@@ -2245,36 +2260,154 @@ class TypeScriptAnalysisRunner {
   ): void {
     const index = context?.projectIndex
     if (index?.complete !== true) return
-    const PLAIN = /^[A-Za-z_$][\w$]*$/
-    const SEP = "\u0000"
-    const markClaim = (md: Record<string, any>, target: string, reason: string) => {
+    const counts: Map<string, number> | undefined = (index as any).symbolCounts
+    const modules: Set<string> | undefined = (index as any).modules
+    if (!counts || !modules) return
+    const projectRoot = String((context as any)?.projectRoot ?? "") || this.findProjectRoot(this.currentFile)
+    const projectPackages = this.projectPackageNames(projectRoot)
+
+    /** "the project declares this name exactly once" — the resolver's own binding precondition. */
+    const declaredOnce = (name: string) => counts.get(name) === 1
+    /** Local binding -> the EXTERNAL module it is imported from. Built by pass 1, read by pass 2. */
+    const externalBindings = new Map<string, string>()
+    const claimModuleNamespace = (md: Record<string, any>, module: string) => {
       if (md.isExternalTarget === true) return
       md.isExternalTarget = true
-      md.externalReason = reason
-      md.externalProof = `ProjectIndex.complete === true; symbolNames has no "${target}"`
+      // The gate's module-path claim kind is selected by THIS reason string; its verification is
+      // the project's module space (`projectModuleNames`), never the symbol table, so the claim is
+      // checkable and stays separate from `resolved`. The evidence travels on the edge: a claim
+      // without its citation is prose.
+      md.externalReason = "module-namespace"
+      md.externalSpecifier = module
+      md.externalProof = `ProjectIndex.complete === true; the project's own module space and package manifests do not declare ${JSON.stringify(module)}`
     }
+
+    // ── PASS 1: imports ────────────────────────────────────────────────────────────────────────
     for (const rel of relationships as any[]) {
+      if (String(rel?.type) !== "imports") continue
       const md: Record<string, any> = (rel.metadata ??= {})
+      // A whole-module binding (`:*`) has no item to join and is already clean in the gate's
+      // binding column; a relative import already publishes the bare item (see
+      // `extractImportRelationships`), so only `module:item` spellings reach the branches below.
+      if (md.localBinding === true) continue
       const target = String(rel.target ?? "")
-      if (!target || target.includes(SEP)) continue
-      if (String(rel.type) === "imports") {
-        const at = target.lastIndexOf(":")
-        if (at <= 0) continue
-        const itemName = target.slice(at + 1).trim()
-        if (!itemName || !PLAIN.test(itemName)) continue
-        if (index.symbolNames.has(itemName)) {
-          // RESOLUTION: the complete index declares this name; the module prefix made it unjoinable.
-          rel.target = itemName
+      const at = target.lastIndexOf(":")
+      if (at <= 0 || at === target.length - 1) continue
+      const module = target.slice(0, at)
+      const item = target.slice(at + 1).trim()
+      if (!isPlainIdentifier(item)) continue
+      if (this.isProjectLocalSpecifier(module, projectPackages)) {
+        if (declaredOnce(item)) {
+          // RESOLUTION: a name the resolver can join, and only under the "exactly once" rule.
+          rel.target = item
           md.resolvedViaProjectIndex = true
+          md.projectIndexEvidence = `project-local module; symbolCounts[${JSON.stringify(item)}] === 1`
+        } else if ((counts.get(item) ?? 0) > 1) {
+          // The project declares the name more than once: re-spelling would pick a stranger, so
+          // the binding spelling stays and the ambiguity is recorded rather than gambled.
+          md.projectIndexAmbiguous = true
         } else {
-          markClaim(md, itemName, "import-binding-absent-from-project")
+          // The module is the project's, the name is not in the index. NOT a claim: an index
+          // whose spec does not record this kind of declaration cannot prove externality.
+          md.projectIndexItemNotDeclared = true
         }
         continue
       }
-      if (String(rel.type) === "calls" && PLAIN.test(target) && !index.symbolNames.has(target)) {
-        markClaim(md, target, "project-scope-bare-name")
+      // ── EXTERNAL MODULE: module-path claim, with the project's own module space as the check ──
+      const root = module.replace(/^node:/, "").split(/[./\\]/)[0] ?? ""
+      if (root !== "" && modules.has(root)) {
+        // The project publishes a module with this root; the claim would be refused as
+        // unverifiable by the arbiter, and staking it would be a statement about the project that
+        // its own index contradicts. Recorded, left unresolved.
+        md.projectIndexModuleShadowed = root
+        continue
+      }
+      claimModuleNamespace(md, module)
+      externalBindings.set(item, module)
+      if (typeof md.alias === "string" && md.alias.length > 0) externalBindings.set(String(md.alias), module)
+    }
+
+    // ── PASS 2: edges whose target (or receiver root) is a binding imported from an external module ──
+    if (externalBindings.size === 0) return
+    for (const rel of relationships as any[]) {
+      const type = String(rel?.type ?? "")
+      if (type === "imports") continue
+      const md: Record<string, any> = (rel.metadata ??= {})
+      if (md.isExternalTarget === true || md.localBinding === true) continue
+      const target = String(rel.target ?? "")
+      if (target.length === 0) continue
+      let module = externalBindings.get(target)
+      if (module === undefined) {
+        // A MEMBER of an imported binding: `path.join(…)`, `lodash.map(…)`, `defaults.foo`. The
+        // receiver ROOT is the binding; the member belongs to the external module's export.
+        const callee = String(md.calleeExpression ?? "")
+        const dot = callee.indexOf(".")
+        if (dot > 0) {
+          const receiver = callee.slice(0, dot)
+          if (isPlainIdentifier(receiver)) module = externalBindings.get(receiver)
+          if (module !== undefined) md.externalReceiver = receiver
+        }
+      }
+      if (module === undefined) continue
+      claimModuleNamespace(md, module)
+    }
+  }
+
+  /** package.json `name`s of the project and of every workspace member it declares. Cached per
+   *  project root: one read per repo per process, not one per file. A read failure contributes
+   *  nothing, which is fail-closed — an unknown package set claims nothing. */
+  private static projectPackageCache = new Map<string, Set<string>>()
+  private projectPackageNames(projectRoot: string): Set<string> {
+    if (!projectRoot) return new Set()
+    const cached = TypeScriptAnalysisRunner.projectPackageCache.get(projectRoot)
+    if (cached !== undefined) return cached
+    const names = new Set<string>()
+    const readManifest = (manifest: string): any => {
+      try {
+        const j = JSON.parse(fs.readFileSync(manifest, "utf8"))
+        if (typeof j?.name === "string" && j.name.length > 0) names.add(j.name)
+        return j
+      } catch {
+        return null
       }
     }
+    const rootPkg = readManifest(path.join(projectRoot, "package.json"))
+    const workspaces: string[] = Array.isArray(rootPkg?.workspaces)
+      ? rootPkg.workspaces.filter((w: any) => typeof w === "string")
+      : Array.isArray(rootPkg?.workspaces?.packages)
+        ? rootPkg.workspaces.packages.filter((w: any) => typeof w === "string")
+        : []
+    for (const pattern of workspaces) {
+      const star = pattern.indexOf("*")
+      if (star > 0) {
+        // `packages/*` — one level, which is what npm/yarn/pnpm workspaces expand for the
+        // `*` form. A deeper pattern contributes nothing rather than being guessed at.
+        const dir = path.join(projectRoot, pattern.slice(0, pattern.lastIndexOf("/")))
+        try {
+          for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+            if (entry.isDirectory()) readManifest(path.join(dir, entry.name, "package.json"))
+          }
+        } catch {
+          /* an unreadable workspace directory is not evidence */
+        }
+      } else if (pattern.length > 0) {
+        readManifest(path.join(projectRoot, pattern, "package.json"))
+      }
+    }
+    TypeScriptAnalysisRunner.projectPackageCache.set(projectRoot, names)
+    return names
+  }
+
+  /** Is this import specifier the PROJECT's own module? Relative/absolute by path algebra;
+   *  a bare specifier only when the project's own manifests declare that package (a workspace
+   *  member). Node built-ins are never the project's. */
+  private isProjectLocalSpecifier(specifier: string, projectPackages: Set<string>): boolean {
+    if (specifier.startsWith(".") || specifier.startsWith("/")) return true
+    const bare = specifier.replace(/^node:/, "")
+    if (isBuiltinModule(bare)) return false
+    const segs = bare.split("/")
+    const pkg = bare.startsWith("@") ? segs.slice(0, 2).join("/") : (segs[0] ?? "")
+    return pkg.length > 0 && projectPackages.has(pkg)
   }
 
   private extractTypeParameters(node: Node): string[] {
@@ -5152,7 +5285,7 @@ class TypeScriptAnalysisRunner {
    */
   private typeLeafName(node: Node): string | null {
     if (node.type === "identifier" || node.type === "type_identifier") {
-      return /^[A-Za-z_$][\w$]*$/.test(node.text) ? node.text : null
+      return isPlainIdentifier(node.text) ? node.text : null
     }
     if (node.type === "nested_identifier" || node.type === "member_expression") {
       const property = node.childForFieldName("property") ?? node.namedChild(node.namedChildCount - 1)
