@@ -2426,6 +2426,15 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     /** owner text -> the fields/locals it declares -> their DECLARED type, when that type is
      *  a plain identifier. `final Base b;` makes `b.count` addressable as `Base.count`. */
+    // THE KIND OF EACH TYPE THIS FILE DECLARES, by name. The receiver contract asks for an owner
+    // that the store's resolver can use: `src/ast/member-owner-resolution.ts` accepts exactly one
+    // CLASS-LIKE owner (class | interface | trait | enum), and a dart `mixin`, `extension` or
+    // `typedef` is NOT class-like to that rule. Emitting such a name as `owner` would make the
+    // resolver decline AND withdraw the row's name binding ("a wrong owner is worse than none",
+    // Lead contract) — so a type this file declares as a non-class-like kind must not become an
+    // owner. A type NOT declared in this file has no kind here and is still emitted: that is the
+    // `HttpClient.close` case, where the owner channel is the only resolution a store can reach.
+    const typeKindByName = new Map<string, string>()
     const fieldTypeByField = new Map<string, string>()
     for (const s of symbols) {
       if (!s.ownerName) continue
@@ -2604,16 +2613,37 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "this" || t === "super") return null
       const text = this.headNameText(head)
       if (text === null) return null
+      // A declared non-class-like type (mixin / extension / typedef) is NOT a usable owner: the
+      // store's resolver accepts only class | interface | trait | enum and would withdraw the
+      // row's name binding on a name it cannot accept. Unknown kinds (type declared outside this
+      // file) stay eligible — that is the external-owner case the channel exists for.
+      const classLikeType = (name: string): string | null => {
+        const kind = typeKindByName.get(name)
+        if (kind === undefined) return name
+        if (kind === "class" || kind === "enum") return name
+        return null
+      }
       const localType = localTypes.get(text)
       if (localType) {
         const evidence = localEvidence.get(text)
+        const owner = classLikeType(localType)
         // No evidence class means no claim about HOW the type is known; the row keeps its
         // existing shape rather than inventing one.
-        return evidence ? { owner: localType, ownerEvidence: evidence } : null
+        return evidence && owner ? { owner, ownerEvidence: evidence } : null
       }
       const fieldType = fieldTypeByField.get(`${enclosing ?? ""}.${text}`)
-      if (fieldType) return { owner: fieldType, ownerEvidence: "field" }
+      const owner = fieldType ? classLikeType(fieldType) : null
+      if (owner) return { owner, ownerEvidence: "field" }
       return null
+    }
+
+    for (const s of symbols) {
+      if (s.ownerName) continue
+      const kind = String(s.kind ?? "")
+      if (kind === "class" || kind === "enum" || kind === "mixin" || kind === "extension" ||
+          kind === "extension_type" || kind === "type_alias" || kind === "type") {
+        if (s.name) typeKindByName.set(s.name, kind)
+      }
     }
 
     // Current call source = enclosing function/method/constructor leaf name.
