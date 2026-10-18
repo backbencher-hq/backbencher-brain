@@ -4088,8 +4088,16 @@ currentPackage,
 
       // THE JAVA.LANG CLOSED-VOCABULARY CLAIM — see JAVA_LANG_TYPES above. Bare names only, never a
       // declaration of this file, never shadowed by a same-named import of another JVM type.
+      // THE CLOSED-VOCABULARY CLAIM, now on the HERITAGE and CONSTRUCTION kinds too: `extends
+      // Exception`, `implements Runnable`, `new StringBuilder()` all name JDK types this project
+      // cannot declare, so they can never resolve against its key space. The claim says exactly
+      // that ("the project's own facts do not answer a name the JDK's java.lang defines") and is
+      // verified against the carried list — it does NOT select a declaration, so it cannot move
+      // `arbitraryTwin` or `resolved`; measured whole-repo before/after confirms both.
+      // references, extends, implements and instantiates only: the heritage/construction surface.
+      const CLAIMED_KINDS = new Set(["references", "extends", "implements", "instantiates"])
       if (JAVA_LANG_TYPES.has(target) && !importedFromJvm.has(target)
-          && String(r?.type ?? "") === "references") {
+          && CLAIMED_KINDS.has(String(r?.type ?? ""))) {
         md.languageNamespace = [target]
         marked++
         continue

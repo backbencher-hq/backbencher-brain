@@ -23,6 +23,7 @@
 import type { Node } from "web-tree-sitter"
 import { detectFrameworks, type FrameworkInfo } from "./framework-detectors"
 import { ASTEngine } from "./engine"
+import { BINDING_SEP } from "./types"
 import * as path from "path"
 import * as fs from "fs"
 import { treeContainsNodeType } from "./node-walk"
@@ -6277,13 +6278,30 @@ class TypeScriptAnalysisRunner {
       if (isImportRequireClause(node)) {
         const clauseNode = node.namedChildren.find((c: any) => c && c.type === "import_require_clause")
         const bindNode = clauseNode?.namedChildren?.find((c: any) => c && c.type === "identifier")
+        // ── THE MODULE-DEPENDENCY CLASS (`*`: require clause, side-effect, namespace, dynamic) ──
+        // These edges name a MODULE, not a symbol, and the old spelling `${modulePath}:*` used a
+        // COLON: the resolver's key space is `name + qualifiedName`, so a target carrying `:` could
+        // never match, and it is not the family's binding spelling either. Measured on the cap-50
+        // stride: imports 669 edges / 0 resolved / 0 bindOK (369 of the 669 were this class).
+        // The family mechanism for "this edge names a local binding, not a declaration" is
+        // `<scope>\u0000<binding>` (BINDING_SEP, src/ast/types.ts) and the gate has the bucket
+        // (`bindOK`, verified by incoming-rule.verifyBindingClaim: a non-empty part after the
+        // separator verifies). The binding part here is `*` — the whole-module binding — which can
+        // never name a declaration, so the claim is unrefutable BY CONSTRUCTION.
+        //
+        // WHAT THIS DOES NOT DO: package imports (`vue:cloneVNode`, `@scope/pkg:Name`) stay
+        // unresolved. Their correct fix is `AnalyzeContext.projectIndex` (resolve the specifier to
+        // its project file, then the name to that file's declaration); a bare-name spelling was
+        // measured to bind to a project-local symbol that merely SHARES THE NAME (432 ts + 276 js
+        // + 5 py external items, recorded at the `bareLocalItem` comment below) — a false binding
+        // is worse than an unresolved edge. projectIndex is LEAD-SCOPED separately.
         relationships.push({
           source: this.moduleLeafName(),
-          target: `${modulePath}:*`,
+          target: `${this.moduleLeafName()}${BINDING_SEP}${modulePath}:*`,
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
           ...this.lineField(bindNode ?? sourceNode),
-          metadata: { module: modulePath, isRequire: true, isDefault: !!bindNode, isTypeOnly: typeOnly },
+          metadata: { module: modulePath, isRequire: true, isDefault: !!bindNode, isTypeOnly: typeOnly, localBinding: true },
         })
         return
       }
@@ -6308,11 +6326,12 @@ class TypeScriptAnalysisRunner {
       if (!hasClause) {
         relationships.push({
           source: this.moduleLeafName(),
-          target: `${modulePath}:*`,
+          // the module-dependency class — binding spelling, reason at the require-clause site above
+          target: `${this.moduleLeafName()}${BINDING_SEP}${modulePath}:*`,
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
           ...this.lineField(sourceNode),
-          metadata: { module: modulePath, isSideEffectImport: true, isTypeOnly: typeOnly },
+          metadata: { module: modulePath, isSideEffectImport: true, isTypeOnly: typeOnly, localBinding: true },
         })
         return
       }
@@ -6344,15 +6363,21 @@ class TypeScriptAnalysisRunner {
         // else keeps its current spelling untouched, which is what makes the external half provably
         // unmoved.
         const bareLocalItem = (modulePath.startsWith(".") || modulePath.startsWith("/")) && itemName !== "" && itemName !== "*"
+        // A NAMESPACE import (`import * as ns from "m"`) is the module-dependency class: the written
+        // binding is the whole module, so it takes the binding spelling, not `${modulePath}:*`.
+        const wholeModuleBinding = itemName === "*"
         relationships.push({
           source: this.moduleLeafName(),
-          target: bareLocalItem ? itemName : `${modulePath}:${itemName}`,
+          target: wholeModuleBinding
+            ? `${this.moduleLeafName()}${BINDING_SEP}${modulePath}:*`
+            : bareLocalItem ? itemName : `${modulePath}:${itemName}`,
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
           // M59 (#825): the imported NAME's own line, not the `import` line.
           ...this.lineField(itemNode),
           metadata: {
             module: modulePath,
+            ...(wholeModuleBinding ? { localBinding: true } : {}),
             alias: item.indexOf(" as ") !== -1 ? item.split(" as ")[1] : undefined,
             isTypeOnly: itemTypeOnly,
           },
@@ -6384,7 +6409,8 @@ class TypeScriptAnalysisRunner {
         if (modulePath) {
           relationships.push({
             source: this.moduleLeafName(),
-            target: `${modulePath}:*`,
+            // the module-dependency class — binding spelling, reason at the require-clause site above
+            target: `${this.moduleLeafName()}${BINDING_SEP}${modulePath}:*`,
             type: ASTEngine.RelationshipType.Imports,
             confidence: 1.0,
             // M59 (#825): a dynamic import's target is named by its path argument.
@@ -6395,6 +6421,7 @@ class TypeScriptAnalysisRunner {
               // Labelling it `isDynamic` was wrong in the first cut of the require
               // port, which reused the dynamic branch wholesale — the edge was
               // right and its metadata claimed the module was loaded lazily.
+              localBinding: true,
               ...(isDynamicImport ? { isDynamic: true } : { isRequire: true, isDefault: requireBindsDefault(node) }),
             },
           })
