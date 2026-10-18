@@ -1720,6 +1720,25 @@ function selfTest(): { ok: boolean; failures: string[] } {
       if (c.outcome !== want) failures.push(`control: moduleExports target ${t} read ${c.outcome}, expected ${want} — ${why}`)
     }
   }
+  // RECEIVER-POSITION CLAIM (JS contract 2026-10-19): same imported-binding evidence, position
+  // discriminator. Controls: verified receiver claim; UNBACKED binding REFUTES; target===binding
+  // REFUTES; non-name member spelling REFUTES.
+  {
+    const recvFacts: ProjectFacts = {
+      packages: new Set(),
+      files: new Set(["src/a.js"]),
+      sdkLib: false,
+      importsByFile: new Map([["src/a.js", new Map([["pkg-x", new Set(["api"])]])]]),
+    }
+    const ok = classifyEdge(declCount, kinds, "fetchThing", { kind: "importedBinding", specifier: "pkg-x", binding: "api", position: "receiver" }, recvFacts, undefined, undefined, undefined, "src/a.js")
+    if (ok.outcome !== "bindingVerified") failures.push(`control: receiver-position claim on a file-bound receiver read ${ok.outcome}, expected bindingVerified`)
+    const unbacked = classifyEdge(declCount, kinds, "fetchThing", { kind: "importedBinding", specifier: "pkg-y", binding: "api", position: "receiver" }, recvFacts, undefined, undefined, undefined, "src/a.js")
+    if (unbacked.outcome !== "bindingRefuted") failures.push(`control: receiver claim with NO import evidence read ${unbacked.outcome}, expected bindingRefuted`)
+    const same = classifyEdge(declCount, kinds, "api", { kind: "importedBinding", specifier: "pkg-x", binding: "api", position: "receiver" }, recvFacts, undefined, undefined, undefined, "src/a.js")
+    if (same.outcome !== "bindingRefuted") failures.push(`control: receiver claim whose target IS the binding read ${same.outcome}, expected bindingRefuted`)
+    const badName = classifyEdge(declCount, kinds, "a b", { kind: "importedBinding", specifier: "pkg-x", binding: "api", position: "receiver" }, recvFacts, undefined, undefined, undefined, "src/a.js")
+    if (badName.outcome !== "bindingRefuted") failures.push(`control: receiver claim with a non-name member spelling read ${badName.outcome}, expected bindingRefuted`)
+  }
   // IMPORTED-BINDING CLAIM (charter §18.10): verified from the RUN'S OWN import evidence, never from
   // the use edge's word. Plants: a name the file's import binds (VERIFIED), a name it does not bind
   // (REFUTED), a specifier the file does not import (REFUTED), another file's import (REFUTED), a

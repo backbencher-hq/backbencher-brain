@@ -125,7 +125,11 @@ export type ExternalClaim =
   | { kind: "projectFacts" } | { kind: "binding" }
   // THE IMPORTED-BINDING CLAIM (2026-10-19): the target is a local name bound by an import of
   // `specifier`; verified from the run's own import edges (see IMPORTED_BINDING_CLAIM_KEY).
-  | { kind: "importedBinding"; specifier: string; binding: string }
+  // The position discriminator distinguishes a TARGET-position claim (the edge's target IS the
+  // imported binding) from a RECEIVER-position claim (the target is a MEMBER LEAF and the receiver
+  // ROOT is the imported binding; JS receiver-position contract 2026-10-19). Same evidence kind,
+  // same binding column — one mechanism, one verification, one column.
+  | { kind: "importedBinding"; specifier: string; binding: string; position?: "target" | "receiver" }
   // THE EXPORT-SURFACE CLAIM: an exports row names the export surface, not a declaration.
   | { kind: "exportSurface"; surface: "default"; form: string; localName?: string }
   | { kind: "exportSurface"; surface: "moduleExports"; property: string; form: string }
@@ -525,6 +529,20 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
     return {
       kind: "exportSurface", surface: "moduleExports",
       property: String((moduleExp as any).property), form: String((moduleExp as any).form),
+    }
+  }
+  // THE RECEIVER-POSITION CLAIM (2026-10-19): `metadata.receiverImport {specifier, binding}` on a row
+  // whose TARGET is a member leaf and whose receiver ROOT is a file import binding. It routes to the
+  // imported-binding verification with the position discriminator — same evidence, same bindOK column.
+  const recvImp = md.receiverImport
+  if (
+    recvImp !== null && typeof recvImp === "object" &&
+    typeof (recvImp as any).specifier === "string" && (recvImp as any).specifier.length > 0 &&
+    typeof (recvImp as any).binding === "string" && (recvImp as any).binding.length > 0
+  ) {
+    return {
+      kind: "importedBinding", specifier: String((recvImp as any).specifier),
+      binding: String((recvImp as any).binding), position: "receiver",
     }
   }
   // THE NAMESPACE CLAIM, read before the population claims for the file claim's own reason: it
@@ -1522,7 +1540,15 @@ export function classifyEdge(
   // on a name the key space also declares as REFUTED (the first version) re-introduced the decoy
   // class from the other side and measured 389/1,299 refutations on a cap-50 smoke — fixed here.
   if (claim !== null && claim.kind === "importedBinding") {
-    const outcome = verifyImportedBindingClaim(claim, facts, edgeFile)
+    let outcome = verifyImportedBindingClaim(claim, facts, edgeFile)
+    // RECEIVER-POSITION ADDITIONS (JS contract): the target must be a MEMBER LEAF, distinct from the
+    // binding itself, and name-shaped. Chain purity is the analyzer's emission duty (the arbiter
+    // cannot re-check it from edges); these three checks are the parts of the statement edges can
+    // refute.
+    if (claim.position === "receiver" && outcome === "bindingVerified") {
+      if (tgt === claim.binding) outcome = "bindingRefuted"
+      else if (!/^[A-Za-z_$][\w$]*$/.test(tgt)) outcome = "bindingRefuted"
+    }
     const disposition: AmbiguousClaimDisposition =
       outcome === "bindingVerified" ? "verified" : outcome === "bindingUnverified" ? "unverified" : "refuted"
     return {
