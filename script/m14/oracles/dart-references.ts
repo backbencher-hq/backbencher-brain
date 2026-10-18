@@ -471,6 +471,11 @@ function annotationSources(ann: any, member: string | null, typeName: string | n
     let sib = ann.nextNamedSibling
     let guard = 0
     while (sib && sib.type === "annotation" && guard++ < 16) sib = sib.nextNamedSibling
+    // The declaration's modifier KEYWORDS are separate siblings (`@deprecated final x = 1;` is
+    // `annotation`, `final_builtin`, `static_final_declaration_list` — probed), so step over the
+    // grammar's `*_builtin` nodes before naming the declaration.
+    let modGuard = 0
+    while (sib && String(sib.type).endsWith("_builtin") && modGuard++ < 8) sib = sib.nextNamedSibling
     return annotationDeclarationNames(sib)
   }
   return []

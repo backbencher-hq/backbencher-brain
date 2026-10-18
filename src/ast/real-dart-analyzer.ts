@@ -5205,6 +5205,15 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       let sib = ann.nextNamedSibling
       let guard = 0
       while (sib && sib.type === "annotation" && guard++ < 16) sib = sib.nextNamedSibling
+      // SKIP THE DECLARATION'S MODIFIER KEYWORDS. `@deprecated final x = 1;` parses as three
+      // PROGRAM siblings — `annotation`, `final_builtin`, `static_final_declaration_list`
+      // (probed) — so the next sibling is a keyword node, not a declaration, and a carrier walk
+      // that stopped there published NOTHING for every annotated *inferred* top-level variable.
+      // The keyword nodes in this grammar are all `*_builtin` (`abstract`, `base`, `const`,
+      // `final`, `late`, `sealed`, …); a declaration node is never one of them, so stepping over
+      // them cannot skip a real declaration.
+      let modGuard = 0
+      while (sib && sib.type.endsWith("_builtin") && modGuard++ < 8) sib = sib.nextNamedSibling
       return sib ? this.carriersOfDeclarationNode(sib) : []
     }
     return []

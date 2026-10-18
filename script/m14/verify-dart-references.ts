@@ -328,8 +328,8 @@ async function main(): Promise<void> {
     `const int deprecated = 1;\n@deprecated class Ann2 { @override void go(@required int x) {} @deprecated int field2 = 1; }`,
     ["Ann2 -> deprecated", "go -> override", "go -> required", "field2 -> deprecated"])
   await checkBoth("a top-level annotated variable and an annotated enum constant attribute to the declaration",
-    `@deprecated int top = 1;\nenum K2 { @deprecated old2, fresh2 }`,
-    ["top -> deprecated", "old2 -> deprecated"])
+    `@deprecated int top = 1;\n@deprecated final inferred = 2;\nenum K2 { @deprecated old2, fresh2 }`,
+    ["top -> deprecated", "inferred -> deprecated", "old2 -> deprecated"])
   await checkBoth("a QUALIFIED annotation resolves to the type leaf, not to the import alias",
     `@prefix.Qualified() class Q2 { }`, ["Q2 -> Qualified"])
   // The THIRD annotation position, probed: inside `library_name`, not inside the declaration.
