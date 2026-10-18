@@ -2134,8 +2134,8 @@
     "rows": 204,
     "detail": "parameter names that are Yul builtin spellings (from 139, caller 49, timestamp 5, chainid 11); claiming them would recover real reads and ADD 204 rows — held back to keep task-20's D2 total invariant at 35,107; needs its own ruling."
    },
-   "commitA": null,
-   "commitB": null
+   "commitA": "96a50614f",
+   "commitB": "909448a40"
   }
  },
  "wholePopulationArms": {
