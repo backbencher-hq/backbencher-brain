@@ -1656,7 +1656,15 @@ export async function processWithWorkerPool(
     // `.proto` ADDED 2026-10-11 (protobuf lane). The entry is INERT WITHOUT A SPEC: measured over the
     // whole corpus (847 .proto files), the Solidity default yields 0 names and 0 types — an entry that
     // indexes the right SHAPE and holds nothing, which is the dart situation one layer down.
-    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java", ".py": "python", ".ts": "typescript", ".tsx": "typescript" }
+    //
+    // DART ADDED 2026-10-18 — the INVERSE of the protobuf note above: the spec existed
+    // (`DART_DECLARATION_SPEC` in project-index.ts, exercised by the m14 gate's own `INDEX_SPECS`
+    // arm) and the ANALYZER already consumed it (`dartCompanionFor` / `extractOverrideRelationships` /
+    // `extractExpressionRelationships` in src/ast/real-dart-analyzer.ts take `context.projectIndex`),
+    // but the extension was in NO production table — so in the store every one of those reads was
+    // DEAD and the dart lane's cross-file override/extends/implements resolution ran per-file only.
+    // A spec plus an analyzer plus a gate arm is not a wire; the entry below is.
+    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java", ".dart": "dart", ".py": "python", ".ts": "typescript", ".tsx": "typescript" }
     // THE THREE NEW EXTENSIONS BUILD ONLY ON A COMPLETE WALK (see `indexScope`). The five pre-existing
     // lanes consume the index for RESOLUTION and tolerate an incomplete one — behaviour that must not
     // change — while python/typescript have no consumer yet and their index exists only to support a
@@ -1695,6 +1703,9 @@ export async function processWithWorkerPool(
           // exists, and the analyzer's head comment pins `tree-sitter-typescript.wasm`.
           python: path.join(repoRoot, "wasm", "tree-sitter-python.wasm"),
           typescript: path.join(repoRoot, "wasm", "tree-sitter-typescript.wasm"),
+          // Same rule for dart: `wasm/dart.wasm` also exists (same bytes today), but the dart
+          // analyzer's head comment pins `tree-sitter-dart.wasm` (grammar line 20).
+          dart: path.join(repoRoot, "wasm", "tree-sitter-dart.wasm"),
         }
         // The SPEC is per language for the reason project-index.ts gives: the generic extractor
         // reads `childForFieldName("name")`, which is true of Solidity and false of F# three ways
@@ -1724,6 +1735,12 @@ export async function processWithWorkerPool(
           // reached through the dynamic `mod` import already in scope.
           python: mod.PYTHON_DECLARATION_SPEC,
           typescript: mod.TYPESCRIPT_DECLARATION_SPEC,
+          // DART, wired with its entry and wasm in the same change (see the block comment above
+          // PROJECT_INDEX_EXTENSIONS). The spec is the whole point here: `baseResolver` and
+          // `memberNodes` are what make `class A extends B` / `with M` / `implements I` resolvable
+          // across files, and `typeNodes` names the grammar's declaration nodes (`class_definition`,
+          // `mixin_declaration`, ...) which the generic Solidity spec does not.
+          dart: mod.DART_DECLARATION_SPEC,
         }
         const { existsSync: wasmExists } = await import("fs")
         const byExt: Record<string, unknown> = {}
