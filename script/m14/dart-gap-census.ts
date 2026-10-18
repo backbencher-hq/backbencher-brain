@@ -144,7 +144,21 @@ async function main(): Promise<void> {
     if (n.parent?.type === "null_assert_pattern") return "null_assert"
     const pp = n.parent?.type
     if (pp === "list_pattern" || pp === "map_pattern" || pp === "record_pattern") return "collection"
-    return "test_bare"
+    // A LITERAL or the `_` WILDCARD is not an identifier TEST: `_ => value` parses as a
+    // constant_pattern holding the wildcard identifier, and `case 'x':` holds a string literal.
+    // Counting those as "bare identifier tests" inflated the DARTGAP2 remainder from a real
+    // number to 1,273 on ProxiCall/lib while the emission it described was a different shape —
+    // the classifier now separates what the implementation claims to read from what the grammar
+    // merely wraps in a constant_pattern.
+    const ids = kids.filter((c) => c && c.type === "identifier")
+    if (ids.some((c) => c.text === "_")) return "wildcard"
+    const literal = kids.some((c) => c && (
+      c.type === "decimal_integer_literal" || c.type === "hex_integer_literal" ||
+      c.type === "decimal_floating_point_literal" || c.type === "string_literal" ||
+      c.type === "true" || c.type === "false" || c.type === "null_literal"))
+    if (literal) return "literal"
+    if (ids.length > 0) return "test_bare"
+    return "other_shape"
   }
   const typeKinds = new Map<string, number>()
   const start = Date.now()
