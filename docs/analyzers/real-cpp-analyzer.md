@@ -1253,6 +1253,70 @@ pinned grammar at the D1 commit, assignment-LHS writes are GATED OUT (`int x; x 
 emits no uses; a member READ does) — the rule the code states at `:4166-4188`. CPP-D5 now
 records the corrected contract and the reversal.
 
+## ALL-OUT-OF-ALL D2/D3/D4 — whole-population emission, resolution classes, and the audit
+
+**D2 — what the analyzer EMITS, at whole population.** `script/m14/cpp-emission-census.ts` (lane-owned)
+runs the production entry (`src/ast/pool-worker.parseFile`, the same call `engine.ts` makes) over the admitted
+population and counts rows/files/repos per type, plus every metadata payload and the grammar constructs.
+Command: `BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json`.
+**Population 7,435/7,435 parsed · 31 repos · 0 failures · 0 degraded** (extensions
+cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu; 2,071 tracked-but-absent + 8 over the 1 MB cap excluded and counted).
+**TOTAL 1,282,777 rows:** calls 931,193 · contains 168,351 · uses 117,705 · imports 51,143 · extends 4,331 ·
+references 3,174 · instantiates 3,093 · overrides 1,884 · exports 1,528 · implements 375. The census also
+walks the grammar per file (per-file parser, tree disposed) so the constructs that carry NO relationship are
+counts: concept_definition 2 / requires_clause 10 / requires_expression 2 (ruled construct);
+template_instantiation 267 vs instantiates 3,093 (CPP-R2); lambda_expression 5,614; structured bindings 389;
+operator_name 3,335; **multiple inheritance 114 classes with more than one base in 58 files/5 repos** (CPP-R4).
+Evidence page: `validation/m14/verification/CPP-D2.md`.
+
+**D3 — what the emitted edges RESOLVE to, and every non-resolution in a named class.**
+`BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp
+cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump` over the SAME 7,435 files: **TOTAL 1,282,777 = resolved 411,648 +
+amb(decl) 469,395 + unresolved 401,734** (+collRes 106,506 tracked as the correctness axis) · extOK/ext?/extFAIL
+all 0 · bind*/cause* all 0 · self-test PASS · arbitraryTwin (whole population) **564,803**. The lane's
+`script/m14/cpp-dump-classify.ts` reads the gate's own dump (no second population), asserts closure arithmetic
+before printing (`1,282,777 == 411,648 resolved + 871,129 classified + 0 claims + 0 bindings + 0 causes`;
+sum of class rows == 871,129; unclassified-label 0) and puts every row in exactly one named wall:
+**W1-callable-not-declared-in-run 614,081 · W10-macro-defined-name 114,398 · W11-member-leaf-owner-unresolved
+83,169 · W2-module-path-not-a-symbol 50,915 · W1-type 4,776 · W4-qualified-name 2,771 · W5-export-marker 835 ·
+W9-operator-name 180 · W8-non-class-standard 4.** The `--index` arm was RUN and is a **measured structural
+non-arm**: production's `PROJECT_INDEX_EXTENSIONS` has no C++ spelling, the gate built 0 indexes, the analyzer
+reads no projectIndex, and the A→B delta is 0 in every column (TABLE 1 byte-identical). The lane's resolution
+was never index-assisted — which is why the per-file-model wall W1 dominates. The **census TOTAL and the gate
+arm's TOTAL are equal (1,282,777)** — two independent pipelines agreeing over one population.
+Evidence page: `validation/m14/verification/CPP-D3.md`.
+
+**D4 — every emitted label derived AND compared.** The lead wired the lane's `deriveCppUnadmittedTruth` into
+`script/m14/differential.ts` (`c56315033`), admitting `contains`, `references`, `imports`, `exports`,
+`overrides` to cpp's compared set in the same change (the other five — calls/uses/extends/instantiates — were
+already compared; `implements` was found to have NO shared truth on the first post-wiring draw and is now
+pushed by the lane's own pure-virtual walker). Both canonical draws, current digest:
+`fmt --sample 60` → files 60 · tree-truth 8,551 · covered 8,412 (98.4%) · MISSING 139 · analyzer-edges 9,583 ·
+unexplained 2,253 (23.5%) · heuristic 0; `nlohmann-json --sample 60` → 60 files · tree-truth 711 · covered 706
+(99.3%) · MISSING 5 · analyzer 755 · unexplained 68 (9%) · heuristic 0. The `COMPARED WITH NO TRUTH` disclosure
+is gone from both. Every non-matching row is classified by `script/m14/cpp-d4-audit.ts` with its deciding side
+(fmt: 46 MISSING / 496 unexplained in 11 named classes; nlohmann-json: 10 / 277 in 6), and the two draws'
+residual is measured debt, not claimed clean. The contract instrument `cpp-oracle-verify.ts` gives 5/5
+synthetic positive+negative cases and a self-test that proves the matcher can fail. Evidence page:
+`validation/m14/verification/CPP-D4-AUDIT.md` (+ `CPP-D4-ORACLE.md` for the inventory/wiring patch).
+
+**D5 — permissions.** Fixtures **50 pass / 1 fail** (the recorded `friend-definition-body-owner` contract
+conflict, unchanged from baseline; exit 0, "no regressions"); completeness inventory 212 types, lane-pass 8/8;
+**no-regex CLEAN** at the AST level (`script/m14/cpp-no-regex-census.ts`: RegExpLiteral 0 · new RegExp 0 ·
+regex argument 0; 5 allowed STRING arguments to split/replace, i.e. the character scans); perf row measured on
+the differential's fmt extension universe, 60-file draw — mean **146 ms/file**, median 31.14, p90 491.05, max
+1512.54, **3.676 ms/KiB**, analyzer share **85.4%** / parse 14.6%, load 5.67 — ratio **0.95×** against the
+pinned differential baseline 154.1 ms/file, reported **UNSCORED** per the `#871` no-re-pin ruling (shared box);
+`npx tsc --noEmit -p tsconfig.scripts.json` and `-p tsconfig.json` both report **0 errors naming any cpp
+script or this analyzer** (other lanes' pre-existing errors are not this lane's files).
+
+**D6 — truthfulness.** `arbitraryTwin` whole-population baseline recorded **564,803** (arm A = arm B, delta 0);
+`extFAIL`/`bindFAIL`/`causeFAIL` **0** on both arms; claims are never merged into resolutions (this lane emits
+no external claims, and the gate's own claim block reads a MEASURED zero of 469,395 ambiguous rows); every
+number above travels with its command and scope; negative results written down (indexed arm structurally
+inert, `contains/global`-owner contract question, shared-oracle over-derivations where the ANALYZER is the
+deciding side, the `.h`-by-content population boundary, the `friend-definition-body-owner` stale pin).
+
 ## Differential ground truth
 
 - Ground truth: `validation/m12/ground-truth/cpp.json` (authority:

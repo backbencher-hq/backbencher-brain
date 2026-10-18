@@ -1363,7 +1363,7 @@
   }
  },
  "wholePopulationArms": {
-  "status": "D2 census MEASURED (7435/7435 files, 31 repos, 1282777 rows); D3 no-index arm MEASURED with a closure-exact classification (see .d3.noIndexArm); the --index arm is OWED.",
+  "status": "D2 census MEASURED (7435/7435 files, 31 repos, 1282777 rows); D3 BOTH arms MEASURED with a closure-exact classification (no-index in .d3.noIndexArm; --index in .d3.indexedArm is a measured STRUCTURAL NON-ARM — production builds no cpp project index, so the A->B delta is 0 in every column).",
   "census": {
    "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
    "artifact": "validation/m14/fixtures/cpp/measurements/cpp-emission-census-whole.json",
@@ -2413,7 +2413,46 @@
     "evidencePage": "validation/m14/verification/CPP-D3.md"
    },
    "indexedArm": {
-    "status": "OWED — the --index arm is the next run; the cpp analyzer reads NO project index, so the expected delta is 0 and the arm is measured to prove that rather than assumed"
+    "status": "MEASURED — STRUCTURALLY INERT, and that is the finding: production builds NO cpp project index (PROJECT_INDEX_EXTENSIONS in src/ast/parallel-indexer.ts has no .cpp/.cc/.hpp spelling), the gate's INDEX_SPECS has no cpp entry (the arm reports 'project index: USED — 0 repo index(es) (0 built, 0 from cache, 0 damaged) over 0 file(s)'), and the analyzer reads no projectIndex (0 occurrences). The arm was RUN, not skipped: TABLE 1, binding intent, claim-carrying block and verdict are IDENTICAL to the no-index arm, and the A->B delta is 0 in every column.",
+    "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --index --dump",
+    "population": [
+     "population: 7435 parsed of 7435 sampled (corpus has 7435 .cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu files across 31 repos; stride sample)",
+     "population: admitted extensions = .cpp, .cc, .cxx, .c++, .hpp, .hxx, .ipp, .inl, .cu (both spellings admitted) — PLUS a bare BASENAME equal to any of them WHEN THE ROUTER'S OWN DETECTION GIVES IT TO THIS LANE (`Makefile` has no extension to match, and an extension-only rule measured 129 files where the production router admits 697 — but the router's verdict is a LANGUAGE, not a spelling: `dart-sdk/sdk/bin/dart` is a bash script and is NOT this lane's file).",
+     "project index: USED — 0 repo index(es) (0 built, 0 from cache, 0 damaged) over 0 file(s) — the files THIS RUN sampled, so an index over a stride sample is not a project index (run with maxFiles 0 for the real one). Passed as { projectIndex } exactly as `pool-worker.ts` parse_batch does. INDEX-ASSISTED POPULATION, and the distinction is not academic: with the index IN, cross-file base resolution and the widened type-visibility gate are measured. THE GATE'S PROJECT-INDEX POPULATION is dart, java, javascript, protobuf, python, scss, typescript (the languages `INDEX_SPECS` can build an index for). For those, this population IS production's; for every other language the analyzer is parsed with NO context and behaves as this run's --index-less arm does, so its counts are not comparable to a --index-less run. Production's own list is PROJECT_INDEX_EXTENSIONS in src/ast/parallel-indexer.ts; a language in that list with no INDEX_SPECS entry here is a gap in THIS instrument, not in production.",
+     "excluded from that population: 2071 tracked-but-absent/unreadable + 8 over the 1 MB cap (largest 5.3 MB) — above the cap the engine extracts structurally, not as an analyzer",
+     "parse failures: 0   degraded (regex fallback): 0"
+    ],
+    "table1": [
+     "TABLE 1 — PER PROJECT, the scope production resolves in (this is the verdict's):",
+     "type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK   ext?    extFAIL  bindOK   bind?   bindFAIL  causeOK  causeFAIL",
+     "----------------------------------------------------------------------------------------------------------------------------------------------------",
+     "calls         931193   203679    0         404969     160458     322545      0       0       0        0        0       0         0        0",
+     "uses          117705   35331     0         59583      21587      22791       0       0       0        0        0       0         0        0",
+     "contains      168351   168351    106506    0          0          0           0       0       0        0        0       0         0        0",
+     "imports       51143    228       0         539        378        50376       0       0       0        0        0       0         0        0",
+     "references    3174     32        0         339        240        2803        0       0       0        0        0       0         0        0",
+     "exports       1528     693       0         780        0          55          0       0       0        0        0       0         0        0",
+     "extends       4331     2314      0         625        327        1392        0       0       0        0        0       0         0        0",
+     "implements    375      295       0         80         24         0           0       0       0        0        0       0         0        0",
+     "overrides     1884     0         0         1884       358        0           0       0       0        0        0       0         0        0",
+     "instantiates  3093     725       0         596        452        1772        0       0       0        0        0       0         0        0",
+     "decorates     0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "renders       0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "mixes_in      0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "part_of       0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+     "---------------------------------------------------------------------------------------------",
+     "TOTAL         1282777  411648    106506    469395     183824     401734      0       0       0        0        0       0         0        0",
+     "collRes = of `resolved`: the target had MORE THAN ONE declaration, so production's tie-break chose the row — the indexer measures 37,318 of 49,729 such picks as WRONG · extOK = external claim the PROJECT CONFIRMS · ext? = claim no check can reach (no identifier owner, and no project fact for it) · extFAIL = claim the project REFUTES, counted against the lane"
+    ],
+    "evidencePage": "validation/m14/verification/CPP-D3.md",
+    "aToBDelta": {
+     "classified": 0,
+     "resolved": 0,
+     "ambiguous": 0,
+     "unresolved": 0,
+     "arbitraryTwin": 0,
+     "classRows": 0
+    }
    }
   },
   "noNewValueConfirmations": "The constructs that carry NO relationship (or a DIFFERENT one than their spelling suggests) and are therefore carried as METADATA/symbol facts rather than as a vocabulary value — each counted at whole population by the same census, so the ruling is a number and not a silence: concepts+requires (concept_definition 2 · requires_clause 10 · requires_expression 2 — RULED construct, no symbol/no edge); template instantiation (template_instantiation 267 sites, versus `instantiates` 3,093 rows emitted from new_expression only — CPP-R2); structured bindings (structured_binding_declarator 389 sites; binding names are declarations, the initializer read is the uses edge); lambda expressions (lambda_expression 5,614 · lambda_capture_specifier 5,670 — captures of declared names are uses, the lambda publishes no symbol); operator/destructor names (operator_name 3,335 · operator_cast 159 · destructor_name 2,873 — symbols contained, no `overloads` value exists); friend declarations (573 — a friend declaration publishes no edge); namespace aliases (83 — a namespace is not a published declaration); pure-virtual clauses (75 — the pure-virtual CONTRACT is why `implements` fires, CPP-R1); multiple inheritance (114 classes with >1 base in 58 files across 5 repos — N extends edges, CPP-R4)."

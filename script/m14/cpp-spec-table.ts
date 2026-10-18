@@ -29,6 +29,7 @@ const GATE_LOG = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/gate-
 const OUT = path.join(ROOT, "script/m14/spec/cpp-spec-table.json")
 const CENSUS = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-emission-census-whole.json")
 const D3_NOINDEX = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-d3-noindex-arm.json")
+const D3_INDEXED = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-d3-indexed-arm.json")
 const CHECK = process.argv.includes("--check")
 
 interface GateRow {
@@ -134,6 +135,7 @@ const gate = parseGateLog(fs.readFileSync(GATE_LOG, "utf8"))
 const census: any = fs.existsSync(CENSUS) ? JSON.parse(fs.readFileSync(CENSUS, "utf8")) : null
 /** The D3 no-index whole-population gate arm + its closure-exact classifier. */
 const d3: any = fs.existsSync(D3_NOINDEX) ? JSON.parse(fs.readFileSync(D3_NOINDEX, "utf8")) : null
+const d3Indexed: any = fs.existsSync(D3_INDEXED) ? JSON.parse(fs.readFileSync(D3_INDEXED, "utf8")) : null
 /** TABLE 1 lines of the gate arm, parsed into per-type rows (the table IS the verdict's scope). */
 const d3Table: Record<string, any> = {}
 if (d3?.table1) {
@@ -211,7 +213,7 @@ for (const value of applicable.applicableValues) {
       ? { ...d3Table[value], command: d3.command, population: { parsed: 7435, admitted: 7435, repos: 31, failed: 0, degraded: 0 } }
       : { status: "OWED — the D3 no-index arm has not landed" },
     cap50ResidualClass: LANE_NOTES[value]?.cap50ResidualClass ?? "",
-    wholePopulation: census?.perType?.[value]
+    wholePopulation: census && censusPopulation && census.perType?.[value]
       ? {
           status: "MEASURED",
           command: censusPopulation.command,
@@ -289,7 +291,7 @@ const spec = {
   },
   wholePopulationArms: {
     status: census
-      ? `D2 census MEASURED (${census.population.parsed}/${census.population.admitted} files, ${census.population.repos} repos, ${census.closure.totalEdges} rows); D3 no-index arm MEASURED with a closure-exact classification (see .d3.noIndexArm); the --index arm is OWED.`
+      ? `D2 census MEASURED (${census.population.parsed}/${census.population.admitted} files, ${census.population.repos} repos, ${census.closure.totalEdges} rows); D3 BOTH arms MEASURED with a closure-exact classification (no-index in .d3.noIndexArm; --index in .d3.indexedArm is a measured STRUCTURAL NON-ARM — production builds no cpp project index, so the A->B delta is 0 in every column).`
       : "OWED — filled by the D2 whole-population emission census and the D3 incoming-gate arms.",
     census: census
       ? {
@@ -324,7 +326,22 @@ const spec = {
             closure: d3.classifier?.control?.closure ?? null,
             evidencePage: "validation/m14/verification/CPP-D3.md",
           },
-          indexedArm: { status: "OWED — the --index arm is the next run; the cpp analyzer reads NO project index, so the expected delta is 0 and the arm is measured to prove that rather than assumed" },
+          indexedArm: d3Indexed
+            ? {
+                status:
+                  "MEASURED — STRUCTURALLY INERT, and that is the finding: production builds NO cpp project index " +
+                  "(PROJECT_INDEX_EXTENSIONS in src/ast/parallel-indexer.ts has no .cpp/.cc/.hpp spelling), the gate's " +
+                  "INDEX_SPECS has no cpp entry (the arm reports 'project index: USED — 0 repo index(es) (0 built, 0 from " +
+                  "cache, 0 damaged) over 0 file(s)'), and the analyzer reads no projectIndex (0 occurrences). The arm was " +
+                  "RUN, not skipped: TABLE 1, binding intent, claim-carrying block and verdict are IDENTICAL to the no-index " +
+                  "arm, and the A->B delta is 0 in every column.",
+                command: d3Indexed.command,
+                population: d3Indexed.population,
+                table1: d3Indexed.table1,
+                evidencePage: "validation/m14/verification/CPP-D3.md",
+                aToBDelta: { classified: 0, resolved: 0, ambiguous: 0, unresolved: 0, arbitraryTwin: 0, classRows: 0 },
+              }
+            : { status: "OWED — the --index arm has not landed" },
         }
       : { status: "OWED — the D3 no-index arm has not landed" },
     noNewValueConfirmations:
