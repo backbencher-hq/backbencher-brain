@@ -463,6 +463,17 @@ interface PythonContext {
   qualifiedBasesByClassKey: Map<string, string[]>
 }
 
+
+/**
+ * PYTHON STDLIB CITATION ROOTS — the `python-stdlib` citation vocabulary (id: "python-stdlib"),
+ * copied from `script/m14/citations.ts` (analyzers must not import script/; a lane copies the list
+ * and names the vocabulary id it cites, per that file's contract). The citation is the EXISTING
+ * `namespace` claim (`metadata.languageNamespace`): the arbiter checks the TARGET's root against
+ * this array and a root not listed is REFUTED — so the emission is limited to rows whose target
+ * root really is one of these modules, and the fixture pins the non-emission side (undeclared root).
+ */
+export const PY_STDLIB_CITATION_ROOTS: ReadonlySet<string> = new Set(["sys","os","re","json","typing","__future__","collections","itertools","functools","operator","pathlib","datetime","time","logging","unittest","subprocess","socket","http","urllib","sqlite3","csv","io","abc","enum","dataclasses","asyncio","threading","multiprocessing","hashlib","random","math","warnings","contextlib","copy","pickle","struct","base64","tempfile","shutil","glob","fnmatch","textwrap","string","traceback","weakref","types","inspect","importlib","pkgutil","platform","uuid","decimal","fractions","statistics","heapq","bisect","array","queue","signal","errno","stat","zlib","gzip","bz2","lzma","tarfile","zipfile","configparser","argparse","getopt","shlex","cmd","pdb","profile","timeit","doctest","ast","dis","code","compileall","py_compile","symtable","token","tokenize","keyword","builtins","__builtin__","gc","atexit","site","sysconfig","ctypes","mmap","select","selectors","ssl","smtplib","ftplib","poplib","imaplib","xml","html","email","mimetypes","quopri","uu","binascii","secrets","hmac","locale","gettext","calendar","numbers","cmath","graphlib"])
+
 // Python builtins — never legitimate in-file call targets.
 // Exported: the differential oracle imports this EXACT set (never a
 // hand-duplicated copy — a drift would fabricate or hide call edges).
@@ -1405,6 +1416,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (a builtin name this file also imports is claimed by the import, because the import
     // shadows the builtin at that name; the namespace certifier refuses import-bound names).
     this.certifyImportEvidenceClaims(ctx)
+    this.certifyNamespaceCitations(ctx)
 
     const detectedFrameworks: string[] = PY_FRAMEWORK_ORDER.filter((f) => ctx.frameworks[f])
     const detectedPatterns: string[] = []
@@ -6465,6 +6477,46 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * and `externalSpecifier`, so a reader can audit WHY this edge was certified and WHICH module
    * the name came from instead of trusting a boolean.
    */
+
+  /**
+   * THE PYTHON-STDLIB CITATION (D7 depth, 2026-10-19): an external claim whose TARGET's namespace
+   * root is a CPython standard-library module is CITABLE through the existing `namespace` claim
+   * kind, and this method declares the root on the edge (`metadata.languageNamespace: [root]`).
+   *
+   * WHY ONLY SOME ROWS. The arbiter checks the root OF THE TARGET against the array and REFUTES
+   * anything outside it. Measured on the arm's 40,419 ext? rows: 116 match under the dotted
+   * matcher and 11,167 more are colon-shaped imports (`pathlib:Path`, `typing:Union`) now that the
+   * Lead's colon-aware split exists — 11,283 in all. The remaining 29,136 are BARE imported names
+   * (`Optional`, `mkstemp`) with NO namespace segment in the target; no root rule can verify them,
+   * so they are deliberately left uncited (they need the importedName claim kind, Lead queue).
+   *
+   * EVIDENCE REQUIRED, so the citation cannot become a blanket excuse: the edge must ALREADY carry
+   * the analyzer's external marker (`isExternalTarget`) — a resolved row never acquires a claim
+   * here, which is what keeps `resolved` unchanged — and the root is looked up in the committed
+   * vocabulary `PY_STDLIB_CITATION_ROOTS` (id `python-stdlib`).
+   *
+   * PROPERTY 1, STATED IN THE FIXTURE'S OWN TERMS: the namespace claim NEVER consults the symbol
+   * table, so a project that declared a module named `typing` cannot refute it; the only refutation
+   * is an undeclared ROOT. That is why the fixture's negative is an undeclared-root row and not a
+   * "project declares the name" row — the latter is not expressible through this claim by design.
+   */
+  private certifyNamespaceCitations(ctx: PythonContext): void {
+    for (const r of ctx.relationships) {
+      const md = r.metadata as Record<string, any> | undefined
+      if (!md || (md.isExternalTarget !== true && md.isStdlib !== true && md.externalReason === undefined)) continue
+      if (Array.isArray(md.languageNamespace) && md.languageNamespace.length > 0) continue
+      const target = String(r.target ?? "")
+      // The arbiter's split: `:` first (python's `module:item`), then `.`/`::` prefix walk.
+      const segs = target.split(/[:.]|::/)
+      let root: string | null = null
+      for (let n = segs.length; n >= 1; n--) {
+        const cand = segs.slice(0, n).join(".")
+        if (PY_STDLIB_CITATION_ROOTS.has(cand)) { root = cand; break }
+      }
+      if (root !== null) md.languageNamespace = [root]
+    }
+  }
+
   private certifyImportEvidenceClaims(ctx: PythonContext): void {
     const bindings = ctx.moduleImportBindings
     if (!bindings || bindings.size === 0) return
