@@ -443,13 +443,17 @@ binding and re-resolves inside the one class-like owner) now carries for four fo
 | --- | --- | --- |
 | `assignment` | initialiser is a constructor | `const c = new Widget()` |
 | `annotation` | local type annotation | `const d: Widget = make()` |
-| `param` | parameter type annotation | `function f(w: Widget) { w.run() }` |
+| `param` | parameter type annotation (incl. a DESTRUCTURED binding typed from the member: `function f({ worker }: Settings)` -> `worker` is `Settings.worker`'s declared type) | `function f(w: Widget) { w.run() }` |
 | `this` | one-hop annotated field access | `private inner: Widget; this.inner.m()` |
 
 A name declared with two different types in one file is dropped whole (shadowing makes the
 file-level answer ambiguous and the store DELETES a correct binding for an owner it then cannot
-resolve). Deliberately not included: post-declaration assignment, `as` casts, factory return
-types, destructuring, receiver chains deeper than one `this.` hop.
+resolve). One hop is typed in each direction: `cfg.worker.m()` (a member of a typed parameter) and
+`this.field.m()` (an annotated field). A DESTRUCTURED binding is typed from the member's own
+declared type when the annotation names a type this file declares (`{ worker }: Settings`,
+`Settings { worker: Widget }`) — the member's stated type only, never a guess. Deliberately not
+included: post-declaration assignment, `as` casts, factory return types, destructured members whose
+type is not stated in the file, and receiver chains deeper than one hop.
 
 **Measured trap, recorded on the symbol (`bb_annotate receiverOwnerType`):** the `this`-field
 class was DEAD on arrival because the field-name node in this grammar is a `property_identifier`

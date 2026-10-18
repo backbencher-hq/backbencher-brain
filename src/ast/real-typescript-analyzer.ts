@@ -5384,6 +5384,11 @@ class TypeScriptAnalysisRunner {
     const typeMembers = new Map<string, Map<string, string>>()
     const conflictedLocals = new Set<string>()
     const conflictedFields = new Set<string>()
+    /** DESTRUCTURED bindings with an annotated type: `function f({ worker }: Settings)` and
+     *  `const { worker }: Settings = …`. Their binding's type is the TYPE MEMBER's type, which is
+     *  known only after the class/interface walk has recorded `typeMembers`, so they are resolved
+     *  after the walk rather than guessed during it. */
+    const pendingPatterns: { pattern: Node; ownerType: string; evidence: string }[] = []
     /** First declaration wins; a second declaration with a DIFFERENT type drops the name from
      *  the map entirely (shadowing makes the file-level answer ambiguous, and a wrong owner is
      *  worse than none — see the docstring). */
@@ -5415,12 +5420,18 @@ class TypeScriptAnalysisRunner {
           const isNew = value !== null && value.type === "new_expression"
           const type = this.declaratorTypeName(n)
           if (type) record(locals, conflictedLocals, nameNode.text, type, isNew ? "assignment" : "annotation")
+        } else if (nameNode && nameNode.type === "object_pattern") {
+          const ownerType = this.annotationTypeName(n)
+          if (ownerType) pendingPatterns.push({ pattern: nameNode, ownerType, evidence: "annotation" })
         }
       } else if (n.type === "required_parameter" || n.type === "optional_parameter") {
         const pattern = n.childForFieldName("pattern") ?? n.childForFieldName("name") ?? n.namedChild(0)
         if (pattern && pattern.type === "identifier") {
           const type = this.annotationTypeName(n)
           if (type) record(locals, conflictedLocals, pattern.text, type, "param")
+        } else if (pattern && pattern.type === "object_pattern") {
+          const ownerType = this.annotationTypeName(n)
+          if (ownerType) pendingPatterns.push({ pattern, ownerType, evidence: "param" })
         }
       } else if (n.type === "public_field_definition" || n.type === "property_signature") {
         // `private inner: UsedClass` — the type a `this.inner.m()` call is made through. A field
@@ -5444,6 +5455,34 @@ class TypeScriptAnalysisRunner {
       for (let i = 0; i < n.namedChildCount; i++) {
         const child = n.namedChild(i)
         if (child) stack.push(child)
+      }
+    }
+    // ── DESTRUCTURED BINDINGS, typed from the TYPE MEMBER they name ──────────────────────────
+    // `function f({ worker }: Settings)` with `Settings { worker: Widget }` makes `worker.other()`
+    // a call on a Widget: the binding's type is the MEMBER's declared type, one hop, read off the
+    // file's own interface/class declaration. Evidence class is the ANNOTATION's position — the
+    // chain's root is the parameter (`param`) or the local (`annotation`) — and only the member's
+    // OWN type is used; a member whose type is unknown stays unowned rather than guessed.
+    for (const { pattern, ownerType, evidence } of pendingPatterns) {
+      const byMember = typeMembers.get(ownerType)
+      if (!byMember) continue
+      for (let i = 0; i < pattern.namedChildCount; i++) {
+        const child = pattern.namedChild(i)
+        if (!child) continue
+        if (child.type === "shorthand_property_identifier_pattern") {
+          const memberType = byMember.get(child.text)
+          if (memberType) record(locals, conflictedLocals, child.text, memberType, evidence)
+          continue
+        }
+        // `{ worker: alias }` (pair) and `{ worker = fallback }` (object_assignment_pattern).
+        if (child.type !== "pair" && child.type !== "object_assignment_pattern") continue
+        const key = child.childForFieldName("key") ?? child.namedChild(0)
+        const value = child.childForFieldName("value") ?? child.namedChild(1) ?? child.namedChild(0)
+        if (!key || !value) continue
+        const binding = value.type === "identifier" ? value : value.type === "object_assignment_pattern" ? (value.childForFieldName("left") ?? value.namedChild(0)) : null
+        if (!binding || binding.type !== "identifier") continue
+        const memberType = byMember.get(key.text)
+        if (memberType) record(locals, conflictedLocals, binding.text, memberType, evidence)
       }
     }
     return { locals, classFields, typeMembers }
