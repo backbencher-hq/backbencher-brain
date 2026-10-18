@@ -189,7 +189,7 @@
       }
     },
     "imported_binding": {
-      "status": "PREPARED, NOT SHIPPED (2026-10-18) — contract-only input for the Lead-owned claim kind (task-19); analyzer emits NO claim yet. Contract: validation/m14/verification/JAVASCRIPT-IMPORTED-BINDING-CONTRACT.md",
+      "status": "ANALYZER HALF SHIPPED 2026-10-18 (2f4fad762 + evidence-key fix d0b525279 + fixture pins 17a3ee2e3); ARBITER HALF landed by the Lead (f36fd659a, claim kind importedBinding, verified from the run's own import evidence, counted in bindOK never resolved).",
       "target_rows_whole_pop": 57142,
       "per_label": {
         "calls_imported_callee": 22005,
@@ -211,6 +211,24 @@
         "IMPORTS-INTERNAL-FILE-MISSING": 720,
         "IMPORTS-URL": 15,
         "note": "projectFile claims / relative resolution, a different verification from this kind; arm B already verified 20128 imports module claims"
+      },
+      "emission": "every imports row publishes metadata.importedBindings (local names; re-export rows []); an edge whose TARGET IS the binding publishes metadata.importedBinding {specifier,binding} and the target stays BARE.",
+      "measured_cap50": {
+        "command": "bun run script/m14/incoming-gate.ts javascript js 50 --dump",
+        "bindOK": 1299,
+        "localSpellingVerified": 910,
+        "importEvidenceVerified": 389,
+        "bindFAIL": 0,
+        "bindingRefuted": 0,
+        "evidenceRows": "105/105 imports rows in the emission probe carry the array"
+      },
+      "claimable_target_is_binding_rows_whole_pop": 46598,
+      "seam_mapping": {
+        "imports_label_rows": 38872,
+        "target_is_binding_rows": 46598,
+        "receiver_member_rows": 38559,
+        "sum": 124029,
+        "note": "receiver-member rows name the member leaf and are NOT claimed by the contract (never-claim (b)); a receiver-position claim is a possible extension needing the Lead's arbiter field."
       }
     }
   }

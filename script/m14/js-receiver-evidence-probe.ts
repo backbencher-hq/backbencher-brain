@@ -185,3 +185,46 @@ console.log(JSON.stringify({
   examples,
   note: "CANDIDATE SITES, not gate yield: a site becomes resolved only when the member is actually declared on the proven owner. Yield is measured by the before/after arm pair after wiring.",
 }, null, 1))
+
+// --- ANALYZE MODE (--analyze): run the production ANALYZER over the sample and count the owner
+// evidence it actually emits per class. The AST-only counts above size the candidate sites; this
+// counts the rows that carry the evidence after the analyzer's own refusals (shadowed class name,
+// dynamic `this`, class expressions), which is the number the D7 row reports.
+if (process.argv.includes("--analyze")) {
+  const { RealJavaScriptAnalyzer } = await import("../../src/ast/real-javascript-analyzer")
+  const analyzer = new (RealJavaScriptAnalyzer as any)()
+  const byEvidence: Record<string, number> = {}
+  const byLabel: Record<string, number> = {}
+  let rowsWithOwner = 0, filesScanned = 0
+  for (const abs of files) {
+    let content: string
+    try { content = readFileSync(abs, "utf8") } catch { continue }
+    let result: any
+    try {
+      const parser: any = await getParser("javascript" as any)
+      const tree = parser.parse(content)
+      result = await analyzer.analyze(tree.rootNode, content, abs)
+      tree.delete?.()
+    } catch { continue }
+    filesScanned++
+    for (const rel of result.relationships ?? []) {
+      const md = rel.metadata ?? {}
+      const ev = md.ownerEvidence
+      if (typeof ev === "string" && typeof md.owner === "string") {
+        rowsWithOwner++
+        byEvidence[ev] = (byEvidence[ev] ?? 0) + 1
+        const label = String(rel.type ?? "")
+        byLabel[label] = (byLabel[label] ?? 0) + 1
+      }
+    }
+  }
+  console.log(JSON.stringify({
+    probe: "js-receiver-evidence-probe --analyze",
+    command: "bun run script/m14/js-receiver-evidence-probe.ts --analyze --sample=" + SAMPLE,
+    population: { sampled: files.length, analysed: filesScanned },
+    ownerCarryingRows: rowsWithOwner,
+    byEvidenceClass: byEvidence,
+    byLabel,
+    note: "Rows the analyzer ACTUALLY published with metadata.owner + ownerEvidence over the sample, after its own refusals. class-static counts the new static-class-receiver class; this-alias the positional const-self=this class.",
+  }, null, 1))
+}
