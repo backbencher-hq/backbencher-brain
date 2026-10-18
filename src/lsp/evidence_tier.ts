@@ -108,12 +108,22 @@ const STRUCTURAL_KINDS: ReadonlySet<string> = new Set([
   "contains",
   "exports",
   "instantiates",
+  // EXTENDED 2026-10-18 (canonical vocabulary). These three are PARSER-DETERMINISTIC by the same
+  // argument the set already carries for extends/implements: `mixes_in` reads the `with` clause,
+  // `renders` reads a JSX element's tag, `decorates` reads a decorator node attached to a
+  // declaration. Leaving them out is not neutral — every tier reader falls through to `inferred`,
+  // so an edge the analyzer read straight off the grammar would be presented as a guess.
+  "mixes_in",
+  "renders",
+  "decorates",
 ])
 
 /** The declared 0.7 floor (see header). */
 export const STRUCTURAL_FLOOR = 0.7
 
-const IMPORT_KINDS: ReadonlySet<string> = new Set(["import", "imports"])
+// `part_of` is a DIRECTIVE (a Dart `part`/`part of` statement) — module-level like imports, not a
+// structural fact about a symbol, so it takes the import-based tier rather than the structural one.
+const IMPORT_KINDS: ReadonlySet<string> = new Set(["import", "imports", "part_of"])
 const USAGE_CONTEXT_KINDS: ReadonlySet<string> = new Set(["reference", "references", "use", "uses", "usage"])
 const REFERENCE_QUALIFIED_KINDS: ReadonlySet<string> = new Set(["references_qualified", "reference_qualified"])
 

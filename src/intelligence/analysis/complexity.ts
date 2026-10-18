@@ -32,7 +32,15 @@ function escapeLike(value: string): string {
  *  on bb's own src (37,929 vs 31,732) and 2.24x on a small corpus, and the same
  *  row count is also reported as stats.relationships — one number, two names,
  *  two implied meanings, in the same tool. */
-export const COUPLING_RELATIONSHIP_TYPES = ["calls", "instantiates", "references", "uses", "imports", "extends", "implements"] as const
+export const COUPLING_RELATIONSHIP_TYPES = [
+  "calls", "instantiates", "references", "uses", "imports", "extends", "implements",
+  // EXTENDED 2026-10-18 (canonical vocabulary). These are real couplings and leaving them out
+  // UNDER-reports the metric with no disclosure: `renders` is a component-to-component dependency,
+  // `mixes_in` composes a supertype, `decorates` is a dependency on the decorator, and `part_of` is
+  // a compilation-unit inclusion (module-level coupling, like imports). The two copies of this
+  // constant are a known duplication; both are updated here and in the same words.
+  "renders", "decorates", "mixes_in", "part_of",
+] as const
 
 const couplingClause = (): string => "relationship_type IN (" + COUPLING_RELATIONSHIP_TYPES.map(() => "?").join(",") + ")"
 

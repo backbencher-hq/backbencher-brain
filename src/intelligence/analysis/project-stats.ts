@@ -26,7 +26,15 @@ const ENGINE_VERSION = "m10.05"
  *  edges, and counting them inflated the coupling figure by 1.20x on
  *  backbencher-brain/src and 1.29x on commander. Declared here so the two
  *  numbers in this report can never be confused for one another again. */
-export const COUPLING_RELATIONSHIP_TYPES = ["calls", "instantiates", "references", "uses", "imports", "extends", "implements"] as const
+export const COUPLING_RELATIONSHIP_TYPES = [
+  "calls", "instantiates", "references", "uses", "imports", "extends", "implements",
+  // EXTENDED 2026-10-18 (canonical vocabulary). These are real couplings and leaving them out
+  // UNDER-reports the metric with no disclosure: `renders` is a component-to-component dependency,
+  // `mixes_in` composes a supertype, `decorates` is a dependency on the decorator, and `part_of` is
+  // a compilation-unit inclusion (module-level coupling, like imports). The two copies of this
+  // constant are a known duplication; both are updated here and in the same words.
+  "renders", "decorates", "mixes_in", "part_of",
+] as const
 
 /** A file with no recorded language is reported as "unknown" rather than
  *  dropped: an unclassified file is a fact about the project, and hiding it
