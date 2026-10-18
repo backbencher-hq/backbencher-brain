@@ -159,7 +159,7 @@ let bbDumped = 0
 // count them the same way, so the classification lives in incoming-rule.ts and this file
 // consumes it. Re-exported below so a caller of this module keeps working unchanged.
 import {
-  EXTERNAL_KEYS, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
+  EXTERNAL_KEYS, NAMESPACE_CLAIM_KEY, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
   NAME_CAP,
   FILE_CLAIM_KEY, REMOTE_REF_CLAIM_KEY,
   emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY, isContainsEdge,
@@ -1627,6 +1627,27 @@ function selfTest(): { ok: boolean; failures: string[] } {
   // is made.
   if (externalClaimOf({ metadata: { [BINDING_CLAIM_KEY]: true } })?.kind !== "binding") {
     failures.push("control: `localBinding` did not route to the binding claim")
+  }
+  // THE NAMESPACE CLAIM IS THE CITATION MECHANISM (charter §18.8 ruling, 2026-10-19): a lane declares
+  // the roots it certifies (`metadata.languageNamespace`), the arbiter checks the target's root against
+  // THAT LIST (prefix or exact symbol), and a non-listed root is REFUTED so a citation can never become
+  // a blanket excuse. Plants: a reserved namespace prefix, a library namespace prefix, a bare symbol
+  // (Dart SDK annotation shape), and — the important one — an UNDECLARED root that must refute.
+  if (externalClaimOf({ metadata: { [NAMESPACE_CLAIM_KEY]: ["java", "override"] } })?.kind !== "namespace") {
+    failures.push("control: `languageNamespace` did not route to the namespace citation claim")
+  }
+  {
+    const citationClaim: ExternalClaim = { kind: "namespace", roots: ["java", "jakarta", "override"] }
+    const citationArms: Array<[string, Outcome, string]> = [
+      ["java.util.List", "externalVerified", "a reserved-platform root must verify"],
+      ["jakarta.servlet.Filter", "externalVerified", "a cited library-namespace root must verify"],
+      ["override", "externalVerified", "a cited bare symbol (Dart SDK annotation shape) must verify"],
+      ["kotlinx.coroutines.Job", "externalRefuted", "an UNDECLARED root must REFUTE — the citation is not a blanket excuse"],
+    ]
+    for (const [t, want, why] of citationArms) {
+      const c = classifyEdge(declCount, kinds, t, citationClaim)
+      if (c.outcome !== want) failures.push(`control: citation target ${t} read ${c.outcome}, expected ${want} — ${why}`)
+    }
   }
   if (externalClaimOf({ metadata: { isExternalBase: true } })?.kind !== "owner") {
     failures.push("control: `isExternalBase` no longer routes to the owner claim")
