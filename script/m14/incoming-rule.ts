@@ -1025,7 +1025,7 @@ export type Classified = {
   kinds: string
   /** WHICH evidence confirmed a verified external claim — reported so a lane can audit the
    *  mechanism that produced the number, not only the number. */
-  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling" | "namespace" | "sourcePath"
+  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling" | "namespace" | "sourcePath" | "ownerChannel"
   /**
    * WHAT A CLAIM SAYS ABOUT A TARGET THAT NAMES TWO OR MORE DECLARATIONS — recorded WITH ITS KIND,
    * and deliberately NOT allowed to move the outcome. See `claimDispositionOnAmbiguous`.
@@ -1223,6 +1223,21 @@ export function classifyEdge(
    *  refuted by another file's declaration — see `claimDispositionOnAmbiguous`. `undefined` means the
    *  caller cannot say, and the disposition then never claims a refutation on that basis. */
   ownFileDeclares?: boolean,
+  /**
+   * THE OWNER CHANNEL'S VERDICT for a row that states its receiver (`metadata.owner`) — the rule
+   * `member-owner-resolution.ts` runs in production, modelled in `script/m14/owner-channel.ts`.
+   *
+   * WHY IT OVERRIDES THE NAME COUNT. Production WITHDRAWS the name-based binding for every
+   * calls/uses row carrying an owner and re-binds only through this channel, so the name count is
+   * not merely less precise for those rows — it measures a binding production deliberately removed.
+   * `resolved` here means the channel found exactly one declaration (owner, same-kind duplicate or
+   * a unique ancestor); `declined` means the store leaves the row NULL, and an unresolved row whose
+   * name happens to be unique must read `unresolved`, not `resolved`.
+   *
+   * `undefined` means the row is not the channel's input (no owner, or not calls/uses) and every
+   * branch below behaves exactly as before it existed.
+   */
+  ownerChannel?: { outcome: "resolved" | "declined" },
 ): Classified {
   const decls = declCount.get(tgt) ?? 0
   if (containsLike === true && decls >= 1) {
@@ -1234,6 +1249,21 @@ export function classifyEdge(
   }
   const kindSet = kinds.get(tgt)
   const kindText = [...(kindSet ?? [])].sort().join("|")
+  // ── THE OWNER CHANNEL IS CHECKED FIRST, BEFORE EVEN THE CLAIMS, because in production it runs
+  // LAST and WINS: `claimOwnerCarryingTargets` withdraws the name binding for every calls/uses row
+  // carrying `metadata.owner`, then the channel re-binds it. A row it resolves therefore HAS a
+  // target_symbol_id no matter what any earlier strategy or marker said — so the gate must report
+  // the resolution first and let every other branch below be reachable only for a row the channel
+  // DECLINES. Modeling it below the claim branches would let a claim marker hide a resolution
+  // production holds.
+  if (ownerChannel !== undefined && ownerChannel.outcome === "resolved") {
+    return { outcome: "resolved", decls, kinds: kindText, verifiedBy: "ownerChannel" }
+  }
+  // A DECLINE does not fall through to the count model: the store withdrew the name binding, so the
+  // row is NULL in production even when its name is unique here. It still falls through the CLAIM
+  // branches (a decliner keeps its declared marker, unverified-but-stated), and the tail below reads
+  // `channelDeclined` to return `unresolved` instead of a name-based `resolved`.
+  const channelDeclined = ownerChannel !== undefined && ownerChannel.outcome === "declined"
   // THE NAMESPACE CLAIM IS THE SOLE AUTHORITY FOR ITS EDGES, checked before every count-based
   // branch because the design's whole point is that the ROOT is checked against the LIST and never
   // against the symbol table (property 1). Refutable by construction: a root the analyzer did not
@@ -1370,6 +1400,11 @@ export function classifyEdge(
       outcome, decls, kinds: kindText,
       verifiedBy: outcome === "externalVerified" ? (viaTarget ? "target" : "owner") : undefined,
     }
+  }
+  if (channelDeclined) {
+    // The store WITHDREW this row's name binding and then declined to re-bind it: NULL in
+    // production, so the name count must not be allowed to call it resolved.
+    return { outcome: "unresolved", decls, kinds: kindText }
   }
   if (decls > 1) {
     // THE CLAIM IS READ ON THIS PATH FOR THE FIRST TIME — to RECORD it, never to move the outcome.

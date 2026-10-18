@@ -118,6 +118,19 @@ import { BINDING_SEP } from "../../src/ast/types"
 // on their first run — see `script/m14/empty-result-kind.ts`. The classification is imported, never
 // re-implemented, so the instrument and its control cannot disagree about what "empty" means.
 import { classifyEmptyResults } from "./empty-result-kind"
+// THE OWNER CHANNEL'S MODEL. Production's `claimOwnerCarryingTargets` is authoritative over every
+// calls/uses row carrying `metadata.owner` (it withdraws the name binding and re-binds from the
+// receiver's class + ancestors); this gate modelled none of it, so it misreported those rows in BOTH
+// directions. The rule lives in ONE module with its own clause-by-clause citations so the two
+// implementations cannot drift silently — see script/m14/owner-channel.ts.
+import {
+  buildOwnerProjectPools,
+  ownerChannelVerdict,
+  EMPTY_OWNER_POOLS,
+  OWNER_CLASS_LIKE,
+  type OwnerProjectPools,
+  type OwnerSymbolRecord,
+} from "./owner-channel"
 
 // ============================================================
 // PER-EDGE DUMP (`--dump`)
@@ -851,6 +864,14 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   const pooledKinds = new Map<string, Set<string>>()
   const projectDecl = new Map<string, Map<string, number>>()
   const projectKinds = new Map<string, Map<string, Set<string>>>()
+  /**
+   * THE SYMBOLS THE OWNER CHANNEL NEEDS, per project — kept as a COMPACT record per relevant symbol,
+   * not per symbol: only class-like declarations (owner identity + heritage), symbols carrying an
+   * owner (members) and symbols with a heritage payload are retained, so a whole-corpus run does not
+   * pay an object per parsed symbol. The pass's rule is in script/m14/owner-channel.ts; the pools are
+   * built AFTER the walk, in the deferred classification pass, where the key space is complete.
+   */
+  const projectOwnerRecords = new Map<string, OwnerSymbolRecord[]>()
   /** project -> key -> the set of NON-EMPTY qualifiedNames answering to it (`--binding-collapse`) */
   const projectBindSet = new Map<string, Map<string, Set<string>>>()
   /** project -> key -> how many of the key's declarations carry a qualifiedName at all */
@@ -954,6 +975,13 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     label: Type
     tgt: string
     claim: ExternalClaim | null
+    /**
+     * THE RECEIVER'S CLASS, when the analyzer recorded one (`metadata.owner`) — the existing key
+     * production's owner channel reads (`claimOwnerCarryingTargets`). It travels with the edge and is
+     * resolved AFTER the walk, against the complete owner pool, because the channel is a
+     * project-scoped rule and classifying it during the walk would measure a half-built key space.
+     */
+    owner: string | null
     /** the marker-set signature, interned in `row.marks` at push time so the diagnostic and
      *  the classification cannot disagree about which marker set an edge belongs to */
     sig: string
@@ -1112,6 +1140,33 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
         countKey(q, symKind, f, symLine, q)
         aliasedKeys++
       }
+
+      // THE OWNER CHANNEL'S SYMBOLS, collected for the deferred classification pass. Only what the
+      // rule in script/m14/owner-channel.ts reads is kept: class-like declarations (owner identity
+      // and heritage), symbols carrying an owner (members), and symbols with a heritage payload.
+      // Collected in the same loop as the name key spaces so a symbol can never be counted in one and
+      // missing from the other.
+      const symOwner = String((s as any)?.ownerName ?? (s as any)?.scope ?? "").trim()
+      const symSuperTypes = Array.isArray((s as any)?.superTypes)
+        ? ((s as any).superTypes as unknown[])
+        : Array.isArray((s as any)?.metadata?.superTypes)
+          ? ((s as any).metadata.superTypes as unknown[])
+          : []
+      const symSupers = symSuperTypes.filter((x): x is string => typeof x === "string" && x.length > 0)
+      if (OWNER_CLASS_LIKE.has(symKind) || symOwner.length > 0 || symSupers.length > 0) {
+        const symEndLine = Number((s as any)?.range?.endLine ?? (s as any)?.endLine ?? (s as any)?.line_end ?? 0) || (symLine ?? 0)
+        let ownerRecords = projectOwnerRecords.get(repo)
+        if (!ownerRecords) projectOwnerRecords.set(repo, (ownerRecords = []))
+        ownerRecords.push({
+          file: f,
+          name,
+          kind: symKind,
+          line: symLine ?? 0,
+          endLine: symEndLine,
+          ownerName: symOwner.length > 0 ? symOwner : null,
+          superTypes: symSupers,
+        })
+      }
     }
 
     for (const rel of Array.isArray(r.relationships) ? r.relationships : []) {
@@ -1147,7 +1202,9 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // is written in the classification pass below, so no column can be filled from a
       // half-built key space even by accident.
       const edgeLine = Number((rel as any)?.line_number ?? (rel as any)?.lineNumber ?? (rel as any)?.line ?? 0) || null
-      pending.push({ label, tgt, claim, sig, repo: repoOf(f), srcFile: f, line: edgeLine })
+      const ownerRaw = md.owner
+      const owner = typeof ownerRaw === "string" && ownerRaw.length > 0 ? ownerRaw : null
+      pending.push({ label, tgt, claim, owner, sig, repo: repoOf(f), srcFile: f, line: edgeLine })
       continue
     }
   }
@@ -1190,6 +1247,24 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   // check was a total. Collected here, printed by `printReport`, and required to carry a ruling by
   // clause 3 below.
   const causeNames = new Map<string, number>()
+
+  // THE OWNER CHANNEL'S POOLS, built once per project over the finished symbol set — the same
+  // position production's pass runs in (after every name strategy, over the complete table). The rule
+  // and its citations live in script/m14/owner-channel.ts.
+  const ownerPools = new Map<string, OwnerProjectPools>()
+  for (const [repo, records] of projectOwnerRecords) ownerPools.set(repo, buildOwnerProjectPools(records))
+
+  // HOW MUCH OF THE TABLE THE OWNER CHANNEL DECIDED, and in which direction. Printed to stderr so no
+  // parser of stdout can mistake it for a column: a row this channel RESOLVED is a resolution the
+  // name count could not see, and a row it DECLINED is a binding production WITHDREW — the second is
+  // the one a reader must not have to guess about, because it can turn a name-looking `resolved` into
+  // an honest NULL. Counted by reason so the channel's mechanisms are priced, not just totalled.
+  let ownerRows = 0
+  let ownerResolved = 0
+  let ownerDeclined = 0
+  let ownerDeclinedButNameWouldResolve = 0
+  let ownerResolvedButNameSaidAmbiguous = 0
+  const ownerReasons = new Map<string, number>()
   for (const e of pending) {
     const row = rows.get(e.label)!
     const marks = row.marks.get(e.sig)!
@@ -1232,14 +1307,46 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     // space and called all 180 of css's ambiguous edges contradicted. Same `d.file === srcFile` test
     // `classifyIntent` uses, so the two agree by construction rather than by convention.
     const ownFileDeclares = (declPos.get(e.tgt) ?? []).some((d) => d.file === e.srcFile)
-    const pc = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares)
+    // THE OWNER CHANNEL'S VERDICT for this row, when the row states its receiver and the type is one
+    // the store channel touches (calls/uses). For those rows the channel is AUTHORITATIVE: the store
+    // withdraws the name binding, so a name-count outcome is not what production holds — it is what
+    // production deliberately discarded. `undefined` means the row is not the channel's input and the
+    // name model applies unchanged.
+    const ownerVerdict = e.owner !== null && (e.label === "calls" || e.label === "uses")
+      ? ownerChannelVerdict(ownerPools.get(e.repo) ?? EMPTY_OWNER_POOLS, {
+          type: e.label,
+          target: e.tgt,
+          owner: e.owner,
+          srcFile: e.srcFile,
+          line: e.line,
+        })
+      : undefined
+    const pc = classifyEdge(
+      projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares,
+      ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome },
+    )
+    if (ownerVerdict !== undefined) {
+      ownerRows++
+      ownerReasons.set(ownerVerdict.reason, (ownerReasons.get(ownerVerdict.reason) ?? 0) + 1)
+      if (ownerVerdict.outcome === "resolved") ownerResolved++
+      else ownerDeclined++
+      // THE TWO CROSS-CHECKS THAT MAKE THIS DISCLOSURE WORTH HAVING: how many rows the channel moved
+      // in each direction relative to the name model alone. Not used for any count in the table — a
+      // diagnostic, so a reader can see the size of the correction instead of trusting that it is small.
+      const nameOnly = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares)
+      if (ownerVerdict.outcome === "declined" && nameOnly.outcome === "resolved") ownerDeclinedButNameWouldResolve++
+      if (ownerVerdict.outcome === "resolved" && (nameOnly.outcome === "ambBoth" || nameOnly.outcome === "ambDeclOnly" || nameOnly.outcome === "unresolved")) ownerResolvedButNameSaidAmbiguous++
+    }
     if (BB_DUMP && pc.outcome !== "resolved" && bbDumped < BB_DUMP_LIMIT && (BB_DUMP_LABEL === "" || e.label === BB_DUMP_LABEL)) {
       bbDumped++
       console.log(`DUMP\t${e.label}\t${pc.outcome}\t${e.tgt}\t${e.srcFile}:${e.line}\t${e.claim?.kind ?? "-"}`)
     }
     tally(row.project, pc, e.tgt, e.label)
     row.intent[classifyIntent(e.tgt, e.srcFile, e.line, e.label, declPos)]++
-    tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, e.tgt, e.claim, facts, isContains), e.tgt, e.label)
+    // The pooled table is the historical comparison key space, but the owner channel's verdict is a
+    // property of the ROW, not of the key space — passing it here keeps the two tables from telling
+    // different stories about the same edge.
+    tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, e.tgt, e.claim, facts, isContains, undefined, ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }), e.tgt, e.label)
     switch (pc.outcome) {
       case "resolved": marks.resolved++; break
       case "ambDeclOnly": case "ambBoth": marks.amb++; break
@@ -1286,6 +1393,21 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   }
   scanSeparator(pooledDecl.keys())
   for (const m of projectDecl.values()) scanSeparator(m.keys())
+
+  // THE OWNER CHANNEL'S DISCLOSURE — on STDERR on purpose. stdout is the report, every consumer
+  // parses it positionally, and this is the difference between the name model and what production
+  // actually holds for owner-carrying rows. BOTH directions are printed, because one of them is the
+  // uncomfortable one: `declined` rows are bindings the store WITHDREW, so a run where that number is
+  // large is a run whose name model would have over-credited resolution.
+  if (ownerRows > 0) {
+    const reasons = [...ownerReasons.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(" · ")
+    process.stderr.write(
+      `  owner channel (production rule, modelled): ${ownerRows} row(s) carried metadata.owner · ` +
+      `resolved ${ownerResolved} · declined ${ownerDeclined} (${reasons})\n` +
+      `  owner channel vs name model: ${ownerResolvedButNameSaidAmbiguous} row(s) the name count called ambiguous/unresolved and the channel resolves; ` +
+      `${ownerDeclinedButNameWouldResolve} row(s) the channel DECLINED whose name would have resolved — production holds those NULL (withdrawn binding)\n`,
+    )
+  }
 
   return {
     lang, ext: exts.join(","), admittedExts: exts, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, bindingCollapse: BINDING_COLLAPSE, bindingCollapsedKeys: collapsedKeys, rows, fallbackRows, emptyResults,
@@ -1625,6 +1747,87 @@ function selfTest(): { ok: boolean; failures: string[] } {
       `collision=${collRow.resolvedAmongCollision} ambiguousByDecl=${collRow.ambiguousByDecl} — ` +
       `the rule fires but its outcome is not reaching the table the verdict reads`,
     )
+  }
+
+  // ── THE OWNER CHANNEL'S CONTROLS. The channel (script/m14/owner-channel.ts) is authoritative over
+  // owner-carrying calls/uses rows in production, so a model that only proves the happy path would be
+  // decoration. These plants drive the REAL rule function and then the REAL `classifyEdge` branch, so
+  // every clause of the production pass has a pin that can go red:
+  //   (1) a direct member resolves; (2) two SAME-KIND candidates are one member published twice and
+  //   resolve; (3) candidates of DIFFERENT kinds decline (a method vs a property is a guess);
+  //   (4) an ancestor's member resolves through the chain; (5) a QUALIFIED target never reaches the
+  //   chain; (6) an absent owner and an AMBIGUOUS owner name both decline — never pick between
+  //   same-named classes; (7) rule-0 identity: a call inside one of two same-named classes resolves
+  //   by identity while a call elsewhere declines; (8) the `classifyEdge` branch itself: a channel
+  //   DECLINE on a name-unique target must read `unresolved`, because the store WITHDREW that binding
+  //   — the mutant that would otherwise credit a resolution production removed.
+  const ownerRecords: OwnerSymbolRecord[] = [
+    { file: "a.ts", name: "Alpha", kind: "class", line: 1, endLine: 60, ownerName: null, superTypes: [] },
+    { file: "a.ts", name: "run", kind: "method", line: 5, endLine: 8, ownerName: "Alpha", superTypes: [] },
+    { file: "a.ts", name: "dupe", kind: "method", line: 10, endLine: 12, ownerName: "Alpha", superTypes: [] },
+    { file: "a.ts", name: "dupe", kind: "method", line: 14, endLine: 16, ownerName: "Alpha", superTypes: [] },
+    { file: "a.ts", name: "twice", kind: "method", line: 20, endLine: 22, ownerName: "Alpha", superTypes: [] },
+    { file: "a.ts", name: "twice", kind: "constructor", line: 30, endLine: 32, ownerName: "Alpha", superTypes: [] },
+    { file: "b.ts", name: "Base", kind: "class", line: 1, endLine: 40, ownerName: null, superTypes: [] },
+    { file: "b.ts", name: "inherited", kind: "method", line: 5, endLine: 6, ownerName: "Base", superTypes: [] },
+    { file: "c.ts", name: "Child", kind: "class", line: 1, endLine: 40, ownerName: null, superTypes: ["Base"] },
+    { file: "c.ts", name: "other", kind: "method", line: 5, endLine: 6, ownerName: "Child", superTypes: [] },
+    { file: "x.ts", name: "Twin", kind: "class", line: 1, endLine: 30, ownerName: null, superTypes: [] },
+    { file: "x.ts", name: "m", kind: "method", line: 5, endLine: 6, ownerName: "Twin", superTypes: [] },
+    { file: "y.ts", name: "Twin", kind: "class", line: 1, endLine: 30, ownerName: null, superTypes: [] },
+  ]
+  const oPools = buildOwnerProjectPools(ownerRecords)
+  const oVerdict = (type: string, target: string, owner: string, srcFile: string, line: number | null) =>
+    ownerChannelVerdict(oPools, { type, target, owner, srcFile, line })
+  const directV = oVerdict("calls", "run", "Alpha", "a.ts", 6)
+  if (directV.outcome !== "resolved" || directV.reason !== "direct") {
+    failures.push(`control (owner channel): a direct member classified ${directV.outcome}/${directV.reason}, expected resolved/direct`)
+  }
+  const dupeV = oVerdict("calls", "dupe", "Alpha", "a.ts", 6)
+  if (dupeV.outcome !== "resolved" || dupeV.reason !== "sameKindDuplicate") {
+    failures.push(`control (owner channel): a same-kind duplicate classified ${dupeV.outcome}/${dupeV.reason}, expected resolved/sameKindDuplicate — one member published twice is not an ambiguity`)
+  }
+  const kindV = oVerdict("calls", "twice", "Alpha", "a.ts", 6)
+  if (kindV.outcome !== "declined" || kindV.reason !== "kindAmbiguous") {
+    failures.push(`control (owner channel): candidates of two DIFFERENT kinds classified ${kindV.outcome}/${kindV.reason}, expected declined/kindAmbiguous — the channel must not choose between a method and a constructor`)
+  }
+  const inheritedV = oVerdict("calls", "inherited", "Child", "c.ts", 6)
+  if (inheritedV.outcome !== "resolved" || inheritedV.reason !== "inherited") {
+    failures.push(`control (owner channel): an ancestor's member classified ${inheritedV.outcome}/${inheritedV.reason}, expected resolved/inherited — the ancestor walk is not applied`)
+  }
+  const qualifiedV = oVerdict("calls", "Child.inherited", "Child", "c.ts", 6)
+  if (qualifiedV.outcome !== "declined") {
+    failures.push(`control (owner channel): a QUALIFIED target classified ${qualifiedV.outcome}, expected declined — a qualified target may only bind in the owner it names, never through the chain`)
+  }
+  const absentV = oVerdict("calls", "run", "NoSuchOwner", "z.ts", 1)
+  if (absentV.outcome !== "declined" || absentV.reason !== "ownerAbsent") {
+    failures.push(`control (owner channel): an absent owner classified ${absentV.outcome}/${absentV.reason}, expected declined/ownerAbsent`)
+  }
+  const ambigV = oVerdict("calls", "m", "Twin", "z.ts", 1)
+  if (ambigV.outcome !== "declined" || ambigV.reason !== "ownerAmbiguous") {
+    failures.push(`control (owner channel): an AMBIGUOUS owner name classified ${ambigV.outcome}/${ambigV.reason} from outside either class, expected declined/ownerAmbiguous — the channel must not pick between same-named classes`)
+  }
+  const identityV = oVerdict("calls", "m", "Twin", "x.ts", 6)
+  if (identityV.outcome !== "resolved") {
+    failures.push(`control (owner channel): rule-0 identity classified ${identityV.outcome}/${identityV.reason} for a call INSIDE one of two same-named classes, expected resolved`)
+  }
+  // THE BRANCH ITSELF — driven through the real classifier, not the rule function:
+  const channelResolved = classifyEdge(new Map(), new Map(), "ghostMember", null, undefined, false, undefined, { outcome: "resolved" })
+  if (channelResolved.outcome !== "resolved" || channelResolved.verifiedBy !== "ownerChannel") {
+    failures.push(`control (owner channel): a channel resolution classified ${channelResolved.outcome}/verifiedBy ${channelResolved.verifiedBy ?? "-"}, expected resolved/ownerChannel`)
+  }
+  const channelDeclined = classifyEdge(new Map([["uniqueName", 1]]), new Map([["uniqueName", new Set(["function"])]]), "uniqueName", null, undefined, false, undefined, { outcome: "declined" })
+  if (channelDeclined.outcome !== "unresolved") {
+    failures.push(`control (owner channel): a channel DECLINE on a name-UNIQUE target classified ${channelDeclined.outcome}, expected unresolved — production withdrew that name binding`)
+  }
+  const channelAbsent = classifyEdge(new Map([["uniqueName", 1]]), new Map([["uniqueName", new Set(["function"])]]), "uniqueName", null, undefined, false, undefined)
+  if (channelAbsent.outcome !== "resolved") {
+    failures.push(`control (owner channel): with no channel verdict the name model changed its answer (${channelAbsent.outcome}) — the branch is not scoped to owner-carrying rows`)
+  }
+  const channelRow = emptyOutcomes()
+  tally(channelRow, channelResolved, "ghostMember", "calls")
+  if (channelRow.resolved !== 1 || channelRow.ambiguousByDecl !== 0) {
+    failures.push(`control (owner channel): a channel resolution tallied as resolved=${channelRow.resolved} amb=${channelRow.ambiguousByDecl} — it is not reaching the table the verdict reads`)
   }
 
   if (got.resolved !== 1) failures.push(`control: expected 1 resolved, got ${got.resolved}`)
