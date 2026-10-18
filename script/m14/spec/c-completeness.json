@@ -322,6 +322,27 @@
     "question": "CGD34's gate read `node.parent?.type !== \"function_definition\"` with no check on the node's OWN type. The rule it implemented was about a bare `identifier` child (a phantom function name from a macro-mangled declaration), but a function_definition's direct children also include its return type, and a return type spelled with a TYPEDEF name is a `type_identifier` in exactly that position. What is a function's return type?",
     "resolution": "A TYPE REFERENCE, always -- whether spelled with a tag (`struct Pt f(void)`) or with a typedef name (`Color f(void)`). That is the family's CGD12/CGD28 contract and the pinned M12 ground truth states it outright (`rel:Negative.c:references:pick_color:Color`, evidence 'bare return type -- in-file type usage'). #935 narrows CGD34's gate to the node types it was written for: a bare `identifier`/`field_identifier` direct child is still suppressed, and any other child type passes. The narrowing is safe for the phantom shape, because the `type_identifier` sibling there is a MACRO (`SQLITE_WSD`), which `isResolvableUseTarget` refuses for a `type_identifier` since no such type is declared in the file; `c/typedef-return-type-935` pins both halves. Measured: 2,903 typedef-spelled return types over 326 corpus files, of which 37 name a type the file declares -- 37 edges missing before, 0 after. Found by `script/m14/tmp/c-audit/m12-truth-drift.ts` comparing the pinned ground truth row by row against the live analyzer, NOT by reading the analyzer: the class is invisible to every other dimension in the lane because the output is well-formed, just incomplete.",
     "measured": "truth-drift probe: 92 pinned facts, 13 drifted, 12 explained by deliberate rulings and 1 a real loss (#935). Corpus: 37 missing `references` edges -> 0."
+   },
+   {
+    "id": "C-D15",
+    "node_type": "preprocessor-ARM enumerators + ERROR-displaced type names (2026-10-18)",
+    "status": "RULED + IMPLEMENTED",
+    "question": "are an enumerator inside a #ifdef/#else arm and a type name displaced into an ERROR real members?",
+    "resolution": "YES for the arm enumerator (#994: the arm is the same declaration under a condition; 15,244 contains rows at whole population); NO for the ERROR-displaced type (#993: an ERROR subtree is never where a declared name is read from; fixture-pinned false-edge class removed)."
+   },
+   {
+    "id": "C-D16",
+    "node_type": "marker-call arguments (2026-10-18)",
+    "status": "RULED",
+    "question": "is a marker invocation's first ARGUMENT an exported name?",
+    "resolution": "ONLY when it is a BARE IDENTIFIER. A condition expression (redis's static_assert macro whose replacement opens with `extern`) is not a name; 7 false exports at whole population before the rule, 0 after (#992)."
+   },
+   {
+    "id": "C-D17",
+    "node_type": "no-regex rule (M49.R2) over the Form C guard scan (2026-10-18)",
+    "status": "LANDED",
+    "question": "the lane still carried 2 regex literals at HEAD (a stale '0' claim in the docs); they are replaced by character scans",
+    "resolution": "isPreprocEndifLine/isPreprocIfLine, longest-first directive matching (an earlier prefix-order version dropped Form C exports and was caught by the cap-50 AFTER arm); the lane is ABSENT from the fresh HEAD-blob regex census."
    }
   ]
  },
@@ -353,64 +374,93 @@
   "corpusUnexercised": [],
   "_emissionSites": {
    "calls": [
-    "src/ast/real-c-analyzer.ts:2834"
+    "src/ast/real-c-analyzer.ts:2917"
    ],
    "uses": [
-    "src/ast/real-c-analyzer.ts:3091",
-    "src/ast/real-c-analyzer.ts:3338"
+    "src/ast/real-c-analyzer.ts:3199",
+    "src/ast/real-c-analyzer.ts:3446"
    ],
    "contains": [
-    "src/ast/real-c-analyzer.ts:3524"
+    "src/ast/real-c-analyzer.ts:3632"
    ],
    "imports": [
-    "src/ast/real-c-analyzer.ts:2534"
+    "src/ast/real-c-analyzer.ts:2617"
    ],
    "references": [
-    "src/ast/real-c-analyzer.ts:3338"
+    "src/ast/real-c-analyzer.ts:3446"
    ],
    "exports": [
-    "src/ast/real-c-analyzer.ts:2403",
-    "src/ast/real-c-analyzer.ts:2974",
-    "src/ast/real-c-analyzer.ts:3856"
+    "src/ast/real-c-analyzer.ts:2486",
+    "src/ast/real-c-analyzer.ts:3082",
+    "src/ast/real-c-analyzer.ts:3993"
    ],
    "overrides": [
-    "src/ast/real-c-analyzer.ts:3595",
-    "src/ast/real-c-analyzer.ts:3652"
+    "src/ast/real-c-analyzer.ts:3703",
+    "src/ast/real-c-analyzer.ts:3760"
    ],
    "instantiates": [
-    "src/ast/real-c-analyzer.ts:2890"
+    "src/ast/real-c-analyzer.ts:2973"
    ]
   },
   "_from": "DERIVATION. implemented = the eight types with an emission site in src/ast/real-c-analyzer.ts, named per type in `_emissionSites` (calls 1 site, uses 2, contains 1, imports 1, references 1, exports 3, overrides 2, instantiates 1). The two types with NO site are excluded by the pinned grammar's own inventory, not by the missing code: C cannot express IS-A or interface satisfaction, so there is no construct for the analyzer to miss. TWO GROUPS OF ZEROS, KEPT APART BECAUSE THEY MEAN DIFFERENT THINGS. (1) `extends` and `implements` read 0 on BOTH the 120-file firing-log stride and the clean 400-file .c-only run, AND the pinned grammar has no production for either \u2014 grammar-absence, excluded. (2) `exports` and `instantiates` ARE implemented here (3 and 1 emission sites, pinned by fixtures) and read 0 on BOTH strides as well; this block does NOT call that a corpus zero, because two strides are not a census, and it does NOT exclude them \u2014 they stay in the denominator as implemented types whose corpus exercise is measured zero on two strides and NOT established as zero corpus-wide. The construct exists in C for both (a visibility macro; a heap allocation) and the code exists for both, so the honest class is 'implemented, unexercised on every stride measured so far'. CLOSURE: implemented 8 + corpusUnexercised 0 + gaps 0 = applicable 8 = 10 - 2 grammar-absence - 0 unclassified.",
   "_implemented_measured": {
-   "_unit": "STRIDE SAMPLE, NOT POPULATION: `bun run script/m14/incoming-gate.ts c c 400` \u2014 the .c-ONLY stride, because a pooled c,h run pools .h headers the router sends to the objective-c analyzer. Instrument disclosure verbatim: `population: 400 parsed of 400 sampled (corpus has 5002 .c files across 38 repos; stride sample)`, plus `excluded from that population: 755 tracked-but-absent/unreadable + 1 over the 1 MB cap`. Per-type edges are TABLE 1 of that run, re-read 2026-10-17 after the #989 allocator-register + sizeof-identifier fix: SEVEN types fire on it (calls 32064 \u00b7 uses 12754 \u00b7 contains 1123 \u00b7 imports 1427 \u00b7 references 1591 \u00b7 overrides 53 \u00b7 instantiates 19) and `exports` fires 9 edges that do NOT resolve (the marker token is not a symbol \u2014 the three export fixtures track that class). `extends` and `implements` are excluded by grammar-absence and read 0. A stride is a lower bound, so these are lower bounds.",
+   "_unit": "WHOLE POPULATION, not a stride: `BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/c-emission-census.ts --cap=0 --json` \u2014 5,022 parsed of 5,022 admitted .c files, 39 repos, 0 parse failures. The stride readings this block used to carry are superseded and kept only in the artifact named beside the numbers.",
+   "_all_out_of_all_2026_10_18": true,
+   "artifact": "validation/m14/fixtures/c/measurements/c-emission-census-whole-final.json",
+   "total": 574886,
    "calls": {
-    "edges": 32064
+    "edges": 358388,
+    "files": 4011,
+    "repos": 36
    },
    "uses": {
-    "edges": 12754
-   },
-   "contains": {
-    "edges": 1123
-   },
-   "imports": {
-    "edges": 1427
+    "edges": 162886,
+    "files": 3024,
+    "repos": 32
    },
    "references": {
-    "edges": 1591
+    "edges": 19265,
+    "files": 834,
+    "repos": 26
+   },
+   "imports": {
+    "edges": 17774,
+    "files": 4886,
+    "repos": 38
+   },
+   "contains": {
+    "edges": 15244,
+    "files": 926,
+    "repos": 25
    },
    "overrides": {
-    "edges": 53
-   },
-   "instantiates": {
-    "edges": 19,
-    "resolved": 19,
-    "note": "#989: 19 of 19 resolve, 0 collRes, 0 arbitraryTwin; every edge's target type is declared in the SAME FILE (probe-c-instantiates.ts, 19/19). 0 edges before the fix on this stride."
+    "edges": 863,
+    "files": 270,
+    "repos": 14
    },
    "exports": {
-    "edges": 9,
-    "resolved": 0,
-    "note": "marker-name edges (`__declspec(dllexport)` etc.); the source is a definition, the target is the marker token, which is not a symbol. Fixtures export-linkage-marker-989 / export-marker-class-965 / exports-attribute-989 pin the remaining work."
+    "edges": 284,
+    "files": 60,
+    "repos": 1
+   },
+   "instantiates": {
+    "edges": 182,
+    "files": 84,
+    "repos": 8
+   },
+   "notApplicableZeros": {
+    "extends": 0,
+    "implements": 0,
+    "decorates": 0,
+    "renders": 0,
+    "mixes_in": 0,
+    "part_of": 0
+   },
+   "movement": {
+    "pre992Total": 574882,
+    "post992Total": 574875,
+    "finalTotal": 574886,
+    "note": "exports -7 (exactly the #992 false static_assert edges); contains +8 NET of two opposite forces (#993 removes phantom type-name members, #994 adds preprocessor-ARM enumerators; per-force whole-pop sizes not separately measured); uses +3 (#994 local enum-member reads). The cap-50 TABLE 1 pair is BYTE-IDENTICAL because the fixed classes are outside that stride."
    }
   }
  }

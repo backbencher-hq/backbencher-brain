@@ -11,12 +11,13 @@
 // content) while the engine/gate path sniffs ObjC/C++ first — change the ROUTER,
 // not this file, to move that boundary (validation/m14/proposals/c-h-boundary.md).
 // Grammar: tree-sitter-c@0.24.1, pinned as wasm/tree-sitter-c.wasm (sha256 f9a2d771…).
-// Docs / spec / fixtures / validations: docs/analyzers/real-c-analyzer.md ·
-// script/m14/spec/c-completeness.json · validation/m14/fixtures/c/** ·
-// validation/m14/verification/C-STATE.md + C-FIX.md.
-// CO-EDIT LIST — when this file changes, review in the SAME pass: those docs, the
-// spec and fixtures above, C-STATE.md, and src/ast/language-detection.ts +
-// src/ast/engine.ts if routing or registration moves.
+// ALL-OUT-OF-ALL 2026-10-18 (charter §9.1): the eight values above are the APPLICABLE
+// set (grammar-enumerated, fixtures RED-proven); extends/implements + the four extended
+// values are ruled out by grammar absence (C-APPLICABLE-SET.md). Whole-population
+// instruments found and mutation-pinned three FALSE-EDGE fixes: #992 marker-call
+// argument must be a bare identifier, #993 an ERROR node is not a declarator, #994
+// preprocessor-ARM enumerators are members. No regex literals (M49.R2).
+// Docs: docs/analyzers/real-c-analyzer.md · spec/c-*.json · fixtures/c/** · C-APPLICABLE-SET.md, C-AUDIT-D4.md, C-DONE-CHECKLIST.md; CO-EDIT those + the router.
 
 function inArray(arr: any[], val: any): boolean {
   for (let i = 0; i < arr.length; i++) {
@@ -556,6 +557,55 @@ function isBareIdentifierText(text: string): boolean {
     if (!((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_")) return false
   }
   return true
+}
+
+/**
+ * M49.R2 — the lane's no-regex rule. These two predicates replace the only two regex
+ * literals in this file (found by the fresh HEAD-blob census, MEASURED-ON rule: the
+ * lane is held to zero regex literals, and a census that names its own file is the
+ * instrument that says so): `^\s*#\s*endif\b` and `^\s*#\s*(if|ifdef|ifndef)\b`,
+ * both in the Form C guard scan. Character scans with EXACTLY the same decisions:
+ * leading whitespace, `#`, whitespace, the directive word, then the `\b` boundary the
+ * pattern wrote (a non-word character or end of line).
+ */
+function skipHorizontalWs(s: string, i: number): number {
+  while (i < s.length && (s[i] === " " || s[i] === "\t")) i++
+  return i
+}
+function wordMatchesAt(s: string, i: number, w: string): boolean {
+  for (let k = 0; k < w.length; k++) if (s[i + k] !== w[k]) return false
+  return true
+}
+function isWordChar(c: string | undefined): boolean {
+  return !!c && ((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_")
+}
+/** `^\s*#\s*endif\b` — the line closes a preprocessor guard. */
+function isPreprocEndifLine(line: string): boolean {
+  let i = 0
+  while (i < line.length && (line[i] === " " || line[i] === "\t" || line[i] === "\r")) i++
+  if (line[i] !== "#") return false
+  i = skipHorizontalWs(line, i + 1)
+  if (!wordMatchesAt(line, i, "endif")) return false
+  return !isWordChar(line[i + 5])
+}
+/** `^\s*#\s*(if|ifdef|ifndef)\b` — the line opens a preprocessor conditional. */
+function isPreprocIfLine(line: string): boolean {
+  let i = 0
+  while (i < line.length && (line[i] === " " || line[i] === "\t" || line[i] === "\r")) i++
+  if (line[i] !== "#") return false
+  i = skipHorizontalWs(line, i + 1)
+  // LONGEST FIRST: `if` is a PREFIX of `ifdef`/`ifndef`, and an early return on the
+  // short word rejects `#ifdef` because `d` follows it. Measured on sqlite
+  // `ext/misc/amatch.c:1510` — the Form C guard there is `#ifdef _WIN32`, and this
+  // predicate returning false for it silently dropped the file's only `exports` edge
+  // (the gate's cap-50 total read exports 1 -> 0). The regex the predicate replaces
+  // had backtracking and could not make this mistake; a hand-written matcher must
+  // spell it out.
+  for (const w of ["ifdef", "ifndef", "if"]) {
+    if (!wordMatchesAt(line, i, w)) continue
+    if (!isWordChar(line[i + w.length])) return true
+  }
+  return false
 }
 
 /**
@@ -4056,11 +4106,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const lines = content.split("\n")
     let i = decl.startPosition.row - 1
     while (i >= 0 && lines[i] !== undefined && lines[i].trim() === "") i--
-    if (i < 0 || lines[i] === undefined || !/^\s*#\s*endif\b/.test(lines[i])) return ""
+    if (i < 0 || lines[i] === undefined || !isPreprocEndifLine(lines[i])) return ""
     const blockEnd = i
     let blockStart = -1
     for (let j = i - 1; j >= 0 && j >= i - 24; j--) {
-      if (/^\s*#\s*(if|ifdef|ifndef)\b/.test(lines[j])) {
+      if (isPreprocIfLine(lines[j])) {
         blockStart = j
         break
       }

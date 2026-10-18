@@ -79,6 +79,11 @@ const KNOWN_TYPES = new Set<string>(ALL_TYPES)
 type Table1 = {
   edges: number; resolved: number; collRes: number; ambDecl: number; ambKind: number
   unresolved: number; extOK: number; extUnknown: number; extFAIL: number
+  bindOK: number; bindUnknown: number; bindFAIL: number; causeOK: number; causeFAIL: number
+}
+const rawTableRows = new Map<string, string[]>()
+function numBind(t: string, col: string): number {
+  return 0 // filled below from rawTableRows via TABLE_COLS lookup; kept as a function for the control's readability
 }
 
 // ── the analyzer's ISO-C claim list, extracted from its own source ──────────────────────────────
@@ -162,8 +167,11 @@ const tally = new Map<string, Map<string, number>>() // type -> family -> count 
 const byOutcome = new Map<string, Map<string, number>>() // type -> outcome -> count
 const examples = new Map<string, string[]>() // `${type}\u0000${family}` -> samples
 const famSplits = new Map<string, { unresolved: number; ambiguous: number }>() // family split by outcome class
+const dumpedAll = new Map<string, number>() // every DUMP row per type (the control's left side)
+const externalVerified = new Map<string, Map<string, number>>() // type -> claim kind -> count
 
 let table1Seen = false
+let table1Ended = false
 let headerCols: string[] = []
 
 const rl = createInterface({ input: createReadStream(FILE, "utf8"), crlfDelay: Infinity })
@@ -176,6 +184,14 @@ for await (const line of rl) {
     const outcome = parts[2]
     const target = parts[3]
     if (!KNOWN_TYPES.has(label)) continue
+    dumpedAll.set(label, (dumpedAll.get(label) ?? 0) + 1)
+    if (outcome === "externalVerified") {
+      if (!externalVerified.has(label)) externalVerified.set(label, new Map())
+      const em = externalVerified.get(label)!
+      const ck = parts[5] ?? "-"
+      em.set(ck, (em.get(ck) ?? 0) + 1)
+      continue
+    }
     // A REFUTED external claim is counted in the unresolved bucket by the table, so it must be
     // classified with it; the other claim outcomes are the legitimate external/binding/cause rows.
     const isUnresolvedOutcome = outcome === "unresolved" || outcome === "externalRefuted"
@@ -204,12 +220,19 @@ for await (const line of rl) {
     continue
   }
   if (line.includes("TABLE 1 — PER PROJECT")) { table1Seen = true; continue }
-  if (table1Seen && line.trim().length > 0 && line.includes("type") && line.includes("edges") && line.includes("resolved")) {
+  // THE FIRST TABLE-1 HEADER ONLY: later tables (TABLE 2 is the pooled key space, printed after
+  // TABLE 1) have a SHORTER header that also contains `type`/`edges`/`resolved`, and letting it
+  // overwrite `headerCols` re-parsed the pooled rows into TABLE 1 — measured: instantiates read
+  // `resolved 0 / amb(decl) 182` and every per-type control failed. The first header is the one
+  // the control is about; `TOTAL` ends the table.
+  if (table1Seen && !table1Ended && headerCols.length === 0 && line.trim().length > 0 &&
+      line.startsWith("type") && line.includes("edges") && line.includes("unresolved") && line.includes("extOK")) {
     headerCols = line.trim().split(/\s+/)
     continue
   }
-  if (table1Seen && headerCols.length > 0) {
+  if (table1Seen && !table1Ended && headerCols.length > 0) {
     const cols = line.trim().split(/\s+/)
+    if (cols[0] === "TOTAL") { table1Ended = true; continue }
     if (cols.length < headerCols.length) continue
     const t = cols[0]
     if (!KNOWN_TYPES.has(t)) continue
@@ -227,7 +250,13 @@ for await (const line of rl) {
       extOK: num("extOK"),
       extUnknown: num("ext?"),
       extFAIL: num("extFAIL"),
+      bindOK: num("bindOK"),
+      bindUnknown: num("bind?"),
+      bindFAIL: num("bindFAIL"),
+      causeOK: num("causeOK"),
+      causeFAIL: num("causeFAIL"),
     })
+    rawTableRows.set(t, cols)
   }
 }
 if (!table1Seen || table1.size === 0) {
@@ -242,10 +271,14 @@ for (const t of ALL_TYPES) {
   const tbl = table1.get(t)
   if (!tbl) continue
   const outcomes = byOutcome.get(t) ?? new Map<string, number>()
-  const dumped = (tally.get(t) ? [...tally.get(t)!.values()].reduce((a, b) => a + b, 0) : 0)
+  const dumped = dumpedAll.get(t) ?? 0
   const unresolvedDumped = (outcomes.get("unresolved") ?? 0) + (outcomes.get("externalRefuted") ?? 0)
   const ambDumped = (outcomes.get("ambDeclOnly") ?? 0) + (outcomes.get("ambBoth") ?? 0)
-  const expected = Math.max(0, tbl.edges - tbl.resolved)
+  // The dump is every NON-RESOLVED row: resolved + amb + unresolved + extOK + ext? + extFAIL +
+  // binding + declared-cause partitions the edge count, so the dump's left side is
+  // edges - resolved - bindOK - bind? - causeOK. C has no binding/cause rows; the subtraction is
+  // spelled out so a future claim channel cannot silently break the control.
+  const expected = Math.max(0, tbl.edges - tbl.resolved - tbl.bindOK - tbl.bindUnknown - tbl.causeOK)
   perTypeControl[t] = { dumped, expected, unresolvedDumped, unresolvedExpected: tbl.unresolved, ambDumped, ambExpected: tbl.ambDecl }
   if (dumped !== expected) failures.push(`${t}: dumped ${dumped} != edges-resolved ${expected}`)
   if (unresolvedDumped !== tbl.unresolved) failures.push(`${t}: dumped unresolved ${unresolvedDumped} != TABLE 1 unresolved ${tbl.unresolved}`)
@@ -259,7 +292,7 @@ if (failures.length > 0) {
 }
 
 // ── report ──────────────────────────────────────────────────────────────────────────────────────
-const table: Record<string, { unresolved: number; ambiguous: number; families: Array<{ family: string; unresolved: number; ambiguous: number; examples: string[] }> }> = {}
+const table: Record<string, { unresolved: number; ambiguous: number; externalVerified: Record<string, number>; families: Array<{ family: string; unresolved: number; ambiguous: number; examples: string[] }> }> = {}
 for (const t of ALL_TYPES) {
   const fams = tally.get(t)
   if (!fams) continue
@@ -276,6 +309,7 @@ for (const t of ALL_TYPES) {
   table[t] = {
     unresolved: (outcomes.get("unresolved") ?? 0) + (outcomes.get("externalRefuted") ?? 0),
     ambiguous: (outcomes.get("ambDeclOnly") ?? 0) + (outcomes.get("ambBoth") ?? 0),
+    externalVerified: Object.fromEntries([...(externalVerified.get(t) ?? new Map()).entries()].sort((a, b) => b[1] - a[1])),
     families: famRows,
   }
 }
@@ -296,7 +330,9 @@ if (JSON_OUT) {
   for (const t of ALL_TYPES) {
     const row = table[t]
     if (!row) continue
-    console.log(`${t}: unresolved ${row.unresolved} · ambiguous ${row.ambiguous} — NAMED CLASSES`)
+    const extTotal = Object.values(row.externalVerified).reduce((a, b) => a + b, 0)
+    console.log(`${t}: unresolved ${row.unresolved} · ambiguous ${row.ambiguous} · verified-external ${extTotal} — NAMED CLASSES`)
+    for (const [k, v] of Object.entries(row.externalVerified)) console.log(`  claim-kind ${w(k, 20)} ${String(v).padStart(8)} verified-cited external`)
     for (const f of row.families) {
       console.log(`  ${w(f.family, 30)} unres ${String(f.unresolved).padStart(8)} · amb ${String(f.ambiguous).padStart(7)}`)
       for (const ex of f.examples.slice(0, 2)) console.log(`      e.g. ${ex}`)

@@ -47,7 +47,7 @@
     "part_of"
   ],
   "evidence_rows": {
-    "_reading_as_of": "2026-10-18 (this lane's onboarding); cap-50 columns from the lane BASELINE run recorded in validation/m14/fixtures/c/measurements/gate-c-cap50-baseline.txt. A cap-50 stride is TRIAGE, never a population claim; whole-population columns are filled by the D2/D3 arms and are EXPLICITLY OWED until then.",
+    "_reading_as_of": "2026-10-18 ALL-OUT-OF-ALL wave final: cap-50 pair BEFORE/AFTER both TOTAL 5,181; whole-population census post-fixes TOTAL 574,886 (5,022/5,022 files, 39 repos); no number here is a stride standing in for a population.",
     "cap50Command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts c c 50",
     "cap50Population": {
       "sampled": 50,
@@ -109,8 +109,8 @@
         ],
         "fixtureExpectationRows": 48,
         "redProof": {
-          "baselinePassFail": "45/3",
-          "mutatedPassFail": "29/19",
+          "baselinePassFail": "47/3",
+          "mutatedPassFail": "31/19",
           "fixturesThatWentRed": 16,
           "redProven": true
         },
@@ -161,8 +161,8 @@
         ],
         "fixtureExpectationRows": 44,
         "redProof": {
-          "baselinePassFail": "45/3",
-          "mutatedPassFail": "28/20",
+          "baselinePassFail": "47/3",
+          "mutatedPassFail": "30/20",
           "fixturesThatWentRed": 17,
           "redProven": true
         },
@@ -209,13 +209,15 @@
           "c/macro-in-field-position-932",
           "c/macro-type-member-985",
           "c/member-name-beside-error-989",
-          "c/self-referential-struct-927"
+          "c/self-referential-struct-927",
+          "c/contains-error-beside-declarator-993",
+          "c/contains-guarded-enumerators-994"
         ],
-        "fixtureExpectationRows": 119,
+        "fixtureExpectationRows": 126,
         "redProof": {
-          "baselinePassFail": "45/3",
-          "mutatedPassFail": "30/18",
-          "fixturesThatWentRed": 15,
+          "baselinePassFail": "47/3",
+          "mutatedPassFail": "30/20",
+          "fixturesThatWentRed": 17,
           "redProven": true
         },
         "cap50": {
@@ -249,8 +251,8 @@
         ],
         "fixtureExpectationRows": 9,
         "redProof": {
-          "baselinePassFail": "45/3",
-          "mutatedPassFail": "42/6",
+          "baselinePassFail": "47/3",
+          "mutatedPassFail": "44/6",
           "fixturesThatWentRed": 3,
           "redProven": true
         },
@@ -291,8 +293,8 @@
         ],
         "fixtureExpectationRows": 23,
         "redProof": {
-          "baselinePassFail": "45/3",
-          "mutatedPassFail": "39/9",
+          "baselinePassFail": "47/3",
+          "mutatedPassFail": "41/9",
           "fixturesThatWentRed": 6,
           "redProven": true
         },
@@ -337,8 +339,8 @@
         ],
         "fixtureExpectationRows": 39,
         "redProof": {
-          "baselinePassFail": "45/3",
-          "mutatedPassFail": "40/8",
+          "baselinePassFail": "47/3",
+          "mutatedPassFail": "42/8",
           "fixturesThatWentRed": 5,
           "redProven": true,
           "note": "including c/exports-assertion-macro-992 (#992: its forbid rows fire when the bare-identifier guard is removed \u2014 measured 45/3 -> 44/4 with the guard reverted)"
@@ -377,8 +379,8 @@
         ],
         "fixtureExpectationRows": 4,
         "redProof": {
-          "baselinePassFail": "45/3",
-          "mutatedPassFail": "44/4",
+          "baselinePassFail": "47/3",
+          "mutatedPassFail": "46/4",
           "fixturesThatWentRed": 1,
           "redProven": true
         },
@@ -413,8 +415,8 @@
         ],
         "fixtureExpectationRows": 8,
         "redProof": {
-          "baselinePassFail": "45/3",
-          "mutatedPassFail": "43/5",
+          "baselinePassFail": "47/3",
+          "mutatedPassFail": "45/5",
           "fixturesThatWentRed": 2,
           "redProven": true
         },
@@ -498,6 +500,115 @@
         "productionsFound": [],
         "reason": "C's file-inclusion construct is `#include`, which IS a module/binding edge and is published as `imports`; there is no part-file directive that shares one library scope without importing \u2014 the distinction `part_of` exists to draw does not exist in C."
       }
+    },
+    "wholePopulation": {
+      "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/c-emission-census.ts --cap=0 --json",
+      "artifact": "validation/m14/fixtures/c/measurements/c-emission-census-whole-final.json",
+      "population": "5,022 parsed of 5,022 admitted .c files \u00b7 39 repos \u00b7 0 parse failures \u00b7 755 tracked-but-absent/unreadable + 1 over the 1 MB cap excluded and counted",
+      "measuredAt": "2026-10-18 (post-#992/#993/#994 analyzer)",
+      "rows": {
+        "calls": 358388,
+        "uses": 162886,
+        "references": 19265,
+        "imports": 17774,
+        "contains": 15244,
+        "overrides": 863,
+        "exports": 284,
+        "instantiates": 182
+      },
+      "files": {
+        "calls": 4011,
+        "uses": 3024,
+        "references": 834,
+        "imports": 4886,
+        "contains": 926,
+        "overrides": 270,
+        "exports": 60,
+        "instantiates": 84
+      },
+      "repos": {
+        "calls": 36,
+        "uses": 32,
+        "references": 26,
+        "imports": 38,
+        "contains": 25,
+        "overrides": 14,
+        "exports": 1,
+        "instantiates": 8
+      },
+      "total": 574886,
+      "notApplicableZeros": {
+        "extends": 0,
+        "implements": 0,
+        "decorates": 0,
+        "renders": 0,
+        "mixes_in": 0,
+        "part_of": 0
+      },
+      "sitePayload": {
+        "exportsByMarker": {
+          "JIM_EXPORT": 112,
+          "CMPP_EXPORT": 109,
+          "__declspec(dllexport)": 63
+        },
+        "exportsByMarkerKind": {
+          "attribute_macro": 221,
+          "attribute": 63
+        },
+        "overridesByShape": {
+          "conditional-redefinition": 492,
+          "undef-redefine": 371
+        },
+        "instantiatesByAllocator": {
+          "sqlite3_malloc64": 66,
+          "sqlite3_malloc": 50,
+          "calloc": 28,
+          "malloc": 19,
+          "sqlite3_realloc64": 18,
+          "realloc": 1
+        },
+        "callsPayload": {
+          "direct": 355785,
+          "functionPointer": 2603
+        },
+        "callsExternalClaims": {
+          "iso-c-standard-library-name": 38733
+        },
+        "referencesMarkers": {
+          "type_reference": 19265
+        }
+      },
+      "movement": {
+        "pre992Total": 574882,
+        "post992Total": 574875,
+        "finalTotal": 574886,
+        "perLabel": {
+          "exports": {
+            "pre992": 291,
+            "post992": 284,
+            "final": 284,
+            "why": "#992 removed exactly the 7 false static_assert expression edges"
+          },
+          "contains": {
+            "pre992": 15236,
+            "post992": 15236,
+            "final": 15244,
+            "why": "+8 net of two opposite forces: #993 removes phantom type-name members, #994 adds preprocessor-ARM enumerators; per-force whole-pop sizes NOT separately measured"
+          },
+          "uses": {
+            "pre992": 162883,
+            "post992": 162883,
+            "final": 162886,
+            "why": "+3: #994 reads of preprocessor-ARM enumerators (owner-qualified published symbols, #961)"
+          }
+        },
+        "note": "the cap-50 TABLE 1 pair is BYTE-IDENTICAL (TOTAL 5,181 / resolved 2,135 / unresolved 2,411 / extOK 495 / extFAIL 0) because the fixed classes are outside that stride; the AFTER arm caught a no-regex conversion regression (exports 1 -> 0) which was fixed"
+      }
+    },
+    "cap50After": {
+      "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts c c 50",
+      "result": "TOTAL 5,181 \u00b7 resolved 2,135 \u00b7 collRes 24 \u00b7 amb(decl) 140 \u00b7 unresolved 2,411 \u00b7 extOK 495 \u00b7 ext? 0 \u00b7 extFAIL 0 (BYTE-IDENTICAL to the BEFORE arm)",
+      "artifact": "validation/m14/fixtures/c/measurements/gate-c-cap50-after.txt"
     }
   },
   "applicableSetClosure": {
@@ -520,7 +631,7 @@
     "docs": "docs/analyzers/real-c-analyzer.md",
     "evidencePage": "validation/m14/verification/C-APPLICABLE-SET.md",
     "fixtures": "validation/m14/fixtures/c/**",
-    "wholePopulation": "OWED \u2014 D2 census + D3 acceptance arm are the next items; this table's cap-50 columns are TRIAGE."
+    "wholePopulation": "validation/m14/verification/C-WHOLE-POPULATION-EMISSION.md (D2) \u00b7 validation/m14/verification/C-AUDIT-D4.md (D4) \u00b7 validation/m14/verification/C-DONE-CHECKLIST.md (the lane claim)"
   },
   "findings_2026_10_18": {
     "C992_EXPORTS_FALSE_EDGE_CLASS": {
@@ -530,6 +641,27 @@
       "fix": "the argument path accepts only a BARE IDENTIFIER (the only spelling a declaration has in C); the declaration path and the kernel `EXPORT_SYMBOL(name, GPL)` spelling are untouched (their argument IS a bare identifier)",
       "fixture": "c/exports-assertion-macro-992 \u2014 goes RED without the guard (measured: 45/3 -> 44/4, all three forbid rows firing), green with it",
       "evidence": "validation/m14/fixtures/c/measurements/fix-992-mutation.md"
+    },
+    "C993_ERROR_DISPLACED_TYPE_AS_MEMBER": {
+      "what": "the struct field walk treated every non-type child as a DECLARATOR, descended an ERROR child and published the displaced TYPE as a member",
+      "measured_on": "D4 whole-repo oracle arm: sqlite src/os_kv.c:341-343 published contains sqlite3_kvvfs_methods -> sqlite3_vfs (and sqlite3_io_methods x2) beside the real pVfs/pIoDb/pIoJrnl",
+      "root": "`MAYBE_CONST sqlite3_vfs * pVfs;` parses as [type_identifier MAYBE_CONST, ERROR(sqlite3_vfs), pointer_declarator pVfs]",
+      "fix": "ERROR/MISSING children are not declarators (the file own firstCleanNamedChild rule applied to that walk)",
+      "fixture": "c/contains-error-beside-declarator-993 \u2014 45/4 mutated with the two forbidden phantom rows, 47/3 restored (byte-identical sha256)",
+      "evidence": "validation/m14/fixtures/c/measurements/fix-993-994-mutation.md"
+    },
+    "C994_GUARDED_ENUMERATORS_INVISIBLE": {
+      "what": "the enum member loop read only DIRECT children of enumerator_list, so enumerators declared inside a #ifdef/#else ARM were invisible",
+      "measured_on": "D4 jq draw: 2 MISSING (contains -> emax/emin) at jq src/jv_dtoa.c:1630-1643",
+      "fix": "pre-order recursion through the preproc guard nodes (the same conditional-member rule the struct path already applies)",
+      "fixture": "c/contains-guarded-enumerators-994 \u2014 46/4 mutated (emax missing), 47/3 restored (byte-identical sha256)",
+      "evidence": "validation/m14/fixtures/c/measurements/fix-993-994-mutation.md"
+    },
+    "C_NO_REGEX_CONVERSION": {
+      "what": "the lane still carried 2 regex literals at HEAD (Form C guard tests) despite the doc claim of 0; replaced with character scans (M49.R2)",
+      "first_version_bug": "a prefix-order bug (`if` matched before `ifdef`) dropped the Form C guarded-attribute export edge on sqlite ext/misc/amatch.c; the cap-50 AFTER arm read exports 1 -> 0 and located it",
+      "fix": "longest-first directive matching (isPreprocIfLine); cap-50 AFTER arm returned byte-identical to BEFORE and fixtures stayed 47/3",
+      "evidence": "validation/m14/fixtures/c/measurements/gate-c-cap50-after.txt + the lane no-regex census run (lane ABSENT from the fresh 34-usage fleet census after commit)"
     }
   }
 }

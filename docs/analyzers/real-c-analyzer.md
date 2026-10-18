@@ -3024,3 +3024,75 @@ Closes M12.16 (GitHub issue #155). This wave's findings are recorded in
 `reviews/c/` rather than closed here, because the contract requires an owner
 spot-check before any issue closure (§5.6) and the owner has not run one on this
 wave's numbers.
+
+## ALL-OUT-OF-ALL wave — 2026-10-18 (charter `ALL-OUT-OF-ALL-PROGRAMME.md` §9.1 D1–D6)
+
+The lane was onboarded to the programme's six-clause bar. Everything below was measured by the commands
+named beside it; the lane's claim page is `validation/m14/verification/C-DONE-CHECKLIST.md`.
+
+### D1 — applicable set (grammar-derived, fixtures RED-proven)
+
+`script/m14/c-applicable-set.ts` enumerates the pinned grammar (`wasm/tree-sitter-c.wasm`, sha256
+`f9a2d771…`: 366 slots = **128 named types + 202 anonymous tokens**) and decides the vocabulary from
+the constructs, not from the matrix. **APPLICABLE 8**: `calls` (:2867-era site), `uses`, `contains`,
+`imports`, `references`, `exports`, `overrides`, `instantiates` — each with its construct productions
+present, an emission site in this file, and a fixture that went RED when the value's edges were removed
+through the real fixture runner (16/17/15/3/6/5/1/2 fixtures respectively). **NOT APPLICABLE 6**, each
+with the productions it would need proven ABSENT: `extends`, `implements` (C has no IS-A/conformance
+grammar), `decorates` (C's `attribute_specifier`/`attribute_declaration` carry no callable target —
+the java-annotation ruling), `renders` (no JSX), `mixes_in` (no mixin), `part_of` (an include is
+`imports`; there is no shared-scope part directive). Closure: 8 + 6 = 14 canonical, 0 unclassified.
+`overrides` is APPLICABLE WITH ADAPTED SEMANTICS, declared: redefinition, never inheritance
+(C 6.9p5 mutually-exclusive preprocessor arms / C 6.10.3p2 `#undef`+redefine), every edge carrying
+`metadata.relationshipType = c_redefinition`; the 26 no-shared-conditional pairs stay REFUSED.
+
+### Three FALSE-EDGE classes found by the whole-population instruments, fixed and mutation-pinned
+
+- **#992 `exports` — a marker CALL's exported name must be a bare identifier.** redis defines
+  `#define static_assert(expr, lit) extern char __static_assert_failure[(expr) ? 1:-1]`; the
+  replacement opens with `extern`, so the #989 agreement rule correctly made it a linkage marker, and
+  the call branch then published the first ARGUMENT as the exported name. Seven edges on the whole
+  admitted population were `exports <condition-expression> -> static_assert`. Fixture
+  `c/exports-assertion-macro-992` (2 positives + 3 forbids + count); measured 45/4 with the guard
+  removed, 47/3 restored.
+- **#993 `contains` — an ERROR node is not a declarator.** `MAYBE_CONST sqlite3_vfs * pVfs;` parses as
+  `[type_identifier MAYBE_CONST, ERROR(sqlite3_vfs), pointer_declarator pVfs]`; the struct field walk
+  treated every non-type child as a declarator, descended the ERROR and published the displaced TYPE
+  as a member (`sqlite3_kvvfs_methods -> sqlite3_vfs`, `-> sqlite3_io_methods` ×2, beside the real
+  pVfs/pIoDb/pIoJrnl at sqlite `src/os_kv.c:341-343`). Fixture
+  `c/contains-error-beside-declarator-993`; measured 45/4 mutated, 46/3 restored.
+- **#994 `contains`/`uses` — an enumerator inside a preprocessor ARM of an enum body IS a member.** The
+  enum loop read only DIRECT children of `enumerator_list`, so jq `src/jv_dtoa.c:1630-1643`
+  (`enum { #ifdef IEEE_Arith emax = …; emin = … #else … }` inside a function) published NO member and
+  the jq differential read 2 MISSING rows. Fixture `c/contains-guarded-enumerators-994`; measured
+  46/4 mutated, 47/3 restored.
+
+Evidence: `validation/m14/fixtures/c/measurements/fix-993-994-mutation.md` (and the #992 fixture's own
+forbid rows), `C-APPLICABLE-SET.md` §4.
+
+### D2 — whole-population emission (the census instrument is `script/m14/c-emission-census.ts`)
+
+`BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/c-emission-census.ts --cap=0 --json` →
+**5,022/5,022 admitted `.c` files parsed, 39 repos, 0 failures**, per-type rows + files + repos in
+`validation/m14/verification/C-WHOLE-POPULATION-EMISSION.md`. Six non-applicable values: **0 edges at
+whole population** (the D1 grammar rulings confirmed on the population, not just on fixtures).
+
+### D4 — differential audit (`C-AUDIT-D4.md`)
+
+After the wiring (`e8800ec66`) plus the named oracle fixes (`4ad9c09f2`, `690519c46`, `858db8e1b`),
+both canonical draws are clean: `--repo sqlite --lang c --sample 60` → 9,283/9,283 covered (100%),
+MISSING 0, 9,159 analyzer edges, **unexplained 0**, exit 0; `--repo jq --lang c --sample 60` →
+3,398/3,398 (100%), MISSING 0, **unexplained 0**, exit 0. The lane's own oracle is
+`script/m14/oracles/c-truth.ts` (`contains`/`exports`/`overrides`), contract-checked by
+`script/m14/c-oracle-verify.ts --selftest` (5 synthetic cases asserting derivation AND refusal).
+
+### Correction to the stale claim in this page's own evidence list
+
+The list above said *"Regex census: … (0 for this analyzer after this wave, from 2)"*. At HEAD
+**before** this ALL-OUT-OF-ALL wave the fresh census found **2** regex literals in
+`real-c-analyzer.ts` (the Form C guard tests `/^\s*#\s*endif\b/` and `/^\s*#\s*(if|ifdef|ifndef)\b/`),
+so that claim was STALE — the wave made it true by replacing both with character scans
+(`isPreprocEndifLine` / `isPreprocIfLine`, M49.R2). The replacement's own first version had a
+prefix-order bug (`if` matching before `ifdef`), caught by the cap-50 AFTER arm reading `exports 1 -> 0`
+and fixed; final state is byte-identical on that population to the pre-change arm (TABLE 1 TOTAL
+5,181 / resolved 2,135 / unresolved 2,411 / extOK 495 / extFAIL 0) and the fixtures stay 47/3.
