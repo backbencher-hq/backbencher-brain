@@ -258,6 +258,69 @@ export const SOLIDITY_DECLARATION_SPEC: DeclarationSpec = {
  * The suppression logic downstream needed no change: it already emits a guess only when
  * `!overrideCompanion?.has(base)`. Only the data was missing.
  */
+/**
+ * THE TYPESCRIPT DECLARATION SHAPES, as tree-sitter-typescript names them.
+ *
+ * THERE WAS NO SPEC FOR THIS LANGUAGE AT ALL -- which is why TypeScript could not be wired into
+ * `PROJECT_INDEX_EXTENSIONS` even though the plumbing (`AnalyzeContext.projectIndex`, the worker's
+ * `contextFor`) has existed for rounds. Every remaining TypeScript relationship type fails for ONE
+ * reason, and the per-edge dump proves it one edge at a time: `extends` names `PropertyFilter` /
+ * `Base` / `Controller`, `exports` names imported icon bindings, `instantiates` names `GraphQLSchema` /
+ * `Neo4jGraphQL`, `imports` names package specifiers, `calls` names members of imported objects.
+ * NOT ONE is a local mistake: all of them need to know what ANOTHER FILE declares.
+ *
+ * Grammar facts that make this differ from python's spec:
+ *   - `class_heritage` is a SIBLING of the class body, and holds `extends_clause` whose value is an
+ *     `identifier` for a bare base and a `member_expression` / `nested_type_identifier` for
+ *     `namespace.Base`. The last identifier is the ancestor's own name -- the same rule python's
+ *     `attribute` and Solidity's `A.B.C` need, for the same reason: keying the first segment files
+ *     every `React.Component` under `React`.
+ *   - MEMBERS are `method_definition` and `public_field_definition`, plus the interface-side
+ *     `method_signature` / `property_signature`. `memberNodesCallable` is the CALLABLE subset only: a
+ *     class PROPERTY is not something a subclass overrides, and indexing it as one is the PY-21
+ *     defect-4 fabrication this repo already paid for once.
+ */
+export const TYPESCRIPT_DECLARATION_SPEC: DeclarationSpec = {
+  typeNodes: {
+    class_declaration: "class",
+    interface_declaration: "interface",
+    enum_declaration: "enum",
+    type_alias_declaration: "class",
+  },
+  memberNodes: ["method_definition", "public_field_definition", "method_signature", "property_signature"],
+  memberNodesCallable: ["method_definition", "method_signature"],
+  scopeNodes: ["function_declaration", "method_definition", "arrow_function", "function_expression"],
+  baseResolver: (node: Node): string[] => {
+    const out: string[] = []
+    let heritage: Node | null = null
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === "class_heritage") { heritage = c; break }
+    }
+    if (!heritage) return out
+    const walk = (n: Node): void => {
+      if (n.type === "extends_clause") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier" || c.type === "type_identifier") out.push(c.text)
+          else if (c.type === "member_expression" || c.type === "nested_type_identifier") {
+            const leaf = c.childForFieldName("property") ?? c.namedChild(c.namedChildCount - 1)
+            if (leaf && leaf.text) out.push(leaf.text)
+          }
+        }
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(heritage!)
+    return out
+  },
+}
+
 export const PYTHON_DECLARATION_SPEC: DeclarationSpec = {
   typeNodes: {
     class_definition: "class",
