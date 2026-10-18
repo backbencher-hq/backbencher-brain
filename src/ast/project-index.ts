@@ -193,6 +193,17 @@ export interface DeclarationSpec {
    */
   nameOnlyNodes?: string[]
   /**
+   * REQUIRE a name-only declaration's name to be IDENTIFIER-SHAPED (dotted allowed) before it is
+   * recorded. Added for TYPESCRIPT, and the reason is a measured shape rather than tidiness: TS's
+   * binding node is `variable_declarator`, whose `name` field is an `identifier` for
+   * `const x = …` but an `object_pattern`/`array_pattern` for `const { a, b } = …` — and the pattern's
+   * TEXT (`{ a, b }`) would be filed in `symbolNames` and `symbolCounts` as a "declaration" no
+   * source can ever write as a target. A name that cannot be spelled as a target is not a name this
+   * index should carry. Off by default: a language whose name-only spellings are not identifiers
+   * (F# module paths, SCSS selectors) keeps its previous behaviour byte for byte.
+   */
+  nameOnlyIdentifierShaped?: boolean
+  /**
    * NAME A ROOT TYPE BY THE FILE IT LIVES IN. A grammar whose type unit IS the file — SCSS, where
    * the stylesheet root node is the module and its name is the file's basename — declares that here,
    * and `indexTree` uses the `fileName` its callers pass. WITHOUT THIS THE EXTRACTION IS EMPTY and
@@ -310,6 +321,22 @@ export const TYPESCRIPT_DECLARATION_SPEC: DeclarationSpec = {
   },
   memberNodes: ["method_definition", "public_field_definition", "method_signature", "property_signature"],
   memberNodesCallable: ["method_definition", "method_signature"],
+  // FS-P17's name-only channel, applied to the TS declarations whose names a TARGET WRITES but
+  // whose kind this index has no use for: a module-level function, a module/namespace header, and a
+  // top-level binding (`const cloneVNode = …`). The measured gap this closes: a workspace-package
+  // import (`import { cloneVNode } from "@scope/utils"`) names a free FUNCTION in another project
+  // file, and without these names the analyzer can prove the module is the project's own code but
+  // cannot prove the ITEM is declared — the handoff's B-class (55 edges at cap 50, more over the
+  // whole population) stayed unresolved on exactly that. `variable_declarator` brings the
+  // destructuring shapes with it, which is why the identifier-shape guard exists.
+  nameOnlyNodes: [
+    "function_declaration",
+    "generator_function_declaration",
+    "internal_module",
+    "module",
+    "variable_declarator",
+  ],
+  nameOnlyIdentifierShaped: true,
   scopeNodes: ["function_declaration", "method_definition", "arrow_function", "function_expression"],
   baseResolver: (node: Node): string[] => {
     const out: string[] = []
@@ -963,8 +990,19 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
       spec.nameOnlyNodes.includes(node.type)
     ) {
       const name = nameOf(node)
-      if (name !== "") {
+      // A NAME THAT CANNOT BE SPELLED AS A TARGET IS NOT A DECLARATION THIS INDEX CARRIES — see
+      // `nameOnlyIdentifierShaped` (TS's destructuring patterns are the measured case).
+      const identifierShaped = !spec.nameOnlyIdentifierShaped ||
+        /^[A-Za-z_$][A-Za-z0-9_$]*(\.[A-Za-z_$][A-Za-z0-9_$]*)*$/.test(name)
+      if (name !== "" && identifierShaped) {
         index.symbolNames.add(name)
+        // THE COUNT IS THE OTHER HALF OF THE CLAIM. `symbolNames` answers "is this name declared at
+        // all"; a caller deciding whether a bare target can be BOUND needs "exactly once"
+        // (`symbolCounts` — the same pair python and typescript claims read). The name-only channel
+        // recorded only into the Set until 2026-10-18, so a project function or `const` answered
+        // "declared" and could not answer "declared once", and every import of one stayed
+        // unresolvable. Recorded for the full name AND its dotted leaf, mirroring `symbolNames`.
+        index.symbolCounts.set(name, (index.symbolCounts.get(name) ?? 0) + 1)
         // A DOTTED header also records its LAST SEGMENT, because both spellings are names a source
         // writes for the same declaration: `Fixture.Project.Domain.Helpers` is what a file outside
         // the namespace writes and `Helpers` is what a file inside it writes, and an index that
@@ -972,7 +1010,11 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
         // could see. The claim is existence either way ("the project declares a name spelled like
         // this"), which is the same claim `symbolNames` already carries.
         const dot = name.lastIndexOf(".")
-        if (dot > 0) index.symbolNames.add(name.slice(dot + 1))
+        if (dot > 0) {
+          const leaf = name.slice(dot + 1)
+          index.symbolNames.add(leaf)
+          index.symbolCounts.set(leaf, (index.symbolCounts.get(leaf) ?? 0) + 1)
+        }
       }
     }
 
