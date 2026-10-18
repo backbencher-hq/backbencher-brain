@@ -556,6 +556,12 @@ type BindingModel = {
   /** import / require bindings: the imported-binding SEAM class, NEVER claimed as local bindings */
   moduleBindings: Set<string>
   /**
+   * LOCAL NAME -> MODULE SPECIFIER AS WRITTEN for every import / require binding whose specifier is
+   * a LITERAL (this is the EVIDENCE the imported-binding claim carries; a dynamic specifier has no
+   * entry, so its binding can never be claimed — the contract's never-claim (c)).
+   */
+  moduleBindingSpecs: Map<string, string>
+  /**
    * PROGRAM-scope class DECLARATIONS — the only class-like names whose members are PUBLISHED
    * symbols, so the only ones a static-class receiver may name. Class EXPRESSIONS are excluded on
    * purpose (their class is not a symbol this family publishes; naming one would hand the owner
@@ -719,13 +725,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               const base = this.findChildByType(heritage, "identifier") ?? this.findChildByType(heritage, "member_expression")
               if (base) {
                 const boundBase = base.type === "identifier" ? this.localBindingTarget(base, base.text, name) : null
+                const importedBase = boundBase ? null : (base.type === "identifier" ? this.importedBindingFor(base, base.text) : null)
                 relationships.push({
                   source: name,
                   target: boundBase ?? base.text,
                   type: ASTEngine.RelationshipType.Extends,
                   confidence: 1.0,
                   ...this.lineField(base),
-                  metadata: boundBase ? { localBinding: true } : {},
+                  metadata: boundBase ? { localBinding: true } : (importedBase ? { importedBinding: importedBase } : {}),
                 })
               }
             }
@@ -760,13 +767,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const base = this.findChildByType(heritage, "identifier") ?? this.findChildByType(heritage, "member_expression")
             if (base) {
               const boundBaseExpr = base.type === "identifier" ? this.localBindingTarget(base, base.text, ownName) : null
+              const importedBaseExpr = boundBaseExpr ? null : (base.type === "identifier" ? this.importedBindingFor(base, base.text) : null)
               relationships.push({
                 source: ownName,
                 target: boundBaseExpr ?? base.text,
                 type: ASTEngine.RelationshipType.Extends,
                 confidence: 1.0,
                 ...this.lineField(base),
-                metadata: boundBaseExpr ? { localBinding: true } : {},
+                metadata: boundBaseExpr ? { localBinding: true } : (importedBaseExpr ? { importedBinding: importedBaseExpr } : {}),
               })
             }
           }
@@ -1301,7 +1309,29 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   confidence: 0.6,
                   // The module path argument is the name this edge is about.
                   ...this.lineField(arg),
-                  metadata: { isRequire: !isDynamic, isDynamicImport: isDynamic, unresolved: true },
+                  metadata: {
+                    isRequire: !isDynamic,
+                    isDynamicImport: isDynamic,
+                    unresolved: true,
+                    // THE EVIDENCE the imported-binding claim is verified against: the local names this
+                    // module load binds IN THIS FILE (a destructured `const { a } = require("m")` binds a,
+                    // a bare `const fs = require("m")` binds fs). Dynamic specifiers are refused earlier,
+                    // so they reach no claim — the contract's never-claim (c).
+                    importedBindings: (() => {
+                      // The declarator this module load initialises, walking up from the CALL node —
+                      // independent of the requireIsDefault branch above (whose `vp` is block-scoped).
+                      let owner: Node | null = node.parent
+                      while (owner && owner.type !== "variable_declarator" && owner.type !== "lexical_declaration" &&
+                             owner.type !== "variable_declaration" && owner.type !== "export_statement" &&
+                             owner.type !== "expression_statement" && owner.type !== "program") {
+                        owner = owner.parent
+                      }
+                      const bindName = owner && owner.type === "variable_declarator"
+                        ? owner.childForFieldName("name")
+                        : null
+                      return bindName ? this.collectPatternPairs(bindName).map((pair) => pair.name) : []
+                    })(),
+                  },
                 })
               }
             }
@@ -1452,6 +1482,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   module: srcPath,
                   declaredName: item.declared,
                   declaredKind: item.kind,
+                  // THE LOCAL NAME THIS IMPORT BINDS — the evidence for the imported-binding claim.
+                  // Default/named: the item's local spelling (alias when present); namespace: the
+                  // local `ns` identifier the clause writes (the item's text is `*`).
+                  importedBindings: isNamespaceItem
+                    ? (String(item.node?.text ?? "") ? [String(item.node.text)] : [])
+                    : (item.text ? [item.text] : []),
                   ...(isNamespaceItem ? { unresolved: true } : {}),
                 },
               })
@@ -1550,6 +1586,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                     isReExport: true,
                     declaredName: spec.member,
                     declaredKind: "named",
+                    // A re-export binds NO local name in this file (never-claim (d): a different
+                    // surface). The key is published on EVERY imports edge so the arbiter never has
+                    // to distinguish "no bindings" from "this row forgot the evidence".
+                    importedBindings: [],
                     ...(spec.exportedAs !== spec.member ? { exportedAs: spec.exportedAs } : {}),
                   },
                 })
@@ -1576,6 +1616,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   isReExport: true,
                   unresolved: true,
                   starForm: namespaceAlias ? "namespace" : "all",
+                  // A clause-less re-export binds NO local name (never-claim (d)). Published on every
+                  // imports edge so the arbiter never has to distinguish "no bindings" from "missing
+                  // evidence".
+                  importedBindings: [],
                   ...(namespaceAlias ? { namespaceName: namespaceAlias } : {}),
                 },
               })
@@ -2398,6 +2442,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const boundCallee = fn.type === "identifier"
               ? this.localBindingTarget(fn, targetName, callSource)
               : null
+            const importedCallee = boundCallee ? null : (fn.type === "identifier" ? this.importedBindingFor(fn, targetName) : null)
             relationships.push({
               source: callSource,
               target: boundCallee ?? targetName,
@@ -2409,6 +2454,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: {
                 calleeExpression: fullCallee,
                 ...(boundCallee ? { localBinding: true } : {}),
+                ...(importedCallee ? { importedBinding: importedCallee } : {}),
                 // The receiver's stated type, on the store's EXISTING channel: `metadata.owner`
                 // is what `member-owner-resolution.ts` (claimOwnerCarryingTargets +
                 // resolveMemberTargetsByOwner) reads on BOTH production resolution paths — it
@@ -2461,6 +2507,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const boundCtor = ctor.type === "identifier"
               ? this.localBindingTarget(ctor, ctorName, callSource)
               : null
+            const importedCtor = boundCtor ? null : (ctor.type === "identifier" ? this.importedBindingFor(ctor, ctorName) : null)
             relationships.push({
               source: callSource,
               target: boundCtor ?? ctorName,
@@ -2469,7 +2516,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               // The CLASS NAME node: for `new ns.Thing()` the property leaf,
               // since the target is the leaf (TSD3 leaf identity).
               ...this.lineField(ctor.type === "member_expression" ? (ctor.childForFieldName("property") ?? ctor) : ctor),
-              metadata: boundCtor ? { localBinding: true } : {},
+              metadata: boundCtor ? { localBinding: true } : (importedCtor ? { importedBinding: importedCtor } : {}),
             })
           }
         }
@@ -2495,13 +2542,18 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               // identifier child at all) and a member component (`<A.B/>`, whose name is a
               // member_expression) still emit NOTHING — the name rule is unchanged.
               const boundJsx = this.localBindingTarget(identifier, identifier.text, callSource)
+              const importedJsx = boundJsx ? null : this.importedBindingFor(identifier, identifier.text)
               relationships.push({
                 source: callSource,
                 target: boundJsx ?? identifier.text,
                 type: ASTEngine.RelationshipType.Renders,
                 confidence: 0.9,
                 ...this.lineField(identifier),
-                metadata: { jsxElement: identifier.text, ...(boundJsx ? { localBinding: true } : {}) },
+                metadata: {
+                  jsxElement: identifier.text,
+                  ...(boundJsx ? { localBinding: true } : {}),
+                  ...(importedJsx ? { importedBinding: importedJsx } : {}),
+                },
               })
             }
           }
@@ -3179,13 +3231,18 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!emitted.has(key)) {
               emitted.add(key)
               const boundRef = right.type === "identifier" ? this.localBindingTarget(right, right.text, source) : null
+              const importedRef = boundRef ? null : (right.type === "identifier" ? this.importedBindingFor(right, right.text) : null)
               relationships.push({
                 source,
                 target: boundRef ?? right.text,
                 type: ASTEngine.RelationshipType.References,
                 confidence: 0.95,
                 ...this.lineField(right),
-                metadata: { relationshipType: "instanceof_check", ...(boundRef ? { localBinding: true } : {}) },
+                metadata: {
+                  relationshipType: "instanceof_check",
+                  ...(boundRef ? { localBinding: true } : {}),
+                  ...(importedRef ? { importedBinding: importedRef } : {}),
+                },
               })
             }
           }
@@ -3329,13 +3386,18 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!seen.has(recvKey)) {
               seen.add(recvKey)
               const boundRecv = this.localBindingTarget(root, head, recvSource)
+              const importedRecv = boundRecv ? null : this.importedBindingFor(root, head)
               relationships.push({
                 source: recvSource,
                 target: boundRecv ?? head,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.6,
                 ...this.lineField(root!),
-                metadata: { isFieldAccess: true, bareRead: true, callReceiver: true, ...(boundRecv ? { localBinding: true } : {}) },
+                metadata: {
+                  isFieldAccess: true, bareRead: true, callReceiver: true,
+                  ...(boundRecv ? { localBinding: true } : {}),
+                  ...(importedRecv ? { importedBinding: importedRecv } : {}),
+                },
               })
             }
           }
@@ -3396,6 +3458,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   // The chain ROOT is a read of the identifier — a local binding when the file
                   // binds it lexically (same claim contract as the bare-read site below).
                   const boundRoot = cur?.type === "identifier" ? this.localBindingTarget(cur, head, rootSource) : null
+                  const importedRoot = boundRoot ? null : (cur?.type === "identifier" ? this.importedBindingFor(cur, head) : null)
                   relationships.push({
                     source: rootSource,
                     target: boundRoot ?? head,
@@ -3404,7 +3467,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                     // The root identifier's own line (the chain may open on a
                     // line the segments do not share).
                     ...this.lineField(cur),
-                    metadata: { isFieldAccess: true, chainRoot: true, ...(boundRoot ? { localBinding: true } : {}) },
+                    metadata: {
+                      isFieldAccess: true, chainRoot: true,
+                      ...(boundRoot ? { localBinding: true } : {}),
+                      ...(importedRoot ? { importedBinding: importedRoot } : {}),
+                    },
                   })
                 }
               }
@@ -3542,13 +3609,18 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!seen.has(bKey)) {
               seen.add(bKey)
               const boundRead = this.localBindingTarget(node, txt, bSource)
+              const importedRead = boundRead ? null : this.importedBindingFor(node, txt)
               relationships.push({
                 source: bSource,
                 target: boundRead ?? txt,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.6,
                 ...this.lineField(node),
-                metadata: { isFieldAccess: true, bareRead: true, ...(boundRead ? { localBinding: true } : {}) },
+                metadata: {
+                  isFieldAccess: true, bareRead: true,
+                  ...(boundRead ? { localBinding: true } : {}),
+                  ...(importedRead ? { importedBinding: importedRead } : {}),
+                },
               })
             }
           }
@@ -3606,13 +3678,18 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // documented isTemplateInterpolation contract.
                 seen.add(`${src2}.#${c.text}`)
                 const boundTmpl = this.localBindingTarget(c, c.text, src2)
+                const importedTmpl = boundTmpl ? null : this.importedBindingFor(c, c.text)
                 relationships.push({
                   source: src2,
                   target: boundTmpl ?? c.text,
                   type: ASTEngine.RelationshipType.Uses,
                   confidence: 0.85,
                   ...this.lineField(c),
-                  metadata: { isTemplateInterpolation: true, ...(boundTmpl ? { localBinding: true } : {}) },
+                  metadata: {
+                    isTemplateInterpolation: true,
+                    ...(boundTmpl ? { localBinding: true } : {}),
+                    ...(importedTmpl ? { importedBinding: importedTmpl } : {}),
+                  },
                 })
               }
             } else if (c.type !== "identifier") {
@@ -3650,6 +3727,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     const scopes: BindingScope[] = []
     const allNames = new Set<string>()
     const moduleBindings = new Set<string>()
+    const moduleBindingSpecs = new Map<string, string>()
     const publishedClasses = new Set<string>()
     const program: BindingScope = {
       kind: "program", startIndex: rootNode.startIndex, endIndex: rootNode.endIndex,
@@ -3689,10 +3767,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     const addImportBindings = (importNode: Node): void => {
       const clause = this.findChildByType(importNode, "import_clause")
       if (!clause) return
+      const sourceNode = importNode.childForFieldName("source")
+      const specifier = sourceNode ? stringContent(sourceNode) : ""
       const add = (name: string): void => {
         if (!name) return
         addName(program, name)
         moduleBindings.add(name)
+        // THE CLAIM'S EVIDENCE: only a LITERAL specifier can be verified by the run's import rows.
+        if (specifier) moduleBindingSpecs.set(name, specifier)
       }
       for (let i = 0; i < clause.namedChildCount; i++) {
         const c = clause.namedChild(i)
@@ -3719,6 +3801,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       const fn = value.childForFieldName("function")
       if (!fn) return false
       return fn.type === "import" || (fn.type === "identifier" && (fn.text === "require" || fn.text === "import"))
+    }
+    /** the LITERAL module specifier a module-load call writes, or "" for a dynamic one. */
+    const moduleLoadSpecifier = (value: Node | null): string => {
+      if (!value || value.type !== "call_expression") return ""
+      const args = value.childForFieldName("arguments")
+      const arg = args?.namedChild(0)
+      if (!arg) return ""
+      if (arg.type !== "string" && arg.type !== "template_string") return ""
+      return stringContent(arg)
     }
     const walk = (n: Node, scope: BindingScope): void => {
       const t = n.type
@@ -3758,10 +3849,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         const isVar = parent?.type === "variable_declaration" || (kindNode !== undefined && kindNode !== null && kindNode.text === "var")
         const target = isVar ? hoistTarget(scope) : scope
         const moduleBound = isModuleLoad(value)
+        const moduleSpec = moduleBound ? moduleLoadSpecifier(value) : ""
         if (nameNode) {
           for (const pair of this.collectPatternPairs(nameNode)) {
             addName(target, pair.name)
-            if (moduleBound) moduleBindings.add(pair.name)
+            if (moduleBound) {
+              moduleBindings.add(pair.name)
+              if (moduleSpec) moduleBindingSpecs.set(pair.name, moduleSpec)
+            }
           }
         }
         for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, scope) }
@@ -3796,7 +3891,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, scope) }
     }
     walk(rootNode, program)
-    return { scopes, allNames, moduleBindings, publishedClasses }
+    return { scopes, allNames, moduleBindings, moduleBindingSpecs, publishedClasses }
   }
 
   /**
@@ -3819,8 +3914,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     const model = this.bindingModel
     if (!model || !node || !name || !source) return null
     if (name === "this" || name === "super" || name === "arguments" || name === "undefined") return null
+    // A name the file binds FROM A MODULE is the imported-binding class, never a local binding: its
+    // claim is evidence-verified and its target stays bare. This covers `import`, `require()` and a
+    // DYNAMIC `require(expr)` (which has no evidence entry and therefore can never be claimed).
     if (model.moduleBindings.has(name)) return null
     const kind = this.resolveBindingKind(model, node.startIndex, name)
+    // ONLY a lexical (unpublishable) binding is a LOCAL-binding claim; program-scope names are
+    // published symbols whose edges may resolve normally.
     if (kind !== "lexical") return null
     return `${source}${BINDING_SEP}${name}`
   }
@@ -3905,6 +4005,30 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       cur = cur.parent
     }
     return null
+  }
+
+  /**
+   * IMPORTED-BINDING CLAIM — the EVIDENCE-VERIFIED claim kind (Lead contract, 2026-10-18). Returns
+   * `{ specifier, binding }` when the name IS the imported binding at THIS site, so the caller can
+   * publish `metadata.importedBinding` and keep the target spelling BARE (no BINDING_SEP — the
+   * arbiter verifies this claim against the run's own import rows, not a spelling).
+   *
+   * REFUSALS, each a false statement the claim must not make:
+   *   · the name has no import evidence in this file (no literal specifier: a name the PROJECT
+   *     declares, a name with no import at all, or a DYNAMIC `require(expr)` — never-claim (a)/(c));
+   *   · a LOCAL binding shadows the import at this site (the positional scope check): the target is
+   *     the shadow, not the import;
+   *   · the site is a namespace MEMBER access — the caller only asks this for a target that IS the
+   *     binding (bare callee / bare read / chain root), never a member segment (never-claim (b));
+   *   · re-export rows never reach here (never-claim (d): different surface).
+   */
+  private importedBindingFor(node: Node | null | undefined, name: string): { specifier: string; binding: string } | null {
+    const model = this.bindingModel
+    if (!model || !node || !name) return null
+    const specifier = model.moduleBindingSpecs.get(name)
+    if (specifier === undefined) return null
+    if (this.resolveBindingKind(model, node.startIndex, name) !== "published") return null
+    return { specifier, binding: name }
   }
 
   /**
