@@ -29,7 +29,8 @@
 // Every count is printed with the population it was measured on and the command that ran it. No number
 // leaves this file without its denominator.
 import { execFileSync } from "node:child_process"
-import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { closeSync, createReadStream, openSync, readFileSync, readdirSync, statSync, writeFileSync, writeSync } from "node:fs"
+import { createInterface } from "node:readline"
 import * as path from "node:path"
 import { getParser } from "../../src/ast/engine"
 import { parseFile } from "../../src/ast/pool-worker"
@@ -44,6 +45,17 @@ const JSON_OUT = (() => {
   return at >= 0 ? process.argv[at + 1] : ""
 })()
 const EXTENSIONS = ["js", "jsx", "mjs", "cjs"]
+/**
+ * STREAM MODE — the whole-population (cap 0) cause census without holding 1.47M edge rows in
+ * memory. Phase A walks the population ONCE, keeps the project tables + the per-file bindings,
+ * and spills each edge as one compact JSON line to a temp file; phase B streams that file back and
+ * classifies one edge at a time. The first single-pass version held tables + bindings + rows and
+ * was killed at 1 GB available during the cap-0 attempt (2026-10-18) rather than risk an OOM for
+ * the whole box — that is why this shape exists. Counts are identical to the non-stream mode by
+ * construction: the same compaction, the same classifyEdge, the same ingestRow.
+ */
+const STREAM = process.argv.includes("--stream")
+const EDGE_SPILL = path.join(process.cwd(), ".tmp-js", "edges-cap0.jsonl")
 const SIZE_CAP = 1024 * 1024
 /** The only metadata keys the cause rules read (see the compact collection in the main loop). */
 const COMPACT_META_KEYS = [
@@ -616,48 +628,6 @@ for (const abs of files) {
   void sampled
 }
 
-const rows: EdgeRow[] = []
-let filesParsed = 0
-let filesSkipped = 0
-for (const abs of files) {
-  let content = ""
-  try { content = readFileSync(abs, "utf8") } catch { filesSkipped++; continue }
-  let res: any
-  let b: Bindings = EMPTY_BINDINGS
-  try {
-    res = await parseFile(abs, repoByAbs.get(abs)!.length > 0 ? path.join(CR, repoByAbs.get(abs)!) : CR, { projectRoot: path.join(CR, repoByAbs.get(abs)!) } as any)
-    const tree = parser.parse(content)
-    b = collectBindings(tree.rootNode)
-    tree.delete?.()
-  } catch { filesSkipped++; continue }
-  filesParsed++
-  const repo = repoByAbs.get(abs)!
-  const p = projOf(repo, projects)
-  for (const s of res?.symbols ?? []) addSymbol(p, s)
-  fileBindings.set(abs, b)
-  const rel = relByAbs.get(abs)!
-  for (const r of res?.relationships ?? []) {
-    const label = String(r?.type ?? r?.relationshipType ?? "")
-    if (!label) continue
-    const md = (r?.metadata ?? {}) as any
-    // COMPACT METADATA — only the keys the cause rules read. At whole population this is 1.47M
-    // rows; keeping the full metadata objects would multiply the footprint for keys nothing here
-    // reads. The edge itself is unchanged and each retained key is verbatim.
-    const compact: any = {}
-    for (const k of COMPACT_META_KEYS) if (md[k] !== undefined) compact[k] = md[k]
-    rows.push({
-      label,
-      target: String(r?.target ?? r?.to ?? r?.toSymbol ?? ""),
-      source: String(r?.source ?? r?.from ?? ""),
-      file: abs,
-      repo,
-      line: Number(r?.line_number ?? 0),
-      meta: compact,
-    })
-  }
-  void rel
-}
-
 // ---- resolve, then classify the non-resolved ----
 const totals: Record<string, { edges: number; resolved: number; unresolved: number; emptyTarget?: number; declsOne?: number; declsMany?: number }> = {}
 // GATE-RECONCILED SPLIT. The gate's verdict has THREE declaration classes and this census must be
@@ -684,7 +654,15 @@ const coverage = new Map<string, Cov>()
 const buckets: Record<string, Map<Bucket, number>> = {}
 const examples: Record<string, Record<string, string[]>> = {}
 let heldAmbiguous = 0
-for (const r of rows) {
+let edgeCount = 0
+
+const rows: EdgeRow[] = []
+let filesParsed = 0
+let filesSkipped = 0
+
+function ingestRow(r: EdgeRow): void {
+  edgeCount++
+
   const p = projOf(r.repo, projects)
   let cov = coverage.get(r.label)
   if (!cov) {
@@ -714,13 +692,13 @@ for (const r of rows) {
     totals[r.label].emptyTarget = (totals[r.label].emptyTarget ?? 0) + 1
     totals[r.label].unresolved++
     bump(buckets[r.label], "EMPTY-TARGET")
-    continue
+    return
   }
   const decls = (p.names.get(r.target) ?? 0) + (p.quals.get(r.target) ?? 0)
   if (decls === 1) { totals[r.label].declsOne = (totals[r.label].declsOne ?? 0) + 1; reconciled.resolvedUnique++ }
   else if (decls > 1) { totals[r.label].declsMany = (totals[r.label].declsMany ?? 0) + 1; reconciled.ambiguous++ }
   else reconciled.unresolved++
-  if (decls >= 1) { totals[r.label].resolved++; if (decls > 1) heldAmbiguous++; continue }
+  if (decls >= 1) { totals[r.label].resolved++; if (decls > 1) heldAmbiguous++; return }
   totals[r.label].unresolved++
   if (r.label === "calls" && ownerValue.length > 0) {
     cov.unresolvedWithOwner++
@@ -734,6 +712,91 @@ for (const r of rows) {
   const ex = examples[r.label] ?? (examples[r.label] = {})
   const list = ex[bucket] ?? (ex[bucket] = [])
   if (list.length < 4) list.push(`${relByAbs.get(r.file) ?? r.file}:${r.line} ${r.source} -> ${r.target} ${r.meta?.calleeExpression ? `[callee=${r.meta.calleeExpression}]` : ""}`)
+
+}
+
+if (!STREAM) {
+  for (const abs of files) {
+    let content = ""
+    try { content = readFileSync(abs, "utf8") } catch { filesSkipped++; continue }
+    let res: any
+    let b: Bindings = EMPTY_BINDINGS
+    try {
+      res = await parseFile(abs, repoByAbs.get(abs)!.length > 0 ? path.join(CR, repoByAbs.get(abs)!) : CR, { projectRoot: path.join(CR, repoByAbs.get(abs)!) } as any)
+      const tree = parser.parse(content)
+      b = collectBindings(tree.rootNode)
+      tree.delete?.()
+    } catch { filesSkipped++; continue }
+    filesParsed++
+    const repo = repoByAbs.get(abs)!
+    const p = projOf(repo, projects)
+    for (const s of res?.symbols ?? []) addSymbol(p, s)
+    fileBindings.set(abs, b)
+    for (const r of res?.relationships ?? []) {
+      const label = String(r?.type ?? r?.relationshipType ?? "")
+      if (!label) continue
+      const md = (r?.metadata ?? {}) as any
+      const compact: any = {}
+      for (const k of COMPACT_META_KEYS) if (md[k] !== undefined) compact[k] = md[k]
+      rows.push({
+        label,
+        target: String(r?.target ?? r?.to ?? r?.toSymbol ?? ""),
+        source: String(r?.source ?? r?.from ?? ""),
+        file: abs,
+        repo,
+        line: Number(r?.line_number ?? 0),
+        meta: compact,
+      })
+    }
+  }
+  for (const r of rows) ingestRow(r)
+} else {
+  // PHASE A — one walk: tables + bindings in memory, edges spilled compact.
+  const fd = openSync(EDGE_SPILL, "w")
+  try {
+    for (let fileIdx = 0; fileIdx < files.length; fileIdx++) {
+      const abs = files[fileIdx]
+      let content = ""
+      try { content = readFileSync(abs, "utf8") } catch { filesSkipped++; continue }
+      let res: any
+      let b: Bindings = EMPTY_BINDINGS
+      try {
+        res = await parseFile(abs, repoByAbs.get(abs)!.length > 0 ? path.join(CR, repoByAbs.get(abs)!) : CR, { projectRoot: path.join(CR, repoByAbs.get(abs)!) } as any)
+        const tree = parser.parse(content)
+        b = collectBindings(tree.rootNode)
+        tree.delete?.()
+      } catch { filesSkipped++; continue }
+      filesParsed++
+      const repo = repoByAbs.get(abs)!
+      const p = projOf(repo, projects)
+      for (const s of res?.symbols ?? []) addSymbol(p, s)
+      fileBindings.set(abs, b)
+      for (const r of res?.relationships ?? []) {
+        const label = String(r?.type ?? r?.relationshipType ?? "")
+        if (!label) continue
+        const md = (r?.metadata ?? {}) as any
+        const compact: any = {}
+        for (const k of COMPACT_META_KEYS) if (md[k] !== undefined) compact[k] = md[k]
+        writeSync(fd, JSON.stringify({
+          f: fileIdx, l: label,
+          t: String(r?.target ?? r?.to ?? r?.toSymbol ?? ""),
+          s: String(r?.source ?? r?.from ?? ""),
+          n: Number(r?.line_number ?? 0),
+          m: compact,
+        }) + "\n")
+      }
+    }
+  } finally {
+    closeSync(fd)
+  }
+  // PHASE B — stream the spill back, one edge at a time.
+  const rl = createInterface({ input: createReadStream(EDGE_SPILL), crlfDelay: Infinity })
+  for await (const line of rl) {
+    if (line.length === 0) continue
+    const e = JSON.parse(line) as { f: number; l: string; t: string; s: string; n: number; m: any }
+    const abs = files[e.f]
+    ingestRow({ label: e.l, target: e.t, source: e.s, file: abs, repo: repoByAbs.get(abs)!, line: e.n, meta: e.m })
+  }
 }
 
 const report = {
@@ -750,8 +813,8 @@ if (JSON_OUT) writeFileSync(JSON_OUT, JSON.stringify(report, null, 1))
 
 const labelOrder = Object.keys(totals).sort()
 console.log(`js-resolution-classify — population: ${files.length} of ${total} admitted files across ${repos} repos (cap ${CAP})`)
-console.log(`command: bun run script/m14/js-resolution-classify.ts ${CAP}`)
-console.log(`files parsed ${filesParsed} · skipped ${filesSkipped} · edges ${rows.length} · ambiguous-among-resolved ${heldAmbiguous}`)
+console.log(`command: bun run script/m14/js-resolution-classify.ts ${CAP}${STREAM ? " --stream" : ""}`)
+console.log(`files parsed ${filesParsed} · skipped ${filesSkipped} · edges ${edgeCount} · ambiguous-among-resolved ${heldAmbiguous}${STREAM ? " · mode=stream" : ""}`)
 for (const label of labelOrder) {
   const t = totals[label]
   const b = buckets[label]
@@ -768,7 +831,7 @@ for (const label of labelOrder) {
   if (claimed > 0) console.log(`\n${label}: ${claimed} edge(s) carry an EXTERNAL CLAIM (gate extOK column) — not resolved, not merged`)
 }
 console.log("\n=== GATE-RECONCILED SPLIT (decls===1 · decls>1 · decls===0) ===")
-console.log(`edges ${rows.length} · resolved-unique ${reconciled.resolvedUnique} · ambiguous ${reconciled.ambiguous} · unresolved ${reconciled.unresolved}`)
+console.log(`edges ${edgeCount} · resolved-unique ${reconciled.resolvedUnique} · ambiguous ${reconciled.ambiguous} · unresolved ${reconciled.unresolved}`)
 console.log(`claims ${reconciled.claims} by reason: ${[...reconciled.claimsByReason.entries()].sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k}=${n}`).join(" · ") || "(none)"}`)
 console.log("NOTE: this census parses with RealJavaScriptAnalyzer via parseFile, so a pool-worker")
 console.log("      identifier-sanitizer row is absent here and present in the gate; the difference is")
