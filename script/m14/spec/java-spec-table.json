@@ -186,11 +186,11 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edges": null,
-     "resolved": null,
-     "ambByDecl": null,
-     "unresolved": null,
-     "status": "owed"
+     "edgesEmitted": 356345,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     }
    },
    "uses": {
@@ -227,11 +227,11 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edges": null,
-     "resolved": null,
-     "ambByDecl": null,
-     "unresolved": null,
-     "status": "owed"
+     "edgesEmitted": 99337,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     }
    },
    "contains": {
@@ -270,11 +270,11 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edges": null,
-     "resolved": null,
-     "ambByDecl": null,
-     "unresolved": null,
-     "status": "owed"
+     "edgesEmitted": 160852,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     }
    },
    "imports": {
@@ -308,11 +308,11 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edges": null,
-     "resolved": null,
-     "ambByDecl": null,
-     "unresolved": null,
-     "status": "owed"
+     "edgesEmitted": 209106,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     }
    },
    "references": {
@@ -358,11 +358,11 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edges": null,
-     "resolved": null,
-     "ambByDecl": null,
-     "unresolved": null,
-     "status": "owed"
+     "edgesEmitted": 554579,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     }
    },
    "exports": {
@@ -397,11 +397,11 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edges": null,
-     "resolved": null,
-     "ambByDecl": null,
-     "unresolved": null,
-     "status": "owed"
+     "edgesEmitted": 10777,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     }
    },
    "extends": {
@@ -436,11 +436,11 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edges": null,
-     "resolved": null,
-     "ambByDecl": null,
-     "unresolved": null,
-     "status": "owed"
+     "edgesEmitted": 6863,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     }
    },
    "implements": {
@@ -471,11 +471,11 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edges": null,
-     "resolved": null,
-     "ambByDecl": null,
-     "unresolved": null,
-     "status": "owed"
+     "edgesEmitted": 5260,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     }
    },
    "overrides": {
@@ -511,11 +511,11 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edges": null,
-     "resolved": null,
-     "ambByDecl": null,
-     "unresolved": null,
-     "status": "owed"
+     "edgesEmitted": 33720,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     }
    },
    "instantiates": {
@@ -548,11 +548,11 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edges": null,
-     "resolved": null,
-     "ambByDecl": null,
-     "unresolved": null,
-     "status": "owed"
+     "edgesEmitted": 41812,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     }
    },
    "decorates": {
@@ -564,7 +564,11 @@
      "edges": 0
     },
     "wholePopulation": {
-     "edges": null
+     "edgesEmitted": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     },
     "perf": {
      "avgMsPerFile": null
@@ -581,7 +585,11 @@
      "edges": 0
     },
     "wholePopulation": {
-     "edges": null
+     "edgesEmitted": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     }
    },
    "mixes_in": {
@@ -591,7 +599,11 @@
      "edges": 0
     },
     "wholePopulation": {
-     "edges": null
+     "edgesEmitted": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     }
    },
    "part_of": {
@@ -601,9 +613,121 @@
      "edges": 0
     },
     "wholePopulation": {
-     "edges": null
+     "edgesEmitted": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+     "resolvedOrClaim": null,
+     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
     }
    }
+  },
+  "_new_emissions_whole_population_2026_10_18": {
+   "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+   "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
+   "readings": {
+    "annotation": {
+     "edges": 100012,
+     "files": 8551,
+     "by annotatedKind": {
+      "method_declaration": 56769,
+      "formal_parameter": 37234,
+      "field_declaration": 2812,
+      "class_declaration": 1827,
+      "annotation_type_declaration": 437,
+      "interface_declaration": 389,
+      "local_variable_declaration": 242,
+      "constructor_declaration": 180,
+      "spread_parameter": 73,
+      "enum_declaration": 15,
+      "type_parameter": 11,
+      "constant_declaration": 8,
+      "record_declaration": 6,
+      "module_declaration": 4,
+      "annotation_type_element_declaration": 3,
+      "enum_constant": 1,
+      "package_declaration": 1
+     }
+    },
+    "throws_type": {
+     "edges": 13109,
+     "files": 3176
+    },
+    "type_parameter_bound": {
+     "edges": 859,
+     "files": 464
+    },
+    "permits": {
+     "edges": 37,
+     "files": 12
+    },
+    "constructor_invocation": {
+     "edges": 4941,
+     "files": 3223
+    },
+    "record_pattern": {
+     "edges": 1,
+     "files": 1
+    },
+    "module_requires": {
+     "edges": 58,
+     "files": 14
+    },
+    "module_exports": {
+     "edges": 27,
+     "files": 13
+    },
+    "receiverPayload": {
+     "calls:local": {
+      "edges": 72432,
+      "files": 4818
+     },
+     "calls:param": {
+      "edges": 48253,
+      "files": 4939
+     },
+     "calls:field": {
+      "edges": 44657,
+      "files": 4006
+     },
+     "calls:return": {
+      "edges": 3851,
+      "files": 880
+     },
+     "uses:local": {
+      "edges": 3403,
+      "files": 927
+     },
+     "uses:param": {
+      "edges": 2620,
+      "files": 633
+     },
+     "uses:field": {
+      "edges": 1013,
+      "files": 282
+     },
+     "uses:return": {
+      "edges": 92,
+      "files": 49
+     }
+    }
+   },
+   "perTypeEmission": {
+    "references": 554579,
+    "calls": 356345,
+    "imports": 209106,
+    "contains": 160852,
+    "uses": 99337,
+    "instantiates": 41812,
+    "overrides": 33720,
+    "exports": 10777,
+    "extends": 6863,
+    "implements": 5260,
+    "decorates": 0,
+    "renders": 0,
+    "mixes_in": 0,
+    "part_of": 0
+   },
+   "control": "whole-population census cannot rerun the gate cheaply; it prints its population beside the last published reading (11,152 files / 19 repos / 1,377,933 edges) so drift is visible. This run: 11,155 files / 20 repos / 1,478,651 edges = +100,718 over that reading, accounted for by this wave's emissions (annotation 100,012 + bounds 859 + permits/other + enum-body contains)."
   }
  }
 }

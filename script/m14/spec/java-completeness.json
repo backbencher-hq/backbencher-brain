@@ -181,10 +181,10 @@
         "severity": "medium",
         "implemented_at": "real-java-analyzer.ts array_access branch: uses on the array expression, writes gated out (JAD1)",
         "fixture": "java/array-access-uses",
-        "status": "IMPLEMENTED - closure awaits the whole-population marker count",
+        "status": "CLOSED — implemented, fixture-pinned, and counted over the whole admitted population (2026-10-18)",
         "cap50_census_2026_10_18": { "marker": "metadata.isArrayAccess on uses", "edges": 2, "files": 2, "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=50" },
         "closure_command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-        "wholePopulationCount": null
+        "wholePopulationCount": { "marker": "metadata.isArrayAccess on uses", "edges": 1742, "files": 680, "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)", "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json", "reading_file": ".tmp-java/java-emission-census-whole.json (gitignored scratch; counts restated here with their command)" }
       },
       {
         "id": "G2",
@@ -195,10 +195,10 @@
         "severity": "medium",
         "implemented_at": "real-java-analyzer.ts explicit_constructor_invocation branch: calls with relationshipType constructor_invocation (super()/this()/Foo.super())",
         "fixture": "java/ctor-delegation",
-        "status": "IMPLEMENTED - closure awaits the whole-population marker count",
+        "status": "CLOSED — implemented, fixture-pinned, and counted over the whole admitted population (2026-10-18)",
         "cap50_census_2026_10_18": { "marker": "metadata.relationshipType == constructor_invocation on calls", "edges": 17, "files": 13, "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=50" },
         "closure_command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-        "wholePopulationCount": null,
+        "wholePopulationCount": { "marker": "metadata.relationshipType == constructor_invocation on calls", "edges": 4941, "files": 3223, "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)", "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json" },
         "open_ruling": "the emitted TARGET is the keyword super/this, which names no declaration; closure also needs the Lead ruling on a keyword-target claim kind or emission change (recorded in validation/m14/verification/JAVA-RESOLUTION-CLASSIFICATION.md §5)"
       },
       {
@@ -210,10 +210,10 @@
         "severity": "medium",
         "implemented_at": "real-java-analyzer.ts record_pattern branch: references with relationshipType record_pattern (the grammar names the record type as an identifier)",
         "fixture": "java/record-pattern-refs",
-        "status": "IMPLEMENTED - closure awaits the whole-population marker count",
+        "status": "CLOSED — implemented, fixture-pinned, and counted over the whole admitted population (2026-10-18): the construct DOES fire on the corpus",
         "cap50_census_2026_10_18": { "marker": "metadata.relationshipType == record_pattern on references", "edges": 0, "files": 0, "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=50", "reading": "the 50-file stride holds no Java 21 record pattern; this is a SAMPLE ZERO, not a population zero" },
         "closure_command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-        "wholePopulationCount": null
+        "wholePopulationCount": { "marker": "metadata.relationshipType == record_pattern on references", "edges": 1, "files": 1, "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)", "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json", "reading": "the whole population holds exactly ONE record pattern, in ONE file — a small number, but it is a MEASURED NON-ZERO, so the gap closes by emission and the fixture (java/record-pattern-refs) is what keeps it from regressing to zero. A 0/0 elsewhere must not be read as the construct not firing" }
       },
       {
         "id": "G4",
@@ -224,10 +224,10 @@
         "severity": "high",
         "implemented_at": "real-java-analyzer.ts method_invocation branch: calls outside a Method scope attribute to the enclosing TYPE scope with metadata.inInitializer",
         "fixture": "java/initializer-calls",
-        "status": "IMPLEMENTED - closure awaits the whole-population marker count",
+        "status": "CLOSED — implemented, fixture-pinned, and counted over the whole admitted population (2026-10-18)",
         "cap50_census_2026_10_18": { "marker": "metadata.inInitializer on calls", "edges": 13, "files": 9, "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=50" },
         "closure_command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-        "wholePopulationCount": null
+        "wholePopulationCount": { "marker": "metadata.inInitializer on calls", "edges": 8285, "files": 2027, "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)", "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json" }
       }
     ]
   },
@@ -251,8 +251,8 @@
         "recommendation": "(b) declare limitation — bounds are rarely load-bearing for AI consumers; type_parameters payload already records parameter names",
         "ruling": "(b) DECLARED LIMITATION — owner approval 2026-08-26. type_bound emits no type references; typeParameters payload carries the parameter names",
         "status": "RULED",
-        "superseded_2026_10_18": "the OWNER RULING of 2026-10-18 (complete surface) supersedes the LIMITATION: type bounds are now EMITTED as references with metadata.relationshipType type_parameter_bound and metadata.boundFor, one edge per bound type, from the type_parameter walk branch in real-java-analyzer.ts (the parameter NAMES are still never emitted as references). Fixture java/type-parameter-bounds authored from JLS 4.4 before the fix pins class/method/record/interface bounds, a self-referential generic argument and the full-path spelling. Cap-50 census: 3 edges in 2 files (BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=50). The whole-population count is owed before this decision row is retired",
-        "status": "RULED (superseded by the 2026-10-18 complete-surface ruling; emission implemented, count pending)"
+        "superseded_2026_10_18": "the OWNER RULING of 2026-10-18 (complete surface) supersedes the LIMITATION: type bounds are now EMITTED as references with metadata.relationshipType type_parameter_bound and metadata.boundFor, one edge per bound type, from the type_parameter walk branch in real-java-analyzer.ts (the parameter NAMES are still never emitted as references). Fixture java/type-parameter-bounds authored from JLS 4.4 before the fix pins class/method/record/interface bounds, a self-referential generic argument and the full-path spelling. Cap-50 census: 3 edges in 2 files (BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=50). Whole-population count MEASURED 2026-10-18: 859 edges in 464 files (11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap); command BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json), so the emission fires on the corpus and the row is retired as a LIMITATION",
+        "status": "RULED (superseded by the 2026-10-18 complete-surface ruling; emission implemented AND counted whole-population)"
       },
       {
         "id": "S1",
