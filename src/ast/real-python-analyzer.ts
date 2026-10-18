@@ -3179,7 +3179,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       ...(localBindingTarget ? { localBinding: true } : {}),
       ...(ownerInfo ? { owner: ownerInfo.owner, ownerEvidence: ownerInfo.evidence }
         : fieldInfo ? { owner: fieldInfo.owner, ownerEvidence: fieldInfo.evidence } : {}),
-    }, this.nodeLine(calleeLeaf))
+    }, this.nodeLine(calleeLeaf), localBindingTarget ? targetName : undefined)
   }
 
   // ========================================================================
@@ -5695,6 +5695,16 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     confidence: number,
     metadata: Record<string, any>,
     line?: number,
+    /**
+     * THE IDENTITY A CLAIM RE-SPELLS, when its published target is not that identity.
+     *
+     * Relationship identity is `source/type/target/line`. A claim that changes the TARGET STRING
+     * therefore SPLITS a row that previously collapsed with a same-line same-target row — the
+     * adversarial finding from the solidity W8 claim (charter §18.5: a claim must RE-SPELL, not
+     * ADD). The local-binding claim publishes `<caller>\u0000<binding>`; its identity is the BARE
+     * callee leaf, so it passes that leaf here and the row keeps the population it always had.
+     */
+    dedupeAs?: string,
   ) {
     if (!source || !target) return
     // PY-6. The dedup key was (type, source, target) with NO LINE, which is STRICTLY
@@ -5721,7 +5731,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // The line is included only when there is one. A relationship with no line keeps
     // the coarse key, because there is nothing finer to distinguish it by and
     // inventing a 0 would be a fabricated position.
-    const key = `${type}\u001f${source}\u001f${target}\u001f${line ?? ""}`
+    const key = `${type}\u001f${source}\u001f${dedupeAs ?? target}\u001f${line ?? ""}`
     if (ctx.seenRels.has(key)) return
     ctx.seenRels.add(key)
     ctx.relationships.push({
