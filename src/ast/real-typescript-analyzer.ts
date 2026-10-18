@@ -2254,6 +2254,17 @@ class TypeScriptAnalysisRunner {
   private moduleResolver: TypeScriptModuleResolver | null = null
   private typeInference: TypeInferenceEngine
   private _pendingReExportImports: ASTEngine.ImportInfo[] = []
+  /** Per-FILE imported-binding evidence: local name -> the specifier that binds it, for specifiers
+   *  that are NOT project-local (external packages and node builtins). Built from this file's own
+   *  import relationships, which is exactly the evidence the arbiter verifies the imported-binding
+   *  claim against (`metadata.importedBindings` on the imports edges + `metadata.importedBinding` on
+   *  the downstream edge). */
+  private _importBindingSpecs: Map<string, string> = new Map()
+  /** The project root this file was analysed under (see `findProjectRoot`), used by the imported-binding
+   *  claim to decide whether a specifier is project-local (a project-local specifier is NOT claimable:
+   *  it names a project module, and the claim would launder a resolvable edge as a binding). */
+  private _projectRoot: string = ""
+  private _projectPackages: Set<string> = new Set()
   // M49 dup-key ruling (#746): dead spans returned by the Phase-2.5
   // collapse, consumed by the post-walk phantom-edge filter.
   private _dupKeyDeadSpans: { name: string; startRow: number; endRow: number; startCol: number; endCol: number }[] | null = null
@@ -2433,7 +2444,7 @@ class TypeScriptAnalysisRunner {
       const type = String(rel?.type ?? "")
       if (type === "imports") continue
       const md: Record<string, any> = (rel.metadata ??= {})
-      if (md.isExternalTarget === true || md.localBinding === true) continue
+      if (md.isExternalTarget === true || md.localBinding === true || md.importedBinding !== undefined) continue
       const target = String(rel.target ?? "")
       if (target.length === 0) continue
       let module = externalBindings.get(target)
@@ -2529,6 +2540,12 @@ class TypeScriptAnalysisRunner {
     // Initialize module resolver with project root
     const projectRoot = this.findProjectRoot(filePath)
     this.moduleResolver = new TypeScriptModuleResolver(projectRoot)
+    // THE BINDING CLAIMS' project facts: which package names this project declares (a workspace
+    // package specifier is project-local, so its imports are not claimable as external bindings).
+    // `projectPackageNames` is cached per project root, so this is one read per repo per process.
+    this._projectRoot = projectRoot
+    this._projectPackages = this.projectPackageNames(projectRoot)
+    this._importBindingSpecs = new Map()
 
     // PERF: one pre-pass so `inDecoratorPosition` can answer `false` without an
     // ancestor walk per node. See that method for the measurement — this lane read
@@ -2775,12 +2792,23 @@ class TypeScriptAnalysisRunner {
     // the count is observable in the payload matrix and in the sweep probe.)
     void baseMismatches
 
+    // THE BINDING CLAIMS (D7 depth round): both attach to rows that already exist.
+    //   1. imported-binding EVIDENCE goes on the imports edges first — the arbiter verifies the
+    //      downstream claims against it;
+    //   2. local bindings are RE-SPELLED to the family binding spelling (this changes a target, so it
+    //      runs BEFORE the claim passes, which read the target);
+    //   3. the file-local external markers still own their rows (existing accounting must not shrink);
+    //   4. imported-binding CLAIMS land only on rows nobody else claimed;
+    //   5. the project-index pass stays last and skips both binding classes (see its PASS 2 guard).
+    void this.publishImportedBindingEvidence(relationships)
+    void this.applyLocalBindingSpellings(rootNode, relationships, symbols)
     // LAST, AND DELIBERATELY SO. Every phase that can DROP an edge has run
     // (`dropDuplicateTypeMentionLabels`, `filterPhantomDupKeyEdges`), so a marker can only ever
     // land on a row that is actually published — marking earlier would leave claims on rows that
     // no longer exist, which is a claim about nothing. The pass reads this file's own symbols and
     // import edges as its evidence; it changes no target, no source and no line.
     void this.markExternalTargets(relationships, symbols)
+    void this.applyImportedBindingClaims(relationships, symbols)
     // THE PROJECT-INDEX PASS, last of all — it can only run on a COMPLETE index and it is
     // fail-closed, so it is a no-op in every sampled run (see the method's header).
     void this.applyProjectIndexClaims(relationships, context)
@@ -4457,6 +4485,241 @@ class TypeScriptAnalysisRunner {
       }
       md.evidenceClass = "usage_contextual"
     }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════════════════════════
+  // THE BINDING CLAIMS (D7 depth round, 2026-10-19): the two claim kinds the arbiter verifies from
+  // evidence the CLAIM DOES NOT SUPPLY. Both are re-spellings or markers on rows the analyzer already
+  // publishes — never new rows (the gate's dedupe key is `source\0type\0target\0line`; the JS lane
+  // measured +49 rows from adding a second target spelling instead of re-spelling).
+  // ══════════════════════════════════════════════════════════════════════════════════════════════
+
+  /**
+   * PUBLISH THE IMPORTED-BINDING EVIDENCE ON THIS FILE'S `imports` EDGES.
+   *
+   * The imported-binding claim ("this target is a local name bound by an import of `specifier`") is
+   * verified by the arbiter against the FILE'S IMPORT EDGES (`metadata.importedBindings` on each
+   * imports row, keyed by `metadata.module`), never against the claim's own word: a claim and its
+   * evidence from one author is not a check. This method is that evidence.
+   *
+   * It also fills `_importBindingSpecs` — local name -> specifier — for specifiers that are NOT
+   * project-local (external packages and node builtins). A project-local specifier (relative,
+   * absolute, or a workspace package named in the project's package.json) is EXCLUDED: it names a
+   * project module, and a claim over it would launder a resolvable edge as a binding.
+   */
+  private publishImportedBindingEvidence(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const rel of relationships as any[]) {
+      if (String(rel?.type ?? "") !== "imports") continue
+      const md: Record<string, any> = (rel.metadata ??= {})
+      const modulePath = typeof md.module === "string" ? md.module : ""
+      if (modulePath.length === 0) continue
+      const target = String(rel.target ?? "")
+      // The local names this edge binds: the edge spells `<module>:<item>` for external items, the
+      // BARE item for a project-local one, and the whole-module binding spelling (<leaf>NUL<module>:*)
+      // for `* as ns` / require / side-effect rows (where the local name, if any, is `metadata.alias`).
+      const localNames: string[] = []
+      const alias = typeof md.alias === "string" && md.alias.length > 0 && md.alias !== "*" ? md.alias : null
+      if (md.localBinding === true) {
+        if (alias) localNames.push(alias)
+      } else {
+        const spelled = target.includes("\u0000") ? target.slice(target.indexOf("\u0000") + 1) : target
+        if (spelled.includes(":")) {
+          const item = spelled.slice(spelled.lastIndexOf(":") + 1)
+          if (item.length > 0 && item !== "*") localNames.push(alias ?? item)
+        } else if (isPlainIdentifier(spelled)) {
+          localNames.push(alias ?? spelled)
+        }
+      }
+      md.importedBindings = localNames
+      // Claimable specifier: NOT project-local. Node builtins are explicitly not project-local
+      // (`isProjectLocalSpecifier` returns false for them); external package specifiers are not in
+      // the project's package set; relative/absolute/workspace specifiers are.
+      if (localNames.length > 0 && !this.isProjectLocalSpecifier(modulePath, this._projectPackages)) {
+        for (const nm of localNames) {
+          if (!this._importBindingSpecs.has(nm)) this._importBindingSpecs.set(nm, modulePath)
+        }
+      }
+    }
+  }
+
+  /**
+   * MARK THE EDGES WHOSE TARGET (or whose RECEIVER ROOT) IS A BINDING IMPORTED FROM AN EXTERNAL
+   * MODULE with `metadata.importedBinding = { specifier, binding }`.
+   *
+   * These are exactly the rows the index-side external claims could not reach (an index pass can
+   * only claim a binding it built from `module:item` spellings, so namespace imports, shadowed
+   * packages and non-indexed runs stayed unresolved). The claim is NOT a resolution: it lands in the
+   * gate's `bindOK` column, never in `resolved`, and the arbiter verifies it from this file's own
+   * import evidence. Rows already claimed by `markExternalTargets`/the project-index pass are
+   * skipped (their existing accounting must not shrink), and a target that names a PUBLISHED
+   * declaration is skipped too: the name model may legitimately resolve that row, and a claim over
+   * it would steal a resolution into the claim column.
+   */
+  private applyImportedBindingClaims(
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+  ): number {
+    // `symbols` is accepted for symmetry with the other passes and deliberately NOT consulted: the
+    // imported-binding claim is read by the arbiter BEFORE every count-based branch (it is the sole
+    // authority for its rows), so a same-named declaration elsewhere in the project is exactly the
+    // name-model DECOY this claim exists to displace, not a reason to withhold it. A published
+    // MEMBER name (`externalHelper.run()` where the file also declares `run()`) is the same case: the
+    // claim states where the receiver comes from, and suppressing it would hand the row back to the
+    // name model that binds `run` to the wrong class.
+    void symbols
+    if (this._importBindingSpecs.size === 0) return 0
+    let claimed = 0
+    for (const rel of relationships as any[]) {
+      const label = String(rel?.type ?? "")
+      if (label === "imports" || label === "contains") continue
+      const md: Record<string, any> = (rel.metadata ??= {})
+      if (md.isExternalTarget === true || md.localBinding === true || md.importedBinding !== undefined) continue
+      if (typeof md.causeBase === "string" || typeof md.baseBeyondRunScope === "string") continue
+      const target = String(rel.target ?? "")
+      if (target.length === 0) continue
+      const receiverRoot = (() => {
+        const callee = typeof md.calleeExpression === "string" ? md.calleeExpression : ""
+        const dot = callee.indexOf(".")
+        return dot > 0 ? callee.slice(0, dot) : ""
+      })()
+      let binding: string | null = null
+      if (isPlainIdentifier(target) && this._importBindingSpecs.has(target)) binding = target
+      else if (receiverRoot.length > 0 && isPlainIdentifier(receiverRoot) && this._importBindingSpecs.has(receiverRoot)) binding = receiverRoot
+      if (binding === null) continue
+      const specifier = this._importBindingSpecs.get(binding)!
+      md.importedBinding = { specifier, binding }
+      // Flat scalar mirrors: fixtures can pin scalar metadata (`meta.importedBindingSpecifier`) but
+      // cannot pin an object by reference; the object itself is what the arbiter reads.
+      md.importedBindingSpecifier = specifier
+      md.importedBindingName = binding
+      claimed++
+    }
+    return claimed
+  }
+
+  /**
+   * COLLECT THIS FILE'S LEXICAL BINDINGS — names bound by something nearer than a published symbol:
+   * parameters (incl. destructured/rest/default), type parameters, local declarators, nested
+   * function/class declarations inside a function body, catch bindings and loop bindings.
+   *
+   * Only names INSIDE a function-like body (or a type-parameter list) are collected: a module-scope
+   * declaration is a published symbol and its edges may resolve normally. The kind map is carried so
+   * a consumer can tell a parameter from a type parameter (`metadata.bindingKind`).
+   */
+  private collectLocalBindingNames(root: Node): Map<string, string> {
+    const out = new Map<string, string>()
+    const bindPattern = (pat: Node | null, kind: string) => {
+      if (!pat) return
+      const walkPat = (p: any) => {
+        if (!p) return
+        // TYPE PARAMETERS lex as `type_identifier` in this grammar (measured on `class Box<T>`: the
+        // name child is `type_identifier`, not `identifier`); requiring only `identifier` left every
+        // type-parameter edge bare, which is the same blind spot the receiver collector hit earlier.
+        if (
+          p.type === "identifier" || p.type === "type_identifier" ||
+          p.type === "shorthand_property_identifier" || p.type === "shorthand_property_identifier_pattern"
+        ) {
+          if (!out.has(p.text)) out.set(p.text, kind)
+          return
+        }
+        if (p.type === "pair_pattern") { walkPat(p.childForFieldName?.("value") ?? p.namedChild(1) ?? p.namedChild(0)); return }
+        if (p.type === "object_assignment_pattern" || p.type === "assignment_pattern") { walkPat(p.childForFieldName?.("left") ?? p.namedChild(0)); return }
+        if (p.type === "rest_pattern" || p.type === "spread_pattern" || p.type === "object_pattern" || p.type === "array_pattern") {
+          for (let i = 0; i < p.namedChildCount; i++) walkPat(p.namedChild(i))
+        }
+      }
+      walkPat(pat)
+    }
+    const walk = (n: Node, insideFunction: boolean) => {
+      const t = n.type
+      let next = insideFunction
+      if (t === "type_parameter") {
+        const nm = n.childForFieldName("name") ?? n.namedChild(0)
+        if (nm && (nm.type === "type_identifier" || nm.type === "identifier")) bindPattern(nm, "type_parameter")
+      } else if (t === "required_parameter" || t === "optional_parameter") {
+        bindPattern(n.childForFieldName("pattern") ?? n.childForFieldName("name") ?? n.namedChild(0), "parameter")
+      } else if (
+        t === "function_declaration" || t === "generator_function_declaration" || t === "function_expression" ||
+        t === "arrow_function" || t === "method_definition"
+      ) {
+        if (insideFunction) {
+          const nm = n.childForFieldName("name") ?? n.namedChild(0)
+          if (nm && (nm.type === "identifier" || nm.type === "property_identifier")) bindPattern(nm.type === "identifier" ? nm : null, "nested_declaration")
+        }
+        next = true
+      } else if (t === "variable_declarator" && insideFunction) {
+        bindPattern(n.childForFieldName("name") ?? n.namedChild(0), "local")
+      } else if (t === "catch_clause") {
+        const pat = n.childForFieldName("parameter") ?? n.namedChild(0)
+        bindPattern(pat, "catch_binding")
+      } else if (t === "for_in_statement" && insideFunction) {
+        const left = n.childForFieldName("left") ?? n.namedChild(0)
+        if (left && left.type === "identifier") bindPattern(left, "loop_binding")
+        else if (left) {
+          for (let i = 0; i < left.namedChildCount; i++) {
+            const c = left.namedChild(i)
+            if (c && c.type === "variable_declarator") bindPattern(c.childForFieldName("name") ?? c.namedChild(0), "loop_binding")
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        if (child) walk(child, next)
+      }
+    }
+    walk(root, false)
+    return out
+  }
+
+  /**
+   * RE-SPELL THE EDGES THAT TARGET A LOCAL BINDING to the family binding spelling
+   * `<callable>\u0000<binding>` and mark them `metadata.localBinding` (D7 local-binding seam).
+   *
+   * The family publishes no locals/parameters/lambda parameters as symbols, so a bare local name can
+   * never name a declaration: the spelled target CANNOT be refuted by the key space, and the arbiter's
+   * binding claim verifies it from its own spelling (`verifyBindingClaim`). This is a RE-SPELL of the
+   * existing row (the row count does not move; the gate's dedupe key stays one row per edge).
+   *
+   * Refusals, each measured or contractual: a name the file PUBLISHES is a real symbol (skipped — its
+   * edge may resolve); a name bound by an IMPORT is the imported-binding class, not a local one
+   * (skipped); a row already carrying a claim/owner marker is left untouched (another author's claim
+   * outranks this one); the target must be a plain identifier (a member or qualified spelling is not
+   * a local binding).
+   */
+  private applyLocalBindingSpellings(
+    root: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+  ): number {
+    const localBindings = this.collectLocalBindingNames(root)
+    if (localBindings.size === 0) return 0
+    const published = new Set<string>()
+    for (const sym of symbols) {
+      if (sym?.name) published.add(String(sym.name))
+      const leaf = String((sym as { qualifiedName?: string })?.qualifiedName ?? "").split(/[:.]/).filter(Boolean).pop()
+      if (leaf) published.add(leaf)
+    }
+    const labels = new Set(["calls", "uses", "references", "instantiates", "extends", "implements", "decorates"])
+    let spelled = 0
+    for (const rel of relationships as any[]) {
+      const label = String(rel?.type ?? "")
+      if (!labels.has(label)) continue
+      const md: Record<string, any> = (rel.metadata ??= {})
+      if (md.isExternalTarget === true || md.localBinding === true || md.importedBinding !== undefined) continue
+      if (typeof md.causeBase === "string" || typeof md.baseBeyondRunScope === "string") continue
+      const target = String(rel.target ?? "")
+      if (!isPlainIdentifier(target)) continue
+      const kind = localBindings.get(target)
+      if (kind === undefined) continue
+      if (published.has(target) || this._importBindingSpecs.has(target)) continue
+      const source = String(rel.source ?? "")
+      if (source.length === 0 || !isPlainIdentifier(source)) continue
+      rel.target = `${source}${BINDING_SEP}${target}`
+      md.localBinding = true
+      md.bindingKind = kind
+      spelled++
+    }
+    return spelled
   }
 
   /**
@@ -7239,7 +7502,10 @@ class TypeScriptAnalysisRunner {
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
           ...this.lineField(bindNode ?? sourceNode),
-          metadata: { module: modulePath, isRequire: true, isDefault: !!bindNode, isTypeOnly: typeOnly, localBinding: true },
+          metadata: {
+            module: modulePath, isRequire: true, isDefault: !!bindNode, isTypeOnly: typeOnly, localBinding: true,
+            ...(bindNode ? { alias: bindNode.text } : {}),
+          },
         })
         return
       }
