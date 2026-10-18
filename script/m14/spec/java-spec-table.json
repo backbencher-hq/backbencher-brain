@@ -186,11 +186,17 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edgesEmitted": 356345,
-     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
-     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-     "resolvedOrClaim": null,
-     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
+     "edges": 356345,
+     "resolved": 99057,
+     "amb": 115026,
+     "unresolved": 94227,
+     "extOK": 47803,
+     "extUnknown": 232,
+     "extFAIL": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos; 20 repo indexes built (0 damaged); 0 parse failures; self-test PASS",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 0 --index",
+     "wallSeconds": 594,
+     "note": "The acceptance arm. extFAIL/bindFAIL/causeFAIL are 0; amb(decl)+unresolved remain as NAMED classes in validation/m14/verification/JAVA-WHOLE-POPULATION-ARM.md §4 (D3). Claims are their own columns, never merged into resolved."
     }
    },
    "uses": {
@@ -227,11 +233,17 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edgesEmitted": 99337,
-     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
-     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-     "resolvedOrClaim": null,
-     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
+     "edges": 99337,
+     "resolved": 44715,
+     "amb": 40385,
+     "unresolved": 3794,
+     "extOK": 10435,
+     "extUnknown": 8,
+     "extFAIL": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos; 20 repo indexes built (0 damaged); 0 parse failures; self-test PASS",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 0 --index",
+     "wallSeconds": 594,
+     "note": "The acceptance arm. extFAIL/bindFAIL/causeFAIL are 0; amb(decl)+unresolved remain as NAMED classes in validation/m14/verification/JAVA-WHOLE-POPULATION-ARM.md §4 (D3). Claims are their own columns, never merged into resolved."
     }
    },
    "contains": {
@@ -270,11 +282,17 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edgesEmitted": 160852,
-     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
-     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-     "resolvedOrClaim": null,
-     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
+     "edges": 160852,
+     "resolved": 160852,
+     "amb": 0,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos; 20 repo indexes built (0 damaged); 0 parse failures; self-test PASS",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 0 --index",
+     "wallSeconds": 594,
+     "note": "The acceptance arm. extFAIL/bindFAIL/causeFAIL are 0; amb(decl)+unresolved remain as NAMED classes in validation/m14/verification/JAVA-WHOLE-POPULATION-ARM.md §4 (D3). Claims are their own columns, never merged into resolved."
     }
    },
    "imports": {
@@ -308,11 +326,17 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edgesEmitted": 209106,
-     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
-     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-     "resolvedOrClaim": null,
-     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
+     "edges": 209106,
+     "resolved": 90769,
+     "amb": 1131,
+     "unresolved": 5881,
+     "extOK": 95289,
+     "extUnknown": 16036,
+     "extFAIL": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos; 20 repo indexes built (0 damaged); 0 parse failures; self-test PASS",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 0 --index",
+     "wallSeconds": 594,
+     "note": "The acceptance arm. extFAIL/bindFAIL/causeFAIL are 0; amb(decl)+unresolved remain as NAMED classes in validation/m14/verification/JAVA-WHOLE-POPULATION-ARM.md §4 (D3). Claims are their own columns, never merged into resolved."
     }
    },
    "references": {
@@ -358,11 +382,17 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edgesEmitted": 554579,
-     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
-     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-     "resolvedOrClaim": null,
-     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
+     "edges": 554579,
+     "resolved": 107650,
+     "amb": 85865,
+     "unresolved": 45603,
+     "extOK": 298338,
+     "extUnknown": 17123,
+     "extFAIL": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos; 20 repo indexes built (0 damaged); 0 parse failures; self-test PASS",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 0 --index",
+     "wallSeconds": 594,
+     "note": "The acceptance arm. extFAIL/bindFAIL/causeFAIL are 0; amb(decl)+unresolved remain as NAMED classes in validation/m14/verification/JAVA-WHOLE-POPULATION-ARM.md §4 (D3). Claims are their own columns, never merged into resolved."
     }
    },
    "exports": {
@@ -397,11 +427,17 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edgesEmitted": 10777,
-     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
-     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-     "resolvedOrClaim": null,
-     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
+     "edges": 10777,
+     "resolved": 4735,
+     "amb": 6022,
+     "unresolved": 20,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos; 20 repo indexes built (0 damaged); 0 parse failures; self-test PASS",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 0 --index",
+     "wallSeconds": 594,
+     "note": "The acceptance arm. extFAIL/bindFAIL/causeFAIL are 0; amb(decl)+unresolved remain as NAMED classes in validation/m14/verification/JAVA-WHOLE-POPULATION-ARM.md §4 (D3). Claims are their own columns, never merged into resolved."
     }
    },
    "extends": {
@@ -436,11 +472,17 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edgesEmitted": 6863,
-     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
-     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-     "resolvedOrClaim": null,
-     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
+     "edges": 6863,
+     "resolved": 2076,
+     "amb": 3220,
+     "unresolved": 82,
+     "extOK": 1379,
+     "extUnknown": 106,
+     "extFAIL": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos; 20 repo indexes built (0 damaged); 0 parse failures; self-test PASS",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 0 --index",
+     "wallSeconds": 594,
+     "note": "The acceptance arm. extFAIL/bindFAIL/causeFAIL are 0; amb(decl)+unresolved remain as NAMED classes in validation/m14/verification/JAVA-WHOLE-POPULATION-ARM.md §4 (D3). Claims are their own columns, never merged into resolved."
     }
    },
    "implements": {
@@ -471,11 +513,17 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edgesEmitted": 5260,
-     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
-     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-     "resolvedOrClaim": null,
-     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
+     "edges": 5260,
+     "resolved": 3865,
+     "amb": 63,
+     "unresolved": 93,
+     "extOK": 1129,
+     "extUnknown": 110,
+     "extFAIL": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos; 20 repo indexes built (0 damaged); 0 parse failures; self-test PASS",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 0 --index",
+     "wallSeconds": 594,
+     "note": "The acceptance arm. extFAIL/bindFAIL/causeFAIL are 0; amb(decl)+unresolved remain as NAMED classes in validation/m14/verification/JAVA-WHOLE-POPULATION-ARM.md §4 (D3). Claims are their own columns, never merged into resolved."
     }
    },
    "overrides": {
@@ -511,11 +559,17 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edgesEmitted": 33720,
-     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
-     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-     "resolvedOrClaim": null,
-     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
+     "edges": 33720,
+     "resolved": 1532,
+     "amb": 32188,
+     "unresolved": 0,
+     "extOK": 0,
+     "extUnknown": 0,
+     "extFAIL": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos; 20 repo indexes built (0 damaged); 0 parse failures; self-test PASS",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 0 --index",
+     "wallSeconds": 594,
+     "note": "The acceptance arm. extFAIL/bindFAIL/causeFAIL are 0; amb(decl)+unresolved remain as NAMED classes in validation/m14/verification/JAVA-WHOLE-POPULATION-ARM.md §4 (D3). Claims are their own columns, never merged into resolved."
     }
    },
    "instantiates": {
@@ -548,11 +602,17 @@
     },
     "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
     "wholePopulation": {
-     "edgesEmitted": 41812,
-     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos (0 parse failures; 282 tracked-but-absent; 0 over the 1 MB cap)",
-     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
-     "resolvedOrClaim": null,
-     "note": "edgesEmitted is the ANALYZER'S emission count over the whole admitted population (census, control = published baseline). The RESOLVED/unresolved/claim columns for the whole population are owed to the gate arm `incoming-gate java java 0` and are null until that run exists."
+     "edges": 41812,
+     "resolved": 2539,
+     "amb": 16796,
+     "unresolved": 860,
+     "extOK": 18951,
+     "extUnknown": 2666,
+     "extFAIL": 0,
+     "population": "11,155 parsed of 11,155 admitted .java files across 20 repos; 20 repo indexes built (0 damaged); 0 parse failures; self-test PASS",
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 0 --index",
+     "wallSeconds": 594,
+     "note": "The acceptance arm. extFAIL/bindFAIL/causeFAIL are 0; amb(decl)+unresolved remain as NAMED classes in validation/m14/verification/JAVA-WHOLE-POPULATION-ARM.md §4 (D3). Claims are their own columns, never merged into resolved."
     }
    },
    "decorates": {
@@ -728,6 +788,46 @@
     "part_of": 0
    },
    "control": "whole-population census cannot rerun the gate cheaply; it prints its population beside the last published reading (11,152 files / 19 repos / 1,377,933 edges) so drift is visible. This run: 11,155 files / 20 repos / 1,478,651 edges = +100,718 over that reading, accounted for by this wave's emissions (annotation 100,012 + bounds 859 + permits/other + enum-body contains)."
+  },
+  "acceptance_arm_2026_10_18": {
+   "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts java java 0 --index",
+   "population": "11,155 parsed of 11,155 admitted .java files across 20 repos; 20 repo indexes built (0 damaged); 0 parse failures; self-test PASS",
+   "wallSeconds": 594,
+   "total": {
+    "edges": 1478651,
+    "resolved": 517790,
+    "ambByDecl": 300696,
+    "unresolved": 150560,
+    "extOK": 473324,
+    "extUnknown": 36281,
+    "extFAIL": 0,
+    "bindFAIL": 0,
+    "causeFAIL": 0
+   },
+   "arbitraryTwin": 751102,
+   "ownerChannel": {
+    "rowsCarryingOwner": 176321,
+    "resolved": 62716,
+    "declined": 113605,
+    "ownerAbsent": 90488,
+    "direct": 54712,
+    "noMember": 16517,
+    "sameKindDuplicate": 8004,
+    "ownerAmbiguous": 6474,
+    "kindAmbiguous": 126,
+    "nameModelAmbiguousResolvedByChannel": 51197,
+    "declinedButNameWouldResolve": 8072
+   },
+   "reading": "CLAUSE 4 CLEAN whole-population (extFAIL 0). CLAUSE 1 fails ONLY on NAMED classes: 300,696 amb(decl) + 150,560 unresolved + 36,281 ext?, each classified in JAVA-WHOLE-POPULATION-ARM.md §4 (D3). resolved 517,790 = 35.0% of 1,478,651 edges. arbitraryTwin 751,102 = the whole-population comparison baseline, unchanged by both fixes (D6).",
+   "comparisonToNoIndexArm": {
+    "command": "bun run script/m14/incoming-gate.ts java java 0",
+    "resolved": 517790,
+    "unresolved": 338783,
+    "extOK": 285101,
+    "extUnknown": 36281,
+    "extFAIL": 0,
+    "note": "the index converts 188,223 rows from unresolved to VERIFIED external claims (project-scope provenance proofs); resolved is identical in both arms, as it must be, because a claim is not a resolution"
+   }
   }
  }
 }
