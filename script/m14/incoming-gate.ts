@@ -1692,6 +1692,33 @@ function selfTest(): { ok: boolean; failures: string[] } {
     failures.push("control: a DOTTED target verified as a binding — the check is not testing the separator")
   }
 
+  // THE PROJECT-ABSOLUTE REFINER VS RESERVED PLATFORM NAMESPACES (java lane defect, 2026-10-19).
+  // The refiner demotes a verified owner claim whose specifier ROOT is a directory the project
+  // carries. `src/main/java` is such a directory in essentially every java checkout, so
+  // `java.util.List` (specifier `java.util`, root `java`) was demoted from verified to ext?
+  // although the reserved-namespace citation had already verified it — measured on the java arm
+  // as 15,419 reserved-prefixed targets plus 19,540 bare targets whose files import a `java.*`
+  // root. The fix exempts ONLY the reserved platforms; the non-reserved control proves the
+  // demotion still fires for a real project module. Both arms are asserted here so a future edit
+  // that widens or removes the exemption fails the gate instead of silently changing a lane's
+  // ext? number.
+  {
+    const refinerFacts: ProjectFacts = {
+      packages: new Set(["declared_pkg"]),
+      files: new Set(["sdk/lib/async/async.dart", "src/main/java/Foo.java", "src/com/Foo.java"]),
+    }
+    const refinerArms: Array<[string, Outcome, string]> = [
+      ["java.util", "externalVerified", "a reserved platform specifier must stay verified even though the project has a directory named `java`"],
+      ["java", "externalVerified", "the bare reserved root must stay verified"],
+      ["com.sun.net", "externalVerified", "a multi-segment reserved namespace (com.sun.) must stay verified"],
+      ["async.thing", "externalUnverified", "a NON-reserved specifier root that is a real project module must still demote (the control)"],
+    ]
+    for (const [spec, want, why] of refinerArms) {
+      const c = classifyEdge(declCount, kinds, "AbsentThing.build", { kind: "owner", specifier: spec }, refinerFacts)
+      if (c.outcome !== want) failures.push(`control: refiner for specifier ${spec} read ${c.outcome}, expected ${want} — ${why}`)
+    }
+  }
+
   // THE SCOPE IS APPLIED, and this asserts it rather than trusting the caller. `gamma` is
   // declared twice in the pooled key space and once in a project's — the shape seven
   // unrelated repositories produce constantly, and the whole reason the two tables exist.

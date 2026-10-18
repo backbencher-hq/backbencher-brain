@@ -1431,7 +1431,21 @@ export function classifyEdge(
     // wrong is visible as unverified rather than laundering a gap into a verified external.
     if (outcome === "externalVerified" && facts && claim.kind === "owner" && claim.specifier) {
       const root = claim.specifier.split(/[.:/\\]/)[0]
-      if (root.length > 0 && projectModuleNames(facts).has(root)) outcome = "externalUnverified"
+      // RESERVED PLATFORM NAMESPACES ARE NOT PROJECT LAYOUT (measured by the java lane, 2026-10-19).
+      // The refiner's job is to demote a claim when the specifier's ROOT is a directory the project
+      // carries — `src/main/java` is such a directory in essentially every java checkout, so
+      // `java.util.List` (specifier `java.util`, root `java`) was demoted to `ext?` even though the
+      // reserved-namespace citation (`4fb712046`) had already verified it. Measured cost: 15,419
+      // reserved-prefixed targets + 19,540 bare targets whose files import a `java.*` root, i.e. the
+      // dominant mass of java's 36,281 `ext?` rows. The project-absolute rule is right in general —
+      // a layout directory named `java` is not a declaration — so the narrow fix is to EXEMPT the
+      // reserved platforms, whose precedence is already the rule, and to leave a non-reserved root
+      // that really is a project module (e.g. `kotlinx`) demoting exactly as before.
+      const reservedSpecifier = RESERVED_PLATFORM_NAMESPACES.some((ns) => {
+        const bare = ns.endsWith(".") ? ns.slice(0, -1) : ns
+        return claim.specifier === bare || claim.specifier!.startsWith(ns)
+      })
+      if (!reservedSpecifier && root.length > 0 && projectModuleNames(facts).has(root)) outcome = "externalUnverified"
     }
     // WHICH MECHANISM CONFIRMED IT, kept apart on purpose. A dotted target is verified
     // through its OWNER; a bare identifier through the TARGET itself (see
