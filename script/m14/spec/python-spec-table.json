@@ -7,73 +7,205 @@
     "class_definition": {
       "symbol": "class | enum (Enum base) | type-alias target",
       "heritage": "extends: every superclasses argument_list entry that names a base LEAF (identifier, attribute -> LAST identifier, subscript -> generic HEAD); implements: only where the base is PROVEN an interface (ABC/Protocol family, in-file or imported, via the interface-binding pre-pass); metaclass= is a keyword_argument inside superclasses and is NOT a heritage edge (arguments are not base names)",
-      "payloads": ["docstring/comments", "decorators (on the decorated_definition wrapping it)", "superTypes metadata (heritage column the store's ancestor walk reads)", "complexity (methods)"],
-      "emits": ["contains (owner -> member)", "extends", "implements"],
-      "fixtures": ["base-shapes", "interface-implements", "class-variable-is-not-overridden"]
+      "payloads": [
+        "docstring/comments",
+        "decorators (on the decorated_definition wrapping it)",
+        "superTypes metadata (heritage column the store's ancestor walk reads)",
+        "complexity (methods)"
+      ],
+      "emits": [
+        "contains (owner -> member)",
+        "extends",
+        "implements"
+      ],
+      "fixtures": [
+        "base-shapes",
+        "interface-implements",
+        "class-variable-is-not-overridden"
+      ]
     },
     "function_definition": {
       "symbol": "function (module scope) | method (class body) | async flag from the anonymous `async` token; a def inside a def is a LOCAL and publishes NO symbol (PY-28)",
-      "payloads": ["parameters (+ types, defaults, *args/**kwargs)", "returnType", "decorators", "docstring", "complexity", "isAsync"],
-      "emits": ["contains", "overrides (base-declares-method, in-file or cross-file companion)", "decorates"],
-      "fixtures": ["nested-def-reference-source", "declaration-name-is-a-declaration", "decorator-column-lines"]
+      "payloads": [
+        "parameters (+ types, defaults, *args/**kwargs)",
+        "returnType",
+        "decorators",
+        "docstring",
+        "complexity",
+        "isAsync"
+      ],
+      "emits": [
+        "contains",
+        "overrides (base-declares-method, in-file or cross-file companion)",
+        "decorates"
+      ],
+      "fixtures": [
+        "nested-def-reference-source",
+        "declaration-name-is-a-declaration",
+        "decorator-column-lines"
+      ]
     },
     "decorated_definition": {
       "symbol": "the wrapped class/function keeps its own node; this wrapper is where the DECORATES rows are read",
-      "emits": ["decorates (one row per decorator per decorated symbol, target = decorator name AS WRITTEN: @lib.inject(\"db\") -> lib.inject; arguments are NOT rows; line = the decorator's own line; NO row when the decorated declaration is a local/nested def or a phantom)"],
-      "fixtures": ["decorator-applied", "decorators-nested-local-emits-nothing", "decorator-column-lines"]
+      "emits": [
+        "decorates (one row per decorator per decorated symbol, target = decorator name AS WRITTEN: @lib.inject(\"db\") -> lib.inject; arguments are NOT rows; line = the decorator's own line; NO row when the decorated declaration is a local/nested def or a phantom)"
+      ],
+      "fixtures": [
+        "decorator-applied",
+        "decorators-nested-local-emits-nothing",
+        "decorator-column-lines"
+      ]
     },
     "type_alias_statement": {
       "symbol": "type (metadata.isTypeAlias: true)",
       "note": "PEP 695 `type Alias = ...`; the alias's RHS type nodes are read as type references like any other annotation position",
-      "fixtures": ["inline-type-parameter-is-not-a-class"]
+      "fixtures": [
+        "inline-type-parameter-is-not-a-class"
+      ]
     },
     "assignment": {
       "symbol": "variable (module scope, ownerless) | property (class body, owner class) — locals/params/comprehension targets NEVER symbols",
       "note": "every binding target shape is read through one shared pattern walker: identifier, pattern_list (a, b), tuple_pattern, list_pattern, list_splat_pattern (*rest); annotated assignments carry a type clause -> references",
-      "fixtures": ["multi-target-assignment-binds-names", "nameless-assignment-target-is-no-symbol"]
+      "fixtures": [
+        "multi-target-assignment-binds-names",
+        "nameless-assignment-target-is-no-symbol"
+      ]
     },
-    "global_statement": { "symbol": "module variable from a `global X` + creating write (ownerless, metadata.boundByGlobalWrite)", "fixtures": ["global-write-creates-module-binding"] },
-    "for_statement/with_statement/except_clause": { "symbol": "module variable (or class property) from a module/class-scope binder target (metadata.boundByBinder = for|with|except); inside a def they bind LOCALS and publish nothing", "fixtures": ["module-binder-binds-a-module-name", "with-except-as-binds-a-local"] },
-    "expression_statement": { "relationship": "exports via `__all__` (class-body `__all__` is NOT a module export surface)", "fixtures": ["module-all-exports", "dunder-all-expression-list", "class-dunder-all-is-not-exports"] },
+    "global_statement": {
+      "symbol": "module variable from a `global X` + creating write (ownerless, metadata.boundByGlobalWrite)",
+      "fixtures": [
+        "global-write-creates-module-binding"
+      ]
+    },
+    "for_statement/with_statement/except_clause": {
+      "symbol": "module variable (or class property) from a module/class-scope binder target (metadata.boundByBinder = for|with|except); inside a def they bind LOCALS and publish nothing",
+      "fixtures": [
+        "module-binder-binds-a-module-name",
+        "with-except-as-binds-a-local"
+      ]
+    },
+    "expression_statement": {
+      "relationship": "exports via `__all__` (class-body `__all__` is NOT a module export surface)",
+      "fixtures": [
+        "module-all-exports",
+        "dunder-all-expression-list",
+        "class-dunder-all-is-not-exports"
+      ]
+    },
     "import_statement / import_from_statement / future_import_statement / relative_import / aliased_import / wildcard_import": {
       "relationship": "imports (`module:item` / `module:*`; future_import_statement stated as module `__future__`; the leading dot of a relative_import is LOCAL by grammar and is never claimed external); metadata.importedAs carries the BOUND alias when it differs; metadata.starImport marks wildcards",
       "note": "on a COMPLETE project index (complete===true only): a project-local module's item edge is re-spelled to the bindable ITEM when symbolCounts says declared once; a third-party module's edge carries the moduleNamespace claim",
-      "fixtures": ["import-surface-is-a-set", "import-alias-is-published-as-a-binding", "star-import-is-a-binding-rule", "import-bound-name-seam.mts"]
+      "fixtures": [
+        "import-surface-is-a-set",
+        "import-alias-is-published-as-a-binding",
+        "star-import-is-a-binding-rule",
+        "import-bound-name-seam.mts"
+      ]
     }
   },
   "types_and_annotations": {
     "type / generic_type / union_type / member_type / constrained_type / splat_type / subscript / list / tuple / dictionary / string(forward ref)": {
       "relationship": "references (annotation positions: parameter/return/annotated assignment; metadata.relationshipType states the position; a PEP-695 inline type_parameter is REFUSED as a reference — inline-type-parameter reason code)",
       "note": "type clauses whose subtree contains a parser ERROR are refused whole (PY-D17: a confidently-wrong edge is worse than an honest NULL)",
-      "fixtures": ["type-usage-graph", "parser-error-region-is-not-a-type", "references-do-not-name-keyword-arguments"]
+      "fixtures": [
+        "type-usage-graph",
+        "parser-error-region-is-not-a-type",
+        "references-do-not-name-keyword-arguments"
+      ]
     },
-    "type_parameter": { "relationship": "NONE — a PEP-695 `[T]` binding is not a class and is not a reference; pinned as a zero", "fixtures": ["inline-type-parameter-is-not-a-class"] },
-    "isinstance/issubclass type arguments": { "relationship": "references (reasonCode instanceof-check)", "note": "a WALRUS/parameter target used as the type argument is a local-binding-target, not a type reference", "fixtures": ["reference-binding-is-not-a-guess", "dispatch-reason-codes"] }
+    "type_parameter": {
+      "relationship": "NONE — a PEP-695 `[T]` binding is not a class and is not a reference; pinned as a zero",
+      "fixtures": [
+        "inline-type-parameter-is-not-a-class"
+      ]
+    },
+    "isinstance/issubclass type arguments": {
+      "relationship": "references (reasonCode instanceof-check)",
+      "note": "a WALRUS/parameter target used as the type argument is a local-binding-target, not a type reference",
+      "fixtures": [
+        "reference-binding-is-not-a-guess",
+        "dispatch-reason-codes"
+      ]
+    }
   },
   "expressions": {
     "call": {
       "relationship": "calls (target = callee LEAF, metadata.qualified = written chain)",
-      "dispatch_classes": ["in-file-callee", "dispatch-on-parameter (self.m()/cls.m())", "dispatch-on-receiver (recv.m())", "external-member-call (module-rooted route)", "local-callee", "bare-name-callee"],
+      "dispatch_classes": [
+        "in-file-callee",
+        "dispatch-on-parameter (self.m()/cls.m())",
+        "dispatch-on-receiver (recv.m())",
+        "external-member-call (module-rooted route)",
+        "local-callee",
+        "bare-name-callee"
+      ],
       "owner_channel": "metadata.owner + metadata.ownerEvidence in {self, annotation, assignment} where the receiver's class-like type is PROVEN; the store resolves members through it (member-owner-resolution.ts) and WITHDRAWS the name binding for those rows",
       "not_emitted": "a raised exception's type and a decorator's CALL ARGUMENTS are not calls rows of their own; builtin-namespace callees are emitted when the target is not filtered as a builtin call",
-      "fixtures": ["callee-shapes", "dispatch-reason-codes", "external-callee-is-called", "owner-evidence-classes"]
+      "fixtures": [
+        "callee-shapes",
+        "dispatch-reason-codes",
+        "external-callee-is-called",
+        "owner-evidence-classes"
+      ]
     },
     "attribute in a read position": {
       "relationship": "uses (isMemberRead; target = member leaf, metadata.qualified = written chain; metadata.owner/ownerEvidence where proven; assignment-LHS / augmented-LHS / call-function / receiver-of-call positions are NOT reads)",
-      "fixtures": ["member-read-is-not-a-declaration", "qualified-endpoint-spellings", "owner-evidence-classes"]
+      "fixtures": [
+        "member-read-is-not-a-declaration",
+        "qualified-endpoint-spellings",
+        "owner-evidence-classes"
+      ]
     },
-    "call with keyword_argument/list_splat/dictionary_splat arguments": { "relationship": "NONE from the argument itself — an argument's NAME (k=) is not a reference, and the class keyword is not heritage", "fixtures": ["references-do-not-name-keyword-arguments"] },
-    "list/dict/set/generator comprehension + for_in_clause/if_clause": { "relationship": "reads inside the body emit calls/uses/references like any expression; the comprehension's OWN for-target is a LOCAL of its own scope (scopeOwnBindings), so a read of it is local-callee/local-binding-target, never a project-wide name", "fixtures": ["comprehension-target-is-a-local"] },
-    "named_expression (walrus)": { "relationship": "the target is a binding (local; or a module/class-scope binding where written at that scope), never a declaration of its own unless a scope binder publishes it; reads of it are bindings", "fixtures": ["reference-binding-is-not-a-guess"] },
-    "comparison_operator with `in` / `is`": { "relationship": "none (no type/owner evidence in the operator itself)" },
-    "raise_statement": { "relationship": "NONE of its own — the raised exception is a call edge when written as a call (`raise ValueError(...)` -> calls -> ValueError); a bare `raise E` names no emitted relationship", "note": "DECLARED: `raises` is a vocabulary candidate this lane does not invent; the census proposal carries the corpus count" },
-    "lambda": { "symbol": "none (a lambda is a value); its parameters are its OWN scope's locals (scopeOwnBindings)", "fixtures": ["comprehension-target-is-a-local"] },
-    "new/instantiation": { "relationship": "instantiates — a call whose callee is an IN-FILE declared class (declaredTypes), confidence 0.9 with reasonCode in-file-class-constructor; an imported class cannot be proven class-like without a COMPLETE project index", "fixtures": ["type-usage-graph"] }
+    "call with keyword_argument/list_splat/dictionary_splat arguments": {
+      "relationship": "NONE from the argument itself — an argument's NAME (k=) is not a reference, and the class keyword is not heritage",
+      "fixtures": [
+        "references-do-not-name-keyword-arguments"
+      ]
+    },
+    "list/dict/set/generator comprehension + for_in_clause/if_clause": {
+      "relationship": "reads inside the body emit calls/uses/references like any expression; the comprehension's OWN for-target is a LOCAL of its own scope (scopeOwnBindings), so a read of it is local-callee/local-binding-target, never a project-wide name",
+      "fixtures": [
+        "comprehension-target-is-a-local"
+      ]
+    },
+    "named_expression (walrus)": {
+      "relationship": "the target is a binding (local; or a module/class-scope binding where written at that scope), never a declaration of its own unless a scope binder publishes it; reads of it are bindings",
+      "fixtures": [
+        "reference-binding-is-not-a-guess"
+      ]
+    },
+    "comparison_operator with `in` / `is`": {
+      "relationship": "none (no type/owner evidence in the operator itself)"
+    },
+    "raise_statement": {
+      "relationship": "NONE of its own — the raised exception is a call edge when written as a call (`raise ValueError(...)` -> calls -> ValueError); a bare `raise E` names no emitted relationship",
+      "note": "DECLARED: `raises` is a vocabulary candidate this lane does not invent; the census proposal carries the corpus count"
+    },
+    "lambda": {
+      "symbol": "none (a lambda is a value); its parameters are its OWN scope's locals (scopeOwnBindings)",
+      "fixtures": [
+        "comprehension-target-is-a-local"
+      ]
+    },
+    "new/instantiation": {
+      "relationship": "instantiates — a call whose callee is an IN-FILE declared class (declaredTypes), confidence 0.9 with reasonCode in-file-class-constructor; an imported class cannot be proven class-like without a COMPLETE project index",
+      "fixtures": [
+        "type-usage-graph"
+      ]
+    }
   },
   "statements_affecting_complexity": [
-    "if_statement / elif_clause", "for_statement", "while_statement", "try_statement / except_clause / finally_clause",
-    "with_statement", "match_statement / case_clause", "boolean_operator (and/or short-circuit)", "conditional_expression (ternary)",
-    "assert_statement", "raise_statement", "comprehensions (list/set/dict/generator)"
+    "if_statement / elif_clause",
+    "for_statement",
+    "while_statement",
+    "try_statement / except_clause / finally_clause",
+    "with_statement",
+    "match_statement / case_clause",
+    "boolean_operator (and/or short-circuit)",
+    "conditional_expression (ternary)",
+    "assert_statement",
+    "raise_statement",
+    "comprehensions (list/set/dict/generator)"
   ],
   "heritage_and_interfaces": {
     "extends": "class superclasses -> base LEAF; a base the parser cannot name is not emitted; third-party bases carry no claim without proof",
@@ -83,7 +215,11 @@
   },
   "exports_surface": {
     "__all__": "exports edges from the module to each listed name (PEP 562 __getattr__ provisions published as symbols too); class-body __all__ is not a module export; a shipped submodule / stale export is a DECLARED residual axis, not filtered out",
-    "fixtures": ["module-all-exports", "module-getattr-provides-names", "export-residual-gate.mts"]
+    "fixtures": [
+      "module-all-exports",
+      "module-getattr-provides-names",
+      "export-residual-gate.mts"
+    ]
   },
   "known_declined_or_declared": {
     "declared": [
@@ -93,5 +229,71 @@
       "raises / annotates / type_alias relationship values are ontology candidates reported to the census, NOT invented here (decorates was the first admitted and is implemented)"
     ],
     "dynamic_dispatch_wall": "self.m()/recv.m() targets keep NO external claim: the receiver's runtime type is not in the file. The owner channel narrows the statically-provable subset (self/annotation/single-assignment); everything else stays an honest unresolved row, measured per evidence class by owner-emission-census.mts"
+  },
+  "implementation_sites": {
+    "calls": "processCall -> processOneCall (target = callee LEAF, metadata.qualified = written chain; owner channel via memberOwnerInfo)",
+    "uses": "extractMemberUses (member reads; isMemberRead; assignment-LHS/augmented-LHS/call-function/receiver positions excluded)",
+    "contains": "analyze() post-walk ownership loop over symbols[].ownerName (class -> member; nested class in class body)",
+    "imports": "extractImport (import_statement / import_from_statement / future_import_statement) + applyProjectIndexFacts on complete-index runs",
+    "references": "extractDeclaredTypeRefs (annotation positions) + isinstance/issubclass type arguments",
+    "exports": "extractAssignment's module-scope __all__ branch + the PEP 562 __getattr__ provisions publisher",
+    "extends": "extractClass base-list walk (base LEAF; dotted base keeps the leaf)",
+    "implements": "extractClass interface-binding branch (proven ABC/Protocol) + extractVirtualRegistrations (proven .register receivers)",
+    "overrides": "extractOverrideRelationships (+ AnalyzeContext.overrideCompanion cross-file tier)",
+    "instantiates": "processOneCall constructor convention (callee Capitalised AND declared in this file's declaredTypes)",
+    "decorates": "extractDecoratorReferences (decorated_definition wrapper; normalized through the decorated declaration's published-symbol test)"
+  },
+  "fixture_pins": {
+    "calls": [
+      "callee-shapes",
+      "dispatch-reason-codes",
+      "external-callee-is-called",
+      "owner-evidence-classes"
+    ],
+    "uses": [
+      "member-read-is-not-a-declaration",
+      "qualified-endpoint-spellings",
+      "owner-evidence-classes"
+    ],
+    "contains": [
+      "nested-class-containment",
+      "multi-target-assignment-binds-names"
+    ],
+    "imports": [
+      "import-surface-is-a-set",
+      "import-alias-is-published-as-a-binding",
+      "star-import-is-a-binding-rule",
+      "import-bound-name-seam.mts"
+    ],
+    "references": [
+      "type-usage-graph",
+      "parser-error-region-is-not-a-type",
+      "references-do-not-name-keyword-arguments"
+    ],
+    "exports": [
+      "module-all-exports",
+      "dunder-all-expression-list",
+      "module-getattr-provides-names"
+    ],
+    "extends": [
+      "base-shapes",
+      "object-base-guess-refused"
+    ],
+    "implements": [
+      "interface-implements",
+      "python-implements-mutants.py"
+    ],
+    "overrides": [
+      "same-name-class-scopes",
+      "class-variable-is-not-overridden"
+    ],
+    "instantiates": [
+      "type-usage-graph",
+      "declaration-name-is-a-declaration"
+    ],
+    "decorates": [
+      "decorator-applied",
+      "decorators-nested-local-emits-nothing"
+    ]
   }
 }

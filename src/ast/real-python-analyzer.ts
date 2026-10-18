@@ -1,23 +1,39 @@
 // Real Python Intelligence Engine — Author: Muhammad Ishaq Khan
 // WHAT THIS FILE IS. The production AST analyzer for python (.py, .pyi, .pyw): tree-sitter-python
-// in, UniversalSymbols + UniversalRelationships out, pure AST extraction, no regex fallback. IT
-// COVERS ALL TEN RELATIONSHIP TYPES — calls, uses, contains, imports, references, exports, extends,
-// implements, overrides, instantiates — each pinned by validation/m14/fixtures/python/ (declaration
-// of record: script/m14/spec/python-completeness.json).
+// in, UniversalSymbols + UniversalRelationships out, pure AST extraction, NO REGEX in the file (the
+// two predicates that used to be regexes are character scans; `isPyIdentifier` /
+// `pyStringLiteralContent` are the shared ones). IT EMITS ELEVEN RELATIONSHIP TYPES — the ten
+// canonical ones (calls, uses, contains, imports, references, exports, extends, implements,
+// overrides, instantiates) AND `decorates`, the new canonical value python was first to emit — each
+// pinned by validation/m14/fixtures/python/ (declaration of record: script/m14/spec/python-
+// completeness.json; the true applicable set: script/m14/spec/python-spec-table.json).
 // WHERE ITS CONTRACT LIVES. docs/analyzers/real-python-analyzer.md (long form), validation/m14/
-// verification/PYTHON-FIX.md + PYTHON-STATE.md (measured rounds), the instruments under script/m14/
-// (python-endpoint-resolution, python-ontology-census, python-endpoint-defects) and the fixtures'
-// *.mts probes. Incoming resolution is arbitrated by script/m14/incoming-gate.ts under the rule in
-// script/m14/incoming-rule.ts — READ THAT FIRST when adding a claim: a claim is read ONLY where the
-// target names nothing, is verified against the project key space, and never raises `resolved`.
+// verification/PYTHON-FIX.md + PYTHON-STATE.md (measured rounds) + PYTHON-RESOLUTION-
+// CLASSIFICATION.md + PYTHON-APPLICABLE-SET.md, the instruments under script/m14/ (py-resolution-
+// classify, py-decorates-oracle-diff, python-endpoint-resolution, python-ontology-census) and the
+// fixtures' *.mts probes. Incoming resolution is arbitrated by script/m14/incoming-gate.ts under the
+// rule in script/m14/incoming-rule.ts — READ THAT FIRST when adding a claim: a claim is read ONLY
+// where the target names nothing, is verified against the project key space, and never raises
+// `resolved`.
 // WHEN THIS FILE CHANGES, ALSO EDIT the fixture(s) pinning the shape, the contract section of the
 // lane doc, and PYTHON-STATE.md. A new metadata KEY the arbiter reads lives in
 // script/m14/incoming-rule.ts, which is SHARED and Lead-owned: propose, never edit it from a lane.
 // GRAMMAR: tree-sitter-python. Module-level symbols are ownerless, class members ride `contains`,
 // call/use endpoints are LEAVES with the written chain in metadata.qualified (eight fixtures pin it),
-// imports are `module:item`, exports come from `__all__`.
+// imports are `module:item`, exports come from `__all__`, decorators emit `decorates`.
+// THE OWNER CHANNEL (2026-10-18). A member edge carries `metadata.owner` (the class-like type the
+// receiver is statically known to have) + `metadata.ownerEvidence` in {self, annotation, assignment}.
+// The store's src/ast/member-owner-resolution.ts resolves such rows through the owner and WITHDRAWS
+// the name binding, so a WRONG owner is worse than a missing one: class-like means declared in this
+// file or `class` in a COMPLETE project index — never capitalisation — and the refusals (conflicting
+// bindings, container annotations, unions of two classes) are pinned in python/owner-evidence-classes.
+// THE ANALYZER-SIDE PROJECT INDEX (2026-10-18, handoff §8.3). `applyProjectIndexFacts` runs ONLY when
+// context.projectIndex.complete === true: project-local imports re-spell to the bindable ITEM (only
+// when symbolCounts says declared once), third-party imports carry the `moduleNamespace` claim, and a
+// name whose module is this project's own code keeps NO external claim. Fail-closed: every sampled /
+// index-less / incremental run is byte-identical to the behaviour before the capability.
 // IMPORTS CARRY A PROVABLE EXTERNAL CLAIM (2026-10-17). An import whose top-level module is in
-// `sys.stdlib_module_names` (PY_STDLIB_MODULES at :719, top-level-segment rule, and deliberately NO
+// `sys.stdlib_module_names` (PY_STDLIB_MODULES, top-level-segment rule, and deliberately NO
 // leading-underscore heuristic because `_pytest` is third-party) is emitted with `isStdlib: true` +
 // `externalReason: "pythonStdlib"`, so the arbiter can VERIFY the claim instead of refusing it. Before
 // this, python emitted zero claims on imports and all 385 edges read `unresolved`; after, 96 verify.
@@ -26,7 +42,7 @@
 // and because a relative import's target is the BARE item, the arbiter found nothing and VERIFIED it —
 // 6 false `verified external` edges, which is the one outcome this programme treats as a false
 // statement about another repository. `isPyStdlibModule` now returns false for any module starting
-// with `.` (see :772). A false verification is worse than an unresolved edge; it looks solved.
+// with `.`. A false verification is worse than an unresolved edge; it looks solved.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
