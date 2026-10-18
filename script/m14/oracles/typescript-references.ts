@@ -286,6 +286,47 @@ const OWNED_BY_OWNER = new Set([
   "abstract_method_signature",
 ])
 
+
+/**
+ * True when `n` sits inside a named DECLARATION (function/method/arrow/class/interface/enum/type
+ * alias/namespace) rather than only at module scope. The analyzer's usage pass keeps a
+ * `currentSymbol` and publishes `uses` / name-resolved `references` ONLY from inside one — a
+ * module-level `const x: Foo = [source]` has no enclosing declaration, so the lane publishes the
+ * DECLARED-TYPE reference (from the declarator extractor) but NOT a uses row and NOT a resolved
+ * reference for the initializer reads. Measured by the lane's own differential classification:
+ * `readonlyArr -> Foo` and `readonlyArr -> source` were truth-only rows for exactly this scope
+ * boundary.
+ */
+function insideNamedDeclaration(n: any): boolean {
+  const named = new Set([
+    "function_declaration", "generator_function_declaration", "function_expression", "arrow_function",
+    "method_definition", "class_declaration", "abstract_class_declaration", "interface_declaration",
+    "enum_declaration", "type_alias_declaration", "internal_module", "module", "namespace_declaration",
+  ])
+  let cur = n?.parent
+  while (cur) {
+    if (named.has(cur.type)) return true
+    cur = cur.parent
+  }
+  return false
+}
+/**
+ * True when `n` is a mention inside a TYPE-PARAMETER constraint (`<T extends Foo>`) or a TYPE
+ * PREDICATE (`x is Foo`). Those are the two positions the analyzer deliberately publishes under
+ * BOTH labels (`KEEPS_BOTH` in `dropDuplicateTypeMentionLabels`), so the references truth keeps
+ * its row there even when the target is a file-declared name.
+ */
+function insideConstraintOrPredicate(n: any): boolean {
+  let cur = n?.parent
+  while (cur) {
+    if (cur.type === "type_predicate") return true
+    if (cur.type === "type_parameter") return true
+    if (cur.type === "type_annotation" || cur.type === "type_arguments" || cur.type === "statement_block") return false
+    cur = cur.parent
+  }
+  return false
+}
+
 /** True when `n` sits inside a function-like body, i.e. it is a LOCAL. */
 function insideFunctionBody(n: any): boolean {
   let cur = n?.parent
@@ -543,11 +584,21 @@ export function deriveTypeScriptReferencesTruth(root: any): TruthEdge[] {
       // annotated-declarator case that the previous rule handled. Left in place,
       // defaulted to "all", so the measurement is not lost with the code.
       const surfaceOk = surface === "all" || (surface === "type" ? typeSurface : !typeSurface)
+      const keepsBothSurfaces =
+        (t === "type_identifier" || t === "nested_type_identifier") && insideConstraintOrPredicate(n)
+      const oneLabelPublishedAsUses =
+        typeSurface &&
+        (t === "type_identifier" || t === "nested_type_identifier") &&
+        declared.has(name) &&
+        !keepsBothSurfaces &&
+        insideNamedDeclaration(n)
       const mentionable =
         surfaceOk &&
         name !== sourceName &&
         !childBound.has(name) &&
         (typeSurface ? !PRIMITIVES.has(name) : declared.has(name)) &&
+        (typeSurface || insideNamedDeclaration(n)) &&
+        !oneLabelPublishedAsUses &&
         !isMemberAccessProperty(n) &&
         !isObjectLiteralKey(n) &&
         !isLabelName(n) &&

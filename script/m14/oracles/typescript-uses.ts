@@ -178,6 +178,31 @@ function isCalledMember(id: any): boolean {
   return !!g && g.type === "call_expression" && g.childForFieldName?.("function")?.startIndex === p.startIndex
 }
 
+
+/**
+ * True when `n` sits inside a named DECLARATION (function/method/arrow/class/interface/enum/type
+ * alias/namespace) rather than only at module scope. The analyzer's usage pass keeps a
+ * `currentSymbol` and publishes `uses` / name-resolved `references` ONLY from inside one — a
+ * module-level `const x: Foo = [source]` has no enclosing declaration, so the lane publishes the
+ * DECLARED-TYPE reference (from the declarator extractor) but NOT a uses row and NOT a resolved
+ * reference for the initializer reads. Measured by the lane's own differential classification:
+ * `readonlyArr -> Foo` and `readonlyArr -> source` were truth-only rows for exactly this scope
+ * boundary.
+ */
+function insideNamedDeclaration(n: any): boolean {
+  const named = new Set([
+    "function_declaration", "generator_function_declaration", "function_expression", "arrow_function",
+    "method_definition", "class_declaration", "abstract_class_declaration", "interface_declaration",
+    "enum_declaration", "type_alias_declaration", "internal_module", "module", "namespace_declaration",
+  ])
+  let cur = n?.parent
+  while (cur) {
+    if (named.has(cur.type)) return true
+    cur = cur.parent
+  }
+  return false
+}
+
 export function deriveTypeScriptUsesTruth(root: any): TruthEdge[] {
   const declared = declaredNames(root)
   const inTypePos = typePositionNodes(root)
@@ -199,6 +224,16 @@ export function deriveTypeScriptUsesTruth(root: any): TruthEdge[] {
   const walk = (n: any, source: string, bound: Set<string>): void => {
     if (!n) return
     const t = n.type
+    // The analyzer's usage pass publishes only from inside a named declaration (it needs a
+    // `currentSymbol`); a module-level initializer read has no source symbol there. Measured: the
+    // truth derived `readonlyArr -> Foo` / `readonlyArr -> source` for a module-level annotated
+    // const while the analyzer publishes the DECLARED-TYPE reference only.
+    if ((t === "type_identifier" || t === "nested_type_identifier" ||
+         t === "property_identifier" || t === "private_property_identifier" ||
+         t === "template_substitution" || t === "jsx_opening_element" || t === "jsx_self_closing_element") &&
+        !insideNamedDeclaration(n)) {
+      return
+    }
 
     if (PUSHES.has(t)) {
       // MEASURED AND REVERTED 2026-10-09. Reading the parameter node under the
@@ -229,6 +264,18 @@ export function deriveTypeScriptUsesTruth(root: any): TruthEdge[] {
     // Surface 2: a member read. The member must be a declared member, and a
     // CALLED member is a call rather than a field read.
     if ((t === "property_identifier" || t === "private_property_identifier") && isMemberAccessProperty(n)) {
+      // THE ANALYZER'S OWN SUPPRESSIONS, mirrored so the audit does not demand rows the lane
+      // deliberately does not publish: a member read that is the ROOT of an optional chain
+      // (`a?.b` — the parent is `optional_chain`) and a member read on the LHS of an assignment
+      // (`this.count = 0` is a write, not a read) emit nothing. Measured on vue-core
+      // template-explorer: `persistedState?.src` was derived here and not emitted there.
+      const member = n.parent
+      if (member && member.type === "optional_chain") return
+      const owner = member?.parent
+      if (owner && (owner.type === "assignment_expression" || owner.type === "augmented_assignment_expression")) {
+        const left = owner.childForFieldName?.("left") ?? owner.namedChild(0)
+        if (left && member && left.startIndex <= member.startIndex && member.endIndex <= left.endIndex) return
+      }
       // The target resolves against EVERY name the file declares, not only its
       // members. A member read is a property of a VALUE, and the value's static
       // type is not consulted here, so `estimateScale -> bucket` is a field edge
@@ -256,8 +303,8 @@ export function deriveTypeScriptUsesTruth(root: any): TruthEdge[] {
     // point where `uses` and `references` deliberately disagree: `references`
     // publishes builtin type names with no declaration behind them, `uses` does
     // not, so `Array<Ty>` yields `Ty` alone.
-    if (t === "type_identifier" || t === "nested_type_identifier" || (t === "identifier" && isTypePos(n))) {
-      const name = t === "identifier" ? field(n.parent, "name") ?? n.text : n.text
+    if (t === "type_identifier" || t === "nested_type_identifier") {
+      const name = n.text
       if (name && declared.has(name) && !PRIMITIVES.has(name) && !childBound.has(name) && name !== source) {
         add(source, name, "type")
       }
