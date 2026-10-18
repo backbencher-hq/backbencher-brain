@@ -95,6 +95,9 @@ import {
   deriveJavaInheritanceTruth,
   deriveJavaInstantiatesTruth,
   deriveJavaOverridesTruth,
+  // Consolidated 2026-10-18: the lane added type-parameter containment (commit fabc5e994) to THIS
+  // module rather than a second file — one heritage/declaration-surface oracle, one import site.
+  deriveJavaTypeParameterContainmentTruth,
 } from "./oracles/java-heritage-truth"
 import { deriveJuliaContainsTruth } from "./oracles/julia-contains"
 import { deriveJuliaExtendsTruth, deriveJuliaInstantiatesTruth } from "./oracles/julia-type-edges"
@@ -2238,7 +2241,11 @@ export function deriveJavaUsesTruth(root: any): { label: string; from: string; t
       const body = n.childForFieldName("body")
       const bodyKids = body ? named(body) : named(n)
       for (const c of bodyKids) {
-        if (c.type === "field_declaration") {
+        // JLS 9.3: an INTERFACE constant is a `constant_declaration`, not a `field_declaration` —
+        // reading only fields left the member set short of every interface constant, so a bare read of
+        // one (measured: `DATASOURCE_PREFIX`) was charged as unexplained when the name IS a declared
+        // member. Both node types are the same declaration in two grammar spellings.
+        if (c.type === "field_declaration" || c.type === "constant_declaration") {
           for (const d of named(c)) {
             if (d.type === "variable_declarator") { const nm = fieldName(d, "name"); if (nm) set.add(nm) }
           }
@@ -2622,7 +2629,17 @@ export function deriveJavaReferencesTruth(root: any): { label: string; from: str
       // `this::m` / `super::m` name the RECEIVER, not a type — pushing them
       // produced `references -> this` MISSING rows. The analyzer already refuses
       // them (`isKeywordReceiver`); the oracle must refuse them too.
-      if (recv?.text && recv.text !== "this" && recv.text !== "super") push(recv.text.split(".").pop()!)
+      //
+      // A CLASS LITERAL receiver (`Foo.class::cast`) is not a NAME either: its leaf is the keyword
+      // `class`, and the analyzer's own receiver switch has no class_literal case (measured:
+      // `HibernatePersistentEntity.class::cast` produced an oracle row `references -> class` that the
+      // analyzer rightly never emitted — 1 MISSING row, the ONLY missing row on the grails-core draw).
+      // The oracle derives what the analyzer can emit: a class literal is not a reference to a type.
+      if (recv?.type === "class_literal" || recv?.type === "array_type") {
+        // refused by the analyzer's receiver switch; deriving here would manufacture a MISSING row
+      } else if (recv?.text && recv.text !== "this" && recv.text !== "super") {
+        push(recv.text.split(".").pop()!)
+      }
     }
     if (n.type === "import_declaration") {
       for (const c of named(n)) {
@@ -24093,6 +24110,14 @@ async function main() {
           ;(truth as any[]).push(e)
         }
         for (const e of deriveJavaEnumConstantBodyContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // TYPE-PARAMETER CONTAINMENT (lane-owned, commit fabc5e994): `contains Identity -> T` —
+        // a type parameter is a member-shaped declaration of its type, the same JLS fact the
+        // references oracle records for bounds. Charged as unexplained on four rows across both
+        // java draws until this derivation existed (verified 1/1 on both charged files, 6/6 on the
+        // fixture), so it is a missing DERIVATION, not a bad edge.
+        for (const e of deriveJavaTypeParameterContainmentTruth(root)) {
           ;(truth as any[]).push(e)
         }
         // ── HERITAGE / CONSTRUCTION / OVERRIDES (2026-10-18) ──────────────────────────────────────
