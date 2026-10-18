@@ -451,15 +451,15 @@ import { findDeclaringParent, localEdgeLabel, localEdgeName } from "./override-c
 // file (field / formal parameter / local variable / a method's return type), and
 // the calls edge currently drops it — `data.find()` publishes the leaf `find` and
 // nothing else, so a consumer cannot tell which type's `find` was called. The
-// contract is ADDITIVE metadata only: `metadata.ownerType` = the declared type's
-// name as written, `metadata.ownerTypeEvidence` ∈ {field, param, local, return} =
+// contract is ADDITIVE metadata only: `metadata.owner` = the declared type's
+// name as written, `metadata.ownerEvidence` ∈ {field, param, local, return} =
 // WHICH declaration stated it. No target spelling changes (JD20's bare-leaf
 // contract and the differential oracle both stay), so this cannot move a
 // resolution or an ambiguity count; it only records what the syntax already says.
 //
 // WHAT IS DELIBERATELY NOT CLAIMED, each because the evidence is not in the file:
 //   * an implicit `this.method()` receiver — the enclosing type is already the
-//     edge's source, so ownerType would be a second spelling of the same fact;
+//     edge's source, so owner would be a second spelling of the same fact;
 //   * a CLASS-qualified static call `Foo.bar()` — the receiver names its owner in
 //     the call expression, so the leaf target lost nothing;
 //   * `super.method()`, chained access through an untyped receiver (`a.b.c()`),
@@ -1628,6 +1628,52 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             ownerKind: parentContext.kind,
             metadata: { nodeType: type }
           })
+          // ENUM CONSTANT BODIES (owner ruling 2026-10-18, Java-only constructs:
+          // "enum constant bodies"). An enum constant with a body — `ONE { void
+          // act() {} }` — declares an ANONYMOUS SUBCLASS of the enum (JLS 8.9.1),
+          // and its members were being attributed to the ENUM: probe on the pinned
+          // grammar, `enum Mode { ONE { void act() { helper(); } }, TWO; void
+          // helper() {} }` emitted `contains Mode->act` with no symbol for the body
+          // and a calls edge sourced at `act`, so the body's members leaked into the
+          // enum's containment graph and the body itself did not exist. Same defect
+          // class the object_creation handler fixed for `new Foo() { … }` (JD18/
+          // JD32), fixed the same way: the family's `anonymous_<token>` noise name
+          // (never leaks into the index), ownerName = the enclosing type, a pushed
+          // scope so members attribute to the body, and classHierarchy registered to
+          // the ENUM so an @Override inside the body has an ancestor to BFS.
+          const constantBody = this.findChildByType(node, "class_body")
+            if (constantBody) {
+              const anonName = `anonymous_${nameNode.text}`
+              const anonFqn = parentContext.fqn ? `${parentContext.fqn}.${anonName}` : anonName
+              const anonSym: ASTEngine.UniversalSymbol = {
+                name: anonName,
+                kind: ASTEngine.SymbolKind.Class,
+                range: this.nodeToRange(constantBody),
+                visibility: "package-private",
+                ownerName: parentContext.name,
+                ownerKind: parentContext.kind,
+                metadata: { nodeType: type, isAnonymousClass: true, enumConstantBody: true, superTypes: [parentContext.name] },
+              }
+              symbols.push(anonSym)
+              symbolMap.set(anonFqn, anonSym)
+              classHierarchy.set(anonFqn, [parentContext.name])
+              newContext = {
+                node: constantBody,
+                name: anonName,
+                kind: ASTEngine.SymbolKind.Class,
+                fqn: anonFqn,
+                symbolRef: anonSym,
+                visibility: "package-private",
+                isAbstract: false,
+                isInterface: false,
+                isRecord: false,
+                annotations: [],
+                fields: [],
+                parents: [parentContext.name],
+              }
+              scopeStack.push(newContext)
+              pushedScope = true
+            }
         }
       }
 
@@ -1640,7 +1686,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             // claimed, from which declaration, and what is deliberately refused.
             const receiverOwner = this.javaReceiverOwnerType(node, receiverTypes)
             const receiverMetadata = receiverOwner
-              ? { ownerType: receiverOwner.type, ownerTypeEvidence: receiverOwner.evidence }
+              ? { owner: receiverOwner.type, ownerEvidence: receiverOwner.evidence }
               : {}
             // JLS 4.12.5/15.9: Java objects are created ONLY by `new`
             // (object_creation_expression, handled separately). A
@@ -2184,6 +2230,50 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 relationshipType: "annotation",
                 isAnnotation: true,
                 annotatedKind: annotationSource.declKind,
+                evidenceClass: "structural",
+              },
+            })
+          }
+        }
+      }
+
+      else if (type === "type_parameter") {
+        // JLS 4.4: a type parameter's BOUNDS are type MENTIONS —
+        // `<T extends Number & Comparable<T>>` names Number and Comparable, and
+        // until this site existed java emitted NOTHING for them: probe on the
+        // pinned grammar, `class Bounds<T extends Number & Comparable<T>, U extends
+        // Serializable>` produced 2 references (the import mention only) and ZERO
+        // for Number/Comparable/Serializable. `java-completeness.json` G6 had ruled
+        // this a declared LIMITATION on the reasoning that bounds are "rarely
+        // load-bearing"; the owner ruling of 2026-10-18 ("complete surface") makes
+        // the ruling obsolete, and the emission is honest with the label the ten
+        // already have — a bound type is a type mention, so `references`, NOT a new
+        // relationship kind invented for it.
+        //
+        // ONE EDGE PER BOUND TYPE: a bound is a TYPE LIST, so `Number &
+        // Comparable<T>` is two mentions (plus T inside the argument, which the
+        // declared-type walk already publishes for generic arguments — the same
+        // consistency rule as `List<T>`). `boundFor` records WHICH type parameter
+        // the bound constrains, because a class with three bounded parameters is
+        // otherwise indistinguishable from three unrelated references.
+        const boundNode = this.findChildByType(node, "type_bound")
+        if (boundNode) {
+          const paramNameNode =
+            node.childForFieldName("name") ||
+            this.findChildByType(node, "type_identifier") ||
+            this.findChildByType(node, "identifier")
+          const boundReadSource = parentContext?.name || parentContext?.symbolRef?.name || "global"
+          for (const { name: boundType, line } of this.collectJavaTypeNames(boundNode)) {
+            relationships.push({
+              source: boundReadSource,
+              target: boundType,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.95,
+              // M59 (#825): the line the BOUND type is named on.
+              line_number: line,
+              metadata: {
+                relationshipType: "type_parameter_bound",
+                ...(paramNameNode ? { boundFor: paramNameNode.text } : {}),
                 evidenceClass: "structural",
               },
             })
