@@ -109,3 +109,105 @@ export function jsBuiltinHasMember(base: string, member: string): boolean {
   }
   return false
 }
+
+/**
+ * JS HOST GLOBALS — the CLOSED, CITED list a `uses`/`calls` target may be claimed EXTERNAL with.
+ *
+ * WHY THIS EXISTS. The javascript lane's unresolved `uses` and `calls` rows are dominated by names the file
+ * does not declare and CANNOT declare: the platform's own global object and its members. Before this list the
+ * analyzer published those rows with NO claim at all, so they read as `unresolved` and cannot be told apart
+ * from a name the project failed to bind. A claim fixes the READ, not the binding — `isExternalTarget` says
+ * "this target is outside the project", and it never picks a declaration, so it cannot raise `arbitraryTwin`
+ * or `bindFAIL`.
+ *
+ * THE DISCIPLINE, AND IT IS THE POINT: **a name not in this list gets NO claim.** A heuristic ("looks like a
+ * DOM name") would be the very "closed list" lie this fleet keeps catching itself violating. The citation
+ * beside each entry IS the list's proof: every name below is a property of the ECMAScript global object or a
+ * member of the HTML `Window` / Web IDL `WindowOrWorkerGlobalScope` surface, at the section named.
+ *
+ * CITED SOURCES:
+ *   ECMA-262 §19–§26  — the global object's own properties (value, function and constructor properties).
+ *   WHATWG HTML §7.3  — the `Window` interface and `WindowOrWorkerGlobalScope` mixin (`document`, `window`,
+ *                       `console`, `location`, `navigator`, `fetch`, timers, storage, …).
+ *   Web IDL           — `WindowOrWorkerGlobalScope` (the mixin itself; its members are listed under HTML §7.3).
+ *
+ * KEPT SEPARATE FROM `JS_BUILTIN_CHAINS` ON PURPOSE: that table answers "what members does this BUILTIN TYPE
+ * have" for override resolution; this one answers "is this bare name an EXTERNAL GLOBAL". Folding them would
+ * make one table serve two questions and lose the ability to cite either.
+ */
+const HOST_GLOBALS: Readonly<Record<string, string>> = {
+  // WHATWG HTML §7.3 — the Window interface and its members.
+  window: "WHATWG HTML §7.3 Window",
+  document: "WHATWG HTML §7.3 Window",
+  console: "WHATWG HTML §7.3 Window.console",
+  location: "WHATWG HTML §7.3 Window.location",
+  navigator: "WHATWG HTML §7.3 Window.navigator",
+  history: "WHATWG HTML §7.3 Window.history",
+  screen: "WHATWG HTML §7.3 Window.screen",
+  localStorage: "WHATWG HTML §7.3 WindowOrWorkerGlobalScope.localStorage",
+  sessionStorage: "WHATWG HTML §7.3 WindowOrWorkerGlobalScope.sessionStorage",
+  fetch: "WHATWG HTML §7.3 WindowOrWorkerGlobalScope.fetch",
+  setTimeout: "WHATWG HTML §7.3 WindowOrWorkerGlobalScope.setTimeout",
+  clearTimeout: "WHATWG HTML §7.3 WindowOrWorkerGlobalScope.clearTimeout",
+  setInterval: "WHATWG HTML §7.3 WindowOrWorkerGlobalScope.setInterval",
+  clearInterval: "WHATWG HTML §7.3 WindowOrWorkerGlobalScope.clearInterval",
+  requestAnimationFrame: "WHATWG HTML §7.3 Window.requestAnimationFrame",
+  cancelAnimationFrame: "WHATWG HTML §7.3 Window.cancelAnimationFrame",
+  alert: "WHATWG HTML §7.3 Window.alert",
+  confirm: "WHATWG HTML §7.3 Window.confirm",
+  prompt: "WHATWG HTML §7.3 Window.prompt",
+  atob: "WHATWG HTML §7.3 WindowOrWorkerGlobalScope.atob",
+  btoa: "WHATWG HTML §7.3 WindowOrWorkerGlobalScope.btoa",
+  queueMicrotask: "WHATWG HTML §7.3 WindowOrWorkerGlobalScope.queueMicrotask",
+  structuredClone: "WHATWG HTML §7.3 WindowOrWorkerGlobalScope.structuredClone",
+  performance: "WHATWG HTML §7.3 Window.performance",
+  customElements: "WHATWG HTML §7.3 Window.customElements",
+  // ECMA-262 §19–§26 — the global object's own properties.
+  globalThis: "ECMA-262 §19.1 globalThis",
+  JSON: "ECMA-262 §25.5 JSON",
+  Math: "ECMA-262 §21.3 Math",
+  Object: "ECMA-262 §20.1 Object",
+  Array: "ECMA-262 §23.1 Array",
+  String: "ECMA-262 §22.1 String",
+  Number: "ECMA-262 §21.1 Number",
+  Boolean: "ECMA-262 §20.3 Boolean",
+  Date: "ECMA-262 §21.4 Date",
+  RegExp: "ECMA-262 §22.2 RegExp",
+  Promise: "ECMA-262 §27.2 Promise",
+  Map: "ECMA-262 §24.1 Map",
+  Set: "ECMA-262 §24.2 Set",
+  WeakMap: "ECMA-262 §24.3 WeakMap",
+  WeakSet: "ECMA-262 §24.4 WeakSet",
+  Symbol: "ECMA-262 §20.4 Symbol",
+  Proxy: "ECMA-262 §28.2 Proxy",
+  Reflect: "ECMA-262 §28.1 Reflect",
+  Error: "ECMA-262 §20.5 Error",
+  TypeError: "ECMA-262 §20.5.6 TypeError",
+  RangeError: "ECMA-262 §20.5.5 RangeError",
+  parseInt: "ECMA-262 §19.2.5 parseInt",
+  parseFloat: "ECMA-262 §19.2.4 parseFloat",
+  isNaN: "ECMA-262 §19.2.3 isNaN",
+  isFinite: "ECMA-262 §19.2.2 isFinite",
+  encodeURIComponent: "ECMA-262 §19.2.6 encodeURIComponent",
+  decodeURIComponent: "ECMA-262 §19.2.7 decodeURIComponent",
+  encodeURI: "ECMA-262 §19.2.8 encodeURI",
+  decodeURI: "ECMA-262 §19.2.9 decodeURI",
+  NaN: "ECMA-262 §6.1.6 NaN",
+  Infinity: "ECMA-262 §6.1.6 Infinity",
+  undefined: "ECMA-262 §6.1.1 undefined",
+}
+
+/**
+ * The citation for a bare name that is an EXTERNAL platform global, or `null` when it is not on the cited list.
+ *
+ * Returns the CITATION, not a boolean, because the caller publishes it as the claim's stated reason — a claim
+ * without its citation is prose, and this programme does not accept prose as a claim.
+ */
+export function hostGlobalCitation(name: string): string | null {
+  return HOST_GLOBALS[name] ?? null
+}
+
+/** The closed list itself, for callers that must show what the vocabulary contains. */
+export function isHostGlobal(name: string): boolean {
+  return Object.prototype.hasOwnProperty.call(HOST_GLOBALS, name)
+}
