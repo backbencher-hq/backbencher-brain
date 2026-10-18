@@ -2165,6 +2165,15 @@ function extractFrameworkPatterns(symbols: ASTEngine.UniversalSymbol[], content:
 // THE TYPESCRIPT ANALYZER - Complete implementation
 // ============================================================================
 
+/** The syntax-stated receiver facts one file yields, in one walk. `typeMembers` is
+ *  typeName -> memberName -> the member's own declared type, so `cfg.worker.run()` can be
+ *  typed one hop beyond the root's annotation. */
+type ReceiverFacts = {
+  locals: Map<string, { type: string; evidence: string }>
+  classFields: Map<string, { type: string; evidence: string }>
+  typeMembers: Map<string, Map<string, string>>
+}
+
 class TypeScriptAnalysisRunner {
   private currentFile: string = ""
   private content: string = ""
@@ -5242,12 +5251,10 @@ class TypeScriptAnalysisRunner {
    * receivers the index does not model (Array 214, Map 107, AbortController 60, Set 48), so the
    * honest answer for them is "no target symbol", not a stranger.
    */
-  private collectLocalReceiverTypes(root: Node): {
-    locals: Map<string, { type: string; evidence: string }>
-    classFields: Map<string, { type: string; evidence: string }>
-  } {
+  private collectLocalReceiverTypes(root: Node): ReceiverFacts {
     const locals = new Map<string, { type: string; evidence: string }>()
     const classFields = new Map<string, { type: string; evidence: string }>()
+    const typeMembers = new Map<string, Map<string, string>>()
     const conflictedLocals = new Set<string>()
     const conflictedFields = new Set<string>()
     /** First declaration wins; a second declaration with a DIFFERENT type drops the name from
@@ -5289,11 +5296,22 @@ class TypeScriptAnalysisRunner {
           if (type) record(locals, conflictedLocals, pattern.text, type, "param")
         }
       } else if (n.type === "public_field_definition" || n.type === "property_signature") {
-        // `private inner: UsedClass` — the type a `this.inner.m()` call is made through.
+        // `private inner: UsedClass` — the type a `this.inner.m()` call is made through. A field
+        // initialised with `new X()` states the type just as plainly as an annotation, and it is
+        // still the SAME evidence class (`this`): the receiver is a property of the enclosing
+        // class. The field's type is also recorded into `typeMembers` so a member access ON it
+        // (`this.inner.helper.m()`) can be typed one more hop.
         const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
         if (nameNode && (nameNode.type === "property_identifier" || nameNode.type === "identifier")) {
-          const type = this.annotationTypeName(n)
+          const type = this.annotationTypeName(n) ?? this.initialiserNewType(n)
           if (type) record(classFields, conflictedFields, nameNode.text, type, "this")
+        }
+        const ownerType = this.enclosingTypeName(n)
+        const memberType = this.annotationTypeName(n) ?? this.initialiserNewType(n)
+        if (ownerType && memberType && nameNode) {
+          const byMember = typeMembers.get(ownerType) ?? new Map<string, string>()
+          if (!byMember.has(nameNode.text)) byMember.set(nameNode.text, memberType)
+          typeMembers.set(ownerType, byMember)
         }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
@@ -5301,7 +5319,29 @@ class TypeScriptAnalysisRunner {
         if (child) stack.push(child)
       }
     }
-    return { locals, classFields }
+    return { locals, classFields, typeMembers }
+  }
+
+  /** The name of the class/interface a member declaration belongs to, walking up to the body. */
+  private enclosingTypeName(n: Node): string | null {
+    let p: Node | null = n.parent
+    while (p) {
+      if (p.type === "class_declaration" || p.type === "abstract_class_declaration" || p.type === "interface_declaration") {
+        const name = p.childForFieldName("name") ?? p.namedChild(0)
+        return name && (name.type === "type_identifier" || name.type === "identifier") ? name.text : null
+      }
+      if (p.type === "statement_block" || p.type === "function_declaration" || p.type === "method_definition") return null
+      p = p.parent
+    }
+    return null
+  }
+
+  /** The type a field's `= new X(...)` initialiser names, if the value IS a constructor call. */
+  private initialiserNewType(n: Node): string | null {
+    const value = n.childForFieldName("value")
+    if (!value || value.type !== "new_expression") return null
+    const ctor = value.namedChild(0)
+    return ctor ? this.typeLeafName(ctor) : null
   }
 
   /** The class a declarator names, from `= new X(...)` or from a `: X` annotation. */
@@ -5354,15 +5394,32 @@ class TypeScriptAnalysisRunner {
    * naming an owner here would double-claim. A one-hop `this.field.m()` IS resolved — the
    * receiver's type there is the FIELD's declared type.
    */
-  private receiverOwnerType(
-    callee: Node,
-    facts: { locals: Map<string, { type: string; evidence: string }>; classFields: Map<string, { type: string; evidence: string }> },
-  ): { type: string; evidence: string } | undefined {
+  private receiverOwnerType(callee: Node, facts: ReceiverFacts): { type: string; evidence: string } | undefined {
     if (callee.type !== "member_expression") return undefined
     const object = callee.childForFieldName("object") ?? callee.namedChild(0)
     if (!object) return undefined
     if (object.type === "identifier") return facts.locals.get(object.text)
     if (object.type === "member_expression") {
+      // CLASS MEMBER ACCESS THROUGH A TYPED LOCAL/PARAM (`cfg.worker.run()`): the receiver chain's
+      // ROOT is a local whose type the syntax states, and the FIRST hop is a member whose type the
+      // file's own class/interface declaration states. One hop only — a deeper chain needs the
+      // member's member, which is a type-inference walk this pass does not have.
+      const root = object.childForFieldName("object") ?? object.namedChild(0)
+      const firstProperty = object.childForFieldName("property") ?? object.namedChild(object.namedChildCount - 1)
+      if (
+        root && root.type === "identifier" && firstProperty &&
+        (firstProperty.type === "identifier" || firstProperty.type === "property_identifier")
+      ) {
+        const rootHint = facts.locals.get(root.text)
+        if (rootHint) {
+          const memberType = facts.typeMembers.get(rootHint.type)?.get(firstProperty.text)
+          if (memberType) {
+            // The evidence class is the ROOT's own (the chain is reached through that param/local);
+            // the OWNER is the member's type, which is the class whose method is called.
+            return { type: memberType, evidence: rootHint.evidence }
+          }
+        }
+      }
       const inner = object.childForFieldName("object") ?? object.namedChild(0)
       const property = object.childForFieldName("property") ?? object.namedChild(object.namedChildCount - 1)
       // THE FIELD NAME NODE IS A `property_identifier` IN THIS GRAMMAR — not an `identifier`.
