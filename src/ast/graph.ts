@@ -32,27 +32,67 @@ export namespace GraphIntelligence {
     metadata: Record<string, any>
   }
 
+  /**
+   * THE GRAPH LAYER'S RELATIONSHIP-TYPE ENUM — it describes the STORED relationship domain.
+   *
+   * Two blocks, and the split is load-bearing:
+   *   EMITTED — the ten values analyzers publish. The AUTHORITATIVE definition of those values is
+   *     `RelationshipType` in ./types (engine.ts re-exports it); this block mirrors it because the
+   *     graph layer types its own edges and traversal options.
+   *   DERIVED — values this layer infers or persists that NO analyzer emits. They are not part of
+   *     the emitted vocabulary and must never be treated as one; `DERIVED_RELATIONSHIP_TYPES` below
+   *     carries the same separation as data so a consumer can exclude them by construction.
+   *
+   * `Exports` was MISSING from this enum until 2026-10-17 even though stored export rows were
+   * already flowing into it: graph.ts types a GraphEdge from `rel.relationship_type as
+   * RelationshipType`, so `"exports"` was cast into a domain that could not represent it. The
+   * omission was invisible because a cast is not a check. Fixed: the enum now lists every value
+   * the stored domain can contain.
+   *
+   * The DERIVED member for `depends_on` is spelled `DependsOnDerived` ON PURPOSE: the old member
+   * name `DependsOn` meant `depends_on` here but `references` in the emitted enums, so the same
+   * authored name produced two different stored strings depending on which import a file used.
+   * That name is gone (removed from the emitted enums in the same consolidation); the derived value
+   * keeps the only name that cannot collide with the emitted vocabulary.
+   */
   export enum RelationshipType {
-    // Direct code relationships
+    // ── EMITTED — the ten analyzer values (authoritative: ./types RelationshipType) ────────────
     Calls = "calls",
     Imports = "imports",
     Extends = "extends",
     Implements = "implements",
     Uses = "uses",
     References = "references",
-
-    // Structural relationships
     Contains = "contains",
-    DependsOn = "depends_on",
     Instantiates = "instantiates",
     Overrides = "overrides",
+    Exports = "exports",
 
-    // Inferred relationships (higher-level intelligence)
+    // ── DERIVED — never emitted by an analyzer ────────────────────────────────────────────────
+    DependsOnDerived = "depends_on",
     SimilarTo = "similar_to",
     RelatesToPattern = "relates_to_pattern",
     PartOfFeature = "part_of_feature",
     AffectedBy = "affected_by",
+    // This value was written as a bare `"semantic_similar" as RelationshipType` cast (see
+    // createSemanticEdges below) — a value present in the data and absent from the enum. The enum
+    // now names it so the cast is a checkable conversion rather than a lie.
+    SemanticSimilar = "semantic_similar",
   }
+
+  /**
+   * The DERIVED-only relationship values: never emitted by an analyzer. A comparison against the
+   * emitted vocabulary must exclude these; exported as data so the claim is checkable rather than
+   * a comment. Keep in sync with the DERIVED block above.
+   */
+  export const DERIVED_RELATIONSHIP_TYPES: ReadonlySet<RelationshipType> = new Set([
+    RelationshipType.DependsOnDerived,
+    RelationshipType.SimilarTo,
+    RelationshipType.RelatesToPattern,
+    RelationshipType.PartOfFeature,
+    RelationshipType.AffectedBy,
+    RelationshipType.SemanticSimilar,
+  ])
 
   export interface TraversalOptions {
     maxDepth?: number
@@ -587,7 +627,7 @@ export namespace GraphIntelligence {
             relationship: {
               source: embeddingA.entity_id,
               target: embeddingB.entity_id,
-              type: "semantic_similar" as RelationshipType,
+              type: RelationshipType.SemanticSimilar,
               confidence: similarity,
               weight: similarity * 0.8, // Semantic relationships have slightly lower weight than explicit ones
               metadata: {

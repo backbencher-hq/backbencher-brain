@@ -5,6 +5,9 @@ import { fileURLToPath } from "url"
 import { createRequire } from "node:module"
 import { resolveWasmAsset, loadWebTreeSitter, hasWasmInRegistry, ensureWasmRegistry, isWasmRegistryLoaded } from "../util/wasm"
 import { detectLanguageFromPath } from "./language-detection"
+// The authoritative relationship-type enum lives in ./types; this file re-exports it inside the
+// ASTEngine namespace (see the note at the re-export) instead of defining a second copy.
+import { RelationshipType as AuthoritativeRelationshipType } from "./types"
 // Added for the byte-offset repair in findSymbol. It was USED there and never
 // imported, so every call threw `ReferenceError: decodeSourceText is not
 // defined` into a `catch` that reported it as "resolveWasm: temp file fallback
@@ -587,28 +590,19 @@ export namespace ASTEngine {
     [key: string]: any
   }
 
-  export enum RelationshipType {
-    Calls = "calls",
-    Call = "calls", // Legacy alias
-    Extends = "extends",
-    Inheritance = "extends", // Legacy alias
-    Implements = "implements",
-    Implementation = "implements", // Legacy alias
-    Uses = "uses",
-    Dependency = "uses", // Legacy alias
-    Imports = "imports",
-    Exports = "exports",
-    Contains = "contains",
-    DependsOn = "references", // Legacy alias
-    Override = "overrides", // Legacy alias
-    Composition = "contains", // Legacy alias
-    Provides = "exports", // Legacy alias
-    Related = "references", // Legacy alias
-    PartOf = "contains", // Legacy alias
-    References = "references",
-    Overrides = "overrides",
-    Instantiates = "instantiates",
-  }
+  /**
+   * RELATIONSHIP TYPES — a RE-EXPORT, not a second definition.
+   *
+   * CONSOLIDATED 2026-10-17: the authoritative enum is `RelationshipType` in ./types (imported
+   * above as `AuthoritativeRelationshipType`). This file carried a duplicate enum — twenty members
+   * over the same ten values — and two definitions of one vocabulary WILL drift: they already had
+   * (this enum's `DependsOn` meant `references`, while graph.ts's meant `depends_on`). The const +
+   * type-alias pair keeps every existing call site working unchanged: `ASTEngine.RelationshipType.X`
+   * in VALUE position reads the enum object, and `ASTEngine.RelationshipType` in TYPE position
+   * resolves through the alias. Emitted strings are identical — this is a type-level consolidation.
+   */
+  export const RelationshipType = AuthoritativeRelationshipType
+  export type RelationshipType = AuthoritativeRelationshipType
 
   // Parse result with extracted intelligence
   export interface ParseResult {

@@ -57,15 +57,27 @@ export enum SymbolKind {
 // RELATIONSHIP TYPES
 // ============================================================================
 
+/**
+ * THE AUTHORITATIVE RELATIONSHIP-TYPE ENUM — one source for the values analyzers emit.
+ *
+ * CONSOLIDATED 2026-10-17. Three `RelationshipType` enums existed with overlapping member names:
+ *   - this one (the authoritative definition),
+ *   - `ASTEngine.RelationshipType` in src/ast/engine.ts, which is now a RE-EXPORT of this enum
+ *     (const + type alias) so every analyzer's `ASTEngine.RelationshipType.X` keeps resolving,
+ *   - `GraphIntelligence.RelationshipType` in src/ast/graph.ts, which keeps the STORED domain and
+ *     separates the values analyzers emit (all ten here) from its DERIVED extras — see that file.
+ *
+ * THE TEN CANONICAL MEMBERS ARE THE EMITTED VOCABULARY. Nothing below them changes an emitted
+ * string: the legacy aliases are alternate NAMES for those same ten values, kept so old call sites
+ * still compile, and each collapse is justified on the member. The one collapse that was NOT kept is
+ * `DependsOn → references` — see the removal note in place of the member.
+ */
 export enum RelationshipType {
+  // ── the ten canonical emitted values ──────────────────────────────────────────────────────────
   Calls = "calls",
-  Call = "calls",
   Extends = "extends",
-  Inheritance = "extends",
   Implements = "implements",
-  Implementation = "implements",
   Uses = "uses",
-  Dependency = "uses",
   // 2026-10-04. This read "brain_import", which is the NAME OF A TABLE, not a
   // relationship type. Three divergent RelationshipType enums exist in this
   // codebase; this is the odd one out:
@@ -84,15 +96,40 @@ export enum RelationshipType {
   Imports = "imports",
   Exports = "exports",
   Contains = "contains",
-  DependsOn = "references",
-  Override = "overrides",
-  Composition = "contains",
-  Provides = "exports",
-  Related = "references",
-  PartOf = "contains",
   References = "references",
   Overrides = "overrides",
   Instantiates = "instantiates",
+
+  // ── legacy aliases: alternate NAMES for the values above, never new values ───────────────────
+  /** @deprecated use {@link Calls}. Singular spelling of the same value. */
+  Call = "calls",
+  /** @deprecated use {@link Extends}. OO-inheritance synonym; `extends` is the emitted spelling. */
+  Inheritance = "extends",
+  /** @deprecated use {@link Implements}. */
+  Implementation = "implements",
+  /** @deprecated use {@link Uses}. A dependency in this vocabulary IS a read of a name, and the
+   *  emitted vocabulary spells that `uses`; zero live uses of this member. */
+  Dependency = "uses",
+  /** @deprecated use {@link Overrides}. Singular spelling of the same value. */
+  Override = "overrides",
+  /** @deprecated use {@link Contains}. Composition is whole/part membership = containment;
+   *  zero live uses of this member. */
+  Composition = "contains",
+  /** @deprecated use {@link Exports}. `Provides` names what a unit makes reachable, which this
+   *  vocabulary spells `exports`; live site: src/ast/real-vue-analyzer.ts. */
+  Provides = "exports",
+  /** @deprecated use {@link References}. A generic "related to" is a name read; zero live uses. */
+  Related = "references",
+  /** @deprecated use {@link Contains}. Part-of is containment; zero live uses of this member. */
+  PartOf = "contains",
+
+  // REMOVED 2026-10-17: `DependsOn = "references"`. It was the ONE member name in the three enums
+  // that meant DIFFERENT strings in different files — `references` here and in engine.ts, but
+  // `depends_on` in graph.ts — so an edge authored as `DependsOn` would be stored as one string or
+  // the other depending on which import the file used: a silent data-corruption class. It had zero
+  // live uses, which is exactly why it is removed NOW, before something fires it and nobody can
+  // tell which string the intent became. `depends_on` is DERIVED-only and lives in
+  // GraphIntelligence.RelationshipType.DependsOnDerived (see src/ast/graph.ts).
 }
 
 // ============================================================================
