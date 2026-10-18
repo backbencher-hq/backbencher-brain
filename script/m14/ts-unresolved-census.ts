@@ -263,7 +263,9 @@ for (const file of [...files].sort()) {
   // AST facts: nested declarations + receiver/parameter types (one walk per file).
   try {
     const tree = parser.parse(fs.readFileSync(file, "utf8"))
-    collectAstFacts(tree.rootNode, facts)
+    // `Parser.parse` returns `Tree | null`; a null tree leaves the depth buckets coarse and is
+    // counted by the join rate rather than crashing the census.
+    if (tree !== null) collectAstFacts(tree.rootNode, facts)
   } catch { /* the parseFile join is the authority; an AST-walk failure leaves the depth buckets coarse */ }
 }
 

@@ -121,6 +121,11 @@ for (const { base, grammar } of FIXTURES_TO_PROBE) {
   const exp = JSON.parse(fs.readFileSync(expectationPath, "utf8"))
   const parser = await ASTEngine.getParser(grammar as any)
   const tree = parser.parse(content)
+  if (tree === null) {
+    console.log(`FAIL  ${base} — the ${grammar} grammar returned no tree; the pin cannot measure a null parse`)
+    allOk = false
+    continue
+  }
   const relPath = path.relative(ROOT, sourcePath)
   if (tree.rootNode.hasError) {
     console.log(`FAIL  ${base} — the fixture does not parse cleanly under the ${grammar} grammar; the pin is measuring a damaged tree`)

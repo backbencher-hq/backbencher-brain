@@ -53,6 +53,10 @@ function findImport(rows: any[], target: string): any | undefined {
 const content = fs.readFileSync(CONSUMER, "utf8")
 const parser = await ASTEngine.getParser("typescript" as any)
 const tree = parser.parse(content)
+if (tree === null) {
+  console.error("PROBE FAILED — tree-sitter returned no tree for the fixture source; nothing can be measured")
+  process.exit(1)
+}
 const analyzer = new RealTypeScriptAnalyzer()
 
 // ── CONTROL ARM FIRST: no context at all. The pass must be a no-op. ──────────────────────────────
