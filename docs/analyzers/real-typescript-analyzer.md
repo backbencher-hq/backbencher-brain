@@ -469,6 +469,26 @@ bun run script/m14/ts-owner-coverage.ts --max-files 50 --per-repo
 bun run script/m14/ts-owner-coverage.ts --max-files 0 --repo=apollo-server --per-repo
 ```
 
+### 3b · Binding spelling for names the family never publishes
+
+A parameter, a type parameter, a catch binding and a nested-scope declaration are names no symbol
+table can own; emitting them bare makes the resolver look them up by name. The classification
+measured 69 such rows at cap-50 (type parameters alone were 53 of the `references` residual). They
+now carry the family spelling `<caller>\u0000<binding>` + `metadata.localBinding` (src/ast/types.ts
+`BINDING_SEP`; dart's calls emitter uses the same form), verified by the arbiter from the target's
+own spelling. `metadata.resolvedBindingName` keeps the written name and `metadata.bindingKind` names
+the kind (`parameter` / `type_parameter` / `catch_binding` / `local`), so no consumer parses a NUL
+target to learn what it is.
+
+THREE GUARDS, because re-spelling is only honest where it is true: the name must be declared in this
+file as one of those bindings, must NOT be a published symbol of this file (a published nested
+function is a resolution target — re-spelling it would MASK a resolution), and must NOT be an import
+binding. Measured trap while building it: a type parameter's name node is a `type_identifier`, not an
+`identifier`, so a test accepting only `identifier` made the whole type-parameter class invisible —
+the same dead-class shape as the `this`-field trap above. Pinned by
+`typescript/local-binding-spellings` (two binding-spelled positives per class + the published-name
+guard asserted from both sides).
+
 ### 4 · The comprehensive cause table for every unresolved edge
 
 `validation/m14/verification/TYPESCRIPT-RESOLUTION-CLASSIFICATION.md` — every non-resolved edge

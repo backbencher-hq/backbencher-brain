@@ -2689,6 +2689,12 @@ class TypeScriptAnalysisRunner {
     // land on a row that is actually published — marking earlier would leave claims on rows that
     // no longer exist, which is a claim about nothing. The pass reads this file's own symbols and
     // import edges as its evidence; it changes no target, no source and no line.
+    // THE BINDING SPELLING, before any marking: a claim must not land on a row that is about to be
+    // re-spelled, and the marking passes test `isPlainIdentifier(target)` so a NUL-spelled target
+    // is invisible to them by construction.
+    const bindingSpellings = this.applyLocalBindingSpellings(rootNode, relationships, symbols, imports)
+    void bindingSpellings
+
     void this.markExternalTargets(relationships, symbols)
     // THE PROJECT-INDEX PASS, last of all — it can only run on a COMPLETE index and it is
     // fail-closed, so it is a no-op in every sampled run (see the method's header).
@@ -4333,6 +4339,127 @@ class TypeScriptAnalysisRunner {
       }
       md.evidenceClass = "usage_contextual"
     }
+  }
+
+  /**
+   * THE BINDING SPELLING FOR NAMES THE FAMILY NEVER PUBLISHES.
+   *
+   * A parameter, a type parameter, a catch binding and a function declared in a NESTED scope are
+   * names the family contract publishes no symbol for, and a bare target that spells one is not a
+   * resolution with a missing declaration — it is an edge the resolver should never bind by name.
+   * Measured cost of the bare spelling on this lane (cap-50 classification, 2026-10-18): 69 rows
+   * whose target is a type parameter / parameter / nested callable, all reading `unresolved` (or,
+   * worse, AMBIGUOUS against an unrelated same-named declaration in the project).
+   *
+   * The family mechanism already exists and the arbiter has the bucket: the target is
+   * `<caller><BINDING_SEP><binding>` with `metadata.localBinding` (src/ast/types.ts, the same
+   * spelling the whole-module import class uses), which no declaration can answer and which
+   * `verifyBindingClaim` verifies from the target's own spelling. dart's calls emitter does exactly
+   * this for a local callable; this lane did it only for imports.
+   *
+   * THE THREE GUARDS ARE WHAT KEEP IT HONEST — a name is re-spelled ONLY when it is
+   *   (1) declared in THIS file as a parameter / type parameter / nested declaration,
+   *   (2) NOT published as a symbol of this file (a top-level function or const IS published, and
+   *       respelling it would MASK a resolution), and
+   *   (3) NOT an import binding (an imported name names another file's declaration).
+   * With those three, a name in the set cannot name a project declaration reachable from this file
+   * without an import, so "this target names a binding, not a declaration" is the true statement
+   * the spelling makes. The metadata keeps the written name (`resolvedBindingName`) and its kind
+   * (`bindingKind`) so a consumer never has to parse the target to learn what it is.
+   */
+  private applyLocalBindingSpellings(
+    root: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    imports: ASTEngine.ImportInfo[],
+  ): number {
+    const localNames = this.collectLocalBindingNames(root)
+    if (localNames.size === 0) return 0
+    const published = new Set<string>()
+    for (const sym of symbols) {
+      if (sym?.name) published.add(String(sym.name))
+      const q = String((sym as { qualifiedName?: string })?.qualifiedName ?? "")
+      if (q.length > 0) published.add(q)
+    }
+    const imported = new Set<string>()
+    for (const imp of imports) {
+      for (const item of imp?.items ?? []) {
+        const written = String(item)
+        const name = written.includes(" as ") ? written.slice(written.lastIndexOf(" as ") + 4) : written.replace(/^\* as /, "")
+        if (name.length > 0 && name !== "*") imported.add(name)
+      }
+    }
+    let respelled = 0
+    for (const rel of relationships as any[]) {
+      const type = String(rel?.type ?? "")
+      if (type !== "calls" && type !== "uses" && type !== "references") continue
+      const md: Record<string, any> = (rel.metadata ??= {})
+      if (md.localBinding === true || md.isExternalTarget === true) continue
+      const target = String(rel.target ?? "")
+      if (!isPlainIdentifier(target)) continue
+      const kind = localNames.get(target)
+      if (kind === undefined) continue
+      if (published.has(target) || imported.has(target)) continue
+      rel.target = `${String(rel.source ?? "")}${BINDING_SEP}${target}`
+      md.localBinding = true
+      md.resolvedBindingName = target
+      md.bindingKind = kind
+      respelled++
+    }
+    return respelled
+  }
+
+  /** name -> the kind of local binding that declares it, for `applyLocalBindingSpellings`.
+   *  Type parameters, parameters, catch bindings and declarations inside a non-top scope. */
+  private collectLocalBindingNames(root: Node): Map<string, string> {
+    const names = new Map<string, string>()
+    // A BINDING'S NAME NODE IS NOT ALWAYS AN `identifier`: a type parameter's name is a
+    // `type_identifier` in this grammar (probed: `class Box<T>` -> type_parameter [type_identifier]).
+    // Accepting only `identifier` made the whole TYPE-PARAMETER class invisible here and the 53
+    // reference rows the classification measured would have stayed bare — the same shape of
+    // dead-class defect the `this`-field trap took (bb_annotate receiverOwnerType).
+    const add = (node: Node | null | undefined, kind: string) => {
+      if (!node) return
+      if (node.type !== "identifier" && node.type !== "type_identifier") return
+      if (!isPlainIdentifier(node.text)) return
+      if (!names.has(node.text)) names.set(node.text, kind)
+    }
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      switch (n.type) {
+        case "type_parameter": {
+          add(n.childForFieldName("name") ?? n.namedChild(0), "type_parameter")
+          break
+        }
+        case "required_parameter":
+        case "optional_parameter": {
+          const pattern = n.childForFieldName("pattern") ?? n.childForFieldName("name") ?? n.namedChild(0)
+          add(pattern, "parameter")
+          break
+        }
+        case "catch_clause": {
+          const param = n.childForFieldName("parameter")
+          add(param, "catch_binding")
+          break
+        }
+        case "variable_declarator": {
+          add(n.childForFieldName("name") ?? n.namedChild(0), "local")
+          break
+        }
+        case "function_declaration":
+        case "generator_function_declaration":
+        case "class_declaration": {
+          add(n.childForFieldName("name") ?? n.namedChild(0), "nested_declaration")
+          break
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return names
   }
 
   /**
