@@ -1704,7 +1704,10 @@ function selfTest(): { ok: boolean; failures: string[] } {
     }
     const cjsArms: Array<[string, ExternalClaim, Outcome, string]> = [
       ["mod", { kind: "exportSurface", surface: "moduleExports", property: "mod", form: "module-exports-object" }, "bindingVerified", "a surface property the project does not declare verifies"],
-      ["alpha", { kind: "exportSurface", surface: "moduleExports", property: "alpha", form: "exports-object" }, "bindingRefuted", "a CJS property the PROJECT declares must REFUTE — a real declaration wins"],
+      // CROSS-FILE DECLARATIONS ARE NOT THE SURFACE'S TARGET (measured: the old refutation produced 245
+      // bindFAIL rows on the JS arm — clause 4 FAIL — because JS modules are file-scoped; a same-file
+      // declaration is already excluded by the analyzer's emission gate).
+      ["alpha", { kind: "exportSurface", surface: "moduleExports", property: "alpha", form: "exports-object" }, "bindingVerified", "a CJS surface whose NAME another project file declares still verifies"],
       ["mod", { kind: "exportSurface", surface: "moduleExports", property: "other", form: "exports-object" }, "bindingRefuted", "a target that is not the claimed property must REFUTE"],
     ]
     for (const [t, claim, want, why] of cjsArms) {

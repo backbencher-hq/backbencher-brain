@@ -704,7 +704,17 @@ export function verifyModuleExportsClaim(
   if (tgt !== claim.property) return "bindingRefuted"
   if (!MODULE_EXPORTS_FORMS.includes(claim.form)) return "bindingRefuted"
   if (!/^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(claim.property)) return "bindingRefuted"
-  return (declCount.get(tgt) ?? 0) > 0 ? "bindingRefuted" : "bindingVerified"
+  // NO PROJECT-DECLARATION REFUTATION (2026-10-19, measured): the first rule refuted the claim
+  // whenever ANY project declaration answered the name, and the JS whole-population arm measured
+  // **245 such refutations → clause 4 FAIL**. The rule was wrong for module-isolated languages: in
+  // JS each FILE is a module, so a name declared in ANOTHER file cannot be the target of this
+  // file's `module.exports` property — the cross-file declaration is a name-model coincidence, the
+  // decoy class. (A same-file declaration is already excluded by the analyzer's emission gate, so
+  // the only cases this rule saw were cross-file.) The claim is verified on its own shape — target
+  // equals property, a defined CJS form, identifier/dotted spelling — the same authority the ESM
+  // `default` claim uses, and the arbiter's name model is not consulted for a surface assertion.
+  void declCount
+  return "bindingVerified"
 }
 
 export function verifyImportedBindingClaim(
