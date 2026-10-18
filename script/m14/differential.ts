@@ -225,6 +225,7 @@ function loadAvg1(): number {
 export function sampleSetHash(relPaths: string[]): string {
   return createHash("sha256").update([...relPaths].sort().join("\n")).digest("hex").slice(0, 16)
 }
+import { BINDING_SEP } from "../../src/ast/types"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 // The `process.env.BB_CORPUS_ROOT ??` prefix was dropped by the m48-recovery merge — it was
@@ -1225,6 +1226,29 @@ export function normTarget(t: string): string {
   const cut = s.search(/[[<]/)
   const head = cut > 0 ? s.slice(0, cut) : s
   return lastSegment(head)
+}
+/**
+ * LOCAL-BINDING AUDIT TARGET (depth campaign, 2026-10-19).
+ *
+ * A local-binding edge is spelled `<callable><BINDING_SEP><binding>` (BINDING_SEP from
+ * src/ast/types). The target names NO declaration — it records that the callable binds to a
+ * lexical binding in the callee's scope — so the whole-population gate counts it in its OWN
+ * column (`bindOK`) and NEVER as resolved. The differential's coverage match, however, is
+ * `label + normTarget(target)`, and `normTarget` works on symbol names: applied to
+ * `foo\0x` it returns whatever `lastSegment` makes of the whole string, and the truth
+ * oracles derive the BARE binding name. Without this strip the audited comparison would
+ * charge a binding edge against a truth row for the callable name (or none), making the
+ * label's audit meaningless exactly when the claim kind starts mattering.
+ *
+ * `auditTarget` returns the binding name (the part AFTER the last BINDING_SEP) and the
+ * target unchanged when it carries no separator — so it is safe to apply on BOTH match
+ * sides (a truth row for `x` normalizes to itself). This helper is exercised by
+ * `--self-test-audit-target`, which fails if the strip is removed.
+ */
+export function auditTarget(t: string): string {
+  const s = String(t ?? "")
+  const at = s.lastIndexOf(BINDING_SEP)
+  return at >= 0 ? s.slice(at + BINDING_SEP.length) : s
 }
 // M60 oracle sharpness (2026-09-25; report-only behind BB_F5_STRICT=1). The
 // coverage match below is `label + normTarget(target)`, and normTarget is the
@@ -22939,6 +22963,29 @@ export function deriveHtmlEdges(root: any, moduleName: string): { label: string;
 }
 
 async function main() {
+  // DEPTH CAMPAIGN (2026-10-19): the local-binding claim audit depends on `auditTarget`
+  // stripping the BINDING_SEP prefix. The self-test proves the helper exists and works, so a
+  // future edit that removes the strip goes RED here rather than silently degrading the JS
+  // 365,748-row binding class to a vacuous audit.
+  if (process.argv.includes("--self-test-audit-target")) {
+    const cases: [string, string, string][] = [
+      [`callable${BINDING_SEP}localName`, "localName", "binding target audits as its binding name"],
+      [`module:item${BINDING_SEP}binding`, "binding", "qualified callable spelling keeps only the binding"],
+      ["plainTarget", "plainTarget", "a non-binding target is unchanged"],
+      [`a${BINDING_SEP}b${BINDING_SEP}c`, "c", "the LAST separator wins"],
+    ]
+    let bad = 0
+    for (const [input, want, why] of cases) {
+      const got = auditTarget(input)
+      if (got !== want) { bad++; console.error(`SELFTEST FAIL auditTarget(${JSON.stringify(input)}) = ${JSON.stringify(got)}, want ${JSON.stringify(want)} — ${why}`) }
+    }
+    // the invariant that makes the strip NECESSARY: without it, the binding name is not the match key
+    if (normTarget(auditTarget(`f${BINDING_SEP}x`)) !== normTarget("x")) { bad++; console.error("SELFTEST FAIL binding name does not reduce to the truth-side spelling") }
+    if (auditTarget(`f${BINDING_SEP}x`) === "f") { bad++; console.error("SELFTEST FAIL auditTarget collapsed to the CALLABLE name (the defect this exists to prevent)") }
+    if (bad > 0) { console.error(`audit-target self-test FAILED: ${bad} case(s)`); process.exit(1) }
+    console.log(`audit-target self-test PASS: ${cases.length + 2} controls (strip present, binding is the audit target, non-binding targets unchanged)`)
+    process.exit(0)
+  }
   // G20: labels that are COMPARED and have analyzer edges but ZERO truth. A
   // lane cannot publish a coverage figure for a label nothing backs.
   const labelTruthGaps: { lang: string; langRepo: string; detail: string }[] = []
@@ -25496,7 +25543,7 @@ async function main() {
       }
       const matchKey = (label: string, target: any): string => {
         const t = String(target ?? "")
-        return label === "imports" && isPathLikeImport(t) ? `EXACT:${t}` : normTarget(t)
+        return label === "imports" && isPathLikeImport(t) ? `EXACT:${t}` : normTarget(auditTarget(t))
       }
       for (const te of truth) {
         const hit = rels.some((r: any) => r.label === te.label && matchKey(r.label, r.target) === matchKey(te.label, te.target))
@@ -25504,7 +25551,7 @@ async function main() {
         else { missingInAnalyzer++; if (samples.length < 300) samples.push({ dir: "MISSING", file: relPath, ...te }) }
       }
       for (const r of rels) {
-        const hit = truth.some(te => te.label === r.label && (matchKey(te.label, te.target) === matchKey(r.label, r.target) || (r.label !== "imports" && te.target.includes(normTarget(r.target)))))
+        const hit = truth.some(te => te.label === r.label && (matchKey(te.label, te.target) === matchKey(r.label, r.target) || (r.label !== "imports" && te.target.includes(normTarget(auditTarget(r.target))))))
         if (hit) { explainableByTree++; continue }
         // Evidence-tier split for unmatched analyzer edges: a low-confidence
         // edge is DECLARED HEURISTIC (honest suspicion), not fabrication.
