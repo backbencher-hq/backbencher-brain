@@ -170,9 +170,19 @@ async function corpusRun(): Promise<void> {
       const tree = parser.parse(src)
       if (!tree) continue
       const label = path.basename(abs, path.extname(abs))
-      for (const e of deriveDartReferencesTruth(tree.rootNode, undefined, label)) rowsT.push(`${e.from} -> ${e.target}`)
+      // PER-FILE DISAGREEMENT EXAMPLES. A corpus gate that can fail only as a COUNTER (`missing=1`)
+      // names no row, and a row no reader can find is a verdict nobody can act on — the shape the
+      // honesty contract calls a measurement without a worklist. The examples are bounded because a
+      // systematically wrong rule would otherwise print a corpus.
+      const fileT = new Set<string>()
+      const fileA = new Set<string>()
+      for (const e of deriveDartReferencesTruth(tree.rootNode, undefined, label)) fileT.add(`${e.from} -> ${e.target}`)
       const r: any = await new RealDartAnalyzer().analyze(tree.rootNode, src, abs)
-      for (const e of r.relationships ?? []) if (e.type === "references") rowsA.push(`${e.source} -> ${e.target}`)
+      for (const e of r.relationships ?? []) if (e.type === "references") fileA.add(`${e.source} -> ${e.target}`)
+      for (const row of fileT) if (!fileA.has(row) && examples.length < 20) examples.push(`  MISSING     ${repo}/${tracked[i]}  ${row}`)
+      for (const row of fileA) if (!fileT.has(row) && examples.length < 20) examples.push(`  UNEXPLAINED ${repo}/${tracked[i]}  ${row}`)
+      for (const row of fileT) rowsT.push(row)
+      for (const row of fileA) rowsA.push(row)
     }
     const m = agreement(rowsT, rowsA)
     totals.truth += m.truth; totals.analyzer += m.analyzer; totals.agreed += m.agreed
@@ -330,13 +340,21 @@ async function main(): Promise<void> {
   await checkBoth("a top-level annotated variable and an annotated enum constant attribute to the declaration",
     `@deprecated int top = 1;\n@deprecated final inferred = 2;\nenum K2 { @deprecated old2, fresh2 }`,
     ["top -> deprecated", "inferred -> deprecated", "old2 -> deprecated"])
-  await checkBoth("a QUALIFIED annotation resolves to the type leaf, not to the import alias",
-    `@prefix.Qualified() class Q2 { }`, ["Q2 -> Qualified"])
+  await checkBoth("an ALIAS-qualified annotation resolves to the type leaf, not to the import alias",
+    `import 'dart:core' as prefix; @prefix.Qualified() class Q2 { }`, ["Q2 -> Qualified"])
   // The THIRD annotation position, probed: inside `library_name`, not inside the declaration.
   // The annotated declaration is the library, so the source is the module's name — the DECLARED
   // name when there is one (`named.lib`), the file-stem convention otherwise.
   await checkBoth("a LIBRARY annotation attributes to the module name",
     `@TestOn('vm') library named.lib; void f() { }`, ["named.lib -> TestOn"])
+  // The scoped_identifier is ONE shape for two facts; the IMPORT ALIAS table decides which.
+  await checkBoth("an ALIAS-qualified annotation names the TYPE leaf; a TYPE-qualified one names the qualifier",
+    `import 'dart:core' as c; @c.deprecated class Al2 { } @Scoped.variant() class B2 { }`,
+    ["Al2 -> deprecated", "B2 -> Scoped"])
+  // An annotation is a CHILD of the type_alias wrapper, not a sibling — caught as MISSING by the
+  // corpus run before the carrier reader learned the position.
+  await checkBoth("an annotated TYPEDEF (annotation inside type_alias)",
+    `class Ann { const Ann(int x); } @Ann(0) typedef Fn = int;`, ["Fn -> Ann"])
 
   console.log("")
   if (failures === 0) {

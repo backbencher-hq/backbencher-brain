@@ -670,6 +670,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     //                              is correct — an annotation is not a library name.
     const library = this.libraryName(rootNode, filePath)
     const moduleName = library.name
+
     // A library's own URI, read once and used by BOTH sides: the module node published below,
     // and the import/export/part edges that name a file (see LIBRARY IDENTITY above).
     const projectRoot = dartProjectRootOf(filePath)
@@ -2250,6 +2251,15 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     projectIndex?: any,
   ): void {
+    // IMPORT ALIASES, collected once: they decide whether a scoped annotation's qualifier is an
+    // ALIAS (`@_i1.TestFor()` -> the type is `TestFor`) or the TYPE itself
+    // (`@TestFor.async_value_nullable_pattern` -> the type is `TestFor` and the member selects a
+    // named constructor). The grammar builds the same `scoped_identifier` shape for both, so the
+    // alias table is the only evidence that separates them. Shape probed:
+    // `(import_specification (configurable_uri …) (identifier))` — the identifier DIRECTLY under
+    // import_specification is the alias; the uri's own identifiers live inside configurable_uri.
+    const importAliases = this.collectImportAliases(node)
+
     // The types this run can SEE. `references` publishes a type mention only when
     // the mentioned name binds to a type declaration the analyzer can point at —
     // a type from another file is a real mention, but from one file it is a NAME,
@@ -3023,7 +3033,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // The carrier helper below turns those positions into the name of the declaration the
       // annotation decorates, because the node alone cannot say WHAT is annotated.
       if (t === "annotation") {
-        this.emitAnnotationReferences(n, relationships, current, owner, moduleName)
+        this.emitAnnotationReferences(n, relationships, current, owner, moduleName, importAliases)
       }
 
       // DT-F: member reads — a selector WITHOUT its own argument_part reads
@@ -4320,6 +4330,26 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     return out
   }
 
+  /** The import aliases this file declares (`import 'x.dart' as _i1;`). Only the identifier that
+   *  is a DIRECT child of `import_specification` is an alias — the specifier's own identifiers sit
+   *  inside `configurable_uri`/`uri`, which is why the walk stops at those nodes. */
+  private collectImportAliases(root: Node): Set<string> {
+    const out = new Set<string>()
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "import_specification") {
+        for (const c of n.namedChildren ?? []) {
+          if (c && c.type === "identifier") out.add(c.text)
+        }
+        continue
+      }
+      if (n.type === "uri" || n.type === "configurable_uri" || n.type === "string_literal") continue
+      for (const c of n.namedChildren ?? []) if (c) stack.push(c)
+    }
+    return out
+  }
+
   private collectDartLocals(root: Node): Set<string> {
     const out = new Set<string>()
     const stack: Node[] = [root]
@@ -5097,10 +5127,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     current: string | null,
     owner: string | null,
     moduleName: string,
+    importAliases: Set<string>,
   ): void {
     const nameNode = ann.childForFieldName?.("name") ?? this.findChildByType(ann, "identifier")
     if (!nameNode) return
-    const target = this.annotationTargetSpelling(nameNode)
+    const target = this.annotationTargetSpelling(nameNode, importAliases)
     if (!target) return
     const carriers = this.annotationCarriers(ann, current, owner, moduleName)
     for (const carrier of carriers) {
@@ -5120,12 +5151,38 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  /** The annotation's type name as this lane spells types: leaf, no alias, no arguments. */
-  private annotationTargetSpelling(nameNode: Node): string | null {
+  /**
+   * The annotation's TYPE name, as this lane spells types.
+   *
+   * A `scoped_identifier` is ONE grammar shape for two different Dart facts, and the alias table
+   * is what tells them apart:
+   *
+   *   `@_i1.TestFor()`                  the qualifier is an IMPORT ALIAS -> the type is the LEAF
+   *                                     (`TestFor`), and publishing `_i1.TestFor` would name an
+   *                                     alias no declaration has.
+   *   `@TestFor.async_value_nullable_pattern`
+   *                                     the qualifier is the TYPE and the member selects a named
+   *                                     CONSTRUCTOR (riverpod's `@TestFor.<lint>()` family) or a
+   *                                     static; the type is the QUALIFIER. Taking the leaf here
+   *                                     published a target named after a constructor, which is
+   *                                     neither a type nor a declaration — and on a file whose
+   *                                     stem matched the constructor it even produced a
+   *                                     self-reference row (`async_value_nullable_pattern ->
+   *                                     async_value_nullable_pattern`), measured by the corpus
+   *                                     gate as UNEXPLAINED.
+   *
+   * Non-scoped names: the name field's own text. Arguments and type arguments are separate
+   * children and never enter the target.
+   */
+  private annotationTargetSpelling(nameNode: Node, importAliases: Set<string>): string | null {
     if (nameNode.type === "identifier" || nameNode.type === "type_identifier") return nameNode.text
     if (nameNode.type === "scoped_identifier") {
-      const leaf = nameNode.childForFieldName?.("name") ?? this.findChildByType(nameNode, "identifier")
-      return leaf ? leaf.text : null
+      const scope = nameNode.childForFieldName?.("scope")?.text ??
+        (nameNode.namedChildren ?? []).find((c) => c?.type === "identifier")?.text
+      const leaf = nameNode.childForFieldName?.("name")?.text ??
+        [...(nameNode.namedChildren ?? [])].reverse().find((c) => c?.type === "identifier")?.text
+      if (scope && importAliases.has(scope)) return leaf ?? null
+      return scope ?? leaf ?? null
     }
     const id = this.findChildByType(nameNode, "identifier") ?? this.findChildByType(nameNode, "type_identifier")
     return id ? id.text : null
@@ -5157,6 +5214,16 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     if (p === "enum_constant") {
       const nm = parent.childForFieldName?.("name")?.text ?? this.findChildByType(parent, "identifier")?.text
+      return nm ? [{ name: nm, kind: p }] : []
+    }
+    // ANNOTATED TYPEDEF: `@A<int>(0) typedef F<T> = ...;` parses the annotation INSIDE the
+    // `type_alias` wrapper — `(type_alias (annotation …) (type_identifier F) (type_parameters …) …)`
+    // — so the child-form branch above did not cover it and NO row was published while the truth
+    // oracle (which keys on TYPE_DECLARATIONS, including type_alias) derived one; the corpus gate
+    // read that as `MISSING F -> A` on generic_metadata_test.dart.
+    if (p === "type_alias") {
+      const nm = parent.childForFieldName?.("name")?.text ??
+        this.findChildByType(parent, "type_identifier")?.text
       return nm ? [{ name: nm, kind: p }] : []
     }
     // LIBRARY ANNOTATION — `@TestOn('vm') library annotated.lib;` parses the annotation as a

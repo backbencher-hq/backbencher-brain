@@ -374,19 +374,46 @@ function shadowedByTypeParameter(node: any, name: string): boolean {
 // unconditionally — a truth derivation gated on visibility would manufacture `unexplained` rows
 // the lane does not have.
 
-/** The annotation's type name as written: `name` field, alias leaf, no arguments. */
-function annotationTargetName(ann: any): string | null {
+/**
+ * The annotation's TYPE name. A `scoped_identifier` is ONE grammar shape for two facts: an
+ * import-ALIAS qualifier (`@_i1.TestFor()` -> type is the LEAF) and a TYPE qualifier
+ * (`@TestFor.async_value_nullable_pattern` -> the type is the QUALIFIER and the member is a named
+ * constructor). The alias table is the only evidence that separates them; taking the leaf
+ * unconditionally published a constructor name as a type, which the corpus gate caught as three
+ * UNEXPLAINED self-reference rows.
+ */
+function annotationTargetName(ann: any, importAliases: Set<string>): string | null {
   const f = ann.childForFieldName?.("name") ??
     namedChildren(ann).find((c: any) => c.type === "identifier" || c.type === "type_identifier")
   if (!f) return null
   if (f.type === "identifier" || f.type === "type_identifier") return f.text
   if (f.type === "scoped_identifier") {
-    const leaf = f.childForFieldName?.("name") ??
-      namedChildren(f).find((c: any) => c.type === "identifier")
-    return leaf ? leaf.text : null
+    const scope = f.childForFieldName?.("scope")?.text ??
+      namedChildren(f).find((c: any) => c.type === "identifier")?.text
+    const leaf = f.childForFieldName?.("name")?.text ??
+      [...namedChildren(f)].reverse().find((c: any) => c.type === "identifier")?.text
+    if (scope && importAliases.has(scope)) return leaf ?? null
+    return scope ?? leaf ?? null
   }
   const id = namedChildren(f).find((c: any) => c.type === "identifier" || c.type === "type_identifier")
   return id ? id.text : null
+}
+
+/** The import aliases this file declares — the alias table the annotation target rule needs. */
+function importAliasesOf(root: any): Set<string> {
+  const aliases = new Set<string>()
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()
+    if (!n) continue
+    if (n.type === "import_specification") {
+      for (const c of namedChildren(n)) if (c.type === "identifier") aliases.add(c.text)
+      continue
+    }
+    if (n.type === "uri" || n.type === "configurable_uri" || n.type === "string_literal") continue
+    for (const c of namedChildren(n)) stack.push(c)
+  }
+  return aliases
 }
 
 /** Names a declaration node publishes — used only by the annotation sibling forms. */
@@ -489,6 +516,7 @@ export function deriveDartReferencesTruth(
   const visible = visibleTypes ? new Set(visibleTypes as any) : dartTypesDeclaredIn(root)
   const out: DartReferenceEdge[] = []
   const seen = new Set<string>()
+  const importAliases = importAliasesOf(root)
 
   const visit = (n: any, member: string | null, type: string | null, fileName: string): void => {
     // The enclosing PUBLISHED declaration, innermost first.
@@ -553,11 +581,15 @@ export function deriveDartReferencesTruth(
     }
 
     if (n.type === "annotation") {
-      const target = annotationTargetName(n)
+      const target = annotationTargetName(n, importAliases)
       if (target) {
         for (const from of annotationSources(n, nextMember, nextType, fileName)) {
           const key = `${from}|${target}`
-          if (!seen.has(key) && from && from !== target) {
+          // NO SELF-REFERENCE EXCLUSION HERE, unlike the type-mention branch: a declaration may
+          // legitimately be annotated with a type whose name equals its own (`@Foo class Foo` is
+          // legal when the annotation resolves), and the analyzer publishes that row — suppressing
+          // it in the truth would manufacture an `unexplained` row instead of measuring one.
+          if (!seen.has(key) && from) {
             seen.add(key)
             out.push({ label: "references", from, target })
           }
