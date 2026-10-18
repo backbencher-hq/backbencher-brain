@@ -193,7 +193,7 @@ function jsProjectModuleLocalityOf(index: { modules?: Set<string> }): (spec: str
   // treated as project-owned and gets NO claim — under-claiming is the safe direction here.
   const allSegments = new Set<string>()
   for (const raw of modules) {
-    const m = String(raw).replace(/\\/g, "/")
+    const m = String(raw).split("\\").join("/")
     if (m.length === 0) continue
     paths.push(m)
     const slash = m.lastIndexOf("/")
@@ -220,8 +220,16 @@ function jsProjectModuleLocalityOf(index: { modules?: Set<string> }): (spec: str
     }
     return false
   }
+  /** Strip a `?query` / `#hash` suffix with a char scan (this file carries no regex literal). */
+  const stripQueryAndHash = (text: string): string => {
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i]
+      if (ch === "?" || ch === "#") return text.slice(0, i)
+    }
+    return text
+  }
   const predicate = (spec: string): "project-local" | "third-party" | "unknown" => {
-    const clean = spec.trim().replace(/[?#].*$/, "")
+    const clean = stripQueryAndHash(spec.trim())
     if (clean.length === 0) return "unknown"
     const segments = clean.split("/")
     const root = segments[0]
