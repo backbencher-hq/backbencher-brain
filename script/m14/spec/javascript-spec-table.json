@@ -123,8 +123,8 @@
   ],
   "claims": {
     "local_binding": {
-      "status": "PREPARED, NOT IMPLEMENTED (2026-10-18) — Lead-owned differential-oracle unblocker; contract: validation/m14/verification/JAVASCRIPT-LOCAL-BINDING-CONTRACT.md",
-      "mechanism": "family spelling: target = `${edge.source}<BINDING_SEP U+0000>${bindingName}` + metadata.localBinding=true; arbiter verifyBindingClaim -> bindingVerified in the gate's bindOK column; NEVER folded into resolved/amb. Shared with php/dart/java/fsharp/haskell (types.ts BINDING_SEP).",
+      "status": "SHIPPED 2026-10-18 (depth §18 D7) — analyzer fd74fa2c4; whole-population arm A bindOK 0 -> 407,881, bind?/bindFAIL 0, differential matcher 4807ea071 audits the class (100%/0/0 both corpora). Contract: validation/m14/verification/JAVASCRIPT-LOCAL-BINDING-CONTRACT.md; evidence: JAVASCRIPT-APPLICABLE-SET.md D7.1.",
+      "mechanism": "FAMILY SPELLING SHIPPED: target = `${edge.source}<BINDING_SEP U+0000>${bindingName}` + metadata.localBinding=true; arbiter verifyBindingClaim -> bindingVerified in the gate bindOK column; NEVER folded into resolved/amb. Shared with php/dart/java/fsharp/haskell (types.ts BINDING_SEP).",
       "sites": [
         "uses — bare read of a local/parameter/catch/destructured binding (and the call-receiver root read)",
         "calls — bare callee that is a local binding",
@@ -156,7 +156,37 @@
         "renders_local": 47,
         "total": 365748
       },
-      "oracle_requirement": "differential.ts (Lead-owned) must audit the class: compare the part AFTER the last BINDING_SEP on the analyzer side before normTarget (both match directions), leaving truth oracles deriving the bare name. Without it every binding row falls to UNEXPLAINED/heuristic — a label compared against nothing."
+      "oracle_requirement": "differential.ts (Lead-owned) must audit the class: compare the part AFTER the last BINDING_SEP on the analyzer side before normTarget (both match directions), leaving truth oracles deriving the bare name. Without it every binding row falls to UNEXPLAINED/heuristic — a label compared against nothing.",
+      "measured_2026_10_18": {
+        "armA_edges_before": 1467637,
+        "armA_edges_after": 1467640,
+        "resolved_before": 196795,
+        "resolved_after": 155712,
+        "amb_before": 438595,
+        "amb_after": 207144,
+        "unresolved_before": 726689,
+        "unresolved_after": 592286,
+        "extOK_before": 105558,
+        "extOK_after": 104617,
+        "bindOK_before": 0,
+        "bindOK_after": 407881,
+        "bindFail": 0,
+        "decomposition": {
+          "previously_resolved": 41083,
+          "previously_ambiguous": 231451,
+          "previously_unresolved": 134403,
+          "previously_extOK": 941,
+          "newly_surfaced": 3
+        },
+        "arbitraryTwin_before": {
+          "calls": 410801,
+          "uses": 253143
+        },
+        "arbitraryTwin_after": {
+          "calls": 390994,
+          "uses": 127231
+        }
+      }
     }
   }
 }

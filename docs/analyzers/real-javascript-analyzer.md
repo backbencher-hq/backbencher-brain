@@ -92,13 +92,18 @@ specifier unconditionally and MEASURED `ext?` 0 → 19 at cap 50: the roots were
 names created by Jest mocks of real packages (`__mocks__/fs-extra.js`), so the claim read as one the
 project could not reach. It is now index-gated (python twin's `applyProjectIndexFacts` precedent).
 
-**PREPARED, NOT IMPLEMENTED — the local-binding claim class** (365,748 whole-population rows:
-local/parameter/catch/destructured reads and calls, `new` of a local constructor, `instanceof`,
-heritage, locally-bound JSX targets). The family mechanism is the `BINDING_SEP` target spelling +
-`metadata.localBinding`, which lands in the arbiter's `bindOK` column and never in `resolved`; it
-needs a positional lexical-scope model in this analyzer and the Lead-owned differential audit of the
-class. The full contract (mechanism, scope rules, never-claimed list, per-site counts, oracle
-requirement, fixture plan) is `validation/m14/verification/JAVASCRIPT-LOCAL-BINDING-CONTRACT.md`.
+**SHIPPED — the local-binding claim class** (`bindOK` column; whole-population arm A 0 → **407,881**
+rows, `bindFAIL` 0; `resolved` moved 196,795 → 155,712 because 41,083 of those rows were name-model
+resolutions of local-binding syntax — the decoy class — and arbitraryTwin FELL on both labels). A
+positional lexical-scope model in NODE OFFSETS (program/function/block/catch; `var` hoisting vs
+`let`/`const` block scope; parameters incl. destructured/rest/default; shadowing; same-scope
+redeclaration) decides the sites; a name the file binds is published as
+`${edge.source}\u0000${name}` + `metadata.localBinding`, and the arbiter verifies the SPELLING. Refused:
+program-scope names (published symbols), import / `require()` bindings (the seam class),
+this/super/arguments/undefined. Wired sites: calls (bare callee), uses (bare read, chain root,
+call-receiver root, template interpolation), instantiates, references, extends, renders. Fixture
+`local-binding-claims`; contract `validation/m14/verification/JAVASCRIPT-LOCAL-BINDING-CONTRACT.md`;
+evidence `JAVASCRIPT-APPLICABLE-SET.md` D7.1.
 
 **Deliberately NOT claimed, with their cap-50 triage counts** (they are the open classes in
 `validation/m14/verification/JAVASCRIPT-RESOLUTION-CLASSIFICATION.md`): MEMBERS of the runtime and
