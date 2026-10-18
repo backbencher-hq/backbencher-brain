@@ -1876,6 +1876,26 @@ function selfTest(): { ok: boolean; failures: string[] } {
   if (verifyExternalClaim(declCount, "./vendor/thing.php") !== "externalUnverified") {
     failures.push("control: a PATH-shaped target verified as external")
   }
+  // A RESERVED PLATFORM NAMESPACE IS A CITATION AND CANNOT BE REFUTED BY A SAME-NAMED PROJECT SYMBOL.
+  // The measured defect this pins: `java.util` read extFAIL on scala3 because a test file declares
+  // `public class java`, and `targetOwner("java.util")` is "java". Both directions are asserted, so a
+  // future edit that widens the citation to every dotted prefix fails HERE: a CLASS-OWNED target whose
+  // owner the key space publishes must still be REFUTED, or the reserved-namespace branch would have
+  // swallowed the whole owner check.
+  declCount.set("java", 1)
+  declCount.set("Foo", 1)
+  if (verifyExternalClaim(declCount, "java.util") !== "externalVerified") {
+    failures.push("control: a reserved JDK package (`java.util`) was not verified by its citation — a project class named `java` must not refute it")
+  }
+  if (verifyExternalClaim(declCount, "java.util.List") !== "externalVerified") {
+    failures.push("control: a JDK-qualified type target (`java.util.List`) was not verified by its reserved namespace")
+  }
+  if (verifyExternalClaim(declCount, "Foo.bar") !== "externalRefuted") {
+    failures.push("control: an owner-qualified target whose owner the key space publishes was not refuted — the reserved-namespace branch must not swallow class-owner claims")
+  }
+  if (verifyExternalClaim(declCount, "kotlinx.coroutines") !== "externalVerified") {
+    failures.push("control: a NON-reserved package path whose owner is unpublished did not verify — only reserved namespaces are citations")
+  }
   if (verifiedByTarget !== 1) {
     failures.push(
       `control: expected 1 external claim confirmed through the TARGET itself, got ${verifiedByTarget} — ` +

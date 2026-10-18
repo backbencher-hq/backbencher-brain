@@ -501,6 +501,29 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
 /** A DOTTED MODULE PATH ENDING IN A TYPE NAME — `java.util.List`, `a.b.C`. Not a path, not a URL. */
 export const DOTTED_MODULE_TYPE = /^[A-Za-z_$][A-Za-z0-9_$]*(\.[A-Za-z_$][A-Za-z0-9_$]*)*\.[A-Z][A-Za-z0-9_$]*$/
 
+/**
+ * RESERVED PLATFORM NAMESPACES — packages a language platform reserves to itself, and therefore a
+ * CITATION when an external claim names one.
+ *
+ * WHY THIS EXISTS, MEASURED. The owner check refutes a claim when `declCount[targetOwner(target)] > 0`,
+ * and `targetOwner("java.util")` is `"java"` — the first SEGMENT of a package path. On scala3 the corpus
+ * declares a test file whose public class is literally `java` (`tests/pos/t11788b/java.java`), so 20
+ * imports of `java.util.*` were charged `extFAIL` against a lane whose claim was TRUE, plus 4 on
+ * `java.io.*`. That is a category error: the segments of a package path are NAMESPACES, not declaration
+ * owners. Where the namespace is reserved by the language spec the claim needs no lookup at all.
+ *
+ * CITATIONS: JLS §6.1 ("The Java programming language reserves package names beginning with `java.` /
+ * `javax.` for the platform") and the JPMS spec's platform module names; `sun.*` / `com.sun.*` are the
+ * JDK's own internal packages (JEP 260). A project symbol that merely shares the first segment cannot
+ * falsify a claim about a reserved namespace, so these verify WITHOUT a lookup.
+ *
+ * WHY NOT EVERY PACKAGE PATH: an arbitrary dotted lowercase path may name a project's own package
+ * (measured on the same arm: kotlinx-coroutines' module-info imports its own `kotlinx.*` packages, and
+ * those claims ARE false, so refuting them is correct). Loosening all package paths would launder
+ * exactly that class. Only reserved namespaces become citations.
+ */
+export const RESERVED_PLATFORM_NAMESPACES: readonly string[] = ["java.", "javax.", "jdk.", "sun.", "com.sun."]
+
 /** Is this edge declared as naming something outside the corpus? */
 export function isMarkedExternal(rel: any): boolean {
   const md = rel?.metadata
@@ -915,6 +938,12 @@ export function verifyExternalClaim(
     if (URI_SCHEME.test(tgt) && !WINDOWS_DRIVE.test(tgt)) return "externalUnverified"
     if (facts) return pathTargetInProject(facts, tgt) ? "externalRefuted" : "externalUnverified"
     return "externalUnverified"
+  }
+  // A RESERVED PLATFORM NAMESPACE IS A CITATION, AND IT OUTRANKS A SAME-NAMED PROJECT SYMBOL.
+  // (JLS §6.1 / JPMS; see RESERVED_PLATFORM_NAMESPACES.) Measured defect: `java.util` was refuted by a
+  // scala3 test file declaring `class java`, charging 24 true claims as extFAIL against a lane.
+  for (const ns of RESERVED_PLATFORM_NAMESPACES) {
+    if (tgt.length > ns.length && tgt.startsWith(ns)) return "externalVerified"
   }
   const owner = targetOwner(tgt)
   // NO DOTTED OWNER: ask about the TARGET ITSELF when it is a plain identifier, and stay
