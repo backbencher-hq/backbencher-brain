@@ -48,6 +48,10 @@ const DUMP = argOf("--dump")
 const SAMPLE = Number(argOf("--sample") ?? "0")
 const ONLY_REPOS = (argOf("--repos") ?? "").split(",").map((s) => s.trim()).filter(Boolean)
 const JSON_OUT = argOf("--json")
+/** `--index`: evaluate the three declaration-bearing evidence classes against the per-repo index's
+ *  inheritance-closed member view (the same rule the implementation applies). A MEASUREMENT only —
+ *  it does not emit anything; the number decides whether a wider emission pass is worth it. */
+const WITH_INDEX = process.argv.includes("--index")
 if (!DUMP) { console.error("usage: bun run script/m14/cpp-receiver-census.ts --dump=<gate dump> [--sample=N] [--repos=a,b] [--json=<path>]"); process.exit(2) }
 const MAX_FILES = 2000
 if (SAMPLE > MAX_FILES) { console.error(`cpp-receiver-census: --sample caps at ${MAX_FILES} files`); process.exit(2) }
@@ -91,6 +95,41 @@ const selectedResidualCalls = files.reduce((a, f) => a + (rowsByFile.get(f)?.len
 
 const { getParser } = await import(path.join(ROOT, "script/m14/run-fixtures.ts"))
 const parser: any = await getParser("cpp")
+
+// ── the per-repo indexes (only with --index): shipped spec, complete=true ────────────────────────
+type RepoIndex = { typeKinds: Map<string, unknown>; allMembers: Map<string, Set<string>>; files: number; buildMs: number }
+const repoIndexes = new Map<string, RepoIndex>()
+if (WITH_INDEX) {
+  const indexMod: any = await import(path.join(ROOT, "src/ast/project-index.ts"))
+  const spec: any = indexMod.CPP_DECLARATION_SPEC
+  if (!spec) { console.error("cpp-receiver-census --index: project-index.ts does not export CPP_DECLARATION_SPEC (Lead wiring absent)"); process.exit(3) }
+  const wasm = path.join(ROOT, "wasm", "tree-sitter-cpp.wasm")
+  for (const repo of [...new Set([...files].map((f) => repoOf(f)))]) {
+    let tracked: string[] = []
+    try { tracked = execFileSync("git", ["-C", path.join(CR, repo), "ls-files"], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 }).split("\n").filter(Boolean) } catch { continue }
+    const admitted: string[] = []
+    for (const rel of tracked) {
+      if (!["cpp", "cc", "cxx", "c++", "hpp", "hxx", "ipp", "inl", "cu"].includes(extOf(rel))) continue
+      const abs = path.join(CR, repo, rel)
+      try { if (fs.statSync(abs).size <= 1024 * 1024) admitted.push(abs) } catch { /* absent */ }
+    }
+    const t0 = performance.now()
+    const built: any = await indexMod.buildProjectIndexStreaming(wasm, admitted, spec)
+    built.complete = true
+    const tables: any = indexMod.buildResolutionTables(built)
+    repoIndexes.set(repo, { typeKinds: built.typeKinds, allMembers: tables.allMembers, files: admitted.length, buildMs: performance.now() - t0 })
+  }
+}
+const INDEX_CLASS_KINDS = new Set(["class", "struct", "union"])
+const indexStateOf = (repo: string, owner: string, leaf: string): string => {
+  if (!WITH_INDEX) return "not-evaluated"
+  if (owner === "") return "no-owner-candidate"
+  const idx = repoIndexes.get(repo)
+  if (!idx) return "no-repo-index"
+  const kind = idx.typeKinds.get(owner)
+  if (typeof kind !== "string" || !INDEX_CLASS_KINDS.has(kind)) return "owner-not-class-like-in-index"
+  return idx.allMembers.get(owner)?.has(leaf) === true ? "CLOSURE-VERIFIABLE" : "closure-does-not-declare"
+}
 
 // ── type-spelling helpers ────────────────────────────────────────────────────────────────────────
 const stripType = (text: string): string => {
@@ -267,8 +306,26 @@ for (const abs of files) {
           if (fn.type === "field_expression") {
             const obj = fn.childForFieldName?.("argument") ?? fn.namedChild(0)
             const op = fn.child(1)?.text ?? ""    // `.` or `->`
-            if (obj && obj.type === "call_expression") { cls = "constructor-temp"; detail = "callee is a call object" }
-            else if (obj && obj.type === "new_expression") { cls = "constructor-temp"; detail = "new-expression object" }
+            if (obj && obj.type === "call_expression") {
+              cls = "constructor-temp"
+              const innerCallee = obj.childForFieldName?.("function") ?? obj.namedChild(0)
+              let inner: any = innerCallee
+              let g2 = 0
+              while (inner && g2++ < 5) {
+                const it = String(inner.type)
+                if (it === "identifier" || it === "type_identifier") break
+                if (it === "qualified_identifier") { const parts = String(inner.text).split("::"); detail = `callee:${parts[parts.length - 1].trim()}`; inner = null; break }
+                if (it === "template_function" || it === "template_method") { inner = inner.namedChild(0); continue }
+                inner = null
+              }
+              if (inner) detail = `callee:${String(inner.text).trim()}`
+              else if (detail === "") detail = "callee:"
+            }
+            else if (obj && obj.type === "new_expression") {
+              cls = "constructor-temp"
+              const tn = obj.childForFieldName?.("type") ?? null
+              detail = `callee:${tn ? String(tn.text).trim() : ""}`
+            }
             else if (obj && (obj.type === "identifier")) {
               const vtype = cur().vars.get(obj.text.trim()) ?? ""
               if (vtype !== "") {
@@ -285,19 +342,26 @@ for (const abs of files) {
             else if (enclosing !== "") { cls = "implicit-this-evidence-no-declaration"; detail = enclosing }
             else { cls = "opaque"; detail = "bare callee at file scope" }
           }
-          // owner spelling for a SECOND fact: does the owner's in-file member set declare the leaf?
+          // owner CANDIDATE from the evidence class (spelled at the site / written in the declaration /
+          // the enclosing class), then TWO facts: does the in-file owner declare the leaf, and (with
+          // --index) does the index's inheritance-closed member view?
+          let ownerCandidate = ""
+          if (cls === "implicit-this") ownerCandidate = detail
+          else if (cls === "typed-local") {
+            const holder = lastTypeName(detail)
+            ownerCandidate = WRAPPER_POINTEE.has(holder) ? templateArg(detail) : holder
+          } else if (cls === "smart-or-container") {
+            ownerCandidate = templateArg(detail) || lastTypeName(detail)
+          } else if (cls === "constructor-temp") {
+            // the type spelled at the site: the receiver was a call/new-expression; the walker stored
+            // the inner callee/type spelling in `detail` for this branch
+            ownerCandidate = lastTypeName(detail.replace(/^callee:\s*/, "")) || detail.replace(/^callee:\s*/, "")
+          }
           let declares = false
           if (cls === "implicit-this") declares = true
-          else if (cls === "typed-local") {
-            const owner = lastTypeName(detail)
-            declares = owner !== "" && declaresLeaf(owner, leaf)
-          } else if (cls === "smart-or-container") {
-            const owner = templateArg(detail) || detail
-            declares = owner !== "" && declaresLeaf(owner, leaf)
-          } else if (cls === "constructor-temp") {
-            declares = true   // the type is spelled at the site; the member is looked up on it by construction
-          }
-          const key = `${cls}|${declares ? "declares" : "does-not-declare"}`
+          else if (ownerCandidate !== "") declares = declaresLeaf(ownerCandidate, leaf)
+          const indexState = cls === "opaque" || cls === "implicit-this-evidence-no-declaration" ? "not-evaluated" : indexStateOf(repoOf(abs), ownerCandidate, leaf)
+          const key = `${cls}|${declares ? "declares" : "does-not-declare"}|${indexState}`
           note(key)
           if (samples.length < 16 && declares) samples.push({ file: path.relative(CR, abs), line: r.line, target: r.target, cls, detail })
         }
