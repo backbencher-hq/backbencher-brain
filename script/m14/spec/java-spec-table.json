@@ -901,6 +901,56 @@
     }
    ],
    "zeroPass3InUnexplained": "measured: heuristic=81/64 are the pass-3 first-parent guesses (conf 0.5, JDJ-1); ZERO pass-3 rows appear in UNEXPLAINED in either draw"
+  },
+  "d3_2026_10_18": {
+   "arm": "ACCEPTANCE — whole population WITH index, same run as the verdict",
+   "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=3000000 bun run script/m14/incoming-gate.ts java java 0 --index --dump",
+   "population": "11,155 parsed of 11,155 admitted .java files, 20 repos, 20 indexes (0 damaged), 0 parse failures, self-test PASS, 580 s, 195,576,366-byte dump",
+   "classificationControl": "PASS — every per-type dumped count equals TABLE 1 (960,861 non-resolved rows)",
+   "closureIdentity": {
+    "resolved": 517790,
+    "ambByDecl": 300696,
+    "unresolved": 150560,
+    "extOK": 473324,
+    "extUnknown": 36281,
+    "total": 1478651,
+    "extFAIL": 0,
+    "bindFAIL": 0,
+    "causeFAIL": 0,
+    "check": "517790+300696+150560+473324+36281 = 1478651 exactly — every edge in exactly one declared class"
+   },
+   "extOKByClaimKind": {
+    "imports importPath": 72600,
+    "references namespace": 162166,
+    "references owner": 136172,
+    "calls owner": 47803,
+    "imports owner": 22689,
+    "instantiates owner": 15823,
+    "uses owner": 10435,
+    "extends+implements owner+namespace": 2508
+   },
+   "extUnknownByClaimKindAndFamily": {
+    "owner references type-shaped": 16466,
+    "owner imports platform-qualified": 16020,
+    "owner instantiates type-shaped": 2638,
+    "owner references platform-qualified": 460,
+    "owner calls member-leaf": 232,
+    "owner references other families": 197,
+    "owner extends/implements/uses": 219,
+    "importPath imports dotted-type": 16
+   },
+   "namedWalls": {
+    "calls member-leaf amb": 114988,
+    "calls member-leaf unres": 89265,
+    "references type-shaped amb": 77058,
+    "overrides member-leaf amb": 32188,
+    "uses member-leaf amb": 28286,
+    "references constant-shaped (type variables) amb": 7693,
+    "references dotted-type unres": 41191,
+    "calls keyword-spelled (G2 super/this) unres": 4941,
+    "imports dotted-member-path unres": 5230
+   },
+   "evidence": "validation/m14/verification/JAVA-WHOLE-POPULATION-ARM.md §9"
   }
  }
 }
