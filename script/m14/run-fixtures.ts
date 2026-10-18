@@ -847,7 +847,14 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
             ? mod.FSHARP_DECLARATION_SPEC
             : runLangLang === "scss"
               ? mod.SCSS_DECLARATION_SPEC
-              : undefined
+              : runLangLang === "cpp"
+                // CPP (task-22): the C++ spec's declarator-chain nameResolver and scopeNodes are
+                // what make a sub-directory fixture's cross-file declarations visible at all.
+                // Built with Solidity's default spec the index has the right shape and holds
+                // nothing, which reads as "nothing is declared anywhere" rather than "the wrong
+                // spec ran" — the PY-7 failure mode, applied to C++.
+                ? mod.CPP_DECLARATION_SPEC
+                : undefined
       const built = await mod.buildProjectIndexFromDisk(
         path.join(ROOT, "wasm", `tree-sitter-${runLangLang}.wasm`),
         subDirs.get(sub)!.map((f) => path.join(dir, sub, f)),
