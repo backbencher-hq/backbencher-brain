@@ -2918,6 +2918,28 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      // ANNOTATIONS — a type MENTION the lane published as payload only. Owner ruling
+      // 2026-10-18 ("complete surface"): `@override`/`@JsonKey(...)`/`@deprecated` name a
+      // declared type, and the type-usage graph must carry the edge. Before this branch the
+      // names reached `decorators`/`metadata.annotations` and NOTHING in the relationship
+      // channel — the same defect the Java lane's `annotation-references` fixture records.
+      //
+      // WHERE DART'S GRAMMAR DIFFERS FROM JAVA'S, measured by `annotation-shapes-probe.ts` in
+      // this lane's fixture directory rather than assumed:
+      //   * there is ONE annotation node (`annotation`); there is no `marker_annotation`;
+      //   * the annotation node carries a `name` FIELD whose node is `identifier` or
+      //     `scoped_identifier`, and type arguments/arguments are separate children
+      //     (`@Generic<int>()` -> `(annotation name: (identifier) (type_arguments ...) (arguments))`);
+      //   * the annotation sits in a DIFFERENT position per declaration kind: a CHILD of
+      //     `class_definition`/`enum_declaration`, `enum_constant`, `formal_parameter` and
+      //     `local_variable_declaration`, but a SIBLING of the declaration inside `class_body`
+      //     and `program` (the `extractAnnotations` payload path already reads that sibling form).
+      // The carrier helper below turns those positions into the name of the declaration the
+      // annotation decorates, because the node alone cannot say WHAT is annotated.
+      if (t === "annotation") {
+        this.emitAnnotationReferences(n, relationships, current, owner)
+      }
+
       // DT-F: member reads — a selector WITHOUT its own argument_part reads
       // its member (`obj.method` tear-off, `this.count`, `C.total`,
       // `a?.value`). The callee link (immediately followed by the
@@ -3082,6 +3104,13 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           const first = n.parent?.namedChild(0)
           return !!first && first.startIndex === n.startIndex && first.endIndex === n.endIndex
         })()
+        // ANNOTATION NAMES ARE NOT VALUE READS. `@override`/`@JsonKey` publish their own
+        // `references` row (see `emitAnnotationReferences`); the identifier inside the
+        // annotation node is the type NAME, not a read of it, and the alias leaf of
+        // `@prefix.Foo` is not a read either. Without this gate a top-level function whose
+        // name coincided with an annotation's name could publish a `uses` row for it.
+        const isAnnotationName = ptype === "annotation" ||
+          (ptype === "scoped_identifier" && n.parent?.parent?.type === "annotation")
         // DT2: `this`/`super` are keyword receivers, never value reads
         // (verified non-identifier in the pinned grammar; belt and braces).
         if (txt === "this" || txt === "super") {
@@ -3092,7 +3121,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           !declName &&
           !isWrite &&
           !isLabel &&
-          !isFieldInitTarget
+          !isFieldInitTarget &&
+          !isAnnotationName
         ) {
           const isDeclaredMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
           if (!locals.has(txt) && isDeclaredMember) {
@@ -4874,6 +4904,227 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return annotations.length > 0 ? annotations : undefined
+  }
+
+  // ============================================================================
+  // ANNOTATION REFERENCES — the type a `@...` names is a `references` edge
+  // ============================================================================
+
+  /**
+   * Emit one `references` row per (annotation, decorated declaration) pair.
+   *
+   * THE RULES, each from the pinned grammar (see `annotation-shapes-probe.ts`):
+   *
+   *   TARGET — the annotation's `name` field, read as written and WITHOUT its `@`, arguments
+   *   or type arguments. For `@prefix.Qualified` the target is the LEAF the `name` field names,
+   *   not the import alias: this lane strips alias prefixes everywhere heritage and type
+   *   mentions are spelled (DT-B/DAD1/DAD2 — `_i2.Mixin` is `Mixin`), and an annotation alias
+   *   is the same alias. (Java keeps the full path because Java's qualifier is a package, not
+   *   an import alias; the two lanes' conventions differ for a reason.)
+   *
+   *   SOURCE — the declaration the annotation DECORATES, because an annotation node has no
+   *   name of its own. Three carrier shapes, all probed:
+   *     child form      `@deprecated class C` -> annotation is a CHILD of `class_definition`;
+   *                     `enum Kind { @deprecated old }` -> child of `enum_constant`;
+   *                     `@deprecated final x = 1;` -> child of `local_variable_declaration`.
+   *     sibling form    inside `class_body` and `program` the annotation is a SIBLING of the
+   *                     declaration (`class_body (annotation) (method_signature)`), so the
+   *                     carrier is the next non-annotation sibling.
+   *     signature-param form  `void f(@required int x)` -> annotation is a CHILD of
+   *                     `formal_parameter`; the carrier is the enclosing callable, because a
+   *                     parameter publishes no symbol (DARTD8) and the annotation is a fact
+   *                     about the declaration that carries it.
+   *   Multi-declarator fields (`@JsonKey(...) int a = 1, b = 2;`) publish ONE row per
+   *   declarator, matching the symbol model (each declarator is its own property).
+   *
+   *   CONFIDENCE 0.95, `evidenceClass: structural`: the annotation's type name is WRITTEN at
+   *   the declaration, not inferred. `annotatedKind` is the carrier's grammar node type so a
+   *   consumer can tell a class annotation from a parameter annotation — the node type alone
+   *   cannot.
+   *
+   * NOT A CLAIM, and not an unresolvable-target exemption: the row is an ordinary `references`
+   * edge and the project's resolver decides whether the annotation type has exactly one
+   * in-project declaration (`@override` is dart:core's, so it will read unresolved in a
+   * per-file run and resolve under an index — the same treatment every out-of-file type
+   * mention gets on this label).
+   */
+  private emitAnnotationReferences(
+    ann: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    current: string | null,
+    owner: string | null,
+  ): void {
+    const nameNode = ann.childForFieldName?.("name") ?? this.findChildByType(ann, "identifier")
+    if (!nameNode) return
+    const target = this.annotationTargetSpelling(nameNode)
+    if (!target) return
+    const carriers = this.annotationCarriers(ann, current, owner)
+    for (const carrier of carriers) {
+      relationships.push({
+        source: carrier.name,
+        target,
+        type: ASTEngine.RelationshipType.References,
+        confidence: 0.95,
+        // The NAME is written on the annotation's line; the declaration's header is another.
+        line_number: this.nodeLine(nameNode),
+        metadata: {
+          relationshipType: "annotation",
+          isAnnotation: true,
+          annotatedKind: carrier.kind,
+        },
+      })
+    }
+  }
+
+  /** The annotation's type name as this lane spells types: leaf, no alias, no arguments. */
+  private annotationTargetSpelling(nameNode: Node): string | null {
+    if (nameNode.type === "identifier" || nameNode.type === "type_identifier") return nameNode.text
+    if (nameNode.type === "scoped_identifier") {
+      const leaf = nameNode.childForFieldName?.("name") ?? this.findChildByType(nameNode, "identifier")
+      return leaf ? leaf.text : null
+    }
+    const id = this.findChildByType(nameNode, "identifier") ?? this.findChildByType(nameNode, "type_identifier")
+    return id ? id.text : null
+  }
+
+  /**
+   * The declarations one annotation decorates, with the grammar node type of each carrier.
+   * EMPTY when the position publishes no name this lane can attribute to — a library
+   * directive's annotation (`library @TestOn('vm');`) is deliberately not attributed: the
+   * library node is the module symbol, and an edge from the module to the annotation type
+   * would be a claim about a directive the lane has not placed in this family.
+   */
+  private annotationCarriers(
+    ann: Node,
+    current: string | null,
+    owner: string | null,
+  ): Array<{ name: string; kind: string }> {
+    const parent = ann.parent
+    if (!parent) return []
+    const p = parent.type
+    // CHILD OF THE DECLARATION.
+    if (
+      p === "class_definition" || p === "mixin_declaration" || p === "enum_declaration" ||
+      p === "extension_declaration" || p === "extension_type_declaration"
+    ) {
+      const nm = parent.childForFieldName?.("name")?.text ?? this.findChildByType(parent, "identifier")?.text
+      return nm ? [{ name: nm, kind: p }] : []
+    }
+    if (p === "enum_constant") {
+      const nm = parent.childForFieldName?.("name")?.text ?? this.findChildByType(parent, "identifier")?.text
+      return nm ? [{ name: nm, kind: p }] : []
+    }
+    if (p === "local_variable_declaration") {
+      const carrier = current ?? owner
+      return carrier ? [{ name: carrier, kind: p }] : []
+    }
+    if (p === "formal_parameter" || p === "constructor_param" || p === "super_formal_parameter") {
+      // A parameter publishes no symbol; the annotation is a fact about the callable that
+      // declares it. Walk to the signature, and fall back to the enclosing function for a
+      // lambda parameter (lambdas fold into their enclosing function — DARTD8).
+      let sig: Node | null = parent
+      let guard = 0
+      while (sig && guard++ < 8) {
+        if (this.isSignatureNode(sig.type)) break
+        sig = sig.parent
+      }
+      if (sig) {
+        if (sig.parent?.type === "lambda_expression" || sig.parent?.type === "function_expression") {
+          return current ? [{ name: current, kind: "lambda_parameter" }] : []
+        }
+        const inner = this.findInnerSignature(sig)
+        if (this.isConstructorSignature(sig.type) || this.isConstructorSignature(inner.type)) {
+          return this.isRealConstructor(inner, this.enclosingTypeName(inner))
+            ? [{ name: "constructor", kind: "constructor_param" }]
+            : []
+        }
+        const nm = this.signatureName(inner)
+        return nm ? [{ name: nm, kind: "parameter_annotation" }] : []
+      }
+      return current ? [{ name: current, kind: "parameter_annotation" }] : []
+    }
+    // SIBLING FORM: class_body / program (and enum_body defensively — the probed enum shape is
+    // the child form above). Walk forward past further annotations: `@a @b class C` decorates
+    // C twice.
+    if (p === "class_body" || p === "program" || p === "enum_body") {
+      let sib = ann.nextNamedSibling
+      let guard = 0
+      while (sib && sib.type === "annotation" && guard++ < 16) sib = sib.nextNamedSibling
+      return sib ? this.carriersOfDeclarationNode(sib) : []
+    }
+    return []
+  }
+
+  /** The names a declaration node publishes, for the annotation sibling form. */
+  private carriersOfDeclarationNode(node: Node): Array<{ name: string; kind: string }> {
+    // THE TOP-LEVEL VARIABLE SHAPE HAS NO `declaration` WRAPPER: a top-level
+    // `@deprecated int topVar = 5;` parses as three PROGRAM SIBLINGS — `annotation`,
+    // `type_identifier`, `initialized_identifier_list` (probed: annotation-shapes-probe.ts) —
+    // so the "next sibling is the declaration" step lands on the TYPE, not on the declarators.
+    // The declaration is the LIST after it. (A top-level function's return type is inside its
+    // `function_signature`, whose sibling is the signature itself, so this branch only fires
+    // for variables/fields written with a separate type node.)
+    if (node.type === "type_identifier" || node.type === "void_type" || node.type === "nullable_type" ||
+        node.type === "function_type" || node.type === "inferred_type") {
+      const after = node.nextNamedSibling
+      if (after && (after.type === "initialized_identifier_list" || after.type === "static_final_declaration_list")) {
+        return this.carriersOfDeclarationNode(after)
+      }
+      return []
+    }
+    if (node.type === "initialized_identifier_list" || node.type === "static_final_declaration_list") {
+      const out: Array<{ name: string; kind: string }> = []
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (!c) continue
+        const id = this.findChildByType(c, "identifier")
+        if (id) out.push({ name: id.text, kind: node.type })
+      }
+      return out
+    }
+    const t = node.type
+    if (t === "class_definition" || t === "mixin_declaration" || t === "enum_declaration" ||
+        t === "extension_declaration" || t === "extension_type_declaration" || t === "type_alias") {
+      const nm = node.childForFieldName?.("name")?.text ?? this.findChildByType(node, "identifier")?.text
+      return nm ? [{ name: nm, kind: t }] : []
+    }
+    // A class member arrives as `declaration` wrapping the signature (DARTD13's shape).
+    let decl = node
+    if (decl.type === "declaration") {
+      for (let i = 0; i < decl.namedChildCount; i++) {
+        const c = decl.namedChild(i)
+        if (c && this.isSignatureNode(c.type)) { decl = c; break }
+      }
+    }
+    if (this.isSignatureNode(decl.type)) {
+      const inner = this.findInnerSignature(decl)
+      if (this.isConstructorSignature(decl.type) || this.isConstructorSignature(inner.type)) {
+        return this.isRealConstructor(inner, this.enclosingTypeName(inner))
+          ? [{ name: "constructor", kind: "constructor_signature" }]
+          : []
+      }
+      const nm = this.signatureName(inner)
+      return nm ? [{ name: nm, kind: inner.type }] : []
+    }
+    // Field / variable declarations: one row per declarator name.
+    const out: Array<{ name: string; kind: string }> = []
+    const stack: Node[] = [node]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 64) {
+      const c = stack.pop()!
+      if (c.type === "initialized_identifier" || c.type === "static_final_declaration") {
+        const id = this.findChildByType(c, "identifier")
+        if (id) out.push({ name: id.text, kind: node.type })
+        continue
+      }
+      for (let i = c.namedChildCount - 1; i >= 0; i--) {
+        const ch = c.namedChild(i)
+        if (ch && (ch.type === "initialized_identifier_list" || ch.type === "static_final_declaration_list" || ch.type === "initialized_identifier" || ch.type === "static_final_declaration")) {
+          stack.push(ch)
+        }
+      }
+    }
+    return out
   }
 
   private collectComments(node: Node): string[] | undefined {

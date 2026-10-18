@@ -238,7 +238,13 @@ async function main(): Promise<void> {
   // These are the rows a naive "every type_identifier is a mention" rule adds.
   await checkBoth("heritage is not a type reference", `class V extends U2 { } class U2 { }`, [], ["U2", "V"])
   await checkBoth("implements is not a type reference", `class W2 implements U2 { } class U2 { }`, [], ["U2", "W2"])
-  await checkBoth("a with-clause is not a type reference", `mixin X2 on U2 { } class U2 { }`, [], ["U2", "X2"])
+  // 2026-10-18: a mixin's `on`-CONSTRAINT is a type the mixin's declaration mentions, so it
+  // publishes `references{isMixinOn}` (it was `extends{isMixinOn}` before the canonical
+  // vocabulary — an on-clause inherits nothing, so `extends` was the wrong label). The
+  // WITH-clause is still not a type reference: it is `mixes_in`. One source line, two
+  // different relationships, and this case pins both halves.
+  await checkBoth("a mixin `on`-constraint is a type reference; a with-clause is not",
+    `mixin X2 on U2 { } class U2 { } class Y7 with X2 { }`, ["X2 -> U2"], ["U2", "X2", "Y7"])
   await checkBoth("construction is not a type reference", `class Y2 { Y2 make() => Y2(); }`, ["make -> Y2"])
   await checkBoth("a TYPE VARIABLE is not a type", `class Z2<T extends U5> { T v; T get() => v; } class U5 { }`, ["Z2 -> U5"])
   // ...and the same thing when the VARIABLE'S NAME is also a declared type, which
@@ -309,6 +315,23 @@ async function main(): Promise<void> {
   await checkBoth("a class ALIAS (`class A<U,V> = Object with M<U,V>`) is a type this file declares",
     `class M5<U, V> { } class A5<U, V> = Object with M5<U, V>; void host2() { A5 x = A5(); print(x); }`,
     ["host2 -> A5"])
+
+  // ── 7. ANNOTATIONS (2026-10-18, owner ruling) ────────────────────────────
+  // An annotation names a DECLARED TYPE, so it is a `references` mention — but it is not a
+  // `type_identifier`, and its SOURCE is a declaration the annotation does not contain. Both
+  // sides now derive it; every case pins the attribution, because that is where the two
+  // implementations can drift while the edge count still looks right. The annotation shapes
+  // are probed in validation/m14/fixtures/dart/annotation-shapes-probe.ts (a CHILD of the type
+  // declaration / enum_constant / formal_parameter / local_variable_declaration, a SIBLING of
+  // the declaration inside class_body and program).
+  await checkBoth("annotations publish for a class, a method, a parameter and a field",
+    `const int deprecated = 1;\n@deprecated class Ann2 { @override void go(@required int x) {} @deprecated int field2 = 1; }`,
+    ["Ann2 -> deprecated", "go -> override", "go -> required", "field2 -> deprecated"])
+  await checkBoth("a top-level annotated variable and an annotated enum constant attribute to the declaration",
+    `@deprecated int top = 1;\nenum K2 { @deprecated old2, fresh2 }`,
+    ["top -> deprecated", "old2 -> deprecated"])
+  await checkBoth("a QUALIFIED annotation resolves to the type leaf, not to the import alias",
+    `@prefix.Qualified() class Q2 { }`, ["Q2 -> Qualified"])
 
   console.log("")
   if (failures === 0) {

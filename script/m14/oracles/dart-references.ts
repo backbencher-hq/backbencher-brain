@@ -354,6 +354,118 @@ function shadowedByTypeParameter(node: any, name: string): boolean {
  * same string: the alternative is a constant that can never bind to a symbol, which
  * is the placeholder defect M60 rule R7 exists to stop.
  */
+// ─────────────────────────────── ANNOTATIONS ───────────────────────────────
+//
+// 2026-10-18 (owner ruling: annotations are owed relationships). An annotation NAMES a declared
+// type, so it is a `references` mention under this file's own rule — but it is NOT a
+// `type_identifier`, so the mention branch below never sees it, and its SOURCE is a declaration
+// the annotation does not contain. Both halves are derived here from the grammar, independently
+// of the analyzer (no import, no shared table — the same contract every rule in this file keeps).
+//
+// The positions are the measured ones (`validation/m14/fixtures/dart/annotation-shapes-probe.ts`):
+// a CHILD of the type declaration / `enum_constant` / `formal_parameter` /
+// `local_variable_declaration`, and a SIBLING of the declaration inside `class_body` / `program`.
+// A top-level annotated variable is three siblings (`annotation`, `type_identifier`,
+// `initialized_identifier_list`), which is why the sibling walk has a type-node step.
+//
+// ANNOTATION TARGETS ARE NOT GATED ON `visible`. Every other mention in this file publishes only
+// when the type is one the run can see; an annotation is a DECLARATION-SITE fact (`@override` is
+// written there whether or not dart:core is in the run), and the analyzer publishes it
+// unconditionally — a truth derivation gated on visibility would manufacture `unexplained` rows
+// the lane does not have.
+
+/** The annotation's type name as written: `name` field, alias leaf, no arguments. */
+function annotationTargetName(ann: any): string | null {
+  const f = ann.childForFieldName?.("name") ??
+    namedChildren(ann).find((c: any) => c.type === "identifier" || c.type === "type_identifier")
+  if (!f) return null
+  if (f.type === "identifier" || f.type === "type_identifier") return f.text
+  if (f.type === "scoped_identifier") {
+    const leaf = f.childForFieldName?.("name") ??
+      namedChildren(f).find((c: any) => c.type === "identifier")
+    return leaf ? leaf.text : null
+  }
+  const id = namedChildren(f).find((c: any) => c.type === "identifier" || c.type === "type_identifier")
+  return id ? id.text : null
+}
+
+/** Names a declaration node publishes — used only by the annotation sibling forms. */
+function annotationDeclarationNames(node: any): string[] {
+  if (!node) return []
+  // The top-level annotated variable: `annotation`, `type_identifier`, `initialized_identifier_list`.
+  if (node.type === "type_identifier" || node.type === "void_type" || node.type === "nullable_type" ||
+      node.type === "function_type" || node.type === "inferred_type") {
+    const after = node.nextNamedSibling
+    return after && (after.type === "initialized_identifier_list" || after.type === "static_final_declaration_list")
+      ? annotationDeclarationNames(after)
+      : []
+  }
+  if (node.type === "initialized_identifier_list" || node.type === "static_final_declaration_list") {
+    const out: string[] = []
+    for (const c of namedChildren(node)) {
+      const id = namedChildren(c).find((x: any) => x.type === "identifier") ?? (c.type === "identifier" ? c : null)
+      if (id) out.push(id.text)
+    }
+    return out
+  }
+  if (TYPE_DECLARATIONS.has(node.type)) {
+    const d = typeDeclarationName(node)
+    return d && d.name ? [d.name] : []
+  }
+  if (node.type === "enum_constant") {
+    const id = node.childForFieldName?.("name") ?? namedChildren(node).find((c: any) => c.type === "identifier")
+    return id ? [id.text] : []
+  }
+  if (isSignature(node.type)) {
+    const nm = memberName(node)
+    return nm ? [nm] : []
+  }
+  if (node.type === "declaration") {
+    const sig = namedChildren(node).find((c: any) => isSignature(c.type))
+    if (sig) {
+      const nm = memberName(sig)
+      return nm ? [nm] : []
+    }
+    const out: string[] = []
+    for (const c of namedChildren(node)) {
+      if (c.type === "initialized_identifier_list" || c.type === "static_final_declaration_list") {
+        out.push(...annotationDeclarationNames(c))
+      }
+    }
+    return out
+  }
+  return []
+}
+
+/** The declarations one annotation decorates, in the grammar's own positions. */
+function annotationSources(ann: any, member: string | null, typeName: string | null, fileName: string): string[] {
+  const parent = ann.parent
+  if (!parent) return []
+  const p = parent.type
+  if (TYPE_DECLARATIONS.has(p)) {
+    const d = typeDeclarationName(parent)
+    return d && d.name ? [d.name] : []
+  }
+  if (p === "enum_constant") {
+    const id = parent.childForFieldName?.("name") ?? namedChildren(parent).find((c: any) => c.type === "identifier")
+    return id ? [id.text] : []
+  }
+  if (p === "local_variable_declaration" || p === "formal_parameter" || p === "constructor_param" ||
+      p === "super_formal_parameter") {
+    // A local / parameter publishes no symbol, so the annotation belongs to the declaration
+    // that carries the position — the enclosing callable, then the enclosing type, then the file.
+    const carrier = member ?? typeName ?? fileName
+    return carrier ? [carrier] : []
+  }
+  if (p === "class_body" || p === "program" || p === "enum_body") {
+    let sib = ann.nextNamedSibling
+    let guard = 0
+    while (sib && sib.type === "annotation" && guard++ < 16) sib = sib.nextNamedSibling
+    return annotationDeclarationNames(sib)
+  }
+  return []
+}
+
 export function deriveDartReferencesTruth(
   root: any,
   visibleTypes?: Set<string> | string[],
@@ -400,6 +512,40 @@ export function deriveDartReferencesTruth(
         if (prev && isSignature(prev.type) && !isLambdaSignature(prev)) {
           const nm = memberName(prev)
           if (nm) nextMember = nm
+        }
+      }
+    }
+
+    // MIXIN `on`-CLAUSE (2026-10-18). DARTD14 used to publish the constraint as
+    // `extends{isMixinOn}`; the canonical vocabulary made it what it is — a type the mixin's
+    // DECLARATION mentions — so the analyzer emits `references{isMixinOn}` and the truth must
+    // derive it from the grammar the same way. The on-base is a DIRECT `type_identifier` child
+    // of `mixin_declaration` (probed: dart-mixin-shape.ts), which is why the generic
+    // `type_identifier` branch below never sees it (its position is in PUBLISHED_ELSEWHERE).
+    if (n.type === "mixin_declaration") {
+      const own = typeDeclarationName(n)?.name ?? ""
+      for (const c of namedChildren(n)) {
+        if (c.type !== "type_identifier") continue
+        const from = own
+        const target = c.text
+        if (!from || !target || from === target) continue
+        const key = `${from}|${target}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          out.push({ label: "references", from, target })
+        }
+      }
+    }
+
+    if (n.type === "annotation") {
+      const target = annotationTargetName(n)
+      if (target) {
+        for (const from of annotationSources(n, nextMember, nextType, fileName)) {
+          const key = `${from}|${target}`
+          if (!seen.has(key) && from && from !== target) {
+            seen.add(key)
+            out.push({ label: "references", from, target })
+          }
         }
       }
     }
