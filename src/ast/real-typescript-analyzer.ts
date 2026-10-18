@@ -5051,20 +5051,54 @@ class TypeScriptAnalysisRunner {
           }
         } else if (
           child.type === "function_declaration" ||
+          child.type === "function_signature" ||
+          child.type === "generator_function_declaration" ||
           child.type === "class_declaration" ||
+          child.type === "abstract_class_declaration" ||
           child.type === "interface_declaration" ||
           child.type === "type_alias_declaration" ||
-          child.type === "enum_declaration"
+          child.type === "enum_declaration" ||
+          child.type === "internal_module" ||
+          child.type === "module"
         ) {
-          const nameNode = child.childForFieldName("name")
-          if (nameNode) {
+          // THE EXPORTED DECLARATION FORMS THE FIRST EMITTER MISSED, each measured on the grammar:
+          //   `export namespace container {}`   -> internal_module (the namespace NAME is exported)
+          //   `export abstract class A {}`      -> abstract_class_declaration
+          //   `export function f(): T;`         -> function_signature (the ambient/signature form)
+          // A `declare module "x"` child carries a STRING name — that names no exported symbol.
+          const nameNode = child.childForFieldName("name") ?? child.namedChild(0)
+          if (nameNode && nameNode.type !== "string") {
             foundNamed = true
             exports.push({
               name: nameNode.text,
               isDefault,
-              type: child.type.replace("_declaration", ""),
+              type: child.type.replace(/_declaration$/, ""),
               range: this.nodeRange(child),
             })
+          }
+        } else if (child.type === "ambient_declaration") {
+          // `export declare function f(): void` / `export declare const x: number` — the exported
+          // name is inside the ambient wrapper, one level down. A wrapper around a STRING-named
+          // `module "x"` names no symbol, which is why the string test below is on the inner node.
+          const inner = child.namedChild(0)
+          if (inner) {
+            if (inner.type === "function_signature" || inner.type === "function_declaration" || inner.type === "class_declaration" || inner.type === "abstract_class_declaration" || inner.type === "interface_declaration" || inner.type === "enum_declaration" || inner.type === "type_alias_declaration") {
+              const nameNode = inner.childForFieldName("name") ?? inner.namedChild(0)
+              if (nameNode && nameNode.type !== "string") {
+                foundNamed = true
+                exports.push({ name: nameNode.text, isDefault, type: inner.type.replace(/_declaration$/, ""), range: this.nodeRange(inner) })
+              }
+            } else if (inner.type === "lexical_declaration" || inner.type === "variable_declaration") {
+              for (let j = 0; j < inner.namedChildCount; j++) {
+                const declarator = inner.namedChild(j)
+                if (!declarator || declarator.type !== "variable_declarator") continue
+                const nameNode = declarator.childForFieldName("name") ?? declarator.namedChild(0)
+                if (nameNode && nameNode.type === "identifier") {
+                  foundNamed = true
+                  exports.push({ name: nameNode.text, isDefault, type: "variable", range: this.nodeRange(declarator) })
+                }
+              }
+            }
           }
         } else if (child.type === "lexical_declaration" || child.type === "variable_declaration") {
           // export const x = ...
