@@ -17,7 +17,8 @@
 // bindings are NOT claimed — they are counted as open classes in
 // validation/m14/verification/JAVASCRIPT-RESOLUTION-CLASSIFICATION.md, not guessed.
 // The receiver-type channel is `metadata.owner` (the store's existing member-owner resolution) +
-// `metadata.ownerEvidence` in {new, assignment, this, jsdoc}; a wrong owner is worse than none.
+// `metadata.ownerEvidence` in {new, assignment, this, jsdoc, class-static, this-alias}; a wrong owner
+// is worse than none.
 // The emission table, confidence tiers and every count live in docs/analyzers/real-javascript-analyzer.md.
 // Where its scripts and validations live: script/m14/spec/javascript-completeness.json
 // (ontology ledger), validation/m14/fixtures/javascript/** (83 fixtures + expectations,
@@ -554,8 +555,15 @@ type BindingModel = {
   allNames: Set<string>
   /** import / require bindings: the imported-binding SEAM class, NEVER claimed as local bindings */
   moduleBindings: Set<string>
+  /**
+   * PROGRAM-scope class DECLARATIONS — the only class-like names whose members are PUBLISHED
+   * symbols, so the only ones a static-class receiver may name. Class EXPRESSIONS are excluded on
+   * purpose (their class is not a symbol this family publishes; naming one would hand the owner
+   * channel an owner it cannot verify).
+   */
+  publishedClasses: Set<string>
 }
-type ReceiverEvidence = "new" | "assignment" | "this" | "jsdoc"
+type ReceiverEvidence = "new" | "assignment" | "this" | "jsdoc" | "class-static" | "this-alias"
 
 export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
@@ -2406,7 +2414,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // resolveMemberTargetsByOwner) reads on BOTH production resolution paths — it
                 // re-resolves the row inside that class, which is what stops `c.run()` binding
                 // to another file's same-named method. `ownerEvidence` says WHICH syntactic
-                // proof produced the owner ({new, assignment, this, jsdoc}) so coverage is a
+                // proof produced the owner ({new, assignment, this, jsdoc, class-static,
+                // this-alias}) so coverage is a
                 // countable number per evidence class rather than one asserted figure. NO new
                 // channel is introduced: a wrong owner is worse than none, because the store
                 // withdraws the name binding for an owner-carrying row and then declines.
@@ -2414,8 +2423,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   const object = fn.childForFieldName("object")
                   if (!object) return {}
                   let recv: ReceiverType | undefined
-                  if (object.type === "identifier") recv = receiverTypes.get(object.text)
-                  else if (object.type === "this") {
+                  if (object.type === "identifier") {
+                    recv = receiverTypes.get(object.text) ??
+                      this.staticClassReceiver(object, object.text) ??
+                      this.thisAliasOwnerAt(object, object.text) ??
+                      undefined
+                  } else if (object.type === "this") {
                     // `this.m()` — `this` is the enclosing class DECLARATION's instance by
                     // POSITION. Only a class body binds it, and only a DECLARATION names a
                     // symbol the owner channel can verify; a plain function's `this` is dynamic,
@@ -3430,7 +3443,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   // a wrong owner is worse than none, because the store withdraws the name
                   // binding for an owner-carrying row and then declines.
                   const recvOwner = (() => {
-                    if (cur?.type === "identifier" && head) return receiverTypes.get(head)
+                    if (cur?.type === "identifier" && head) {
+                      return receiverTypes.get(head) ??
+                        this.staticClassReceiver(cur, head) ??
+                        this.thisAliasOwnerAt(cur, head) ??
+                        undefined
+                    }
                     if (cur?.type === "this") {
                       const cls = this.enclosingThisClass(node)
                       return cls ? { type: cls, evidence: "this" as ReceiverEvidence } : undefined
@@ -3632,6 +3650,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     const scopes: BindingScope[] = []
     const allNames = new Set<string>()
     const moduleBindings = new Set<string>()
+    const publishedClasses = new Set<string>()
     const program: BindingScope = {
       kind: "program", startIndex: rootNode.startIndex, endIndex: rootNode.endIndex,
       published: true, parent: null, names: new Set(),
@@ -3757,7 +3776,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (t === "class_declaration") {
         const nm = n.childForFieldName("name")
-        if (nm) addName(scope, nm.text)
+        if (nm) {
+          addName(scope, nm.text)
+          if (scope.published) publishedClasses.add(nm.text)
+        }
         for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, scope) }
         return
       }
@@ -3774,7 +3796,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, scope) }
     }
     walk(rootNode, program)
-    return { scopes, allNames, moduleBindings }
+    return { scopes, allNames, moduleBindings, publishedClasses }
   }
 
   /**
@@ -3801,6 +3823,73 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     const kind = this.resolveBindingKind(model, node.startIndex, name)
     if (kind !== "lexical") return null
     return `${source}${BINDING_SEP}${name}`
+  }
+
+  /**
+   * STATIC CLASS RECEIVER — `Service.create()` where the receiver identifier is a PROGRAM-scope
+   * class DECLARATION in this file. That class's members ARE published symbols, so the owner channel
+   * can resolve the member inside it; the proof is positional (the identifier must still resolve to
+   * the program scope at THIS site — a parameter or local shadowing the class name is not the class,
+   * and gets nothing). Evidence class `class-static`.
+   */
+  private staticClassReceiver(node: Node | null | undefined, name: string): ReceiverType | null {
+    const model = this.bindingModel
+    if (!model || !node || !name) return null
+    if (!model.publishedClasses.has(name)) return null
+    return this.resolveBindingKind(model, node.startIndex, name) === "published"
+      ? { type: name, evidence: "class-static" }
+      : null
+  }
+
+  /**
+   * THIS-ALIAS RECEIVER — `const self = this` in the SAME function body as the site, with `this`
+   * provably the enclosing class DECLARATION's instance. Resolved POSITIONALLY, never through the
+   * file map: a file map leaked an alias across sibling functions in the fixture (a plain
+   * function's `const self = this` is dynamic `this`, yet it inherited the class recorded by
+   * another function's alias of the same name) — the leak produced a wrong owner, which is worse
+   * than none. Refusals: a plain function/generator is dynamic `this` (nothing); an arrow is
+   * lexical `this` but the alias would have to be declared in an enclosing body, so this helper
+   * under-claims rather than reach across (nothing); a class expression is not a published symbol.
+   */
+  private thisAliasOwnerAt(node: Node | null | undefined, name: string): ReceiverType | null {
+    if (!node || !name) return null
+    const isFunctionForm = (t: string): boolean =>
+      t === "function_declaration" || t === "function_expression" ||
+      t === "generator_function_declaration" || t === "generator_function" ||
+      t === "arrow_function" || t === "method_definition" || t === "class_static_block"
+    // nearest enclosing function form; a class boundary above it means there is no `this` proof
+    let fn: Node | null = null
+    for (let p: Node | null = node; p; p = p.parent) {
+      if (isFunctionForm(p.type)) { fn = p; break }
+      if (p.type === "class_declaration" || p.type === "class") return null
+    }
+    if (!fn) return null
+    // dynamic-this forms and lexical arrows are refused (see the doc above)
+    if (fn.type !== "method_definition" && fn.type !== "class_static_block") return null
+    // the class that owns this method/static block — only a class DECLARATION publishes members
+    let cls: string | null = null
+    for (let p: Node | null = fn.parent; p; p = p.parent) {
+      if (p.type === "class_declaration") { cls = p.childForFieldName("name")?.text ?? null; break }
+      if (p.type === "class" || p.type === "class_expression") return null
+      if (p.type === "function_declaration" || p.type === "function_expression" ||
+          p.type === "generator_function_declaration" || p.type === "generator_function") return null
+    }
+    if (!cls) return null
+    // the alias must be declared in THIS function body (nested function bodies are not ours)
+    const stack: Node[] = [fn]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n !== fn && isFunctionForm(n.type)) continue
+      if (n.type === "variable_declarator") {
+        const id = n.childForFieldName("name")
+        const value = n.childForFieldName("value")
+        if (id && id.type === "identifier" && id.text === name && value && value.type === "this") {
+          return { type: cls, evidence: "this-alias" }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+    }
+    return null
   }
 
   /** innermost scope containing `index`, then the scope chain — "published" | "lexical" | null. */
