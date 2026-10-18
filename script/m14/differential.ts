@@ -175,6 +175,10 @@ import { deriveTypeScriptUsesTruth } from "./oracles/typescript-uses"
 // language's rules, and its header states PER CLASS whether the derivation is
 // independent of the analyzer's — which is the entire value of a differential, and
 // a blanket claim would be worth nothing.
+// SOLIDITY imports truth (lane-owned, 2026-10-19): the ONE emitted-but-unaudited label for this lane.
+// Its contract check avoids the matcher trap above by comparing the specifier AS WRITTEN (see the
+// matchKey block in the per-file comparison for the measured collapse table).
+import { deriveSolidityImportTruth } from "./oracles/solidity-imports-truth"
 import { deriveSolidityEdges, deriveSolidityCallReferenceEdges } from "./oracles/solidity"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
@@ -24740,6 +24744,11 @@ async function main() {
         for (const e of deriveSolidityCallReferenceEdges(root, solModule)) {
           ;(truth as any[]).push(e)
         }
+        // IMPORTS: every import spelling (path / named / remapping / using / self) derived lane-side;
+        // admitted to the compared set in the same change (below) so the label is audited, not just derived.
+        for (const e of deriveSolidityImportTruth(root, solModule)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "ruby") {
         for (const e of deriveRubyEdges(root)) {
@@ -25295,7 +25304,7 @@ async function main() {
           // derivation is independent). Naming only two would leave the lane's
           // second-largest kind unaudited and every one of its edges counted as a
           // confident fabrication, which is the #910 trap this comment sits inside.
-          ...(lang === "solidity" ? ["uses", "contains", "calls", "references", "exports"] : []),
+          ...(lang === "solidity" ? ["uses", "contains", "calls", "references", "exports", "imports"] : []),
           // M14 F10: css is comparable on exactly the four kinds its oracle
           // derives. Naming them is not bookkeeping — the allowlist filters the
           // ANALYZER side, so a kind that the oracle derives but the allowlist
@@ -25467,13 +25476,35 @@ async function main() {
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length
 
+      // ── MODULE PATHS ARE NOT NAMES, AND LEAF-COLLAPSING THEM MAKES THE AUDIT VACUOUS ────────────
+      // `normTarget` takes the LAST dot/`::` segment, which is right for a symbol NAME but wrong for a
+      // module SPECIFIER: normTarget("./A.sol") = "sol", normTarget("@openzeppelin/.../Utils.sol") = "sol",
+      // normTarget("hardhat/console.sol") = "sol", normTarget("../Governor.sol") = "sol" — so with `imports`
+      // admitted through the standard match, ANY import path in a file covered ANY other, and the label's
+      // audit could never fail. MEASURED by the solidity lane while wiring its imports oracle; the C lane's
+      // include paths ("stdio.h" → "h") have the same degenerate shape, so this is fixed ONCE for every lane.
+      // A PATH-LIKE imports target is compared EXACTLY as written (the specifier is the fact); dotted module
+      // names ("java.util") keep the old behaviour for now, and the includes() fallback is disabled for
+      // path-like targets for the same reason — a containment test on "sol" is not evidence.
+      const PATH_EXT = new Set(["sol","h","hh","hpp","hxx","c","cc","cpp","cxx","cu","js","jsx","mjs","cjs","ts","tsx","mts","cts","py","pyi","pyw","dart","rb","java","go","rs","json","yaml","yml","toml","md","css","scss","sass","html","proto"])
+      const isPathLikeImport = (t: string): boolean => {
+        if (t.length === 0) return false
+        if (t.startsWith(".") || t.includes("/") || t.includes("\\")) return true
+        const dot = t.lastIndexOf(".")
+        if (dot > 0 && dot < t.length - 1) return PATH_EXT.has(t.slice(dot + 1).toLowerCase())
+        return false
+      }
+      const matchKey = (label: string, target: any): string => {
+        const t = String(target ?? "")
+        return label === "imports" && isPathLikeImport(t) ? `EXACT:${t}` : normTarget(t)
+      }
       for (const te of truth) {
-        const hit = rels.some((r: any) => r.label === te.label && normTarget(r.target) === normTarget(te.target))
+        const hit = rels.some((r: any) => r.label === te.label && matchKey(r.label, r.target) === matchKey(te.label, te.target))
         if (hit) coveredByAnalyzer++
         else { missingInAnalyzer++; if (samples.length < 300) samples.push({ dir: "MISSING", file: relPath, ...te }) }
       }
       for (const r of rels) {
-        const hit = truth.some(te => te.label === r.label && (normTarget(te.target) === normTarget(r.target) || te.target.includes(normTarget(r.target))))
+        const hit = truth.some(te => te.label === r.label && (matchKey(te.label, te.target) === matchKey(r.label, r.target) || (r.label !== "imports" && te.target.includes(normTarget(r.target)))))
         if (hit) { explainableByTree++; continue }
         // Evidence-tier split for unmatched analyzer edges: a low-confidence
         // edge is DECLARED HEURISTIC (honest suspicion), not fabrication.
