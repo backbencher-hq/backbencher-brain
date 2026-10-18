@@ -42,7 +42,7 @@ Central classifier at end of analyze(): every relationship carries
   `validation/m14/verification/JAVASCRIPT-RESOLUTION-CLASSIFICATION.md`
 
 ## Verification
-- Fixtures: 82 (`validation/m14/fixtures/javascript/`, run by
+- Fixtures: 83 (`validation/m14/fixtures/javascript/`, run by
   `bun run script/m14/run-fixtures.ts --lang javascript`; the one standing failure is the
   pre-existing HEAD-only `non-name-callee-refused`)
 - Current measured emission/claim state, with commands and populations:
