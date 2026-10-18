@@ -187,6 +187,11 @@ function jsProjectModuleLocalityOf(index: { modules?: Set<string> }): (spec: str
   const paths: string[] = []
   const stems = new Set<string>()
   const dirs = new Set<string>()
+  // EVERY path segment, not only the last directory: a monorepo's files live under
+  // `.../svelte/packages/svelte/...`, so the package name "svelte" IS a project-owned directory
+  // even though it is never a file's immediate directory. A module root matching ANY segment is
+  // treated as project-owned and gets NO claim — under-claiming is the safe direction here.
+  const allSegments = new Set<string>()
   for (const raw of modules) {
     const m = String(raw).replace(/\\/g, "/")
     if (m.length === 0) continue
@@ -203,6 +208,7 @@ function jsProjectModuleLocalityOf(index: { modules?: Set<string> }): (spec: str
       const d = dir.lastIndexOf("/")
       dirs.add(d >= 0 ? dir.slice(d + 1) : dir)
     }
+    for (const seg of m.split("/")) if (seg.length > 0) allSegments.add(seg)
   }
   const JS_EXTS = [".js", ".jsx", ".mjs", ".cjs", ".json"]
   const tailNamesIndexedFile = (spec: string): boolean => {
@@ -223,7 +229,10 @@ function jsProjectModuleLocalityOf(index: { modules?: Set<string> }): (spec: str
     // so the scope is only project-owned when the FULL scoped package name matches a directory.
     const rootOf = root.startsWith("@") && segments.length >= 2 ? `${root}/${segments[1]}` : root
     const rootOfOwn = root.startsWith("@") ? root : rootOf
-    if (stems.has(rootOf) || dirs.has(rootOf) || dirs.has(rootOfOwn) || stems.has(rootOfOwn)) return "project-local"
+    if (
+      stems.has(rootOf) || dirs.has(rootOf) || dirs.has(rootOfOwn) || stems.has(rootOfOwn) ||
+      allSegments.has(rootOf) || allSegments.has(rootOfOwn)
+    ) return "project-local"
     if (segments.length > 1 && tailNamesIndexedFile(clean)) return "project-local"
     return "third-party"
   }
