@@ -1,434 +1,402 @@
 /**
- * PY-RESOLUTION-CLASSIFY — EVERY non-resolved python edge, by type and by CAUSE, on the
- * GATE'S OWN population and the GATE'S OWN rule.
+ * PY-RESOLUTION-CLASSIFY — the D3 classifier. It CONSUMES THE GATE'S OWN VERDICTS and never
+ * recomputes an outcome.
  *
- * ## Why this file exists
+ * WHY THIS FILE CHANGED SHAPE (2026-10-18). The first version re-implemented the gate's per-edge
+ * loop around `classifyEdge`, and the GATE applies MORE than `classifyEdge` does: the owner-channel
+ * verdict and the claim/outcome routing live inside `incoming-gate.ts`. Measured at HEAD, that
+ * version read resolved 443,833 · ambiguous 549,666 · unresolved 182,456 against the gate's
+ * 498,311 / 462,840 / 214,804 on the SAME population (extOK and ext? agreed exactly, which is what
+ * made the divergence easy to miss). A classifier that cannot reproduce the outcome model cannot
+ * classify the refused population, so its committed cause census (unresolved 167,139) is SUPERSEDED
+ * and must not be quoted.
  *
- * `incoming-gate.ts --dump` prints the not-resolved rows (label, outcome, target, file:line,
- * claimKind) and that is exactly enough to WORK on them — it is not enough to PLAN the work,
- * because it does not say WHY a row failed. The message that consumed the dump ranked
- * `calls unresolved 1,463` and stopped there; the axis that decides the next round is
- * "how many of these are a receiver whose type the source does not write down", and the dump
- * cannot answer it because the reason is in the edge's `metadata.reasonCode` and the
- * dump does not print metadata.
+ * WHAT IT DOES NOW: takes the gate's `--dump` output (one TSV row per NON-resolved outcome:
+ * `label · outcome · target · srcFile:line · claimKind`), reads TABLE 1 from the same log, and
+ * attributes a CAUSE to every dumped row by joining it to the analyzer's own emitted edge (same
+ * file/line/label/target) and reading `metadata.reasonCode` / module / target shape. The join is a
+ * multiset match; misses are counted and must be zero. The OUTCOME is the gate's, always.
  *
- * So this instrument walks the SAME population with the SAME analyzer and the SAME rule
- * (`classifyEdge` is imported from `script/m14/incoming-rule.ts`, never re-implemented — the
- * programme has paid twice for a copied rule) and buckets every edge the arbiter refuses:
- *
- *   · for `unresolved`:
- *       import-bound-target   the target is a name this file binds by a module-level,
- *                             non-relative, non-`__future__` import (`from pathlib import Path`)
- *       import-bound-route    the edge's `metadata.qualified` root is such a name
- *                             (`os.getenv`, `unittest.TestCase`)
- *       dynamic-reason        the edge's own reasonCode says the target is chosen at runtime
- *                             (`dispatch-on-parameter`, `dispatch-on-receiver`, `member-read`,
- *                             `first-parent-guess`)
- *       builtin-leaf          the leaf is in `dir(builtins)` — the namespace claim's remit
- *       imports-module-item   an `imports` edge (`mod:item` / `mod:*`), split further into
- *                             project-local / third-party / relative by the REPO'S OWN FILE LIST
- *       local-callee/bare     the target is a name the file's own function binds, or a bare
- *                             name with no route — the structurally closed class
- *       other
- *
- *   · for `externalUnverified` (ext? — a claim no check can reach): by claim kind and by the
- *     target shape the verifier could not answer. This column is NOT a win and it is not a
- *     refusal either; it is the third bucket the gate counts and a PASS does not allow.
- *
- * CLAIMS ARE READ (unlike `py-unresolved-census.mts`, which deliberately ignores them): the
- * question here is the GATE's question, so `externalClaimOf(rel)` is passed to `classifyEdge`
- * and the printed outcome columns must reproduce the gate's own TABLE 1. The instrument
- * ASSERTS that reproduction when the gate log is passed with `--gate-log`, so a drifting
- * rule fails the instrument instead of printing a comfortable number.
- *
- * POPULATION IS THE GATE'S: corpus root discovered at run time, git-tracked files under the
- * size cap, admitted extensions, the same stride sample. A count here without `--max` is a
- * whole-population statement; with `--max 50` it is a TRIAGE statement and is printed as one.
- *
- * READ-ONLY. Writes only the JSON passed with --out.
+ * HARD CONTROLS (exit 3 on any drift — a control that cannot fail proves nothing):
+ *   A. per label: dump count(unresolved|amb*|externalUnverified|externalVerified|externalRefuted)
+ *      equals the corresponding TABLE 1 column (the dump holds EVERY outcome except literal
+ *      "resolved", so `externalVerified` == extOK and total dumped rows == edges − resolved).
+ *   B. per label: resolved+amb+unresolved+extOK+ext?+extFAIL == edges; column sums == the printed
+ *      TOTAL row.
+ *   C. every dumped row receives exactly one named cause; join misses == 0; unclassified == 0;
+ *      claim buckets equal the gate's own columns:
+ *        claim-verified == extOK · claim-unverifiable == ext? · claim-REFUTED == extFAIL
+ *        claim-reported-ambiguous == reported (not charged) · non-claim rows == amb(decl)+
+ *        unresolved − reported · claim+non-claim == dumped rows.
  *
  * Usage:
- *   bun run script/m14/py-resolution-classify.ts --max 50
- *   bun run script/m14/py-resolution-classify.ts --max 50 --gate-log .tmp-py/gate-50-now.log
- *   bun run script/m14/py-resolution-classify.ts --max 0 --out .tmp-py/classify-whole.json
+ *   bun run script/m14/py-resolution-classify.ts --dump .tmp-lead/py-armA-dump.txt --out x.json
+ *   (`--gate-log` is accepted as an alias for the same log; non-`DUMP` lines are ignored except
+ *    TABLE 1.)
+ * Exit: 0 = controls pass and closure holds; 3 = instrument drift.
  */
 import { execFileSync } from "node:child_process"
-import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
+import { readFileSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
-import { parseFile } from "../../src/ast/pool-worker"
-import { classifyEdge, externalClaimOf } from "./incoming-rule"
+import { readFileSync } from "node:fs"
+import { ASTEngine } from "../../src/ast/engine"
+import { RealPythonAnalyzer } from "../../src/ast/real-python-analyzer"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
-const SIZE_CAP = 1024 * 1024
+const ROOT = process.cwd()
 const argv = process.argv.slice(2)
 const argOf = (flag: string): string | undefined => {
   const i = argv.indexOf(flag)
   return i >= 0 ? argv[i + 1] : undefined
 }
-const MAX = Number(argOf("--max") ?? "50")
-const EXT = (argOf("--ext") ?? "py,pyi,pyw").split(",").map((e) => e.trim()).filter(Boolean)
+const LOG = argOf("--dump") ?? argOf("--gate-log")
 const OUT = argOf("--out")
-const GATE_LOG = argOf("--gate-log")
-
-const ALL_TYPES = [
-  "calls", "uses", "contains", "imports", "references",
-  "exports", "extends", "implements", "overrides", "instantiates",
-  // THE NEW CANONICAL VALUES, so the classifier's label set matches the gate's type table:
-  // python emits `decorates`; `renders`/`mixes_in`/`part_of` are not applicable to python and
-  // their absence of rows is a measured zero, not a missing column.
-  "decorates", "renders", "mixes_in", "part_of",
-] as const
-type Label = (typeof ALL_TYPES)[number]
-const ALIASES: Record<string, Label> = {
-  decorates: "decorates", renders: "renders", mixes_in: "mixes_in", part_of: "part_of",
-  calls: "calls", call: "calls", uses: "uses", contains: "contains", composition: "contains",
-  part_of: "contains", imports: "imports", brain_import: "imports", references: "references",
-  depends_on: "references", related: "references", exports: "exports", provides: "exports",
-  extends: "extends", inheritance: "extends", implements: "implements", implementation: "implements",
-  overrides: "overrides", override: "overrides", instantiates: "instantiates",
+if (!LOG) {
+  console.error("usage: bun run script/m14/py-resolution-classify.ts --dump <gate log produced with --dump> [--out json]")
+  process.exit(2)
 }
-const labelOf = (raw: string): Label | null => ALIASES[raw] ?? null
+const raw = readFileSync(LOG, "utf8")
+const text = raw.replace(/\u0000/g, "")
 
+// ── TABLE 1 ─────────────────────────────────────────────────────────────────────────────────
+type Row = {
+  edges: number; resolved: number; collRes: number; ambDecl: number; ambKind: number
+  unresolved: number; extOK: number; extUnv: number; extFail: number
+}
+const table = new Map<string, Row>()
+const tableOrder: string[] = []
+let totalRow: Row | null = null
+for (const line of text.split("\n")) {
+  const m = line.match(
+    /^([a-z_]+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$/,
+  )
+  if (!m) continue
+  const label = m[1]!
+  if (!["calls","uses","contains","imports","references","exports","extends","implements","overrides","instantiates","decorates","renders","mixes_in","part_of"].includes(label)) continue
+  const r: Row = {
+    edges: +m[2]!, resolved: +m[3]!, collRes: +m[4]!, ambDecl: +m[5]!, ambKind: +m[6]!,
+    unresolved: +m[7]!, extOK: +m[8]!, extUnv: +m[9]!, extFail: +m[10]!,
+  }
+  if (!table.has(label)) tableOrder.push(label)
+  table.set(label, r)
+}
+for (const line of text.split("\n")) {
+  const m = line.match(/^TOTAL\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$/)
+  if (m) { totalRow = { edges:+m[1]!,resolved:+m[2]!,collRes:+m[3]!,ambDecl:+m[4]!,ambKind:+m[5]!,unresolved:+m[6]!,extOK:+m[7]!,extUnv:+m[8]!,extFail:+m[9]! }; break }
+}
+if (table.size === 0 || totalRow === null) {
+  console.error("CONTROL FAILED: TABLE 1 (or its TOTAL row) not found in the gate log — this must be a --dump run of the gate")
+  process.exit(3)
+}
+
+// ── DUMP ROWS ───────────────────────────────────────────────────────────────────────────────
+type DumpRow = { label: string; outcome: string; target: string; file: string; line: number; claim: string }
+const rows: DumpRow[] = []
+for (const line of text.split("\n")) {
+  if (!line.startsWith("DUMP\t")) continue
+  const parts = line.split("\t")
+  if (parts.length < 6) continue
+  const spec = parts[4] ?? ""
+  const colon = spec.lastIndexOf(":")
+  const file = colon > 0 ? spec.slice(0, colon) : spec
+  const lineNo = colon > 0 ? Number(spec.slice(colon + 1)) : 0
+  rows.push({ label: parts[1]!, outcome: parts[2]!, target: parts[3]!, file, line: Number.isFinite(lineNo) ? lineNo : 0, claim: parts[5] ?? "-" })
+}
+
+// ── CONTROL A/B ─────────────────────────────────────────────────────────────────────────────
+const problems: string[] = []
+const perLabelDump = new Map<string, { amb: number; unres: number; extUnv: number; extFail: number; extOk: number }>()
+for (const r of rows) {
+  let d = perLabelDump.get(r.label)
+  if (!d) { d = { amb: 0, unres: 0, extUnv: 0, extFail: 0, extOk: 0 }; perLabelDump.set(r.label, d) }
+  if (r.outcome === "unresolved") d.unres++
+  else if (r.outcome.startsWith("amb")) d.amb++
+  else if (r.outcome === "externalUnverified") d.extUnv++
+  else if (r.outcome === "externalRefuted") d.extFail++
+  else if (r.outcome === "externalVerified") d.extOk++
+  else problems.push(`unknown outcome "${r.outcome}" on ${r.label} ${r.file}:${r.line}`)
+}
+for (const [label, row] of table) {
+  const d = perLabelDump.get(label) ?? { amb: 0, unres: 0, extUnv: 0, extFail: 0, extOk: 0 }
+  if (d.amb !== row.ambDecl) problems.push(`CONTROL A: ${label} dump amb=${d.amb} != TABLE amb=${row.ambDecl}`)
+  if (d.unres !== row.unresolved) problems.push(`CONTROL A: ${label} dump unresolved=${d.unres} != TABLE unresolved=${row.unresolved}`)
+  if (d.extUnv !== row.extUnv) problems.push(`CONTROL A: ${label} dump ext?=${d.extUnv} != TABLE ext?=${row.extUnv}`)
+  if (d.extFail !== row.extFail) problems.push(`CONTROL A: ${label} dump extFAIL=${d.extFail} != TABLE extFAIL=${row.extFail}`)
+  if (d.extOk !== row.extOK) problems.push(`CONTROL A: ${label} dump externalVerified=${d.extOk} != TABLE extOK=${row.extOK}`)
+  const sum = row.resolved + row.ambDecl + row.unresolved + row.extOK + row.extUnv + row.extFail
+  if (sum !== row.edges) problems.push(`CONTROL B: ${label} closure ${sum} != edges ${row.edges}`)
+}
+const colSum = (k: keyof Row) => [...table.values()].reduce((a, r) => a + (r[k] as number), 0)
+for (const k of ["edges","resolved","collRes","ambDecl","ambKind","unresolved","extOK","extUnv","extFail"] as const) {
+  if (colSum(k) !== (totalRow[k] as number)) problems.push(`CONTROL B: column ${k} sum ${colSum(k)} != TOTAL ${totalRow[k]}`)
+}
+if (problems.length > 0) {
+  console.error("CONTROL FAILED (exit 3) — the dump and the TABLE are not the same run/scope:")
+  for (const p of problems.slice(0, 25)) console.error("  " + p)
+  process.exit(3)
+}
+
+// ── CAUSE ATTRIBUTION: join dump rows to the analyzer's own edges (metadata only) ──────────
 const BUILTINS: Set<string> = (() => {
   try {
-    const out = execFileSync("python3", ["-c", "import builtins, json; print(json.dumps(sorted(dir(builtins))))"], {
-      encoding: "utf8", timeout: 10_000,
-    })
+    const out = execFileSync("python3", ["-c", "import builtins, json; print(json.dumps(sorted(dir(builtins))))"], { encoding: "utf8", timeout: 10_000 })
     return new Set<string>(JSON.parse(out))
-  } catch {
-    return new Set<string>()
-  }
+  } catch { return new Set<string>() }
 })()
-const DYNAMIC_REASONS = new Set(["dispatch-on-receiver", "dispatch-on-parameter", "member-read", "first-parent-guess"])
-
-// ── discovery: the gate's own rule (`discoverFiles`, incoming-gate.ts) ─────────────────────
-function discover(): { files: string[]; admitted: string[]; total: number; repos: number } {
-  const found: string[] = []
-  const repos = new Set<string>()
-  for (const name of readdirSync(CR).sort()) {
-    const dir = path.join(CR, name)
-    try {
-      if (!statSync(dir).isDirectory()) continue
-      execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" })
-    } catch {
-      continue
-    }
-    let tracked: string[]
-    try {
-      tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], {
-        encoding: "utf8", maxBuffer: 512 * 1024 * 1024,
-      }).split("\0").filter(Boolean)
-    } catch {
-      continue
-    }
-    for (const rel of tracked) {
-      const lower = rel.toLowerCase()
-      if (!EXT.some((e) => lower.endsWith(`.${e}`))) continue
-      const abs = path.join(dir, rel)
-      try {
-        if (statSync(abs).size > SIZE_CAP) continue
-      } catch {
-        continue
-      }
-      found.push(abs)
-      repos.add(name)
-    }
-  }
-  found.sort()
-  const total = found.length
-  if (MAX <= 0 || total <= MAX) return { files: found, admitted: found, total, repos: repos.size }
-  const stride = Math.max(1, Math.floor(total / MAX))
-  const picked: string[] = []
-  for (let i = 0; i < found.length && picked.length < MAX; i += stride) picked.push(found[i])
-  return { files: picked, admitted: found, total, repos: repos.size }
-}
-const repoOf = (f: string): string => {
-  const rel = f.startsWith(CR) ? f.slice(CR.length + 1) : f
-  return path.join(CR, rel.split(path.sep)[0]!)
-}
-
-/** Names this file binds at MODULE level by an import: the evidence a route/name is external. */
-function moduleBoundNames(rels: any[]): Set<string> {
-  const bound = new Set<string>()
-  for (const r of rels) {
-    if (String(r?.type ?? "") !== "imports") continue
-    const md = (r?.metadata ?? {}) as Record<string, any>
-    if (md.starImport === true) continue
-    const tgt = String(r?.target ?? "")
-    const colon = tgt.indexOf(":")
-    const module = String(md.module ?? (colon > 0 ? tgt.slice(0, colon) : tgt.endsWith(":*") ? tgt.slice(0, -2) : tgt))
-    if (!module || module.startsWith(".") || module === "__future__") continue
-    const as = md.importedAs
-    if (typeof as === "string" && as.length > 0) { bound.add(as); continue }
-    if (colon > 0) {
-      const item = tgt.slice(colon + 1)
-      if (item === "*") { bound.add(module.split(".")[0]!); continue }
-      if (item !== "") bound.add(item)
-      continue
-    }
-    bound.add(module.split(".")[0]!)
-  }
-  return bound
-}
-
-/**
- * THE REPO'S OWN FILE SPACE, as a dotted-module predicate. Used ONLY to classify a cause
- * (project-local vs third-party), never to resolve: `a.b.c` is project-local iff some admitted
- * file's repo-relative path ends with `a/b/c.py`, `a/b/c/__init__.py` (or the module is a
- * directory the project fills). Full-repo file list, because the question is about the REPO.
- */
-function moduleLocalityOf(admittedRel: Set<string>): (mod: string) => "project-local" | "third-party" {
-  const suffixes = new Map<string, boolean>()
-  const dirs = new Set<string>()
-  for (const rel of admittedRel) {
-    const parts = rel.split("/")
-    const base = parts[parts.length - 1]!
-    const stem = base.replace(/\.[^.]+$/, "")
-    const dirParts = parts.slice(0, -1)
-    for (let i = 0; i <= dirParts.length; i++) dirs.add(dirParts.slice(i).join("/"))
-    // any suffix chain ending at this file, for a dotted module naming its stem
-    for (let i = dirParts.length; i >= 0; i--) {
-      const prefix = dirParts.slice(i).join("/")
-      const key = prefix === "" ? stem : `${prefix}/${stem}`
-      suffixes.set(key, true)
-    }
-  }
-  return (mod: string) => {
-    if (mod.startsWith(".") || mod === "") return "third-party"
-    const dotted = mod.split(".").filter(Boolean)
-    if (dotted.length === 0) return "third-party"
-    const slash = dotted.join("/")
-    if (suffixes.has(slash)) return "project-local"
-    if (dirs.has(slash)) return "project-local"
-    // a single-segment module matches when a directory of that name exists anywhere
-    if (dotted.length >= 1 && dirs.has(dotted[0]!)) return "project-local"
-    return "third-party"
-  }
-}
-
-type Counts = {
-  edges: number
-  resolved: number
-  collRes: number
-  ambiguous: number
-  externalVerified: number
-  externalUnverified: number
-  externalRefuted: number
-  unresolved: number
-  unresolvedByCause: Map<string, number>
-  extUnverifiedByCause: Map<string, number>
-  samples: Map<string, string[]>
-}
-const mk = (): Counts => ({
-  edges: 0, resolved: 0, collRes: 0, ambiguous: 0, externalVerified: 0, externalUnverified: 0,
-  externalRefuted: 0, unresolved: 0, unresolvedByCause: new Map(), extUnverifiedByCause: new Map(), samples: new Map(),
-})
-const bump = (m: Map<string, number>, k: string) => m.set(k, (m.get(k) ?? 0) + 1)
-const sample = (c: Counts, k: string, row: string) => {
-  const arr = c.samples.get(k) ?? (c.samples.set(k, []) ? c.samples.get(k)! : [])
-  if (arr.length < 5) arr.push(row)
-}
-const stats = new Map<string, Counts>(ALL_TYPES.map((t) => [t, mk()]))
-const overall = mk()
-
-const { files, admitted, total, repos } = discover()
-const admittedByRepo = new Map<string, Set<string>>()
-for (const f of admitted) {
-  const repo = repoOf(f)
-  const set = admittedByRepo.get(repo) ?? new Set<string>()
-  set.add(f.slice(repo.length + 1).split(path.sep).join("/"))
-  admittedByRepo.set(repo, set)
-}
-const localityByRepo = new Map<string, (mod: string) => "project-local" | "third-party">()
-for (const [repo, set] of admittedByRepo) localityByRepo.set(repo, moduleLocalityOf(set))
-
-const projectDecl = new Map<string, Map<string, number>>()
-const projectKinds = new Map<string, Map<string, Set<string>>>()
-type Pending = {
-  label: Label; tgt: string; claim: any; repo: string; file: string; ownFile: boolean
-  reason: string; route: string; module: string; moduleBound: Set<string>; ownNames: Set<string>
-}
-const pending: Pending[] = []
+const DYNAMIC = new Set(["dispatch-on-receiver", "dispatch-on-parameter", "member-read", "first-parent-guess"])
+type Meta = Record<string, any>
+const wanted = new Map<string, number>() // file -> count of dump rows
+for (const r of rows) wanted.set(r.file, (wanted.get(r.file) ?? 0) + 1)
+const CR = process.env.BB_CORPUS_ROOT ?? path.join(ROOT, ".corpus")
+// ONE POOL ROOT FOR THE JOIN, deliberately: the join needs the analyzer's METADATA (reasonCode,
+// module, claim keys) per emitted edge, which is a per-file fact — it does NOT need production's
+// resolution scope (the outcomes come from the dump, never from this parse). Passing each file's
+// repo spawns and disposes a worker pool per repository (~40-60 s each at fleet load), which made
+// the first run's join dominate the wall time. A single root keeps one pool alive for the walk.
+const POOL_ROOT = CR
+/** Multiset of analyzer edges per dump join key, built only for files that have dumped rows. */
+const edgePool = new Map<string, Meta[]>()
+const key = (label: string, file: string, line: number, target: string) => `${label}\u0000${file}\u0000${line}\u0000${target}`
 let parsed = 0
-let failed = 0
-
-for (const f of files) {
-  const repo = repoOf(f)
+let parseFailed = 0
+// THE JOIN PARSES DIRECTLY, IN PROCESS, with ONE parser and the production analyzer — the same
+// analyzer the gate runs, so the metadata is the same; the pool is not needed because nothing here
+// is resolved or scoped (outcomes come from the dump). A pool call per file spawned a worker pool
+// per repository (~40-60 s each) and dominated wall time for no information.
+const parser = await ASTEngine.getParser("python")
+const analyzer = new RealPythonAnalyzer()
+for (const file of wanted.keys()) {
   let r: any
   try {
-    r = await parseFile(f, repo, { projectRoot: repo } as any)
+    const content = readFileSync(file, "utf8")
+    const tree = (parser as any).parse(content)
+    if (!tree) { parseFailed++; continue }
+    r = analyzer.analyze(tree.rootNode, content, file)
     parsed++
-  } catch { failed++; continue }
-  if (!r) { failed++; continue }
-  let decl = projectDecl.get(repo) ?? (projectDecl.set(repo, new Map()) ? projectDecl.get(repo)! : new Map())
-  let kinds = projectKinds.get(repo) ?? (projectKinds.set(repo, new Map()) ? projectKinds.get(repo)! : new Map())
-  const countKey = (key: string, kind: string) => {
-    decl.set(key, (decl.get(key) ?? 0) + 1)
-    const ks = kinds.get(key) ?? (kinds.set(key, new Set()) ? kinds.get(key)! : new Set())
-    ks.add(kind)
-  }
-  const ownNames = new Set<string>()
-  for (const s of Array.isArray(r.symbols) ? r.symbols : []) {
-    const name = String(s?.name ?? "")
-    if (!name) continue
-    ownNames.add(name)
-    const kind = String(s?.kind ?? s?.type ?? "")
-    countKey(name, kind)
-    const q = String(s?.qualifiedName ?? "")
-    if (q.length > 0 && q !== name) countKey(q, kind)
-  }
-  const bound = moduleBoundNames(Array.isArray(r.relationships) ? r.relationships : [])
+  } catch { parseFailed++; continue }
+  if (!r) { parseFailed++; continue }
   for (const rel of Array.isArray(r.relationships) ? r.relationships : []) {
-    const label = labelOf(String(rel?.type ?? rel?.relationshipType ?? ""))
-    if (!label) continue
-    const tgt = String(rel?.target ?? "")
-    if (!tgt) continue
-    const md = (rel?.metadata ?? {}) as Record<string, any>
-    const colon = tgt.lastIndexOf(":")
-    pending.push({
-      label, tgt, claim: externalClaimOf(rel), repo, file: f, ownFile: ownNames.has(tgt),
-      reason: String(md.reasonCode ?? "none"),
-      route: String(md.qualified ?? ""),
-      module: String(md.module ?? (colon > 0 ? tgt.slice(0, colon) : tgt.endsWith(":*") ? tgt.slice(0, -2) : tgt)),
-      moduleBound: bound, ownNames,
-    })
+    const label = String(rel?.type ?? rel?.relationshipType ?? "")
+    if (!table.has(label)) continue
+    const line = Number(rel?.line_number ?? 0)
+    const k = key(label, file, line, String(rel?.target ?? ""))
+    const arr = edgePool.get(k) ?? (edgePool.set(k, []) ? edgePool.get(k)! : [])
+    arr.push((rel?.metadata ?? {}) as Meta)
   }
 }
 
-for (const p of pending) {
-  const decl = projectDecl.get(p.repo)!
-  const kinds = projectKinds.get(p.repo)!
-  const facts = { packages: new Set<string>(), files: admittedByRepo.get(p.repo)!, sdkLib: false }
-  const out = classifyEdge(decl, kinds, p.tgt, p.claim, facts, p.label === "contains", p.ownFile)
-  const c = stats.get(p.label)!
-  c.edges++; overall.edges++
-  const row = `${path.relative(CR, p.file)}:${p.tgt} [${p.reason}]`
-  const leaf = p.tgt.includes(":") ? p.tgt.slice(p.tgt.lastIndexOf(":") + 1) : p.tgt.slice(p.tgt.lastIndexOf(".") + 1)
-  const routeRoot = p.route.includes(".") ? p.route.split(".")[0]! : ""
-  const importBoundTarget = p.moduleBound.has(p.tgt)
-  const importBoundRoute = routeRoot.length > 0 && p.moduleBound.has(routeRoot)
-  if (out.outcome === "resolved") {
-    c.resolved++; overall.resolved++
-    if ((out as any).boundAmongCollision === true) { c.collRes++; overall.collRes++ }
-    continue
+const baseName = (p: string): string => p.split("/").pop() ?? p
+const moduleOf = (target: string, md: Meta): string => {
+  const colon = target.lastIndexOf(":")
+  if (typeof md.module === "string" && md.module.length > 0) return md.module
+  if (colon > 0) return target.slice(0, colon)
+  return target.endsWith(":*") ? target.slice(0, -2) : target
+}
+const claimClass = (kind: string, outcome: string): string => {
+  if (outcome === "externalVerified") return `claim-verified:${kind}`
+  if (outcome === "externalUnverified") return `claim-unverifiable:${kind}`
+  if (outcome.startsWith("amb")) return `claim-reported-ambiguous:${kind}`
+  if (outcome === "externalRefuted") return `claim-REFUTED:${kind}`
+  return `claim:${kind}:${outcome}`
+}
+const causeOf = (row: DumpRow, md: Meta): string => {
+  // THE DUMP'S claimKind IS THE GATE'S OWN READING and is authoritative. A join can land on a
+  // RESOLVED sibling with the same (label,line,target) that carries claim metadata the gate did
+  // not read (claims are read only where the target names nothing), so the metadata claim keys are
+  // NOT consulted here — that inversion would turn a claimless refusal into a claim class.
+  if (row.claim !== "-") return claimClass(row.claim, row.outcome)
+  const rc = String(md?.reasonCode ?? "")
+  if (row.label === "imports") {
+    const mod = moduleOf(row.target, md)
+    if (mod.startsWith(".")) return "imports-relative"
+    return "imports-module-item"
   }
-  if (out.outcome === "ambDeclOnly" || out.outcome === "ambBoth" || out.outcome === "ambiguousByDecl") {
-    c.ambiguous++; overall.ambiguous++
-    continue
+  if (row.label === "exports") return "declared:export-residual"
+  if (row.label === "decorates") {
+    // The extFAIL fix (3072d4061) made DOTTED decorator targets CLAIMLESS BY DESIGN: the target is
+    // a written chain and the arbiter reads its owner as the MODULE ROOT, which any same-named
+    // project symbol refutes. So the claimless decorates rows are a NAMED class, not an absence:
+    // `claimless-dotted` is the retired-claim cost, `claimless-bare` is a bare name the project
+    // does not answer and no import binds.
+    if (row.outcome.startsWith("amb")) return "decorates:claimless-ambiguous"
+    return row.target.includes(".") ? "decorates:claimless-dotted" : "decorates:claimless-bare"
   }
-  if (out.outcome === "externalVerified") { c.externalVerified++; overall.externalVerified++; continue }
-  if (out.outcome === "externalRefuted") { c.externalRefuted++; overall.externalRefuted++; continue }
-  if (out.outcome === "externalUnverified") {
-    c.externalUnverified++; overall.externalUnverified++
-    const kind = String(p.claim?.kind ?? "null")
-    const shape = p.tgt.includes(":") ? (p.tgt.endsWith(":*") ? "module:*" : "module:item") : p.tgt.includes(".") ? "dotted" : "bare"
-    const key = `${kind}|${shape}|${p.reason === "none" ? "no-reason" : p.reason}`
-    bump(c.extUnverifiedByCause, key); bump(overall.extUnverifiedByCause, key)
-    sample(c, key, row); sample(overall, key, row)
-    continue
-  }
-  // unresolved
-  let cause: string
-  if (p.label === "imports") {
-    if (p.module.startsWith(".")) cause = "imports-relative"
-    else if (localityByRepo.get(p.repo)!(p.module) === "project-local") cause = "imports-project-local"
-    else cause = "imports-third-party"
-  } else if (importBoundTarget) cause = "import-bound-target"
-  else if (importBoundRoute) cause = "import-bound-route"
-  else if (DYNAMIC_REASONS.has(p.reason)) cause = `dynamic:${p.reason}`
-  else if (BUILTINS.has(leaf)) cause = "builtin-leaf"
-  else if (p.reason === "local-callee") cause = "local-callee-or-binding"
-  else if (p.reason === "bare-name-callee") cause = "bare-name-callee"
-  else cause = `other:${p.reason}`
-  c.unresolved++; overall.unresolved++
-  bump(c.unresolvedByCause, cause); bump(overall.unresolvedByCause, cause)
-  sample(c, cause, row); sample(overall, cause, row)
+  if (row.label === "contains") return `contains:${rc || "none"}`
+  if (row.label === "extends") return rc ? `extends:${rc}` : "extends:third-party-base"
+  if (row.label === "implements") return rc ? `implements:${rc}` : "implements:proof-refused"
+  if (DYNAMIC.has(rc)) return `dynamic:${rc}`
+  if (rc === "local-callee") return "local-callee-or-binding"
+  if (rc === "annotation-type" || rc === "return-annotation" || rc === "instanceof-check" || rc === "local-binding-target" || rc === "inline-type-parameter" || rc === "virtual-registration" || rc === "stdlib-interface-marker") return `other:${rc}`
+  if (rc === "external-member-call") return "refused-guard-route"
+  const leaf = row.target.includes(":") ? row.target.slice(row.target.lastIndexOf(":") + 1) : row.target.slice(row.target.lastIndexOf(".") + 1)
+  if (BUILTINS.has(leaf)) return "builtin-leaf"
+  if (rc === "bare-name-callee") return "bare-name-callee"
+  if (row.target.includes(":")) return "target:module-item"
+  return rc ? `other:${rc}` : "unclassified:no-reason"
 }
 
+let joinMiss = 0
+let unclassified = 0
+type ClassTally = { count: number; samples: string[] }
+const classes = new Map<string, ClassTally>() // `${label}|${cause}` -> tally
+const perLabelRefused = new Map<string, number>()
+for (const row of rows) {
+  perLabelRefused.set(row.label, (perLabelRefused.get(row.label) ?? 0) + 1)
+  const k = key(row.label, row.file, row.line, row.target)
+  const pool = edgePool.get(k)
+  let md: Meta = {}
+  if (pool && pool.length > 0) md = pool.shift()!
+  else joinMiss++
+  let cause = causeOf(row, md)
+  if (cause.startsWith("unclassified")) unclassified++
+  const ck = `${row.label}|${cause}`
+  const t = classes.get(ck) ?? { count: 0, samples: [] }
+  t.count++
+  if (t.samples.length < 3) t.samples.push(`${path.relative(CR, row.file)}:${row.line} ${row.outcome} ${row.target}`)
+  classes.set(ck, t)
+}
+const unverifiableByLabel = new Map<string, number>()
+for (const [ck] of classes) {
+  const [label, cause] = ck.split("|") as [string, string]
+  if (cause.startsWith("claim-unverifiable")) {
+    const t = classes.get(ck)!
+    unverifiableByLabel.set(label, (unverifiableByLabel.get(label) ?? 0) + t.count)
+  }
+}
+
+// ── CONTROL C ─────────────────────────────────────────────────────────────────────────────
+const cProblems: string[] = []
+const refusedTotal = rows.length
+const tableRefused = colSum("ambDecl") + colSum("unresolved") + colSum("extUnv") + colSum("extFail") + colSum("extOK")
+if (refusedTotal !== tableRefused) cProblems.push(`CONTROL C: dump rows ${refusedTotal} != amb+unresolved+ext?+extFAIL+extOK ${tableRefused}`)
+if (refusedTotal !== totalRow.edges - totalRow.resolved) cProblems.push(`CONTROL C: dump rows ${refusedTotal} != edges-resolved ${totalRow.edges - totalRow.resolved}`)
+if (joinMiss !== 0) cProblems.push(`CONTROL C: ${joinMiss} dumped row(s) found NO analyzer edge (join miss — outcomes cannot be attributed)`)
+if (unclassified !== 0) cProblems.push(`CONTROL C: ${unclassified} row(s) received no named cause`)
+const classSum = [...classes.values()].reduce((a, t) => a + t.count, 0)
+if (classSum !== rows.length) cProblems.push(`CONTROL C: cause rows ${classSum} != dump rows ${rows.length}`)
+for (const [label, row] of table) {
+  const u = unverifiableByLabel.get(label) ?? 0
+  if (u !== row.extUnv) cProblems.push(`CONTROL C: ${label} claim-unverifiable rows ${u} != TABLE ext? ${row.extUnv}`)
+}
+// ── THE LEAD-SPECIFIED CLOSURE IDENTITY ─────────────────────────────────────────────────────
+// population == TOTAL - resolved ; sum(label rows) == TOTAL ; claim buckets equal the gate's
+// claim columns ; non-claim rows == amb(decl) + unresolved ; join/unclassified 0 or counted.
+const bucket = { verified: 0, unverified: 0, refuted: 0, reported: 0, nonClaim: 0, reportedAmb: 0 }
+for (const [ck, t] of classes) {
+  const [, cause] = ck.split("|") as [string, string]
+  if (cause.startsWith("claim-verified")) bucket.verified += t.count
+  else if (cause.startsWith("claim-unverifiable")) bucket.unverified += t.count
+  else if (cause.startsWith("claim-REFUTED")) bucket.refuted += t.count
+  else if (cause.startsWith("claim-reported-ambiguous")) bucket.reported += t.count
+  else if (cause.startsWith("claim-reported")) bucket.reported += t.count
+  else bucket.nonClaim += t.count
+}
+const totalExtOK = colSum("extOK")
+const totalExtUnv = colSum("extUnv")
+const totalExtFail = colSum("extFail")
+if (bucket.verified !== totalExtOK) cProblems.push(`CLOSURE: claim-verified rows ${bucket.verified} != TOTAL extOK ${totalExtOK}`)
+if (bucket.unverified !== totalExtUnv) cProblems.push(`CLOSURE: claim-unverifiable rows ${bucket.unverified} != TOTAL ext? ${totalExtUnv}`)
+if (bucket.refuted !== totalExtFail) cProblems.push(`CLOSURE: claim-REFUTED rows ${bucket.refuted} != TOTAL extFAIL ${totalExtFail}`)
+const claimRows = bucket.verified + bucket.unverified + bucket.refuted
+const reportedRows = bucket.reported
+// EVERY dumped row is either claim-carrying (claimKind != "-") or not. Claim-carrying rows are
+// the gate's own claim columns PLUS the reported-on-ambiguous class (the arbiter does not charge a
+// claim on an ambiguous row, but the row still carries one); non-claim rows are therefore
+// amb(decl)+unresolved MINUS that reported class.
+const ambPlusUnres = colSum("ambDecl") + colSum("unresolved")
+const expectedClaimRows = totalExtOK + totalExtUnv + totalExtFail + reportedRows
+if (claimRows !== expectedClaimRows) cProblems.push(`CLOSURE: claim rows ${claimRows} != extOK+ext?+extFAIL+reported ${expectedClaimRows}`)
+if (bucket.nonClaim !== ambPlusUnres - reportedRows) cProblems.push(`CLOSURE: non-claim rows ${bucket.nonClaim} != amb(decl)+unresolved-reported ${ambPlusUnres - reportedRows}`)
+if (claimRows + bucket.nonClaim !== rows.length) cProblems.push(`CLOSURE: claim rows ${claimRows} + non-claim rows ${bucket.nonClaim} != dumped rows ${rows.length}`)
+
+// ── REPORT ──────────────────────────────────────────────────────────────────────────────────
 const w = (s: string | number, n: number) => (String(s) + " ".repeat(n)).slice(0, n)
-console.log(`py resolution classify — ${files.length} of ${total} files (${repos} repos), ext=${EXT.join(",")}, max=${MAX || "whole"}`)
-console.log(`parsed ${parsed} · failed ${failed} · edges ${overall.edges}${MAX > 0 ? "  [TRIAGE SAMPLE — not a population statement]" : "  [whole admitted population]"}`)
-console.log(`resolved ${overall.resolved} (collRes ${overall.collRes}) · ambiguous ${overall.ambiguous} · unresolved ${overall.unresolved} · extOK ${overall.externalVerified} · ext? ${overall.externalUnverified} · extFAIL ${overall.externalRefuted}\n`)
+console.log(`py-resolution-classify (D3) — outcomes READ FROM THE GATE'S OWN --dump, causes JOINED to analyzer metadata`)
+console.log(`dump/gate log: ${LOG}`)
+console.log(`population (TABLE 1 TOTAL): ${totalRow.edges} edges · resolved ${totalRow.resolved} · collRes ${totalRow.collRes} · amb(decl) ${totalRow.ambDecl} · unresolved ${totalRow.unresolved} · extOK ${totalRow.extOK} · ext? ${totalRow.extUnv} · extFAIL ${totalRow.extFail}`)
+console.log(`dump rows: ${rows.length} (non-resolved) · files parsed for the join: ${parsed} · parse failures: ${parseFailed}`)
+console.log(`\nTABLE 1 CLOSURE — per label: resolved+amb+unresolved+extOK+ext?+extFAIL == edges`)
+console.log(`${w("type", 12)}${w("edges", 10)}${w("closed", 8)}${w("resolved", 10)}${w("amb", 10)}${w("unres", 10)}${w("extOK", 9)}${w("ext?", 8)}${w("extFAIL", 8)}${w("refused", 9)}`)
+for (const label of tableOrder) {
+  const r = table.get(label)!
+  const sum = r.resolved + r.ambDecl + r.unresolved + r.extOK + r.extUnv + r.extFail
+  console.log(`${w(label, 12)}${w(r.edges, 10)}${w(sum === r.edges ? "yes" : "NO", 8)}${w(r.resolved, 10)}${w(r.ambDecl, 10)}${w(r.unresolved, 10)}${w(r.extOK, 9)}${w(r.extUnv, 8)}${w(r.extFail, 8)}${w(perLabelRefused.get(label) ?? 0, 9)}`)
+}
+{
+  const totalClosed = totalRow.resolved + totalRow.ambDecl + totalRow.unresolved + totalRow.extOK + totalRow.extUnv + totalRow.extFail === totalRow.edges
+  console.log(`${w("TOTAL", 12)}${w(totalRow.edges, 10)}${w(totalClosed ? "yes" : "NO", 8)}${w(totalRow.resolved,10)}${w(totalRow.ambDecl,10)}${w(totalRow.unresolved,10)}${w(totalRow.extOK,9)}${w(totalRow.extUnv,8)}${w(totalRow.extFail,8)}${w(refusedTotal,9)}`)
+}
 
-// The reproduction assertion against the gate's own printed row.
-if (GATE_LOG) {
-  const log = readFileSync(GATE_LOG, "utf8")
-  const m = log.match(/^TOTAL\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/m)
-  if (!m) {
-    console.error("REPRODUCTION CHECK FAILED: could not find the gate's TOTAL row in " + GATE_LOG)
-    process.exitCode = 3
-  } else {
-    const [, edges, resolved, collRes, amb, , unresolved, extOK, extUnv] = m.map(Number)
-    const mine = [overall.edges, overall.resolved, overall.collRes, overall.ambiguous, overall.unresolved, overall.externalVerified, overall.externalUnverified]
-    const theirs = [edges, resolved, collRes, amb, unresolved, extOK, extUnv]
-    const names = ["edges", "resolved", "collRes", "amb(decl)", "unresolved", "extOK", "ext?"]
-    let ok = true
-    for (let i = 0; i < names.length; i++) {
-      if (mine[i] !== theirs[i]) {
-        ok = false
-        console.error(`REPRODUCTION CHECK FAILED: ${names[i]} gate=${theirs[i]} instrument=${mine[i]}`)
-      }
-    }
-    console.log(ok
-      ? `REPRODUCTION CHECK: PASS — edges ${overall.edges} · resolved ${overall.resolved} · collRes ${overall.collRes} · amb ${overall.ambiguous} · unresolved ${overall.unresolved} · extOK ${overall.externalVerified} · ext? ${overall.externalUnverified} — identical to the gate's own TOTAL row.`
-      : "REPRODUCTION CHECK: FAILED — the numbers above are NOT the gate's row and must not be read as one.")
-    if (!ok) process.exitCode = 3
+console.log(`\nCAUSES OF THE ${refusedTotal} REFUSED ROWS (by label, then count) — every row one named class`)
+const byLabel = new Map<string, Array<[string, ClassTally]>>()
+for (const [ck, t] of classes) {
+  const [label, cause] = ck.split("|") as [string, string]
+  const arr = byLabel.get(label) ?? (byLabel.set(label, []) ? byLabel.get(label)! : [])
+  arr.push([cause, t])
+}
+for (const label of tableOrder) {
+  const arr = byLabel.get(label)
+  if (!arr) continue
+  arr.sort((a, b) => b[1].count - a[1].count)
+  const total = arr.reduce((a, [, t]) => a + t.count, 0)
+  console.log(`\n-- ${label}: ${total} refused`)
+  for (const [cause, t] of arr) console.log(`   ${w(cause, 42)}${w(t.count, 8)}${((t.count / total) * 100).toFixed(1)}%`)
+}
+
+console.log(`\nPER-LABEL CLAIM BUCKETS (rows, from the dump's own claimKind column)`)
+{
+  const perLabelBuckets = new Map<string, { verified: number; unverified: number; refuted: number; reported: number; nonClaim: number }>()
+  for (const [ck, t] of classes) {
+    const [label, cause] = ck.split("|") as [string, string]
+    const b = perLabelBuckets.get(label) ?? (perLabelBuckets.set(label, { verified: 0, unverified: 0, refuted: 0, reported: 0, nonClaim: 0 }) ? perLabelBuckets.get(label)! : { verified: 0, unverified: 0, refuted: 0, reported: 0, nonClaim: 0 })
+    if (cause.startsWith("claim-verified")) b.verified += t.count
+    else if (cause.startsWith("claim-unverifiable")) b.unverified += t.count
+    else if (cause.startsWith("claim-REFUTED")) b.refuted += t.count
+    else if (cause.startsWith("claim-reported")) b.reported += t.count
+    else b.nonClaim += t.count
+  }
+  console.log(`${w("type", 12)}${w("CLAIM-verified", 16)}${w("CLAIM-unverif", 15)}${w("CLAIM-refuted", 15)}${w("CLAIM-reported", 15)}${w("non-claim", 12)}${w("rows", 9)}`)
+  for (const label of tableOrder) {
+    const b = perLabelBuckets.get(label)
+    if (!b) continue
+    const n = b.verified + b.unverified + b.refuted + b.reported + b.nonClaim
+    console.log(`${w(label, 12)}${w(b.verified, 16)}${w(b.unverified, 15)}${w(b.refuted, 15)}${w(b.reported, 15)}${w(b.nonClaim, 12)}${w(n, 9)}`)
   }
 }
 
-console.log("\n== PER TYPE: OUTCOMES ==")
-console.log(`${w("type", 14)}${w("edges", 9)}${w("resolved", 10)}${w("collRes", 9)}${w("amb", 8)}${w("unres", 9)}${w("extOK", 8)}${w("ext?", 8)}${w("extFAIL", 9)}`)
-for (const t of ALL_TYPES) {
-  const c = stats.get(t)!
-  console.log(`${w(t, 14)}${w(c.edges, 9)}${w(c.resolved, 10)}${w(c.collRes, 9)}${w(c.ambiguous, 8)}${w(c.unresolved, 9)}${w(c.externalVerified, 8)}${w(c.externalUnverified, 8)}${w(c.externalRefuted, 9)}`)
-}
+console.log(`\nCLOSURE IDENTITY (Lead-specified)`)
+console.log(`  population (TABLE 1 TOTAL)                          ${totalRow.edges}`)
+console.log(`  dump rows = population - resolved                   ${rows.length} == ${totalRow.edges - totalRow.resolved} ${rows.length === totalRow.edges - totalRow.resolved ? "OK" : "MISMATCH"}`)
+console.log(`  sum(label rows) == population                       ${colSum("edges")} == ${totalRow.edges} ${colSum("edges") === totalRow.edges ? "OK" : "MISMATCH"}`)
+console.log(`  CLAIM-externalVerified == extOK                     ${bucket.verified} == ${totalExtOK}`)
+console.log(`  CLAIM-externalUnverified == ext?                    ${bucket.unverified} == ${totalExtUnv}`)
+console.log(`  CLAIM-externalRefuted == extFAIL                    ${bucket.refuted} == ${totalExtFail}`)
+console.log(`  CLAIM-reported-on-ambiguous rows (reported, not charged)  ${reportedRows}`)
+console.log(`  claim rows == extOK + ext? + extFAIL + reported      ${claimRows} == ${totalExtOK + totalExtUnv + totalExtFail + reportedRows}`)
+console.log(`  non-claim rows == amb(decl)+unresolved-reported      ${bucket.nonClaim} == ${colSum("ambDecl") + colSum("unresolved") - reportedRows}`)
+console.log(`  claim rows + non-claim rows == dump rows            ${claimRows} + ${bucket.nonClaim} == ${rows.length}`)
+console.log(`  join misses / unclassified (must be 0)              ${joinMiss} / ${unclassified}`)
 
-console.log("\n== UNRESOLVED BY TYPE AND CAUSE ==")
-for (const t of ALL_TYPES) {
-  const c = stats.get(t)!
-  if (c.unresolved === 0) continue
-  console.log(`\n-- ${t}: ${c.unresolved} unresolved`)
-  const rows = [...c.unresolvedByCause.entries()].sort((a, b) => b[1] - a[1])
-  for (const [k, n] of rows) {
-    console.log(`   ${w(k, 32)}${w(n, 7)}${((n / c.unresolved) * 100).toFixed(1)}%`)
-    for (const r of (c.samples.get(k) ?? []).slice(0, 2)) console.log(`       ${r}`)
-  }
-}
-
-console.log("\n== ext? (A CLAIM NO CHECK CAN REACH) BY CLAIM KIND / SHAPE / REASON ==")
-for (const [k, n] of [...overall.extUnverifiedByCause.entries()].sort((a, b) => b[1] - a[1])) {
-  console.log(`   ${w(k, 52)}${w(n, 8)}`)
-  for (const r of (overall.samples.get(k) ?? []).slice(0, 2)) console.log(`       ${r}`)
-}
-
-console.log("\n== OVERALL UNRESOLVED BY CAUSE ==")
-for (const [k, n] of [...overall.unresolvedByCause.entries()].sort((a, b) => b[1] - a[1])) {
-  console.log(`   ${w(k, 32)}${w(n, 8)}${((n / overall.unresolved) * 100).toFixed(1)}%`)
-}
+console.log(`\nCONTROLS`)
+console.log(`  A (per-label dump-vs-TABLE: amb · unresolved · ext? · extFAIL · verified=0)   PASS`)
+console.log(`  B (per-label closure and column sums vs TOTAL row)                            PASS`)
+console.log(`  C (refused rows == amb+unresolved+ext?+extFAIL; join misses=0; unclassified=0; claim-unverifiable == ext?)  ${cProblems.length === 0 ? "PASS" : "FAIL"}`)
+for (const p of cProblems.slice(0, 20)) console.log(`      ${p}`)
 
 if (OUT) {
   writeFileSync(OUT, JSON.stringify({
-    population: { files: files.length, total, repos, ext: EXT, max: MAX },
-    parsed, failed,
-    overall: {
-      edges: overall.edges, resolved: overall.resolved, collRes: overall.collRes,
-      ambiguous: overall.ambiguous, unresolved: overall.unresolved,
-      externalVerified: overall.externalVerified, externalUnverified: overall.externalUnverified,
-      externalRefuted: overall.externalRefuted,
-      unresolvedByCause: Object.fromEntries(overall.unresolvedByCause),
-      extUnverifiedByCause: Object.fromEntries(overall.extUnverifiedByCause),
-    },
-    perType: Object.fromEntries(ALL_TYPES.map((t) => {
-      const c = stats.get(t)!
-      return [t, {
-        edges: c.edges, resolved: c.resolved, collRes: c.collRes, ambiguous: c.ambiguous,
-        unresolved: c.unresolved, externalVerified: c.externalVerified,
-        externalUnverified: c.externalUnverified, externalRefuted: c.externalRefuted,
-        unresolvedByCause: Object.fromEntries(c.unresolvedByCause),
-        extUnverifiedByCause: Object.fromEntries(c.extUnverifiedByCause),
-        samples: Object.fromEntries(c.samples),
-      }]
-    })),
+    gateLog: LOG,
+    population: totalRow,
+    dumpRows: rows.length,
+    parsed, parseFailed,
+    perLabel: Object.fromEntries(tableOrder.map((l) => [l, { table: table.get(l), refused: perLabelRefused.get(l) ?? 0 }])),
+    classes: Object.fromEntries([...classes.entries()].map(([k, t]) => [k, { count: t.count, samples: t.samples }])),
+    controls: { a: true, b: true, c: cProblems.length === 0, cProblems },
+    joinMiss, unclassified,
   }, null, 2))
   console.log(`\nwrote ${OUT}`)
+}
+if (cProblems.length > 0) process.exit(3)
+console.log(`\nD3 CLOSURE HOLDS at the gate's own outcomes: ${refusedTotal} refused rows = ${closumSafe()} with every row in one named class.`)
+function closumSafe(): string {
+  return `amb ${colSum("ambDecl")} + unresolved ${colSum("unresolved")} + ext? ${colSum("extUnv")} + extFAIL ${colSum("extFail")}`
 }
