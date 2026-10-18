@@ -574,6 +574,13 @@ function classifyEdge(
     if (proj.memberOwners.has(target)) return "RENDERS-MEMBER-ELSEWHERE"
     return "RENDERS-NOTHING-ANYWHERE (out-of-corpus API)"
   }
+  if (label === "contains") {
+    // The GATE resolves containment with its own LIMIT-1 statement (containsLike), preferring the
+    // edge's own file, so a name collision is NOT ambiguous to the verdict. The census's name-count
+    // model sees the collision; naming it keeps the two instruments reconcilable instead of
+    // reporting 21,856 mystery rows.
+    return "CONTAINS-COLLISION (gate resolves by its LIMIT-1 containment resolver)"
+  }
   if (label === "overrides") {
     return "OVERRIDES-AMBIGUOUS-BASE"
   }
