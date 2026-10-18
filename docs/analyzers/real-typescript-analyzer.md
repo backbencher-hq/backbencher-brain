@@ -22,7 +22,7 @@
 | documentation/comments | ✅ | `comment` nodes preceding the declaration (JSDoc `/** ... */` and `//` line comments), comment markers stripped via pure-String helpers; exported declarations (`export class X`) look past the `export` keyword wrapper to the preceding JSDoc (fixed in post-close review, exercised by `Domain.ts` JSDoc fixtures) |
 | complexity metrics | ✅ | `complexity` metadata on methods (branching nodes counted iteratively) |
 | syntax errors | ✅ | ERROR/missing nodes are surfaced by the engine pipeline; fixture parse errors reported as `parseErrors` in the differential |
-| decorators/attributes | ✅ | `decorator` nodes → `@Name` and `@Name(args)` parsed via AST (call_expression children); stored in `decorators` metadata only — decorator relationships are NOT emitted (family contract: C#, Java, F# treat decorators as metadata) |
+| decorators/attributes | ✅ | `decorator` nodes → `@Name` and `@Name(args)` parsed via AST (call_expression children); stored in `decorators` metadata AND, since 2026-10-18, emitted as a `decorates` relationship (see the relationship table) — the ten stored values had no honest spelling for "applied TO this declaration", and `references` claimed the symbol mentions the decorator in its body |
 
 ## Relationship ontology
 
@@ -80,20 +80,21 @@ file this lane does not own:
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | ✅ | `call_expression` → callee LEAF by `calleeLeafName()` (identifier; member → property, private `#` kept; `(foo)()` → `foo`; call-of-call / subscript / `super` / anonymous / `await`-wrapped member → NO edge); source = enclosing function/method leaf; builtins filtered (console.*, Object leaf methods); `super()` filtered (language keyword). **A member call on a LOCAL receiver carries `metadata.owner` = the receiver's class**, read from the two forms this language states it in — `const c = new Widget()` and `const d: Widget = make()` (a name declared with two different types in one file is dropped, not guessed). This is the STORE channel `src/ast/member-owner-resolution.ts` uses to bind the member INSIDE that class instead of by bare name: on a 3-file program where a third file declares its own `run()`, the call bound to the OTHER file's `run` at confidence 0.9 (`verify-patterns` caught the symptom — the dead file could not be reported as orphaned because a fabricated edge referenced it), and the row now binds to the class it was constructed from. MEASURED ON REAL CODE (graphql-js/src, 24,801 `calls` rows, full re-index of a fresh copy both arms): 958 rows carry a receiver type, 493/493 of those whose target resolves inside a class agree with the receiver, and of the 423 rows the name binding had resolved that are now unresolved, 404 had landed in a DIFFERENT class than the receiver, 16 on a free function, 3 in the receiver's own class (the price of not guessing). Pinned by `typescript/receiver-owner-from-new` (owner on the `new` row and on the annotation row, a line-scoped forbid on the type-free receiver) and end-to-end in `script/verify-graph.ts` | 0.9 |
+| calls | ✅ | `call_expression` → callee LEAF by `calleeLeafName()` (identifier; member → property, private `#` kept; `(foo)()` → `foo`; call-of-call / subscript / `super` / anonymous / `await`-wrapped member → NO edge); source = enclosing function/method leaf; builtins filtered (console.*, Object leaf methods); `super()` filtered (language keyword). **A member call whose receiver type the syntax proves carries `metadata.owner` = that class, plus `metadata.ownerEvidence` naming WHICH form stated it** — `assignment` (`const c = new Widget()`), `annotation` (`const d: Widget = make()`), `param` (a parameter annotation, `function f(w: Widget)`), `this` (a one-hop `this.<field>.m()` where the field is annotated; the field-name node in this grammar is a `property_identifier`, and a test accepting only `identifier` silently killed this whole class once — measured, recorded on the symbol). A name declared with two different types in one file is dropped whole, not guessed. This is the STORE channel `src/ast/member-owner-resolution.ts` uses to bind the member INSIDE that class instead of by bare name: on a 3-file program where a third file declares its own `run()`, the call bound to the OTHER file's `run` at confidence 0.9 (`verify-patterns` caught the symptom — the dead file could not be reported as orphaned because a fabricated edge referenced it), and the row now binds to the class it was constructed from. MEASURED ON REAL CODE (graphql-js/src, 24,801 `calls` rows, full re-index of a fresh copy both arms): 958 rows carry a receiver type, 493/493 of those whose target resolves inside a class agree with the receiver, and of the 423 rows the name binding had resolved that are now unresolved, 404 had landed in a DIFFERENT class than the receiver, 16 on a free function, 3 in the receiver's own class (the price of not guessing). Pinned by `typescript/receiver-owner-from-new` — one positive row per evidence class plus two line-scoped forbids on receivers that state no type (`const e = make()`, `u: any`) — and end-to-end in `script/verify-graph.ts`. OWNER-COVERAGE BY EVIDENCE CLASS IS MEASURED BY `script/m14/ts-owner-coverage.ts` over a derived population; the count is not quoted in this file until the measurement is run at HEAD under the Lead's resource hold, and an owner-carrying row is NEVER reported here as a resolved row. | 0.9 |
 | extends | ✅ | `class_heritage` `extends_clause` → base class name (verbatim: a qualified base stays qualified) | 1.0 |
 | implements | ✅ | `implements_clause` → each interface LEAF name (`heritageBaseName` strips `<...>` AND the qualifier) | 1.0 |
 | instantiates | ✅ | `new_expression` → constructor leaf name (with `contains: owner → constructor` complement) | 1.0 |
-| uses | ✅ | a VALUE/MEMBER READ in expression position (field access, template interpolation, JSX tag) AND a type MENTION (`isTypeReference`, label-per-position). **RULING 2026-10-17 (`8def4a5d5`): the type-mention `uses` row SURVIVES and the duplicate `references` row for the same (source, target) is dropped** — the reverse of the earlier one-label survivor; predicates/constraints and every other type position keep `uses`, the duplicate is what goes | 0.85–0.9 |
-| imports | ✅ | `import_statement`/`import` specifiers → source = module leaf name, target = `<module>:<name>` (named + default + namespace imports); side-effect-only and `require` forms publish `<module>:*` | 1.0 |
+| uses | ✅ | a VALUE/MEMBER READ in expression position (field access, template interpolation) AND a type MENTION (`isTypeReference`, label-per-position). **RULING 2026-10-17 (`8def4a5d5`): the type-mention `uses` row SURVIVES and the duplicate `references` row for the same (source, target) is dropped** — the reverse of the earlier one-label survivor; predicates/constraints and every other type position keep `uses`, the duplicate is what goes | 0.85–0.9 |
+| imports | ✅ | `import_statement`/`import` specifiers → source = module leaf name. Named/default items from a RELATIVE or ABSOLUTE specifier publish the bare `<name>` (the resolver can join it); everything else publishes `<module>:<name>`. Side-effect-only, namespace and `require`/dynamic forms publish the family BINDING spelling `<moduleLeaf>\u0000<modulePath>:*` + `metadata.localBinding` (unrefutable by construction). A complete `ProjectIndex` adds two operations, both fail-closed on `complete !== true` — RESOLUTION: a `module:name` whose specifier is the project's own module space (path algebra, or a package the project's own `package.json` workspaces declare) is re-spelled to the bare name ONLY when `symbolCounts` says the name is declared exactly once (production's `_res_name.cnt = 1`); CLAIM: a module outside the project's module space carries `externalReason: "module-namespace"` + `externalSpecifier`, verified by the arbiter against the project module space and never refuted, and the same claim is attached to `calls`/`uses`/`references`/`instantiates`/`extends`/`implements` edges whose target or receiver root is a binding imported from that module. A bare name absent from `symbolNames` is NOT claimed: that set covers declared types and members only. Measurement status in §"2026-10-18" below | 1.0 |
 | imports — type-only marker | ✅ | `metadata.isTypeOnly` — `true` for `import type {…}` (anonymous `type` child of the statement) and for the inline TS 4.5+ form `import { type A, B }` (anonymous `type` child of the `import_specifier`); `false` otherwise. Metadata only: no edge added, removed, or re-pointed | 1.0 |
 | exports | ✅ | `export` statements → source = module leaf, target = exported name; `export default` handled | 1.0 |
 | overrides | ✅ | method in derived class whose name matches a base-class method (base resolved via extends heritage) → `Derived.method → Base.method` | 1.0 |
 | references | ✅ | a TYPE mention that does NOT also have a `uses` row for the same (source, target) → referenced type name, with `metadata.relationshipType` naming the position (`declared_type`, `return_type`, `type_alias`, `cast_target`, `type_argument`, `satisfies_target`). `type_parameter_constraint` / `type_predicate_target` are the two positions that keep BOTH surfaces | 0.95 |
+| decorates | ✅ | since 2026-10-18 (was a `references{isDecorator}` row): source = the DECORATED declaration (class/method/field), target = the decorator's name leaf (`@module.Decorator` → `Decorator`), `line_number` = the decorator's OWN line (M59 #860); one row per decorator per decorated symbol; a decorator's ARGUMENT is not a row, and the call/reference walks skip decorator position so no duplicate row is left behind. `evidenceClass: structural` (read off the declaration's own decorator list). Pinned by `typescript/decorator-emission` (+ the two re-pinned M59 fixtures) | 1.0 |
 | contains | ✅ | namespace → member; class/interface/enum → member; type alias → member; computed from `ownerName` on symbols (single-pass, no per-symbol scan) | 1.0 |
 | depends | — | not emitted (covered by imports) | — |
 | field_access | — | folded into `uses`/`references` (family contract) | — |
-| JSX element usage | ✅ | `jsx_self_closing_element`/`jsx_opening_element` → `uses` relationship to the component function/class (`metadata.jsxElement`; only capitalized tags) | 0.9 |
+| JSX element usage | ✅ | since 2026-10-18 a `renders` relationship (was `uses`): `jsx_self_closing_element`/`jsx_element` → component function/class; source = enclosing declaration, target = the written tag (`Foo`, and `Foo.Bar` for a nested_identifier tag), one row PER ELEMENT (the opening element is read for the name but never matched as its own node), only capitalized component tags — a lowercase intrinsic tag or a fragment fires nothing, and `React.createElement(Foo, …)` stays a `calls` row. A QUALIFIED tag in tsx (`<Ns.Chart/>`) is a `member_expression` in the grammar and does NOT fire: a measured bound of the current name rule, not expanded by the relabel. Pinned by `typescript/tsx-renders` + `script/m14/ts-fixture-probe.ts` | 0.9 |
 
 ## Supported constructs
 
@@ -355,3 +356,122 @@ Analyzer on a 374-file tsx stride: 374/374 parsed, **1,782 `uses` edges carrying
 reads 17,083 edges with 0 extFAIL. The corpus is real React but 84% concentrated in 4 repos; the
 proposal `validation/m14/proposals/typescript-react-corpus-widening.md` asks that the lane's gate
 invocation become `typescript ts,tsx 400` so React is inside the measured population at all.
+
+---
+
+## 2026-10-18 — vocabulary extension, project-index imports pass, receiver evidence classes
+
+**MEASUREMENT STATUS OF THIS SECTION, stated first because the programme's rule is that a
+status is not optional: the code below is landed and the FIXTURES are executed, but the
+cap-50 before/after pair, the whole-project indexed arm and the owner-coverage count are
+QUEUED under the Lead's resource hold (the box was at 1–3 GB available). Nothing in this
+section is reported as a measured population change; the commands to measure it are printed
+with it.**
+
+### 1 · Two relabels into the extended vocabulary (owner-admitted, `src/ast/types.ts`)
+
+| construct | was | now | direction |
+| --- | --- | --- | --- |
+| decorator | `references{isDecorator}` | **`decorates`** | source = decorated declaration · target = decorator name leaf · line = the decorator's own line · one row per decorator · an argument is NOT a row |
+| JSX element | `uses{jsxElement}` | **`renders`** | source = enclosing declaration · target = written tag · one row per ELEMENT (paired element = 1 row) · lowercase intrinsic tags and fragments fire nothing · `React.createElement(Foo)` stays `calls` |
+
+Both relabels are 1:1 by the owner's direction. Both now have a `classifyEvidenceTier`
+branch (previously they fell through to `usage_contextual`): `decorates` is `structural`
+unconditionally (read off the declaration's own decorator list); `renders` follows
+`instantiates`'s rule (`conf >= 0.9 ? structural : usage_contextual`) because it is the same
+kind of fact — a construction site written in the source.
+
+Fixtures: `typescript/decorator-emission` (positive + five forbids: old label, argument,
+class-scoped attribution, decorator invocation as a call) and `typescript/tsx-renders`
+(three element rows + exact-count rows + forbids for lowercase tags/fragments/React/
+`createElement`'s argument). The tsx fixture cannot be run by `script/m14/run-fixtures.ts`
+(one extension per language, and `.tsx` needs the tsx grammar), so
+`script/m14/ts-fixture-probe.ts` executes the SAME expectation file the runner would read and
+carries a NEGATIVE CONTROL that swaps each new label back and requires the checks to go RED.
+Last run: `bun run script/m14/ts-fixture-probe.ts` → decorator-emission 7/7 PASS,
+tsx-renders 12/12 PASS, both controls FIRED, overall PASS.
+
+```bash
+# the relabel pair, once the box allows a measurement (cap-50 before/after):
+export BB_CORPUS_ROOT=$PWD/.corpus
+bun run script/m14/incoming-gate.ts typescript ts 50      # expect references to FALL, decorates to appear; uses unchanged on .ts
+bun run script/m14/incoming-gate.ts typescript tsx 50     # renders appears; uses falls by the JSX rows
+```
+
+### 2 · `imports` B-class: the project index decides the spelling (fail-closed on `complete !== true`)
+
+`applyProjectIndexClaims` rewritten. The previous version re-spelled `module:name` → bare
+`name` whenever `index.symbolNames.has(name)`, with no locality test and no uniqueness test —
+which is the measured false-binding class (432 ts external items bind to a project symbol that
+merely shares the name) and cannot tell one declaration from two. It also attached an
+`owner`-kind claim to `module:item` targets, which the arbiter reads as a URI and leaves
+`extUnverified` (a claim no check can reach, which BLOCKS a pass), and claimed EVERY bare
+`calls` target absent from the narrow `symbolNames` — including calls to local functions and
+parameters, which are not external.
+
+Now, only with `ProjectIndex.complete === true` and `symbolCounts`/`modules` present:
+
+* **RESOLUTION** — an `imports` edge `module:name` is re-spelled to bare `name` only when the
+  specifier is the project's own module space (relative/absolute by path algebra, or a package
+  name the project's own `package.json` `workspaces` declare — read once per project root,
+  cached, fail-closed on read failure) AND `symbolCounts` says the name is declared EXACTLY
+  ONCE (production's own `_res_name.cnt = 1`). Two declarations → `projectIndexAmbiguous`,
+  no re-spelling. Zero → `projectIndexItemNotDeclared`, **no claim**.
+* **CLAIM** — an `imports` edge whose module is NOT project-local carries
+  `externalReason: "module-namespace"` + `externalSpecifier`, which the arbiter verifies
+  against the project's module space and can never REFUTE (it degrades to unverified); a module
+  root the project publishes is refused here (`projectIndexModuleShadowed`) instead of claimed.
+  The same claim attaches to any other edge whose target — or whose callee receiver ROOT — is a
+  binding imported from that external module (`computed()` from `vue`, `path.join()` from
+  `node:path`, a mention of `Ref` from `vue`). **A claim is not a resolution.**
+* The blanket `calls` bare-name claim is REMOVED (see above).
+
+**The measured bound this exposes:** `TYPESCRIPT_DECLARATION_SPEC` records declared TYPES and
+their MEMBERS in `symbolNames`/`symbolCounts`; free functions and module-scope bindings are not
+in it. So workspace-package imports of a `const`/`function` (e.g. `@element-plus/utils:isString`)
+stay unresolved until the spec is widened with `nameOnlyNodes` (function/variable/namespace
+declarations) AND the name-only branch increments `symbolCounts`. That is a shared-file change
+(`src/ast/project-index.ts`, Lead-owned) and is reported as a need, not made here.
+
+### 3 · Receiver typing: four syntactic forms, one store channel, evidence per form
+
+`metadata.owner` (the channel `src/ast/member-owner-resolution.ts` reads — it WITHDRAWS the name
+binding and re-resolves inside the one class-like owner) now carries for four forms, each with
+`metadata.ownerEvidence`:
+
+| evidence | form | example |
+| --- | --- | --- |
+| `assignment` | initialiser is a constructor | `const c = new Widget()` |
+| `annotation` | local type annotation | `const d: Widget = make()` |
+| `param` | parameter type annotation | `function f(w: Widget) { w.run() }` |
+| `this` | one-hop annotated field access | `private inner: Widget; this.inner.m()` |
+
+A name declared with two different types in one file is dropped whole (shadowing makes the
+file-level answer ambiguous and the store DELETES a correct binding for an owner it then cannot
+resolve). Deliberately not included: post-declaration assignment, `as` casts, factory return
+types, destructuring, receiver chains deeper than one `this.` hop.
+
+**Measured trap, recorded on the symbol (`bb_annotate receiverOwnerType`):** the `this`-field
+class was DEAD on arrival because the field-name node in this grammar is a `property_identifier`
+and the test accepted only `identifier`; the collector recorded the field, the lookup found it,
+and the test rejected the name node — rows carried no owner and the evidence class silently
+reported zero. `typescript/receiver-owner-from-new` now asserts one positive row per evidence
+class plus two line-scoped forbids on receivers that state no type.
+
+Coverage instrument: `script/m14/ts-owner-coverage.ts` (derives its population the way the fleet
+gate does, prints the stride/repo count, counts `calls` rows carrying `owner` and breaks them
+down by `ownerEvidence`; never reports an owner-carrying row as resolved).
+
+```bash
+export BB_CORPUS_ROOT=$PWD/.corpus
+bun run script/m14/ts-owner-coverage.ts --max-files 50 --per-repo
+# whole-project (honest unit for a receiver question — run one repo at a time):
+bun run script/m14/ts-owner-coverage.ts --max-files 0 --repo=apollo-server --per-repo
+```
+
+### 4 · The comprehensive cause table for every unresolved edge
+
+`validation/m14/verification/TYPESCRIPT-RESOLUTION-CLASSIFICATION.md` — every non-resolved edge
+at cap 50 (2,100 dump rows, 100% joined) classified by cause with counts and the disposition
+each bucket must land in (resolution vs claim vs binding), plus the ranked lever table. It is
+cap-50 TRIAGE; no bucket count there is a population claim.
