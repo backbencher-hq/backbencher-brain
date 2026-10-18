@@ -261,13 +261,24 @@ export const LANES_A: Record<string, string> = {
 const ALL_TYPES = [
   "calls", "uses", "contains", "imports", "references",
   "exports", "extends", "implements", "overrides", "instantiates",
+  // EXTENDED 2026-10-18. A stored label this table does not name is INVISIBLE to the gate:
+  // `ontologyName` returns null and the row is skipped before any count — the same
+  // filter-before-the-question defect this file's `--dump` header records. So the four values the
+  // ten could not spell honestly are listed the moment the enum carries them, even before a lane
+  // emits one; a type with 0 edges reads as `0 edges`, which is a measurement, not a silence.
+  "decorates", "renders", "mixes_in", "part_of",
 ] as const
 type Type = (typeof ALL_TYPES)[number]
 
 const LABEL_ALIASES: Record<string, string> = {
   calls: "calls", call: "calls",
   uses: "uses",
-  contains: "contains", composition: "contains", part_of: "contains",
+  // `part_of` MOVED 2026-10-18. It used to collapse to `contains`, on the pre-ruling ontology claim
+  // that "part-of is containment". That claim is measured false for the construct the spelling
+  // denotes (a Dart `part` directive includes a compile unit; it contains no symbol), and the
+  // canonical value now exists. Leaving the collapse would make every emitted `part_of` read as a
+  // `contains` edge — a wrong measurement that still adds up.
+  contains: "contains", composition: "contains",
   // BOTH spellings: src/ast/types.ts says `brain_import`, src/ast/engine.ts says `imports`,
   // and analyzers import from engine. A table keyed on one of them reads 0 in EVERY
   // language while the edges are emitted — a confident zero from a table that can never
@@ -279,6 +290,9 @@ const LABEL_ALIASES: Record<string, string> = {
   implements: "implements", implementation: "implements",
   overrides: "overrides", override: "overrides",
   instantiates: "instantiates",
+  // The extended values, spelled once each and given NO legacy alias: a raw spelling no analyzer ever
+  // produced must not be handed a meaning here, or the gate would report an edge class nothing can fire.
+  decorates: "decorates", renders: "renders", mixes_in: "mixes_in", part_of: "part_of",
 }
 const ontologyName = (raw: string): Type | null => (LABEL_ALIASES[raw] as Type) ?? null
 

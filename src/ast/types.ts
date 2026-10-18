@@ -67,13 +67,29 @@ export enum SymbolKind {
  *   - `GraphIntelligence.RelationshipType` in src/ast/graph.ts, which keeps the STORED domain and
  *     separates the values analyzers emit (all ten here) from its DERIVED extras — see that file.
  *
- * THE TEN CANONICAL MEMBERS ARE THE EMITTED VOCABULARY. Nothing below them changes an emitted
- * string: the legacy aliases are alternate NAMES for those same ten values, kept so old call sites
+ * THE CANONICAL MEMBERS ARE THE EMITTED VOCABULARY. Nothing below them changes an emitted
+ * string: the legacy aliases are alternate NAMES for those same values, kept so old call sites
  * still compile, and each collapse is justified on the member. The one collapse that was NOT kept is
  * `DependsOn → references` — see the removal note in place of the member.
+ *
+ * EXTENDED 2026-10-18, on the owner's ruling that the vocabulary is extended where one of the ten
+ * cannot honestly spell a construct: `decorates`, `renders`, `mixes_in`, `part_of` join the ten.
+ * The bar for a new value is the programme's own, and it is not a naming preference:
+ *   - the construct must EXIST with a measured population (a triage stride is not a population);
+ *   - each of the ten must be DISHONEST for it (not merely less specific), stated on the member;
+ *   - it must carry a fixture that FIRES it and an oracle that audits it, or it is DERIVATION debt
+ *     the moment it lands;
+ *   - every consumer that enumerates types must admit it (the graph's default filter drops a type it
+ *     does not list BEFORE the query runs), and the matrix must show lanes that have not adjudicated
+ *     it as PENDING ADOPTION, never as the silent-sink `!`.
+ * The ten remain the fleet matrix's stable columns; the extended values are the acceptance vocabulary
+ * for the lanes that can express them. The reasoning for each (and for the constructs that were
+ * MEASURED and deliberately left on an existing value — annotations, throws/raises, satisfies, type
+ * bounds, instanceof, record components, metaclass) is
+ * validation/m14/verification/VOCABULARY-EXTENSION-PROPOSAL.md.
  */
 export enum RelationshipType {
-  // ── the ten canonical emitted values ──────────────────────────────────────────────────────────
+  // ── the canonical emitted values ──────────────────────────────────────────────────────────────
   Calls = "calls",
   Extends = "extends",
   Implements = "implements",
@@ -100,6 +116,49 @@ export enum RelationshipType {
   Overrides = "overrides",
   Instantiates = "instantiates",
 
+  // ── EXTENDED 2026-10-18: values the ten could not spell honestly (see the header block) ───────
+  /**
+   * A decorator is APPLIED TO a declaration: source = the decorating symbol, target = the decorated
+   * declaration. Python is the measured population (`@deco` on a def/class); TS and JS decorators
+   * emit the same edge once their lanes land the sites.
+   *
+   * NOT `calls`: the decorated symbol does not invoke the decorator — the runtime applies it while
+   * the declaration is created, and a call edge would assert a call site that does not exist.
+   * NOT `references`: a reference says the decorator's name is mentioned, which is true but says
+   * nothing about application; the point of the edge is what it was applied to.
+   */
+  Decorates = "decorates",
+  /**
+   * A component RENDERS another component: source = the rendering symbol, target = the rendered
+   * component. Measured population is TSX/JSX (`<Button/>` inside a component); the JSX layer of
+   * TypeScript emitted `uses` for it, which is a value read and not element creation, and the JS
+   * lane emitted NOTHING (its JSX gap).
+   *
+   * NOT `instantiates`: nothing is `new`ed — React (or the host renderer) constructs the element, and
+   * a construction edge would claim an allocation site the source does not contain.
+   */
+  Renders = "renders",
+  /**
+   * A class COMPOSES a mixin into its supertype chain: source = the class, target = the mixin.
+   * Measured on Dart (`class C with M`), which published `uses{isMixin:true}` — a value READ, while
+   * the mixin is a supertype member. A mixin is not `extends` either (there is no single base and the
+   * `with` list is not an inheritance clause); and it is not `implements` (no conformance is
+   * declared).
+   */
+  MixesIn = "mixes_in",
+  /**
+   * A library unit INCLUDES a part file: source = the including library/file symbol, target = the
+   * part's file or its module symbol. Measured on Dart (`part 'x.dart'` / `part of`), published as
+   * `imports{isPart:true}` — an import names a module and creates binding scope; a part shares the
+   * library's single scope, imports nothing, and cannot be resolved as a separate module.
+   *
+   * DISTINCT FROM the DERIVED `part_of_feature` in graph.ts: that one is a FEATURE grouping the
+   * engine derives over symbols; this one is a FILE/Grammar relationship an analyzer emits. They are
+   * deliberately spelled differently (`part_of` vs `part_of_feature`) so a reader cannot conflate
+   * them, and only this one is ever emitted.
+   */
+  PartOf = "part_of",
+
   // ── legacy aliases: alternate NAMES for the values above, never new values ───────────────────
   /** @deprecated use {@link Calls}. Singular spelling of the same value. */
   Call = "calls",
@@ -120,8 +179,13 @@ export enum RelationshipType {
   Provides = "exports",
   /** @deprecated use {@link References}. A generic "related to" is a name read; zero live uses. */
   Related = "references",
-  /** @deprecated use {@link Contains}. Part-of is containment; zero live uses of this member. */
-  PartOf = "contains",
+  // REMOVED 2026-10-18: `PartOf = "contains"`. It was a deprecated alias asserting "part-of is
+  // containment", and that assertion is now measured FALSE for the construct the name denotes: a Dart
+  // `part`/`part of` directive is a COMPILE-UNIT inclusion (the part shares the library's single
+  // scope and imports nothing), not symbol containment, and the lane was publishing it as
+  // `imports{isPart:true}`. The member name is reused for the canonical `part_of` value above —
+  // deliberately: a stale call site reaching for "part of" now lands on the edge type that says what
+  // it means instead of silently collapsing to `contains`. Zero live uses at the flip.
 
   // REMOVED 2026-10-17: `DependsOn = "references"`. It was the ONE member name in the three enums
   // that meant DIFFERENT strings in different files — `references` here and in engine.ts, but

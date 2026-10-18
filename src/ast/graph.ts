@@ -56,7 +56,7 @@ export namespace GraphIntelligence {
    * keeps the only name that cannot collide with the emitted vocabulary.
    */
   export enum RelationshipType {
-    // ── EMITTED — the ten analyzer values (authoritative: ./types RelationshipType) ────────────
+    // ── EMITTED — the analyzer values (authoritative: ./types RelationshipType) ──────────────
     Calls = "calls",
     Imports = "imports",
     Extends = "extends",
@@ -67,6 +67,16 @@ export namespace GraphIntelligence {
     Instantiates = "instantiates",
     Overrides = "overrides",
     Exports = "exports",
+    // ── EXTENDED 2026-10-18, still EMITTED ───────────────────────────────────────────────────
+    // The four values the ten could not spell honestly (Dart mixin composition and part inclusion,
+    // decorator application, JSX rendering). The authoritative definitions are on the enum members
+    // in ./types; each carries a measured population and a fixture/oracle requirement. They sit in
+    // the EMITTED block, not DERIVED, because analyzers publish all four — and the DERIVED set below
+    // is what a comparison against the emitted vocabulary excludes.
+    Decorates = "decorates",
+    Renders = "renders",
+    MixesIn = "mixes_in",
+    PartOf = "part_of",
 
     // ── DERIVED — never emitted by an analyzer ────────────────────────────────────────────────
     DependsOnDerived = "depends_on",

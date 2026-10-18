@@ -12,7 +12,14 @@ const ENGINE = "orphans@intelligence"
 // is treated as evidence of a consumer only if it also passes the evidence
 // quality gate below. The previous revision decided on the type alone, which
 // meant an `overrides` row produced by a name guess was accepted as proof.
-const USAGE_TYPES = ["calls", "instantiates", "extends", "implements", "uses", "references", "imports", "overrides"]
+//
+// EXTENDED 2026-10-18 with the three new kinds whose TARGET is the depended-on symbol, because an
+// unlisted kind is not a conservative omission here — it manufactures dead code. `renders` targets the
+// rendered component, `decorates` targets the decorator (source is the decorated declaration), and
+// `mixes_in` targets the mixin; without them a component used only by JSX, a decorator used only by
+// decorators, and a mixin used only by a `with` clause all read as orphans. `part_of` is deliberately
+// NOT here: its target is a compilation unit named by a Dart directive, not a symbol somebody uses.
+const USAGE_TYPES = ["calls", "instantiates", "extends", "implements", "uses", "references", "imports", "overrides", "renders", "decorates", "mixes_in"]
 
 // ---- evidence quality gate ------------------------------------------------
 //

@@ -45,6 +45,12 @@ type EdgeMetadata = NonNullable<GraphEdge["metadata"]>
 const DEFAULT_REL_TYPES = [
   "calls", "extends", "implements", "uses", "instantiates", "overrides",
   "contains", "references", "imports", "exports",
+  // EXTENDED 2026-10-18, and they MUST be appended here in the same change that makes analyzers emit
+  // them: this array is the default filter, so an unlisted kind is dropped BEFORE the query runs.
+  // The measured size of that mistake is in the block above (22.2% of every emitted relationship on
+  // a 1,200-file ruby sample) and it would be exactly 100% for the four new kinds, because they have
+  // no other route into a default traversal.
+  "decorates", "renders", "mixes_in", "part_of",
 ]
 /**
  * NAMES an ACTIVE caller-supplied type filter, so a filtered traversal is never
@@ -144,16 +150,27 @@ const DEFAULT_WALK_TIME_BUDGET_MS = 0
  * then rowId), so two identical questions still produce identical answers.
  */
 const EDGE_KIND_PRIORITY: Record<string, number> = {
+  // RENUMBERED 2026-10-18 to make room for the four extended kinds. The RELATIVE order of the ten is
+  // unchanged (calls < instantiates < extends < implements < overrides < uses < references < imports
+  // < exports < contains) — only the gaps are new, so no existing answer's ordering moves except
+  // where an extended kind is now in front of an old one (which is the point). The new kinds carry a
+  // dependency meaning and sit with the dependencies: `mixes_in` and `renders` compose a supertype /
+  // component (dependency), `decorates` applies a decorator to a declaration (dependency on the
+  // decorator), `part_of` is a compilation-unit inclusion (module-level, weakest for a traversal).
   calls: 0,
-  instantiates: 1,
-  extends: 2,
-  implements: 3,
-  overrides: 4,
-  uses: 5,
-  references: 6,
-  imports: 7,
-  exports: 8,
-  contains: 9,
+  instantiates: 2,
+  extends: 4,
+  implements: 6,
+  mixes_in: 7,
+  renders: 8,
+  overrides: 10,
+  decorates: 11,
+  uses: 12,
+  references: 14,
+  imports: 16,
+  exports: 18,
+  contains: 20,
+  part_of: 22,
 }
 const UNRANKED_KIND_ORDER = 100
 
