@@ -148,7 +148,26 @@ type FileFacts = {
 }
 const fileFacts = new Map<string, FileFacts>()
 const parseFailures: string[] = []
-const parser = await ASTEngine.getParser("typescript" as any)
+/**
+ * WHY FILES FAILED, aggregated — a mass fallback must say its cause, not only its count.
+ * (The js lane's classifier records the same rule after its first cap-0 run skipped 11,875 of
+ * 12,374 files and the report printed a bare number.)
+ */
+const parseFailureReasons = new Map<string, number>()
+const noteFailure = (why: string, detail: unknown): void => {
+  const msg = `${why}: ${String((detail as any)?.message ?? detail ?? "unknown").slice(0, 140)}`
+  parseFailureReasons.set(msg, (parseFailureReasons.get(msg) ?? 0) + 1)
+}
+/**
+ * READY-GUARD, NOT A HELD PARSER. `engine.getParser` caches parser instances and its own cleanup
+ * recreates them every 500 acquisitions (deleting the old one); a parser held across the stream then
+ * faults on its next `.parse` — the measured failure here was a whole-population mass fallback
+ * (`join: 283,714 of 465,865`) with `[BB-PARSE-ERR] … Out of bounds memory access` on element-plus
+ * trees, while a 50-file run was clean because it never crossed the recreation boundary. Acquire the
+ * grammar once to fail early if it is missing, then acquire PER FILE below (the engine cache makes
+ * that cheap).
+ */
+await ASTEngine.getParser("typescript" as any)
 
 function collectAstFacts(root: any, facts: FileFacts) {
   const stack: any[] = [root]
@@ -233,8 +252,8 @@ for (const file of [...files].sort()) {
   }
   fileFacts.set(file, facts)
   let r: any
-  try { r = await parseFile(file, CORPUS) } catch (e: any) { parseFailures.push(`${file}: ${e?.message ?? e}`); continue }
-  if (r?.fallback === true) parseFailures.push(`${file}: fallback`)
+  try { r = await parseFile(file, CORPUS) } catch (e: any) { parseFailures.push(`${file}: ${e?.message ?? e}`); noteFailure("parseFile-threw", e); continue }
+  if (r?.fallback === true) { parseFailures.push(`${file}: fallback`); noteFailure("parseFile-fallback", "fallback") }
   for (const s of r?.symbols ?? []) {
     const name = String(s?.name ?? "")
     if (!name) continue
@@ -261,12 +280,21 @@ for (const file of [...files].sort()) {
     }
   }
   // AST facts: nested declarations + receiver/parameter types (one walk per file).
+  // PARSER ACQUIRED PER FILE, TREE DISPOSED AFTER THE WALK — never a parser held across the stream
+  // (see the ready-guard comment above for the measured fault this caused).
+  let tree: any = null
   try {
-    const tree = parser.parse(fs.readFileSync(file, "utf8"))
+    const fileParser: any = await ASTEngine.getParser("typescript" as any)
+    tree = fileParser.parse(fs.readFileSync(file, "utf8"))
     // `Parser.parse` returns `Tree | null`; a null tree leaves the depth buckets coarse and is
     // counted by the join rate rather than crashing the census.
     if (tree !== null) collectAstFacts(tree.rootNode, facts)
-  } catch { /* the parseFile join is the authority; an AST-walk failure leaves the depth buckets coarse */ }
+  } catch (e) {
+    // Counted, not swallowed: an AST-walk failure leaves the depth buckets coarse and is reported.
+    noteFailure("ast-parse-threw", e)
+  } finally {
+    try { tree?.delete?.() } catch { /* Tree.delete is optional in web-tree-sitter */ }
+  }
 }
 
 function classifyModule(spec: string, repo: string): string {
@@ -393,6 +421,20 @@ for (const row of rows) {
     continue
   }
 
+  // `decorates` and `overrides` used to fall through to `unclassified-label` — a counted bucket,
+  // but not a CAUSE, and D3 asks for every edge in a DECLARED class. Their targets are names like
+  // any other: an ambiguous outcome is the project-declaration ambiguity class, and a
+  // non-ambiguous one is classified by the same bare-name resolver the heritage/ctor labels use.
+  if (row.label === "decorates") {
+    if (row.outcome.startsWith("amb")) { bucket(row.label, "ambiguous (2+ declarations in project)", sample); continue }
+    bucket(row.label, `decorator name -> ${classifyBareName(facts, repo, target)}`, sample)
+    continue
+  }
+  if (row.label === "overrides") {
+    if (row.outcome.startsWith("amb")) { bucket(row.label, "ambiguous (2+ declarations in project)", sample); continue }
+    bucket(row.label, `override target -> ${classifyBareName(facts, repo, target)}`, sample)
+    continue
+  }
   if (row.label === "extends" || row.label === "implements" || row.label === "instantiates") {
     bucket(row.label, `base/ctor name -> ${classifyBareName(facts, repo, target)}`, sample)
     continue
@@ -404,10 +446,11 @@ for (const row of rows) {
 // ─────────────────────────────────────────────────────────────────────────────────────────
 // Report
 // ─────────────────────────────────────────────────────────────────────────────────────────
-const report: any = { dump: dumpPath, population: { rows: rows.length, files: files.size, parseFailures: parseFailures.length }, labels: {} }
+const report: any = { dump: dumpPath, population: { rows: rows.length, files: files.size, parseFailures: parseFailures.length, failureReasons: Object.fromEntries(parseFailureReasons) }, labels: {} }
 let total = 0
 console.log(`TS UNRESOLVED CENSUS — ${path.basename(dumpPath)}`)
 console.log(`population: ${rows.length} dumped non-resolved rows over ${files.size} source file(s); re-parsed with the gate's own entry; unreadable/fallback: ${parseFailures.length}`)
+if (parseFailureReasons.size > 0) console.log(`failure reasons: ${[...parseFailureReasons.entries()].sort((a, b) => b[1] - a[1]).map(([m, n]) => `${n}x ${m}`).join(" | ")}`)
 for (const [label, l] of [...labels.entries()].sort((a, b) => b[1].rows - a[1].rows)) {
   total += l.rows
   console.log(`\n== ${label}: ${l.rows} rows ==`)
