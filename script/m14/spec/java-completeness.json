@@ -170,6 +170,7 @@
   },
   "gap": {
     "_description": "Confirmed missing emissions (probe-verified: the analyzer emits nothing where the spec table requires an emission)",
+    "_status_2026_10_18": "G1-G4 IMPLEMENTATIONS LANDED 2026-10-18 (owner ruling: complete surface) and each is pinned by a fixture, so the rows below are no longer \"confirmed missing emissions\" - they are CLOSED-PENDING-MEASUREMENT. They stay OPEN deliberately: a gap closes by a counted whole-population measurement, never by prose or by deleting the row. Each row now carries the fixture that pins it, the cap-50 census reading with its command, and the exact whole-population command whose count closes it. G3 measured 0 at cap 50 because the 50-file stride holds no Java 21 record pattern; the whole-population count decides whether G3 closes by emission or is RULED as corpus-unexercised.",
     "gaps": [
       {
         "id": "G1",
@@ -177,7 +178,13 @@
         "missing": "Uses relationship on the array expression",
         "evidence": "probe: class A { int[] xs; void f(int i) { xs[i] = 5; int v = xs[i]; } } emits contains only — no uses on xs for reads or writes",
         "spec_row": "expressions_requiring_uses_or_calls: array_access",
-        "severity": "medium"
+        "severity": "medium",
+        "implemented_at": "real-java-analyzer.ts array_access branch: uses on the array expression, writes gated out (JAD1)",
+        "fixture": "java/array-access-uses",
+        "status": "IMPLEMENTED - closure awaits the whole-population marker count",
+        "cap50_census_2026_10_18": { "marker": "metadata.isArrayAccess on uses", "edges": 2, "files": 2, "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=50" },
+        "closure_command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+        "wholePopulationCount": null
       },
       {
         "id": "G2",
@@ -185,7 +192,14 @@
         "missing": "Calls relationship for super(...) / this(...)",
         "evidence": "probe: class A { A() { super(); } } emits no calls",
         "spec_row": "declarations.constructor_declaration — constructor delegation is a call edge",
-        "severity": "medium"
+        "severity": "medium",
+        "implemented_at": "real-java-analyzer.ts explicit_constructor_invocation branch: calls with relationshipType constructor_invocation (super()/this()/Foo.super())",
+        "fixture": "java/ctor-delegation",
+        "status": "IMPLEMENTED - closure awaits the whole-population marker count",
+        "cap50_census_2026_10_18": { "marker": "metadata.relationshipType == constructor_invocation on calls", "edges": 17, "files": 13, "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=50" },
+        "closure_command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+        "wholePopulationCount": null,
+        "open_ruling": "the emitted TARGET is the keyword super/this, which names no declaration; closure also needs the Lead ruling on a keyword-target claim kind or emission change (recorded in validation/m14/verification/JAVA-RESOLUTION-CLASSIFICATION.md §5)"
       },
       {
         "id": "G3",
@@ -193,7 +207,13 @@
         "missing": "Type reference for the record type in instanceof Point(int x, int y)",
         "evidence": "probe: if (o instanceof Point p) emits instanceof_check, but if (o instanceof Point(int a, int b)) emits nothing",
         "spec_row": "expressions_requiring_uses_or_calls: instanceof_expression (record-pattern form)",
-        "severity": "medium"
+        "severity": "medium",
+        "implemented_at": "real-java-analyzer.ts record_pattern branch: references with relationshipType record_pattern (the grammar names the record type as an identifier)",
+        "fixture": "java/record-pattern-refs",
+        "status": "IMPLEMENTED - closure awaits the whole-population marker count",
+        "cap50_census_2026_10_18": { "marker": "metadata.relationshipType == record_pattern on references", "edges": 0, "files": 0, "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=50", "reading": "the 50-file stride holds no Java 21 record pattern; this is a SAMPLE ZERO, not a population zero" },
+        "closure_command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+        "wholePopulationCount": null
       },
       {
         "id": "G4",
@@ -201,7 +221,13 @@
         "missing": "Calls relationships for invocations outside method bodies: static initializers, instance initializers, field initializers, enum constant bodies",
         "evidence": "probes: static { x = compute(); }, { x = compute(); }, static int x = compute(), enum { int x = compute(); } all emit no calls. Root cause: src/ast/real-java-analyzer.ts method_invocation handler guards on parentContext.kind === SymbolKind.Method, so calls attributed to no method scope are dropped; qualified_calls likewise never recorded",
         "spec_row": "expressions_requiring_uses_or_calls: method_invocation (all statement/expression positions)",
-        "severity": "high"
+        "severity": "high",
+        "implemented_at": "real-java-analyzer.ts method_invocation branch: calls outside a Method scope attribute to the enclosing TYPE scope with metadata.inInitializer",
+        "fixture": "java/initializer-calls",
+        "status": "IMPLEMENTED - closure awaits the whole-population marker count",
+        "cap50_census_2026_10_18": { "marker": "metadata.inInitializer on calls", "edges": 13, "files": 9, "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=50" },
+        "closure_command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=0 --json",
+        "wholePopulationCount": null
       }
     ]
   },
@@ -214,7 +240,9 @@
         "question": "module-info.java currently emits zero symbols and zero relationships. Options: (a) declare module-info out of scope (documented limitation), (b) emit requires/exports/uses targets as References/imports (dependency edges)",
         "recommendation": "(a) declare out of scope — module-info is rare, low-value for AI code understanding, and the analyzer already extracts imports elsewhere",
         "ruling": "(a) DECLARED OUT OF SCOPE — owner approval 2026-08-26. module-info.java is a documented limitation; requires/exports/opens/uses/provides emit no edges by design",
-        "status": "RULED"
+        "status": "RULED",
+        "premise_falsified_2026_10_18": "the question above states module-info.java emits ZERO symbols and ZERO relationships; at HEAD it emits BOTH. Probe (pinned grammar, the lane's own fixture): java/module-info-directives yields 3 symbols and 24 relationships — module symbol, exported-package Namespace symbols, exports edges (module_exports) and imports edges of kind module_requires with fileLevel+reasonCode, plus a references mention per directive. The fixtures java/module-info, java/jpms-module-exports and java/module-exports-jpms pin it row by row, and the analyzer's emitJavaModuleDeclaration header states the two-label rule. So the RULING (no obligation) does not need overturning to observe that the OUT-OF-SCOPE DESCRIPTION is stale: the construct is COVERED, and the two stale fixtures that still expect the pre-two-label spelling are triaged in validation/m14/verification/JAVA-FIXTURE-RECONCILIATION.md (read-only, no expectation edited)",
+        "status": "RULED (and the described limitation no longer exists at HEAD)"
       },
       {
         "id": "G6",
@@ -222,7 +250,9 @@
         "question": "generic bound types (class Box<T extends Number & Comparable<T>>) emit no type references for Number/Comparable. Options: (a) emit declared_type references for bounds, (b) declare limitation (bounds captured only as type_parameter names)",
         "recommendation": "(b) declare limitation — bounds are rarely load-bearing for AI consumers; type_parameters payload already records parameter names",
         "ruling": "(b) DECLARED LIMITATION — owner approval 2026-08-26. type_bound emits no type references; typeParameters payload carries the parameter names",
-        "status": "RULED"
+        "status": "RULED",
+        "superseded_2026_10_18": "the OWNER RULING of 2026-10-18 (complete surface) supersedes the LIMITATION: type bounds are now EMITTED as references with metadata.relationshipType type_parameter_bound and metadata.boundFor, one edge per bound type, from the type_parameter walk branch in real-java-analyzer.ts (the parameter NAMES are still never emitted as references). Fixture java/type-parameter-bounds authored from JLS 4.4 before the fix pins class/method/record/interface bounds, a self-referential generic argument and the full-path spelling. Cap-50 census: 3 edges in 2 files (BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/java-emission-census.ts --cap=50). The whole-population count is owed before this decision row is retired",
+        "status": "RULED (superseded by the 2026-10-18 complete-surface ruling; emission implemented, count pending)"
       },
       {
         "id": "S1",
