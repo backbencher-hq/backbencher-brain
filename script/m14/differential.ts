@@ -107,6 +107,11 @@ import {
   // module rather than a second file — one heritage/declaration-surface oracle, one import site.
   deriveJavaTypeParameterContainmentTruth,
 } from "./oracles/java-heritage-truth"
+// C LANE-OWNED ORACLE (2026-10-18, commit 1c482948a carried the c files while its message described python's
+// docs — recorded in ALL-OUT-OF-ALL §9.6-precedent note): contains/exports/overrides truth, the lane's own
+// recorded D4 DERIVATION debt. Wired here; `contains`+`exports` admitted in the SAME change below (the
+// two-sided rule), `overrides` was already admitted for C.
+import { deriveCExtraTruth } from "./oracles/c-truth"
 import { deriveJuliaContainsTruth } from "./oracles/julia-contains"
 import { deriveJuliaExtendsTruth, deriveJuliaInstantiatesTruth } from "./oracles/julia-type-edges"
 import { deriveJuliaCallsTruth } from "./oracles/julia-calls"
@@ -19557,16 +19562,26 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
           // type_arguments are ARGUMENTS, not inherited bases - descending
           // into them pushed type PARAMETERS (K, Props, Events...) as fake
           // extends targets (svelte repo .d.ts corpus).
+          // TRIVIA IS NOT A NAME. In this grammar `comment` and `ERROR` are NAMED CHILDREN of heritage
+          // clauses, and `extends /* note */ A` therefore iterated the COMMENT as a base: the oracle
+          // derived `I -> "/* note */"` beside `I -> A`, and a zero-width comment became `target ""`.
+          // The analyzer side was fixed at 4580c6eaa (isNameableHeritageNode + zero-width guards); the
+          // oracle kept the junk rows and the differential then read MISSING 232 -> 276 on the
+          // vue-core draw — a TRUTH-side over-derivation exposed by a correct analyzer. The two sides
+          // are fixed together here (the same rule this file records for every oracle/analyzer pair):
+          // a comment or an ERROR node is not a declaration name, and an empty text names nothing.
+          const isTrivia = (c: any): boolean =>
+            !c || c.type === "comment" || c.type === "ERROR" || String(c.text ?? "").trim().length === 0
           if (ext2) {
             for (const c of ext2.namedChildren) {
-              if (!c || c.type === "type_arguments" || c.type === "type_parameters") continue
+              if (isTrivia(c) || c.type === "type_arguments" || c.type === "type_parameters") continue
               collect(c, "extends", clsName)
             }
           }
           const imp2 = heritage.namedChildren.find((c: any) => c.type === "implements_clause")
           if (imp2) {
             for (const c of imp2.namedChildren) {
-              if (!c || c.type === "type_arguments") continue
+              if (isTrivia(c) || c.type === "type_arguments") continue
               collect(c, "implements", clsName)
             }
           }
@@ -24225,6 +24240,14 @@ async function main() {
         for (const e of deriveCInstantiates(root, content)) {
           ;(truth as any[]).push(e)
         }
+        // C D4 LANE HALF (2026-10-18): contains/exports/overrides. `overrides` follows the Lead's ruling —
+        // canonical value + metadata.c_redefinition + adapted semantics (C 6.9p5 shared-conditional arms /
+        // C 6.10.3p2 #undef+redefine), the 26 no-shared-conditional pairs REFUSED (pinned by the lane's
+        // contract case 5). `content` is needed only for the guarded `__declspec(dllexport)` export form,
+        // exactly as the analyzer folds it.
+        for (const e of deriveCExtraTruth(root, content)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "cpp") {
         // M37.9: dedicated cpp oracle — calls + member-read uses truth so the
@@ -24935,6 +24958,9 @@ async function main() {
           // typescript to the references and uses sets and dart to imports/exports.
           // Neither list is a subset of the other, so both contributions are kept.
           ...(lang === "zig" ? ["calls", "uses", "references", "imports", "instantiates", "exports", "contains"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "typescript" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" || lang === "typescript" ? ["uses"] : []),          ...(lang === "dart" ? ["imports", "exports"] : []),
+          // C contains/exports (2026-10-18): truth pushed from the lane-owned oracle in the c block; admitted
+          // in the same change or the oracle compares nothing — the two-sided rule this file records.
+          ...(lang === "c" ? ["contains", "exports"] : []),
           // M14 ontology wave (2026-10-13): `overrides` — the largest label this lane publishes
           // (316,120 edges corpus-wide at arm13) and, until today, the last one compared against
           // NOTHING. Its truth has been pushed since M60 (see the correction in the dart truth
