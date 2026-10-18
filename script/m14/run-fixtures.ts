@@ -854,6 +854,12 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
                 // nothing, which reads as "nothing is declared anywhere" rather than "the wrong
                 // spec ran" — the PY-7 failure mode, applied to C++.
                 ? mod.CPP_DECLARATION_SPEC
+                : runLangLang === "java"
+                  // JAVA (2026-10-19, java lane's citation fixture): the fail-closed citation rule
+                  // requires a COMPLETE project index and the project not declaring the cited FQN,
+                  // so the fixture runner must give java its own spec (types/`typeKinds`) — built
+                  // with Solidity's spec it would index the right shape and hold nothing.
+                  ? mod.JAVA_DECLARATION_SPEC
                 : undefined
       const built = await mod.buildProjectIndexFromDisk(
         path.join(ROOT, "wasm", `tree-sitter-${runLangLang}.wasm`),
@@ -861,6 +867,10 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         spec,
       )
       mod.buildResolutionTables(built)
+      // A sub-directory fixture's tree is COMPLETE by construction (the runner indexes every file
+      // in it), and the fail-closed claims (java's library-namespace citation) require that flag —
+      // without it a fixture can never exercise the positive side.
+      ;(built as any).complete = true
       indexCache.set(sub, built)
       return built
     } catch (e: any) {

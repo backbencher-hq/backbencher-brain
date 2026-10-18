@@ -1715,6 +1715,10 @@ function selfTest(): { ok: boolean; failures: string[] } {
       ["jakarta.servlet.Filter", "externalVerified", "a cited library-namespace root must verify"],
       ["override", "externalVerified", "a cited bare symbol (Dart SDK annotation shape) must verify"],
       ["kotlinx.coroutines.Job", "externalRefuted", "an UNDECLARED root must REFUTE — the citation is not a blanket excuse"],
+      // COLON-AWARE SPLIT (python lane measurement, 2026-10-19): a `module:item` target must reach
+      // its root, or the stdlib citation cannot verify the 11,167 import rows it exists to cite.
+      ["pathlib:Path", "externalVerified", "a module:item target must split on the colon and match its root"],
+      ["django:Model", "externalRefuted", "a module:item target whose root is undeclared must REFUTE"],
     ]
     for (const [t, want, why] of citationArms) {
       const c = classifyEdge(declCount, kinds, t, citationClaim)

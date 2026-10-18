@@ -437,7 +437,13 @@ export function namespaceMatchOf(tgt: string, roots: readonly string[]): string 
   // claim that turns out refuted is a false statement the gate must catch, not a recall improvement.
   // This is additive and cannot reach a call edge: a call's target is a bare leaf, which has no
   // separator at all and is refused as vacuous by the lanes that measured it (rust, go, toml, yaml).
-  const segs = tgt.split(/\.|::/)
+  // COLON-AWARE SPLIT (2026-10-19, python lane measurement): a module:item target (`pathlib:Path`,
+  // `__future__:annotations`) has no dot before the item, so a dot/`::`-only split produced ONE
+  // segment and no root could match — measured on python's arm 40,419 ext? rows: the python-stdlib
+  // citation vocabulary reached only 116 rows under the old split, and **+11,167 rows, ALL imports**
+  // with `:` in the separator set. `::` is matched before `:` so rust's `std::fs` still splits
+  // correctly. A claim that cannot reach the rows it cites is a citation nobody can use.
+  const segs = tgt.split(/\.|::|:/)
   for (let n = segs.length; n >= 1; n--) {
     const cand = segs.slice(0, n).join(".")
     if (roots.includes(cand)) return cand
@@ -1375,12 +1381,6 @@ export function classifyEdge(
     const answered = (declCount.get(tgt) ?? 0) > 0 || (owner !== null && (declCount.get(owner) ?? 0) > 0)
     if (answered) claim = null
   }
-  // AN IMPORTED-BINDING CLAIM ON A TARGET THE KEY SPACE ANSWERS IS FALSE: the name names a
-  // declaration, so the import claim (which says it names no declaration) is refuted and counted
-  // against the lane — the same rule the spelling-based binding claim applies.
-  if (claim !== null && claim.kind === "importedBinding" && decls > 0) {
-    return { outcome: "bindingRefuted", decls, kinds: kindText }
-  }
   // ── THE OWNER CHANNEL IS CHECKED FIRST, BEFORE EVEN THE CLAIMS, because in production it runs
   // LAST and WINS: `claimOwnerCarryingTargets` withdraws the name binding for every calls/uses row
   // carrying `metadata.owner`, then the channel re-binds it. A row it resolves therefore HAS a
@@ -1396,6 +1396,24 @@ export function classifyEdge(
   // branches (a decliner keeps its declared marker, unverified-but-stated), and the tail below reads
   // `channelDeclined` to return `unresolved` instead of a name-based `resolved`.
   const channelDeclined = ownerChannel !== undefined && ownerChannel.outcome === "declined"
+  // THE IMPORTED-BINDING CLAIM IS THE SOLE AUTHORITY FOR ITS EDGES (2026-10-19), and it is checked
+  // BEFORE every count-based branch for the namespace claim's reason: a file-scoped import binding
+  // OCCUPIES its file's name, so a same-named declaration elsewhere in the project is not the
+  // target of this edge — that coincidence is exactly the name-model decoy class. The claim is
+  // verified from the run's own import edges and REFUTED only when that evidence contradicts it
+  // (the file does not bind the name / imports another specifier / no evidence). Counting a claim
+  // on a name the key space also declares as REFUTED (the first version) re-introduced the decoy
+  // class from the other side and measured 389/1,299 refutations on a cap-50 smoke — fixed here.
+  if (claim !== null && claim.kind === "importedBinding") {
+    const outcome = verifyImportedBindingClaim(claim, facts, edgeFile)
+    const disposition: AmbiguousClaimDisposition =
+      outcome === "bindingVerified" ? "verified" : outcome === "bindingUnverified" ? "unverified" : "refuted"
+    return {
+      outcome, decls, kinds: kindText,
+      verifiedBy: outcome === "bindingVerified" ? "importEvidence" : undefined,
+      ...(decls > 1 ? { claimOnAmbiguous: { kind: "importedBinding", disposition } } : {}),
+    }
+  }
   // THE NAMESPACE CLAIM IS THE SOLE AUTHORITY FOR ITS EDGES, checked before every count-based
   // branch because the design's whole point is that the ROOT is checked against the LIST and never
   // against the symbol table (property 1). Refutable by construction: a root the analyzer did not
@@ -1472,10 +1490,6 @@ export function classifyEdge(
   }
   if (decls === 0) {
     if (claim === null) return { outcome: "unresolved", decls, kinds: kindText }
-    if (claim.kind === "importedBinding") {
-      const outcome = verifyImportedBindingClaim(claim, facts, edgeFile)
-      return { outcome, decls, kinds: kindText, verifiedBy: outcome === "bindingVerified" ? "importEvidence" : undefined }
-    }
     if (claim.kind === "cause") {
       // READ ONLY WHERE THE TARGET NAMES NOTHING — property 1 of `CAUSE_CLAIM_KEY`: a declared
       // cause can only re-label a gap, never turn one into a resolution, so this column cannot
