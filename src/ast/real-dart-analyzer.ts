@@ -4198,6 +4198,39 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       }
+      // CATCH-CLAUSE TYPE — the type a caught exception is bound with is WRITTEN in the clause
+      // (`on MyErr catch (e)`), and until this branch the analyzer collected the BINDING (`e`
+      // was in `locals`: its reads were published) but not its TYPE. Measured on the shape:
+      // `on MyErr catch (e) { e.mark(); }` published `calls -> mark` with
+      // `receiverCause: receiverTypeUnknown` — a bare leaf that names a declaration three lines
+      // away in the same file. The type is written, so this is the same evidence class as a
+      // declared local (`annotation`), not an inference.
+      //
+      // The grammar puts the `on T` type as a DIRECT `type_identifier` child of `catch_clause`
+      // and the bound names inside its `catch_parameters` child — a signature-style two-parameter
+      // catch (`catch (e, st)`) types BOTH with the same `on` type, which is what Dart's own
+      // rule says (the second parameter is the stack trace of the same exception).
+      if (t === "catch_clause") {
+        // THE `on T` TYPE IS A SIBLING, NOT A CHILD — probed on the pinned grammar:
+        //   (try_statement (block) (type_identifier) (catch_clause (catch_parameters (identifier) (identifier))) (block))
+        // so a child scan finds the bound NAMES and no type at all. The type written immediately
+        // before the clause is the exception's type; a clause with no such sibling is the untyped
+        // `catch (e)` form and stays cut (the reader refuses rather than guessing).
+        const prev = n.previousNamedSibling
+        const typeNode = prev && (prev.type === "type_identifier" || prev.type === "nullable_type")
+          ? prev
+          : undefined
+        const typeLeaf = typeNode
+          ? (typeNode.type === "type_identifier" ? typeNode.text : this.findChildByType(typeNode, "type_identifier")?.text)
+          : undefined
+        const typeName = typeLeaf ? stripNullableSuffix(String(typeLeaf)) : undefined
+        const params = this.findChildByType(n, "catch_parameters")
+        if (typeName && isPlainIdentifier(typeName) && params) {
+          for (const c of params.namedChildren ?? []) {
+            if (c && c.type === "identifier") out.set(c.text, { type: typeName, evidence: "annotation" })
+          }
+        }
+      }
       if (t === "local_variable_declaration" || t === "declaration" || t === "initialized_variable_definition") {
         const name =
           n.childForFieldName?.("name")?.text ??
