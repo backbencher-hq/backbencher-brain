@@ -24,6 +24,10 @@
  *                               imports.isSystemInclude (angle vs quoted spelling)
  *                               calls.qualified (none — the leaf is the target; the qualified
  *                                 path is metadata and is counted here)
+ *                               contains.sourceShape (global-pseudo-container vs named-owner) —
+ *                                 the whole-population size of the file-scope contains class
+ *                                 the Lead's §14 ruling ACCEPTED for C/C++; this is the count the
+ *                                 shared-oracle fix is scoped with.
  *                               instantiates.isNew
  *   GRAMMAR CONSTRUCTS        the D1 construct table's own population: class/struct/union,
  *                             template declarations, namespaces, using-declarations, operator
@@ -193,6 +197,11 @@ const callsQualified = new Map<string, Tally>()
 const instantiatesNew = new Map<string, Tally>()
 const usesMarker = new Map<string, Tally>()
 const referencesMarker = new Map<string, Tally>()
+/** `contains` edges split by SOURCE SHAPE — the Lead's §14 ruling on the file-scope
+ *  pseudo-container: the analyzer publishes `contains` from `global` for file-scope symbols, and
+ *  the whole-population size of that class is what the shared-oracle fix must be scoped with. The
+ *  split is read off the EDGE ITSELF (source name), never inferred from a target's spelling. */
+const containsSource = new Map<string, Tally>()
 const constructCounts = new Map<string, Tally>()
 const multipleInheritance = new Map<string, Tally>()
 const markerOnType = (type: string, marker: string) => `${type}\u0000${marker}`
@@ -283,6 +292,9 @@ for (const abs of files) {
       add(usesMarker, marker || "(none)", relSlug)
     } else if (type === "references") {
       add(referencesMarker, marker || "(none)", relSlug)
+    } else if (type === "contains") {
+      const sourceName = String(r.source ?? "")
+      add(containsSource, sourceName === "global" ? "global-pseudo-container" : "named-owner", relSlug)
     }
   }
   // Grammar-construct walk. Files over FULL_AST_LIMIT use the production structural path and are
@@ -383,6 +395,7 @@ if (JSON_OUT) {
     instantiatesPayload: payloadJson(instantiatesNew),
     usesPayload: payloadJson(usesMarker),
     referencesPayload: payloadJson(referencesMarker),
+    containsPayload: payloadJson(containsSource),
     constructs: payloadJson(constructCounts),
     multipleInheritance: payloadJson(multipleInheritance),
     parseErrors: parseErrors.slice(0, 20),
@@ -413,6 +426,7 @@ if (JSON_OUT) {
   block("IMPORTS — include spelling", includesSpelling)
   block("CALLS — qualified path carried", callsQualified)
   block("INSTANTIATES — isNew", instantiatesNew)
+  block("CONTAINS — source shape (global = the file-scope pseudo-container, Lead §14 ruling)", containsSource)
   block("GRAMMAR CONSTRUCTS (per-file parser, tree disposed)", constructCounts)
   block("MULTIPLE INHERITANCE", multipleInheritance)
   if (parseErrors.length) {

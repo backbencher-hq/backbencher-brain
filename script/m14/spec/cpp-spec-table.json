@@ -1713,6 +1713,18 @@
      "repos": 14
     }
    },
+   "containsPayload": {
+    "named-owner": {
+     "edges": 163794,
+     "files": 6117,
+     "repos": 24
+    },
+    "global-pseudo-container": {
+     "edges": 4557,
+     "files": 750,
+     "repos": 23
+    }
+   },
    "multipleInheritance": {
     "totalBases": {
      "edges": 4403,

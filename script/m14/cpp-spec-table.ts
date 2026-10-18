@@ -306,6 +306,7 @@ const spec = {
           instantiatesPayload: census.instantiatesPayload,
           usesPayload: census.usesPayload,
           referencesPayload: census.referencesPayload,
+          containsPayload: census.containsPayload,
           multipleInheritance: census.multipleInheritance,
           constructPopulations: census.constructs,
           parseErrors: census.parseErrors,
