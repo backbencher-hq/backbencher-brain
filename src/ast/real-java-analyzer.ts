@@ -2063,6 +2063,68 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      else if (type === "annotation" || type === "marker_annotation") {
+        // ANNOTATION TYPE REFERENCES (M14 owner ruling 2026-10-18, directed as
+        // "annotations produce ZERO relationship rows — a real missing
+        // relationship"). An annotation is a TYPE mentioning itself in a
+        // declaration position (JLS 9.6 declares an annotation interface; JLS 9.7
+        // uses it). The pinned grammar gives it two node types — `marker_annotation`
+        // (`@Override`) and `annotation` (`@SuppressWarnings("x")`, the only
+        // difference being the argument list) — and until this site existed NEITHER
+        // emitted a relationship: the names reached `decorators`/
+        // `metadata.annotations` as PAYLOAD only, so the type-usage graph had no
+        // edge to the annotation class. Measured by the Lead's census over a
+        // 203-file draw: 1,475 `marker_annotation` + 119 `annotation` nodes, 0
+        // relationship rows. Probe on the fixture authored for this site: pre-fix
+        // `java/annotation-references` emitted 0 rows carrying `isAnnotation`.
+        //
+        // THE EDGE. `references` — the type is MENTIONED, and every other type
+        // mention in this analyzer is `references` (declared types, casts,
+        // instanceof, throws, class literals) — at confidence 0.95 for the
+        // declaration's structural spelling, with the line on the annotation NAME
+        // (not the statement), the same M59 rule every other site here follows.
+        // `annotatedKind` records WHICH declaration carries the annotation, because
+        // a class, method, field, parameter, local, type parameter, enum constant
+        // and record component are different facts to a consumer and the annotation
+        // node alone cannot tell them apart.
+        //
+        // TARGET SPELLING IS THE WRITTEN SPELLING, not a leaf: `@Override` emits
+        // `Override` while `@org.springframework.stereotype.Service` emits the full
+        // path — the rule `throws java.sql.SQLException` already follows here (the
+        // file wrote the qualifier, so the edge carries it). Truncating to a leaf
+        // would be a second spelling of one name and unexplainable by the diff.
+        //
+        // ONE EDGE PER ANNOTATED DECLARATION, which is why the sources are a LIST:
+        // JLS 8.3 makes `@Deprecated int a, b;` annotate BOTH declarators, and a
+        // consumer asking "what is annotated with X" must get both fields. A
+        // parameter/local/type-parameter has no published symbol, so its annotation
+        // is attributed to the declaration that carries it (the enclosing
+        // method/constructor/type) — the same attribution this lane already uses
+        // for those positions' `declared_type` references.
+        const annotationNameNode = this.javaAnnotationNameNode(node)
+        if (annotationNameNode) {
+          const annotationSources = this.javaAnnotatedDeclarationSources(node, parentContext)
+          for (let annotationIdx = 0; annotationIdx < annotationSources.length; annotationIdx++) {
+            const annotationSource = annotationSources[annotationIdx]
+            relationships.push({
+              source: annotationSource.name,
+              target: annotationNameNode.text,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.95,
+              // M59 (#825): the annotation TYPE is named by its name node — the
+              // `@` sigil and an argument list are not the name.
+              line_number: annotationNameNode.startPosition.row + 1,
+              metadata: {
+                relationshipType: "annotation",
+                isAnnotation: true,
+                annotatedKind: annotationSource.declKind,
+                evidenceClass: "structural",
+              },
+            })
+          }
+        }
+      }
+
       else if (type === "throws") {
         // JLS 8.4.4: throws clauses reference each exception type.
         for (let i = 0; i < node.namedChildCount; i++) {
@@ -3552,6 +3614,128 @@ currentPackage,
       }
     }
     return annotations
+  }
+
+  /**
+   * The NAME child of an annotation / marker_annotation node — the annotation
+   * TYPE as the file wrote it. The grammar serializes it as
+   * `$._name = choice(identifier, scoped_identifier)` (probe-verified: `@Override`
+   * has a direct `identifier`, `@org.springframework.stereotype.Service` a
+   * `scoped_identifier`), and `findChildByType` only inspects DIRECT children, so
+   * an identifier inside an argument list can never be mistaken for the name.
+   */
+  private javaAnnotationNameNode(ann: Node): Node | null {
+    return this.findChildByType(ann, "identifier") || this.findChildByType(ann, "scoped_identifier")
+  }
+
+  /** The declaration kinds whose annotations this lane attributes to a published
+   *  name. Every entry is a node type of the pinned tree-sitter-java grammar; the
+   *  list is exhaustive for the positions Java permits a type annotation in
+   *  (`modifiers`, type-use, parameter, type-parameter, receiver, record
+   *  component, enum constant). */
+  private static readonly JAVA_ANNOTATED_DECLARATIONS: ReadonlySet<string> = new Set([
+    "class_declaration", "interface_declaration", "enum_declaration",
+    "record_declaration", "annotation_type_declaration", "module_declaration",
+    "method_declaration", "constructor_declaration", "compact_constructor_declaration",
+    "annotation_type_element_declaration", "field_declaration",
+    "constant_declaration", "local_variable_declaration", "enum_constant",
+    "formal_parameter", "spread_parameter", "catch_formal_parameter",
+    "receiver_parameter", "type_parameter",
+  ])
+
+  /** Positions whose annotated thing is NOT a published symbol of its own: the
+   *  annotation belongs to the declaration that carries the position. */
+  private static readonly JAVA_ANNOTATION_CARRIER_POSITIONS: ReadonlySet<string> = new Set([
+    "formal_parameter", "spread_parameter", "catch_formal_parameter",
+    "receiver_parameter", "type_parameter", "local_variable_declaration",
+  ])
+
+  /**
+   * The declaration an annotation node decorates, found by climbing ancestors to
+   * the first node type in JAVA_ANNOTATED_DECLARATIONS.
+   *
+   * WHY A CLIMB AND NOT `parent.parent`: a declaration annotation sits under the
+   * declaration's `modifiers` child (one hop), but a TYPE-USE annotation
+   * (`List<@Nullable String>`, JLS 9.7.4) is nested inside the type node
+   * (`annotated_type` > `type_arguments` > `generic_type` > …), and a parameter /
+   * record-component annotation sits under `formal_parameter`'s modifiers. The
+   * fixed-hop version would work for exactly one of those shapes and silently
+   * emit nothing for the others.
+   */
+  private javaAnnotatedDeclarationNode(ann: Node): Node | null {
+    let cur: Node | null = ann.parent
+    let guard = 0
+    while (cur && guard++ < 64) {
+      if (RealJavaAnalyzer.JAVA_ANNOTATED_DECLARATIONS.has(cur.type)) return cur
+      cur = cur.parent
+    }
+    return null
+  }
+
+  /** The name of the nearest enclosing named declaration (method / constructor /
+   *  type), used for positions that publish no symbol of their own. */
+  private javaEnclosingDeclarationName(node: Node): string | undefined {
+    let cur: Node | null = node.parent
+    let guard = 0
+    while (cur && guard++ < 64) {
+      const named = this.findChildByType(cur, "type_identifier")
+      if (
+        cur.type === "class_declaration" || cur.type === "interface_declaration" ||
+        cur.type === "enum_declaration" || cur.type === "record_declaration" ||
+        cur.type === "annotation_type_declaration" || cur.type === "module_declaration" ||
+        cur.type === "method_declaration" || cur.type === "constructor_declaration" ||
+        cur.type === "compact_constructor_declaration" ||
+        cur.type === "annotation_type_element_declaration"
+      ) {
+        const namedChild =
+          cur.childForFieldName("name") ||
+          this.findChildByType(cur, "identifier") ||
+          named
+        if (namedChild) return namedChild.text
+      }
+      cur = cur.parent
+    }
+    return undefined
+  }
+
+  /**
+   * The names an annotation edge is emitted FROM, with the annotated declaration's
+   * node type beside each. See the `annotation` branch in the walk for the
+   * contract; this helper exists so the branch reads as one edge shape.
+   */
+  private javaAnnotatedDeclarationSources(ann: Node, parentContext: any): Array<{ name: string; declKind: string }> {
+    const fallback: Array<{ name: string; declKind: string }> = parentContext?.name
+      ? [{ name: String(parentContext.name), declKind: "enclosing_scope" }]
+      : []
+    const decl = this.javaAnnotatedDeclarationNode(ann)
+    if (!decl) return fallback
+    const declKind = decl.type
+
+    // Fields and constants publish one symbol PER DECLARATOR (JLS 8.3.1: one
+    // annotation on `@Deprecated int a, b;` applies to both variables), so each
+    // declarator gets its own edge. A LOCAL publishes no symbol at all, so its
+    // annotation is attributed to the carrying declaration below.
+    if (declKind === "field_declaration" || declKind === "constant_declaration") {
+      const names: Array<{ name: string; declKind: string }> = []
+      for (let i = 0; i < decl.namedChildCount; i++) {
+        const c = decl.namedChild(i)
+        if (!c || c.type !== "variable_declarator") continue
+        const n = c.childForFieldName("name") || this.findChildByType(c, "identifier")
+        if (n) names.push({ name: n.text, declKind })
+      }
+      return names.length > 0 ? names : fallback
+    }
+
+    if (RealJavaAnalyzer.JAVA_ANNOTATION_CARRIER_POSITIONS.has(declKind)) {
+      const carrier = this.javaEnclosingDeclarationName(decl)
+      return carrier ? [{ name: carrier, declKind }] : fallback
+    }
+
+    const ownName =
+      decl.childForFieldName("name") ||
+      this.findChildByType(decl, "identifier") ||
+      this.findChildByType(decl, "type_identifier")
+    return ownName ? [{ name: ownName.text, declKind }] : fallback
   }
 
   /**
