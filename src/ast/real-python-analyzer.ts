@@ -1089,8 +1089,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "decorated_definition": {
-          // The decorator nodes are metadata on the wrapped class/function;
-          // the class/function node itself is visited as a child normally.
+          // The decorator nodes are metadata on the wrapped class/function AND, since
+          // `extractDecoratorReferences`, an EDGE (declaration -> decorator name with
+          // `metadata.isDecorator`); the class/function node itself is visited as a
+          // child normally.
           ctx.patterns["Decorators"] = true
           break
         }
@@ -1166,6 +1168,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.extractDeclaredTypeRefs(rootNode, ctx.relationships, phantomDefs, ctx.moduleName, ctx.functionLocals)
     this.extractMemberUses(rootNode, ctx, phantomDefs)
     this.extractVirtualRegistrations(rootNode, ctx)
+    // DECORATORS — the one python declaration modifier that had no graph edge. Emitted
+    // BEFORE `classifyEvidenceTier` so the new rows leave with an evidenceClass, and
+    // before the claim passes so a decorator naming an imported module member is
+    // certified like any other route (the claims only ADD metadata; they never rewrite
+    // a target). See `extractDecoratorReferences` for why the label is a placeholder
+    // (`references` + `metadata.isDecorator`) until the ontology's `decorates` lands.
+    this.extractDecoratorReferences(rootNode, ctx)
     this.classifyEvidenceTier(ctx.relationships)
     // AND LAST, the language-namespace claim: it runs over the COMPLETE relationship set — so
     // that an edge added by any of the passes above is certified too — and it only ADDS a
@@ -3206,52 +3215,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
      * module-level annotation — and `python/reference-source-scope-and-reason-codes` pins the
      * two inside a class nested in a function, where the CLASS wins for its own method.
      */
-    const resolveSource = (start: Node): string => {
-      // Include the start node itself: a function's return annotation
-      // resolves to the function, not its enclosing scope.
-      const chain: Node[] = []
-      let p: Node | null = start
-      while (p) { chain.push(p); p = p.parent }
-      let fn: string | undefined
-      let cls: string | undefined
-      for (let i = chain.length - 1; i >= 0; i--) {
-        const n = chain[i]
-        if (n.type === "class_definition") {
-          const nm = this.findChildByType(n, "identifier")?.text
-          if (nm) { cls = nm; fn = undefined }
-        } else if (n.type === "function_definition") {
-          if (fn === undefined) {
-            const nm = this.findChildByType(n, "identifier")?.text
-            if (nm) fn = nm
-          }
-        }
-      }
-      if (fn !== undefined) return fn
-      if (cls !== undefined) return cls
-      // PY-4. This used to return the LITERAL STRING "global" — a Python KEYWORD used
-      // as a scope name — whenever a statement had no enclosing function or class. Three
-      // things were wrong with it at once.
-      //
-      // A name that is not a name: `global` is not a scope, a module, or anything a
-      // reader can navigate to. This is the M60 R7 class, the same one markdown hit when
-      // an empty ATX heading published a symbol named `#`.
-      //
-      // Not tolerated by the store: `GENERIC_SOURCE_NAMES` is
-      // `["unknown", "SCSS_FILE_SCOPE", "window", "exports", "default", "GlobalScope"]` —
-      // the names the indexer knows are synthetic scopes — and `global` is not among
-      // them, so Python's synthetic scope took a path no other lane's takes.
-      //
-      // And INCONSISTENT WITH ITS OWN FILE: `imports` in the same module attributes the
-      // import to `ctx.moduleName`, the file's stem. One module, two spellings for one
-      // scope, from one analyzer, so neither can be trusted as the module's identity.
-      //
-      // So it returns the module name — the SAME derivation `imports` already uses, one
-      // line away, which is what makes this a consistency fix rather than a new
-      // convention. `__init__.py` yields `__init__`, which is a weak module name; that is
-      // a property of the file stem, it is the string `imports` has always published, and
-      // improving the stem derivation is a separate change with its own blast radius.
-      return moduleName
-    }
+    const resolveSource = (start: Node): string => this.resolveReferenceSource(start, moduleName)
 
     const emit = (source: string, roots: (Node | null | undefined)[], relType: string): void => {
       for (const r of roots) {
@@ -5105,6 +5069,158 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       return last ? last.text : undefined
     }
     return inner.text.split(".")[0].split("(")[0]
+  }
+
+  /**
+   * DECORATORS — the one python declaration modifier that emitted NO relationship row.
+   *
+   * MEASURED BEFORE THIS PASS, on a 50-file stride of the admitted population: `decorator`
+   * is a named grammar node and the analyzer put its NAME on the wrapped symbol's
+   * `decorators` array and nowhere else. A symbol payload is not an edge: no consumer of the
+   * GRAPH could see that `@app.route("/x")` depends on `app.route`, so `bb_graph`,
+   * `bb_impact` and `bb_migrate` could not reach the decorator from the declaration at all.
+   * The relationship is real in the source — the decorator IS applied to the declaration —
+   * and the lane's contract is that a fact the grammar states gets an edge, not a field no
+   * reader sees.
+   *
+   * THE LABEL IS `references` TODAY AND IT IS A PLACEHOLDER WITH A NAMED TARGET. The
+   * ontology workstream records that this construct wants its OWN vocabulary (`decorates`);
+   * a lane does not invent a stored value. When the value lands, the ONE
+   * `RelationshipType` argument on the push below changes and the fixture — which asserts
+   * source/target/line/metadata, not the enum spelling — pins the same fact through the
+   * relabel. Until then `metadata.isDecorator: true` is what lets a consumer separate these
+   * rows from every other `references` edge, and it is additive metadata: no resolution or
+   * label number moves because of it.
+   *
+   * THE EDGE IS (decorated declaration) -> (decorator's NAME), and the name is the LEAF
+   * with the written chain in `metadata.qualified` — the lane's endpoint contract, the same
+   * rule `calls`, `uses` and base classes follow (`@app.route(...)` -> `route`, qualified
+   * `app.route`; `@pkg.decorator` -> `decorator`, qualified `pkg.decorator`; `@login` ->
+   * `login`). A decorator expression that names nothing readably (a lambda, a
+   * comprehension) is SKIPPED rather than text-sliced into an invented name: an edge to a
+   * declaration the source never wrote is the fabrication this lane refuses everywhere.
+   *
+   * THE LINE is the decorator NAME's own line, never the `def`/`class` line — the other
+   * half of the M59 contract. The fixture `python/decorator-column-lines` pins the
+   * declaration's SYMBOL range to the def line; this edge names the other event, so a
+   * consumer can tell "this name is written on the `@` line" from "this name is the
+   * declaration".
+   */
+  private extractDecoratorReferences(rootNode: Node, ctx: PythonContext): void {
+    const walk = (n: Node): void => {
+      if (n.type === "decorated_definition") {
+        const def =
+          n.childForFieldName("definition") ??
+          this.findChildByType(n, "function_definition") ??
+          this.findChildByType(n, "class_definition")
+        const nameNode = def?.childForFieldName("name")
+        if (def && nameNode?.text) {
+          // THE SOURCE IS A PUBLISHED SYMBOL, NEVER THE NESTED DEF'S OWN NAME. A def inside
+          // a def is a LOCAL on this family's contract (PY-28), so `@login def nested()`
+          // inside a method belongs to the METHOD — the same attribution the annotation
+          // references already make, through the same shared helper, so the two passes
+          // cannot answer this question differently.
+          const source = this.resolveReferenceSource(def, ctx.moduleName)
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c || c.type !== "decorator") continue
+            const target = this.decoratorReferenceTarget(c)
+            if (!target) continue
+            this.pushRel(ctx, source, target.name, ASTEngine.RelationshipType.References, 1.0, {
+              pythonSpecific: true,
+              isDecorator: true,
+              ...(target.qualified ? { qualified: target.qualified } : {}),
+            }, this.nodeLine(target.node))
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        if (child) walk(child)
+      }
+    }
+    walk(rootNode)
+  }
+
+  /**
+   * The name a `decorator` node WRITES, and the node that writes it, or null.
+   *
+   * `decorator` is `"@"` + one of {identifier, attribute, call, subscript} in this
+   * grammar, and a call's `function` / a subscript's `value` / a parenthesised
+   * expression's inner node are the same shapes one level down. Only those shapes are
+   * read: anything else (a lambda, a comprehension, an arbitrary expression) NAMES no
+   * decorator, and returning a text-sliced guess for it would publish an edge to a
+   * declaration that does not exist.
+   */
+  private decoratorReferenceTarget(decorator: Node): { name: string; node: Node; qualified?: string } | null {
+    const read = (n: Node): { name: string; node: Node; qualified?: string } | null => {
+      if (n.type === "identifier") return n.text === "" ? null : { name: n.text, node: n }
+      if (n.type === "attribute") {
+        const leaf = n.childForFieldName("attribute") ?? n.namedChild(n.namedChildCount - 1)
+        if (!leaf || leaf.type !== "identifier" || leaf.text === "") return null
+        return { name: leaf.text, node: leaf, qualified: n.text }
+      }
+      if (n.type === "call") {
+        const fn = n.childForFieldName("function") ?? n.namedChild(0)
+        return fn ? read(fn) : null
+      }
+      if (n.type === "subscript") {
+        const value = n.childForFieldName("value") ?? n.namedChild(0)
+        return value ? read(value) : null
+      }
+      if (n.type === "parenthesized_expression") {
+        const inner = n.namedChild(0)
+        return inner ? read(inner) : null
+      }
+      return null
+    }
+    const inner = decorator.namedChild(0)
+    return inner ? read(inner) : null
+  }
+
+  /**
+   * THE PUBLISHED SYMBOL A STATEMENT INSIDE A BODY BELONGS TO — PY-28's rule, extracted so
+   * the type-reference walk and the decorator pass cannot disagree about it (they are the
+   * same question asked at two sites: "this fact is written inside a body; which symbol in
+   * the graph does that body belong to?").
+   *
+   * The replay is the main walk's model, replayed OUTERMOST-FIRST: entering a `class`
+   * sets the class and CLEARS the function scope (a def directly in a class body is a
+   * Method of that class), and entering a `function_definition` while one is already open
+   * changes nothing — so a def two levels deep still belongs to the OUTERMOST def on the
+   * path, which is the published one. A statement with no enclosing def or class belongs to
+   * the MODULE, and the module's name is the file stem — the same derivation `imports`
+   * uses, so one file has one module identity (PY-4).
+   *
+   * WHY THIS IS A METHOD AND NOT A LOCAL CLOSURE ANY MORE: the decorated-definition pass
+   * needs exactly this answer for a decorated NESTED def (`@login def nested()` inside a
+   * method), and a second copy of the rule would be two rules. Pinned by
+   * `python/nested-def-reference-source` (the four reference shapes) and
+   * `python/decorators-are-references` (the nested-decorator shape).
+   */
+  private resolveReferenceSource(start: Node, moduleName: string): string {
+    // Include the start node itself: a function's return annotation
+    // resolves to the function, not its enclosing scope.
+    const chain: Node[] = []
+    let p: Node | null = start
+    while (p) { chain.push(p); p = p.parent }
+    let fn: string | undefined
+    let cls: string | undefined
+    for (let i = chain.length - 1; i >= 0; i--) {
+      const n = chain[i]
+      if (n.type === "class_definition") {
+        const nm = this.findChildByType(n, "identifier")?.text
+        if (nm) { cls = nm; fn = undefined }
+      } else if (n.type === "function_definition") {
+        if (fn === undefined) {
+          const nm = this.findChildByType(n, "identifier")?.text
+          if (nm) fn = nm
+        }
+      }
+    }
+    if (fn !== undefined) return fn
+    if (cls !== undefined) return cls
+    return moduleName
   }
 
   private isAsyncFunction(node: Node): boolean {
