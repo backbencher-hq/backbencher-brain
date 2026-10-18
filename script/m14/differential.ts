@@ -91,6 +91,14 @@ import {
 // anonymous classes and enum-constant bodies included); the analyzer's pass-3 GUESS rows (confidence 0.5)
 // are deliberately NOT derived — they belong in the heuristic bucket, where the harness counts them as
 // such rather than as truth.
+// JAVA IMPORTS/EXPORTS TRUTH (2026-10-18, lane-owned module committed 597a32e90) — the LAST two
+// emitted labels the D4 audit had no derivation for. Derives the published contract: module path as
+// written for every import_declaration form (wildcard names the PACKAGE per JLS 7.5.3/7.5.4; static
+// member keeps the member) plus JPMS `requires` module names (JLS 7.7.1); exports covers all three
+// emission sites — top-level types of a named package (public AND package-private tiers), JPMS `exports`
+// directives (the `to` modules are references, not exports), and the composed Spring/JAX-RS API-route
+// surface with the analyzer's own constant folding. Wired here; the labels are admitted below.
+import { deriveJavaImportTruth, deriveJavaExportTruth } from "./oracles/java-imports-exports-truth"
 import {
   deriveJavaInheritanceTruth,
   deriveJavaInstantiatesTruth,
@@ -24120,6 +24128,16 @@ async function main() {
         for (const e of deriveJavaTypeParameterContainmentTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // IMPORTS / EXPORTS (2026-10-18): the last two java labels with no truth. Directives are
+        // wherever-they-appear (inside module_body — a direct-child read derives zero), and the export
+        // oracle covers three separate emission sites; one row per target because the analyzer
+        // publishes the same module target on two import channels and the matcher keys label+target.
+        for (const e of deriveJavaImportTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveJavaExportTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
         // ── HERITAGE / CONSTRUCTION / OVERRIDES (2026-10-18) ──────────────────────────────────────
         // The four labels the D4 bar found compared against nothing. Pushed directly: these are narrow
         // derivations from the declaration nodes themselves, not filters over the references walk.
@@ -25094,6 +25112,10 @@ async function main() {
           // or the oracle compares nothing — the two-sided rule this file records twice.
           ...(lang === "typescript" ? ["imports", "exports"] : []),
           ...(lang === "javascript" ? ["contains", "exports", "references", "imports"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : []),
+          // JAVA imports/exports (2026-10-18): truth pushed in the java block from the lane-owned
+          // oracle. Admitted here in the same change — the two-sided rule this file records for
+          // c-imports #910 / groovy G7 / python decorates. With these, ALL TEN java labels are audited.
+          ...(lang === "java" ? ["imports", "exports"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
           // every reference it makes into its own address space is a `uses` edge
