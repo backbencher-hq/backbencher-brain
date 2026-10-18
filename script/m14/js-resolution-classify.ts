@@ -351,9 +351,7 @@ function moduleOf(target: string): { module: string; item: string } {
 
 /** candidate project-relative paths a relative specifier could name (the shapes the lane's seam resolves) */
 function specifierCandidates(spec: string): string[] {
-  let base = spec
-  while (base.startsWith("./")) base = base.slice(2)
-  base = base.replace(/^\.\.\//, "")
+  const base = spec
   const out: string[] = [base]
   for (const ext of [".js", ".jsx", ".mjs", ".cjs"]) out.push(base + ext)
   for (const ext of ["/index.js", "/index.jsx", "/index.mjs", "/index.cjs"]) out.push(base + ext)
@@ -367,6 +365,10 @@ function classifyEdge(
   fileRel: (abs: string) => string,
 ): Bucket {
   const { label, target, meta } = row
+  // A CLAIM IS NOT A RESOLUTION (the gate's own rule): an edge the analyzer marked
+  // `isExternalTarget` is counted in extOK, so this census reports it in its own bucket and
+  // never inside a "needs work" class. The claim's stated reason travels with the count.
+  if (meta?.isExternalTarget === true) return `CLAIMED-${String(meta?.externalReason ?? "external")} (gate extOK)`
   if (label === "calls") {
     const callee = typeof meta.calleeExpression === "string" ? meta.calleeExpression : target
     const bare = callee === target || !callee.includes(".")
@@ -437,7 +439,11 @@ function classifyEdge(
   if (label === "imports") {
     const { module: mod, item } = moduleOf(target)
     if (isRelativeSpecifier(mod)) {
-      const rel = fileRel(row.file)
+      // project file sets are REPO-relative; the row's rel path is CORPUS-relative, so the
+      // repository prefix is removed before candidate resolution (a ../ join across the two
+      // spaces produced false "missing" for every cross-directory relative import).
+      const full = fileRel(row.file)
+      const rel = full.startsWith(`${row.repo}/`) ? full.slice(row.repo.length + 1) : full
       const dir = path.posix.dirname(rel)
       const cands = specifierCandidates(mod)
       let found = false
@@ -450,8 +456,9 @@ function classifyEdge(
         : "IMPORTS-INTERNAL-FILE-MISSING"
     }
     if (mod.includes("://")) return "IMPORTS-URL (needs citation)"
-    if (mod.startsWith("@")) return `IMPORTS-SCOPED-PACKAGE (moduleNamespace claim)`
-    if (mod.length > 0 && !mod.includes("/")) return `IMPORTS-PACKAGE (moduleNamespace claim)`
+    if (mod.startsWith("@")) return "IMPORTS-SCOPED-PACKAGE (moduleNamespace claim)"
+    if (mod.length > 0 && !mod.includes("/")) return "IMPORTS-PACKAGE (moduleNamespace claim)"
+    if (mod.length > 0) return "IMPORTS-PACKAGE-SUBPATH (moduleNamespace claim, root decides)"
     return "IMPORTS-OTHER-SPECIFIER"
   }
   if (label === "exports") {
@@ -475,6 +482,24 @@ function classifyEdge(
     if (fileBindings.imports.has(target)) return "NEW-IMPORTED-BINDING (external module)"
     if (fileBindings.locals.has(target)) return "NEW-LOCAL-BINDING"
     return "NEW-NOTHING-ANYWHERE"
+  }
+  if (label === "decorates") {
+    if (fileBindings.imports.has(target)) {
+      const spec = fileBindings.imports.get(target)!
+      return isRelativeSpecifier(spec) ? "DECORATES-IMPORTED-INTERNAL (seam)" : "DECORATES-IMPORTED-EXTERNAL (seam)"
+    }
+    if (fileBindings.locals.has(target) || fileBindings.requires.has(target)) return "DECORATES-LOCAL-BINDING"
+    if (proj.memberOwners.has(target)) return "DECORATES-MEMBER-ELSEWHERE"
+    return "DECORATES-NOTHING-ANYWHERE (out-of-corpus API)"
+  }
+  if (label === "renders") {
+    if (fileBindings.imports.has(target)) {
+      const spec = fileBindings.imports.get(target)!
+      return isRelativeSpecifier(spec) ? "RENDERS-IMPORTED-INTERNAL (seam)" : "RENDERS-IMPORTED-EXTERNAL (seam)"
+    }
+    if (fileBindings.locals.has(target) || fileBindings.requires.has(target)) return "RENDERS-LOCAL-BINDING"
+    if (proj.memberOwners.has(target)) return "RENDERS-MEMBER-ELSEWHERE"
+    return "RENDERS-NOTHING-ANYWHERE (out-of-corpus API)"
   }
   if (label === "overrides") {
     return "OVERRIDES-AMBIGUOUS-BASE"
@@ -616,5 +641,11 @@ for (const label of labelOrder) {
     console.log(`  ${String(n).padStart(6)}  ${k}`)
     for (const e of examples[label]?.[k] ?? []) console.log(`             e.g. ${e}`)
   }
+}
+// reconciliation: the gate's columns, restored from this census's own buckets
+for (const label of labelOrder) {
+  const b = buckets[label]
+  const claimed = [...b.entries()].filter(([k]) => k.startsWith("CLAIMED-")).reduce((a, [, n]) => a + n, 0)
+  if (claimed > 0) console.log(`\n${label}: ${claimed} edge(s) carry an EXTERNAL CLAIM (gate extOK column) — not resolved, not merged`)
 }
 if (JSON_OUT) console.log(`\njson: ${JSON_OUT}`)
