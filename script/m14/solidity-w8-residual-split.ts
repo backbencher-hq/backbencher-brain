@@ -67,7 +67,19 @@ const repoRootOf = (rel: string): string => {
   const first = rel.split("/")[0]
   return path.join(CR, first)
 }
-const files = [...new Set(rows.map((r) => r.src))]
+const allCorpusFiles: string[] = []
+for (const repo of ["solidity", "nvim-treesitter"]) {
+  const dir = path.join(CR, repo)
+  try {
+    const tracked = execFileSync("git", ["-C", dir, "ls-files", "*.sol"], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 })
+      .split("\n").filter(Boolean)
+    for (const rel of tracked) allCorpusFiles.push(path.join(dir, rel))
+  } catch {
+    // a corpus without the second checkout is fine: the split is about the files the dump names
+  }
+}
+const residualFiles = new Set(rows.map((r) => r.src))
+const files = allCorpusFiles.length > 0 ? allCorpusFiles : [...residualFiles]
 const declByFile = new Map<string, Map<string, { count: number; kinds: Set<string> }>>()
 const projectDecl = new Map<string, number>()
 const { parseFile } = await import(path.join(ROOT, "src/ast/pool-worker.ts"))
@@ -77,6 +89,7 @@ for (const rel of files) {
   const abs = path.isAbsolute(rel) ? rel : path.join(CR, rel)
   const relToCorpus = path.isAbsolute(rel) ? path.relative(CR, rel) : rel
   const res: any = await parseFile(abs, repoRootOf(relToCorpus))
+  const isResidualFile = residualFiles.has(rel) || residualFiles.has(abs) || residualFiles.has(relToCorpus)
   const decls = new Map<string, { count: number; kinds: Set<string> }>()
   for (const s of res.symbols ?? []) {
     const d = decls.get(s.name) ?? { count: 0, kinds: new Set<string>() }
@@ -85,9 +98,13 @@ for (const rel of files) {
     decls.set(s.name, d)
     projectDecl.set(s.name, (projectDecl.get(s.name) ?? 0) + 1)
   }
+  declByFile.set(abs, decls)
   declByFile.set(rel, decls)
+  if (!isResidualFile) continue
   for (const e of res.relationships ?? []) {
-    analyzerMeta.set(`${rel}\0${String(e.type)}\0${String(e.target)}\0${Number(e.line_number ?? 0)}`, e.metadata ?? {})
+    for (const key of new Set([abs, rel, relToCorpus])) {
+      analyzerMeta.set(`${key}\0${String(e.type)}\0${String(e.target)}\0${Number(e.line_number ?? 0)}`, e.metadata ?? {})
+    }
   }
 }
 
@@ -105,9 +122,11 @@ for (const r of rows) {
   const decls = declByFile.get(r.src) ?? new Map()
   const here = decls.get(bare)
   let k: string
+  const projectCount = projectDecl.get(bare) ?? 0
   if (here && here.count > 1) k = `duplicate-in-file(${[...here.kinds].sort().join("+")})`
-  else if (here && here.count === 1) k = `single-decl-in-file(${[...here.kinds].sort().join("+")})`
-  else if ((projectDecl.get(bare) ?? 0) > 0) k = "declared-in-other-file-only"
+  else if (here && here.count === 1 && projectCount > 1) k = `single-in-file-declared-elsewhere-too(${[...here.kinds].sort().join("+")})`
+  else if (here && here.count === 1) k = `UNIQUE-DECLARATION-IN-PROJECT(${[...here.kinds].sort().join("+")})`
+  else if (projectCount > 0) k = "declared-in-other-file-only"
   else k = "declared-nowhere"
   const fam = md.isYulPathSegment === true ? "yul" : md.isVariableReference === true ? "varref" : md.isMemberReference === true ? "member" : md.isTypeReference === true ? "type" : "other"
   bump(`${r.label}/${fam}|${k}`, `${r.src}:${r.line}: ${r.target} [${r.outcome}]`)
