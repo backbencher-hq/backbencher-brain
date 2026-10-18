@@ -2885,10 +2885,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             !suppressCall &&
             !inDirectiveCondition &&
             target && target.trim() !== "" &&
-            // K1 (D7 #996): a keyword or a non-identifier target is a RECOVERY FRAGMENT,
-            // not a call. The class and its prediction table are in C-D7-DISPOSITION.md
-            // D-IMPLEMENTABLE-1; the fixture is c/call-target-refusals-996 (both directions).
-            this.isCalflableNameSpelling(target) &&
+            // K1 CORRECTED (D7 #996): a KEYWORD target is a recovery fragment, not a call — a keyword
+            // can never be a declared name (CGD22), so this half cannot withdraw a resolution. The
+            // non-identifier half of the first K1 was reverted: arm-A measured it removing 3 REAL
+            // name-model resolutions (`$`-containing Cython template identifiers whose declarations this
+            // analyzer publishes). Class, measured delta and corrected prediction table:
+            // C-D7-DISPOSITION.md D-IMPLEMENTABLE-1. Fixture: c/call-target-refusals-996 (both directions).
+            !this.isKeywordCallee(target) &&
             // Malformed recovery guard: include-adjacent macros produced
             // targets containing quotes/newlines (never real callees).
             !target.includes('"') && !target.includes("\n") && !target.includes("{")
@@ -7979,38 +7982,26 @@ private isAttributeInternalCall(callNode: Node, fnNode: Node): boolean {
   }
 
   /**
-   * K1 (D7 #996): can a C CALLEE legitimately spell this name?
+   * K1 CORRECTED (D7 #996, arm-A measured): a C keyword can never be a CALLEE.
    *
-   * The recovery shapes in the corpus published two target classes that cannot be a
-   * callee in valid C, and both are now refused at the call-emission gate:
+   * The first K1 also refused NON-IDENTIFIER spellings (a `$`-containing target). The arm-A after-run
+   * showed that half was WRONG, and the measurement is the argument: the broad guard withdrew 43 calls
+   * rows, of which 40 were the predicted garbage (keyword/non-identifier recovery fragments) but **3 were
+   * name-model RESOLUTIONS** — calls to identifiers that CONTAIN `$`, e.g. Cython's generated
+   * `__Pyx_ImportType_$cyversion` / `__Pyx_ImportFromPxd_$cyversion` in `Cython/Utility/ImportExport.c`,
+   * whose declarations the analyzer ITSELF publishes in the same file (so the calls resolved to them).
+   * Refusing those removed real resolutions to satisfy a spelling rule, which is the wrong trade: the
+   * name model is the analyzer's own, and a `$`-spelling is not disqualified by the C grammar the way a
+   * keyword is. The non-identifier class therefore stays UNRESOLVED (its 5 rows) and is dispositioned as
+   * RULED UNDECIDABLE in C-D7-DISPOSITION.md, not deleted.
    *
-   *   1. A C KEYWORD — SuiteSparse's debug macros invoked with an `if` STATEMENT as the
-   *      argument (`DEBUG (if (cond) fn ())`) recover into a call whose target is the
-   *      keyword itself (29 unresolved + 1 ambiguous calls at whole population). The
-   *      declaration path has refused keywords since CGD22 (`C_KEYWORDS`); the call path
-   *      never consulted the set.
-   *   2. A NON-IDENTIFIER — Cython's generated `$global_code_object_cache_find(...)`
-   *      template placeholder (5 unresolved calls). A `$` is not a C identifier
-   *      character, so nothing in a C program can declare that name.
-   *
-   * Measured D7 class (charter §18): 35 calls edges predicted withdrawn, resolved MUST
-   * stay fixed, arbitraryTwin must not rise (validation/m14/verification/C-D7-DISPOSITION.md
-   * D-IMPLEMENTABLE-1 carries the prediction table and the run falsifier). The predicate is
-   * a character scan, never a regex literal (M49.R2): first byte a letter or underscore,
-   * every later byte a letter, digit or underscore.
+   * A KEYWORD, by contrast, is structurally impossible to declare: declaration extraction has refused
+   * keywords since CGD22 (`C_KEYWORDS`), and no `#define`/member/type can carry one (the corpus-wide
+   * check in the D7 disposition found 0). So the keyword half cannot withdraw a resolution, and the
+   * corrected predicted rule is: TOTAL −35 (all keyword), `resolved` FIXED, no decoy class.
    */
-  private isCalflableNameSpelling(name: string): boolean {
-    if (name.length === 0) return false
-    if (C_KEYWORDS.has(name)) return false
-    const first = name.charCodeAt(0)
-    const firstOk = (first >= 65 && first <= 90) || (first >= 97 && first <= 122) || first === 95
-    if (!firstOk) return false
-    for (let i = 1; i < name.length; i++) {
-      const c = name.charCodeAt(i)
-      const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
-      if (!ok) return false
-    }
-    return true
+  private isKeywordCallee(target: string): boolean {
+    return C_KEYWORDS.has(target)
   }
 
   // CGD33: does `name` resolve ONLY as a type declaration (no value

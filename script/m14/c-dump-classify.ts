@@ -128,10 +128,16 @@ function isAllCapsIdentifier(s: string): boolean {
   return hasUpper
 }
 const C_KEYWORDS = new Set([
-  "if", "else", "for", "while", "do", "switch", "case", "return", "sizeof", "goto",
-  "break", "continue", "default", "auto", "register", "restrict", "volatile",
-  "int", "char", "void", "static", "const", "struct", "union", "enum", "typedef",
-  "unsigned", "signed", "long", "short", "float", "double", "extern", "inline",
+  // K1 CORRECTION (D7 arm-A measured): this copy now matches the ANALYZER's C_KEYWORDS exactly. The old
+  // copy omitted _Bool/_Complex/_Imaginary/_Alignas/_Alignof/_Atomic/_Generic/_Noreturn/_Static_assert/
+  // _Thread_local, so 5 `_Static_assert` recovery rows were classified `name-not-in-run-key-space` in §15
+  // while the corrected K1 (keyword-only) withdrew them. Class counts are corrected in
+  // C-D7-DISPOSITION.md; TABLE 1/closure were never affected (this is a family boundary, not a measurement).
+  "if", "else", "for", "while", "do", "switch", "case", "default", "break", "continue", "return",
+  "goto", "sizeof", "typedef", "struct", "union", "enum", "static", "extern", "inline", "register",
+  "volatile", "const", "auto", "signed", "unsigned", "void", "char", "short", "int", "long", "float",
+  "double", "_Bool", "_Complex", "_Imaginary", "restrict", "_Alignas", "_Alignof", "_Atomic",
+  "_Generic", "_Noreturn", "_Static_assert", "_Thread_local",
 ])
 
 /** One family per target SPELLING. `type` only narrows the vocabulary the spelling can mean. */

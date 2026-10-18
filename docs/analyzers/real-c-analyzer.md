@@ -2774,27 +2774,32 @@ The pattern is consistent enough to name: every one was a node-type or
 traversal assumption, and in every case the analyzer was right and the probe was not.
 The containment check exists because of that, not because of the two rows it fixed.
 
-## D7 K1 — call-target refusals (#996, 2026-10-19)
+## D7 K1 — call-target refusals, CORRECTED after arm A (#996, 2026-10-19)
 
-The call-emission gate now refuses a target that cannot be a callee in valid C, closing the D7
-`keyword-spelled` + `non-identifier-shaped` classes with a measured WITHDRAWAL (not a resolution):
-**29 unresolved + 1 ambiguous keyword targets** (a C keyword used as a callee, from macro-with-statement
-recovery — SuiteSparse CHOLMOD's `DEBUG (if (cond) fn ())` shape) and **5 unresolved non-identifier
-targets** (`$`-prefixed Cython template placeholders from generated `Cython/Utility/Exceptions.c`).
+The call-emission gate refuses a target that is a C KEYWORD — and nothing else. A keyword is structurally
+impossible to declare (declaration extraction has refused keywords since CGD22; the D7 corpus-wide check found
+0 `#define <keyword>`), so this half cannot withdraw a resolution. `isKeywordCallee()` is the whole rule.
 
-Rule: `isCalflableNameSpelling(target)` — the target must not be a C keyword (`C_KEYWORDS`, carried since
-CGD22 but never consulted on the call path) and must spell a C identifier (first byte letter/underscore,
-remaining bytes letter/digit/underscore; char scan, no regex). Both recovery targets are fragments, not
-names. The class, its **pre-stated arm-A prediction table** (TOTAL −35, `resolved` fixed at 250,033,
-amb −1, unresolved −34, extOK fixed, arbitraryTwin must not rise) and its run falsifier live in
-`validation/m14/verification/C-D7-DISPOSITION.md` D-IMPLEMENTABLE-1.
+**The first K1 also refused NON-IDENTIFIER spellings; arm A proved that half WRONG and it is reverted.** The
+arm (5,022 `.c` · 39 repos · self-test PASS) withdrew 43 calls rows where the prediction said 35, and
+**`resolved` fell by 3**. The named causes: (a) five `_Static_assert` rows were a class-boundary error —
+§15's family table was derived with a keyword copy that omitted `_Static_assert` (and the other
+underscore keywords), so they had been counted `name-not-in-run-key-space`; with the analyzer's own
+`C_KEYWORDS` the corrected class is keyword 34/1 and name-not-in-run calls 84,922/18,301 (TABLE 1 and the
+closure were never affected); (b) the three resolved withdrawals were `$`-spelling calls in generated Cython
+templates — `Cython/Utility/ImportExport.c` defines AND calls `__Pyx_ImportType_$cyversion`,
+`__Pyx_ImportFromPxd_$cyversion`, … so those calls were name-model RESOLUTIONS to declarations this analyzer
+publishes. Removing real resolutions to enforce a spelling rule is the wrong trade: a `$`-spelling is not
+disqualified the way a keyword is. The non-identifier class is therefore RULED UNDECIDABLE in the D7
+disposition and its 5 rows stay emitted.
 
-Pinned by `validation/m14/fixtures/c/call-target-refusals-996` in BOTH directions: the two refusals are
-forbidden rows, and five controls (an ordinary call, a file-local function-like macro call #908 keeps,
-and the three inner calls inside the recovered statement) must survive. RED was measured before the fix
-(the fixture published 7 calls rows including `-> if` and `-> $global_code_object_cache_find`);
-`bun run script/m14/c-call-target-probe.ts` reproduces either state and exits 1 while any refusal-class
-target publishes. Fixtures after: 48 pass / 3 recorded pre-existing failures, `no regressions`.
+Fixture `validation/m14/fixtures/c/call-target-refusals-996` pins BOTH directions of the corrected boundary:
+the keyword row is forbidden, the `$`-spelling call is a POSITIVE control that must keep publishing, plus an
+ordinary call, a file-local function-like macro call (#908 keeps), and the three inner calls inside the
+recovered statement. Probe `script/m14/c-call-target-probe.ts` reproduces either state; forensic probe
+`script/m14/c-k1-loss-probe.ts` names the refused-spelling symbols. Fixtures: 48 pass / 3 recorded pre-existing
+failures, `no regressions`. Corrected prediction for the re-run, the measured-vs-predicted table and the run
+falsifier live in `validation/m14/verification/C-D7-DISPOSITION.md` D-IMPLEMENTABLE-1.
 
 ## Corpus validation
 

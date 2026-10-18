@@ -50,12 +50,16 @@ if (!FILE) {
 }
 
 // ── §15's published class totals (the CONTROL). Each row: [unresolved, ambiguous]. ────────────────
+// K1 CORRECTION (D7 arm-A measured): these are §15's numbers RE-DERIVED with the analyzer's exact keyword
+// set. §15 printed calls keyword-spelled 29/1 and name-not-in-run 84,927/18,301; the short keyword copy
+// classified 5 `_Static_assert` rows as name-not-in-run. Corrected: keyword 34/1, name-not-in-run
+// 84,922/18,301. TABLE 1 and the closure were never affected (a family boundary, not a measurement).
 const SECTION_15: Record<string, Record<string, [number, number]>> = {
   calls: {
-    "name-not-in-run-key-space": [84_927, 18_301],
+    "name-not-in-run-key-space": [84_922, 18_301],
     "macro-spelled": [42_316, 18_294],
     "iso-c-stdlib-name": [2, 4_708],
-    "keyword-spelled": [29, 1],
+    "keyword-spelled": [34, 1],
     "non-identifier-shaped": [5, 0],
   },
   uses: {
@@ -102,10 +106,16 @@ if (ISO_C_LIBRARY_NAMES.size < 40) {
   process.exit(3)
 }
 const C_KEYWORDS = new Set([
-  "if", "else", "for", "while", "do", "switch", "case", "return", "sizeof", "goto",
-  "break", "continue", "default", "auto", "register", "restrict", "volatile",
-  "int", "char", "void", "static", "const", "struct", "union", "enum", "typedef",
-  "unsigned", "signed", "long", "short", "float", "double", "extern", "inline",
+  // K1 CORRECTION (D7 arm-A measured): this copy now matches the ANALYZER's C_KEYWORDS exactly. The old
+  // copy omitted _Bool/_Complex/_Imaginary/_Alignas/_Alignof/_Atomic/_Generic/_Noreturn/_Static_assert/
+  // _Thread_local, so 5 `_Static_assert` recovery rows were classified `name-not-in-run-key-space` in §15
+  // while the corrected K1 (keyword-only) withdrew them. Class counts are corrected in
+  // C-D7-DISPOSITION.md; TABLE 1/closure were never affected (this is a family boundary, not a measurement).
+  "if", "else", "for", "while", "do", "switch", "case", "default", "break", "continue", "return",
+  "goto", "sizeof", "typedef", "struct", "union", "enum", "static", "extern", "inline", "register",
+  "volatile", "const", "auto", "signed", "unsigned", "void", "char", "short", "int", "long", "float",
+  "double", "_Bool", "_Complex", "_Imaginary", "restrict", "_Alignas", "_Alignof", "_Atomic",
+  "_Generic", "_Noreturn", "_Static_assert", "_Thread_local",
 ])
 function isIdentifierShape(s: string): boolean {
   if (s.length === 0) return false
