@@ -170,6 +170,30 @@ const TS_LIB_TYPE_NAMES = new Set([
  * regex literal (`script/m14/no-regex-gate.sh`), so the character classes are
  * written out. `$` and `_` are legal starts in TypeScript; digits are not.
  */
+/**
+ * PURE-STRING HELPERS FOR THE THREE SHAPES THAT KEPT RE-INTRODUCING A REGEX.
+ *
+ * This file carries NO regex literal by contract (`script/m14/no-regex-gate.sh`), and a later round
+ * broke that contract three ways while adding the project-index pass: `module.replace(/^node:/, "")`,
+ * `.split(/[./\\]/)[0]`, and `child.type.replace(/_declaration$/, "")`. The claim "no regexes" had
+ * been verified against the file BEFORE those edits — the lesson is that the claim has to be
+ * re-verified whenever this file changes, and a helper makes the correct form the easy one.
+ */
+function stripNodePrefix(specifier: string): string {
+  return specifier.startsWith("node:") ? specifier.slice("node:".length) : specifier
+}
+function firstPathSegment(text: string): string {
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (c === "." || c === "/" || c === "\\") return text.slice(0, i)
+  }
+  return text
+}
+function declarationKindName(nodeType: string): string {
+  const suffix = "_declaration"
+  return nodeType.endsWith(suffix) ? nodeType.slice(0, nodeType.length - suffix.length) : nodeType
+}
+
 function isPlainIdentifier(text: string): boolean {
   if (text.length === 0) return false
   const first = text[0]
@@ -2361,7 +2385,7 @@ class TypeScriptAnalysisRunner {
         continue
       }
       // ── EXTERNAL MODULE: module-path claim, with the project's own module space as the check ──
-      const root = module.replace(/^node:/, "").split(/[./\\]/)[0] ?? ""
+      const root = firstPathSegment(stripNodePrefix(module))
       if (root !== "" && modules.has(root)) {
         // The project publishes a module with this root; the claim would be refused as
         // unverifiable by the arbiter, and staking it would be a statement about the project that
@@ -2450,7 +2474,7 @@ class TypeScriptAnalysisRunner {
    *  member). Node built-ins are never the project's. */
   private isProjectLocalSpecifier(specifier: string, projectPackages: Set<string>): boolean {
     if (specifier.startsWith(".") || specifier.startsWith("/")) return true
-    const bare = specifier.replace(/^node:/, "")
+    const bare = stripNodePrefix(specifier)
     if (isBuiltinModule(bare)) return false
     const segs = bare.split("/")
     const pkg = bare.startsWith("@") ? segs.slice(0, 2).join("/") : (segs[0] ?? "")
@@ -4992,7 +5016,7 @@ class TypeScriptAnalysisRunner {
             exports.push({
               name: nameNode.text,
               isDefault,
-              type: child.type.replace(/_declaration$/, ""),
+              type: declarationKindName(child.type),
               range: this.nodeRange(child),
             })
           }
@@ -5006,7 +5030,7 @@ class TypeScriptAnalysisRunner {
               const nameNode = inner.childForFieldName("name") ?? inner.namedChild(0)
               if (nameNode && nameNode.type !== "string") {
                 foundNamed = true
-                exports.push({ name: nameNode.text, isDefault, type: inner.type.replace(/_declaration$/, ""), range: this.nodeRange(inner) })
+                exports.push({ name: nameNode.text, isDefault, type: declarationKindName(inner.type), range: this.nodeRange(inner) })
               }
             } else if (inner.type === "lexical_declaration" || inner.type === "variable_declaration") {
               for (let j = 0; j < inner.namedChildCount; j++) {
