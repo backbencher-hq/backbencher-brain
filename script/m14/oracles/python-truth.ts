@@ -697,20 +697,40 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
 
   // `imports` — 15,405 edges, the last large relation with no independent derivation.
   //
-  // The target spelling is `${module}:${item}` and the module is kept WHOLE, dotted and
-  // relative alike: `from .models import User` gives target `.models:User`, not `models:User`.
-  // Keeping the leading dot matters because it is what distinguishes a package-relative
-  // import from an absolute one, and the analyzer keeps it rather than normalising it away.
+  // The target spelling is `${module}:${item}` for an ABSOLUTE module and the BARE ITEM for a
+  // RELATIVE one (`from .models import User` -> `User`), because commit d0f2ea19b settled that
+  // the edge names the symbol the import binds and a relative specifier is local BY THE
+  // GRAMMAR. The module half is not lost: the analyzer keeps it in `metadata.module`, and this
+  // oracle derives the same contract from the source rather than from the analyzer.
   //
   // Two shapes, and they are spelled differently on purpose:
   //   - `import a.b.c` binds the TOP-LEVEL package `a`, so the edge is `a.b.c:*` — the whole
   //     dotted path with a wildcard item, because `import a.b.c` brings the module, not a
   //     name out of it;
   //   - `from m import x` binds `x`, so the edge is `m:x` per imported item.
-  // A bare `from . import x` has no module part at all and publishes NO edge, because there
-  // is no module to attribute it to and inventing one would be a fabricated endpoint.
+  // A bare `from . import x` names the ITEM (`x`) exactly like a named relative module: the
+  // module is `.` and the analyzer publishes `x` with `metadata.module: "."`, so the oracle
+  // derives `x` too. The leading dot is part of the SOURCE, not of the target spelling.
   {
     const walkImports = (n: any): void => {
+      if (n.type === "future_import_statement") {
+        // `from __future__ import annotations` IS NOT AN `import_from_statement` in this
+        // grammar: tree-sitter-python gives it its own node type and hard-codes the module,
+        // so a walk that dispatches only the two ordinary statement types derives NOTHING
+        // for it — the same omission PY-D33 fixed in the analyzer (1,286 statements / 1,298
+        // items corpus-wide), found again here on the differential as 11 + 13 UNEXPLAINED
+        // analyzer rows. The module is stated, the items are the node's dotted_name children.
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c || (c.type !== "dotted_name" && c.type !== "identifier")) continue
+          add("imports", moduleName ?? "", `__future__:${c.text}`, c.startPosition.row + 1)
+        }
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) walkImports(c)
+        }
+        return
+      }
       if (n.type === "import_statement") {
         for (let i = 0; i < n.namedChildCount; i++) {
           const name = n.namedChild(i)
@@ -724,12 +744,22 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         }
       } else if (n.type === "import_from_statement") {
         let mod = ""
+        let modNodeId: number | undefined
         let seenImport = false
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
           if (!c) continue
           if (c.type === "import" || c.text === "import") { seenImport = true; continue }
-          if ((c.type === "relative_import" || c.type === "dotted_name") && !seenImport && !mod) mod = c.text
+          if ((c.type === "relative_import" || c.type === "dotted_name") && !seenImport && !mod) {
+            mod = c.text
+            // THE MODULE IS SKIPPED BY NODE, NOT BY TEXT. `from datetime import UTC, datetime`
+            // names an ITEM that spells the module's own name; skipping `c.text !== mod` (the
+            // pre-fix analyzer's bug, PY-D34) also skipped that REAL binding, so the oracle was
+            // silent on an item the analyzer correctly publishes -> every such row read as
+            // UNEXPLAINED (26 of the 32 residual rows on the 2026-10-18 differential). `.id`
+            // rather than object identity: web-tree-sitter hands back a fresh wrapper per access.
+            modNodeId = (c as any).id
+          }
         }
         if (mod.length === 0) {
           for (let i = 0; i < n.namedChildCount; i++) { /* nothing to attribute */ }
@@ -737,10 +767,12 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
             if (!c) continue
+            if (modNodeId !== undefined && (c as any).id === modNodeId) continue
             let itemName: string | null = null
             let itemNode: any = null
             if (c.type === "dotted_name" || c.type === "identifier") {
-              if (c.text !== mod) { itemName = c.text; itemNode = c }
+              itemName = c.text
+              itemNode = c
             } else if (c.type === "aliased_import") {
               const itemNameNode = c.childForFieldName("name") || c.namedChild(0)
               if (itemNameNode) { itemName = itemNameNode.text; itemNode = itemNameNode }
@@ -749,7 +781,19 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
               itemNode = c
             }
             if (itemName !== null && itemNode) {
-              add("imports", moduleName ?? "", `${mod}:${itemName}`, itemNode.startPosition.row + 1)
+              // THE RELATIVE-IMPORT TARGET IS THE ITEM, and this is the lane's documented
+              // contract rather than a concession to the analyzer: commit d0f2ea19b settled that
+              // an `imports` edge names the SYMBOL the import binds, so a module known to be
+              // local BY THE GRAMMAR (a relative specifier — the leading dot) publishes the bare
+              // item name, with the module kept in `metadata.module`. The header above used to
+              // say the analyzer keeps the dot; that stopped being true when the contract landed,
+              // and the oracle was never reconciled, so the differential had been reading every
+              // RELATIVE import as MISSING (146 on cython + 208 on requests in the 2026-10-18
+              // run) — an oracle defect, not an analyzer one. ABSOLUTE imports keep
+              // `module:item`: whether an absolute module is local is a project-index question
+              // and the analyzer cannot decide it from the file either.
+              const target = mod.startsWith(".") && itemName !== "*" ? itemName : `${mod}:${itemName}`
+              add("imports", moduleName ?? "", target, itemNode.startPosition.row + 1)
             }
           }
         }
@@ -1425,12 +1469,57 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
   // a later same-name declaration exists.
   {
     // container key -> declared name -> the highest declaration line in that container
-    const liveDeclLine = new Map<string, Map<string, number>>()
-    const noteDeclaration = (container: string, name: string, line: number): void => {
+    // container -> name -> { maxLine, lines, chain }
+    //
+    // `chain` is the DECLARATION-CHAIN concept the analyzer already implements (#748's
+    // `isDeclarationChain`, pinned in class-variable-is-not-overridden / the overload groups):
+    // same-name defs whose OWN decorators say the runtime keeps them together are ALL live —
+    // `@overload` type-checker stubs, `@property`/`@x.setter` accessor pairs — so a blanket
+    // last-wins rule would delete real decorates rows. MEASURED: 1 + 5 UNEXPLAINED analyzer
+    // rows on the 2026-10-18 differential were exactly the `@overload` groups in
+    // cython/Shadow.py and requests/utils.py; the analyzer published their `decorates` rows
+    // (correctly — a chain member is a live declaration) and the oracle, max-line only,
+    // published none.
+    type DeclInfo = { maxLine: number; lines: Set<number>; chain: boolean }
+    const liveDeclLine = new Map<string, Map<string, DeclInfo>>()
+    const noteDeclaration = (container: string, name: string, line: number, chain: boolean): void => {
       let m = liveDeclLine.get(container)
       if (!m) { m = new Map(); liveDeclLine.set(container, m) }
-      const prior = m.get(name) ?? 0
-      if (line > prior) m.set(name, line)
+      const prior = m.get(name)
+      if (!prior) m.set(name, { maxLine: line, lines: new Set([line]), chain })
+      else {
+        prior.lines.add(line)
+        if (line > prior.maxLine) prior.maxLine = line
+        if (chain) prior.chain = true
+      }
+    }
+    const CHAIN_DECORATOR_LEAVES = new Set(["overload", "property", "setter", "getter", "deleter"])
+    const declaresChain = (wrapper: any, name: string): boolean => {
+      for (let i = 0; i < wrapper.namedChildCount; i++) {
+        const c = wrapper.namedChild(i)
+        if (!c || c.type !== "decorator") continue
+        const inner = c.namedChild(0)
+        if (!inner) continue
+        let leaf: string | null = null
+        let whole = String(inner.text ?? "")
+        if (inner.type === "identifier") leaf = inner.text
+        else if (inner.type === "attribute") {
+          const a = inner.childForFieldName("attribute") ?? inner.namedChild(inner.namedChildCount - 1)
+          if (a && a.type === "identifier") leaf = a.text
+        } else if (inner.type === "call") {
+          const fn = inner.childForFieldName("function") ?? inner.namedChild(0)
+          if (fn && fn.type === "identifier") leaf = fn.text
+          else if (fn && fn.type === "attribute") {
+            const a = fn.childForFieldName("attribute") ?? fn.namedChild(fn.namedChildCount - 1)
+            if (a && a.type === "identifier") leaf = a.text
+          }
+        }
+        if (leaf !== null && CHAIN_DECORATOR_LEAVES.has(leaf)) return true
+        // self-qualified: `@name.attr` derives the new binding from the earlier one
+        const t = whole.trim()
+        if (t.startsWith(`${name}.`)) return true
+      }
+      return false
     }
     const definitionOf = (wrapper: any): any => {
       const f = wrapper.childForFieldName ? wrapper.childForFieldName("definition") : null
@@ -1448,14 +1537,16 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       for (let i = 0; i < body.namedChildCount; i++) {
         let stmt = body.namedChild(i)
         if (!stmt) continue
+        let wrapper: any = null
         if (stmt.type === "decorated_definition") {
+          wrapper = stmt
           const def = definitionOf(stmt)
           if (def) stmt = def
           else continue
         }
         if (stmt.type === "function_definition") {
           const nm = stmt.childForFieldName("name")
-          if (nm && nm.text) noteDeclaration(container, nm.text, stmt.startPosition.row + 1)
+          if (nm && nm.text) noteDeclaration(container, nm.text, stmt.startPosition.row + 1, wrapper !== null && declaresChain(wrapper, nm.text))
           continue
         }
         if (stmt.type === "class_definition") {
@@ -1463,7 +1554,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
           const bodyNode = stmt.childForFieldName("body")
           if (!nm || !nm.text) continue
           const line = stmt.startPosition.row + 1
-          noteDeclaration(container, nm.text, line)
+          noteDeclaration(container, nm.text, line, wrapper !== null && declaresChain(wrapper, nm.text))
           if (bodyNode) scanContainer(bodyNode, containerKey(container, nm.text, line))
         }
       }
@@ -1497,7 +1588,9 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
           if (!def) continue
           const nm = def.childForFieldName("name")
           const line = def.startPosition.row + 1
-          if (nm && nm.text && liveDeclLine.get(container)?.get(nm.text) === line) {
+          const info = nm && nm.text ? liveDeclLine.get(container)?.get(nm.text) : undefined
+          const live = info !== undefined && (info.chain || info.maxLine === line)
+          if (nm && nm.text && live) {
             for (let j = 0; j < stmt.namedChildCount; j++) {
               const dec = stmt.namedChild(j)
               if (!dec || dec.type !== "decorator") continue
