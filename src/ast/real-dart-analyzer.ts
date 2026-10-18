@@ -4,13 +4,26 @@
 // stores, works from AST nodes only, and is fully regex-free (string work is char-code scans). Symbols:
 // classes, mixins, extensions, enums (+enum members), typedefs, methods, getters/setters -> property,
 // fields, top-level functions, constructors -> "constructor"; NO locals/params/lambda params.
-// Relationship types covered (ten, measured this round over the 30 expectation-paired fixture sources):
-// contains 292 · uses 228 · calls 85 · references 73 · instantiates 55 · extends 41 · overrides 29 ·
-// imports 21 · implements 18 · exports 3. The rules: leaf identities for calls (`Counter -> Sqrt`); contains
-// from ownerName; extends/implements/mixin-uses from the superclass clause; instantiates from capitalized
-// constructor invocations (Dart has no `new`); imports/exports from import/export/part directives; overrides
-// from `@override` or same-name-in-base (cross-file via the override companion); builtins (print/assert)
-// filtered; selector chains and cascade_sections resolve to the selector.
+// Relationship types: the TEN matrix types PLUS the canonical vocabulary the owner ruling added (2026-10-18):
+//   contains · uses · calls · references · instantiates · extends · overrides · imports · implements · exports
+//   mixes_in      with-clause mixin application (all three sites; was uses{isMixin:true})
+//   part_of       `part`/`part of` directives, URI and NAMED-library forms (was imports{isPart})
+//   references    additionally carries ANNOTATIONS (references{isAnnotation, annotatedKind}, 16 positions)
+//                 and the mixin `on`-constraint (references{isMixinOn}; was extends{isMixinOn})
+// The rules: leaf identities for calls (`Counter -> Sqrt`); contains from ownerName; extends/implements from
+// the superclass/interfaces clauses; instantiates from capitalized constructor invocations (Dart has no
+// `new`); imports/exports from import/export directives with a project-relative file target when the
+// checkout can answer; overrides from `@override` or same-name-in-base; constant-pattern TESTS (bare,
+// null-check/null-assert, relational, collection forms) publish uses{isConstantPattern,isPatternTest};
+// builtins (print/assert) filtered; selector chains and cascade_sections resolve to the selector.
+// RECEIVER CHANNEL: calls/uses rows whose receiver type is statically known carry metadata.owner (exact
+// class-like type: class/enum or a type declared outside the file) + metadata.ownerEvidence in
+// {param, field, annotation, assignment} — the channel src/ast/member-owner-resolution.ts resolves
+// through. Mixin/extension/typedef owners are deliberately withheld (the resolver would withdraw the
+// binding). Typed catch clauses and container ELEMENT types (List<T> etc.) type their bindings.
+// THE POPULATION THIS IS MEASURED ON: docs in validation/m14/verification/ — DART-APPLICABLE-SET.md,
+// DART-RESOLUTION-CLASSIFICATION.md, DART-WHOLE-POPULATION.md (cap-0 arm: 3,748,617 edges over 33,738
+// files, every non-resolved edge in a named counted class).
 // Where docs, spec, fixtures and validations live: docs/analyzers/real-dart-analyzer.md ·
 // script/m14/spec/dart-completeness.json · validation/m14/fixtures/dart/** · `bun run script/m14/run-fixtures.ts --lang dart`.
 // CO-EDIT WHEN THIS FILE CHANGES: the spec's node-type buckets · the fixtures pinning a changed edge · the
