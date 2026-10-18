@@ -2859,7 +2859,28 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (const [nm, ty] of boundTypes) {
             childLocalTypes.set(nm, ty.type)
             childLocalEvidence.set(nm, ty.evidence)
+            // A map's KEY element rides in the SAME map under an encoded key: `localElements` is
+            // already threaded through the traversal, and a second parallel map is state that can
+            // drift. The encoding is a NUL separator — a local name cannot contain it.
             if (ty.element) childLocalElements.set(nm, ty.element)
+            if (ty.keyElement) childLocalElements.set(`${nm}\u0000key`, ty.keyElement)
+          }
+        }
+        // AWAITED LOCALS, over the whole body: `final repo = await pending;` types `repo` as the
+        // Future's written type argument, and the binding must be visible to SIBLING statements
+        // (a child-local write cannot reach them). It runs after the signature merge because the
+        // future is very often a PARAMETER (`Future<Repo> pending`) and parameters only enter this
+        // state from the merge. This is a PREPASS over the body subtree, like
+        // `collectDartLocalTypes`; a fixed number of rounds settles nested awaits.
+        const awaitTypes = this.collectAwaitLocalTypes(n, childLocalElements, childLocalTypes)
+        if (awaitTypes.size > 0) {
+          childLocalTypes = new Map(childLocalTypes)
+          childLocalEvidence = new Map(childLocalEvidence)
+          childLocalElements = new Map(childLocalElements)
+          for (const [nm, ty] of awaitTypes) {
+            childLocalTypes.set(nm, ty)
+            childLocalEvidence.set(nm, "annotation")
+            childLocalElements.set(nm, ty)
           }
         }
         if (!insideCollected) childInsideCollected = true
@@ -2877,7 +2898,32 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           const nameNode = parts.childForFieldName?.("name")
           const valueNode = parts.childForFieldName?.("value")
           if (!hasWrittenType && nameNode && valueNode && !childLocalTypes.has(nameNode.text)) {
-            const element = localElements.get(valueNode.text)
+            // TWO ITERABLE SHAPES carry a written element type: the bare local (`for (e in xs)`
+            // over `List<Repo> xs`) and the MAP VIEW selector. The pinned grammar parses
+            // `byId.values` as `(identifier) (selector (unconditional_assignable_selector...))` —
+            // the selector is a SIBLING of the identifier, not its child — so the bare branch is
+            // entered for both, and the link must be read from the NEXT named sibling. `values`
+            // iterates the map's VALUE element, `keys` its KEY element (encoded as `<name>\u0000key`
+            // in the same localElements map).
+            let element: string | undefined
+            let link: string | undefined
+            const sel = valueNode.nextNamedSibling
+            if (sel && sel.type === "selector") {
+              // The link is one hop deeper (`selector > unconditional_assignable_selector >
+              // identifier`), so the DIRECT-child reader finds nothing; the subtree scan keeps
+              // the rule reading the grammar rather than the node's text.
+              const ids: string[] = []
+              const linkStack: Node[] = [sel]
+              while (linkStack.length > 0) {
+                const x = linkStack.pop()!
+                if (x.type === "identifier") { ids.push(x.text); continue }
+                for (const c of x.namedChildren ?? []) if (c) linkStack.push(c)
+              }
+              link = ids.find((t) => t === "values" || t === "keys")
+            }
+            if (link === "values") element = localElements.get(valueNode.text)
+            else if (link === "keys") element = localElements.get(`${valueNode.text}\u0000key`)
+            else element = localElements.get(valueNode.text)
             if (element) {
               childLocalTypes = new Map(childLocalTypes)
               childLocalTypes.set(nameNode.text, element)
@@ -4282,8 +4328,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
    * resolves through a type argument this pass has not read, and naming the wrong declaration
    * is worse than naming none.
    */
-  private collectDartLocalTypes(root: Node): Map<string, { type: string; evidence: string; element?: string }> {
-    const out = new Map<string, { type: string; evidence: string; element?: string }>()
+  private collectDartLocalTypes(root: Node): Map<string, { type: string; evidence: string; element?: string; keyElement?: string }> {
+    const out = new Map<string, { type: string; evidence: string; element?: string; keyElement?: string }>()
     const stack: Node[] = [root]
     while (stack.length > 0) {
       const n = stack.pop()!
@@ -4370,14 +4416,102 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             // `final List<Repo> xs = ...` — the type ARGUMENT is the same written evidence the
             // parameter collector reads; it types an untyped for-in variable over `xs`.
             const args = this.findChildByType(n, "type_arguments")
-            if (args && RealDartAnalyzer.DART_ELEMENT_CONTAINERS.has(typeName)) {
-              element = this.findChildByType(args, "type_identifier")?.text
+            let keyElement: string | undefined
+            if (args) {
+              const argsIds: string[] = []
+              const argStack: Node[] = [args]
+              while (argStack.length > 0) {
+                const a = argStack.pop()!
+                if (a.type === "type_identifier") { argsIds.push(a.text); continue }
+                for (const c of a.namedChildren ?? []) if (c) argStack.push(c)
+              }
+              if (RealDartAnalyzer.DART_ELEMENT_CONTAINERS.has(typeName)) element = argsIds[0]
+              else if (RealDartAnalyzer.DART_MAP_CONTAINERS.has(typeName)) { keyElement = argsIds[0]; element = argsIds[1] }
             }
-            out.set(name, { type: typeName, evidence: explicit ? "annotation" : "assignment", ...(element ? { element } : {}) })
+            out.set(name, { type: typeName, evidence: explicit ? "annotation" : "assignment", ...(element ? { element } : {}), ...(keyElement ? { keyElement } : {}) })
           }
         }
       }
       for (const c of n.namedChildren ?? []) if (c) stack.push(c)
+    }
+    // AWAITED LOCALS — `final repo = await pending;` where `pending` is a `Future<Repo>`.
+    // The awaited VALUE's type is the Future's type argument, which is WRITTEN in the source
+    // (the same `annotation` evidence class as the declared local). Without this, the awaited
+    // local is untyped and `repo.load()` publishes a bare leaf with receiverTypeUnknown — the
+    // most common asynchronous shape in Dart. Resolved in a second pass over the declarations
+    // because the future may be declared after (or in a different branch than) the await; a
+    // fixed number of rounds settles nested awaits (`await f` where f itself is awaited-typed).
+    const awaits: Array<{ name: string; operand: string }> = []
+    const awaitStack: Node[] = [root]
+    while (awaitStack.length > 0) {
+      const n = awaitStack.pop()!
+      if (n.type === "initialized_variable_definition") {
+        const nameNode = n.childForFieldName?.("name")
+        const value = n.childForFieldName?.("value")
+        if (nameNode && value && value.type === "await_expression") {
+          const operand = this.findChildByType(value, "identifier")
+          if (operand) awaits.push({ name: nameNode.text, operand: operand.text })
+        }
+      }
+      for (const c of n.namedChildren ?? []) if (c) awaitStack.push(c)
+    }
+    for (let round = 0; round < 3 && awaits.length > 0; round++) {
+      let changed = false
+      for (const a of awaits) {
+        if (out.has(a.name)) continue
+        const fut = out.get(a.operand)
+        if (!fut || !fut.element) continue
+        if (!RealDartAnalyzer.DART_ELEMENT_CONTAINERS.has(fut.type)) continue
+        out.set(a.name, { type: fut.element, evidence: "annotation" })
+        changed = true
+      }
+      if (!changed) break
+    }
+    return out
+  }
+
+  /**
+   * AWAITED LOCALS: `final repo = await pending;` where the awaited variable's type is written as
+   * `Future<Repo>` — the awaited VALUE's type is the future's type argument (written evidence, the
+   * `annotation` class). Returns the declarations to type; the caller applies them to the body scope
+   * so SIBLING statements see them. Grammar note: `await pending` parses as
+   * `unary_expression > await_expression > identifier` (probed), not as a bare await_expression.
+   */
+  private collectAwaitLocalTypes(
+    root: Node,
+    localElements: Map<string, string>,
+    localTypes: Map<string, string>,
+  ): Map<string, string> {
+    const out = new Map<string, string>()
+    const decls: Array<{ name: string; operand: string }> = []
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "initialized_variable_definition") {
+        const nameNode = n.childForFieldName?.("name")
+        const valueRaw = n.childForFieldName?.("value")
+        const awaitNode = valueRaw && valueRaw.type === "unary_expression"
+          ? this.findChildByType(valueRaw, "await_expression")
+          : valueRaw
+        if (nameNode && awaitNode && awaitNode.type === "await_expression") {
+          const operand = this.findChildByType(awaitNode, "identifier")
+          if (operand) decls.push({ name: nameNode.text, operand: operand.text })
+        }
+      }
+      for (const c of n.namedChildren ?? []) if (c) stack.push(c)
+    }
+    for (let round = 0; round < 3 && decls.length > 0; round++) {
+      let changed = false
+      for (const d of decls) {
+        if (out.has(d.name) || localTypes.has(d.name)) continue
+        const fut = localTypes.get(d.operand) ?? ""
+        const element = localElements.get(d.operand)
+        if (!element) continue
+        if (fut !== "Future" && fut !== "FutureOr") continue
+        out.set(d.name, element)
+        changed = true
+      }
+      if (!changed) break
     }
     return out
   }
@@ -4412,10 +4546,18 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   /** Container types whose ELEMENT type this lane can read from a written type argument. */
   private static readonly DART_ELEMENT_CONTAINERS = new Set([
     "List", "Iterable", "Set", "Queue", "Stream", "Iterator", "ListQueue", "DoubleLinkedQueue",
+    // `Future<T>`: the AWAITED value is T, and `await f` is written evidence of exactly the same
+    // class as a declared local — it types the receiver of the statements after the await.
+    "Future", "FutureOr",
   ])
 
-  private collectDartParameterTypes(sig: Node): Map<string, { type: string; evidence: string; element?: string }> {
-    const out = new Map<string, { type: string; evidence: string; element?: string }>()
+  /** Map types whose KEY/VALUE type arguments this lane can read (value = `element`, key = `keyElement`). */
+  private static readonly DART_MAP_CONTAINERS = new Set([
+    "Map", "HashMap", "LinkedHashMap", "SplayTreeMap", "UnmodifiableMapView",
+  ])
+
+  private collectDartParameterTypes(sig: Node): Map<string, { type: string; evidence: string; element?: string; keyElement?: string }> {
+    const out = new Map<string, { type: string; evidence: string; element?: string; keyElement?: string }>()
     let params: any[] = []
     try {
       params = (this.extractParameters(sig) as any[]) ?? []
@@ -4438,12 +4580,16 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = n.childForFieldName?.("name") ?? this.findChildByType(n, "identifier")
         const typeNode = this.findChildByType(n, "type_identifier")
         const args = this.findChildByType(n, "type_arguments")
-        const element = args ? this.findChildByType(args, "type_identifier") : undefined
+        const argsIds: any[] = args ? (args.namedChildren ?? []).filter((c: any) => c && c.type === "type_identifier") : []
         const base = typeNode ? stripNullableSuffix(typeNode.text) : ""
-        if (nameNode && element && RealDartAnalyzer.DART_ELEMENT_CONTAINERS.has(base)) {
+        if (nameNode && argsIds.length > 0 && RealDartAnalyzer.DART_ELEMENT_CONTAINERS.has(base)) {
           const prev = out.get(nameNode.text)
-          if (prev) prev.element = element.text
-          else out.set(nameNode.text, { type: base, evidence: "param", element: element.text })
+          if (prev) prev.element = argsIds[0].text
+          else out.set(nameNode.text, { type: base, evidence: "param", element: argsIds[0].text })
+        } else if (nameNode && argsIds.length >= 2 && RealDartAnalyzer.DART_MAP_CONTAINERS.has(base)) {
+          const prev = out.get(nameNode.text)
+          if (prev) { prev.keyElement = argsIds[0].text; prev.element = argsIds[1].text }
+          else out.set(nameNode.text, { type: base, evidence: "param", keyElement: argsIds[0].text, element: argsIds[1].text })
         }
         continue
       }
