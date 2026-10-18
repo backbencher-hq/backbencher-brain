@@ -46,6 +46,11 @@ export {
 export const PYTHON_TRUTH_ORACLE_LABELS: ReadonlyArray<string> = [
   "calls",
   "contains",
+  // 2026-10-18: the eleventh label — the NEW canonical `decorates` value. Kept in step with
+  // `PYTHON_ORACLE_LABELS` by script/m14/verify-python-oracle-labels.ts, in BOTH directions;
+  // a shim list that lags the canonical one is the exact stale-restatement failure that
+  // verifier exists for.
+  "decorates",
   "exports",
   "extends",
   "implements",

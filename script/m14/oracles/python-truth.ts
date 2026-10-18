@@ -75,6 +75,11 @@ export const PYTHON_ORACLE_LABELS: ReadonlyArray<string> = (() => {
   const declared = [
     "contains", "extends", "implements", "overrides", "calls", "instantiates",
     "uses", "references", "imports", "exports",
+    // THE ELEVENTH LABEL (2026-10-18): `decorates` is a canonical relationship value the
+    // owner admitted to src/ast/types.ts, and python was its first emitter. An oracle that
+    // derives it and a list that omits it would fail this file's own both-directions check,
+    // which is exactly what that check exists for.
+    "decorates",
   ]
   for (const d of declared) seen.add(d)
   return [...seen]
@@ -1395,6 +1400,126 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     for (let i = 0; i < n.namedChildCount; i++) walkScopes(n.namedChild(i), scope, ownerClass, fnOwner)
   }
   walkScopes(rootNode, null, null, null)
+
+  // ── DECORATES (2026-10-18) — the ELEVENTH label, derived independently ────────────────
+  //
+  // POLICY, taken from python's grammar and runtime, not from the analyzer: a decorator is
+  // an APPLIED DEPENDENCY written in the decorated declaration's header, so it is an edge
+  // from the DECLARED SYMBOL to the decorator expression's name as written. One row per
+  // decorator, and the rules that make it checkable:
+  //
+  //   · the decorated declaration must PUBLISH a symbol — module or class body only. A def
+  //     inside a def is a LOCAL (PY-28) and contributes no row, and it is NOT re-attributed
+  //     to the enclosing symbol: a decorator is part of the decorated declaration's identity.
+  //   · a call's ARGUMENTS are not part of the name: `@lib.inject("db")` -> `lib.inject`.
+  //     The name is the written chain (identifier, or the attribute chain); a shape that names
+  //     nothing readable (lambda, arbitrary expression) is SKIPPED rather than guessed.
+  //   · THE LINE IS THE DECORATOR NAME'S OWN LINE, never the def/class line — the same rule
+  //     the analyzer's endpoints follow, derived here from the decorator node's own position.
+  //   · a SHADOWED declaration is not the live binding: the LAST declaration of a name in its
+  //     container wins (python's runtime rule, and the same phantom rule the analyzer applies
+  //     at #748), so earlier same-name declarations contribute no row.
+  //
+  // The two passes are deliberate: the first records the live declaration's line per
+  // container, the second emits rows only for that line. A single pass could not know whether
+  // a later same-name declaration exists.
+  {
+    // container key -> declared name -> the highest declaration line in that container
+    const liveDeclLine = new Map<string, Map<string, number>>()
+    const noteDeclaration = (container: string, name: string, line: number): void => {
+      let m = liveDeclLine.get(container)
+      if (!m) { m = new Map(); liveDeclLine.set(container, m) }
+      const prior = m.get(name) ?? 0
+      if (line > prior) m.set(name, line)
+    }
+    const definitionOf = (wrapper: any): any => {
+      const f = wrapper.childForFieldName ? wrapper.childForFieldName("definition") : null
+      if (f) return f
+      for (let i = 0; i < wrapper.namedChildCount; i++) {
+        const c = wrapper.namedChild(i)
+        if (c && (c.type === "function_definition" || c.type === "class_definition")) return c
+      }
+      return null
+    }
+    const containerKey = (parentKey: string, name: string, line: number): string => `${parentKey.split("\u0000")[0]}/${name}@${line}`
+
+    // PASS 1 — every PUBLISHED declaration's line, per container (never inside a function body).
+    const scanContainer = (body: any, container: string): void => {
+      for (let i = 0; i < body.namedChildCount; i++) {
+        let stmt = body.namedChild(i)
+        if (!stmt) continue
+        if (stmt.type === "decorated_definition") {
+          const def = definitionOf(stmt)
+          if (def) stmt = def
+          else continue
+        }
+        if (stmt.type === "function_definition") {
+          const nm = stmt.childForFieldName("name")
+          if (nm && nm.text) noteDeclaration(container, nm.text, stmt.startPosition.row + 1)
+          continue
+        }
+        if (stmt.type === "class_definition") {
+          const nm = stmt.childForFieldName("name")
+          const bodyNode = stmt.childForFieldName("body")
+          if (!nm || !nm.text) continue
+          const line = stmt.startPosition.row + 1
+          noteDeclaration(container, nm.text, line)
+          if (bodyNode) scanContainer(bodyNode, containerKey(container, nm.text, line))
+        }
+      }
+    }
+    scanContainer(rootNode, "module")
+
+    // PASS 2 — the decorates rows, only for the live declaration in each container.
+    const decoratorName = (inner: any): { name: string; line: number } | null => {
+      let n = inner
+      while (n) {
+        if (n.type === "call") { n = n.childForFieldName("function") ?? n.namedChild(0); continue }
+        if (n.type === "subscript") { n = n.childForFieldName("value") ?? n.namedChild(0); continue }
+        if (n.type === "parenthesized_expression") { n = n.namedChild(0); continue }
+        break
+      }
+      if (!n) return null
+      if (n.type === "identifier") return n.text ? { name: n.text, line: n.startPosition.row + 1 } : null
+      if (n.type === "attribute") {
+        const leaf = n.childForFieldName("attribute") ?? n.namedChild(n.namedChildCount - 1)
+        if (!leaf || leaf.type !== "identifier" || !leaf.text) return null
+        return { name: n.text, line: leaf.startPosition.row + 1 }
+      }
+      return null
+    }
+    const emitContainer = (body: any, container: string): void => {
+      for (let i = 0; i < body.namedChildCount; i++) {
+        const stmt = body.namedChild(i)
+        if (!stmt) continue
+        if (stmt.type === "decorated_definition") {
+          const def = definitionOf(stmt)
+          if (!def) continue
+          const nm = def.childForFieldName("name")
+          const line = def.startPosition.row + 1
+          if (nm && nm.text && liveDeclLine.get(container)?.get(nm.text) === line) {
+            for (let j = 0; j < stmt.namedChildCount; j++) {
+              const dec = stmt.namedChild(j)
+              if (!dec || dec.type !== "decorator") continue
+              const target = decoratorName(dec.namedChild(0))
+              if (target) add("decorates", nm.text, target.name, target.line)
+            }
+          }
+          if (def.type === "class_definition" && nm && nm.text) {
+            const cb = def.childForFieldName("body")
+            if (cb) emitContainer(cb, containerKey(container, nm.text, line))
+          }
+          continue
+        }
+        if (stmt.type === "class_definition") {
+          const nm = stmt.childForFieldName("name")
+          const cb = stmt.childForFieldName("body")
+          if (nm && nm.text && cb) emitContainer(cb, containerKey(container, nm.text, stmt.startPosition.row + 1))
+        }
+      }
+    }
+    emitContainer(rootNode, "module")
+  }
 
   return edges
 }
