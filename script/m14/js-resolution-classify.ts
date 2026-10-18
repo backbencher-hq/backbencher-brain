@@ -657,6 +657,8 @@ type Cov = {
 }
 const coverage = new Map<string, Cov>()
 const buckets: Record<string, Map<Bucket, number>> = {}
+/** decls>1 buckets, kept SEPARATE from the decls===0 buckets so the two classes never merge */
+const ambBuckets: Record<string, Map<Bucket, number>> = {}
 const examples: Record<string, Record<string, string[]>> = {}
 let heldAmbiguous = 0
 let edgeCount = 0
@@ -709,7 +711,18 @@ function ingestRow(r: EdgeRow): void {
   if (decls === 1) { totals[r.label].declsOne = (totals[r.label].declsOne ?? 0) + 1; reconciled.resolvedUnique++ }
   else if (decls > 1) { totals[r.label].declsMany = (totals[r.label].declsMany ?? 0) + 1; reconciled.ambiguous++ }
   else reconciled.unresolved++
-  if (decls >= 1) { totals[r.label].resolved++; if (decls > 1) heldAmbiguous++; return }
+  if (decls >= 1) {
+    totals[r.label].resolved++
+    if (decls > 1) {
+      heldAmbiguous++
+      // A COLLISION IS NOT A RESOLUTION. Name its composition with the same cause rules, in its
+      // own bucket map, so D3's "every edge in a declared class" covers the amb(decl) column too.
+      const b = fileBindings.get(r.file) ?? EMPTY_BINDINGS
+      if (!ambBuckets[r.label]) ambBuckets[r.label] = new Map()
+      bump(ambBuckets[r.label], classifyEdge(r, p, b, (abs) => relByAbs.get(abs) ?? abs))
+    }
+    return
+  }
   totals[r.label].unresolved++
   if (r.label === "calls" && ownerValue.length > 0) {
     cov.unresolvedWithOwner++
@@ -820,6 +833,7 @@ const report = {
   totals,
   ambiguousAmongResolved: heldAmbiguous,
   buckets: Object.fromEntries(Object.entries(buckets).map(([k, v]) => [k, [...v.entries()].sort((a, b) => b[1] - a[1])])),
+  ambiguousBuckets: Object.fromEntries(Object.entries(ambBuckets).map(([k, v]) => [k, [...v.entries()].sort((a, b) => b[1] - a[1])])),
   examples,
 }
 if (JSON_OUT) writeFileSync(JSON_OUT, JSON.stringify(report, null, 1))
@@ -867,4 +881,12 @@ function pct(n: number, d: number): string {
   return `${((n * 100) / d).toFixed(1)}%`
 }
 
+console.log("\n=== AMBIGUOUS-EDGE COMPOSITION (decls>1; a collision is not a resolution — D3 class) ===")
+for (const label of Object.keys(ambBuckets).sort()) {
+  const total = [...ambBuckets[label].values()].reduce((a, b) => a + b, 0)
+  console.log(`\n--- ${label}: ${total} ambiguous edge(s) with a named composition`)
+  for (const [k, n] of [...ambBuckets[label].entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`  ${String(n).padStart(6)}  ${k}`)
+  }
+}
 if (JSON_OUT) console.log(`\njson: ${JSON_OUT}`)
