@@ -1152,7 +1152,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             // missed it entirely (left is a bare identifier here).
             if (left.type === "identifier" && left.text === "exports") {
               patterns["CommonJS Exports"] = true
-              this.collectModuleExports(right, exports, node, false)
+              this.collectModuleExports(right, exports, node, false, "exports")
             }
             // `a.b` is a member_expression, `a["b"]` is a subscript_expression —
             // both write the same surface, so the gate admits both. Every branch
@@ -1166,7 +1166,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
 
               if (objText === "module" && propText === "exports") {
                 patterns["CommonJS Exports"] = true
-                this.collectModuleExports(right, exports, node, true)
+                this.collectModuleExports(right, exports, node, true, "module-exports")
               } else if (obj && writtenSegment(prop, left)) {
                 // DEEP property assignment: `module.exports.sub = ...` /
                 // `exports.group.item = 1` — every segment below the base
@@ -1188,7 +1188,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   patterns["CommonJS Exports"] = true
                   const seg = writtenSegment(prop, left)!
                   const exportName = [...surface, segmentName(seg)].join(".")
-                  exports.push({ name: exportName, isDefault: false, range: this.nodeToRange(seg), metadata: { viaCommonJs: true } })
+                  exports.push({
+                    name: exportName, isDefault: false, range: this.nodeToRange(seg),
+                    metadata: { viaCommonJs: true, cjsForm: "deep-member-assignment" },
+                  })
                 }
               }
 
@@ -2584,7 +2587,33 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // so this pass takes no other source (see FILE_LEVEL_SOURCE).
     moduleActor: string,
   ): void {
-    for (const item of exports) {        relationships.push({
+    for (const item of exports) {
+      // ---- EXPORTS CLAIM EVIDENCE (contract: validation/m14/verification/JAVASCRIPT-EXPORTS-CLAIM-CONTRACT.md)
+      // Additive markers that let an arbiter verify a claim from THIS row's own evidence. The target is
+      // NEVER changed: `default` stays `default` (an ECMAScript public name) and a CJS property stays
+      // the property name. The nested object is the canonical evidence; the flat mirrors exist because
+      // the fixture runner pins SCALARS/ARRAYS only, so a nested object alone cannot be red-pinned.
+      const isCjs = item.metadata?.viaCommonJs === true
+      const localName = typeof item.metadata?.localName === "string" ? String(item.metadata.localName) : ""
+      const defaultForm = isCjs
+        ? ""
+        : item.metadata?.viaDefaultDeclaration === true ? "named-declaration"
+        : item.metadata?.viaAliasDefault === true ? "export-alias"
+        : item.metadata?.viaDefaultExpression === true ? "expression"
+        : item.metadata?.viaAnonymousDefaultExpression === true ? "anonymous"
+        : "anonymous"
+      const claimMarkers: Record<string, unknown> = {}
+      if (item.isDefault && !isCjs) {
+        claimMarkers.defaultExportForm = defaultForm
+        if (localName) claimMarkers.defaultExportLocalName = localName
+        claimMarkers.defaultExport = { form: defaultForm, ...(localName ? { localName } : {}) }
+      } else if (isCjs && !item.isDefault) {
+        const cjsForm = typeof item.metadata?.cjsForm === "string" ? String(item.metadata.cjsForm) : "module-exports-unknown"
+        claimMarkers.moduleExportsProperty = item.name
+        claimMarkers.moduleExportsForm = cjsForm
+        claimMarkers.moduleExports = { property: item.name, form: cjsForm }
+      }
+      relationships.push({
           source: moduleActor,
           target: item.name,
           type: ASTEngine.RelationshipType.Exports,
@@ -2604,7 +2633,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `localName` (src/ast/import-resolution.ts) to recover the
           // declaration in the row's own file. Additive: `isDefault` stays, and
           // the engine's own evidenceClass/fileLevel are added later.
-          metadata: { isDefault: item.isDefault, ...(item.metadata ?? {}) },
+          metadata: { isDefault: item.isDefault, ...(item.metadata ?? {}), ...claimMarkers },
         })
     }
   }
@@ -2962,17 +2991,25 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     exports: ASTEngine.ExportInfo[],
     node: Node,
     isDefault: boolean,
+    /**
+     * THE CJS SURFACE FORM — recorded as evidence for the exports claim, never used to change a
+     * target. `module-exports` = `module.exports = …`; `exports` = the wholesale rebind
+     * `exports = …`. The member/value shape is appended by this function so the evidence says both
+     * which surface was written and what kind of value the row came from.
+     */
+    surface: "module-exports" | "exports",
   ): void {
+    const form = (kind: "object" | "binding" | "expression"): string => `${surface}-${kind}`
     if (right.type === "object") {
       for (let i = 0; i < right.namedChildCount; i++) {
         const c = right.namedChild(i)
         if (!c) continue
         if (c.type === "shorthand_property_identifier" || c.type === "identifier") {
-          exports.push({ name: c.text, isDefault: false, range: this.nodeToRange(c), metadata: { viaCommonJs: true } })
+          exports.push({ name: c.text, isDefault: false, range: this.nodeToRange(c), metadata: { viaCommonJs: true, cjsForm: form("object") } })
         } else if (c.type === "pair") {
           const key = c.childForFieldName("key")
           if (key && (key.type === "property_identifier" || key.type === "identifier")) {
-            exports.push({ name: key.text, isDefault: false, range: this.nodeToRange(key), metadata: { viaCommonJs: true } })
+            exports.push({ name: key.text, isDefault: false, range: this.nodeToRange(key), metadata: { viaCommonJs: true, cjsForm: form("object") } })
           }
         } else if (c.type === "method_definition") {
           // A SHORTHAND METHOD is the dominant modern CJS export form
@@ -2984,19 +3021,19 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           // (M60 review JD5. No fixture covered a method in a CJS export
           // object — the three CJS fixtures use identifier/`pair` keys only.)
           const nm = c.childForFieldName("name")
-          if (nm) exports.push({ name: nm.text, isDefault: false, range: this.nodeToRange(nm), metadata: { viaCommonJs: true } })
+          if (nm) exports.push({ name: nm.text, isDefault: false, range: this.nodeToRange(nm), metadata: { viaCommonJs: true, cjsForm: form("object") } })
         }
         // `spread_element` (`...rest`) and a computed key (`[key]`) name no
         // statically knowable export, so they are declined rather than guessed —
         // the object-spread case is recorded as a standing gap, not a defect.
       }
     } else if (right.type === "identifier") {
-      exports.push({ name: right.text, isDefault, range: this.nodeToRange(right), metadata: { viaCommonJs: true } })
+      exports.push({ name: right.text, isDefault, range: this.nodeToRange(right), metadata: { viaCommonJs: true, cjsForm: form("binding") } })
     } else if (right.type === "function_expression" || right.type === "arrow_function" || right.type === "class_declaration" || right.type === "class") {
       const nm = right.type === "class_declaration" || right.type === "class"
         ? right.childForFieldName("name")?.text
         : undefined
-      exports.push({ name: nm ?? "default", isDefault, range: this.nodeToRange(right), metadata: { viaCommonJs: true } })
+      exports.push({ name: nm ?? "default", isDefault, range: this.nodeToRange(right), metadata: { viaCommonJs: true, cjsForm: form("expression") } })
     }
     // M49 exports invariant: the CJS surface is a NAME SET.
     //
@@ -3032,7 +3069,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (!child) continue
-      if (child.type === "identifier") {
+      if (child.type === "identifier" && !isDefault) {
+        // `export default <identifier>` reaches the fallback below: the module exports `default`,
+        // and the identifier's name is the LOCAL BINDING the default value refers to — EVIDENCE,
+        // never a public name. Publishing it here fabricated an export the module does not have
+        // (found while writing the exports-claim contract; the differential oracle mirrors the same
+        // branch and is being corrected by the Lead, so both instruments stop sharing the premise).
         foundNamed = true
         exports.push({ name: child.text, isDefault, range: this.nodeToRange(child) })
       } else if (child.type === "export_clause") {
@@ -3114,7 +3156,18 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // above — record the module's main export under "default" instead of
     // dropping it silently.
     if (isDefault && !foundNamed) {
-      exports.push({ name: "default", isDefault: true, range: this.nodeToRange(node) })
+      const valueNode = node.childForFieldName("value")
+      const isIdentifierValue = valueNode?.type === "identifier"
+      exports.push({
+        name: "default", isDefault: true, range: this.nodeToRange(node),
+        // EVIDENCE for the exports claim: the statement form, and — when the defaulted expression IS
+        // a plain identifier — the local binding it names (`export default foo`). An anonymous
+        // expression (literal, object, call, anonymous function) states no local name and says so
+        // rather than inventing one.
+        metadata: isIdentifierValue
+          ? { viaDefaultExpression: true, localName: valueNode!.text }
+          : { viaAnonymousDefaultExpression: true },
+      })
     }
     // M49 exports invariant: an ES module has AT MOST ONE default binding —
     // `export default fn; export default class` in one file dedupes to one

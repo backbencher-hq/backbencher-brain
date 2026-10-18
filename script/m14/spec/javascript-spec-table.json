@@ -255,6 +255,67 @@
         }
       },
       "claimable_target_is_binding_rows_whole_pop_note": "CORRECTED: 46,598 is a LOWER BOUND (census projection of the NON-RESOLVED classes only). The measured arm verifies 95,528 imported-binding claims because imported bindings are program-scope published names: their bare rows can also sit in resolved (18,275 decoys) or ambiguous (26,949) by the name model. The arm is the record."
+    },
+    "default_export": {
+      "status": "EVIDENCE EMITTED 2026-10-18; ARBITER KIND NOT DECIDED (Lead) — contract: validation/m14/verification/JAVASCRIPT-EXPORTS-CLAIM-CONTRACT.md",
+      "evidence": {
+        "canonical": "metadata.defaultExport = { form, localName? }",
+        "flat_mirrors": [
+          "metadata.defaultExportForm",
+          "metadata.defaultExportLocalName"
+        ]
+      },
+      "forms": [
+        "named-declaration",
+        "export-alias",
+        "expression",
+        "anonymous"
+      ],
+      "verification": "exports label; target==='default' (never a declaration name); form known; named/alias/expression rows: localName is a file-scope binding the run can see; anonymous: form is the evidence.",
+      "refutation": [
+        "target !== 'default' (fabricated public name)",
+        "unknown/missing form",
+        "localName with no declaration/import binding in the file",
+        "ES marker on a CJS value row"
+      ],
+      "class_rows_census": 6186,
+      "sample_split": {
+        "anonymous": 144,
+        "named-declaration": 53,
+        "expression": 17,
+        "basis": "js-export-claim-probe --cap=400, 454 exports rows"
+      },
+      "measurement_change": "identifier-valued `export default foo` previously published a fabricated named export (target foo) and could be counted resolved; the analyzer now publishes target default with expression+localName evidence, so the class total will RISE above 6,186. Corpus scale of the corrected form: 2,759 statements / 2,755 files (all repos). Lead-owned differential oracle fix required before an arm: differential.ts identifier branch must exclude sawDefaultToken."
+    },
+    "module_exports": {
+      "status": "EVIDENCE EMITTED 2026-10-18; ARBITER KIND NOT DECIDED (Lead) — contract: JAVASCRIPT-EXPORTS-CLAIM-CONTRACT.md",
+      "evidence": {
+        "canonical": "metadata.moduleExports = { property, form }",
+        "flat_mirrors": [
+          "metadata.moduleExportsProperty",
+          "metadata.moduleExportsForm"
+        ]
+      },
+      "forms": [
+        "module-exports-object",
+        "exports-object",
+        "module-exports-binding",
+        "module-exports-expression",
+        "deep-member-assignment"
+      ],
+      "verification": "exports label; target===property (row's own spelling; dotted allowed for deep-member-assignment); form known; NO project declaration answers the name (name-model resolution wins where one does).",
+      "refutation": [
+        "target !== property",
+        "unknown/missing form",
+        "non-name property spelling",
+        "a project-declared same name answers the claim"
+      ],
+      "class_rows_census": 4884,
+      "sample_split": {
+        "module-exports-object": 53,
+        "deep-member-assignment": 1,
+        "basis": "js-export-claim-probe --cap=400 (exports-object/rebind and binding/expression forms rare in the sample draw)"
+      }
     }
   }
 }

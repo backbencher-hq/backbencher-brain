@@ -105,6 +105,17 @@ call-receiver root, template interpolation), instantiates, references, extends, 
 `local-binding-claims`; contract `validation/m14/verification/JAVASCRIPT-LOCAL-BINDING-CONTRACT.md`;
 evidence `JAVASCRIPT-APPLICABLE-SET.md` D7.1.
 
+**EXPORTS CLAIM EVIDENCE (emitted, arbiter kind pending — Lead).** Every `exports` row now carries the
+write-form evidence for two proposed claim classes, with the target NEVER changed: ES defaults get
+`metadata.defaultExport = { form, localName? }` (forms `named-declaration`, `export-alias`,
+`expression`, `anonymous`; `localName` only when a local binding is statically nameable) plus the flat
+mirrors `defaultExportForm`/`defaultExportLocalName` (the fixture runner pins scalars only); CJS rows get
+`metadata.moduleExports = { property, form }` (forms `module-exports-object`, `exports-object`,
+`module-exports-binding`, `module-exports-expression`, `deep-member-assignment`) plus flat mirrors.
+A CJS default VALUE row (`module.exports = function(){}`) deliberately carries NO ES-default marker.
+Contract, verification/refutation conditions and expected counts:
+`validation/m14/verification/JAVASCRIPT-EXPORTS-CLAIM-CONTRACT.md`.
+
 **Deliberately NOT claimed, with their cap-50 triage counts** (they are the open classes in
 `validation/m14/verification/JAVASCRIPT-RESOLUTION-CLASSIFICATION.md`): MEMBERS of the runtime and
 test-runner globals (`jest.fn`, `process.argv.slice`, `expect(x).toBe` — the leaf may be a genuine
