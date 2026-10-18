@@ -807,7 +807,21 @@ export function moduleMemberTarget(tgt: string): boolean {
   // scheme and more in the body, and its path half is not a module name. So the module half must be
   // colon-free.
   if (mod.includes(":")) return false
-  return true
+  // AND THE MODULE HALF MUST LOOK LIKE A MODULE, NOT LIKE A NAMESPACE PREFIX.
+  //
+  // MEASURED REGRESSION, mine: with only the tests above, `xsl:template` was accepted as `<module>:<member>`
+  // (module `xsl`, member `template`) -- but an XML namespace prefix is NOT a module. That turned xml's
+  // prefix-spelled `references`/`uses` targets into external CLAIMS instead of letting them resolve, and the
+  // regenerated matrix lost xml its last wholly-done cell (xml references 3/22 and imports 3/14 unresolved).
+  // The fleet number moved 183 -> 172 on the strength of that one predicate.
+  //
+  // The discriminator is the ONE thing a namespace prefix never has: a package separator. A real module
+  // spelling is `argparse:*` (a `*` member, the unambiguous shape), or it carries a dot, a slash or a scope
+  // marker -- `django.apps:AppConfig`, `@scope/pkg:Name`, `java.util:List`. A bare single-segment module with
+  // an identifier member (`xsl:template`, `vue:cloneVNode`) is indistinguishable from a namespace prefix by
+  // shape, and guessing wrong costs a lane a cell, so it keeps the OLD path-shaped behaviour.
+  if (member === "*") return true
+  return mod.includes(".") || mod.includes("/") || mod.includes("@")
 }
 
 export function pathLikeTarget(tgt: string): boolean {

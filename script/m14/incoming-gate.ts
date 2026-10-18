@@ -136,6 +136,11 @@ import { classifyEmptyResults } from "./empty-result-kind"
 // ============================================================
 const BB_DUMP = process.argv.includes("--dump")
 const BB_DUMP_LIMIT = Number(process.env.BB_DUMP_LIMIT ?? 40)
+// RESTRICT THE DUMP TO ONE LABEL. Without this the limit is consumed by whichever type happens to have the
+// most unresolved edges (typescript `calls` alone has 1,688), so a `--dump | grep extends` returns NOTHING and
+// reads as "no unresolved extends edges" when the truth is "the bound was reached before extends was seen".
+// A filter that is applied AFTER a bound is not a filter. `BB_DUMP_LABEL=extends` filters BEFORE the bound.
+const BB_DUMP_LABEL = process.env.BB_DUMP_LABEL ?? ""
 let bbDumped = 0
 // THE RULE IS IMPORTED, NOT COPIED. A census that counts WHY about the same edges must
 // count them the same way, so the classification lives in incoming-rule.ts and this file
@@ -1207,7 +1212,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     // `classifyIntent` uses, so the two agree by construction rather than by convention.
     const ownFileDeclares = (declPos.get(e.tgt) ?? []).some((d) => d.file === e.srcFile)
     const pc = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares)
-    if (BB_DUMP && pc.outcome !== "resolved" && bbDumped < BB_DUMP_LIMIT) {
+    if (BB_DUMP && pc.outcome !== "resolved" && bbDumped < BB_DUMP_LIMIT && (BB_DUMP_LABEL === "" || e.label === BB_DUMP_LABEL)) {
       bbDumped++
       console.log(`DUMP\t${e.label}\t${pc.outcome}\t${e.tgt}\t${e.srcFile}:${e.line}\t${e.claim?.kind ?? "-"}`)
     }
