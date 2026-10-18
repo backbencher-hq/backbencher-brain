@@ -96,6 +96,30 @@ export const ISO_C_STDLIB: CitationVocabulary = {
   ],
 }
 
+/** Python STANDARD LIBRARY modules: names the runtime provides and a project does not declare
+ *  (Python docs module index). Root list is module-level; a lane may claim only targets whose root
+ *  is in this list. Third-party packages are deliberately NOT here — their names can be the project's
+ *  own code in their own checkout (the kotlinx precedent), so they stay named classes, not citations. */
+export const PYTHON_STDLIB: CitationVocabulary = {
+  id: "python-stdlib",
+  source: "Python 3 standard library module index (docs.python.org/3/library)",
+  roots: [
+    "sys", "os", "re", "json", "typing", "__future__", "collections", "itertools", "functools",
+    "operator", "pathlib", "datetime", "time", "logging", "unittest", "subprocess", "socket",
+    "http", "urllib", "sqlite3", "csv", "io", "abc", "enum", "dataclasses", "asyncio", "threading",
+    "multiprocessing", "hashlib", "random", "math", "warnings", "contextlib", "copy", "pickle",
+    "struct", "base64", "tempfile", "shutil", "glob", "fnmatch", "textwrap", "string", "traceback",
+    "weakref", "types", "inspect", "importlib", "pkgutil", "platform", "uuid", "decimal",
+    "fractions", "statistics", "heapq", "bisect", "array", "queue", "signal", "errno", "stat",
+    "zlib", "gzip", "bz2", "lzma", "tarfile", "zipfile", "configparser", "argparse", "getopt",
+    "shlex", "cmd", "pdb", "profile", "timeit", "doctest", "ast", "dis", "code", "compileall",
+    "py_compile", "symtable", "token", "tokenize", "keyword", "builtins", "__builtin__", "gc",
+    "atexit", "site", "sysconfig", "ctypes", "mmap", "select", "selectors", "ssl", "smtplib",
+    "ftplib", "poplib", "imaplib", "xml", "html", "email", "mimetypes", "quopri", "uu", "binascii",
+    "secrets", "hmac", "locale", "gettext", "calendar", "numbers", "cmath", "statistics", "graphlib",
+  ],
+}
+
 export const CITATION_VOCABULARIES: readonly CitationVocabulary[] = [
-  JLS_JPMS, JAVA_PLATFORM_LIBRARIES, DART_SDK_CORE, ISO_C_STDLIB,
+  JLS_JPMS, JAVA_PLATFORM_LIBRARIES, DART_SDK_CORE, ISO_C_STDLIB, PYTHON_STDLIB,
 ]
