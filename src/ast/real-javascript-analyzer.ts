@@ -4,7 +4,8 @@
 // the relationships the graph engine stores; it is regex-free and never reads text
 // where the tree has a node. Grammar: tree-sitter-javascript 0.23.1 (WASM loaded by
 // engine.ts), plus the JSX nodes it carries. ESM and CommonJS are both first-class.
-// Relationship types covered: calls, uses, imports, exports, extends, instantiates,
+// Relationship types covered: calls, uses, imports, exports, extends, instantiates, renders
+// (JSX component usage), decorates (decorator metadata edge),
 // overrides, contains, references. `implements` is RULED OUT — JavaScript has no
 // implements clause (six instruments; docs §"What was RULED"). The emission table,
 // confidence tiers and every count live in docs/analyzers/real-javascript-analyzer.md.
@@ -108,6 +109,39 @@ function writtenSegment(prop: Node | null, lhs: Node): Node | null {
 /** The NAME a written segment spells — a quoted index reads as its contents. */
 function segmentName(node: Node): string {
   return node.type === "string" ? stringContent(node) : node.text
+}
+
+/**
+ * Does `text` spell a plain JavaScript identifier — `[A-Za-z_$][A-Za-z0-9_$]*` — written as a
+ * char scan rather than a regex (this file carries none, and the no-regex gate is structural).
+ * The claim pass refuses everything else: a dotted, path-like or fragment target is either
+ * looked up by its owner (refutable) or unreachable to the arbiter's verifier.
+ */
+function isPlainJsIdentifier(text: string): boolean {
+  if (text.length === 0) return false
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    const isLetter = (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+    const isDigit = c >= 48 && c <= 57
+    const isStart = isLetter || c === 95 || c === 36
+    if (i === 0) { if (!isStart) return false; continue }
+    if (!isStart && !isDigit) return false
+  }
+  return true
+}
+
+/** The length of the LEADING identifier of `text` (`location.hash` -> 8, `(el).x` -> 0). */
+function jsIdentifierPrefixEnd(text: string): number {
+  let end = 0
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    const isLetter = (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+    const isDigit = c >= 48 && c <= 57
+    const isStart = isLetter || c === 95 || c === 36
+    if (end === 0 ? !isStart : !(isStart || isDigit)) break
+    end = i + 1
+  }
+  return end
 }
 
 function hasBraceEquals(text: string): boolean {
@@ -323,7 +357,7 @@ function scopeString(scopes: JSScopeEntry[]): string {
 // ANALYZER
 // ============================================================================
 
-import { isJsBuiltin, jsBuiltinHasMember } from "./js-builtin-prototypes"
+import { isJsBuiltin, jsBuiltinHasMember, hostGlobalCitation, memberChainClaim } from "./js-builtin-prototypes"
 
 /**
  * THE FILE-LEVEL ACTOR — the source spelling for an edge whose actor is the FILE,
@@ -1665,6 +1699,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!r.source || !r.target) relationships.splice(i, 1)
     }
 
+    // EXTERNAL CLAIMS — the ADDITIVE half of resolution: it rewrites no target, adds no edge, and
+    // moves no edge out of `unresolved` on its own authority. See markExternalClaims.
+    this.markExternalClaims(rootNode, relationships, symbols)
+
     this.classifyEvidenceTier(relationships)
 
     return {
@@ -2078,10 +2116,19 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (identifier && identifier.type === "identifier") {
             const char = identifier.text[0]
             if (char && char === char.toUpperCase() && char !== char.toLowerCase()) {
+              // 2026-10-18 (canonical vocabulary, types.ts): a JSX component usage is a
+              // RENDER, not a generic read. The row used to be `uses` because no canonical
+              // value existed; `RelationshipType.Renders` now does, and the relabel is 1:1 —
+              // same source (the enclosing symbol), same target (the tag name), same line,
+              // same jsxElement metadata. One row per ELEMENT: a paired `<Panel>…</Panel>` is
+              // handled once, at the jsx_element, never once per opening/closing tag; a
+              // lowercase intrinsic (`div`, `span`), a fragment (`<></>`, which has no
+              // identifier child at all) and a member component (`<A.B/>`, whose name is a
+              // member_expression) still emit NOTHING — the name rule is unchanged.
               relationships.push({
                 source: callSource,
                 target: identifier.text,
-                type: ASTEngine.RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Renders,
                 confidence: 0.9,
                 ...this.lineField(identifier),
                 metadata: { jsxElement: identifier.text },
@@ -2296,10 +2343,17 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < symbol.decorators.length; i++) {
         const decorator = symbol.decorators[i]
         const line = lines?.[i]
+        // 2026-10-18 (canonical vocabulary, types.ts): the decorator's edge is its own
+        // canonical relation, `decorates` — source the DECORATED declaration, target the
+        // decorator name leaf (`jsDecoratorName` spelling), line the DECORATOR's own line.
+        // It replaces the `references` row this site used to emit: one row per decorator,
+        // never one for a decorator's ARGUMENTS (`@inject(make())` names `inject`, not
+        // `make`, and the call/read walks already refuse decorator position whole — see
+        // `inDecoratorPosition`), and no second references/calls row at the same site.
         relationships.push({
           source: symbol.name,
           target: decorator,
-          type: ASTEngine.RelationshipType.References,
+          type: ASTEngine.RelationshipType.Decorates,
           confidence: 1.0,
           ...(typeof line === "number" ? { line_number: line } : {}),
           metadata: {
@@ -3008,7 +3062,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                     type: ASTEngine.RelationshipType.Uses,
                     confidence: 0.6,
                     ...this.lineField(segNode),
-                    metadata: { isFieldAccess: true },
+                    // `receiverRoot` is the chain's FIRST identifier when it IS an identifier
+                    // (`location.hash.substring` -> `location`), and empty for a call-rooted chain
+                    // (`$(el).removeClass` -> ""). It is published so the terminal claim pass can ask
+                    // memberChainClaim the question the rule is defined on — the RECEIVER ROOT — without
+                    // re-deriving the chain from text. Additive; consumers that do not read it are unaffected.
+                    metadata: { isFieldAccess: true, ...(cur?.type === "identifier" && head ? { receiverRoot: head } : {}) },
                   })
                 }
               }
@@ -3163,6 +3222,166 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (child) stack.push({ node: child, owner: nextOwner, method: nextMethod, module: moduleName })
       }
     }
+  }
+
+  /**
+   * JS EXTERNAL CLAIMS — mark the edges whose target is a platform name the FILE cannot declare,
+   * using the CLOSED CITED vocabulary in `js-builtin-prototypes.ts` and nothing else.
+   *
+   * WHY THIS PASS EXISTS. The lane's unresolved `calls`/`uses` mass is dominated by names no
+   * repository can declare: `document.getElementById`, `window.addEventListener`,
+   * `location.hash.substring`, `JSON.stringify`, `setTimeout`. Before this pass the analyzer
+   * published those rows with NO claim at all, so they read exactly like a name the project
+   * failed to bind. The claim fixes the READ, not the binding — it never picks a declaration,
+   * so it cannot raise `arbitraryTwin`, `bindFAIL` or `extFAIL` for a DOTLESS target (the
+   * arbiter looks a dotless target up by its own spelling and can only reach a refutation on a
+   * target that names a declaration — which is why this pass NEVER rewrites a target, and why
+   * it refuses every non-identifier target; a dotted target is looked up by its OWNER, which a
+   * project may well publish).
+   *
+   * THE TWO PROOFS, both readable from the syntax with NO type inference:
+   *
+   *   bare name is a cited host global           `setTimeout(...)`      -> claim, cites ECMA-262 §19.2
+   *   receiver ROOT is a cited host global       `document.getElementById` -> claim, cites WHATWG HTML §7.3
+   *   receiver root is a LOCAL                    `x.substring(...)`    -> NO CLAIM (x may be a project object)
+   *   name/receiver root the FILE DECLARES        `class Map {}; Map.x()` -> NO CLAIM (the declaration outranks the table)
+   *
+   * The vocabulary is `HOST_GLOBALS` (57 cited entries) + `memberChainClaim` in
+   * `js-builtin-prototypes.ts` — the same module the differential's oracle imports, so the two
+   * sides cannot drift into two copies of one rule. A name NOT in that list gets NO claim: a
+   * heuristic ("looks like a DOM name") would be the closed-list lie this fleet keeps catching.
+   *
+   * WHAT IT DELIBERATELY DOES NOT CLAIM, and the counts are the next measurement: Node runtime
+   * globals (`process`, `Buffer`, `module`, `require`), test-runner globals (`describe`, `it`,
+   * `test`, `expect`, `assert`) and imported bindings from external packages are OUTSIDE the
+   * cited list. They stay unresolved until each gets its own cited vocabulary; they are named in
+   * `validation/m14/verification/JAVASCRIPT-RESOLUTION-CLASSIFICATION.md` with their measured
+   * counts rather than smuggled into this table.
+   *
+   * The claim's own words are published twice: `externalReason` (the machine bucket the arbiter
+   * reads) and `externalClaimReason` (the full citation a human audits). `externalReceiver`
+   * names the receiver root when the proof is the MEMBER rule, so a reader can re-run the rule
+   * from the edge itself.
+   */
+  private markExternalClaims(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+  ): number {
+    const declaredHere = new Set<string>()
+    for (const s of symbols) if (s.name) declaredHere.add(String(s.name))
+    const bound = this.collectBoundNames(rootNode)
+    let marked = 0
+    for (const r of relationships) {
+      const label = String(r.type ?? "")
+      const target = String(r.target ?? "")
+      if (target.length === 0) continue
+      // A target with a dot is looked up by its OWNER by the arbiter, and a project may publish
+      // that owner — a claim there is refutable, so this pass refuses it. A path or a fragment
+      // is refused as unreachable. Only a plain identifier can earn a claim here.
+      if (!isPlainJsIdentifier(target)) continue
+      if (declaredHere.has(target)) continue
+      const md = (r.metadata ?? (r.metadata = {})) as Record<string, unknown>
+      if (md.isExternalTarget === true) continue
+
+      let reason: string | null = null
+      let citation: string | null = null
+      let receiver: string | null = null
+
+      if (label === "calls") {
+        const callee = String(md.calleeExpression ?? "")
+        if (callee.length > 0 && callee === target) {
+          if (!bound.has(target)) {
+            citation = hostGlobalCitation(target)
+            if (citation !== null) reason = "host-global-bare"
+          }
+        } else if (callee.length > 0 && callee.endsWith(`.${target}`)) {
+          // The receiver CHAIN's root, which is what memberChainClaim is defined on:
+          // `location.hash.substring` -> root `location` (a cited Window member).
+          const recvChain = callee.slice(0, callee.length - target.length - 1)
+          const rootEnd = jsIdentifierPrefixEnd(recvChain)
+          const root = recvChain.slice(0, rootEnd)
+          if (root.length > 0 && isPlainJsIdentifier(root) && !bound.has(root) && !declaredHere.has(root)) {
+            citation = memberChainClaim(root, target)
+            if (citation !== null) { reason = "host-global-member"; receiver = root }
+          }
+        }
+      } else if (label === "uses") {
+        const isBareRead = md.bareRead === true || md.chainRoot === true || md.callReceiver === true || md.isTemplateInterpolation === true
+        if (isBareRead) {
+          if (!bound.has(target)) {
+            citation = hostGlobalCitation(target)
+            if (citation !== null) reason = "host-global-bare"
+          }
+        } else if (md.isFieldAccess === true) {
+          const root = String(md.receiverRoot ?? "")
+          if (root.length > 0 && isPlainJsIdentifier(root) && !bound.has(root) && !declaredHere.has(root)) {
+            citation = memberChainClaim(root, target)
+            if (citation !== null) { reason = "host-global-member"; receiver = root }
+          }
+        }
+      } else if (label === "extends" || label === "references") {
+        // A BASE or an `instanceof` type that is a cited host class (`extends Error`,
+        // `x instanceof Date`). The name is the target itself, so the bare proof applies.
+        if (!bound.has(target)) {
+          citation = hostGlobalCitation(target)
+          if (citation !== null) reason = label === "extends" ? "host-global-base" : "host-global-type"
+        }
+      }
+      if (reason === null || citation === null) continue
+      md.isExternalTarget = true
+      md.externalReason = reason
+      md.externalClaimReason = citation
+      if (receiver !== null) md.externalReceiver = receiver
+      marked++
+    }
+    return marked
+  }
+
+  /**
+   * EVERY NAME THIS FILE BINDS — the negative control of the claim pass, and deliberately
+   * over-collecting: a name collected here that is not really a binding can only REFUSE a
+   * claim, never make one, so the conservative direction is the safe direction.
+   *
+   * The positions are the grammar's own definition positions, matched by the same node-type
+   * tests the bare-read walk applies (`isImportBinding` / `isParamBinding` / `isPatternBinding`
+   * / declaration names), read from the IDENTIFIER's parent rather than re-walking each
+   * construct — one pass, no shape re-derived.
+   */
+  private collectBoundNames(rootNode: Node): Set<string> {
+    const out = new Set<string>()
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "identifier") {
+        const p = n.parent
+        if (p) {
+          const isDeclName =
+            (p.type === "variable_declarator" && p.childForFieldName("name")?.id === n.id) ||
+            (p.type === "function_declaration" && p.childForFieldName("name")?.id === n.id) ||
+            (p.type === "generator_function_declaration" && p.childForFieldName("name")?.id === n.id) ||
+            (p.type === "class_declaration" && p.childForFieldName("name")?.id === n.id) ||
+            (p.type === "function_expression" && p.childForFieldName("name")?.id === n.id) ||
+            (p.type === "method_definition" && p.childForFieldName("name")?.id === n.id) ||
+            (p.type === "required_parameter") || (p.type === "optional_parameter")
+          const isBindingPosition =
+            p.type === "formal_parameters" ||
+            p.type === "import_clause" || p.type === "import_specifier" || p.type === "namespace_import" ||
+            p.type === "catch_clause" ||
+            p.type === "object_pattern" || p.type === "array_pattern" || p.type === "rest_pattern" ||
+            p.type === "shorthand_property_identifier_pattern" ||
+            (p.type === "pair_pattern") ||
+            (p.type === "assignment_pattern" && (p.childForFieldName("left") ?? p.namedChild(0))?.id === n.id) ||
+            (p.type === "arrow_function" && p.childForFieldName("parameter")?.id === n.id)
+          if (isDeclName || isBindingPosition) out.add(n.text)
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
   }
 
   /**
