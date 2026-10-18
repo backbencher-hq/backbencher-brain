@@ -161,11 +161,18 @@ for (const file of files) {
     }
   }
   perRepoTally.set(repoName, tally)
-  for (const k of Object.keys(tally) as (keyof Tally)[]) {
+}
+// THE TOTAL IS RECOMPUTED FROM THE PER-REPO TALLIES, not accumulated inside the file loop.
+// The first version added `tally` (a PER-REPO CUMULATIVE) to the total after EVERY file, so a
+// repository with N sampled files contributed its running sum N times — measured on the cap-50
+// stride before the fix: calls read 2752 where the 50 files hold 2497 relationships in total, a
+// count LARGER than the whole population it is a part of. The reconciliation is printed below.
+for (const t of perRepoTally.values()) {
+  for (const k of Object.keys(t) as (keyof Tally)[]) {
     if (k === "byEvidence") continue
-    ;(totalTally as any)[k] += (tally as any)[k]
+    ;(totalTally as any)[k] += (t as any)[k]
   }
-  for (const [evidence, n] of Object.entries(tally.byEvidence)) {
+  for (const [evidence, n] of Object.entries(t.byEvidence)) {
     totalTally.byEvidence[evidence] = (totalTally.byEvidence[evidence] ?? 0) + n
   }
 }
