@@ -144,6 +144,82 @@ function jsIdentifierPrefixEnd(text: string): number {
   return end
 }
 
+/**
+ * THE PROJECT'S OWN FILE SPACE, as a module predicate — the analyzer-side half of the
+ * `context.projectIndex` capability, and a FAIL-CLOSED gate:
+ *
+ *   project-local  the specifier's ROOT is a directory or file stem the index records, or a
+ *                  multi-segment specifier's tail names an indexed file. NO claim, whatever the
+ *                  specifier looks like: a `__mocks__/fs-extra.js` (a Jest mock of a REAL external
+ *                  package) puts "fs-extra" in the project's directory names, and a bare claim
+ *                  would then read as a statement the project can refute — the gate returns
+ *                  `externalUnverified` (`ext?`), which blocks a pass.
+ *   third-party    NO indexed file carries the root and no tail matches. The ONLY state in which
+ *                  this lane may claim externality, and only when the index is complete: a
+ *                  fragment that says "no such file" is not the project saying it.
+ *   unknown        a matching tail exists but the root does not line up; neither claimed nor
+ *                  resolved (a wrong resolution is worse than an unresolved row).
+ *
+ * RELATIVE/ABSOLUTE SPECIFIERS ARE NEVER ASKED (the caller filters them): they name this project
+ * by the grammar, and a file claim that misses is REFUTED against the lane.
+ *
+ * CACHED ON THE INDEX OBJECT (WeakMap key = ProjectIndex): the predicate's sets cost one pass over
+ * the project's file list and the index is one object per run; a per-file rebuild would be O(files)
+ * per file.
+ */
+const JS_MODULE_LOCALITY_CACHE = new WeakMap<object, (spec: string) => "project-local" | "third-party" | "unknown">()
+
+function jsProjectModuleLocalityOf(index: { modules?: Set<string> }): (spec: string) => "project-local" | "third-party" | "unknown" {
+  const cached = JS_MODULE_LOCALITY_CACHE.get(index as object)
+  if (cached) return cached
+  const modules = index.modules ?? new Set<string>()
+  const paths: string[] = []
+  const stems = new Set<string>()
+  const dirs = new Set<string>()
+  for (const raw of modules) {
+    const m = String(raw).replace(/\\/g, "/")
+    if (m.length === 0) continue
+    paths.push(m)
+    const slash = m.lastIndexOf("/")
+    const base = slash >= 0 ? m.slice(slash + 1) : m
+    const dot = base.lastIndexOf(".")
+    if (dot > 0) {
+      const stem = base.slice(0, dot)
+      if (stem.length > 0) stems.add(stem)
+    }
+    if (slash > 0) {
+      const dir = m.slice(0, slash)
+      const d = dir.lastIndexOf("/")
+      dirs.add(d >= 0 ? dir.slice(d + 1) : dir)
+    }
+  }
+  const JS_EXTS = [".js", ".jsx", ".mjs", ".cjs", ".json"]
+  const tailNamesIndexedFile = (spec: string): boolean => {
+    for (const p of paths) {
+      if (p.endsWith(`/${spec}`) || p === spec) return true
+      for (const ext of JS_EXTS) {
+        if (p.endsWith(`/${spec}${ext}`)) return true
+      }
+    }
+    return false
+  }
+  const predicate = (spec: string): "project-local" | "third-party" | "unknown" => {
+    const clean = spec.trim().replace(/[?#].*$/, "")
+    if (clean.length === 0) return "unknown"
+    const segments = clean.split("/")
+    const root = segments[0]
+    // A SCOPED PACKAGE'S ROOT IS ITS SCOPE (`@scope/pkg`): the scope alone names no project file,
+    // so the scope is only project-owned when the FULL scoped package name matches a directory.
+    const rootOf = root.startsWith("@") && segments.length >= 2 ? `${root}/${segments[1]}` : root
+    const rootOfOwn = root.startsWith("@") ? root : rootOf
+    if (stems.has(rootOf) || dirs.has(rootOf) || dirs.has(rootOfOwn) || stems.has(rootOfOwn)) return "project-local"
+    if (segments.length > 1 && tailNamesIndexedFile(clean)) return "project-local"
+    return "third-party"
+  }
+  JS_MODULE_LOCALITY_CACHE.set(index as object, predicate)
+  return predicate
+}
+
 function hasBraceEquals(text: string): boolean {
   for (let i = 0; i < text.length; i++) {
     const ch = text[i]
@@ -1726,7 +1802,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // EXTERNAL CLAIMS — the ADDITIVE half of resolution: it rewrites no target, adds no edge, and
     // moves no edge out of `unresolved` on its own authority. See markExternalClaims.
-    this.markExternalClaims(rootNode, relationships, symbols)
+    this.markExternalClaims(rootNode, relationships, symbols, context)
 
     this.classifyEvidenceTier(relationships)
 
@@ -3475,6 +3551,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
    * sides cannot drift into two copies of one rule. A name NOT in that list gets NO claim: a
    * heuristic ("looks like a DOM name") would be the closed-list lie this fleet keeps catching.
    *
+   * THE IMPORT CLASS is claimed too, and it is a DIFFERENT claim kind on purpose: an `imports`
+   * row spells `<module>:<item>`, so the claim is about the MODULE (a namespace, not a
+   * declaration). The arbiter's `moduleNamespace` claim verifies the module ROOT against the
+   * project's own file/directory names and FAILS CLOSED when the root is project-owned, so a
+   * workspace package that names a real project directory cannot be laundered. A relative or
+   * absolute specifier is NEVER claimed: it names a FILE in this project, and a file claim that
+   * misses is REFUTED against the lane — this per-file analyzer is not given the project's file
+   * list, so those rows stay unclaimed rather than risk a false external statement.
+   *
    * WHAT IT DELIBERATELY DOES NOT CLAIM, and the counts are the next measurement: Node runtime
    * globals (`process`, `Buffer`, `module`, `require`), test-runner globals (`describe`, `it`,
    * `test`, `expect`, `assert`) and imported bindings from external packages are OUTSIDE the
@@ -3491,6 +3576,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
+    context?: ASTEngine.AnalyzeContext,
   ): number {
     const declaredHere = new Set<string>()
     for (const s of symbols) if (s.name) declaredHere.add(String(s.name))
@@ -3500,13 +3586,16 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       const label = String(r.type ?? "")
       const target = String(r.target ?? "")
       if (target.length === 0) continue
-      // A target with a dot is looked up by its OWNER by the arbiter, and a project may publish
-      // that owner — a claim there is refutable, so this pass refuses it. A path or a fragment
-      // is refused as unreachable. Only a plain identifier can earn a claim here.
-      if (!isPlainJsIdentifier(target)) continue
-      if (declaredHere.has(target)) continue
       const md = (r.metadata ?? (r.metadata = {})) as Record<string, unknown>
       if (md.isExternalTarget === true) continue
+      // THE PLAIN-IDENTIFIER RULE IS PER CLAIM CLASS, not global. For the dotless-target claims
+      // (calls/uses/extends/references) a dotted target is looked up by its OWNER by the arbiter
+      // and a project may publish that owner — a claim there is refutable — while a path or a
+      // fragment is refused as unreachable. An `imports` target is `<module>:<item>` BY
+      // CONSTRUCTION, so it can never satisfy that rule and the module-namespace claim (a
+      // different kind, verified against the project's file/dir names) is the one that applies.
+      if (label !== "imports" && !isPlainJsIdentifier(target)) continue
+      if (declaredHere.has(target)) continue
 
       let reason: string | null = null
       let citation: string | null = null
@@ -3544,6 +3633,44 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (citation !== null) { reason = "host-global-member"; receiver = root }
           }
         }
+      } else if (label === "imports") {
+        // THE MODULE-NAMESPACE CLAIM — the arbiter's mechanism for a language whose import
+        // spelling names a MODULE and an ITEM (`pathlib:Path`, `xml.sax.handler:ContentHandler`,
+        // and every `javascript` import row). The claim is exactly what the spelling states:
+        // the SPECIFIER is not a project-relative path, so the module it names is outside this
+        // project. The arbiter verifies the module ROOT against the project's own file and
+        // directory names and, when the root IS project-owned, returns `externalUnverified`
+        // (fail-closed `ext?`) rather than a refutation — so a workspace package that names a
+        // real project directory can never be laundered into `extOK`.
+        //
+        // ONLY A NON-PATH SPECIFIER IS CLAIMED. A relative/absolute specifier names a FILE in
+        // this project, and the file question needs the project's admitted file list, which
+        // this per-file analyzer is not given (and a file claim that misses is REFUTED, i.e.
+        // counted against the lane) — those rows stay unclaimed and are counted in
+        // JAVASCRIPT-RESOLUTION-CLASSIFICATION.md.
+        const at = target.lastIndexOf(":")
+        if (at > 0) {
+          const spec = target.slice(0, at)
+          const item = target.slice(at + 1)
+          const isRelative = spec.startsWith(".") || spec.startsWith("/")
+          const isScheme = spec.includes("://")
+          const isPathish = spec.includes("\\") || spec.length === 0 || item.length === 0
+          // FAIL-CLOSED, like the python twin's `applyProjectIndexFacts`: externality of a MODULE
+          // is not readable from one file. A complete project index is the project saying "no
+          // module of mine answers to this specifier"; a sampled or absent index is a fragment,
+          // and a fragment that says "no such file" says nothing. Without the index the lane
+          // claims NOTHING here — that is why the cap-50 index-less gate can never show these
+          // edges in `extOK`, and why the claim's measurable arm is `incoming-gate … 0 --index`.
+          const index = context?.projectIndex
+          if (!isRelative && !isScheme && !isPathish && index !== undefined && index.complete === true) {
+            const verdict = jsProjectModuleLocalityOf(index)(spec)
+            if (verdict === "third-party") {
+              reason = "module-namespace"
+              citation = `import specifier \`${spec}\` names no module of this project (complete project index; ${item === "*" ? "namespace import" : `item ${item}`})`
+              receiver = spec
+            }
+          }
+        }
       } else if (label === "extends" || label === "references") {
         // A BASE or an `instanceof` type that is a cited host class (`extends Error`,
         // `x instanceof Date`). The name is the target itself, so the bare proof applies.
@@ -3557,6 +3684,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       md.externalReason = reason
       md.externalClaimReason = citation
       if (receiver !== null) md.externalReceiver = receiver
+      // THE FIELD THE ARBITER VERIFIES A module-namespace CLAIM WITH: the module (or receiver
+      // root) the claim is about. `externalClaimOf` reads it as `externalSpecifier` and routes
+      // the claim to `moduleNamespace`, whose check is the module ROOT against the project's
+      // own file/directory names — the only check this claim can honestly be given.
+      if (reason === "module-namespace" && receiver !== null) md.externalSpecifier = receiver
       marked++
     }
     return marked

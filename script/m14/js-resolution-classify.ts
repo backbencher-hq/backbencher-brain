@@ -368,7 +368,31 @@ function classifyEdge(
   // A CLAIM IS NOT A RESOLUTION (the gate's own rule): an edge the analyzer marked
   // `isExternalTarget` is counted in extOK, so this census reports it in its own bucket and
   // never inside a "needs work" class. The claim's stated reason travels with the count.
-  if (meta?.isExternalTarget === true) return `CLAIMED-${String(meta?.externalReason ?? "external")} (gate extOK)`
+  if (meta?.isExternalTarget === true) {
+    if (label === "imports" && typeof meta?.externalSpecifier === "string") {
+      // REPRODUCE THE ARBITER'S OWN CHECK for a module-namespace claim, so the census says which
+      // claims verify (`extOK`) and which read "no check can reach" (`ext?`, which BLOCKS a pass):
+      // the module ROOT is compared with the project's file stems and directory names.
+      const spec = meta.externalSpecifier
+      const root = spec.split(/[./\\]/)[0]
+      const projectNames = new Set<string>()
+      for (const f of proj.files) {
+        const slash = f.lastIndexOf("/")
+        const base = slash >= 0 ? f.slice(slash + 1) : f
+        const dot = base.lastIndexOf(".")
+        if (dot > 0) projectNames.add(base.slice(0, dot))
+        if (slash > 0) {
+          const dir = f.slice(0, slash)
+          const d = dir.lastIndexOf("/")
+          projectNames.add(d >= 0 ? dir.slice(d + 1) : dir)
+        }
+      }
+      return projectNames.has(root)
+        ? `CLAIMED-module-namespace PROJECT-ROOT (gate ext? — blocks pass)`
+        : `CLAIMED-module-namespace (gate extOK)`
+    }
+    return `CLAIMED-${String(meta?.externalReason ?? "external")} (gate extOK)`
+  }
   if (label === "calls") {
     const callee = typeof meta.calleeExpression === "string" ? meta.calleeExpression : target
     const bare = callee === target || !callee.includes(".")
