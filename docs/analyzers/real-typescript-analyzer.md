@@ -361,12 +361,12 @@ invocation become `typescript ts,tsx 400` so React is inside the measured popula
 
 ## 2026-10-18 — vocabulary extension, project-index imports pass, receiver evidence classes
 
-**MEASUREMENT STATUS OF THIS SECTION, stated first because the programme's rule is that a
-status is not optional: the code below is landed and the FIXTURES are executed, but the
-cap-50 before/after pair, the whole-project indexed arm and the owner-coverage count are
-QUEUED under the Lead's resource hold (the box was at 1–3 GB available). Nothing in this
-section is reported as a measured population change; the commands to measure it are printed
-with it.**
+**MEASUREMENT STATUS, stated first because the programme's rule is that a status is not
+optional: the code below is landed, the FIXTURES are executed, and the cap-50 arm was
+MEASURED on 2026-10-18 against the gate with its owner channel green (numbers in §5). The
+WHOLE-PROJECT indexed arm (the one that decides the imports B-class and turns claims on) is
+still QUEUED under the Lead's resource hold — no whole-population number appears in this
+section.**
 
 ### 1 · Two relabels into the extended vocabulary (owner-admitted, `src/ast/types.ts`)
 
@@ -475,3 +475,51 @@ bun run script/m14/ts-owner-coverage.ts --max-files 0 --repo=apollo-server --per
 at cap 50 (2,100 dump rows, 100% joined) classified by cause with counts and the disposition
 each bucket must land in (resolution vs claim vs binding), plus the ranked lever table. It is
 cap-50 TRIAGE; no bucket count there is a population claim.
+
+### 5 · CAP-50 MEASURED, gate green with the owner channel modelled (2026-10-18)
+
+Command: `BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts typescript ts 50`
+(50 of 13,950 admitted `.ts` files, stride 279, 40 repos, 0 parse failures). Before column =
+the same command captured before any of this round's code; after = HEAD of this round.
+
+| label | before edges/resolved/unresolved | after edges/resolved/unresolved | note |
+| --- | --- | --- | --- |
+| calls | 1616 / 69 / 1148 | 1616 / **64** / **1153** | the gate's owner channel is now modelled; 5 rows whose NAME would have resolved are WITHDRAWN because the channel declines their owner in this stride (production holds those NULL) |
+| references | 291 / 49 / 187 | **281** / 49 / **179** | −10 rows are the decorators, moved to `decorates`; the 2 ambiguous rows went with them |
+| decorates | — (did not exist) | **10 / 0 / 8** (2 ambiguous) | the relabel, 1:1 by construction; 2 of the 10 are ambiguous member names in the stride |
+| renders | — | 0 on `.ts` | JSX cannot appear in a `.ts` file; measured on the tsx arm below |
+| imports / exports / extends / implements / instantiates / uses / contains / overrides | unchanged | unchanged | this round changed no emission for them at cap-50 |
+| **TOTAL** | 2497 / 397 / 1624 | 2497 / **392** / **1629** | `extOK` 447 both sides, `bindOK` 16 both sides, `extFAIL` 0, `causeFAIL` 0; **`arbitraryTwin` TOTAL 47 before and 47 after** (calls 43, uses 2, 2 moved from references to decorates) |
+
+The gate's own stderr block, quoted because it is the channel's measurement and not this
+document's:
+
+```
+owner channel (production rule, modelled): 126 row(s) carried metadata.owner · resolved 0 · declined 126
+  (ownerAbsent 125 · noMember 1)
+owner channel vs name model: 0 row(s) the name count called ambiguous/unresolved and the channel
+  resolves; 5 row(s) the channel DECLINED whose name would have resolved — production holds those
+  NULL (withdrawn binding)
+```
+
+**CAP-50 IS A LOWER BOUND FOR THIS CHANNEL**, and saying so is required: the channel is
+project-scoped and the stride samples ~1 file per repo, so an owner class declared in an
+unsampled file reads `ownerAbsent` (125 of 126 here). The whole-repo arm is the honest unit.
+
+**TSX ARM** (`incoming-gate typescript tsx 50`): `renders 222` rows (17 resolved, 205
+unresolved) · `uses 63` · calls 718 · imports 394 · references 209 · instantiates 12 ·
+decorates 0. No before-run exists for this exact 50-file tsx stride, so the relabel's
+population effect is NOT reported as a delta; the 1:1 property is proven by construction (same
+emission site, same target/line, one row per element) and by the fixture probe (12/12 rows,
+control fired). Scale check only: the previous round measured 1,782 JSX rows over a 374-file
+tsx stride (4.8/file); this arm reads 222 over 50 files (4.4/file).
+
+**OWNER COVERAGE** (`script/m14/ts-owner-coverage.ts --max-files 50 --per-repo`, same
+population as the gate): calls 1,616 · member calls 826 (51.1%) · owner-carrying 126 — **7.8% of
+all calls, 15.3% of member calls** — by evidence: `this` 68 (54.0%), `assignment` 40 (31.7%),
+`annotation` 11 (8.7%), `param` 7 (5.6%). Before the four-form extension the same population
+carried 51 owner rows. Per-repo shares run from 0.0% (r-air, vue-core) to 17.8% (vault), so
+the coverage is never pooled into one claim. **The four syntax-proven forms do not cross the
+wall**: they reach about one member call in six; the remaining five need receiver types the
+syntax does not state (unions/primitives, destructuring, factory returns, post-declaration
+assignment) and are left unowned rather than guessed.
