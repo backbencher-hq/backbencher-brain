@@ -461,6 +461,7 @@ function scopeString(scopes: JSScopeEntry[]): string {
 // ANALYZER
 // ============================================================================
 
+import { BINDING_SEP } from "./types"
 import { isJsBuiltin, jsBuiltinHasMember, hostGlobalCitation, memberChainClaim } from "./js-builtin-prototypes"
 import { runtimeGlobalCitation, runtimeGlobalReason } from "./js-runtime-globals"
 
@@ -528,6 +529,32 @@ const FILE_LEVEL_SOURCE = "(file)"
  * form here is one the syntax PROVES rather than a guess from a name.
  */
 type ReceiverType = { type: string; evidence: ReceiverEvidence }
+
+/**
+ * A POSITIONAL LEXICAL SCOPE — the model the LOCAL-BINDING claim needs (contract:
+ * validation/m14/verification/JAVASCRIPT-LOCAL-BINDING-CONTRACT.md). Ranges are NODE OFFSETS, not
+ * lines: a binding claim must be resolved at the exact site, and minified one-line files make a
+ * line-based answer a guess. `published` is the load-bearing flag: the PROGRAM scope's bindings are
+ * published SYMBOLS (module-scope declarations), so a name resolving there must NOT be claimed as a
+ * binding (the family contract: never claim a name that is a real in-file declaration at the site);
+ * function/block/catch scopes hold unpublishable bindings, which ARE claimable.
+ */
+type BindingScope = {
+  kind: "program" | "function" | "block" | "catch"
+  startIndex: number
+  endIndex: number
+  published: boolean
+  parent: BindingScope | null
+  names: Set<string>
+}
+
+type BindingModel = {
+  scopes: BindingScope[]
+  /** every binding name in the file — used by the claim pass's REFUSALS (a file that binds a name never gets an external claim) */
+  allNames: Set<string>
+  /** import / require bindings: the imported-binding SEAM class, NEVER claimed as local bindings */
+  moduleBindings: Set<string>
+}
 type ReceiverEvidence = "new" | "assignment" | "this" | "jsdoc"
 
 export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -537,6 +564,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
    * measurement that made it worth having.
    */
   private hasAnyDecoratorNode = false
+
+  /**
+   * The positional lexical scope model for the file currently being analyzed (built once per
+   * `analyze`, before the relationship extraction passes, so every emission site can resolve its
+   * own node position exactly). Null outside an `analyze` call.
+   */
+  private bindingModel: BindingModel | null = null
 
   analyze(
     rootNode: Node,
@@ -676,13 +710,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (heritage) {
               const base = this.findChildByType(heritage, "identifier") ?? this.findChildByType(heritage, "member_expression")
               if (base) {
+                const boundBase = base.type === "identifier" ? this.localBindingTarget(base, base.text, name) : null
                 relationships.push({
                   source: name,
-                  target: base.text,
+                  target: boundBase ?? base.text,
                   type: ASTEngine.RelationshipType.Extends,
                   confidence: 1.0,
                   ...this.lineField(base),
-                  metadata: {},
+                  metadata: boundBase ? { localBinding: true } : {},
                 })
               }
             }
@@ -716,13 +751,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (heritage && ownName) {
             const base = this.findChildByType(heritage, "identifier") ?? this.findChildByType(heritage, "member_expression")
             if (base) {
+              const boundBaseExpr = base.type === "identifier" ? this.localBindingTarget(base, base.text, ownName) : null
               relationships.push({
                 source: ownName,
-                target: base.text,
+                target: boundBaseExpr ?? base.text,
                 type: ASTEngine.RelationshipType.Extends,
                 confidence: 1.0,
                 ...this.lineField(base),
-                metadata: {},
+                metadata: boundBaseExpr ? { localBinding: true } : {},
               })
             }
           }
@@ -1718,6 +1754,9 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // --- Relationship passes -------------------------------------------------
+    // THE POSITIONAL SCOPE MODEL, built once before any relationship pass: the local-binding claim
+    // resolves each emission SITE by node offset (never by line — minified files are one line).
+    this.bindingModel = this.collectBindingModel(rootNode)
     this.addContainmentRelationships(symbols, relationships)
     this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion)
     // ONE COLLECTION PER FILE: both walks consume the same receiver-type map, so a member call
@@ -2344,9 +2383,16 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           } else if (this.isJSBuiltinCall(targetName, fullCallee)) {
             // filtered builtins
           } else {
+            // LOCAL-BINDING claim (contract: JAVASCRIPT-LOCAL-BINDING-CONTRACT.md): a BARE callee
+            // that the file binds lexically is published with the family separator spelling, so the
+            // arbiter verifies the spelling (`bindOK`) instead of binding the bare name to an
+            // unrelated same-named declaration. A member callee (`a.b()`) is never a binding here.
+            const boundCallee = fn.type === "identifier"
+              ? this.localBindingTarget(fn, targetName, callSource)
+              : null
             relationships.push({
               source: callSource,
-              target: targetName,
+              target: boundCallee ?? targetName,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
               // The callee LEAF — for `a.b.c()` the property node, so a chain's
@@ -2354,6 +2400,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               ...this.lineField(fn.type === "member_expression" ? (fn.childForFieldName("property") ?? fn) : fn),
               metadata: {
                 calleeExpression: fullCallee,
+                ...(boundCallee ? { localBinding: true } : {}),
                 // The receiver's stated type, on the store's EXISTING channel: `metadata.owner`
                 // is what `member-owner-resolution.ts` (claimOwnerCarryingTargets +
                 // resolveMemberTargetsByOwner) reads on BOTH production resolution paths — it
@@ -2398,15 +2445,18 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             ctorName = prop ? prop.text : ctor.text
           }
           if (ctorName && !JS_GLOBAL_CONSTRUCTORS.has(ctorName)) {
+            const boundCtor = ctor.type === "identifier"
+              ? this.localBindingTarget(ctor, ctorName, callSource)
+              : null
             relationships.push({
               source: callSource,
-              target: ctorName,
+              target: boundCtor ?? ctorName,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.95,
               // The CLASS NAME node: for `new ns.Thing()` the property leaf,
               // since the target is the leaf (TSD3 leaf identity).
               ...this.lineField(ctor.type === "member_expression" ? (ctor.childForFieldName("property") ?? ctor) : ctor),
-              metadata: {},
+              metadata: boundCtor ? { localBinding: true } : {},
             })
           }
         }
@@ -2431,13 +2481,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               // lowercase intrinsic (`div`, `span`), a fragment (`<></>`, which has no
               // identifier child at all) and a member component (`<A.B/>`, whose name is a
               // member_expression) still emit NOTHING — the name rule is unchanged.
+              const boundJsx = this.localBindingTarget(identifier, identifier.text, callSource)
               relationships.push({
                 source: callSource,
-                target: identifier.text,
+                target: boundJsx ?? identifier.text,
                 type: ASTEngine.RelationshipType.Renders,
                 confidence: 0.9,
                 ...this.lineField(identifier),
-                metadata: { jsxElement: identifier.text },
+                metadata: { jsxElement: identifier.text, ...(boundJsx ? { localBinding: true } : {}) },
               })
             }
           }
@@ -3114,13 +3165,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const key = `${source}|${right.text}`
             if (!emitted.has(key)) {
               emitted.add(key)
+              const boundRef = right.type === "identifier" ? this.localBindingTarget(right, right.text, source) : null
               relationships.push({
                 source,
-                target: right.text,
+                target: boundRef ?? right.text,
                 type: ASTEngine.RelationshipType.References,
                 confidence: 0.95,
                 ...this.lineField(right),
-                metadata: { relationshipType: "instanceof_check" },
+                metadata: { relationshipType: "instanceof_check", ...(boundRef ? { localBinding: true } : {}) },
               })
             }
           }
@@ -3263,13 +3315,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const recvKey = `${recvSource}.#${head}`
             if (!seen.has(recvKey)) {
               seen.add(recvKey)
+              const boundRecv = this.localBindingTarget(root, head, recvSource)
               relationships.push({
                 source: recvSource,
-                target: head,
+                target: boundRecv ?? head,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.6,
                 ...this.lineField(root!),
-                metadata: { isFieldAccess: true, bareRead: true, callReceiver: true },
+                metadata: { isFieldAccess: true, bareRead: true, callReceiver: true, ...(boundRecv ? { localBinding: true } : {}) },
               })
             }
           }
@@ -3327,15 +3380,18 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 const rootKey = `${rootSource}.#${head}`
                 if (!seen.has(rootKey)) {
                   seen.add(rootKey)
+                  // The chain ROOT is a read of the identifier — a local binding when the file
+                  // binds it lexically (same claim contract as the bare-read site below).
+                  const boundRoot = cur?.type === "identifier" ? this.localBindingTarget(cur, head, rootSource) : null
                   relationships.push({
                     source: rootSource,
-                    target: head,
+                    target: boundRoot ?? head,
                     type: ASTEngine.RelationshipType.Uses,
                     confidence: 0.6,
                     // The root identifier's own line (the chain may open on a
                     // line the segments do not share).
                     ...this.lineField(cur),
-                    metadata: { isFieldAccess: true, chainRoot: true },
+                    metadata: { isFieldAccess: true, chainRoot: true, ...(boundRoot ? { localBinding: true } : {}) },
                   })
                 }
               }
@@ -3467,13 +3523,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const bKey = `${bSource}.#${txt}`
             if (!seen.has(bKey)) {
               seen.add(bKey)
+              const boundRead = this.localBindingTarget(node, txt, bSource)
               relationships.push({
                 source: bSource,
-                target: txt,
+                target: boundRead ?? txt,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.6,
                 ...this.lineField(node),
-                metadata: { isFieldAccess: true, bareRead: true },
+                metadata: { isFieldAccess: true, bareRead: true, ...(boundRead ? { localBinding: true } : {}) },
               })
             }
           }
@@ -3530,13 +3587,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // two Uses edges. First emitter wins: this rule carries the
                 // documented isTemplateInterpolation contract.
                 seen.add(`${src2}.#${c.text}`)
+                const boundTmpl = this.localBindingTarget(c, c.text, src2)
                 relationships.push({
                   source: src2,
-                  target: c.text,
+                  target: boundTmpl ?? c.text,
                   type: ASTEngine.RelationshipType.Uses,
                   confidence: 0.85,
                   ...this.lineField(c),
-                  metadata: { isTemplateInterpolation: true },
+                  metadata: { isTemplateInterpolation: true, ...(boundTmpl ? { localBinding: true } : {}) },
                 })
               }
             } else if (c.type !== "identifier") {
@@ -3551,6 +3609,213 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (child) stack.push({ node: child, owner: nextOwner, method: nextMethod, module: moduleName })
       }
     }
+  }
+
+  /**
+   * BUILD THE POSITIONAL LEXICAL SCOPE MODEL — one walk of the tree, ranges in node offsets.
+   *
+   * THE RULES ARE THE LANGUAGE'S, not an approximation:
+   *   · scopes: program, every function form (declaration / expression / generator / arrow /
+   *     method / constructor / static block), blocks (`statement_block`, `switch_body`), loop
+   *     headers (`for`/`for_in`/`for_of`), catch clauses;
+   *   · `var` HOISTS to the nearest function-or-program scope; `let`/`const` bind in the current
+   *     block; parameters bind in the function scope; a catch parameter binds in its catch scope;
+   *     a function or class DECLARATION binds in its enclosing scope;
+   *   · a later same-scope redeclaration keeps one name (a Set), and an inner binding shadows an
+   *     outer one because resolution walks the scope chain from the innermost containing scope;
+   *   · import bindings and `require(...)` / `import(...)` declarators are recorded in
+   *     `moduleBindings` and are NEVER local-binding claims — they are the imported-binding seam;
+   *   · destructured/rest/default parameter and declarator patterns bind their VALUE sides
+   *     (`collectPatternPairs`, the same reader the symbol walk uses).
+   */
+  private collectBindingModel(rootNode: Node): BindingModel {
+    const scopes: BindingScope[] = []
+    const allNames = new Set<string>()
+    const moduleBindings = new Set<string>()
+    const program: BindingScope = {
+      kind: "program", startIndex: rootNode.startIndex, endIndex: rootNode.endIndex,
+      published: true, parent: null, names: new Set(),
+    }
+    scopes.push(program)
+    const addName = (scope: BindingScope, name: string): void => {
+      if (!name) return
+      scope.names.add(name)
+      allNames.add(name)
+    }
+    const newScope = (node: Node, kind: BindingScope["kind"], parent: BindingScope, published: boolean): BindingScope => {
+      const scope: BindingScope = { kind, startIndex: node.startIndex, endIndex: node.endIndex, published, parent, names: new Set() }
+      scopes.push(scope)
+      return scope
+    }
+    /** nearest function/program scope — the target of `var` hoisting */
+    const hoistTarget = (scope: BindingScope): BindingScope => {
+      let cur: BindingScope = scope
+      while (cur.kind !== "function" && cur.kind !== "program" && cur.parent) cur = cur.parent
+      return cur
+    }
+    const addParams = (fnNode: Node, fnScope: BindingScope): void => {
+      const paramsNode = fnNode.childForFieldName("parameters")
+      if (paramsNode) {
+        for (let i = 0; i < paramsNode.namedChildCount; i++) {
+          const param = paramsNode.namedChild(i)
+          if (!param) continue
+          for (const pair of this.collectPatternPairs(param)) addName(fnScope, pair.name)
+        }
+      }
+      // Arrow single-parameter form: `x => ...` has a `parameter` field, not `parameters`.
+      const single = fnNode.childForFieldName("parameter")
+      if (single) for (const pair of this.collectPatternPairs(single)) addName(fnScope, pair.name)
+    }
+    /** import bindings: default / named (alias = local binding) / namespace, all module-scope. */
+    const addImportBindings = (importNode: Node): void => {
+      const clause = this.findChildByType(importNode, "import_clause")
+      if (!clause) return
+      const add = (name: string): void => {
+        if (!name) return
+        addName(program, name)
+        moduleBindings.add(name)
+      }
+      for (let i = 0; i < clause.namedChildCount; i++) {
+        const c = clause.namedChild(i)
+        if (!c) continue
+        if (c.type === "identifier") add(c.text)
+        else if (c.type === "namespace_import") {
+          const nm = c.childForFieldName("name") ?? c.namedChild(0)
+          if (nm) add(nm.text)
+        } else if (c.type === "named_imports") {
+          for (let j = 0; j < c.namedChildCount; j++) {
+            const spec = c.namedChild(j)
+            if (!spec || spec.type !== "import_specifier") continue
+            const alias = spec.childForFieldName("alias")
+            const nm = spec.childForFieldName("name") ?? spec.namedChild(0)
+            const local = alias ?? nm
+            if (local) add(local.text)
+          }
+        }
+      }
+    }
+    /** is this declarator's value a module load (`require(...)` / `import(...)`)? */
+    const isModuleLoad = (value: Node | null): boolean => {
+      if (!value || value.type !== "call_expression") return false
+      const fn = value.childForFieldName("function")
+      if (!fn) return false
+      return fn.type === "import" || (fn.type === "identifier" && (fn.text === "require" || fn.text === "import"))
+    }
+    const walk = (n: Node, scope: BindingScope): void => {
+      const t = n.type
+      if (t === "function_declaration" || t === "generator_function_declaration") {
+        const nm = n.childForFieldName("name")
+        if (nm) addName(scope, nm.text)
+        const fnScope = newScope(n, "function", scope, false)
+        addParams(n, fnScope)
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, fnScope) }
+        return
+      }
+      if (t === "function_expression" || t === "generator_function") {
+        const fnScope = newScope(n, "function", scope, false)
+        const nm = n.childForFieldName("name")
+        if (nm) addName(fnScope, nm.text)  // a NAMED function expression binds inside itself
+        addParams(n, fnScope)
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, fnScope) }
+        return
+      }
+      if (t === "arrow_function" || t === "method_definition" || t === "class_static_block") {
+        const fnScope = newScope(n, "function", scope, false)
+        if (t !== "class_static_block") addParams(n, fnScope)
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, fnScope) }
+        return
+      }
+      if (t === "import_statement") {
+        addImportBindings(n)
+        // an import statement can wrap an export_statement? no; still descend for safety
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, scope) }
+        return
+      }
+      if (t === "variable_declarator") {
+        const nameNode = n.childForFieldName("name")
+        const value = n.childForFieldName("value")
+        const parent = n.parent
+        const kindNode = parent?.childForFieldName?.("kind")
+        const isVar = parent?.type === "variable_declaration" || (kindNode !== undefined && kindNode !== null && kindNode.text === "var")
+        const target = isVar ? hoistTarget(scope) : scope
+        const moduleBound = isModuleLoad(value)
+        if (nameNode) {
+          for (const pair of this.collectPatternPairs(nameNode)) {
+            addName(target, pair.name)
+            if (moduleBound) moduleBindings.add(pair.name)
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, scope) }
+        return
+      }
+      if (t === "catch_clause") {
+        const catchScope = newScope(n, "catch", scope, false)
+        const param = n.childForFieldName("parameter")
+        if (param) for (const pair of this.collectPatternPairs(param)) addName(catchScope, pair.name)
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, catchScope) }
+        return
+      }
+      if (t === "class_declaration") {
+        const nm = n.childForFieldName("name")
+        if (nm) addName(scope, nm.text)
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, scope) }
+        return
+      }
+      if (t === "statement_block" || t === "switch_body") {
+        const blockScope = newScope(n, "block", scope, false)
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, blockScope) }
+        return
+      }
+      if (t === "for_statement" || t === "for_in_statement") {
+        const loopScope = newScope(n, "block", scope, false)
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, loopScope) }
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, scope) }
+    }
+    walk(rootNode, program)
+    return { scopes, allNames, moduleBindings }
+  }
+
+  /**
+   * THE LOCAL-BINDING SPELLING for the site, or `null` when the name at this node is not a
+   * claimable local binding. Returns `${source}${BINDING_SEP}${name}` exactly as the family
+   * contract specifies (php/dart/java/fsharp/haskell): the arbiter verifies the SPELLING (a
+   * declaration name can never contain the separator), the row lands in the gate's `bindOK`
+   * column, and it is never merged into `resolved`.
+   *
+   * REFUSALS, each one a false statement the claim must not make:
+   *   · the file loads the name from a module (`import` / `require` / dynamic `import()`) — that is
+   *     the imported-binding seam class, not a local binding;
+   *   · the name resolves to the PROGRAM scope — module-scope declarations are PUBLISHED SYMBOLS,
+   *     so the edge can resolve normally and a binding claim would deny a real declaration;
+   *   · no lexical binding answers the name at this node's position (the read is of something the
+   *     file does not bind — host global, import through another route, or a genuine gap);
+   *   · the name would be the empty string or is one of the keywords the language never binds.
+   */
+  private localBindingTarget(node: Node | null | undefined, name: string, source: string | null | undefined): string | null {
+    const model = this.bindingModel
+    if (!model || !node || !name || !source) return null
+    if (name === "this" || name === "super" || name === "arguments" || name === "undefined") return null
+    if (model.moduleBindings.has(name)) return null
+    const kind = this.resolveBindingKind(model, node.startIndex, name)
+    if (kind !== "lexical") return null
+    return `${source}${BINDING_SEP}${name}`
+  }
+
+  /** innermost scope containing `index`, then the scope chain — "published" | "lexical" | null. */
+  private resolveBindingKind(model: BindingModel, index: number, name: string): "published" | "lexical" | null {
+    let best: BindingScope | null = null
+    for (const scope of model.scopes) {
+      if (index < scope.startIndex || index > scope.endIndex) continue
+      if (best === null || (scope.endIndex - scope.startIndex) < (best.endIndex - best.startIndex)) best = scope
+    }
+    let cur: BindingScope | null = best
+    while (cur) {
+      if (cur.names.has(name)) return cur.published ? "published" : "lexical"
+      cur = cur.parent
+    }
+    return null
   }
 
   /**
@@ -3609,7 +3874,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): number {
     const declaredHere = new Set<string>()
     for (const s of symbols) if (s.name) declaredHere.add(String(s.name))
-    const bound = this.collectBoundNames(rootNode)
+    const bound = this.bindingModel ? this.bindingModel.allNames : this.collectBoundNames(rootNode)
     let marked = 0
     for (const r of relationships) {
       const label = String(r.type ?? "")
