@@ -842,64 +842,50 @@
     {
      "draw": "grails-core:java",
      "sample": 60,
-     "treeTruth": 2420,
-     "covered": 2419,
+     "treeTruth": 2873,
+     "covered": 2873,
      "coveragePct": 100,
-     "missing": 1,
-     "analyzerEdges": 2370,
-     "unexplained": 3,
-     "fabricationPct": 0.1,
+     "missing": 0,
+     "analyzerEdges": 2818,
+     "unexplained": 0,
+     "fabricationPct": 0,
      "heuristic": 81,
-     "hash": "2fff892462bb64ee"
+     "hash": "2fff892462bb64ee",
+     "exit": 6,
+     "exitMeaning": "harness disclosure: a compared label has edges but zero truth ON THIS DRAW (grails-core's comparable override rows are all pass-3 guesses, which the oracle deliberately does not derive; the clojure draw exercises overrides)"
     },
     {
      "draw": "clojure:java",
      "sample": 60,
-     "treeTruth": 3768,
-     "covered": 3768,
+     "treeTruth": 3927,
+     "covered": 3927,
      "coveragePct": 100,
      "missing": 0,
-     "analyzerEdges": 3427,
-     "unexplained": 2,
-     "fabricationPct": 0.1,
+     "analyzerEdges": 3583,
+     "unexplained": 0,
+     "fabricationPct": 0,
      "heuristic": 64,
-     "hash": "86f37ca7cf27bbd4"
+     "hash": "86f37ca7cf27bbd4",
+     "exit": 0
     }
    ],
    "labelsBacked": {
     "calls": "deriveJavaEdges (shipped)",
-    "uses": "deriveJavaUsesTruth (shipped) — one member-kind gap: interface constant_declaration",
-    "contains": "deriveJavaContainsTruth (shipped) + lane-owned deriveJavaTypeParameterContainmentTruth (pending one dispatch line)",
-    "references": "deriveJavaReferencesTruth (shipped) + four lane-owned extension loops (wired f5c5cb9c4) — one oracle over-derivation (class literal '.class' receiver)",
+    "uses": "deriveJavaUsesTruth (shipped; interface constants read as constant_declaration since 06e9f149d)",
+    "contains": "deriveJavaContainsTruth (shipped) + lane-owned deriveJavaTypeParameterContainmentTruth (wired 06e9f149d)",
+    "references": "deriveJavaReferencesTruth (shipped) + four lane-owned extension loops (wired f5c5cb9c4) + class-literal receiver fix (06e9f149d)",
     "extends": "lane-owned deriveJavaInheritanceTruth (wired)",
     "implements": "lane-owned deriveJavaInheritanceTruth (wired)",
     "instantiates": "lane-owned deriveJavaInstantiatesTruth (wired)",
-    "overrides": "lane-owned deriveJavaOverridesTruth (wired; pass-3 guesses intentionally not derived, land in heuristic)"
+    "overrides": "lane-owned deriveJavaOverridesTruth (wired; pass-3 guesses intentionally not derived, land in heuristic)",
+    "imports": "lane-owned deriveJavaImportTruth (wired + admitted 936760c7e)",
+    "exports": "lane-owned deriveJavaExportTruth (wired + admitted 936760c7e)"
    },
    "derivationDebt": {
-    "imports": "NOT in java's compared set; package/module-path dependency surface has no oracle yet — declared debt, cannot be charged as fabrication because the label is absent from the filter",
-    "exports": "same as imports"
+    "imports": "CLOSED 936760c7e — derived lane-owned + admitted to the compared set",
+    "exports": "CLOSED 936760c7e — derived lane-owned + admitted to the compared set"
    },
-   "residualDefects": [
-    {
-     "id": "orig-1",
-     "where": "differential.ts ~2618-2625 (Lead-owned)",
-     "row": "references -> class",
-     "cause": "method_reference branch uses recv.text.split('.').pop() and a CLASS LITERAL receiver yields the keyword 'class'; the oracle invents a truth row the analyzer rightly never emits"
-    },
-    {
-     "id": "orig-2",
-     "where": "differential.ts deriveJavaUsesTruth collectMembers (Lead-owned)",
-     "row": "uses -> DATASOURCE_PREFIX",
-     "cause": "interface constants are constant_declaration nodes (JLS 9.3); collectMembers reads only field_declaration"
-    },
-    {
-     "id": "orig-3",
-     "where": "differential.ts java dispatch (Lead-owned)",
-     "row": "contains Owner -> T (4 rows over both draws)",
-     "cause": "type-parameter symbol containment not derived; lane-owned deriveJavaTypeParameterContainmentTruth is written and verified, awaiting one dispatch line"
-    }
-   ],
+   "residualDefects": "ALL THREE FIXED AND VERIFIED (06e9f149d): class-literal receiver refused, interface constant_declaration read, type-parameter containment dispatched. Both draws after the imports/exports admission (936760c7e): coverage 100%/100%, MISSING 0/0, UNEXPLAINED 0/0, heuristic 81/64 (pass-3 guesses only).",
    "zeroPass3InUnexplained": "measured: heuristic=81/64 are the pass-3 first-parent guesses (conf 0.5, JDJ-1); ZERO pass-3 rows appear in UNEXPLAINED in either draw"
   },
   "d3_2026_10_18": {
