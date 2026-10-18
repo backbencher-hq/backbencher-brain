@@ -4804,7 +4804,19 @@ currentPackage,
     imports: ASTEngine.ImportInfo[],
     context?: ASTEngine.AnalyzeContext,
   ): number {
-    const JVM_ROOTS = ["java.", "javax.", "jakarta.", "jdk.", "sun.", "com.sun.", "kotlin.", "kotlinx."]
+    // THE CLAIM'S NAMESPACE LIST, and `kotlin.`/`kotlinx.` are NOT on it. Measured at WHOLE
+    // POPULATION (11,155 files, `incoming-gate java java 0`, 2026-10-18): 28 imports and 1 references
+    // carrying a kotlin/kotlinx external claim were REFUTED by the project key space — the
+    // kotlinx-coroutines project own those packages (its own module-info publishes `exports
+    // kotlinx.coroutines…` as Namespace symbols, and `targetOwner("kotlinx.coroutines.BuildersKt")`
+    // is exactly `kotlinx.coroutines`). A library namespace is not a reserved platform namespace:
+    // JLS §6.1 / JPMS / JEP 260 reserve `java.`/`javax.`/`jdk.`/`sun.`/`com.sun.` (the arbiter's own
+    // `RESERVED_PLATFORM_NAMESPACES` citation list), while ANY project can legally define packages
+    // under `kotlin.`, `kotlinx.` or `jakarta.`. A claim the project can refute is not a claim this
+    // marker may make, so kotlin/kotlinx targets now stay UNCLAIMED (honest unresolved rows) instead
+    // of being excused by a per-file marker. The cost is measured, not hidden: 225 verified claims
+    // and 29 refuted ones move from the claim columns to unresolved, and `extFAIL` gains 0.
+    const JVM_ROOTS = ["java.", "javax.", "jakarta.", "jdk.", "sun.", "com.sun."]
     const isJvmModule = (name: string): boolean => JVM_ROOTS.some((r) => name.startsWith(r))
 
     const declared = new Set<string>()
