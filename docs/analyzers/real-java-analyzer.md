@@ -644,3 +644,35 @@ carried over from this sample.
 * **Generic type-variable references** (`T`, `R`, `A`, `B`) are still published as `references` at
   their use sites and read as ambiguous; whether a type variable should be a `references` edge at all
   is a contract ruling, not a defect this lane may unilaterally remove.
+
+## 2026-10-19 — DEPTH CAMPAIGN (task-17): receiver-identity classes, the channel-exact guard, the imported-name seam
+
+Charter §18 raises the bar from "complete surface + honest classification" to "as perfect as possible
+resolution". This lane's depth wave added, on the SAME owner channel and with NO target-spelling change:
+
+* **Seven receiver-identity evidence classes** (`ownerEvidence` values): `this` (implicit-`this` calls
+  JLS 15.12.1 and `this.m()`; also implicit-`this` reads), `super` (first IN-FILE base that declares
+  the member), `enum` (enum-constant receiver and read — the constant's static type IS the enum, JLS
+  8.9.1), `initializer` (`var` with a stated initializer, JLS 14.4), `new` (`new Widget().paint()`),
+  `cast` (`((Widget) x).paint()`), `element` (`widgets[0].paint()` via the declared element type,
+  JLS 10.1). Static imports are refused as implicit-`this` evidence (JLS 7.5.3/7.5.4), a
+  class-qualified static call stays owner-less (2026-10-18 contract), and an array binding is never a
+  class owner.
+* **The guard is the owner channel's own model**: candidate members are filtered by the relationship's
+  kind, a direct owner hit wins even over a same-named ancestor, and the in-file ancestor chain must
+  collect the member exactly once — otherwise no owner is attached (an owner the channel would
+  decline costs a withdrawn name binding, which this lane measures and does not trade silently).
+  Java's `ProjectIndex` has NO ancestry (`typeBases` empty for `JAVA_DECLARATION_SPEC`), so a
+  cross-file inherited member is refused rather than guessed.
+* **`metadata.importedFrom`**: a type-shaped target written through a single-type import publishes the
+  joined qualified name (`List` → `java.util.List`; `Map.Entry` → `java.util.Map.Entry`). The target
+  stays the bare leaf (JD20 + differential oracle unchanged). This is the analyzer half of the sized
+  D7 resolver gap.
+* **Instruments**: `script/m14/java-ambiguity-classes.ts` (read-only over a gate `--dump`: which
+  resolver input the edge's own file carries — same-file declaration / single-type import / static
+  import / no file evidence) and `validation/m14/verification/JAVA-DEPTH-D7.md` (every §10 wall in
+  RESOLVED / CLAIMED / INSTRUMENT GAP sized / RULED UNDECIDABLE with counts).
+* **Measured** (arm A, `incoming-gate java java 0 --index`, 1,478,651 edges): resolved 517,790 →
+  563,444 (+45,654) · amb 300,696 → 250,561 · unresolved 150,560 → 155,041 (+4,481 net cost, stated) ·
+  extOK 473,324 → 507,159 (Lead's ext? refiner fix) · extFAIL/bindFAIL/causeFAIL 0 · arbitraryTwin
+  751,102 unchanged · verified-class 67.06% → 72.40%.
