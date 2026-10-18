@@ -204,9 +204,93 @@ function memberNamesOfField(field: any, out: Array<{ name: string; line: number 
   }
 }
 
+/**
+ * `enumeratorsInsideMacroInvocation`'s contract (#930), re-derived rather than imported: an X-macro
+ * enumeration puts the invocation in the LIST and the grammar recovery parks its ARGUMENTS as
+ * `enumerator` nodes. The analyzer refuses them; an oracle that does not is a strict SUPERSET and
+ * manufactures a truth row no analyzer edge can cover (the workstream's superset trap).
+ *
+ * The state machine reads the list's RAW children, because the punctuation is anonymous: an ERROR
+ * child carrying `)` closes the current invocation and one carrying `(` opens the next — a single
+ * ERROR can do both (curl's separator is `ERROR(number_literal ")" "," identifier "(")`).
+ */
+function enumeratorsInsideMacroInvocation(list: any): Set<number> {
+  const inside = new Set<number>()
+  let inInvocation = false
+  for (let i = 0; i < list.childCount; i++) {
+    const c = list.child(i)
+    if (!c) continue
+    if (c.isError || c.type === "ERROR") {
+      const text = String(c.text ?? "")
+      if (text.indexOf(")") !== -1) inInvocation = false
+      if (text.indexOf("(") !== -1) inInvocation = true
+      continue
+    }
+    if (inInvocation && c.type === "enumerator") inside.add(c.startIndex)
+  }
+  return inside
+}
+
 export function deriveCContainsTruth(root: any): CTruthEdge[] {
   const edges: CTruthEdge[] = []
   const seen = new Set<string>()
+  const pushMember = (owner: string, name: string, line: number): void => {
+    const n = name.trim()
+    if (!n || C_KEYWORDS.has(n)) return
+    if (seen.has(n)) return
+    seen.add(n)
+    edges.push({ label: "contains", from: owner, target: n, line })
+  }
+  /** Fields inside a struct/union body, INCLUDING the ones a conditional wraps (#conditional arms). */
+  const collectFields = (body: any, owner: string): void => {
+    const walkBody = (node: any): void => {
+      for (const child of namedChildrenOf(node)) {
+        if (!child) continue
+        if (child.type === "field_declaration") {
+          const members: Array<{ name: string; line: number }> = []
+          memberNamesOfField(child, members)
+          for (const m of members) pushMember(owner, m.name, m.line)
+          continue
+        }
+        // A conditional inside the body still declares members; the analyzer records them with
+        // `isConditional` metadata rather than dropping them, so the same nodes are read here. The
+        // recursion also covers a conditional nested inside another conditional — the shape that
+        // cost this oracle two `contains` rows on sqlite (`#ifdef _WIN32 … #else pthread_t tid;` at
+        // test/threadtest3.c:458 and `#if … u64 ino;` at src/os_unix.c:1294).
+        if (
+          child.type === "preproc_if" || child.type === "preproc_ifdef" ||
+          child.type === "preproc_else" || child.type === "preproc_elif"
+        ) {
+          walkBody(child)
+        }
+        // A NESTED aggregate is walked by the main visitor under its own owner; do not descend.
+      }
+    }
+    walkBody(body)
+  }
+  const collectEnumerators = (holder: any, owner: string): void => {
+    const list = holder.type === "enum_specifier"
+      ? (holder.childForFieldName?.("body") ?? anyNamedChild(holder, "enumerator_list"))
+      : null
+    if (!list) return
+    const macroArgs = enumeratorsInsideMacroInvocation(list)
+    const walkList = (node: any): void => {
+      for (const en of namedChildrenOf(node)) {
+        if (!en) continue
+        if (en.type === "enumerator" && !macroArgs.has(en.startIndex)) {
+          const id = en.childForFieldName?.("name") ?? namedChildrenOf(en)[0]
+          const name = id ? String(id.text ?? "").trim() : ""
+          if (name) pushMember(owner, name, (id?.startPosition?.row ?? en.startPosition.row) + 1)
+          continue
+        }
+        if (
+          en.type === "preproc_if" || en.type === "preproc_ifdef" ||
+          en.type === "preproc_else" || en.type === "preproc_elif"
+        ) walkList(en)
+      }
+    }
+    walkList(list)
+  }
   const visit = (n: any): void => {
     if (!n) return
     if (n.type === "struct_specifier" || n.type === "union_specifier") {
@@ -214,50 +298,12 @@ export function deriveCContainsTruth(root: any): CTruthEdge[] {
       if (body) {
         const nameNode = n.childForFieldName?.("name")
         const owner = nameNode ? String(nameNode.text ?? "").trim() : "(anonymous)"
-        for (const child of namedChildrenOf(body)) {
-          if (!child) continue
-          if (child.type === "field_declaration") {
-            const members: Array<{ name: string; line: number }> = []
-            memberNamesOfField(child, members)
-            for (const m of members) {
-              const key = `${m.name}`
-              if (seen.has(key)) continue
-              seen.add(key)
-              edges.push({ label: "contains", from: owner, target: m.name, line: m.line })
-            }
-          } else if (child.type === "preproc_if" || child.type === "preproc_ifdef" || child.type === "preproc_else" || child.type === "preproc_elif") {
-            // A conditional inside a body still declares members when its arm is taken; the analyzer's
-            // walk publishes them regardless of arm (it records `isConditional` metadata), so the
-            // oracle reads the same nodes.
-            for (const c2 of namedChildrenOf(child)) {
-              if (c2 && c2.type === "field_declaration") {
-                const members: Array<{ name: string; line: number }> = []
-                memberNamesOfField(c2, members)
-                for (const m of members) {
-                  if (seen.has(m.name)) continue
-                  seen.add(m.name)
-                  edges.push({ label: "contains", from: owner, target: m.name, line: m.line })
-                }
-              }
-            }
-          }
-        }
+        collectFields(body, owner)
       }
     } else if (n.type === "enum_specifier") {
-      const body = n.childForFieldName?.("body") ?? anyNamedChild(n, "enumerator_list")
-      if (body) {
-        const nameNode = n.childForFieldName?.("name")
-        const owner = nameNode ? String(nameNode.text ?? "").trim() : "(anonymous)"
-        for (const en of namedChildrenOf(body)) {
-          if (!en || en.type !== "enumerator") continue
-          const id = en.childForFieldName?.("name") ?? namedChildrenOf(en)[0]
-          const name = id ? String(id.text ?? "").trim() : ""
-          if (!name || C_KEYWORDS.has(name)) continue
-          if (seen.has(name)) continue
-          seen.add(name)
-          edges.push({ label: "contains", from: owner, target: name, line: (id?.startPosition?.row ?? en.startPosition.row) + 1 })
-        }
-      }
+      const nameNode = n.childForFieldName?.("name")
+      const owner = nameNode ? String(nameNode.text ?? "").trim() : "(anonymous)"
+      collectEnumerators(n, owner)
     }
     for (const c of namedChildrenOf(n)) visit(c)
   }

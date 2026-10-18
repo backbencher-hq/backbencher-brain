@@ -4567,6 +4567,8 @@ private isAttributeInternalCall(callNode: Node, fnNode: Node): boolean {
             const rawDecl = field.child(j)
             if (
               rawDecl &&
+              !rawDecl.isError &&
+              !rawDecl.isMissing &&
               !inArray(
                 [
                   "primitive_type",
@@ -4618,6 +4620,28 @@ private isAttributeInternalCall(callNode: Node, fnNode: Node): boolean {
                 rawDecl.type,
               )
             ) {
+              // #993: AN ERROR NODE IS NOT A DECLARATOR, and a name read out of one is not a member.
+              //
+              // Measured by the D4 whole-repo differential arm on sqlite: `src/os_kv.c:341-343`
+              // publishes `contains sqlite3_kvvfs_methods -> sqlite3_vfs` (and the same for
+              // `sqlite3_io_methods` twice) BESIDE the real members `pVfs`/`pIoDb`/`pIoJrnl`. The
+              // source is `MAYBE_CONST sqlite3_vfs * pVfs;` where MAYBE_CONST is a file macro the
+              // parser cannot see, so the plan is:
+              //
+              //   field_declaration
+              //     type_identifier "MAYBE_CONST"      <- the unknown macro, read as a type
+              //     ERROR "sqlite3_vfs"                <- the REAL TYPE, displaced by recovery
+              //       field_identifier "sqlite3_vfs"
+              //     pointer_declarator "* pVfs"        <- the real declarator
+              //
+              // This loop treats every child that is not a known type/punctuation node as a
+              // DECLARATOR, so the ERROR was descended and its identifier published as a member —
+              // a TYPE, and the same FABRICATION class #932/#985/#990 already refuse on the paths
+              // they reach. The refusal here is the file's own established rule ("an ERROR subtree
+              // is never where a declared name is read from", `firstCleanNamedChild`), applied to the
+              // one walk that did not have it. `fieldDeclarationHasDeclarator` keeps the real
+              // declarator, so only the phantom goes; clang's independent reading of the same file
+              // has no such member.
               let arraySize = 1
               let unresolvableDimensions = false
               let bitfieldClause = ""
@@ -5147,9 +5171,35 @@ private isAttributeInternalCall(callNode: Node, fnNode: Node): boolean {
       // damaged list still lands -- see the rule for why a blunt "this list is
       // damaged" rejection would have been wrong.
       const macroArgumentEnumerators = enumeratorsInsideMacroInvocation(listNode)
-      for (let i = 0; i < listNode.namedChildCount; i++) {
-        const enumerator = listNode.namedChild(i)
-        if (enumerator && enumerator.type === "enumerator" && !macroArgumentEnumerators.has(enumerator.startIndex)) {
+      // #994: members declared inside a PREPROCESSOR ARM of the enumerator list are REAL
+      // enumerators — whichever arm compiles declares them, and the file is the source of truth
+      // for both arms. Measured by the D4 jq draw: `jq/src/jv_dtoa.c:1630-1643` declares
+      //   enum { #ifdef IEEE_Arith  emax = …, emin = …  #else  emin = …  #ifdef VAX emax = … …
+      // inside a function whose whole file is wrapped in one ERROR. The direct-child loop saw
+      // only the `preproc_ifdef` node and published NO member, so the differential read 2 MISSING
+      // rows (`contains -> emax`, `contains -> emin`) against an oracle that recursed into the arm.
+      // This is the STRUCT-field rule this analyzer already applies to conditional members ("a
+      // preprocessor arm is not a different construct, it is the same declaration under a
+      // condition" — the struct path records `isConditional` on the member instead of dropping
+      // it); the enum path simply did not have it. Order is preserved (pre-order, direct
+      // enumerators and arms interleaved as written), so value tracking is unchanged.
+      const enumerators: Node[] = []
+      {
+        const gather = (holder: Node): void => {
+          for (let i = 0; i < holder.namedChildCount; i++) {
+            const c = holder.namedChild(i)
+            if (!c) continue
+            if (c.type === "enumerator") enumerators.push(c)
+            else if (
+              c.type === "preproc_if" || c.type === "preproc_ifdef" ||
+              c.type === "preproc_else" || c.type === "preproc_elif"
+            ) gather(c)
+          }
+        }
+        gather(listNode)
+      }
+      for (const enumerator of enumerators) {
+        if (enumerator && !macroArgumentEnumerators.has(enumerator.startIndex)) {
           const enumNameNode = enumerator.childForFieldName("name") || enumerator.namedChild(0)
           // #931 SHADOWING: this local is `memberName`, NOT `enumName`. Naming it
           // `enumName` shadowed the METHOD's own `enumName` (the enum's name) for
