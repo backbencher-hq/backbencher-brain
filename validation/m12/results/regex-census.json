@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-18T06:40:32.869Z",
+  "generatedAt": "2026-10-18T06:42:53.188Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 37,
+  "totalRegexUsages": 36,
   "analyzersScanned": 48,
   "byClassification": {
-    "needs_review": 36,
+    "needs_review": 35,
     "unavoidable": 1
   },
   "byReceiverCategory": {
-    "other": 14,
+    "other": 13,
     "identifier": 22,
     "string_literal": 1
   },
@@ -398,23 +398,6 @@
           "file": "real-fsharp-analyzer.ts",
           "line": 2684,
           "column": 30,
-          "source": "/^[A-Za-z_$][A-Za-z0-9_$]*$/",
-          "operation": "other",
-          "receiver": "",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-java-analyzer.ts",
-      "count": 1,
-      "usages": [
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 4978,
-          "column": 32,
           "source": "/^[A-Za-z_$][A-Za-z0-9_$]*$/",
           "operation": "other",
           "receiver": "",
