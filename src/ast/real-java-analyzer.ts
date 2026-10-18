@@ -483,6 +483,7 @@ function javaTypeBaseName(node: Node | null | undefined): string {
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { findDeclaringParent, localEdgeLabel, localEdgeName } from "./override-context"
+import type { ProjectIndex } from "./project-index"
 
 // ── RECEIVER TYPING (owner contract 2026-10-18, additive) ───────────────────────────────────────
 //
@@ -505,7 +506,7 @@ import { findDeclaringParent, localEdgeLabel, localEdgeName } from "./override-c
 //     `var` declarations (JLS 14.4 inference is invisible here), primitives, and
 //     any name that resolves to a FIELD OF AN INHERITED type — the file cannot
 //     state their type, and "probably" is what this metadata must not say.
-type JavaTypeEvidence = "field" | "param" | "local" | "return"
+type JavaTypeEvidence = "field" | "param" | "local" | "return" | "initializer" | "this" | "super" | "enum"
 
 /** One name a declaration binds to a written type, with the scope that binds it.
  *  `declStart` is where the declaration is written (a local must precede its use,
@@ -514,8 +515,29 @@ type JavaTypeEvidence = "field" | "param" | "local" | "return"
 type JavaDeclaredMember = { type: string; evidence: JavaTypeEvidence; declStart: number; scopeStart: number; scopeEnd: number }
 
 /** A lexical scope's name→declared-type table. `type` scopes carry FIELDS, `method`
- *  scopes carry parameters and locals. */
-type JavaTypeScope = { start: number; end: number; members: Map<string, JavaDeclaredMember> }
+ *  scopes carry parameters and locals.
+ *
+ *  THE THREE OPTIONAL TYPE-SCOPE FACTS serve the depth campaign's new receiver-IDENTITY
+ *  classes (2026-10-19): they let the resolver answer "which TYPE is this receiver"
+ *  for `this`/`super`/class-qualified/`var` receivers — and they GUARD the emitted
+ *  owner so the store never withdraws a name binding for an owner chain that cannot
+ *  contain the target (see javaMemberChainHas). */
+type JavaTypeScope = {
+  start: number
+  end: number
+  members: Map<string, JavaDeclaredMember>
+  /** The type's own declared name. Absent for an anonymous class body — an anonymous
+   *  class is not a project declaration, so it can never be a resolvable owner. */
+  name?: string
+  /** The type's DIRECT base names as written (superclass, then the interface list,
+   *  JLS 8.1.4/8.1.5/9.1.3). Read only for the `super` receiver class. */
+  parents?: string[]
+  /** Every MEMBER NAME this type declares (methods, constructors, fields, enum
+   *  constants, nested types). The new owner classes are attached only when the target
+   *  can be a member of the owner chain; without this the channel would withdraw the
+   *  name binding and then decline, trading a resolution for nothing. */
+  memberNames?: Set<string>
+}
 
 /** The per-file index the receiver resolver reads. Built once per file in a
  *  pre-pass, because a call site is visited before the declarations later in the
@@ -527,12 +549,27 @@ type JavaReceiverTypeIndex = {
   /** names of types DECLARED in this file — an identifier matching one of these in
    *  receiver position is a type (static call), not a variable */
   typeNames: Set<string>
+  /** Declared type name -> the DECLARATION NODE's kind (class/interface/enum/record/
+   *  annotation), needed by the enum-constant receiver class: only an enum constant's
+   *  static type is its enum (JLS 8.9.1), a class's static field's type is not the class. */
+  typeKindsByName: Map<string, string>
   /** local names bound by a single-type import — same purpose, and the reason a
    *  static call to an imported class is never mistaken for a variable read */
   importSingleTypes: Set<string>
   /** method name -> the set of declared return type names in THIS file. A name with
    *  more than one distinct return type is an overload set and is refused. */
   methodReturns: Map<string, Set<string>>
+  /** Declared type name -> its TYPE scope. The receiver-identity classes use it for the
+   *  in-file member/ancestor checks (an inner class's OWN members answer before the
+   *  project index is consulted). */
+  typeScopesByName: Map<string, JavaTypeScope>
+  /** Member names brought into scope by `import static …;` — an unqualified call whose
+   *  name is here is NOT an implicit-this member (JLS 7.5.3/7.5.4), so the `this` owner
+   *  must not be attached: the enclosing type is then the wrong owner. */
+  staticImportLeaves: Set<string>
+  /** True when the file has any static-on-demand import: an unqualified call may then
+   *  come from a type the file never names, so implicit-this is refused outright. */
+  hasStaticOnDemand: boolean
 }
 
 export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -1726,7 +1763,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             // receiver, when the file itself states it. Additive metadata only —
             // see the JavaReceiverTypeIndex contract above the class for what is
             // claimed, from which declaration, and what is deliberately refused.
-            const receiverOwner = this.javaReceiverOwnerType(node, receiverTypes)
+            const receiverOwner = this.javaReceiverOwnerType(node, receiverTypes, context?.projectIndex)
             const receiverMetadata = receiverOwner
               ? { owner: receiverOwner.type, ownerEvidence: receiverOwner.evidence }
               : {}
@@ -2505,7 +2542,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // Add Uses relationships for field accesses (this.name, obj.method)
-    this.collectFieldAccessUses(rootNode, relationships, symbols, receiverTypes)
+    this.collectFieldAccessUses(rootNode, relationships, symbols, receiverTypes, context?.projectIndex)
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
@@ -3461,6 +3498,7 @@ currentPackage,
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
     receiverTypes: JavaReceiverTypeIndex,
+    projectIndex?: ProjectIndex,
   ) {
     // Walk with an enclosing-type scope so `this`/`super` receivers resolve to
     // the containing class/interface/enum instead of the literal keyword, and
@@ -3584,7 +3622,7 @@ currentPackage,
             // receiver is not one of the four declaration classes the contract
             // names — a wrong owner is worse than none (the store withdraws the
             // name binding then declines).
-            const readReceiver = this.javaReceiverOwnerType(node, receiverTypes)
+            const readReceiver = this.javaReceiverOwnerType(node, receiverTypes, projectIndex)
             relationships.push({
               source,
               target: parts[parts.length - 1],
@@ -3735,6 +3773,20 @@ currentPackage,
             !seen.has(key)
           ) {
             seen.add(key)
+            // DEPTH CAMPAIGN (2026-10-19): a BARE read is an implicit-`this` member read
+            // (JLS 15.8.3), so the declaring type is the ENCLOSING TYPE — the first
+            // evidence the calls wall shares. Attached only when the store can use it
+            // (complete index; the type is declared exactly once; the member is in the
+            // type's chain), the same guard the calls classes use, because an owner the
+            // channel cannot resolve would withdraw the name binding for nothing.
+            let bareOwner: string | null = null
+            if (
+              owner &&
+              this.javaTypeEligible(owner, receiverTypes, projectIndex) &&
+              this.javaMemberChainHas(owner, txt, receiverTypes, projectIndex)
+            ) {
+              bareOwner = owner
+            }
             relationships.push({
               source: readSource,
               target: txt,
@@ -3748,7 +3800,7 @@ currentPackage,
               confidence: 1.0,
               // M59 (#825): the bare read IS its identifier node.
               line_number: node.startPosition.row + 1,
-              metadata: { isBareRead: true },
+              metadata: { isBareRead: true, ...(bareOwner ? { owner: bareOwner, ownerEvidence: "this" } : {}) },
             })
           }
         }
@@ -4013,8 +4065,12 @@ currentPackage,
       methodScopes: [],
       typeScopes: [],
       typeNames: new Set(),
+      typeKindsByName: new Map(),
       importSingleTypes: new Set(),
       methodReturns: new Map(),
+      typeScopesByName: new Map(),
+      staticImportLeaves: new Set(),
+      hasStaticOnDemand: false,
     }
     const TYPE_DECLARATIONS = new Set([
       "class_declaration", "interface_declaration", "enum_declaration",
@@ -4035,19 +4091,74 @@ currentPackage,
           for (let j = 0; j < child.namedChildCount; j++) {
             const inner = child.namedChild(j)
             if (inner && (inner.type === "field_declaration" || inner.type === "constant_declaration")) {
-              this.addJavaDeclaredMembers(inner, "field", scope, body)
+              this.addJavaDeclaredMembers(inner, "field", scope, body, index)
             }
           }
           continue
         }
         if (child.type === "field_declaration" || child.type === "constant_declaration") {
-          this.addJavaDeclaredMembers(child, "field", scope, body)
+          this.addJavaDeclaredMembers(child, "field", scope, body, index)
         }
       }
     }
-    const makeTypeScope = (body: Node): JavaTypeScope => {
-      const scope: JavaTypeScope = { start: body.startIndex, end: body.endIndex, members: new Map() }
+    /** Member names + enum-constant bindings, filled when the type scope is made.
+     *  Enum constants are receivers with a statically known type (JLS 8.9.1: the
+     *  constant's type IS the enum), so they are recorded exactly like fields. */
+    const addMemberNamesAndEnumConstants = (scope: JavaTypeScope, body: Node): void => {
+      const names = scope.memberNames
+      if (!names) return
+      const addName = (decl: Node | null | undefined): void => {
+        if (!decl) return
+        const nameNode = decl.childForFieldName("name")
+        if (nameNode && nameNode.text) { names.add(nameNode.text); return }
+        // A FIELD declares its names on VARIABLE_DECLARATOR children (`int a, b;`), not on a
+        // `name` field — the first version of this reader missed every field, so `this.x`
+        // reads and implicit-`this` calls could not see the enclosing type's own fields.
+        if (decl.type === "field_declaration" || decl.type === "constant_declaration") {
+          for (let k = 0; k < decl.namedChildCount; k++) {
+            const d = decl.namedChild(k)
+            if (!d || d.type !== "variable_declarator") continue
+            const n = d.childForFieldName("name")
+            if (n && n.text) names.add(n.text)
+          }
+        }
+      }
+      for (let i = 0; i < body.namedChildCount; i++) {
+        const child = body.namedChild(i)
+        if (!child) continue
+        if (child.type === "enum_body_declarations") {
+          for (let j = 0; j < child.namedChildCount; j++) addName(child.namedChild(j))
+          continue
+        }
+        if (
+          child.type === "method_declaration" || child.type === "constructor_declaration" ||
+          child.type === "compact_constructor_declaration" || child.type === "field_declaration" ||
+          child.type === "constant_declaration" || TYPE_DECLARATIONS.has(child.type)
+        ) {
+          addName(child)
+          continue
+        }
+        if (child.type === "enum_constant") {
+          const nameNode = child.childForFieldName("name") || this.findChildByType(child, "identifier")
+          if (!nameNode || !nameNode.text) continue
+          names.add(nameNode.text)
+          if (scope.name) {
+            scope.members.set(nameNode.text, {
+              type: scope.name, evidence: "field",
+              declStart: child.startIndex, scopeStart: scope.start, scopeEnd: scope.end,
+            })
+          }
+        }
+      }
+    }
+    const makeTypeScope = (body: Node, name?: string, parents?: string[]): JavaTypeScope => {
+      const scope: JavaTypeScope = {
+        start: body.startIndex, end: body.endIndex, members: new Map(),
+        name, parents, memberNames: new Set(),
+      }
       addFields(scope, body)
+      addMemberNamesAndEnumConstants(scope, body)
+      if (name) index.typeScopesByName.set(name, scope)
       index.typeScopes.push(scope)
       return scope
     }
@@ -4086,19 +4197,34 @@ currentPackage,
       const nextBlock = BLOCK_NODES.has(t) ? n : block
       if (TYPE_DECLARATIONS.has(t)) {
         const nameNode = n.childForFieldName("name")
-        if (nameNode) index.typeNames.add(nameNode.text)
+        const typeName = nameNode?.text
+        if (typeName) {
+          index.typeNames.add(typeName)
+          index.typeKindsByName.set(typeName, t)
+        }
         const body =
           this.findChildByType(n, "class_body") ||
           this.findChildByType(n, "enum_body") ||
           this.findChildByType(n, "interface_body") ||
           this.findChildByType(n, "annotation_type_body")
-        if (body) nextTypeScopes = [...typeScopes, makeTypeScope(body)]
+        if (body) {
+          nextTypeScopes = [...typeScopes, makeTypeScope(body, typeName, typeName ? this.javaDeclaredParentNames(n) : undefined)]
+        }
       }
       if (t === "object_creation_expression") {
         // An anonymous class body declares real fields and methods; calls inside it
-        // must resolve against ITS fields first, not the enclosing type's.
+        // must resolve against ITS fields first, not the enclosing type's. It has NO
+        // declared name (so it can never be an owner) but its creation type IS its
+        // superclass, which is what a `super.m()` inside the body resolves against.
         const body = this.findChildByType(n, "class_body")
-        if (body) nextTypeScopes = [...typeScopes, makeTypeScope(body)]
+        if (body) {
+          const superNode =
+            this.findChildByType(n, "type_identifier") ||
+            this.findChildByType(n, "generic_type") ||
+            this.findChildByType(n, "scoped_type_identifier")
+          const superName = superNode ? this.javaDeclaredTypeBaseName(superNode) : null
+          nextTypeScopes = [...typeScopes, makeTypeScope(body, undefined, superName ? [superName] : undefined)]
+        }
       }
       if (t === "method_declaration" || t === "constructor_declaration" || t === "compact_constructor_declaration") {
         nextMethod = makeBodyScope(n)
@@ -4123,6 +4249,18 @@ currentPackage,
           if (childNode && childNode.type === "static") { isStatic = true; break }
         }
         const isWildcard = this.findChildByType(n, "asterisk") !== null
+        if (isStatic) {
+          // JLS 7.5.3/7.5.4: a static import brings a MEMBER (or a container's members)
+          // into the file's unqualified scope. Recorded so the `this` receiver class can
+          // refuse an unqualified call the enclosing type does not own.
+          const staticName = this.findChildByType(n, "scoped_identifier") || this.findChildByType(n, "identifier")
+          if (staticName) {
+            const text = staticName.text
+            const leaf = text.slice(text.lastIndexOf(".") + 1)
+            if (isWildcard) index.hasStaticOnDemand = true
+            else if (leaf) index.staticImportLeaves.add(leaf)
+          }
+        }
         if (!isStatic && !isWildcard) {
           const nameNode = this.findChildByType(n, "scoped_identifier") || this.findChildByType(n, "identifier")
           if (nameNode) {
@@ -4161,7 +4299,7 @@ currentPackage,
       }
       if (t === "local_variable_declaration" && methodScope) {
         const scopeNode = block ?? (n.parent ?? n)
-        this.addJavaDeclaredMembers(n, "local", methodScope, scopeNode)
+        this.addJavaDeclaredMembers(n, "local", methodScope, scopeNode, index)
       }
       if (methodScope && t === "catch_formal_parameter") {
         // JLS 14.20: the caught variable is DECLARED with a type (a union type is
@@ -4244,21 +4382,79 @@ currentPackage,
     evidence: JavaTypeEvidence,
     scope: JavaTypeScope,
     scopeNode: Node,
+    index?: JavaReceiverTypeIndex,
   ): void {
-    const typeName = this.javaDeclaredTypeBaseName(decl.childForFieldName("type"))
-    if (!typeName) return
+    const typeNode = decl.childForFieldName("type")
+    const isVarForm = typeNode?.type === "type_identifier" && typeNode.text === "var"
+    const typeName = isVarForm ? null : this.javaDeclaredTypeBaseName(typeNode)
+    if (!typeName && !isVarForm) return
     for (let i = 0; i < decl.namedChildCount; i++) {
       const declarator = decl.namedChild(i)
       if (!declarator || declarator.type !== "variable_declarator") continue
       const nameNode = declarator.childForFieldName("name") || this.findChildByType(declarator, "identifier")
       if (!nameNode) continue
+      // `var` (JLS 14.4 inference) — the depth campaign's "initializer" evidence class.
+      // The binding's type is the INITIALIZER's written type, never a guess: an
+      // object-creation/cast type is stated, a file-local single-return-type method is
+      // stated, and anything else records nothing. The emission is still guarded
+      // downstream (only a PROJECT-declared owner is ever attached), so a `var` whose
+      // initializer names a library type adds no owner and cannot cost a binding.
+      let memberType = typeName
+      let memberEvidence: JavaTypeEvidence = evidence
+      if (isVarForm) {
+        if (!index) continue
+        const inferred = this.javaInferVarInitializerType(declarator, index)
+        if (!inferred) continue
+        memberType = inferred
+        memberEvidence = "initializer"
+      }
+      if (!memberType) continue
       scope.members.set(nameNode.text, {
-        type: typeName, evidence,
+        type: memberType, evidence: memberEvidence,
         declStart: declarator.startIndex,
         scopeStart: evidence === "field" ? scope.start : scopeNode.startIndex,
         scopeEnd: evidence === "field" ? scope.end : scopeNode.endIndex,
       })
     }
+  }
+
+  /**
+   * The statically stated type of a `var` declarator's INITIALIZER (JLS 14.4 / 10.3.2:
+   * `var` takes the type of its initializer, it is not inferred from later use).
+   *
+   * Only shapes whose type the FILE WRITES are read: `new Foo()`, a cast's type, and a
+   * method invocation whose name has exactly ONE declared return type in this file (an
+   * overload set with differing returns is refused, the same rule the `return` evidence
+   * class already states). String literals, chained calls on foreign types, lambdas and
+   * arrays are refused: their type is not written in this file, and a wrong owner is
+   * worse than none.
+   */
+  private javaInferVarInitializerType(declarator: Node, index: JavaReceiverTypeIndex): string | null {
+    let value = declarator.childForFieldName("value")
+    // `var x = (Foo) y;` — the cast states the type. Descend parentheses.
+    for (let guard = 0; guard < 8 && value; guard++) {
+      if (value.type !== "parenthesized_expression") break
+      value = value.namedChild(0)
+    }
+    if (!value) return null
+    if (value.type === "object_creation_expression") {
+      const typeNode =
+        this.findChildByType(value, "type_identifier") ||
+        this.findChildByType(value, "generic_type") ||
+        this.findChildByType(value, "scoped_type_identifier")
+      return typeNode ? this.javaDeclaredTypeBaseName(typeNode) : null
+    }
+    if (value.type === "cast_expression") {
+      return this.javaDeclaredTypeBaseName(value.childForFieldName("type"))
+    }
+    if (value.type === "method_invocation") {
+      const nameNode = value.childForFieldName("name")
+      const name = nameNode ? nameNode.text : ""
+      if (!name || this.isJavaBuiltin(name)) return null
+      const returns = index.methodReturns.get(name)
+      return returns && returns.size === 1 ? [...returns][0] : null
+    }
+    return null
   }
 
   /** The type name a declared-type node writes, or null when the node is a
@@ -4287,16 +4483,192 @@ currentPackage,
     return best
   }
 
-  /**
-   * The declared type of a call's receiver, from THE FILE'S OWN DECLARATIONS.
+  /** The base names a type declaration writes in its heritage clauses (JLS 8.1.4/8.1.5,
+   *  9.1.3, 8.10.3): superclass first, then the interface list. Used ONLY by the depth
+   *  campaign's `super` receiver class — ancestry is otherwise never inferred. */
+  private javaDeclaredParentNames(declNode: Node): string[] {
+    const inheritance = this.extractJavaInheritance(declNode)
+    const names: string[] = []
+    if (inheritance.extendsClass?.name) names.push(inheritance.extendsClass.name)
+    for (const p of inheritance.extendsInterfaces) if (p.name) names.push(p.name)
+    for (const p of inheritance.implementsInterfaces) if (p.name) names.push(p.name)
+    return names
+  }
+
+  /** The innermost TYPE scope containing `pos` that has a NAME. An anonymous class body
+   *  deliberately has none: it is not a project declaration, so it can never be an owner. */
+  private javaEnclosingTypeScope(index: JavaReceiverTypeIndex, pos: number): JavaTypeScope | null {
+    let best: JavaTypeScope | null = null
+    for (const scope of index.typeScopes) {
+      if (!scope.name) continue
+      if (scope.start <= pos && pos <= scope.end) {
+        if (!best || scope.start >= best.start) best = scope
+      }
+    }
+    return best
+  }
+
+  /** Does `ownerName` — or an IN-FILE base of it — declare `memberName`?
    *
-   * Returns null — never a guess — for every receiver whose type this file does not
-   * state: an implicit `this`, a class-qualified static call (its owner is already
-   * spelled in the call expression), `super`, chained access on an untyped
-   * receiver, an inherited field, and a `var` local. The four evidence classes are
-   * the declarations the Lead's contract names: field / param / local / return.
+   *  The depth campaign's receiver-IDENTITY classes (`this`/`super`/enum-constant/`var`)
+   *  attach an owner ONLY when this holds. The store WITHDRAWS the name binding for an
+   *  owner-carrying row (the owner channel's own rule) and then declines if the owner chain
+   *  has no such member, so an emitted-but-impossible owner would trade a resolution for
+   *  nothing. In-file scopes answer first; a COMPLETE project index's member map answers
+   *  across files. INHERITANCE ACROSS FILES IS DELIBERATELY NOT ASSUMED: java's ProjectIndex
+   *  has NO ancestry (measured 2026-10-19 with JAVA_DECLARATION_SPEC: `typeBases` is EMPTY
+   *  because `baseNodes` reads an `ancestor` field this grammar does not have), so only a
+   *  type's OWN members count there, while an IN-FILE parent chain is walked through the
+   *  file's own scopes. Missing an inherited member loses an owner; a wrong one costs a
+   *  binding, and the programme's precision rule ranks that worse. */
+  private javaMemberChainHas(
+    ownerName: string,
+    memberName: string,
+    index: JavaReceiverTypeIndex,
+    projectIndex: ProjectIndex | undefined,
+    depth = 0,
+  ): boolean {
+    if (!ownerName || !memberName || depth > 8) return false
+    const fileScope = index.typeScopesByName.get(ownerName)
+    if (fileScope?.memberNames?.has(memberName)) return true
+    if (projectIndex?.complete === true && (projectIndex.typeMembers.get(ownerName)?.has(memberName) ?? false)) return true
+    for (const parent of fileScope?.parents ?? []) {
+      if (this.javaMemberChainHas(parent, memberName, index, projectIndex, depth + 1)) return true
+    }
+    return false
+  }
+
+  /** Can an owner spelled `ownerName` be attached at all?
+   *
+   *  A type DECLARED IN THIS FILE is eligible: the enclosing-type classes are exactly the
+   *  declarations this file contains. A type declared only in the PROJECT is eligible when a
+   *  COMPLETE index declares it exactly once; completeness is the bit that turns "declared
+   *  once in the project" from a fragment's opinion into a statement. When the complete
+   *  index shows the simple name declared MORE THAN ONCE the owner is refused: the channel
+   *  reports `ownerAmbiguous` and would withdraw the name binding for nothing. */
+  private javaTypeEligible(ownerName: string, index: JavaReceiverTypeIndex, projectIndex: ProjectIndex | undefined): boolean {
+    if (!ownerName) return false
+    const inFile = index.typeNames.has(ownerName)
+    if (projectIndex?.complete === true) {
+      const count = projectIndex.symbolCounts.get(ownerName) ?? 0
+      if (count > 1) return false
+      if (inFile) return true
+      return projectIndex.typeKinds.has(ownerName) && count === 1
+    }
+    return inFile
+  }
+
+  /**
+   * The declared type of a call's receiver — the depth campaign's EIGHT evidence classes.
+   *
+   * The 2026-10-18 contract classes (field / param / local / return) are read from THE
+   * FILE'S OWN DECLARATIONS by `javaReceiverOwnerTypeFromFile` and are byte-identical to
+   * that contract.
+   *
+   * The 2026-10-19 depth classes are evidence the FILE (or, for cross-file `var`
+   * initializers, a COMPLETE project index) states, and each is guarded by
+   * `javaMemberChainHas` + `javaTypeEligible`:
+   *   * `this`        — an implicit `this.m()` call (no receiver, JLS 15.12.1) and an
+   *                     explicit `this.m()`. The enclosing type is the instance receiver.
+   *                     REFUSED when an unqualified name could come from a static import
+   *                     (JLS 7.5.3/7.5.4) — there the enclosing type is the wrong owner.
+   *   * `super`       — `super.m()`; the first IN-FILE base of the enclosing type that
+   *                     declares the member. An external parent stays owner-less (the store
+   *                     could not resolve it either).
+   *   * `enum`        — an ENUM-CONSTANT receiver (`Mode.ONE.act()`): the constant's static
+   *                     type IS the enum (JLS 8.9.1), so the receiver names a type that a
+   *                     calls leaf target drops. A class's static field is NOT this shape
+   *                     (its type is the field's, not the class's) and is refused.
+   *   * `initializer` — `var` locals/fields whose initializer states the type (JLS 14.4).
+   *
+   * Returns null — never a guess — for every receiver whose type no static evidence here
+   * states: an inherited field, a chained call on a foreign type, a method param of a
+   * library type, an untyped lambda parameter, multi-catch, a CLASS-QUALIFIED STATIC CALL
+   * (`Helper.help()` — the receiver already names its owner, which the 2026-10-18 contract
+   * and its fixture deliberately keep owner-less), and any `this` whose member is inherited
+   * from a type outside this file.
    */
   private javaReceiverOwnerType(
+    callNode: Node,
+    index: JavaReceiverTypeIndex,
+    projectIndex?: ProjectIndex,
+  ): { type: string; evidence: JavaTypeEvidence } | null {
+    const fileLocal = this.javaReceiverOwnerTypeFromFile(callNode, index)
+    const targetNode = callNode.childForFieldName("name") ?? callNode.childForFieldName("field")
+    const targetName = targetNode ? targetNode.text : ""
+    if (fileLocal) {
+      // The `initializer` class is subject to the same chain/eligibility guards as the new
+      // identity classes: a `var` whose inferred type is a library type must not attach an
+      // owner (it would withdraw the name binding and decline).
+      if (fileLocal.evidence !== "initializer") return fileLocal
+      if (!this.javaTypeEligible(fileLocal.type, index, projectIndex)) return null
+      if (!this.javaMemberChainHas(fileLocal.type, targetName, index, projectIndex)) return null
+      return fileLocal
+    }
+    if (!targetName) return null
+    const objectNode = callNode.childForFieldName("object")
+    const pos = callNode.startIndex
+    const enclosing = this.javaEnclosingTypeScope(index, pos)
+    // 1) IMPLICIT `this` (no receiver at all).
+    if (!objectNode) {
+      if (!enclosing?.name) return null
+      if (index.staticImportLeaves.has(targetName) || index.hasStaticOnDemand) return null
+      if (!this.javaTypeEligible(enclosing.name, index, projectIndex)) return null
+      if (!this.javaMemberChainHas(enclosing.name, targetName, index, projectIndex)) return null
+      return { type: enclosing.name, evidence: "this" }
+    }
+    const ot = objectNode.type
+    // 2) explicit `this.m()` / `this.field` receiver.
+    if (ot === "this") {
+      if (!enclosing?.name) return null
+      if (!this.javaTypeEligible(enclosing.name, index, projectIndex)) return null
+      if (!this.javaMemberChainHas(enclosing.name, targetName, index, projectIndex)) return null
+      return { type: enclosing.name, evidence: "this" }
+    }
+    // 3) `super.m()` — the first IN-FILE base that declares the member.
+    if (ot === "super") {
+      if (!enclosing?.name) return null
+      for (const parent of enclosing.parents ?? []) {
+        if (!this.javaTypeEligible(parent, index, projectIndex)) continue
+        if (this.javaMemberChainHas(parent, targetName, index, projectIndex)) return { type: parent, evidence: "super" }
+      }
+      return null
+    }
+    // 3b) A READ whose receiver is an ENUM CONSTANT (`Mode.ONE` read): the read's TARGET is
+    //     the constant, whose declaring type is the enum. (For a CALL the receiver shape is
+    //     `Mode.ONE.m()` and is handled below.)
+    if (callNode.type === "field_access" && ot === "identifier") {
+      const enumName = objectNode.text
+      if (index.typeKindsByName.get(enumName) !== "enum_declaration") return null
+      if (!this.javaTypeEligible(enumName, index, projectIndex)) return null
+      if (!this.javaMemberChainHas(enumName, targetName, index, projectIndex)) return null
+      return { type: enumName, evidence: "enum" }
+    }
+    // 4) ENUM-CONSTANT receiver: `Mode.ONE.act()` — a field_access whose root is an ENUM
+    //    declared in this file and whose second segment is a member of it (the pre-pass
+    //    records enum constants as members, JLS 8.9.1).
+    if (ot === "field_access") {
+      const parts = objectNode.text.split(".")
+      if (parts.length === 2 && index.typeKindsByName.get(parts[0]) === "enum_declaration") {
+        const enumName = parts[0]
+        if (!this.javaTypeEligible(enumName, index, projectIndex)) return null
+        if (!this.javaMemberChainHas(enumName, parts[1], index, projectIndex)) return null
+        return { type: enumName, evidence: "enum" }
+      }
+      return null
+    }
+    return null
+  }
+
+  /**
+   * The 2026-10-18 contract: the declared type of a receiver from THE FILE'S OWN
+   * DECLARATIONS. Returns null — never a guess — for every receiver whose type this file
+   * does not state: an implicit `this`, a class-qualified static call, `super`, chained
+   * access on an untyped receiver, an inherited field, and a `var` local. The four
+   * evidence classes are the declarations the Lead's contract names: field / param /
+   * local / return.
+   */
+  private javaReceiverOwnerTypeFromFile(
     callNode: Node,
     index: JavaReceiverTypeIndex,
   ): { type: string; evidence: JavaTypeEvidence } | null {
