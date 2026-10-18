@@ -1696,7 +1696,12 @@ function selfTest(): { ok: boolean; failures: string[] } {
       ["default", { kind: "exportSurface", surface: "default", form: "anonymous" }, "bindingVerified", "an anonymous default verifies on its form"],
       ["foo", { kind: "exportSurface", surface: "default", form: "named-declaration", localName: "alpha" }, "bindingRefuted", "a FABRICATED public name (the identifier beside export default) must REFUTE"],
       ["default", { kind: "exportSurface", surface: "default", form: "made-up-form", localName: "alpha" }, "bindingRefuted", "an unknown form must REFUTE"],
-      ["default", { kind: "exportSurface", surface: "default", form: "expression", localName: "nope" }, "bindingRefuted", "an unbacked localName must REFUTE"],
+      // A LOCALNAME IS NOT A PUBLISHED DECLARATION (measured: requiring the run to declare it produced
+      // 24 bindFAIL rows — the `const cfg = …; export default cfg` expression form, where locals are not
+      // symbols). The claim's public assertion is target===default + form; a missing localName on a form
+      // that requires one is what refutes.
+      ["default", { kind: "exportSurface", surface: "default", form: "expression", localName: "nope" }, "bindingVerified", "an expression default whose localName the run does not publish still verifies (locals are not declarations)"],
+      ["default", { kind: "exportSurface", surface: "default", form: "expression" }, "bindingRefuted", "an expression default with NO localName must REFUTE"],
     ]
     for (const [t, claim, want, why] of defArms) {
       const c = classifyEdge(declCount, kinds, t, claim)

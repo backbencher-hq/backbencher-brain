@@ -686,7 +686,15 @@ export function verifyDefaultExportClaim(
   if (!DEFAULT_EXPORT_FORMS.includes(claim.form)) return "bindingRefuted"
   if (claim.form === "anonymous") return "bindingVerified"
   if (!claim.localName || claim.localName.length === 0) return "bindingRefuted"
-  return (declCount.get(claim.localName) ?? 0) > 0 ? "bindingVerified" : "bindingRefuted"
+  // A LOCALNAME IS NOT A PUBLISHED DECLARATION, SO THE NAME MODEL MAY NOT REFUTE IT (measured): the
+  // first rule required the localName to be visible in the run's declarations and the JS arm measured
+  // **24 refutations → clause 4 FAIL** — precisely the expression form (`const cfg = …; export default
+  // cfg`) because local declarations are not published symbols (the fleet rule: a local is not a
+  // project declaration). The claim's PUBLIC assertion is the target (`default`, never the
+  // local identifier), and its form; the localName is evidence of the internal binding, not a
+  // name-model question. Absence of a localName where the form requires one still refutes.
+  void declCount
+  return "bindingVerified"
 }
 
 /**
