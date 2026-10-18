@@ -6959,6 +6959,10 @@ class TypeScriptAnalysisRunner {
         const specifiers = (exportClause.namedChildren ?? []).filter((c: any) => c && c.type === "export_specifier")
         if (specifiers.length === 0) return
         for (const spec of specifiers) {
+          // NARROW THE NULLABLE ELEMENT. `namedChildren` is `(Node | null)[]`, and the filter that
+          // builds `specifiers` narrows only inside its predicate — so every dereference here was a
+          // TS18047 under the project's strict null checks (measured: 6 errors, whole-project tsc).
+          if (!spec) continue
           const nameNode = spec.childForFieldName("name") ?? spec.namedChild(0)
           const aliasNode = spec.childForFieldName("alias") ?? (spec.namedChildCount > 1 ? spec.namedChild(spec.namedChildCount - 1) : null)
           const itemName = nameNode ? nameNode.text : ""
