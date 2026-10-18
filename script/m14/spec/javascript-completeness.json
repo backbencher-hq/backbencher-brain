@@ -15,11 +15,9 @@
     ],
     "excluded": [
       {
-        "type": "implements",
-        "class": "grammar-absence",
-        "reason": "JavaScript has NO nominal conformance construct: no `implements` keyword, no grammar node, and no semantics that would produce one. `class A implements B` is TypeScript-only syntax. Structural typing is not a declaration, so there is nothing for the analyzer to emit.",
-        "evidence": "incoming-gate javascript js,jsx,mjs,cjs 50 -> IMPLEMENTS 0 edges, 0 resolved, 0 ambiguous, 0 unresolved: the population emits none. Coverage lists 9 of 10 implemented and NOT ONE excluded entry, so `implements` was in NO list at all -- the silent-sink defect: declared nowhere, measurable nowhere, and readable as 'implemented and quiet'.",
-        "ruling": "2026-10-18, measured on the whole admitted population"
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "JavaScript has NO nominal conformance construct: no `implements` keyword, no grammar node, no semantics that would produce one (class A implements B is TypeScript-only syntax), and structural typing is not a declaration. MEASURED: `incoming-gate javascript js,jsx,mjs,cjs 50` reads IMPLEMENTS 0 edges / 0 resolved / 0 ambiguous / 0 unresolved -- the population emits none, while the analyzer's conditional mention of the token never fires. Before this ruling the type was in NEITHER `implemented` nor `excluded`: the silent-sink defect, declared nowhere and measurable nowhere. Ruled 2026-10-18 on the whole admitted population."
       }
     ],
     "corpusUnexercised": [],
