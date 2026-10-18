@@ -3626,7 +3626,18 @@ currentPackage,
               parent?.type === "annotation_type_declaration" ||
               parent?.type === "enum_constant" ||
               parent?.type === "catch_formal_parameter" ||
-              parent?.type === "enhanced_for_statement") &&
+              parent?.type === "enhanced_for_statement" ||
+              // A COMPACT CONSTRUCTOR (JLS 8.10.4) and an ANNOTATION TYPE ELEMENT
+              // (JLS 9.6.1) both NAME a member: `R { ... }` and `Class<?> value();`.
+              // The first is the constructor's own name and the second is an element
+              // declaration, so neither is a read of an enclosing member — but the
+              // list above did not include them and probe on the pinned grammar
+              // showed both fabricated a bare read: record R(int x) { R { ... } }
+              // emitted `uses R -> R` and `@interface Ann { List<String> list(); }`
+              // emitted `uses Ann -> list`. A name is not a read; GATE A below then
+              // let the fabricated edge through because the member map carried it.
+              parent?.type === "compact_constructor_declaration" ||
+              parent?.type === "annotation_type_element_declaration") &&
             parent.childForFieldName("name")?.startIndex === node.startIndex
           let isWrite = false
           if (parent?.type === "assignment_expression") {
@@ -3864,7 +3875,27 @@ currentPackage,
       ? [{ name: String(parentContext.name), declKind: "enclosing_scope" }]
       : []
     const decl = this.javaAnnotatedDeclarationNode(ann)
-    if (!decl) return fallback
+    if (!decl) {
+      // PACKAGE ANNOTATION (JLS 7.4.1 — `@Deprecated package p;`, the package-info.java
+      // shape). The annotated declaration is the PACKAGE, which publishes no symbol, so
+      // the source is the package NAME: that is the only identity the file states, and
+      // the package's `exports` rows are published under the same name. Found by walking
+      // to the root rather than by reading `currentPackage`, because the annotation is
+      // written BEFORE the package declaration and the walk has not set the package yet
+      // when it visits the annotation.
+      let root: Node | null = ann
+      let rootGuard = 0
+      while (root.parent && root.type !== "program" && rootGuard++ < 64) root = root.parent
+      if (root.type === "program") {
+        for (let i = 0; i < root.namedChildCount; i++) {
+          const top = root.namedChild(i)
+          if (!top || top.type !== "package_declaration") continue
+          const pkgName = this.findChildByType(top, "scoped_identifier") || this.findChildByType(top, "identifier")
+          if (pkgName) return [{ name: pkgName.text, declKind: "package_declaration" }]
+        }
+      }
+      return fallback
+    }
     const declKind = decl.type
 
     // Fields and constants publish one symbol PER DECLARATOR (JLS 8.3.1: one
