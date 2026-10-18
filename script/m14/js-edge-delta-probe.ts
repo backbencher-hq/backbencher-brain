@@ -25,6 +25,8 @@ import { BINDING_SEP } from "../../src/ast/types"
 
 const CR = process.env.BB_CORPUS_ROOT ?? path.join(process.cwd(), ".corpus")
 const LIMIT = Number(process.argv.find((a) => a.startsWith("--limit="))?.slice("--limit=".length) ?? 0)
+/** restore the PRE-FIX `export default <identifier>` target spelling in the BEFORE variant */
+const EXPORT_FIX = process.argv.includes("--export-fix")
 const EXTENSIONS = ["js", "jsx", "mjs", "cjs"]
 const SIZE_CAP = 1024 * 1024
 // THE GATE'S ADMITTED POPULATION — mirroring `discoverFiles` in incoming-gate.ts through the census
@@ -81,6 +83,23 @@ if (fileListArg) {
   const d = discover()
   files.push(...d.files)
   population = { total: d.total, repos: d.repos }
+  const candidatesArg = process.argv.find((a) => a.startsWith("--candidates="))?.slice("--candidates=".length)
+  if (candidatesArg === "export-default-identifier") {
+    // THE FABRICATED-NAME FIX SPACE: files with `export default <identifier>`. Only these rows changed
+    // target in the export-claim commit (identifier -> `default`), so only they can surface through the
+    // dropped-symbol filter. Reading the admitted files to filter is cheap; parsing is the cost.
+    const kept: string[] = []
+    const pattern = new RegExp("export\\s+default\\s+[A-Za-z_$][A-Za-z0-9_$]*\\s*;?")
+    for (const abs of files) {
+      let content = ""
+      try { content = readFileSync(abs, "utf8") } catch { continue }
+      if (pattern.test(content)) kept.push(abs)
+    }
+    files.length = 0
+    files.push(...kept)
+    population = { total: kept.length, repos: d.repos }
+    console.log(`candidates (export default <identifier>): ${kept.length} of ${d.total} admitted files`)
+  }
   if (LIMIT > 0) files.length = Math.min(files.length, LIMIT)
 }
 
@@ -145,9 +164,21 @@ for (const abs of files) {
       : rows
     return rowsOf(filterNoiseRelationships(dropped as any[], "javascript", declaredNames))
   }
-  const beforeRows = raw.map((r) => r.meta?.localBinding === true && r.target.includes(BINDING_SEP)
-    ? { ...r, target: r.target.slice(r.target.lastIndexOf(BINDING_SEP) + BINDING_SEP.length) }
-    : r)
+  const beforeRows = raw.map((r) => {
+    // LOCAL-BINDING claim spelling -> bare leaf (pre-claim analyzer)
+    if (r.meta?.localBinding === true && r.target.includes(BINDING_SEP)) {
+      return { ...r, target: r.target.slice(r.target.lastIndexOf(BINDING_SEP) + BINDING_SEP.length) }
+    }
+    // EXPORT-CLAIM fabricated-name fix -> the PRE-FIX spelling: `export default <identifier>` used to
+    // publish the identifier as the export target; the fix publishes `default` and keeps the identifier
+    // as localName evidence. Mode `--export-fix` restores the old spelling so the pipeline's
+    // dropped-symbol filter treats the row exactly as it did before the fix.
+    if (EXPORT_FIX && r.target === "default" && r.meta?.viaDefaultExpression === true &&
+        typeof r.meta?.localName === "string" && r.meta.localName.length > 0) {
+      return { ...r, target: String(r.meta.localName) }
+    }
+    return r
+  })
   const before = runPipeline(beforeRows)
   const after = runPipeline(raw)
   beforeTotal += before.length

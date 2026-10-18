@@ -257,7 +257,7 @@
       "claimable_target_is_binding_rows_whole_pop_note": "CORRECTED: 46,598 is a LOWER BOUND (census projection of the NON-RESOLVED classes only). The measured arm verifies 95,528 imported-binding claims because imported bindings are program-scope published names: their bare rows can also sit in resolved (18,275 decoys) or ambiguous (26,949) by the name model. The arm is the record."
     },
     "default_export": {
-      "status": "ARBITER KIND LANDED BY LEAD — one kind `exportSurface` (surface discriminator default|moduleExports), binding family verifiedBy:\"exportSurface\", bindOK never resolved; analyzer evidence shipped; differential oracle fabricated-name mirror fixed by Lead (JS draws 100%/0/0 after).",
+      "status": "ARBITER LANDED (one kind exportSurface; binding family verifiedBy:'exportSurface'; bindOK never resolved); FULL ARM MEASURED: 7,137 exportSurface verified + 245 refuted (245 = arbiter cross-file rule error, REMOVED by Lead -> decoys; expected re-run bindOK ~510791).",
       "evidence": {
         "canonical": "metadata.defaultExport = { form, localName? }",
         "flat_mirrors": [
@@ -300,7 +300,7 @@
       }
     },
     "module_exports": {
-      "status": "ARBITER KIND LANDED BY LEAD (same exportSurface kind); FILE-LOCAL DECLARATION GUARD shipped: marker suppressed when the file declares the target (incl. object-literal method names the analyzer symbolizes) — measured 7 refutations/ resolved 407->400 before, resolved 407 / bindFAIL 0 after.",
+      "status": "ARBITER LANDED (same exportSurface kind); FILE-LOCAL DECLARATION GUARD shipped; FULL ARM: 7,137 verified / 245 refuted (all 245 decoys: the cross-file declaration rule was an arbiter error and is REMOVED - JS modules are file-scoped).",
       "evidence": {
         "canonical": "metadata.moduleExports = { property, form }",
         "flat_mirrors": [
@@ -315,12 +315,11 @@
         "module-exports-expression",
         "deep-member-assignment"
       ],
-      "verification": "exports label; target===property (row's own spelling; dotted allowed for deep-member-assignment); form known; NO project declaration answers the name (name-model resolution wins where one does).",
+      "verification": "exports label; target===property (row's own spelling; dotted allowed for deep-member-assignment); form known. NO cross-file declaration test (CORRECTED by the Lead after the arm: JS modules are file-scoped). Only the FILE-LOCAL exclusion applies, at emission.",
       "refutation": [
         "target !== property",
         "unknown/missing form",
-        "non-name property spelling",
-        "a project-declared same name answers the claim"
+        "non-name property spelling"
       ],
       "class_rows_census": 4884,
       "sample_split": {
@@ -328,7 +327,26 @@
         "deep-member-assignment": 1,
         "basis": "js-export-claim-probe --cap=400 (exports-object/rebind and binding/expression forms rare in the sample draw)"
       },
-      "claimable_share_after_guard": "sample 400 files: marked CJS object rows 53 -> 23 of 454 exports rows (~43% claimable); deep-member-assignment unchanged; remainder name-model-resolvable or non-claimable per the arbiter rule."
+      "claimable_share_after_guard": "sample 400 files: marked CJS object rows 53 -> 23 of 454 exports rows (~43% claimable); deep-member-assignment unchanged; remainder name-model-resolvable or non-claimable per the arbiter rule.",
+      "arm_record": {
+        "edges": 1467642,
+        "resolved": 137045,
+        "amb": 179890,
+        "unresolved": 535299,
+        "extOK": 104617,
+        "bindOK": 510546,
+        "exportSurfaceVerified": 7137,
+        "exportSurfaceRefuted": 245,
+        "movement": {
+          "resolved": -392,
+          "amb": -305,
+          "unresolved": -6683,
+          "bindOK": 7137,
+          "edges": 2
+        },
+        "decoyNote": "245 refutations were an arbiter cross-file rule error (removed) and are decoys, not over-claims. Expected re-run bindOK ~510791, clause 4 0, arbitraryTwin 534890 (fell 4).",
+        "edgesPlus2": "export NAME-SET collapse resolved (consul replace.js:27, hasura ApiLimitsHeader.js:9); no residual."
+      }
     }
   }
 }
