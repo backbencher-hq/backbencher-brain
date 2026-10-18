@@ -64,6 +64,46 @@ function stripLeadingAt(text: string): string {
  * A character scan rather than a regex, like every other shape test in this lane (the
  * `no-regex-gate` counts them).
  */
+/**
+ * A PYTHON IDENTIFIER, BY CHARACTER SCAN — and the content of a python string LITERAL.
+ *
+ * Both are here, at module scope, because TWO sites need them and a second copy would be a second
+ * rule: the `__getattr__` provision reader (which unquotes a literal name) and the receiver-typing
+ * pre-pass (which reads a FORWARD-REFERENCE annotation `x: "Foo"` as the class Foo). The lane
+ * carries no regex literal (the fleet's no-regex gate counts them), so the shapes are stated as
+ * scans: a literal is an optional letter prefix, an opening ' or ", and a closing quote that is the
+ * SAME character — content is everything between them, greedy to the LAST such quote, which is
+ * exactly the shape the old `/^[A-Za-z]*(["'])([\s\S]*)\1$/` encoded.
+ */
+function isPyIdentifier(text: string): boolean {
+  if (text.length === 0) return false
+  const first = text.charCodeAt(0)
+  const firstOk = (first >= 65 && first <= 90) || (first >= 97 && first <= 122) || first === 95
+  if (!firstOk) return false
+  for (let i = 1; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+    if (!ok) return false
+  }
+  return true
+}
+
+function pyStringLiteralContent(text: string): string | null {
+  let i = 0
+  while (i < text.length) {
+    const c = text.charCodeAt(i)
+    const letter = (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+    if (!letter) break
+    i++
+  }
+  if (i >= text.length) return null
+  const quote = text[i]
+  if (quote !== '"' && quote !== "'") return null
+  if (text.length - 1 <= i) return null
+  if (text[text.length - 1] !== quote) return null
+  return text.slice(i + 1, text.length - 1)
+}
+
 function dottedChainRoot(text: string): string {
   if (text.length === 0) return ""
   let i = 0
@@ -4498,17 +4538,98 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     type Scope = { startLine: number; endLine: number; hints: Map<string, Hint> }
     const scopes: Scope[] = []
 
-    /** The simple identifier an annotation names, or undefined. `type` wraps it on this grammar. */
-    const simpleTypeName = (typeNode: Node | null): string | undefined => {
+    /**
+     * THE CLASS AN ANNOTATION NAMES, when it names exactly ONE — or undefined.
+     *
+     * The first version read only a bare identifier (`x: Foo`) and refused everything else, which
+     * was honest but left three shapes on the floor that the source writes down just as plainly:
+     *
+     *   `x: "Foo"`              a FORWARD REFERENCE — the same class, spelled as a string literal
+     *                           (read through the module-scope character-scan predicates, the same
+     *                           ones the `__getattr__` reader uses)
+     *   `x: Optional[Foo]`      `typing.Optional` / `typing.Union` with exactly ONE named type and
+     *   `x: Union[Foo, None]`   nothing but `None` beside it — the receiver is Foo-or-None, and a
+     *                           member read on it is Foo's member when it is not None
+     *   `x: Foo | None`         the PEP 604 union spelling of the second case
+     *
+     * REFUSED, because each proves no single owner: two or more named classes (`Union[A, B]`,
+     * `A | B`), a CONTAINER (`list[Foo]` — the receiver is the list, not a Foo), and any other
+     * expression. The rule is the same one the assignment branch applies: a maybe is not an owner,
+     * and a wrong owner is worse than a missing one because the store withdraws the name binding.
+     */
+    const annotationOwnerName = (typeNode: Node | null): string | undefined => {
       if (!typeNode) return undefined
-      let n: Node = typeNode
-      if (n.type === "type") {
-        if (n.namedChildCount !== 1) return undefined
-        const inner = n.namedChild(0)
-        if (!inner) return undefined
-        n = inner
+      const names = new Set<string>()
+      const visit = (m: Node): void => {
+        switch (m.type) {
+          case "type": {
+            for (let i = 0; i < m.namedChildCount; i++) {
+              const c = m.namedChild(i)
+              if (c) visit(c)
+            }
+            return
+          }
+          case "identifier":
+            if (m.text) names.add(m.text)
+            return
+          case "string": {
+            const v = pyStringLiteralContent(m.text)
+            if (v !== null && isPyIdentifier(v)) names.add(v)
+            return
+          }
+          case "none":
+            return
+          case "union_type": {
+            for (let i = 0; i < m.namedChildCount; i++) {
+              const c = m.namedChild(i)
+              if (c) visit(c)
+            }
+            return
+          }
+          case "binary_operator": {
+            // PEP 604's OTHER SPELLING: `Widget | None` over plain names parses as a
+            // `binary_operator` (the `union_type` node appears when an operand is itself a
+            // generic, e.g. `list[int] | None` — BOTH shapes were probed on the pinned wasm).
+            // Only `|` is a union; `&`, shifts and arithmetic are not annotations this rule reads.
+            let isUnion = false
+            for (let i = 0; i < m.childCount; i++) {
+              const op = m.child(i)
+              if (op && op.text === "|") { isUnion = true; break }
+            }
+            if (!isUnion) return
+            const left = m.childForFieldName("left")
+            const right = m.childForFieldName("right")
+            if (left) visit(left)
+            if (right) visit(right)
+            return
+          }
+          case "generic_type": {
+            const head = m.namedChild(0)
+            const headName = head && head.type === "identifier" ? head.text : undefined
+            if (headName !== "Optional" && headName !== "Union") return
+            for (let i = 1; i < m.namedChildCount; i++) {
+              const p = m.namedChild(i)
+              if (!p) continue
+              if (p.type === "type_parameter") {
+                for (let j = 0; j < p.namedChildCount; j++) {
+                  const c = p.namedChild(j)
+                  if (c) visit(c)
+                }
+              } else visit(p)
+            }
+            return
+          }
+          case "parenthesized_expression": {
+            const inner = m.namedChild(0)
+            if (inner) visit(inner)
+            return
+          }
+          default:
+            return
+        }
       }
-      return n.type === "identifier" ? n.text : undefined
+      visit(typeNode)
+      return names.size === 1 ? [...names][0] : undefined
     }
     /** `Foo(...)` -> `Foo` when Foo is class-like; an await-wrapped call is unwrapped once. */
     const constructorOwner = (value: Node | null): string | undefined => {
@@ -4546,7 +4667,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (p.type === "typed_parameter" || p.type === "typed_default_parameter") {
             const nameNode = p.childForFieldName("name") ?? this.findChildByType(p, "identifier")
             const typeNode = p.childForFieldName("type") ?? this.findChildByType(p, "type")
-            const owner = simpleTypeName(typeNode)
+            const owner = annotationOwnerName(typeNode)
             if (nameNode) bump(nameNode.text, owner && classLike(owner) ? owner : undefined, "annotation")
             continue
           }
@@ -4566,8 +4687,18 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         // name entirely.
         if (n.type === "function_definition" || n.type === "lambda" || n.type === "class_definition") return
         if (n.type === "assignment") {
-          const owner = constructorOwner(n.childForFieldName("right"))
-          for (const t of this.patternTargetNodes(n.childForFieldName("left"))) bump(t.text, owner, "assignment")
+          // AN ANNOTATED ASSIGNMENT STATES THE TYPE IN THE SOURCE: `z: Foo = make()` proves the
+          // receiver as squarely as a parameter annotation does, so it is ANNOTATION evidence and
+          // it outranks the constructor reading of the right-hand side (which may be a factory
+          // call whose return type is written nowhere). Only when there is no usable annotation
+          // does the `x = Foo(...)` constructor path decide.
+          const annotated = annotationOwnerName(n.childForFieldName("type"))
+          if (annotated !== undefined && classLike(annotated)) {
+            for (const t of this.patternTargetNodes(n.childForFieldName("left"))) bump(t.text, annotated, "annotation")
+          } else {
+            const owner = constructorOwner(n.childForFieldName("right"))
+            for (const t of this.patternTargetNodes(n.childForFieldName("left"))) bump(t.text, owner, "assignment")
+          }
         } else if (n.type === "augmented_assignment") {
           for (const t of this.patternTargetNodes(n.childForFieldName("left"))) bump(t.text)
         } else if (n.type === "named_expression") {
@@ -5045,44 +5176,14 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     const body = fn.childForFieldName("body")
     if (!body) return
 
-    // NO REGEX (the fleet's no-regex gate counts this lane). These two predicates are character
-    // scans, stated here because the shape they encode is the whole rule: a string LITERAL with
-    // an optional letter prefix (`b"x"`, `r'x'`), and a name that is a python identifier. The
-    // backreference semantics are preserved exactly: the closing quote must be the SAME character
-    // as the opening one, and the content is everything between them (greedy to the LAST such
-    // quote, as the old expression was).
-    const unquoteLiteral = (text: string): string | null => {
-      let i = 0
-      while (i < text.length) {
-        const c = text.charCodeAt(i)
-        const letter = (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
-        if (!letter) break
-        i++
-      }
-      if (i >= text.length) return null
-      const quote = text[i]
-      if (quote !== '"' && quote !== "'") return null
-      if (text.length - 1 <= i) return null
-      if (text[text.length - 1] !== quote) return null
-      return text.slice(i + 1, text.length - 1)
-    }
-    const isIdentifierName = (text: string): boolean => {
-      if (text.length === 0) return false
-      const first = text.charCodeAt(0)
-      const firstOk = (first >= 65 && first <= 90) || (first >= 97 && first <= 122) || first === 95
-      if (!firstOk) return false
-      for (let i = 1; i < text.length; i++) {
-        const c = text.charCodeAt(i)
-        const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
-        if (!ok) return false
-      }
-      return true
-    }
+    // NO REGEX. One implementation, at module scope (`isPyIdentifier` / `pyStringLiteralContent`),
+    // because the receiver-typing pre-pass reads forward-reference annotations through the SAME
+    // two predicates: a second copy would be a second rule.
     const unquote = (text: string): string | null => {
-      const value = unquoteLiteral(text)
+      const value = pyStringLiteralContent(text)
       if (value === null) return null
       // A name is a python identifier or it is not a name this rule can publish.
-      return isIdentifierName(value) ? value : null
+      return isPyIdentifier(value) ? value : null
     }
 
     const stack: Node[] = [body]
