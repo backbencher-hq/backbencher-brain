@@ -131,6 +131,15 @@ const report = {
   intent: { A: intentA, BOn: intentBon },
   ownerChannel: { A: A.owner, Boff: Boff.owner, Bon: Bon.owner },
   deltas: { "A->B-off": delta(A.table, Boff.table), "A->B-on": delta(A.table, Bon.table) },
+  perType: Object.fromEntries(TYPES.map((ty) => {
+    const pick = (t: Table) => Object.fromEntries(COLS.map((c) => [c, t[ty]?.[c] ?? 0]))
+    const a = pick(A.table)
+    const bon = pick(Bon.table)
+    const d: Record<string, number> = {}
+    for (const c of COLS) if ((a[c] ?? 0) !== (bon[c] ?? 0)) d[c] = (bon[c] ?? 0) - (a[c] ?? 0)
+    return [ty, { A: a, "B-on": bon, delta: d }]
+  })),
+  ownerChannelDecomposition: Bon.owner.line,
   verdicts: { a: A.verdict, bOn: Bon.verdict },
   checks: { ok: failures.length === 0, failures },
 }
