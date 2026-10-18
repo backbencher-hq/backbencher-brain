@@ -21,8 +21,15 @@
 // GRAMMAR: tree-sitter-python. Module-level symbols are ownerless, class members ride `contains`,
 // call/use endpoints are LEAVES with the written chain in metadata.qualified (eight fixtures pin it),
 // imports are `module:item`, exports come from `__all__`, decorators emit `decorates`.
-// THE OWNER CHANNEL (2026-10-18). A member edge carries `metadata.owner` (the class-like type the
-// receiver is statically known to have) + `metadata.ownerEvidence` in {self, annotation, assignment}.
+// THE OWNER CHANNEL (2026-10-18, DEPTH EXTENSION 2026-10-19). A member edge carries
+// `metadata.owner` (the class-like type the receiver is statically known to have) +
+// `metadata.ownerEvidence` in {self, annotation, assignment, annotation-element, field}: the
+// last two are the depth campaign's new static proof classes — a FOR TARGET over an annotated
+// container (`for x in xs` with `xs: list[Foo]`) and a two-dot receiver through a `@dataclass`
+// field (`self.body.send()` with `body: Foo`). LOCAL BINDINGS ARE CLAIMED, NOT BOUND: a bare
+// callee that names an enclosing function's binding is spelled `<caller>\u0000<binding>` with
+// `metadata.localBinding` (the family contract's separator), so the arbiter VERIFIES a claim in
+// its own bindOK column instead of binding the bare name to an unrelated declaration.
 // The store's src/ast/member-owner-resolution.ts resolves such rows through the owner and WITHDRAWS
 // the name binding, so a WRONG owner is worse than a missing one: class-like means declared in this
 // file or `class` in a COMPLETE project index — never capitalisation — and the refusals (conflicting
@@ -45,6 +52,7 @@
 // with `.`. A false verification is worse than an unresolved edge; it looks solved.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { BINDING_SEP } from "./types"
 
 /**
  * `replace(/^@/, "")` as a prefix check (M49.R2 wave 2026-09-25: the AST census counted
@@ -392,7 +400,26 @@ interface PythonContext {
    * row, which is exactly today's behaviour; a WRONG owner is worse, because the store withdraws
    * the name binding and then declines (see the Lead's ruling).
    */
-  receiverTypeOwner?: (receiverName: string, line: number) => { owner: string; evidence: "annotation" | "assignment" } | undefined
+  receiverTypeOwner?: (receiverName: string, line: number) => { owner: string; evidence: "annotation" | "assignment" | "annotation-element" } | undefined
+  /**
+   * DATACLASS FIELD TYPES — the next static evidence class of the owner channel.
+   *
+   * `self.body.send()` names two facts at once: `body` is a field of the enclosing class, and the
+   * DATACLASS DECLARATION writes that field's type down (`body: Payload`). The one-dot receiver
+   * rule deliberately refuses a second dot (`self.store.save` must not label `save` with the
+   * OUTER class), so a two-dot receiver carries no owner today and the wall counted it as
+   * untyped. A field whose type is DECLARED IN THE CLASS BODY is a static proof, and the owner
+   * for the member call is the FIELD'S TYPE, not the enclosing class.
+   *
+   * RESTRICTED TO `@dataclass` CLASSES ON PURPOSE. A bare class-body annotation in Python is not
+   * a runtime field declaration at all — it is a type-checker hint the runtime ignores, and
+   * untyped python routinely rebinds `self.body` to something else. A dataclass IS the language's
+   * declaration form (the decorator generates `__init__` from these annotations), so the
+   * annotation there is exactly the field's type as the language defines it. The narrower rule is
+   * the honest one: a wrong owner costs a resolution, because the store withdraws the name
+   * binding for owner-carrying rows.
+   */
+  classFieldOwner?: (className: string | undefined, field: string) => { owner: string; evidence: "field" } | undefined
   seenRels: Set<string>
   // (class\u001fattr) — one Property per instance attribute per class (PYD1)
   instanceAttrs: Set<string>
@@ -1104,6 +1131,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `context.projectIndex` (only a COMPLETE index, fail-closed) so a project-declared class can
     // be proven class-like rather than guessed at from capitalisation.
     this.collectReceiverTypeHints(rootNode, ctx, context)
+
+    // DATACLASS FIELD TYPES, same pre-walk reason: a field's declared type is a fact about the
+    // class body, and the emission site needs it before it walks any method body.
+    this.collectClassFieldOwners(rootNode, ctx, context)
 
     // #748 (M49 dup-key family ruling, Option A — the same rule js/ts/vue
     // pinned): python binds the LAST definition of a name in one container
@@ -3124,11 +3155,30 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       ? fullCallee.slice(0, dotIdx)
       : undefined
     const ownerInfo = this.memberOwnerInfo(receiverName, ctx.currentClass, ctx, this.nodeLine(calleeLeaf) ?? 0)
-    this.pushRel(ctx, caller, targetName, ASTEngine.RelationshipType.Calls, 0.9, {
+    // DATACLASS FIELD RECEIVER (`self.body.send()`): one more dot than the one-dot owner rule
+    // allows, and the field's declared type is the owner of the MEMBER CALL. Only when the
+    // one-dot rule abstained — a proven receiver keeps its own evidence.
+    const fieldInfo = ownerInfo === undefined || ownerInfo === null
+      ? this.dottedFieldOwner(fullCallee, ctx)
+      : undefined
+    // LOCAL-BINDING CLAIM (family contract, JS lane's spelling; Lead landed the arbiter-verifiable
+    // kind): a BARE callee that is bound in an ENCLOSING FUNCTION's scope (`def outer(): def
+    // inner(): ...; inner()`) names a BINDING this family never publishes as a symbol, so the
+    // honest target is not the bare name — which could bind to an unrelated same-named declaration
+    // anywhere in the project — but the binding SPELLING. `BINDING_SEP` cannot appear in a
+    // published key (it is a NUL, and keys are node text), so the arbiter verifies the claim from
+    // the spelling and the claim is never merged into `resolved` (own bindOK column). This is the
+    // python half of the JS 365,748-row class, measured before it was proposed.
+    const localBindingTarget = dispatchClass === "local-callee" && caller !== ""
+      ? `${caller}${BINDING_SEP}${targetName}`
+      : undefined
+    this.pushRel(ctx, caller, localBindingTarget ?? targetName, ASTEngine.RelationshipType.Calls, 0.9, {
       pythonSpecific: true,
       qualified: fullCallee,
       reasonCode: dispatchClass,
-      ...(ownerInfo ? { owner: ownerInfo.owner, ownerEvidence: ownerInfo.evidence } : {}),
+      ...(localBindingTarget ? { localBinding: true } : {}),
+      ...(ownerInfo ? { owner: ownerInfo.owner, ownerEvidence: ownerInfo.evidence }
+        : fieldInfo ? { owner: fieldInfo.owner, ownerEvidence: fieldInfo.evidence } : {}),
     }, this.nodeLine(calleeLeaf))
   }
 
@@ -3157,7 +3207,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // comment records why that is not free: "web-tree-sitter wrappers are per-access, identity
     // never holds". Every `.parent` is a fresh object crossing the WASM boundary. Recursion
     // already has the value in hand, because a node's parent is the `parent` its caller passed.
-    const walk = (n: Node, inFn: string | undefined, cls: string | undefined, parent: Node | null, gp: Node | null): void => {
+    const walk = (n: Node, inFn: string | undefined, cls: string | undefined, parent: Node | null, gp: Node | null, clsKey?: string): void => {
       const t = n.type
       // #748: a shadowed definition's body is never walked — its member reads
       // belong to a body the runtime has already rebound away.
@@ -3178,9 +3228,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `class_definition` rebinds it; the module scope leaves it undefined, which is what
       // keeps a module-level `def f(self)` from inventing an owner it does not have.
       let nextCls = cls
+      let nextClsKey = clsKey
       if (t === "class_definition") {
         const classNameNode = this.findChildByType(n, "identifier")
-        if (classNameNode?.text) nextCls = classNameNode.text
+        if (classNameNode?.text) {
+          nextCls = classNameNode.text
+          nextClsKey = `${classNameNode.text}@${n.startPosition.row + 1}`
+        }
       }
       if (t === "attribute" && inFn && parent) {
         const leaf = n.namedChild(n.namedChildCount - 1)
@@ -3233,6 +3287,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
             // prices which class of syntax set the key. See `memberOwnerOf` /
             // `collectReceiverTypeHints`.
             const ownerInfo = this.memberOwnerInfo(recvName, cls, ctx, this.nodeLine(leaf) ?? 0)
+            // The read's receiver may itself be an ATTRIBUTE (`self.body.send` as a bare read of
+            // `send`, or `self.body.label`): resolve it through the same dataclass-field rule so
+            // calls and reads never answer "whose member is this" differently (memberOwnerInfo's
+            // whole reason to exist).
+            const ownField = ownerInfo === undefined || ownerInfo === null
+              ? this.dottedFieldOwnerKey(n.text, ctx, nextClsKey)
+              : undefined
             // PY-25 / INCOMING_PY — the read's ROUTE, which is the whole subject of a member
             // read in python: `self.stash` and a bare `stash` are the same leaf and two
             // different facts, and the lane was publishing them identically.
@@ -3251,14 +3312,15 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
               qualified: n.text,
               reasonCode: "member-read",
               ...(qualified !== leaf.text ? { qualifiedTarget: true, receiver: recvName } : {}),
-              ...(ownerInfo ? { owner: ownerInfo.owner, ownerEvidence: ownerInfo.evidence } : {}),
+              ...(ownerInfo ? { owner: ownerInfo.owner, ownerEvidence: ownerInfo.evidence }
+                : ownField ? { owner: ownField.owner, ownerEvidence: ownField.evidence } : {}),
             }, this.nodeLine(leaf))
           }
         }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c) walk(c, nextFn, nextCls, n, parent)
+        if (c) walk(c, nextFn, nextCls, n, parent, nextClsKey)
       }
     }
     walk(rootNode, undefined, undefined, null, null)
@@ -3819,12 +3881,210 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `line` is the line of the member's own leaf, so the lexical lookup answers for the scope the
    * RECEIVER is read in, not for some other occurrence of the name.
    */
+
+  /**
+   * DATACLASS FIELD RECEIVER -> the FIELD'S declared type, as the OWNER of the member the edge
+   * names, or undefined when the receiver is not exactly `self.<field>` / `cls.<field>`.
+   *
+   * Deliberately a SEPARATE helper from `memberOwnerInfo`: the receiver here is an attribute, not
+   * a name, and the one-dot owner rule's whole safety argument is that it refuses a second
+   * segment. This adds the second segment ONLY when a dataclass declares what it holds.
+   */
+  private dottedFieldOwner(fullCallee: string, ctx: PythonContext): { owner: string; evidence: "field" } | undefined {
+    return this.dottedFieldOwnerKey(fullCallee, ctx, ctx.currentClassKey)
+  }
+
+  /**
+   * The key-explicit form. The MEMBER-READS pass is its own walk with its own class chain
+   * (`extractMemberUses`) and does NOT run inside the main walk's class bookkeeping, so
+   * `ctx.currentClassKey` is undefined there — the first version of the read-path call silently
+   * resolved nothing on a fixture that PASSED the calls path, which is the exact two-sites-disagree
+   * defect `memberOwnerInfo` exists to prevent. The caller passes the key from ITS walk.
+   */
+  private dottedFieldOwnerKey(fullCallee: string, ctx: PythonContext, classKey: string | undefined): { owner: string; evidence: "field" } | undefined {
+    if (!ctx.classFieldOwner || !classKey) return undefined
+    const parts = fullCallee.split(".")
+    if (parts.length !== 3) return undefined
+    const root = parts[0]
+    if (root !== "self" && root !== "cls") return undefined
+    return ctx.classFieldOwner(classKey, parts[1]!)
+  }
+
+  /**
+   * `@dataclass` FIELD TYPES -> the owner channel's `field` evidence class.
+   *
+   * Reads the class BODY only (no method bodies): `body: Payload` / `body: "Payload"` /
+   * `body: Optional[Payload]` / `body: Payload | None` are the same four spellings
+   * `annotationOwnerName` already reads for parameters and annotated assignments, so the reader
+   * is shared rather than re-implemented (a second reader is how two emission sites start
+   * disagreeing).
+   *
+   * WHAT IS REFUSED AND WHY:
+   *   - a NON-`@dataclass` class body annotation: runtime python ignores it and untyped code
+   *     rebinds `self.x` freely, so it is not a field declaration;
+   *   - a CONTAINER field (`tags: list[Payload]`): the field is the list, not a Payload —
+   *     `annotationOwnerName` refuses it by construction and the fixture forbids the row;
+   *   - a field type that is not class-like (not declared in this file, not a class in a COMPLETE
+   *     project index): capitalisation is not evidence;
+   *   - the class declares the same field twice: ambiguity refuses.
+   *
+   * Keyed by `currentClassKey` (`name@line`), not by name: two same-name classes in one file are
+   * two different field sets.
+   */
+  private collectClassFieldOwners(rootNode: Node, ctx: PythonContext, context?: ASTEngine.AnalyzeContext): void {
+    const index = context?.projectIndex
+    const classLike = (name: string): boolean => {
+      if (name === "") return false
+      if (ctx.declaredTypes.has(name)) return true
+      return index?.complete === true && index.typeKinds?.get(name) === "class"
+    }
+    const isDataclass = (def: Node): boolean => {
+      const parent = def.parent
+      if (!parent || parent.type !== "decorated_definition") return false
+      for (let i = 0; i < parent.namedChildCount; i++) {
+        const c = parent.namedChild(i)
+        if (!c || c.type !== "decorator") continue
+        let inner: Node | null = c.namedChild(0)
+        if (!inner) continue
+        // `@dataclass(...)` — the decorator is a CALL; the name is its function child.
+        while (inner && (inner.type === "call" || inner.type === "subscript")) {
+          inner = inner.childForFieldName("function") ?? inner.namedChild(0)
+        }
+        if (!inner) continue
+        if (inner.type === "identifier" && inner.text === "dataclass") return true
+        if (inner.type === "attribute") {
+          const leaf = inner.childForFieldName("attribute") ?? inner.namedChild(inner.namedChildCount - 1)
+          if (leaf?.type === "identifier" && leaf.text === "dataclass") return true
+        }
+      }
+      return false
+    }
+    type FieldMap = Map<string, string>
+    const byClass = new Map<string, FieldMap>()
+    const duplicated = new Map<string, Set<string>>()
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "function_definition" || n.type === "lambda") continue
+      if (n.type === "class_definition") {
+        const nameNode = this.findChildByType(n, "identifier")
+        const body = n.childForFieldName("body")
+        if (nameNode?.text && body && isDataclass(n)) {
+          const classKey = `${nameNode.text}@${n.startPosition.row + 1}`
+          const fields: FieldMap = byClass.get(classKey) ?? new Map<string, string>()
+          const dups: Set<string> = duplicated.get(classKey) ?? new Set<string>()
+          for (let i = 0; i < body.namedChildCount; i++) {
+            const stmt = body.namedChild(i)
+            if (!stmt) continue
+            const a = stmt.type === "expression_statement" ? stmt.namedChild(0) : stmt
+            if (!a || a.type !== "assignment") continue
+            const left = a.childForFieldName("left")
+            const typeNode = a.childForFieldName("type")
+            if (!left || left.type !== "identifier" || !typeNode || !left.text) continue
+            const owner = this.annotationOwnerName(typeNode)
+            if (owner === undefined || !classLike(owner)) continue
+            if (fields.has(left.text)) dups.add(left.text)
+            else fields.set(left.text, owner)
+          }
+          byClass.set(classKey, fields)
+          if (dups.size > 0) duplicated.set(classKey, dups)
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    if (byClass.size === 0) return
+    ctx.classFieldOwner = (classKey: string | undefined, field: string): { owner: string; evidence: "field" } | undefined => {
+      if (!classKey) return undefined
+      if (duplicated.get(classKey)?.has(field)) return undefined
+      const owner = byClass.get(classKey)?.get(field)
+      return owner ? { owner, evidence: "field" } : undefined
+    }
+  }
+
+  private annotationOwnerName(typeNode: Node | null): string | undefined {
+      if (!typeNode) return undefined
+      const names = new Set<string>()
+      const visit = (m: Node): void => {
+        switch (m.type) {
+          case "type": {
+            for (let i = 0; i < m.namedChildCount; i++) {
+              const c = m.namedChild(i)
+              if (c) visit(c)
+            }
+            return
+          }
+          case "identifier":
+            if (m.text) names.add(m.text)
+            return
+          case "string": {
+            const v = pyStringLiteralContent(m.text)
+            if (v !== null && isPyIdentifier(v)) names.add(v)
+            return
+          }
+          case "none":
+            return
+          case "union_type": {
+            for (let i = 0; i < m.namedChildCount; i++) {
+              const c = m.namedChild(i)
+              if (c) visit(c)
+            }
+            return
+          }
+          case "binary_operator": {
+            // PEP 604's OTHER SPELLING: `Widget | None` over plain names parses as a
+            // `binary_operator` (the `union_type` node appears when an operand is itself a
+            // generic, e.g. `list[int] | None` — BOTH shapes were probed on the pinned wasm).
+            // Only `|` is a union; `&`, shifts and arithmetic are not annotations this rule reads.
+            let isUnion = false
+            for (let i = 0; i < m.childCount; i++) {
+              const op = m.child(i)
+              if (op && op.text === "|") { isUnion = true; break }
+            }
+            if (!isUnion) return
+            const left = m.childForFieldName("left")
+            const right = m.childForFieldName("right")
+            if (left) visit(left)
+            if (right) visit(right)
+            return
+          }
+          case "generic_type": {
+            const head = m.namedChild(0)
+            const headName = head && head.type === "identifier" ? head.text : undefined
+            if (headName !== "Optional" && headName !== "Union") return
+            for (let i = 1; i < m.namedChildCount; i++) {
+              const p = m.namedChild(i)
+              if (!p) continue
+              if (p.type === "type_parameter") {
+                for (let j = 0; j < p.namedChildCount; j++) {
+                  const c = p.namedChild(j)
+                  if (c) visit(c)
+                }
+              } else visit(p)
+            }
+            return
+          }
+          case "parenthesized_expression": {
+            const inner = m.namedChild(0)
+            if (inner) visit(inner)
+            return
+          }
+          default:
+            return
+        }
+      }
+      visit(typeNode)
+      return names.size === 1 ? [...names][0] : undefined
+    }
+
   private memberOwnerInfo(
     receiverName: string | undefined,
     enclosingClass: string | undefined,
     ctx: PythonContext,
     line: number,
-  ): { owner: string; evidence: "self" | "annotation" | "assignment" } | undefined {
+  ): { owner: string; evidence: "self" | "annotation" | "assignment" | "annotation-element" | "field" } | undefined {
     const implicit = this.memberOwnerOf(receiverName, enclosingClass)
     if (implicit !== undefined) return { owner: implicit, evidence: "self" }
     if (!receiverName || !ctx.receiverTypeOwner) return undefined
@@ -4550,7 +4810,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (ctx.declaredTypes.has(name)) return true
       return index?.complete === true && index.typeKinds?.get(name) === "class"
     }
-    type Hint = { owner: string; evidence: "annotation" | "assignment" }
+    type Hint = { owner: string; evidence: "annotation" | "assignment" | "annotation-element" }
     type Scope = { startLine: number; endLine: number; hints: Map<string, Hint> }
     const scopes: Scope[] = []
 
@@ -4573,80 +4833,66 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
      * expression. The rule is the same one the assignment branch applies: a maybe is not an owner,
      * and a wrong owner is worse than a missing one because the store withdraws the name binding.
      */
-    const annotationOwnerName = (typeNode: Node | null): string | undefined => {
+    /**
+     * THE ELEMENT TYPE OF A CONTAINER ANNOTATION — `list[Widget]` -> Widget, `tuple[Widget, ...]` ->
+     * Widget — or undefined when the annotation is not a container of exactly one named type.
+     *
+     * This is what makes a STATIC LOOP VARIABLE provable: `for x in xs:` where `xs: list[Widget]`
+     * binds `x` to the element type, which is Python's own typing rule rather than an inference.
+     * The reader is separate from `annotationOwnerName` on purpose — that one refuses containers
+     * precisely because the RECEIVER of `xs.render()` is the list and not an element, and that
+     * refusal stays; the container only types an ELEMENT read, never the container itself.
+     *
+     * REFUSED: an unparameterised container (`xs: list`), a mapping (the value/keys are not the
+     * iteration element of `for x in d` — keys are, and the key type of `dict[str, Foo]` is str,
+     * not a class), a tuple of two or more named types (the element is a union — a maybe), and any
+     * nested container (`list[list[Widget]]` types the element as `list[Widget]`, not Widget).
+     */
+    const CONTAINER_HEADS = new Set([
+      "list", "List", "set", "Set", "frozenset", "FrozenSet", "Sequence", "MutableSequence",
+      "Iterable", "Iterator", "Collection", "Deque", "deque", "AbstractSet",
+    ])
+    const annotationElementOwner = (typeNode: Node | null): string | undefined => {
       if (!typeNode) return undefined
-      const names = new Set<string>()
-      const visit = (m: Node): void => {
-        switch (m.type) {
-          case "type": {
-            for (let i = 0; i < m.namedChildCount; i++) {
-              const c = m.namedChild(i)
-              if (c) visit(c)
-            }
-            return
-          }
-          case "identifier":
-            if (m.text) names.add(m.text)
-            return
-          case "string": {
-            const v = pyStringLiteralContent(m.text)
-            if (v !== null && isPyIdentifier(v)) names.add(v)
-            return
-          }
-          case "none":
-            return
-          case "union_type": {
-            for (let i = 0; i < m.namedChildCount; i++) {
-              const c = m.namedChild(i)
-              if (c) visit(c)
-            }
-            return
-          }
-          case "binary_operator": {
-            // PEP 604's OTHER SPELLING: `Widget | None` over plain names parses as a
-            // `binary_operator` (the `union_type` node appears when an operand is itself a
-            // generic, e.g. `list[int] | None` — BOTH shapes were probed on the pinned wasm).
-            // Only `|` is a union; `&`, shifts and arithmetic are not annotations this rule reads.
-            let isUnion = false
-            for (let i = 0; i < m.childCount; i++) {
-              const op = m.child(i)
-              if (op && op.text === "|") { isUnion = true; break }
-            }
-            if (!isUnion) return
-            const left = m.childForFieldName("left")
-            const right = m.childForFieldName("right")
-            if (left) visit(left)
-            if (right) visit(right)
-            return
-          }
-          case "generic_type": {
-            const head = m.namedChild(0)
-            const headName = head && head.type === "identifier" ? head.text : undefined
-            if (headName !== "Optional" && headName !== "Union") return
-            for (let i = 1; i < m.namedChildCount; i++) {
-              const p = m.namedChild(i)
-              if (!p) continue
-              if (p.type === "type_parameter") {
-                for (let j = 0; j < p.namedChildCount; j++) {
-                  const c = p.namedChild(j)
-                  if (c) visit(c)
-                }
-              } else visit(p)
-            }
-            return
-          }
-          case "parenthesized_expression": {
-            const inner = m.namedChild(0)
-            if (inner) visit(inner)
-            return
-          }
-          default:
-            return
-        }
+      // The annotation FIELD is a `type` wrapper node around the real type expression — the same
+      // one-level unwrap `annotationOwnerName` handles by recursing children; measured shape:
+      // `typed_parameter -> type -> generic_type(list, type_parameter -> type -> identifier)`.
+      if (typeNode.type === "type") {
+        const inner = typeNode.namedChild(0)
+        return inner ? annotationElementOwner(inner) : undefined
       }
-      visit(typeNode)
-      return names.size === 1 ? [...names][0] : undefined
+      const genericArgs = (m: Node): Node[] => {
+        const args: Node[] = []
+        for (let i = 1; i < m.namedChildCount; i++) {
+          const p = m.namedChild(i)
+          if (!p) continue
+          if (p.type === "type_parameter") {
+            for (let j = 0; j < p.namedChildCount; j++) {
+              const c = p.namedChild(j)
+              if (c) args.push(c)
+            }
+          } else args.push(p)
+        }
+        return args
+      }
+      if (typeNode.type === "generic_type") {
+        const head = typeNode.namedChild(0)
+        const headName = head?.type === "identifier" ? head.text : undefined
+        if (!headName) return undefined
+        const args = genericArgs(typeNode)
+        if (headName === "tuple" || headName === "Tuple") {
+          if (args.length === 1) return this.annotationOwnerName(args[0]!)
+          // the variadic spelling: the trailing `...` arrives as a `type` node whose text IS
+          // "...", not an `ellipsis` node (probed on the pinned wasm)
+          if (args.length === 2 && String(args[1]!.text).trim() === "...") return this.annotationOwnerName(args[0]!)
+          return undefined
+        }
+        if (!CONTAINER_HEADS.has(headName) || args.length !== 1) return undefined
+        return this.annotationOwnerName(args[0]!)
+      }
+      return undefined
     }
+
     /** `Foo(...)` -> `Foo` when Foo is class-like; an await-wrapped call is unwrapped once. */
     const constructorOwner = (value: Node | null): string | undefined => {
       if (!value) return undefined
@@ -4658,8 +4904,20 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (v.type !== "call") return undefined
       const fn = v.childForFieldName("function") ?? v.namedChild(0)
-      if (!fn || fn.type !== "identifier") return undefined
-      return classLike(fn.text) ? fn.text : undefined
+      if (!fn) return undefined
+      if (fn.type === "identifier") return classLike(fn.text) ? fn.text : undefined
+      // MODULE-QUALIFIED CONSTRUCTOR (`w = helpers.Widget()`): the callee is an attribute, and the
+      // class being constructed is its LEAF when that leaf names a class-like type. The qualified
+      // spelling does not change what is constructed — `pkg.Widget(...)` constructs `Widget` — and
+      // the assignment evidence rule is the same one-binding rule as the bare form. A qualified
+      // FACTORY (`x = helpers.make_widget()`) is refused by the same test: the leaf is not a
+      // class-like name, so its return type is written nowhere.
+      if (fn.type === "attribute") {
+        const leaf = fn.childForFieldName("attribute") ?? fn.namedChild(fn.namedChildCount - 1)
+        if (!leaf || leaf.type !== "identifier") return undefined
+        return classLike(leaf.text) ? leaf.text : undefined
+      }
+      return undefined
     }
 
     /** Bindings of one lexical body, with the single-binding guard applied at the end. */
@@ -4683,7 +4941,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (p.type === "typed_parameter" || p.type === "typed_default_parameter") {
             const nameNode = p.childForFieldName("name") ?? this.findChildByType(p, "identifier")
             const typeNode = p.childForFieldName("type") ?? this.findChildByType(p, "type")
-            const owner = annotationOwnerName(typeNode)
+            const owner = this.annotationOwnerName(typeNode)
             if (nameNode) bump(nameNode.text, owner && classLike(owner) ? owner : undefined, "annotation")
             continue
           }
@@ -4708,7 +4966,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           // it outranks the constructor reading of the right-hand side (which may be a factory
           // call whose return type is written nowhere). Only when there is no usable annotation
           // does the `x = Foo(...)` constructor path decide.
-          const annotated = annotationOwnerName(n.childForFieldName("type"))
+          const annotated = this.annotationOwnerName(n.childForFieldName("type"))
           if (annotated !== undefined && classLike(annotated)) {
             for (const t of this.patternTargetNodes(n.childForFieldName("left"))) bump(t.text, annotated, "annotation")
           } else {
@@ -4755,6 +5013,71 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         // the same owner — refuse the hint: the receiver is a value whose type the file does not
         // pin down to a single declaration.
         if (e.count === 1 && e.owner !== undefined && e.evidence !== undefined) hints.set(name, { owner: e.owner, evidence: e.evidence })
+      }
+
+      // ── CONTAINER-ELEMENT TYPING (`for x in xs:` where `xs: list[Widget]`) ──────────────────
+      // The static proof is the annotation ON THE ITERABLE, and the language's rule for a `for`
+      // target is that it binds the element. Collected as a SEPARATE map first (iterables can be
+      // declared after the loop), then the loop target gets the element owner only when the
+      // binding is unambiguous: exactly ONE binding event for the target name in this scope (the
+      // `for` itself). A loop that rebinds its own variable (`x = make_other()` inside the body) is
+      // two events and stays untyped, exactly like every other maybe.
+      const elementOf = new Map<string, string>()
+      const noteElement = (name: string, typeNode: Node | null): void => {
+        const el = annotationElementOwner(typeNode)
+        if (name !== "" && el !== undefined && classLike(el)) elementOf.set(name, el)
+      }
+      if (parameters) {
+        for (let i = 0; i < parameters.namedChildCount; i++) {
+          const p = parameters.namedChild(i)
+          if (!p || (p.type !== "typed_parameter" && p.type !== "typed_default_parameter")) continue
+          const nameNode = p.childForFieldName("name") ?? this.findChildByType(p, "identifier")
+          const typeNode = p.childForFieldName("type") ?? this.findChildByType(p, "type")
+          if (nameNode?.type === "identifier") noteElement(nameNode.text, typeNode)
+        }
+      }
+      const noteElementsFromBody = (n: Node): void => {
+        if (n.type === "function_definition" || n.type === "lambda" || n.type === "class_definition") return
+        if (n.type === "assignment") {
+          const typeNode = n.childForFieldName("type")
+          if (typeNode) {
+            for (const t of this.patternTargetNodes(n.childForFieldName("left"))) noteElement(t.text, typeNode)
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) noteElementsFromBody(c)
+        }
+      }
+      if (body) noteElementsFromBody(body)
+      if (elementOf.size > 0 && body) {
+        const addLoopElements = (n: Node): void => {
+          if (n.type === "function_definition" || n.type === "lambda" || n.type === "class_definition") return
+          if (n.type === "for_statement") {
+            const right = n.childForFieldName("right")
+            const left = n.childForFieldName("left")
+            if (right?.type === "identifier" && left) {
+              const el = elementOf.get(right.text)
+              if (el !== undefined) {
+                // ONE target identifier, ONE binding event: `for a, b in xs` has two targets whose
+                // elements the annotation does not distinguish, so it is refused rather than shared.
+                const targets = this.patternTargetNodes(left)
+                if (targets.length === 1) {
+                  const t0 = targets[0]!
+                  const known = seen.get(t0.text)
+                  if (t0.type === "identifier" && known !== undefined && known.count === 1 && known.owner === undefined) {
+                    hints.set(t0.text, { owner: el, evidence: "annotation-element" })
+                  }
+                }
+              }
+            }
+          }
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c) addLoopElements(c)
+          }
+        }
+        addLoopElements(body)
       }
       return hints
     }

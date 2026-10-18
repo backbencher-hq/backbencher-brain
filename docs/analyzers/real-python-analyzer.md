@@ -1576,3 +1576,37 @@ fails E (while the third-party control still passes, so the check is directional
 guard fails F. **Activation measurement is QUEUED, not claimed:** it needs a whole walk
 (`incoming-gate python py,pyi,pyw 0 --index`) because only cap-0 states `complete === true`, and the Lead's
 resource hold forbids that arm; the cap-50 non-index run is a deliberate no-op for this pass.
+
+## Depth campaign §18 (2026-10-19) — static receiver proofs and a binding claim
+
+Three NEW static evidence classes extend the owner channel, and one class of dropped
+resolution becomes a CLAIM instead of a guess. Every class has a fixture row that can go
+red, and every count in the D7 disposition table (`validation/m14/verification/PYTHON-DEPTH-D7.md`)
+comes from a printed command.
+
+### Receiver typing evidence classes (`metadata.ownerEvidence`)
+
+| evidence | static proof | measured wall rows (whole population, arm A) |
+|---|---|---|
+| `self` | implicit `self`/`cls` parameter | see D7 doc |
+| `annotation` | parameter/annotated-assignment annotation, incl. forward refs, `Optional`/`Union`-of-one, PEP 604 | see D7 doc |
+| `assignment` | single-binding `x = Foo(...)`, `with Foo() as x`; now also the QUALIFIED spelling `x = pkg.Foo(...)` when the leaf names a class-like type | see D7 doc |
+| `annotation-element` | FOR TARGET over an annotated container: `for x in xs` where `xs: list[Foo]` — python's own rule is that the target binds the element. Refused: unparameterised containers, two-target loops, a rebinding inside the loop body | see D7 doc |
+| `field` | two-dot receiver through a `@dataclass` field: `self.body.send()` where `body: Foo`. Restricted to `@dataclass` because a plain class-body annotation is a type-checker hint the runtime ignores; refused: non-dataclass classes, container fields, duplicate field declarations, unions of two classes | see D7 doc |
+
+`annotationOwnerName` is ONE reader shared by parameters, annotated assignments and dataclass
+fields — a second reader is how two emission sites start disagreeing. The member-READS pass
+(`extractMemberUses`) is its own walk and threads its own class key, because the main walk's
+`currentClassKey` does not apply there (a bug the fixture caught: the calls path resolved while
+the read path silently did not).
+
+### Local bindings are CLAIMED (`bindOK`), never resolved
+
+A bare callee bound in an ENCLOSING FUNCTION's scope (`def outer(): def inner(): ...; inner()`)
+names a binding this family never publishes as a symbol. Its target is published as
+`<caller>${BINDING_SEP}<binding>` with `metadata.localBinding: true`, so the arbiter verifies the
+claim from the spelling (the separator is a NUL and no published key can contain it) and counts it
+in the `bindOK` column. `resolved` does not move; claims are never merged into resolutions. Rows:
+`local-callee` reason code. Fixtures: `python/local-callee-is-a-binding-not-a-guess`,
+`python/comprehension-target-is-a-local`, `python/with-except-as-binds-a-local`,
+`python/multi-target-assignment-binds-names`, `python/module-binder-binds-a-module-name`.
