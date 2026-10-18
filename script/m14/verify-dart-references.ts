@@ -332,6 +332,11 @@ async function main(): Promise<void> {
     ["top -> deprecated", "old2 -> deprecated"])
   await checkBoth("a QUALIFIED annotation resolves to the type leaf, not to the import alias",
     `@prefix.Qualified() class Q2 { }`, ["Q2 -> Qualified"])
+  // The THIRD annotation position, probed: inside `library_name`, not inside the declaration.
+  // The annotated declaration is the library, so the source is the module's name — the DECLARED
+  // name when there is one (`named.lib`), the file-stem convention otherwise.
+  await checkBoth("a LIBRARY annotation attributes to the module name",
+    `@TestOn('vm') library named.lib; void f() { }`, ["named.lib -> TestOn"])
 
   console.log("")
   if (failures === 0) {

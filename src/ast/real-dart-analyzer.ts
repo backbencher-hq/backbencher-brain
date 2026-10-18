@@ -1622,6 +1622,29 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (node.type === "part_directive" || node.type === "part_of_directive") {
       const uriNode = this.findDescendantByType(node, "string_literal") || this.findDescendantByType(node, "uri")
       const uri = uriNode ? unquote(uriNode.text) : ""
+      // THE NAMED FORM: `part of my.lib;` names the library by NAME, not by file — legal Dart
+      // (a library declared `library my.lib;`), and the pinned grammar parses it as
+      // `(part_of_directive (part_of_builtin) (dotted_identifier_list (identifier) (identifier)))`
+      // (probed). It was published as NOTHING while every URI-shaped part published a row.
+      // The target is the library NAME as written (whitespace stripped by the same helper the
+      // library-name reader uses, so `part of a . b;` and `library a.b;` spell the same string),
+      // which is exactly the module symbol's name in the store — strategy 2 resolves it when the
+      // project declares that name once. Only `part_of_directive` has this form; `part` always
+      // carries a URI.
+      if (!uri && node.type === "part_of_directive") {
+        const named = this.findChildByType(node, "dotted_identifier_list")
+        if (named) {
+          relationships.push({
+            source: site.moduleName,
+            target: stripWhitespace(named.text),
+            type: ASTEngine.RelationshipType.PartOf,
+            confidence: 1.0,
+            line_number: this.nodeLine(named),
+            metadata: { partRole: "part", isNamedLibrary: true },
+          })
+        }
+        return
+      }
       if (uri) {
         const resolved = targetOf(uri)
         // The ImportInfo payload is NOT a relationship and is kept for consumers that
@@ -3000,7 +3023,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // The carrier helper below turns those positions into the name of the declaration the
       // annotation decorates, because the node alone cannot say WHAT is annotated.
       if (t === "annotation") {
-        this.emitAnnotationReferences(n, relationships, current, owner)
+        this.emitAnnotationReferences(n, relationships, current, owner, moduleName)
       }
 
       // DT-F: member reads — a selector WITHOUT its own argument_part reads
@@ -5073,12 +5096,13 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     current: string | null,
     owner: string | null,
+    moduleName: string,
   ): void {
     const nameNode = ann.childForFieldName?.("name") ?? this.findChildByType(ann, "identifier")
     if (!nameNode) return
     const target = this.annotationTargetSpelling(nameNode)
     if (!target) return
-    const carriers = this.annotationCarriers(ann, current, owner)
+    const carriers = this.annotationCarriers(ann, current, owner, moduleName)
     for (const carrier of carriers) {
       relationships.push({
         source: carrier.name,
@@ -5118,6 +5142,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     ann: Node,
     current: string | null,
     owner: string | null,
+    moduleName: string,
   ): Array<{ name: string; kind: string }> {
     const parent = ann.parent
     if (!parent) return []
@@ -5133,6 +5158,16 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (p === "enum_constant") {
       const nm = parent.childForFieldName?.("name")?.text ?? this.findChildByType(parent, "identifier")?.text
       return nm ? [{ name: nm, kind: p }] : []
+    }
+    // LIBRARY ANNOTATION — `@TestOn('vm') library annotated.lib;` parses the annotation as a
+    // CHILD of `library_name`, before the dotted name (probed). The annotated declaration is the
+    // library itself, and this lane already publishes a module symbol for every file, so the
+    // source is that symbol's name: the DECLARED library name when the directive has one, else the
+    // file-stem convention the module symbol uses for an implicit/unnamed library.
+    if (p === "library_name") {
+      const declared = this.findChildByType(parent, "dotted_identifier_list")
+      const name = declared ? stripWhitespace(declared.text) : moduleName
+      return name ? [{ name, kind: "library_annotation" }] : []
     }
     if (p === "local_variable_declaration") {
       const carrier = current ?? owner

@@ -457,6 +457,16 @@ function annotationSources(ann: any, member: string | null, typeName: string | n
     const carrier = member ?? typeName ?? fileName
     return carrier ? [carrier] : []
   }
+  // LIBRARY ANNOTATION — `@TestOn('vm') library named.lib;` puts the annotation INSIDE the
+  // library directive (probed). The annotated declaration is the library itself, whose published
+  // symbol is the module node: the DECLARED name when the directive has one, else the file-stem
+  // convention the module symbol uses. The truth walk knows the file label, which is the same
+  // fallback the analyzer uses for an implicit/unnamed library.
+  if (p === "library_name") {
+    const dotted = namedChildren(parent).find((c: any) => c.type === "dotted_identifier_list")
+    const name = dotted ? String(dotted.text).replace(/\s+/g, "") : fileName
+    return name ? [name] : []
+  }
   if (p === "class_body" || p === "program" || p === "enum_body") {
     let sib = ann.nextNamedSibling
     let guard = 0
