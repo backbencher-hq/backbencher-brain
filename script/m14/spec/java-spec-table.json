@@ -115,15 +115,22 @@
   "_rule": "OWNER RE-ORIENTATION 2026-10-18: every APPLICABLE relationship type ends with an evidence row {implemented+fixture, whole-pop edges, resolved or claim, unresolved+why, perf, no-regex, docs}. A row with a null field is EXPLICITLY OWED, never considered done; nothing retires without its count.",
   "_reading_as_of": "cap-50 columns were measured by the Lead's committed owner-channel gate (972297b5b) with self-test PASS, over a 50-file stride of 11,155 admitted .java files (project scope). The last three analyzer commits after that reading (uses-owner, four extra receiver evidence sources, AST static-keyword read) add METADATA only and are expected to leave edge counts unchanged; a re-pair is queued and any movement will be reported before these numbers are quoted again.",
   "perf": {
-   "last_recorded_avgMsPerFile": {
-    "grails-core:java": 7.8,
-    "scala3:java": 3.6,
-    "cats-effect:java": 4.7,
-    "clojure:java": 13.8
+   "measured_2026_10_18": {
+    "avgMsPerFile": 19.58,
+    "medianMsPerFile": 11,
+    "p90MsPerFile": 39,
+    "maxMsPerFile": 141,
+    "files": 60,
+    "repoDraw": "grails-core:java",
+    "loadAvg1": 9.8,
+    "method": "per-file trace durations from `M14_TRACE_FILE=1 bun run script/m14/differential.ts --repo grails-core --lang java --sample 60`"
    },
-   "source": "validation/m14/differential-baseline.json (differential baseline rows, NOT this wave)",
-   "status": "OWED RE-MEASURE: this wave adds a per-file receiver-type PRE-PASS (one extra tree walk). The recorded rows predate it, so the perf row is not claimed until the differential baseline for java is regenerated.",
-   "command": "run the java differential arm / validation baseline regeneration when the box is quiet"
+   "pinnedBaseline": {
+    "avgMsPerFile": 7.8,
+    "source": "validation/m14/differential-baseline.json grails-core:java",
+    "problem": "recorded before this wave (no receiver-type pre-pass) AND records no loadAvg1, so the differential's own perf evaluator REFUSES to score it (#871 §1). The 19.58 is NOT a valid ratio against 7.8; re-pinning needs a stable-tree --update-baseline run (Lead-owned artifact)."
+   },
+   "status": "MEASURED with context — the perf row exists and is honest; the RATIO is not claimed"
   },
   "noRegex": {
    "result": "CLEAN — java carries ZERO regex literals; it is absent from the no-regex census list",
@@ -828,6 +835,72 @@
     "extFAIL": 0,
     "note": "the index converts 188,223 rows from unresolved to VERIFIED external claims (project-scope provenance proofs); resolved is identical in both arms, as it must be, because a claim is not a resolution"
    }
+  },
+  "audit_2026_10_18": {
+   "clause": "D4 — every emitted label derived by a differential oracle AND admitted to the compared set",
+   "draws": [
+    {
+     "draw": "grails-core:java",
+     "sample": 60,
+     "treeTruth": 2420,
+     "covered": 2419,
+     "coveragePct": 100,
+     "missing": 1,
+     "analyzerEdges": 2370,
+     "unexplained": 3,
+     "fabricationPct": 0.1,
+     "heuristic": 81,
+     "hash": "2fff892462bb64ee"
+    },
+    {
+     "draw": "clojure:java",
+     "sample": 60,
+     "treeTruth": 3768,
+     "covered": 3768,
+     "coveragePct": 100,
+     "missing": 0,
+     "analyzerEdges": 3427,
+     "unexplained": 2,
+     "fabricationPct": 0.1,
+     "heuristic": 64,
+     "hash": "86f37ca7cf27bbd4"
+    }
+   ],
+   "labelsBacked": {
+    "calls": "deriveJavaEdges (shipped)",
+    "uses": "deriveJavaUsesTruth (shipped) — one member-kind gap: interface constant_declaration",
+    "contains": "deriveJavaContainsTruth (shipped) + lane-owned deriveJavaTypeParameterContainmentTruth (pending one dispatch line)",
+    "references": "deriveJavaReferencesTruth (shipped) + four lane-owned extension loops (wired f5c5cb9c4) — one oracle over-derivation (class literal '.class' receiver)",
+    "extends": "lane-owned deriveJavaInheritanceTruth (wired)",
+    "implements": "lane-owned deriveJavaInheritanceTruth (wired)",
+    "instantiates": "lane-owned deriveJavaInstantiatesTruth (wired)",
+    "overrides": "lane-owned deriveJavaOverridesTruth (wired; pass-3 guesses intentionally not derived, land in heuristic)"
+   },
+   "derivationDebt": {
+    "imports": "NOT in java's compared set; package/module-path dependency surface has no oracle yet — declared debt, cannot be charged as fabrication because the label is absent from the filter",
+    "exports": "same as imports"
+   },
+   "residualDefects": [
+    {
+     "id": "orig-1",
+     "where": "differential.ts ~2618-2625 (Lead-owned)",
+     "row": "references -> class",
+     "cause": "method_reference branch uses recv.text.split('.').pop() and a CLASS LITERAL receiver yields the keyword 'class'; the oracle invents a truth row the analyzer rightly never emits"
+    },
+    {
+     "id": "orig-2",
+     "where": "differential.ts deriveJavaUsesTruth collectMembers (Lead-owned)",
+     "row": "uses -> DATASOURCE_PREFIX",
+     "cause": "interface constants are constant_declaration nodes (JLS 9.3); collectMembers reads only field_declaration"
+    },
+    {
+     "id": "orig-3",
+     "where": "differential.ts java dispatch (Lead-owned)",
+     "row": "contains Owner -> T (4 rows over both draws)",
+     "cause": "type-parameter symbol containment not derived; lane-owned deriveJavaTypeParameterContainmentTruth is written and verified, awaiting one dispatch line"
+    }
+   ],
+   "zeroPass3InUnexplained": "measured: heuristic=81/64 are the pass-3 first-parent guesses (conf 0.5, JDJ-1); ZERO pass-3 rows appear in UNEXPLAINED in either draw"
   }
  }
 }
