@@ -580,6 +580,10 @@ type JavaReceiverTypeIndex = {
   /** True when the file has any static-on-demand import: an unqualified call may then
    *  come from a type the file never names, so implicit-this is refused outright. */
   hasStaticOnDemand: boolean
+  /** STATIC single-member import LEAF -> the container path AS WRITTEN (`sort` ->
+   *  `java.util.Collections`). The analyzer half of the D7 `staticImport` CLAIM proposal:
+   *  an unqualified call/read whose leaf is here was brought into scope by that import. */
+  staticImportPaths: Map<string, string>
 }
 
 export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -3537,13 +3541,23 @@ currentPackage,
     // marker uses (a local declaration wins over an import).
     const declared = new Set<string>()
     for (const s of symbols) if (s && s.name) declared.add(s.name)
-    const LABELS = new Set(["references", "instantiates", "extends", "implements"])
+    const TYPE_LABELS = new Set(["references", "instantiates", "extends", "implements"])
+    const MEMBER_LABELS = new Set(["calls", "uses"])
     for (const r of relationships) {
-      if (!LABELS.has(String(r.type ?? ""))) continue
+      const label = String(r.type ?? "")
+      if (!TYPE_LABELS.has(label) && !MEMBER_LABELS.has(label)) continue
       const md = r.metadata as Record<string, unknown> | undefined
       if (!md || typeof md !== "object" || md.importedFrom !== undefined) continue
       const target = String(r.target ?? "")
       if (target.length === 0) continue
+      // A STATIC SINGLE-MEMBER IMPORT (`import static java.util.Collections.sort;`) states
+      // where an unqualified member name comes from (JLS 7.5.3) — the evidence the D7
+      // `staticImport` CLAIM proposal rests on.
+      if (MEMBER_LABELS.has(label) && index.staticImportPaths.has(target) && !declared.has(target)) {
+        md.importedFrom = `${index.staticImportPaths.get(target)}.${target}`
+        continue
+      }
+      if (!TYPE_LABELS.has(label)) continue
       const first = target.split(".")[0]
       if (first.length === 0 || declared.has(first)) continue
       const imported = index.importSinglePaths.get(first)
@@ -4153,6 +4167,7 @@ currentPackage,
       typeScopesByName: new Map(),
       staticImportLeaves: new Set(),
       hasStaticOnDemand: false,
+      staticImportPaths: new Map(),
     }
     const TYPE_DECLARATIONS = new Set([
       "class_declaration", "interface_declaration", "enum_declaration",
@@ -4347,7 +4362,11 @@ currentPackage,
             const text = staticName.text
             const leaf = text.slice(text.lastIndexOf(".") + 1)
             if (isWildcard) index.hasStaticOnDemand = true
-            else if (leaf) index.staticImportLeaves.add(leaf)
+            else if (leaf) {
+              index.staticImportLeaves.add(leaf)
+              const container = text.slice(0, text.lastIndexOf("."))
+              if (container.length > 0) index.staticImportPaths.set(leaf, container)
+            }
           }
         }
         if (!isStatic && !isWildcard) {
