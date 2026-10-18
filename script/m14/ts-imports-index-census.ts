@@ -94,6 +94,26 @@ console.log(
     ` · over size cap ${overCap} · absent ${absent} · COMPLETE index by construction (the whole project's admitted set)`,
 )
 
+// THE ARBITER'S OWN MODULE-NAME RULE, computed here so the census can say which claims the
+// arbiter will find UNVERIFIABLE (`ext?`): every admitted file's stem and its last directory
+// segment (`projectModuleNames` in incoming-rule.ts). A module-namespace claim is verified by
+// looking its ROOT (first segment) up in that set; a present root degrades the claim to `ext?`,
+// which BLOCKS a pass. This is the census's forecast of that column, computed from the same
+// population the gate builds its facts from.
+const projectModuleNames = new Set<string>()
+for (const abs of found) {
+  const rel = abs.startsWith(CR) ? abs.slice(CR.length + 1) : abs
+  const slash = rel.lastIndexOf("/")
+  const base = slash >= 0 ? rel.slice(slash + 1) : rel
+  const dot = base.lastIndexOf(".")
+  if (dot > 0) projectModuleNames.add(base.slice(0, dot))
+  if (slash > 0) {
+    const dir = rel.slice(0, slash)
+    const dSlash = dir.lastIndexOf("/")
+    projectModuleNames.add(dSlash >= 0 ? dir.slice(dSlash + 1) : dir)
+  }
+}
+
 const mod: any = await import("../../src/ast/project-index")
 const wasm = resolveWasmAsset("tree-sitter-typescript/tree-sitter-typescript.wasm")
 let lastProgress = 0
@@ -122,6 +142,7 @@ const note = (name: string, row: string) => {
 let analyzed = 0
 let parseFailures = 0
 let importsRows = 0
+const shadowedRoots = new Map<string, number>()
 const relOf = (f: string) => (f.startsWith(CR) ? f.slice(CR.length + 1) : f)
 
 for (const file of found) {
@@ -143,7 +164,18 @@ for (const file of found) {
     else if (md.projectIndexAmbiguous === true) note("REFUSED: project-local item declared more than once", row)
     else if (md.projectIndexItemNotDeclared === true) note("REFUSED: project-local module, item not in the index", row)
     else if (md.projectIndexModuleShadowed === true) note(`REFUSED: external module root shadowed by project module ${md.projectIndexModuleShadowed}`, row)
-    else if (md.externalReason === "module-namespace") note("CLAIMED: module outside the project (module-namespace)", row)
+    else if (md.externalReason === "module-namespace") {
+      const mod2 = String(md.externalSpecifier ?? "")
+      const root = mod2.split(/[./\\]/)[0] ?? ""
+      const shadowed = root.length > 0 && projectModuleNames.has(root)
+      note(
+        shadowed
+          ? `CLAIMED-but-UNVERIFIABLE (module root "${root}" IS a project module name -> arbiter reads ext?)`
+          : "CLAIMED: module outside the project (module-namespace, verifiable)",
+        row,
+      )
+      if (shadowed) shadowedRoots.set(root, (shadowedRoots.get(root) ?? 0) + 1)
+    }
     else if (md.localBinding === true) note("BINDING: whole-module binding spelling (already clean column)", row)
     else if (!target.includes(":")) note("ALREADY BARE: relative/absolute item (resolver's population question, not the pass's)", row)
     else note("UNTOUCHED module:item (no decision — should be 0 if the pass covered the row)", row)
@@ -157,7 +189,15 @@ for (const [name, b] of ordered) {
   console.log(`${String(b.count).padStart(6)}  ${name}`)
   for (const sample of b.rows) console.log(`          e.g. ${sample}`)
 }
-const claimCount = (buckets.get("CLAIMED: module outside the project (module-namespace)")?.count ?? 0)
+if (shadowedRoots.size > 0) {
+  console.log(`\nCLAIMS THE ARBITER WILL FIND UNVERIFIABLE (root is a project module name), by root:`)
+  for (const [root, n] of [...shadowedRoots.entries()].sort((a, b) => b[1] - a[1]).slice(0, 25)) {
+    console.log(`  ${String(n).padStart(6)}  root "${root}"`)
+  }
+  console.log(`  total unverifiable-forecast claims: ${[...shadowedRoots.values()].reduce((a, b) => a + b, 0)}`)
+}
+const claimCount = (buckets.get("CLAIMED: module outside the project (module-namespace, verifiable)")?.count ?? 0) +
+  (buckets.get("CLAIMED: module outside the project (module-namespace)")?.count ?? 0)
 const resolvedCount = (buckets.get("RESOLVED-BY-INDEX: bare target the resolver can join")?.count ?? 0)
 const refusedCount = ordered.filter(([n]) => n.startsWith("REFUSED")).reduce((n, [, b]) => n + b.count, 0)
 console.log("")

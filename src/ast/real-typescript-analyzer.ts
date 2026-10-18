@@ -4,8 +4,13 @@
 // WHAT THIS FILE IS — `RealTypeScriptAnalyzer`, the TypeScript/TSX AST analyzer. It is
 // registered in `engine.ts` for BOTH language ids: `typescript` (.ts/.mts/.cts) and `tsx`
 // (.tsx); the code is shared and only the wasm grammar differs.
-// RELATIONSHIP TYPES IT EMITS — all ten: calls, uses, contains, imports, exports,
-// references, extends, implements, overrides, instantiates.
+// RELATIONSHIP TYPES IT EMITS — TWELVE of the canonical vocabulary: the ten stored values
+// (calls, uses, contains, imports, exports, references, extends, implements, overrides,
+// instantiates) plus the two the owner admitted BECAUSE the ten could not spell them honestly —
+// `decorates` (a decorator is applied TO a declaration; `references` claimed the body mentioned it)
+// and `renders` (a JSX element renders a component; `uses` claimed a mention). `mixes_in`/`part_of`
+// are NOT TypeScript constructs and are deliberately not emitted. The applicable-set evidence for
+// every construct and every type is validation/m14/verification/TYPESCRIPT-APPLICABLE-SET.md.
 // WHERE ITS EVIDENCE LIVES — docs/analyzers/real-typescript-analyzer.md (+ -ontology.md);
 // fixtures validation/m14/fixtures/typescript/** (run `bun run script/m14/run-fixtures.ts
 // --lang typescript`); gate `bun run script/m14/incoming-gate.ts typescript ts 400`; spec
