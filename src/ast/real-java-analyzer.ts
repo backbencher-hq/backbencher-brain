@@ -54,6 +54,28 @@ function stringIncludes(str: string, val: string): boolean {
 }
 
 /**
+ * Is this a PLAIN Java identifier — `[A-Za-z_$][A-Za-z0-9_$]*` — by CHAR SCAN, not a regex
+ * (the R2 register: the analyzers are AST walkers and `no-regex-gate.sh` counts regex literals in
+ * them; java's one literal lived at the project-scope external claim below and was found by the
+ * fresh HEAD-blob regex census on 2026-10-18).
+ *
+ * Used by `markExternalTargets`' project-scope rule, which may only claim a BARE identifier (a dotted
+ * target belongs to the arbiter's `importPath` claim, a path/URI names no symbol). The scan is the
+ * exact character class the regex encoded: ASCII letters, `_` and `$` to start; those plus digits to
+ * continue.
+ */
+function isPlainJavaIdentifier(name: string): boolean {
+  if (name.length === 0) return false
+  const isStart = (c: number) => (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 36 || c === 95
+  const isPart = (c: number) => isStart(c) || (c >= 48 && c <= 57)
+  if (!isStart(name.charCodeAt(0))) return false
+  for (let i = 1; i < name.length; i++) {
+    if (!isPart(name.charCodeAt(i))) return false
+  }
+  return true
+}
+
+/**
  * #904: does a parameter signature carry a GENERIC TYPE VARIABLE — Java's
  * single-capital-letter convention (`E`, `T`, `K`, `V`)? Char-scan, no regex:
  * analyzers carry no regex literals (R2 register).
@@ -4975,8 +4997,7 @@ currentPackage,
       if (md.isExternalTarget === true) continue
       if (context?.projectIndex?.complete !== true) continue
       if (String(r?.type ?? "") === "imports" || String(r?.type ?? "") === "brain_import") continue
-      const PLAIN_JAVA_IDENT = /^[A-Za-z_$][A-Za-z0-9_$]*$/
-      if (!PLAIN_JAVA_IDENT.test(target)) continue
+      if (!isPlainJavaIdentifier(target)) continue
       if (JAVA_RESERVED.has(target)) continue
       if (context.projectIndex.symbolNames.has(target)) continue
       md.isExternalTarget = true
