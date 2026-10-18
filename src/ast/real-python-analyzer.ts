@@ -301,6 +301,17 @@ interface PythonContext {
    */
   moduleImportBindings: Map<string, string>
   /**
+   * THE COMPLETE PROJECT INDEX'S ANSWER for one imported module: `project-local` (the repo ships
+   * the module — resolve, never claim external), `third-party` (the complete index's `modules`
+   * says the project does not ship it — claim territory) or `unknown` (a same-named file exists
+   * somewhere in the project but the dotted path does not match it — neither resolve nor claim).
+   *
+   * SET ONLY WHEN `context.projectIndex.complete === true`. Absent (every sampled, index-less
+   * and incremental run) means every consumer behaves exactly as it did before this capability
+   * existed — the fail-closed contract the ProjectIndex documents.
+   */
+  projectModuleVerdict?: (module: string) => "project-local" | "third-party" | "unknown"
+  /**
    * THE LEXICAL SCOPES A NAME CAN BE LOCAL TO, with their 1-based line ranges: one entry per
    * `def`, one per `lambda`, one per comprehension. Built from `functionLocals` plus a range
    * walk, and read by the import-evidence certifier to answer "is this name a LOCAL at the
@@ -790,6 +801,95 @@ function isPyStdlibModule(moduleName: string): boolean {
   return top !== "" && PY_STDLIB_MODULES.has(top)
 }
 
+/**
+ * THE PROJECT'S OWN FILE SPACE, as a python-module predicate — the analyzer-side half of the
+ * `context.projectIndex` capability (handoff §8.3), and the ONLY place this lane reads `modules`.
+ *
+ * WHAT IT ANSWERS, and the three-valued answer is the whole design:
+ *
+ *   `project-local`  some indexed file's path ENDS WITH the dotted module as a directory path
+ *                    (`ansible.module_utils.facts.network.base` -> `.../facts/network/base.py`,
+ *                    or `.../base/__init__.py`). The suffix, not the full path, because the repo
+ *                    root is not python's `sys.path` root: ansible's files live under `lib/` while
+ *                    the import is rooted at `ansible`. Two or more segments are required: a
+ *                    ONE-segment dotted name could match a same-named file anywhere in the repo,
+ *                    and that is exactly the false-binding class this lane already refused
+ *                    (5 py / 432 ts / 276 js same-named project symbols).
+ *   `third-party`    NO indexed file carries the module's root or its full dotted tail. This is
+ *                    the only state in which the lane may CLAIM externality, and only when the
+ *                    index is `complete === true` — a fragment that says "no such file" is not
+ *                    the project saying it.
+ *   `unknown`        a same-named file or a matching directory EXISTS somewhere, but the dotted
+ *                    path does not line up (or the module is one segment). Neither resolved nor
+ *                    claimed: a wrong resolution is worse than an unresolved row.
+ *
+ * RELATIVE MODULES ARE NEVER ASKED (the caller filters them): a relative import names this
+ * project BY THE GRAMMAR, and the leading dot is part of the rule — stripping it once certified
+ * a project-local import as the standard library (the 6-verified-false-edges defect in this
+ * file's head comment).
+ *
+ * CACHED ON THE INDEX OBJECT: the predicate's backing sets cost one pass over the project's file
+ * list, and the index is one object for the whole run (the WeakMap key is the ProjectIndex; a
+ * run that replaces it gets a fresh answer). A per-file rebuild would be O(files) per file.
+ */
+const PY_MODULE_LOCALITY_CACHE = new WeakMap<object, (module: string) => "project-local" | "third-party" | "unknown">()
+
+function projectModuleLocalityOf(index: { modules?: Set<string> }): (module: string) => "project-local" | "third-party" | "unknown" {
+  const cached = PY_MODULE_LOCALITY_CACHE.get(index as object)
+  if (cached) return cached
+  const modules = index.modules ?? new Set<string>()
+  // Normalised once: the index stores each file's path (as the builder received it — absolute in
+  // the gate/production callers), its basename and its stem. Only the PATH entries are useful for
+  // suffix matching, and a stem entry must be compared exactly.
+  const paths: string[] = []
+  const stems = new Set<string>()
+  const dirSegments = new Set<string>()
+  for (const raw of modules) {
+    const m = String(raw).replace(/\\/g, "/")
+    if (m.length === 0) continue
+    paths.push(m)
+    const slash = m.lastIndexOf("/")
+    const base = slash >= 0 ? m.slice(slash + 1) : m
+    const dot = base.lastIndexOf(".")
+    if (dot > 0) {
+      const stem = base.slice(0, dot)
+      if (stem.length > 0) stems.add(stem)
+    }
+    if (slash > 0) {
+      const dir = m.slice(0, slash)
+      const dSlash = dir.lastIndexOf("/")
+      dirSegments.add(dSlash >= 0 ? dir.slice(dSlash + 1) : dir)
+    }
+  }
+  const PY_EXTS = [".py", ".pyi", ".pyw"]
+  const hasPathSuffix = (suffix: string): boolean => {
+    for (const p of paths) {
+      for (const ext of PY_EXTS) {
+        if (p === suffix + ext || p.endsWith(`/${suffix}${ext}`) || p.endsWith(`/${suffix}/__init__${ext}`)) return true
+      }
+    }
+    return false
+  }
+  const locality = (module: string): "project-local" | "third-party" | "unknown" => {
+    const m = String(module ?? "").trim()
+    if (m === "" || m.startsWith(".")) return "unknown"
+    const segments = m.split(".").filter((s) => s.length > 0)
+    if (segments.length === 0) return "unknown"
+    // MULTI-SEGMENT: the dotted tail must line up with a real path suffix, longest tail first so
+    // `a.b.c` is not satisfied by an unrelated `b/c.py` when `a/b/c.py` also exists.
+    for (let k = segments.length; k >= 2; k--) {
+      if (hasPathSuffix(segments.slice(segments.length - k).join("/"))) return "project-local"
+    }
+    // NOT PROVEN LOCAL. Claim externality only when the project shows no trace of the root: a
+    // same-named file stem or directory segment anywhere makes the answer unknowable from here.
+    const root = segments[0]!
+    if (stems.has(root) || dirSegments.has(root)) return "unknown"
+    return "third-party"
+  }
+  PY_MODULE_LOCALITY_CACHE.set(index as object, locality)
+  return locality
+}
+
 export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -1177,6 +1277,12 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // certified like any other route (the claims only ADD metadata; they never rewrite
     // a target). See `extractDecoratorReferences` for the source/line/argument rules.
     this.extractDecoratorReferences(rootNode, ctx, phantomDefs)
+    // THE PROJECT-INDEX PASS — only ever active when `context.projectIndex.complete === true`
+    // (fail-closed: every sampled/index-less run is byte-identical to the behaviour before the
+    // capability). It runs BEFORE the claim passes because it both ADDS a claim (third-party
+    // imports) and SUPPRESSES one (a name whose module the project itself ships), and the
+    // import-evidence certifier reads `ctx.projectModuleVerdict` for the suppression half.
+    this.applyProjectIndexFacts(ctx, context)
     this.classifyEvidenceTier(ctx.relationships)
     // AND LAST, the language-namespace claim: it runs over the COMPLETE relationship set — so
     // that an edge added by any of the passes above is certified too — and it only ADDS a
@@ -5173,6 +5279,95 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * THE PROJECT-INDEX PASS — the analyzer side of `context.projectIndex` (handoff §8.3), and the
+   * capability the whole project-index contract was built for on this lane (Lead commits
+   * `c83faa798` / `26c90c99d`: `modules` and `symbolCounts` exist exactly so this pass can be
+   * written without fabricating a verification).
+   *
+   * FAIL-CLOSED BY CONSTRUCTION. No index, or `complete !== true`, returns before touching an
+   * edge: every sampled run, every index-less run and every incremental run is byte-identical to
+   * the behaviour before this method existed. The completeness bit is the whole licence — a
+   * fragment of a project that says "no such module" is not the project saying it, and the
+   * fragment-vs-project confusion is the defect the ProjectIndex docstring records.
+   *
+   * THREE OPERATIONS, and their difference is the difference between a resolution and a claim:
+   *
+   *   · RESOLUTION (`project-local`) — the file's own import names a module the COMPLETE index
+   *     proves this project ships (a dotted-path suffix match, at least two segments; see
+   *     `projectModuleLocalityOf`). The edge's target becomes the ITEM the import binds — the
+   *     symbol the edge actually refers to — but ONLY when `symbolCounts` says that name is
+   *     declared exactly ONCE in the project: the same-named false-binding risk is the measured
+   *     5 py / 432 ts / 276 js class, and a count of 1 is production's own strategy-2 condition.
+   *     The module stays in `metadata.module`, and `metadata.qualified` gains the written route,
+   *     so nothing the edge means is lost. A namespace/wildcard import (`import a.b`,
+   *     `from a.b import *`) binds no single name, so it gains the FACT
+   *     (`metadata.projectLocalModule`) and no retarget.
+   *
+   *   · CLAIM (`third-party`) — the complete index proves the project does not ship the module.
+   *     The IMPORTS edge (a `module:item` spelling no claim kind could verify before the
+   *     `moduleNamespace` kind existed) is certified with that kind: `isExternalTarget` +
+   *     `externalReason: "module-namespace"` + `externalSpecifier`. It is verify-never-refute at
+   *     the arbiter (a module the project turns out to ship reads `ext?`, never a refutation), so
+   *     a wrong answer here can cost a pass but can never become a false statement about another
+   *     repository.
+   *
+   *   · SUPPRESSION (`project-local` on a name-bound route) — handled by
+   *     `certifyImportEvidenceClaims`, which consults `ctx.projectModuleVerdict` and refuses the
+   *     external claim for a name whose module the index proves is this project's OWN code. A
+   *     claim of externality on project code is the one outcome this lane treats as a false
+   *     statement, and before the index existed it had no way to avoid it.
+   *
+   * THE LEADING DOT IS PART OF THE RULE. A relative module names this project BY THE GRAMMAR, so
+   * it is never asked about (and never claimed external); the previous round already paid for
+   * stripping it (`from .types import UUID` became a verified stdlib edge — 6 false
+   * `verified external` rows).
+   */
+  private applyProjectIndexFacts(ctx: PythonContext, context?: ASTEngine.AnalyzeContext): void {
+    const index = context?.projectIndex
+    if (!index || index.complete !== true) return
+    if (!index.modules || index.modules.size === 0) return
+    const locality = projectModuleLocalityOf(index)
+    ctx.projectModuleVerdict = locality
+    for (const r of ctx.relationships) {
+      if (String(r.type ?? r.relationshipType ?? "") !== "imports") continue
+      const md = (r.metadata ?? (r.metadata = {})) as Record<string, any>
+      const target = String(r.target ?? "")
+      let module = typeof md.module === "string" ? String(md.module) : ""
+      const colon = target.lastIndexOf(":")
+      if (module === "" && colon > 0) module = target.slice(0, colon)
+      if (module === "" || module.startsWith(".") || module === "__future__") continue
+      const verdict = locality(module)
+      if (verdict === "third-party") {
+        md.isExternalTarget = true
+        md.externalReason = "module-namespace"
+        md.externalSpecifier = module
+        continue
+      }
+      if (verdict !== "project-local") continue
+      md.projectLocalModule = true
+      // A PROJECT-LOCAL IMPORT IS NOT STDLIB, whatever its top segment spells: the suffix proof
+      // outranks the name list, and the name list was the only evidence before the index.
+      delete md.isStdlib
+      if (md.externalReason === "pythonStdlib") delete md.externalReason
+      const item = colon > 0 ? target.slice(colon + 1) : "*"
+      if (item === "" || item === "*" || item.indexOf(".") !== -1 || dottedChainRoot(item) !== item) continue
+      // THE TRUST TEST IS THE COUNT, not presence: `symbolNames.has` cannot tell one declaration
+      // from four, and picking one of four same-named declarations is the false-binding class the
+      // lane already refused. Absent counts (an older payload) read as "cannot trust".
+      const count = index.symbolCounts?.get(item)
+      if (count !== 1) continue
+      r.target = item
+      if (typeof (r as any).toSymbol === "string") (r as any).toSymbol = item
+      md.qualified = `${module}.${item}`
+      md.projectIndexResolution = "item-declared-once"
+      // The edge is a RESOLUTION candidate, so it must not carry an external claim it would
+      // contradict; a project-local import was never external evidence anyway.
+      delete md.isExternalTarget
+      delete md.externalSpecifier
+    }
+  }
+
+  /**
    * The NAME a `decorator` node WRITES, the node that writes it, and the written CHAIN.
    *
    * `decorator` is `"@"` + one of {identifier, attribute, call, subscript} in this grammar,
@@ -5574,6 +5769,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         const specifier = bindings.get(root)
         if (!specifier) continue
         if (shadowedAt(line, root)) continue
+        // THE PROJECT-INDEX SUPPRESSION. A claim of externality on this project's OWN code is
+        // the one outcome the lane treats as a false statement, and only a complete index can
+        // prove it: the module this route's root was imported from is a file the project ships,
+        // so the member is project code even though a per-file analyzer cannot see its
+        // declaration. Only `project-local` suppresses — `unknown`/absent keeps the old
+        // behaviour, because the index has not proved anything about those modules.
+        if (ctx.projectModuleVerdict?.(specifier) === "project-local") continue
         md.isExternalTarget = true
         md.externalReason = "imported-module-member"
         md.externalSpecifier = specifier
@@ -5582,6 +5784,8 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       const specifier = bindings.get(tgt)
       if (!specifier) continue
       if (shadowedAt(line, tgt)) continue
+      // The same suppression on the TARGET-BOUND shape (`from a.b import C` -> a read of `C`).
+      if (ctx.projectModuleVerdict?.(specifier) === "project-local") continue
       md.isExternalTarget = true
       md.externalReason = "imported-name"
       md.externalSpecifier = specifier
