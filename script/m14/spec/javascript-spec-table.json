@@ -87,14 +87,22 @@
     "subscript_expression": {
       "relationship": "uses",
       "note": "computed member access"
+    },
+    "decorator": {
+      "relationship": "decorates",
+      "note": "2026-10-18 canonical vocabulary (src/ast/types.ts RelationshipType.Decorates): source = the DECORATED declaration (class/method/field/accessor), target = the decorator name leaf (jsDecoratorName spelling), line_number = the decorator's own line; ONE row per decorator and NONE for its arguments (decorator position is suppressed whole by the call/read walks, inDecoratorPosition); no second references/calls row at the same site. This REPLACED the per-decorator `references` row. Parameter decorators do not exist in this grammar/ECMAScript. Fixture: javascript/decorator-arguments-not-decorates (+ the two decorator-*-861/868 fixtures repinned)."
+    },
+    "jsx_element": {
+      "relationship": "renders",
+      "note": "2026-10-18 canonical vocabulary (src/ast/types.ts RelationshipType.Renders): a CAPITALIZED component tag emits renders (source = the enclosing symbol the old `uses` row was attributed to, target = the tag name, one row per ELEMENT — a paired <Panel>…</Panel> is ONE row); lowercase intrinsics (div/span), fragments (<></>) and member components (<A.B/>) emit NOTHING; React.createElement(Foo) stays `calls`. This replaced the JSX `uses` row 1:1 (same name rule). Fixture: javascript/jsx-usage (paired element pinned by expectRelationshipCount equals 1, intrinsics forbidden)."
     }
   },
   "expressions_requiring_uses_or_calls": [
-    "template_substitution (gap J3: `${x}` emits no Uses on x)",
+    "template_substitution (EMITTED uses since J3 — the old gap text is superseded by handled_verified)",
     "member_expression field access (uses, isFieldAccess)",
     "call_expression (calls)",
     "new_expression (instantiates)",
-    "jsx_* components (gap J5: <Button/> emits nothing)"
+    "jsx_* components — EMITTED as `renders` (2026-10-18 canonical vocabulary; gap J8 was CLOSED, the old 'gap J5: <Button/> emits nothing' text was stale)"
   ],
   "statements_affecting_complexity": [
     "if_statement",
