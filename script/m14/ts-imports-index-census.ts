@@ -41,6 +41,12 @@ const CR = process.env.BB_CORPUS_ROOT ?? path.join(process.cwd(), ".corpus")
 const SIZE_CAP = 1024 * 1024
 const argv = process.argv.slice(2)
 const argOf = (flag: string): string | null => {
+  // BOTH FORMS: `--flag value` and `--flag=value`. The first version accepted only the
+  // space-separated form, so the documented `--repo=element-plus` invocation exited 2 with
+  // "usage" — a usage error on the instrument's OWN documented command, which is how this was
+  // caught (the run died before doing any work, so nothing was measured under the wrong scope).
+  const eq = argv.find((a) => a.startsWith(`${flag}=`))
+  if (eq !== undefined) return eq.slice(flag.length + 1)
   const i = argv.indexOf(flag)
   return i >= 0 ? (argv[i + 1] ?? null) : null
 }
