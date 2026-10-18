@@ -305,7 +305,21 @@ function deriveContains(root: Node): CppTruthEdge[] {
       if (nm) {
         const next = String(nm)
         const body = firstNamed(n, ["declaration_list"]) ?? n.childForFieldName?.("body")
-        if (body) for (const c of namedChildren(body)) visit(c, next, nameLine(n), false)
+        if (body) {
+          for (const c of namedChildren(body)) {
+            const ct = c.type
+            // A NAMED namespace member is contained by the namespace: a function, a variable, a
+            // typedef/using-alias — not only the class/enum shapes the class walker already
+            // covers. Measured defect this closes: the fixtures' `namespace N { int x; int getx(); }`
+            // published analyzer edges N -> x / N -> getx that truth never derived (unexplained
+            // contains), while the analyzer's own contract is one edge per (owner, name) pair.
+            if (ct === "declaration" || ct === "field_declaration" || ct === "function_definition" || ct === "alias_declaration" || ct === "type_definition") {
+              const dn = declaredName(c) ?? (ct === "type_definition" ? firstNamed(c, ["type_identifier"])?.text : null)
+              if (dn) push(next, String(dn), lineOf(c))
+            }
+            visit(c, next, nameLine(n), false)
+          }
+        }
       }
       return
     }
@@ -785,6 +799,35 @@ export function deriveCppTruth(root: Node): CppTruthEdge[] {
     ...deriveExports(root),
     ...deriveOverrides(root),
     ...deriveImplements(root),
+  ]
+}
+
+/**
+ * THE D4 WIRING HALF (ALL-OUT-OF-ALL §9.1 D4, 2026-10-18).
+ *
+ * The measured state this closes: the shared differential's compared set for cpp named only
+ * `calls`/`uses`/`extends`/`implements`/`instantiates`, so the lane's five OTHER emitted
+ * labels — `contains` (161,930 whole-population edges), `references`, `imports` (45,829),
+ * `exports`, `overrides` (1,875) — were stored and compared against NOTHING (the
+ * `validation/m60/rel-type-coverage-baseline.json` DERIVATION shape). The Lead wires this
+ * function into `script/m14/differential.ts` (the shared file is Lead-owned, single-writer
+ * rule) and admits the five labels in the SAME change — an oracle with no admission compares
+ * nothing, and an admitted label with no oracle turns every analyzer row into a fabrication.
+ *
+ * It returns ONLY the unadmitted five. `calls`/`uses`/`instantiates`/`extends`/`implements`
+ * are already derived for cpp by the shared differential (`deriveCppEdges`,
+ * `deriveCppBareUses`, `deriveTreeEdges`); re-exporting them here (see `deriveCppShared`)
+ * would push every row twice. One implementation per label is the contract this module's
+ * header states, so the wiring pushes each label's truth exactly once.
+ */
+export function deriveCppUnadmittedTruth(root: Node): CppTruthEdge[] {
+  const { imports, references } = deriveImportsAndReferences(root)
+  return [
+    ...deriveContains(root),
+    ...imports,
+    ...references,
+    ...deriveExports(root),
+    ...deriveOverrides(root),
   ]
 }
 
