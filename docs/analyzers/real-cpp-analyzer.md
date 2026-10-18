@@ -1291,11 +1291,11 @@ Evidence page: `validation/m14/verification/CPP-D3.md`.
 `overrides` to cpp's compared set in the same change (the other five — calls/uses/extends/instantiates — were
 already compared; `implements` was found to have NO shared truth on the first post-wiring draw and is now
 pushed by the lane's own pure-virtual walker). Both canonical draws, current digest:
-`fmt --sample 60` → files 60 · tree-truth 8,551 · covered 8,412 (98.4%) · MISSING 139 · analyzer-edges 9,583 ·
-unexplained 2,253 (23.5%) · heuristic 0; `nlohmann-json --sample 60` → 60 files · tree-truth 711 · covered 706
-(99.3%) · MISSING 5 · analyzer 755 · unexplained 68 (9%) · heuristic 0. The `COMPARED WITH NO TRUTH` disclosure
+`fmt --sample 60` → files 60 · tree-truth 8,666 · covered 8,523 (98.3%) · MISSING 143 · analyzer-edges 9,583 ·
+unexplained 2,146 (22.4%) · heuristic 0; `nlohmann-json --sample 60` → 60 files · tree-truth 757 · covered 752
+(99.3%) · MISSING 5 · analyzer 755 · unexplained 40 (5.3%) · heuristic 0. The `COMPARED WITH NO TRUTH` disclosure
 is gone from both. Every non-matching row is classified by `script/m14/cpp-d4-audit.ts` with its deciding side
-(fmt: 46 MISSING / 496 unexplained in 11 named classes; nlohmann-json: 10 / 277 in 6), and the two draws'
+(fmt: 50 MISSING / 444 unexplained in 11 named classes; nlohmann-json: 10 / 245 in 6), and the two draws'
 residual is measured debt, not claimed clean. The contract instrument `cpp-oracle-verify.ts` gives 5/5
 synthetic positive+negative cases and a self-test that proves the matcher can fail. Evidence page:
 `validation/m14/verification/CPP-D4-AUDIT.md` (+ `CPP-D4-ORACLE.md` for the inventory/wiring patch).

@@ -305,7 +305,21 @@ function deriveContains(root: Node): CppTruthEdge[] {
     }
     if (t === "namespace_definition") {
       const nm = n.childForFieldName?.("name")?.text
-      if (nm) {
+      // ANONYMOUS NAMESPACE (`namespace { … }`) IS A CONTAINER TOO — CORRECTED 2026-10-18 by
+      // measurement. The previous branch required a NAME and returned silently otherwise, so every
+      // member of an anonymous namespace (and of anything nested in one) was MISSING from truth.
+      // Measured: fmt's src/os.cc wraps its whole Windows section in `namespace { … }`, and truth
+      // derived ZERO contains rows for the file while the analyzer published 8 (class
+      // system_message -> result_ / message_ / constructor / ~system_message / operator= /
+      // is_whitespace). The analyzer publishes NO namespace symbol for the anonymous scope, so its
+      // members are file-scope: visit the body with owner=null (a named class inside still owns its
+      // own members, which is what the analyzer does).
+      if (!nm) {
+        const body = firstNamed(n, ["declaration_list"]) ?? n.childForFieldName?.("body")
+        if (body) for (const c of namedChildren(body)) visit(c, null, nameLine(n), false)
+        return
+      }
+      {
         const next = String(nm)
         const body = firstNamed(n, ["declaration_list"]) ?? n.childForFieldName?.("body")
         if (body) {
