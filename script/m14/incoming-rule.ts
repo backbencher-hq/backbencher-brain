@@ -934,16 +934,24 @@ export function verifyExternalClaim(
     // VERIFY the claim and record the limitation rather than manufacture a refutation.
     return "externalVerified"
   }
+  // A RESERVED PLATFORM NAMESPACE IS A CITATION, AND IT MUST BE READ BEFORE THE PATH-LIKE TEST.
+  // (JLS §6.1 / JPMS; see RESERVED_PLATFORM_NAMESPACES.) Second measured defect in this area, found by
+  // the java lane's post-fix residual split (2026-10-19): reserved dotted targets whose LAST SEGMENT
+  // looks like a file extension -- `java.io.File`, `java.util.concurrent.locks.Lock`,
+  // `java.nio.file.Path` -- were refused by `pathLikeTarget` BEFORE this citation branch ran, leaving
+  // **243** whole-population rows in `ext?` that the refiner fix (`ebbf68b04`) could not reach. A
+  // package path is not a file path simply because its leaf name ends in `.File`: the reserved
+  // namespace prefix is decisive. Measured defect history: `java.util` was also refuted by a scala3
+  // test file declaring `class java`, charging 24 true claims as extFAIL against a lane.
+  const reservedPlatform = RESERVED_PLATFORM_NAMESPACES.some((ns) => {
+    const bare = ns.endsWith(".") ? ns.slice(0, -1) : ns
+    return tgt === bare || (tgt.length > ns.length && tgt.startsWith(ns))
+  })
+  if (reservedPlatform) return "externalVerified"
   if (pathLikeTarget(tgt)) {
     if (URI_SCHEME.test(tgt) && !WINDOWS_DRIVE.test(tgt)) return "externalUnverified"
     if (facts) return pathTargetInProject(facts, tgt) ? "externalRefuted" : "externalUnverified"
     return "externalUnverified"
-  }
-  // A RESERVED PLATFORM NAMESPACE IS A CITATION, AND IT OUTRANKS A SAME-NAMED PROJECT SYMBOL.
-  // (JLS §6.1 / JPMS; see RESERVED_PLATFORM_NAMESPACES.) Measured defect: `java.util` was refuted by a
-  // scala3 test file declaring `class java`, charging 24 true claims as extFAIL against a lane.
-  for (const ns of RESERVED_PLATFORM_NAMESPACES) {
-    if (tgt.length > ns.length && tgt.startsWith(ns)) return "externalVerified"
   }
   const owner = targetOwner(tgt)
   // NO DOTTED OWNER: ask about the TARGET ITSELF when it is a plain identifier, and stay

@@ -1717,6 +1717,20 @@ function selfTest(): { ok: boolean; failures: string[] } {
       const c = classifyEdge(declCount, kinds, "AbsentThing.build", { kind: "owner", specifier: spec }, refinerFacts)
       if (c.outcome !== want) failures.push(`control: refiner for specifier ${spec} read ${c.outcome}, expected ${want} — ${why}`)
     }
+    // RESERVED CITATION MUST BE READ BEFORE THE PATH-LIKE REFUSAL (java lane's 243-row residual class,
+    // 2026-10-19): `java.io.File`, `...Lock`, `...Path` are package paths whose leaf looks like a file
+    // extension, so the path-like test used to swallow them before the reserved-namespace citation
+    // branch ran. A reserved prefix is decisive; a non-reserved path-like target must still refuse.
+    const reservedPathArms: Array<[string, Outcome, string]> = [
+      ["java.io.File", "externalVerified", "reserved package path whose leaf is extension-like must verify by citation"],
+      ["java.util.concurrent.locks.Lock", "externalVerified", "second extension-like reserved leaf"],
+      ["java.nio.file.Path", "externalVerified", "third extension-like reserved leaf"],
+      ["libs/File", "externalUnverified", "a NON-reserved path-like target must still refuse (the control)"],
+    ]
+    for (const [t, want, why] of reservedPathArms) {
+      const c = classifyEdge(declCount, kinds, t, { kind: "owner" }, refinerFacts)
+      if (c.outcome !== want) failures.push(`control: reserved/path-like target ${t} read ${c.outcome}, expected ${want} — ${why}`)
+    }
   }
 
   // THE SCOPE IS APPLIED, and this asserts it rather than trusting the caller. `gamma` is
