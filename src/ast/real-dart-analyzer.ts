@@ -20,7 +20,9 @@
 // class-like type: class/enum or a type declared outside the file) + metadata.ownerEvidence in
 // {param, field, annotation, assignment} — the channel src/ast/member-owner-resolution.ts resolves
 // through. Mixin/extension/typedef owners are deliberately withheld (the resolver would withdraw the
-// binding). Typed catch clauses and container ELEMENT types (List<T> etc.) type their bindings.
+// binding). Typed catch clauses, container ELEMENT types (List<T> etc.), MAP views (`for (v in
+// m.values)` reads V; `.keys` reads K) and AWAITED FUTURES (`final repo = await pending` with
+// `Future<Repo> pending` types `repo` as Repo) type their bindings from written evidence.
 // THE POPULATION THIS IS MEASURED ON: docs in validation/m14/verification/ — DART-APPLICABLE-SET.md,
 // DART-RESOLUTION-CLASSIFICATION.md, DART-WHOLE-POPULATION.md (cap-0 arm: 3,748,617 edges over 33,738
 // files, every non-resolved edge in a named counted class).
