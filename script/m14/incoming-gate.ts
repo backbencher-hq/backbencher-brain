@@ -759,6 +759,13 @@ const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> =
   // PROJECT_INDEX_EXTENSIONS already carried `.scss`. The spec lives in project-index.ts and is
   // exported as of this change.
   scss: { spec: async () => (await import("../../src/ast/project-index")).SCSS_DECLARATION_SPEC, wasm: "tree-sitter-scss.wasm" },
+  // SOLIDITY — the OPPOSITE of the cpp gap: production ALREADY builds this index (`PROJECT_INDEX_EXTENSIONS`
+  // carries `.sol: "solidity"` and `parallel-indexer.ts` wires `SOLIDITY_DECLARATION_SPEC` + wasm),
+  // and the analyzer CONSUMES it (SOL-21: 507 undecided kinds → 0, 99 mis-typed fixed, external
+  // 1,677→190). This table had no entry, so `--index` would build 0 indexes and the arm that measures
+  // the analyzer's real indexed behaviour could not be produced — a fake non-arm, unlike cpp where the
+  // production list genuinely has no C++ spelling. Both halves are wired; the gate now measures them.
+  solidity: { spec: async () => (await import("../../src/ast/project-index")).SOLIDITY_DECLARATION_SPEC, wasm: "tree-sitter-solidity.wasm" },
   // JAVA, and the spec is the point rather than the wasm: `JAVA_DECLARATION_SPEC` carries
   // `qualifyTypeWithFile`, which is what lets the analyzer decide whether an import is LOCAL —
   // a qualified lookup instead of the package-prefix heuristic that scored 0.84 precision.
