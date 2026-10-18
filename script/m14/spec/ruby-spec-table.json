@@ -1,11 +1,11 @@
 {
   "language": "ruby",
-  "programme": "ALL-OUT-OF-ALL phase 2 (charter §9.1 D1; task-13)",
-  "purpose": "THE RUBY APPLICABLE SET as a machine-readable table: one row per canonical relationship type the Ruby language can express (decided from the PINNED GRAMMAR's own enumeration, never from the ten-value matrix), with the emission site in src/ast/real-ruby-analyzer.ts and at least one fixture that can go RED for it — plus the ruled non-applicable canonical values.",
+  "programme": "ALL-OUT-OF-ALL phase 2 (charter \u00a79.1 D1; task-13)",
+  "purpose": "THE RUBY APPLICABLE SET as a machine-readable table: one row per canonical relationship type the Ruby language can express (decided from the PINNED GRAMMAR's own enumeration, never from the ten-value matrix), with the emission site in src/ast/real-ruby-analyzer.ts and at least one fixture that can go RED for it \u2014 plus the ruled non-applicable canonical values.",
   "grammar": {
     "wasm": "wasm/tree-sitter-ruby.wasm",
     "sha256": "93a5022855314cdb",
-    "sha256Note": "full sha256 in the instrument artifact; the doc records that the shipped bytes are a REDISTRIBUTOR BUILD (tree-sitter-wasms@0.1.11 out/, no source published) — see docs/analyzers/real-ruby-analyzer.md 'Grammar surface'",
+    "sha256Note": "full sha256 in the instrument artifact; the doc records that the shipped bytes are a REDISTRIBUTOR BUILD (tree-sitter-wasms@0.1.11 out/, no source published) \u2014 see docs/analyzers/real-ruby-analyzer.md 'Grammar surface'",
     "enumeration": "353 node-type slots = 108 NAMED types + 176 anonymous tokens (284 distinct node-type names, matching the doc's measured count). The grammar has exactly ONE call node type (`call`): `command`/`command_call` are not producible. `ERROR`/`MISSING` are universal parser outputs, not productions.",
     "fields": "32 fields (the doc's measured count; the Language API exposed by web-tree-sitter here cannot enumerate field names portably, so the count is CITED from the doc's instrument rather than re-derived)",
     "instrument": "script/m14/ruby-applicable-set.ts",
@@ -14,17 +14,41 @@
   },
   "admissibilityRule": "A canonical value is APPLICABLE to Ruby iff (i) every construct production it needs is present in the pinned grammar's enumeration, (ii) src/ast/real-ruby-analyzer.ts has an emission site for it, (iii) at least one committed fixture carries a positive `expectRelationships` row naming it, and (iv) that fixture goes RED when the emission is removed (measured through the real fixture runner). A value ruled NOT APPLICABLE must have ZERO emissions over the fixture corpus (positive evidence of absence).",
   "canonicalVocabulary": [
-    "calls", "extends", "implements", "uses", "imports", "exports",
-    "contains", "references", "overrides", "instantiates",
-    "decorates", "renders", "mixes_in", "part_of"
+    "calls",
+    "extends",
+    "implements",
+    "uses",
+    "imports",
+    "exports",
+    "contains",
+    "references",
+    "overrides",
+    "instantiates",
+    "decorates",
+    "renders",
+    "mixes_in",
+    "part_of"
   ],
   "applicableValues": [
-    "calls", "uses", "contains", "imports", "references", "exports",
-    "extends", "mixes_in", "overrides", "instantiates"
+    "calls",
+    "uses",
+    "contains",
+    "imports",
+    "references",
+    "exports",
+    "extends",
+    "mixes_in",
+    "overrides",
+    "instantiates"
   ],
-  "notApplicableValues": ["implements", "decorates", "renders", "part_of"],
+  "notApplicableValues": [
+    "implements",
+    "decorates",
+    "renders",
+    "part_of"
+  ],
   "evidence_rows": {
-    "_reading_as_of": "2026-10-19 ALL-OUT-OF-ALL phase 2 (task-13). The cap-50 pair is BEFORE/AFTER the RUBY-D1 mixes_in relabel; a cap-50 stride is TRIAGE, never a population claim. Whole-population columns are OWED by the D2/D3 arms.",
+    "_reading_as_of": "2026-10-19 phase-2 wave: whole-population census + D3 arm measured; cap-50 pair BEFORE/AFTER the RUBY-D1 relabel. D3 clause 3 is OPEN on a stale cause-rulings file (candidate prepared, Lead-owned path) \u2014 see RUBY-RESOLUTION-CLASSIFICATION.md \u00a75.",
     "cap50Command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 50",
     "cap50Population": {
       "sampled": 50,
@@ -37,28 +61,106 @@
       "exit": 1,
       "exitMeaning": "FAIL on clause 1 (unresolved/ambiguous rows); the D3 work, not an instrument error",
       "before": {
-        "TOTAL": {"edges": 2671, "resolved": 727, "collRes": 96, "ambDecl": 128, "ambKind": 8, "unresolved": 1732, "extOK": 0, "extUnknown": 0, "extFAIL": 0, "causeOK": 84, "causeFAIL": 0},
+        "TOTAL": {
+          "edges": 2671,
+          "resolved": 727,
+          "collRes": 96,
+          "ambDecl": 128,
+          "ambKind": 8,
+          "unresolved": 1732,
+          "extOK": 0,
+          "extUnknown": 0,
+          "extFAIL": 0,
+          "causeOK": 84,
+          "causeFAIL": 0
+        },
         "perType": {
-          "calls": {"edges": 1752, "resolved": 332, "ambDecl": 99, "unresolved": 1321},
-          "uses": {"edges": 117, "resolved": 0, "ambDecl": 0, "unresolved": 117},
-          "contains": {"edges": 341, "resolved": 341, "collRes": 96},
-          "imports": {"edges": 64, "resolved": 0},
-          "references": {"edges": 64, "resolved": 0},
-          "exports": {"edges": 59, "resolved": 35, "ambDecl": 24},
-          "extends": {"edges": 48, "resolved": 4, "ambDecl": 5, "unresolved": 39},
-          "implements": {"edges": 17, "resolved": 1, "unresolved": 16},
-          "overrides": {"edges": 84, "resolved": 0, "causeOK": 84},
-          "instantiates": {"edges": 125, "resolved": 14, "unresolved": 111},
-          "mixes_in": {"edges": 0}
+          "calls": {
+            "edges": 1752,
+            "resolved": 332,
+            "ambDecl": 99,
+            "unresolved": 1321
+          },
+          "uses": {
+            "edges": 117,
+            "resolved": 0,
+            "ambDecl": 0,
+            "unresolved": 117
+          },
+          "contains": {
+            "edges": 341,
+            "resolved": 341,
+            "collRes": 96
+          },
+          "imports": {
+            "edges": 64,
+            "resolved": 0
+          },
+          "references": {
+            "edges": 64,
+            "resolved": 0
+          },
+          "exports": {
+            "edges": 59,
+            "resolved": 35,
+            "ambDecl": 24
+          },
+          "extends": {
+            "edges": 48,
+            "resolved": 4,
+            "ambDecl": 5,
+            "unresolved": 39
+          },
+          "implements": {
+            "edges": 17,
+            "resolved": 1,
+            "unresolved": 16
+          },
+          "overrides": {
+            "edges": 84,
+            "resolved": 0,
+            "causeOK": 84
+          },
+          "instantiates": {
+            "edges": 125,
+            "resolved": 14,
+            "unresolved": 111
+          },
+          "mixes_in": {
+            "edges": 0
+          }
         },
         "artifact": "validation/m14/fixtures/ruby/gate-ruby-cap50-baseline.txt"
       },
       "afterRUBY_D1_relabel": {
-        "TOTAL": {"edges": 2671, "resolved": 727, "collRes": 96, "ambDecl": 128, "ambKind": 8, "unresolved": 1732, "extOK": 0, "extUnknown": 0, "extFAIL": 0, "causeOK": 84, "causeFAIL": 0},
+        "TOTAL": {
+          "edges": 2671,
+          "resolved": 727,
+          "collRes": 96,
+          "ambDecl": 128,
+          "ambKind": 8,
+          "unresolved": 1732,
+          "extOK": 0,
+          "extUnknown": 0,
+          "extFAIL": 0,
+          "causeOK": 84,
+          "causeFAIL": 0
+        },
         "perType": {
-          "extends": {"edges": 44, "resolved": 2, "ambDecl": 5, "unresolved": 37},
-          "implements": {"edges": 0},
-          "mixes_in": {"edges": 21, "resolved": 3, "unresolved": 18}
+          "extends": {
+            "edges": 44,
+            "resolved": 2,
+            "ambDecl": 5,
+            "unresolved": 37
+          },
+          "implements": {
+            "edges": 0
+          },
+          "mixes_in": {
+            "edges": 21,
+            "resolved": 3,
+            "unresolved": 18
+          }
         },
         "delta": "TOTAL byte-identical; implements 17 -> 0; extends 48 -> 44 (the 4 extend-mixin rows); mixes_in 0 -> 21 = 17 relabelled implements + 4 relabelled extend rows EXACTLY. The tier change on the relabelled rows is evidenceClass structural (classifyEvidenceTier follows the construct).",
         "artifact": "validation/m14/fixtures/ruby/gate-ruby-cap50-after-relabel.txt"
@@ -66,116 +168,445 @@
     },
     "types": {
       "calls": {
-        "constructs": ["call", "argument_list", "block"],
+        "constructs": [
+          "call",
+          "argument_list",
+          "block"
+        ],
         "grammarProductionPresent": true,
         "rule": "a `call` whose callee is not a builtin; bare identifiers in expression position that are not locals are calls (`bareCall: true`); source = enclosing method, else owner, else the file-scope sentinel; receiver calls keep the leaf target.",
-        "implementationSites": ["src/ast/real-ruby-analyzer.ts:911", "src/ast/real-ruby-analyzer.ts:2368", "src/ast/real-ruby-analyzer.ts:2555", "src/ast/real-ruby-analyzer.ts:2605"],
-        "fixturesCanGoRed": ["ruby/callsite-lines-825", "ruby/file-scope-owner-pins", "ruby/m60-deep-round", "ruby/master-review-wave", "ruby/payload-and-complexity", "ruby/rack-wave-regressions", "ruby/second-review"],
-        "redProof": {"baselinePassFail": "11/1", "mutatedPassFail": "4/8", "fixturesThatWentRed": 7, "redProven": true}
+        "implementationSites": [
+          "src/ast/real-ruby-analyzer.ts:911",
+          "src/ast/real-ruby-analyzer.ts:2368",
+          "src/ast/real-ruby-analyzer.ts:2555",
+          "src/ast/real-ruby-analyzer.ts:2605"
+        ],
+        "fixturesCanGoRed": [
+          "ruby/callsite-lines-825",
+          "ruby/file-scope-owner-pins",
+          "ruby/m60-deep-round",
+          "ruby/master-review-wave",
+          "ruby/payload-and-complexity",
+          "ruby/rack-wave-regressions",
+          "ruby/second-review"
+        ],
+        "redProof": {
+          "baselinePassFail": "11/1",
+          "mutatedPassFail": "4/8",
+          "fixturesThatWentRed": 7,
+          "redProven": true
+        }
       },
       "uses": {
-        "constructs": ["instance_variable", "call"],
+        "constructs": [
+          "instance_variable",
+          "call"
+        ],
         "grammarProductionPresent": true,
         "rule": "instance-variable READS (`memberRead`) and ActiveRecord association macros (`activerecordMacro`); writes including compound-assignment LHS stay silent.",
-        "implementationSites": ["src/ast/real-ruby-analyzer.ts:867", "src/ast/real-ruby-analyzer.ts:1098", "src/ast/real-ruby-analyzer.ts:1805", "src/ast/real-ruby-analyzer.ts:2453"],
-        "fixturesCanGoRed": ["ruby/callsite-lines-825", "ruby/file-scope-owner-pins", "ruby/framework-surface-pins", "ruby/m60-deep-round", "ruby/payload-and-complexity", "ruby/rack-wave-regressions", "ruby/second-review"],
-        "redProof": {"baselinePassFail": "11/1", "mutatedPassFail": "4/8", "fixturesThatWentRed": 7, "redProven": true}
+        "implementationSites": [
+          "src/ast/real-ruby-analyzer.ts:867",
+          "src/ast/real-ruby-analyzer.ts:1098",
+          "src/ast/real-ruby-analyzer.ts:1805",
+          "src/ast/real-ruby-analyzer.ts:2453"
+        ],
+        "fixturesCanGoRed": [
+          "ruby/callsite-lines-825",
+          "ruby/file-scope-owner-pins",
+          "ruby/framework-surface-pins",
+          "ruby/m60-deep-round",
+          "ruby/payload-and-complexity",
+          "ruby/rack-wave-regressions",
+          "ruby/second-review"
+        ],
+        "redProof": {
+          "baselinePassFail": "11/1",
+          "mutatedPassFail": "4/8",
+          "fixturesThatWentRed": 7,
+          "redProven": true
+        }
       },
       "contains": {
-        "constructs": ["class", "module", "method", "singleton_method", "assignment", "do_block"],
+        "constructs": [
+          "class",
+          "module",
+          "method",
+          "singleton_method",
+          "assignment",
+          "do_block"
+        ],
         "grammarProductionPresent": true,
-        "rule": "one edge per OWNED symbol from `ownerName`; a factory-declared type owns its DSL block's members, a bare unnamed `Class.new do … end` owns nothing (NAMABLE-OWNER rule); the line is the naming token (#825).",
-        "implementationSites": ["src/ast/real-ruby-analyzer.ts:1418"],
-        "fixturesCanGoRed": ["ruby/callsite-lines-825", "ruby/external-override", "ruby/file-scope-owner-pins", "ruby/framework-surface-pins", "ruby/m60-deep-round", "ruby/master-review-wave", "ruby/ontology-imports-exports", "ruby/payload-and-complexity"],
-        "redProof": {"baselinePassFail": "11/1", "mutatedPassFail": "3/9", "fixturesThatWentRed": 8, "redProven": true}
+        "rule": "one edge per OWNED symbol from `ownerName`; a factory-declared type owns its DSL block's members, a bare unnamed `Class.new do \u2026 end` owns nothing (NAMABLE-OWNER rule); the line is the naming token (#825).",
+        "implementationSites": [
+          "src/ast/real-ruby-analyzer.ts:1418"
+        ],
+        "fixturesCanGoRed": [
+          "ruby/callsite-lines-825",
+          "ruby/external-override",
+          "ruby/file-scope-owner-pins",
+          "ruby/framework-surface-pins",
+          "ruby/m60-deep-round",
+          "ruby/master-review-wave",
+          "ruby/ontology-imports-exports",
+          "ruby/payload-and-complexity"
+        ],
+        "redProof": {
+          "baselinePassFail": "11/1",
+          "mutatedPassFail": "3/9",
+          "fixturesThatWentRed": 8,
+          "redProven": true
+        }
       },
       "imports": {
-        "constructs": ["call", "string", "string_content"],
+        "constructs": [
+          "call",
+          "string",
+          "string_content"
+        ],
         "grammarProductionPresent": true,
-        "rule": "`require`/`require_relative`/`load`/`autoload` — one `imports` edge per required path (file-level, `requireMethod`, `resolution: file-relative|load-path`) written one-for-one with the `imports[]` payload channel and with the `references` row.",
-        "implementationSites": ["src/ast/real-ruby-analyzer.ts:2044"],
-        "fixturesCanGoRed": ["ruby/ontology-imports-exports"],
-        "redProof": {"baselinePassFail": "11/1", "mutatedPassFail": "10/2", "fixturesThatWentRed": 1, "redProven": true}
+        "rule": "`require`/`require_relative`/`load`/`autoload` \u2014 one `imports` edge per required path (file-level, `requireMethod`, `resolution: file-relative|load-path`) written one-for-one with the `imports[]` payload channel and with the `references` row.",
+        "implementationSites": [
+          "src/ast/real-ruby-analyzer.ts:2044"
+        ],
+        "fixturesCanGoRed": [
+          "ruby/ontology-imports-exports"
+        ],
+        "redProof": {
+          "baselinePassFail": "11/1",
+          "mutatedPassFail": "10/2",
+          "fixturesThatWentRed": 1,
+          "redProven": true
+        }
       },
       "references": {
-        "constructs": ["constant", "scope_resolution", "call"],
+        "constructs": [
+          "constant",
+          "scope_resolution",
+          "call"
+        ],
         "grammarProductionPresent": true,
         "rule": "constant/scope-resolution mentions in read/type positions plus the require/load path strings (the references half of the load-fact pair).",
-        "implementationSites": ["src/ast/real-ruby-analyzer.ts:2035"],
-        "fixturesCanGoRed": ["ruby/callsite-lines-825", "ruby/m60-deep-round", "ruby/ontology-imports-exports", "ruby/payload-and-complexity", "ruby/second-review"],
-        "redProof": {"baselinePassFail": "11/1", "mutatedPassFail": "6/6", "fixturesThatWentRed": 5, "redProven": true}
+        "implementationSites": [
+          "src/ast/real-ruby-analyzer.ts:2035"
+        ],
+        "fixturesCanGoRed": [
+          "ruby/callsite-lines-825",
+          "ruby/m60-deep-round",
+          "ruby/ontology-imports-exports",
+          "ruby/payload-and-complexity",
+          "ruby/second-review"
+        ],
+        "redProof": {
+          "baselinePassFail": "11/1",
+          "mutatedPassFail": "6/6",
+          "fixturesThatWentRed": 5,
+          "redProven": true
+        }
       },
       "exports": {
-        "constructs": ["assignment", "method", "singleton_method", "call"],
+        "constructs": [
+          "assignment",
+          "method",
+          "singleton_method",
+          "call"
+        ],
         "grammarProductionPresent": true,
-        "rule": "ADAPTED SEMANTICS, declared: Ruby has no export keyword, but a FILE UNIT has a reachable surface — top-level constants/defs, source = the file unit (path-derived, `resolvedTarget: file-unit`), with measured refusals (singleton-class members, `private_constant`, reopens/duplicates are one unit, unnameable symbols).",
-        "implementationSites": ["src/ast/real-ruby-analyzer.ts:1264"],
-        "fixturesCanGoRed": ["ruby/ontology-imports-exports"],
-        "redProof": {"baselinePassFail": "11/1", "mutatedPassFail": "10/2", "fixturesThatWentRed": 1, "redProven": true}
+        "rule": "ADAPTED SEMANTICS, declared: Ruby has no export keyword, but a FILE UNIT has a reachable surface \u2014 top-level constants/defs, source = the file unit (path-derived, `resolvedTarget: file-unit`), with measured refusals (singleton-class members, `private_constant`, reopens/duplicates are one unit, unnameable symbols).",
+        "implementationSites": [
+          "src/ast/real-ruby-analyzer.ts:1264"
+        ],
+        "fixturesCanGoRed": [
+          "ruby/ontology-imports-exports"
+        ],
+        "redProof": {
+          "baselinePassFail": "11/1",
+          "mutatedPassFail": "10/2",
+          "fixturesThatWentRed": 1,
+          "redProven": true
+        }
       },
       "extends": {
-        "constructs": ["class", "call"],
+        "constructs": [
+          "class",
+          "call"
+        ],
         "grammarProductionPresent": true,
         "rule": "`class B < A` when the base is a statically nameable constant path (line = the base type node, #825), plus the factory spelling `K = Class.new(Base)`; `extend M` is NOT here any more (RUBY-D1: it is a mixin, mixes_in).",
-        "implementationSites": ["src/ast/real-ruby-analyzer.ts:593", "src/ast/real-ruby-analyzer.ts:1037"],
-        "fixturesCanGoRed": ["ruby/callsite-lines-825", "ruby/external-override", "ruby/framework-surface-pins", "ruby/master-review-wave", "ruby/mixes-in-modules", "ruby/payload-and-complexity"],
-        "redProof": {"baselinePassFail": "11/1", "mutatedPassFail": "5/7", "fixturesThatWentRed": 6, "redProven": true}
+        "implementationSites": [
+          "src/ast/real-ruby-analyzer.ts:593",
+          "src/ast/real-ruby-analyzer.ts:1037"
+        ],
+        "fixturesCanGoRed": [
+          "ruby/callsite-lines-825",
+          "ruby/external-override",
+          "ruby/framework-surface-pins",
+          "ruby/master-review-wave",
+          "ruby/mixes-in-modules",
+          "ruby/payload-and-complexity"
+        ],
+        "redProof": {
+          "baselinePassFail": "11/1",
+          "mutatedPassFail": "5/7",
+          "fixturesThatWentRed": 6,
+          "redProven": true
+        }
       },
       "mixes_in": {
-        "constructs": ["call", "module", "class"],
+        "constructs": [
+          "call",
+          "module",
+          "class"
+        ],
         "grammarProductionPresent": true,
         "rule": "CANONICAL mixin composition (RUBY-D1): `include M`/`prepend M` compose M into the class's ancestor chain, `extend M` into its singleton class; source = composing class/module, target = the mixin, `metadata.mixinType` records the keyword; dynamic (lowercase/computed) arguments emit nothing.",
-        "implementationSites": ["src/ast/real-ruby-analyzer.ts:2233"],
-        "fixturesCanGoRed": ["ruby/callsite-lines-825", "ruby/file-scope-owner-pins", "ruby/mixes-in-modules", "ruby/payload-and-complexity"],
-        "redProof": {"baselinePassFail": "11/1", "mutatedPassFail": "7/5", "fixturesThatWentRed": 4, "redProven": true},
+        "implementationSites": [
+          "src/ast/real-ruby-analyzer.ts:2233"
+        ],
+        "fixturesCanGoRed": [
+          "ruby/callsite-lines-825",
+          "ruby/file-scope-owner-pins",
+          "ruby/mixes-in-modules",
+          "ruby/payload-and-complexity"
+        ],
+        "redProof": {
+          "baselinePassFail": "11/1",
+          "mutatedPassFail": "7/5",
+          "fixturesThatWentRed": 4,
+          "redProven": true
+        },
         "relabel": "RUBY-D1: the family's previous adaptation (include/prepend -> implements, extend -> extends) is replaced at the UNCHANGED construct sites; cap-50 delta: implements 17 -> 0, extends -4, mixes_in 0 -> 21 = 17 + 4 EXACTLY, TABLE 1 totals byte-identical."
       },
       "overrides": {
-        "constructs": ["method", "class"],
+        "constructs": [
+          "method",
+          "class"
+        ],
         "grammarProductionPresent": true,
-        "rule": "a subclass method redefining a base method: 0.95 structural when the base method is verifiable from local declarations or the project companion index, 0.5 with `reasonCode: first-parent-guess` (the declared-cause channel — 84 causeOK on the cap-50 stride).",
-        "implementationSites": ["src/ast/real-ruby-analyzer.ts:1358", "src/ast/real-ruby-analyzer.ts:1378"],
-        "fixturesCanGoRed": ["ruby/callsite-lines-825", "ruby/external-override"],
-        "redProof": {"baselinePassFail": "11/1", "mutatedPassFail": "9/3", "fixturesThatWentRed": 2, "redProven": true}
+        "rule": "a subclass method redefining a base method: 0.95 structural when the base method is verifiable from local declarations or the project companion index, 0.5 with `reasonCode: first-parent-guess` (the declared-cause channel \u2014 84 causeOK on the cap-50 stride).",
+        "implementationSites": [
+          "src/ast/real-ruby-analyzer.ts:1358",
+          "src/ast/real-ruby-analyzer.ts:1378"
+        ],
+        "fixturesCanGoRed": [
+          "ruby/callsite-lines-825",
+          "ruby/external-override"
+        ],
+        "redProof": {
+          "baselinePassFail": "11/1",
+          "mutatedPassFail": "9/3",
+          "fixturesThatWentRed": 2,
+          "redProven": true
+        }
       },
       "instantiates": {
-        "constructs": ["call", "constant"],
+        "constructs": [
+          "call",
+          "constant"
+        ],
         "grammarProductionPresent": true,
         "rule": "`X.new` on a constant receiver; a receiverless `new` names the enclosing class (`resolvedTarget: enclosing-class`); expression/variable receivers emit nothing (RB-A).",
-        "implementationSites": ["src/ast/real-ruby-analyzer.ts:2524"],
-        "fixturesCanGoRed": ["ruby/callsite-lines-825", "ruby/file-scope-owner-pins", "ruby/m60-deep-round", "ruby/master-review-wave", "ruby/ontology-imports-exports", "ruby/payload-and-complexity", "ruby/rack-wave-regressions"],
-        "redProof": {"baselinePassFail": "11/1", "mutatedPassFail": "4/8", "fixturesThatWentRed": 7, "redProven": true}
+        "implementationSites": [
+          "src/ast/real-ruby-analyzer.ts:2524"
+        ],
+        "fixturesCanGoRed": [
+          "ruby/callsite-lines-825",
+          "ruby/file-scope-owner-pins",
+          "ruby/m60-deep-round",
+          "ruby/master-review-wave",
+          "ruby/ontology-imports-exports",
+          "ruby/payload-and-complexity",
+          "ruby/rack-wave-regressions"
+        ],
+        "redProof": {
+          "baselinePassFail": "11/1",
+          "mutatedPassFail": "4/8",
+          "fixturesThatWentRed": 7,
+          "redProven": true
+        }
       }
     },
     "notApplicable": {
       "implements": {
-        "requiredProductions": ["interface", "implements_clause", "super_interfaces", "conformance"],
+        "requiredProductions": [
+          "interface",
+          "implements_clause",
+          "super_interfaces",
+          "conformance"
+        ],
         "productionsFound": [],
-        "reason": "Ruby has no interface/conformance construct — no keyword, no production, no enforcement; duck typing is not a declared conformance. The edges this lane used to publish under implements are include/prepend module composition, which RUBY-D1 now spells mixes_in.",
+        "reason": "Ruby has no interface/conformance construct \u2014 no keyword, no production, no enforcement; duck typing is not a declared conformance. The edges this lane used to publish under implements are include/prepend module composition, which RUBY-D1 now spells mixes_in.",
         "measuredAbsence": "0 implements edges over the whole fixture corpus (11 files) after the relabel; cap-50 implements 17 -> 0 with the TABLE total byte-identical (relabel closure).",
         "vocabularyRuling": "canonical value, NOT APPLICABLE to Ruby after RUBY-D1. The previous adaptation is RECORDED, not erased."
       },
       "decorates": {
-        "requiredProductions": ["decorator", "annotation", "annotation_declaration"],
+        "requiredProductions": [
+          "decorator",
+          "annotation",
+          "annotation_declaration"
+        ],
         "productionsFound": [],
         "reason": "no decorator/annotation production exists in the pinned Ruby grammar; attr_*/ActiveRecord macros are DSL CALLS (carried as contains members / uses), not applied decorators.",
         "measuredAbsence": "0 edges over the fixture corpus.",
         "vocabularyRuling": "extended value, NOT APPLICABLE to Ruby."
       },
       "renders": {
-        "requiredProductions": ["jsx_element", "jsx_self_closing_element", "jsx_opening_element"],
+        "requiredProductions": [
+          "jsx_element",
+          "jsx_self_closing_element",
+          "jsx_opening_element"
+        ],
         "productionsFound": [],
         "reason": "no JSX/element-construction production; ERB/HTML templates are other languages routed to their own analyzers.",
         "measuredAbsence": "0 edges over the fixture corpus.",
         "vocabularyRuling": "extended value (TSX/JSX), NOT APPLICABLE to Ruby."
       },
       "part_of": {
-        "requiredProductions": ["part_directive", "part_of_directive", "part_clause"],
+        "requiredProductions": [
+          "part_directive",
+          "part_of_directive",
+          "part_clause"
+        ],
         "productionsFound": [],
         "reason": "Ruby's file-inclusion construct is require/load, published as imports+references; there is no shared-scope part-file directive.",
         "measuredAbsence": "0 edges over the fixture corpus.",
         "vocabularyRuling": "extended value (Dart part/part of), NOT APPLICABLE to Ruby."
       }
+    },
+    "wholePopulation": {
+      "command": "export BB_CORPUS_ROOT=$PWD/.corpus && bun run script/m14/ruby-emission-census.ts --cap=0 --json",
+      "artifact": "validation/m14/fixtures/ruby/measurements/ruby-emission-census-whole.json",
+      "population": "989 parsed of 989 admitted .rb files \u00b7 15 repos \u00b7 0 parse failures \u00b7 191 tracked-but-absent + 0 over the 1 MB cap (excluded and counted)",
+      "measuredAt": "2026-10-19, post RUBY-D1 relabel",
+      "rows": {
+        "calls": 57319,
+        "contains": 10201,
+        "uses": 4760,
+        "instantiates": 3426,
+        "overrides": 3115,
+        "extends": 1895,
+        "exports": 1367,
+        "imports": 1304,
+        "references": 1304,
+        "mixes_in": 543
+      },
+      "files": {
+        "calls": 914,
+        "contains": 755,
+        "uses": 343,
+        "instantiates": 474,
+        "overrides": 394,
+        "extends": 470,
+        "exports": 817,
+        "imports": 545,
+        "references": 545,
+        "mixes_in": 291
+      },
+      "repos": {
+        "calls": 14,
+        "contains": 7,
+        "uses": 4,
+        "instantiates": 8,
+        "overrides": 5,
+        "extends": 5,
+        "exports": 12,
+        "imports": 10,
+        "references": 10,
+        "mixes_in": 4
+      },
+      "total": 85234,
+      "notApplicableZeros": {
+        "implements": 0,
+        "decorates": 0,
+        "renders": 0,
+        "part_of": 0
+      },
+      "sitePayload": {
+        "mixesInByRole": {
+          "include": 423,
+          "extend": 115,
+          "prepend": 5
+        },
+        "extendsSpelling": {
+          "direct": 1885,
+          "Class.new": 10
+        },
+        "importsByMethodResolution": {
+          "require/load-path": 806,
+          "require_relative/file-relative": 350,
+          "autoload/load-path": 146,
+          "load/load-path": 2
+        },
+        "exportsByKind": {
+          "module": 628,
+          "class": 441,
+          "function": 298
+        },
+        "overridesByTier": {
+          "guess/first-parent-guess": 3047,
+          "structural/0.95": 68
+        },
+        "instantiatesByResolvedTarget": {
+          "receiver": 3389,
+          "enclosing-class": 37
+        },
+        "callsPayload": {
+          "callNode": 55262,
+          "bareCall": 2057
+        },
+        "usesPayload": {
+          "memberRead": 4746,
+          "activerecordMacro": 14
+        },
+        "crossCheck": "imports 1304 == references 1304 exactly (the load-fact pair is published one-for-one)"
+      },
+      "movement": {
+        "note": "FRESH population + RUBY-D1 relabel, separated exactly, never smoothed",
+        "priorReading": "958 files / 14 repos / TOTAL 84,865 (ruby-completeness.json _from, 2026-10-14)",
+        "growthDelta": 369,
+        "growthByLabel": {
+          "calls": 366,
+          "imports": 1,
+          "references": 1,
+          "instantiates": 1
+        },
+        "relabelDelta": {
+          "implements": -428,
+          "extends": -115,
+          "mixes_in": 543,
+          "net": 0
+        },
+        "identity": "428 + 115 = 543 EXACTLY; 84,865 + 369 = 85,234"
+      }
+    },
+    "cap50Pair": {
+      "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 50",
+      "before": {
+        "TOTAL": 2671,
+        "resolved": 727,
+        "collRes": 96,
+        "ambDecl": 128,
+        "unresolved": 1732,
+        "causeOK": 84,
+        "implements": 17,
+        "extends": 48,
+        "mixes_in": 0
+      },
+      "afterRUBY_D1": {
+        "TOTAL": 2671,
+        "resolved": 727,
+        "collRes": 96,
+        "ambDecl": 128,
+        "unresolved": 1732,
+        "causeOK": 84,
+        "implements": 0,
+        "extends": 44,
+        "mixes_in": 21
+      },
+      "note": "TABLE 1 totals byte-identical; only the three relabelled values moved (implements 17->0, extends 48->44, mixes_in 0->21 = 17+4)",
+      "artifacts": [
+        "validation/m14/fixtures/ruby/gate-ruby-cap50-baseline.txt",
+        "validation/m14/fixtures/ruby/gate-ruby-cap50-after-relabel.txt"
+      ]
     }
   },
   "applicableSetClosure": {
@@ -194,12 +625,12 @@
     "whatItProves": "grammar enumeration (353 slots = 108 named + 176 anonymous), per-value construct presence/absence, fixture expectation rows read from the fixtures' own files, RED proof through the real fixture runner with one value removed per run, and NOT-APPLICABLE zero-emission measurement over the fixture corpus."
   },
   "rulings": {
-    "RUBY-D1": "include/prepend/extend are MODULE MIXIN COMPOSITION -> canonical mixes_in (source = composing class/module, target = mixin, metadata.mixinType = keyword). The family's previous adaptation (include/prepend -> implements, extend -> extends) was WRONG on both axes: implements is conformance (Ruby has none) and extend is not superclass inheritance (it composes into the singleton class). Relabel at unchanged sites, delta closure-measured: implements 17 -> 0, extends 48 -> 44, mixes_in 0 -> 21 (17 + 4), TABLE 1 totals byte-identical. Dart's §9.8 relabel is the precedent."
+    "RUBY-D1": "include/prepend/extend are MODULE MIXIN COMPOSITION -> canonical mixes_in (source = composing class/module, target = mixin, metadata.mixinType = keyword). The family's previous adaptation (include/prepend -> implements, extend -> extends) was WRONG on both axes: implements is conformance (Ruby has none) and extend is not superclass inheritance (it composes into the singleton class). Relabel at unchanged sites, delta closure-measured: implements 17 -> 0, extends 48 -> 44, mixes_in 0 -> 21 (17 + 4), TABLE 1 totals byte-identical. Dart's \u00a79.8 relabel is the precedent."
   },
   "related": {
     "docs": "docs/analyzers/real-ruby-analyzer.md (updated in the same pass: the ontology table's stale imports/exports/adaptation claims corrected)",
     "completeness": "script/m14/spec/ruby-completeness.json (136 grammar types classified; 120 handled / 12 silent / 0 gaps; 25 RULED decisions)",
     "fixtures": "validation/m14/fixtures/ruby/** (12 fixtures; the new mixes-in-modules pins RUBY-D1)",
-    "wholePopulation": "OWED — D2 census + D3 arm next"
+    "wholePopulation": "validation/m14/verification/RUBY-WHOLE-POPULATION-EMISSION.md (D2) \u00b7 validation/m14/verification/RUBY-RESOLUTION-CLASSIFICATION.md (D3)"
   }
 }
