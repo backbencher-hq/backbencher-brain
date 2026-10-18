@@ -691,3 +691,19 @@ outside the registry (`com.google.*`) are never claimed. Fixture `java/library-n
 pins dotted positives, bare positives, and both negatives; the undeclared-root-refutes polarity is the
 shared gate selfTest's control. Measured: fixtures 73/0, light cap-50 gate extFAIL 0 (extOK 1,422,
 ext? 2 on 5,713 edges); the whole-population movement is measured by the Lead's arm.
+
+### 2026-10-19c — CITATION EMISSION NARROWED AFTER THE OVER-CLAIM AUDIT (measured)
+
+The first citation emission was reproduced with ext? 2,446 → 0 and extOK +4,091, but it withdrew 468
+previously-RESOLVED rows. The lane's read-only decomposition instrument
+(`script/m14/java-citation-conversions.ts`) showed the gain decomposed EXACTLY as ext? 2,446 + amb 195
++ unresolved 982 + resolved 468, and that **87 of the 214 resolved-withdrawal candidate pairs are
+targets the project ITSELF declares at the cited FQN** — scala3's own `dotty.tools.xsbt.*`, androidx
+sources vendored inside flutter's repo. Those were TRUE project references, so the emission was
+narrowed fail-closed: a citation now requires `projectIndex.complete === true` AND the project not
+declaring the cited FQN (bare half also refuses file-declared names; no index ⇒ no citation). The
+Lead's narrowed arm measures **ext? 2,446 → 0 · extOK 507,159 → 510,787 (+3,628) · resolved 563,444 →
+563,309 (−135) · amb −70 · unresolved −977** (135+70+977+2,446 = 3,628 exactly): 333 of the 468
+withdrawals were restored, the remaining 135 are the correct readings of the 127 external-citation
+pairs (JLS 6.5.5.1). Fixtures: flat fail-closed pin + new sub-directory `java/citation-project`
+(positive citations against a real project index + a file-shadowing negative), 75/0.
