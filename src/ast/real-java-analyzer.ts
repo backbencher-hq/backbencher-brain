@@ -586,6 +586,19 @@ type JavaReceiverTypeIndex = {
   staticImportPaths: Map<string, string>
 }
 
+/**
+ * LIBRARY-NAMESPACE CITATIONS — the analyzer's copy of the Lead-owned vocabulary
+ * `java-platform-libraries` (`script/m14/citations.ts`), and the rule that makes it safe:
+ * THE DECLARED LIST MUST BE A SUBSET OF THE REGISTRY. The arbiter's `namespace` claim
+ * (`metadata.languageNamespace`) verifies a target whose LEADING SEGMENTS match a declared
+ * root, counts it in `extOK` with `verifiedBy: "namespace"` and NEVER in `resolved`, and
+ * REFUTES a root that is not declared — so inventing a root here would be a false claim the
+ * gate must catch. These roots are library/platform namespaces the corpus population cannot
+ * own: `jakarta` (Jakarta EE), `androidx` (AndroidX), `org.yaml` (SnakeYAML),
+ * `dotty.tools` (Scala 3 compiler). Registry id: java-platform-libraries.
+ */
+const JAVA_LIBRARY_NAMESPACE_CITATIONS: readonly string[] = ["jakarta", "androidx", "dotty.tools", "org.yaml"]
+
 export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -2563,6 +2576,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // differential and the key space — and it is the seam a cross-file resolver needs
     // to bind the row instead of leaving it ambiguous.
     this.attachJavaImportedFrom(relationships, receiverTypes, symbols)
+    // LIBRARY-NAMESPACE CITATIONS (Lead ruling 2026-10-19, vocabulary java-platform-libraries):
+    // a target whose leading segments name a registry root is claimed through the arbiter's
+    // existing `namespace` channel — a CITATION, never a resolution. Subset-only: the list above
+    // is copied from `script/m14/citations.ts` and an undeclared root REFUTES.
+    this.attachJavaLibraryNamespaceCitations(relationships, receiverTypes)
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
@@ -3508,6 +3526,56 @@ currentPackage,
     }
     visit(node)
     return out
+  }
+
+  /**
+   * LIBRARY-NAMESPACE CITATIONS — attach the arbiter's `languageNamespace` claim to targets whose
+   * LEADING SEGMENTS name a root in the Lead-owned registry `java-platform-libraries`.
+   *
+   * WHAT IT MOVES AND WHAT IT CANNOT. The arbiter's namespace claim is a CITATION: a target whose
+   * leading segments equal a declared root is `externalVerified` (`verifiedBy: "namespace"`), is
+   * counted in `extOK`, and is NEVER folded into `resolved`. It is refutable by construction (a
+   * root not in the declared list REFUTES), which is why the declared list is the registry's
+   * subset and nothing else. A BARE target (a type name with no dots) can never match a prefix
+   * segment and is therefore NOT claimed here — those rows need the imported-binding claim kind
+   * (Lead task-19), which is why the depth wave leaves them as a sized residual.
+   *
+   * Measured before this: the depth residual `ext?` 2,446 carried 1,160 non-reserved dotted rows
+   * (jakarta 1,114 · androidx.media3 10 · org.yaml 4 · dotty.tools 2) whose roots are exactly this
+   * registry entry. Nothing is claimed for roots outside it.
+   */
+  private attachJavaLibraryNamespaceCitations(
+    relationships: ASTEngine.UniversalRelationship[],
+    index: JavaReceiverTypeIndex,
+  ): void {
+    // Longest root first so `org.yaml` cannot be shadowed by a shorter registry entry.
+    const roots = [...JAVA_LIBRARY_NAMESPACE_CITATIONS].sort((a, b) => b.length - a.length)
+    for (const r of relationships) {
+      const md = r.metadata as Record<string, unknown> | undefined
+      if (!md || typeof md !== "object") continue
+      if (md.languageNamespace !== undefined) continue
+      const target = String(r.target ?? "")
+      if (target.length === 0) continue
+      for (const root of roots) {
+        if (target !== root && !target.startsWith(`${root}.`)) continue
+        md.languageNamespace = [root]
+        break
+      }
+      if (md.languageNamespace !== undefined) continue
+      // THE BARE-SYMBOL HALF. A bare type name has no leading segments, so a
+      // DOTTED-PREFIX root can never match it; the file's own SINGLE-TYPE IMPORT is the
+      // evidence that the name comes from a cited library namespace (the same evidence the
+      // JVM-root paired-import claim uses). The declared root is then the TARGET ITSELF —
+      // `namespaceMatchOf`'s bare-symbol form — which is why the import's root must be in
+      // the registry: without that check this would certify any imported name whatsoever.
+      const importedPath = index.importSinglePaths.get(target)
+      if (!importedPath) continue
+      for (const root of roots) {
+        if (!importedPath.startsWith(`${root}.`)) continue
+        md.languageNamespace = [target]
+        break
+      }
+    }
   }
 
   /**
@@ -5416,6 +5484,7 @@ currentPackage,
     // of being excused by a per-file marker. The cost is measured, not hidden: 225 verified claims
     // and 29 refuted ones move from the claim columns to unresolved, and `extFAIL` gains 0.
     const JVM_ROOTS = ["java.", "javax.", "jakarta.", "jdk.", "sun.", "com.sun."]
+
     const isJvmModule = (name: string): boolean => JVM_ROOTS.some((r) => name.startsWith(r))
 
     const declared = new Set<string>()

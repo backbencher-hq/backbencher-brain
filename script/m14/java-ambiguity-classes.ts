@@ -48,6 +48,9 @@ type FileFacts = {
   singleImports: Map<string, string> // leaf -> module path as written
   staticImportLeaves: Set<string>
   staticOnDemand: boolean
+  /** name -> the type AS WRITTEN for every binding the file declares (fields, params, locals,
+   *  catch/for variables). Used only by `--shapes` to price a receiver's owner evidence. */
+  bindings: Map<string, string>
 }
 type EdgeRow = { label: string; outcome: string; target: string; file: string; line: number; claimKind: string }
 
@@ -82,6 +85,7 @@ function collectFacts(absPath: string): FileFacts | null {
   const facts: FileFacts = {
     typeNames: new Set(), methodNames: new Set(), fieldNames: new Set(),
     singleImports: new Map(), staticImportLeaves: new Set(), staticOnDemand: false,
+    bindings: new Map(),
   }
   const nameOf = (n: any): string => (n?.childForFieldName?.("name")?.text ?? "") as string
   const walk = (n: any): void => {
@@ -93,11 +97,31 @@ function collectFacts(absPath: string): FileFacts | null {
       const nm = nameOf(n)
       if (nm) facts.methodNames.add(nm)
     } else if (n.type === "field_declaration" || n.type === "constant_declaration") {
+      const typeNode = n.childForFieldName("type")
+      const typeText = typeNode?.type === "array_type" ? (typeNode.namedChild(0)?.text ?? "") : (typeNode?.text ?? "")
       for (let i = 0; i < n.namedChildCount; i++) {
         const d = n.namedChild(i)
         if (d && d.type === "variable_declarator") {
           const nm = nameOf(d)
-          if (nm) facts.fieldNames.add(nm)
+          if (nm) {
+            facts.fieldNames.add(nm)
+            if (typeText) facts.bindings.set(nm, typeText)
+          }
+        }
+      }
+    } else if (n.type === "formal_parameter" || n.type === "spread_parameter" || n.type === "catch_formal_parameter" || n.type === "resource" || n.type === "enhanced_for_statement") {
+      const nameNode = n.childForFieldName("name") ?? (() => { for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c?.type === "identifier") return c } return null })()
+      const typeNode = n.childForFieldName("type") ?? (() => { for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c?.type === "type_identifier" || c?.type === "generic_type" || c?.type === "scoped_type_identifier") return c } return null })()
+      if (nameNode && typeNode) facts.bindings.set(nameNode.text, typeNode.text)
+    } else if (n.type === "local_variable_declaration") {
+      const typeNode = n.childForFieldName("type")
+      const typeText = typeNode?.text ?? ""
+      if (typeText) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const d = n.namedChild(i)
+          if (!d || d.type !== "variable_declarator") continue
+          const nm = nameOf(d)
+          if (nm) facts.bindings.set(nm, typeText)
         }
       }
     } else if (n.type === "enum_constant") {
@@ -183,8 +207,92 @@ const out = [...counts.entries()].map(([key, bucket]) => {
   return sum(b) - sum(a)
 })
 
+// ── RECEIVER-SHAPE PRICING (`--shapes`) ─────────────────────────────────────────────────────
+// For calls/uses rows the classifier above only says whether a NAME is declared/imported. This
+// second pass re-parses the edge's file and reads the RECEIVER EXPRESSION the row was written
+// with, which is what the owner channel needs and what the depth wave's guard prices: it tells
+//  - shapes that SHOULD already carry an owner under the current emission (a miss is a lane bug),
+//  - receivers whose type is an EXTERNAL/imported type (owner known but unresolvable here: the
+//    classpath-member-model instrument gap), and
+//  - receivers whose type the file never states (chained calls, unknown bindings: undecidable
+//    until signatures exist).
+let shapeReport: Record<string, number> | null = null
+if (argv.includes("--shapes")) {
+  const treeCache = new Map<string, any>()
+  const parseTree = (f: string): any => {
+    const hit = treeCache.get(f)
+    if (hit) return hit
+    let tree: any = null
+    try { tree = parser.parse(readFileSync(f, "utf8")) } catch { tree = null }
+    treeCache.set(f, tree)
+    return tree
+  }
+  const shapes = new Map<string, number>()
+  const bumpShape = (k: string) => shapes.set(k, (shapes.get(k) ?? 0) + 1)
+  const unwrap = (n: any): any => {
+    let expr = n
+    for (let g = 0; g < 8 && expr && expr.type === "parenthesized_expression"; g++) expr = expr.namedChild(0)
+    return expr
+  }
+  const bindingKind = (facts: FileFacts, name: string): string => {
+    const written = facts.bindings.get(name)
+    if (!written) return "unknown-binding"
+    const base = written.replace(/<.*$/, "").replace(/\[\]/g, "").replace(/^.*\./, "")
+    if (facts.typeNames.has(base)) return "project-binding"
+    const importedPath = facts.singleImports.get(base)
+    if (importedPath) return importedPath.startsWith("java.") || importedPath.startsWith("javax.") || importedPath.startsWith("jdk.") || importedPath.startsWith("sun.") || importedPath.startsWith("com.sun.") || importedPath.startsWith("jakarta.") ? "external-binding" : "imported-project-binding"
+    return "other-binding"
+  }
+  for (const row of rows) {
+    if (row.label !== "calls" && row.label !== "uses") continue
+    if (row.outcome !== "ambDeclOnly" && row.outcome !== "ambBoth" && row.outcome !== "unresolved") continue
+    const tree = parseTree(row.file)
+    const facts = fileFactsCache.get(row.file)
+    if (!tree || !facts) { bumpShape("unparsed"); continue }
+    const wantCall = row.label === "calls"
+    const wanted = wantCall ? "method_invocation" : "field_access"
+    let found: any = null
+    const walk = (n: any): void => {
+      if (!n || found) return
+      if (n.type === wanted && n.startPosition.row + 1 === row.line) {
+        const nameNode = wantCall ? n.childForFieldName("name") : n.childForFieldName("field")
+        if (nameNode && nameNode.text === row.target) { found = n; return }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) walk(n.namedChild(i))
+    }
+    walk(tree.rootNode)
+    if (!found) { bumpShape("not-located"); continue }
+    const objectNode = unwrap(found.childForFieldName("object"))
+    if (!objectNode) {
+      // a call with no receiver: implicit this (uses always have an object expression)
+      bumpShape(wantCall ? "implicit-this" : "no-object")
+      continue
+    }
+    const ot = objectNode.type
+    if (ot === "this") { bumpShape("this"); continue }
+    if (ot === "super") { bumpShape("super"); continue }
+    if (ot === "identifier") {
+      bumpShape(`identifier:${bindingKind(facts, objectNode.text)}`)
+      continue
+    }
+    if (ot === "field_access") {
+      const parts = objectNode.text.split(".")
+      if (parts.length === 2 && parts[0] === "this") { bumpShape("this-field"); continue }
+      if (parts.length === 2 && facts.typeNames.has(parts[0])) { bumpShape("type-qualified"); continue }
+      bumpShape("field-access-other")
+      continue
+    }
+    if (ot === "method_invocation") { bumpShape("chained-method-call"); continue }
+    if (ot === "object_creation_expression") { bumpShape("new-expression(SHOULD-BE-RESOLVED)"); continue }
+    if (ot === "cast_expression") { bumpShape("cast-expression(SHOULD-BE-RESOLVED)"); continue }
+    if (ot === "array_access") { bumpShape("array-element(SHOULD-BE-RESOLVED)"); continue }
+    bumpShape(`other:${ot}`)
+  }
+  shapeReport = Object.fromEntries([...shapes.entries()].sort((a, b) => b[1] - a[1]))
+}
+
 if (asJson) {
-  console.log(JSON.stringify({ dump: dumpPath, rows: rows.length, fileFacts: fileFactsCache.size, skippedFiles: skippedFontFiles, groups: out }, null, 2))
+  console.log(JSON.stringify({ dump: dumpPath, rows: rows.length, fileFacts: fileFactsCache.size, skippedFiles: skippedFontFiles, groups: out, ...(shapeReport ? { shapes: shapeReport } : {}) }, null, 2))
 } else {
   console.log(`dump: ${dumpPath}`)
   console.log(`non-resolved rows: ${rows.length} · files parsed: ${fileFactsCache.size} · files unreadable: ${skippedFontFiles}`)
