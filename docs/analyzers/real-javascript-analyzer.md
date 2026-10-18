@@ -74,6 +74,7 @@ that carries one is counted in the `extOK` column BESIDE `resolved`, never insid
 | host-global, bare | `setTimeout(...)`, `JSON` read, `extends Error`, `x instanceof Date` | `isExternalTarget: true`, `externalReason` ∈ {host-global-bare, host-global-base, host-global-type}, `externalClaimReason` (the citation) | dotless target looked up in the project's key space; a project that declares the name is a different answer and the claim is inert |
 | host-global, member | `document.getElementById`, `window.addEventListener`, `location.hash.substring`, `document.body.dataset.theme` segments | same + `externalReceiver` = the receiver chain ROOT | the receiver root is on the closed cited list; a LOCAL receiver gets NO claim (`x.substring` may be a project object) |
 | module-namespace, imports | a non-relative `imports` specifier (`qunit:test`, `@glimmer/component:Component`) | `isExternalTarget: true`, `externalReason: "module-namespace"`, `externalSpecifier` = the module | module ROOT against the project's own file/directory names, and only when `context.projectIndex.complete === true`; FAILS CLOSED (no claim) otherwise |
+| runtime/test-runner, bare | `process`, `Buffer` (node-runtime-global); `describe`, `it`, `test`, `expect`, `beforeEach`, `jest`, `vi`, `QUnit`, … (test-runner-global) | `isExternalTarget: true`, `externalReason` ∈ {node-runtime-global, test-runner-global}, `externalClaimReason` (the official citation) | BARE names only, from the SECOND closed cited table `src/ast/js-runtime-globals.ts` (Node.js API + Jest/Vitest/Mocha/QUnit API pages, one entry per name); a FILE-bound or FILE-declared name is never claimed, and a MEMBER of these globals is never claimed from this table (its leaf may be a real project member). Measured cap-50: +122 verified claims (calls 109 test-runner, uses 4 test-runner + 9 node), ext? 0, extFAIL 0 |
 
 The vocabulary behind the first two is `src/ast/js-builtin-prototypes.ts` — the 57 cited
 `HOST_GLOBALS` (ECMA-262 §19–§26, WHATWG HTML §7.3) plus `memberChainClaim` — the same module the
@@ -84,11 +85,13 @@ names created by Jest mocks of real packages (`__mocks__/fs-extra.js`), so the c
 project could not reach. It is now index-gated (python twin's `applyProjectIndexFacts` precedent).
 
 **Deliberately NOT claimed, with their cap-50 triage counts** (they are the open classes in
-`validation/m14/verification/JAVASCRIPT-RESOLUTION-CLASSIFICATION.md`): test-runner globals
-(`it`/`describe`/`test`/`expect`/`assert`, 494 edges — no cited table exists yet and a heuristic
-would be the closed-list lie), Node runtime globals (`process`/`Buffer`/`module`/`require`), and
-imported bindings (`steps()`, `extends Component`, decorator names — the binding is a name in THIS
-file whose declaration is in another module; that needs the import seam, not a claim).
+`validation/m14/verification/JAVASCRIPT-RESOLUTION-CLASSIFICATION.md`): MEMBERS of the runtime and
+test-runner globals (`jest.fn`, `process.argv.slice`, `expect(x).toBe` — the leaf may be a genuine
+project member, so only the bare ROOT is claimed), imported bindings (`steps()`, `extends
+Component`, decorator names — the binding is a name in THIS file whose declaration is in another
+module; that needs the import seam, not a claim), and `assert`/`should`/`sinon`, which are NOT
+documented globals of the cited runners (assert is a QUnit callback parameter or an imported
+binding) and therefore have no entry in the closed list.
 
 ---
 
