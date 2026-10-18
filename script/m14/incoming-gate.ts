@@ -1248,8 +1248,14 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
           if (!byFile) importEvidence.set(repo, (byFile = new Map()))
           let bySpec = byFile.get(f)
           if (!bySpec) byFile.set(f, (bySpec = new Map()))
-          let bindSet = bySpec.get(tgt)
-          if (!bindSet) bySpec.set(tgt, (bindSet = new Set()))
+          // THE SPECIFIER KEY IS THE MODULE, NOT THE EDGE'S target: an imports edge spells its
+          // target `module:item` (`@glimmer/component:Component`), while the use-edge claim carries
+          // the specifier as written (`@glimmer/component`). Keying by the target made every claim
+          // refute (measured 389/1,299 on a cap-50 smoke). `metadata.module` is the analyzer's own
+          // specifier field; fall back to the target only when it is absent.
+          const specKey = typeof relMdEarly?.module === "string" && relMdEarly.module.length > 0 ? relMdEarly.module : tgt
+          let bindSet = bySpec.get(specKey)
+          if (!bindSet) bySpec.set(specKey, (bindSet = new Set()))
           for (const nm of names) if (typeof nm === "string" && nm.length > 0) bindSet.add(nm)
         }
       }
