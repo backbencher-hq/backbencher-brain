@@ -64,6 +64,15 @@ const ROOT = process.env.BB_M60_ROOT
   : path.resolve((import.meta as any).dirname ?? path.dirname(process.argv[1] ?? "."), "..", "..")
 
 const ENGINE = path.join(ROOT, "src", "ast", "engine.ts")
+/**
+ * THE AUTHORITATIVE ENUM SOURCE. Until 2026-10-18 this gate parsed `export enum RelationshipType`
+ * out of engine.ts — and since the 2026-10-17 CONSOLIDATION engine.ts only re-exports it
+ * (`export const RelationshipType = AuthoritativeRelationshipType`), so the `indexOf` found nothing
+ * and the arbiter has been reading a STALE enum basis ever since. Found by the ontology census
+ * reading this file; fixed to read the definition itself. A gate that reads the wrong file is a
+ * gate with a stale basis and its checks cannot be trusted even when they are green.
+ */
+const TYPES = path.join(ROOT, "src", "ast", "types.ts")
 /** `differential.ts` is the shared, contended audited-label allowlist, and
  *  `BB_DIFFERENTIAL` exists for the same reason `BB_RB_ORACLE` exists on the
  *  corpus census: to point a lane's gate at a MIRRORED copy when the shared file
@@ -79,8 +88,15 @@ const ANALYZER_DIR = path.join(ROOT, "src", "ast")
 const BASELINE = path.join(ROOT, "validation", "m60", "rel-type-coverage-baseline.json")
 const RESULTS = path.join(ROOT, "validation", "m60", "results")
 
-/** Enum member -> its string value. Mirrors `ASTEngine.RelationshipType`, whose
- * aliases all collapse onto the ten values below. */
+/** Enum member -> its string value, for the member names an ANALYZER source can write as
+ *  `RelationshipType.X`. Kept as a name->value map because the analyzer text names MEMBERS and the
+ *  checks compare VALUES; it must be updated whenever the enum gains a member (the enum itself is
+ *  read from source by `readEnumValues`, so a missing row here shows up as an analyzer emission the
+ *  gate cannot see — the exact silence this gate exists to prevent).
+ *
+ *  UPDATED 2026-10-18 with the extended vocabulary: `Decorates`/`Renders`/`MixesIn` were absent, and
+ *  `PartOf` was still mapped to `contains` — both false now (`PartOf` is `part_of`; the ten-value
+ *  alias was removed). Found by the ontology census reading this file, not by a failing check. */
 const MEMBER_TO_VALUE: Record<string, string> = {
   Calls: "calls", Call: "calls",
   Extends: "extends", Inheritance: "extends",
@@ -88,9 +104,13 @@ const MEMBER_TO_VALUE: Record<string, string> = {
   Uses: "uses", Dependency: "uses",
   Imports: "imports", Exports: "exports",
   Contains: "contains", Composition: "contains", Provides: "exports",
-  PartOf: "contains", Related: "references", DependsOn: "references",
   References: "references", Override: "overrides", Overrides: "overrides",
   Instantiates: "instantiates",
+  // extended canonical members (2026-10-18)
+  Decorates: "decorates", Renders: "renders", MixesIn: "mixes_in", PartOf: "part_of",
+  // legacy spelling still accepted on READ (an analyzer that has not migrated): the old alias meant
+  // containment. Deliberately NOT `part_of`: that spelling now has a canonical member of its own.
+  Related: "references", DependsOn: "references",
 }
 
 interface Lane {
@@ -108,11 +128,29 @@ interface Finding {
  * 1. The enum, read from source.
  * ------------------------------------------------------------------ */
 function readEnumValues(): string[] {
-  const src = fs.readFileSync(ENGINE, "utf8")
-  const body = src.slice(src.indexOf("export enum RelationshipType"))
-  const end = body.indexOf("\n  }")
+  const src = fs.readFileSync(TYPES, "utf8")
+  const at = src.indexOf("export enum RelationshipType")
+  if (at < 0) {
+    // THE BASIS MUST BE FOUND OR THE GATE MUST REFUSE. Returning an empty list here would make
+    // every check below vacuously pass — a green run measuring nothing, which this programme has
+    // already paid for more than once.
+    throw new Error(`could not find the authoritative \`export enum RelationshipType\` in ${path.relative(ROOT, TYPES)} — the enum basis moved and this gate must be repaired, not run`)
+  }
+  const body = src.slice(at)
+  const end = body.indexOf("\n}")
+  if (end < 0) throw new Error("RelationshipType enum has no closing brace — refusing to read a partial enum")
   const values = new Set<string>()
-  for (const m of body.slice(0, end).matchAll(/=\s*"([^"]+)"/g)) values.add(m[1])
+  // COMMENTS ARE NOT MEMBERS. The enum body carries prose about the old spellings — including a
+  // literal `Imports = "brain_import"` inside a comment — and a regex over the raw slice read that as
+  // a value and reported a fabricated member ("a value can be neither used nor accounted for").
+  // Only member lines are considered: enum members live on lines whose first non-space text is an
+  // identifier followed by `=`.
+  for (const line of body.slice(0, end).split("\n")) {
+    const trimmed = line.trimStart()
+    if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) continue
+    const m = trimmed.match(/^([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*"([^"]+)"/)
+    if (m) values.add(m[2])
+  }
   return [...values].sort()
 }
 
@@ -488,7 +526,10 @@ export function selfTest(): { passed: number; failures: string[]; skipped: Array
 
   // 6. ENUM: a fabricated enum value with no constructor must be reported.
   const realEnum = readEnumValues()
-  check("the enum parse found the known values", realEnum.includes("calls") && realEnum.includes("contains") && realEnum.length === 10)
+  check("the enum parse found the known values",
+    realEnum.includes("calls") && realEnum.includes("contains") &&
+    realEnum.includes("decorates") && realEnum.includes("renders") &&
+    realEnum.includes("mixes_in") && realEnum.includes("part_of") && realEnum.length === 14)
 
   // 7. the extraction must not silently return empty — the failure mode that
   //    made a census report a clean 0 for four rounds.
