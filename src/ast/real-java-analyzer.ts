@@ -2580,7 +2580,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // a target whose leading segments name a registry root is claimed through the arbiter's
     // existing `namespace` channel — a CITATION, never a resolution. Subset-only: the list above
     // is copied from `script/m14/citations.ts` and an undeclared root REFUTES.
-    this.attachJavaLibraryNamespaceCitations(relationships, receiverTypes)
+    this.attachJavaLibraryNamespaceCitations(relationships, symbols, receiverTypes, context?.projectIndex)
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
@@ -3546,8 +3546,22 @@ currentPackage,
    */
   private attachJavaLibraryNamespaceCitations(
     relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
     index: JavaReceiverTypeIndex,
+    projectIndex: ProjectIndex | undefined,
   ): void {
+    // A CITATION NEEDS A PROJECT KEY SPACE. Without a COMPLETE index the analyzer cannot know
+    // whether the project itself owns the target — and the Lead's reproduction measured what
+    // happens when it claims anyway: 468 previously-RESOLVED rows were withdrawn, most of them
+    // TRUE project references (scala3's own `dotty.tools.xsbt.*` classes, the androidx sources
+    // vendored inside flutter's repo). The arbiter's namespace claim is the SOLE authority for
+    // its rows, so an over-claim is an extOK row in place of a resolution — a fabrication in the
+    // direction the campaign refuses. Fail-closed: no complete index, no citation.
+    if (projectIndex?.complete !== true) return
+    const projectOwnsQualified = (qualified: string): boolean =>
+      projectIndex.typeKinds.has(qualified) || projectIndex.symbolNames.has(qualified)
+    const fileDeclared = new Set<string>()
+    for (const s of symbols) if (s && s.name) fileDeclared.add(s.name)
     // Longest root first so `org.yaml` cannot be shadowed by a shorter registry entry.
     const roots = [...JAVA_LIBRARY_NAMESPACE_CITATIONS].sort((a, b) => b.length - a.length)
     for (const r of relationships) {
@@ -3558,6 +3572,10 @@ currentPackage,
       if (target.length === 0) continue
       for (const root of roots) {
         if (target !== root && !target.startsWith(`${root}.`)) continue
+        // THE PROJECT'S OWN KEY SPACE WINS. `dotty.tools.dotc.reporting.Diagnostic` is a
+        // REGISTRY-rooted path AND scala3's own class in that repo; the citation must not
+        // launder a project reference into extOK.
+        if (projectOwnsQualified(target)) return
         md.languageNamespace = [root]
         break
       }
@@ -3568,10 +3586,12 @@ currentPackage,
       // JVM-root paired-import claim uses). The declared root is then the TARGET ITSELF —
       // `namespaceMatchOf`'s bare-symbol form — which is why the import's root must be in
       // the registry: without that check this would certify any imported name whatsoever.
+      if (fileDeclared.has(target)) continue
       const importedPath = index.importSinglePaths.get(target)
       if (!importedPath) continue
       for (const root of roots) {
         if (!importedPath.startsWith(`${root}.`)) continue
+        if (projectOwnsQualified(importedPath)) return
         md.languageNamespace = [target]
         break
       }
