@@ -185,9 +185,9 @@ for (const abs of files) {
       add(perMarker, marker, rel)
       add(markerByType, markerOnType(type, marker), rel)
     }
-    if (type === "calls" && typeof md.owner === "string" && md.owner.length > 0) {
+    if ((type === "calls" || type === "uses") && typeof md.owner === "string" && md.owner.length > 0) {
       const ev = typeof md.ownerEvidence === "string" ? md.ownerEvidence : "(unlabelled)"
-      add(ownerEvidence, ev, rel)
+      add(ownerEvidence, `${type}:${ev}`, rel)
     }
     for (const bkey of BOOLEAN_MARKER_KEYS) {
       if (md[bkey] === true) add(booleanMarkers, bkey, rel)
@@ -296,9 +296,11 @@ if (JSON_OUT) {
   console.log("  (counts of what the ANALYZER stated; resolution through the owner channel is")
   console.log("   src/ast/member-owner-resolution.ts's decision and is NOT claimed here)")
   console.log("-".repeat(72))
-  for (const ev of ["field", "param", "local", "return", "(unlabelled)"]) {
-    const hit = ownerEvidence.get(ev)
-    if (hit) console.log(`  ${w(ev, 12)} ${w(hit.edges, 8)} edge(s) in ${hit.files.size} file(s)`)
+  for (const relType of ["calls", "uses"]) {
+    for (const ev of ["field", "param", "local", "return", "(unlabelled)"]) {
+      const hit = ownerEvidence.get(`${relType}:${ev}`)
+      if (hit) console.log(`  ${w(relType, 5)} ${w(ev, 12)} ${w(hit.edges, 8)} edge(s) in ${hit.files.size} file(s)`)
+    }
   }
   console.log()
   console.log("ANNOTATION EDGES BY ANNOTATED DECLARATION KIND")

@@ -2463,7 +2463,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // Add Uses relationships for field accesses (this.name, obj.method)
-    this.collectFieldAccessUses(rootNode, relationships, symbols)
+    this.collectFieldAccessUses(rootNode, relationships, symbols, receiverTypes)
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
@@ -3418,6 +3418,7 @@ currentPackage,
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
+    receiverTypes: JavaReceiverTypeIndex,
   ) {
     // Walk with an enclosing-type scope so `this`/`super` receivers resolve to
     // the containing class/interface/enum instead of the literal keyword, and
@@ -3529,6 +3530,19 @@ currentPackage,
           const key = `${source}.${parts[parts.length - 1]}`
           if (!isWrite && !seen.has(key)) {
             seen.add(key)
+            // RECEIVER TYPING ON READS (the same store channel as calls — see the
+            // JavaReceiverTypeIndex contract above the class). A read's TARGET is
+            // the member leaf, so for `config.timeout` the edge says `read ->
+            // timeout` and nothing names the type that declares it; `metadata.owner`
+            // is the channel production already resolves member rows through
+            // (member-owner-resolution.ts), and `ownerEvidence` prices which
+            // declaration proved it. Only receiver-VARIABLE shapes resolve here
+            // (field/param/local/return evidence); `this.x` / `super.x` /
+            // class-qualified reads stay owner-less on purpose, because their
+            // receiver is not one of the four declaration classes the contract
+            // names — a wrong owner is worse than none (the store withdraws the
+            // name binding then declines).
+            const readReceiver = this.javaReceiverOwnerType(node, receiverTypes)
             relationships.push({
               source,
               target: parts[parts.length - 1],
@@ -3538,7 +3552,10 @@ currentPackage,
               // `field` node, not the field_access (which starts at its
               // receiver, the same defect class as the call site).
               ...this.lineField(node.childForFieldName("field"), node),
-              metadata: { isFieldAccess: true },
+              metadata: {
+                isFieldAccess: true,
+                ...(readReceiver ? { owner: readReceiver.type, ownerEvidence: readReceiver.evidence } : {}),
+              },
             })
           }
         }
