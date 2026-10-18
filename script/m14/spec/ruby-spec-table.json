@@ -48,7 +48,7 @@
     "part_of"
   ],
   "evidence_rows": {
-    "_reading_as_of": "2026-10-19 phase-2 wave: whole-population census + D3 arm measured; cap-50 pair BEFORE/AFTER the RUBY-D1 relabel. D3 clause 3 is OPEN on a stale cause-rulings file (candidate prepared, Lead-owned path) \u2014 see RUBY-RESOLUTION-CLASSIFICATION.md \u00a75.",
+    "_reading_as_of": "2026-10-19 phase-2 wave: whole-population census + D3 arm measured; clause 3 CLOSED by refreshing the stale cause-rulings population fingerprint (73 -> 105 rulings over parsed=989/989 admitted=989; the cause classification is unchanged). cap-50 pair BEFORE/AFTER the RUBY-D1 relabel.",
     "cap50Command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 50",
     "cap50Population": {
       "sampled": 50,
@@ -607,6 +607,25 @@
         "validation/m14/fixtures/ruby/gate-ruby-cap50-baseline.txt",
         "validation/m14/fixtures/ruby/gate-ruby-cap50-after-relabel.txt"
       ]
+    },
+    "d3": {
+      "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0 (and the --dump + classifier arm)",
+      "TABLE1": {
+        "TOTAL": 85234,
+        "resolved": 24328,
+        "collRes": 5728,
+        "ambDecl": 24310,
+        "ambKind": 12211,
+        "unresolved": 33653,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 2943
+      },
+      "closure": "24,328 + 24,310 + 33,653 + 2,943 = 85,234 EXACT",
+      "clauses": "1 FAIL (named walls, permitted) \u00b7 2 ok \u00b7 3 ok (after fingerprint refresh) \u00b7 4 ok",
+      "indexArm": "NOT MEASURED, declared: Ruby has no project index in production (no projectIndex wiring, no PROJECT_INDEX_EXTENSIONS entry for .rb) \u2014 same situation as c/cpp",
+      "artifact": "validation/m14/verification/RUBY-RESOLUTION-CLASSIFICATION.md"
     }
   },
   "applicableSetClosure": {
