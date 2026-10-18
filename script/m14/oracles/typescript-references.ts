@@ -384,11 +384,22 @@ export function declaredNames(root: any): Set<string> {
   const out = new Set<string>()
   const visit = (n: any): void => {
     if (!n) return
-    if (DECLARERS.has(n.type)) {
-      if (n.type !== "variable_declarator" || !insideFunctionBody(n)) {
-        const nm = field(n, "name")
-        if (nm && isIdentifierText(nm)) out.add(nm)
+    if (n.type === "variable_declarator") {
+      // A MODULE-SCOPE DECLARATOR'S NAME CAN BE A PATTERN. `const { a, b } = x` at module scope
+      // declares a and b (the analyzer publishes symbols for them and name-resolved references to
+      // them), but the old check read the RAW name text (`{ a, b }`) and dropped it — so those
+      // analyzer references were UNEXPLAINED (the differential classified the class:
+      // `compileCode -> lastSuccessfulCode`-adjacent destructured names, 196 rows over two draws).
+      if (!insideFunctionBody(n)) {
+        const nm = n.childForFieldName?.("name") ?? n.namedChild(0)
+        if (nm) {
+          if (isIdentifierText(nm.text)) out.add(nm.text)
+          else for (const b of patternNames(nm)) out.add(b)
+        }
       }
+    } else if (DECLARERS.has(n.type)) {
+      const nm = field(n, "name")
+      if (nm && isIdentifierText(nm)) out.add(nm)
     }
     for (const c of named(n)) visit(c)
   }
