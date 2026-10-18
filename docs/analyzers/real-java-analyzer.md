@@ -676,3 +676,18 @@ resolution". This lane's depth wave added, on the SAME owner channel and with NO
   563,444 (+45,654) · amb 300,696 → 250,561 · unresolved 150,560 → 155,041 (+4,481 net cost, stated) ·
   extOK 473,324 → 507,159 (Lead's ext? refiner fix) · extFAIL/bindFAIL/causeFAIL 0 · arbitraryTwin
   751,102 unchanged · verified-class 67.06% → 72.40%.
+
+### 2026-10-19b — LIBRARY-NAMESPACE CITATIONS (Lead ruling, vocabulary `java-platform-libraries`)
+
+The arbiter's `namespace` claim (`metadata.languageNamespace`) is a CITATION: a target whose leading
+segments match a declared root verifies (extOK, `verifiedBy: "namespace"`), never folds into
+`resolved`, and REFUTES an undeclared root — so the analyzer declares only a SUBSET of the Lead-owned
+registry `script/m14/citations.ts` (`jakarta`, `androidx`, `org.yaml`, `dotty.tools`), copied with the
+registry id. Two forms: **dotted prefix** for module/type paths (`jakarta.persistence.Entity` →
+`["jakarta"]`), and **bare symbol** for a bare type name whose SINGLE-TYPE import path is under a
+registry root (declared root = the target itself, namespaceMatchOf's bare-symbol form). A WILDCARD
+import licenses no bare citation (the file cannot state which library type it brings in), and roots
+outside the registry (`com.google.*`) are never claimed. Fixture `java/library-namespace-citations`
+pins dotted positives, bare positives, and both negatives; the undeclared-root-refutes polarity is the
+shared gate selfTest's control. Measured: fixtures 73/0, light cap-50 gate extFAIL 0 (extOK 1,422,
+ext? 2 on 5,713 edges); the whole-population movement is measured by the Lead's arm.
