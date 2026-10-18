@@ -118,6 +118,25 @@ import { BINDING_SEP } from "../../src/ast/types"
 // on their first run — see `script/m14/empty-result-kind.ts`. The classification is imported, never
 // re-implemented, so the instrument and its control cannot disagree about what "empty" means.
 import { classifyEmptyResults } from "./empty-result-kind"
+
+// ============================================================
+// PER-EDGE DUMP (`--dump`)
+//
+// This gate classifies EVERY edge (classifyEdge) and then prints only per-type
+// aggregate columns. That is enough to rank work and useless for diagnosing it:
+// an agent told "3355 of 4222 `uses` edges are unresolved" cannot tell whether the
+// cause is a wrong target spelling, a missing cross-file index, a tie-break, or a
+// genuinely undeclared name WITHOUT SEEING THE ROWS.
+//
+// So `--dump` prints the rows themselves -- one TSV line per NON-RESOLVED edge:
+//   label · outcome · target · srcFile:line · claimKind
+// Bounded by BB_DUMP_LIMIT (default 40) so a whole-corpus run cannot flood a report,
+// and the bound is PRINTED when reached, so a short list is never mistaken for the set.
+// Read-only: it changes no count, no tally and no exit code.
+// ============================================================
+const BB_DUMP = process.argv.includes("--dump")
+const BB_DUMP_LIMIT = Number(process.env.BB_DUMP_LIMIT ?? 40)
+let bbDumped = 0
 // THE RULE IS IMPORTED, NOT COPIED. A census that counts WHY about the same edges must
 // count them the same way, so the classification lives in incoming-rule.ts and this file
 // consumes it. Re-exported below so a caller of this module keeps working unchanged.
@@ -1188,6 +1207,10 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     // `classifyIntent` uses, so the two agree by construction rather than by convention.
     const ownFileDeclares = (declPos.get(e.tgt) ?? []).some((d) => d.file === e.srcFile)
     const pc = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares)
+    if (BB_DUMP && pc.outcome !== "resolved" && bbDumped < BB_DUMP_LIMIT) {
+      bbDumped++
+      console.log(`DUMP\t${e.label}\t${pc.outcome}\t${e.tgt}\t${e.srcFile}:${e.line}\t${e.claim?.kind ?? "-"}`)
+    }
     tally(row.project, pc, e.tgt, e.label)
     row.intent[classifyIntent(e.tgt, e.srcFile, e.line, e.label, declPos)]++
     tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, e.tgt, e.claim, facts, isContains), e.tgt, e.label)
