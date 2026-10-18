@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-18T06:42:53.188Z",
+  "generatedAt": "2026-10-18T06:48:19.833Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 36,
+  "totalRegexUsages": 34,
   "analyzersScanned": 48,
   "byClassification": {
-    "needs_review": 35,
+    "needs_review": 33,
     "unavoidable": 1
   },
   "byReceiverCategory": {
-    "other": 13,
+    "other": 11,
     "identifier": 22,
     "string_literal": 1
   },
@@ -328,34 +328,6 @@
           "source": "/^\\s*#\\s*(if|ifdef|ifndef)\\b/",
           "operation": "test",
           "receiver": "lines[j]",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-javascript-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-javascript-analyzer.ts",
-          "line": 196,
-          "column": 35,
-          "source": "/\\\\/g",
-          "operation": "replace",
-          "receiver": "String(raw)",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-javascript-analyzer.ts",
-          "line": 224,
-          "column": 39,
-          "source": "/[?#].*$/",
-          "operation": "replace",
-          "receiver": "spec.trim()",
           "receiverCategory": "other",
           "classification": "needs_review",
           "justification": ""
