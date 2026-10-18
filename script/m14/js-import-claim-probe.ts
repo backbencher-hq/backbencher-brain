@@ -57,6 +57,8 @@ const claims: Record<string, number> = {}
 const receiverClaims: Record<string, number> = {}
 const receiverBySpecifierClass: Record<string, number> = {}
 let receiverRows = 0
+let receiverExternalEligible = 0
+let receiverInternalExcluded = 0
 const bySpecifierClass: Record<string, number> = {}
 let evidenceEdges = 0, evidenceNames = 0, importsRows = 0, reexportRows = 0, filesWithClaims = 0
 let dynamicRefused = 0
@@ -82,6 +84,9 @@ for (const abs of files) {
       const spec = String(md.receiverImportSpecifier)
       const cls = spec.startsWith(".") || spec.startsWith("/") ? "relative/project" : spec.startsWith("@") ? "scoped-package" : spec.length > 0 && !spec.includes("/") ? "bare-package" : "package-subpath"
       receiverBySpecifierClass[cls] = (receiverBySpecifierClass[cls] ?? 0) + 1
+      const internal = spec.startsWith(".") || spec.startsWith("/") || /^(workspace|file|link):/i.test(spec)
+      receiverExternalEligible += internal ? 0 : 1
+      receiverInternalExcluded += internal ? 1 : 0
     }
     if (md.importedBinding && typeof md.importedBinding === "object") {
       const label = String(rel.type ?? "")
@@ -105,6 +110,6 @@ console.log(JSON.stringify({
     reExportRowsWithEmptyArray: reexportRows,
   },
   claims: { total: Object.values(claims).reduce((a, b) => a + b, 0), byLabel: claims, bySpecifierClass, filesWithClaims },
-  receiverPositionClaims: { total: receiverRows, byLabel: receiverClaims, bySpecifierClass: receiverBySpecifierClass },
+  receiverPositionClaims: { total: receiverRows, byLabel: receiverClaims, bySpecifierClass: receiverBySpecifierClass, externalEligible: receiverExternalEligible, internalExcluded: receiverInternalExcluded },
   note: "Emission-side measurement only. The gate counts these claims in bindOK only once the Lead's arbiter knows the importedBinding kind; this probe sizes the analyzer half and proves the evidence arrays are on every imports row.",
 }, null, 1))

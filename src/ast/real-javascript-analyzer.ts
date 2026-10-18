@@ -448,6 +448,21 @@ function containerOwnerName(n: Node): string | undefined {
   return undefined
 }
 
+/**
+ * IS THIS MODULE SPECIFIER EXTERNAL? The receiver-position claim is EXTERNAL-ONLY: relative (`./x`,
+ * `../x`), absolute (`/x`) and workspace (`workspace:*`) specifiers name PROJECT-INTERNAL modules whose
+ * members are project-resolvable, so a claim there would launder a resolvable edge. Bare package names,
+ * scoped packages and node builtins are external — they have no project file to resolve into.
+ */
+function isExternalSpecifier(specifier: string): boolean {
+  if (specifier.length === 0) return false
+  if (specifier.startsWith(".") || specifier.startsWith("/")) return false
+  const low = specifier.toLowerCase()
+  if (low.startsWith("workspace:") || low.startsWith("file:") || low.startsWith("link:")) return false
+  if (/^[a-zA-Z]:[\\/]/.test(specifier)) return false // windows absolute path
+  return true
+}
+
 function scopeString(scopes: JSScopeEntry[]): string {
   const parts: string[] = []
   for (let i = 1; i < scopes.length; i++) {
@@ -2480,7 +2495,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!boundCallee && !importedCallee && fn.type === "member_expression") {
               let recvRoot: Node | null = fn.childForFieldName("object")
               while (recvRoot && recvRoot.type === "member_expression") recvRoot = recvRoot.childForFieldName("object")
-              if (recvRoot?.type === "identifier") receiverImport = this.importedBindingFor(recvRoot, recvRoot.text)
+              if (recvRoot?.type === "identifier") {
+                const candidate = this.importedBindingFor(recvRoot, recvRoot.text)
+                // EXTERNAL-ONLY (Lead decision): a relative/absolute/workspace receiver is a
+                // PROJECT-INTERNAL import — the member is project-resolvable and claiming it would launder
+                // a resolvable edge, so those rows stay declared and need index resolution (the same rule
+                // the imported-binding emission already follows).
+                if (candidate && isExternalSpecifier(candidate.specifier)) receiverImport = candidate
+              }
               if (receiverImport && receiverImport.binding === targetName) receiverImport = null
             }
             relationships.push({
@@ -2630,6 +2652,17 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
      */
     declaredNames: Set<string>,
   ): void {
+    /**
+     * THE CJS FORMS A PROPERTY CLAIM MAY USE. These are the forms that assert a PROPERTY on the module's
+     * export object (object-literal members and deep writes). The value-rebind forms
+     * (`exports-binding`, `exports-expression`, `module-exports-binding`, `module-exports-expression`)
+     * describe the VALUE a surface is replaced with, not a property name, so they are NOT claimable.
+     */
+    const CJS_PROPERTY_CLAIM_FORMS = new Set<string>([
+      "module-exports-object",
+      "exports-object",
+      "deep-member-assignment",
+    ])
     for (const item of exports) {
       // ---- EXPORTS CLAIM EVIDENCE (contract: validation/m14/verification/JAVASCRIPT-EXPORTS-CLAIM-CONTRACT.md)
       // Additive markers that let an arbiter verify a claim from THIS row's own evidence. The target is
@@ -2650,12 +2683,20 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         claimMarkers.defaultExportForm = defaultForm
         if (localName) claimMarkers.defaultExportLocalName = localName
         claimMarkers.defaultExport = { form: defaultForm, ...(localName ? { localName } : {}) }
-      } else if (isCjs && !item.isDefault && !declaredNames.has(item.name)) {
+      } else if (isCjs && !item.isDefault && !declaredNames.has(item.name) && CJS_PROPERTY_CLAIM_FORMS.has(String(item.metadata?.cjsForm ?? ""))) {
         // THE FILE-LOCAL DECLARATION GUARD: no marker when THIS FILE declares the name — the row keeps
         // its bare property spelling so the name model may resolve it, and the arbiter never receives a
-        // claim it would refute. (Project-wide-only collisions still refute at the arbiter; those are
-        // honest bindFAIL signals that the claim population must then be narrowed around.)
-        const cjsForm = typeof item.metadata?.cjsForm === "string" ? String(item.metadata.cjsForm) : "module-exports-unknown"
+        // claim it would refute.
+        //
+        // THE FORM GUARD (added after the final arm's ONE refuted row): only GENUINE EXPORT-OBJECT
+        // PROPERTY forms are claimable. `exports = <identifier>` / `exports = function(){}` are VALUE
+        // REBINDS — they do not put a property named after the value on the module's export object, so a
+        // moduleExports claim there asserts something false. Measured instance: require.js:908
+        // (`exports = factory`) emitted moduleExports {property:"factory", form:"exports-binding"} and the
+        // arbiter (whose allowed set is the five DOCUMENTED forms, not the implementation's
+        // surface×kind product) REFUTED it — the one bindFAIL in the final arm. Value-rebind rows are
+        // emitted as plain exports rows and are not claims.
+        const cjsForm = String(item.metadata?.cjsForm ?? "module-exports-unknown")
         claimMarkers.moduleExportsProperty = item.name
         claimMarkers.moduleExportsForm = cjsForm
         claimMarkers.moduleExports = { property: item.name, form: cjsForm }

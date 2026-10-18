@@ -347,10 +347,33 @@
         },
         "decoyNote": "245 refutations were an arbiter cross-file rule error (removed) and are decoys, not over-claims. Expected re-run bindOK ~510791, clause 4 0, arbitraryTwin 534890 (fell 4).",
         "edgesPlus2": "export NAME-SET collapse resolved (consul replace.js:27, hasura ApiLimitsHeader.js:9); no residual."
+      },
+      "claimable_forms": [
+        "module-exports-object",
+        "exports-object",
+        "deep-member-assignment"
+      ],
+      "value_rebind_excluded_note": "VALUE REBINDS (`exports = X`, `exports = function(){}`; forms exports-binding/exports-expression/module-exports-binding|expression) are NOT claimable: they replace the surface value and put no property named after the value on the export object. Measured instance: require.js:908 (`exports = factory`) was the FINAL ARM's one refuted row (bindFAIL 1, clause 4 failing by that row); fixed by the claimable-form gate, row now emits no markers; expected re-run 7,382 verified / bindFAIL 0 / bindOK 510,791.",
+      "final_arm": {
+        "command": "Lead's final arm (charter §18.17 record)",
+        "edges": 1467642,
+        "resolved": 137045,
+        "amb": 179890,
+        "unresolved": 535299,
+        "extOK": 104617,
+        "bindOK": 510790,
+        "exportSurfaceVerified": 7381,
+        "bindFAIL": 1,
+        "oneRefutedRow": "dart-sdk/third_party/requirejs/require.js:908 exports factory (moduleExports form exports-binding; value rebind -> claim semantically false; emission fixed)",
+        "expected_after_fix": {
+          "bindOK": 510791,
+          "exportSurfaceVerified": 7382,
+          "bindFAIL": 0
+        }
       }
     },
     "receiver_position": {
-      "status": "ANALYZER EVIDENCE EMITTED 2026-10-18; ARBITER KIND NOT DECIDED (Lead). Contract: validation/m14/verification/JAVASCRIPT-RECEIVER-POSITION-CLAIM-CONTRACT.md",
+      "status": "LEAD DECISION IMPLEMENTED: EXISTING imported-binding claim kind + POSITION DISCRIMINATOR (position:'receiver'), bindOK family, never resolved; no new kind/column. EXTERNAL-ONLY emission: relative/absolute/workspace receivers stay unmarked.",
       "class_rows_census": 38559,
       "census_classes": {
         "IMPORT-RECEIVER-EXTERNAL": 16963,
@@ -379,7 +402,9 @@
         "NO target/project-declaration refutation recommended (decoy rule)",
         "arbiter cannot re-check chain purity - analyzer duty; add a selfTest control for unbacked binding"
       ],
-      "fixture": "javascript/receiver-position-claims (5 positives / 4 negatives)"
+      "fixture": "javascript/receiver-position-claims (5 positives / 5 negatives incl. RELATIVE receiver unmarked)",
+      "expected_claimable_recomputed": "~26,000-27,400 after external-only exclusion (sample 839 external receiver claims per 400 files: x12374/400 ~25,950; ratio 839/2931 x 95,528 ~27,350); census 38,559 upper bound.",
+      "receiver_exclusion": "relative/absolute/workspace (and file:/link:/windows-absolute) specifiers excluded at emission - project-internal members are project-resolvable and a claim would launder a resolvable edge."
     }
   }
 }
