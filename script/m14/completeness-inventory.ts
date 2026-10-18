@@ -286,7 +286,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // the 44,181 ambiguous `references` rows were outside every lever table this programme kept,
     // including the receiver-cause pricing that sized the dart residual.
     // swift's row (below) names `references`; the two rows are now consistent.
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "overrides", "imports", "references", "exports"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "overrides", "imports", "references", "exports", "mixes_in", "part_of"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "dart/payload-and-complexity" },
       parameters: { key: "expectParameters", pin: "dart/payload-and-complexity" },
@@ -567,7 +567,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // implements fixtures (`interface-implements`, `interface-qualified-subscript-head`,
     // and the store-heritage seam) already pin both directions, so the row is satisfiable
     // rather than aspirational.
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "imports", "references", "overrides", "exports"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "imports", "references", "overrides", "exports", "decorates"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "python/payload-and-complexity" },
     },
@@ -863,7 +863,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/typescript.md", "docs/analyzers/real-typescript-analyzer.md"],
     differentialCheck: "differential-typescript",
     perfKey: "vue-core:typescript",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "renders", "decorates"],
     payloads: {
       qualified_calls: { key: "expectQualifiedCalls", pin: "typescript/qualified-call-path" },
       docstrings: { key: "expectComments", pin: "typescript/payload-docs (js) / comment pins" },
@@ -883,7 +883,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/javascript.md", "docs/analyzers/real-javascript-analyzer.md"],
     differentialCheck: "differential-javascript",
     perfKey: "lodash:javascript",
-    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+    // CANONICAL VOCABULARY 2026-10-18: the analyzer publishes `renders` (JSX component elements)
+    // and `decorates` (decorator application) — both are pinned by expectation files
+    // (javascript/jsx-usage, decorator-declaration-lines-861, decorator-arguments-not-decorates), so
+    // section B's forward check stays green and its reverse check now names the labels instead of
+    // failing on the analyzer publishing more than the contract row admitted.
+    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "renders", "decorates"],
     payloads: {
       qualified_calls: { key: "expectQualifiedCalls", pin: "javascript/payload-pins" },
       docstrings: { key: "expectComments", pin: "javascript/payload-docs" },

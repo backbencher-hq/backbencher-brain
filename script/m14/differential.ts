@@ -63,6 +63,19 @@ import { deriveDartOverridesTruth } from "./oracles/dart-overrides"
 // not "measured and passing", simply unread — which is the state that reads most like coverage
 // and is why it took a reader of the allowlist to find it.
 import { deriveDartReferencesTruth, dartTypesDeclaredIn } from "./oracles/dart-references"
+// LANE-OWNED ORACLE EXTENSION (2026-10-18, java lane). Four truth classes the shipped
+// deriveJavaReferencesTruth does not cover and that the complete-surface ruling made owed:
+// annotation type mentions, type-parameter BOUNDS (the old notAReference rule explicitly excluded
+// them as declarations — contradicted now), the record-pattern type (gap G3), and containment into
+// an enum constant's class_body (the anonymous per-constant subclass members). Written as pure
+// functions in the lane's own module so the truth is independent of the analyzer under test; the
+// WIRING (import + dispatch) stays in this file, the single-writer rule this repo already applies.
+import {
+  deriveJavaAnnotationReferencesTruth,
+  deriveJavaTypeParameterBoundReferencesTruth,
+  deriveJavaRecordPatternReferencesTruth,
+  deriveJavaEnumConstantBodyContainsTruth,
+} from "./oracles/java-references-truth"
 import { deriveJuliaContainsTruth } from "./oracles/julia-contains"
 import { deriveJuliaExtendsTruth, deriveJuliaInstantiatesTruth } from "./oracles/julia-type-edges"
 import { deriveJuliaCallsTruth } from "./oracles/julia-calls"
@@ -5752,7 +5765,7 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
         const owner = nm?.text ?? ""
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
-          if (c && c.type === "decorator") pushRef(owner || "(decorated)", jsDecoratorNameTruth(c))
+          if (c && c.type === "decorator") pushDecorates(owner || "(decorated)", jsDecoratorNameTruth(c))
         }
       } else if (n.type === "export_statement") {
         let owner = ""
@@ -5762,7 +5775,7 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
         }
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
-          if (c && c.type === "decorator") pushRef(owner || "(decorated)", jsDecoratorNameTruth(c))
+          if (c && c.type === "decorator") pushDecorates(owner || "(decorated)", jsDecoratorNameTruth(c))
         }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
@@ -5771,6 +5784,59 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
       }
     }
   }
+  // ── THE DECORATE AND RENDER VALUES (canonical vocabulary, 2026-10-18) ────────────────────────
+  // The analyzer emits `decorates` / `renders` now (src/ast/types.ts). An oracle that still derived
+  // `references` for a decorator and NOTHING for a JSX element would (a) report every new row as
+  // UNEXPLAINED and (b) derive rows nothing emits — the exact two-sided failure this file's other
+  // label migrations record. Derived here from the LANGUAGE's rule, never from the analyzer's
+  // helpers: a decorator name is a `decorates` from the decorated declaration, and a JSX element
+  // whose opening tag is a CAPITALIZED IDENTIFIER is a `renders` of that component.
+  // HOISTED ON PURPOSE (`function`, not `const`): the decorator walk ABOVE calls this, and a
+  // `const` arrow would put it in the temporal dead zone — every JS file containing a decorator
+  // node would throw `Cannot access 'pushDecorates' before initialization`. Caught by the js lane
+  // reviewing the diff before commit; stated here so the next reader does not "tidy" it back.
+  function pushDecorates(from: string, target: string): void {
+    if (!target) return
+    const k = `decorates|${from}|${target}`
+    if (seenRef.has(k)) return
+    seenRef.add(k)
+    edges.push({ label: "decorates", from, target })
+  }
+  {
+    // RENDERS: one row per ELEMENT. `jsx_element` (paired) is handled at the element and its opening
+    // tag is NOT visited as a second render; `jsx_self_closing_element` is its own element. The name
+    // must be a bare identifier whose first character is uppercase — lowercase intrinsics (`div`),
+    // fragments (`<></>`, no identifier child), member components (`<A.B/>`, a member_expression)
+    // and namespaced tags emit nothing, the family contract the analyzers already pin.
+    const isCapitalizedIdentifier = (n: any): boolean => {
+      if (!n || n.type !== "identifier") return false
+      const first = String(n.text ?? "")[0]
+      return !!first && first === first.toUpperCase() && first !== first.toLowerCase()
+    }
+    const jsxOpeningName = (n: any): any => {
+      if (n.type === "jsx_self_closing_element") return n.childForFieldName("name") ?? n.namedChild(0)
+      if (n.type === "jsx_element") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "jsx_opening_element") return c.childForFieldName("name") ?? c.namedChild(0)
+        }
+      }
+      return null
+    }
+    const stR: any[] = [root]
+    while (stR.length > 0) {
+      const n = stR.pop()!
+      if (n.type === "jsx_element" || n.type === "jsx_self_closing_element") {
+        const nameNode = jsxOpeningName(n)
+        if (isCapitalizedIdentifier(nameNode)) push("renders", nameNode.text)
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stR.push(c)
+      }
+    }
+  }
+
   // `x instanceof T`: the right operand is the type under test. Scoped to the
   // WHOLE tree with no decorator guard, which is the analyzer's own scope for
   // this rule — a decorator ARGUMENT can carry an instanceof test, so skipping
@@ -10466,8 +10532,12 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
         // never a superclass child, so the branch below never sees it.
         // DT-B: resolved (alias-free) — `on _i1.Base` leaked the alias.
         if (t === "mixin_declaration") {
+          // DARTD14 RELABEL (canonical vocabulary 2026-10-18): a mixin's `on X` is a CONSTRAINT on
+          // where the mixin may be applied, not inheritance — the analyzer publishes it as
+          // `references` now, and an oracle still deriving `extends` would charge the new row as a
+          // fabrication while deriving a row nothing emits.
           const onNames = resolvedRawNames(n).filter((x) => x !== nm)
-          for (const b of onNames) push("extends", b)
+          for (const b of onNames) push("references", b)
         }
         const sup = n.namedChildren.find((c: any) => c.type === "superclass")
         if (sup) {
@@ -10478,13 +10548,15 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
             push("extends", base)
             break
           }
-          // mixins under superclass (extends A with M) — DT-B resolved
+          // mixins under superclass (extends A with M) — DT-B resolved. CANONICAL RELABEL
+          // 2026-10-18: a `with` clause COMPOSES a mixin into the supertype chain; the analyzer
+          // publishes `mixes_in`, and `uses` (a value read) was the dishonest spelling it replaced.
           const mx = sup.namedChildren.find((c: any) => c.type === "mixins")
-          if (mx) for (const m of resolvedRawNames(mx)) push("uses", m)
+          if (mx) for (const m of resolvedRawNames(mx)) push("mixes_in", m)
         }
         // mixins directly on the class (class A with M implements C) — DT-B resolved
         const mxDirect = n.namedChildren.find((c: any) => c.type === "mixins")
-        if (mxDirect) for (const m of resolvedRawNames(mxDirect)) push("uses", m)
+        if (mxDirect) for (const m of resolvedRawNames(mxDirect)) push("mixes_in", m)
         // interfaces — DAD2 mirror: resolved names only (alias prefixes
         // dropped, generic args excluded).
         const ifc = n.namedChildren.find((c: any) => c.type === "interfaces")
@@ -10499,7 +10571,7 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
         const ifc = n.namedChildren.find((c: any) => c.type === "interfaces")
         if (ifc) for (const m of resolvedRawNames(ifc)) push("implements", m)
         const mx = n.namedChildren.find((c: any) => c.type === "mixins")
-        if (mx) for (const m of resolvedRawNames(mx)) push("uses", m)
+        if (mx) for (const m of resolvedRawNames(mx)) push("mixes_in", m)
       }
     }
     if (t === "constructor_invocation" || t === "new_expression" || t === "const_object_expression") {
@@ -23820,6 +23892,26 @@ async function main() {
         for (const e of deriveJavaReferencesTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // ── THE LANE-OWNED EXTENSION (2026-10-18) ────────────────────────────────────────────────
+        // Four classes the shipped references/contains oracles do not derive, each MEASURED as an
+        // emission the analyzer publishes and nothing audited: annotations (353 cap-50 rows), the
+        // type-parameter BOUNDS the old notAReference rule excluded as declarations (contradicted by
+        // the complete-surface ruling), record patterns (G3 — grammar spells the type `identifier`),
+        // and containment into an enum constant's class_body (the anonymous per-constant subclass).
+        // PUSHED DIRECTLY, NOT THROUGH notAReference: that filter is what excludes bound types today,
+        // and these derivations are already narrow (they start at the bound/pattern node itself).
+        for (const e of deriveJavaAnnotationReferencesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveJavaTypeParameterBoundReferencesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveJavaRecordPatternReferencesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveJavaEnumConstantBodyContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "kotlin") {
         // M37.21 #610: kotlin calls oracle (JD-oracle gap, java precedent).
@@ -24614,6 +24706,13 @@ async function main() {
           // label sat in the second state — emitted since the ontology wave, derived and
           // shape-pinned by `verify-dart-references.ts`, admitted by neither side.
           ...(lang === "dart" ? ["references"] : []),
+          // CANONICAL VOCABULARY (2026-10-18): `mixes_in`'s truth is derived in `deriveDartEdges`
+          // above (the three with-clause sites) and the analyzer publishes it, so the label is
+          // COMPARED. `part_of` is deliberately NOT here yet: its truth needs an independent
+          // path-resolution walk (the lane's import oracle removed the old `imports{isPart}`
+          // derivation rather than re-spell it), so admitting the label now would charge every
+          // analyzer row as a fabrication. Recorded as DERIVATION debt in the vocabulary proposal.
+          ...(lang === "dart" ? ["mixes_in"] : []),
           // M60 K2 (2026-09-27): kotlin joins the uses-audited set.
           // 1,758 `uses` edges on the primary corpus, every one of them from
           // five emission sites that NO oracle derived and the allowlist dropped
@@ -24755,6 +24854,10 @@ async function main() {
           // typescript joins the contains-audited set for the same reason java
           // and javascript did: an unaudited label cannot be caught going missing
           // even once, and its own oracle now exists.
+          // 2026-10-18: the two canonical values the js lane now emits are COMPARED, not silently
+          // dropped. A label in neither the oracle nor this list is the DERIVATION-debt shape this
+          // file already records for imports/exports ("stored and compared against nothing").
+          ...(lang === "javascript" ? ["decorates", "renders"] : []),
           ...(lang === "javascript" ? ["contains", "exports", "references", "imports"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
