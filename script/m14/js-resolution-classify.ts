@@ -585,7 +585,12 @@ function classifyEdge(
 // ============================================================================
 
 const { files, total, repos } = discover()
-const parser: any = await getParser("javascript" as any)
+// NO HELD PARSER: engine.getParser caches instances and its cleanup can dispose one mid-run; a
+// held wasm Parser then returns "Out of bounds memory access" on its next parse (measured: 1,198
+// of 2,000 files skipped in the first cap-0 stream attempt at ~499). Acquired per file below;
+// the engine cache makes that cheap. Kept here only as a ready-guard so a missing grammar fails
+// before the walk, not on file 1.
+await getParser("javascript" as any)
 const projects = new Map<string, Proj>()
 const fileBindings = new Map<string, Bindings>()
 const relByAbs = new Map<string, string>()
@@ -659,6 +664,12 @@ let edgeCount = 0
 const rows: EdgeRow[] = []
 let filesParsed = 0
 let filesSkipped = 0
+/** why files were skipped — a mass skip must say its cause, not just its count */
+const skipReasons = new Map<string, number>()
+const noteSkip = (e: unknown): void => {
+  const msg = String((e as any)?.message ?? e ?? "unknown").slice(0, 120)
+  skipReasons.set(msg, (skipReasons.get(msg) ?? 0) + 1)
+}
 
 function ingestRow(r: EdgeRow): void {
   edgeCount++
@@ -718,15 +729,16 @@ function ingestRow(r: EdgeRow): void {
 if (!STREAM) {
   for (const abs of files) {
     let content = ""
-    try { content = readFileSync(abs, "utf8") } catch { filesSkipped++; continue }
+    try { content = readFileSync(abs, "utf8") } catch (e) { filesSkipped++; noteSkip(e); continue }
     let res: any
     let b: Bindings = EMPTY_BINDINGS
     try {
       res = await parseFile(abs, repoByAbs.get(abs)!.length > 0 ? path.join(CR, repoByAbs.get(abs)!) : CR, { projectRoot: path.join(CR, repoByAbs.get(abs)!) } as any)
-      const tree = parser.parse(content)
+      const fileParser: any = await getParser("javascript" as any)
+      const tree = fileParser.parse(content)
       b = collectBindings(tree.rootNode)
       tree.delete?.()
-    } catch { filesSkipped++; continue }
+    } catch (e) { filesSkipped++; noteSkip(e); continue }
     filesParsed++
     const repo = repoByAbs.get(abs)!
     const p = projOf(repo, projects)
@@ -757,15 +769,16 @@ if (!STREAM) {
     for (let fileIdx = 0; fileIdx < files.length; fileIdx++) {
       const abs = files[fileIdx]
       let content = ""
-      try { content = readFileSync(abs, "utf8") } catch { filesSkipped++; continue }
+      try { content = readFileSync(abs, "utf8") } catch (e) { filesSkipped++; noteSkip(e); continue }
       let res: any
       let b: Bindings = EMPTY_BINDINGS
       try {
         res = await parseFile(abs, repoByAbs.get(abs)!.length > 0 ? path.join(CR, repoByAbs.get(abs)!) : CR, { projectRoot: path.join(CR, repoByAbs.get(abs)!) } as any)
-        const tree = parser.parse(content)
+        const fileParser: any = await getParser("javascript" as any)
+        const tree = fileParser.parse(content)
         b = collectBindings(tree.rootNode)
         tree.delete?.()
-      } catch { filesSkipped++; continue }
+      } catch (e) { filesSkipped++; noteSkip(e); continue }
       filesParsed++
       const repo = repoByAbs.get(abs)!
       const p = projOf(repo, projects)
@@ -814,6 +827,7 @@ if (JSON_OUT) writeFileSync(JSON_OUT, JSON.stringify(report, null, 1))
 const labelOrder = Object.keys(totals).sort()
 console.log(`js-resolution-classify — population: ${files.length} of ${total} admitted files across ${repos} repos (cap ${CAP})`)
 console.log(`command: bun run script/m14/js-resolution-classify.ts ${CAP}${STREAM ? " --stream" : ""}`)
+if (skipReasons.size > 0) console.log(`skip reasons: ${[...skipReasons.entries()].sort((a, b) => b[1] - a[1]).map(([m, n]) => `${n}x ${m}`).join(" | ")}`)
 console.log(`files parsed ${filesParsed} · skipped ${filesSkipped} · edges ${edgeCount} · ambiguous-among-resolved ${heldAmbiguous}${STREAM ? " · mode=stream" : ""}`)
 for (const label of labelOrder) {
   const t = totals[label]
