@@ -133,13 +133,14 @@ function discover(cap: number): { files: string[]; total: number; repos: number;
   return { files, total, repos: repos.size, absent, overCap }
 }
 
-type Tally = { edges: number; files: Set<string> }
-const mk = () => ({ edges: 0, files: new Set<string>() } as Tally)
-const add = (m: Map<string, Tally>, key: string, file: string) => {
+type Tally = { edges: number; files: Set<string>; repos: Set<string> }
+const mk = () => ({ edges: 0, files: new Set<string>(), repos: new Set<string>() } as Tally)
+const add = (m: Map<string, Tally>, key: string, file: string, repo: string) => {
   let t = m.get(key)
   if (!t) { t = mk(); m.set(key, t) }
   t.edges++
   t.files.add(file)
+  t.repos.add(repo)
 }
 
 const perType = new Map<string, Tally>()
@@ -175,29 +176,30 @@ for (const abs of files) {
   }
   parsed++
   const rel = path.relative(CR, abs)
+  const repoName = rel.split(path.sep)[0]
   for (const r of (result.relationships ?? []) as any[]) {
     const type = String(r?.type ?? "")
-    add(perType, type, rel)
+    add(perType, type, rel, repoName)
     const md = (r?.metadata ?? {}) as Record<string, unknown>
     const marker = typeof md.relationshipType === "string" ? md.relationshipType : ""
     if (marker) {
-      add(perMarker, marker, rel)
-      add(markerByType, markerOnType(type, marker), rel)
+      add(perMarker, marker, rel, repoName)
+      add(markerByType, markerOnType(type, marker), rel, repoName)
     }
     if (type === "calls") {
-      add(callsFnPtr, md.isFunctionPointer === true ? "functionPointer" : "direct", rel)
-      if (md.isExternal === true) add(callsExternal, typeof md.externalEvidence === "string" ? md.externalEvidence : "(unlabelled)", rel)
+      add(callsFnPtr, md.isFunctionPointer === true ? "functionPointer" : "direct", rel, repoName)
+      if (md.isExternal === true) add(callsExternal, typeof md.externalEvidence === "string" ? md.externalEvidence : "(unlabelled)", rel, repoName)
     } else if (type === "exports") {
-      if (typeof md.exportMacro === "string") add(exportMacro, md.exportMacro, rel)
-      if (typeof md.exportMarkerKind === "string") add(exportMarkerKind, md.exportMarkerKind, rel)
+      if (typeof md.exportMacro === "string") add(exportMacro, md.exportMacro, rel, repoName)
+      if (typeof md.exportMarkerKind === "string") add(exportMarkerKind, md.exportMarkerKind, rel, repoName)
     } else if (type === "overrides") {
-      add(overrideShape, typeof md.shape === "string" ? md.shape : "(unlabelled)", rel)
+      add(overrideShape, typeof md.shape === "string" ? md.shape : "(unlabelled)", rel, repoName)
     } else if (type === "instantiates") {
-      add(instantiatedAllocator, typeof md.allocator === "string" ? md.allocator : "(unlabelled)", rel)
+      add(instantiatedAllocator, typeof md.allocator === "string" ? md.allocator : "(unlabelled)", rel, repoName)
     } else if (type === "references") {
-      add(referencesMarker, marker || "(none)", rel)
+      add(referencesMarker, marker || "(none)", rel, repoName)
     } else if (type === "contains") {
-      add(containsOwnerKind, typeof md.memberKind === "string" ? md.memberKind : "(none)", rel)
+      add(containsOwnerKind, typeof md.memberKind === "string" ? md.memberKind : "(none)", rel, repoName)
     }
   }
 }
@@ -260,24 +262,24 @@ if (JSON_OUT) {
   console.log(JSON.stringify({
     population: { cap: CAP, sampled: files.length, parsed, failed, admitted: total, repos, absent, overCap, exts: EXTS, sizeCapBytes: SIZE_CAP },
     control,
-    perType: Object.fromEntries(sorted(perType).map(([k, v]) => [k, { edges: v.edges, files: v.files.size }])),
-    perMarker: Object.fromEntries(sorted(perMarker).map(([k, v]) => [k, { edges: v.edges, files: v.files.size }])),
+    perType: Object.fromEntries(sorted(perType).map(([k, v]) => [k, { edges: v.edges, files: v.files.size, repos: v.repos.size }])),
+    perMarker: Object.fromEntries(sorted(perMarker).map(([k, v]) => [k, { edges: v.edges, files: v.files.size, repos: v.repos.size }])),
     callPayload: {
-      functionPointer: Object.fromEntries(sorted(callsFnPtr).map(([k, v]) => [k, { edges: v.edges, files: v.files.size }])),
-      externalClaims: Object.fromEntries(sorted(callsExternal).map(([k, v]) => [k, { edges: v.edges, files: v.files.size }])),
+      functionPointer: Object.fromEntries(sorted(callsFnPtr).map(([k, v]) => [k, { edges: v.edges, files: v.files.size, repos: v.repos.size }])),
+      externalClaims: Object.fromEntries(sorted(callsExternal).map(([k, v]) => [k, { edges: v.edges, files: v.files.size, repos: v.repos.size }])),
     },
     exportPayload: {
-      macros: Object.fromEntries(sorted(exportMacro).map(([k, v]) => [k, { edges: v.edges, files: v.files.size }])),
-      markerKinds: Object.fromEntries(sorted(exportMarkerKind).map(([k, v]) => [k, { edges: v.edges, files: v.files.size }])),
+      macros: Object.fromEntries(sorted(exportMacro).map(([k, v]) => [k, { edges: v.edges, files: v.files.size, repos: v.repos.size }])),
+      markerKinds: Object.fromEntries(sorted(exportMarkerKind).map(([k, v]) => [k, { edges: v.edges, files: v.files.size, repos: v.repos.size }])),
     },
     overridePayload: {
-      shapes: Object.fromEntries(sorted(overrideShape).map(([k, v]) => [k, { edges: v.edges, files: v.files.size }])),
+      shapes: Object.fromEntries(sorted(overrideShape).map(([k, v]) => [k, { edges: v.edges, files: v.files.size, repos: v.repos.size }])),
     },
     instantiatePayload: {
-      allocators: Object.fromEntries(sorted(instantiatedAllocator).map(([k, v]) => [k, { edges: v.edges, files: v.files.size }])),
+      allocators: Object.fromEntries(sorted(instantiatedAllocator).map(([k, v]) => [k, { edges: v.edges, files: v.files.size, repos: v.repos.size }])),
     },
-    referencePayload: Object.fromEntries(sorted(referencesMarker).map(([k, v]) => [k, { edges: v.edges, files: v.files.size }])),
-    containsPayload: Object.fromEntries(sorted(containsOwnerKind).map(([k, v]) => [k, { edges: v.edges, files: v.files.size }])),
+    referencePayload: Object.fromEntries(sorted(referencesMarker).map(([k, v]) => [k, { edges: v.edges, files: v.files.size, repos: v.repos.size }])),
+    containsPayload: Object.fromEntries(sorted(containsOwnerKind).map(([k, v]) => [k, { edges: v.edges, files: v.files.size, repos: v.repos.size }])),
   }, null, 2))
 } else {
   console.log(`c emission census — ${parsed} parsed of ${total} admitted .c files (${repos} repos; cap ${CAP === 0 ? "NONE (whole population)" : CAP})`)
