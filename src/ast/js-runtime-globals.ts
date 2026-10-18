@@ -26,18 +26,22 @@
  *   Node.js API — https://nodejs.org/api/process.html            (`process`'s own page)
  *   Node.js API — https://nodejs.org/api/buffer.html             (`Buffer`'s own page)
  *   Node.js API — https://nodejs.org/api/timers.html             (`setImmediate`, `clearImmediate`)
- *   Jest API    — https://jestjs.io/docs/api                     (`describe`, `test`, `it`,
- *                                                                 `expect`, `beforeAll`, `afterAll`,
- *                                                                 `beforeEach`, `afterEach`, `jest`)
- *   Vitest API  — https://vitest.dev/api/                        (`vi`, plus the Jest-shaped names it
+ *   Jest Globals — https://jestjs.io/docs/api                   (`describe`, `test`, `it` alias,
+ *                                                                 `beforeAll`, `afterAll`,
+ *                                                                 `beforeEach`, `afterEach`)
+ *   Jest Expect  — https://jestjs.io/docs/expect                 (`expect`)
+ *   Jest Object  — https://jestjs.io/docs/jest-object            (`jest`)
+ *   Vitest API   — https://vitest.dev/api/                       (`vi`, plus the Jest-shaped names it
  *                                                                 deliberately mirrors)
- *   Mocha       — https://mochajs.org/                           (BDD interface: `describe`,
+ *   Mocha        — https://mochajs.org/                          (BDD interface: `describe`,
  *                                                                 `context`, `it`, `specify`,
  *                                                                 `before`, `after`, `beforeEach`,
  *                                                                 `afterEach`)
- *   QUnit API   — https://api.qunitjs.com/QUnit/                 (`QUnit` — QUnit exposes its API
+ *   QUnit API    — https://qunitjs.com/api/                      (`QUnit` — QUnit exposes its API
  *                                                                 through the `QUnit` object, not as a
- *                                                                 bare `test`/`describe`)
+ *                                                                 bare `test`/`describe`; the older
+ *                                                                 `api.qunitjs.com/QUnit/` redirects
+ *                                                                 here, verified 2026-10-18)
  *
  * WHAT THIS LIST DOES **NOT** PROVE, stated so it is not "fixed" with a wider list:
  *
@@ -73,21 +77,21 @@ const RUNTIME_GLOBALS: Readonly<Record<string, string>> = {
   __filename: "Node.js API §__filename (https://nodejs.org/api/modules.html#__filename)",
 
   // ── Test-runner globals (Jest-canonical spellings; Vitest mirrors them by design) ────────────
-  describe: "Jest API §describe (https://jestjs.io/docs/api) — also a Mocha BDD global (https://mochajs.org/) and mirrored by Vitest (https://vitest.dev/api/)",
+  describe: "Jest Globals §describe (https://jestjs.io/docs/api) — also a Mocha BDD global (https://mochajs.org/) and mirrored by Vitest (https://vitest.dev/api/)",
   context: "Mocha BDD §context (https://mochajs.org/) — an alias of describe",
-  it: "Jest API §test (https://jestjs.io/docs/api) — also a Mocha BDD global and mirrored by Vitest",
-  test: "Jest API §test (https://jestjs.io/docs/api) — also a Mocha BDD global and mirrored by Vitest",
+  it: "Jest Globals §test, of which `it` is the alias (https://jestjs.io/docs/api) — also a Mocha BDD global and mirrored by Vitest",
+  test: "Jest Globals §test (https://jestjs.io/docs/api) — also a Mocha BDD global and mirrored by Vitest",
   specify: "Mocha BDD §specify (https://mochajs.org/) — an alias of it",
-  expect: "Jest API §expect (https://jestjs.io/docs/api) — also a Mocha/QUnit-style assertion global in the frameworks that expose it bare; mirrored by Vitest",
-  beforeAll: "Jest API §beforeAll (https://jestjs.io/docs/api) — mirrored by Vitest",
-  afterAll: "Jest API §afterAll (https://jestjs.io/docs/api) — mirrored by Vitest",
-  beforeEach: "Jest API §beforeEach (https://jestjs.io/docs/api) — also a Mocha BDD global; mirrored by Vitest",
-  afterEach: "Jest API §afterEach (https://jestjs.io/docs/api) — also a Mocha BDD global; mirrored by Vitest",
+  expect: "Jest API §expect (https://jestjs.io/docs/expect) — mirrored by Vitest (https://vitest.dev/api/)",
+  beforeAll: "Jest Globals §beforeAll (https://jestjs.io/docs/api) — mirrored by Vitest",
+  afterAll: "Jest Globals §afterAll (https://jestjs.io/docs/api) — mirrored by Vitest",
+  beforeEach: "Jest Globals §beforeEach (https://jestjs.io/docs/api) — also a Mocha BDD global; mirrored by Vitest",
+  afterEach: "Jest Globals §afterEach (https://jestjs.io/docs/api) — also a Mocha BDD global; mirrored by Vitest",
   before: "Mocha BDD §before (https://mochajs.org/) — the TDD/BDD hook",
   after: "Mocha BDD §after (https://mochajs.org/) — the TDD/BDD hook",
-  jest: "Jest API §jest object (https://jestjs.io/docs/api) — a global",
+  jest: "Jest Object (https://jestjs.io/docs/jest-object) — a global",
   vi: "Vitest API §vi (https://vitest.dev/api/) — a global",
-  QUnit: "QUnit API §QUnit (https://api.qunitjs.com/QUnit/) — QUnit exposes its API through the QUnit global",
+  QUnit: "QUnit API (https://qunitjs.com/api/) — QUnit exposes its API through the QUnit global",
 }
 
 /**
