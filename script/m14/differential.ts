@@ -25854,6 +25854,11 @@ async function main() {
       // 43-language M14.0.F5.json stays untouched.
       else if (scope === "scala") emitEvidence({ ...base, issueId: "M14.0.F5.scala" })
       else if (scope === "swift") emitEvidence({ ...base, issueId: "M14.0.F5.swift" })
+      // TYPESCRIPT (2026-10-18): the lane had classified its differential and had no declared id to
+      // write the measurement under — `--emit` refuses a computed id because the artifact would become
+      // an orphan to M49's identity gate. A LANE-SCOPED artifact is the honest record for a single-lane
+      // draw; it makes no claim about the canonical 47-language sweep.
+      else if (scope === "typescript") emitEvidence({ ...base, issueId: "M14.0.F5.typescript" })
       else throw new Error(
         `differential: --emit has no declared artifact id for scope "${scope}" — add one literal emit call `
         + '(`{ ...base, issueId: "M14.0.F5.<lane>" }`) beside clean\'s, because a computed id writes an artifact that '
