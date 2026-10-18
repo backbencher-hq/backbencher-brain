@@ -224,16 +224,17 @@ unresolved 4,541→2,230; **`bindOK` 0→8,923**; bindFAIL/extFAIL/causeFAIL 0; 
 `35,107 = 16,288 + 7,666 + 2,230 + 8,923`. Intent axes: intended unchanged 7,065; **arbitraryTwin
 12,234→6,785 (−5,449, FELL)**. Classifier (both arms, control PASS, 9,896/9,896 joined, misses 0):
 **W8 9,805→3,254** and **W6 2,275→819** (6,551 + 1,456 claimed; +18 calls rows from W3; +898 decoy = 8,923).
-The W8/W6 residuals are EXACTLY split (`solidity-w8-residual-split.ts`, control PASS over all 9,896 residual
-rows) by what the bare target is declared as in its own file: W8 3,254 = 1,896 duplicate-in-file locals +
-838 single-declaration-but-residual + 318 single(property) + 73/33 duplicate(property±variable) + 21 declared
-nowhere + 13 single(method) + 8 single(type) + 4 other-file + 1 duplicate(method+property); W6 819 = 473
-duplicate-in-file + 188 single-declaration-but-residual + 119 other-file + 20 nowhere + 15
-duplicate(property+variable) + 4 single(property). These are a name-keyed RESOLVER-SCOPE question (the
-declarations exist — tuple-destructured locals ARE published, measured: `newDefaultAdmin`×2/`schedule`×3 in
-one file — but duplicate local names across functions make the name-keyed store unable to choose, and 838
-rows remain residual even with a unique declaration). An earlier sample-based draft called this a
-declaration-coverage gap; measurement refuted that and the correction is recorded in the page. D2 census TOTAL identical 35,107 per type; only `calls.external`
+The W8/W6 residuals are EXACTLY split and CORRECTED TWICE (`solidity-w8-residual-split.ts`, control PASS
+over all 9,896 residual rows), by what the bare target is declared as in its own file and project-wide:
+W8 family = **2,008 duplicate-in-file** (locals reusing a name across functions — the one scope-resolvable
+class; a resolver consulting the row's source callable/container could choose) + **1,177
+single-in-file-declared-elsewhere-too** (ordinary cross-file name collision) + 21 nowhere + 4 other-file;
+W6 = 488 + 192 + 119 + 20 = 819; W7 = 478 + 264 + 662 + 61 = 1,465. `UNIQUE-DECLARATION-IN-PROJECT` = **0
+rows, measured** — so there is no "resolver ignored an unambiguous declaration" class. Two drafts were
+corrected by measurement and the corrections are recorded in the page: (1) tuple-destructured locals ARE
+published (`newDefaultAdmin`×2/`schedule`×3 in one file — it is a name-keyed scope question, not a
+declaration-coverage gap); (2) the "single-declaration-but-residual" bucket is cross-file collision, not a
+resolver-scope defect. D2 census TOTAL identical 35,107 per type; only `calls.external`
 3,707→3,689 (−18) and the new `calleeKind: localBinding` 18. Arm B preserves SOL-21 exactly
 (extends 588→488, implements 7→107, everything else 0). D4 draws: truth unchanged (2,567/2,565/2 · imports 0
 unexplained); the differential's per-file `label|target` dedupe view rises 1,759→2,081 and unexplained
