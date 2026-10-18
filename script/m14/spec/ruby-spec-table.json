@@ -48,7 +48,7 @@
     "part_of"
   ],
   "evidence_rows": {
-    "_reading_as_of": "2026-10-19 phase-2 wave: whole-population census + D3 arm measured; clause 3 CLOSED by refreshing the stale cause-rulings population fingerprint (73 -> 105 rulings over parsed=989/989 admitted=989; the cause classification is unchanged). cap-50 pair BEFORE/AFTER the RUBY-D1 relabel.",
+    "_reading_as_of": "2026-10-19 FINAL: D1-D3 measured and accepted; D4 post-wiring draws live (99.9%/99.8%, residual named, PARTIAL); D5/D6 recorded; see validation/m14/verification/RUBY-FINAL-D1-D6-STATEMENT.md",
     "cap50Command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 50",
     "cap50Population": {
       "sampled": 50,
@@ -626,6 +626,96 @@
       "clauses": "1 FAIL (named walls, permitted) \u00b7 2 ok \u00b7 3 ok (after fingerprint refresh) \u00b7 4 ok",
       "indexArm": "NOT MEASURED, declared: Ruby has no project index in production (no projectIndex wiring, no PROJECT_INDEX_EXTENSIONS entry for .rb) \u2014 same situation as c/cpp",
       "artifact": "validation/m14/verification/RUBY-RESOLUTION-CLASSIFICATION.md"
+    },
+    "d4": {
+      "status": "PARTIAL \u2014 audit live and two-sided, residual measured and named",
+      "wiring": "Lead landed in script/m14/differential.ts: import deriveRubyEdges as deriveRubyLaneEdges + RUBY_ORACLE_LABELS as RUBY_LANE_LABELS from ./ruby-truth; ruby truth block calls the lane oracle; in-file legacy deriveRubyEdges DELETED; compared set admits mixes_in/contains/references/imports/exports (implements stays admitted as a zero).",
+      "commands": [
+        "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/differential.ts --repo rack --lang ruby",
+        "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/differential.ts --repo gql-ruby --lang ruby --sample 60"
+      ],
+      "draws": {
+        "rack": {
+          "files": 60,
+          "truth": 7755,
+          "covered": 7747,
+          "coverage": "99.9%",
+          "MISSING": 8,
+          "analyzerEdges": 2765,
+          "unexplained": 29,
+          "unexplainedByLabel": {
+            "calls": 20,
+            "uses": 8,
+            "instantiates": 1
+          },
+          "hash": "cbf9b090af441408"
+        },
+        "gql-ruby": {
+          "files": 60,
+          "truth": 4120,
+          "covered": 4111,
+          "coverage": "99.8%",
+          "MISSING": 9,
+          "analyzerEdges": 2044,
+          "unexplained": 15,
+          "unexplainedByLabel": {
+            "calls": 14,
+            "contains": 1
+          },
+          "hash": "3205ac270483d624"
+        }
+      },
+      "sevenLabelsExactBothDirections": [
+        "contains",
+        "exports",
+        "extends",
+        "imports",
+        "mixes_in",
+        "overrides",
+        "references"
+      ],
+      "residualFamilies": [
+        "binding-model divergence in calls (analyzer emits a leaf call for a name the oracle treats as bound: stat.mtime, stat.size, request.env, request.path_info, block_given?)",
+        "oracle over-derivation in calls (alias store []= operand; one __method__ pseudo-constant; one factory-extends row)",
+        "uses write-window / receiver-position (ivar reads beside their own write, spec-block ivars)",
+        "instantiates 1 / contains 1"
+      ],
+      "next": "align the oracle binding model with the analyzer; re-run the draws and record per-label movement",
+      "artifacts": [
+        "validation/m14/fixtures/ruby/measurements/differential-rack-after-wiring.txt",
+        "validation/m14/fixtures/ruby/measurements/differential-gql-ruby-after-wiring.txt",
+        "validation/m14/verification/RUBY-FINAL-D1-D6-STATEMENT.md"
+      ]
+    },
+    "d5": {
+      "status": "HOLDS with two pinned items",
+      "fixtures": "12 .rb fixtures / 11 expectation files / 11 pass 1 fail; the failure is ruby/ontology-factory-and-names (NO expectation file) \u2014 PINNED with reason (constructs covered by ontology-imports-exports, payload-and-complexity, mixes-in-modules; gate says no regressions)",
+      "docs": "docs/analyzers/real-ruby-analyzer.md corrected in-wave (stale imports/exports claims + mixes_in row + CORRECTION block)",
+      "headComment": "updated: emitted set names mixes_in (not implements) with the RUBY-D1 ruling and delta",
+      "specTable": "script/m14/spec/ruby-spec-table.json (this file) + ruby-completeness.json",
+      "noRegex": "M49.R2 preserved: this wave added no regex literal to the analyzer; all predicate tests are indexOf/char scans",
+      "typecheck": "whole-project tsc names ONLY src/ast/real-python-analyzer.ts(5060,25) (python lane own break); no ruby file",
+      "perf": "NOT MEASURED this wave \u2014 declared, not claimed"
+    },
+    "d6": {
+      "status": "HOLDS",
+      "intentTable": {
+        "intended": 11568,
+        "sameFileUnproven": 9229,
+        "arbitraryTwin": 31352,
+        "nothingAnywhere": 33085,
+        "noTarget": 0,
+        "closure": "11,568 + 9,229 + 31,352 + 33,085 = 85,234 EXACT"
+      },
+      "externalClaims": "extOK 0 / ext? 0 / extFAIL 0 \u2014 ruby publishes no external claim channel (declared absence, not a pass by omission)",
+      "causes": "causeOK 2,943 in its own bucket, causeFAIL 0, never merged into resolved; overrides resolved 0",
+      "negatives": [
+        "D1 four ruled-out values with grammar evidence + zero emissions",
+        "D3 named walls (gem/DSL/dynamic method wall, @sigil ivar wall, load-path pair by construction, file-unit export collision, external-base walls, overrides qualified residual, clause 1 FAIL, index arm NOT MEASURED)",
+        "D2 contains writes no payload marker (declared); .rb-only admission excludes router-admitted bare basenames",
+        "D4 three residual divergence families with samples",
+        "D5 pinned expectation-less fixture and perf NOT MEASURED"
+      ]
     }
   },
   "applicableSetClosure": {
@@ -650,6 +740,7 @@
     "docs": "docs/analyzers/real-ruby-analyzer.md (updated in the same pass: the ontology table's stale imports/exports/adaptation claims corrected)",
     "completeness": "script/m14/spec/ruby-completeness.json (136 grammar types classified; 120 handled / 12 silent / 0 gaps; 25 RULED decisions)",
     "fixtures": "validation/m14/fixtures/ruby/** (12 fixtures; the new mixes-in-modules pins RUBY-D1)",
-    "wholePopulation": "validation/m14/verification/RUBY-WHOLE-POPULATION-EMISSION.md (D2) \u00b7 validation/m14/verification/RUBY-RESOLUTION-CLASSIFICATION.md (D3)"
+    "wholePopulation": "validation/m14/verification/RUBY-WHOLE-POPULATION-EMISSION.md (D2) \u00b7 validation/m14/verification/RUBY-RESOLUTION-CLASSIFICATION.md (D3)",
+    "finalStatement": "validation/m14/verification/RUBY-FINAL-D1-D6-STATEMENT.md"
   }
 }

@@ -2,11 +2,19 @@
 // What this file is: the pure-AST analyzer for Ruby (.rb, routed by src/ast/language-detection.ts); it
 // produces the symbols and relationships the graph engine stores.
 // Relationship types covered (the emitted set, stated so the contract row cannot drift from this file
-// again): calls, uses, contains, imports, references, exports, extends, implements, overrides,
+// again): calls, uses, contains, imports, references, exports, extends, mixes_in, overrides,
 // instantiates. FOUR OF THESE — `exports`, `imports`, `overrides`, `references` — were MISSING from
 // this lane's contract row and were found by the reverse check (the analyzer published them while the
 // row did not name them). They are named now; if this file starts or stops emitting one of the ten,
 // EDIT THE ROW IN THE SAME COMMIT and say which layer emits it.
+// RUBY-D1 (ALL-OUT-OF-ALL phase 2, 2026-10-19): `implements` is RULED OUT of this set — Ruby's grammar
+// has no interface/conformance construct, and the family's old adaptation (include/prepend -> implements,
+// extend -> extends) was WRONG on both axes: include/prepend compose a module into the ancestor chain
+// and extend composes it into the SINGLETON class, i.e. module mixin composition, which the canonical
+// vocabulary spells `mixes_in` (source = composing class/module, target = mixin, metadata.mixinType =
+// include|prepend|extend). The relabel happened at UNCHANGED construct sites and the delta closes
+// exactly (cap-50: implements 17 -> 0, extends 48 -> 44, mixes_in 0 -> 21 = 17 + 4, table totals
+// byte-identical). Do not reintroduce `implements` here without a ruling that reverses RUBY-D1.
 // Where its scripts and validations live: script/m14/spec/ruby-completeness.json · fixtures
 // validation/m14/fixtures/ruby/** (`bun run script/m14/run-fixtures.ts --lang ruby`) · lane doc
 // docs/analyzers/real-ruby-analyzer.md.
