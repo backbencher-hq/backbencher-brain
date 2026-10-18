@@ -2827,7 +2827,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         // same way. A receiver whose type is written in the signature or the declaration
         // (`void run(OrderRepository r)`, `final Base b = Base();`) is what makes a call
         // target determinate; the NAME set alone cannot tell `r` from a local.
-        let boundTypes: Map<string, { type: string; evidence: string; element?: string }> | null = null
+        let boundTypes: Map<string, { type: string; evidence: string; element?: string; keyElement?: string }> | null = null
         if (!insideCollected) {
           const own = this.collectDartLocals(n)
           if (own.size > 0) bound = own
@@ -2846,7 +2846,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           const sigTypes = this.collectDartParameterTypes(sig)
           if (sigTypes.size > 0) {
-            if (!boundTypes) boundTypes = new Map<string, { type: string; evidence: string; element?: string }>()
+            if (!boundTypes) boundTypes = new Map<string, { type: string; evidence: string; element?: string; keyElement?: string }>()
             for (const [nm, ty] of sigTypes) boundTypes.set(nm, ty)
           }
         }
