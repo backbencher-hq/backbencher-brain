@@ -354,11 +354,22 @@ const cppDeclaredName = (n: Node): string => {
   // function_definition / declaration / field_declaration: the declarator carries the name.
   return cppDeclaratorName(n.childForFieldName("declarator"))
 }
-/** `base_class_clause` -> [access_specifier] type_identifier | qualified_identifier | template_type. */
+/** The TYPE node's DIRECT base names: find its `base_class_clause` child, then read the spells.
+ *  INDEX-TREE CONTRACT (measured the hard way): `baseResolver` is called on the TYPE node, not on
+ *  the base-clause node, and `baseNodes` would look for an `ancestor` FIELD the cpp clause does not
+ *  have. A spec that supplied a clause-shaped resolver therefore produced an EMPTY typeBases map and
+ *  the inheritance closure silently saw no ancestors — Derived appeared not to inherit Base, so the
+ *  index could not verify an inherited member. This resolver reads the clause off the type node. */
 const cppBaseNames = (n: Node): string[] => {
-  const out: string[] = []
+  let clause: Node | null = null
   for (let i = 0; i < n.namedChildCount; i++) {
     const c = n.namedChild(i)
+    if (c && c.type === "base_class_clause") { clause = c; break }
+  }
+  if (!clause) return []
+  const out: string[] = []
+  for (let i = 0; i < clause.namedChildCount; i++) {
+    const c = clause.namedChild(i)
     if (!c) continue
     const t = c.type
     if (t === "access_specifier" || t === "virtual") continue
@@ -376,7 +387,8 @@ export const CPP_DECLARATION_SPEC: DeclarationSpec = {
     enum_specifier: "enum",
   },
   memberNodes: ["field_declaration", "function_definition", "declaration", "enumerator"],
-  baseNodes: ["base_class_clause"],
+  // NO `baseNodes`: the cpp grammar's `base_class_clause` carries no `ancestor` field, so the
+  // baseNodes path reads nothing; `baseResolver` (called on the TYPE node) is the working half.
   // A FUNCTION BODY IS A SCOPE. Without this, a local declared inside a body would be recorded as a
   // PROJECT declaration — the fleet rule is that a local is not a project declaration (PY-7's closure
   // correction). `function_definition` is also a member/nameOnly node: the node's OWN name is read
