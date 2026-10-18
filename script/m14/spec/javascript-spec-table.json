@@ -271,11 +271,11 @@
         "expression",
         "anonymous"
       ],
-      "verification": "exports label; target==='default' (never a declaration name); form known; named/alias/expression rows: localName is a file-scope binding the run can see; anonymous: form is the evidence.",
+      "verification": "exports label; target==='default' (never a declaration name); form known. CORRECTED by the Lead after the second re-run: localName is NOT required to be a visible declaration (local declarations are not published symbols; the test refuted 24 correct claims and was removed). named-declaration/export-alias/expression rows must CARRY a non-empty localName; a missing one refutes.",
       "refutation": [
         "target !== 'default' (fabricated public name)",
         "unknown/missing form",
-        "localName with no declaration/import binding in the file",
+        "a required localName is EMPTY/missing",
         "ES marker on a CJS value row"
       ],
       "class_rows_census": 6186,
@@ -297,7 +297,8 @@
         "bindOK": 1332,
         "bindFAIL": 0,
         "bindingRefuted": 0
-      }
+      },
+      "arm_progression": "7,137 verified + 245 refuted (cross-file rule, an arbiter error) -> after removal 24 refuted (default localName-declaration rule, also an arbiter error) -> both rules removed; cap-50 bindOK 1,332 / bindFAIL 0 / resolved 407; FINAL ARM expected bindOK ~510,791 (407,881 local + 95,528 imported + ~7,382 exportSurface), clause 4 0, arbitraryTwin 534,890 (fell 4) - Lead §18.17 is the number of record."
     },
     "module_exports": {
       "status": "ARBITER LANDED (same exportSurface kind); FILE-LOCAL DECLARATION GUARD shipped; FULL ARM: 7,137 verified / 245 refuted (all 245 decoys: the cross-file declaration rule was an arbiter error and is REMOVED - JS modules are file-scoped).",
@@ -347,6 +348,38 @@
         "decoyNote": "245 refutations were an arbiter cross-file rule error (removed) and are decoys, not over-claims. Expected re-run bindOK ~510791, clause 4 0, arbitraryTwin 534890 (fell 4).",
         "edgesPlus2": "export NAME-SET collapse resolved (consul replace.js:27, hasura ApiLimitsHeader.js:9); no residual."
       }
+    },
+    "receiver_position": {
+      "status": "ANALYZER EVIDENCE EMITTED 2026-10-18; ARBITER KIND NOT DECIDED (Lead). Contract: validation/m14/verification/JAVASCRIPT-RECEIVER-POSITION-CLAIM-CONTRACT.md",
+      "class_rows_census": 38559,
+      "census_classes": {
+        "IMPORT-RECEIVER-EXTERNAL": 16963,
+        "IMPORT-RECEIVER-INTERNAL": 1687,
+        "REQUIRE-RECEIVER": 17235,
+        "NAMESPACE-IMPORT-RECEIVER": 2674
+      },
+      "evidence": {
+        "canonical": "metadata.receiverImport = { specifier, binding }",
+        "flat_mirrors": [
+          "metadata.receiverImportSpecifier",
+          "metadata.receiverImportBinding"
+        ],
+        "source": "the file's own imports rows (metadata.importedBindings + metadata.module) - same evidence as importedBinding"
+      },
+      "verification": "calls label; target is a member leaf != binding; evidence present/well-formed; the run's own import rows for this file bind the name to the specifier.",
+      "refutation": [
+        "no import evidence in the file for binding/specifier",
+        "target === binding (bare imported-binding class)",
+        "non-name member spelling"
+      ],
+      "expected_claimable": "~30,000-32,000 (sample ratio 0.331 x 95,528 imported claims); census 38,559 is the upper bound",
+      "open_decisions": [
+        "kind: new receiverImport kind vs position field on the imported-binding path",
+        "project-relative specifiers: verify or exclude (13.5% of sample)",
+        "NO target/project-declaration refutation recommended (decoy rule)",
+        "arbiter cannot re-check chain purity - analyzer duty; add a selfTest control for unbacked binding"
+      ],
+      "fixture": "javascript/receiver-position-claims (5 positives / 4 negatives)"
     }
   }
 }

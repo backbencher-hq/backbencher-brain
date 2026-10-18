@@ -116,6 +116,16 @@ A CJS default VALUE row (`module.exports = function(){}`) deliberately carries N
 Contract, verification/refutation conditions and expected counts:
 `validation/m14/verification/JAVASCRIPT-EXPORTS-CLAIM-CONTRACT.md`.
 
+**RECEIVER-POSITION CLAIM EVIDENCE (emitted, arbiter kind pending — Lead).** A `calls` row whose
+callee is a MEMBER expression, whose receiver chain is PURE (object-of-member to the root, no computed
+subscript, no intervening call) and whose ROOT identifier is a file import binding publishes
+`metadata.receiverImport = { specifier, binding }` + flat mirrors `receiverImportSpecifier` /
+`receiverImportBinding`; the target stays the member leaf, and the evidence is the file's own `imports`
+rows (the same evidence the imported-binding claim uses). Refused: bare imported callees (their own
+claim class), call-result receivers, computed subscripts, non-import roots, and leaf==binding. Contract:
+`validation/m14/verification/JAVASCRIPT-RECEIVER-POSITION-CLAIM-CONTRACT.md` (38,559 census rows; expected
+claimable ≈30,000–32,000; fixture `receiver-position-claims`).
+
 **Deliberately NOT claimed, with their cap-50 triage counts** (they are the open classes in
 `validation/m14/verification/JAVASCRIPT-RESOLUTION-CLASSIFICATION.md`): MEMBERS of the runtime and
 test-runner globals (`jest.fn`, `process.argv.slice`, `expect(x).toBe` — the leaf may be a genuine

@@ -2463,6 +2463,26 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               ? this.localBindingTarget(fn, targetName, callSource)
               : null
             const importedCallee = boundCallee ? null : (fn.type === "identifier" ? this.importedBindingFor(fn, targetName) : null)
+            /**
+             * RECEIVER-POSITION evidence (contract: JAVASCRIPT-RECEIVER-POSITION-CLAIM-CONTRACT.md).
+             * For a MEMBER call whose receiver chain is PURE (object-of-member all the way, no computed
+             * subscript, no call in between) and whose ROOT identifier is a file import binding, the row
+             * proves "this member target is accessed on import binding B from specifier S". The
+             * imported-binding evidence (imports rows' metadata.importedBindings + metadata.module) is
+             * what an arbiter would verify the claim against; this marker is that claim's evidence.
+             *
+             * REFUSED: a bare callee (that is the importedBinding class itself), a chain through a CALL
+             * result (`ns.make().go()` — the receiver is the call result, not the namespace), a computed
+             * subscript (`ns[key]()` — dynamic), and a root that is not an import binding (locals,
+             * parameters, `this`, project symbols).
+             */
+            let receiverImport: { specifier: string; binding: string } | null = null
+            if (!boundCallee && !importedCallee && fn.type === "member_expression") {
+              let recvRoot: Node | null = fn.childForFieldName("object")
+              while (recvRoot && recvRoot.type === "member_expression") recvRoot = recvRoot.childForFieldName("object")
+              if (recvRoot?.type === "identifier") receiverImport = this.importedBindingFor(recvRoot, recvRoot.text)
+              if (receiverImport && receiverImport.binding === targetName) receiverImport = null
+            }
             relationships.push({
               source: callSource,
               target: boundCallee ?? targetName,
@@ -2475,6 +2495,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 calleeExpression: fullCallee,
                 ...(boundCallee ? { localBinding: true } : {}),
                 ...(importedCallee ? { importedBinding: importedCallee } : {}),
+                ...(receiverImport ? {
+                  receiverImport: receiverImport,
+                  receiverImportSpecifier: receiverImport.specifier,
+                  receiverImportBinding: receiverImport.binding,
+                } : {}),
                 // The receiver's stated type, on the store's EXISTING channel: `metadata.owner`
                 // is what `member-owner-resolution.ts` (claimOwnerCarryingTargets +
                 // resolveMemberTargetsByOwner) reads on BOTH production resolution paths — it
