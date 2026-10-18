@@ -4311,6 +4311,17 @@ class TypeScriptAnalysisRunner {
         md.evidenceClass = conf >= 0.9 ? "structural" : "usage_contextual"
         continue
       }
+      // `decorates` is STRUCTURAL unconditionally: the row is read off the decorated declaration's
+      // own decorator list (the symbol the analyzer recorded), not inferred from a mention in a
+      // body — the same class `contains`/`exports` get for being read off a declaration.
+      if (t === "decorates") { md.evidenceClass = "structural"; continue }
+      // `renders` follows `instantiates`'s rule, because it is the same kind of fact: the JSX
+      // element is the construction site written in the source. Confidence 0.9 (the capitalized-
+      // component convention) is what decides structural vs contextual, exactly as it does there.
+      if (t === "renders") {
+        md.evidenceClass = conf >= 0.9 ? "structural" : "usage_contextual"
+        continue
+      }
       md.evidenceClass = "usage_contextual"
     }
   }
@@ -5454,7 +5465,24 @@ class TypeScriptAnalysisRunner {
           const constructor = n.namedChild(0)
           if (constructor) this.pushInstantiation(constructor, n, callSource, relationships)
         } else {
-          // JSX element
+          // ── JSX IS A `renders` RELATIONSHIP ────────────────────────────────────────────────
+          // A component rendered in a template is not a name MENTIONED in a body; the owner
+          // admitted `renders` (src/ast/types.ts) because `uses` could not say which of the two
+          // it was. The relabel is 1:1 by construction: same enclosing-symbol source, same
+          // component target, same line, same capitalized-name rule (`Foo`, `Foo.Bar` via
+          // nested_identifier), same one-row-per-element rule.
+          //
+          // ONE ROW PER JSX ELEMENT, NOT ONE PER OPENING TAG: `jsx_element` is visited once and
+          // its OPENING element is read for the name; the opening node itself never matches this
+          // branch (`jsx_self_closing_element` / `jsx_element` are the two matched types), so
+          // `<Foo>…</Foo>` emits exactly one row and `<Foo/>` exactly one.
+          //
+          // WHAT DOES NOT FIRE, each for its own reason: a lowercase intrinsic tag (`<div>`) is
+          // an HTML element, not a component — the capitalization test is the language's own
+          // component convention; a fragment (`<>…</>`) has no opening identifier to name; a
+          // `React.createElement(Foo, …)` call is a CALL of `createElement` with `Foo` as an
+          // argument, so it stays a `calls` row (and `Foo` is reached, if at all, by the
+          // ordinary argument walk) — it is not a rendered element in the syntax.
           const opening = n.type === "jsx_self_closing_element" ? n : n.namedChild(0)
           if (opening && (opening.type === "jsx_self_closing_element" || opening.type === "jsx_opening_element")) {
             const identifier = opening.namedChild(0)
@@ -5465,10 +5493,12 @@ class TypeScriptAnalysisRunner {
                 relationships.push({
                   source: callSource.name,
                   target: identifier.text,
-                  type: ASTEngine.RelationshipType.Uses,
+                  type: ASTEngine.RelationshipType.Renders,
                   confidence: 0.9,
                   ...this.lineField(identifier),
                   metadata: {
+                    // The pre-relabel key is KEPT: a consumer written against the old row should
+                    // not have to learn a second metadata spelling for the same fact.
                     jsxElement: identifier.text,
                     line: n.startPosition.row + 1,
                   } as any,
@@ -6062,11 +6092,29 @@ class TypeScriptAnalysisRunner {
   }
 
   /**
-   * M59 #860: a decorator's reference edge names the DECORATOR's own line. The
-   * line travels in metadata.decoratorLines, parallel to symbol.decorators (the
-   * same lockstep pattern as extendsLines/implementsLines). A decorator whose
-   * line was never recorded stays line-less rather than borrowing the
-   * declaration's line — never invent a line (#823).
+   * A DECORATOR IS A `decorates` RELATIONSHIP — not a `references` row.
+   *
+   * THE RELABEL, and why it is not cosmetic. `@sealed` on a class is a declaration modifier the
+   * JVM/F# family stores as metadata and this lane used to publish as a `references` edge from
+   * the decorated symbol to the decorator. A `references` row is a claim that the symbol's body
+   * MENTIONS a type/name; a decorator is applied TO the declaration, and the ten stored values
+   * had no honest spelling for that. The owner admitted `decorates` (src/ast/types.ts) for it, so
+   * the row becomes `Decorates` with the SAME source (the decorated declaration), the SAME target
+   * (the decorator's name leaf, `@module.Decorator` -> `Decorator`, from `extractDecoratorName`),
+   * the SAME line (the decorator's own line, M59 #860) and the SAME one-row-per-decorator rule.
+   *
+   * A DECORATOR'S ARGUMENT IS NOT A ROW: `@Get('/path')` publishes `decorates: handler -> Get`
+   * only; `/path` is an argument of the decorator, not a declaration the decorator names.
+   *
+   * NO DOUBLE EMISSION: the call/reference walks skip decorator position (`inDecoratorPosition`),
+   * so replacing this type cannot leave the old `references` row behind for the same site — and
+   * the `isDecorator` metadata key is kept as the edge's own provenance marker for consumers that
+   * were written against the old row.
+   *
+   * M59 #860: the line travels in metadata.decoratorLines, parallel to symbol.decorators (the
+   * same lockstep pattern as extendsLines/implementsLines). A decorator whose line was never
+   * recorded stays line-less rather than borrowing the declaration's line — never invent a line
+   * (#823).
    */
   private extractDecoratorRelationships(
     symbols: ASTEngine.UniversalSymbol[],
@@ -6081,7 +6129,7 @@ class TypeScriptAnalysisRunner {
           relationships.push({
             source: symbol.name,
             target: decorator,
-            type: ASTEngine.RelationshipType.References,
+            type: ASTEngine.RelationshipType.Decorates,
             confidence: 1.0,
             ...(typeof line === "number" ? { line_number: line } : {}),
             metadata: {
