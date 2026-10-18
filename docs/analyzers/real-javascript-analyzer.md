@@ -26,7 +26,9 @@
 
 ## Relationship ontology
 
-Ten types, ten verdicts. **Every number below was measured through the
+Twelve types now carry an emitted verdict: the original ten ontology types, plus the two canonical
+labels landed 2026-10-18 (`renders` for JSX component usage, `decorates` for the decorator edge,
+which replaced the per-decorator `references` row). **Every number below was measured through the
 production entry `src/ast/pool-worker.parseFile`** — not through `analyze()`
 directly, because the two disagree (see "Two paths" at the foot of this file, and
 JSD36). Every number was **re-measured at this commit**, and three rows the
@@ -45,7 +47,7 @@ and graded; the tenth is blocked on the gate's first-row skip (Open findings §1
 
 | Relationship type | Emitted? | Count / files | How resolved | Confidence model |
 | --- | --- | --- | --- | --- |
-| calls | **EMITTED** | svelte 31,940 / 3,371 files; lodash 12,555 / 47; ts corpus 64,557 / 6,516 | `call_expression` → callee leaf (member expressions reduce to leaf: `obj.method()` → `method`); source = enclosing function/method leaf name; `console.*` leaf methods filtered; `super()` filtered (language keyword); `require()` handled as import; computed/dynamic calls (`o[key]()`) filtered. **A member call on a LOCAL receiver whose initialiser is `new` carries `metadata.owner` = the constructor leaf** (`const c = new Widget(); c.run()` → `owner: "Widget"`): JavaScript states a receiver's type in exactly one syntactic form — the initialiser — and this is the STORE channel (`src/ast/member-owner-resolution.ts:25`) that binds the member inside Widget. MEASURED END-TO-END through the production index (`indexProjectParallel`): with two classes Foo and Bar each declaring `run()`, `c.run()` bound to **Bar.run** (the alphabetically-first WRONG declaration) without the metadata and to **Foo.run** (the intended one) with it — the only place in this lane where a store channel has been shown to change a resolution. Controls pinned by `javascript/receiver-owner-from-new`: a non-`new` initialiser (`const d = make()`) states no type and carries no owner, and two different constructors for one name are refused, not guessed | 0.9 |
+| calls | **EMITTED** | svelte 31,940 / 3,371 files; lodash 12,555 / 47; ts corpus 64,557 / 6,516 | `call_expression` → callee leaf (member expressions reduce to leaf: `obj.method()` → `method`); source = enclosing function/method leaf name; `console.*` leaf methods filtered; `super()` filtered (language keyword); `require()` handled as import; computed/dynamic calls (`o[key]()`) filtered. **A member call whose receiver type the file STATES carries `metadata.owner` = that type, plus `metadata.ownerEvidence` ∈ {new, assignment, this, jsdoc}** — the STORE channel (`src/ast/member-owner-resolution.ts`, `claimOwnerCarryingTargets` + `resolveMemberTargetsByOwner`, read by BOTH resolution paths in `parallel-indexer.ts`) that binds the member inside the owner. The four proofs: `new` (`const c = new Widget()`), `assignment` (`this.x = new Widget()`, `x = new W()`, class field `x = new Widget()`), `this` (`this.m()` inside a class DECLARATION — a class expression names no class-like symbol here, and a plain function's dynamic `this` gets nothing) and `jsdoc` (`/** @type {Widget} */` on a declarator, a scoped `@param {Widget} w`, or the constructor-parameter propagation `this.dep = dep`). A wrong owner is worse than none: the store WITHDRAWS the name binding for an owner-carrying row and then declines. **Coverage cap-50 triage (2026-10-18): 4 of 921 member-receiver calls (0.4%) — new 2, assignment 1, jsdoc 1**; the sample contains no class-declaration `this`-call (every `this.*` call there is a dynamic-`this` callback). Host-global claims: see "External claims" below. MEASURED END-TO-END through the production index (`indexProjectParallel`): with two classes Foo and Bar each declaring `run()`, `c.run()` bound to **Bar.run** (the alphabetically-first WRONG declaration) without the metadata and to **Foo.run** (the intended one) with it — the only place in this lane where a store channel has been shown to change a resolution. Controls pinned by `javascript/receiver-owner-from-new`: a non-`new` initialiser (`const d = make()`) states no type and carries no owner, and two different constructors for one name are refused, not guessed | 0.9 |
 | extends | **EMITTED** | svelte 15 / 14; ts corpus 3,575 / 1,031; **lodash 0** (ES5 has no `class`) | `class_heritage` → base class leaf name | 1.0 |
 | implements | **RULED** — the language has no `implements` clause. **Six instruments, two of them new this round and decisive** — see "What was RULED" | 0 emitted on every corpus | — | — |
 | instantiates | **EMITTED** | svelte 140 / 72; lodash 586 / 21; ts corpus 6,415 / 1,264 | `new_expression` → constructor leaf name; 55 global runtime constructors filtered (`JS_GLOBAL_CONSTRUCTORS`) | 0.95 |
@@ -53,11 +55,40 @@ and graded; the tenth is blocked on the gate's first-row skip (Open findings §1
 | exports | **EMITTED** | svelte 4,856 / 3,404; lodash 60 / 12; ts corpus 26,043 / 3,148 | ESM `export` statements (declaration, export_clause, default); CJS `module.exports = { … }` (object keys), `exports.x = …` → exported name. **Source is `(file)` + `metadata.fileLevel`.** **The export record's own metadata is carried through** (`{isDefault, ...item.metadata}`), so a NAMED default declaration's row carries `metadata.localName` (`export default class Main` → `localName: "Main"`); `loadImportInputs` uses it to recover the declaration, which is what lets `import Def from "./lib"` resolve to `Main` (JSD53, m40 JD2.4) | 1.0 |
 | overrides | **EMITTED** | svelte 52 / 7 files (all at 0.5); ts corpus **630 / 148** `[re-measured, was 644 / 158]`; **lodash 0** | derived member matching base-class member name, over METHODS, CONSTRUCTORS and ACCESSOR PAIRS; an accessor pair is a prototype member, so `get x()`/`set x(v)` shadow a base accessor too, and the pair collapses to ONE edge (J10). Symbol kinds are unchanged by that widening — accessors are still kinded `property`. A `#private` name can neither be declared by a base nor shadowed by a subclass, so it is always silent (J9). Base resolved via extends + cross-file harness companion (`User.format → BaseService.format`) | 0.95 in-file verified, 0.5 first-parent guess |
 | contains | **EMITTED** | svelte 654 / 63; lodash 16 / 8; ts corpus **23,121 / 3,483** `[re-measured, was 23,209]` | computed from `ownerName` on symbols (single pass) — class members, object-literal members, prototype methods | 1.0 |
-| uses | **EMITTED** | svelte 30,758 / 2,544; lodash 7,691 / 48; ts corpus 215,640 / 11,901 | **Four emission sites:** bare identifier reads at 0.9 (`return config`, `if (flag)`); member-chain segments at 0.85 (`title.length` → `title`); template-substitution reads at 0.85; and the chain ROOT of a call's callee at 0.6 with `metadata.callReceiver` (`title.toUpperCase()` → `title`). The 0.6 tier exists because `calls` names only the leaf, so the receiver is named by nothing else — see X1 in `script/m14/spec/svelte-completeness.json`. `this`/`super` are excluded as keywords. **The SOURCE expression is `method \|\| owner \|\| moduleName`** — `\|\|`, not `??`, so a zero-length recovered name cannot win (JSD35) | 0.6 / 0.85 / 0.9 |
-| references | **EMITTED** | svelte 26 / 15; lodash 46 / 11; ts corpus 1,533 / 574 | Carries both ways JavaScript names a type it does not own: decorator metadata (1.0) and `instanceof` (0.95). The oracle derives these in `deriveJavaScriptEdges` in a pre-pass OUTSIDE the decorator-skipping walk, so it audits those nodes rather than stepping around them. **An `instanceof` with no enclosing declaration is sourced to the MODULE, not to a placeholder** (JSD35). **The 1.0 decorator tier fires on 0 corpus rows on every JavaScript corpus measured** — 0 `decorator` nodes across svelte's 3,447 and lodash's 51 — so half this label is unexercised by real JavaScript | 1.0 decorator (unexercised), 0.95 instanceof |
+| uses | **EMITTED** | svelte 30,758 / 2,544; lodash 7,691 / 48; ts corpus 215,640 / 11,901 | **Four emission sites:** bare identifier reads at 0.9 (`return config`, `if (flag)`); member-chain segments at 0.85 (`title.length` → `title`); template-substitution reads at 0.85; and the chain ROOT of a call's callee at 0.6 with `metadata.callReceiver` (`title.toUpperCase()` → `title`). The 0.6 tier exists because `calls` names only the leaf, so the receiver is named by nothing else — see X1 in `script/m14/spec/svelte-completeness.json`. `this`/`super` are excluded as keywords. **The SOURCE expression is `method \|\| owner \|\| moduleName`** — `\|\|`, not `??`, so a zero-length recovered name cannot win (JSD35). **A member READ also carries `metadata.owner` + `metadata.ownerEvidence` when the chain root's type is stated** — a typed local (`const c = new Widget(); c.name`) or `this` inside a class declaration (`this.Path`); cap-50 triage: 16 of 1,008 (1.6%), this 15 / jsdoc 1. Host-global claims: see "External claims" below | 0.6 / 0.85 / 0.9 |
+| references | **EMITTED** | svelte 26 / 15; lodash 46 / 11; ts corpus 1,533 / 574 | NOW `instanceof` ONLY (0.95): the decorator half became the canonical `decorates` label on 2026-10-18. **An `instanceof` with no enclosing declaration is sourced to the MODULE, not to a placeholder** (JSD35). The oracle derives `instanceof` in `deriveJavaScriptEdges` outside the decorator-skipping walk, so it audits those nodes rather than stepping around them | 0.95 |
+| renders | **EMITTED** (canonical vocabulary, 2026-10-18) | cap-50 triage (incoming-gate, 50-file stride): **1 row**; whole-population count not yet measured | `jsx_element` / `jsx_self_closing_element` → the capitalized component tag identifier; **ONE row per element** (a paired `<Panel>…</Panel>` is one row, never one per tag); lowercase intrinsics (`div`), fragments (`<></>`) and member components (`<A.B/>`) emit NOTHING; source = the enclosing symbol the old `uses` row was already attributed to. This was a 1:1 relabel of the JSX `uses` row, so the name rule is unchanged | 0.9 |
+| decorates | **EMITTED** (canonical vocabulary, 2026-10-18) | cap-50 triage: **21 rows**; whole-population count not yet measured | Per decorated symbol: source = the DECORATED declaration, target = the decorator name leaf (`jsDecoratorName` spelling), line = the decorator's own line. One row per decorator; **no row for a decorator's ARGUMENTS** (`@inject(make())` names `inject`, not `make`) and no second `references`/`calls` row at the same site — decorator position is suppressed whole by the call/read walks (`inDecoratorPosition`). Parameter decorators do not exist in this grammar/ECMAScript | 1.0 |
 
 `depends` is not one of the ten ontology types and is not emitted; the lane doc's
 earlier "covered by imports" row was about a name the ontology does not carry.
+
+## External claims (2026-10-18) — published, never merged into `resolved`
+
+A CLAIM IS NOT A RESOLUTION. Three claim classes are emitted, and the arbiter
+(`incoming-gate.ts`) reads each through its own `metadata` keys and its own verification; an edge
+that carries one is counted in the `extOK` column BESIDE `resolved`, never inside it.
+
+| claim class | edges it marks | keys published | how the project checks it |
+| --- | --- | --- | --- |
+| host-global, bare | `setTimeout(...)`, `JSON` read, `extends Error`, `x instanceof Date` | `isExternalTarget: true`, `externalReason` ∈ {host-global-bare, host-global-base, host-global-type}, `externalClaimReason` (the citation) | dotless target looked up in the project's key space; a project that declares the name is a different answer and the claim is inert |
+| host-global, member | `document.getElementById`, `window.addEventListener`, `location.hash.substring`, `document.body.dataset.theme` segments | same + `externalReceiver` = the receiver chain ROOT | the receiver root is on the closed cited list; a LOCAL receiver gets NO claim (`x.substring` may be a project object) |
+| module-namespace, imports | a non-relative `imports` specifier (`qunit:test`, `@glimmer/component:Component`) | `isExternalTarget: true`, `externalReason: "module-namespace"`, `externalSpecifier` = the module | module ROOT against the project's own file/directory names, and only when `context.projectIndex.complete === true`; FAILS CLOSED (no claim) otherwise |
+
+The vocabulary behind the first two is `src/ast/js-builtin-prototypes.ts` — the 57 cited
+`HOST_GLOBALS` (ECMA-262 §19–§26, WHATWG HTML §7.3) plus `memberChainClaim` — the same module the
+differential's oracle imports, so the two sides cannot drift into two copies of one rule. **A name
+not in that list gets NO claim.** The import claim's first version claimed every non-relative
+specifier unconditionally and MEASURED `ext?` 0 → 19 at cap 50: the roots were project directory
+names created by Jest mocks of real packages (`__mocks__/fs-extra.js`), so the claim read as one the
+project could not reach. It is now index-gated (python twin's `applyProjectIndexFacts` precedent).
+
+**Deliberately NOT claimed, with their cap-50 triage counts** (they are the open classes in
+`validation/m14/verification/JAVASCRIPT-RESOLUTION-CLASSIFICATION.md`): test-runner globals
+(`it`/`describe`/`test`/`expect`/`assert`, 494 edges — no cited table exists yet and a heuristic
+would be the closed-list lie), Node runtime globals (`process`/`Buffer`/`module`/`require`), and
+imported bindings (`steps()`, `extends Component`, decorator names — the binding is a name in THIS
+file whose declaration is in another module; that needs the import seam, not a claim).
 
 ---
 
@@ -187,6 +218,33 @@ Full table and reasoning in "What was RULED" below. The two decisive additions t
 - **R7**: 0 empty; **0 `global` sources — fixed this round** (116 rows on the ts corpus, 14 on lodash, 1 on svelte; JSD35). Every remaining "placeholder-looking" endpoint on this type is 0.
 
 ---
+
+### 11. renders — EMITTED (2026-10-18)
+
+- **Fires**: cap-50 triage 1 row (the stride's whole JSX surface); whole-population count not yet
+  measured. The row replaced a `uses` row 1:1, so the emission site and its name rule are the ones
+  the JSX fixtures already pinned — only the label is canonical.
+- **Labelled**: a JSX element is a RENDER of a component, not a generic read. One row per ELEMENT:
+  a paired `<Panel>…</Panel>` is one row (pinned by `expectRelationshipCount` equals 1), its nested
+  elements are their own rows; lowercase intrinsics, fragments and member components emit nothing.
+- **Oracle**: `script/m14/differential.ts` has NO JSX derivation for the plain javascript grammar
+  (0 jsx references), so this label is currently outside the differential's reach — reported, not
+  hidden. The fixtures pin it (`javascript/jsx-usage`).
+- **Confident**: 0.9, the tier the `uses` row carried; nothing under the 0.7 fabrication threshold.
+
+### 12. decorates — EMITTED (2026-10-18)
+
+- **Fires**: cap-50 triage 21 rows; whole-population count not yet measured.
+- **Labelled**: source = the DECORATED declaration, target = the decorator name leaf, line = the
+  decorator's own line; one row per decorator, none for its arguments. This REPLACED the
+  per-decorator `references` row, so the label the differential's oracle derives
+  (`deriveJavaScriptEdges`'s decorator block still pushes `references`) is now the OLD contract —
+  a known, reported mismatch in a Lead-owned file, not a silent one.
+- **Confident**: 1.0 (the name is written in the file). The decorator's arguments remain
+  measurements of the call/read walks' suppression (`inDecoratorPosition`), pinned by
+  `javascript/decorator-arguments-not-decorates`.
+- **Parameter decorators**: none exist in this grammar or in ECMAScript decorators, so that
+  position has nothing to emit from.
 
 ## What was RULED, and the measurement that rules it
 

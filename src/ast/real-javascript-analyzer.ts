@@ -5,14 +5,25 @@
 // where the tree has a node. Grammar: tree-sitter-javascript 0.23.1 (WASM loaded by
 // engine.ts), plus the JSX nodes it carries. ESM and CommonJS are both first-class.
 // Relationship types covered: calls, uses, imports, exports, extends, instantiates, renders
-// (JSX component usage), decorates (decorator metadata edge),
-// overrides, contains, references. `implements` is RULED OUT — JavaScript has no
-// implements clause (six instruments; docs §"What was RULED"). The emission table,
-// confidence tiers and every count live in docs/analyzers/real-javascript-analyzer.md.
+// (JSX component usage — canonical vocabulary, 2026-10-18), decorates (the decorator edge,
+// same vocabulary landing; it REPLACED the per-decorator `references` row),
+// overrides, contains, references (now `instanceof` only). `implements` is RULED OUT — JavaScript
+// has no implements clause (six instruments; docs §"What was RULED").
+// EXTERNAL CLAIMS are published, never merged into resolution: the closed CITED platform
+// vocabulary (`js-builtin-prototypes.ts`) proves a bare host global, a member whose receiver
+// chain root is one, and a host base/`instanceof` type (`metadata.isExternalTarget` +
+// `externalReason` + `externalClaimReason`); the module-namespace claim on `imports` fires ONLY
+// on a complete project index and fails closed otherwise. Node/test-runner globals and imported
+// bindings are NOT claimed — they are counted as open classes in
+// validation/m14/verification/JAVASCRIPT-RESOLUTION-CLASSIFICATION.md, not guessed.
+// The receiver-type channel is `metadata.owner` (the store's existing member-owner resolution) +
+// `metadata.ownerEvidence` in {new, assignment, this, jsdoc}; a wrong owner is worse than none.
+// The emission table, confidence tiers and every count live in docs/analyzers/real-javascript-analyzer.md.
 // Where its scripts and validations live: script/m14/spec/javascript-completeness.json
-// (ontology ledger), validation/m14/fixtures/javascript/** (77 fixtures + expectations,
+// (ontology ledger), validation/m14/fixtures/javascript/** (82 fixtures + expectations,
 // run by script/m14/run-fixtures.ts --lang javascript), validation/m14/verification/
-// JAVASCRIPT-STATE.md and JAVASCRIPT-RESIDUAL.md, and the gates
+// JAVASCRIPT-STATE.md, JAVASCRIPT-RESIDUAL.md and JAVASCRIPT-RESOLUTION-CLASSIFICATION.md,
+// and the gates
 // script/m14/incoming-gate.ts, verify-js-binding-resolution.ts, verify-js-import-seam.ts,
 // verify-js-source-attribution.ts, verify-doc-truth-emissions.ts.
 // EDIT THESE TOO: the doc, the spec, the fixtures. This analyzer is the DELEGATE HOST
