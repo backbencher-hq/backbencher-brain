@@ -1471,6 +1471,17 @@ export async function processWithWorkerPool(
   onProgress: (processed: number, total: number, currentFile: string) => void,
   telemetry?: { dbFlushMs: number; retries: number; workerCount: number; workerStartupFailures: number; poisonFiles: number },
   signal?: AbortSignal,
+  /**
+   * DID THIS RUN WALK THE PROJECT'S WHOLE ADMITTED FILE SET? The one fact `ProjectIndex.complete` may
+   * rest on, and only the CALLER has it: `files` here is the run's list, and under a cap, a stride or
+   * an incremental reindex that list is a FRAGMENT of the project.
+   *
+   * OPTIONAL AND FAIL-CLOSED: an absent scope means `complete: false`, and an index marked incomplete
+   * cannot support a "the project declares no such name" claim — the only use a project-scope index
+   * has. A caller that does not say leaves it false, exactly as `ProjectIndex.complete` reads an
+   * absent field.
+   */
+  indexScope?: { complete: boolean },
 ): Promise<FileResult[]> {
   const concurrency = ParallelIndexerConfig.concurrency
   const batchSize = ParallelIndexerConfig.workerBatchSize
@@ -1645,7 +1656,14 @@ export async function processWithWorkerPool(
     // `.proto` ADDED 2026-10-11 (protobuf lane). The entry is INERT WITHOUT A SPEC: measured over the
     // whole corpus (847 .proto files), the Solidity default yields 0 names and 0 types — an entry that
     // indexes the right SHAPE and holds nothing, which is the dart situation one layer down.
-    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java" }
+    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java", ".py": "python", ".ts": "typescript", ".tsx": "typescript" }
+    // THE THREE NEW EXTENSIONS BUILD ONLY ON A COMPLETE WALK (see `indexScope`). The five pre-existing
+    // lanes consume the index for RESOLUTION and tolerate an incomplete one — behaviour that must not
+    // change — while python/typescript have no consumer yet and their index exists only to support a
+    // project-scope CLAIM, which an incomplete index can never support. Building it anyway would pay a
+    // SECOND FULL PARSE of every project on every capped/incremental run (measured 8.6-24.5 ms/file,
+    // ~16 s on ansible's 1,858 .py files) for an artefact no one may read. Fail-closed, and cheap.
+    const CLAIM_ONLY_INDEX_EXTENSIONS = new Set([".py", ".ts", ".tsx"])
     // `.groovy` IS DELIBERATELY ABSENT, and it was added and then removed in the same change: this
     // table is only half the contract, and the other half is `specByLang` below. With `.groovy` here
     // and no groovy spec there, the lookup fell through to `?? SOLIDITY_DECLARATION_SPEC` and
@@ -1673,6 +1691,10 @@ export async function processWithWorkerPool(
           fsharp: path.join(repoRoot, "wasm", "tree-sitter-fsharp.wasm"),
           protobuf: path.join(repoRoot, "wasm", "tree-sitter-protobuf.wasm"),
           scss: path.join(repoRoot, "wasm", "tree-sitter-scss.wasm"),
+          // The wasm each ANALYZER loads, not the nearest filename: `wasm/typescript.wasm` also
+          // exists, and the analyzer's head comment pins `tree-sitter-typescript.wasm`.
+          python: path.join(repoRoot, "wasm", "tree-sitter-python.wasm"),
+          typescript: path.join(repoRoot, "wasm", "tree-sitter-typescript.wasm"),
         }
         // The SPEC is per language for the reason project-index.ts gives: the generic extractor
         // reads `childForFieldName("name")`, which is true of Solidity and false of F# three ways
@@ -1696,6 +1718,12 @@ export async function processWithWorkerPool(
           // the language's own analyzer because the grammar's declarations are named by a CHILD node
           // (`message_name`, not a `name` field) and the `package` is a SIBLING of the declaration.
           protobuf: (await import("./real-protobuf-analyzer")).PROTOBUF_DECLARATION_SPEC,
+          // BOTH HALVES, named together — the `.scss`/`.groovy` notes above record what a half-wire
+          // costs: the lookup falls through to `?? SOLIDITY_DECLARATION_SPEC` and indexes a lane's
+          // declarations with the wrong grammar's rules. These specs live in project-index.ts and are
+          // reached through the dynamic `mod` import already in scope.
+          python: mod.PYTHON_DECLARATION_SPEC,
+          typescript: mod.TYPESCRIPT_DECLARATION_SPEC,
         }
         const { existsSync: wasmExists } = await import("fs")
         const byExt: Record<string, unknown> = {}
@@ -1703,9 +1731,14 @@ export async function processWithWorkerPool(
           const lang = PROJECT_INDEX_EXTENSIONS[ext]
           const wasm = wasmByLang[lang]
           if (wasm === undefined || !wasmExists(wasm)) continue
+          if (CLAIM_ONLY_INDEX_EXTENSIONS.has(ext) && indexScope?.complete !== true) continue
           const subset = files.filter((f) => f.toLowerCase().endsWith(ext))
           if (subset.length === 0) continue
           const built = await mod.buildProjectIndexFromDisk(wasm, subset, specByLang[lang] ?? mod.SOLIDITY_DECLARATION_SPEC)
+          // THE COMPLETENESS CONTRACT, applied where the fact lives. No builder can set this itself —
+          // only the run's caller knows whether its file list was the project — so the scope is the
+          // only honest source, and false stays false: an incomplete index must never claim.
+          if (indexScope?.complete === true) built.complete = true
           byExt[ext] = mod.serializeProjectIndex(built)
           log.info("project index built", { ext, files: subset.length, types: built.typeKinds.size })
         }
@@ -6340,6 +6373,12 @@ export async function indexProjectParallel(
     const files = options.skipDiscovery && options.files
       ? options.files.filter(f => !shouldSkipCli(f) && hasValidExtension(f))
       : await discoverAndFilterFiles(projectId, projectPath, stats, options.files, options.excludePatterns)
+    // THE FULL-WALK SIGNAL, read off the existing call graph rather than invented: when the caller
+    // hands no explicit `files` list and does not ask for an incremental run, `discoverAndFilterFiles`
+    // walked the project's admitted set — a full walk. An explicit list (`service.ts` passes
+    // `[targetPath]` with `isIncremental: true`) or an incremental run is a fragment, and a fragment
+    // must never mark an index complete.
+    const indexScope = { complete: options.files === undefined && options.isIncremental !== true }
     phases.discoveryMs = Date.now() - discoveryStart
 
     // M40.A2: on incremental runs, capture cross-file edges INTO the files
@@ -6608,7 +6647,12 @@ export async function indexProjectParallel(
           updatedAt: now,
         })
       }
-    }, poolTelemetry, signal)
+    },
+      poolTelemetry,
+      signal,
+      // The same scope the index build reads: a capped/strided/incremental run passes false.
+      indexScope,
+    )
     if (signal?.aborted) stats.cancelled = true
 
     // PERL-MR15. Populate the cross-file override companion from the symbols this
@@ -7039,7 +7083,10 @@ export async function indexProjectParallel(
         // reads this call's telemetry (its return value is the FileResult list),
         // and the enclosing run already keeps its own accumulator.
         const reprocessed = await processWithWorkerPool(projectId, projectPath, missed, () => {},
-                                                        undefined, signal)
+                                                        undefined, signal,
+                                                        // The retry pass is part of the SAME run: it
+                                                        // inherits the run's scope, never its own.
+                                                        indexScope)
         // Map of files already tallied in the main pass, so a file that failed
         // there but recovered here is counted ONCE (as a success), not twice.
         const mainOutcomes = new Map<string, { success: boolean; timeout: boolean }>()
