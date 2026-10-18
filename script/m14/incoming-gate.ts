@@ -752,6 +752,11 @@ const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> =
   // `qualifyTypeWithFile`, which is what lets the analyzer decide whether an import is LOCAL —
   // a qualified lookup instead of the package-prefix heuristic that scored 0.84 precision.
   java: { spec: async () => (await import("../../src/ast/project-index")).JAVA_DECLARATION_SPEC, wasm: "tree-sitter-java.wasm" },
+  // JAVASCRIPT — absent like `.scss` was, and with the same consequence: `--index` built 0 repo indexes
+  // for the lane, so the arm that exercises its cross-file claim mechanism could not be produced. The
+  // analyzer's module claims are fail-closed on `complete===true`, so this is the ONLY arm where the
+  // JS claim columns can mean anything.
+  javascript: { spec: async () => (await import("../../src/ast/project-index")).JAVASCRIPT_DECLARATION_SPEC, wasm: "tree-sitter-javascript/tree-sitter-javascript.wasm" },
   // TYPESCRIPT AND PYTHON. Both were wired in PRODUCTION (`parallel-indexer.ts` carries `.ts`/`.tsx` and
   // `.py` with their specs) while this table was missing them, so `--index` built 0 repo indexes and
   // parsed the analyzer with NO context -- the same instrument-gap shape as `.scss` above, where the gate

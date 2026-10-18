@@ -1664,14 +1664,21 @@ export async function processWithWorkerPool(
     // but the extension was in NO production table — so in the store every one of those reads was
     // DEAD and the dart lane's cross-file override/extends/implements resolution ran per-file only.
     // A spec plus an analyzer plus a gate arm is not a wire; the entry below is.
-    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java", ".dart": "dart", ".py": "python", ".ts": "typescript", ".tsx": "typescript" }
+    // JAVASCRIPT (2026-10-18): `.js/.jsx/.mjs/.cjs` were absent, so no project index was ever built for
+    // the lane and its fail-closed module claims could never verify. Added together with the spec below
+    // and the gate's INDEX_SPECS entry — all three halves in one change, because a half-wire reads as
+    // covered and measures nothing (see the `.scss`/`.groovy` notes).
+    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java", ".dart": "dart", ".py": "python", ".ts": "typescript", ".tsx": "typescript", ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript" }
     // THE THREE NEW EXTENSIONS BUILD ONLY ON A COMPLETE WALK (see `indexScope`). The five pre-existing
     // lanes consume the index for RESOLUTION and tolerate an incomplete one — behaviour that must not
     // change — while python/typescript have no consumer yet and their index exists only to support a
     // project-scope CLAIM, which an incomplete index can never support. Building it anyway would pay a
     // SECOND FULL PARSE of every project on every capped/incremental run (measured 8.6-24.5 ms/file,
     // ~16 s on ansible's 1,858 .py files) for an artefact no one may read. Fail-closed, and cheap.
-    const CLAIM_ONLY_INDEX_EXTENSIONS = new Set([".py", ".ts", ".tsx"])
+    // JS joins the claim-only set for the same reason as python/ts: its import/global claims are
+    // fail-closed on `complete===true`, so an INCOMPLETE walk must not pay a second full parse for an
+    // index nobody may read.
+    const CLAIM_ONLY_INDEX_EXTENSIONS = new Set([".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"])
     // `.groovy` IS DELIBERATELY ABSENT, and it was added and then removed in the same change: this
     // table is only half the contract, and the other half is `specByLang` below. With `.groovy` here
     // and no groovy spec there, the lookup fell through to `?? SOLIDITY_DECLARATION_SPEC` and
@@ -1735,6 +1742,9 @@ export async function processWithWorkerPool(
           // reached through the dynamic `mod` import already in scope.
           python: mod.PYTHON_DECLARATION_SPEC,
           typescript: mod.TYPESCRIPT_DECLARATION_SPEC,
+          // JAVASCRIPT: the spec's member/nameOnly/base rules are what make `class A extends B`,
+          // `export { item } from` and a bare `import { item }` provable across project files.
+          javascript: mod.JAVASCRIPT_DECLARATION_SPEC,
           // DART, wired with its entry and wasm in the same change (see the block comment above
           // PROJECT_INDEX_EXTENSIONS). The spec is the whole point here: `baseResolver` and
           // `memberNodes` are what make `class A extends B` / `with M` / `implements I` resolvable

@@ -369,6 +369,86 @@ export const TYPESCRIPT_DECLARATION_SPEC: DeclarationSpec = {
   },
 }
 
+/**
+ * JAVASCRIPT DECLARATION SPEC (2026-10-18). The JS lane's project index did not exist at all: no spec,
+ * no `.js`/`.jsx`/`.mjs`/`.cjs` entry in `PROJECT_INDEX_EXTENSIONS`, no gate `INDEX_SPECS` entry — so
+ * production never built it and the lane's import/global module claims (fail-closed on `complete===true`)
+ * could never reach `extOK` in any arm. That is the `.scss`/`.groovy` half-wire shape this file records:
+ * a lane wired in ONE place reads as covered and is measured against nothing.
+ *
+ * The grammar names are tree-sitter-javascript's: a class is `class_declaration`, a member is
+ * `method_definition` or `field_definition` (`class C { x = 1 }`), and the base is reached through
+ * `class_heritage` -> `extends_clause`. Default/whole-module bindings are NOT members and stay in
+ * `nameOnlyNodes` so an imported ITEM can be proven declared without claiming a kind (FS-P17), which is
+ * exactly what the lane's `import { cloneVNode } from "@scope/utils"` class needs.
+ */
+export const JAVASCRIPT_DECLARATION_SPEC: DeclarationSpec = {
+  typeNodes: {
+    class_declaration: "class",
+  },
+  memberNodes: ["method_definition", "field_definition"],
+  memberNodesCallable: ["method_definition"],
+  nameOnlyNodes: [
+    "function_declaration",
+    "generator_function_declaration",
+    "variable_declarator",
+  ],
+  nameOnlyIdentifierShaped: true,
+  // THE JS GRAMMAR NAMES A FIELD BY `property`, NOT BY `name` (`class C { x = 1 }` is
+  // field_definition { property: (property_identifier) }), so the generic `childForFieldName("name")`
+  // reads "" for every class field and the index held NO field members. Probed: `Panel => render` only,
+  // with `template` missing. Method names use `name`, so both fields are tried in that order.
+  nameResolver: (node: Node): string =>
+    node.childForFieldName("name")?.text ?? node.childForFieldName("property")?.text ?? "",
+  scopeNodes: [
+    "function_declaration",
+    "generator_function_declaration",
+    "method_definition",
+    "arrow_function",
+    "function_expression",
+  ],
+  baseResolver: (node: Node): string[] => {
+    const out: string[] = []
+    let heritage: Node | null = null
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === "class_heritage") { heritage = c; break }
+    }
+    if (!heritage) return out
+    // THE JS GRAMMAR PUTS THE BASE DIRECTLY INSIDE `class_heritage` — `class A extends B` parses as
+    // class_heritage { identifier: B }, with no `extends_clause` node at all (probed; the TS grammar has
+    // the clause). Reading only `extends_clause` gave an index with ZERO bases for every JS class, so
+    // `bases:` was empty on a 2-file probe with `Panel extends Base` in it.
+    const walk = (n: Node): void => {
+      if (n.type === "class_heritage" || n.type === "extends_clause") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier" || c.type === "nested_identifier") out.push(c.text)
+          else if (c.type === "member_expression") {
+            const leaf = c.childForFieldName("property") ?? c.namedChild(c.namedChildCount - 1)
+            if (leaf && leaf.text) out.push(leaf.text)
+          } else if (c.type === "call_expression") {
+            // `class A extends mixin(B)` — the CALLABLE's name is the base the index can value.
+            const fn = c.childForFieldName("function")
+            if (fn && (fn.type === "identifier" || fn.type === "member_expression")) {
+              const leaf = fn.type === "member_expression" ? (fn.childForFieldName("property") ?? fn.namedChild(fn.namedChildCount - 1)) : fn
+              if (leaf && leaf.text) out.push(leaf.text)
+            }
+          }
+        }
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(heritage!)
+    return out
+  },
+}
+
 export const PYTHON_DECLARATION_SPEC: DeclarationSpec = {
   typeNodes: {
     class_definition: "class",
