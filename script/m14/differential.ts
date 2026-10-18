@@ -63,6 +63,12 @@ import { deriveDartOverridesTruth } from "./oracles/dart-overrides"
 // not "measured and passing", simply unread — which is the state that reads most like coverage
 // and is why it took a reader of the allowlist to find it.
 import { deriveDartReferencesTruth, dartTypesDeclaredIn } from "./oracles/dart-references"
+// DART `part_of` TRUTH (lane-owned, 2026-10-18): an INDEPENDENT walk over the directive syntax with
+// its own pubspec reader, its own path normalisation and its own module-name derivation — no import
+// of the analyzer, so a match means two implementations agreed rather than one confirmed itself.
+// Covers both directive directions and the NAMED `part of my.lib;` form (a library NAME, not a path,
+// which a file-list-only walk would miss). Its 7 synthetic contract cases agree truth-vs-analyzer.
+import { deriveDartPartOfTruth } from "./oracles/dart-part-of"
 // LANE-OWNED ORACLE EXTENSION (2026-10-18, java lane). Four truth classes the shipped
 // deriveJavaReferencesTruth does not cover and that the complete-surface ruling made owed:
 // annotation type mentions, type-parameter BOUNDS (the old notAReference rule explicitly excluded
@@ -24190,6 +24196,12 @@ async function main() {
         for (const e of deriveDartReferencesTruth(root, dartVisible)) {
           ;(truth as any[]).push(e)
         }
+        // `part_of` — the last of the four canonical values with no truth. Its targets are
+        // project-relative paths or DECLARED LIBRARY NAMES (the named `part of my.lib;` form), which
+        // is why this oracle is a file/project walk and not a node walk like `mixes_in`.
+        for (const e of deriveDartPartOfTruth(root, { filePath: relPath, projectRoot: repoDir })) {
+          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
+        }
       }
       if (lang === "julia") {
         // M60 julia `contains` truth, derived from JULIA'S OWN containment rule in a lane-owned
@@ -24707,12 +24719,9 @@ async function main() {
           // shape-pinned by `verify-dart-references.ts`, admitted by neither side.
           ...(lang === "dart" ? ["references"] : []),
           // CANONICAL VOCABULARY (2026-10-18): `mixes_in`'s truth is derived in `deriveDartEdges`
-          // above (the three with-clause sites) and the analyzer publishes it, so the label is
-          // COMPARED. `part_of` is deliberately NOT here yet: its truth needs an independent
-          // path-resolution walk (the lane's import oracle removed the old `imports{isPart}`
-          // derivation rather than re-spell it), so admitting the label now would charge every
-          // analyzer row as a fabrication. Recorded as DERIVATION debt in the vocabulary proposal.
-          ...(lang === "dart" ? ["mixes_in"] : []),
+          // above (the three with-clause sites); `part_of`'s comes from the lane-owned independent
+          // oracle pushed in the dart truth block. Both are COMPARED.
+          ...(lang === "dart" ? ["mixes_in", "part_of"] : []),
           // M60 K2 (2026-09-27): kotlin joins the uses-audited set.
           // 1,758 `uses` edges on the primary corpus, every one of them from
           // five emission sites that NO oracle derived and the allowlist dropped
