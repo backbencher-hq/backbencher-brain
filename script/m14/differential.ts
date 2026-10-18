@@ -24823,6 +24823,12 @@ async function main() {
           // label sat in the second state — emitted since the ontology wave, derived and
           // shape-pinned by `verify-dart-references.ts`, admitted by neither side.
           ...(lang === "dart" ? ["references"] : []),
+          // PYTHON `decorates` (canonical vocabulary 2026-10-18): the lane's OWN oracle derives it
+          // (oracles/python-truth.ts:1505, and PYTHON_ORACLE_LABELS declares the eleventh label) and
+          // the analyzer publishes it — but the compared set did not name it, so the label was stored
+          // and compared against nothing while rel-type-coverage-gate charged it as DERIVATION debt.
+          // Truth push and label entry land together, per this file's own two-sided rule.
+          ...(lang === "python" ? ["decorates"] : []),
           // CANONICAL VOCABULARY (2026-10-18): `mixes_in`'s truth is derived in `deriveDartEdges`
           // above (the three with-clause sites); `part_of`'s comes from the lane-owned independent
           // oracle pushed in the dart truth block. Both are COMPARED.
