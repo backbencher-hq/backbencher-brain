@@ -37,7 +37,7 @@ import { readFileSync } from "node:fs"
 import * as path from "node:path"
 import { deriveSolidityCallReferenceEdges, deriveSolidityEdges } from "./oracles/solidity"
 import { deriveSolidityImportTruth } from "./oracles/solidity-imports-truth"
-import { normTarget } from "./differential"
+import { auditTarget, normTarget } from "./differential"
 
 const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
 const CR = process.env.BB_CORPUS_ROOT ?? path.join(ROOT, ".corpus")
@@ -139,8 +139,14 @@ const bump = (c: RowClass, sample: string) => {
   row.rows++
   if (row.samples.length < 6) row.samples.push(sample)
 }
+// SOL-W8 — the differential's own binding rule (`4807ea071`): a binding-spelled target is audited
+// against the truth oracle's BARE binding name, so the claim cannot make the audit vacuous. This
+// instrument uses the SAME rule the audit of record uses; a divergence here would make its
+// residual classes meaningless, which is why it is imported rather than re-implemented.
 const keyOf = (label: string, target: string) =>
-  label === "imports" ? `imports\u0000EXACT:${target}` : `${label}\u0000${normTarget(target)}`
+  label === "imports"
+    ? `imports\u0000EXACT:${target}`
+    : `${label}\u0000${normTarget(auditTarget(target))}`
 
 let parsed = 0
 let failed = 0

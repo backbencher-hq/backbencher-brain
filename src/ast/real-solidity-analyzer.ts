@@ -29,6 +29,11 @@ import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { isReservedTarget, isPrimitiveTypeToken, ENGINE_FUNCTION_NAMES, STORE_REFUSED_SYMBOL_NAMES } from "./solidity-reserved-tokens"
 import { buildResolutionTables } from "./project-index"
+// SOL-W8 (depth campaign, D7 CLAIMED): the fleet BINDING_SEP. A function-scope binding has no
+// published declaration in this lane, so the family's claim is the SPELLING that can never be a
+// declaration: `<declaring callable>\u0000<binding name>` + metadata.localBinding. The gate verifies
+// the spelling and prints it in its own `bindOK` column — it is NEVER folded into `resolved`.
+import { BINDING_SEP } from "./types"
 
 /**
  * Solidity analyzer.
@@ -695,12 +700,21 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       sym: ASTEngine.UniversalSymbol | null
       /** SOL-20 — qualified calls made from inside THIS frame. */
       qualifiedCalls: string[]
+      /**
+       * SOL-W8 — the FUNCTION-SCOPE BINDINGS declared by this frame's callable: its parameters and
+       * its NAMED RETURN values (both from `collectParameters`, the same list the signature is
+       * published from). Only callable frames carry bindings; the file frame, contract frames and
+       * struct/enum frames are empty. A local declared with `variable_declaration` is deliberately
+       * NOT here: this lane PUBLISHES locals as symbols, so a local read resolves correctly and
+       * claiming it would remove a resolution the store can make (`SOL-W8-BINDING-CLAIM` §2).
+       */
+      bindings: Set<string>
     }
     // SOL-18/SOL-20 added `branches`, `sym` and `qualifiedCalls` to Frame, but this
     // seed literal was never given them, so the file-scope frame did not satisfy
     // its own interface. The values are the honest ones for file scope: no branch
     // has been seen, no symbol owns the file, and no qualified call has been made.
-    const frames: Frame[] = [{ owner: fileName, scope: fileName, containerLine: 1, yul: false, branches: 0, sym: null, qualifiedCalls: [] }]
+    const frames: Frame[] = [{ owner: fileName, scope: fileName, containerLine: 1, yul: false, branches: 0, sym: null, qualifiedCalls: [], bindings: new Set() }]
     const top = (): Frame => frames[frames.length - 1]
     const atFileScope = (): boolean => frames.length === 1
     const nodeKey = (n: Node): string => `${n.startIndex}:${n.endIndex}`
@@ -841,11 +855,23 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
        * reserved target is refused, and the `relKeys` dedup still runs — because those all mean something for a
        * path. Only the symbol-name shape test is inapplicable, so only it is skipped.
        */
-      opts: { pathTarget?: boolean } = {},
+      opts: { pathTarget?: boolean; bindingTarget?: boolean; dedupeAs?: string } = {},
     ) => {
       if (caseAudit) __emits[__cur] = (__emits[__cur] ?? 0) + 1
       if (!source || !target) return
-      if (!opts.pathTarget && !isPlausibleSymbolName(target)) return
+      // SOL-W8 — a CLAIMED binding target is spelled `<callable><BINDING_SEP><binding>`, so it is
+      // not identifier-shaped by construction and the plausibility guard would drop it. The guard
+      // is NOT skipped: the two HALVES are tested separately (a callable-shaped owner, a
+      // binding-shaped leaf, exactly one separator, both non-empty) — the same discipline the
+      // `pathTarget` opt-out states, applied to the shape that actually has to hold here.
+      if (opts.bindingTarget) {
+        const at = target.lastIndexOf(BINDING_SEP)
+        if (at <= 0 || at + BINDING_SEP.length >= target.length) return
+        if (target.indexOf(BINDING_SEP) !== at) return
+        const ownerPart = target.slice(0, at)
+        const leafPart = target.slice(at + BINDING_SEP.length)
+        if (!isPlausibleSymbolName(ownerPart) || !isPlausibleSymbolName(leafPart)) return
+      } else if (!opts.pathTarget && !isPlausibleSymbolName(target)) return
       // SOL-1: EVERY edge carries the line of the node that BEARS ITS NAME, and
       // that line is part of the identity, so two call sites of one callee are
       // two rows — the store resolves a containment edge BY the line it carries,
@@ -868,7 +894,12 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         engineCallsSuppressed++
         return
       }
-      const key = `${source}\u0000${type}\u0000${target}\u0000${line}`
+      // SOL-W8 — a CLAIM re-spells a row; it does not ADD one. The dedupe key therefore uses the
+      // BARE binding name (`dedupeAs`), the same key the unclaimed row used, so the claim cannot
+      // turn one previous row into two (a claimed read and an unclaimed same-name read on one line
+      // once collapsed to one row; the claim keeps that identity). Measured cause of the +49 rows
+      // before this option: those splits. The D2 census edge total must stay 35,107.
+      const key = `${source}\u0000${type}\u0000${opts.dedupeAs ?? target}\u0000${line}`
       if (relKeys.has(key)) return
       relKeys.add(key)
       const isImport = (metadata as { import?: boolean }).import === true
@@ -1519,7 +1550,48 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       yul = false, isType = false, sym: ASTEngine.UniversalSymbol | null = null,
     ) => {
       openedFrames.add(nodeKey(node))
-      frames.push({ owner, scope, containerLine: line, yul, isType, branches: 1, sym, qualifiedCalls: [] })
+      // SOL-W8 — a CALLABLE frame carries its parameters + named returns as function-scope
+      // bindings. The list is the SAME `collectParameters` the published signature is built from,
+      // so a claimed binding and a published parameter cannot disagree.
+      //
+      // GATED ON THE NODE KIND, NOT ON THE SYMBOL, and that distinction is a MEASURED bug fix: an
+      // OVERLOAD (`function _checkRole(bytes32 role)` and `function _checkRole(bytes32 role, address
+      // account)` in one contract) gets `sym = null` from `declareSymbol` because the name is already
+      // published — so gating on `sym !== null` silently left the SECOND overload's parameters
+      // unclaimed (measured on AccessControl.sol:93-94, `role`/`account` reads stayed bare while the
+      // one-arg overload's were claimed; 3 of 4 `_checkRole` reads across the corpus are in
+      // duplicate-name overloads). The bindings are lexical facts of the NODE, so the node kind is
+      // the right key. Yul frames are deliberately NOT here: a Yul function's parameters are not
+      // this claim's population (the lane's W6 residual keeps them, fixture `yul-subset-sol` pins
+      // them bare), so only the four Solidity callable definitions carry bindings.
+      const CALLABLE_DEFINITION_TYPES = new Set([
+        "function_definition", "constructor_definition", "fallback_receive_definition", "modifier_definition",
+      ])
+      let bindings: Set<string> = new Set()
+      if (CALLABLE_DEFINITION_TYPES.has(node.type)) {
+        for (const p of collectParameters(node)) bindings.add(p.name)
+      }
+      frames.push({ owner, scope, containerLine: line, yul, isType, branches: 1, sym, qualifiedCalls: [], bindings })
+    }
+
+    /**
+     * SOL-W8 — which CALLABLE declares `name` as a function-scope binding at this site.
+     *
+     * Walks the frame stack inward-out, EXCLUDING the file frame, and answers the nearest callable
+     * whose own parameters/named returns contain the name. This is the positional part of the claim
+     * (the analyzer already walks with the frame stack, so the read's enclosing callables are known
+     * at the emit site); the claim is only made where this answers non-null.
+     *
+     * NEVER claimed, by construction rather than by a list: a `variable_declaration` local (published
+     * symbol, resolves), a state variable (published symbol, resolves), an imported binding (a
+     * `references` row, not a `uses` row), `this`/`super`/`msg`/`block`/`tx` (filtered before this is
+     * consulted), and any name no callable's parameter list contains.
+     */
+    const bindingOwnerOf = (name: string): string | null => {
+      for (let i = frames.length - 1; i >= 1; i--) {
+        if (frames[i].bindings.has(name)) return frames[i].scope
+      }
+      return null
     }
     /** SOL-15 — the nearest enclosing TYPE. `top().owner` cannot answer this inside a
      *  function body, because SOL-13 makes a function frame its own owner, so
@@ -2112,7 +2184,22 @@ const meta = modifiersOf(node)
           const segTexts: Node[] = segs.length > 0 ? segs : findChildren(node, "identifier")
           segTexts.forEach((seg, i) => {
             if (EVM_BUILTIN_NAMES.has(seg.text)) return
-            addRel(top().scope, seg.text, ASTEngine.RelationshipType.Uses, 0.7, seg.startPosition.row + 1, {
+            // SOL-W8 — a ONE-SEGMENT path read inside assembly whose name is a binding of the
+            // ENCLOSING Solidity callable (a parameter or named return read in assembly) is claimed.
+            // A multi-segment path's leaf is a MEMBER (not a binding), and a Yul `let` local is a
+            // PUBLISHED symbol (yul_variable_declaration declares it) so it resolves and must not be
+            // claimed — the contract's exemption, enforced structurally.
+            const yulBindOwner = segTexts.length === 1 && i === 0 ? bindingOwnerOf(seg.text) : null
+            const yulLine = seg.startPosition.row + 1
+            const yulBareRefused = isReservedTarget(ASTEngine.RelationshipType.Uses, seg.text,
+              { isYulPathSegment: true, isYulVariableRead: true })
+            if (yulBindOwner !== null && !yulBareRefused) {
+              addRel(top().scope, `${yulBindOwner}${BINDING_SEP}${seg.text}`, ASTEngine.RelationshipType.Uses, 0.7,
+                yulLine, { isYulPathSegment: true, isYulVariableRead: true, localBinding: true },
+                { bindingTarget: true, dedupeAs: seg.text })
+              return
+            }
+            addRel(top().scope, seg.text, ASTEngine.RelationshipType.Uses, 0.7, yulLine, {
               isYulPathSegment: true,
               ...(i === 0 ? { isYulVariableRead: true } : { isYulMemberReference: true }),
             })
@@ -2237,8 +2324,19 @@ const meta = modifiersOf(node)
             if (qObj !== "" && qObj !== "abi" && qObj !== "type" && !ENGINE_FUNCTION_NAMES.has(got.name)) {
               top().qualifiedCalls.push(`${qObj}.${got.name}`)
             }
-            addRel(top().scope, got.name, ASTEngine.RelationshipType.Calls, 0.9, got.line, {
+            // SOL-W8 — a call through a FUNCTION-TYPE PARAMETER (`op(store.latest(), delta)` where
+            // `op` is declared `function(...) op`) is a call whose CALLEE IS A BINDING, not a
+            // declaration. Claimed only for a BARE callee (`!got.viaMember`): `obj.m()` names a
+            // member and is a different construct (W7 / SOL-15), never a function-scope binding.
+            const callBindOwnerRaw = got.viaMember ? null : bindingOwnerOf(got.name)
+            const callBareRefused = callBindOwnerRaw !== null &&
+              (isReservedTarget(ASTEngine.RelationshipType.Calls, got.name, { isSolidityCall: true }) ||
+                ENGINE_FUNCTION_NAMES.has(got.name))
+            const callBindOwner = callBareRefused ? null : callBindOwnerRaw
+            const callTarget = callBindOwner !== null ? `${callBindOwner}${BINDING_SEP}${got.name}` : got.name
+            addRel(top().scope, callTarget, ASTEngine.RelationshipType.Calls, 0.9, got.line, {
               isSolidityCall: true,
+              ...(callBindOwner !== null ? { localBinding: true } : {}),
               // The member flag is REPORTED BY THE NAME RESOLVER, never by a second
               // traversal that re-decides the same question. The first version ran a
               // separate `isMemberLike(fn)` over the callee's DIRECT children, which
@@ -2265,7 +2363,7 @@ const meta = modifiersOf(node)
               // bug to see because the rule looks fine.
               ...(enclosingTypeOf() !== "" ? { calleeOwner: enclosingTypeOf() } : {}),
               ...(fn && findFirstChild(fn, "struct_expression") !== null ? { hasCallOptions: true } : {}),
-            })
+            }, callBindOwner !== null ? { bindingTarget: true, dedupeAs: got.name } : {})
           }
           break
         }
@@ -2395,8 +2493,31 @@ const meta = modifiersOf(node)
           // `uses -> this` for every occurrence. A global is not a read of
           // anything the file declares.
           if (GLOBAL_OBJECTS.has(node.text)) break
-          addRel(top().scope, node.text, ASTEngine.RelationshipType.Uses, 0.75,
-            node.startPosition.row + 1, { isVariableReference: true })
+          // SOL-W8 — a read of a function-scope BINDING (a parameter or a named return) is
+          // published with the fleet binding spelling + `localBinding: true`, so the gate can
+          // verify the claim in its own column instead of the name-keyed resolver answering with a
+          // decoy declaration. Locals/state vars are NOT claimed: they are published symbols and
+          // their reads resolve correctly (see bindingOwnerOf's refusal list).
+          {
+            const bindOwner = bindingOwnerOf(node.text)
+            const bareLine = node.startPosition.row + 1
+            // A claim RE-SPELLS a row this lane already emits. A name the lane's own SOL-7b
+            // reserved-target guard refuses as a bare read (Yul builtin spellings such as
+            // `caller`/`from`/`timestamp`/`chainid` used as parameter names — measured 204
+            // whole-population rows) is NOT rescued into a claim: that would be an EMISSION
+            // ADDITION with its own ruling, not a re-spelling, and the D2 edge total is an
+            // invariant of this task. Those 204 are named as a measured opportunity in the
+            // evidence page instead of being added silently.
+            const bareRefused = isReservedTarget(ASTEngine.RelationshipType.Uses, node.text, { isVariableReference: true })
+            if (bindOwner !== null && !bareRefused) {
+              addRel(top().scope, `${bindOwner}${BINDING_SEP}${node.text}`, ASTEngine.RelationshipType.Uses, 0.75,
+                bareLine, { isVariableReference: true, localBinding: true },
+                { bindingTarget: true, dedupeAs: node.text })
+            } else {
+              addRel(top().scope, node.text, ASTEngine.RelationshipType.Uses, 0.75,
+                bareLine, { isVariableReference: true })
+            }
+          }
           break
         }
 
@@ -2598,7 +2719,7 @@ const meta = modifiersOf(node)
       conversion: 0, namespaceBuiltin: 0, modifierInvocation: 0,
       localFunction: 0, inheritedMember: 0, inFileTypeMember: 0,
       crossFileInheritedMember: 0, projectMemberCandidate: 0,
-      eventEmission: 0, errorRevert: 0, structConstructor: 0, external: 0,
+      eventEmission: 0, errorRevert: 0, structConstructor: 0, external: 0, localBinding: 0,
     }
     // SOL-21 — the index's inheritance-closed member set per type, and the
     // name -> declaring-types table. Built once per file from the shared index rather
@@ -2628,6 +2749,11 @@ const meta = modifiersOf(node)
         for (const m of memberClosure(b)) ownInherited.add(m)
       }
       const kind = ((): string => {
+        // SOL-W8 — a CLAIMED function-scope binding callee is its own kind. Without this the
+        // binding-spelled target (`f<NUL>op`) matches no declaration and falls through to
+        // `external`, which would state something false about the row; the claim column and the
+        // calleeKind must agree.
+        if (md.localBinding === true) return "localBinding"
         // The three non-call shapes this language routes through `calls`, each tagged
       // by its OWN emit site: `emit E(...)`, `revert MyError(...)`, and `S{...}`.
       if (md.isEventEmission === true) return "eventEmission"

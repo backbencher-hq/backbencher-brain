@@ -1888,6 +1888,254 @@
    },
    "docs": "docs/analyzers/real-solidity-analyzer.md gained the phase-2 D1 section and is current for the D2/D3/D4/D5 clauses.",
    "specTable": "script/m14/spec/solidity-spec-table.json — generated (`solidity-spec-table.ts --check` passes) with the D1/D2/D3/D4/D5 blocks and this file as an input."
+  },
+  "claim": {
+   "task": "task-20",
+   "status": "IMPLEMENTED + MEASURED (awaiting Lead reproduction)",
+   "contract": "SOLIDITY-LOCAL-BINDING-CONTRACT.md (9ea1799f7)",
+   "page": "SOLIDITY-W8-CLAIM.md",
+   "mechanism": "target = `<declaring callable>\\u0000<binding name>` + metadata.localBinding; three emission sites (identifier read, one-segment yul_path, bare function-type-parameter callee with calleeKind localBinding); NEVER claims variable_declaration locals, state vars, imported bindings, this/super/msg/block/tx, reserved spellings.",
+   "arms": {
+    "before": {
+     "source": "accepted D3 (58ecc0ea2 / charter §19)",
+     "edges": 35107,
+     "resolved": 17186,
+     "ambDecl": 13380,
+     "unresolved": 4541,
+     "bindOK": 0,
+     "arbitraryTwin": 12234,
+     "sameFileUnproven": 11281,
+     "nothingAnywhere": 4527
+    },
+    "after": {
+     "edges": 35107,
+     "resolved": 16288,
+     "ambDecl": 7666,
+     "unresolved": 2230,
+     "bindOK": 8923,
+     "bindFAIL": 0,
+     "extFAIL": 0,
+     "causeFAIL": 0,
+     "closureIdentity": "35107 == 16288 resolved + 7666 amb(decl) + 2230 unresolved + 8923 bindings (0 claims, 0 causes)",
+     "arbitraryTwin": 6785,
+     "sameFileUnproven": 10107,
+     "nothingAnywhere": 11150,
+     "intentClosure": "7065 intended + 10107 sameFileUnproven + 6785 arbitraryTwin + 11150 nothingAnywhere = 35107",
+     "perType": {
+      "calls": [
+       6734,
+       3407,
+       2194,
+       1115,
+       18
+      ],
+      "uses": [
+       17880,
+       3437,
+       5433,
+       105,
+       8905
+      ],
+      "contains": [
+       6531,
+       6531,
+       0,
+       0,
+       0
+      ],
+      "imports": [
+       932,
+       0,
+       0,
+       932,
+       0
+      ],
+      "references": [
+       1452,
+       1380,
+       33,
+       39,
+       0
+      ],
+      "exports": [
+       534,
+       528,
+       6,
+       0,
+       0
+      ],
+      "extends": [
+       588,
+       550,
+       0,
+       38,
+       0
+      ],
+      "implements": [
+       7,
+       7,
+       0,
+       0,
+       0
+      ],
+      "overrides": [
+       423,
+       422,
+       0,
+       1,
+       0
+      ],
+      "instantiates": [
+       26,
+       26,
+       0,
+       0,
+       0
+      ],
+      "columns": [
+       "edges",
+       "resolved",
+       "ambDecl",
+       "unresolved",
+       "bindOK"
+      ]
+     },
+     "armB": {
+      "indexesBuilt": 2,
+      "damaged": 0,
+      "extendsEdges": 488,
+      "implementsRows": 107,
+      "delta": "extends 588->488 (-100/-100), implements 7->107 (+100/+100), every other per-type column identical — SOL-21 preserved post-claim"
+     }
+    }
+   },
+   "decomposition": {
+    "W8_claimed": 6551,
+    "W6_claimed": 1456,
+    "W3_calls_claimed": 18,
+    "decoy_from_resolved": 898,
+    "bindOK": 8923,
+    "note": "resolved -898 is the DECOY class: a claimed target names no declaration, so every row leaving resolved had bound to a same-named declaration — a name-keyed coincidence (JS precedent). arbitraryTwin FELL by 5,449."
+   },
+   "classifier": {
+    "control": "PASS both arms",
+    "join": {
+     "rows": 9896,
+     "misses": 0
+    },
+    "closure": "35107 == 16288 resolved + 9896 classified + 0 claims + 8923 bindings + 0 causes",
+    "classTotals": {
+     "W8-function-scope-binding-read": 3254,
+     "W6-yul-path-segment-read": 819,
+     "W3-cross-file-or-unvendored-target": 2021,
+     "W7-member-or-builtin-read": 1465,
+     "W5-in-file-name-not-a-declaration": 935,
+     "W1-module-path-not-a-symbol": 932,
+     "W2-language-namespace-builtin": 344,
+     "W10-type-mention-not-in-run": 72,
+     "W4-declared-kind-not-in-run": 47,
+     "W12-export-surface-not-a-declaration": 6,
+     "W11-override-base-outside-run": 1
+    },
+    "residualNote": "after the claimable construct moved out, the W8/W6 residuals are the rest of those classifier FAMILIES: tuple-destructuring locals (not published — a declaration-coverage gap, not the claim population) and shared-name state-var/Yul-local ambiguity (`_roles` declared in 2 project files). Sample-classified, stated as such."
+   },
+   "d2Invariant": {
+    "censusTotal": 35107,
+    "perTypeIdentical": true,
+    "payloadDelta": "calls external 3707->3689 (-18), localBinding 18 (new kind)",
+    "oldNewDiff": "oldEdges 35107 · newEdges 35107 · net 0 over all 421 files"
+   },
+   "cap50": {
+    "before": {
+     "uses": {
+      "resolved": 819,
+      "amb": 279,
+      "unresolved": 1219,
+      "bindOK": 0
+     }
+    },
+    "after": {
+     "uses": {
+      "resolved": 411,
+      "amb": 229,
+      "unresolved": 87,
+      "bindOK": 1590
+     },
+     "calls": {
+      "bindOK": 1
+     }
+    },
+    "totalEdges": "4,138 unchanged"
+   },
+   "d4": {
+    "repo60": {
+     "truth": 2567,
+     "covered": 2565,
+     "coveragePct": 99.9,
+     "missing": 2,
+     "analyzerEdges": 2081,
+     "unexplained": 23,
+     "byLabel": {
+      "uses": 19,
+      "calls": 3,
+      "exports": 1,
+      "imports": 0
+     },
+     "hash": "e9708e750546e983"
+    },
+    "stride60": {
+     "truth": 3799,
+     "covered": 3792,
+     "coveragePct": 99.8,
+     "missing": 7,
+     "analyzerEdges": 2830,
+     "unexplained": 47,
+     "byLabel": {
+      "uses": 46,
+      "calls": 1,
+      "imports": 0
+     },
+     "hash": "8de361440b750429"
+    },
+    "audit": {
+     "missing": 6,
+     "unexplained": 101,
+     "classes": {
+      "truth-gap/uses-yul": 79,
+      "truth-gap/uses-variable": 21,
+      "truth-over-derivation/uses-inheritance-specifier": 6,
+      "truth-gap/calls-errorRevert": 1
+     },
+     "imports": {
+      "truth": 141,
+      "published": 141,
+      "missing": 0,
+      "unexplained": 0
+     }
+    },
+    "movementNote": "analyzer-edges +322/+416 is the differential's per-file label|target DEDUPE view (re-spelled rows become distinct pairs; population invariant proven above). unexplained +2/+14 = the same effect on `uses … self` rows the tree oracle refuses (D4 truth-debt class), heuristic 0. The lane audit (full row sets, auditTarget rule) is unchanged at MISSING 6 / unexplained 101."
+   },
+   "d5": {
+    "fixtures": {
+     "before": "28/4 while the four pins awaited reconciliation",
+     "after": "32 pass / 0 fail, no regressions, allowance not raised"
+    },
+    "noRegex": "lane AST census CLEAN",
+    "tsc": "0 errors naming any solidity script or the analyzer",
+    "reconciliation": "SEPARATE task-9 commit: six expectation rows re-spelled with superseded-bare comments + forbidRelationships on the old spelling; controls (locals/state vars/Yul let/Yul fn params) asserted bare and unchanged"
+   },
+   "verifiedClassPct": {
+    "before": "(17186 + 0) / 35107 = 48.9%",
+    "after": "(16288 + 8923) / 35107 = 71.8%",
+    "delta": "+22.9 pp"
+   },
+   "namedOpportunity": {
+    "id": "SOL-RESERVED-NAME-CLAIMABLE",
+    "rows": 204,
+    "detail": "parameter names that are Yul builtin spellings (from 139, caller 49, timestamp 5, chainid 11); claiming them would recover real reads and ADD 204 rows — held back to keep task-20's D2 total invariant at 35,107; needs its own ruling."
+   },
+   "commitA": null,
+   "commitB": null
   }
  },
  "wholePopulationArms": {

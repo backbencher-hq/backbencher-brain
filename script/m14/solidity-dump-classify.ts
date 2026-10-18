@@ -73,6 +73,12 @@ const rows: DumpRow[] = []
 const table1 = new Map<string, Table1>()
 const byOutcome = new Map<string, Map<string, number>>()
 const dumped = new Map<string, number>()
+/** SOL-W8 — claim/binding/cause rows are their OWN columns in TABLE 1, so the parity check must
+ *  account for them per type: with a claim kind in play, `dumped rows == edges − resolved` is no
+ *  longer the identity — `dumped + claims + bindings + causes == edges − resolved` is. */
+const claimByType = new Map<string, number>()
+const bindingByType = new Map<string, number>()
+const causeByType = new Map<string, number>()
 const unclassifiedLabels = new Map<string, number>()
 let dumpLines = 0
 let malformed = 0
@@ -107,9 +113,21 @@ for await (const line of rl) {
     const target = parts[3]
     const srcLine = parts[4] ?? ""
     if (!KNOWN_TYPES.has(label)) { unclassifiedLabels.set(label, (unclassifiedLabels.get(label) ?? 0) + 1); continue }
-    if (CLAIM_OUTCOMES.has(outcome)) { claimRows++; continue }
-    if (BINDING_OUTCOMES.has(outcome)) { bindingRows++; continue }
-    if (CAUSE_OUTCOMES.has(outcome)) { causeRows++; continue }
+    if (CLAIM_OUTCOMES.has(outcome)) {
+      claimRows++
+      claimByType.set(label, (claimByType.get(label) ?? 0) + 1)
+      continue
+    }
+    if (BINDING_OUTCOMES.has(outcome)) {
+      bindingRows++
+      bindingByType.set(label, (bindingByType.get(label) ?? 0) + 1)
+      continue
+    }
+    if (CAUSE_OUTCOMES.has(outcome)) {
+      causeRows++
+      causeByType.set(label, (causeByType.get(label) ?? 0) + 1)
+      continue
+    }
     const isUnresolved = UNRESOLVED_OUTCOMES.has(outcome)
     const isAmbiguous = AMBIGUOUS_OUTCOMES.has(outcome)
     if (!isUnresolved && !isAmbiguous) { unclassifiedOutcomeRows++; continue }
@@ -281,8 +299,23 @@ for (const t of ALL_TYPES) {
   const unresolvedDumped = (outcomes.get("unresolved") ?? 0) + (outcomes.get("externalRefuted") ?? 0) + (outcomes.get("bindingRefuted") ?? 0)
   const ambDumped = (outcomes.get("ambDeclOnly") ?? 0) + (outcomes.get("ambBoth") ?? 0)
   const expected = Math.max(0, tbl.edges - tbl.resolved)
-  perTypeControl[t] = { dumped: d, expected, unresolvedDumped, unresolvedExpected: tbl.unresolved, ambDumped, ambExpected: tbl.ambDecl }
-  if (d !== expected) failures.push(`${t}: dumped ${d} != edges-resolved ${expected}`)
+  const claimD = claimByType.get(t) ?? 0
+  const bindD = bindingByType.get(t) ?? 0
+  const causeD = causeByType.get(t) ?? 0
+  perTypeControl[t] = {
+    dumped: d, expected, unresolvedDumped, unresolvedExpected: tbl.unresolved,
+    ambDumped, ambExpected: tbl.ambDecl,
+    claimDumped: claimD, claimExpected: tbl.extOK + tbl.extUnknown + tbl.extFAIL,
+    bindingDumped: bindD, bindingExpected: tbl.bindOK + tbl.bindUnknown + tbl.bindFAIL,
+    causeDumped: causeD, causeExpected: tbl.causeOK + tbl.causeFAIL,
+  }
+  // THE IDENTITY, with claim columns in play: every non-resolved edge is classified OR carried by
+  // its own claim/binding/cause column. Nothing is dropped and nothing is folded.
+  if (d + claimD + bindD + causeD !== expected) {
+    failures.push(`${t}: dumped ${d} + claims ${claimD} + bindings ${bindD} + causes ${causeD} != edges-resolved ${expected}`)
+  }
+  if (claimD !== tbl.extOK + tbl.extUnknown + tbl.extFAIL) failures.push(`${t}: claim rows ${claimD} != TABLE 1 claim columns`)
+  if (bindD !== tbl.bindOK + tbl.bindUnknown + tbl.bindFAIL) failures.push(`${t}: binding rows ${bindD} != TABLE 1 bindOK+bind?+bindFAIL`)
   if (unresolvedDumped !== tbl.unresolved) failures.push(`${t}: dumped unresolved ${unresolvedDumped} != TABLE 1 unresolved ${tbl.unresolved}`)
   if (ambDumped !== tbl.ambDecl) failures.push(`${t}: dumped ambiguous ${ambDumped} != TABLE 1 amb(decl) ${tbl.ambDecl}`)
 }

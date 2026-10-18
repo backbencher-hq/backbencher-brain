@@ -193,6 +193,50 @@ priced by the lane's reverted 400-file experiment: unresolved −52.3%, amb −3
 arbitraryTwin FELL 3,703, collRes unchanged; four fixtures pin the bare spelling and are reconcilable
 under the task-9 ruling).
 
+## DEPTH CAMPAIGN (D7, task-20) — the function-scope binding CLAIM
+
+**`SOL-W8-BINDING-CLAIM`, charter §18 task-20, contract `SOLIDITY-LOCAL-BINDING-CONTRACT.md`.** A read of a
+function-scope binding — a parameter or a named return, and a Solidity binding read inside `assembly` — is
+now published with the FLEET claim spelling instead of the bare name:
+
+```
+target   = `<declaring callable>` + BINDING_SEP (`"\u0000"`) + `<binding name>`
+metadata = { localBinding: true }
+```
+
+The claim says "this name is a binding, not a declaration"; the gate verifies the spelling and counts the row
+in its own **`bindOK`** column — never in `resolved`. Three emission sites, each gated on the analyzer's own
+frame stack: positional `identifier` reads (0.75), one-segment `yul_path` reads inside assembly whose name is
+a binding of the enclosing Solidity callable (0.7), and a BARE `call_expression` callee that is a
+function-type parameter (`calls`, 0.9, `calleeKind: "localBinding"`). **Never claimed:** `variable_declaration`
+locals (this lane publishes them as symbols — they resolve, and claiming them would remove a correct
+resolution), Yul `let` locals (published), state variables (published), imported bindings (`references`, not
+`uses`), `this`/`super`/`msg`/`block`/`tx`, and reserved spellings. A claim RE-SPELLS a row: `dedupeAs` keeps
+the old bare key in `relKeys` so the D2 edge total cannot move, and the 204 reads whose bare name the SOL-7b
+guard refuses are deliberately NOT rescued (a named opportunity, `SOL-RESERVED-NAME-CLAIMABLE`). The binding
+list is gated on the NODE KIND, not the published symbol — a measured fix: gating on `sym !== null` silently
+left the parameters of every overload after the first unclaimed (`AccessControl.sol`'s two `_checkRole`s).
+
+**MEASURED, whole population (421 files / 2 repos; both arms):** edges **35,107 unchanged**;
+resolved 17,186→**16,288** (−898, all decoy rows: a claimed target names no declaration, so a row leaving
+`resolved` had bound to a same-named declaration — the JS-precedent explanation); amb(decl) 13,380→7,666;
+unresolved 4,541→2,230; **`bindOK` 0→8,923**; bindFAIL/extFAIL/causeFAIL 0; closure exact
+`35,107 = 16,288 + 7,666 + 2,230 + 8,923`. Intent axes: intended unchanged 7,065; **arbitraryTwin
+12,234→6,785 (−5,449, FELL)**. Classifier (both arms, control PASS, 9,896/9,896 joined, misses 0):
+**W8 9,805→3,254** and **W6 2,275→819** (6,551 + 1,456 claimed; +18 calls rows from W3; +898 decoy = 8,923).
+The W8/W6 residuals are sample-classified as the rest of those classifier families — tuple-destructuring
+locals (not published: a declaration-coverage gap) and shared-name state-var/Yul-local ambiguity (`_roles`
+declared in two project files). D2 census TOTAL identical 35,107 per type; only `calls.external`
+3,707→3,689 (−18) and the new `calleeKind: localBinding` 18. Arm B preserves SOL-21 exactly
+(extends 588→488, implements 7→107, everything else 0). D4 draws: truth unchanged (2,567/2,565/2 · imports 0
+unexplained); the differential's per-file `label|target` dedupe view rises 1,759→2,081 and unexplained
+21→23 because re-spelled rows become distinct pairs and the tree oracle refuses `self` reads (the D4
+truth-debt class); the lane audit (full row sets, `auditTarget` rule) is unchanged MISSING 6 / unexplained 101.
+**D7 metric: verified-class (resolved + bindOK)/edges = 48.9% → 71.8% (+22.9 pp).** Fixtures 32/0 with the
+four pinned expectations reconciled in a separate `task-9` commit (six rows re-spelled, old bare spellings
+forbidden, controls for locals/state vars/Yul `let`/Yul function params kept asserted bare); no-regex AST
+census clean; tsc 0; inventory 126/8/8.
+
 ## Complexity envelope
 
 (M60 R6.) One iterative DFS with an explicit `{node, exit}` stack — no recursion
