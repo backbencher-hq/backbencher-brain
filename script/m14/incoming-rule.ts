@@ -876,19 +876,25 @@ export function verifyExternalClaim(
   // symbol spelled as the module. Both spellings are tried because a module written `ansible.errors` is a
   // dotted PATH convention while `@scope/pkg` is a slash one -- the rule reads the spelling, not a language.
   if (moduleMemberTarget(tgt)) {
-    const mod = tgt.slice(0, tgt.lastIndexOf(":"))
-    if ((declCount.get(mod) ?? 0) > 0) return "externalRefuted"
-    if (facts) {
-      const variants = [mod, mod.replace(/\./g, "/")]
-      for (const v of variants) {
-        const norm = v.replace(/\\/g, "/").replace(/^\.\//, "")
-        if (norm === "") continue
-        for (const f of facts.files) {
-          const nf = f.replace(/\\/g, "/")
-          if (nf.startsWith(`${norm}/`) || nf.includes(`/${norm}/`)) return "externalRefuted"
-        }
-      }
-    }
+    // A MODULE-MEMBER CLAIM IS VERIFIED, NEVER REFUTED FROM PROJECT-WIDE EVIDENCE.
+    //
+    // The first version of this branch DID refute, using two project-wide tests: a published symbol named
+    // as the module, or any project path with the module as a segment. The python lane measured what that
+    // produced and every single refutation was a FALSE POSITIVE -- 18 distinct targets / 21 edges:
+    //
+    //   typing:Any :List :Optional ...  (16 edges) refuted because a project owns `util/typing.py` (which
+    //     publishes a module symbol named `typing`) and `test/typing/` (a directory). But PYTHON SHADOWING
+    //     IS SCOPED TO THE IMPORTING FILE's directory and sys.path: a `typing.py` under `sqlalchemy/util/`
+    //     does not make `from typing import Any` in `sqlalchemy/testing/suite/` import it.
+    //   logging:* (1 edge) refuted by DIRECTORIES in Go vendored code -- not a Python module at all.
+    //   array:*  (1 edge) refuted by `postgresql/array.py` (a different module) and unrelated dirs.
+    //
+    // THE MEASUREMENT CANNOT EXPRESS THE QUESTION: `verifyExternalClaim` is not given the importing file,
+    // so project-wide adjacency is the only test available, and project-wide adjacency is not shadowing.
+    // A false refutation is a false statement in the opposite direction -- it asserts the PROJECT owns a
+    // module it does not -- so it is not an acceptable error to trade. Refutation here needs the importing
+    // file (and, for python, sys.path roots); until this function is given one, the honest answer is to
+    // VERIFY the claim and record the limitation rather than manufacture a refutation.
     return "externalVerified"
   }
   if (pathLikeTarget(tgt)) {
