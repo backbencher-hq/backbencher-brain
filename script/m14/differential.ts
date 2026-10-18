@@ -7576,8 +7576,20 @@ export function deriveCInstantiates(root: any, sourceText?: string): { label: st
     edges.push({ label: "instantiates", from: "(expr)", target: name })
   }
 
+  // MIRROR THE ANALYZER'S REGISTER BY NAME, AND POINT AT IT. This set had drifted from
+  // `MALLOC_FUNCTIONS` in `src/ast/real-c-analyzer.ts` (post-#989):
+  //   analyzer: malloc, calloc, realloc, kmalloc, vmalloc, sqlite3_malloc64, sqlite3_malloc, sqlite3_realloc64
+  //   oracle  : malloc, calloc, realloc, kmalloc, kcalloc, krealloc, vmalloc, vmap
+  // The consequence is measured, not hypothetical: every sqlite `sqlite3_*` allocation edge the analyzer
+  // emits had NO truth, which was the ENTIRE 22-row `instantiates` UNEXPLAINED class on the sqlite draw
+  // ("COMPARED WITH NO TRUTH: instantiates (22 comparable, 0 truth)"). The reverse error matters too — an
+  // oracle SUPERSET manufactures MISSING rows on corpora that call `kcalloc`/`krealloc`/`vmap` and a
+  // system whose verifier does not publish edges for them. So the set is the analyzer's list, exactly,
+  // with the analyzer file named beside it: a register that moves in the analyzer must be re-pointed here
+  // in the same change (the #992 lane/oracle register-drift class, one level up).
   const ALLOCATORS = new Set([
-    "malloc", "calloc", "realloc", "kmalloc", "kcalloc", "krealloc", "vmalloc", "vmap",
+    "malloc", "calloc", "realloc", "kmalloc", "vmalloc",
+    "sqlite3_malloc64", "sqlite3_malloc", "sqlite3_realloc64",
   ])
   const stack: any[] = [root]
   while (stack.length > 0) {
