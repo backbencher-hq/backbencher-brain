@@ -180,6 +180,40 @@ const JAVA_RESERVED: ReadonlySet<string> = new Set([
   "volatile", "while", "true", "false", "null", "_", "var", "yield", "record", "sealed", "permits",
   "non-sealed",
 ])
+
+/**
+ * THE JDK `java.lang` CLOSED VOCABULARY — JAVA-REFERENCES, the name-level claim the lane can make
+ * WITHOUT a project index.
+ *
+ * SOURCE, and it is generated rather than curated: JDK **17.0.20.1** (OpenJDK, `java -version`
+ * 2026-08-18) ships its platform classes in `lib/modules`; the list below is that image's complete
+ * `java/lang` package namespace, top-level class names only:
+ *
+ *   jimage list /usr/lib/jvm/java-17-openjdk-amd64/lib/modules
+ *   (then, per emitted path, the top-level class name: perl -ne 'print "$1\n" if m{java/lang/([A-Z][^/]*)\.class}')
+ *   -> 137 names (this list)
+ *
+ * WHAT IT CLAIMS, exactly: "this bare target is a name the JDK's own `java.lang` package defines, so
+ * no declaration of the PROJECT answers it". JLS §7.3 makes `java.lang.*` implicitly imported in
+ * every compilation unit — that is why the reference can be written bare — and a name in this list
+ * that the project does not declare cannot be project code. The claim is carried on the edge as
+ * `languageNamespace`, the arbiter's list-verified claim kind (graphql's built-in scalars and
+ * python's module namespace use the same channel), and the arbiter verifies the SPELLING against
+ * this carried list rather than trusting a marker.
+ *
+ * THE SCOPE IS HONEST, not a shortcut:
+ *   - It is not "any unresolved name": only these exact spellings, only bare (no dot), only when the
+ *     file does not declare it, and only when this file has NOT imported a same-named JVM type
+ *     (an import of `foo.String` shadows `java.lang.String`, and claiming it would be a false
+ *     statement the verifier would accept).
+ *   - It does not touch `amb(decl)` or any tie-break: the claim never selects a declaration.
+ *   - A project class named `String` is the one known shadowing cost, disclosed in
+ *     `validation/m14/verification/JAVA-REFERENCES-STATE.md`; the list is the language's, and a
+ *     project that redefines a `java.lang` name is the project's exception, not the lane's evidence.
+ */
+const JAVA_LANG_TYPES: ReadonlySet<string> = new Set([
+"AbstractMethodError", "AbstractStringBuilder", "Appendable", "ApplicationShutdownHooks", "ArithmeticException", "ArrayIndexOutOfBoundsException", "ArrayStoreException", "AssertionError", "AssertionStatusDirectives", "AutoCloseable", "Boolean", "BootstrapMethodError", "Byte", "Character", "CharacterData", "CharacterData00", "CharacterData01", "CharacterData02", "CharacterData03", "CharacterData0E", "CharacterDataLatin1", "CharacterDataPrivateUse", "CharacterDataUndefined", "CharacterName", "CharSequence", "Class", "ClassCastException", "ClassCircularityError", "ClassFormatError", "ClassLoader", "ClassNotFoundException", "ClassValue", "Cloneable", "CloneNotSupportedException", "Comparable", "Compiler", "CompoundEnumeration", "ConditionalSpecialCasing", "Deprecated", "Double", "Enum", "EnumConstantNotPresentException", "Error", "Exception", "ExceptionInInitializerError", "FdLibm", "Float", "FunctionalInterface", "IllegalAccessError", "IllegalAccessException", "IllegalArgumentException", "IllegalCallerException", "IllegalMonitorStateException", "IllegalStateException", "IllegalThreadStateException", "IncompatibleClassChangeError", "IndexOutOfBoundsException", "InheritableThreadLocal", "InstantiationError", "InstantiationException", "Integer", "InternalError", "InterruptedException", "Iterable", "LayerInstantiationException", "LinkageError", "LiveStackFrame", "LiveStackFrameInfo", "Long", "Math", "Module", "ModuleLayer", "NamedPackage", "NegativeArraySizeException", "NoClassDefFoundError", "NoSuchFieldError", "NoSuchFieldException", "NoSuchMethodError", "NoSuchMethodException", "NullPointerException", "Number", "NumberFormatException", "Object", "OutOfMemoryError", "Override", "Package", "Process", "ProcessBuilder", "ProcessEnvironment", "ProcessHandle", "ProcessHandleImpl", "ProcessImpl", "PublicMethods", "Readable", "Record", "ReflectiveOperationException", "Runnable", "Runtime", "RuntimeException", "RuntimePermission", "SafeVarargs", "SecurityException", "SecurityManager", "Short", "Shutdown", "StackFrameInfo", "StackOverflowError", "StackStreamFactory", "StackTraceElement", "StackWalker", "StrictMath", "String", "StringBuffer", "StringBuilder", "StringCoding", "StringConcatHelper", "StringIndexOutOfBoundsException", "StringLatin1", "StringUTF16", "SuppressWarnings", "System", "Terminator", "Thread", "ThreadDeath", "ThreadGroup", "ThreadLocal", "Throwable", "TypeNotPresentException", "UnknownError", "UnsatisfiedLinkError", "UnsupportedClassVersionError", "UnsupportedOperationException", "VerifyError", "VersionProps", "VirtualMachineError", "Void", "WeakPairMap"
+])
 function pickJavaFramework(frameworks: string[]): string | undefined {
   for (let i = 0; i < JAVA_FRAMEWORK_PRIORITY.length; i++) {
     if (inArray(frameworks, JAVA_FRAMEWORK_PRIORITY[i])) return JAVA_FRAMEWORK_PRIORITY[i]
@@ -4036,6 +4070,30 @@ currentPackage,
       if (md.isExternalTarget === true) continue
       // A name this file declares is project code, whatever it is called.
       if (declared.has(target)) continue
+
+      // THE PAIRED IMPORT MENTION — the narrow claim. An `import_declaration_mention` references edge
+      // carries the same module path as its `imports` sibling, and the claim is its evidence. It is
+      // NARROWED TO JVM-ROOT MODULES (`java.`/`javax.`/`jakarta.`/`jdk.`/`sun.`/`com.sun.`/`kotlin.`):
+      // those can never be project code, so the claim cannot override a resolution the key space
+      // answers. Measured at whole-repo scope, claiming EVERY mention stole 4,285 already-resolved
+      // references (project-internal `com.<project>.*` imports resolve via qualifiedName), which is a
+      // regression with a nicer `unresolved` — the class this programme refuses.
+      if (String(r?.type ?? "") === "references"
+          && (md as any).relationshipType === "import_declaration_mention"
+          && isJvmModule(target) && !declared.has(target)) {
+        md.languageNamespace = [target]
+        marked++
+        continue
+      }
+
+      // THE JAVA.LANG CLOSED-VOCABULARY CLAIM — see JAVA_LANG_TYPES above. Bare names only, never a
+      // declaration of this file, never shadowed by a same-named import of another JVM type.
+      if (JAVA_LANG_TYPES.has(target) && !importedFromJvm.has(target)
+          && String(r?.type ?? "") === "references") {
+        md.languageNamespace = [target]
+        marked++
+        continue
+      }
 
       // Module URIs — the `<module>:<name>` form this lane emits for `imports`.
       const colon = target.indexOf(":")
