@@ -447,11 +447,14 @@ const PY_BUILTIN_NAMESPACE: ReadonlySet<string> = new Set(
  *   `contains`, `exports`, `imports`, `overrides`, `instantiates` name declarations and import
  *            specifiers rather than language namespaces.
  *
- * What is left is exactly the three types on which a bare name IS a reference to something the
- * interpreter owns: a type annotation, a heritage base, an interface base.
+ * What is left is exactly the types on which a bare name IS a reference to something the
+ * interpreter owns: a type annotation, a heritage base, an interface base — and, since the
+ * `decorates` emission, a decorator (`@property`, `@staticmethod`, `@classmethod` are BUILTIN
+ * names, and the same two guards do the work: a file that declares or imports the name keeps
+ * no claim, and a decorated declaration's own nested/local shape publishes no row at all).
  */
 const PY_NAMESPACE_CLAIM_TYPES: ReadonlySet<string> = new Set([
-  "references", "extends", "implements",
+  "references", "extends", "implements", "decorates",
 ])
 
 /**
@@ -515,7 +518,7 @@ const PY_NAMESPACE_REFUSING_REASONS: ReadonlySet<string> = new Set([
  * WHICH mechanism verified what.
  */
 const PY_IMPORT_CLAIM_TYPES: ReadonlySet<string> = new Set([
-  "calls", "uses", "references", "extends", "implements",
+  "calls", "uses", "references", "extends", "implements", "decorates",
 ])
 
 /**
@@ -1168,13 +1171,12 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.extractDeclaredTypeRefs(rootNode, ctx.relationships, phantomDefs, ctx.moduleName, ctx.functionLocals)
     this.extractMemberUses(rootNode, ctx, phantomDefs)
     this.extractVirtualRegistrations(rootNode, ctx)
-    // DECORATORS — the one python declaration modifier that had no graph edge. Emitted
+    // DECORATORS — `decorates` rows (declaration -> decorator name as written). Emitted
     // BEFORE `classifyEvidenceTier` so the new rows leave with an evidenceClass, and
     // before the claim passes so a decorator naming an imported module member is
     // certified like any other route (the claims only ADD metadata; they never rewrite
-    // a target). See `extractDecoratorReferences` for why the label is a placeholder
-    // (`references` + `metadata.isDecorator`) until the ontology's `decorates` lands.
-    this.extractDecoratorReferences(rootNode, ctx)
+    // a target). See `extractDecoratorReferences` for the source/line/argument rules.
+    this.extractDecoratorReferences(rootNode, ctx, phantomDefs)
     this.classifyEvidenceTier(ctx.relationships)
     // AND LAST, the language-namespace claim: it runs over the COMPLETE relationship set — so
     // that an edge added by any of the passes above is certified too — and it only ADDS a
@@ -5083,22 +5085,26 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * and the lane's contract is that a fact the grammar states gets an edge, not a field no
    * reader sees.
    *
-   * THE LABEL IS `references` TODAY AND IT IS A PLACEHOLDER WITH A NAMED TARGET. The
-   * ontology workstream records that this construct wants its OWN vocabulary (`decorates`);
-   * a lane does not invent a stored value. When the value lands, the ONE
-   * `RelationshipType` argument on the push below changes and the fixture — which asserts
-   * source/target/line/metadata, not the enum spelling — pins the same fact through the
-   * relabel. Until then `metadata.isDecorator: true` is what lets a consumer separate these
-   * rows from every other `references` edge, and it is additive metadata: no resolution or
-   * label number moves because of it.
+   * THE LABEL IS `decorates`, THE FIRST OF THE FOUR NEW CANONICAL MEMBERS the owner admitted
+   * to the stored domain (`src/ast/types.ts`), and python is its first emitter. One row per
+   * decorator per decorated symbol; multiple decorators are multiple rows; a decorator's
+   * ARGUMENTS are not rows (`@lib.inject("db")` depends on `lib.inject`; the `"db"` is an
+   * argument of that call, not a second dependency of the decorated declaration).
    *
-   * THE EDGE IS (decorated declaration) -> (decorator's NAME), and the name is the LEAF
-   * with the written chain in `metadata.qualified` — the lane's endpoint contract, the same
-   * rule `calls`, `uses` and base classes follow (`@app.route(...)` -> `route`, qualified
-   * `app.route`; `@pkg.decorator` -> `decorator`, qualified `pkg.decorator`; `@login` ->
-   * `login`). A decorator expression that names nothing readably (a lambda, a
-   * comprehension) is SKIPPED rather than text-sliced into an invented name: an edge to a
-   * declaration the source never wrote is the fabrication this lane refuses everywhere.
+   * THE EDGE IS (decorated declaration symbol) -> (the decorator expression's NAME, as
+   * written): `@lib.inject("db")` -> `lib.inject`, `@pkg.decorator` -> `pkg.decorator`,
+   * `@login` -> `login`. That is the Lead's spelling for this vocabulary and it is
+   * deliberately NOT the leaf+`metadata.qualified` shape the ten legacy labels use: the
+   * decorator's name is the thing a reader navigates to, and `decorates` has no legacy
+   * consumer to stay compatible with. `metadata.qualified` still carries the written chain
+   * when there IS one, because the import-evidence claim's route-bound shape reads it.
+   *
+   * THE SOURCE MUST BE A PUBLISHED SYMBOL. A def/class inside a FUNCTION BODY is a local on
+   * this family's contract (PY-28) and publishes no symbol, so a decorator applied to it
+   * emits NO row — deliberately NOT re-attributed to the enclosing symbol, because a
+   * decorator is part of the decorated declaration's identity, not a fact about the body
+   * that contains it. Shadowed definitions (`phantoms`, #748) are skipped for the same
+   * reason: the graph holds the surviving declaration, not that one.
    *
    * THE LINE is the decorator NAME's own line, never the `def`/`class` line — the other
    * half of the M59 contract. The fixture `python/decorator-column-lines` pins the
@@ -5106,7 +5112,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * consumer can tell "this name is written on the `@` line" from "this name is the
    * declaration".
    */
-  private extractDecoratorReferences(rootNode: Node, ctx: PythonContext): void {
+  private extractDecoratorReferences(rootNode: Node, ctx: PythonContext, phantoms: Set<string>): void {
     const walk = (n: Node): void => {
       if (n.type === "decorated_definition") {
         const def =
@@ -5114,22 +5120,30 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.findChildByType(n, "function_definition") ??
           this.findChildByType(n, "class_definition")
         const nameNode = def?.childForFieldName("name")
-        if (def && nameNode?.text) {
-          // THE SOURCE IS A PUBLISHED SYMBOL, NEVER THE NESTED DEF'S OWN NAME. A def inside
-          // a def is a LOCAL on this family's contract (PY-28), so `@login def nested()`
-          // inside a method belongs to the METHOD — the same attribution the annotation
-          // references already make, through the same shared helper, so the two passes
-          // cannot answer this question differently.
-          const source = this.resolveReferenceSource(def, ctx.moduleName)
+        // THE SOURCE MUST BE A PUBLISHED SYMBOL, and there are exactly two ways this shape
+        // fails that test — both are SKIPS, not attributions:
+        //
+        //   1. a def/class inside a FUNCTION BODY is a LOCAL on this family's contract
+        //      (PY-28). It publishes no symbol, so the decorator has no declaration in the
+        //      graph to be applied TO. The Lead's ruling for this emission is explicit: no
+        //      row, and do not re-attribute it to the enclosing symbol — a decorator is
+        //      part of the DEF's identity, not a fact about the body that contains it.
+        //   2. a SHADOWED definition (`phantoms`, #748) is a body the runtime rebound away;
+        //      its decorators belong to a declaration the graph does not hold either.
+        if (def && nameNode?.text && !this.isPhantom(def, phantoms) && !this.hasEnclosingFunctionBody(def)) {
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
             if (!c || c.type !== "decorator") continue
             const target = this.decoratorReferenceTarget(c)
             if (!target) continue
-            this.pushRel(ctx, source, target.name, ASTEngine.RelationshipType.References, 1.0, {
+            this.pushRel(ctx, nameNode.text, target.target, ASTEngine.RelationshipType.Decorates, 1.0, {
               pythonSpecific: true,
               isDecorator: true,
-              ...(target.qualified ? { qualified: target.qualified } : {}),
+              // THE WRITTEN ROUTE, for the import-evidence claim's route-bound shape
+              // (`@functools.wraps(...)` -> target `functools.wraps`, route the same chain,
+              // root `functools` bound by this file's import). For a bare name the target IS
+              // the route and the claim's target-bound shape reads it directly.
+              ...(target.chain ? { qualified: target.chain } : {}),
             }, this.nodeLine(target.node))
           }
         }
@@ -5143,22 +5157,44 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * The name a `decorator` node WRITES, and the node that writes it, or null.
-   *
-   * `decorator` is `"@"` + one of {identifier, attribute, call, subscript} in this
-   * grammar, and a call's `function` / a subscript's `value` / a parenthesised
-   * expression's inner node are the same shapes one level down. Only those shapes are
-   * read: anything else (a lambda, a comprehension, an arbitrary expression) NAMES no
-   * decorator, and returning a text-sliced guess for it would publish an edge to a
-   * declaration that does not exist.
+   * IS THIS DECLARATION INSIDE A FUNCTION BODY? — the python scope test the main walk applies
+   * (`a def inside a def is a local; only a module/class-body def is published`), asked here
+   * as a property of the node so the decorator pass and the symbol publisher cannot disagree.
+   * The walk starts at the declaration's PARENT: the declaration's own `function_definition`
+   * node is not an enclosing body, it is the symbol.
    */
-  private decoratorReferenceTarget(decorator: Node): { name: string; node: Node; qualified?: string } | null {
-    const read = (n: Node): { name: string; node: Node; qualified?: string } | null => {
-      if (n.type === "identifier") return n.text === "" ? null : { name: n.text, node: n }
+  private hasEnclosingFunctionBody(def: Node): boolean {
+    let p: Node | null = def.parent
+    while (p) {
+      if (p.type === "function_definition" || p.type === "lambda") return true
+      p = p.parent
+    }
+    return false
+  }
+
+  /**
+   * The NAME a `decorator` node WRITES, the node that writes it, and the written CHAIN.
+   *
+   * `decorator` is `"@"` + one of {identifier, attribute, call, subscript} in this grammar,
+   * and a call's `function` / a subscript's `value` / a parenthesised expression's inner node
+   * are the same shapes one level down. THE ARGUMENTS ARE NOT PART OF THE NAME: `@lib.inject("db")`
+   * depends on `lib.inject`, and the `"db"` in the parens is an argument of that call, not a
+   * second dependency of the decorated declaration.
+   *
+   * The TARGET is the written chain (`lib.inject`, `login`) — the Lead's spelling for this
+   * emission — and `chain` is present only when the written name HAS a chain, so the
+   * import-evidence claim can read the route it needs. Anything that names no readable
+   * decorator (a lambda, a comprehension) returns null rather than a text-sliced guess.
+   */
+  private decoratorReferenceTarget(
+    decorator: Node,
+  ): { target: string; node: Node; chain?: string } | null {
+    const read = (n: Node): { target: string; node: Node; chain?: string } | null => {
+      if (n.type === "identifier") return n.text === "" ? null : { target: n.text, node: n }
       if (n.type === "attribute") {
         const leaf = n.childForFieldName("attribute") ?? n.namedChild(n.namedChildCount - 1)
         if (!leaf || leaf.type !== "identifier" || leaf.text === "") return null
-        return { name: leaf.text, node: leaf, qualified: n.text }
+        return { target: n.text, node: leaf, chain: n.text }
       }
       if (n.type === "call") {
         const fn = n.childForFieldName("function") ?? n.namedChild(0)
@@ -5393,6 +5429,15 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       if (t === "imports") { md.evidenceClass = "import_based"; continue }
+      if (t === "decorates") {
+        // A decorator is WRITTEN in the declaration's header — `@lib.inject("db")` is applied
+        // to the def/class by the source itself, at confidence 1.0 — so it is a declaration
+        // fact, the same tier `extends`/`implements`-from-header get. It is not a call: the
+        // ARGUMENTS are a different dependency (and are not rows), the decorator application
+        // is not dispatched through a value at this site.
+        md.evidenceClass = "structural"
+        continue
+      }
       if (t === "references") {
         md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"
         continue
