@@ -1826,7 +1826,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const r of relationships) {
       if (!r.source || !r.target) continue
       const type = r.type ?? r.relationshipType ?? ""
-      if (type === "extends" || type === "implements" || type === "uses") {
+      // 2026-10-18 — `mixes_in` JOINS THIS WALK. The with-clause used to arrive here as
+      // `uses{isMixin:true}`; the relabel removed that spelling, and a filter left on `uses`
+      // alone would silently stop the pass from seeing mixin-contributed members (the
+      // fixture caught the regression in `dart/object-interface-override`, case K/N: the
+      // fall-through over `extends Object with ListMixin<int>` stopped naming `ListMixin`).
+      // `references{isMixinOn}` is deliberately NOT here: an `on` constraint contributes no
+      // members to the host, so it must never enter the inheritance walk.
+      if (type === "extends" || type === "implements" || type === "uses" || type === "mixes_in") {
         const list = heritageByClass.get(r.source) ?? []
         if (!list.includes(r.target)) list.push(r.target)
         heritageByClass.set(r.source, list)
@@ -1860,8 +1867,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     const baseOrder = new Map<string, string[]>()
     for (const r of relationships) {
       const type = r.type ?? r.relationshipType ?? ""
-      const isBase = type === "extends" || type === "implements" ||
-        (type === "uses" && (r.metadata as any)?.isMixin === true)
+      // `mixes_in` IS a base for this map's purpose — a with-clause is a heritage clause, and
+      // this is the map the Object-skip fallback chooses from. The old `uses{isMixin}` spelling
+      // is gone (2026-10-18 relabel), and the reference row an `on` constraint publishes is not
+      // in this list: a constraint is not a base.
+      const isBase = type === "extends" || type === "implements" || type === "mixes_in"
       if (!isBase || !r.source || !r.target) continue
       const list = baseOrder.get(r.source) ?? []
       if (!list.includes(r.target)) list.push(r.target)
@@ -2977,7 +2987,12 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // names a type, and whether that deserves a `uses` edge is a family
       // decision this lane has not made. Widening to every `qualified` would
       // answer that question by accident, so it stays open and visible.
-      if (t === "qualified" && n.parent?.type === "constant_pattern") {
+      // DARTGAP2 (2026-10-18): the same pattern TEST in its RELATIONAL form (`x case >= M.off`)
+      // parses with no wrapper node at all — the `qualified` is a direct child of the case/if
+      // whose previous named sibling is the operator — so the original single-parent test missed
+      // it. `isPatternTestConstant` is the ONE predicate for both shapes; it also refuses the
+      // binding contexts the original test could not see (`var (a, b)` destructuring, `...rest`).
+      if (t === "qualified" && this.isPatternTestConstant(n)) {
         const segs = n.text.split(".")
         const member = segs[segs.length - 1]
         // THE HEAD IS SPELLED THE WAY THE SOURCE WROTE IT, ARGUMENTS AND ALL. This site reads
@@ -3118,6 +3133,40 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               // A read of a PARAMETER is a binding too: `locals` holds the function's bound
               // names (parameters and `var`s alike), which is why both land here.
               metadata: { isLocalRead: true, localBinding: true },
+            })
+          } else if (this.isPatternTestConstant(n)) {
+            // DARTGAP2 — THE CONSTANT A PATTERN TESTS.
+            //
+            // `case kOne:` / `if (x case kOne)` / `case kNested?` / `case kOne!` /
+            // `case >= kOne` / `case [kOne, 2]` / `case {'a': kOne}` / `case (kOne, 2)`:
+            // every one of these is a READ of a constant, and every one was SILENT before this
+            // branch. The reason is the order of the arms below: a bare identifier fall through
+            // `isDeclaredMember` (no — a pattern test is not a member), `locals` (no — a constant
+            // pattern does not name a local; the binding forms parse as `variable_pattern`, which
+            // this predicate refuses), `topLevelValues` (only when the constant happens to be
+            // declared in THIS file). A constant imported from another library therefore published
+            // nothing at all, while the same text in an expression position published `uses`
+            // through the top-level-value arm.
+            //
+            // THE TARGET IS THE NAME THE SOURCE WROTE, at the same 0.9 the qualified-constant
+            // branch uses (3d4d7fa4): a pattern test is an ordinary value read of a constant, and
+            // the project's own resolver decides whether that name has exactly one declaration.
+            // `isConstantPattern` is the flag the closed qualified arm already carries (the mutant
+            // battery keys on it); `isPatternTest` says this row came from a TEST position rather
+            // than a `qualified` member spelling. No claim is attached: a pattern test can only
+            // name something, so there is no unreachable owner to declare.
+            //
+            // A LOCAL named by a pattern test is handled ABOVE this branch (the `locals` arm) and
+            // keeps the family's binding spelling `<callable>\\u0000<binding>` — a local constant is
+            // still a binding, and spelling it as a bare declaration name is the phantom link
+            // `local-read-phantom.ts` exists to prevent.
+            relationships.push({
+              source: callSource,
+              target: txt,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.9,
+              line_number: this.nodeLine(n),
+              metadata: { isConstantPattern: true, isPatternTest: true },
             })
           } else if (!isDeclaredMember && topLevelValues.has(txt)) {
             // DT2: file-scope values read as values. Members shadow
@@ -4231,7 +4280,9 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // operator is the previous named sibling. `a > b` in an EXPRESSION parses as
     // `relational_expression`, never this shape, so this cannot reach a comparison.
     if (p.type === "if_statement" || p.type === "switch_statement_case" || p.type === "switch_expression_case") {
-      return id !== null && id.previousNamedSibling?.type === "relational_operator"
+      // Both spellings of a relational operand reach here: a bare identifier (`>= kOne`) and a
+      // `qualified` constant (`>= Mode.off`). Neither gets a wrapper node from this grammar.
+      return n.previousNamedSibling?.type === "relational_operator"
     }
     return false
   }
