@@ -5197,70 +5197,103 @@ class TypeScriptAnalysisRunner {
   }
 
   /**
-   * RECEIVER TYPES for a member call on a LOCAL variable, read off the syntax.
+   * RECEIVER TYPES for a member call, read off the syntax — the input to the STORE'S OWN
+   * member-owner channel (`metadata.owner`, read by `src/ast/member-owner-resolution.ts` and
+   * called from both resolution paths in `parallel-indexer.ts`).
    *
-   * Measured 2026-10-17 on a three-file program (src/used.ts, src/orphan.ts,
-   * src/main.ts; both classes declare `run`, and main does
-   * `const c = new UsedClass(); return c.run()`): the call published nothing but
-   * the LEAF NAME `run`, so the store's name-based binding picked
-   * `src/orphan.ts:run` — a file main never imports — at confidence 0.9, and
-   * bb_graph served it as a callee while the true `src/used.ts:run` edge was
-   * absent. `verify-patterns` caught the symptom: orphan.ts could never be
-   * reported as an orphaned file because a fabricated edge "referenced" it.
+   * Measured 2026-10-17 on a three-file program (src/used.ts, src/orphan.ts, src/main.ts; both
+   * classes declare `run`, and main does `const c = new UsedClass(); return c.run()`): the call
+   * published nothing but the LEAF NAME `run`, so the store's name-based binding picked
+   * `src/orphan.ts:run` — a file main never imports — at confidence 0.9, and bb_graph served it as
+   * a callee while the true `src/used.ts:run` edge was absent. `verify-patterns` caught the
+   * symptom: orphan.ts could never be reported as an orphaned file because a fabricated edge
+   * "referenced" it. The repair is the channel the store already has: a `calls`/`uses` row
+   * carrying `metadata.owner` is re-resolved by `resolveMemberTargetsByOwner` inside that class,
+   * and its NAME binding is WITHDRAWN, so a wrong name binding is replaced by the receiver's own.
    *
-   * The repair uses the channel the store already has. A `calls` row carrying
-   * `metadata.owner` is re-resolved by `resolveMemberTargetsByOwner` inside that
-   * class, so a WRONG name binding is replaced by the receiver's real one. This
-   * pass supplies the owner from the two syntactic forms that state it without
-   * inference:
+   * FOUR SYNTACTIC FORMS STATE THE TYPE, and each carries its evidence class on the row
+   * (`metadata.ownerEvidence`) so the channel's coverage can be priced per form rather than
+   * guessed at:
    *
-   *   const c = new UsedClass()        -> c: UsedClass
-   *   const c: UsedClass = make()      -> c: UsedClass
+   *   const c = new UsedClass()        -> c: UsedClass          evidence "assignment"
+   *   const c: UsedClass = make()      -> c: UsedClass          evidence "annotation"
+   *   function f(c: UsedClass)         -> c: UsedClass          evidence "param"
+   *   this.field.m() (field: UsedClass)-> the field's type      evidence "this"
    *
-   * Deliberately NOT included: parameter annotations, assignment after
-   * declaration, `as` casts, and factory returns. Each needs flow analysis this
-   * pass does not have, and a WRONG owner is worse than no owner — it would
-   * rewrite a binding that is currently correct. A name declared with two
-   * different types in one file is dropped for the same reason: shadowing makes
-   * the file-level answer ambiguous, so the row keeps the binding it had.
+   * `this.field` is resolved one hop: the call's receiver is `this.<field>` and the field's OWN
+   * declared type is read from the class body. A field map whose entries disagree (two classes in
+   * one file declaring the same field name with different types) is DROPPED whole, not picked
+   * between — the same rule the local map uses.
    *
-   * MEASURED ON REAL CODE (graphql-js/src, 24,801 `calls` rows, full re-index of
-   * a fresh copy both arms, 2026-10-17): 958 rows now carry a receiver type; of
+   * Deliberately NOT included: assignment after declaration, `as` casts, factory return types
+   * (a call's return type is not in the same file's syntax), destructuring patterns (no single
+   * variable), and receiver chains deeper than one `this.` hop. Each needs flow analysis this
+   * pass does not have, and a WRONG owner is worse than no owner — the store WITHDRAWS the name
+   * binding for an owner-carrying row and then declines if the owner does not resolve, so a bad
+   * owner deletes a correct binding instead of improving it.
+   *
+   * MEASURED ON REAL CODE (graphql-js/src, 24,801 `calls` rows, full re-index of a fresh copy both
+   * arms, 2026-10-17, for the `new`+annotation forms only): 958 rows carried a receiver type; of
    * the 493 whose target resolves inside a class, 493/493 agree with the receiver
-   * (owner-consistent). The cost is visible and was counted the same way: 423
-   * rows the name binding had resolved are now UNRESOLVED, and of those, 404 had
-   * landed in a DIFFERENT class than the receiver (`Array.push` bound to
-   * QueueExecutorOptions.push; `Map.get` bound to spyOn.get), 16 on a free
-   * function, and only 3 in the receiver's own class. Those 423 are built-in
-   * receivers the index does not model (Array 214, Map 107, AbortController 60,
-   * Set 48), so the honest answer for them is "no target symbol", not a stranger.
+   * (owner-consistent). The cost is visible and was counted the same way: 423 rows the name
+   * binding had resolved became UNRESOLVED, and of those, 404 had landed in a DIFFERENT class than
+   * the receiver (`Array.push` bound to QueueExecutorOptions.push; `Map.get` bound to spyOn.get),
+   * 16 on a free function, and only 3 in the receiver's own class. Those 423 are built-in
+   * receivers the index does not model (Array 214, Map 107, AbortController 60, Set 48), so the
+   * honest answer for them is "no target symbol", not a stranger.
    */
-  private collectLocalReceiverTypes(root: Node): Map<string, string> {
-    const types = new Map<string, string>()
-    const conflicted = new Set<string>()
+  private collectLocalReceiverTypes(root: Node): {
+    locals: Map<string, { type: string; evidence: string }>
+    classFields: Map<string, { type: string; evidence: string }>
+  } {
+    const locals = new Map<string, { type: string; evidence: string }>()
+    const classFields = new Map<string, { type: string; evidence: string }>()
+    const conflictedLocals = new Set<string>()
+    const conflictedFields = new Set<string>()
+    /** First declaration wins; a second declaration with a DIFFERENT type drops the name from
+     *  the map entirely (shadowing makes the file-level answer ambiguous, and a wrong owner is
+     *  worse than none — see the docstring). */
+    const record = (
+      into: Map<string, { type: string; evidence: string }>,
+      conflicted: Set<string>,
+      name: string,
+      type: string,
+      evidence: string,
+    ) => {
+      if (conflicted.has(name)) return
+      const previous = into.get(name)
+      if (previous === undefined) into.set(name, { type, evidence })
+      else if (previous.type !== type) {
+        into.delete(name)
+        conflicted.add(name)
+      }
+    }
     const stack: Node[] = [root]
     while (stack.length) {
       const n = stack.pop()!
       if (n.type === "variable_declarator") {
-        // A destructuring pattern states no single variable; `namedChild(0)` is
-        // an object_pattern/array_pattern there, which the identifier test drops.
-        // (The 3 same-class losses in the measurement above are the price of not
-        // guessing: they are rows whose member belongs to the receiver's class
-        // by name but which the pass left unresolved, and a repair there belongs
-        // in the member-owner pass, not in a wider guess here.)
+        // A destructuring pattern states no single variable; `namedChild(0)` is an
+        // object_pattern/array_pattern there, which the identifier test drops. (The 3 same-class
+        // losses in the measurement above are the price of not guessing.)
         const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
         if (nameNode && nameNode.type === "identifier") {
+          const value = n.childForFieldName("value")
+          const isNew = value !== null && value.type === "new_expression"
           const type = this.declaratorTypeName(n)
-          if (type) {
-            const name = nameNode.text
-            const previous = types.get(name)
-            if (previous === undefined) {
-              if (!conflicted.has(name)) types.set(name, type)
-            } else if (previous !== type) {
-              types.delete(name)
-              conflicted.add(name)
-            }
-          }
+          if (type) record(locals, conflictedLocals, nameNode.text, type, isNew ? "assignment" : "annotation")
+        }
+      } else if (n.type === "required_parameter" || n.type === "optional_parameter") {
+        const pattern = n.childForFieldName("pattern") ?? n.childForFieldName("name") ?? n.namedChild(0)
+        if (pattern && pattern.type === "identifier") {
+          const type = this.annotationTypeName(n)
+          if (type) record(locals, conflictedLocals, pattern.text, type, "param")
+        }
+      } else if (n.type === "public_field_definition" || n.type === "property_signature") {
+        // `private inner: UsedClass` — the type a `this.inner.m()` call is made through.
+        const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
+        if (nameNode && (nameNode.type === "property_identifier" || nameNode.type === "identifier")) {
+          const type = this.annotationTypeName(n)
+          if (type) record(classFields, conflictedFields, nameNode.text, type, "this")
         }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
@@ -5268,7 +5301,7 @@ class TypeScriptAnalysisRunner {
         if (child) stack.push(child)
       }
     }
-    return types
+    return { locals, classFields }
   }
 
   /** The class a declarator names, from `= new X(...)` or from a `: X` annotation. */
@@ -5279,6 +5312,11 @@ class TypeScriptAnalysisRunner {
       const leaf = ctor ? this.typeLeafName(ctor) : null
       if (leaf) return leaf
     }
+    return this.annotationTypeName(n)
+  }
+
+  /** The type an annotation names, if this declaration carries one: `: X` -> `X`. */
+  private annotationTypeName(n: Node): string | null {
     for (let i = 0; i < n.namedChildCount; i++) {
       const child = n.namedChild(i)
       if (child && child.type === "type_annotation") {
@@ -5310,16 +5348,36 @@ class TypeScriptAnalysisRunner {
   }
 
   /**
-   * The owner a member call states, or undefined when the receiver is not a
-   * local variable with one known type. `this`/`super` are left alone: their
-   * rows are resolved through the SOURCE symbol's own owner, a different and
-   * already-implemented channel, and naming an owner here would double-claim.
+   * The owner a member call states, plus the evidence class that stated it, or undefined when
+   * the syntax states neither. `super` is left alone (no type in the syntax); a bare `this.m()`
+   * is left to the SOURCE symbol's own owner, a different and already-implemented channel, so
+   * naming an owner here would double-claim. A one-hop `this.field.m()` IS resolved — the
+   * receiver's type there is the FIELD's declared type.
    */
-  private receiverOwnerType(callee: Node, types: Map<string, string>): string | undefined {
+  private receiverOwnerType(
+    callee: Node,
+    facts: { locals: Map<string, { type: string; evidence: string }>; classFields: Map<string, { type: string; evidence: string }> },
+  ): { type: string; evidence: string } | undefined {
     if (callee.type !== "member_expression") return undefined
     const object = callee.childForFieldName("object") ?? callee.namedChild(0)
-    if (!object || object.type !== "identifier") return undefined
-    return types.get(object.text)
+    if (!object) return undefined
+    if (object.type === "identifier") return facts.locals.get(object.text)
+    if (object.type === "member_expression") {
+      const inner = object.childForFieldName("object") ?? object.namedChild(0)
+      const property = object.childForFieldName("property") ?? object.namedChild(object.namedChildCount - 1)
+      // THE FIELD NAME NODE IS A `property_identifier` IN THIS GRAMMAR — not an `identifier`.
+      // Measured on the fixture: requiring `identifier` here made the whole `this.<field>.m()`
+      // evidence class DEAD (the collector recorded the field, the lookup above found it, and
+      // this test rejected the name node, so every such row carried no owner and reported
+      // nothing). Both spellings are accepted because a class field is a member in either shape.
+      if (
+        inner && inner.type === "this" && property &&
+        (property.type === "identifier" || property.type === "property_identifier" || property.type === "private_property_identifier")
+      ) {
+        return facts.classFields.get(property.text)
+      }
+    }
+    return undefined
   }
 
   /**
@@ -5426,7 +5484,14 @@ class TypeScriptAnalysisRunner {
             // The receiver's type, when the syntax states one. See
             // collectLocalReceiverTypes for why this is the difference between
             // a fabricated edge and the real one on `const c = new Foo(); c.m()`.
-            const ownerType = this.receiverOwnerType(callee, receiverTypes)
+            //
+            // TWO KEYS, ONE COMPUTATION, and they are not duplicable state: `owner` is the STORE
+            // channel's spelling (src/ast/member-owner-resolution.ts withdraws the name binding
+            // and re-resolves inside this class); `ownerEvidence` records WHICH syntactic form
+            // stated it ({assignment, annotation, param, this}) so the channel's coverage is a
+            // queryable number per evidence class rather than a claim. The field is deliberately
+            // named `ownerEvidence`, not a second type key: one value, one spelling.
+            const ownerHint = this.receiverOwnerType(callee, receiverTypes)
             relationships.push({
               source: callSource.name,
               target: targetName,
@@ -5440,7 +5505,7 @@ class TypeScriptAnalysisRunner {
                 // The receiver's declared type, when the syntax states one. The
                 // store re-resolves the row inside that class (member-owner pass),
                 // which is what stops `c.run()` binding to another file's `run`.
-                ...(ownerType ? { owner: ownerType } : {}),
+                ...(ownerHint ? { owner: ownerHint.type, ownerEvidence: ownerHint.evidence } : {}),
                 // WHICH WRAPPER THE LEAF WAS REDUCED THROUGH, recorded only when there was
                 // one. A consumer can then tell `(foo)()` from `foo()` and `foo!()` from
                 // `foo()` without re-parsing, and an audit of `calleeLeafName`'s allowlist
