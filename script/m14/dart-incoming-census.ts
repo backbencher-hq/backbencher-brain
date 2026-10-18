@@ -66,6 +66,10 @@ const GATE_JSON_PATH = argOf("--gate-json") ?? process.env.BB_DART_GATE_JSON ?? 
 const ALL_TYPES = [
   "calls", "uses", "contains", "imports", "references",
   "exports", "extends", "implements", "overrides", "instantiates",
+  // 2026-10-18: the canonical vocabulary added stored labels this lane now emits; a census that
+  // did not read them would classify their rows as UNCLASSIFIED (control 2) — the correct failure,
+  // and the reason the labels are listed here rather than assumed absent.
+  "mixes_in", "part_of",
 ] as const
 type Type = (typeof ALL_TYPES)[number]
 
@@ -81,6 +85,7 @@ const LABEL_ALIASES: Record<string, string> = {
   implements: "implements", implementation: "implements",
   overrides: "overrides", override: "overrides",
   instantiates: "instantiates",
+  mixes_in: "mixes_in", part_of: "part_of",
 }
 const ontologyName = (raw: string): Type | null => (LABEL_ALIASES[raw] as Type) ?? null
 
@@ -232,6 +237,12 @@ function classifyUnresolved(
       if (isBareUpper(t)) {
         return { family: "bare-upper-call", status: "analyzer", detail: "a capitalized bare target in calls/uses — a type in a value position" }
       }
+      // A POSITIONAL RECORD FIELD (`rec.$1`) is Dart's own name for a record position, and no
+      // declaration can answer it (DARTGAP4 ruled the shape). It is spelled correctly and the
+      // absent member is the language's, not the analyzer's — a `spelling` family, not a gap.
+      if (/^\$[0-9]+$/.test(t)) {
+        return { family: "positional-record-field-read", status: "spelling", detail: "Dart's positional record field ($1, $2) — a real name with no declaration to bind" }
+      }
       return { family: "call-use-other", status: "analyzer", detail: `target=${JSON.stringify(t)}` }
     }
     case "instantiates": {
@@ -242,6 +253,27 @@ function classifyUnresolved(
         return { family: "qualified-construction", status: "analyzer", detail: `target=${JSON.stringify(t)}` }
       }
       return { family: "instantiate-other", status: "analyzer", detail: `target=${JSON.stringify(t)}` }
+    }
+    case "references": {
+      if (md?.isAnnotation === true) {
+        return { family: "annotation-type-not-in-key-space", status: "population", detail: "the annotation's TYPE is declared outside this run's key space (a library annotation such as @override/@pragma, or a package annotation)" }
+      }
+      if (md?.isMixinOn === true) {
+        return { family: "mixin-on-type-not-in-key-space", status: "population", detail: "the mixin's `on` constraint names a type outside this run" }
+      }
+      return { family: "type-mention-not-in-key-space", status: "population", detail: "an ordinary type mention whose declaration is outside this run" }
+    }
+    case "mixes_in": {
+      if (isBareUpper(t)) {
+        return { family: "mixin-type-not-in-key-space", status: "population", detail: "an applied mixin whose declaration is not admitted here" }
+      }
+      return { family: "mixin-target-other", status: "analyzer", detail: `target=${JSON.stringify(t)}` }
+    }
+    case "part_of": {
+      if (isPathTarget(t) || !t.includes("/")) {
+        return { family: "part-target-not-in-key-space", status: "population", detail: "a part/library target (path or named library) whose symbol is not admitted here" }
+      }
+      return { family: "part-target-other", status: "analyzer", detail: `target=${JSON.stringify(t)}` }
     }
     case "extends":
     case "implements": {
