@@ -2999,7 +2999,32 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               // #962 corrected for `instantiates`.
               const arg = node.childForFieldName("arguments")?.namedChild(0)
               const declName = this.exportedDeclarationName(node)
-              const nameNode = declName ?? (arg && arg.text.trim() ? arg : null)
+              // #992 — THE ARGUMENT HALF OF A MARKER CALL IS A NAME OR IT IS NOTHING.
+              //
+              // Measured on the WHOLE admitted .c population (`script/m14/c-emission-census.ts
+              // --cap=0`: 5,022 files, 39 repos, 291 exports edges): 7 edges carried the marker
+              // `static_assert`, and every one of their SOURCES was the assertion's CONDITION
+              // expression — `UINTPTR_MAX == 0xffffffffffffffff || …` (redis/src/util.c:63),
+              // `offsetof(FirstSegHdr, head) == 0` (redis/src/ebuckets.c:109-113),
+              // `sizeof(uint64_t) == 8` (redis/src/crccombine.c:120-122). The cause is structural,
+              // not corpus luck: redis defines
+              //   `#define static_assert(expr, lit) extern char __static_assert_failure[(expr) ? 1:-1]`
+              // so the replacement list OPENS WITH `extern` and the agreement rule correctly makes
+              // the macro a linkage marker — and then a marker INVOCATION whose first argument is an
+              // EXPRESSION was published as an exported NAME.
+              //
+              // The fix is the declarator rule the rest of this file already states three times: an
+              // exported name must be something a consumer can RESOLVE, and the only spelling of a
+              // declared name in C is a bare identifier. A condition expression is not a name, so the
+              // argument path publishes nothing. The declaration path is untouched (a declarator
+              // yields an identifier node by construction), so the kernel `EXPORT_SYMBOL(my_function,
+              // GPL)` spelling keeps firing: its argument IS a bare identifier.
+              //
+              // FALSE edges rank above missing ones in this lane, and the refusal is pinned by
+              // c/exports-assertion-macro-992's `forbidRelationships` row (the fixture fails without
+              // this guard).
+              const argText = arg && arg.type === "identifier" ? arg.text.trim() : ""
+              const nameNode = declName ?? (argText !== "" && isBareIdentifierText(argText) ? arg : null)
               if (nameNode) {
                 relationships.push({
                   source: nameNode.text,

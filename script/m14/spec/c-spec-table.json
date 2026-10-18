@@ -1,11 +1,11 @@
 {
   "language": "c",
-  "programme": "ALL-OUT-OF-ALL (charter validation/m14/verification/ALL-OUT-OF-ALL-PROGRAMME.md §9.1 D1)",
-  "purpose": "THE C APPLICABLE SET, as a machine-readable table: one row per relationship type the C language can express (decided from the PINNED GRAMMAR's own enumeration, never from the ten-value matrix), with the emission site in src/ast/real-c-analyzer.ts and at least one fixture that can go RED for it — plus the ruled non-applicable canonical values.",
+  "programme": "ALL-OUT-OF-ALL (charter validation/m14/verification/ALL-OUT-OF-ALL-PROGRAMME.md \u00a79.1 D1)",
+  "purpose": "THE C APPLICABLE SET, as a machine-readable table: one row per relationship type the C language can express (decided from the PINNED GRAMMAR's own enumeration, never from the ten-value matrix), with the emission site in src/ast/real-c-analyzer.ts and at least one fixture that can go RED for it \u2014 plus the ruled non-applicable canonical values.",
   "grammar": {
     "wasm": "wasm/tree-sitter-c.wasm",
     "sha256": "f9a2d771d989495b",
-    "pinNote": "full sha256 in the instrument artifact; the short form is the value the analyzer head comment and c-completeness.json carry (sha256 f9a2d771…, tree-sitter-c@0.24.1)",
+    "pinNote": "full sha256 in the instrument artifact; the short form is the value the analyzer head comment and c-completeness.json carry (sha256 f9a2d771\u2026, tree-sitter-c@0.24.1)",
     "enumeration": "366 node-type slots = 128 NAMED types + 202 anonymous tokens, enumerated through web-tree-sitter's Language API (nodeTypeCount / nodeTypeIsNamed / nodeTypeForId). ERROR and MISSING are universal parser outputs, not grammar productions, and are classified separately in c-completeness.json.",
     "instrument": "script/m14/c-applicable-set.ts",
     "command": "bun run script/m14/c-applicable-set.ts --out validation/m14/fixtures/c/measurements/applicable-set.json",
@@ -13,15 +13,38 @@
   },
   "admissibilityRule": "A canonical value is APPLICABLE to C iff (i) every construct production it needs is present in the pinned grammar's enumeration, (ii) src/ast/real-c-analyzer.ts has at least one EMISSION site for it, (iii) at least one committed fixture carries a positive `expectRelationships` row naming it, and (iv) that fixture goes RED when the emission is removed (measured through the real fixture runner, one mutated analyzer per value). A value failing any conjunct is a finding; the instrument exits 1 when any conjunct fails.",
   "canonicalVocabulary": [
-    "calls", "extends", "implements", "uses", "imports", "exports",
-    "contains", "references", "overrides", "instantiates",
-    "decorates", "renders", "mixes_in", "part_of"
+    "calls",
+    "extends",
+    "implements",
+    "uses",
+    "imports",
+    "exports",
+    "contains",
+    "references",
+    "overrides",
+    "instantiates",
+    "decorates",
+    "renders",
+    "mixes_in",
+    "part_of"
   ],
   "applicableValues": [
-    "calls", "uses", "contains", "imports", "references", "exports", "overrides", "instantiates"
+    "calls",
+    "uses",
+    "contains",
+    "imports",
+    "references",
+    "exports",
+    "overrides",
+    "instantiates"
   ],
   "notApplicableValues": [
-    "extends", "implements", "decorates", "renders", "mixes_in", "part_of"
+    "extends",
+    "implements",
+    "decorates",
+    "renders",
+    "mixes_in",
+    "part_of"
   ],
   "evidence_rows": {
     "_reading_as_of": "2026-10-18 (this lane's onboarding); cap-50 columns from the lane BASELINE run recorded in validation/m14/fixtures/c/measurements/gate-c-cap50-baseline.txt. A cap-50 stride is TRIAGE, never a population claim; whole-population columns are filled by the D2/D3 arms and are EXPLICITLY OWED until then.",
@@ -34,214 +57,446 @@
       "parseFailures": 0,
       "degraded": 0,
       "exit": 1,
-      "exitMeaning": "FAIL on clause 1 — the baseline has unresolved/ambiguous rows; that is the state being worked, not an instrument error",
+      "exitMeaning": "FAIL on clause 1 \u2014 the baseline has unresolved/ambiguous rows; that is the state being worked, not an instrument error",
       "tables": {
         "TOTAL": {
-          "edges": 5181, "resolved": 2135, "collRes": 24, "ambDecl": 140, "ambKind": 35,
-          "unresolved": 2411, "extOK": 495, "extUnknown": 0, "extFAIL": 0,
-          "bindOK": 0, "bindUnknown": 0, "bindFAIL": 0, "causeOK": 0, "causeFAIL": 0
+          "edges": 5181,
+          "resolved": 2135,
+          "collRes": 24,
+          "ambDecl": 140,
+          "ambKind": 35,
+          "unresolved": 2411,
+          "extOK": 495,
+          "extUnknown": 0,
+          "extFAIL": 0,
+          "bindOK": 0,
+          "bindUnknown": 0,
+          "bindFAIL": 0,
+          "causeOK": 0,
+          "causeFAIL": 0
         }
       }
     },
     "types": {
       "calls": {
-        "constructs": ["call_expression", "argument_list"],
+        "constructs": [
+          "call_expression",
+          "argument_list"
+        ],
         "grammarProductionPresent": true,
         "rule": "call_expression with an identifier / field_expression / function-pointer callee. A call-shaped DECLARATION is not a call (#912); a function-like macro invocation gets both calls and uses (#908) while a `#define` replacement list that recovery reads as a call gets neither (definition site).",
-        "implementationSites": ["src/ast/real-c-analyzer.ts:2867"],
+        "implementationSites": [
+          "src/ast/real-c-analyzer.ts:2867"
+        ],
         "fixturesCanGoRed": [
-          "c/call-callee-must-be-a-name-954", "c/call-in-directive-condition-956", "c/callsite-lines-825",
-          "c/cgd31-37-regressions", "c/contains-conditional-and-nested-958", "c/declaration-identity",
-          "c/exports-attribute-989", "c/field-access-offsetof-955", "c/field-read-single-edge",
-          "c/function-like-macro-not-a-binding-908", "c/instantiates-allocated-type-962",
-          "c/instantiates-allocator-register-989", "c/macro-truncated-declarator-916",
-          "c/macro-wrapped-heading-917", "c/macro-wrapped-pointer-heading-918",
-          "c/parenthesized-declarator-name-971", "c/prototype-member-names-972"
+          "c/call-callee-must-be-a-name-954",
+          "c/call-in-directive-condition-956",
+          "c/callsite-lines-825",
+          "c/cgd31-37-regressions",
+          "c/contains-conditional-and-nested-958",
+          "c/declaration-identity",
+          "c/exports-attribute-989",
+          "c/field-access-offsetof-955",
+          "c/field-read-single-edge",
+          "c/function-like-macro-not-a-binding-908",
+          "c/instantiates-allocated-type-962",
+          "c/instantiates-allocator-register-989",
+          "c/macro-truncated-declarator-916",
+          "c/macro-wrapped-heading-917",
+          "c/macro-wrapped-pointer-heading-918",
+          "c/parenthesized-declarator-name-971",
+          "c/prototype-member-names-972"
         ],
         "fixtureExpectationRows": 48,
         "redProof": {
-          "baselinePassFail": "44/3",
-          "mutatedPassFail": "28/19",
+          "baselinePassFail": "45/3",
+          "mutatedPassFail": "29/19",
           "fixturesThatWentRed": 16,
           "redProven": true
         },
-        "cap50": {"edges": 3324, "resolved": 764, "collRes": 0, "ambDecl": 54, "ambKind": 19, "unresolved": 2011, "extOK": 495, "extUnknown": 0, "extFAIL": 0},
-        "cap50ResidualClass": "unresolved 2011: declaration lives in a project HEADER outside the .c run, or is a name declared nowhere in the run (third-party/POSIX macros) — C-D2 per-file model; the 495 extOK are ISO C standard-library names claimed with `isExternal` and verified by the project."
+        "cap50": {
+          "edges": 3324,
+          "resolved": 764,
+          "collRes": 0,
+          "ambDecl": 54,
+          "ambKind": 19,
+          "unresolved": 2011,
+          "extOK": 495,
+          "extUnknown": 0,
+          "extFAIL": 0
+        },
+        "cap50ResidualClass": "unresolved 2011: declaration lives in a project HEADER outside the .c run, or is a name declared nowhere in the run (third-party/POSIX macros) \u2014 C-D2 per-file model; the 495 extOK are ISO C standard-library names claimed with `isExternal` and verified by the project."
       },
       "uses": {
-        "constructs": ["field_expression", "identifier", "assignment_expression", "update_expression"],
+        "constructs": [
+          "field_expression",
+          "identifier",
+          "assignment_expression",
+          "update_expression"
+        ],
         "grammarProductionPresent": true,
         "rule": "a READ of an in-file declared name: field reads (field_access) and bare identifier reads; assignment-LHS / update targets are WRITES and are published as uses per #960 (the ontology has no `writes` kind, so silence would be an unrepresented fact), never dropped.",
-        "implementationSites": ["src/ast/real-c-analyzer.ts:3124", "src/ast/real-c-analyzer.ts:3371"],
+        "implementationSites": [
+          "src/ast/real-c-analyzer.ts:3124",
+          "src/ast/real-c-analyzer.ts:3371"
+        ],
         "fixturesCanGoRed": [
-          "c/c-completeness", "c/callsite-lines-825", "c/cgd31-37-regressions",
-          "c/contains-conditional-and-nested-958", "c/field-access-offsetof-955", "c/field-read-single-edge",
-          "c/function-like-macro-not-a-binding-908", "c/function-local-type-959",
-          "c/layout-bitfields-unions-945", "c/layout-widths-from-ast-936", "c/macro-forward-read",
-          "c/macro-generated-enumerator", "c/macro-truncated-declarator-916",
-          "c/macro-wrapped-heading-917", "c/macro-wrapped-pointer-heading-918",
-          "c/parenthesized-declarator-name-971", "c/prototype-member-names-972"
+          "c/c-completeness",
+          "c/callsite-lines-825",
+          "c/cgd31-37-regressions",
+          "c/contains-conditional-and-nested-958",
+          "c/field-access-offsetof-955",
+          "c/field-read-single-edge",
+          "c/function-like-macro-not-a-binding-908",
+          "c/function-local-type-959",
+          "c/layout-bitfields-unions-945",
+          "c/layout-widths-from-ast-936",
+          "c/macro-forward-read",
+          "c/macro-generated-enumerator",
+          "c/macro-truncated-declarator-916",
+          "c/macro-wrapped-heading-917",
+          "c/macro-wrapped-pointer-heading-918",
+          "c/parenthesized-declarator-name-971",
+          "c/prototype-member-names-972"
         ],
         "fixtureExpectationRows": 44,
         "redProof": {
-          "baselinePassFail": "44/3",
-          "mutatedPassFail": "27/20",
+          "baselinePassFail": "45/3",
+          "mutatedPassFail": "28/20",
           "fixturesThatWentRed": 17,
           "redProven": true
         },
-        "cap50": {"edges": 1301, "resolved": 973, "collRes": 0, "ambDecl": 81, "ambKind": 11, "unresolved": 247, "extOK": 0, "extUnknown": 0, "extFAIL": 0},
+        "cap50": {
+          "edges": 1301,
+          "resolved": 973,
+          "collRes": 0,
+          "ambDecl": 81,
+          "ambKind": 11,
+          "unresolved": 247,
+          "extOK": 0,
+          "extUnknown": 0,
+          "extFAIL": 0
+        },
         "cap50ResidualClass": "field-read targets on structs whose declared type is not in the file (struct members are resolved through the owner channel); macro constants declared in unsampled headers."
       },
       "contains": {
-        "constructs": ["struct_specifier", "union_specifier", "enum_specifier", "field_declaration", "field_declaration_list", "enumerator", "enumerator_list"],
+        "constructs": [
+          "struct_specifier",
+          "union_specifier",
+          "enum_specifier",
+          "field_declaration",
+          "field_declaration_list",
+          "enumerator",
+          "enumerator_list"
+        ],
         "grammarProductionPresent": true,
-        "rule": "container → member: struct/union → field (kind property), enum → enumerator (kind enum_member). The edge MOVES WITH its symbol and its line is the member's NAME line (#921), not the declaration start.",
-        "implementationSites": ["src/ast/real-c-analyzer.ts:3557"],
+        "rule": "container \u2192 member: struct/union \u2192 field (kind property), enum \u2192 enumerator (kind enum_member). The edge MOVES WITH its symbol and its line is the member's NAME line (#921), not the declaration start.",
+        "implementationSites": [
+          "src/ast/real-c-analyzer.ts:3557"
+        ],
         "fixturesCanGoRed": [
-          "c/callsite-lines-825", "c/contains-conditional-and-nested-958", "c/contains-name-line-921",
-          "c/fabricated-macro-name-991", "c/function-local-type-959", "c/inline-enum-member-path-986",
-          "c/layout-bitfields-unions-945", "c/layout-widths-from-ast-936", "c/macro-cdecl-member-990",
-          "c/macro-generated-enumerator", "c/macro-generated-field", "c/macro-in-field-position-932",
-          "c/macro-type-member-985", "c/member-name-beside-error-989", "c/self-referential-struct-927"
+          "c/callsite-lines-825",
+          "c/contains-conditional-and-nested-958",
+          "c/contains-name-line-921",
+          "c/fabricated-macro-name-991",
+          "c/function-local-type-959",
+          "c/inline-enum-member-path-986",
+          "c/layout-bitfields-unions-945",
+          "c/layout-widths-from-ast-936",
+          "c/macro-cdecl-member-990",
+          "c/macro-generated-enumerator",
+          "c/macro-generated-field",
+          "c/macro-in-field-position-932",
+          "c/macro-type-member-985",
+          "c/member-name-beside-error-989",
+          "c/self-referential-struct-927"
         ],
         "fixtureExpectationRows": 119,
         "redProof": {
-          "baselinePassFail": "44/3",
-          "mutatedPassFail": "29/18",
+          "baselinePassFail": "45/3",
+          "mutatedPassFail": "30/18",
           "fixturesThatWentRed": 15,
           "redProven": true
         },
-        "cap50": {"edges": 173, "resolved": 173, "collRes": 24, "ambDecl": 0, "ambKind": 0, "unresolved": 0, "extOK": 0, "extUnknown": 0, "extFAIL": 0},
-        "cap50ResidualClass": "none — fully resolved on this stride (collRes 24 are resolved picks among duplicate member names; the clang-14 instrument is the independent correctness reference: 421/421 members agreed)."
+        "cap50": {
+          "edges": 173,
+          "resolved": 173,
+          "collRes": 24,
+          "ambDecl": 0,
+          "ambKind": 0,
+          "unresolved": 0,
+          "extOK": 0,
+          "extUnknown": 0,
+          "extFAIL": 0
+        },
+        "cap50ResidualClass": "none \u2014 fully resolved on this stride (collRes 24 are resolved picks among duplicate member names; the clang-14 instrument is the independent correctness reference: 421/421 members agreed)."
       },
       "imports": {
-        "constructs": ["preproc_include", "system_lib_string", "string_literal"],
+        "constructs": [
+          "preproc_include",
+          "system_lib_string",
+          "string_literal"
+        ],
         "grammarProductionPresent": true,
-        "rule": "preproc_include → the include path, published as the first-class `imports` kind (import_based evidence tier). The target is a module path and the source is the file-scope identity, so NEITHER endpoint is a symbol by construction of the type — 0% resolution is the type's shape, not a failure rate.",
-        "implementationSites": ["src/ast/real-c-analyzer.ts:2567"],
-        "fixturesCanGoRed": ["c/c-completeness", "c/callsite-lines-825", "c/macro-composed-include"],
+        "rule": "preproc_include \u2192 the include path, published as the first-class `imports` kind (import_based evidence tier). The target is a module path and the source is the file-scope identity, so NEITHER endpoint is a symbol by construction of the type \u2014 0% resolution is the type's shape, not a failure rate.",
+        "implementationSites": [
+          "src/ast/real-c-analyzer.ts:2567"
+        ],
+        "fixturesCanGoRed": [
+          "c/c-completeness",
+          "c/callsite-lines-825",
+          "c/macro-composed-include"
+        ],
         "fixtureExpectationRows": 9,
         "redProof": {
-          "baselinePassFail": "44/3",
-          "mutatedPassFail": "41/6",
+          "baselinePassFail": "45/3",
+          "mutatedPassFail": "42/6",
           "fixturesThatWentRed": 3,
           "redProven": true
         },
-        "cap50": {"edges": 152, "resolved": 0, "collRes": 0, "ambDecl": 0, "ambKind": 0, "unresolved": 152, "extOK": 0, "extUnknown": 0, "extFAIL": 0},
-        "cap50ResidualClass": "path-target-not-a-symbol 152 (declared by construction; the .c-only population cannot admit a header as a target, and marking system includes external would trade unresolved for an unverifiable ext? claim — refused)."
+        "cap50": {
+          "edges": 152,
+          "resolved": 0,
+          "collRes": 0,
+          "ambDecl": 0,
+          "ambKind": 0,
+          "unresolved": 152,
+          "extOK": 0,
+          "extUnknown": 0,
+          "extFAIL": 0
+        },
+        "cap50ResidualClass": "path-target-not-a-symbol 152 (declared by construction; the .c-only population cannot admit a header as a target, and marking system includes external would trade unresolved for an unverifiable ext? claim \u2014 refused)."
       },
       "references": {
-        "constructs": ["type_identifier", "sizeof_expression", "cast_expression", "parameter_declaration", "field_declaration", "type_definition"],
+        "constructs": [
+          "type_identifier",
+          "sizeof_expression",
+          "cast_expression",
+          "parameter_declaration",
+          "field_declaration",
+          "type_definition"
+        ],
         "grammarProductionPresent": true,
         "rule": "a TYPE mention in a type position (declarator type fields, sizeof/cast TYPE operands, parameter/field types) targeted at the file's declared type. A value identifier in a value position is `uses`, not `references`; the two share one emission site and are chosen by position.",
-        "implementationSites": ["src/ast/real-c-analyzer.ts:3371"],
+        "implementationSites": [
+          "src/ast/real-c-analyzer.ts:3371"
+        ],
         "fixturesCanGoRed": [
-          "c/c-completeness", "c/callsite-lines-825", "c/cgd31-37-regressions",
-          "c/layout-bitfields-unions-945", "c/layout-widths-from-ast-936", "c/typedef-return-type-935"
+          "c/c-completeness",
+          "c/callsite-lines-825",
+          "c/cgd31-37-regressions",
+          "c/layout-bitfields-unions-945",
+          "c/layout-widths-from-ast-936",
+          "c/typedef-return-type-935"
         ],
         "fixtureExpectationRows": 23,
         "redProof": {
-          "baselinePassFail": "44/3",
-          "mutatedPassFail": "38/9",
+          "baselinePassFail": "45/3",
+          "mutatedPassFail": "39/9",
           "fixturesThatWentRed": 6,
           "redProven": true
         },
-        "cap50": {"edges": 225, "resolved": 220, "collRes": 0, "ambDecl": 5, "ambKind": 5, "unresolved": 0, "extOK": 0, "extUnknown": 0, "extFAIL": 0},
+        "cap50": {
+          "edges": 225,
+          "resolved": 220,
+          "collRes": 0,
+          "ambDecl": 5,
+          "ambKind": 5,
+          "unresolved": 0,
+          "extOK": 0,
+          "extUnknown": 0,
+          "extFAIL": 0
+        },
         "cap50ResidualClass": "ambiguous 5 (a type name declared as two kinds in the file's project); 0 unresolved."
       },
       "exports": {
-        "constructs": ["linkage_specification", "storage_class_specifier", "attribute_specifier", "attribute_declaration", "preproc_def", "preproc_function_def"],
+        "constructs": [
+          "linkage_specification",
+          "storage_class_specifier",
+          "attribute_specifier",
+          "attribute_declaration",
+          "preproc_def",
+          "preproc_function_def"
+        ],
         "grammarProductionPresent": true,
-        "rule": "THREE emission forms, each with its refusals: (A) a linkage marker the file defines (every definition opens `extern`, none names `dllimport`; a marker on a LOCAL declaration is refused — #989), (B) a GNU/`__attribute__` spelling of the same boundary, (C) compound-statement declarations the recovery pass carries. FALSE edges rank above missing ones and are pinned by forbid rows.",
+        "rule": "THREE emission forms, each with its refusals: (A) a linkage marker the file defines (every definition opens `extern`, none names `dllimport`; a marker on a LOCAL declaration is refused \u2014 #989), (B) a GNU/`__attribute__` spelling of the same boundary, (C) compound-statement declarations the recovery pass carries. FALSE edges rank above missing ones and are pinned by forbid rows.",
         "implementationSites": [
           "src/ast/real-c-analyzer.ts:2436",
           "src/ast/real-c-analyzer.ts:3007",
           "src/ast/real-c-analyzer.ts:3918"
         ],
         "fixturesCanGoRed": [
-          "c/c-completeness", "c/export-linkage-marker-989", "c/export-marker-class-965",
-          "c/export-preproc-guarded-152", "c/exports-attribute-989", "c/exports-linkage-marker-989",
-          "c/exports-marker-conventions-963"
+          "c/c-completeness",
+          "c/export-linkage-marker-989",
+          "c/export-marker-class-965",
+          "c/export-preproc-guarded-152",
+          "c/exports-attribute-989",
+          "c/exports-linkage-marker-989",
+          "c/exports-marker-conventions-963",
+          "c/exports-assertion-macro-992"
         ],
-        "fixtureExpectationRows": 37,
+        "fixtureExpectationRows": 39,
         "redProof": {
-          "baselinePassFail": "44/3",
-          "mutatedPassFail": "40/7",
-          "fixturesThatWentRed": 4,
-          "redProven": true
+          "baselinePassFail": "45/3",
+          "mutatedPassFail": "40/8",
+          "fixturesThatWentRed": 5,
+          "redProven": true,
+          "note": "including c/exports-assertion-macro-992 (#992: its forbid rows fire when the bare-identifier guard is removed \u2014 measured 45/3 -> 44/4 with the guard reverted)"
         },
-        "cap50": {"edges": 1, "resolved": 0, "collRes": 0, "ambDecl": 0, "ambKind": 0, "unresolved": 1, "extOK": 0, "extUnknown": 0, "extFAIL": 0},
+        "cap50": {
+          "edges": 1,
+          "resolved": 0,
+          "collRes": 0,
+          "ambDecl": 0,
+          "ambKind": 0,
+          "unresolved": 1,
+          "extOK": 0,
+          "extUnknown": 0,
+          "extFAIL": 0
+        },
         "cap50ResidualClass": "the marker token is not a symbol (`__declspec(dllexport)`), so an exports target cannot resolve by name by construction; the .c stride is also thin for this type (the export-dense files are headers). D2 must count it whole-population."
       },
       "overrides": {
-        "constructs": ["preproc_def", "preproc_function_def", "preproc_call", "preproc_if", "preproc_ifdef", "preproc_elif", "preproc_else"],
+        "constructs": [
+          "preproc_def",
+          "preproc_function_def",
+          "preproc_call",
+          "preproc_if",
+          "preproc_ifdef",
+          "preproc_elif",
+          "preproc_else"
+        ],
         "grammarProductionPresent": true,
         "rule": "ADAPTED SEMANTICS, DECLARED: C has no inheritance. The relationship is a REDEFINITION (C 6.9p5 / C 6.10.3p2): two definitions in mutually exclusive preprocessor arms (`shape: conditional-redefinition`), or `#undef X` then `#define X` (`shape: undef-redefine`). An unconditional second definition is a constraint violation and is REFUSED; so is a pair with no shared conditional (26 pairs over 7 sqlite files, refused and recorded). The edge runs from the LATER definition to the earlier one; both endpoints are the same name and `metadata.overridesLine` carries the prior line.",
         "implementationSites": [
           "src/ast/real-c-analyzer.ts:3628",
           "src/ast/real-c-analyzer.ts:3685"
         ],
-        "fixturesCanGoRed": ["c/overrides-conditional-redefinition-989"],
+        "fixturesCanGoRed": [
+          "c/overrides-conditional-redefinition-989"
+        ],
         "fixtureExpectationRows": 4,
         "redProof": {
-          "baselinePassFail": "44/3",
-          "mutatedPassFail": "43/4",
+          "baselinePassFail": "45/3",
+          "mutatedPassFail": "44/4",
           "fixturesThatWentRed": 1,
           "redProven": true
         },
-        "cap50": {"edges": 3, "resolved": 3, "collRes": 0, "ambDecl": 0, "ambKind": 0, "unresolved": 0, "extOK": 0, "extUnknown": 0, "extFAIL": 0},
+        "cap50": {
+          "edges": 3,
+          "resolved": 3,
+          "collRes": 0,
+          "ambDecl": 0,
+          "ambKind": 0,
+          "unresolved": 0,
+          "extOK": 0,
+          "extUnknown": 0,
+          "extFAIL": 0
+        },
         "cap50ResidualClass": "none on this stride (self-name edges resolve to the declaration)."
       },
       "instantiates": {
-        "constructs": ["call_expression", "cast_expression", "sizeof_expression", "type_identifier"],
+        "constructs": [
+          "call_expression",
+          "cast_expression",
+          "sizeof_expression",
+          "type_identifier"
+        ],
         "grammarProductionPresent": true,
         "rule": "an ALLOCATION whose produced type the source STATES: `(T *)malloc(...)` reads the cast, else `sizeof(T)` in the argument list; the target must be a type the file DECLARES, so `void *` allocates no named type (#962/#989). The allocator register is the measured set of wrappers found in the corpus, not a name list invented from intuition.",
-        "implementationSites": ["src/ast/real-c-analyzer.ts:2923"],
-        "fixturesCanGoRed": ["c/instantiates-allocated-type-962", "c/instantiates-allocator-register-989"],
+        "implementationSites": [
+          "src/ast/real-c-analyzer.ts:2923"
+        ],
+        "fixturesCanGoRed": [
+          "c/instantiates-allocated-type-962",
+          "c/instantiates-allocator-register-989"
+        ],
         "fixtureExpectationRows": 8,
         "redProof": {
-          "baselinePassFail": "44/3",
-          "mutatedPassFail": "42/5",
+          "baselinePassFail": "45/3",
+          "mutatedPassFail": "43/5",
           "fixturesThatWentRed": 2,
           "redProven": true
         },
-        "cap50": {"edges": 2, "resolved": 2, "collRes": 0, "ambDecl": 0, "ambKind": 0, "unresolved": 0, "extOK": 0, "extUnknown": 0, "extFAIL": 0},
+        "cap50": {
+          "edges": 2,
+          "resolved": 2,
+          "collRes": 0,
+          "ambDecl": 0,
+          "ambKind": 0,
+          "unresolved": 0,
+          "extOK": 0,
+          "extUnknown": 0,
+          "extFAIL": 0
+        },
         "cap50ResidualClass": "none on this stride (2/2 resolved). Whole-population emission measured by the lane's own scan: 182 edges over 5,002 .c files, 182/182 with a same-file type declaration."
       }
     },
     "notApplicable": {
       "extends": {
-        "requiredProductions": ["class_specifier", "class_declaration", "base_class_clause", "superclass", "extends_clause", "extends_interfaces"],
+        "requiredProductions": [
+          "class_specifier",
+          "class_declaration",
+          "base_class_clause",
+          "superclass",
+          "extends_clause",
+          "extends_interfaces"
+        ],
         "productionsFound": [],
-        "reason": "C has no class and no superclass slot — none of the productions above exists in the pinned grammar, so no declaration can write an IS-A relation. (C-D1.)",
+        "reason": "C has no class and no superclass slot \u2014 none of the productions above exists in the pinned grammar, so no declaration can write an IS-A relation. (C-D1.)",
         "corpusHalf": "measured 0 edges on the clean .c-only 400-file stride while six other types fire on the same files; cross-grammar control in c-completeness.json finds base_class_clause only in the cpp grammar, etc."
       },
       "implements": {
-        "requiredProductions": ["interface_declaration", "super_interfaces", "implements_clause", "class_interface_clause"],
+        "requiredProductions": [
+          "interface_declaration",
+          "super_interfaces",
+          "implements_clause",
+          "class_interface_clause"
+        ],
         "productionsFound": [],
         "reason": "no interface/conformance production exists in the pinned C grammar; nothing a declaration could satisfy. (C-D1.)",
         "corpusHalf": "measured 0 edges on the same clean stride; cross-grammar control finds interface_declaration in c_sharp/groovy/java only."
       },
       "decorates": {
-        "requiredProductions": ["decorator", "annotation", "annotation_declaration", "marker_annotation", "decorator_expression"],
+        "requiredProductions": [
+          "decorator",
+          "annotation",
+          "annotation_declaration",
+          "marker_annotation",
+          "decorator_expression"
+        ],
         "productionsFound": [],
-        "reason": "C has no decorator/annotation production. It DOES have attribute_specifier/attribute_declaration (GNU and C23 attributes), and they are adjudicated rather than ignored: an attribute names no declaration of its own (a keyword/macro-written specifier, not an applied callable) and the analyzer records linkage/storage-class attributes as SYMBOL METADATA — the same ruling the java lane applied to annotations. No C fixture expects an attribute-shaped decorates edge.",
+        "reason": "C has no decorator/annotation production. It DOES have attribute_specifier/attribute_declaration (GNU and C23 attributes), and they are adjudicated rather than ignored: an attribute names no declaration of its own (a keyword/macro-written specifier, not an applied callable) and the analyzer records linkage/storage-class attributes as SYMBOL METADATA \u2014 the same ruling the java lane applied to annotations. No C fixture expects an attribute-shaped decorates edge.",
         "corpusHalf": "extends/implements zero is grammar-absence; decorates is the same class one vocabulary generation later."
       },
       "renders": {
-        "requiredProductions": ["jsx_element", "jsx_self_closing_element", "jsx_opening_element", "jsx_attribute"],
+        "requiredProductions": [
+          "jsx_element",
+          "jsx_self_closing_element",
+          "jsx_opening_element",
+          "jsx_attribute"
+        ],
         "productionsFound": [],
         "reason": "no JSX/element-construction production exists in the pinned C grammar; C never creates a component-element pair."
       },
       "mixes_in": {
-        "requiredProductions": ["mixin", "mixins", "with_clause", "mixin_application_class"],
+        "requiredProductions": [
+          "mixin",
+          "mixins",
+          "with_clause",
+          "mixin_application_class"
+        ],
         "productionsFound": [],
         "reason": "no mixin/with production exists in the pinned C grammar."
       },
       "part_of": {
-        "requiredProductions": ["part_directive", "part_of_directive", "part_clause"],
+        "requiredProductions": [
+          "part_directive",
+          "part_of_directive",
+          "part_clause"
+        ],
         "productionsFound": [],
-        "reason": "C's file-inclusion construct is `#include`, which IS a module/binding edge and is published as `imports`; there is no part-file directive that shares one library scope without importing — the distinction `part_of` exists to draw does not exist in C."
+        "reason": "C's file-inclusion construct is `#include`, which IS a module/binding edge and is published as `imports`; there is no part-file directive that shares one library scope without importing \u2014 the distinction `part_of` exists to draw does not exist in C."
       }
     }
   },
@@ -265,6 +520,16 @@
     "docs": "docs/analyzers/real-c-analyzer.md",
     "evidencePage": "validation/m14/verification/C-APPLICABLE-SET.md",
     "fixtures": "validation/m14/fixtures/c/**",
-    "wholePopulation": "OWED — D2 census + D3 acceptance arm are the next items; this table's cap-50 columns are TRIAGE."
+    "wholePopulation": "OWED \u2014 D2 census + D3 acceptance arm are the next items; this table's cap-50 columns are TRIAGE."
+  },
+  "findings_2026_10_18": {
+    "C992_EXPORTS_FALSE_EDGE_CLASS": {
+      "what": "the call branch of `exports` read a marker invocation first ARGUMENT as the exported name; an expression argument published `exports <condition> -> static_assert`",
+      "measured_on": "whole admitted .c population via script/m14/c-emission-census.ts --cap=0: 5,022/5,022 parsed, 39 repos, 291 exports edges of which 7 were this class (redis/src/util.c:63, ebuckets.c:109-113, crccombine.c:120-122)",
+      "cause": "redis defines `#define static_assert(expr, lit) extern char __static_assert_failure[(expr) ? 1:-1]`; the replacement opens with `extern`, so the #989 agreement rule correctly makes it a linkage marker, and the call branch then read its first argument (an expression) as a name",
+      "fix": "the argument path accepts only a BARE IDENTIFIER (the only spelling a declaration has in C); the declaration path and the kernel `EXPORT_SYMBOL(name, GPL)` spelling are untouched (their argument IS a bare identifier)",
+      "fixture": "c/exports-assertion-macro-992 \u2014 goes RED without the guard (measured: 45/3 -> 44/4, all three forbid rows firing), green with it",
+      "evidence": "validation/m14/fixtures/c/measurements/fix-992-mutation.md"
+    }
   }
 }
