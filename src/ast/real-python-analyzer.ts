@@ -858,7 +858,13 @@ function projectModuleLocalityOf(index: { modules?: Set<string> }): (module: str
   const stems = new Set<string>()
   const dirSegments = new Set<string>()
   for (const raw of modules) {
-    const m = String(raw).replace(/\\/g, "/")
+    // BACKSLASHES TO SLASHES BY CHARACTER SCAN, not `replace(/\\/g, "/")`: the lane carries no
+    // regex literal (the fleet's no-regex gate counts them per analyzer), and a one-character
+    // substitution needs none. The index stores whatever separator the builder received, so both
+    // spellings must normalise the same way before suffix matching.
+    const rawText = String(raw)
+    let m = ""
+    for (let i = 0; i < rawText.length; i++) m += rawText[i] === "\\" ? "/" : rawText[i]
     if (m.length === 0) continue
     paths.push(m)
     const slash = m.lastIndexOf("/")
@@ -5039,12 +5045,44 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     const body = fn.childForFieldName("body")
     if (!body) return
 
+    // NO REGEX (the fleet's no-regex gate counts this lane). These two predicates are character
+    // scans, stated here because the shape they encode is the whole rule: a string LITERAL with
+    // an optional letter prefix (`b"x"`, `r'x'`), and a name that is a python identifier. The
+    // backreference semantics are preserved exactly: the closing quote must be the SAME character
+    // as the opening one, and the content is everything between them (greedy to the LAST such
+    // quote, as the old expression was).
+    const unquoteLiteral = (text: string): string | null => {
+      let i = 0
+      while (i < text.length) {
+        const c = text.charCodeAt(i)
+        const letter = (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+        if (!letter) break
+        i++
+      }
+      if (i >= text.length) return null
+      const quote = text[i]
+      if (quote !== '"' && quote !== "'") return null
+      if (text.length - 1 <= i) return null
+      if (text[text.length - 1] !== quote) return null
+      return text.slice(i + 1, text.length - 1)
+    }
+    const isIdentifierName = (text: string): boolean => {
+      if (text.length === 0) return false
+      const first = text.charCodeAt(0)
+      const firstOk = (first >= 65 && first <= 90) || (first >= 97 && first <= 122) || first === 95
+      if (!firstOk) return false
+      for (let i = 1; i < text.length; i++) {
+        const c = text.charCodeAt(i)
+        const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+        if (!ok) return false
+      }
+      return true
+    }
     const unquote = (text: string): string | null => {
-      const m = /^[A-Za-z]*(["'])([\s\S]*)\1$/.exec(text)
-      if (!m) return null
-      const value = m[2] ?? ""
+      const value = unquoteLiteral(text)
+      if (value === null) return null
       // A name is a python identifier or it is not a name this rule can publish.
-      return /^[A-Za-z_][A-Za-z0-9_]*$/.test(value) ? value : null
+      return isIdentifierName(value) ? value : null
     }
 
     const stack: Node[] = [body]
