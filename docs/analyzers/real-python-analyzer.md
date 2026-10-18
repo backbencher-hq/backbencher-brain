@@ -1493,3 +1493,86 @@ claim is wrong there and the verifier says so. They are owed a classification, n
 project-local imports (needs `context.projectIndex`). Retargeting those to their bare item would false-bind
 **5 python / 432 typescript / 276 javascript** items by the analyzer's own recorded measurement — the route
 is the project index, not a spelling change.
+
+## Decorators are edges: `decorates` (2026-10-18)
+
+`decorated_definition` is a named grammar node and the decorator is a real dependency — `@app.route("/x")`
+means the declaration depends on `app.route` — but the analyzer read the decorator's NAME onto the wrapped
+symbol's `decorators` payload and emitted NO relationship row, so no GRAPH consumer could reach it
+(`bb_graph`, `bb_impact`, `bb_migrate` read edges, not payloads).
+
+`extractDecoratorReferences` now emits **one `decorates` row per decorator per decorated symbol**, and python
+is the first emitter of the owner-admitted canonical value (`src/ast/types.ts`):
+
+* **target is the decorator expression's NAME AS WRITTEN** — `@lib.inject("db")` → `lib.inject`,
+  `@pkg.decorator` → `pkg.decorator`, `@login` → `login`. A decorator's **arguments are not rows**. This is
+  deliberately not the ten legacy labels' leaf + `metadata.qualified` shape: `decorates` has no legacy
+  consumer to keep compatible.
+* **line = the decorator NAME's own line**, never the `def`/`class` line (the other half of the M59 contract;
+  `python/decorator-column-lines` pins the symbol half).
+* **the source must be a PUBLISHED symbol**: a decorator on a local/nested def emits NO row and is NOT
+  re-attributed to the enclosing symbol (a def inside a def is a local, PY-28); shadowed definitions
+  (`phantoms`) are skipped. One row per decorator, never a second `references`/`calls` row for the same site.
+* evidence tier is `structural` (written in the declaration's header); `decorates` joined both claim sets
+  (`PY_NAMESPACE_CLAIM_TYPES`, `PY_IMPORT_CLAIM_TYPES`) so a builtin decorator (`@property`) and an imported
+  one (`@functools.wraps`) carry the checked claim kind.
+
+**Measured cap-50 (TRIAGE, stride sample; `bun run script/m14/incoming-gate.ts python py,pyi,pyw 50`):**
+`decorates` 136 edges · resolved 0 · unresolved 3 · **extOK 109** · ext? 24 · extFAIL 0; TOTAL edges
+5,244 → 5,380 and every other label BYTE-IDENTICAL (a decorator application is not a call, and the earlier
+placeholder `references` version was never measured on a corpus — it is superseded, not carried).
+Fixtures: `python/decorator-applied` (single, multiple = 2 exact rows, dotted, called, class, method;
+forbids argument-as-row / leaf-only target / def-line / duplicate rows) and
+`python/decorators-nested-local-emits-nothing` (a bare `{type: decorates}` forbid wildcard — ANY row on a
+local def fails, including re-attribution).
+
+## The owner channel: evidence classes (2026-10-18)
+
+`metadata.owner` is production-authoritative (`src/ast/member-owner-resolution.ts`: owner must name exactly
+one class-like symbol, members resolve through it, ancestors through `super_types`, and the name-based
+binding is **withdrawn** for owner-carrying rows). Python published it only for the implicit `self`/`cls`
+parameter. `collectReceiverTypeHints` + `memberOwnerInfo` now publish the SAME key (no new `ownerType`) plus
+`metadata.ownerEvidence` in `{self, annotation, assignment}`:
+
+| evidence | where the syntax proves it | limits |
+|---|---|---|
+| `self` | `self.m()` / `cls.m()` inside the class body (pre-existing, now TAGGED so it can be priced) | none |
+| `annotation` | a parameter annotation that is a single bare identifier: `def f(x: Foo)` → `x.m()` | dotted / aliased / subscripted annotations prove no single class name and are REFUSED |
+| `assignment` | a SINGLE binding `x = Foo(...)` in one lexical scope (`with Foo() as y` shares this class) | a second assignment, for/with/except target, walrus, del or global/nonlocal makes the type a maybe → NO owner |
+
+**Class-like means proven**, not capitalised: a class this file declares, or a name a COMPLETE project index
+records as `class`. The refusals are the safety property — the store withdraws the name binding for
+owner-carrying rows, so a WRONG owner turns an edge production had resolved by name into an honest NULL; a
+missing owner costs nothing. Pinned by `python/owner-evidence-classes` (5 positive rows across calls AND
+member reads, 3 refusals as forbid rows).
+
+**Coverage, cap-50 TRIAGE (COVERAGE ONLY — no resolution claim; the arbiter model is Lead commit
+972297b5b):** calls 395/2,497 rows carry an owner (15.8%) · uses 156/1,752 (8.9%) — all `self`;
+`dispatch-on-parameter` 395/445 (88.8%) · `dispatch-on-receiver` 0/749. Annotation/assignment coverage is 0
+on this sample and that is a property of the sample, verified independently with CPython's `ast` (0
+annotated parameters naming an in-file class; the one single-ctor assignment's variable is never used as a
+receiver). Imported classes become class-like only on the index-backed arm.
+
+## The analyzer-side project index: imports resolve, own-code claims suppressed (2026-10-18)
+
+`applyProjectIndexFacts` is the analyzer-side half of handoff §8.3 and is **fail-closed**: with no
+`context.projectIndex`, or any `complete !== true`, it returns before touching an edge — every sampled,
+index-less and incremental run is byte-identical to the pre-capability behaviour (the pin includes the
+ABSENT-field case an older payload produces). Locality is read from the index's own `modules` as a dotted-path
+suffix match of **at least two segments** (the repo root is not python's `sys.path` root — ansible's files sit
+under `lib/` while the import is rooted at `ansible`); a one-segment module is `unknown`, NEVER local, and a
+relative module is never asked about because **the leading dot is part of the rule** (the 6-false-verified-
+external-edges defect recorded above).
+
+| class | action | guard |
+|---|---|---|
+| project-local module | the imports edge's target becomes the bindable **ITEM** (the symbol the edge refers to), `metadata.module` and `metadata.qualified` keep the written halves | only when `symbolCounts` says the name is declared exactly ONCE — the measured same-named false-binding class (5 py / 432 ts / 276 js) |
+| third-party module | `moduleNamespace` claim (`isExternalTarget` + `externalReason: "module-namespace"` + `externalSpecifier`) | verify-never-refute at the arbiter: a module the project turns out to ship reads `ext?`, never a refutation |
+| project-local module used as a name's origin | **no external claim** — the import-evidence certifier suppresses it | only a COMPLETE index may prove locality; `unknown`/absent keep the old behaviour |
+
+Pinned by `validation/m14/fixtures/python/project-index-import-edge.mts` — 10 checks over a synthetic 6-file
+project, PASS, and **proven capable of failing**: removing the count guard fails B, removing the suppression
+fails E (while the third-party control still passes, so the check is directional), and a `complete === false`
+guard fails F. **Activation measurement is QUEUED, not claimed:** it needs a whole walk
+(`incoming-gate python py,pyi,pyw 0 --index`) because only cap-0 states `complete === true`, and the Lead's
+resource hold forbids that arm; the cap-50 non-index run is a deliberate no-op for this pass.

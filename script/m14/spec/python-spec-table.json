@@ -15,7 +15,7 @@
       "symbol": "function (module scope) | method (class body) | async flag from the anonymous `async` token; a def inside a def is a LOCAL and publishes NO symbol (PY-28)",
       "payloads": ["parameters (+ types, defaults, *args/**kwargs)", "returnType", "decorators", "docstring", "complexity", "isAsync"],
       "emits": ["contains", "overrides (base-declares-method, in-file or cross-file companion)", "decorates"],
-      "fixtures": ["nested-def-reference-source", "declaration-lines-825"]
+      "fixtures": ["nested-def-reference-source", "declaration-name-is-a-declaration", "decorator-column-lines"]
     },
     "decorated_definition": {
       "symbol": "the wrapped class/function keeps its own node; this wrapper is where the DECORATES rows are read",
@@ -65,7 +65,7 @@
     "call with keyword_argument/list_splat/dictionary_splat arguments": { "relationship": "NONE from the argument itself — an argument's NAME (k=) is not a reference, and the class keyword is not heritage", "fixtures": ["references-do-not-name-keyword-arguments"] },
     "list/dict/set/generator comprehension + for_in_clause/if_clause": { "relationship": "reads inside the body emit calls/uses/references like any expression; the comprehension's OWN for-target is a LOCAL of its own scope (scopeOwnBindings), so a read of it is local-callee/local-binding-target, never a project-wide name", "fixtures": ["comprehension-target-is-a-local"] },
     "named_expression (walrus)": { "relationship": "the target is a binding (local; or a module/class-scope binding where written at that scope), never a declaration of its own unless a scope binder publishes it; reads of it are bindings", "fixtures": ["reference-binding-is-not-a-guess"] },
-    "binary_expression with `in` / `is`": { "relationship": "none (no type/owner evidence in the operator itself)" },
+    "comparison_operator with `in` / `is`": { "relationship": "none (no type/owner evidence in the operator itself)" },
     "raise_statement": { "relationship": "NONE of its own — the raised exception is a call edge when written as a call (`raise ValueError(...)` -> calls -> ValueError); a bare `raise E` names no emitted relationship", "note": "DECLARED: `raises` is a vocabulary candidate this lane does not invent; the census proposal carries the corpus count" },
     "lambda": { "symbol": "none (a lambda is a value); its parameters are its OWN scope's locals (scopeOwnBindings)", "fixtures": ["comprehension-target-is-a-local"] },
     "new/instantiation": { "relationship": "instantiates — a call whose callee is an IN-FILE declared class (declaredTypes), confidence 0.9 with reasonCode in-file-class-constructor; an imported class cannot be proven class-like without a COMPLETE project index", "fixtures": ["type-usage-graph"] }
