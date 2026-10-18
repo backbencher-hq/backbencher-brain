@@ -520,6 +520,36 @@ const ISO_C_LIBRARY_NAMES = new Set<string>([
   "iswpunct", "iswspace", "iswupper", "iswxdigit", "towlower", "towupper", "wctrans", "towctrans",
   "wctype",
 ])
+/**
+ * D7 CLAIMED — the CITATION roots this lane may declare (`metadata.languageNamespace`).
+ *
+ * COPIED SUBSET of the committed vocabulary `ISO_C_STDLIB` in `script/m14/citations.ts` (vocabulary id
+ * "iso-c-stdlib", source ISO/IEC 9899 — the names the C standard reserves to the implementation's library).
+ * The rule is: a lane may declare a SUBSET of a committed vocabulary, never a superset and never a name it
+ * invented. This lane's wider `ISO_C_LIBRARY_NAMES` set stays what it is (the analyzer's own detection list);
+ * a citation is emitted ONLY when the target is in this copied vocabulary, and it cites EXACTLY the target
+ * (`languageNamespace: [target]`) rather than restating the whole list — a single listed symbol is a valid
+ * subset and makes the claim reviewable on the edge itself.
+ *
+ * WHY SYMBOL-LEVEL, NOT root-level: every C standard-library name is a BARE symbol (`printf`, `malloc`,
+ * `errno`), and `namespaceMatchOf` matches a bare target against a symbol listed as a root exactly. So the
+ * citation for a bare name is the name itself.
+ */
+const ISO_C_STDLIB_CITATION_ROOTS = new Set<string>([
+  "printf", "fprintf", "sprintf", "snprintf", "vprintf", "puts", "putchar", "fputs", "fputc", "getchar",
+  "fgets", "fread", "fwrite", "fopen", "fclose", "fflush", "fseek", "ftell", "fgetc", "scanf", "sscanf",
+  "malloc", "calloc", "realloc", "free", "exit", "abort", "atexit", "getenv", "setenv", "system",
+  "strlen", "strcmp", "strncmp", "strcpy", "strncpy", "strcat", "strncat", "strchr", "strrchr", "strstr",
+  "strdup", "memcpy", "memmove", "memset", "memcmp", "memchr", "atoi", "atol", "atoll", "strtol",
+  "strtoul", "strtoll", "strtod", "strtof", "abs", "labs", "qsort", "bsearch", "pow", "sqrt", "fabs",
+  "floor", "ceil", "round", "trunc", "fmod", "sin", "cos", "tan", "log", "log10", "exp", "ldiv", "div",
+  "assert", "errno", "FILE", "NULL", "size_t", "ssize_t", "ptrdiff_t", "int8_t", "int16_t", "int32_t",
+  "int64_t", "uint8_t", "uint16_t", "uint32_t", "uint64_t", "intptr_t", "uintptr_t", "stdin", "stdout",
+  "stderr", "va_list", "va_start", "va_end", "va_arg", "offsetof", "bool", "true", "false", "stdbool",
+  "intmax_t", "uintmax_t", "wchar_t", "char16_t", "char32_t", "time_t", "clock_t", "div_t", "ldiv_t",
+])
+
+
 // CGD9 (M37 #601 dead-code sweep): DECLARATION_NODES, STRUCT_TYPE_NODES,
 // DECLARATOR_NODES, TYPE_NODES were declared and never referenced anywhere —
 // disconnected constants that suggested coverage that did not exist. Removed.
@@ -2928,7 +2958,20 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                 relationshipType: "c_function_call",
                 isFunctionPointer: isFuncPtr,
                 ...(stdlibCallee
-                  ? { isExternal: true, externalEvidence: "iso-c-standard-library-name" }
+                  ? {
+                      isExternal: true,
+                      externalEvidence: "iso-c-standard-library-name",
+                      // D7 CLAIMED (task-21 follow-up): a CITATION, verified by the arbiter's namespace
+                      // claim kind (`metadata.languageNamespace`, incoming-rule.ts) against the committed
+                      // vocabulary "iso-c-stdlib" — subset only, and this edge cites exactly its target.
+                      // Emitted ONLY where the target is not declared in this file (the `stdlibCallee`
+                      // condition above): a project-declared name must stay uncited, so the claim can
+                      // never excuse a same-file declaration. Exact names only: an unlisted library name
+                      // stays `unresolved`, never invented into a citation.
+                      ...(ISO_C_STDLIB_CITATION_ROOTS.has(target)
+                        ? { languageNamespace: [target] }
+                        : {}),
+                    }
                   : {}),
               },
             })

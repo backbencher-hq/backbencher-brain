@@ -2801,6 +2801,25 @@ recovered statement. Probe `script/m14/c-call-target-probe.ts` reproduces either
 failures, `no regressions`. Corrected prediction for the re-run, the measured-vs-predicted table and the run
 falsifier live in `validation/m14/verification/C-D7-DISPOSITION.md` D-IMPLEMENTABLE-1.
 
+## D7 CLAIMED — ISO-C citation emission (#997, 2026-10-19)
+
+The `iso-c-stdlib-name` class (4,708 ambiguous + 2 unresolved calls rows at arm A) is now CLAIMED through the
+Lead-landed citation mechanism: an edge whose target is an ISO-C standard-library name carries
+`metadata.languageNamespace: [target]`, verified by the arbiter's namespace claim kind
+(`incoming-rule.ts`, root checked against the declared LIST; a non-listed root is `externalRefuted` and counts
+`extFAIL`). The roots are a copied SUBSET of the committed vocabulary `ISO_C_STDLIB` (id "iso-c-stdlib",
+`script/m14/citations.ts`, source ISO/IEC 9899); a C standard-library name is a bare symbol, so the claim cites
+exactly its target — a valid subset, reviewable on the edge. Emission is gated on the analyzer's existing
+condition that the target is NOT declared in the file, so a project-declared name can never be excused.
+
+Fixtures pin BOTH directions (`validation/m14/fixtures/c/iso-c-citation-997`): three positives cite exactly
+(`strlen`, `malloc`, `memcpy`), and three negatives stay uncited — a LISTED name DECLARED in the file (`free`),
+an unlisted BSD name (`strlcpy`), and a third-party name (`PyObject_Call`). Evidence probe:
+`bun run script/m14/c-citation-probe.ts` (CITATION CONTRACT PASSED). Fixtures: 49 pass / 3 recorded pre-existing
+failures, `no regressions`. The arm-A movement (expected `extOK` +~4,708, `ext?` 0, `resolved` UNCHANGED,
+arbitraryTwin not risen) is measured and reported BEFORE it is claimed — the claim counts only after the
+reproduced arm.
+
 ## Corpus validation
 
 - The corpus is **three independently cloned repositories**, one of which is the
