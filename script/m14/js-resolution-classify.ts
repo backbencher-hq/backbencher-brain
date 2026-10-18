@@ -152,6 +152,10 @@ function addSymbol(p: Proj, sym: any): void {
 type Bindings = {
   /** names bound by a variable declarator (ANY scope), a parameter, a catch clause or a for-in target */
   locals: Set<string>
+  /** the subset bound as a FORMAL PARAMETER (an untyped receiver that is a parameter is its own class) */
+  params: Set<string>
+  /** the subset bound by a catch clause / for-in target */
+  catches: Set<string>
   /** local binding -> module specifier, for every import form */
   imports: Map<string, string>
   /** namespace import bindings (`import * as ns`) */
@@ -164,7 +168,7 @@ type Bindings = {
 }
 
 const EMPTY_BINDINGS: Bindings = {
-  locals: new Set(), imports: new Map(), namespaces: new Set(), newTypes: new Map(), requires: new Map(), classes: new Set(),
+  locals: new Set(), params: new Set(), catches: new Set(), imports: new Map(), namespaces: new Set(), newTypes: new Map(), requires: new Map(), classes: new Set(),
 }
 
 function collectPatternNames(node: any, out: Set<string>): void {
@@ -204,11 +208,14 @@ function collectFormalParams(node: any, out: Set<string>): void {
 
 function collectBindings(root: any): Bindings {
   const b: Bindings = {
-    locals: new Set(), imports: new Map(), namespaces: new Set(), newTypes: new Map(), requires: new Map(), classes: new Set(),
+    locals: new Set(), params: new Set(), catches: new Set(), imports: new Map(), namespaces: new Set(), newTypes: new Map(), requires: new Map(), classes: new Set(),
   }
   const visitParams = (n: any): void => {
     const params = n.childForFieldName?.("parameters")
-    if (params) collectFormalParams({ namedChildCount: 1, namedChild: (i: number) => (i === 0 ? params : null), type: "formal_parameters" }, b.locals)
+    if (!params) return
+    const found = new Set<string>()
+    collectFormalParams({ namedChildCount: 1, namedChild: (i: number) => (i === 0 ? params : null), type: "formal_parameters" }, found)
+    for (const name of found) { b.locals.add(name); b.params.add(name) }
   }
   const stack: any[] = [root]
   while (stack.length) {
@@ -280,7 +287,11 @@ function collectBindings(root: any): Bindings {
       visitParams(n)
     } else if (t === "catch_clause") {
       const p = n.childForFieldName?.("parameter")
-      if (p) collectPatternNames(p, b.locals)
+      if (p) { const found = new Set<string>(); collectPatternNames(p, found); for (const name of found) { b.locals.add(name); b.catches.add(name) } }
+    } else if (t === "arrow_function") {
+      const single = n.childForFieldName?.("parameter")
+      if (single && single.type === "identifier") { b.locals.add(single.text); b.params.add(single.text) }
+      visitParams(n)
     } else if (t === "class_declaration") {
       const nm = n.childForFieldName?.("name")
       if (nm) b.classes.add(nm.text)
@@ -403,7 +414,10 @@ function classifyEdge(
       if (isHostGlobal(target)) return "CLAIM-HOST-BARE (cited list)"
       if (NODE_GLOBALS.has(target)) return "CLAIM-NODE-BARE (needs citation)"
       if (TEST_GLOBALS.has(target)) return "CLAIM-TEST-BARE (needs citation)"
-      if (fileBindings.imports.has(target)) return "IMPORT-BINDING (external module unknown)"
+      if (fileBindings.imports.has(target)) {
+        const spec = fileBindings.imports.get(target)!
+        return isRelativeSpecifier(spec) ? "IMPORT-BINDING-INTERNAL (seam)" : "IMPORT-BINDING-EXTERNAL (seam)"
+      }
       if (fileBindings.locals.has(target) || fileBindings.requires.has(target)) return "BINDING-LOCAL"
       if (proj.memberOwners.has(target)) return "MEMBER-DECLARED-ELSEWHERE (receiver untyped)"
       return "NOTHING-ANYWHERE (out-of-corpus API)"
@@ -414,9 +428,16 @@ function classifyEdge(
     if (NODE_GLOBALS.has(root)) return "CLAIM-NODE-RECEIVER (needs citation)"
     if (TEST_GLOBALS.has(root)) return "CLAIM-TEST-RECEIVER (needs citation)"
     if (root === "this" || root === "super") {
-      return proj.memberOwners.has(target)
-        ? "THIS-RECEIVER-MEMBER-DECLARED (owner qualification)"
-        : "THIS-RECEIVER-MEMBER-UNDECLARED"
+      // A `this` INSIDE a class declaration is typed by position (the analyzer's owner channel
+      // carries it, so such a row would have arrived with ownerEvidence "this"); a `this` in a
+      // plain function is DYNAMIC, and no syntactic form states its type — that is the declared
+      // wall, named separately so it is never read as a missing form.
+      if (meta?.ownerEvidence === "this") {
+        return proj.memberOwners.has(target)
+          ? "THIS-RECEIVER-MEMBER-DECLARED (owner qualification)"
+          : "THIS-RECEIVER-CLASS-MEMBER-UNDECLARED"
+      }
+      return "DYNAMIC-THIS-RECEIVER (declared wall: no stated type)"
     }
     const ctor = fileBindings.newTypes.get(root)
     if (ctor) {
@@ -426,9 +447,14 @@ function classifyEdge(
       return "TYPED-RECEIVER-MEMBER-UNDECLARED"
     }
     if (fileBindings.namespaces.has(root)) return "NAMESPACE-IMPORT-RECEIVER (import seam)"
-    if (fileBindings.imports.has(root)) return "IMPORT-RECEIVER (external module unknown)"
+    if (fileBindings.imports.has(root)) {
+      const spec = fileBindings.imports.get(root)!
+      return isRelativeSpecifier(spec) ? "IMPORT-RECEIVER-INTERNAL (seam)" : "IMPORT-RECEIVER-EXTERNAL (seam)"
+    }
     if (fileBindings.requires.has(root)) return "REQUIRE-RECEIVER (external module unknown)"
-    if (fileBindings.locals.has(root)) return "UNTYPED-LOCAL-RECEIVER (needs receiver typing)"
+    if (fileBindings.params.has(root)) return "UNTYPED-PARAMETER-RECEIVER (declared wall: no stated type)"
+    if (fileBindings.catches.has(root)) return "CATCH-PARAM-RECEIVER (declared wall: no stated type)"
+    if (fileBindings.locals.has(root)) return "UNTYPED-LOCAL-RECEIVER (declared wall: no stated type)"
     if (proj.classes.has(root)) {
       return proj.memberOwners.has(target)
         ? "STATIC-CLASS-RECEIVER-MEMBER-DECLARED (owner qualification)"
@@ -436,7 +462,9 @@ function classifyEdge(
     }
     if (isHostGlobal(root)) return "CLAIM-HOST-RECEIVER (cited list)"
     if (proj.names.has(root)) return "PROJECT-SYMBOL-RECEIVER (member not a declaration)"
-    return "UNKNOWN-RECEIVER-ROOT (out-of-corpus API)"
+    return callee.includes("(")
+      ? "CALL-ROOTED-RECEIVER (receiver is a call result; declared wall)"
+      : "UNKNOWN-RECEIVER-ROOT (out-of-corpus API)"
   }
   if (label === "uses") {
     const isBareRead = meta.bareRead === true
