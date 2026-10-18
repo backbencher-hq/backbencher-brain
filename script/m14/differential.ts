@@ -112,6 +112,11 @@ import {
 // recorded D4 DERIVATION debt. Wired here; `contains`+`exports` admitted in the SAME change below (the
 // two-sided rule), `overrides` was already admitted for C.
 import { deriveCExtraTruth } from "./oracles/c-truth"
+// CPP LANE-OWNED ORACLE (2026-10-18, commits 52c292d8b/0c67748a2/683252fdf): the FIVE labels cpp emits
+// that this differential never admitted — contains, references, imports, exports, overrides (212,943 rows
+// on the earlier whole-pop arm). The helper re-exports the shared walkers' four AND derives the unadmitted
+// five itself, so a push here does not double-count the shared half.
+import { deriveCppUnadmittedTruth } from "./cpp-truth"
 import { deriveJuliaContainsTruth } from "./oracles/julia-contains"
 import { deriveJuliaExtendsTruth, deriveJuliaInstantiatesTruth } from "./oracles/julia-type-edges"
 import { deriveJuliaCallsTruth } from "./oracles/julia-calls"
@@ -24276,6 +24281,15 @@ async function main() {
         for (const e of deriveCppBareUses(root)) {
           ;(truth as any[]).push(e)
         }
+        // ── THE FIVE UNADMITTED LABELS (2026-10-18) ───────────────────────────────────────────────
+        // contains/references/imports/exports/overrides were EMITTED with truth available in
+        // `script/m14/cpp-truth.ts` but never in the compared set, so D4 was a both-halves gap: the m60
+        // coverage gate read `CPP_ORACLE_LABELS` and credited all ten while the differential admitted
+        // five. The helper returns exactly those five (the shared half's four are re-exported for the
+        // lanes that consume it directly — pushing `deriveCppShared` here would double-count them).
+        for (const e of deriveCppUnadmittedTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "rust") {
         for (const e of deriveRustEdges(root)) {
@@ -24973,6 +24987,9 @@ async function main() {
           // C contains/exports (2026-10-18): truth pushed from the lane-owned oracle in the c block; admitted
           // in the same change or the oracle compares nothing — the two-sided rule this file records.
           ...(lang === "c" ? ["contains", "exports"] : []),
+          // CPP (2026-10-18): the five labels the lane's truth module derives and this file never admitted —
+          // both halves in the same change (the rule this file records).
+          ...(lang === "cpp" ? ["contains", "references", "imports", "exports", "overrides"] : []),
           // M14 ontology wave (2026-10-13): `overrides` — the largest label this lane publishes
           // (316,120 edges corpus-wide at arm13) and, until today, the last one compared against
           // NOTHING. Its truth has been pushed since M60 (see the correction in the dart truth
