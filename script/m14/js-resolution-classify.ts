@@ -45,6 +45,12 @@ const JSON_OUT = (() => {
 })()
 const EXTENSIONS = ["js", "jsx", "mjs", "cjs"]
 const SIZE_CAP = 1024 * 1024
+/** The only metadata keys the cause rules read (see the compact collection in the main loop). */
+const COMPACT_META_KEYS = [
+  "calleeExpression", "owner", "ownerEvidence",
+  "bareRead", "chainRoot", "callReceiver", "isFieldAccess", "isTemplateInterpolation",
+  "isExternalTarget", "externalReason", "externalSpecifier",
+] as const
 
 /** Repository directories in the corpus (symlinked entries are directories; `find` without -L is not used). */
 function repoNames(): string[] {
@@ -633,6 +639,12 @@ for (const abs of files) {
   for (const r of res?.relationships ?? []) {
     const label = String(r?.type ?? r?.relationshipType ?? "")
     if (!label) continue
+    const md = (r?.metadata ?? {}) as any
+    // COMPACT METADATA — only the keys the cause rules read. At whole population this is 1.47M
+    // rows; keeping the full metadata objects would multiply the footprint for keys nothing here
+    // reads. The edge itself is unchanged and each retained key is verbatim.
+    const compact: any = {}
+    for (const k of COMPACT_META_KEYS) if (md[k] !== undefined) compact[k] = md[k]
     rows.push({
       label,
       target: String(r?.target ?? r?.to ?? r?.toSymbol ?? ""),
@@ -640,7 +652,7 @@ for (const abs of files) {
       file: abs,
       repo,
       line: Number(r?.line_number ?? 0),
-      meta: r?.metadata ?? {},
+      meta: compact,
     })
   }
   void rel
