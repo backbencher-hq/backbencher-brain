@@ -133,7 +133,7 @@
    "status": "MEASURED with context — the perf row exists and is honest; the RATIO is not claimed"
   },
   "noRegex": {
-   "result": "CLEAN — java carries ZERO regex literals; absent from the FRESH HEAD-blob census",
+   "result": "CLEAN AT LANE LEVEL — java carries ZERO regex literals and is ABSENT from the fresh HEAD-blob census (36 fleet usages, real-java-analyzer.ts absent). The FLEET gate is RED on OTHER lanes' literals (FAIL - regex literals present, exit 1; real-javascript-analyzer.ts:196/:224 among them); the `regex census gate PASSED` line only certifies the census describes HEAD. D5 requires the LANE regex-free, which it is.",
    "command": "npx tsx script/m12/regex-census.ts --head && bash script/m14/no-regex-gate.sh",
    "freshCensus": "at HEAD ee5db0dda: 36 regex usages in scope across the fleet, real-java-analyzer.ts ABSENT; `regex census gate PASSED` (verify-regex-census checks the census describes HEAD)",
    "history": "the earlier '11 findings, java absent' reading was STALE (census artifact predated the literal); the Lead's fresh census found ONE java literal (markExternalTargets' `/^[A-Za-z_$][A-Za-z0-9_$]*$/`), fixed in ee5db0dda as the exact char-scan `isPlainJavaIdentifier()` (ASCII letters/`_`/`$` start; those plus digits continue)",
@@ -939,6 +939,15 @@
     "imports dotted-member-path unres": 5230
    },
    "evidence": "validation/m14/verification/JAVA-WHOLE-POPULATION-ARM.md §9"
+  },
+  "fixtures_2026_10_18": {
+   "status": "GREEN — 71 pass / 0 fail",
+   "command": "bun run script/m14/run-fixtures.ts --lang java",
+   "before": "67 pass / 4 fail (four stale expectations, adjudicated correct-but-stale against PASSING sibling fixtures)",
+   "after": "71 pass / 0 fail (commit b247cc328, explicit paths, separate commit)",
+   "adjudication": "Lead ruling task-9: each of the four updated ONE BY ONE with the superseded behaviour stated in the fixture's own comment and coverage STRENGTHENED (four package-private forbids became four explicit 0.6-tier expectations; four JLS import forms pinned as channel pairs; module directives pin symbols+contains+exports+mentions; a stale forbid became positive mention expectations). Detail: validation/m14/verification/JAVA-FIXTURE-RECONCILIATION.md §7",
+   "allowance": "validation/m14/fixture-baseline.json records java 4 and is now STALE-HIGH (measured 0) — NOT raised (task-9 cond.4), Lead-owned to retire",
+   "redAble": "every one of the ten labels has fixtures whose expectation rows are that label (derived from the expectation files)"
   }
  }
 }
