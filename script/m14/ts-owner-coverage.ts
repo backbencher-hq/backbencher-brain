@@ -35,6 +35,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
+import { buildOwnerProjectPools, ownerChannelVerdict, type OwnerSymbolRecord } from "./owner-channel"
 
 const CR = process.env.BB_CORPUS_ROOT ?? path.join(process.cwd(), ".corpus")
 const SIZE_CAP = 1024 * 1024
@@ -114,6 +115,7 @@ if (maxFiles > 0 && total > maxFiles) {
   files = picked
 }
 
+type ResolutionTally = { carried: number; resolved: number; declined: number; reasons: Record<string, number> }
 type Tally = {
   calls: number
   memberCalls: number
@@ -122,14 +124,23 @@ type Tally = {
   ownerWithoutEvidence: number
   uses: number
   usesWithOwner: number
+  /** D7: per-evidence RESOLUTION of the owner rows, computed with the PRODUCTION rule
+   *  (`ownerChannelVerdict` from script/m14/owner-channel.ts) over pools built from THIS run's own
+   *  symbols. This is what lets each receiver-typing class report resolved/declined separately
+   *  instead of only "carried". It is a MODEL of the channel, not the gate's number: the gate prints
+   *  one aggregate block, and this instrument's pools come from the same analyzer output the rows do. */
+  resolution: Record<string, ResolutionTally>
 }
 const emptyTally = (): Tally => ({
-  calls: 0, memberCalls: 0, owner: 0, byEvidence: {}, ownerWithoutEvidence: 0, uses: 0, usesWithOwner: 0,
+  calls: 0, memberCalls: 0, owner: 0, byEvidence: {}, ownerWithoutEvidence: 0, uses: 0, usesWithOwner: 0, resolution: {},
 })
 const totalTally = emptyTally()
 const perRepoTally = new Map<string, Tally>()
 const parseFailures: string[] = []
 
+const CLASSLIKE_KINDS = new Set(["class", "interface", "enum", "namespace", "module", "internal_module", "record", "struct", "trait", "abstract_class"])
+const recordsByRepo = new Map<string, OwnerSymbolRecord[]>()
+const ownerRows: { evidence: string; target: string; owner: string; fileRel: string; line: number | null }[] = []
 for (const file of files) {
   const rel = file.startsWith(CR) ? file.slice(CR.length + 1) : file
   const repoName = rel.split(path.sep)[0]!
@@ -142,6 +153,35 @@ for (const file of files) {
     continue
   }
   if (r?.fallback === true) parseFailures.push(`${rel}: fallback`)
+  // Owner-channel model inputs: class-like declarations and members (the only symbol classes the
+  // pools consume), from the SAME parse the rows come from.
+  {
+    const repoRecords = recordsByRepo.get(repoName) ?? []
+    recordsByRepo.set(repoName, repoRecords)
+    for (const sym of r?.symbols ?? []) {
+      const kind = String(sym?.kind ?? "")
+      const name = String(sym?.name ?? "")
+      if (!name) continue
+      const ownerName = typeof sym?.ownerName === "string" && sym.ownerName.length > 0 ? sym.ownerName : null
+      if (!CLASSLIKE_KINDS.has(kind) && !ownerName) continue
+      // ParseResult symbols carry TOP-LEVEL startLine/endLine (no `range` object): using `range`
+      // here left every record at line 0 and the owner-identity rule fell back to by-name for every
+      // row — the model then read ownerAbsent/ownerAmbiguous far more than the production rule does.
+      const superTypes = [
+        ...((sym as any)?.metadata?.extends ?? []),
+        ...((sym as any)?.metadata?.implements ?? []),
+      ].map((x: any) => String(x))
+      repoRecords.push({
+        file: rel,
+        name,
+        kind,
+        line: Number(sym?.startLine ?? 0),
+        endLine: Number(sym?.endLine ?? sym?.startLine ?? 0),
+        ownerName,
+        superTypes,
+      })
+    }
+  }
   const tally = perRepoTally.get(repoName) ?? emptyTally()
   for (const edge of r?.relationships ?? []) {
     const label = String(edge?.type ?? "")
@@ -154,6 +194,13 @@ for (const file of files) {
         const evidence = typeof md.ownerEvidence === "string" && md.ownerEvidence.length > 0 ? md.ownerEvidence : "(unrecorded)"
         tally.byEvidence[evidence] = (tally.byEvidence[evidence] ?? 0) + 1
         if (evidence === "(unrecorded)") tally.ownerWithoutEvidence++
+        ownerRows.push({
+          evidence,
+          target: String(edge?.target ?? ""),
+          owner: String(md.owner),
+          fileRel: rel,
+          line: Number.isFinite(Number(edge?.line_number)) ? Number(edge.line_number) : (Number(md.line ?? NaN) || null),
+        })
       }
     } else if (label === "uses") {
       tally.uses++
@@ -162,6 +209,26 @@ for (const file of files) {
   }
   perRepoTally.set(repoName, tally)
 }
+// ── D7 PER-CLASS RESOLUTION: the production owner rule over this run's own pools ──────────────
+// Declined rows fall back to the name model in production; here they are counted as declined so a
+// class whose owners do not resolve is visible instead of being folded into "carried".
+for (const row of ownerRows) {
+  const repoName = row.fileRel.split(path.sep)[0] ?? ""
+  const repoRecords = recordsByRepo.get(repoName)
+  if (!repoRecords) continue
+  const pools = buildOwnerProjectPools(repoRecords)
+  const verdict = ownerChannelVerdict(pools, { type: "calls", target: row.target, owner: row.owner, srcFile: row.fileRel, line: row.line })
+  const tally = perRepoTally.get(repoName)
+  if (!tally) continue
+  const rt = tally.resolution[row.evidence] ?? (tally.resolution[row.evidence] = { carried: 0, resolved: 0, declined: 0, reasons: {} })
+  rt.carried++
+  if (verdict.outcome === "resolved") rt.resolved++
+  else {
+    rt.declined++
+    rt.reasons[verdict.reason] = (rt.reasons[verdict.reason] ?? 0) + 1
+  }
+}
+
 // THE TOTAL IS RECOMPUTED FROM THE PER-REPO TALLIES, not accumulated inside the file loop.
 // The first version added `tally` (a PER-REPO CUMULATIVE) to the total after EVERY file, so a
 // repository with N sampled files contributed its running sum N times — measured on the cap-50
@@ -169,11 +236,18 @@ for (const file of files) {
 // count LARGER than the whole population it is a part of. The reconciliation is printed below.
 for (const t of perRepoTally.values()) {
   for (const k of Object.keys(t) as (keyof Tally)[]) {
-    if (k === "byEvidence") continue
+    if (k === "byEvidence" || k === "resolution") continue
     ;(totalTally as any)[k] += (t as any)[k]
   }
   for (const [evidence, n] of Object.entries(t.byEvidence)) {
     totalTally.byEvidence[evidence] = (totalTally.byEvidence[evidence] ?? 0) + n
+  }
+  for (const [evidence, rt] of Object.entries(t.resolution)) {
+    const into = totalTally.resolution[evidence] ?? (totalTally.resolution[evidence] = { carried: 0, resolved: 0, declined: 0, reasons: {} })
+    into.carried += rt.carried
+    into.resolved += rt.resolved
+    into.declined += rt.declined
+    for (const [reason, n] of Object.entries(rt.reasons)) into.reasons[reason] = (into.reasons[reason] ?? 0) + n
   }
 }
 
@@ -196,6 +270,7 @@ const report = {
   owner_share_of_all_calls: pct(totalTally.owner, totalTally.calls),
   owner_share_of_member_calls: pct(totalTally.owner, totalTally.memberCalls),
   by_evidence: totalTally.byEvidence,
+  resolution_by_evidence: totalTally.resolution,
   owner_without_evidence: totalTally.ownerWithoutEvidence,
   uses: totalTally.uses,
   uses_with_owner: totalTally.usesWithOwner,
@@ -233,6 +308,15 @@ for (const k of Object.keys(totalTally.byEvidence).sort()) {
   console.log(`    ownerEvidence=${k} (UNRECOGNISED) ${totalTally.byEvidence[k]}`)
 }
 console.log(`uses edges                       ${totalTally.uses}   · with metadata.owner ${totalTally.usesWithOwner} (the channel's uses half is not emitted by this lane yet)`)
+if (Object.keys(totalTally.resolution).length > 0) {
+  console.log("")
+  console.log("PER-EVIDENCE RESOLUTION (production owner rule over this run's pools; declined = falls back to the name model):")
+  for (const k of Object.keys(totalTally.resolution).sort()) {
+    const rt = totalTally.resolution[k]!
+    const top = Object.entries(rt.reasons).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([r, n]) => `${r} ${n}`).join(" · ")
+    console.log(`    ${k.padEnd(12)} carried ${String(rt.carried).padStart(6)} · resolved ${String(rt.resolved).padStart(6)} (${pct(rt.resolved, rt.carried)}) · declined ${String(rt.declined).padStart(6)}${top ? `   [${top}]` : ""}`)
+  }
+}
 if (perRepo) {
   console.log("\nper repo (repo-dependence is why this is never pooled into one 'coverage' claim):")
   for (const [repo, t] of [...perRepoTally.entries()].sort()) {

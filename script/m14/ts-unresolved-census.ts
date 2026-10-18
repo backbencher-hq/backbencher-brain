@@ -444,6 +444,73 @@ for (const row of rows) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────────────
+// EXT? PRICING — the module-space wall, priced from the dump (D7: "price ext? so the Lead can
+// decide module-space facts"). A claim is `externalUnverified` (ext?) when no check the arbiter
+// has can reach it. This pass keeps the closure bucket (`CLAIM-externalUnverified`) intact and
+// reports the pricing SEPARATELY, so the claim bucket still equals the gate's ext? column.
+//
+// The wall's mechanism, from the class: `moduleNamespace` claims are verified through
+// `projectModuleNames`, which includes every admitted file's STEM and LAST DIRECTORY SEGMENT. A
+// project DIRECTORY that shares a bare package's spelling (element-plus's
+// `packages/utils/__tests__/vue/` making "vue" a project module name) makes a TRUE claim
+// unverifiable. This pricing counts how many ext? rows name a module whose root collides — the
+// rows a module-space fact change would move — and how many name a bare target the dump cannot
+// attribute to a specifier (the instrument's own gap).
+const projectModuleNames = new Map<string, Set<string>>()
+for (const file of files) {
+  const rel = file.startsWith(CORPUS) ? file.slice(CORPUS.length + 1) : file
+  const parts = rel.split(/[\\/]/)
+  const repo = parts[0] ?? ""
+  const base = parts[parts.length - 1] ?? ""
+  const stem = base.replace(/\.(d\.ts|[cm]?tsx?)$/i, "")
+  const dir = parts.length >= 2 ? parts[parts.length - 2] ?? "" : ""
+  const set = projectModuleNames.get(repo) ?? new Set<string>()
+  if (stem) set.add(stem)
+  if (dir) set.add(dir)
+  projectModuleNames.set(repo, set)
+}
+const extPricing = {
+  total: 0,
+  byClaimKind: {} as Record<string, number>,
+  targetClass: {} as Record<string, number>,
+  rootCollidesWithProjectName: 0,
+  rootNoCollision: 0,
+  rootExamples: [] as string[],
+}
+const moduleOfImportsTarget = (target: string): string | null => {
+  // import dependency spellings: `module:item`, and the whole-module binding `<leaf>\0<module>:*`
+  const t = target.includes("\u0000") ? target.slice(target.indexOf("\u0000") + 1) : target
+  const colon = t.lastIndexOf(":")
+  if (colon <= 0) return null
+  let module = t.slice(0, colon)
+  if (module.startsWith("node:")) module = module.slice("node:".length)
+  return module || null
+}
+for (const row of rows) {
+  if (row.outcome !== "externalUnverified") continue
+  extPricing.total++
+  const kind = row.claimKind || "-"
+  extPricing.byClaimKind[kind] = (extPricing.byClaimKind[kind] ?? 0) + 1
+  const rel = row.file.startsWith(CORPUS) ? row.file.slice(CORPUS.length + 1) : row.file
+  const repo = rel.split(path.sep)[0] ?? rel.split("/")[0] ?? ""
+  const module = row.label === "imports" ? moduleOfImportsTarget(row.target) : null
+  if (!module) {
+    extPricing.targetClass["bare-target (dump names no specifier)"] = (extPricing.targetClass["bare-target (dump names no specifier)"] ?? 0) + 1
+    continue
+  }
+  const root = module.includes("/") ? module.slice(0, module.indexOf("/")) : module
+  const names = projectModuleNames.get(repo) ?? new Set<string>()
+  if (names.has(root)) {
+    extPricing.rootCollidesWithProjectName++
+    extPricing.targetClass["module-root collides with a project file/dir name"] = (extPricing.targetClass["module-root collides with a project file/dir name"] ?? 0) + 1
+    if (extPricing.rootExamples.length < 8) extPricing.rootExamples.push(`${root} @ ${rel}`)
+  } else {
+    extPricing.rootNoCollision++
+    extPricing.targetClass["module-root does NOT collide"] = (extPricing.targetClass["module-root does NOT collide"] ?? 0) + 1
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────
 // Report
 // ─────────────────────────────────────────────────────────────────────────────────────────
 const report: any = { dump: dumpPath, population: { rows: rows.length, files: files.size, parseFailures: parseFailures.length, failureReasons: Object.fromEntries(parseFailureReasons) }, labels: {} }
@@ -471,4 +538,13 @@ const unionFiles = rows.length
 const joined = [...labels.values()].reduce((n, l) => n + [...l.buckets.entries()].reduce((m, [name, b]) => m + (name.startsWith("unjoined") ? b.count : 0), 0), 0)
 console.log(`join: ${joined} of ${unionFiles} rows could not be joined back to analyzer output (${((100 * joined) / Math.max(1, unionFiles)).toFixed(1)}%)`)
 report.joinFailures = joined
+if (extPricing.total > 0) {
+  console.log(`\nEXT? PRICING (module-space wall, priced; NOT folded into the claim bucket above):`)
+  console.log(`  ext? total: ${extPricing.total}`)
+  console.log(`  by claim kind: ${Object.entries(extPricing.byClaimKind).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join(" · ")}`)
+  for (const [k, n] of Object.entries(extPricing.targetClass).sort((a, b) => b[1] - a[1])) console.log(`    ${String(n).padStart(7)}  ${k}`)
+  for (const ex of extPricing.rootExamples) console.log(`      e.g. ${ex}`)
+  report.extUnverifiedPricing = extPricing
+}
+report.extUnverifiedPricing = extPricing
 if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify(report, null, 2))

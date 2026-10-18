@@ -6103,9 +6103,11 @@ class TypeScriptAnalysisRunner {
             // TWO KEYS, ONE COMPUTATION, and they are not duplicable state: `owner` is the STORE
             // channel's spelling (src/ast/member-owner-resolution.ts withdraws the name binding
             // and re-resolves inside this class); `ownerEvidence` records WHICH syntactic form
-            // stated it ({assignment, annotation, param, this}) so the channel's coverage is a
-            // queryable number per evidence class rather than a claim. The field is deliberately
-            // named `ownerEvidence`, not a second type key: one value, one spelling.
+            // stated it — the four original classes ({assignment, annotation, param, this}) plus the
+            // D7 extension classes ({destructured, element, generic, factory, cast, enum,
+            // class-static}) — so the channel's coverage is a queryable number per evidence class
+            // rather than a claim. The field is deliberately named `ownerEvidence`, not a second
+            // type key: one value, one spelling.
             const ownerHint = this.receiverOwnerType(callee, receiverTypes)
             relationships.push({
               source: callSource.name,
