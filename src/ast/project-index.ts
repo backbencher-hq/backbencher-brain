@@ -1203,27 +1203,51 @@ export async function buildProjectIndexStreaming(
   // error. Here the tree is already being streamed, so the honest middle is to
   // finish and report the count.
   let damaged = 0
+  // THE MODULE SPACE IS PART OF THE INDEX, NOT AN OPTIONAL EXTRA. The COLLECTING builder records it
+  // (`index.modules.add(f.path)` plus basename and stem) and this one did not — so an index built
+  // through the streaming API answered "the project declares no module named X" for every X, and a
+  // caller could not tell a project module from a third-party package. MEASURED on element-plus:
+  // cumulative `modules 0` beside `symbolCounts 2809` from the streaming builder, while the collecting
+  // builder produces the module set. `incoming-gate.ts` builds its `--index` arms through THIS
+  // function, so every indexed gate arm ran with an empty module space and the analyzer's
+  // `projectIndexModuleShadowed` pre-check was dead in exactly the runs that use the index.
+  // The spellings are the collecting builder's: full path, basename, stem-without-extension, because
+  // import spellings differ (`ansible.errors` dotted, `./util` relative, `@scope/pkg` scoped).
+  const addModuleIdentity = (path: string): void => {
+    index.modules.add(path)
+    const base = path.split(/[\\/]/).pop() ?? ""
+    if (base !== "") {
+      index.modules.add(base)
+      const stem = base.replace(/\.[^.]+$/, "")
+      if (stem !== "") index.modules.add(stem)
+    }
+  }
   for (const f of files) {
     let text: string
     try {
       text = fs.readFileSync(f, "utf8")
     } catch {
       damaged++
+      index.damagedFiles.add(f)
       done++
       continue
     }
+    addModuleIdentity(f)
     let tree: any = null
     try {
       tree = parser.parse(text)
       if (tree?.rootNode) {
         indexTree(tree.rootNode, index, spec, f)
+        if (tree.rootNode.hasError) index.damagedFiles.add(f)
       } else {
         damaged++
+        index.damagedFiles.add(f)
       }
     } catch {
       // A file that will not parse contributes no declarations, exactly as in the
       // collecting form. Recorded, not hidden.
       damaged++
+      index.damagedFiles.add(f)
     } finally {
       // The whole point: free the tree before the next parse.
       try { tree?.delete?.() } catch { /* an aborted instance refuses politely */ }
