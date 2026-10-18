@@ -110,6 +110,12 @@ import { deriveErlangContainsTruth } from "./oracles/erlang-contains"
 // "COMPARED WITH NO TRUTH". The lane oracle derives all ten from the tree by python's own
 // rules; see its header for the per-label policy and the independence argument.
 import { derivePythonTruth } from "./oracles/python-truth"
+// TS LANE-OWNED IMPORT/EXPORT TRUTH (2026-10-18, commit b57785641): the last two typescript labels the
+// coverage gate charged as DERIVATION debt. The module's contract check passed (12/12 synthetic shapes,
+// 106/106 lane fixtures agree, negative control fired) and it found three real export-emission gaps in
+// the analyzer (export namespace / export abstract class / function_signature + ambient declares) which
+// the lane fixed. Wired here; the labels are admitted below in the same commit.
+import { deriveTypeScriptImportTruth, deriveTypeScriptExportTruth } from "./oracles/typescript-imports-truth"
 import { deriveMakeTruth } from "./oracles/make"
 // M60: rust `contains` — see script/m14/oracles/rust-contains.ts for the rule.
 import { deriveRustContainsTruth } from "./oracles/rust-contains"
@@ -5357,6 +5363,14 @@ export function deriveJavaScriptImportEdges(root: any): { label: string; from: s
     if (frag && frag.type === "string_fragment") return frag.text
     return String(str.text ?? "").replace(/^["'`]|["'`]$/g, "")
   }
+  // A RELATIVE OR ABSOLUTE SPECIFIER NAMES A PROJECT FILE ("./m", "../x", "/abs"), while a bare one
+  // names a package (`fs`, `@scope/x`). The distinction matters for the spelling the analyzer
+  // publishes, and it is the language's own rule rather than a convention: a relative import's item
+  // is declared in this very project, so the DECLARED name is the only spelling the resolver can
+  // bind; a package item is external, and the module-qualified binding spelling is what the analyzer
+  // keeps for it. Measured from the analyzer's contract (JSD53) and confirmed on svelte: 123 MISSING
+  // rows were all relative-module imports the oracle spelled `${module}:${local}`.
+  const isProjectSpecifier = (mod: string): boolean => mod.startsWith(".") || mod.startsWith("/")
   const firstStringChild = (n: any): any => {
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
@@ -5402,18 +5416,53 @@ export function deriveJavaScriptImportEdges(root: any): { label: string; from: s
               const alias = spec.childForFieldName("alias")
               const name = spec.childForFieldName("name") ?? spec.namedChild(0)
               const local = alias ?? name
-              if (local) push(`${modPath}:${local.text}`)
+              if (!name) continue
+              // PROJECT SPECIFIER -> the DECLARED name, BARE. That is the spelling the arbiter can
+              // resolve (a name lookup), and it is what the analyzer publishes since JSD53; the
+              // old `${module}:${local}` truth was a stale record of the pre-JSD53 contract. A
+              // package specifier keeps `${module}:${local binding}` (module:alias), which is what
+              // the analyzer publishes there and what a module-qualified claim is about.
+              if (isProjectSpecifier(modPath)) push(name.text)
+              else if (local) push(`${modPath}:${local.text}`)
             }
           }
         }
       }
     } else if (t === "export_statement") {
-      // A re-export declares a module EDGE, not a local name, so the whole
-      // module is the target whatever the clause says — `export { e } from`,
-      // `export * from` and `export * as ns from` all reduce to `path:*`.
       const src = n.childForFieldName("source")
       const modPath = modulePath(src)
-      if (modPath) push(`${modPath}:*`)
+      if (modPath) {
+        // JSD53 CONTRACT (2026-10-18): a NAMED re-export clause publishes ONE row per specifier in
+        // the DECLARED name's spelling — `export { readFile as read } from "fs"` is `fs:readFile`,
+        // and `export { named } from "./mod"` is `./mod:named`. The old rule reduced every
+        // re-export to `path:*`, which the analyzer stopped publishing for named clauses (the star
+        // forms are the ones that keep `:*`). The declared name is the `name` FIELD, not the alias:
+        // the alias is the local binding the re-export creates, and the module exports the declared
+        // one.
+        const exportClause = (() => {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && c.type === "export_clause") return c
+          }
+          return null
+        })()
+        if (exportClause) {
+          let named = 0
+          for (let j = 0; j < exportClause.namedChildCount; j++) {
+            const spec = exportClause.namedChild(j)
+            if (!spec || spec.type !== "export_specifier") continue
+            const declared = spec.childForFieldName("name") ?? spec.namedChild(0)
+            if (declared) {
+              push(`${modPath}:${declared.text}`)
+              named++
+            }
+          }
+          // A `export * from` / `export * as ns from` has NO export_clause: it keeps `module:*`.
+          if (named === 0) push(`${modPath}:*`)
+        } else {
+          push(`${modPath}:*`)
+        }
+      }
     } else if (t === "call_expression") {
       const fn = n.childForFieldName("function")
       const args = n.childForFieldName("arguments")
@@ -23709,6 +23758,15 @@ async function main() {
         for (const e of deriveTypeScriptDecoratorTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // IMPORTS / EXPORTS — the ts lane's independent oracle, in the analyzer's published spelling
+        // (binding spelling, bare project items, module:* for whole-module forms). Passed the file path
+        // because a module specifier's truth depends on the importing file's own location.
+        for (const e of deriveTypeScriptImportTruth(root, relPath)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveTypeScriptExportTruth(root, relPath)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "javascript") {
         // M37.21 #611: wire the dedicated JS calls oracle into the plain
@@ -24981,6 +25039,9 @@ async function main() {
           // TYPESCRIPT: its own decorates/renders derivation is pushed in the ts truth block; admit the
           // labels or the oracle compares nothing (the mirror failure the same paragraph records).
           ...(lang === "typescript" ? ["decorates", "renders"] : []),
+          // imports/exports: truth pushed in the ts block (lane-owned oracle, b57785641); admitted here
+          // or the oracle compares nothing — the two-sided rule this file records twice.
+          ...(lang === "typescript" ? ["imports", "exports"] : []),
           ...(lang === "javascript" ? ["contains", "exports", "references", "imports"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
