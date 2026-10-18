@@ -4307,6 +4307,20 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         const id = this.deepIdentifier(n)
         if (id) out.add(id.text)
       }
+      // DARTGAP1, the missing half: a REST element BINDS ITS NAME.
+      //   `final [int first, ...rest] = xs;`  ->  `(rest_pattern (constant_pattern (identifier)))`
+      //   (probed: validation/m14/fixtures/dart/pattern-forms-probe.ts, which prints the raw tree
+      //   for that exact line — the map-pattern rest spelling is NOT probed and is not claimed).
+      // Nothing collected `rest` before this branch, so every later read of it (`rest.length`)
+      // fell through every arm in the read pass and published NOTHING — a real missing edge, not
+      // a convention question. The identifier is not a constant being tested: the pattern's
+      // `constant_pattern` wrapper is the grammar's way of spelling the binding, and the read
+      // pass explicitly refuses a constant_pattern whose parent is `rest_pattern` for the same
+      // reason (see `isPatternTestConstant`).
+      if (n.type === "rest_pattern") {
+        const id = this.deepIdentifier(n)
+        if (id) out.add(id.text)
+      }
       if (n.type === "constant_pattern" && this.isBindingPatternContext(n)) {
         const id = this.deepIdentifier(n)
         if (id) out.add(id.text)
