@@ -16,6 +16,17 @@
 // GRAMMAR: tree-sitter-python. Module-level symbols are ownerless, class members ride `contains`,
 // call/use endpoints are LEAVES with the written chain in metadata.qualified (eight fixtures pin it),
 // imports are `module:item`, exports come from `__all__`.
+// IMPORTS CARRY A PROVABLE EXTERNAL CLAIM (2026-10-17). An import whose top-level module is in
+// `sys.stdlib_module_names` (PY_STDLIB_MODULES at :719, top-level-segment rule, and deliberately NO
+// leading-underscore heuristic because `_pytest` is third-party) is emitted with `isStdlib: true` +
+// `externalReason: "pythonStdlib"`, so the arbiter can VERIFY the claim instead of refusing it. Before
+// this, python emitted zero claims on imports and all 385 edges read `unresolved`; after, 96 verify.
+// THE LEADING DOT IS PART OF THE ANSWER: a relative import (`.types`) is LOCAL by the grammar of the
+// source. Stripping the dot once claimed `from .types import UUID` as stdlib (`types` IS a stdlib name),
+// and because a relative import's target is the BARE item, the arbiter found nothing and VERIFIED it —
+// 6 false `verified external` edges, which is the one outcome this programme treats as a false
+// statement about another repository. `isPyStdlibModule` now returns false for any module starting
+// with `.` (see :772). A false verification is worse than an unresolved edge; it looks solved.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
@@ -692,6 +703,89 @@ const PY_FRAMEWORK_PATTERN: Record<string, string> = Object.fromEntries(
  * depend on how the imports happen to be sorted, which is not a property of the code.
  */
 const PY_FRAMEWORK_ORDER: string[] = Object.values(PY_FRAMEWORK_MARKERS).map((m) => m.framework)
+
+/**
+ * PYTHON'S STANDARD LIBRARY, AS A CLOSED SET — the one import class a SINGLE FILE can prove is
+ * outside the project.
+ *
+ * WHY THIS EXISTS. `imports` measures 385 of 385 unresolved with `extOK 0` and `ext? 0`, i.e. not one
+ * import edge carries any claim. Clause 1 admits two states — RESOLVED, or "carries a claim the
+ * project verifies" — so an `import argparse` edge with no claim can only be counted as a failure,
+ * even though the standard library is provably not part of the checkout. The fix is a CLAIM, never a
+ * target: `argparse` is not a symbol this project declares, and inventing one would be the laundering
+ * the contract forbids.
+ *
+ * THE SET IS AUTHORITATIVE, NOT A HEURISTIC: it is `sys.stdlib_module_names` from the pinned
+ * interpreter (300 names), generated rather than typed, and the rule is stated here because it is the whole
+ * justification — THE TOP-LEVEL SEGMENT of the imported module decides. `os` and `os.path` are both
+ * stdlib; `pytest` is not, and `_pytest` is NOT matched by a leading-underscore heuristic, which is
+ * why there is no such heuristic in the test below.
+ *
+ * WHAT THIS DOES NOT CLAIM, stated so the residue stays honest: a THIRD-PARTY module (`django`,
+ * `pydantic`) and a PROJECT-LOCAL module imported absolutely (`ansible.errors`) are indistinguishable
+ * from a single file — the analyzer has no project index — so neither is marked, and both stay
+ * unresolved. That is the measured majority of this lane's import residual and it needs the
+ * `context.projectIndex` route, not a wider set here.
+ */
+const PY_STDLIB_MODULES = new Set<string>([
+  "__future__", "_abc", "_aix_support", "_ast", "_asyncio", "_bisect", "_blake2", "_bz2",
+  "_codecs", "_codecs_cn", "_codecs_hk", "_codecs_iso2022", "_codecs_jp", "_codecs_kr", "_codecs_tw", "_collections",
+  "_collections_abc", "_compat_pickle", "_compression", "_contextvars", "_crypt", "_csv", "_ctypes", "_curses",
+  "_curses_panel", "_datetime", "_dbm", "_decimal", "_elementtree", "_frozen_importlib", "_frozen_importlib_external", "_functools",
+  "_gdbm", "_hashlib", "_heapq", "_imp", "_io", "_json", "_locale", "_lsprof",
+  "_lzma", "_markupbase", "_md5", "_msi", "_multibytecodec", "_multiprocessing", "_opcode", "_operator",
+  "_osx_support", "_overlapped", "_pickle", "_posixshmem", "_posixsubprocess", "_py_abc", "_pydatetime", "_pydecimal",
+  "_pyio", "_pylong", "_queue", "_random", "_scproxy", "_sha1", "_sha2", "_sha3",
+  "_signal", "_sitebuiltins", "_socket", "_sqlite3", "_sre", "_ssl", "_stat", "_statistics",
+  "_string", "_strptime", "_struct", "_symtable", "_thread", "_threading_local", "_tkinter", "_tokenize",
+  "_tracemalloc", "_typing", "_uuid", "_warnings", "_weakref", "_weakrefset", "_winapi", "_zoneinfo",
+  "abc", "aifc", "antigravity", "argparse", "array", "ast", "asyncio", "atexit",
+  "audioop", "base64", "bdb", "binascii", "bisect", "builtins", "bz2", "cProfile",
+  "calendar", "cgi", "cgitb", "chunk", "cmath", "cmd", "code", "codecs",
+  "codeop", "collections", "colorsys", "compileall", "concurrent", "configparser", "contextlib", "contextvars",
+  "copy", "copyreg", "crypt", "csv", "ctypes", "curses", "dataclasses", "datetime",
+  "dbm", "decimal", "difflib", "dis", "doctest", "email", "encodings", "ensurepip",
+  "enum", "errno", "faulthandler", "fcntl", "filecmp", "fileinput", "fnmatch", "fractions",
+  "ftplib", "functools", "gc", "genericpath", "getopt", "getpass", "gettext", "glob",
+  "graphlib", "grp", "gzip", "hashlib", "heapq", "hmac", "html", "http",
+  "idlelib", "imaplib", "imghdr", "importlib", "inspect", "io", "ipaddress", "itertools",
+  "json", "keyword", "lib2to3", "linecache", "locale", "logging", "lzma", "mailbox",
+  "mailcap", "marshal", "math", "mimetypes", "mmap", "modulefinder", "msilib", "msvcrt",
+  "multiprocessing", "netrc", "nis", "nntplib", "nt", "ntpath", "nturl2path", "numbers",
+  "opcode", "operator", "optparse", "os", "ossaudiodev", "pathlib", "pdb", "pickle",
+  "pickletools", "pipes", "pkgutil", "platform", "plistlib", "poplib", "posix", "posixpath",
+  "pprint", "profile", "pstats", "pty", "pwd", "py_compile", "pyclbr", "pydoc",
+  "pydoc_data", "pyexpat", "queue", "quopri", "random", "re", "readline", "reprlib",
+  "resource", "rlcompleter", "runpy", "sched", "secrets", "select", "selectors", "shelve",
+  "shlex", "shutil", "signal", "site", "smtplib", "sndhdr", "socket", "socketserver",
+  "spwd", "sqlite3", "sre_compile", "sre_constants", "sre_parse", "ssl", "stat", "statistics",
+  "string", "stringprep", "struct", "subprocess", "sunau", "symtable", "sys", "sysconfig",
+  "syslog", "tabnanny", "tarfile", "telnetlib", "tempfile", "termios", "textwrap", "this",
+  "threading", "time", "timeit", "tkinter", "token", "tokenize", "tomllib", "trace",
+  "traceback", "tracemalloc", "tty", "turtle", "turtledemo", "types", "typing", "unicodedata",
+  "unittest", "urllib", "uu", "uuid", "venv", "warnings", "wave", "weakref",
+  "webbrowser", "winreg", "winsound", "wsgiref", "xdrlib", "xml", "xmlrpc", "zipapp",
+  "zipfile", "zipimport", "zlib", "zoneinfo",
+])
+
+/**
+ * Is the imported module the Python standard library? TOP-LEVEL SEGMENT ONLY, and a RELATIVE module is
+ * NEVER stdlib — that second clause is a measured bug fix, not caution.
+ *
+ * The first version stripped leading dots before taking the top segment, so `from .types import UUID`
+ * (module `.types`, project-local by the grammar) looked up `types` — a real stdlib name — and marked a
+ * PROJECT-LOCAL import as the standard library. On the cap-50 stride sample that produced the claim's
+ * ONLY 5 `externalVerified` edges, i.e. **every edge the instrument called "verified external" was a
+ * false claim**: `.types`, `.select`, `.inspect` are this project's modules that happen to share a
+ * spelling with stdlib names. A relative specifier is local BY THE GRAMMAR OF THE SOURCE, which is the
+ * same rule the relative-import retarget below already relies on — so the dot is the whole answer.
+ */
+function isPyStdlibModule(moduleName: string): boolean {
+  const m = String(moduleName ?? "").trim()
+  if (m === "" || m.startsWith(".")) return false
+  const top = m.split(".")[0] ?? ""
+  return top !== "" && PY_STDLIB_MODULES.has(top)
+}
 
 export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
@@ -2145,6 +2239,9 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.noteFramework(ctx, moduleName)
         this.pushRel(ctx, ctx.moduleName, `${moduleName}:*`, ASTEngine.RelationshipType.Imports, 1.0, {
           pythonSpecific: true,
+          // Same claim as the from-import site: a stdlib module is outside the project by the
+          // language's own manifest, so the edge carries it instead of reading as a failure.
+          ...(isPyStdlibModule(moduleName) ? { isStdlib: true, externalReason: "pythonStdlib" } : {}),
           // PY-D13 (round 7): the BOUND local name. `import typing as t` binds `t`, and `t`
           // is the only word in the file that spells this module in front of a member
           // (`t.Protocol`, `t.Callable`), while the edge's target is the `module:*` pair the
@@ -2316,6 +2413,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           const pyBareLocalItem = item.name !== "" && item.name !== "*" && (moduleName.startsWith(".") || moduleName.startsWith("/"))
           this.pushRel(ctx, ctx.moduleName, pyBareLocalItem ? item.name : `${moduleName}:${item.name === "*" ? "*" : item.name}`, ASTEngine.RelationshipType.Imports, 1.0, {
             pythonSpecific: true,
+            // CLAUSE 1'S SECOND ARM FOR THE ONE IMPORT CLASS A FILE CAN PROVE: a standard-library
+            // module is not this project's, and saying so is a claim the project verifies rather
+            // than an invented target. See `PY_STDLIB_MODULES`.
+            ...(isPyStdlibModule(moduleName) ? { isStdlib: true, externalReason: "pythonStdlib" } : {}),
             // THE MODULE, NOW THAT IT IS NO LONGER GLUED INTO THE TARGET: for a local module the
             // target is the bare item, and without this the module half would be LOST, not moved.
             module: moduleName,

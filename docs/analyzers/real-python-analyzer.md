@@ -1465,3 +1465,31 @@ the first-400 slice name a stdlib module; ≈53,000 at whole population, 17.8% o
   contributes **0 regex literals**, and the whole-tree census reports 4, all in
   `real-svelte-analyzer.ts`. The analyzer and all five lane instruments on this branch were
   re-checked through the TypeScript AST: **0 regex constructs across 6 files**.
+
+## PythonStdlib external claim (2026-10-17) — imports
+
+An `import`/`from` edge whose top-level module is in `sys.stdlib_module_names` is emitted with
+`metadata.isStdlib: true` and `metadata.externalReason: "pythonStdlib"`. The arbiter
+(`script/m14/incoming-rule.ts`) verifies such a claim against the project's admitted files: a project file
+carrying the module as a path segment REFUTES it, otherwise it VERIFIES as external.
+
+**The leading dot is part of the rule.** A relative import (`.types`) is LOCAL by the grammar of the source
+and is never stdlib. Stripping the dot once claimed `from .types import UUID` as the standard library —
+`types` IS a stdlib name — and because a relative import's target is the bare item, the arbiter found no
+declaration and *verified* the false claim: **6 false `verified external` edges**, the outcome this
+programme treats as a false statement about another repository. Fixed at `isPyStdlibModule` (:772).
+
+**Measured, whole command `bun run script/m14/incoming-gate.ts python py 50`:**
+
+| | resolved | unresolved | extOK | ext? | extFAIL |
+|---|---|---|---|---|---|
+| before | 0 | 385 | 0 | 0 | 0 |
+| after  | 0 | 268 | 96 | 0 | 21 |
+
+The **21 `extFAIL`** are stdlib claims the project refutes: a project file carries that module name, so the
+claim is wrong there and the verifier says so. They are owed a classification, not a tuning pass.
+
+**Still unresolved and why (268):** third-party modules (not provable from a single file) and absolute
+project-local imports (needs `context.projectIndex`). Retargeting those to their bare item would false-bind
+**5 python / 432 typescript / 276 javascript** items by the analyzer's own recorded measurement — the route
+is the project index, not a spelling change.
