@@ -2885,6 +2885,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             !suppressCall &&
             !inDirectiveCondition &&
             target && target.trim() !== "" &&
+            // K1 (D7 #996): a keyword or a non-identifier target is a RECOVERY FRAGMENT,
+            // not a call. The class and its prediction table are in C-D7-DISPOSITION.md
+            // D-IMPLEMENTABLE-1; the fixture is c/call-target-refusals-996 (both directions).
+            this.isCalflableNameSpelling(target) &&
             // Malformed recovery guard: include-adjacent macros produced
             // targets containing quotes/newlines (never real callees).
             !target.includes('"') && !target.includes("\n") && !target.includes("{")
@@ -7970,6 +7974,41 @@ private isAttributeInternalCall(callNode: Node, fnNode: Node): boolean {
     // ≡ /declarator$/ (endsWith — same match set as above).
     if (p.type.endsWith("declarator") || p.type === "init_declarator") {
       return this.isDeclaringChainLeftmost(node)
+    }
+    return true
+  }
+
+  /**
+   * K1 (D7 #996): can a C CALLEE legitimately spell this name?
+   *
+   * The recovery shapes in the corpus published two target classes that cannot be a
+   * callee in valid C, and both are now refused at the call-emission gate:
+   *
+   *   1. A C KEYWORD — SuiteSparse's debug macros invoked with an `if` STATEMENT as the
+   *      argument (`DEBUG (if (cond) fn ())`) recover into a call whose target is the
+   *      keyword itself (29 unresolved + 1 ambiguous calls at whole population). The
+   *      declaration path has refused keywords since CGD22 (`C_KEYWORDS`); the call path
+   *      never consulted the set.
+   *   2. A NON-IDENTIFIER — Cython's generated `$global_code_object_cache_find(...)`
+   *      template placeholder (5 unresolved calls). A `$` is not a C identifier
+   *      character, so nothing in a C program can declare that name.
+   *
+   * Measured D7 class (charter §18): 35 calls edges predicted withdrawn, resolved MUST
+   * stay fixed, arbitraryTwin must not rise (validation/m14/verification/C-D7-DISPOSITION.md
+   * D-IMPLEMENTABLE-1 carries the prediction table and the run falsifier). The predicate is
+   * a character scan, never a regex literal (M49.R2): first byte a letter or underscore,
+   * every later byte a letter, digit or underscore.
+   */
+  private isCalflableNameSpelling(name: string): boolean {
+    if (name.length === 0) return false
+    if (C_KEYWORDS.has(name)) return false
+    const first = name.charCodeAt(0)
+    const firstOk = (first >= 65 && first <= 90) || (first >= 97 && first <= 122) || first === 95
+    if (!firstOk) return false
+    for (let i = 1; i < name.length; i++) {
+      const c = name.charCodeAt(i)
+      const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+      if (!ok) return false
     }
     return true
   }
