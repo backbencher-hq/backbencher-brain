@@ -136,8 +136,25 @@ export function deriveDartImportsTruth(root: any, filePath: string): TruthEdge[]
       const uri = firstStringLiteral(node)
       if (uri) add("exports", uri)
     } else if (node.type === "part_directive" || node.type === "part_of_directive") {
-      const uri = firstStringLiteral(node)
-      if (uri) add("imports", `${uri}:*`)
+      // 2026-10-18 — A PART DIRECTIVE IS NO LONGER AN IMPORT, and this truth derivation must
+      // move with the analyzer in the same commit. The analyzer now publishes `part_of`
+      // (canonical vocabulary, Lead df5a03eb2) with `metadata.partRole`, replacing the old
+      // `imports{isPart,isPartOf}` rows. Two different facts were sharing one label; leaving
+      // this branch in place would derive an `imports` truth row for a clause the analyzer no
+      // longer emits on that label, and the differential would report it as MISSING —
+      // a truth row with no emission is the fabricated-half of the harness gap this programme
+      // keeps recording.
+      //
+      // The part graph's truth is NOT derived here yet, deliberately: `part_of` is compared
+      // only once the differential allowlist admits it (a harness change owned by the Lead),
+      // and a truth derivation pushed with no allowlist entry compares nothing while reading
+      // as coverage. When that wiring lands, the truth rule is: source = the file's module,
+      // target = the resolved project-relative path of the named file, label `part_of`,
+      // with `partRole` from the NODE TYPE (`part_of_directive` -> part,
+      // `part_directive` -> library). The resolution is the one open question — the analyzer
+      // resolves package/relative specifiers through the checkout's own pubspec map, and a
+      // truth derivation that re-implemented that would be a second copy of the rule under
+      // test rather than an independent one.
     }
     for (const c of named(node)) visit(c)
   }

@@ -1605,26 +1605,38 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       resolved === null && outsideProject(uri) ? { importOutsideProject: true } : {}
     // `part 'x.dart'` (library lists a part) and `part of 'lib.dart'`
     // (part file names its library) are both library-coupling directives —
-    // each produces an imports edge so the part graph is visible (ProxiCall
+    // each produces a `part_of` edge so the part graph is visible (ProxiCall
     // has 29 `part of` files, incl. generated freezed output).
+    //
+    // CANONICAL `part_of` since 2026-10-18. The old shape was `imports` with
+    // ad-hoc `isPart`/`isPartOf` flags, which put a file-coupling fact on the
+    // same label as every dependency import. The DIRECTION is the directive's own
+    // direction, so `partRole` says which end this file is:
+    //   part_of_directive -> "part"    (this part file -> the library it belongs to)
+    //   part_directive    -> "library" (this library -> the part file it lists)
+    // ONLY these two node types reach this branch: import/export directives are
+    // handled below, so a plain `import` can never be relabelled by this code.
+    // An UNRESOLVABLE specifier publishes NO row: without a resolved target the
+    // edge would name a specifier string, and a path no project key can answer is
+    // exactly the `:${"*"}` shape this label exists to stop publishing.
     if (node.type === "part_directive" || node.type === "part_of_directive") {
       const uriNode = this.findDescendantByType(node, "string_literal") || this.findDescendantByType(node, "uri")
       const uri = uriNode ? unquote(uriNode.text) : ""
       if (uri) {
         const resolved = targetOf(uri)
+        // The ImportInfo payload is NOT a relationship and is kept for consumers that
+        // read the parsed file's directive list; the STORED edge is the `part_of` row.
         imports.push({ module: uri, source: uri, imported: ["*"], isPart: true, range: this.nodeToRange(node) })
-        relationships.push({
-          source: site.moduleName,
-          target: resolved ?? `${uri}:*`,
-          type: ASTEngine.RelationshipType.Imports,
-          confidence: 1.0,
-          line_number: this.nodeLine(uriNode),
-          metadata: {
-            isPart: true,
-            isPartOf: node.type === "part_of_directive",
-            ...claimMeta(uri, resolved),
-          },
-        })
+        if (resolved !== null) {
+          relationships.push({
+            source: site.moduleName,
+            target: resolved,
+            type: ASTEngine.RelationshipType.PartOf,
+            confidence: 1.0,
+            line_number: this.nodeLine(uriNode),
+            metadata: { partRole: node.type === "part_of_directive" ? "part" : "library" },
+          })
+        }
       }
       return
     }
@@ -3553,7 +3565,9 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): void {
     // Mixin application class: `class A = Base with M;` — the base + mixins
     // live in a mixin_application node (no superclass node). The base is
-    // `extends`, the with-clause mixins are `uses`.
+    // `extends`; the with-clause mixins are `mixes_in` (canonical vocabulary,
+    // 2026-10-18 — they were `uses{isMixin:true}`, an ad-hoc flag on a label that
+    // also means every other type mention the file makes).
     const mixinAppCls = this.findChildByType(node, "mixin_application_class")
     if (mixinAppCls) {
       const app = this.findChildByType(mixinAppCls, "mixin_application")
@@ -3578,7 +3592,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             relationships.push({
               source: className,
               target: ti.text,
-              type: ASTEngine.RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.MixesIn,
               confidence: 1.0,
               line_number: this.nodeLine(ti),
               metadata: { isMixin: true },
@@ -3593,16 +3607,24 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // dart-mixin-shape.ts: [mixin, identifier, type_identifier, interfaces]).
     // The superclass/interfaces branches below never see it. DT-B: resolved
     // (alias-free) names — `on _i1.Base` leaked the alias as the base.
+    //
+    // 2026-10-18 — THIS IS NOT `extends` (and not `mixes_in` either). `on` is a
+    // CONSTRAINT on what may be mixed in, not an inheritance edge and not an
+    // application of `Base`: the mixin declares a requirement about its host.
+    // The family vocabulary now has both members, so leaving it on `extends` would
+    // put two different Dart facts on one label. It publishes as `references` —
+    // the mixin's declaration mentions the constraining type — with the original
+    // `isMixinOn` flag retained so a reader can still pick the clause out.
     if (node.type === "mixin_declaration") {
       const onNodes = this.resolvedHeritageNodes(node).filter((n) => n.text !== className)
       for (const baseNode of onNodes) {
         relationships.push({
           source: className,
           target: baseNode.text,
-          type: ASTEngine.RelationshipType.Extends,
+          type: ASTEngine.RelationshipType.References,
           confidence: 1.0,
           line_number: this.nodeLine(baseNode),
-          metadata: { isMixinOn: true },
+          metadata: { isMixinOn: true, isTypeMention: true, typePosition: "mixin_on_clause" },
         })
       }
     }
@@ -3640,7 +3662,12 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // mixins (with-clause): inside superclass OR directly on the class
+    // mixins (with-clause): inside superclass OR directly on the class.
+    // CANONICAL `mixes_in` since 2026-10-18 — one row per applied mixin, same
+    // source/target/line the ad-hoc `uses{isMixin:true}` row carried. The
+    // EXTENDS base and the IMPLEMENTS list are emitted by their own branches
+    // above and never reach this one, which is what makes the three heritage
+    // kinds distinguishable in the store instead of all wearing `uses`.
     let mixinsNode = superclass ? this.findChildByType(superclass, "mixins") : undefined
     if (!mixinsNode) mixinsNode = this.findChildByType(node, "mixins")
     if (mixinsNode) {
@@ -3650,7 +3677,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         relationships.push({
           source: className,
           target: ti.text,
-          type: ASTEngine.RelationshipType.Uses,
+          type: ASTEngine.RelationshipType.MixesIn,
           confidence: 1.0,
           line_number: this.nodeLine(ti),
           metadata: { isMixin: true },
@@ -3676,6 +3703,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       const md: any = r.metadata ?? {}
       if (type === "contains") { md.evidenceClass = "structural"; continue }
       if (type === "imports" || type === "exports") { md.evidenceClass = "import_based"; continue }
+      // `part_of` is a DIRECTIVE: the same tier as imports/exports, not the
+      // usage tier the default below would give it. Caught by the tier census,
+      // not by assumption: without this line every part_of row would be filed
+      // `usage_contextual` while it is a statement about the file graph.
+      if (type === "part_of") { md.evidenceClass = "import_based"; continue }
+      // `mixes_in` is a GRAMMAR CLAUSE with confidence 1.0 — the same tier as
+      // extends/implements, which it replaces on the with-clause.
+      if (type === "mixes_in") { md.evidenceClass = "structural"; continue }
       if (type === "calls" || type === "uses") {
         md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
         continue
@@ -4147,6 +4182,58 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return null
+  }
+
+  /**
+   * DARTGAP2: is this node a CONSTANT being TESTED by a pattern — i.e. a position whose
+   * owed relationship is a `uses` read of the constant, not a declaration and not a binding?
+   *
+   * The qualified form (`case M.off:`) is already read by the `qualified`-under-`constant_pattern`
+   * branch (3d4d7fa4). This predicate covers the BARE identifier and the RELATIONAL operand.
+   * The shapes are not inferred from the Dart spec — they were probed against the PINNED grammar
+   * (`validation/m14/fixtures/dart/pattern-forms-probe.ts`):
+   *
+   *   case kOne:               (switch_statement_case (case_builtin) (constant_pattern (identifier)))
+   *   if (x case kOne)         (if_statement (identifier) (constant_pattern (identifier)))
+   *   if (x case kNested?)     (if_statement (identifier) (null_check_pattern (constant_pattern (identifier))))
+   *   if (x case kOne!)        (if_statement (identifier) (null_assert_pattern (constant_pattern (identifier))))
+   *   if (x case >= kOne)      (if_statement (identifier) (relational_operator) (identifier))
+   *                            — tree-sitter-dart has NO `relational_pattern` wrapper, so the
+   *                            operand is a direct child of the `if_statement` whose previous
+   *                            NAMED sibling is the operator; the same shape appears under
+   *                            `switch_statement_case` (probed) and `switch_expression_case`.
+   *   case [kOne, 2]           (list_pattern (constant_pattern (identifier)) (constant_pattern (decimal_integer_literal)))
+   *   case {'a': kOne}         (map_pattern (string_literal) (constant_pattern (identifier)))
+   *   case (kOne, 2)           (record_pattern (constant_pattern (identifier)) (constant_pattern (decimal_integer_literal)))
+   *
+   * THREE EXCLUSIONS, each measured rather than assumed:
+   *   * BINDING context. `var (int a, int b) = ...` parses its names as `variable_pattern`, so
+   *     they never reach this predicate — but a destructuring declaration can still hold a
+   *     `constant_pattern`, and `isBindingPatternContext` is the ONE rule that already decides
+   *     that question for the binding collector. Reused rather than re-spelled.
+   *   * `...rest` in `final [int f, ...rest] = ...` parses as
+   *     `(rest_pattern (constant_pattern (identifier)))` — probed. That identifier is the BINDING
+   *     being declared, not a constant being tested, so reading it would fabricate a use of the
+   *     very name being bound.
+   *   * the `_` wildcard parses as `constant_pattern (identifier "_")` in map patterns (probed:
+   *     `{'b': _}`). `_` is not a constant and no declaration is named by it.
+   */
+  private isPatternTestConstant(n: Node): boolean {
+    const id = n.type === "identifier" ? n : null
+    const p = n.parent
+    if (!p) return false
+    if (p.type === "constant_pattern") {
+      if (id && id.text === "_") return false
+      if (p.parent?.type === "rest_pattern") return false
+      return !this.isBindingPatternContext(p)
+    }
+    // RELATIONAL operand: no wrapper node exists (probed), so the parent is the case/if and the
+    // operator is the previous named sibling. `a > b` in an EXPRESSION parses as
+    // `relational_expression`, never this shape, so this cannot reach a comparison.
+    if (p.type === "if_statement" || p.type === "switch_statement_case" || p.type === "switch_expression_case") {
+      return id !== null && id.previousNamedSibling?.type === "relational_operator"
+    }
+    return false
   }
 
   /**

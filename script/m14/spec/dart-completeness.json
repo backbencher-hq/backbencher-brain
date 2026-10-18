@@ -403,9 +403,9 @@
       {
         "id": "DARTD14",
         "node_type": "mixin_declaration on-clause heritage (mixin M on Base implements I)",
-        "status": "FIXED",
+        "status": "FIXED — RELABELLED 2026-10-18 (see DARTD23)",
         "question": "M37 master-review 2: on-base is a DIRECT type_identifier child (probed dart-mixin-shape.ts) — heritage extractor only looked for superclass children, so mixin on-bases emitted zero edges",
-        "answer": "extractClassHeritage handles mixin_declaration direct type_identifier as extends + interfaces/mixins via existing branches; oracle derives the same truth; mutants dart/mixin-on-heritage-dropped"
+        "answer": "extractClassHeritage handles mixin_declaration direct type_identifier + interfaces/mixins via existing branches; oracle derives the same truth; mutants dart/mixin-on-heritage-dropped. 2026-10-18: the on-base moved from `extends{isMixinOn}` to `references{isMixinOn, typePosition: mixin_on_clause}` — an `on` constraint inherits nothing, so publishing it as `extends` put two different Dart facts on one label once DARTD23's vocabulary made the distinction expressible. Pinned by dart/mixes-in (boundary 3, both directions)."
       },
       {
         "id": "DARTD15",
@@ -569,6 +569,14 @@
         "question": "Is an enum VALUE (`enum Color { red }` — `(enum_body (enum_constant (identifier)))`) a read of its own enum? The DT-F+ declaration-name gate listed `enum_declaration` (the enum's name) but not the value's node, so every constant was published as `uses Color -> red` on the declaration line.",
         "resolution": "No. `enum_constant` joins the declaration-name gate on BOTH sides (the analyzer's `isDartDeclNameParent` and the differential oracle's DECL_PARENTS, single rule stated twice) — a bind, never a read. The constants' ARGUMENTS stay ordinary reads. WHY IT OUTLIVED EVERY GATE: the edge was emitted at confidence 0.6, below the M12 harness's 0.7 claim threshold, so it was filed as `unknown` rather than as a false positive and no gate scored it — the M12 #933 triage is the instrument that surfaced it. Pinned by dart/enum-constant-decls and the CAUGHT mutant dart/enum-constant-decl-read.",
         "issue": "#933 (dart half)"
+      },
+      {
+        "id": "DARTD23",
+        "node_type": "with-clause (mixins), part_directive, part_of_directive, mixin on-clause",
+        "status": "FIXED — vocabulary extended and rows relabelled 2026-10-18",
+        "question": "Two Dart constructs had no canonical stored value, so each was published on a label that also meant something else, with the distinction living in metadata the store's resolver never reads: a with-clause was `uses{isMixin:true}`, and both part directives were `imports{isPart,isPartOf}` with the ROLE (part vs library) in metadata although the two directions are opposite.",
+        "resolution": "The Lead landed four canonical members (`renders`, `decorates`, `mixes_in`, `part_of`, src/ast/types.ts commit df5a03eb2). Dart uses two: `mixes_in` (source = declaring class, target = each applied mixin, same source/target/line as the old uses row, one row per mixin, `metadata.isMixin:true` kept, `evidenceClass: structural`) and `part_of` (source = the file's module symbol, target = the RESOLVED project-relative path, `metadata.partRole` = \"part\" for `part_of_directive` / \"library\" for `part_directive`, `evidenceClass: import_based`; unresolvable specifier = NO row, which retires the `uri:*` shape for parts). The mixin `on`-base was a third misfile: DARTD14 published it as `extends{isMixinOn}`, and an `on` clause is a CONSTRAINT, not inheritance — it now publishes `references{isMixinOn, typePosition:\"mixin_on_clause\"}`. Boundaries pinned so the relabel cannot overrun: extends base, implements list, and `on` constraint are all FORBIDDEN as mixes_in; import/export directives are forbidden as part_of; both superseded labels are forbidden at their old sites. Fixtures: dart/mixes-in (3 positive shapes incl. `= Base with M1, M2`, 9 negative pins) and dart/part-of-roles (both roles, boundary + no-row-for-unresolvable pins); updated: dart/member-value-reads, dart/payload-and-complexity, dart/dedup-and-attribution, dart/flutter-bloc-generic-target, dart/part-of, dart/type-references (note only). Oracle: script/m14/oracles/dart-imports.ts no longer derives part directives as imports (a truth row with no emission would be a fabricated MISSING). HARNESS WIRING STILL OWED BY THE LEAD: differential.ts `deriveDartEdges` still derives `uses` for with-clauses, `extends` for on-bases and (via the imports oracle) nothing for parts, and the dart allowlist has no `mixes_in`/`part_of` term; two mutate-analyzer mutants (the `uses{isMixin}` deletion and the `extends{isMixinOn}` mutation) target the superseded shapes.",
+        "measured_by": "validation/m14/fixtures/dart/mixes-in.{dart,expectation.json}, validation/m14/fixtures/dart/part-of-roles.{dart,expectation.json}; gate pair `script/m14/incoming-gate.ts dart dart 50` before/after (queued — box under load control at commit time)"
       },
       {
         "id": "DT-C1",
