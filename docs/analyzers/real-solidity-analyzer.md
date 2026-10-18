@@ -128,6 +128,71 @@ receive/fallback · state vars+getters · modifiers · events/errors/emit/revert
 imports · using-for · `new` · override · Yul/assembly · type aliases · NatSpec/pragma) is in the spec
 table. Evidence page: `validation/m14/verification/SOLIDITY-D1.md`.
 
+## ALL-OUT-OF-ALL phase 2 — D2/D3/D4/D5 (whole population, both arms, the audit)
+
+**D2 — what the analyzer EMITS, whole population.** `script/m14/solidity-emission-census.ts` (lane-owned)
+over **421/421 admitted `.sol` files · 2 repos · 0 parse failures · 0 degraded** → **TOTAL 35,107 rows**:
+uses 17,880 · calls 6,734 · contains 6,531 · references 1,452 · imports 932 · extends 588 · exports 534 ·
+overrides 423 · instantiates 26 · implements 7. Payloads: calls by `calleeKind` (external 3,707 ·
+localFunction 1,980 · errorRevert 455 · namespaceBuiltin 362 · eventEmission 170 · modifierInvocation 31 ·
+inFileTypeMember 22 · inheritedMember 7 — the SOL-15 taxonomy); overrides **all 423 `inferred`, 0
+`verified`** at whole population (measured finding); uses variableReference 12,454 · yulPathSegment 2,420 ·
+memberReference 1,967; imports path 931 + namespace 1; contains includes 61 synthesised getters (SOL-3).
+Construct populations make the rulings numeric (Yul: 2,843 yul_function_calls each carrying an
+yul_evm_builtin child, 487 assembly statements, **0 yul_function_definition sites** — a measured negative;
+modifier_definition 23/invocation 222; pragma 421 / comment 5,787 ruled no-relationship). Evidence page:
+`SOLIDITY-D2.md`.
+
+**D3 — resolution, BOTH whole-population arms.** Arm A (`incoming-gate solidity sol 0 --dump`,
+`BB_DUMP_LIMIT=1000000`): **421/421 parsed · 2 repos · self-test PASS** · **TOTAL 35,107 = resolved 17,186 +
+amb(decl) 13,380 + unresolved 4,541** (+collRes 3,491, amb(kind) 5,327) · claims/bindings/causes all 0 ·
+dump rows 17,921 = TOTAL − resolved exactly · **arbitraryTwin 12,234** with exact intent closure. The D2
+census TOTAL equals the arm TOTAL exactly (cross-instrument). D3 classification by
+`script/m14/solidity-dump-classify.ts` (dump rows joined to the analyzer's own metadata markers per row;
+381 files re-analysed, JOIN 17,921/17,921 misses 0) → control PASS, closure exact, **11 named walls**:
+W8-function-scope-binding-read 9,805 (54.7% — parameter/return/Yul-local reads; see the claim-opportunity
+note in `SOLIDITY-D4-AUDIT.md` §4) · W6-yul-path-segment 2,275 · W3-cross-file/unvendored 2,039 ·
+W7-member-or-builtin 1,465 · W5-in-file-name-not-a-declaration 935 · W1-module-path 932 ·
+W2-language-namespace 344 · W10-type-mention 72 · W4-declared-kind 47 · W12-export-surface 6 ·
+W11-override-base 1. Clause 1 fails ONLY on these named classes; clause 4 clean by measurement.
+**Arm B (`--index`) is the SOL-21 effect measured, not an artifact:** the gate builds **2 repo indexes (2
+built, 0 damaged)**, and the A→B delta is exactly **extends 588→488 (−100 edges/resolved) and implements
+7→107 (+100/+100)** with **every other per-type column 0**, TOTAL/resolved/ambiguous/unresolved unchanged,
+arbitraryTwin unchanged (12,234), classifier classes identical — the project index settles heritage KINDS
+and trades ZERO resolutions. Evidence page: `SOLIDITY-D3.md`.
+
+**D4 — the audit, MEASURED on the wired digest (Lead `174f35fda` + lane `86e39a889`).** All ten emitted
+labels derived AND admitted; `imports` was the last (m60: emitted 10 / audited 9). The lane found that
+`normTarget` collapses every module path to its extension segment (`./A.sol` → `sol`), which would have
+made the imports audit vacuous; the Lead fixed the matcher globally for path-like imports. Post-wiring
+draws: `--repo solidity --sample 60` → truth 2,567 · covered 2,565 (**99.9%**) · MISSING 2 · analyzer 1,875
+· unexplained 21 (1.1%) · heuristic 0 · hash e9708e75; stride draw → truth 3,799 · covered 3,792 (**99.8%**)
+· MISSING 7 · analyzer 2,414 · unexplained 33 (1.4%) · heuristic 0 · hash 8de36144 — **`imports`
+contributes ZERO unexplained in both**, a label that can now fail and does not. Residual classified by
+`script/m14/solidity-d4-audit.ts` (control fails on any unclassified row): own 60-file draw → MISSING 6 /
+unexplained 101 in four named classes with deciding side (`truth-gap/uses-yul` 79 ·
+`truth-gap/uses-variable` 21 · `truth-over-derivation/uses-inheritance-specifier` 6 ·
+`truth-gap/calls-errorRevert` 1). Oracle contract: `solidity-oracle-verify.ts` 4/4 cases + self-test PASS.
+Evidence page: `SOLIDITY-D4-AUDIT.md` (and the inventory/matcher narrative in `SOLIDITY-D4-ORACLE.md`).
+
+**D5 — permissions.** Fixtures **32 pass / 0 fail** (exit 0, "no regressions"; no pre-existing pin, no
+allowance consumed) · inventory **126 types / lane-pass 8/8** (caveat quoted) · **no-regex**: lane-owned
+AST census CLEAN (0 regex literals, 0 constructors, 0 regex args; 6 allowed string arguments) and the lane
+is **absent from the fresh shared census** (0 solidity rows); the older M60 gate PASSes but its own
+`--selftest` reports `MUTANT 3` not caught — **a defect in that gate (outside this lane's write scope),
+reported to the Lead**, which is why the lane's D5 evidence uses its own AST census · **perf row** measured
+on the M60 baseline's exact population/surface (389 production files × 2 trials, `parseFile`): min **11.494
+ms/file** · median 21.544 · analyzer share 83.1% · 1.653 ms/KiB · ratio **0.19×** against the recorded
+baseline 59.738 ms/file (which was itself load-29-contended and unqualified) — **UNSCORED** per the `#871`
+no-re-pin ruling · **tsc**: 0 errors naming any solidity script / the analyzer (both configs; evidence
+file). Spec table current (`solidity-spec-table.ts --check` passes).
+
+**Named residuals and their owners** are listed in `SOLIDITY-DONE.md` §NAMED RESIDUALS; the single
+candidate improvement is **`SOL-W8-BINDING-CLAIM`** (parameters + named returns as fleet binding claims —
+priced by the lane's reverted 400-file experiment: unresolved −52.3%, amb −3,944, bindOK 6,504,
+arbitraryTwin FELL 3,703, collRes unchanged; four fixtures pin the bare spelling and are reconcilable
+under the task-9 ruling).
+
 ## Complexity envelope
 
 (M60 R6.) One iterative DFS with an explicit `{node, exit}` stack — no recursion

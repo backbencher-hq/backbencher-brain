@@ -30,6 +30,8 @@ const OUT = path.join(ROOT, "script/m14/spec/solidity-spec-table.json")
 const CENSUS = path.join(ROOT, "validation/m14/fixtures/solidity/measurements/solidity-emission-census-whole.json")
 const D3_NOINDEX = path.join(ROOT, "validation/m14/fixtures/solidity/measurements/solidity-d3-noindex-arm.json")
 const D3_INDEXED = path.join(ROOT, "validation/m14/fixtures/solidity/measurements/solidity-d3-indexed-arm.json")
+const D4_SUMMARY = path.join(ROOT, "validation/m14/fixtures/solidity/measurements/solidity-d4-summary.json")
+const D5_SUMMARY = path.join(ROOT, "validation/m14/fixtures/solidity/measurements/solidity-d5-summary.json")
 const CHECK = process.argv.includes("--check")
 
 interface GateRow {
@@ -86,6 +88,8 @@ const gate = parseGateLog(fs.readFileSync(GATE_LOG, "utf8"))
 const census: any = fs.existsSync(CENSUS) ? JSON.parse(fs.readFileSync(CENSUS, "utf8")) : null
 const d3A: any = fs.existsSync(D3_NOINDEX) ? JSON.parse(fs.readFileSync(D3_NOINDEX, "utf8")) : null
 const d3B: any = fs.existsSync(D3_INDEXED) ? JSON.parse(fs.readFileSync(D3_INDEXED, "utf8")) : null
+const d4: any = fs.existsSync(D4_SUMMARY) ? JSON.parse(fs.readFileSync(D4_SUMMARY, "utf8")) : null
+const d5: any = fs.existsSync(D5_SUMMARY) ? JSON.parse(fs.readFileSync(D5_SUMMARY, "utf8")) : null
 const censusPopulation = census
   ? {
       command: "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-emission-census.ts --cap=0 --json",
@@ -225,6 +229,10 @@ const spec = {
     TOTAL: gate.total,
     types,
     fixtureBaseline: applicable.fixtureBaseline,
+  },
+  verification: {
+    d4: d4 ?? { status: "OWED" },
+    d5: d5 ?? { status: "OWED" },
   },
   wholePopulationArms: {
     status: census && d3A && d3B

@@ -262,7 +262,7 @@ for (const { row, md } of joined) {
   const cls = entry.classes.get(c.declaredClass) ?? { family: c.family, declaredClass: c.declaredClass, unresolved: 0, ambiguous: 0, samples: [] }
   if (isAmbiguous) cls.ambiguous++
   else cls.unresolved++
-  if (cls.samples.length < 4) cls.samples.push(`${row.src}:${row.line}: ${row.target} [${row.family}]`)
+  if (cls.samples.length < 4) cls.samples.push(`${row.src}:${row.line}: ${row.target} [${c.family}]`)
   entry.classes.set(c.declaredClass, cls)
 }
 

@@ -1708,6 +1708,188 @@
    "failingFixtures": []
   }
  },
+ "verification": {
+  "d4": {
+   "wiring": {
+    "leadCommit": "174f35fda",
+    "laneModuleCommit": "86e39a889",
+    "importsAdmitted": true,
+    "matcherFix": "path-like imports compared EXACTLY as written; normTarget leaf-collapse no longer makes any import path cover any other (the lane's measured finding: normTarget('./A.sol')=normTarget('@openzeppelin/.../Utils.sol')='sol'); global across lanes, C's include paths fixed by the same change.",
+    "distribution": null
+   },
+   "oracle": {
+    "contractCases": "4/4 PASS",
+    "selfTest": "PASS (accepts a real truth row, refuses a fabricated one)",
+    "fixtureLane": {
+     "imports": {
+      "truth": 3,
+      "published": 3,
+      "missing": 0,
+      "unexplained": 0
+     }
+    },
+    "instrument": "script/m14/solidity-oracle-verify.ts"
+   },
+   "postWiringDraws": {
+    "repo60": {
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/differential.ts --repo solidity --lang solidity --sample 60",
+     "files": 60,
+     "treeTruth": 2567,
+     "covered": 2565,
+     "coveragePct": 99.9,
+     "missing": 2,
+     "analyzerEdges": 1875,
+     "unexplained": 21,
+     "unexplainedPct": 1.1,
+     "byLabel": {
+      "uses": 17,
+      "calls": 3,
+      "exports": 1,
+      "imports": 0
+     },
+     "heuristic": 0,
+     "hash": "e9708e750546e983",
+     "exit": 0
+    },
+    "stride60": {
+     "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/differential.ts --lang solidity --sample 60",
+     "files": 60,
+     "treeTruth": 3799,
+     "covered": 3792,
+     "coveragePct": 99.8,
+     "missing": 7,
+     "analyzerEdges": 2414,
+     "unexplained": 33,
+     "unexplainedPct": 1.4,
+     "byLabel": {
+      "uses": 32,
+      "calls": 1,
+      "imports": 0
+     },
+     "heuristic": 0,
+     "hash": "8de361440b750429",
+     "exit": 0
+    }
+   },
+   "importsClean": true,
+   "audit": {
+    "instrument": "script/m14/solidity-d4-audit.ts",
+    "draw": {
+     "repo": "solidity",
+     "files": 60,
+     "admitted": 420
+    },
+    "truthRows": 2962,
+    "analyzerRows": 5182,
+    "missing": 6,
+    "unexplained": 101,
+    "classes": {
+     "truth-gap/uses-yul": 79,
+     "truth-gap/uses-variable": 21,
+     "truth-over-derivation/uses-inheritance-specifier": 6,
+     "truth-gap/calls-errorRevert": 1
+    },
+    "control": "PASS — every residual row in a named class; class rows 107 == MISSING 6 + unexplained 101; 0 parse failures"
+   },
+   "corpusNote": "one real project (solidity, 420 .sol) + one nvim-treesitter query fixture; both canonical draws are that project at different rotations (hash e9708e75 / 8de36144), stated not smoothed.",
+   "missingBoth": "none — all 10 emitted labels have a derivation and an admission (imports was the last) + 4 ruled non-applicable values have grammar-absence evidence."
+  },
+  "d5": {
+   "fixtures": {
+    "command": "bun run script/m14/run-fixtures.ts --lang solidity",
+    "pass": 32,
+    "fail": 0,
+    "exit": 0,
+    "baselineGate": "no regressions",
+    "artifact": "measurements/solidity-fixtures-baseline.txt",
+    "note": "no pre-existing red pin and no fixture allowance consumed — unlike c/cpp there is nothing to declare."
+   },
+   "inventory": {
+    "command": "bun run script/m14/completeness-inventory.ts --lang solidity",
+    "typesClassified": 126,
+    "lanePass": "8/8",
+    "artifact": "measurements/solidity-inventory-baseline.txt",
+    "caveat": "the inventory's own caveat is quoted in SOLIDITY-D1.md: 8/8 is not a DONE claim; the denominator is the DECLARED kind set."
+   },
+   "noRegex": {
+    "laneOwnedAst": {
+     "instrument": "script/m14/solidity-no-regex-census.ts",
+     "ok": true,
+     "counts": {
+      "regexLiterals": 0,
+      "regexpConstructors": 0,
+      "regexArgumentsToStringMethods": 0,
+      "regexTypedVariableArguments": 0,
+      "stringArgumentsToStringMethods": 6
+     },
+     "artifact": "measurements/solidity-no-regex-census.json"
+    },
+    "m60Gate": {
+     "instrument": "script/m60/solidity-zero-regex.ts",
+     "pass": true,
+     "artifact": "measurements/solidity-m60-zero-regex-gate.txt",
+     "selftest": {
+      "result": "FAIL — 1 selftest expectation did not hold: 'MUTANT 3 is caught by the operation check (0 operation(s))'",
+      "artifact": "measurements/solidity-m60-zero-regex-selftest.txt",
+      "reading": "a DEFECT IN THE M60 GATE, not in the analyzer: its injected-regex (operation) arm does not fire, so that gate's PASS on the operation count is weaker than it looks. The file is outside this lane's write scope; reported to the Lead. The lane's own AST-level census above is the evidence used for D5."
+     }
+    },
+    "sharedCensus": {
+     "result": "lane absent — 0 solidity rows in validation/m12/results/regex-census.json (the Lead's fresh HEAD-blob census)",
+     "note": "the shared fleet census is the Lead-owned cross-check; the lane's own two instruments are the lane-level evidence."
+    }
+   },
+   "perfRow": {
+    "instrument": "script/m14/solidity-perf.ts",
+    "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/solidity-perf.ts --trials=2 --json=validation/m14/fixtures/solidity/measurements/solidity-perf-row.json",
+    "population": {
+     "productionFiles": 389,
+     "allSolidityFiles": 420,
+     "rule": "git ls-files *.sol; exclude test/ and *.t.sol — the M60 baseline's population"
+    },
+    "minMsPerFile": 11.494,
+    "medianMsPerFile": 21.544,
+    "trials": [
+     {
+      "trial": 1,
+      "loadAvg1": 3.15,
+      "wallMs": 8380.6,
+      "perFileMs": 21.544,
+      "files": 389,
+      "facts": 33609
+     },
+     {
+      "trial": 2,
+      "loadAvg1": 3.66,
+      "wallMs": 4471.1,
+      "perFileMs": 11.494,
+      "files": 389,
+      "facts": 33609
+     }
+    ],
+    "analyzerSharePct": 83.1,
+    "msPerKiB": 1.653,
+    "baseline": {
+     "source": "validation/m60/results/solidity-perf.json (gate M60.solidity-perf, commit c25c144d)",
+     "minMsPerFile": 59.738,
+     "loadAvg1": 21.17,
+     "qualified": false
+    },
+    "ratio": 0.19,
+    "scored": false,
+    "whyUnscored": "the baseline was recorded at loadAvg1 21.17 with its own perfIsQualified=false; the programme's no-re-pin ruling (#871) forbids scoring a busy-machine wall clock. The ratio is DISCLOSED, not a pass/fail.",
+    "artifact": "measurements/solidity-perf-row.json"
+   },
+   "typecheck": {
+    "scripts": "0 errors naming any solidity-* script",
+    "project": "0 errors naming real-solidity-analyzer or solidity-*",
+    "artifact": "measurements/solidity-tsc-evidence.txt",
+    "note": "the shared tree carries other lanes' pre-existing errors; none of them is this lane's file, reported not patched."
+   },
+   "docs": "docs/analyzers/real-solidity-analyzer.md gained the phase-2 D1 section and is current for the D2/D3/D4/D5 clauses.",
+   "specTable": "script/m14/spec/solidity-spec-table.json — generated (`solidity-spec-table.ts --check` passes) with the D1/D2/D3/D4/D5 blocks and this file as an input."
+  }
+ },
  "wholePopulationArms": {
   "status": "D2 census MEASURED (421/421 files · 2 repos · 35107 rows); D3 BOTH arms MEASURED with closure-exact classification. A->B delta: extends edges -100/resolved -100 · implements edges +100/resolved +100 — the project index settles inheritance KINDS (SOL-21), it trades no resolutions.",
   "census": {
@@ -2466,10 +2648,10 @@
          "unresolved": 1839,
          "ambiguous": 7966,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:65: proposalNames [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:93: voter [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:96: voter [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:97: voter [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:65: proposalNames [variable-reference]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:93: voter [variable-reference]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:96: voter [variable-reference]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:97: voter [variable-reference]"
          ]
         },
         {
@@ -2478,10 +2660,10 @@
          "unresolved": 498,
          "ambiguous": 1777,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:26: authority [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:26: data [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:27: immediate [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:28: delay [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:26: authority [yul-path-segment]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:26: data [yul-path-segment]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:27: immediate [yul-path-segment]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:28: delay [yul-path-segment]"
          ]
         },
         {
@@ -2490,10 +2672,10 @@
          "unresolved": 63,
          "ambiguous": 1402,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:60: length [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:116: delegate [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:117: delegate [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:130: delegate [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:60: length [member-reference]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:116: delegate [member-reference]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:117: delegate [member-reference]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:130: delegate [member-reference]"
          ]
         }
        ]
@@ -2508,10 +2690,10 @@
          "unresolved": 1047,
          "ambiguous": 954,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:64: push [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:85: _msgSender [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:155: _msgSender [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:183: _msgSender [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:64: push [external-target]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:85: _msgSender [external-target]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:155: _msgSender [external-target]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:183: _msgSender [external-target]"
          ]
         },
         {
@@ -2520,10 +2702,10 @@
          "unresolved": 0,
          "ambiguous": 935,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:70: supportsInterface [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:93: hasRole [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:120: getRoleAdmin [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:121: _grantRole [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:70: supportsInterface [in-file-localFunction]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:93: hasRole [in-file-localFunction]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:120: getRoleAdmin [in-file-localFunction]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:121: _grantRole [in-file-localFunction]"
          ]
         },
         {
@@ -2532,10 +2714,10 @@
          "unresolved": 84,
          "ambiguous": 260,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/Ownable2Step.sol:54: _transferOwnership [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:85: grantRole [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:95: revokeRole [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:119: renounceRole [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/Ownable2Step.sol:54: _transferOwnership [language-namespace]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:85: grantRole [language-namespace]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:95: revokeRole [language-namespace]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:119: renounceRole [language-namespace]"
          ]
         },
         {
@@ -2544,10 +2726,10 @@
          "unresolved": 0,
          "ambiguous": 47,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:170: RoleAdminChanged [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:183: RoleGranted [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:200: RoleRevoked [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AccessManager.sol:305: RoleGranted [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:170: RoleAdminChanged [event-emission]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:183: RoleGranted [event-emission]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:200: RoleRevoked [event-emission]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AccessManager.sol:305: RoleGranted [event-emission]"
          ]
         }
        ]
@@ -2562,10 +2744,10 @@
          "unresolved": 932,
          "ambiguous": 0,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:9: anotherFile [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:6: ../utils/Context.sol [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:7: ../utils/introspection/ERC165.sol [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:8: ./IAccessControl.sol [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:9: anotherFile [import-path]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:6: ../utils/Context.sol [import-path]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:7: ../utils/introspection/ERC165.sol [import-path]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:8: ./IAccessControl.sol [import-path]"
          ]
         }
        ]
@@ -2580,10 +2762,10 @@
          "unresolved": 39,
          "ambiguous": 33,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:9: something [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:12: initializerRan() [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:13: onlyInitializingRan() [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:14: x() [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:9: something [type-or-using]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:12: initializerRan() [type-or-using]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:13: onlyInitializingRan() [type-or-using]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:14: x() [type-or-using]"
          ]
         }
        ]
@@ -2598,10 +2780,10 @@
          "unresolved": 0,
          "ambiguous": 6,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/Panic.sol:26: Panic [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:37: AddressSlot [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:49: BooleanSlot [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:61: Bytes32Slot [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/Panic.sol:26: Panic [compilation-unit-surface]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:37: AddressSlot [compilation-unit-surface]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:49: BooleanSlot [compilation-unit-surface]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:61: Bytes32Slot [compilation-unit-surface]"
          ]
         }
        ]
@@ -2616,10 +2798,10 @@
          "unresolved": 38,
          "ambiguous": 0,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/account/paymaster/PaymasterSigner.t.sol:31: Test [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/account/utils/draft-ERC7579Utils.t.sol:109: Test [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/governance/Governor.t.sol:9: Test [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/governance/extensions/GovernorSuperQuorumGreaterThanQuorum.t.sol:52: Test [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/account/paymaster/PaymasterSigner.t.sol:31: Test [base-not-declared-in-file]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/account/utils/draft-ERC7579Utils.t.sol:109: Test [base-not-declared-in-file]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/governance/Governor.t.sol:9: Test [base-not-declared-in-file]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/governance/extensions/GovernorSuperQuorumGreaterThanQuorum.t.sol:52: Test [base-not-declared-in-file]"
          ]
         }
        ]
@@ -2634,7 +2816,7 @@
          "unresolved": 1,
          "ambiguous": 0,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/token/ERC20/extensions/ERC4626.t.sol:23: ERC4626Test [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/token/ERC20/extensions/ERC4626.t.sol:23: ERC4626Test [external-or-single-base]"
          ]
         }
        ]
@@ -2892,10 +3074,10 @@
          "unresolved": 1839,
          "ambiguous": 7966,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:65: proposalNames [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:93: voter [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:96: voter [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:97: voter [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:65: proposalNames [variable-reference]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:93: voter [variable-reference]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:96: voter [variable-reference]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:97: voter [variable-reference]"
          ]
         },
         {
@@ -2904,10 +3086,10 @@
          "unresolved": 498,
          "ambiguous": 1777,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:26: authority [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:26: data [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:27: immediate [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:28: delay [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:26: authority [yul-path-segment]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:26: data [yul-path-segment]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:27: immediate [yul-path-segment]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AuthorityUtils.sol:28: delay [yul-path-segment]"
          ]
         },
         {
@@ -2916,10 +3098,10 @@
          "unresolved": 63,
          "ambiguous": 1402,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:60: length [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:116: delegate [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:117: delegate [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:130: delegate [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:60: length [member-reference]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:116: delegate [member-reference]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:117: delegate [member-reference]",
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:130: delegate [member-reference]"
          ]
         }
        ]
@@ -2934,10 +3116,10 @@
          "unresolved": 1047,
          "ambiguous": 954,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:64: push [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:85: _msgSender [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:155: _msgSender [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:183: _msgSender [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:64: push [external-target]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:85: _msgSender [external-target]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:155: _msgSender [external-target]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:183: _msgSender [external-target]"
          ]
         },
         {
@@ -2946,10 +3128,10 @@
          "unresolved": 0,
          "ambiguous": 935,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:70: supportsInterface [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:93: hasRole [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:120: getRoleAdmin [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:121: _grantRole [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:70: supportsInterface [in-file-localFunction]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:93: hasRole [in-file-localFunction]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:120: getRoleAdmin [in-file-localFunction]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:121: _grantRole [in-file-localFunction]"
          ]
         },
         {
@@ -2958,10 +3140,10 @@
          "unresolved": 84,
          "ambiguous": 260,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/Ownable2Step.sol:54: _transferOwnership [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:85: grantRole [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:95: revokeRole [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:119: renounceRole [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/Ownable2Step.sol:54: _transferOwnership [language-namespace]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:85: grantRole [language-namespace]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:95: revokeRole [language-namespace]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/extensions/AccessControlDefaultAdminRules.sol:119: renounceRole [language-namespace]"
          ]
         },
         {
@@ -2970,10 +3152,10 @@
          "unresolved": 0,
          "ambiguous": 47,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:170: RoleAdminChanged [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:183: RoleGranted [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:200: RoleRevoked [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AccessManager.sol:305: RoleGranted [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:170: RoleAdminChanged [event-emission]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:183: RoleGranted [event-emission]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:200: RoleRevoked [event-emission]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/manager/AccessManager.sol:305: RoleGranted [event-emission]"
          ]
         }
        ]
@@ -2988,10 +3170,10 @@
          "unresolved": 932,
          "ambiguous": 0,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:9: anotherFile [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:6: ../utils/Context.sol [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:7: ../utils/introspection/ERC165.sol [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:8: ./IAccessControl.sol [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:9: anotherFile [import-path]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:6: ../utils/Context.sol [import-path]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:7: ../utils/introspection/ERC165.sol [import-path]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/access/AccessControl.sol:8: ./IAccessControl.sol [import-path]"
          ]
         }
        ]
@@ -3006,10 +3188,10 @@
          "unresolved": 39,
          "ambiguous": 33,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:9: something [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:12: initializerRan() [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:13: onlyInitializingRan() [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:14: x() [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/nvim-treesitter/tests/query/highlights/solidity/test.sol:9: something [type-or-using]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:12: initializerRan() [type-or-using]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:13: onlyInitializingRan() [type-or-using]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/mocks/InitializableMock.sol:14: x() [type-or-using]"
          ]
         }
        ]
@@ -3024,10 +3206,10 @@
          "unresolved": 0,
          "ambiguous": 6,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/Panic.sol:26: Panic [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:37: AddressSlot [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:49: BooleanSlot [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:61: Bytes32Slot [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/Panic.sol:26: Panic [compilation-unit-surface]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:37: AddressSlot [compilation-unit-surface]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:49: BooleanSlot [compilation-unit-surface]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/contracts/utils/TransientSlot.sol:61: Bytes32Slot [compilation-unit-surface]"
          ]
         }
        ]
@@ -3042,10 +3224,10 @@
          "unresolved": 38,
          "ambiguous": 0,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/account/paymaster/PaymasterSigner.t.sol:31: Test [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/account/utils/draft-ERC7579Utils.t.sol:109: Test [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/governance/Governor.t.sol:9: Test [undefined]",
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/governance/extensions/GovernorSuperQuorumGreaterThanQuorum.t.sol:52: Test [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/account/paymaster/PaymasterSigner.t.sol:31: Test [base-not-declared-in-file]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/account/utils/draft-ERC7579Utils.t.sol:109: Test [base-not-declared-in-file]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/governance/Governor.t.sol:9: Test [base-not-declared-in-file]",
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/governance/extensions/GovernorSuperQuorumGreaterThanQuorum.t.sol:52: Test [base-not-declared-in-file]"
          ]
         }
        ]
@@ -3060,7 +3242,7 @@
          "unresolved": 1,
          "ambiguous": 0,
          "samples": [
-          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/token/ERC20/extensions/ERC4626.t.sol:23: ERC4626Test [undefined]"
+          "$HOME/mcp/backbencher-brain/.corpus/solidity/test/token/ERC20/extensions/ERC4626.t.sol:23: ERC4626Test [external-or-single-base]"
          ]
         }
        ]
