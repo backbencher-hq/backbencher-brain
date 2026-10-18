@@ -2531,6 +2531,58 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       return text
     }
 
+    /**
+     * RECEIVER OWNERSHIP — the STORE's channel, not a second spelling.
+     *
+     * `src/ast/member-owner-resolution.ts` (`claimOwnerCarryingTargets` +
+     * `resolveMemberTargetsByOwner`, called from both resolution paths in
+     * `src/ast/parallel-indexer.ts`) already resolves a call/uses row by the
+     * `metadata.owner` key: it requires exactly one CLASS-LIKE owner (class / interface /
+     * trait / enum — a dart `mixin`/`extension` is not class-like to that rule), filters the
+     * member candidates by kind, walks the owner's ancestors through the stored super_types,
+     * and WITHDRAWS the row's name binding rather than letting an owner-carrying row keep an
+     * unrelated same-name declaration.
+     *
+     * The analyzer's job is therefore exactly one thing: state the type the receiver is
+     * STATICALLY KNOWN to have, and the EVIDENCE CLASS that says how the source said so.
+     * The four classes are the receiver contract's, not this lane's invention:
+     *
+     *   param       the receiver resolves to a formal parameter whose declared type was
+     *               extracted (`void run(OrderRepository r) { r.load(); }`)
+     *   field       the receiver resolves to a field of the enclosing class
+     *               (`fieldTypeByField`, filled by the symbol pass)
+     *   annotation  a local/for-in binding with a WRITTEN type (`final Base b = ...`,
+     *               `for (final Element e in xs)`)
+     *   assignment  a local whose type comes from its INITIALIZER (`var x = Foo()`)
+     *
+     * NOT emitted for `this`/`super` (the target spelling already names the owner and "the
+     * enclosing class" is none of the four classes), and NOT emitted when the head is not a
+     * plain name (call result, index expression, prefix alias). A WRONG owner is worse than
+     * none: this helper only reports a type the source wrote or the initializer constructed —
+     * it never infers one from member names or call results.
+     */
+    const receiverOwnerMeta = (
+      head: Node | null,
+      enclosing: string | null,
+      localTypes: Map<string, string>,
+      localEvidence: Map<string, string>,
+    ): Record<string, unknown> | null => {
+      const t = head?.type
+      if (t === "this" || t === "super") return null
+      const text = this.headNameText(head)
+      if (text === null) return null
+      const localType = localTypes.get(text)
+      if (localType) {
+        const evidence = localEvidence.get(text)
+        // No evidence class means no claim about HOW the type is known; the row keeps its
+        // existing shape rather than inventing one.
+        return evidence ? { owner: localType, ownerEvidence: evidence } : null
+      }
+      const fieldType = fieldTypeByField.get(`${enclosing ?? ""}.${text}`)
+      if (fieldType) return { owner: fieldType, ownerEvidence: "field" }
+      return null
+    }
+
     // Current call source = enclosing function/method/constructor leaf name.
     const resolveCurrent = (n: Node, current: string | null): string | null => {
       // Local functions are NOT call contexts (family contract: locals fold
@@ -2629,8 +2681,9 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       owner: string | null,
       locals: Set<string>,
       localTypes: Map<string, string>,
+      localEvidence: Map<string, string>,
       insideCollected: boolean,
-    ): [string | null, string | null, Set<string>, Map<string, string>, boolean] => {
+    ): [string | null, string | null, Set<string>, Map<string, string>, Map<string, string>, boolean] => {
       const prev = current
       const prevOwner = owner
       const t = n.type
@@ -2642,6 +2695,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // sibling (Dart puts the body AFTER the signature in the container).
       let childLocals = locals
       let childLocalTypes = localTypes
+      let childLocalEvidence = localEvidence
       // Whether a STRICT ancestor's whole subtree has already been collected into
       // `locals`. See the block below for why that makes a re-walk redundant.
       let childInsideCollected = insideCollected
@@ -2676,7 +2730,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         // same way. A receiver whose type is written in the signature or the declaration
         // (`void run(OrderRepository r)`, `final Base b = Base();`) is what makes a call
         // target determinate; the NAME set alone cannot tell `r` from a local.
-        let boundTypes: Map<string, string> | null = null
+        let boundTypes: Map<string, { type: string; evidence: string }> | null = null
         if (!insideCollected) {
           const own = this.collectDartLocals(n)
           if (own.size > 0) bound = own
@@ -2695,7 +2749,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           const sigTypes = this.collectDartParameterTypes(sig)
           if (sigTypes.size > 0) {
-            if (!boundTypes) boundTypes = new Map<string, string>()
+            if (!boundTypes) boundTypes = new Map<string, { type: string; evidence: string }>()
             for (const [nm, ty] of sigTypes) boundTypes.set(nm, ty)
           }
         }
@@ -2705,7 +2759,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         if (boundTypes) {
           childLocalTypes = new Map(localTypes)
-          for (const [nm, ty] of boundTypes) childLocalTypes.set(nm, ty)
+          childLocalEvidence = new Map(localEvidence)
+          for (const [nm, ty] of boundTypes) {
+            childLocalTypes.set(nm, ty.type)
+            childLocalEvidence.set(nm, ty.evidence)
+          }
         }
         if (!insideCollected) childInsideCollected = true
       }
@@ -2886,6 +2944,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             // the leaf, and a lowercase link (`a.b.c()`) does not name a type, so the
             // lookup refuses it and the target stays the bare leaf.
             const ownerCand = links.length > 1 ? before : headOwner(head, owner, localTypes)
+            const ownMeta = links.length > 1 ? null : receiverOwnerMeta(head, owner, localTypes, localEvidence)
             const q = qualifiedTarget(ownerCand, method)
             relationships.push({
               source: callSource,
@@ -2912,6 +2971,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 ...(locals.has(method) ? { isLocalRead: true } : {}),
                 ...(q.target ? { qualifier: "chain" } : {}),
                 ...receiverCut(q),
+                // THE STORE'S CHANNEL (see `receiverOwnerMeta`): the exactly-known receiver
+                // type plus the evidence class. Additive — the target spelling above is
+                // unchanged, so nothing here can move an edge.
+                ...(ownMeta ?? {}),
               },
             })
           }
@@ -2968,6 +3031,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             } else {
               // `Color.red`, `M.off`, `C.total`, `this.count`, `b.count` — the source
               // names the owner and the analyzer used to drop it (see `qualifiedTarget`).
+              const ownMeta = receiverOwnerMeta(head, owner, localTypes, localEvidence)
               const q = qualifiedTarget(headOwner(head, owner, localTypes), member)
               relationships.push({
                 source: callSource,
@@ -2979,8 +3043,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                   // THE CLAIM TRAVELS WITH THE SPELLING — see `apply-recv-spell.py` #4: this ternary
                   // consulted only `q.target`, so the claim was dropped the moment there was a
                   // target to spell.
-                  ? { isMemberRead: true, qualifier: "head", ...receiverCut(q) }
-                  : { isMemberRead: true, ...receiverCut(q) },
+                  ? { isMemberRead: true, qualifier: "head", ...receiverCut(q), ...(ownMeta ?? {}) }
+                  : { isMemberRead: true, ...receiverCut(q), ...(ownMeta ?? {}) },
               })
             }
           }
@@ -3412,7 +3476,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // What this node's children inherit. `current`/`owner` are this node's resolved
       // values and `childLocals`/`childInsideCollected` its merged sets — exactly the four
       // arguments the recursive form passed down.
-      return [current, owner, childLocals, childLocalTypes, childInsideCollected]
+      return [current, owner, childLocals, childLocalTypes, childLocalEvidence, childInsideCollected]
     }
 
     /**
@@ -3430,14 +3494,15 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       owner: string | null,
       locals: Set<string>,
       localTypes: Map<string, string>,
+      localEvidence: Map<string, string>,
       insideCollected: boolean,
     ): void => {
-      const work: Array<[Node, string | null, string | null, Set<string>, Map<string, string>, boolean]> = [
-        [root, current, owner, locals, localTypes, insideCollected],
+      const work: Array<[Node, string | null, string | null, Set<string>, Map<string, string>, Map<string, string>, boolean]> = [
+        [root, current, owner, locals, localTypes, localEvidence, insideCollected],
       ]
       while (work.length > 0) {
-        const [n2, cur, own, loc, types, inside] = work.pop()!
-        const [cur2, own2, loc2, types2, inside2] = visitNode(n2, cur, own, loc, types, inside)
+        const [n2, cur, own, loc, types, evid, inside] = work.pop()!
+        const [cur2, own2, loc2, types2, evid2, inside2] = visitNode(n2, cur, own, loc, types, evid, inside)
         // MATERIALISE THE CHILD LIST ONCE, then iterate it. Indexing `n2.namedChild(i)` in
         // a loop is a trap rather than a style choice, and it is the reason this file cost
         // 7.6 minutes: `node --cpu-prof` on a 31,905-node slice put **92% of the run inside
@@ -3453,12 +3518,12 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         const kids: (Node | null)[] = n2.namedChildren ?? []
         for (let i = kids.length - 1; i >= 0; i--) {
           const child = kids[i]
-          if (child) work.push([child, cur2, own2, loc2, types2, inside2])
+          if (child) work.push([child, cur2, own2, loc2, types2, evid2, inside2])
         }
       }
     }
 
-    processNode(node, null, null, new Set<string>(), new Map<string, string>(), false)
+    processNode(node, null, null, new Set<string>(), new Map<string, string>(), new Map<string, string>(), false)
   }
 
   // ============================================================================
@@ -4096,8 +4161,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
    * resolves through a type argument this pass has not read, and naming the wrong declaration
    * is worse than naming none.
    */
-  private collectDartLocalTypes(root: Node): Map<string, string> {
-    const out = new Map<string, string>()
+  private collectDartLocalTypes(root: Node): Map<string, { type: string; evidence: string }> {
+    const out = new Map<string, { type: string; evidence: string }>()
     const stack: Node[] = [root]
     while (stack.length > 0) {
       const n = stack.pop()!
@@ -4127,7 +4192,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               // Type arguments are dropped exactly as `extractParameters` drops them (`List<int> e`
               // records `List`), so this reader and the parameter reader agree by construction.
               const plain = stripNullableSuffix(c.text)
-              if (isPlainIdentifier(plain)) out.set(nameNode.text, plain)
+              if (isPlainIdentifier(plain)) out.set(nameNode.text, { type: plain, evidence: "annotation" })
               break
             }
           }
@@ -4140,7 +4205,15 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (name && !out.has(name)) {
           const explicit = this.extractFieldType(n, n)
           const typeName = explicit ? stripNullableSuffix(String(explicit)) : this.constructedTypeName(n)
-          if (typeName && isPlainIdentifier(typeName)) out.set(name, typeName)
+          // THE EVIDENCE CLASS the receiver contract asks for, recorded where the TYPE is
+          // collected rather than re-derived per site: a written type (`Foo x = ...`,
+          // `final Foo x`, a typed for-in) is an ANNOTATION; a type inferred from the
+          // INITIALIZER (`var x = Foo()`) is an ASSIGNMENT. A parameter is the third class
+          // and comes from `collectDartParameterTypes` below; a field is the fourth and is
+          // read from `fieldTypeByField` (the symbol pass already extracted it).
+          if (typeName && isPlainIdentifier(typeName)) {
+            out.set(name, { type: typeName, evidence: explicit ? "annotation" : "assignment" })
+          }
         }
       }
       for (const c of n.namedChildren ?? []) if (c) stack.push(c)
@@ -4175,8 +4248,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
    * reader, two consumers. A parameter whose type is not a plain identifier contributes
    * nothing, which is the conservative half of the rule.
    */
-  private collectDartParameterTypes(sig: Node): Map<string, string> {
-    const out = new Map<string, string>()
+  private collectDartParameterTypes(sig: Node): Map<string, { type: string; evidence: string }> {
+    const out = new Map<string, { type: string; evidence: string }>()
     let params: any[] = []
     try {
       params = (this.extractParameters(sig) as any[]) ?? []
@@ -4186,7 +4259,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const p of params) {
       const name = String(p?.name ?? "")
       const typeName = stripNullableSuffix(String(p?.type ?? ""))
-      if (name && isPlainIdentifier(typeName)) out.set(name, typeName)
+      if (name && isPlainIdentifier(typeName)) out.set(name, { type: typeName, evidence: "param" })
     }
     return out
   }
