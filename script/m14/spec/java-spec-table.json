@@ -133,10 +133,12 @@
    "status": "MEASURED with context — the perf row exists and is honest; the RATIO is not claimed"
   },
   "noRegex": {
-   "result": "CLEAN — java carries ZERO regex literals; it is absent from the no-regex census list",
-   "command": "bash script/m14/no-regex-gate.sh",
-   "positiveResult": true,
-   "note": "the gate still prints FAIL fleet-wide with 11 findings, ALL other lanes (julia 1, powershell 1, python 2, scss 3, toml 1, vue 1, yaml 2); this wave removed java's single text-regex (import `static` keyword is now read from the unnamed AST token)."
+   "result": "CLEAN — java carries ZERO regex literals; absent from the FRESH HEAD-blob census",
+   "command": "npx tsx script/m12/regex-census.ts --head && bash script/m14/no-regex-gate.sh",
+   "freshCensus": "at HEAD ee5db0dda: 36 regex usages in scope across the fleet, real-java-analyzer.ts ABSENT; `regex census gate PASSED` (verify-regex-census checks the census describes HEAD)",
+   "history": "the earlier '11 findings, java absent' reading was STALE (census artifact predated the literal); the Lead's fresh census found ONE java literal (markExternalTargets' `/^[A-Za-z_$][A-Za-z0-9_$]*$/`), fixed in ee5db0dda as the exact char-scan `isPlainJavaIdentifier()` (ASCII letters/`_`/`$` start; those plus digits continue)",
+   "artifactNote": "the regenerated validation/m12/results/regex-census.json was left UNCOMMITTED (Lead-owned artifact); the Lead must commit it or regenerate at the final HEAD",
+   "positiveResult": true
   },
   "docs": "docs/analyzers/real-java-analyzer.md (grammar provenance + per-type emission sites + the 2026-10-18 complete-surface section incl. limitations); validation/m14/verification/JAVA-RESOLUTION-CLASSIFICATION.md (cap-50 cause table); validation/m14/verification/JAVA-FIXTURE-RECONCILIATION.md (stale fixtures, read-only)",
   "wholePopulation": {
