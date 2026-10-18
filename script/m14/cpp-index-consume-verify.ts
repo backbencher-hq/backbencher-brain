@@ -112,16 +112,20 @@ check("population-count-unchanged", rowsOf(onComplete).length === rowsOf(baselin
 const computeCall = callRow(onComplete, "compute")
 check("call-to-project-free-function-declaredInProject", computeCall?.metadata?.declaredInProject === true, `metadata=${JSON.stringify(computeCall?.metadata)}`)
 check("call-to-project-free-function-has-declaration-count", computeCall?.metadata?.indexDeclarationCount === 1, `count=${computeCall?.metadata?.indexDeclarationCount}`)
-// A member declared by exactly ONE project type: `create` is Base's alone (`start` now belongs to
-// both Base and Factory in the fixture, which is the correct "not unique" answer for that spelling).
-const uniqueMemberCall = callRow(onComplete, "create")
-check("call-to-unique-project-member-owner", uniqueMemberCall?.metadata?.memberOfProjectType === "Base", `owner=${uniqueMemberCall?.metadata?.memberOfProjectType}`)
+const callRowOf = (r: any, source: string, target: string) => rowsOf(r).find((x: any) => x.type === "calls" && x.source === source && x.target === target)
+// THE INHERITANCE CLOSURE IS NOW CORRECT (index patch v2): `memberOwners` is closed over bases, so
+// `create` — declared by Base — is ALSO a member of Derived, and the "unique project type" fact must
+// legitimately read undefined for it. `nothing` (Other's alone) is the unique case.
+const inheritedMemberCall = callRow(onComplete, "create")
+check("inherited-member-not-unique", inheritedMemberCall?.metadata?.declaredInProject === true && inheritedMemberCall?.metadata?.memberOfProjectType === undefined, `declaredInProject=${JSON.stringify(inheritedMemberCall?.metadata?.declaredInProject)} owner=${JSON.stringify(inheritedMemberCall?.metadata?.memberOfProjectType)}`)
+const uniqueMemberCall = callRowOf(onComplete, "uniqueMember", "nothing")
+check("call-to-unique-project-member-owner", uniqueMemberCall?.metadata?.memberOfProjectType === "Other", `owner=${uniqueMemberCall?.metadata?.memberOfProjectType}`)
 const printfCall = callRow(onComplete, "printf")
 check("platform-call-not-declaredInProject", printfCall !== undefined && printfCall.metadata?.declaredInProject !== true, `metadata=${JSON.stringify(printfCall?.metadata)}`)
 const createCall = callRow(onComplete, "create")
 check("qualified-call-owner-metadata", createCall?.metadata?.owner === "Base", `owner=${JSON.stringify(createCall?.metadata?.owner)}`)
 // RECEIVER TYPING (task-22 milestone 5): three declaration-bearing classes + the two negatives.
-const callRowOf = (r: any, source: string, target: string) => rowsOf(r).find((x: any) => x.type === "calls" && x.source === source && x.target === target)
+
 const ctorTemp = callRowOf(onComplete, "ctorTemp", "start")
 check("constructor-temp-owner", ctorTemp?.metadata?.owner === "Factory", `owner=${JSON.stringify(ctorTemp?.metadata?.owner)}`)
 const typedLocal = callRowOf(onComplete, "typedLocal", "start")
@@ -130,6 +134,8 @@ const paramTypedLocal = callRowOf(onComplete, "use", "start")
 check("parameter-typed-local-owner", paramTypedLocal?.metadata?.owner === "Base", `owner=${JSON.stringify(paramTypedLocal?.metadata?.owner)}`)
 const chained = callRowOf(onComplete, "chainedNegative", "start")
 check("opaque-chained-receiver-no-invented-owner", chained !== undefined && chained.metadata?.owner === undefined, `owner=${JSON.stringify(chained?.metadata?.owner)}`)
+const implicitThis = callRowOf(onComplete, "viaImplicit", "start")
+check("implicit-this-owner", implicitThis?.metadata?.owner === "Derived", `owner=${JSON.stringify(implicitThis?.metadata?.owner)}`)
 const otherTypedLocal = callRowOf(onComplete, "otherNegative", "start")
 check("typed-local-not-declaring-no-invented-owner", otherTypedLocal !== undefined && otherTypedLocal.metadata?.owner === undefined, `owner=${JSON.stringify(otherTypedLocal?.metadata?.owner)}`)
 const baseExtends = extendsRow(onComplete, "Base")
