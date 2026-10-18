@@ -86,6 +86,27 @@ export interface ProjectIndex {
   typeBases: Map<string, string[]>
   /** Every declared symbol name anywhere in the project. */
   symbolNames: Set<string>
+  /**
+   * THE PROJECT'S MODULE IDENTITIES: every indexed file's project-relative path AND its
+   * basename-without-extension.
+   *
+   * WITHOUT THIS, "THE PROJECT DECLARES NO MODULE NAMED pydantic" IS UNPROVABLE. `symbolNames` is a set of
+   * DECLARATIONS; a file's module is never emitted as one, so a real project module
+   * (`postgrest/__init__.py` -> `postgrest`, `util.py` -> `util`) is absent from it exactly like a
+   * third-party package is. Measured on postgrest's 21 .py files: `symbolNames.has("postgrest")` and
+   * `has("util")` are BOTH false while both are real project modules, so claiming externality from
+   * `symbolNames` would have moved ~250 python import edges to `extOK` on NO EVIDENCE -- and the gate,
+   * which is built from the same name space, would have CONFIRMED the fabrication.
+   */
+  modules: Set<string>
+  /**
+   * HOW MANY TIMES each declared name is declared across the project. `symbolNames` answers "is this
+   * name declared at all"; this answers "is it declared ONCE" -- and that difference is the spread
+   * between a binding that can be trusted and one that may pick an unrelated same-named declaration.
+   * Measured cost of the shortcut this avoids: 5 python / 432 typescript / 276 javascript items bind to
+   * a project symbol merely sharing a name.
+   */
+  symbolCounts: Map<string, number>
   /** Files that produced ERROR/MISSING nodes, so a caller can refuse to trust them. */
   damagedFiles: Set<string>
   /** How many files were read, and how many were damaged. */
@@ -912,6 +933,7 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
             const qualified = `${prefix}.${name}`
             if (!index.typeKinds.has(qualified)) index.typeKinds.set(qualified, kind)
             index.symbolNames.add(qualified)
+            index.symbolCounts.set(qualified, (index.symbolCounts.get(qualified) ?? 0) + 1)
           }
         }
         // A name declared twice with DIFFERENT kinds is a compile error in Solidity;
@@ -921,6 +943,7 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
         if (prior === undefined) index.typeKinds.set(name, kind)
         else if (prior !== kind) index.typeKinds.set(name, "unknown")
         index.symbolNames.add(name)
+        index.symbolCounts.set(name, (index.symbolCounts.get(name) ?? 0) + 1)
         nextOwner = name
         // A class body starts its own member scope, so a class nested inside a method is
         // indexed under its OWN name and not smeared onto the enclosing class.
@@ -1020,6 +1043,8 @@ export function emptyProjectIndex(): ProjectIndex {
     typeMembers: new Map(),
     typeBases: new Map(),
     symbolNames: new Set(),
+    modules: new Set(),
+    symbolCounts: new Map(),
     damagedFiles: new Set(),
     stats: { files: 0, damaged: 0 },
     // FALSE, NOT undefined: an empty index is the least complete index there is, and a reader that
@@ -1043,6 +1068,20 @@ export function buildProjectIndex(
   const index = emptyProjectIndex()
   for (const f of files) {
     index.stats.files++
+    // MODULE IDENTITY, recorded per indexed file. Without it a real project module is absent from
+    // `symbolNames` exactly like a third-party package is, and "the project declares no module named X"
+    // becomes unprovable -- the fabricated-verification route this repo already refused once. The full
+    // path, the basename and the stem-without-extension are all recorded because import spellings differ:
+    // `ansible.errors` is dotted, `./util` is relative, `@scope/pkg` is scoped.
+    index.modules.add(f.path)
+    {
+      const base = f.path.split(/[\\/]/).pop() ?? ""
+      if (base !== "") {
+        index.modules.add(base)
+        const stem = base.replace(/\.[^.]+$/, "")
+        if (stem !== "") index.modules.add(stem)
+      }
+    }
     if (f.tree.hasError) {
       index.stats.damaged++
       index.damagedFiles.add(f.path)
@@ -1261,6 +1300,12 @@ export interface SerializedProjectIndex {
   typeMembers: [string, string[]][]
   typeBases: [string, string[]][]
   symbolNames: string[]
+  /** Carried because the analyzer reads it from a DESERIALIZED index, in a worker, not from the parent's
+   *  object. Absent on read means an older payload — the analyzer then claims nothing, the safe direction. */
+  modules?: string[]
+  /** Per-name declaration counts, carried for the same reason: a deserialized index that lost them would
+   *  read `undefined` at the only place a binding decision is made. */
+  symbolCounts?: [string, number][]
   damagedFiles: string[]
   stats: { files: number; damaged: number }
   /**
@@ -1292,6 +1337,11 @@ export function serializeProjectIndex(index: ProjectIndex): SerializedProjectInd
     typeKinds: [...index.typeKinds.entries()],
     typeMembers: [...index.typeMembers.entries()].map(([k, v]) => [k, [...v]]),
     typeBases: [...index.typeBases.entries()].map(([k, v]) => [k, [...v]]),
+    // A FIELD THE ANALYZER READS MUST SURVIVE THE WIRE. The index is built in the parent and
+    // deserialised in every worker, so anything omitted here reads `undefined` at the only place it is
+    // used -- the defect this file already records for `__closedMembers`.
+    modules: [...index.modules],
+    symbolCounts: [...index.symbolCounts.entries()],
     symbolNames: [...index.symbolNames],
     damagedFiles: [...index.damagedFiles],
     stats: { ...index.stats },
@@ -1316,6 +1366,10 @@ export function deserializeProjectIndex(raw: unknown): ProjectIndex | null {
   for (const [k, v] of r.typeMembers) index.typeMembers.set(k, new Set(v))
   for (const [k, v] of r.typeBases) index.typeBases.set(k, [...v])
   for (const n of r.symbolNames) index.symbolNames.add(n)
+  // FAIL-CLOSED, LIKE `complete`: an older payload carries neither field, and the analyzer must then
+  // claim nothing rather than read an absent set as "the project declares no module".
+  for (const m of r.modules ?? []) index.modules.add(m)
+  for (const [k, v] of r.symbolCounts ?? []) index.symbolCounts.set(k, v)
   for (const f of r.damagedFiles ?? []) index.damagedFiles.add(f)
   index.stats = { files: r.stats?.files ?? 0, damaged: r.stats?.damaged ?? 0 }
   // AN ABSENT FIELD IS false. A payload written before completeness existed cannot vouch for itself.

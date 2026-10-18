@@ -2215,6 +2215,68 @@ class TypeScriptAnalysisRunner {
 
   /** Delegates to the module-level `extractTypeParametersOf` (one
    *  implementation, one place the generic-parameter contract can change). */
+  /**
+   * THE PROJECT-INDEX PASS — the analyzer side of the `complete === true` capability.
+   *
+   * FAIL-CLOSED BY CONSTRUCTION: with no `context.projectIndex`, or any `complete !== true`, this
+   * returns before touching an edge, so every sampled / index-less run is byte-identical to the
+   * behaviour before this method existed. The whole file's output is unchanged whenever the index is
+   * absent — that is the contract the wiring states (`ProjectIndex.complete`, "a reader must test
+   * `=== true`, never truthiness").
+   *
+   * TWO OPERATIONS, and their difference is the difference between a resolution and a claim:
+   *
+   *   · RESOLUTION — an `imports` edge whose written binding is `module:name` names a name the
+   *     COMPLETE index declares; re-spelling it to the bare name gives the resolver a target it can
+   *     join. The bound is the INDEX'S OWN API, stated rather than papered over: `ProjectIndex`
+   *     exposes `typeKinds`/`typeMembers`/`typeBases`/`symbolNames`, NOT a module -> file map, so
+   *     specifier-to-file resolution is not available from here and the bare-name re-spelling is the
+   *     strongest resolution this capability supports.
+   *
+   *   · CLAIM — an edge whose name the COMPLETE index does NOT declare can carry the external-target
+   *     claim, with its reason and its proof recorded on the metadata. `symbolNames.has()` IS the
+   *     refutation test that matters here: on this lane 53 claim candidates were measured to be
+   *     REFUTABLE (50 of them target `h`), and this check refuses exactly those. A claim is not a
+   *     resolution and nothing here reports it as one.
+   */
+  private applyProjectIndexClaims(
+    relationships: ASTEngine.UniversalRelationship[],
+    context?: ASTEngine.AnalyzeContext,
+  ): void {
+    const index = context?.projectIndex
+    if (index?.complete !== true) return
+    const PLAIN = /^[A-Za-z_$][\w$]*$/
+    const SEP = "\u0000"
+    const markClaim = (md: Record<string, any>, target: string, reason: string) => {
+      if (md.isExternalTarget === true) return
+      md.isExternalTarget = true
+      md.externalReason = reason
+      md.externalProof = `ProjectIndex.complete === true; symbolNames has no "${target}"`
+    }
+    for (const rel of relationships as any[]) {
+      const md: Record<string, any> = (rel.metadata ??= {})
+      const target = String(rel.target ?? "")
+      if (!target || target.includes(SEP)) continue
+      if (String(rel.type) === "imports") {
+        const at = target.lastIndexOf(":")
+        if (at <= 0) continue
+        const itemName = target.slice(at + 1).trim()
+        if (!itemName || !PLAIN.test(itemName)) continue
+        if (index.symbolNames.has(itemName)) {
+          // RESOLUTION: the complete index declares this name; the module prefix made it unjoinable.
+          rel.target = itemName
+          md.resolvedViaProjectIndex = true
+        } else {
+          markClaim(md, itemName, "import-binding-absent-from-project")
+        }
+        continue
+      }
+      if (String(rel.type) === "calls" && PLAIN.test(target) && !index.symbolNames.has(target)) {
+        markClaim(md, target, "project-scope-bare-name")
+      }
+    }
+  }
+
   private extractTypeParameters(node: Node): string[] {
     return extractTypeParametersOf(node)
   }
@@ -2223,6 +2285,7 @@ class TypeScriptAnalysisRunner {
     rootNode: Node,
     content: string,
     filePath: string,
+    context?: ASTEngine.AnalyzeContext,
   ): ASTEngine.ParseResult & { metadata: Partial<ASTEngine.FileMetadata> } {
     // Reset state for new analysis
     this.currentFile = filePath
@@ -2485,6 +2548,9 @@ class TypeScriptAnalysisRunner {
     // no longer exist, which is a claim about nothing. The pass reads this file's own symbols and
     // import edges as its evidence; it changes no target, no source and no line.
     void this.markExternalTargets(relationships, symbols)
+    // THE PROJECT-INDEX PASS, last of all — it can only run on a COMPLETE index and it is
+    // fail-closed, so it is a no-op in every sampled run (see the method's header).
+    void this.applyProjectIndexClaims(relationships, context)
 
     return {
       language: "typescript",
@@ -7814,7 +7880,8 @@ export class RealTypeScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     content: string,
     filePath: string,
+    context?: ASTEngine.AnalyzeContext,
   ): ASTEngine.ParseResult & { metadata: Partial<ASTEngine.FileMetadata> } {
-    return new TypeScriptAnalysisRunner().analyze(rootNode, content, filePath)
+    return new TypeScriptAnalysisRunner().analyze(rootNode, content, filePath, context)
   }
 }

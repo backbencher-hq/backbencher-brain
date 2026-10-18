@@ -725,6 +725,13 @@ const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> =
   // `qualifyTypeWithFile`, which is what lets the analyzer decide whether an import is LOCAL —
   // a qualified lookup instead of the package-prefix heuristic that scored 0.84 precision.
   java: { spec: async () => (await import("../../src/ast/project-index")).JAVA_DECLARATION_SPEC, wasm: "tree-sitter-java.wasm" },
+  // TYPESCRIPT AND PYTHON. Both were wired in PRODUCTION (`parallel-indexer.ts` carries `.ts`/`.tsx` and
+  // `.py` with their specs) while this table was missing them, so `--index` built 0 repo indexes and
+  // parsed the analyzer with NO context -- the same instrument-gap shape as `.scss` above, where the gate
+  // reported "0 repo index(es) over 0 file(s)" while production was already wired. The indexed arm
+  // therefore could not be measured AT ALL, and a fix proven only by unit test is not measured.
+  typescript: { spec: async () => (await import("../../src/ast/project-index")).TYPESCRIPT_DECLARATION_SPEC, wasm: "tree-sitter-typescript.wasm" },
+  python: { spec: async () => (await import("../../src/ast/project-index")).PYTHON_DECLARATION_SPEC, wasm: "tree-sitter-python.wasm" },
 }
 const INDEX_CACHE = process.env.BB_INDEX_CACHE ?? "/tmp/bb-project-index"
 
