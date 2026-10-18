@@ -17,6 +17,7 @@
 // USAGE: export BB_CORPUS_ROOT=$PWD/.corpus
 //        bun run script/m14/js-edge-delta-probe.ts [--limit=N]
 import { readFileSync, readdirSync, statSync } from "node:fs"
+import { execFileSync } from "node:child_process"
 import * as path from "node:path"
 import { getParser } from "../../src/ast/engine"
 import { keepSymbol, filterNoiseRelationships } from "../../src/ast/pool-worker"
@@ -26,31 +27,60 @@ const CR = process.env.BB_CORPUS_ROOT ?? path.join(process.cwd(), ".corpus")
 const LIMIT = Number(process.argv.find((a) => a.startsWith("--limit="))?.slice("--limit=".length) ?? 0)
 const EXTENSIONS = ["js", "jsx", "mjs", "cjs"]
 const SIZE_CAP = 1024 * 1024
-function walk(dir: string, out: string[]): void {
-  for (const name of readdirSync(dir)) {
-    const abs = path.join(dir, name)
-    let st
-    try { st = statSync(abs) } catch { continue }
-    if (st.isDirectory()) { walk(abs, out); continue }
-    const dot = name.lastIndexOf(".")
-    if (dot < 0) continue
-    if (!EXTENSIONS.includes(name.slice(dot + 1).toLowerCase())) continue
-    if (st.size > SIZE_CAP) continue
-    out.push(abs)
+// THE GATE'S ADMITTED POPULATION — mirroring `discoverFiles` in incoming-gate.ts through the census
+// instrument that already reproduced it exactly (12,374 files / 95 repos; the mirror is printed and
+// VERIFIED against that number so a drift can never be silently measured). A recursive walk of the
+// corpus is NOT the population: it finds 79,625 files because node_modules/.yarn trees dominate.
+function repoNames(): string[] {
+  try {
+    return readdirSync(CR).filter((n) => {
+      try { return statSync(path.join(CR, n)).isDirectory() } catch { return false }
+    }).sort()
+  } catch { return [] }
+}
+function admit(rel: string): boolean {
+  const dot = rel.lastIndexOf(".")
+  const ext = dot >= 0 ? rel.slice(dot + 1).toLowerCase() : ""
+  if (EXTENSIONS.includes(ext)) return true
+  const base = path.basename(rel)
+  return EXTENSIONS.includes(base)
+}
+function discover(): { files: string[]; total: number; repos: number } {
+  const found: string[] = []
+  const repos = new Set<string>()
+  for (const name of repoNames()) {
+    const dir = path.join(CR, name)
+    try { execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" }) } catch { continue }
+    let tracked: string[] = []
+    try {
+      tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 })
+        .split("\0").filter(Boolean)
+    } catch { continue }
+    for (const rel of tracked) {
+      if (!admit(rel)) continue
+      const abs = path.join(dir, rel)
+      try { if (statSync(abs).size > SIZE_CAP) continue } catch { continue }
+      found.push(abs)
+      repos.add(name)
+    }
   }
+  found.sort()
+  return { files: found, total: found.length, repos: repos.size }
 }
 const files: string[] = []
 const fileListArg = process.argv.find((a) => a.startsWith("--files="))?.slice("--files=".length)
+let population = { total: 0, repos: 0 }
 if (fileListArg) {
-  // TARGETED MODE: an explicit file list (newline/pipe separated), used to price a small class
-  // without re-walking the population (a full walk is heavy and the box is shared).
+  // TARGETED MODE: an explicit file list (newline separated), used to price a small class.
   for (const f of readFileSync(fileListArg, "utf8").split(/\r?\n/)) {
     const t = f.trim()
     if (t) files.push(path.isAbsolute(t) ? t : path.join(process.cwd(), t))
   }
+  population = { total: files.length, repos: -1 }
 } else {
-  walk(CR, files)
-  files.sort()
+  const d = discover()
+  files.push(...d.files)
+  population = { total: d.total, repos: d.repos }
   if (LIMIT > 0) files.length = Math.min(files.length, LIMIT)
 }
 
@@ -95,6 +125,7 @@ for (const abs of files) {
     tree.delete?.()
   } catch { skipped++; continue }
   parsedFiles++
+  if (parsedFiles % 500 === 0) console.log(`… ${parsedFiles}/${files.length} files (added=${added.length} removed=${removed.length})`)
   const raw = rowsOf(result.relationships)
   const symbols = result.symbols ?? []
   // --- replicate pool-worker's kept/dropped symbol split ---
@@ -145,7 +176,7 @@ for (const abs of files) {
 console.log(JSON.stringify({
   probe: "js-edge-delta-probe",
   command: "bun run script/m14/js-edge-delta-probe.ts",
-  population: { corpusFiles: files.length, parsed: parsedFiles, skipped },
+  population: { admittedTotal: population.total, repos: population.repos, sampled: files.length, parsed: parsedFiles, skipped },
   rawVersusProduction: {
     beforeRows: beforeTotal,
     afterRows: afterTotal,
