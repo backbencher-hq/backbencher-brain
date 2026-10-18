@@ -83,15 +83,27 @@ The enum has 11 distinct values. This is what the analyzer does with **each** of
 | --- | --- |
 | `calls` | non-builtin `call` nodes, plus bare identifiers in expression position that are not locals (marked `bareCall: true`). Source = enclosing method, else owner, else `Global`. Receiver calls keep the leaf target; constructor expressions keep the class target. |
 | `uses` | instance-variable **reads** (marked `memberRead`), and ActiveRecord association macros (marked `activerecordMacro`). Writes — including compound-assignment LHS — stay silent. |
-| `extends` | Ruby superclass (`class Child < Parent`) when the base is a **statically nameable constant path**, and `extend` for singleton mixins. |
-| `implements` | `include` / `prepend`, constant targets only. A lowercase or computed arg is a dynamic mixin and correctly emits nothing. |
+| `extends` | Ruby superclass (`class Child < Parent`) when the base is a **statically nameable constant path**, plus the factory spelling `K = Class.new(Base)`. **`extend` is NOT here any more** (RUBY-D1): it composes the module into the singleton class, which is mixin composition (`mixes_in`), not inheritance. |
+| `mixes_in` | **CANONICAL mixin composition (RUBY-D1, 2026-10-19)**: `include M` / `prepend M` compose M into the class's ancestor chain, `extend M` into its singleton class — source = the composing class/module, target = the mixin, `metadata.mixinType` records which keyword. Constant targets only: a lowercase or computed arg is a dynamic mixin and correctly emits nothing. The family's previous adaptation (include/prepend -> `implements`, extend -> `extends`) is RELABELLED at the unchanged sites: cap-50 `implements` 17 -> 0, `extends` 48 -> 44, `mixes_in` 0 -> 21 = 17 + 4 exactly, TABLE 1 totals byte-identical. |
+| `implements` | **RULED NOT APPLICABLE for Ruby (RUBY-D1)**: the grammar has no interface/conformance construct — no keyword, no production, no enforcement, and duck typing is not a declared conformance. The value this lane used to publish here was a mixin wearing the wrong name; it now publishes `mixes_in`. 0 edges, measured over the fixture corpus and at whole-population arms. |
 | `instantiates` | `X.new` on a constant receiver. A receiverless `new` names the enclosing class and is marked `resolvedTarget: "enclosing-class"`. Expression receivers and variable receivers correctly emit nothing (RB-A). |
 | `overrides` | 0.95 when the base's method is verifiable from local declarations or the project companion index; 0.5 with `reasonCode: "first-parent-guess"` when the base is external and unverifiable. |
 | `references` | `require` / `require_relative` / `load` / `autoload` string paths, source `Global`. |
 | `contains` | one edge per owned symbol, from `ownerName`. |
-| `imports` | **never emitted as a relationship — but COVERED, by measurement.** `require` / `autoload` push to the `imports: ImportInfo[]` array, which parallel-indexer writes to the import table the file-dependency engine reads. Measured on the **production path** (`ASTEngine.parseFile`) at `route_set.rb`: **7 requires → 7 `references` edges and 7 import records, one for one.** Emitting an `imports` edge too would put the same facts in the graph a third time under a second label. The `imports` *kind* is a minority construct: 2 of 14 OO-family analyzers. |
-| `exports` | **never emitted, and correctly so.** Ruby has no module-level export construct — every constant and method in a module is public unless `private_constant` / `private` says otherwise — so there is nothing for an `exports` edge to name. Minority construct: 3 of 14, and of the OO lanes only java emits it, at one site. |
+| `imports` | **EMITTED (corrected 2026-10-19; the handover claim below is stale).** `require` / `require_relative` / `load` / `autoload` publish ONE `imports` edge per required path (source = the file unit, `fileLevel: true`, `requireMethod`, `resolution: file-relative` for `require_relative` and `load-path` for a bare `require`), beside the `references` row and the `imports[]` payload record — the same fact in the graph channel, the reference channel and the index channel, which is the family's stated convention for load directives (`pushLoadFacts`). Measured: 64 `imports` edges on the cap-50 stride, one-for-one with the `references` require rows. |
+| `exports` | **EMITTED, with ADAPTED semantics, declared (corrected 2026-10-19; the handover claim below is stale).** Ruby has no export KEYWORD, but a FILE UNIT has a reachable surface: top-level constants/defs are published as `exports` with source = the path-derived file unit (`resolvedTarget: file-unit`) and the measured refusals — singleton-class members, `private_constant` deletions, reopens/duplicates are ONE unit, unnameable symbols. Measured: 59 `exports` edges on the cap-50 stride (35 resolved). |
 | `Dependency` / `Related` | enum aliases of `uses` / `references`, not separate types. |
+
+### CORRECTION 2026-10-19 (ALL-OUT-OF-ALL phase 2) — which rows of the handover state below are STALE
+
+The handover section that follows was written when this analyzer emitted 8 of the 10 labels; it says
+`imports` and `exports` are never emitted. **That is no longer true and this wave re-measured it**: the
+cap-50 arm (`incoming-gate ruby rb 50`, 50/50 parsed of 989 admitted `.rb` / 15 repos) reads
+`imports` **64** and `exports` **59** edges, and the whole ten-label surface fires. The handover
+paragraphs are kept below for provenance (their import-payload pairing argument is still the reason
+BOTH the edge and the payload exist), but a reader must not take the "silent types" claim from them.
+Also corrected above: `mixes_in` is the canonical mixin value (RUBY-D1 relabel), `implements` is ruled
+not applicable, and `extends` no longer carries `extend`.
 
 ## Relationship ontology — handover state, 2026-10-05, re-measured
 

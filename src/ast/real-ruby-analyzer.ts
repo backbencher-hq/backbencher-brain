@@ -2214,11 +2214,23 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
 
-    // --- include / extend / prepend (mixin relationships) ---
+    // --- include / extend / prepend (MIXIN COMPOSITION — canonical `mixes_in`, RUBY-D1) ---
+    //
+    // RUBY-D1 (ALL-OUT-OF-ALL phase 2, grammar-derived): Ruby's `include M` / `prepend M` /
+    // `extend M` are MODULE MIXIN composition — M is inserted into the class's ancestor chain
+    // (`extend` into its singleton class) — not conformance and not superclass inheritance. The
+    // canonical vocabulary has exactly one value for that construct: `mixes_in` (source = the
+    // composing class/module, target = the mixin; Dart's `with` is the measured population of the
+    // same value). The previous adaptation — include/prepend -> `implements`, extend -> `extends` —
+    // is RELABELLED here, not silently dropped: `implements` is ruled NOT APPLICABLE for Ruby (the
+    // grammar has no interface/conformance construct; duck typing is not a declared conformance),
+    // and `extend` is not superclass inheritance. `metadata.mixinType` keeps the spelling so a
+    // consumer can tell include from prepend from extend, and the relabel's delta is measured
+    // (implements N -> 0, extends loses the extend-mixin rows, mixes_in gains both) rather than
+    // smoothed. Dart's §9.8 relabel is the precedent: a pure enum swap with the construct sites
+    // unchanged.
     if (methodName === "include" || methodName === "extend" || methodName === "prepend") {
-      const relType = methodName === "extend"
-        ? ASTEngine.RelationshipType.Extends
-        : ASTEngine.RelationshipType.Implements
+      const relType = ASTEngine.RelationshipType.MixesIn
       const args = this.findChild(node, "argument_list")
       if (args) {
         const _nc17 = args.namedChildCount
@@ -3077,7 +3089,12 @@ private rubyNameFromLiteral(node: Node): string | undefined {
         md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
         continue
       }
-      if (type === "instantiates" || type === "extends" || type === "implements") {
+      // RUBY-D1: `mixes_in` is the declared mixin-composition construct (the relabel of the old
+      // implements/extends adaptation), so it belongs in the DECLARED-structural group with
+      // instantiates/extends — the tier follows the construct, not the old label. `implements` stays
+      // in the list as the retained spelling of the same tier even though this lane no longer emits
+      // it (a rule that reads by NAME must not silently drop a label the family still defines).
+      if (type === "instantiates" || type === "extends" || type === "implements" || type === "mixes_in") {
         md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
         continue
       }
