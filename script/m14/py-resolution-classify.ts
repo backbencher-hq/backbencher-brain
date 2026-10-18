@@ -73,9 +73,14 @@ const GATE_LOG = argOf("--gate-log")
 const ALL_TYPES = [
   "calls", "uses", "contains", "imports", "references",
   "exports", "extends", "implements", "overrides", "instantiates",
+  // THE NEW CANONICAL VALUES, so the classifier's label set matches the gate's type table:
+  // python emits `decorates`; `renders`/`mixes_in`/`part_of` are not applicable to python and
+  // their absence of rows is a measured zero, not a missing column.
+  "decorates", "renders", "mixes_in", "part_of",
 ] as const
 type Label = (typeof ALL_TYPES)[number]
 const ALIASES: Record<string, Label> = {
+  decorates: "decorates", renders: "renders", mixes_in: "mixes_in", part_of: "part_of",
   calls: "calls", call: "calls", uses: "uses", contains: "contains", composition: "contains",
   part_of: "contains", imports: "imports", brain_import: "imports", references: "references",
   depends_on: "references", related: "references", exports: "exports", provides: "exports",
