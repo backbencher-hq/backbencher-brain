@@ -6168,6 +6168,27 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (PY_IMPORT_REFUSING_REASONS.has(String(md.reasonCode ?? ""))) continue
       const route = String(md.qualified ?? "")
       const root = dottedChainRoot(route)
+      // ── THE DOTTED-DECORATOR CLAIM IS REFUSED, AND THAT IS A MEASURED FIX (2026-10-18) ─────
+      //
+      // `decorates` is the ONE label whose target is the WRITTEN CHAIN (`t.overload`,
+      // `cython.cfunc`), not a leaf with the chain in `metadata.qualified`. The route-bound claim
+      // below is verified by the arbiter as an OWNER claim: the target's owner (everything before
+      // the last dot = the MODULE ROOT) must not be published. For a leaf target that owner is a
+      // real declaration or null; for a CHAIN target the owner is a MODULE ROOT, and a project
+      // that publishes ANY symbol with that spelling (`t`, `patch`, `cython`, `timeout` are common
+      // variable/function names in tests) REFUTES the claim.
+      //
+      // MEASURED on the whole-population indexed arm (11,559 files, 51 repos): `decorates`
+      // extFAIL **4,370** — the only refuted claims in the entire lane — with samples
+      // `t.runtime_checkable`, `t.overload`, `t.final`, `patch.object`, `patch.dict`,
+      // `timeout.timeout`, `dataclasses.dataclass`, and cython's compiler directives. Every one is
+      // a TRUE external dependency whose MODULE ROOT happens to be a name some project file
+      // declares: the marker was wrong for the shape, not the dependency wrong for the project.
+      // So the DOTTED decorator carries NO external claim. The BARE decorator keeps one — its
+      // target-bound claim is about a name, and it is verified the same way a `references`/`calls`
+      // leaf is (`@dataclass` imported from `dataclasses` verifies because the project publishes no
+      // declaration named `dataclass` and that is exactly what an unresolved leaf means).
+      if (label === "decorates" && route.indexOf(".") > 0) continue
       if (root.length > 0 && route.indexOf(".") > 0) {
         const specifier = bindings.get(root)
         if (!specifier) continue
