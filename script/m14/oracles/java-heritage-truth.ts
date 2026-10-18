@@ -425,6 +425,62 @@ export function deriveJavaOverridesTruth(root: any): JavaOracleEdge[] {
 }
 
 /**
+ * (4) TYPE-PARAMETER CONTAINMENT — `contains Owner -> T` for every declared type parameter.
+ *
+ * WHY: the analyzer PUBLISHES type parameters as symbols (JLS 4.4 — `class Box<T>` declares T,
+ * rationale at `emitJavaTypeParameterSymbols`) and the containment post-pass therefore emits
+ * `contains Box -> T`; the shipped `deriveJavaContainsTruth` derives members from the body and the
+ * record `parameters` field but NOT from `type_parameters`, so those rows were charged as
+ * unexplained containments (measured: 2 of the 3 unexplained rows in the grails-core java draw, at
+ * Identity.java and EmbeddedPersistentEntity.java; 2 more in the clojure draw). The containment is a
+ * real declaration fact, so the TRUTH is what was missing, not the edge.
+ *
+ * ONE ROW PER (owner, parameter): the owner is the nearest enclosing NAMED declaration — a class /
+ * interface / enum / record names its own parameters (probe: `TP -> T`), a method names its own
+ * (probe: `f -> M`), a record names its components' parameters (`R -> E`).
+ */
+export function deriveJavaTypeParameterContainmentTruth(root: any): JavaOracleEdge[] {
+  const out: JavaOracleEdge[] = []
+  const seen = new Set<string>()
+  const NAMED_DECLARATIONS = new Set([
+    "class_declaration", "interface_declaration", "enum_declaration", "record_declaration",
+    "annotation_type_declaration", "method_declaration", "constructor_declaration",
+    "compact_constructor_declaration", "annotation_type_element_declaration",
+  ])
+  const ownerNameOf = (decl: any): string | null => {
+    const nameNode = fieldOf(decl, "name") || childByType(decl, "identifier") || childByType(decl, "type_identifier")
+    return nameNode ? String(nameNode.text ?? "") : null
+  }
+  const enclosingNamed = (n: any): any | null => {
+    let cur = n?.parent ?? null
+    let guard = 0
+    while (cur && guard++ < 64) {
+      if (NAMED_DECLARATIONS.has(String(cur.type))) return cur
+      cur = cur.parent ?? null
+    }
+    return null
+  }
+  const walk = (n: any): void => {
+    if (!n) return
+    if (n.type === "type_parameter") {
+      const paramName =
+        fieldOf(n, "name") || childByType(n, "type_identifier") || childByType(n, "identifier")
+      const owner = enclosingNamed(n)
+      const ownerName = owner ? ownerNameOf(owner) : null
+      const target = paramName ? String(paramName.text ?? "") : ""
+      const k = "contains|" + (ownerName ?? "") + "|" + target
+      if (ownerName && target && !seen.has(k)) {
+        seen.add(k)
+        out.push({ label: "contains", from: "(decl)", target })
+      }
+    }
+    for (const c of namedChildren(n)) walk(c)
+  }
+  walk(root)
+  return out
+}
+
+/**
  * CONVENIENCE — the four derivations in one call for a single wiring site.
  */
 export function deriveJavaDeclarationSurfaceTruth(root: any): JavaOracleEdge[] {
@@ -432,5 +488,6 @@ export function deriveJavaDeclarationSurfaceTruth(root: any): JavaOracleEdge[] {
     ...deriveJavaInheritanceTruth(root),
     ...deriveJavaInstantiatesTruth(root),
     ...deriveJavaOverridesTruth(root),
+    ...deriveJavaTypeParameterContainmentTruth(root),
   ]
 }
