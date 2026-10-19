@@ -1664,11 +1664,21 @@ export async function parseFile(filePath: string, projectPath: string, context?:
       // be measured alone.
       relationships: filterNoiseRelationships(
         droppedNames.size
-          ? (parsed.relationships ?? []).filter(
-              (r: any) =>
-                !droppedNames.has(String(r?.source ?? r?.from ?? "")) &&
-                !droppedNames.has(String(r?.target ?? r?.to ?? "")),
-            )
+          ? (parsed.relationships ?? []).filter((r: any) => {
+              const type = String(r?.type ?? r?.relationshipType ?? "")
+              const src = String(r?.source ?? r?.from ?? "")
+              const tgt = String(r?.target ?? r?.to ?? "")
+              // (b) THE MODULE LEAF IS SYNTHETIC (2026-10-19, TS lane's sized shared-pipeline
+              // defect): an `imports`/`exports` row's SOURCE is the file's module leaf, not a
+              // symbol identity — if a dropped symbol's name happens to equal that stem, this
+              // invariant was deleting the ENTIRE import/export surface of the file. Measured on
+              // the admitted population: 16 JS_GLOBAL-stem files, 2 affected, 49 delivered edges
+              // silently lost (shopify `process.ts`: 17 imports + 1 exports + calls/references/
+              // uses/instantiates; phpmyadmin `console.ts`: 10 calls). Only the SYNTHETIC source
+              // is exempted here; real symbol endpoints still obey the invariant.
+              if ((type === "imports" || type === "exports") && droppedNames.has(src)) return true
+              return !droppedNames.has(src) && !droppedNames.has(tgt)
+            })
           : parsed.relationships,
         language,
         new Set((parsed.symbols ?? []).map((s: any) => String(s?.name ?? "")).filter(Boolean)),
