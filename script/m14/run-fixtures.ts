@@ -334,6 +334,22 @@ function unknownConstraintKeys(rows: any[] | undefined): string[] {
  * deterministic for mixed and nested element types, which a value comparator
  * cannot be.
  */
+/**
+ * ORDER-INDEPENDENT JSON for OBJECT-valued metadata pins (2026-10-19, java lane's static-import claim
+ * fixture): the `meta.*` matcher compared arrays by sorted JSON but non-array OBJECTS fell through to
+ * strict `!==`, so a claim payload (`metadata.importedBinding = {specifier, binding}`) could never be
+ * pinned — an unsatisfiable positive fixture. Objects now compare by key-sorted JSON, recursively;
+ * arrays keep the existing sorted-array rule. Additive: every scalar/null pin behaves exactly as before.
+ */
+function stableJson(x: unknown): string {
+  if (Array.isArray(x)) return `[${x.map(stableJson).join(",")}]`
+  if (x !== null && typeof x === "object") {
+    const o = x as Record<string, unknown>
+    return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${stableJson(o[k])}`).join(",")}}`
+  }
+  return JSON.stringify(x)
+}
+
 function stableSortedJson(arr: unknown[]): string {
   return JSON.stringify([...arr].map(canonicalJson).sort())
 }
@@ -632,6 +648,10 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
         // rather than inventing a second spelling. Additive: every other value
         // compares exactly as before.
         if (mv !== undefined && mv !== null) return false
+      } else if (v !== null && typeof v === "object" && !Array.isArray(v)) {
+        // OBJECT-VALUED metadata (claim payloads): compare structurALLy, order-independent.
+        if (mv === null || typeof mv !== "object" || Array.isArray(mv)) return false
+        if (stableJson(mv) !== stableJson(v)) return false
       } else if (mv !== v) return false
     } else if (actual[k] !== v && (actual.range?.[k] ?? actual[k]) !== v) {
       // relationship field aliases
