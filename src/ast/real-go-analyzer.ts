@@ -192,7 +192,7 @@ const GO_STDLIB_SINGLE_SEGMENT = new Set<string>([
  * NOT the file's `isGoStandardLibrary` sweep, whose last clause (`!stringIncludes(path, ".")`) calls
  * a project-local `internal/util` a stdlib package.
  */
-const GO_STDLIB_TOP_LEVEL = new Set<string>([
+export const GO_STDLIB_TOP_LEVEL = new Set<string>([
   "archive", "bufio", "bytes", "cmp", "compress", "container", "context", "crypto", "database",
   "debug", "embed", "encoding", "errors", "expvar", "flag", "fmt", "go", "hash", "html", "image",
   "index", "io", "iter", "log", "maps", "math", "mime", "net", "os", "path", "plugin", "reflect",
@@ -499,6 +499,34 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         invalidImportPathCount++
         continue
       }
+      // ── GO-STDLIB MULTI-SEGMENT CLAIM (task-38, Lead ruling 2026-10-19: OPTION A-MODIFIED) ──────
+      //
+      // The existing `isStdlib` import claim can only reach a SINGLE-SEGMENT module path
+      // (`fmt`, `io`): the arbiter's `pathLikeTarget` sends `encoding/json` to the path cases of
+      // `verifyExternalClaim`, where an external claim reads `externalUnverified` — a clause-1
+      // failure exactly as `unresolved` is. The lane therefore leaves the 200+ stdlib multi-segment
+      // imports unresolved even though they cite a CLOSED, language-level vocabulary.
+      //
+      // THE RULED MECHANISM is the namespace citation with an OPT-IN slash separator: the Lead's
+      // arbiter change splits the target on `/` IN ADDITION to `.`/`::`/`:` ONLY when the edge
+      // carries `languageNamespaceSlash: true`, so every other lane's citation arms are
+      // byte-identical. The lane emits it for `imports` edges ONLY, and only where ALL of these
+      // hold — the fail-closed evidence chain:
+      //   1. the module is READ from this file's own import literal (never inferred from a target's
+      //      shape; the forbidden sweep is `!stringIncludes(path, ".")`, which calls a project-local
+      //      `internal/util` a stdlib package — that shape heuristic is NOT used here);
+      //   2. the module has ≥2 `/`-separated segments (single-segment rows keep the existing
+      //      `isStdlib` claim, so the two claim families never meet on one edge);
+      //   3. the FIRST segment is a member of the CLOSED `GO_STDLIB_TOP_LEVEL` set. A domain
+      //      (`github.com/...`), a project path (`internal/...`) and an aliased path are all outside
+      //      it by construction: no Go distribution directory is named `github.com` or `internal`.
+      // A wrong/non-listed root is REFUTED by the arbiter (fail-closed), never silently resolved:
+      // `languageNamespace` claims are checked against the cited list and refuted on mismatch.
+      const importModule = String(imp.module ?? "")
+      const moduleSegments = importModule.split("/")
+      const stdlibRoot = moduleSegments.length >= 2 ? moduleSegments[0] ?? "" : ""
+      const isMultiSegmentStdlib =
+        stdlibRoot.length > 0 && stdlibRoot !== "." && stdlibRoot !== ".." && GO_STDLIB_TOP_LEVEL.has(stdlibRoot)
       relationships.push({
         source: packageName || filePath,
         target: imp.module || "",
@@ -542,6 +570,19 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           // anything — so it is not done. MEASURED on the 400-file stride: this covers 830 of the
           // lane's 25,215 unresolved edges and all 830 verify; the other 24,385 are untouched.
           ...(GO_STDLIB_SINGLE_SEGMENT.has(imp.module ?? "") ? { isStdlib: true } : {}),
+          // Multi-segment stdlib citation (ruled mechanism above; imports edges only). The root
+          // listed is the MATCHED first segment, so the claim's vocabulary is exactly what the
+          // closed set proved; `stdlibModule` is evidence kept beside the claim for a reviewer
+          // (not a claim key). `isStdlib` is deliberately NOT added here: one claim family per
+          // edge, and `externalClaimOf` resolves the namespace claim first anyway.
+          ...(isMultiSegmentStdlib
+            ? {
+                languageNamespace: [stdlibRoot],
+                languageNamespacePolicy: "strict-absent",
+                languageNamespaceSlash: true,
+                stdlibModule: importModule,
+              }
+            : {}),
         },
       })
     }

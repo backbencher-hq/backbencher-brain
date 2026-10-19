@@ -1178,9 +1178,57 @@ references at cap 400), but it would break the family leaf contract pinned by
 `references|.`/`calls|.` separators, and require a clause-3 ruling for every qualifier name in a
 shared instrument file. See `validation/m14/proposals/go-cause-channel.md`.
 
+## STDLIB MULTI-SEGMENT IMPORT CITATION — `languageNamespaceSlash` (2026-10-19, task-38)
+
+**What it is.** The `isStdlib` claim above reaches only SINGLE-SEGMENT module paths: the arbiter
+sends a path-shaped target (`encoding/json`) to its path cases, where an external claim reads
+`externalUnverified` — a clause-1 failure exactly as `unresolved` is. So the 208 stdlib
+MULTI-SEGMENT imports of the cap-400 stride stayed unresolved although they cite a CLOSED,
+language-level vocabulary. The lane now cites them through the namespace mechanism, with the
+Lead-ruled **opt-in slash separator**.
+
+**The ruled mechanism (Lead §21.21, Option A-modified).** `metadata.languageNamespaceSlash === true`
+makes the arbiter's `namespaceMatchOf` split the target on `/` in addition to `.`, `::` and `:`.
+Without the marker every other lane's citation arms are byte-identical — the opt-in is what keeps
+this from being a global separator change.
+
+**Emission (imports edges ONLY).** For an `imports` edge whose target is an import PATH read from
+THIS FILE's import literal, with **≥2 `/`-separated segments** whose FIRST segment is a member of
+the CLOSED `GO_STDLIB_TOP_LEVEL` set:
+```
+metadata.languageNamespace       = [<first segment>]     // exactly the cited root
+metadata.languageNamespacePolicy = "strict-absent"
+metadata.languageNamespaceSlash  = true
+metadata.stdlibModule            = <full module path>     // evidence, not a claim key
+```
+`isStdlib` is deliberately NOT added on these rows: single-segment rows keep the existing
+`isStdlib` route, so the two claim families never meet on one edge. **No shape heuristic is used** —
+the forbidden sweep (`!includes(".")` ⇒ stdlib) would also claim a project-local `internal/util`; a
+domain (`github.com/...`), a project path (`internal/...`) and an aliased path all fail the CLOSED
+root test by construction. A wrong or non-listed root is REFUTED by the arbiter (fail-closed), never
+resolved.
+
+**Measured.** Eligible rows recomputed independently from the dump with the closed set (not from the
+emission): cap-400 stride **208** rows (the earlier "stdlib-shaped" heuristic said 209; one row's
+first segment is outside the closed vocabulary, so the ruled emission correctly does not claim it);
+the `gql-gqlgen` chunk dump (888 files, the first baseline chunk) **414** rows exactly. The
+whole-population count is the sum over the 27 per-repo chunk dumps as they are recorded.
+Two-direction fixture `go/stdlib-multisegment-claim` pins claimed forms (`encoding/json`, `net/http`,
+dot-aliased `net/url`, blank-aliased `crypto/sha256`) and FORBIDS the claim on `fmt` (single-segment
+control), `github.com/...` and a project-internal path. Arbiter verification:
+`bun run script/m14/go-stdlib-multisegment-census.ts --verify` — claimed rows verify, unclaimed stay
+unresolved, a non-matching root refutes, the old `isStdlib` route is intact; the same instrument
+prints the documented dotted-root leak (`github.com/...` claimed with `["github"]` verifies) as the
+reason the emission vocabulary is closed.
+
+**Pre-registered falsifiers for the arm:** any `extFAIL` on newly reached rows; any other lane's
+`ext?`/`extFAIL` change (the opt-in makes it structurally impossible, the arm re-checks); any
+`resolved` displacement. Expected at cap-400: 208 rows `unresolved → extOK` (clause-1 failure count
+23,074 → 22,866).
+
 ## Supported constructs
 
-- Fixtures: `validation/m14/fixtures/go/` — 22 fixtures, all passing. `service.go` (positive) and
+- Fixtures: `validation/m14/fixtures/go/` — 32 fixtures, all passing. `service.go` (positive) and
   `Negative.go` (negative) in `validation/m12/fixtures/go/` are read by `script/m12/verify-analyzer.ts`.
   Four are new in this round: `exports-contract`, `overrides-promotion`,
   `overrides-qualified-embed`, `error-recovery-empty-type`.
@@ -1483,7 +1531,7 @@ is reported, not made.
 - Corpus manifest: `validation/m12/corpus-manifest.json` → analyzer `go`
 - Lane instruments (this lane owns them): `script/m14/go-ontology-census.ts`,
   `go-endpoint-probe.ts`, `go-denylist-probe.ts`, `go-overrides-diff.ts`,
-  `go-payload-latency.ts`, `go-mutants.ts`, `go-mutant-run.ts`, `go-fixture-dump.ts`
+  `go-payload-latency.ts`, `go-mutants.ts`, `go-mutant-run.ts`, `go-fixture-dump.ts`, `go-stdlib-multisegment-census.ts`
 - Gate scripts: `script/m14/verify-analyzer.ts`, `script/m14/measure-analyzer.ts`,
   `script/m14/go-corpus-errors.ts`, `script/m12/go-node-types-compare.ts`,
   `script/m12/go-wasm-compare.ts`, `script/m12/verify-regex-census.ts`

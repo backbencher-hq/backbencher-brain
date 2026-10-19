@@ -670,7 +670,7 @@
     "src/ast/real-go-analyzer.ts:2373"
    ],
    "imports": [
-    "src/ast/real-go-analyzer.ts:517"
+    "src/ast/real-go-analyzer.ts:545"
    ],
    "references": [
     "src/ast/real-go-analyzer.ts:1050"
