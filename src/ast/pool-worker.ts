@@ -525,6 +525,28 @@ const NOISE_TARGETS = new Set([
  * `lang` is passed in rather than read from a closure so the decision is a pure
  * function of (symbol, language) and can be exercised directly.
  */
+/**
+ * DECLARATION SHAPE (2026-10-19, shared-pipeline fix (a)). The JS-global denylist was name-only, and two
+ * independent raw-output measurements (TS lane 19/19, JS lane 22/22 raw symbols whose name is denylisted)
+ * found EVERY such symbol declaration-shaped with a real non-zero span — a method `process()`, a const
+ * `module`, a property `document` in generated .d.ts — and ZERO synthetic/phantom shapes (the analyzers no
+ * longer inject them). A name is therefore the wrong discriminator; a shape is the right one: keep a real
+ * declaration and drop only range-less/zero-width/invalid-line entries (the class the denylist was
+ * originally written for). Fix (b) already exempted the synthetic module-leaf source of imports/exports;
+ * (a) restores the remaining symbol-sourced edges for genuinely-declared global-named symbols.
+ */
+function isDeclarationShaped(s: any): boolean {
+  const r = s?.range ?? {}
+  const st = Number(r.startIndex ?? s?.startIndex)
+  const en = Number(r.endIndex ?? s?.endIndex)
+  const sl = Number(r.startLine ?? s?.startLine)
+  const el = Number(r.endLine ?? s?.endLine)
+  return (
+    Number.isFinite(st) && Number.isFinite(en) && en > st &&
+    Number.isFinite(sl) && sl >= 1 && Number.isFinite(el) && el >= sl
+  )
+}
+
 export function keepSymbol(s: any, lang: string): boolean {
   const name = s.name || ""
   if (s.qualifiedName?.startsWith("__global__")) return false
@@ -542,7 +564,7 @@ export function keepSymbol(s: any, lang: string): boolean {
     "window", "document", "console", "process", "global",
     "__dirname", "__filename", "module", "exports", "default", "globalThis",
   ])
-  if (JS_FAMILY.has(lang) && JS_GLOBALS.has(name)) return false
+  if (JS_FAMILY.has(lang) && JS_GLOBALS.has(name)) return isDeclarationShaped(s)
   // Universal denylist. SPLIT, because the original conflated two different
   // things and the comment claimed a property none of the second kind has.
   //
