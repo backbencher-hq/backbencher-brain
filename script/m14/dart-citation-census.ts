@@ -31,6 +31,7 @@
  *   bun run script/m14/dart-citation-census.ts --dump=proxi.dump --repo=proxicall [--gate-json=proxi.json] [--json]
  */
 import { execFileSync } from "node:child_process"
+import { statSync } from "node:fs"
 import { readFileSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
@@ -102,8 +103,18 @@ async function metadataFor(file: string): Promise<Map<string, Record<string, unk
 }
 
 // ---- the project's OWN declaration key space (the same index builder the differential uses) ----
+// THE RUN'S KEY SPACE, not "every tracked file": the gate admits .dart files up to 1 MB (the pooled
+// analyzer's full-AST limit); a larger file is NOT in the arm's population and a declaration inside it
+// cannot answer for the run. Measured 2026-10-19 on dart-http: 335 tracked files, 2 over 1 MB
+// (`pkgs/ok_http/lib/src/jni/bindings.dart` 1.14 MB declares `extension type Uri`) -> the gate parsed
+// 333, and a census that indexed all 335 wrongly flagged `Uri` as project-declared. The census now
+// filters exactly like the gate, so its project-declared flags describe the arm it is measuring.
 const tracked = execFileSync("git", ["-C", REPO_ROOT, "ls-files", "*.dart"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 })
-  .split("\n").filter(Boolean).map((f) => path.join(REPO_ROOT, f))
+  .split("\n").filter(Boolean)
+  .map((f) => path.join(REPO_ROOT, f))
+  .filter((f) => {
+    try { return statSync(f).size <= 1048576 } catch { return false }
+  })
 const projectIndex = await buildProjectIndexStreaming(WASM, tracked, DART_DECLARATION_SPEC)
 const projectDeclared = projectIndex.symbolNames
 const projectTypes = new Set(projectIndex.typeKinds.keys())

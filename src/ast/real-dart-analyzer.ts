@@ -23,6 +23,11 @@
 // binding). Typed catch clauses, container ELEMENT types (List<T> etc.), MAP views (`for (v in
 // m.values)` reads V; `.keys` reads K) and AWAITED FUTURES (`final repo = await pending` with
 // `Future<Repo> pending` types `repo` as Repo) type their bindings from written evidence.
+// NAMESPACE CITATION CLAIMS (task-26): with BB_DART_CITATION=1 (DEFAULT OFF) rows whose bare target
+// is an exact committed DART_SDK_CORE vocabulary name carry languageNamespace:[name] +
+// languageNamespacePolicy:"strict-absent" (annotation rows and capitalized type-shaped targets only);
+// the arbiter verifies against the committed list and strict-absent falls through where the run
+// declares the target. Flag-off output is byte-identical (probe: script/m14/dart-citation-fixtures.ts).
 // THE POPULATION THIS IS MEASURED ON: docs in validation/m14/verification/ — DART-APPLICABLE-SET.md,
 // DART-RESOLUTION-CLASSIFICATION.md, DART-WHOLE-POPULATION.md (cap-0 arm: 3,748,617 edges over 33,738
 // files, every non-resolved edge in a named counted class).
@@ -39,6 +44,28 @@ import * as path from "path"
 import { existsSync, readFileSync, readdirSync } from "fs"
 import { ASTEngine } from "./engine"
 import { BINDING_SEP } from "./types"
+
+/**
+ * The committed citation vocabulary, LITERAL COPY of `script/m14/citations.ts` `DART_SDK_CORE`
+ * (id `dart-sdk-core`; source: "Dart SDK dart:core / dart:async — metadata annotations and core
+ * global symbols"). `src/ast` must not import `script/`, so the copy is asserted against the
+ * committed file by `script/m14/dart-citation-fixtures.ts`; a divergence fails that probe.
+ * EXPORTED so the drift probe can read the exact list that ships.
+ */
+export const DART_CITATION_ROOTS: ReadonlySet<string> = new Set([
+  "override", "deprecated", "Deprecated", "pragma", "deprecated_member_use", "mustCallSuper",
+  "protected", "required", "immutable", "factory", "optionalTypeArgs", "visibleForTesting",
+  "visibleForOverriding", "doNotStore", "doNotSubmit", "mustBeOverridden", "redeclare",
+  "nonVirtual", "recordUse", "target", "Target", "Metadata", "Object", "String", "int", "double",
+  "bool", "List", "Map", "Set", "Future", "FutureOr", "Stream", "Function", "Iterable", "Duration",
+  "DateTime", "Exception", "Error", "StackTrace", "RegExp", "Uri", "BigInt", "Symbol", "Type",
+  "Null", "Never", "void", "dynamic", "print", "identical", "identityHashCode",
+])
+
+/** Labels whose bare-name targets may carry a citation claim (the D7 row-6 type-shaped class). */
+const DART_CITATION_TYPE_SHAPED_LABELS = new Set([
+  "calls", "uses", "instantiates", "extends", "implements", "overrides", "mixes_in", "part_of",
+])
 
 // ============================================================================
 // PURE-STRING HELPERS (regex-free normalization)
@@ -1207,6 +1234,51 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       framework: "Dart",
       patterns: [{ type: "usage", detected: true, description: p }],
     }))
+
+    // ============================================================================
+    // NAMESPACE CITATION CLAIMS (charter §18.19 / task-26, Lead-approved)
+    // ============================================================================
+    //
+    // WHAT IS CLAIMED. A row whose target is a BARE name that appears EXACTLY in the committed
+    // `DART_SDK_CORE` vocabulary (`script/m14/citations.ts`, id `dart-sdk-core`: dart:core /
+    // dart:async metadata annotations and core symbols) is a PLATFORM name, not a project
+    // declaration — the project is not expected to declare `override` or `Duration`. The claim is
+    // `metadata.languageNamespace = [<name>]` + `metadata.languageNamespacePolicy = "strict-absent"`.
+    // The arbiter verifies it against the committed list (extOK, `verifiedBy: namespace`) and,
+    // because of strict-absent, ONLY where the run declares nothing for the target: a project that
+    // vendors a same-named declaration (measured: dart-http's `extension type Uri` in its JNI
+    // bindings) makes the claim FALL THROUGH to the name model instead of laundering it.
+    //
+    // WHAT MAY CARRY IT (two measured classes, both under the D7 ledger):
+    //   * annotation rows (`metadata.isAnnotation`) — the 246,724-row annotation wall; the census
+    //     showed 99.87 % of it is already in the committed list (proxicall 228,955 / 229,257);
+    //   * bare-name TYPE-SHAPED rows of the row-6 labels — the census showed only ~3.3 % claimable,
+    //     and its measured `Uri` collision is why claims in this class are restricted to
+    //     CAPITALIZED names: lowercase vocabulary entries (`target`, `required`, `factory`, …) are
+    //     also ordinary member names, and a member read named `target` is not a dart:core symbol.
+    //     The narrowing can only REMOVE claims, never add one.
+    //
+    // WHY A LITERAL COPY. `src/ast` must not depend on `script/` (the vocabulary header says so), so
+    // the roots are copied here with the vocabulary id and source named. The copy is checked against
+    // the committed file by `script/m14/dart-citation-fixtures.ts` (drift assertion): a name added to
+    // the list becomes claimable only after the copy moves with it, and a removed name cannot linger.
+    //
+    // FLAG-GATED AND DEFAULT-OFF: `BB_DART_CITATION=1` enables the emission; without it not a single
+    // byte of the analyzer's output changes (the probe compares the two states structurally).
+    if (process.env.BB_DART_CITATION === "1") {
+      for (const r of relationships) {
+        const t = String(r.target ?? "")
+        if (!DART_CITATION_ROOTS.has(t)) continue
+        const md = (r.metadata ?? {}) as Record<string, unknown>
+        const isAnnotation = md.isAnnotation === true
+        const label = String(r.type)
+        const typeShaped = DART_CITATION_TYPE_SHAPED_LABELS.has(label) && /^[A-Z][A-Za-z0-9_$]*$/.test(t)
+        if (!isAnnotation && !typeShaped) continue
+        md.languageNamespace = [t]
+        md.languageNamespacePolicy = "strict-absent"
+        r.metadata = md
+      }
+    }
 
     // THE EMPTY-ENDPOINT GUARD — measured on the whole-population arm (cap 0, 33,738 files):
     // 23 of 3,748,617 edges carried an EMPTY TARGET. That is the incoming gate's `unclassed`
