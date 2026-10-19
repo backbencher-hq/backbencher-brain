@@ -125,77 +125,74 @@ export function deriveScalaMixesInTruth(root: any): TruthEdge[] {
 }
 
 /** imports: dependency targets per import_declaration, mirroring the analyzer's published import facts
- *  (module path as written + selectors appended per group; excluded selectors skipped; source "(file)"). */
+ *  (module path as written + selector names appended per group; excluded selectors skipped; source
+ *  "(file)"). Targets are the depended-on module paths — never a truncated prefix. */
 export function deriveScalaImportTruth(root: any): TruthEdge[] {
   const out: TruthEdge[] = []
+  const emitted = new Set<string>()
+  const emit = (target: string): void => {
+    if (!target || emitted.has(target)) return
+    emitted.add(target)
+    out.push({ label: "imports", from: "(file)", target })
+  }
   const stack: any[] = [root]
   while (stack.length > 0) {
     const n = stack.pop()
     if (!n) continue
     if (n.type === "import_declaration") {
-      // Split the declaration into comma-separated GROUPS at the top level: `import a._, b._` is two
-      // dependencies with independent prefixes (the analyzer's `groups` reset at each comma).
-      const groups: { prefix: string[]; names: string[] }[] = []
-      let cur = { prefix: [] as string[], names: [] as string[] }
-      const pushGroup = (): void => { if (cur.prefix.length > 0 || cur.names.length > 0) groups.push(cur); cur = { prefix: [], names: [] } }
-      const walk = (node: any, inSelectors: boolean): void => {
-        for (let i = 0; i < (node.childCount ?? 0); i++) {
-          const c = node.child(i)
-          if (!c) continue
-          if (c.type === "identifier") {
-            if (inSelectors) cur.names.push(stripQuoting(c.text))
-            else cur.prefix.push(stripQuoting(c.text))
-          } else if (c.type === "namespace_wildcard") {
-            if (!inSelectors) pushGroup()
-          } else if (c.type === "namespace_selectors") {
-            for (let j = 0; j < (c.namedChildCount ?? 0); j++) {
-              const s = c.namedChild(j)
-              if (!s) continue
-              // `X => _` excludes X: not a dependency. `X => Y` introduces Y (renamed target is Y).
-              if (s.type === "arrow_renamed_identifier") {
-                const kids: any[] = []
-                for (let k = 0; k < (s.namedChildCount ?? 0); k++) kids.push(s.namedChild(k))
-                const arrowText = s.text
-                const rhs = arrowText.split("=>")[1]?.trim() ?? ""
-                if (rhs === "_") continue
-                const leaf = kids.length > 1 ? kids[kids.length - 1] : kids[0]
-                const nm = stripQuoting((leaf?.text ?? rhs).replace(/^_/, "").trim())
-                if (nm && nm !== "_") cur.names.push(nm)
-              } else if (s.type === "given_pattern" || s.type === "given") {
-                // `{given C}` imports the given C: leaf is its type identifier
-                for (let k = 0; k < (s.namedChildCount ?? 0); k++) {
-                  const nm = superTypeNames(s.namedChild(k))[0]
-                  if (nm) { cur.names.push(stripQuoting(nm)); break }
-                }
-              } else if (s.type === "identifier" || s.type === "type_identifier") {
-                cur.names.push(stripQuoting(s.text))
+      type Group = { prefix: string[]; names: string[] }
+      const groups: Group[] = []
+      let cur: Group = { prefix: [], names: [] }
+      const closeGroup = (): void => {
+        if (cur.prefix.length > 0 || cur.names.length > 0) groups.push(cur)
+        cur = { prefix: [], names: [] }
+      }
+      for (let i = 0; i < (n.childCount ?? 0); i++) {
+        const c = n.child(i)
+        if (!c) continue
+        if (c.type === "identifier") cur.prefix.push(stripQuoting(c.text))
+        else if (c.type === "namespace_wildcard") closeGroup()
+        else if (c.type === "namespace_selectors") {
+          const base = cur.prefix.slice()
+          // the selector clause CONSUMES the group prefix: it is emitted as base.name rows, never
+          // as an extra bare-prefix group (that would publish `java.io` alongside `java.io.File`)
+          cur = { prefix: [], names: [] }
+          const localNames: string[] = []
+          for (let j = 0; j < (c.namedChildCount ?? 0); j++) {
+            const sel = c.namedChild(j)
+            if (!sel) continue
+            if (sel.type === "identifier" || sel.type === "type_identifier") localNames.push(stripQuoting(sel.text))
+            else if (sel.type === "arrow_renamed_identifier") {
+              // A dependency edge names what is DEPENDED ON — the imported (left-hand) name.
+              // `X => Y` renames the LOCAL binding; `X => _` imports nothing.
+              const text = sel.text
+              const rhs = text.split("=>")[1]?.trim() ?? ""
+              if (rhs === "_") continue
+              const kids: any[] = []
+              for (let k = 0; k < (sel.namedChildCount ?? 0); k++) kids.push(sel.namedChild(k))
+              const lhs = kids.length > 0 ? stripQuoting(kids[0].text) : stripQuoting(text.split("=>")[0]?.trim() ?? "")
+              if (lhs && lhs !== "_") localNames.push(lhs)
+            } else if (sel.type === "given_pattern" || sel.type === "given") {
+              for (let k = 0; k < (sel.namedChildCount ?? 0); k++) {
+                const t = sel.namedChild(k)
+                if (t && (t.type === "type_identifier" || t.type === "identifier")) { localNames.push(stripQuoting(t.text)); break }
               }
             }
-          } else if (c.type === ",") {
-            // A comma between GROUPS (not inside a selector clause): close the group.
-            if (!(node.type === "namespace_selectors")) pushGroup()
-          } else if (c.type !== ".") {
-            walk(c, inSelectors || c.type === "namespace_selectors")
           }
-        }
+          const baseStr = base.join(".")
+          for (const nm of localNames) {
+            if (!baseStr) continue
+            emit(baseStr.endsWith("." + nm) ? baseStr : baseStr + "." + nm)
+          }
+          if (localNames.length === 0 && baseStr) emit(baseStr)
+        } else if (c.type === ",") closeGroup()
       }
-      walk(n, false)
-      pushGroup()
-      // Dependency target: prefix joined + selector names appended; wildcard/exclusion-only -> prefix.
-      const emitted = new Set<string>()
+      closeGroup()
       for (const g of groups) {
         const base = g.prefix.join(".")
-        if (base.length === 0) continue
-        const targets: string[] = []
-        if (g.names.length === 0) targets.push(base)
-        else {
-          const alreadyFull = g.names.every((nm) => base.endsWith(`.${nm}`) || base === nm)
-          if (alreadyFull) targets.push(base)
-          else for (const nm of g.names) targets.push(`${base}.${nm}`)
-        }
-        for (const t of targets) {
-          if (!emitted.has(t)) { emitted.add(t); out.push({ label: "imports", from: "(file)", target: t }) }
-        }
+        if (!base) continue
+        if (g.names.length === 0) emit(base)
+        else for (const nm of g.names) emit(base.endsWith("." + nm) ? base : base + "." + nm)
       }
     }
     for (let i = (n.namedChildCount ?? 0) - 1; i >= 0; i--) {
@@ -215,9 +212,11 @@ function moduleNameOf(filePath: string | undefined): string {
   return dot > 0 ? base.slice(0, dot) : base
 }
 
-/** exports: both published channels — (a) `(file)` -> public top-level declaration names, (b) the
- *  module sentinel -> public-top-level surface + Scala 3 export-clause names. Kinds are not needed by
- *  the comparison (label+target is the row key); names are. */
+/** exports: the published channels — (a) `(file)` -> every public top-level declaration name (the
+ *  analyzer's ExportInfo flush), (b) the package/module sentinel -> the public-top-level surface, and
+ *  (c) Scala 3 `export` clauses: introduced names with the clause's OWNER (or the file sentinel for a
+ *  top-level clause) AND the surface channel's module-named rows. Only NAMES are targets — a clause's
+ *  dotted path is never an export target. */
 export function deriveScalaExportTruth(root: any, filePath?: string): TruthEdge[] {
   const out: TruthEdge[] = []
   const SURFACE_DECLS = new Set([
@@ -225,84 +224,106 @@ export function deriveScalaExportTruth(root: any, filePath?: string): TruthEdge[
     "val_definition", "var_definition", "val_declaration", "var_declaration",
     "function_definition", "given_definition",
   ])
-  const moduleName = moduleNameOf(filePath)
   const seen = new Set<string>()
   const push = (from: string, target: string): void => {
-    const k = `${from}\u0000${target}`
+    if (!from || !target) return
+    const k = from + "\u0000" + target
     if (seen.has(k)) return
     seen.add(k)
     out.push({ label: "exports", from, target })
+  }
+  // module sentinel = the file's package name (namespace), or FILE_MODULE "(file)" when none
+  let packageName = ""
+  {
+    const stack: any[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()
+      if (!n) continue
+      if (n.type === "package_clause") {
+        const ids: string[] = []
+        for (let i = 0; i < (n.childCount ?? 0); i++) {
+          const c = n.child(i)
+          if (c && c.type === "identifier") ids.push(stripQuoting(c.text))
+        }
+        if (ids.length > 0) { packageName = ids.join("."); break }
+      }
+      for (let i = (n.namedChildCount ?? 0) - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) stack.push(c) }
+    }
+  }
+  const moduleName = packageName || "(file)"
+  const nameOf = (decl: any): string => {
+    const nm = decl.childForFieldName?.("name") ?? childOfType(decl, "identifier") ?? childOfType(decl, "type_identifier")
+    return stripQuoting(nm?.text ?? "")
   }
   const isPrivateish = (decl: any): boolean => {
     const mods = childOfType(decl, "modifiers")
     const text = (mods?.text ?? "").slice(0, 200)
     return /\bprivate\b/.test(text) || /\bprotected\b/.test(text)
   }
-  const nameOf = (decl: any): string => {
-    const nm = decl.childForFieldName?.("name") ?? childOfType(decl, "identifier") ?? childOfType(decl, "type_identifier")
-    return stripQuoting(nm?.text ?? "")
-  }
-  // top-level scope: root's children plus package-clause / package-object bodies (the analyzer's
-  // collectSurface rule).
-  const stack: any[] = [root]
-  while (stack.length > 0) {
-    const n = stack.pop()
-    if (!n) continue
-    if (n !== root && (n.type === "package_clause" || n.type === "package_object")) {
-      for (let i = 0; i < (n.namedChildCount ?? 0); i++) {
-        const b = n.namedChild(i)
-        if (b && (b.type === "block" || b.type === "template_body")) stack.push(b)
+  const introducedNames = (clause: any): string[] => {
+    const names: string[] = []
+    const hasSelections = clause.text.includes("{")
+    if (!hasSelections) {
+      // `export a.b.c` introduces the LEAF c
+      const ids: string[] = []
+      for (let i = 0; i < (clause.childCount ?? 0); i++) {
+        const c = clause.child(i)
+        if (c && c.type === "identifier") ids.push(stripQuoting(c.text))
       }
-      continue
+      if (ids.length > 0) names.push(ids[ids.length - 1])
+      return names
     }
-    if (n !== root && SURFACE_DECLS.has(n.type) && !isPrivateish(n)) {
-      const nm = nameOf(n)
-      if (nm) { push("(file)", nm); push(moduleName, nm) }
-      // members of a declaration are NOT top-level: do not descend into it for the surface
-      continue
-    }
-    for (let i = (n.namedChildCount ?? 0) - 1; i >= 0; i--) {
-      const c = n.namedChild(i)
-      if (c) stack.push(c)
-    }
-  }
-  // Scala 3 `export a.b.{x, y}` clause: the names introduced into THIS file (leaf / renamed-to).
-  const visit = (n: any): void => {
-    if (n.type === "export_declaration") {
-      const names: string[] = []
-      const walk = (x: any, inSel: boolean): void => {
-        for (let i = 0; i < (x.childCount ?? 0); i++) {
-          const c = x.child(i)
-          if (!c) continue
-          if (c.type === "namespace_selectors") { walk(c, true); continue }
-          if (inSel) {
-            if (c.type === "identifier" || c.type === "type_identifier") names.push(stripQuoting(c.text))
-            else if (c.type === "arrow_renamed_identifier") {
-              const rhs = c.text.split("=>")[1]?.trim() ?? ""
-              if (rhs && rhs !== "_") names.push(stripQuoting(rhs))
-              else {
-                const kids: any[] = []
-                for (let k = 0; k < (c.namedChildCount ?? 0); k++) kids.push(c.namedChild(k))
-                const nm = kids.length > 1 ? stripQuoting(kids[kids.length - 1].text) : ""
-                if (nm && nm !== "_") names.push(nm)
-              }
-            }
-          } else if (c.type === "identifier" || c.type === "type_identifier") {
-            names.push(stripQuoting(c.text))
-          }
+    const sel = childOfType(clause, "namespace_selectors")
+    if (!sel) return names
+    for (let j = 0; j < (sel.namedChildCount ?? 0); j++) {
+      const x = sel.namedChild(j)
+      if (!x) continue
+      if (x.type === "identifier" || x.type === "type_identifier") names.push(stripQuoting(x.text))
+      else if (x.type === "arrow_renamed_identifier") {
+        const rhs = x.text.split("=>")[1]?.trim() ?? ""
+        if (rhs === "_") continue
+        const kids: any[] = []
+        for (let k = 0; k < (x.namedChildCount ?? 0); k++) kids.push(x.namedChild(k))
+        const nm = rhs || (kids.length > 1 ? stripQuoting(kids[kids.length - 1].text) : "")
+        if (nm && nm !== "_") names.push(stripQuoting(nm))
+      } else if (x.type === "given_pattern" || x.type === "given") {
+        for (let k = 0; k < (x.namedChildCount ?? 0); k++) {
+          const t = x.namedChild(k)
+          if (t && (t.type === "type_identifier" || t.type === "identifier")) { names.push(stripQuoting(t.text)); break }
         }
       }
-      walk(n, false)
-      // the LAST segment is the leaf for the plain `export a.b.c` form; selectors already name leaves
-      const hasSelectors = n.text.includes("{")
-      const finalNames = hasSelectors ? names : names.length > 0 ? [names[names.length - 1]] : []
-      for (const nm of finalNames) if (nm) push(moduleName, nm)
     }
-    for (let i = 0; i < (n.namedChildCount ?? 0); i++) {
-      const c = n.namedChild(i)
-      if (c) visit(c)
-    }
+    return names
   }
-  visit(root)
+  // one walk: declarations contribute the top-level channels; export clauses contribute introduced names
+  const walk = (n: any, owner: string | null, topLevel: boolean): void => {
+    if (!n) return
+    if (n.type === "package_clause" || n.type === "package_object") {
+      for (let i = 0; i < (n.namedChildCount ?? 0); i++) {
+        const b = n.namedChild(i)
+        if (b && (b.type === "block" || b.type === "template_body")) walk(b, null, true)
+      }
+      return
+    }
+    if (n.type === "export_declaration") {
+      const names = introducedNames(n)
+      const clauseOwner = owner ?? "(file)"
+      for (const nm of names) {
+        push(clauseOwner, nm)
+        push(moduleName, nm)
+      }
+    }
+    if (SURFACE_DECLS.has(n.type)) {
+      const nm = nameOf(n)
+      if (nm && !isPrivateish(n)) {
+        if (topLevel) { push("(file)", nm); push(moduleName, nm) }
+      }
+      // descend for nested export clauses, attributing them to this declaration
+      for (let i = 0; i < (n.namedChildCount ?? 0); i++) walk(n.namedChild(i), nm || owner, false)
+      return
+    }
+    for (let i = 0; i < (n.namedChildCount ?? 0); i++) walk(n.namedChild(i), owner, topLevel)
+  }
+  walk(root, null, true)
   return out
 }
