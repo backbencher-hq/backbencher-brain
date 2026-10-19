@@ -261,9 +261,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    // SCALA fleet-phase ruling (§21.4): with-clause traits are mixes_in and implements is RULED NOT-APPLICABLE;
-    // the contract row names what the analyzer publishes.
-    requiredKinds: ["calls", "extends", "mixes_in", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "csharp/payload-and-complexity" },
       parameters: { key: "expectParameters", pin: "csharp/payload-and-complexity" },
@@ -853,7 +851,8 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
+    // SCALA fleet-phase ruling (§21.4): with-clause traits publish mixes_in; implements is RULED NOT-APPLICABLE.
+    requiredKinds: ["calls", "extends", "mixes_in", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
     payloads: {
       qualified_calls: { key: "expectQualifiedCalls", pin: "scala/qualified-calls-payload" },
       docstrings: { key: "expectComments", pin: "scala/scaladoc-payload" },

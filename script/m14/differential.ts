@@ -185,12 +185,17 @@ import { deriveRubyEdges as deriveRubyLaneEdges, RUBY_ORACLE_LABELS as RUBY_LANE
 // SCALA lane oracle additions (2026-10-19, fleet phase): imports/exports emitted-but-unaudited labels,
 // derived by the lane-owned syntax truth — one implementation, imported rather than mirrored.
 import { deriveScalaImportTruth, deriveScalaExportTruth } from "./scala-truth"
+// RUST fleet-phase wiring (2026-10-19): the three missing oracles for 41,737 emitted-but-unmeasured rows
+// (imports 11,704 · exports 4,572 · overrides 2,956) — lane-owned `rust-truth.ts`, tree-only with
+// contract provenance in its header; contains oracle was already imported but never pushed.
+import { deriveRustImportsTruth, deriveRustExportsTruth, deriveRustOverridesTruth } from "./rust-truth"
 // ELIXIR fleet-phase wiring (2026-10-19): three MATURE but UNWIRED oracles already existed in
 // oracles/elixir-contains.ts (contains 14,389 · exports 7,451 · uses 6,032 edges were audited by
 // nothing), plus the lane's new gap-truth module for imports and the ruled raise/struct
 // instantiation spellings. This is the same "finished-but-unconnected" shape the M60 notes record.
 import { deriveElixirContainsTruth, deriveElixirUsesTruth, deriveElixirExportsTruth } from "./oracles/elixir-contains"
 import { deriveElixirImportsTruth, deriveElixirCallInstantiationTruth, deriveElixirAtomRemoteCallsTruth } from "./oracles/elixir-gap-truth"
+import { deriveElixirOverridesTruth } from "./oracles/elixir-overrides"
 import { deriveSolidityImportTruth } from "./oracles/solidity-imports-truth"
 import { deriveSolidityEdges, deriveSolidityCallReferenceEdges } from "./oracles/solidity"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
@@ -16185,7 +16190,9 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
       // ELIXIR round-2 patch 3: an operator leaf is not a callable name (`Kernel.<>`).
       // Elixir callables may END in `!`/`?` (`File.ls!`, `Version.parse!`) — the first version of this
       // guard rejected those legitimate names and turned 181 analyzer calls into false `unexplained`.
-      if (!/^[A-Za-z_][A-Za-z0-9_]*[!?]?$/.test(leaf)) return
+      // ROUND 3: a MULTI-SEGMENT leaf is legitimate (`Kernel.LexicalTracker.references`,
+      // `Kernel.SpecialForms.__info__`) — only a single segment is an operator candidate.
+      if (!leaf.includes(".") && !/^[A-Za-z_][A-Za-z0-9_]*[!?]?$/.test(leaf)) return
       if (KERNEL.has(leaf) || SPECIAL.has(leaf)) return
     }
     const parts = finalTarget.split(".")
@@ -23961,6 +23968,18 @@ async function main() {
         for (const e of deriveRustContainsTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // RUST fleet-phase wiring (2026-10-19): imports/exports/overrides truth for the emitted-but-unmeasured
+        // labels; the divergences the wiring counts are the named defect classes (imports function-scope source,
+        // exports publication breadth, override impl-target name surface).
+        for (const e of deriveRustImportsTruth(root)) {
+          ;(truth as any[]).push({ label: "imports", from: e.from, target: e.to })
+        }
+        for (const e of deriveRustExportsTruth(root)) {
+          ;(truth as any[]).push({ label: "exports", from: e.from, target: e.to })
+        }
+        for (const e of deriveRustOverridesTruth(root)) {
+          ;(truth as any[]).push({ label: "overrides", from: e.from, target: e.to })
+        }
       }
       if (lang === "go") {
         for (const e of deriveGoEdges(root)) {
@@ -24443,6 +24462,12 @@ async function main() {
         for (const e of deriveElixirAtomRemoteCallsTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // ELIXIR round 3 (2026-10-19): validated overrides oracle — defoverridable redefinition,
+        // use-of-provider, @impl explicit/single-behaviour (incl. erlang-atom), defimpl protocols;
+        // quoted templates excluded. Whole-corpus validation: truth 146 / analyzer 145 / 0 MISSING / 0 unexplained.
+        for (const e of deriveElixirOverridesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "erlang") {
         // ER wave (M14 #275 F5): dedicated erlang
@@ -24648,7 +24673,7 @@ async function main() {
       // strict superset of the exclusion: it drops `overrides` from the compared set for
       // dart and go as well as csharp/swift/cpp. Taking the local list would have
       // re-admitted two lanes whose override oracles were deliberately left unwired.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" && lang !== "go" && lang !== "elixir" ? ["overrides"] : []), ...(lang === "hcl" ? ["calls", "uses", "references", "imports", "exports"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" && lang !== "go" ? ["overrides"] : []), ...(lang === "hcl" ? ["calls", "uses", "references", "imports", "exports"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
@@ -24800,7 +24825,7 @@ async function main() {
           // existed in zig-truth.ts, wired only to tmp probes.
           ...(lang === "zig" ? ["contains", "imports", "exports"] : []),
           ...(lang === "erlang" ? ["contains"] : []),
-          ...(lang === "rust" ? ["contains"] : []),
+          ...(lang === "rust" ? ["contains", "imports", "exports", "overrides"] : []),
           // SQL-G14 / M14.0.F5: sql joins the compared set with the TWO labels its first-half oracle
           // derives — `contains` and `references`. THE ARM IS DELIBERATELY NARROW: the oracle's header
           // names the labels it does NOT derive yet (calls, uses, imports, overrides, instantiates), so
