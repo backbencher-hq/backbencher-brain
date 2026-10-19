@@ -10,6 +10,8 @@ process.env.BB_PY_OWNER_MEMBER_ABSENT = "1"
 const A=(f:string)=>{const i=process.argv.indexOf(f);return i>=0?process.argv[i+1]:undefined}
 const OUT=A("--out")
 const CORPUS=process.env.BB_CORPUS_ROOT??path.join(process.cwd(),".corpus")
+let SYNTH_DECL_COUNTS: Map<string, number> | null = null
+let SYNTH_ALL_COUNTS: Map<string, number> | null = null
 const ONLY=A("--repo")
 const repos=readdirSync(CORPUS).map((e)=>path.join(CORPUS,e)).filter((p)=>{try{return statSync(p).isDirectory()}catch{return false}}).filter((p)=>!ONLY||path.basename(p)===ONLY).sort()
 const parser:any=await ASTEngine.getParser("python")
@@ -27,12 +29,18 @@ for(const repo of repos){
   for(const f of files){let text:string|null=null;try{text=readFileSync(f,"utf8")}catch{text=null};if(text===null)continue;const t=parser.parse(text);if(!t)continue;trees.push({path:f,tree:t});contents.push(text)}
   if(trees.length===0)continue
   const SYNTHETIC = process.argv.includes("--synthetic")
+  const REAL = process.argv.includes("--real")
   let index: any
-  if (SYNTHETIC) {
+  if (REAL) {
+    // REAL index (same builder/ spec production uses): the indexed arm's decls test is
+    // index.symbolCounts, so this is the only faithful split diagnosis.
+    index = buildProjectIndex(trees, PYTHON_DECLARATION_SPEC); index.complete = true
+  } else if (SYNTHETIC) {
     // LIGHT COUNT MODE: the reworked emission reads ONLY index.complete, typeKinds and
     // symbolCounts, so a synthetic index built from this repo's own analyzer symbols is enough to
     // count claims without materialising per-repo parse trees (memory-light under box pressure).
     const counts = new Map<string, number>()
+    const countsDecl = new Map<string, number>()
     const kinds = new Map<string, string>()
     {
       const analyzerA = new RealPythonAnalyzer()
@@ -43,11 +51,16 @@ for(const repo of repos){
         for (const sym of rr.symbols ?? []) {
           if (!sym?.name) continue
           counts.set(sym.name, (counts.get(sym.name) ?? 0) + 1)
+          if (sym.kind === "class" || sym.kind === "enum" || sym.kind === "function" || sym.kind === "method") {
+            countsDecl.set(sym.name, (countsDecl.get(sym.name) ?? 0) + 1)
+          }
           if ((sym.kind === "class" || sym.kind === "enum") && !kinds.has(sym.name)) kinds.set(sym.name, "class")
         }
       }
     }
     index = { complete: true, typeKinds: kinds, typeMembers: new Map(), typeBases: new Map(), symbolCounts: counts }
+    SYNTH_DECL_COUNTS = countsDecl
+    SYNTH_ALL_COUNTS = counts
   } else {
     index = buildProjectIndex(trees,PYTHON_DECLARATION_SPEC); index.complete = true
   }
@@ -70,7 +83,18 @@ for(const repo of repos){
     while(stack.length>0){const cur=stack.pop() as string;const own=membersByName.get(cur);if(own)for(const m of own)out.add(m)
       for(const up of supers.get(cur)??[]){if(seen.has(up))continue;seen.add(up);stack.push(up)}}
     closed.set(start,out)}
-  if(ONLY){console.log("REPOJSON "+JSON.stringify({repo:path.basename(repo),files:trees.length,claims:repoClaims.length,gateVerified:repoClaims.filter(({rel,md})=>{const set=closed.get(md.owner);return set!==undefined&&!set.has(String(rel.target))}).length,gateRefuted:repoClaims.filter(({rel,md})=>{const set=closed.get(md.owner);return set!==undefined&&set.has(String(rel.target))}).length}));continue}
+  if(ONLY){
+    // THE GATE'S DECLS MAP IS EVERY ANALYZER SYMBOL NAME (plus qualifiedName aliases), NOT the
+    // declaration proxy: incoming-gate counts each symbol's name (properties/attrs included) as a
+    // declaration key. So the faithful diagnosis uses the ALL-symbol count map.
+    const dc=(REAL && index?.symbolCounts) ? index.symbolCounts : (SYNTH_ALL_COUNTS ?? new Map<string,number>())
+    const verifiedRows=repoClaims.filter(({rel,md})=>{const set=closed.get(md.owner);return set!==undefined&&!set.has(String(rel.target))})
+    const declsZero=verifiedRows.filter(({rel})=>(dc.get(String(rel.target))??0)===0)
+    const declsPos=verifiedRows.filter(({rel})=>(dc.get(String(rel.target))??0)>0)
+    const samples=declsPos.slice(0,5).map(({rel,md,file})=>`${path.relative(CORPUS,file)}:${rel.line_number} ${String(rel.type)} ${String(rel.target)} owner=${md.owner}`)
+    console.log("REPOJSON "+JSON.stringify({repo:path.basename(repo),files:trees.length,claims:repoClaims.length,gateVerified:verifiedRows.length,gateRefuted:repoClaims.length-verifiedRows.length,verifiedDeclsZero:declsZero.length,verifiedDeclsPositive:declsPos.length,declsPositiveSamples:samples}))
+    continue
+  }
   for(const {rel,md,file} of repoClaims){
     claims++; byOwner.set(md.owner,(byOwner.get(md.owner)??0)+1)
     const set=closed.get(md.owner)
