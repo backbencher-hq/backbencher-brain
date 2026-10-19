@@ -120,6 +120,24 @@ export const PYTHON_STDLIB: CitationVocabulary = {
   ],
 }
 
+/** ISO C++ STANDARD LIBRARY symbols (namespace `std`) — the SAFE subset measured by the cpp lane's
+ *  whole-population namespace census (`69af5a208`): 2,998 residual calls spell `std::<symbol>` and the
+ *  namespaces `absl`/`json`/`testing` are EXCLUDED — a project may vendor those libraries, so claiming
+ *  them external would be false by construction (the vendoring caveat is recorded). ISO C++ reserves
+ *  the `std` namespace, so a `std::<listed symbol>` spelling is a citable platform fact. List = the
+ *  measured top spellings (lane artifact has the full ranking); extending it is a policy change. */
+export const ISO_CPP_STDLIB: CitationVocabulary = {
+  id: "iso-cpp-stdlib",
+  source: "ISO/IEC 14882 C++ standard library (namespace std; measured top spellings from the cpp namespace census)",
+  roots: [
+    "move", "string", "max", "infinity", "min", "quiet_NaN", "make_pair", "isnan", "signaling_NaN",
+    "swap", "make_tuple", "sort", "to_string", "forward", "make_shared", "make_unique", "size_t",
+    "vector", "map", "unordered_map", "set", "pair", "tuple", "optional", "variant", "function",
+    "shared_ptr", "unique_ptr", "string_view", "numeric_limits", "find", "begin", "end", "size",
+    "copy", "fill", "count", "abs", "fabs", "sqrt", "pow", "floor", "ceil", "round", "log", "exp",
+  ],
+}
+
 export const CITATION_VOCABULARIES: readonly CitationVocabulary[] = [
-  JLS_JPMS, JAVA_PLATFORM_LIBRARIES, DART_SDK_CORE, ISO_C_STDLIB, PYTHON_STDLIB,
+  JLS_JPMS, JAVA_PLATFORM_LIBRARIES, DART_SDK_CORE, ISO_C_STDLIB, PYTHON_STDLIB, ISO_CPP_STDLIB,
 ]
