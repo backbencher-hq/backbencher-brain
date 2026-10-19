@@ -125,6 +125,11 @@ import { deriveJuliaUsesTruth, deriveJuliaReferencesTruth } from "./oracles/juli
 // was wired to NOTHING in this file — only a tmp gate consumed it — so clojure
 // published `contains` that nothing compared while the lane printed a percentage.
 import { deriveClojureContainsTruth, deriveClojureUsesTruth, deriveClojureStaticUsesTruth, deriveClojureImportsTruth, deriveClojureExportsTruth, deriveClojureOverridesTruth } from "./clojure-truth"
+// KOTLIN fleet-phase wiring (2026-10-19): three lane-owned oracles existed and were referenced by NOTHING —
+// imports/exports (emitted but unmeasured) and the property-overrides half the shared walker cannot see.
+import { deriveKotlinModuleEdges } from "./oracles/kotlin-module-edges"
+import { deriveKotlinExportsTruth } from "./oracles/kotlin-exports"
+import { deriveKotlinPropertyOverrides } from "./oracles/kotlin-overrides"
 // M60: zig-truth.ts carries FOUR finished oracles — containment, imports, exports
 // and instantiation — and every one of them was consumed only by a script/m14/tmp
 // probe. So zig published `contains`, `imports` and `exports` that no comparison
@@ -23954,6 +23959,16 @@ async function main() {
         for (const e of deriveKotlinReferencesTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // KOTLIN fleet-phase (2026-10-19): imports/exports + property-overrides truth (validated shapes).
+        for (const e of deriveKotlinModuleEdges(root, relPath)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveKotlinExportsTruth(root, relPath)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveKotlinPropertyOverrides(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "scala") {
         // M37.21 #610: scala calls oracle (JD-oracle gap, java precedent).
@@ -24979,6 +24994,8 @@ async function main() {
           // FLEET PHASE (2026-10-19): imports and exports were emitted but compared by nothing;
           // mixes_in is the new canonical label from the heritage reclassification (§21.4).
           ...(lang === "scala" ? ["imports", "exports", "mixes_in"] : []),
+          // KOTLIN fleet-phase (2026-10-19): imports/exports now audited (oracles wired above).
+          ...(lang === "kotlin" ? ["imports", "exports"] : []),
           // FLEET PHASE (2026-10-19): elixir's three mature-but-unwired oracles are now pushed above,
           // so the labels become comparable; overrides is REMOVED until its oracle lands (named D4
           // residual in the verdict rather than a compared-with-no-truth disclosure).
