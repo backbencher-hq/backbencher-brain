@@ -320,6 +320,26 @@ export const CLOJURE_SPECIAL_FORMS: ReadonlySet<string> = new Set([
 
 export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    // ── CLJ-EX3 (2026-10-20, Lead ruling): EDN IS DATA, NOT CODE ─────────────
+    //
+    // MEASURED BEFORE THE RULE: the production router sends `.edn` to this lane
+    // (`src/ast/parallel-indexer.ts` PROJECT_INDEX_EXTENSIONS carries `.edn`, and
+    // `src/ast/language-detection.ts` maps edn → clojure), and the analyzer read the
+    // data literals as code — 15 relationship rows over 59 EDN files, all fabricated:
+    // `clj-kondo/.clj-kondo/config.edn:26 calls user->clojure.test/is`,
+    // `clj-kondo/bb.edn:7-14 calls user->shell`, `corpus/config_dir/config.edn:1
+    // calls user->bar/weird-macro`. EDN is a DATA format with no evaluation: a symbol
+    // or list in an EDN map is a VALUE, and reading it as a call invents a code edge
+    // that the language cannot express.
+    //
+    // RULED (Lead, 2026-10-20): "`.edn` emits NO relationships and NO symbols; data
+    // is data." No Babashka-script exception. The ROUTER population is therefore
+    // wider than this lane's ANALYZABLE surface, and the verdict says so in those
+    // words — the analyzer's output for an EDN file is empty BY CONTRACT, not by
+    // failure. Their two-direction fixture: `edn-data-rule.edn` (zero rows) and
+    // `edn-data-rule.clj` (the same forms as code keep their rows).
+    if (/\.edn$/i.test(filePath)) return this.dataOnlyResult(content)
+
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -3074,124 +3094,69 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       s.qualifiedName = `${sc}/${s.name}`
     }
 
-    // ── CLJ-EX1: PUBLISH THE REASON THIS LANE ALREADY COMPUTES ──────────────
+    // ── CLJ-EX2 (2026-10-20): THE LANGUAGE-NAMESPACE CLAIM IS THE INSTRUMENT THIS LANE'S
+    // REASON EXISTS FOR.
     //
-    // THE OBLIGATION IS THIS LANE'S OWN, IN ITS OWN WORDS. The lane's committed
-    // declaration (`validation/m14/instruments/clojure/incoming-declaration.json:29`)
-    // records the state and the bar together:
+    // WHAT WAS HERE. The block published only the GENERIC marker (`isExternalTarget` +
+    // `externalReason: "language-platform-namespace"`) on libspec `references`/`imports`
+    // edges whose first segment was one of (`clojure`,`cljs`,`js`,`goog`) and whose owner
+    // was a single segment. The arbiter read that as an OWNER claim and checked the owner
+    // against the PROJECT key space — a project cannot declare `clojure` or `java`, so 619
+    // of those rows read `externalUnverified` (`ext?` — "a claim no check can reach") and
+    // the whole arm carried 901 ext?. The generic marker was the reason; it was not the
+    // instrument the rule family built for a reason about a NAMESPACE.
     //
-    //   "EXTERNAL IS 0 on all ten types, and that is a state, not a defect claim:
-    //    this lane's analyzer emits no provable external marker, so by construction
-    //    every unbound target in it is backlog ... Marking is future work with a
-    //    proof obligation the Java precedent shows how to meet: an edge may only
-    //    join the external class if the analyzer can record WHY the target is
-    //    outside the project (see real-java-analyzer.ts's isExternalTarget +
-    //    externalReason), because an unmarked unresolved edge and a marked one are
-    //    different claims."
+    // THE RULE NOW SPEAKS `languageNamespace`: `metadata.languageNamespace` is the declared
+    // root LIST (a visible, diffable evidence array — the claim contract's property 2) and
+    // `languageNamespacePolicy: "strict-absent"` is the cpp precedent's guard: the claim is
+    // honored ONLY where the run declares nothing for the target (`decls === 0`), so it can
+    // never displace a name-model answer. The roots are a CLOSED, CORPUS-INDEPENDENT set:
+    // `clojure · cljs · js · goog · java · javax`. Third-party roots (`babashka`,
+    // `rewrite-clj`, `ring`, …) are deliberately absent: whether a project vendors one is a
+    // PROJECT fact this single-file analyzer cannot know, and a corpus-derived list would be
+    // a laundered constant.
     //
-    // THE REASON WAS ALREADY COMPUTED AND PUBLISHED WHERE NOTHING READS IT. The
-    // libspec handler tags every dependency edge it emits with `isLibraryDep: true`
-    // (pushImport at :780 and the `references` twins at :917, :931, :946, :967,
-    // :978, :1498, :2318, :2358) and pushes `isExternal: true` onto the `imports`
-    // ARRAY row (:927, :970, :977) — an array `incoming-gate.ts` never walks. So
-    // this is the 41-lane brief's fleet cause (a) exactly ("lanes already compute
-    // the reason but publish it on a key the gate does not read"), and the fix is
-    // to publish it on the key the gate DOES read: `isExternalTarget` is in
-    // `incoming-rule.ts:56-66`'s recognised set, and the arbiter then VERIFIES the
-    // claim by looking the target's owner up in the project's own key space
-    // (`verifyExternalClaim`), so a wrong claim is refuted and charged to this
-    // lane rather than being believed.
-    //
-    // WHY A CLAIM CANNOT MOVE A RESOLUTION. The marker is read only inside
-    // `classifyEdge`'s `decls === 0` branch (`incoming-rule.ts:1145-1178`), so an
-    // edge whose target names a declaration keeps its `resolved`/`ambiguous`
-    // outcome however it is marked. That is what makes this change arithmetic on
-    // one column instead of a re-binding of the graph.
-    //
-    // WHICH TARGETS MAY BE MARKED, AND WHY IT IS NOT "EVERYTHING I REQUIRED".
-    // Measured BEFORE this landed, by `validation/m14/fixtures/clojure/probe-clojure-claims.mts`
-    // (which re-classifies these same edges through the gate's own rule and asserts
-    // its totals against the gate's TABLE 1 row — cap-400 and whole-population
-    // runs, logs in `validation/m14/fixtures/clojure/lane-logs/`):
-    //
-    //   every `isLibraryDep` edge (3,825 at cap-400)   563..916 verified BUT
-    //                                                  56..105 non-clean: `extFAIL` 56
-    //   minus path-like targets                        49 refuted by owner overlap
-    //   minus non-language roots                        7 refuted (`clojure.core.async`:
-    //                                                  the corpus declares a FIXTURE ns
-    //                                                  `clojure.core`, so the owner key
-    //                                                  IS published)
-    //   THE SHIPPED PREDICATE                           948 verified, 0 refuted,
-    //                                                  0 unverifiable (whole population)
-    //
-    // The refutations are the arbiter working as designed, not a bug to route around:
-    // `targetOwner` is everything before the FINAL dot, so a 2-dot target's key is an
-    // INTERMEDIATE namespace (`clojure.test` for `clojure.data.generators`, `next` for
-    // `next.jdbc`) which a project may itself declare — the zig measurement recorded in
-    // `incoming-rule.ts`'s EXTERNAL_KEYS doc says the same thing ("the mechanism is
-    // sound where the owner is itself qualified and over-reaches where the owner is a
-    // single segment the project may well publish"). A refuted claim is counted AGAINST
-    // the lane and `extFAIL` is 0 today, so the two restrictions below are what keep
-    // this change from trading one defect for another:
-    //
-    //   1. THE ROOT MUST BE A NAMESPACE THE LANGUAGE OR ITS RUNTIME PROVIDES — a
-    //      CLOSED, corpus-independent set (`clojure`, `cljs`, `js`, `goog`), the shape
-    //      the 41-lane brief blesses at graphql ("membership in the closed 5-name
-    //      built-in scalar set is a DECIDABLE TEST with no missing grammar node and no
-    //      new corpus"). Third-party libraries are deliberately NOT listed: whether a
-    //      project vendors `babashka`/`ring`/`schema` is a PROJECT fact this analyzer,
-    //      which sees one file, cannot know, and a corpus-derived list would be a
-    //      laundered constant. `java`/`javax` are also not listed, and that is measured
-    //      too: the arbiter's `pathLikeTarget` reads a Java package's final segment as
-    //      a file extension (`java.sql` → `.sql`), and a path-like target carrying a
-    //      claim reads `externalUnverified` — "a claim no check can reach" — in the one
-    //      column this lane keeps at 0. JVM interop reaches the graph as bare class
-    //      targets and `Class/member` statics, which no claim channel can check, and
-    //      they are left unresolved rather than mislabelled.
-    //   2. THE VERIFIER'S KEY MUST BE THE CERTIFIED ROOT — the owner (text before the
-    //      final dot) must be a single segment, i.e. exactly the root this list matched.
-    //      Without this, the claim's stated evidence and the key the arbiter checks
-    //      disagree (`ring.mock.request` would be certified by `ring` but verified
-    //      against `ring.mock`), and at population level that disagreement costs 79
-    //      refuted claims (`clojure.data.generators` 46, `clojure.test.generative` 14,
-    //      `clojure.core.async` 7, `clojure.test.check` 7, `clojure.test.SwissArmy` 5).
-    //
-    // AND THE JAVA PRECEDENT'S GUARD, kept because it is the precedent's own shape
-    // (`real-java-analyzer.ts:3952`: "A name this file declares is project code,
-    // whatever it is called"): a target this file declares is skipped. It is inert by
-    // construction — a target the file declares has a declaration, so the edge is not
-    // in the `decls === 0` branch and the marker could never be read — and measured
-    // inert: the arm with it and the arm without it are identical (638 marked, 589
-    // moved) at cap-400.
+    // MEASURED, whole admitted population (646 files, gate maxFiles 0): 901 ext? rows (619
+    // `references` + 282 `imports`), and 5,649 language-root candidates among the
+    // unresolved/amb(decl) residual — `calls` 4,159 (root clojure 4,094 · java 40 · js 19 ·
+    // goog 10 · cljs 4 · javax 1), `references` 904, `instantiates` 223, `imports` 189,
+    // `implements` 64, `extends` 16, `uses` 4. The list is the sole authority; the arbiter
+    // checks the target's ROOT against it; a mismatch refutes the claim, so the arm's
+    // extFAIL staying 0 is the pre-registered condition of this emission rule.
     {
-      const LANGUAGE_PLATFORM_ROOTS = new Set(["clojure", "cljs", "js", "goog"])
+      // Mirrors `incoming-rule.ts namespaceMatchOf` exactly: split the target on `.`, `::`
+      // and `:`, and test prefixes longest-first. A claim attached only where a prefix
+      // matches cannot be refuted by the verifier's own rule.
+      const LANGUAGE_NAMESPACE_ROOTS = ["clojure", "cljs", "js", "goog", "java", "javax"]
+      const rootOf = (target: string): string | null => {
+        if (target.length === 0) return null
+        const segs = target.split(/\.|::|:/)
+        for (let n = segs.length; n >= 1; n--) {
+          const cand = segs.slice(0, n).join(".")
+          if (LANGUAGE_NAMESPACE_ROOTS.includes(cand)) return cand
+        }
+        return null
+      }
       const declaredHere = new Set<string>()
-      for (const s of symbols) {
-        if (typeof s.name === "string" && s.name.length > 0) declaredHere.add(s.name)
+      for (const s2 of symbols) {
+        if (typeof s2.name === "string" && s2.name.length > 0) declaredHere.add(s2.name)
       }
       for (const r of relationships) {
         const md = r.metadata as Record<string, any> | undefined
-        // THE REASON THE ANALYZER ALREADY COMPUTED, and nothing else qualifies.
-        if (!md || md.isLibraryDep !== true || md.isExternalTarget === true) continue
+        if (!md || md.languageNamespace !== undefined) continue
         const tgt = typeof r.target === "string" ? r.target : ""
-        if (tgt.length === 0) continue
-        // A `ns/name` CALL or an interop static is not what this list certifies, and it is
-        // path-like to the arbiter's verifier besides; every `isLibraryDep` target is a
-        // dotted namespace today, so this is a guard rather than a filter with a budget.
-        if (tgt.includes("/") || tgt.includes("\\") || tgt.includes(":")) continue
-        if (declaredHere.has(tgt)) continue
-        // `namespaceRootOf` / `targetOwner`, spelled as `incoming-rule.ts:354` and `:648` spell
-        // them (first dot / final dot) because the claim's evidence and the arbiter's key must
-        // be the same string.
-        const firstDot = tgt.indexOf(".")
-        const root = firstDot > 0 ? tgt.slice(0, firstDot) : tgt
-        if (!LANGUAGE_PLATFORM_ROOTS.has(root)) continue
-        const lastDot = tgt.lastIndexOf(".")
-        const owner = lastDot > 0 ? tgt.slice(0, lastDot) : null
-        if (owner !== null && owner.includes(".")) continue
-        md.isExternalTarget = true
-        md.externalReason = "language-platform-namespace"
-        md.externalSpecifier = root
+        if (tgt.length === 0 || declaredHere.has(tgt)) continue
+        const root = rootOf(tgt)
+        if (root === null) continue
+        md.languageNamespace = LANGUAGE_NAMESPACE_ROOTS
+        md.languageNamespacePolicy = "strict-absent"
+        // Keep the generic marker too: production consumers read `isExternalTarget`, and the
+        // claim kind is chosen by the gate from the more specific key above it.
+        if (md.isExternalTarget !== true) {
+          md.isExternalTarget = true
+          md.externalReason = "language-platform-namespace"
+          md.externalSpecifier = root
+        }
       }
     }
 
@@ -3223,6 +3188,42 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         analysisVersion: "6.0-clojure-yogthos-grammar-pure-ast-single-pass"
       }
     }
+  }
+
+  /**
+   * CLJ-EX3: the EMPTY result for a data file. `.edn` is a data format; this lane
+   * publishes no symbols and no relationships for it (Lead ruling 2026-10-20). The
+   * metadata is the honest zero: one line count, no complexity, no framework, no
+   * type inference, no REPL-driven score, and the same analysisVersion the code
+   * path carries so a consumer can tell a data file from a fallback parser.
+   */
+  private dataOnlyResult(content: string): ASTEngine.ParseResult {
+    return {
+      language: "clojure",
+      symbols: [],
+      relationships: [],
+      imports: [],
+      exports: [],
+      errors: [],
+      metadata: {
+        complexity: 1,
+        linesOfCode: content.split("\n").length,
+        cyclomaticComplexity: 1,
+        framework: undefined,
+        patterns: [],
+        detectedFrameworks: [],
+        frameworkPatterns: [],
+        architecturalInsights: [],
+        architecturalScore: 0,
+        codeQuality: "Fair",
+        hasTypeInference: false,
+        hasFrameworkIntelligence: false,
+        immutabilityScore: 0,
+        concurrencyComplexity: 0,
+        replDrivenScore: 0,
+        analysisVersion: "6.0-clojure-yogthos-grammar-pure-ast-single-pass",
+      },
+    } as ASTEngine.ParseResult
   }
 
   /**

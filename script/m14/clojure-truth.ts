@@ -2201,3 +2201,403 @@ export function deriveClojureCallsTruth(
   })
   return edges
 }
+
+// ── M60 LABEL-COVERAGE CLOSURE (2026-10-20, D4) ────────────────────────────────────────────────
+//
+// The differential compared EIGHT of the lane's TEN emitted labels. Three were broken in the
+// same shape, and the gate itself disclosed it on the clojure draws:
+//
+//   overrides   COMPARED WITH NO TRUTH — "11 comparable, 0 truth". Every override edge was
+//               therefore counted as unexplained (a confident fabrication) or declared
+//               suspicion; neither is coverage.
+//   imports     emitted 1,452 times at whole population, NEVER COMPARED — no oracle existed.
+//   exports     emitted 4,620 times, NEVER COMPARED — no oracle existed.
+//
+// The three derivations below close that. They are written FROM THE GRAMMAR SHAPES, the way the
+// lane's other oracles are, and the contract harness `script/m14/clojure-oracle-contract.ts`
+// measures agreement with the analyzer over the whole admitted population before the Lead wires
+// them into `differential.ts` — an oracle that has never been measured can only move fabrication
+// from one column to another.
+
+/**
+ * TRUTH for `imports` — one edge per dependency DECLARATION, at the spec's line.
+ *
+ * Sites: `ns` libspec clauses (`:require`/`:use`/`:import`/`:require-macros`/`:use-macros`) and the
+ * top-level directive forms (`(require …)`, `(use …)`, `(import …)`). Shapes handled: a bare symbol
+ * spec, a vector spec `[lib :as a …]` (skipping `:as-alias`-only entries — the lib is not loaded),
+ * a prefix list `[prefix [sub :as a]]` (which imports `prefix.sub`), and the `(pkg Cls …)` import
+ * form (which imports the PACKAGE and each nested `(sub :as …)` as `pkg.sub`; class names in the
+ * package form are class imports, not module dependencies — the analyzer's own rule).
+ */
+export function deriveClojureImportsTruth(root: Node): RelEdge[] {
+  const out: RelEdge[] = []
+  const timeline = namespaceTimeline(root)
+  const nsHere = (pos: number): string => nsAt(timeline, pos) || "user"
+  const push = (from: string, to: string, line: number): void => {
+    if (!from || !to || from === to) return
+    out.push({ label: "imports", from, to, line })
+  }
+  const unwrap = (n: Node): Node => (n.type === "quoting_lit" ? (n.namedChild(0) ?? n) : n)
+  const handleSpec = (raw: Node): void => {
+    const spec = unwrap(raw)
+    if (spec.type === "read_cond_lit" || spec.type === "splicing_read_cond_lit") {
+      for (let i = 0; i < spec.namedChildCount; i++) {
+        const c = spec.namedChild(i)
+        if (c && (c.type === "vec_lit" || c.type === "list_lit" || c.type === "sym_lit" || c.type === "quoting_lit" || c.type === "read_cond_lit")) handleSpec(c)
+      }
+      return
+    }
+    const line = spec.startPosition.row + 1
+    if (spec.type === "vec_lit") {
+      if (isAsAliasOnly(spec)) return
+      const first = spec.namedChild(0)
+      const lib = first && first.type === "str_lit"
+        ? (first.text ?? "").replace(/^"/, "").replace(/"$/, "")
+        : libNameOf(spec)
+      if (!lib) return
+      const from = nsHere(spec.startIndex)
+      push(from, lib, line)
+      for (const t of prefixSubTargets(spec)) push(from, t, line)
+      // PREFIX PREFIX-LISTS: `[foo [bar [baz :as b]] [baz :as c]]` — the analyzer reads one more
+      // level than `prefixSubTargets` does (measured: foo.bar@11 and foo.baz@12 on
+      // corpus/prefixed_libspec.clj), so the oracle reads each nested vector's own first symbol.
+      for (let i = 1; i < spec.namedChildCount; i++) {
+        const c = spec.namedChild(i)
+        if (!c || c.type !== "vec_lit") continue
+        const prev = spec.namedChild(i - 1)
+        if (prev && prev.type === "kwd_lit") continue
+        const sub = c.namedChild(0)
+        if (sub && sub.type === "sym_lit") push(from, `${lib}.${symName(sub)}`, c.startPosition.row + 1)
+      }
+      return
+    }
+    if (spec.type === "list_lit") {
+      // `(java.util Date UUID)` — the package is the libspec; class children are not
+      // module dependencies. A nested `(pkg.sub …)` list is a prefix import.
+      const pkg = libNameOf(spec)
+      if (!pkg) return
+      const from = nsHere(spec.startIndex)
+      push(from, pkg, line)
+      for (let i = 1; i < spec.namedChildCount; i++) {
+        const cls = spec.namedChild(i)
+        if (cls && cls.type === "list_lit") {
+          const sub = cls.namedChild(0)
+          if (sub && sub.type === "sym_lit") push(from, `${pkg}.${symName(sub)}`, cls.startPosition.row + 1)
+        }
+      }
+      return
+    }
+    if (spec.type === "sym_lit") {
+      const lib = symName(spec)
+      if (lib) push(nsHere(spec.startIndex), lib, line)
+    }
+  }
+  const processDirective = (n: Node, allowed: Set<string>): void => {
+    const h = executionHead(n)
+    if (!h) return
+    const raw = h.text ?? ""
+    const bare = raw.charCodeAt(0) === 58 ? raw.slice(1) : raw
+    if (!allowed.has(bare)) return
+    for (let i = 1; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (!c || c.type === "kwd_lit") continue
+      handleSpec(c)
+    }
+  }
+  const nsClauses = new Set(["require", "use", "import", "require-macros"])
+  const topDirectives = new Set(["require", "use", "import", "refer", "require-macros"])
+  const rec = (n: Node, data: number): void => {
+    if (n.type === "dis_expr" || n.type === "quoting_lit") return
+    let depth = data
+    if (n.type === "syn_quoting_lit") depth = data + 1
+    else if (n.type === "unquoting_lit" || n.type === "unquote_splicing_lit") depth = Math.max(0, data - 1)
+    if (n.type === "list_lit" && depth === 0) {
+      const h = executionHead(n)
+      const raw = h?.text ?? ""
+      const bare = raw.charCodeAt(0) === 58 ? raw.slice(1) : raw
+      if (bare === "comment") return
+      if (h && (bare === "ns" || bare === "in-ns")) {
+        // An ns form's libspec clauses, including reader-conditional clause wrappers.
+        for (let i = 1; i < n.namedChildCount; i++) {
+          const clause = n.namedChild(i)
+          if (!clause) continue
+          if (clause.type === "list_lit") processDirective(clause, nsClauses)
+          else if (clause.type === "read_cond_lit" || clause.type === "splicing_read_cond_lit") {
+            for (let c = 0; c < clause.namedChildCount; c++) {
+              const inner = clause.namedChild(c)
+              if (inner && inner.type === "list_lit") processDirective(inner, nsClauses)
+            }
+          }
+        }
+      } else if (h && h.type === "sym_lit" && isTopLevelChild(n)) {
+        processDirective(n, topDirectives)
+      }
+    }
+    // A list inside quote/syntax-quote/#_ is DATA: its forms are not dependencies of this file.
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) rec(c, depth) }
+  }
+  rec(root, 0)
+  return out
+}
+
+/**
+ * TRUTH for `exports` — the namespace's public var surface: one edge per surviving name.
+ *
+ * A name is exported when its declaration is NAMESPACE-LEVEL, PUBLIC (no `defn-`, no `^:private`,
+ * no `^{:private true}`) and DEFINED here (`(declare …)` forwards are not definitions). The set of
+ * exported kinds is the analyzer's declared one: functions, variables, classes (records/types) and
+ * interfaces (protocols), plus modules (a file's own namespace symbol is never its own export).
+ */
+export function deriveClojureExportsTruth(root: Node): RelEdge[] {
+  const out: RelEdge[] = []
+  const timeline = namespaceTimeline(root)
+  const exportsByName = new Map<string, { ns: string; name: string; line: number }>()
+
+  const privateMeta = (n: Node): boolean => {
+    const hasPrivateText = (text: string): boolean =>
+      // The metadata spelling is `^:private`, `^{:private true}`, or the SAME metadata folded into
+      // the name symbol's text (`sym_lit: "^:private private-by-meta"` — measured). The name may
+      // then continue with a `-` (`private-by-meta`), so the boundary test must allow a hyphen in
+      // the spelling itself; matching only whitespace/`}` after `private` missed that shape.
+      /(^|[\s{^:])private(?=[\s}],?$|\s+true|\s|\}|$)/.test(text) || /:private\s+true/.test(text)
+    // ^:private / ^{:private true} can sit on the FORM (leading meta, child 0) or on the NAME
+    // (child 1, or wrapped inside it). Scanning only `n` itself missed the second spelling and
+    // fabricated `private.private-defs -> private-by-meta`.
+    for (let i = 0; i < Math.min(3, n.namedChildCount); i++) {
+      const c = n.namedChild(i)
+      if (!c) continue
+      if (c.type === "meta_lit") {
+        if (hasPrivateText(c.text ?? "")) return true
+        const inner = c.namedChild(c.namedChildCount - 1)
+        if (inner && hasPrivateText(inner.text ?? "")) return true
+      }
+      // MEASURED shape: `(defn ^:private private-by-meta [])` folds the metadata into the NAME
+      // SYMBOL'S OWN TEXT (`sym_lit: "^:private private-by-meta"`), so no meta_lit node exists.
+      if (hasPrivateText(c.text ?? "")) return true
+    }
+    return false
+  }
+  // DATA IS NOT CODE: a definition inside quote/comment/#_ is a value, not this file's export.
+  const rec = (n: Node, data: number): void => {
+    if (n.type === "dis_expr" || n.type === "quoting_lit") return
+    let depth = data
+    if (n.type === "syn_quoting_lit") depth = data + 1
+    else if (n.type === "unquoting_lit" || n.type === "unquote_splicing_lit") depth = Math.max(0, data - 1)
+    if (n.type === "list_lit" && depth === 0) {
+      const h = executionHead(n)
+      const head = h && h.type === "sym_lit" ? symName(h) : ""
+      if (head === "comment") return
+      if (isDefLikeHead(head) && head !== "defmethod") {
+        const name = defNameOf(n)
+        const ns = nsAt(timeline, n.startIndex) || "user"
+        const priv = head === "defn-" || privateMeta(n)
+        if (name && !priv && ns !== name) {
+          // TWO MEASURED DETAILS of the analyzer's export surface, mirrored rather than idealised:
+          // 1. The isNSLevel test runs AFTER the walk, so it compares against the FILE'S FINAL
+          //    namespace; a definition written under an earlier ns form is not exported (measured:
+          //    corpus/cond_without_else.clj exports only cond-without-else2 -> n@12, not ns1's n@5).
+          // 2. The RELATIONSHIP pass dedupes by `ns->name` (not by kind), so the FIRST surviving
+          //    declaration of a name is the one exported (measured: corpus/inline_def.clj exports
+          //    foo@4 and x@5, never the later Variable/Function redefinitions).
+          const key = `${ns}->${name}`
+          if (!exportsByName.has(key)) exportsByName.set(key, { ns, name, line: n.startPosition.row + 1 })
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) rec(c, depth) }
+  }
+  rec(root, 0)
+  for (const { ns, name, line } of exportsByName.values()) {
+    if (ns && name && ns !== name) out.push({ label: "exports", from: ns, to: name, line })
+  }
+  return out
+}
+
+/** Data-shape helpers for the overrides oracle: the extending forms and their protocol/method reading. */
+const EXTENDING_FORMS = new Set(["defrecord", "deftype", "extend-type", "extend-protocol", "proxy"])
+
+/**
+ * TRUTH for `overrides` — CLJ-D59: a REDEFINITION of one namespace-level definition by a later one,
+ * outside the same reader conditional (the `.cljc` branch pairs are ONE definition, not a
+ * replacement). The oracle derives the groups from the tree: namespace at the form's position,
+ * definition name, and the enclosing reader-conditional offset (a unique per-form key when the form
+ * is not inside one).
+ */
+export function deriveClojureOverridesTruth(root: Node): RelEdge[] {
+  const out: RelEdge[] = []
+  const timeline = namespaceTimeline(root)
+  const nsHere = (pos: number): string => nsAt(timeline, pos) || "user"
+  const seen = new Set<string>()
+  // ── class 1: a method IMPLEMENTATION supplying a protocol method this file DECLARES ───────────
+  // `(defprotocol P (m [this]))` + `(deftype T [] P (m [this] …))` => overrides `T.m -> P.m`.
+  // The analyzer's strict join: the protocol must be declared in the SAME file, and the method must
+  // be one that protocol declares. The written protocol name is matched first, then its unique
+  // simple name (Clojure qualifies at use, unqualifies at declaration).
+  const protoMethods = new Map<string, Set<string>>() // protocol name as declared -> method names
+  const protoSimple = new Map<string, string[]>() // simple name -> protocol names declared under it
+  const addProtocol = (name: string, form: Node): void => {
+    if (!name) return
+    const methods = new Set<string>()
+    for (let i = 1; i < form.namedChildCount; i++) {
+      const c = form.namedChild(i)
+      if (c && c.type === "list_lit") {
+        const h = executionHead(c)
+        const m = h && (h.type === "sym_lit" || h.type === "kwd_lit") ? symName(h).replace(/^:/, "") : ""
+        if (m) methods.add(m)
+      }
+    }
+    const prev = protoMethods.get(name)
+    protoMethods.set(name, prev ? new Set([...prev, ...methods]) : methods)
+    const seg = name.indexOf(".") >= 0 ? name.slice(name.lastIndexOf(".") + 1) : name
+    const cur = protoSimple.get(seg) ?? []
+    if (!cur.includes(name)) cur.push(name)
+    protoSimple.set(seg, cur)
+  }
+  const resolveProto = (written: string): string => {
+    if (protoMethods.has(written)) return written
+    if (written.indexOf(".") < 0) return ""
+    const cands = protoSimple.get(written.slice(written.lastIndexOf(".") + 1)) ?? []
+    return cands.length === 1 ? cands[0]! : ""
+  }
+  const emitImpl = (type: string, written: string, method: string, line: number): void => {
+    if (!type || !written || !method) return
+    const proto = resolveProto(written)
+    if (!proto) return
+    const declares = protoMethods.get(proto)
+    if (!declares || !declares.has(method)) return
+    const src = `${type}.${method}`
+    const tgt = `${proto}.${method}`
+    if (src === tgt) return
+    const key = `${src}->${tgt}`
+    if (seen.has(key)) return
+    seen.add(key)
+    out.push({ label: "overrides", from: src, to: tgt, line })
+  }
+  /** Protocol names an extending form names, from the tree: symbols between the type and the first
+   *  implementation list. `defrecord`/`deftype` name the type first, then protocols; `extend-type`
+   *  names the type first, then protocols; `extend-protocol` names protocols and types interleaved
+   *  (each type's methods follow it), so its protocol is read per-type below. */
+  const protocolsOf = (form: Node, from: number): string[] => {
+    const out: string[] = []
+    for (let i = from; i < form.namedChildCount; i++) {
+      const c = form.namedChild(i)
+      if (!c) continue
+      if (c.type === "sym_lit") out.push(symName(c))
+      else if (c.type === "vec_lit" || c.type === "list_lit") break
+    }
+    return out
+  }
+  const rec = (n: Node, data: number): void => {
+    if (n.type === "dis_expr" || n.type === "quoting_lit") return
+    let depth = data
+    if (n.type === "syn_quoting_lit") depth = data + 1
+    else if (n.type === "unquoting_lit" || n.type === "unquote_splicing_lit") depth = Math.max(0, data - 1)
+    if (n.type === "list_lit" && depth === 0) {
+      const h = executionHead(n)
+      const head = h && h.type === "sym_lit" ? symName(h) : ""
+      if (head === "defprotocol" || head === "definterface") addProtocol(defNameOf(n), n)
+      else if (head === "defrecord" || head === "deftype") {
+        const type = defNameOf(n)
+        // children: head, name, FIELDS VECTOR, then protocols, then implementation lists
+        const protos = protocolsOf(n, 3)
+        for (let i = 3; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "list_lit") {
+            const mh = executionHead(c)
+            const m = mh && mh.type === "sym_lit" ? symName(mh) : ""
+            for (const p of protos) emitImpl(type, p, m, c.startPosition.row + 1)
+          }
+        }
+      } else if (head === "extend-type") {
+        const typeNode = n.namedChild(1)
+        const type = typeNode && typeNode.type === "sym_lit" ? symName(typeNode) : ""
+        const protos = protocolsOf(n, 2)
+        for (let i = 2; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "list_lit") {
+            const mh = executionHead(c)
+            const m = mh && mh.type === "sym_lit" ? symName(mh) : ""
+            for (const p of protos) emitImpl(type, p, m, c.startPosition.row + 1)
+          }
+        }
+      } else if (head === "extend-protocol") {
+        const protoNode = n.namedChild(1)
+        const proto = protoNode && protoNode.type === "sym_lit" ? symName(protoNode) : ""
+        let currentType = ""
+        for (let i = 2; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "sym_lit") { currentType = symName(c); continue }
+          // A nil/boolean/string type is a type in Clojure's protocol extension (measured:
+          // corpus/override_members.clj has `(extend-protocol Foo nil (-foo …))`).
+          if (c.type === "nil_lit") { currentType = "nil"; continue }
+          if (c.type === "bool_lit") { currentType = c.text; continue }
+          if (c.type === "list_lit") {
+            const mh = executionHead(c)
+            const m = mh && mh.type === "sym_lit" ? symName(mh) : ""
+            emitImpl(currentType, proto, m, c.startPosition.row + 1)
+          }
+        }
+      }
+      // ── class 2: a REDEFINITION of one namespace-level definition by a later one, outside the
+      // same reader conditional (CLJ-D59). Grouped by (ns, name, reader-conditional offset).
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) rec(c, depth) }
+  }
+  rec(root, 0)
+  // class 2: redefinitions
+  const defKindOf = (head: string): boolean => isDefLikeHead(head) && head !== "defmethod"
+  const readCondOf = (n: Node): number => {
+    for (let anc: Node | null = n.parent; anc; anc = anc.parent) {
+      if (anc.type === "read_cond_lit" || anc.type === "splicing_read_cond_lit") return anc.startIndex
+    }
+    return 0
+  }
+  type Def = { ns: string; name: string; line: number; group: string }
+  const defs: Def[] = []
+  const recDefs = (n: Node, data: number): void => {
+    if (n.type === "dis_expr" || n.type === "quoting_lit") return
+    let depth = data
+    if (n.type === "syn_quoting_lit") depth = data + 1
+    else if (n.type === "unquoting_lit" || n.type === "unquote_splicing_lit") depth = Math.max(0, data - 1)
+    if (n.type === "list_lit" && depth === 0) {
+      const h = executionHead(n)
+      const head = h && h.type === "sym_lit" ? symName(h) : ""
+      if (head === "comment") return
+      if (defKindOf(head)) {
+        const name = defNameOf(n)
+        const ns = nsHere(n.startIndex)
+        if (name && ns !== name) {
+          const cond = readCondOf(n)
+          defs.push({ ns, name, line: n.startPosition.row + 1, group: cond !== 0 ? `c${cond}` : `f${n.startIndex}` })
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) recDefs(c, depth) }
+  }
+  recDefs(root, 0)
+  const byKey = new Map<string, Map<string, Def>>()
+  for (const d of defs) {
+    const key = `${d.ns}->${d.name}`
+    const groups = byKey.get(key) ?? new Map<string, Def>()
+    const existing = groups.get(d.group)
+    if (!existing || d.line < existing.line) groups.set(d.group, d)
+    byKey.set(key, groups)
+  }
+  for (const [key, groups] of byKey) {
+    if (groups.size < 2) continue
+    const ordered = [...groups.values()].sort((a, b) => a.line - b.line)
+    void key
+    for (let i = 1; i < ordered.length; i++) {
+      const later = ordered[i]!
+      // ROW identity, not name identity: a file can redefine one name at several later lines and
+      // every later definition is its own override row (measured on corpus/inline_def.clj:
+      // foo@10,14,18 and x@10,12,14,16,20). A shared ns|name key drops all but the first.
+      const rkey = `${later.ns}|${later.name}|${later.line}`
+      if (seen.has(rkey)) continue
+      seen.add(rkey)
+      out.push({ label: "overrides", from: later.ns, to: later.name, line: later.line })
+    }
+  }
+  return out
+}

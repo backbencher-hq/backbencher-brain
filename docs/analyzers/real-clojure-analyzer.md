@@ -611,3 +611,46 @@ else `inferred`, `overrides` → `structural`/`usage_contextual`/`inferred` by c
 relationship is added, removed or retargeted** — clojure fixtures pass 72/72 before and after. Measured on the 72
 expectation-described fixture sources (1,017 relationships): all rows now carry a tier, and the fixtures pin
 `inferred`, `usage_contextual` and `reference_qualified` on rows the analyzer emits with exactly those values.
+
+## CLJ-EX2 — the `languageNamespace` claim (fleet D-bar, 2026-10-20)
+
+**What changed.** Every relationship whose target's ROOT belongs to the closed language/runtime
+namespace set — `clojure · cljs · js · goog · java · javax` — now carries
+`metadata.languageNamespace` (the declared root LIST) and
+`metadata.languageNamespacePolicy: "strict-absent"`; the generic `isExternalTarget` marker is kept
+beside it for production consumers. The root match mirrors `incoming-rule.ts namespaceMatchOf`
+exactly (split on `.`, `::`, `:`, prefixes longest-first), so a claim is attached only where the
+verifier's own rule can match it.
+
+**Why this shape.** The generic `isExternalTarget` marker produced an OWNER claim, checked against
+the PROJECT key space — a project cannot declare `clojure`/`java`, so 619 `references` + 282 `imports`
+rows read `externalUnverified` (ext?): "a claim no check can reach". The `languageNamespace` claim is
+the rule family's instrument for a statement about a NAMESPACE: the list is the evidence, the verifier
+checks the root, and the list is diffable in a review.
+
+**Guard.** `strict-absent` is the cpp precedent: the claim is honored only where the run declares
+nothing for the target (`decls === 0`), so it can never displace a name-model answer. Third-party
+roots (`babashka`, `rewrite-clj`, `ring`, …) are deliberately NOT listed: whether a project vendors a
+library is a PROJECT fact a single-file analyzer cannot know.
+
+**Measured (whole admitted population, 646 files, gate maxFiles 0):** ext? 901 → 0; unresolved
+11,323 → 5,769; extOK 73 → 6,519; extFAIL still 0 — the pre-registered falsifier (ANY refuted claim on
+these roots refutes the emission rule) did not fire. Fixture `language-namespace-claim` pins the
+paths, the policy and the third-party exclusion.
+
+## CLJ-EX3 — EDN IS DATA (Lead ruling, 2026-10-20)
+
+Production routes `.edn` to this lane (`PROJECT_INDEX_EXTENSIONS` and `language-detection` both carry
+it), and the analyzer used to read EDN data literals as code: **15 fabricated rows over 59 EDN files**
+(`clj-kondo/.clj-kondo/config.edn:26 calls user->clojure.test/is`, `bb.edn` `user->shell`,
+`corpus/config_dir/config.edn` `user->bar/weird-macro`). EDN is a data format with no evaluation; a
+symbol or list in an EDN map is a VALUE.
+
+**Rule:** a `.edn` file publishes **NO symbols and NO relationships** (early return in `analyze`,
+`dataOnlyResult`). No Babashka-script exception: data is data. The two-direction fixture is
+`edn-data-rule.edn` (all ten relationship labels forbidden) + `edn-data-rule-code.clj` (the same forms
+in a `.clj` file keep their rows, including the languageNamespace claim on `clojure.test/is`).
+
+**Population statement.** The lane's ROUTER population is therefore wider than its ANALYZABLE
+surface: `.edn` is routed here but produces an empty graph BY CONTRACT. The verdict says so
+explicitly; the whole-population arm moves by −15 rows (calls 11, references 4).
