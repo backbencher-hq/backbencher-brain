@@ -230,25 +230,6 @@ function carriesClaimMarker(md: Record<string, any> | undefined): boolean {
   return false
 }
 
-/**
- * MIRROR of the shared worker's `JS_GLOBALS` denylist (`src/ast/pool-worker.ts`, `keepSymbol`): a
- * JS-family symbol named one of these is DROPPED from the delivered payload even when the file
- * genuinely declares it, and the worker's dropped-symbol invariant then deletes every relationship
- * whose SOURCE or TARGET carries that name. The module-leaf source of `imports`/`exports` edges is
- * the file's stem — so a file named e.g. `process.ts` that declares `function process` loses its
- * ENTIRE import evidence on the way to the product.
- *
- * THE LANE-SIDE GUARD BELOW USES THIS LIST ONLY TO WITHHOLD CLAIMS THAT WOULD BE REFUTED BY THAT
- * DATA LOSS (the arbiter verifies imported-binding claims against the delivered imports edges). It is
- * a WORKAROUND, not the fix: the shared worker should (a) keep a JS_GLOBAL name the file DECLARES and
- * (b) never apply the dropped-symbol invariant to the synthetic module-leaf SOURCE of imports/exports
- * rows. Reported to the Lead; remove this mirror when the shared filter becomes declaration-aware.
- */
-const JS_GLOBAL_DENYLIST_MIRROR = new Set([
-  "window", "document", "console", "process", "global",
-  "__dirname", "__filename", "module", "exports", "default", "globalThis",
-])
-
 function isPlainIdentifier(text: string): boolean {
   if (text.length === 0) return false
   const first = text[0]
@@ -2309,12 +2290,6 @@ class TypeScriptAnalysisRunner {
    *  it names a project module, and the claim would launder a resolvable edge as a binding). */
   private _projectRoot: string = ""
   private _projectPackages: Set<string> = new Set()
-  /** True when this file's import EVIDENCE may be deleted by the shared worker's dropped-symbol
-   *  invariant (see `JS_GLOBAL_DENYLIST_MIRROR`): the module leaf is a JS-global name AND the file
-   *  itself declares a symbol of that name. Imported-binding claims are withheld in that case — the
-   *  arbiter would refute them against missing evidence (measured: bindFAIL 2 on the whole-population
-   *  arm, all in `shopify-api/lib/webhooks/process.ts`). */
-  private _importEvidenceAtRisk = false
   // M49 dup-key ruling (#746): dead spans returned by the Phase-2.5
   // collapse, consumed by the post-walk phantom-edge filter.
   private _dupKeyDeadSpans: { name: string; startRow: number; endRow: number; startCol: number; endCol: number }[] | null = null
@@ -2596,7 +2571,6 @@ class TypeScriptAnalysisRunner {
     this._projectRoot = projectRoot
     this._projectPackages = this.projectPackageNames(projectRoot)
     this._importBindingSpecs = new Map()
-    this._importEvidenceAtRisk = false
 
     // PERF: one pre-pass so `inDecoratorPosition` can answer `false` without an
     // ancestor walk per node. See that method for the measurement — this lane read
@@ -2851,16 +2825,6 @@ class TypeScriptAnalysisRunner {
     //   3. the file-local external markers still own their rows (existing accounting must not shrink);
     //   4. imported-binding CLAIMS land only on rows nobody else claimed;
     //   5. the project-index pass stays last and skips both binding classes (see its PASS 2 guard).
-    // THE EVIDENCE-AT-RISK GUARD: if the delivered imports edges will be deleted by the shared
-    // worker's dropped-symbol invariant, an imported-binding claim would be refuted by the arbiter
-    // (claim without the evidence it is checked against). Withhold the class in that file instead of
-    // publishing refuted claims; the local-binding claim is unaffected (its evidence is the target's
-    // own spelling, delivered inside the row).
-    {
-      const leaf = this.moduleLeafName()
-      const declaresLeaf = symbols.some((sym) => String(sym?.name ?? "") === leaf)
-      this._importEvidenceAtRisk = !!(leaf && declaresLeaf && JS_GLOBAL_DENYLIST_MIRROR.has(leaf))
-    }
     void this.publishImportedBindingEvidence(relationships)
     // LAST, AND DELIBERATELY SO. Every phase that can DROP an edge has run
     // (`dropDuplicateTypeMentionLabels`, `filterPhantomDupKeyEdges`), so a marker can only ever
@@ -4636,7 +4600,6 @@ class TypeScriptAnalysisRunner {
     // claim states where the receiver comes from, and suppressing it would hand the row back to the
     // name model that binds `run` to the wrong class.
     void symbols
-    if (this._importEvidenceAtRisk) return 0
     if (this._importBindingSpecs.size === 0) return 0
     let claimed = 0
     for (const rel of relationships as any[]) {
