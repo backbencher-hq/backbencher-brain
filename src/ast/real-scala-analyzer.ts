@@ -3838,10 +3838,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // TOP-LEVEL export — legal Scala 3, and 39 of the 277 measured declarations
     // are one (tests/pos/i11141.scala, tests/pos/i13476.scala and the
     // package-level exports in tests/neg/package-export/package.scala). Those
-    // publish no owner symbol to point at, so they are sourced at the same
-    // file-scope sentinel the rest of this analyzer uses, "(script)" — never at
-    // a fabricated type name.
-    const source = parent?.name ?? "(script)"
+    // publish no owner symbol to point at, so they are sourced at the FILE_MODULE
+    // sentinel "(file)" — the family sentinel for "this FILE, as a unit"
+    // (FLEET SENTINEL RULING 2026-10-19, Lead: "(script)" is the STATEMENT-scope
+    // sentinel and must never name a FILE-as-a-unit source) — never at a
+    // fabricated type name.
+    const source = parent?.name ?? RealScalaAnalyzer.FILE_MODULE
     const seen = new Set<string>()
 
     for (const e of exportees) {
