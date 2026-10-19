@@ -1881,10 +1881,19 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * 6). A comment is text ABOUT the declaration, never the declaration.
    */
   private declarationLineNode(node: Node): Node {
+    // M60 name-anchor fold (fixture scala/declaration-name-anchoring, held RED as a named defect):
+    // the contract is M59/#825 — the anchor of a declaration is the node its NAME is written on.
+    // The positional walk below is exact for `class Foo` but anchors on the MODIFIER for
+    // modifier-prefixed declarations (tree-sitter-scala models `opaque`/`inline` as their own named
+    // child nodes: `opaque type Size` anchored at column 1, `final opaque type Guarded` at 7).
+    // Read the grammar's own `name` field first — the family's answer (java/kotlin read
+    // `childForFieldName("name")`) — and keep the walk as the fallback for nodes without one.
+    const nameNode = node.childForFieldName?.("name")
+    if (nameNode) return nameNode
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c) continue
-      if (c.type === "annotation" || c.type === "modifiers") continue
+      if (c.type === "annotation" || c.type === "modifiers" || c.type === "opaque_modifier" || c.type === "inline_modifier") continue
       // M59 (#825) / F6: tree-sitter-scala's comment nodes are `comment` and
       // `block_comment` — `line_comment` does not exist in that grammar (the
       // wasm node-type table is the check), so it was dead code.
@@ -2110,7 +2119,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // would delete 210 real edges; refusing the wildcard only where it IS a
         // wildcard cannot. Enumerated, not pattern-matched, because each spelling was
         // checked against what the grammar can put in a type position.
-        if (name === "?" || name === "_") return
+        //
+        // BUG (fixture scala/qmark-declared-is-a-name, RESOLVED 2026-10-19): this
+        // unconditional reject made the per-file guard in the type_identifier branch
+        // DEAD CODE, so a file that DECLARES `type ?[A]` (legal Scala 3) lost its real
+        // `references -> ?` edges. The narrow rule lives in that branch: `?`/`_` are
+        // refused only where the node is a WILDCARD and the file declares no such name
+        // (SCALA4/R7's corpus measurements stand; only the redundant blanket ban goes).
         if (out.some((x) => x.name === name)) return
         out.push({ name, line: n.startPosition.row + 1 })
       }
