@@ -182,6 +182,9 @@ import { deriveTypeScriptUsesTruth } from "./oracles/typescript-uses"
 // in-file mirror that was the old adaptation. One implementation — the lane's — so a stale set
 // cannot be reported as current (the failure mode that produced the old 8-label set).
 import { deriveRubyEdges as deriveRubyLaneEdges, RUBY_ORACLE_LABELS as RUBY_LANE_LABELS } from "./ruby-truth"
+// SCALA lane oracle additions (2026-10-19, fleet phase): imports/exports emitted-but-unaudited labels,
+// derived by the lane-owned syntax truth — one implementation, imported rather than mirrored.
+import { deriveScalaImportTruth, deriveScalaExportTruth } from "./scala-truth"
 import { deriveSolidityImportTruth } from "./oracles/solidity-imports-truth"
 import { deriveSolidityEdges, deriveSolidityCallReferenceEdges } from "./oracles/solidity"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
@@ -19217,8 +19220,13 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
               if (lt !== -1) target = target.slice(0, lt)
             }
             if (!target) continue
-            if (isTraitDecl || isEnumDecl || first) edges.push({ label: "extends", from: clsName, target })
-            else edges.push({ label: "implements", from: clsName, target })
+            // RULING (b) 2026-10-19 (§21.4): scala heritage split is extends (position 0) and
+            // mixes_in (positions >= 1) — the Dart/Ruby cross-language precedent for the SAME
+            // with-clause composition syntax. `implements` is NOT-APPLICABLE for scala (no
+            // conformance-without-composition construct), so this oracle derives NO implements
+            // rows; the analyzer relabel is the other half of the measurement change.
+            if (first) edges.push({ label: "extends", from: clsName, target })
+            else edges.push({ label: "mixes_in", from: clsName, target })
             first = false
           }
         }
@@ -23813,6 +23821,15 @@ async function main() {
         for (const e of deriveScalaReferencesTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // FLEET-PHASE wiring (2026-10-19): imports and exports were emitted by the analyzer but
+        // compared by NOTHING (spec label_coverage named them; no oracle existed). The lane's
+        // syntax truth is imported above; enables the audit of two more emitted labels.
+        for (const e of deriveScalaImportTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveScalaExportTruth(root, relPath)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "groovy") {
         // M37.21 #610: groovy calls oracle (JD-oracle gap, java precedent).
@@ -24730,6 +24747,9 @@ async function main() {
           // (the G7 shape), and enabling the allowlist without the oracle would
           // have reported every reference as fabrication. Both halves land here.
           ...(lang === "scala" ? ["references"] : []),
+          // FLEET PHASE (2026-10-19): imports and exports were emitted but compared by nothing;
+          // mixes_in is the new canonical label from the heritage reclassification (§21.4).
+          ...(lang === "scala" ? ["imports", "exports", "mixes_in"] : []),
           // JD14 (M60, 2026-09-26): javascript joins the CONTAINS-audited set.
           // The label was excluded by construction before this change, so the
           // lane could not have caught containment going missing even once — and
