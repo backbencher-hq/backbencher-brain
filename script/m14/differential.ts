@@ -124,7 +124,7 @@ import { deriveJuliaUsesTruth, deriveJuliaReferencesTruth } from "./oracles/juli
 // M60: clojure's CONTAINS oracle already existed in script/m14/clojure-truth.ts and
 // was wired to NOTHING in this file — only a tmp gate consumed it — so clojure
 // published `contains` that nothing compared while the lane printed a percentage.
-import { deriveClojureContainsTruth, deriveClojureUsesTruth, deriveClojureStaticUsesTruth } from "./clojure-truth"
+import { deriveClojureContainsTruth, deriveClojureUsesTruth, deriveClojureStaticUsesTruth, deriveClojureImportsTruth, deriveClojureExportsTruth, deriveClojureOverridesTruth } from "./clojure-truth"
 // M60: zig-truth.ts carries FOUR finished oracles — containment, imports, exports
 // and instantiation — and every one of them was consumed only by a script/m14/tmp
 // probe. So zig published `contains`, `imports` and `exports` that no comparison
@@ -24438,6 +24438,20 @@ async function main() {
         for (const e of deriveClojureStaticUsesTruth(root, (h) => Boolean(CLOJURE_CORE_BUILTINS[h as keyof typeof CLOJURE_CORE_BUILTINS]))) {
           ;(truth as any[]).push({ label: "uses", from: e.source, target: e.target })
         }
+        // FLEET PHASE (2026-10-19): the three labels the spec named but the allowlist dropped —
+        // imports (1452), exports (4710), overrides (128) — had NO truth in this file (overrides was
+        // even read with "COMPARED WITH NO TRUTH"). The lane's derive*Truth functions are wired here;
+        // pre-wiring contract over all 646 files: imports 98.416% (MISSING 23/unexplained 0), exports
+        // 98.365% (MISSING 77/unexplained 38), overrides 94.531% (MISSING 7/unexplained 0).
+        for (const e of deriveClojureImportsTruth(root)) {
+          ;(truth as any[]).push({ label: "imports", from: e.from, target: e.to })
+        }
+        for (const e of deriveClojureExportsTruth(root)) {
+          ;(truth as any[]).push({ label: "exports", from: e.from, target: e.to })
+        }
+        for (const e of deriveClojureOverridesTruth(root)) {
+          ;(truth as any[]).push({ label: "overrides", from: e.from, target: e.to })
+        }
       }
       if (lang === "clean") {
         // F5 wave (CLEAN): dedicated clean
@@ -24751,6 +24765,9 @@ async function main() {
           // in this file, so the label was unadmitted AND unmeasured — the same
           // finished-but-unconnected shape as typescript and contains.
           ...(lang === "clojure" ? ["uses"] : []),
+          // FLEET PHASE (2026-10-19): imports/exports/overrides were emitted but compared by nothing
+          // (overrides read "COMPARED WITH NO TRUTH"); their lane-owned truth is wired above.
+          ...(lang === "clojure" ? ["imports", "exports", "overrides"] : []),
           // M60 S1 (2026-09-27): scala joins the uses-audited set. Measured
           // before this change: scala emitted 8 labels and the allowlist compared
           // 5, so uses/contains/references — 59-62% of everything the analyzer
