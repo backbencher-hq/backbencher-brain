@@ -74,6 +74,9 @@ for (const [target, shape] of [["move", "std::move"], ["string", "std::string"],
 check("unlisted-std-symbol-unclaimed", claimsOf(calls(on, "for_each")).length === 0, `claims=${claimsOf(calls(on, "for_each")).length}`)
 check("listed-symbol-other-root-unclaimed", claimsOf(calls(on, "move", "mylib::")).length === 0, `claims=${claimsOf(calls(on, "move", "mylib::")).length}`)
 check("unqualified-call-unclaimed", claimsOf(calls(on, "move").filter((x: any) => !String(x.metadata?.qualified ?? "").includes("::"))).length === 0, "bare move claimed")
+// 3b. NARROWING CONTRACT (Lead §18.27): every claim MUST carry the companion policy marker
+check("policy-marker-on-claims", claimsOf(rows(on)).length > 0 && claimsOf(rows(on)).every((x: any) => x.metadata?.languageNamespacePolicy === "strict-absent"), "claimed row without the strict-absent policy marker")
+check("policy-marker-only-with-claim", rows(on).filter((x: any) => x.metadata?.languageNamespacePolicy !== undefined).every((x: any) => Array.isArray(x.metadata?.languageNamespace)), "policy marker on a row with no claim")
 // 4. flag-off byte-identity (metadata-only emission; rows identical)
 const key = (x: any) => `${x.type}\u0000${x.target}`
 check("flag-off-no-citation", claimsOf(rows(base)).length === 0, `claims=${claimsOf(rows(base)).length}`)
