@@ -157,6 +157,40 @@ check(
   `${rows.length} imports rows: ${JSON.stringify(rows.map((r: any) => String(r.target).replace(/\u0000/g, "\\0")))}`,
 )
 
+// ── THE CLAIM-ORDER PIN (D7 binding-claim round, 2026-10-19) ──────────────────────────────────
+// ONE row, two eligible claim families. The external/index passes must own it when an index is
+// present; the imported-binding pass may only claim it when nothing else did. This is the executable
+// form of the whole-population defect that cost 27,459 verified extOK rows (binding claims are SOLE
+// AUTHORITY in the arbiter, so a row carrying both classifies as bindOK and the external claim
+// vanishes).
+{
+  const claimsFile = path.join(PROJECT, "src", "binding-claims.ts")
+  const claimsContent = fs.readFileSync(claimsFile, "utf8")
+  const claimsTree = parser.parse(claimsContent)
+  const withIdx: any = claimsTree
+    ? new RealTypeScriptAnalyzer().analyze(claimsTree.rootNode, claimsContent, path.join("validation", "m14", "fixtures", "typescript", "project-index-imports", "src", "binding-claims.ts"), {
+        projectIndex: projectIndex as any,
+        projectRoot: PROJECT,
+      } as any)
+    : null
+  const noIdx: any = claimsTree
+    ? new RealTypeScriptAnalyzer().analyze(claimsTree.rootNode, claimsContent, path.join("validation", "m14", "fixtures", "typescript", "project-index-imports", "src", "binding-claims.ts"))
+    : null
+  const callRow = (res: any) => (res?.relationships ?? []).find((r: any) => String(r.type) === "calls" && String(r.target) === "run")
+  const withRow = callRow(withIdx)
+  const noRow = callRow(noIdx)
+  check(
+    "CLAIM ORDER: with a complete index the external/index claim OWNS the row (isExternalTarget true, importedBinding ABSENT)",
+    !!withRow && (withRow.metadata ?? {}).isExternalTarget === true && (withRow.metadata ?? {}).importedBinding === undefined,
+    withRow ? JSON.stringify((withRow.metadata ?? { importedBinding: undefined, isExternalTarget: withRow.metadata?.isExternalTarget })) : "row missing",
+  )
+  check(
+    "CLAIM ORDER CONTROL: without an index the imported-binding claim fills the same row (importedBinding present, no external marker)",
+    !!noRow && !!(noRow.metadata ?? {}).importedBinding && (noRow.metadata ?? {}).isExternalTarget !== true,
+    noRow ? JSON.stringify(noRow.metadata?.importedBinding ?? null) : "row missing",
+  )
+}
+
 const failed = outcomes.filter((o) => !o.ok)
 for (const o of outcomes) console.log(`${o.ok ? "  ok  " : "  FAIL"}  ${o.what} — ${o.detail}`)
 console.log(`\nVERDICT: ${failed.length === 0 ? "PASS" : "FAIL"} — ${outcomes.length - failed.length}/${outcomes.length} checks · control arm ${ctrlRespelled === 0 && ctrlClaims === 0 ? "clean (fail-closed)" : "DIRTY — the pass is not fail-closed"}`)

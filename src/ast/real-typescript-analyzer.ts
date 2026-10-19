@@ -205,6 +205,50 @@ function declarationKindName(nodeType: string): string {
 function isNameableHeritageNode(nodeType: string): boolean {
   return nodeType !== "comment" && nodeType !== "ERROR" && nodeType !== "type_arguments"
 }
+/**
+ * DOES THIS ROW ALREADY CARRY A CLAIM? Every marker key the pipeline can attach, from the arbiter's
+ * own vocabulary (`script/m14/incoming-rule.ts` claims) plus this analyzer's external marker.
+ *
+ * The guard exists because the arbiter's binding and imported-binding claims are SOLE AUTHORITY for
+ * their rows (checked before the generic external markers). A row carrying BOTH therefore classifies
+ * as `bindOK` and its `extOK`/`ext?` claim disappears — measured on the whole-population arm as
+ * `extOK −27,459` and `ext? −3,633`, a defect the lane's first emission had. A claim may only land on
+ * a row NOBODY else claimed, so this guard is consulted by BOTH binding passes.
+ */
+function carriesClaimMarker(md: Record<string, any> | undefined): boolean {
+  if (!md || typeof md !== "object") return false
+  if (md.isExternalTarget === true) return true
+  const keys = [
+    "localBinding", "importedBinding", "defaultExport", "moduleExports", "importOutsideProject",
+    "importProjectFile", "remoteRef", "baseBeyondRunScope", "languageNamespace", "sourcePathClaim",
+  ]
+  for (const k of keys) {
+    const v = md[k]
+    if (v === true) return true
+    if (v !== undefined && v !== null && v !== false) return true
+  }
+  return false
+}
+
+/**
+ * MIRROR of the shared worker's `JS_GLOBALS` denylist (`src/ast/pool-worker.ts`, `keepSymbol`): a
+ * JS-family symbol named one of these is DROPPED from the delivered payload even when the file
+ * genuinely declares it, and the worker's dropped-symbol invariant then deletes every relationship
+ * whose SOURCE or TARGET carries that name. The module-leaf source of `imports`/`exports` edges is
+ * the file's stem — so a file named e.g. `process.ts` that declares `function process` loses its
+ * ENTIRE import evidence on the way to the product.
+ *
+ * THE LANE-SIDE GUARD BELOW USES THIS LIST ONLY TO WITHHOLD CLAIMS THAT WOULD BE REFUTED BY THAT
+ * DATA LOSS (the arbiter verifies imported-binding claims against the delivered imports edges). It is
+ * a WORKAROUND, not the fix: the shared worker should (a) keep a JS_GLOBAL name the file DECLARES and
+ * (b) never apply the dropped-symbol invariant to the synthetic module-leaf SOURCE of imports/exports
+ * rows. Reported to the Lead; remove this mirror when the shared filter becomes declaration-aware.
+ */
+const JS_GLOBAL_DENYLIST_MIRROR = new Set([
+  "window", "document", "console", "process", "global",
+  "__dirname", "__filename", "module", "exports", "default", "globalThis",
+])
+
 function isPlainIdentifier(text: string): boolean {
   if (text.length === 0) return false
   const first = text[0]
@@ -2265,6 +2309,12 @@ class TypeScriptAnalysisRunner {
    *  it names a project module, and the claim would launder a resolvable edge as a binding). */
   private _projectRoot: string = ""
   private _projectPackages: Set<string> = new Set()
+  /** True when this file's import EVIDENCE may be deleted by the shared worker's dropped-symbol
+   *  invariant (see `JS_GLOBAL_DENYLIST_MIRROR`): the module leaf is a JS-global name AND the file
+   *  itself declares a symbol of that name. Imported-binding claims are withheld in that case — the
+   *  arbiter would refute them against missing evidence (measured: bindFAIL 2 on the whole-population
+   *  arm, all in `shopify-api/lib/webhooks/process.ts`). */
+  private _importEvidenceAtRisk = false
   // M49 dup-key ruling (#746): dead spans returned by the Phase-2.5
   // collapse, consumed by the post-walk phantom-edge filter.
   private _dupKeyDeadSpans: { name: string; startRow: number; endRow: number; startCol: number; endCol: number }[] | null = null
@@ -2546,6 +2596,7 @@ class TypeScriptAnalysisRunner {
     this._projectRoot = projectRoot
     this._projectPackages = this.projectPackageNames(projectRoot)
     this._importBindingSpecs = new Map()
+    this._importEvidenceAtRisk = false
 
     // PERF: one pre-pass so `inDecoratorPosition` can answer `false` without an
     // ancestor walk per node. See that method for the measurement — this lane read
@@ -2800,18 +2851,35 @@ class TypeScriptAnalysisRunner {
     //   3. the file-local external markers still own their rows (existing accounting must not shrink);
     //   4. imported-binding CLAIMS land only on rows nobody else claimed;
     //   5. the project-index pass stays last and skips both binding classes (see its PASS 2 guard).
+    // THE EVIDENCE-AT-RISK GUARD: if the delivered imports edges will be deleted by the shared
+    // worker's dropped-symbol invariant, an imported-binding claim would be refuted by the arbiter
+    // (claim without the evidence it is checked against). Withhold the class in that file instead of
+    // publishing refuted claims; the local-binding claim is unaffected (its evidence is the target's
+    // own spelling, delivered inside the row).
+    {
+      const leaf = this.moduleLeafName()
+      const declaresLeaf = symbols.some((sym) => String(sym?.name ?? "") === leaf)
+      this._importEvidenceAtRisk = !!(leaf && declaresLeaf && JS_GLOBAL_DENYLIST_MIRROR.has(leaf))
+    }
     void this.publishImportedBindingEvidence(relationships)
-    void this.applyLocalBindingSpellings(rootNode, relationships, symbols)
     // LAST, AND DELIBERATELY SO. Every phase that can DROP an edge has run
     // (`dropDuplicateTypeMentionLabels`, `filterPhantomDupKeyEdges`), so a marker can only ever
     // land on a row that is actually published — marking earlier would leave claims on rows that
     // no longer exist, which is a claim about nothing. The pass reads this file's own symbols and
     // import edges as its evidence; it changes no target, no source and no line.
     void this.markExternalTargets(relationships, symbols)
-    void this.applyImportedBindingClaims(relationships, symbols)
-    // THE PROJECT-INDEX PASS, last of all — it can only run on a COMPLETE index and it is
-    // fail-closed, so it is a no-op in every sampled run (see the method's header).
+    // THE PROJECT-INDEX PASS — it can only run on a COMPLETE index and it is fail-closed, so it is a
+    // no-op in every sampled run (see the method's header). It runs BEFORE the binding passes
+    // deliberately: its external claims own their rows, and a binding claim landing on one of them
+    // would steal a verified `extOK`/`ext?` row into `bindOK` (the arbiter's binding claims are sole
+    // authority) — the measured whole-population defect this ordering fixes.
     void this.applyProjectIndexClaims(relationships, context)
+    // THE BINDING PASSES, LAST — they may only claim rows nobody else claimed (see
+    // `carriesClaimMarker`). Re-spell before claiming, so a locally-bound target is claimed by its
+    // own spelling and never by a stale bare name; each pass re-checks the guard because the spell
+    // pass itself marks rows.
+    void this.applyLocalBindingSpellings(rootNode, relationships, symbols)
+    void this.applyImportedBindingClaims(relationships, symbols)
 
     return {
       language: "typescript",
@@ -4511,6 +4579,7 @@ class TypeScriptAnalysisRunner {
     for (const rel of relationships as any[]) {
       if (String(rel?.type ?? "") !== "imports") continue
       const md: Record<string, any> = (rel.metadata ??= {})
+      if (md.isReExport === true) continue
       const modulePath = typeof md.module === "string" ? md.module : ""
       if (modulePath.length === 0) continue
       const target = String(rel.target ?? "")
@@ -4567,14 +4636,14 @@ class TypeScriptAnalysisRunner {
     // claim states where the receiver comes from, and suppressing it would hand the row back to the
     // name model that binds `run` to the wrong class.
     void symbols
+    if (this._importEvidenceAtRisk) return 0
     if (this._importBindingSpecs.size === 0) return 0
     let claimed = 0
     for (const rel of relationships as any[]) {
       const label = String(rel?.type ?? "")
       if (label === "imports" || label === "contains") continue
       const md: Record<string, any> = (rel.metadata ??= {})
-      if (md.isExternalTarget === true || md.localBinding === true || md.importedBinding !== undefined) continue
-      if (typeof md.causeBase === "string" || typeof md.baseBeyondRunScope === "string") continue
+      if (carriesClaimMarker(md)) continue
       const target = String(rel.target ?? "")
       if (target.length === 0) continue
       const receiverRoot = (() => {
@@ -4705,8 +4774,7 @@ class TypeScriptAnalysisRunner {
       const label = String(rel?.type ?? "")
       if (!labels.has(label)) continue
       const md: Record<string, any> = (rel.metadata ??= {})
-      if (md.isExternalTarget === true || md.localBinding === true || md.importedBinding !== undefined) continue
-      if (typeof md.causeBase === "string" || typeof md.baseBeyondRunScope === "string") continue
+      if (carriesClaimMarker(md)) continue
       const target = String(rel.target ?? "")
       if (!isPlainIdentifier(target)) continue
       const kind = localBindings.get(target)
