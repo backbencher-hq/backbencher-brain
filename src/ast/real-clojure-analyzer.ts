@@ -207,6 +207,33 @@ function defNameNodeOf(node: Node): Node | null {
   return null
 }
 
+/**
+ * A4/A3 (2026-10-20) — A PUBLISHED NAME IS AN IDENTIFIER.
+ *
+ * Two analyzer-defect classes on the accepted D1–D6 draw were names that no Clojure
+ * reader can bind: a STRING literal in the name position (`(defn "bad docstring"
+ * testname …)` on invalid test code) and a READER-CONDITIONAL node
+ * (`(defn #?@(:clj [seqable?] :cljs [^boolean seqable?]) …)`), whose node text is the
+ * whole `#?@(…)` form. The symbol/exports/contains passes published those node texts as
+ * names (10 exports + 15 contains rows at whole population). A name carrying reader or
+ * string syntax is not an identifier; the honest answer is to publish NOTHING for that
+ * declaration rather than a name the graph can never navigate to.
+ *
+ * Whitespace, quotes and the reader delimiters `()[]{}#;` cannot occur in a Clojure
+ * symbol, so their presence is a structural rejection, not a lexical judgement.
+ */
+export function isPublishableName(name: string): boolean {
+  if (name.length === 0) return false
+  for (let i = 0; i < name.length; i++) {
+    const c = name.charCodeAt(i)
+    // whitespace
+    if (c === 32 || c === 9 || c === 10 || c === 13) return false
+    // " ( ) [ ] { } # ;  — reader/string syntax
+    if (c === 34 || c === 40 || c === 41 || c === 91 || c === 93 || c === 123 || c === 125 || c === 35 || c === 59) return false
+  }
+  return true
+}
+
 function isDefLikeHead(head: string): boolean {
   if (head.length < 3) return false
   if (head.charCodeAt(0) !== 100 /* d */ || head.charCodeAt(1) !== 101 /* e */ || head.charCodeAt(2) !== 102 /* f */) return false
@@ -479,6 +506,12 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // public. Meta stays DATA (CLJ-D5) — this only READS the flag.
     const metaHasPrivate = (nd: Node | null): boolean => {
       if (!nd) return false
+      // A2: `meta_lit` is the `^` spelling; `old_meta_lit` is the LEGACY `#^` reader
+      // form, which the old wrapper test did not recognise at all. A name symbol may
+      // also carry the metadata folded into its own TEXT (`sym_lit: "^:private f"`),
+      // so an own-text scan is part of the same check. Measured defects: 5 exports
+      // of private declarations the analyzer published as public (defmulti name
+      // metadata ×3, `#^` macro ×1, `#^` def ×1).
       const scan = (n: Node): boolean => {
         if (n.type === "kwd_lit" && n.text === ":private") return true
         for (let i = 0; i < n.namedChildCount; i++) {
@@ -487,10 +520,12 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         return false
       }
+      if ((nd.type === "sym_lit" || nd.type === "sym_name") && /(^|\s|\^):?private(\s|$|\})/.test(nd.text ?? "")) return true
       for (let i = 0; i < nd.namedChildCount; i++) {
         const c = nd.namedChild(i)
-        if (c && c.type === "meta_lit" && scan(c)) return true
+        if (c && (c.type === "meta_lit" || c.type === "old_meta_lit") && scan(c)) return true
       }
+      if (nd.type === "meta_lit" || nd.type === "old_meta_lit") return scan(nd)
       return false
     }
 
@@ -813,6 +848,19 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!fromNs || !lib || fromNs === lib) return
       pushRel(fromNs, lib, ASTEngine.RelationshipType.Imports, 1.0,
         { clojureSpecific: true, isLibraryDep: true, isImport: true, evidenceClass: "structural", ...(extra ?? {}) }, line)
+    }
+
+    // A5 (2026-10-20): the directive forms are TOP-LEVEL by contract ("top-level
+    // directive forms after the ns"), but the branch fired for any nested list whose
+    // head was `require`/`use`/`import`/`refer` — `(. *ns* (refer (or (rename sym) sym) v))`
+    // inside clojure.core read the nested list `(or …)` as a PACKAGE and emitted
+    // `imports clojure.core -> or`. A data/body position is never a directive.
+    const isTopLevelDirective = (n: Node): boolean => {
+      for (let p: Node | null = n.parent; p; p = p.parent) {
+        if (p.type === "source") return true
+        if (p.type === "list_lit" || p.type === "vec_lit" || p.type === "map_lit" || p.type === "set_lit") return false
+      }
+      return false
     }
 
     const handleLibNode = (rawNode: Node) => {
@@ -1656,31 +1704,48 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `s/join`-style call dangling. The kwd-headed ns clauses
         // (`(:require …)`) are consumed by the ns branch above; this branch
         // fires only for sym-headed top-level forms.
-        else if ((formName === "require" || formName === "use" || formName === "import" || formName === "refer" || formName === "require-macros") && executionHead(node)?.type === "sym_lit") {
+        else if ((formName === "require" || formName === "use" || formName === "import" || formName === "refer" || formName === "require-macros") && executionHead(node)?.type === "sym_lit" && isTopLevelDirective(node)) {
           for (let j = 1; j < node.namedChildCount; j++) {
             const libNode = node.namedChild(j)
-            if (libNode) handleLibNode(libNode)
+            if (!libNode) continue
+            // A5: `(require ns)` where `ns` is an UNQUOTED, UNQUALIFIED symbol is a
+            // DYNAMIC argument (a local var), not a libspec. Clojure's static requires
+            // spell the lib quoted, dotted, or as a vector/list spec; the analyzer read
+            // the local name as a library and emitted an `imports` edge for it.
+            if (libNode.type === "sym_lit" && !libNode.text.includes(".") && !libNode.text.includes("/")) continue
+            handleLibNode(libNode)
           }
         }
         // ── defn / defn- / defmacro ──────────────────────────────────────
         else if (bareForm === "defn" || bareForm === "defn-" || bareForm === "defmacro" || bareForm === "s/defn" || formName === "mu/defn") {
           const isMacro = bareForm === "defmacro"
+          // A3 (2026-10-20): the name position may hold METADATA (fold through it), or
+          // STRING / READER-CONDITIONAL syntax — which is not an identifier. Publishing
+          // the node's text as a name produced `(defn "bad docstring" testname …)` ->
+          // export `"bad docstring"` and `(defn #?@(…) …)` -> export `#?@(…)`. A form
+          // whose name no reader can bind publishes NO symbol and NO export.
+          const nameNode2 = defNameNodeOf(node)
+          const rawName = nameNode2 ? symName(nameNode2) : ""
+          const name = isPublishableName(rawName) ? rawName : ""
           // W24-mr3: `defn-` AND `^{:private true}` / `^:private` both bind private.
-          const isPrivate = formName === "defn-" || metaHasPrivate(node.namedChild(1))
-          const name = symName(node.namedChild(1)) || "unknown"
-          const funcSymbol: ASTEngine.UniversalSymbol = {
-            name, kind: ASTEngine.SymbolKind.Function,
-            range: this.nodeToRange(node), scope: currentNamespace, ownerName: currentNamespace,
-            visibility: isPrivate ? "private" : "public",
-            parameters: extractParams(node),
-            metadata: { clojureSpecific: true, isPure: true, complexity: 1, isMacro: isMacro || undefined }
+          const isPrivate = formName === "defn-" || metaHasPrivate(node.namedChild(1)) || metaHasPrivate(nameNode2)
+          if (name) {
+            const funcSymbol: ASTEngine.UniversalSymbol = {
+              name, kind: ASTEngine.SymbolKind.Function,
+              range: this.nodeToRange(node), scope: currentNamespace, ownerName: currentNamespace,
+              visibility: isPrivate ? "private" : "public",
+              parameters: extractParams(node),
+              metadata: { clojureSpecific: true, isPure: true, complexity: 1, isMacro: isMacro || undefined }
+            }
+            symbols.push(funcSymbol)
+            activeFunction = funcSymbol
+            attachDocs(funcSymbol, node, "fn")
           }
-          symbols.push(funcSymbol)
-          activeFunction = funcSymbol
-          attachDocs(funcSymbol, node, "fn")
           if (isMacro) patterns["Metaprogramming"] = true
-          exports.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), visibility: isPrivate ? "private" : "public" })
-          exportNamespaces.push(currentNamespace)
+          if (name) {
+            exports.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), visibility: isPrivate ? "private" : "public" })
+            exportNamespaces.push(currentNamespace)
+          }
         }
         // ── deftest (clojure.test) ───────────────────────────────────────
         // The test body is a function: calls inside it were dropped entirely
@@ -1964,16 +2029,20 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         // ── defmulti / defmethod ─────────────────────────────────────────
         else if (formName === "defmulti") {
-          const name = symName(node.namedChild(1)) || "unknown"
+          const multiNameNode = defNameNodeOf(node)
+          const name = multiNameNode ? symName(multiNameNode) : "unknown"
+          // A2 (CLJ-D27 twin): defmulti's name may carry `^:private` metadata; the
+          // handler never read it, so 3 private multimethods were exported as public.
+          const multiVisibility = metaHasPrivate(node.namedChild(1)) || metaHasPrivate(multiNameNode) ? "private" : "public"
           const multiSym: ASTEngine.UniversalSymbol = {
             name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node),
-            scope: currentNamespace, ownerName: currentNamespace, visibility: "public",
+            scope: currentNamespace, ownerName: currentNamespace, visibility: multiVisibility,
             metadata: { clojureSpecific: true, isMultimethod: true }
           }
           symbols.push(multiSym)
           attachDocs(multiSym, node, "always")
           patterns["Multimethods"] = true
-          exports.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), visibility: "public" })
+          exports.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), visibility: multiVisibility })
           exportNamespaces.push(currentNamespace)
         } else if (formName === "defmethod") {
           const multiName = symName(node.namedChild(1)) || "unknown"
@@ -2663,6 +2732,17 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (s.range.startLine < prev.range.startLine) containsPick.set(key, s)
     }
     for (const s of containsPick.values()) {
+      // A4 (2026-10-20): `(declare …)` interns a var with NO definition (CLJ-D23), so it
+      // is not a containment of the namespace. The export and override passes already
+      // excluded forward declarations; contains did not (25 rows whole population).
+      // SPEC NAMES ARE NOT FORWARD DECLARATIONS: `(s/def ::email …)` legitimately
+      // publishes a containment for a name the spec describes (CLJ-D35), so the filter
+      // is the declare marker alone, not the broader `isDefinition` preference test.
+      if (s.metadata?.isForwardDeclaration === true) continue
+      // A3: a name carrying string/reader syntax is not an identifier — the reader-
+      // conditional and string-literal name positions must publish NOTHING rather than
+      // the node's text.
+      if (!isPublishableName(s.name)) continue
       // M59 (#825): the contains edge carries the owned symbol's own
       // declaration line (erlang parity) — never 0.
       pushRel(s.ownerName!, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range.startLine)
@@ -2817,6 +2897,12 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       definedNames.add(s.name)
     }
     for (const s of symbols) {
+      // A1: a METHOD IMPLEMENTATION is not a namespace-level definition. `defmethod`
+      // impl symbols carry isMethodImpl; record/type/proxy/reify method impls carry
+      // isProtocolMethodImpl. Both were published as exports (29 rows whole pop).
+      if (s.metadata?.isMethodImpl === true || s.metadata?.isProtocolMethodImpl === true || s.metadata?.isRecordMethod === true) continue
+      // A3: a non-identifier name is not publishable.
+      if (!isPublishableName(s.name)) continue
       const isNSLevel = !s.scope || s.scope === currentNamespace || (s.ownerName === currentNamespace)
       // CLJ-D23: a `(declare …)` var is public in its namespace but NOT defined
       // here, so it is not an export of this file. Without the exclusion the
@@ -2858,6 +2944,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       // mean. (The rows that used to reach here carried `visibility: "private"`
       // — 415 functions and 68 variables over the 143-file clojure corpus.)
       if (e.visibility && e.visibility !== "public") continue
+      if (!isPublishableName(e.name)) continue
       const key = `${e.name}|${e.kind}`
       if (seenExports.has(key)) continue
       seenExports.add(key)
