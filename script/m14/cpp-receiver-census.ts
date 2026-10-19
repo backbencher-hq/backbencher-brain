@@ -178,7 +178,7 @@ const namespaceRoots: Record<string, number> = {}
 /** repo -> the NAMESPACE names it DECLARES (so a project's own namespace is never called a platform
  *  citation), and the per-row (root, repo) list the citation census is computed from after the walk. */
 const declaredNamespaces = new Map<string, Set<string>>()
-const namespaceRows: Array<{ root: string; repo: string }> = []
+const namespaceRows: Array<{ root: string; repo: string; leaf: string }> = []
 const note = (k: string) => { classes[k] = (classes[k] ?? 0) + 1 }
 
 type Residue = { file: string; line: number; target: string; cls: string; detail: string }
@@ -320,7 +320,33 @@ for (const abs of files) {
           // ── classify the receiver evidence ──
           let cls = "opaque"
           let detail = ""
-          if (fn.type === "field_expression") {
+          let qualifiedOwnerHandled = false
+          {
+            // THE SPELLING'S ROOT, read from whatever the grammar made of the callee: a fully qualified
+            // callee (`std::move`), a qualified OBJECT (`std::chrono::steady_clock::now()` — object type
+            // field_expression!), or a qualified template. Any `::` in the callee/object path means the
+            // owner is SPELLED (namespace or class), which is the citation census's unit — classifying
+            // these as receiver evidence was the measured undercount (800-file sample: 1,062 std rows here
+            // against 2,271 actual claims from the same files).
+            let qtext = ""
+            if (fn.type === "field_expression") {
+              const qobj = fn.childForFieldName?.("argument") ?? fn.namedChild(0)
+              qtext = String(qobj?.text ?? "")
+            } else {
+              qtext = String(fn.text ?? "")
+            }
+            if (qtext.includes("::")) {
+              const qroot = qtext.replace(/^::/, "").split("::")[0].trim()
+              cls = "namespace-qualified"
+              detail = qroot
+              if (qroot !== "") {
+                namespaceRoots[qroot] = (namespaceRoots[qroot] ?? 0) + 1
+                namespaceRows.push({ root: qroot, repo, leaf: r.target })
+              }
+              qualifiedOwnerHandled = true
+            }
+          }
+          if (!qualifiedOwnerHandled && fn.type === "field_expression") {
             const obj = fn.childForFieldName?.("argument") ?? fn.namedChild(0)
             const op = fn.child(1)?.text ?? ""    // `.` or `->`
             if (obj && obj.type === "call_expression") {
@@ -352,9 +378,9 @@ for (const abs of files) {
               } else { cls = "opaque"; detail = "object name has no written type in this function" }
             } else { cls = "opaque"; detail = `object node ${obj?.type}` }
             void op
-          } else if (fn.type === "qualified_identifier" ||
+          } else if (!qualifiedOwnerHandled && (fn.type === "qualified_identifier" ||
             (fn.type === "template_function" && fn.namedChildCount > 0 && fn.namedChild(0)?.type === "qualified_identifier") ||
-            (fn.type === "field_expression" && (() => { const o = fn.childForFieldName?.("argument") ?? fn.namedChild(0); return o && o.type === "qualified_identifier" })())) {
+            (fn.type === "field_expression" && (() => { const o = fn.childForFieldName?.("argument") ?? fn.namedChild(0); return o && o.type === "qualified_identifier" })()))) {
             // A QUALIFIED callee/free function (`std::move`, `ns::detail::f`, `std::chrono::steady_clock::now`):
             // the owner is a NAMESPACE (or a class, checked elsewhere) spelled in the source. Record the ROOT
             // segment — the citation-census unit — and classify as namespace-qualified, not opaque.
@@ -366,7 +392,7 @@ for (const abs of files) {
             detail = root
             if (root !== "") {
               namespaceRoots[root] = (namespaceRoots[root] ?? 0) + 1
-              namespaceRows.push({ root, repo })
+              namespaceRows.push({ root, repo, leaf: r.target })
             }
           } else if (fn.type === "identifier") {
             // bare callee: implicit-this if the enclosing class declares the leaf
@@ -379,7 +405,8 @@ for (const abs of files) {
           // the enclosing class), then TWO facts: does the in-file owner declare the leaf, and (with
           // --index) does the index's inheritance-closed member view?
           let ownerCandidate = ""
-          if (cls === "implicit-this") ownerCandidate = detail
+          if (cls === "namespace-qualified") ownerCandidate = detail
+          else if (cls === "implicit-this") ownerCandidate = detail
           else if (cls === "typed-local") {
             const holder = lastTypeName(detail)
             ownerCandidate = WRAPPER_POINTEE.has(holder) ? templateArg(detail) : holder
@@ -430,17 +457,51 @@ const report = {
   namespaceCitation: (() => {
     const projectDeclared: Record<string, number> = {}
     const undeclaredCandidates: Record<string, number> = {}
-    for (const { root, repo } of namespaceRows) {
-      if (declaredNamespaces.get(repo)?.has(root) === true) projectDeclared[root] = (projectDeclared[root] ?? 0) + 1
-      else undeclaredCandidates[root] = (undeclaredCandidates[root] ?? 0) + 1
+    // THE CITATION CANDIDATE IS A TRUE NAMESPACE, not a static-class call: exclude (a) roots the
+    // repo DECLARES as a namespace (the project's own `fmt::`, `duckdb::`) and (b) roots the INDEX
+    // says are CLASS-LIKE (`StringUtil::Format`, `LogicalType::X` — owner qualification, already the
+    // qualified-owner emission's territory, NOT a citation). Without --index the class-like filter is
+    // unavailable and the report says so.
+    const candidateSymbols: Record<string, number> = {}
+    const rootSymbols: Record<string, Record<string, number>> = {}
+    const candidateRoots: Record<string, number> = {}
+    const classLikeRoots: Record<string, number> = {}
+    let candidateRows = 0
+    let classLikeRows = 0
+    for (const { root, repo, leaf } of namespaceRows) {
+      if (declaredNamespaces.get(repo)?.has(root) === true) { projectDeclared[root] = (projectDeclared[root] ?? 0) + 1; continue }
+      undeclaredCandidates[root] = (undeclaredCandidates[root] ?? 0) + 1
+      const idx = repoIndexes.get(repo)
+      const kind = idx?.typeKinds.get(root)
+      if (typeof kind === "string" && INDEX_CLASS_KINDS.has(kind)) {
+        classLikeRows++
+        classLikeRoots[root] = (classLikeRoots[root] ?? 0) + 1
+        continue
+      }
+      candidateRows++
+      candidateRoots[root] = (candidateRoots[root] ?? 0) + 1
+      candidateSymbols[leaf] = (candidateSymbols[leaf] ?? 0) + 1
+      const rs = rootSymbols[root] ?? (rootSymbols[root] = {})
+      rs[leaf] = (rs[leaf] ?? 0) + 1
     }
-    const sortTop = (m: Record<string, number>) => Object.fromEntries(Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 40))
+    const sortTop = (m: Record<string, number>) => Object.fromEntries(Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 60))
     return {
       rule: "namespace-qualified residual call roots, split by whether the ROOT is a namespace this repo DECLARES (project namespace — not a citation) or not (candidate platform namespace — the citation question). Roots are the unit the fleet's `languageNamespace` citation claim matches; a candidate still needs a committed vocabulary before a lane may claim it (citations.ts).",
       projectNamespaceRows: Object.values(projectDeclared).reduce((a, b) => a + b, 0),
-      candidateRows: Object.values(undeclaredCandidates).reduce((a, b) => a + b, 0),
+      candidateRows,
+      classLikeQualifiedRows: classLikeRows,
       projectDeclaredRoots: sortTop(projectDeclared),
-      candidateRoots: sortTop(undeclaredCandidates),
+      candidateRoots: sortTop(candidateRoots),
+      classLikeRoots: sortTop(classLikeRoots),
+      undeclaredRootsBeforeClassFilter: sortTop(undeclaredCandidates),
+      // THE VOCABULARY'S UNIT: the LEAF spellings of candidate rows, so the Lead can curate a
+      // symbol-level `iso-cpp-stdlib` list from measured spellings instead of a lane-invented one.
+      candidateSymbols: sortTop(candidateSymbols),
+      // Per-root symbol histogram for the roots with the volume to matter: the vocabulary a Lead
+      // curates is SYMBOL-level, so the top spellings per ROOT are the actionable list.
+      rootSymbols: Object.fromEntries(Object.entries(rootSymbols)
+        .sort((a, b) => (candidateRoots[b[0]] ?? 0) - (candidateRoots[a[0]] ?? 0)).slice(0, 12)
+        .map(([root, syms]) => [root, Object.fromEntries(Object.entries(syms).sort((a, b) => b[1] - a[1]).slice(0, 20))])),
     }
   })(),
   samples,
