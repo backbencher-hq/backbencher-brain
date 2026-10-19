@@ -1287,6 +1287,62 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       if (base) projectFacts.set(repo, { ...base, importsByFile: byFile })
     }
   }
+  // OWNER-MEMBER EVIDENCE (ownerMemberAbsent claim): built from the SAME symbols the owner channel
+  // reads, and INHERITANCE-CLOSED so an inherited member can never be cited as absent. Map:
+  // owner name -> the member names declared by that type OR any ancestor namable from the run.
+  // Unknown owners are simply absent from the map (claim => UNVERIFIABLE, never accepted).
+  if (projectFacts && projectOwnerRecords.size > 0) {
+    const leaf = (n: string): string => {
+      const t = n.replace(/[<[].*$/, "").trim()
+      const segs = t.split(/[.:]/).filter((x) => x.length > 0)
+      return segs.length > 0 ? segs[segs.length - 1] : t
+    }
+    for (const [repo, recs] of projectOwnerRecords) {
+      const base = projectFacts.get(repo)
+      if (!base) continue
+      // class-like name -> heritage names; members keyed by the owner spelling the analyzers publish
+      const supers = new Map<string, string[]>()
+      const membersByName = new Map<string, Set<string>>()
+      const addKey = (m: Map<string, string[]>, k: string, v: string[]) => {
+        const cur = m.get(k)
+        if (cur) m.set(k, [...cur, ...v])
+        else m.set(k, v)
+      }
+      for (const r of recs) {
+        if (r.ownerName) {
+          const keys = new Set([r.ownerName, leaf(r.ownerName)])
+          for (const k of keys) {
+            let set = membersByName.get(k)
+            if (!set) membersByName.set(k, (set = new Set()))
+            set.add(r.name)
+          }
+          continue
+        }
+        for (const k of new Set([r.name, leaf(r.name)])) {
+          const sup = (r.superTypes ?? []).map(leaf).filter((x) => x.length > 0)
+          if (sup.length > 0) addKey(supers, k, sup)
+        }
+      }
+      const closed = new Map<string, Set<string>>()
+      for (const start of membersByName.keys()) {
+        const out = new Set<string>()
+        const seen = new Set<string>([start])
+        const stack = [start]
+        while (stack.length > 0) {
+          const cur = stack.pop() as string
+          const own = membersByName.get(cur)
+          if (own) for (const m of own) out.add(m)
+          for (const up of supers.get(cur) ?? []) {
+            if (seen.has(up)) continue
+            seen.add(up)
+            stack.push(up)
+          }
+        }
+        closed.set(start, out)
+      }
+      projectFacts.set(repo, { ...base, ownerMembers: closed })
+    }
+  }
   // THE BINDING COLLAPSE, applied to the per-project count ONCE, here, where the key space is
   // complete — so `classifyEdge` and every downstream reader keep seeing a plain declaration count,
   // and no shared rule function changes. A key collapses to ONE declaration only when EVERY
@@ -1792,6 +1848,30 @@ function selfTest(): { ok: boolean; failures: string[] } {
     if (withDecl.outcome === "bindingVerified") failures.push("control: importedName claim displaced a row that HAS declarations (must fall through to the name model)")
     const noFacts = classifyEdge(zeroDecls, kinds, "Optional", { kind: "importedName", specifier: "typing", name: "Optional" }, undefined, undefined, undefined, undefined, "src/a.py")
     if (noFacts.outcome !== "bindingUnverified") failures.push("control: an imported-name claim with no evidence must be UNVERIFIED")
+  }
+  // OWNER-MEMBER-ABSENCE CLAIM (2026-10-19): a verifiable ABSENCE read only where the name model has
+  // nothing. Controls: owner known + member absent verifies; member declared refutes; unknown owner is
+  // UNVERIFIED (never accepted); a declaration-answered row FALLS THROUGH (claim may not displace).
+  {
+    const omFacts: ProjectFacts = {
+      packages: new Set(),
+      files: new Set(["src/a.py"]),
+      sdkLib: false,
+      ownerMembers: new Map([["Widget", new Set(["render"])]]),
+    }
+    const verified = classifyEdge(new Map(), kinds, "paint", { kind: "ownerMemberAbsent", owner: "Widget", member: "paint" }, omFacts, undefined, undefined, undefined, "src/a.py")
+    if (verified.outcome !== "externalVerified") failures.push(`control: ownerMemberAbsent absent member read ${verified.outcome}, expected externalVerified`)
+    const refuted = classifyEdge(new Map(), kinds, "render", { kind: "ownerMemberAbsent", owner: "Widget", member: "render" }, omFacts, undefined, undefined, undefined, "src/a.py")
+    if (refuted.outcome !== "externalRefuted") failures.push(`control: ownerMemberAbsent declared member read ${refuted.outcome}, expected externalRefuted`)
+    const unknown = classifyEdge(new Map(), kinds, "paint", { kind: "ownerMemberAbsent", owner: "Ghost", member: "paint" }, omFacts, undefined, undefined, undefined, "src/a.py")
+    if (unknown.outcome !== "externalUnverified") failures.push(`control: ownerMemberAbsent unknown owner read ${unknown.outcome}, expected externalUnverified`)
+    const noFacts = classifyEdge(new Map(), kinds, "paint", { kind: "ownerMemberAbsent", owner: "Widget", member: "paint" }, undefined, undefined, undefined, undefined, "src/a.py")
+    if (noFacts.outcome !== "externalUnverified") failures.push("control: ownerMemberAbsent with no evidence must be UNVERIFIED")
+    const answered = classifyEdge(declCount, kinds, "alpha", { kind: "ownerMemberAbsent", owner: "Widget", member: "alpha" }, omFacts, undefined, undefined, undefined, "src/a.py")
+    if (answered.outcome === "externalVerified") failures.push("control: ownerMemberAbsent displaced a declaration-answered row (must fall through)")
+    if (externalClaimOf({ metadata: { ownerMemberAbsent: { owner: "Widget", member: "paint" } } })?.kind !== "ownerMemberAbsent") {
+      failures.push("control: ownerMemberAbsent did not route to its claim kind")
+    }
   }
   // IMPORTED-BINDING CLAIM (charter §18.10): verified from the RUN'S OWN import evidence, never from
   // the use edge's word. Plants: a name the file's import binds (VERIFIED), a name it does not bind

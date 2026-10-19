@@ -146,6 +146,10 @@ export type ExternalClaim =
   // declared list. Checked against that list INSTEAD of the symbol table; see NAMESPACE_CLAIM_KEY
   // for the four required properties and the four lanes' measurements that produced the design.
   | { kind: "namespace"; roots: string[]; strictAbsent?: boolean }
+  // THE OWNER-MEMBER-ABSENCE CLAIM: a verifiable statement that a known owner type declares no
+  // member of the row's target name. Checked against the caller's ownerMembers evidence, never the
+  // claim's own word; read only where the name model has nothing (decls === 0).
+  | { kind: "ownerMemberAbsent"; owner: string; member: string }
   // THE SOURCE-PATH CLAIM — evidence is the WRITTEN SOURCE STRING as the document spells it, and the
   // verdict is the inverse of a file claim: a candidate the project admits REFUTES it.
   | { kind: "sourcePath"; sources: string[] }
@@ -412,6 +416,22 @@ export const NAMESPACE_CLAIM_KEY = "languageNamespace"
 export const NAMESPACE_POLICY_KEY = "languageNamespacePolicy"
 
 /**
+ * THE OWNER-MEMBER-ABSENCE CLAIM (`ownerMemberAbsent = {owner, member}`, 2026-10-19).
+ *
+ * The shape it exists for: a calls/uses row carries `metadata.owner` (the receiver type is known),
+ * production's owner channel DECLINES it (no member of that name is declared under the owner, or the
+ * member lookup is ambiguous), and the row therefore stays NULL — an honest wall. But "this owner
+ * type declares no member with this name" is a fact the project CAN verify: the gate builds
+ * `ownerMembers` from the run's own symbols. VERIFIED when the owner is in that map and the member is
+ * not; REFUTED when the project does declare the member (the claim is then false and the row goes to
+ * the failure column); UNVERIFIABLE when the owner is unknown (a claim about a type nobody declared
+ * cannot be checked here). It is a claim, never a resolution: it rides the external/binding family
+ * and cannot raise `resolved`, and it is read only where the name model has nothing (`decls === 0`),
+ * so it can never displace a real binding.
+ */
+export const OWNER_MEMBER_ABSENT_CLAIM_KEY = "ownerMemberAbsent"
+
+/**
  * THE `source-path` CLAIM — "nothing the project ADMITS resolves to this written source string".
  *
  * WHY IT EXISTS. The same SHAPE blocked three lanes independently: protobuf's 581 unresolved module paths,
@@ -625,6 +645,16 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
     }
   }
   if (hasCause) return { kind: "cause", base: cause, conflict: false }
+  // THE OWNER-MEMBER-ABSENCE CLAIM — read late (every explicit analyzer claim above wins) because it
+  // is about a row the other mechanisms have nothing to say about.
+  const oma = md[OWNER_MEMBER_ABSENT_CLAIM_KEY]
+  if (
+    oma !== null && typeof oma === "object" &&
+    typeof (oma as any).owner === "string" && (oma as any).owner.length > 0 &&
+    typeof (oma as any).member === "string" && (oma as any).member.length > 0
+  ) {
+    return { kind: "ownerMemberAbsent", owner: String((oma as any).owner), member: String((oma as any).member) }
+  }
   // THE MODULE-PATH IMPORT CLAIM — checked LAST, so every explicit analyzer claim above wins, and only
   // where the edge carries no claim at all. See `importPath` in the claim union for the why and the
   // deliberate capitalised-leaf narrowing.
@@ -843,6 +873,15 @@ export type ProjectFacts = {
    * UNVERIFIABLE (never quietly accepted).
    */
   importsByFile?: Map<string, Map<string, Set<string>>>
+  /**
+   * OWNER-MEMBER EVIDENCE, built by the caller from the run's OWN symbols (ownerName -> the member
+   * names the project declares under that owner). The `ownerMemberAbsent` claim states a verifiable
+   * ABSENCE ("this owner type does not declare this member"), and this map is what decides it:
+   * present owner + absent member = VERIFIED; present member = REFUTED; unknown owner = UNVERIFIABLE
+   * (never quietly accepted). Absent map means the caller built no evidence and every such claim is
+   * unverifiable.
+   */
+  ownerMembers?: Map<string, Set<string>>
 }
 
 /**
@@ -1710,6 +1749,17 @@ export function classifyEdge(
     // claims to be both outside the population and beyond this run) and it is exactly as wrong
     // on a resolvable target as on an unresolvable one.
     return { outcome: "causeRefuted", decls, kinds: kindText }
+  }
+  // THE OWNER-MEMBER-ABSENCE CLAIM — a WALL-CLASS converter, like the imported-name narrowing:
+  // it may speak only where the name model has nothing (decls === 0) so it cannot displace a binding.
+  // The target must be the claimed member; the fact is checked in the caller's evidence map.
+  if (claim !== null && claim.kind === "ownerMemberAbsent" && decls === 0) {
+    if (tgt !== claim.member) return { outcome: "externalRefuted", decls, kinds: kindText }
+    if (!facts || !facts.ownerMembers) return { outcome: "externalUnverified", decls, kinds: kindText }
+    const members = facts.ownerMembers.get(claim.owner)
+    if (members === undefined) return { outcome: "externalUnverified", decls, kinds: kindText }
+    if (members.has(claim.member)) return { outcome: "externalRefuted", decls, kinds: kindText }
+    return { outcome: "externalVerified", decls, kinds: kindText, verifiedBy: "ownerMembers" }
   }
   if (decls === 0) {
     if (claim === null) return { outcome: "unresolved", decls, kinds: kindText }
