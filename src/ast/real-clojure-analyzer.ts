@@ -504,6 +504,32 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // visibility contract (the canonical alternative to the `defn-` suffix) —
     // only the suffix was read before, so meta-private vars/fns exported as
     // public. Meta stays DATA (CLJ-D5) — this only READS the flag.
+    /**
+     * A2 (task-35 Part B): the ATTRIBUTE-MAP spelling. Everything between the name (or its
+     * docstring) and the parameter vector is the attr-map, and Clojure merges it into the
+     * var's metadata — so `(defmacro add-doc-and-meta {:private true} [name …] …)` declares
+     * a PRIVATE macro. The handler read only name metadata and exported two such private
+     * declarations (clojure.core add-doc-and-meta, gvec mk-am).
+     */
+    const attrMapHasPrivate = (node: Node, nameNode: Node | null): boolean => {
+      if (!nameNode) return false
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (!c || c.startIndex <= nameNode.startIndex) continue
+        if (c.type === "vec_lit" || c.type === "list_lit") break // params / arity clauses end the header
+        if (c.type === "str_lit") continue                  // docstring
+        if (c.type === "map_lit") {
+          const hasKey = (n: Node): boolean => {
+            if (n.type === "kwd_lit" && n.text === ":private") return true
+            for (let k = 0; k < n.namedChildCount; k++) { const kk = n.namedChild(k); if (kk && hasKey(kk)) return true }
+            return false
+          }
+          if (hasKey(c)) return true
+        }
+      }
+      return false
+    }
+
     const metaHasPrivate = (nd: Node | null): boolean => {
       if (!nd) return false
       // A2: `meta_lit` is the `^` spelling; `old_meta_lit` is the LEGACY `#^` reader
@@ -1728,7 +1754,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           const rawName = nameNode2 ? symName(nameNode2) : ""
           const name = isPublishableName(rawName) ? rawName : ""
           // W24-mr3: `defn-` AND `^{:private true}` / `^:private` both bind private.
-          const isPrivate = formName === "defn-" || metaHasPrivate(node.namedChild(1)) || metaHasPrivate(nameNode2)
+          const isPrivate = formName === "defn-" || metaHasPrivate(node.namedChild(1)) || metaHasPrivate(nameNode2) || attrMapHasPrivate(node, nameNode2)
           if (name) {
             const funcSymbol: ASTEngine.UniversalSymbol = {
               name, kind: ASTEngine.SymbolKind.Function,
