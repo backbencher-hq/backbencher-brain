@@ -1424,7 +1424,12 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the emission is held until the precedence question is ruled. The whole-population count is
     // measured and reported: 31,498 claimable rows, of which 6,276 were resolved before (cross-file
     // decoys the analyzer cannot see without the project index).
-    this.certifyImportedNameClaims(ctx)
+    // PARKED (D7, charter §18.30): the full-population arm showed the claim cannot be gated by
+    // marker evidence alone — it converts 7,540 intended ext? rows but also displaces 16,025
+    // externalVerified rows (the arbiter cannot re-verify the marker chain) and produced 361
+    // refutations. Ruled INSTRUMENT GAP by the Lead: emission stays implemented but OFF until an
+    // evidence gate proves verified-vs-unverified without duplicating the arbiter's verification.
+    // this.certifyImportedNameClaims(ctx)
 
     const detectedFrameworks: string[] = PY_FRAMEWORK_ORDER.filter((f) => ctx.frameworks[f])
     const detectedPatterns: string[] = []
