@@ -1006,7 +1006,15 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         return { importProjectFile: [rebased] }
       }
     }
-    if (value.includes("/") || urlScheme(value).length > 0) return { sourcePathClaim: [value] }
+    // HTML-RELATIVE (fleet baseline 2026-10-19, the 2 whole-population refutations): a RELATIVE
+    // path whose rebase check failed must NOT publish sourcePathClaim ("no project file admits
+    // this") — the rebase answers a project-root-relative question, but html references are
+    // DOCUMENT-relative, so a miss proves nothing (measured: `third_party/trace_viewer_full.html`
+    // from dart-sdk/pkg/observatory/web/timeline.html and `./docs/index.html` from
+    // fantomas/docs/index.html BOTH exist in the corpus; the gate's admitted-file check found
+    // both and refuted the claims). The analyzer cannot know where a relative path resolves;
+    // only the gate can. Keep sourcePathClaim for NETWORK urls only.
+    if (urlScheme(value).length > 0) return { sourcePathClaim: [value] }
     return {}
   }
 
