@@ -428,6 +428,22 @@ const isAsciiUpper = (c: number): boolean => c >= 65 && c <= 90
  *
  * Zero regex, and no word list: every predicate here is a byte test over the published name.
  */
+/** PS-RELATIVE-PATH (fleet baseline 2026-10-19): a dot-sourced RELATIVE path ending in .ps1 —
+ *  `.\hack\make\.go-autogen.ps1`, `.\eng\common\tools.ps1` — is a PROJECT FILE reference, not an
+ *  external target. Character scan, not a regex: the fleet's no-regex policy applies to the Lead's
+ *  own edits exactly as it does to a lane's. */
+const isRelativeScriptPath = (t: string): boolean => {
+  // ends with ".ps1" (case-insensitive) — compared byte-wise, no pattern engine
+  if (t.length < 4) return false
+  const ext = t.slice(-4)
+  if (!(ext[0] === "." && (ext[1] === "p" || ext[1] === "P") && (ext[2] === "s" || ext[2] === "S") && ext[3] === "1")) return false
+  // and carries a path separator anywhere (relative or not)
+  for (let i = 0; i < t.length; i++) {
+    const c = t.charCodeAt(i)
+    if (c === 92 /* \ */ || c === 47 /* / */) return true
+  }
+  return false
+}
 const externalReadingOf = (t: string): "cmdlet" | "qualified" | null => {
   if (t.charCodeAt(0) === 34 /* " */ || t.charCodeAt(0) === 39 /* ' */) return null
   // PS-RELATIVE-PATH (fleet baseline 2026-10-19, the two whole-population refutations): a
@@ -437,7 +453,7 @@ const externalReadingOf = (t: string): "cmdlet" | "qualified" | null => {
   // case-1 path check correctly found the file in the project and REFUTED the claim — the
   // emission was false. A path-shaped .ps1 target is a dependency the arbiter answers by the
   // admitted file list, so no externality reading may attach to it.
-  if (/\.ps1$/i.test(t) && (t.includes("\\") || t.includes("/"))) return null
+  if (isRelativeScriptPath(t)) return null
   for (let i = 1; i < t.length; i++) {
     if (t.charCodeAt(i) !== 45 /* - */) continue
     if (isAsciiUpper(t.charCodeAt(0)) && isAsciiUpper(t.charCodeAt(i + 1))) return "cmdlet"
