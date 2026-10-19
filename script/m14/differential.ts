@@ -16797,7 +16797,7 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
   // (order-aware from there on); a binding vector covers its ENCLOSING form
   // only (params live inside their fn/defn form; a multi-arity clause's
   // param covers that clause). See the analyzer for the full rationale.
-  const shadowRanges: Array<{ start: number; end: number }> = []
+  const shadowRanges: Array<{ name: string; start: number; end: number }> = []
   {
     const DEF_NAME_HEADS = new Set(["def", "defn", "defn-", "defmacro", "defonce", "defmulti"])
     const BINDING_VEC_HEADS = new Set(["let", "let*", "loop", "loop*", "when-let", "if-let", "when-some", "if-some", "when-first", "binding", "for", "doseq", "dotimes", "with-open", "with-local-vars", "with-bindings", "letfn"])
@@ -16864,17 +16864,71 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
     while (scan.length > 0) {
       const c = scan.pop()!
       if (c.type === "dis_expr" || c.type === "quoting_lit") continue
-      if (c.type === "sym_lit" && symName(c) === "comment") {
+      if (c.type === "sym_lit") {
+        // F7 + B2: EVERY binding/def-name position opens a shadow range FOR THAT NAME.
+        // The old scan recorded only `comment` sites, which is why the truth's
+        // `isShadowedAt` could not tell that `folder`/`proxy-name`/`atom?` were
+        // DEFINED by the file and suppressed their calls as core names.
         const range = shadowRangeOf(c)
-        if (range) shadowRanges.push(range)
+        if (range) shadowRanges.push({ name: symName(c), start: range.start, end: range.end })
       }
       for (const k of kids(c)) scan.push(k)
     }
   }
-  const isShadowedAt = (pos: number): boolean => {
-    for (const r of shadowRanges) if (pos >= r.start && pos < r.end) return true
+  const isShadowedAt = (name: string, pos: number): boolean => {
+    for (const r of shadowRanges) if (r.name === name && pos >= r.start && pos < r.end) return true
     return false
   }
+
+  // ── M-D/E + CLJ-D56 mirror: a def-family NAME may be wrapped in metadata
+  // (`(defspec ^{:doc …} name …)`, `(defn ^:private f …)`) and the FRAME test
+  // used to read `namedChild(1)` by index. A metadata-wrapped name then fell
+  // through to the general-call branch, fabricating `calls defspec/defroutes`
+  // rows (the M-D class) and mis-naming frames. This helper is the analyzer's
+  // own head-then-name unwrap.
+  const defLikeNameNode = (n: any): any => {
+    let head = 0
+    while (head < n.namedChildCount && n.namedChild(head)?.type === "meta_lit") head++
+    let idx = head + 1
+    while (idx < n.namedChildCount) {
+      const c = n.namedChild(idx)
+      if (!c) return null
+      if (c.type === "meta_lit") {
+        const inner = execHead(c)
+        if (inner && inner.type === "sym_lit") return inner
+        idx++
+        continue
+      }
+      return c.type === "sym_lit" ? c : null
+    }
+    return null
+  }
+
+  // ── B1/B2/B3 mirror of the analyzer's `isCoreCallSuppressed`: a core name is
+  // only a standard-library call when the site does not REFER it and does not
+  // SHADOW it. The truth suppressed by name alone, which (a) dropped 24 `:refer`ed
+  // core names the analyzer qualifies (`is`/`testing`) and (b) dropped 11 calls to
+  // core-named functions the FILE ITSELF defines (`folder`, `reducer`, `atom?`, …).
+  const isTruthCoreSuppressed = (name: string, pos: number): boolean => {
+    if (!CORE[name]) return false
+    if (refers.has(name)) return false
+    if (isShadowedAt(name, pos)) return false
+    return true
+  }
+
+  // A5 parity (task-35 Part B follow-through): the directive forms are TOP-LEVEL by
+  // contract, and a bare unquoted symbol after require/use/import/refer is a DYNAMIC
+  // argument (a local var), not a libspec. The analyzer now enforces both; the truth
+  // kept deriving `references -> ns` for `(doseq [ns …] (require ns))`, which showed up
+  // as one fabricated MISSING row once the analyzer side was fixed.
+  const isTopLevelDirective = (node: any): boolean => {
+    for (let p = node.parent; p; p = p.parent) {
+      if (p.type === "source") return true
+      if (p.type === "list_lit" || p.type === "vec_lit" || p.type === "map_lit" || p.type === "set_lit") return false
+    }
+    return false
+  }
+
   const resolveQualified = (name: string): string => {
     const slash = name.indexOf("/")
     if (slash <= 0) return name
@@ -16916,9 +16970,21 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
           // vector. `(:use [clojure.java.browse :only (browse-url)])` registered
           // NO refer name here while the analyzer registered it, so every
           // `(browse-url …)` call dangled on one side only.
+          if (kw === "rename" && k + 1 < spec.namedChildCount) {
+            // CLJ-D25 mirror: `:rename {old new}` — the VALUE is the name this
+            // namespace may call; the KEY is not bound here. Missing this dropped
+            // the ONE remaining MISSING row (`assert-submaps` via :rename).
+            const renameMap = spec.namedChild(k + 1)
+            if (renameMap && renameMap.type === "map_lit") {
+              for (let r = 1; r < renameMap.namedChildCount; r += 2) {
+                const v = renameMap.namedChild(r)
+                if (v && v.type === "sym_lit") refers.set(symName(v), libName)
+              }
+            }
+          }
           if ((kw === "refer" || kw === "only") && k + 1 < spec.namedChildCount) {
             const refVec = spec.namedChild(k + 1)
-            if (refVec && (refVec.type === "vec_lit" || refVec.type === "list_lit"))          if (refVec && refVec.type === "vec_lit") {
+            if (refVec && (refVec.type === "vec_lit" || refVec.type === "list_lit")) {
               for (let r = 0; r < refVec.namedChildCount; r++) {
                 const rn = refVec.namedChild(r)
                 if (rn && rn.type === "sym_lit") refers.set(symName(rn), libName)
@@ -16975,7 +17041,6 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
   }
   const frames: { name: string; isFn: boolean }[] = []
   const currentName = (): string => (frames.length > 0 ? frames[frames.length - 1].name : nsName)
-  const isFnContext = (): boolean => frames.length > 0 && frames[frames.length - 1].isFn
   const work: { n: any; exit?: boolean; qd: number }[] = [{ n: root, qd: 0 }]
   while (work.length > 0) {
     const { n, exit, qd } = work.pop()!
@@ -17014,7 +17079,7 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       const anonHead = n.namedChild(0)
       if (anonHead && anonHead.type === "sym_lit") {
         const hName = symName(anonHead)
-        if (hName && !/^%(\d+|&)?$/.test(hName) && !CORE[hName]) {
+        if (hName && !/^%(\d+|&)?$/.test(hName) && !CORE[hName] && !hName.startsWith(".")) {
           if (hName.includes("/")) {
             const [a, f] = hName.split("/")
             const resolvedNs = aliases.get(a) || a
@@ -17034,7 +17099,7 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       const form = formNameOf(n)
       // F10 mirror: spelling-independent data-form skip.
       const canon = resolveQualified(form)
-      if (canon === "quote" || canon === "clojure.core/quote" || canon === "clojure.core/comment" || (canon === "comment" && !isShadowedAt(n.startIndex))) continue
+      if (canon === "quote" || canon === "clojure.core/quote" || canon === "clojure.core/comment" || (canon === "comment" && !isShadowedAt("comment", n.startIndex))) continue
       if (n.parent?.type === "list_lit" && LIBSITE_FORMS.has(clauseNameOf(n.parent) || formNameOf(n.parent))) continue
       if (n.parent?.type === "list_lit" && IMPL_PARENTS.has(formNameOf(n.parent)) && execHead(n.parent)?.startIndex !== n.startIndex) {
         // CLJ-D6: method definition, not a call (defprotocol/definterface sigs
@@ -17087,25 +17152,28 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
             if (libNode) handleLib(libNode)
           }
         }
-      } else if ((form === "require" || form === "use" || form === "import" || form === "refer" || form === "require-macros") && execHead(n)?.type === "sym_lit") {
+      } else if ((form === "require" || form === "use" || form === "import" || form === "refer" || form === "require-macros") && execHead(n)?.type === "sym_lit" && isTopLevelDirective(n)) {
         // CLJ-D7: top-level directive forms after the ns (the kwd-headed ns
-        // clauses were consumed by the ns branch above).
+        // clauses were consumed by the ns branch above). A5 parity: nested forms are
+        // body code, and a bare unquoted symbol is a dynamic argument.
         for (let j = 1; j < n.namedChildCount; j++) {
           const libNode = n.namedChild(j)
-          if (libNode) handleLib(libNode)
+          if (!libNode) continue
+          if (libNode.type === "sym_lit" && !libNode.text.includes(".") && !libNode.text.includes("/")) continue
+          handleLib(libNode)
         }
       } else if (form === "defn" || form === "defn-" || form === "defmacro" || form === "s/defn" || form === "mu/defn") {
-        const dn0 = symName(n.namedChild(1))
+        const dn0 = symName(defLikeNameNode(n))
         if (dn0) localNames.add(dn0)
         frames.push({ name: dn0 || "unknown", isFn: true })
         pushedFrame = true
       } else if (form === "deftest") {
-        const dn1 = symName(n.namedChild(1))
+        const dn1 = symName(defLikeNameNode(n))
         if (dn1) localNames.add(dn1)
         frames.push({ name: dn1 || `test_${n.startPosition.row}`, isFn: true })
         pushedFrame = true
       } else if (form === "defmethod") {
-        const dn2 = symName(n.namedChild(1))
+        const dn2 = symName(defLikeNameNode(n))
         if (dn2) localNames.add(dn2)
         frames.push({ name: dn2 || "unknown", isFn: true })
         pushedFrame = true
@@ -17116,17 +17184,17 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
         // F8 mirror: a letfn binding-vector list is a DEFINITION (a frame),
         // never a call.
         const fName = symName(n.namedChild(0))
-        if (fName && !CORE[fName]) {
+        if (fName && !isTruthCoreSuppressed(fName, n.startIndex)) {
           frames.push({ name: fName, isFn: true })
           pushedFrame = true
         }
       } else if (form === "def" || form === "defonce" || form === "defmulti") {
         // W24-mr2 mirror: a def-family name IS a local declaration (shadows
         // `:refer`ed names at resolution; no frame — mirroring the analyzer).
-        const dn3 = symName(n.namedChild(1))
+        const dn3 = symName(defLikeNameNode(n))
         if (dn3) localNames.add(dn3)
       } else if (form === "defrecord" || form === "deftype") {
-        const rn = symName(n.namedChild(1))
+        const rn = symName(defLikeNameNode(n))
         for (let pi = 3; pi < n.namedChildCount; pi++) {
           const protoNode = n.namedChild(pi)
           if (protoNode && protoNode.type === "sym_lit" && rn) {
@@ -17170,8 +17238,29 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
             }
           }
         }
-      } else if (form === "recur") {
-        if (isFnContext()) push("calls", currentName(), currentName())
+      } else if (form === "gen-class") {
+        // B5: gen-class states heritage as KEYWORD OPTIONS, not a positional
+        // vector — `(gen-class :name X :extends C :implements [I])`. Reading only
+        // a positional ifaces vec missed 4 rows; the analyzer parses the options.
+        const cur = currentName()
+        for (let gi = 1; gi < n.namedChildCount; gi++) {
+          const c = n.namedChild(gi)
+          if (!c || c.type !== "kwd_lit") continue
+          const kw = c.childForFieldName?.("name")?.text || ""
+          if (kw !== "extends" && kw !== "implements") continue
+          const val = n.namedChild(gi + 1)
+          if (!val) continue
+          if (kw === "extends") {
+            if (val.type === "sym_lit") { const v = resolveQualified(symName(val)); if (v) push("extends", cur, v) }
+          } else {
+            const vals: any[] = val.type === "vec_lit"
+              ? Array.from({ length: val.namedChildCount }, (_, j) => val.namedChild(j))
+              : [val]
+            for (const vn of vals) {
+              if (vn && vn.type === "sym_lit") { const v = resolveQualified(symName(vn)); if (v) push("implements", cur, v) }
+            }
+          }
+        }
       } else if (form === "s/def" || form === "s/fdef" || form === "clojure.spec.alpha/def" || form === "clojure.spec.alpha/fdef") {
         // spec declaration forms are symbols-only in the analyzer — consumed,
         // no edges (a generic-call fallthrough would fabricate one).
@@ -17190,11 +17279,12 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
         // audited by its own gate. Consuming the branch here is what keeps these
         // out of `calls` — the edge `f -> String/.toUpperCase` was a dangling
         // target that both sides agreed on.
-      } else if (isDefLikeHead(form) && n.namedChild(1)?.type === "sym_lit") {
+      } else if (isDefLikeHead(form) && defLikeNameNode(n) !== null) {
         // CLJ-D30 mirror: a def-like head in def position DEFINES a name, so it
-        // is a frame and a local binding, never a call. This branch only runs
-        // for a head none of the explicit cases above claimed.
-        const dn = symName(n.namedChild(1))
+        // is a frame and a local binding, never a call. Metadata-wrapped names
+        // are unwrapped (CLJ-D56) so `(defspec ^{:doc …} name …)` is a frame,
+        // not a fabricated call to `defspec`.
+        const dn = symName(defLikeNameNode(n))
         if (dn) {
           localNames.add(dn)
           frames.push({ name: dn, isFn: true })
@@ -17217,27 +17307,33 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
           const head = step.type === "list_lit" ? execHead(step) : step
           if (!head || head.type !== "sym_lit") continue
           const hName = symName(head)
-          if (!hName || CORE[hName] || hName.startsWith(".") || hName.startsWith("->") || hName.endsWith(".")) continue
+          if (!hName || isTruthCoreSuppressed(hName, head.startIndex) || hName.startsWith(".") || hName.startsWith("->") || hName.endsWith(".")) continue
           if (hName.includes("/")) {
             const [a, f] = hName.split("/")
             const resolvedNs = aliases.get(a) || a
             push("calls", currentName(), `${resolvedNs}/${f}`)
             push("references", nsName, resolvedNs)
           } else {
-            push("calls", currentName(), hName)
+            const referred = refers.get(hName)
+            if (referred) push("calls", currentName(), `${referred}/${hName}`)
+            else push("calls", currentName(), hName)
           }
         }
       } else if (form.startsWith(".")) {
         // Java member/field access — the `uses` family; this oracle derives
         // no uses truth for clojure (label not compared for the lane).
-      } else if (form && !CORE[form]) {
+      } else if (form && !isDefLikeHead(form) && !isTruthCoreSuppressed(form, n.startIndex)) {
         if (form.includes("/")) {
           const [a, f] = form.split("/")
           const resolvedNs = aliases.get(a) || a
           push("calls", currentName(), `${resolvedNs}/${f}`)
           push("references", nsName, resolvedNs)
         } else {
-          push("calls", currentName(), form)
+          // W24-mr2/CLJ-D21 mirror: a `:refer`ed name is a CONFIRMED target and the
+          // analyzer emits it as `<lib>/<name>`; the truth used to keep it bare.
+          const referred = refers.get(form)
+          if (referred) push("calls", currentName(), `${referred}/${form}`)
+          else push("calls", currentName(), form)
         }
       }
       if (pushedFrame) work.push({ n, exit: true, qd })
@@ -17247,9 +17343,25 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       // child count) is an EXPRESSION, never a constant group; the parity
       // rule must not swallow it.
       const isCase = form === "case"
-      const caseDefaultIdxO = isCase && cs.length % 2 === 1 ? cs.length - 1 : -1
+      // B4: constants occupy EXECUTABLE even positions (the truth's own
+      // `isCaseConstant` rule and the analyzer's): comments/#_ are not positions, so
+      // raw child parity mis-classified an EXPRESSION (`(let [v …] (cond …))`) as a
+      // constant and never walked it — one call (`number->tag`) was invisible.
+      const caseExecPos = new Map<number, number>()
+      let caseDefaultPos = -1
+      if (isCase) {
+        let execN = 0
+        for (const c of cs) {
+          if (c.type === "comment" || c.type === "dis_expr") continue
+          caseExecPos.set(c.startIndex, execN++)
+        }
+        caseDefaultPos = execN % 2 === 1 ? execN - 1 : -1
+      }
       for (let i = cs.length - 1; i >= 0; i--) {
-        if (isCase && i >= 2 && i % 2 === 0 && cs[i].type === "list_lit" && i !== caseDefaultIdxO) continue
+        if (isCase) {
+          const pos = caseExecPos.get(cs[i].startIndex)
+          if (pos !== undefined && pos >= 2 && pos % 2 === 0 && pos !== caseDefaultPos && cs[i].type === "list_lit") continue
+        }
         work.push({ n: cs[i], qd })
       }
       continue
