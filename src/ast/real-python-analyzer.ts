@@ -1417,7 +1417,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // shadows the builtin at that name; the namespace certifier refuses import-bound names).
     this.certifyImportEvidenceClaims(ctx)
     this.certifyNamespaceCitations(ctx)
-    this.certifyOwnerMemberAbsentClaims(ctx, context)
+    this.certifyOwnerMemberAbsentClaims(rootNode, ctx, context)
     // HELD (2026-10-19): `certifyImportedNameClaims` is implemented but NOT CALLED. The cap-50 arm
     // with the claim live read bindOK 266 / bindFAIL 2 and erodes extOK by 125 (rows whose imported
     // name the file also imports were already verified through another claim kind, and the
@@ -6609,50 +6609,126 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * FAIL-CLOSED CONTROL: without `BB_PY_OWNER_MEMBER_ABSENT=1` or without a COMPLETE index this
    * method returns immediately, so the no-index arm and every fixture are byte-identical.
    */
-  private certifyOwnerMemberAbsentClaims(ctx: PythonContext, context?: ASTEngine.AnalyzeContext): void {
+  private certifyOwnerMemberAbsentClaims(rootNode: Node, ctx: PythonContext, context?: ASTEngine.AnalyzeContext): void {
     if (process.env.BB_PY_OWNER_MEMBER_ABSENT !== "1") return
     const index = context?.projectIndex
     if (!index || index.complete !== true) return
     const kinds = index.typeKinds
-    const members = index.typeMembers
-    const bases = index.typeBases
-    if (!kinds || !members || !bases) return
     const counts = index.symbolCounts
-    // The gate's own closure shape: leaf names, cycle-safe, unknown names contribute nothing.
-    const leaf = (n: string): string => {
-      const t = n.replace(/[<[].*$/, "").trim()
-      const segs = t.split(/[.:]/).filter((x) => x.length > 0)
-      return segs.length > 0 ? segs[segs.length - 1]! : t
-    }
-    const closureOf = (owner: string): Set<string> | null => {
-      const out = new Set<string>()
-      const seen = new Set<string>([owner])
-      const stack = [owner]
-      let unresolvedAncestorRisk = false
-      while (stack.length > 0) {
-        const cur = stack.pop() as string
-        for (const m of members.get(cur) ?? []) out.add(m)
-        for (const raw of bases.get(cur) ?? []) {
-          const up = leaf(raw)
-          if (up === "" || seen.has(up)) continue
-          seen.add(up)
-          if (kinds.has(up) || (counts?.get(up) ?? 0) === 0) {
-            stack.push(up)
-          } else {
-            // declared in the project but not class-like in the index: its member set is unknowable
-            // here while the gate may still hold it => the claim could be REFUTED. Withhold.
-            unresolvedAncestorRisk = true
-          }
-        }
-      }
-      return unresolvedAncestorRisk ? null : out
-    }
+    if (!kinds) return
     const CLAIM_MARKERS = [
       "isExternalTarget", "isStdlib", "externalReason", "externalSpecifier",
       "localBinding", "importedBinding", "importedName", "languageNamespace",
       "projectIndexResolution", "projectLocalModule", "isImportFile", "importOutsideProject",
       "remoteRef", "sourcePath", "cause", "ownerMemberAbsent",
     ]
+    // LOCAL, SYMBOL-COMPLETE CLASS MODEL. The gate's owner-member evidence comes from the run's
+    // SYMBOLS, and python's symbols include MORE than the index's callable members: a class-level
+    // assignment AND a `self.x = ...` instance attribute are published as `property` symbols with
+    // ownerName (measured: `kind`/`state` in a three-line class). The project index's typeMembers
+    // holds callable members only, so an absence proof from the index alone is WRONG by construction
+    // in exactly the direction that refutes a claim (gate holds a member the index does not). The
+    // claim is therefore restricted to owners whose whole inheritance closure is declared IN THIS
+    // FILE, where the same-AST member set (methods + class assignments + self-attribute assignments)
+    // can be built and compared like for like. A base the project declares but this file does not
+    // makes the closure unknowable => WITHHOLD; a base no project symbol declares contributes no
+    // members to the gate either (it is not in membersByName), so it is safe to traverse through.
+    type ClassInfo = { members: Set<string>; bases: string[] }
+    const classes = new Map<string, ClassInfo>()
+    const baseLeaf = (n: Node | null): string | null => {
+      if (!n) return null
+      if (n.type === "identifier") return n.text
+      if (n.type === "attribute") {
+        const leaf = n.childForFieldName("attribute") ?? n.namedChild(n.namedChildCount - 1)
+        return leaf?.type === "identifier" ? leaf.text : null
+      }
+      if (n.type === "subscript" || n.type === "generic_type") {
+        const v = n.namedChild(0)
+        return baseLeaf(v)
+      }
+      return null
+    }
+    const collectAssigned = (target: Node | null, out: Set<string>): void => {
+      if (!target) return
+      if (target.type === "identifier") { out.add(target.text); return }
+      const attrs: Node[] = []
+      if (target.type === "attribute") attrs.push(target)
+      else if (target.type === "pattern_list" || target.type === "tuple_pattern") {
+        for (let i = 0; i < target.namedChildCount; i++) { const c = target.namedChild(i); if (c) collectAssigned(c, out) }
+        return
+      }
+      for (const a of attrs) {
+        const base = a.namedChild(0)
+        if (base?.type === "identifier" && (base.text === "self" || base.text === "cls")) continue
+        const leaf = a.childForFieldName("attribute") ?? a.namedChild(a.namedChildCount - 1)
+        if (leaf?.type === "identifier") out.add(leaf.text)
+      }
+    }
+    const scanClass = (cls: Node): void => {
+      const nm = this.findChildByType(cls, "identifier")
+      if (!nm?.text) return
+      const info: ClassInfo = classes.get(nm.text) ?? { members: new Set<string>(), bases: [] }
+      const sup = cls.childForFieldName("superclasses")
+      if (sup) for (let i = 0; i < sup.namedChildCount; i++) {
+        const c = sup.namedChild(i)
+        if (!c || c.type === "keyword_argument") continue
+        const b = baseLeaf(c)
+        if (b) info.bases.push(b)
+      }
+      const body = cls.childForFieldName("body")
+      if (body) {
+        for (let i = 0; i < body.namedChildCount; i++) {
+          const st = body.namedChild(i)
+          if (!st) continue
+          const def = st.type === "decorated_definition" ? (st.childForFieldName("definition") ?? st.namedChild(st.namedChildCount - 1)) : st
+          if (def?.type === "function_definition") {
+            const fn = this.findChildByType(def, "identifier")
+            if (fn?.text) info.members.add(fn.text)
+            // property-equivalent symbols: `self.x = ...` / `self.x.y = ...` inside ANY method body
+            const walk = (n: Node): void => {
+              if (n.type === "assignment" || n.type === "augmented_assignment") collectAssigned(n.childForFieldName("left"), info.members)
+              for (let j = 0; j < n.namedChildCount; j++) { const c = n.namedChild(j); if (c) walk(c) }
+            }
+            walk(def)
+          } else if (def?.type === "expression_statement") {
+            const a = def.namedChild(0)
+            if (a?.type === "assignment") {
+              const left = a.childForFieldName("left")
+              if (left?.type === "identifier") info.members.add(left.text)
+              else collectAssigned(left, info.members)
+            }
+          }
+        }
+      }
+      classes.set(nm.text, info)
+    }
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "function_definition" || n.type === "lambda") continue
+      if (n.type === "class_definition") scanClass(n)
+      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+    }
+    if (classes.size === 0) return
+    const closureOf = (owner: string): Set<string> | null => {
+      const out = new Set<string>()
+      const seen = new Set<string>([owner])
+      const st = [owner]
+      while (st.length > 0) {
+        const cur = st.pop() as string
+        const info = classes.get(cur)
+        if (!info) return null
+        for (const m of info.members) out.add(m)
+        for (const b of info.bases) {
+          if (seen.has(b)) continue
+          seen.add(b)
+          if (classes.has(b)) st.push(b)
+          else if ((counts?.get(b) ?? 0) > 0 || kinds.has(b)) return null
+          // else: no project symbol declares this base — the gate's map has no members for it either
+        }
+      }
+      return out
+    }
     const ownNames = new Set<string>()
     for (const sym of ctx.symbols ?? []) if (sym?.name) ownNames.add(String(sym.name))
     for (const r of ctx.relationships) {
@@ -6663,7 +6739,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       const target = String(r.target ?? "")
       if (target.length === 0 || target.includes(":") || target.includes(".")) continue
       if (ownNames.has(target)) continue
-      if (!kinds.has(md.owner)) continue
+      if (!classes.has(md.owner)) continue
       if ((counts?.get(md.owner) ?? 0) !== 1) continue
       const closed = closureOf(md.owner)
       if (closed === null || closed.has(target)) continue
