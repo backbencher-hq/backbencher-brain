@@ -130,6 +130,9 @@ import { deriveClojureContainsTruth, deriveClojureUsesTruth, deriveClojureStatic
 import { deriveKotlinModuleEdges } from "./oracles/kotlin-module-edges"
 import { deriveKotlinExportsTruth } from "./oracles/kotlin-exports"
 import { deriveKotlinPropertyOverrides } from "./oracles/kotlin-overrides"
+// CSHARP fleet-phase wiring (2026-10-19): three lane-owned truth modules validated 1:1 against the patched
+// analyzer (exports 263/263, imports 1,006/1,006, overrides 192/192) for the previously-unmeasured labels.
+import { deriveCSharpExportsTruth, deriveCSharpImportsTruth, deriveCSharpOverridesTruth } from "./csharp-truth"
 // M60: zig-truth.ts carries FOUR finished oracles — containment, imports, exports
 // and instantiation — and every one of them was consumed only by a script/m14/tmp
 // probe. So zig published `contains`, `imports` and `exports` that no comparison
@@ -24174,16 +24177,12 @@ async function main() {
       }
       if (lang === "csharp") {
         for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES)) {
-          // C923 (#923): the truth now DERIVES the member-level interface contract, but
-          // `overrides` is excluded from csharp's comparison on the ANALYZER side too (the
-          // harness allowlist below), so pushing it here would read every one of those TRUE
-          // edges as MISSING — the mirror image of the #910/fabricated-MISSING class this file
-          // already documents twice. The exclusion is applied on BOTH sides, one place each, and
-          // the class's independent evidence is script/m60/verify-c923-interface-members.ts
-          // (tree-derivation vs oracle vs lane, both corpora in full extent) plus its fixture and
-          // its two mutants. A round that starts comparing `overrides` for csharp must remove
-          // this line and the analyzer-side entry TOGETHER, or the pair desyncs silently.
-          if (e.label === "overrides") continue
+          // C923 (#923) EXCLUSION LIFTED 2026-10-19 (fleet phase, route (a)): `overrides` is now
+          // compared for csharp — the analyzer emits property/indexer/field/event overrides and
+          // C923 interface-member implementations, and the lane's own override oracle derives both
+          // surfaces. BOTH halves landed in the same change (this truth push + the analyzer-side
+          // allowlist entry below); the class's independent evidence
+          // script/m60/verify-c923-interface-members.ts remains as the secondary instrument.
           ;(truth as any[]).push(e)
         }
         // R9 (#804): declared-type references — the analyzer emits them, so the
@@ -24214,6 +24213,19 @@ async function main() {
           ;(truth as any[]).push(e)
         }
         for (const e of deriveCSharpBareUses(root, (result as any)?.symbols ?? [])) {
+          ;(truth as any[]).push(e)
+        }
+        // CSHARP fleet-phase (2026-10-19): the three emitted-but-unmeasured labels — exports
+        // (assembly-surface rows: FQN target, name-line, (name, arity) dedupe), imports (using/
+        // alias/extern forms) and overrides (property/indexer/field/event + C923 interface-member
+        // implementations). Validated 1:1 against the patched analyzer.
+        for (const e of deriveCSharpExportsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveCSharpImportsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveCSharpOverridesTruth(root)) {
           ;(truth as any[]).push(e)
         }
       }
@@ -24800,7 +24812,7 @@ async function main() {
       // strict superset of the exclusion: it drops `overrides` from the compared set for
       // dart and go as well as csharp/swift/cpp. Taking the local list would have
       // re-admitted two lanes whose override oracles were deliberately left unwired.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" && lang !== "go" ? ["overrides"] : []), ...(lang === "hcl" ? ["calls", "uses", "references", "imports", "exports"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "dart" && lang !== "swift" && lang !== "cpp" && lang !== "go" ? ["overrides"] : []), ...(lang === "hcl" ? ["calls", "uses", "references", "imports", "exports"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
@@ -24996,6 +25008,9 @@ async function main() {
           ...(lang === "scala" ? ["imports", "exports", "mixes_in"] : []),
           // KOTLIN fleet-phase (2026-10-19): imports/exports now audited (oracles wired above).
           ...(lang === "kotlin" ? ["imports", "exports"] : []),
+          // CSHARP fleet-phase (2026-10-19): exports/imports/overrides now audited (oracles wired above;
+          // the overrides exclusion lifted on BOTH sides in this same change — the C923 desync guard).
+          ...(lang === "csharp" ? ["exports", "imports", "overrides"] : []),
           // FLEET PHASE (2026-10-19): elixir's three mature-but-unwired oracles are now pushed above,
           // so the labels become comparable; overrides is REMOVED until its oracle lands (named D4
           // residual in the verdict rather than a compared-with-no-truth disclosure).
