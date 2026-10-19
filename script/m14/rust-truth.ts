@@ -31,7 +31,13 @@
  * owed — recorded in RUST-CENSUS.md §6); this module follows the cross-file variant the analyzer
  * implements and the trait-override fixture expects.
  */
-export type RustTruthEdge = { label: string; from: string; target: string }
+export type RustTruthEdge = { label: string; from: string; target: string
+  /** ALIAS of `target`, deliberately carried: the differential wiring in `script/m14/differential.ts`
+   *  publishes truth rows as `target: e.to` (the scala-truth convention). Without this alias every row
+   *  from this module reached the comparator with an UNDEFINED target and was dropped by its
+   *  `String(t.target ?? "").trim().length > 0` filter — so the three labels it was written for measured
+   *  NOTHING and their analyzer rows were charged as unexplained. Both keys always carry the same value. */
+  to: string }
 
 const RUST_FILE_SOURCE = "(file)"
 const PATH_KEYWORD_ROOTS = new Set(["crate", "self", "super"])
@@ -92,7 +98,7 @@ export function deriveRustImportsTruth(root: any): RustTruthEdge[] {
     const k = `${source}\u0000${module}`
     if (seen.has(k)) return
     seen.add(k)
-    out.push({ label: "imports", from: source, target: module })
+    out.push({ label: "imports", from: source, target: module, to: module })
   }
   const walk = (start: any) => {
     const stack = [start]
@@ -102,7 +108,10 @@ export function deriveRustImportsTruth(root: any): RustTruthEdge[] {
         const mods = enclosingMods(n)
         const fn = mods.length === 0 ? enclosingFunction(n) : ""
         const source = mods.length > 0 ? mods[mods.length - 1] : fn !== "" ? fn : RUST_FILE_SOURCE
-        const arg = n.namedChild(0)
+        const arg = (() => {
+          for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c && c.type !== "visibility_modifier") return c }
+          return n.namedChild(0)
+        })()
         // A group's leaves are BINDINGS; only a bare path contributes its own dependency. Nested
         // groups/paths inside a group add the dependency they name (`use std::{env, path::PathBuf}`
         // depends on `std` AND `std::path`), mirroring the analyzer's own nested_group rule.
@@ -165,7 +174,15 @@ export function deriveRustImportsTruth(root: any): RustTruthEdge[] {
 }
 
 const isPublicItem = (n: any): boolean => {
-  for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c && c.type === "visibility_modifier") return true }
+  // EXTENRAL publication requires `pub` and NOTHING ELSE: `pub(crate) use ...` and `pub(super) use ...`
+  // are visible inside the crate only, so they publish nothing outside it (the module-surface fixture's
+  // D3 rule). The previous "any visibility_modifier" test over-derived 126 restricted names on ripgrep.
+  for (let i = 0; i < n.namedChildCount; i++) {
+    const c = n.namedChild(i)
+    if (!c || c.type !== "visibility_modifier") continue
+    const txt = text(c).trim()
+    return txt === "pub"
+  }
   return false
 }
 
@@ -185,7 +202,11 @@ export function deriveRustExportsTruth(root: any): RustTruthEdge[] {
       // the re-bound names of a file-scope pub use, ALIAS-AWARE and BINDINGS-ONLY: a path's own
       // segments are not published names (`pub use self::decompress::X` publishes X, never "self" or
       // "decompress"); a wildcard binds no name.
-      const boundNames = (node: any): string[] => {
+      // The names a `pub use` RE-BINDS, base-path aware: a nested group's leaves bind their own names
+      // (`crate::cli::{self, flags::{IgnoreMatcher}}` binds `cli`, `IgnoreMatcher`); `self` binds the
+      // last segment of the group's base (`use a::b::{self}` binds `b`); aliases bind the alias; a
+      // wildcard binds no name. Path segments are never bindings.
+      const boundNames = (node: any, base: string): string[] => {
         if (!node) return []
         const nt = String(node.type)
         if (nt === "use_as_clause") {
@@ -194,33 +215,38 @@ export function deriveRustExportsTruth(root: any): RustTruthEdge[] {
         }
         if (nt === "use_wildcard") return []
         if (nt === "identifier" || nt === "type_identifier") return [text(node)]
+        if (nt === "self") {
+          const parts = base.split("::").filter(Boolean)
+          const last = parts.length > 1 ? parts[parts.length - 1] : ""
+          return last && !["crate", "self", "super"].includes(last) ? [last] : []
+        }
         if (nt === "scoped_identifier") {
           const nm = node.childForFieldName?.("name") ?? node.namedChild(node.namedChildCount - 1)
           return nm && nm.type !== "scoped_identifier" ? [text(nm)] : []
         }
-        if (nt === "scoped_use_list") {
-          const list = node.childForFieldName?.("list") ?? node.namedChild(node.namedChildCount - 1)
-          const base = pathOf(node.childForFieldName?.("path") ?? node.namedChild(0))
-          const out: string[] = []
-          for (let j = 0; j < (list?.namedChildCount ?? 0); j++) {
-            const leaf = list.namedChild(j)
-            if (!leaf) continue
-            if (leaf.type === "self") { const last = leaf === null ? "" : base.split("::").filter(Boolean).pop() ?? ""; if (last) out.push(last); continue }
-            out.push(...boundNames(leaf))
-          }
-          return out
-        }
         if (nt === "use_list") {
           const out: string[] = []
-          for (let j = 0; j < node.namedChildCount; j++) out.push(...boundNames(node.namedChild(j)))
+          for (let j = 0; j < node.namedChildCount; j++) out.push(...boundNames(node.namedChild(j), base))
+          return out
+        }
+        if (nt === "scoped_use_list") {
+          const inner = pathOf(node.childForFieldName?.("path") ?? node.namedChild(0))
+          const nextBase = inner === "" ? base : (base === "" ? inner : (["crate", "self", "super"].includes(base) ? `${base}::${inner}` : `${base}::${inner}`))
+          const list = node.childForFieldName?.("list") ?? node.namedChild(node.namedChildCount - 1)
+          const out: string[] = []
+          for (let j = 0; j < (list?.namedChildCount ?? 0); j++) out.push(...boundNames(list.namedChild(j), nextBase))
           return out
         }
         return []
       }
-      for (const nm of boundNames(c.namedChild(0))) if (nm) names.add(nm)
+      const useTree = (() => {
+        for (let i = 0; i < c.namedChildCount; i++) { const ch = c.namedChild(i); if (ch && ch.type !== "visibility_modifier") return ch }
+        return c.namedChild(0)
+      })()
+      for (const nm of boundNames(useTree, "")) if (nm) names.add(nm)
     }
   }
-  const edges = [...names].sort().map((name) => ({ label: "exports", from: RUST_FILE_SOURCE, target: name }))
+  const edges = [...names].sort().map((name) => ({ label: "exports", from: RUST_FILE_SOURCE, target: name, to: name }))
   // ROUTE ATTRIBUTES: `#[get("/users")]` on a function publishes an exports row (source = the function,
   // target = the route path) — the analyzer's actix contract, mirrored from the attribute syntax alone.
   const ROUTE_VERBS = ["get", "post", "put", "delete", "patch", "head", "options", "trace", "route"]
@@ -243,7 +269,7 @@ export function deriveRustExportsTruth(root: any): RustTruthEdge[] {
         if (target && target.type === "function_item") {
           const fnName = target.childForFieldName?.("name")
           const q1 = t.indexOf('"'), q2 = q1 >= 0 ? t.indexOf('"', q1 + 1) : -1
-          if (fnName && q1 >= 0 && q2 > q1 + 1) edges.push({ label: "exports", from: text(fnName), target: t.slice(q1 + 1, q2) })
+          if (fnName && q1 >= 0 && q2 > q1 + 1) { const routeTarget = t.slice(q1 + 1, q2); edges.push({ label: "exports", from: text(fnName), target: routeTarget, to: routeTarget }) }
         }
       }
     }
@@ -338,7 +364,7 @@ export function deriveRustOverridesTruth(root: any): RustTruthEdge[] {
               const k = `${from}\u0000${method}`
               if (seen.has(k)) continue
               seen.add(k)
-              out.push({ label: "overrides", from, target: method })
+              out.push({ label: "overrides", from, target: method, to: method })
             }
           }
         }
