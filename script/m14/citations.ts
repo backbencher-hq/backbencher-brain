@@ -138,6 +138,29 @@ export const ISO_CPP_STDLIB: CitationVocabulary = {
   ],
 }
 
+/**
+ * .NET PLATFORM / LIBRARY NAMESPACES (csharp lane proposal `6e7c153c3`, 2026-10-19): the seven
+ * namespaces that are EXACTLY the measured 706-row `ext?` population of the csharp clean arm
+ * (System.Text.Json 635 · Newtonsoft.Json 43 · System.Xml 17 · System.Net.Http.Json 8 ·
+ * Microsoft.AspNetCore.Http.Json 1 · BenchmarkDotNet.Exporters.Csv 1 · BenchmarkDotNet.Exporters.Json 1).
+ * Measured namespaces only, no broad prefixes. The two JSON/BenchmarkDotNet entries carry the same
+ * VENDORING CAVEAT JAVA_PLATFORM_LIBRARIES records — a project that vendors one is the collision the
+ * citation design cannot refute; strict-absent keeps the name model's answer.
+ */
+export const DOTNET_PLATFORM_LIBRARIES: CitationVocabulary = {
+  id: "dotnet-platform-libraries",
+  source: ".NET API browser (learn.microsoft.com/dotnet/api) for System.Text.Json / System.Xml / System.Net.Http.Json / Microsoft.AspNetCore.Http.Json · Json.NET (newtonsoft.com) · BenchmarkDotNet (benchmarkdotnet.org/api)",
+  roots: [
+    "System.Text.Json",
+    "Newtonsoft.Json",
+    "System.Xml",
+    "System.Net.Http.Json",
+    "Microsoft.AspNetCore.Http.Json",
+    "BenchmarkDotNet.Exporters.Csv",
+    "BenchmarkDotNet.Exporters.Json",
+  ],
+}
+
 export const CITATION_VOCABULARIES: readonly CitationVocabulary[] = [
-  JLS_JPMS, JAVA_PLATFORM_LIBRARIES, DART_SDK_CORE, ISO_C_STDLIB, PYTHON_STDLIB, ISO_CPP_STDLIB,
+  JLS_JPMS, JAVA_PLATFORM_LIBRARIES, DART_SDK_CORE, ISO_C_STDLIB, PYTHON_STDLIB, ISO_CPP_STDLIB, DOTNET_PLATFORM_LIBRARIES,
 ]

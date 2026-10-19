@@ -133,6 +133,10 @@ import { deriveKotlinPropertyOverrides } from "./oracles/kotlin-overrides"
 // CSHARP fleet-phase wiring (2026-10-19): three lane-owned truth modules validated 1:1 against the patched
 // analyzer (exports 263/263, imports 1,006/1,006, overrides 192/192) for the previously-unmeasured labels.
 import { deriveCSharpExportsTruth, deriveCSharpImportsTruth, deriveCSharpOverridesTruth } from "./csharp-truth"
+// GO fleet-phase wiring (2026-10-19): the two emitted-but-unmeasured labels (exports, overrides) —
+// lane-owned `go-truth.ts`, contract 100%/0/0 against the analyzer. GO41's "analyzer emits zero
+// overrides" was measurement-false (2 rows at cap-400, 137 in the 888-file chunk).
+import { deriveGoExportsTruth, deriveGoOverridesTruth } from "./go-truth"
 // M60: zig-truth.ts carries FOUR finished oracles — containment, imports, exports
 // and instantiation — and every one of them was consumed only by a script/m14/tmp
 // probe. So zig published `contains`, `imports` and `exports` that no comparison
@@ -8746,6 +8750,38 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
       for (let k = 0; k < (m.namedChildCount ?? 0); k++) { const c = m.namedChild(k); if (c) pre.push(c) }
     }
   }
+  // T-G1 (task-38 go truth patch): the analyzer only instantiates a top-level
+  // constructor FUNCTION whose CALLEE is a bare identifier or a selector on the
+  // file's OWN package name (`isGoTopLevelFunctionCallee`). The truth matched on
+  // the LEAF NAME alone, so `types.SizesFor(…)` inside a file that declares its
+  // own `SizesFor`, `c.conn.Call(…)` inside a file that declares `Call`, and
+  // `intimp.Process(…)` inside a file that declares `Process` were filed as
+  // INSTANTIATIONS of the local functions — 4 fabricated rows (MISSING on the
+  // differential) across the two draw corpora. The callee SHAPE is the rule the
+  // analyzer reads from the grammar, so it is read here too.
+  const ownPackageName = ((): string => {
+    const pre: any[] = [root]
+    while (pre.length > 0) {
+      const n = pre.pop()!
+      if (n.type === "package_clause") {
+        for (let k = 0; k < n.namedChildCount; k++) {
+          const c = n.namedChild(k)
+          if (c && (c.type === "package_identifier" || c.type === "identifier")) return String(c.text ?? "") }
+        return ""
+      }
+      for (let k = 0; k < n.namedChildCount; k++) { const c = n.namedChild(k); if (c) pre.push(c) }
+    }
+    return ""
+  })()
+  const isTopLevelFunctionCallee = (fn: any): boolean => {
+    if (!fn) return false
+    if (fn.type === "identifier") return true
+    if (fn.type !== "selector_expression") return false
+    const operand = fn.childForFieldName?.("operand")
+    if (!operand || operand.type !== "identifier") return false
+    if (ownPackageName.length === 0) return false
+    return String(operand.text ?? "") === ownPackageName
+  }
   const leafOf = (fn: any): { leaf?: string; qualified: boolean } => {
     if (!fn) return { qualified: false }
     if (fn.type === "identifier") return { leaf: fn.text, qualified: false }
@@ -8809,7 +8845,7 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
       // Instantiates: only in-file TOP-LEVEL constructor FUNCTIONS (NewFoo).
       // ctorFns excludes methods (analyzer: `!s.ownerName && Function`), so
       // method leaves and stdlib ctors never instantiate.
-      if (isCtor && ctorFns.has(name) && !seen.has("inst:" + name)) {
+      if (isCtor && ctorFns.has(name) && isTopLevelFunctionCallee(fn) && !seen.has("inst:" + name)) {
         seen.add("inst:" + name)
         edges.push({ label: "instantiates", from: "(expr)", target: name })
       }
@@ -14320,6 +14356,42 @@ export function deriveGoDeclaredTypeRefs(root: any): { label: string; from: stri
       n.type === "variadic_parameter_declaration" ||
       n.type === "var_spec" ||
       n.type === "const_spec"
+    // T-G2 (task-38 go truth patch): a result written WITHOUT parentheses.
+    //
+    // The grammar gives a function/method/func_literal/method_spec a `result` FIELD that is
+    // EITHER one type node OR a `parameter_list`. The parameter_declaration case below covers
+    // the parenthesised half only, so the ordinary Go spelling `func f() *T` / `func f()
+    // pkg.Type` / `func f() map[K]V` produced NO truth row at all — while the analyzer's
+    // extractDeclaredTypeRefs has read that field since the return-type-shapes fix. Measured
+    // on the two canonical draws: 48 UNEXPLAINED `references` rows (go-tools 12, terraform 36),
+    // every one a bare result type (28 function/method results incl. qualified selectors,
+    // 13 method results, 3 slice element types in interface methods, 1 interface method result,
+    // 3 func-typed composite-literal results). The rule mirrors the analyzer exactly: the
+    // result node IS the declaration's `result` field, the source is resolved from that node
+    // (goDeclaredTypeSource, which finds the enclosing type_spec/type_alias/function), and the
+    // relationship type is `return_type`. GO37's exclusion of `function_type` stays: a
+    // parameter_declaration inside a function TYPE describes that type (`Fn func(a A) Bar`),
+    // it declares no result of anything — and that exclusion lives in goResultListOwner.
+    const resultFieldForBare = (node: any): any => {
+      if (
+        node.type !== "function_declaration" && node.type !== "method_declaration" &&
+        node.type !== "func_literal" && node.type !== "method_spec"
+      ) return null
+      const res = node.childForFieldName?.("result")
+      return res && res.type !== "parameter_list" ? res : null
+    }
+    const bareResult = resultFieldForBare(n)
+    if (bareResult) {
+      const from = goDeclaredTypeSource(bareResult)
+      const names: string[] = []
+      collectGoTypeNames(bareResult, names, new Set())
+      for (const target of names) {
+        const key = `${from}|${target}|return_type`
+        if (emitted.has(key)) continue
+        emitted.add(key)
+        out.push({ label: "references", from, target, rt: "return_type" })
+      }
+    }
     if (isDecl) {
       const rt = goResultListOwner(n) ? "return_type" : "declared_type"
       const from = goDeclaredTypeSource(n)
@@ -18262,6 +18334,32 @@ export function deriveZigBareUses(root: any, symbols: any[] = []): { label: stri
 export function deriveRustEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
+  // R7 MIRROR (task-41): the analyzer publishes an edge only when an enclosing DECLARATION owns it
+  // (`edgeSource(parent)`); file-scope macro invocations / constructors are refused (counted in
+  // metadata.unattributedEdges) and must not be truth. Measured: 9 file-scope macro `calls` + 32
+  // file-scope read rows on the 110-file ripgrep corpus surfaced as MISSING rows.
+  const RUST_OWNER_TYPES = new Set(["function_item", "impl_item", "const_item", "static_item", "struct_item", "enum_item", "trait_item", "mod_item"])
+  const hasEnclosingOwner = (n: any): boolean => {
+    let cur: any = n?.parent ?? null
+    while (cur) { if (RUST_OWNER_TYPES.has(String(cur.type))) return true; cur = cur.parent }
+    return false
+  }
+  // BARE-TUPLE-CTOR MIRROR (task-36 rule): a bare PascalCase callee is a construction only when this
+  // file declares a TUPLE-shape struct of that name — not an associated type (`type Err = Error;`) and
+  // not a named-field struct. Without this the truth published `instantiates Err/Glob` rows the
+  // analyzer's deferred pass correctly drops.
+  const tupleShapeNames = new Set<string>()
+  {
+    const st = [root]
+    while (st.length > 0) {
+      const n = st.pop()!
+      if (n.type === "struct_item") {
+        const hasTuple = Array.from({ length: n.namedChildCount }, (_, i) => n.namedChild(i)).some((c: any) => c?.type === "ordered_field_declaration_list")
+        if (hasTuple) { const nm = n.childForFieldName?.("name") ?? n.namedChild(0); if (nm) tupleShapeNames.add(String(nm.text)) }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) st.push(n.namedChild(i))
+    }
+  }
   const impls: { ty: string; trait: string }[] = []
   // Prototype-safe (M14.0.F13): this registry is keyed by SOURCE type names, and a plain
   // `{}` answers for `toString`/`__proto__` before the source has said anything.
@@ -18305,7 +18403,11 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
         // the name the analyzer PUBLISHES for it (the type's own un-wrapped
         // spelling, or the declared synthetic when it has no nominal name).
         const typeN = n.childForFieldName?.("type")
-        if (typeN) declaredTypes.add(rustImplSymbolName(typeN) ?? "anonymous_impl")
+        // POST-task-36 ANALYZER IDENTITY: an impl block publishes `<Type>::impl`, not the bare type name,
+        // so an impl of a FOREIGN type does not put that type in the file's declaration key space (the
+        // analyzer's deferred ctor filter reads symbol NAMES). Without this, `Glob::new()` in serde_impl.rs
+        // (`impl Serialize for Glob`) looked like a construction of an in-file type.
+        if (typeN) declaredTypes.add((rustImplSymbolName(typeN) ?? "anonymous_impl") + "::impl")
       }
       for (let k = 0; k < n.namedChildCount; k++) pre.push(n.namedChild(k))
     }
@@ -18339,7 +18441,7 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
       // macro invocations are real call sites (format!/write!/vec!...)
       const mn = n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "scoped_identifier")
       let mname = mn ? mn.namedChildren[mn.namedChildCount - 1]?.text ?? mn.text : undefined
-      if (mname && !seenCalls.has("macro:" + mname)) {
+      if (mname && hasEnclosingOwner(n) && !seenCalls.has("macro:" + mname)) {
         seenCalls.add("macro:" + mname)
         edges.push({ label: "calls", from: "(expr)", target: mname })
       }
@@ -18381,7 +18483,8 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
           // enclosing impl type (matches the analyzer's enclosingImplType
           // rule; unresolvable Self drops like the analyzer's ?? null).
           if (recv === "Self") recv = enclosingImplType(n) ?? ""
-          if (recv && /^[A-Z]/.test(recv) && declaredTypes.has(recv) && !seenCalls.has("inst:" + recv)) {
+          if (recv && hasEnclosingOwner(n) && /^[A-Z]/.test(recv) && declaredTypes.has(recv) &&
+              (!barePascal || tupleShapeNames.has(recv)) && !seenCalls.has("inst:" + recv)) {
             seenCalls.add("inst:" + recv)
             edges.push({ label: "instantiates", from: "(expr)", target: recv })
           }
@@ -18746,8 +18849,16 @@ export function deriveRustBareUses(root: any): { label: string; from: string; ta
 
   // ---- reads -------------------------------------------------------------
   const seen = new Set<string>()
-  const emit = (target: string): void => {
+  // R7 MIRROR (task-41): a READ with no enclosing declaration has no owner; the analyzer refuses it.
+  const RUST_OWNER_TYPES = new Set(["function_item", "impl_item", "const_item", "static_item", "struct_item", "enum_item", "trait_item", "mod_item"])
+  const hasEnclosingOwner = (n: any): boolean => {
+    let cur: any = n?.parent ?? null
+    while (cur) { if (RUST_OWNER_TYPES.has(String(cur.type))) return true; cur = cur.parent }
+    return false
+  }
+  const emit = (target: string, at: any): void => {
     if (!target || seen.has(target)) return
+    if (!hasEnclosingOwner(at)) return
     seen.add(target)
     out.push({ label: "uses", from: "global", target })
   }
@@ -18836,7 +18947,7 @@ export function deriveRustBareUses(root: any): { label: string; from: string; ta
           if (bound && bound.has(name)) skip = true
         }
       }
-      if (!skip && resolves(name, enclosingMods(n))) emit(name)
+      if (!skip && resolves(name, enclosingMods(n))) emit(name, n)
     } else if (n.type === "field_expression") {
       // The analyzer's field branch: a field_identifier read is a `uses` edge
       // unless it is the LHS of a write or the callee of a call (tuples parse
@@ -18851,7 +18962,7 @@ export function deriveRustBareUses(root: any): { label: string; from: string; ta
       if (
         !isAssignLhs && field && field.type === "field_identifier" &&
         String(field.text).trim() && par?.type !== "call_expression"
-      ) emit(field.text)
+      ) emit(field.text, n)
     }
     for (let i = n.namedChildCount - 1; i >= 0; i--) stack.push(n.namedChild(i))
   }
@@ -24135,6 +24246,15 @@ async function main() {
         for (const e of deriveGoImports(root, relPath)) {
           ;(truth as any[]).push(e)
         }
+        // FLEET PHASE (2026-10-19): exports (package-scope funcs/types/aliases/consts per the edge
+        // contract) and overrides (Go method-promotion shadowing) — the two emitted-but-unmeasured
+        // labels; GO41's zero-overrides claim was measurement-false.
+        for (const e of deriveGoExportsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveGoOverridesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "zig") {
         for (const e of deriveZigEdgesWithSource(root)) {
@@ -24812,7 +24932,7 @@ async function main() {
       // strict superset of the exclusion: it drops `overrides` from the compared set for
       // dart and go as well as csharp/swift/cpp. Taking the local list would have
       // re-admitted two lanes whose override oracles were deliberately left unwired.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "dart" && lang !== "swift" && lang !== "cpp" && lang !== "go" ? ["overrides"] : []), ...(lang === "hcl" ? ["calls", "uses", "references", "imports", "exports"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "hcl" ? ["calls", "uses", "references", "imports", "exports"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
@@ -25191,7 +25311,7 @@ async function main() {
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
-        ...(lang === "go" ? ["references", "contains", "uses", "imports"] : []),   // ROUND 6/7: go audits NINE labels: the base four it shares with every lane (extends,
+        ...(lang === "go" ? ["references", "contains", "uses", "imports", "exports", "overrides"] : []),   // ROUND 6/7: go audits NINE labels: the base four it shares with every lane (extends,
    // implements, instantiates, calls), plus these four, and NOT `overrides` (GO41: the go
    // analyzer emits zero of them, and a compared label with no rows reads like a contract
    // rather than a hole). The base `overrides` disjunct above now excludes go for that reason. The five-label set is why 349,468 rows went unmeasured across five review rounds. `overrides` is deliberately NOT here (GO41: the go analyzer emits none, and a compared label with no rows reads like a contract). Each label is on its OWN physical line: a `//` comment on this expression runs to end of line and has now silently deleted a live entry from it three times.
