@@ -1424,7 +1424,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the emission is held until the precedence question is ruled. The whole-population count is
     // measured and reported: 31,498 claimable rows, of which 6,276 were resolved before (cross-file
     // decoys the analyzer cannot see without the project index).
-    // this.certifyImportedNameClaims(ctx)
+    this.certifyImportedNameClaims(ctx)
 
     const detectedFrameworks: string[] = PY_FRAMEWORK_ORDER.filter((f) => ctx.frameworks[f])
     const detectedPatterns: string[] = []
@@ -6525,19 +6525,38 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * cited; those stay NAMED in the D7 ledger until a project-module test exists.
    */
   private certifyImportedNameClaims(ctx: PythonContext): void {
+    // NO EXISTING CLAIM MARKER MAY BE PRESENT (Lead precedence ruling): a claim must not shrink
+    // existing accounting. A row that already carries isExternal*/moduleNamespace/namespace/
+    // projectIndex*/cause*/owner/localBinding/... is ALREADY routed by that marker; attaching
+    // `importedName` would re-route and displace its outcome (cap-50 measured extOK 672 -> 547).
+    // The claim lands only where the row is currently UNCLAIMED (the name-model/ext? classes).
+    // ALLOWED: the GENERIC external marker (`isExternalTarget`/`externalReason`/`externalSpecifier`)
+    // — that is the owner-claim marker that puts a row in the ext? class this claim exists to
+    // convert; excluding it would exclude the class itself. SKIPPED: every SPECIFIC claim kind and
+    // evidence marker — a row already routed/verified by one of those must keep its outcome
+    // (cap-50 measured the extOK erosion 672->547 when the claim displaced them).
+    const CLAIM_MARKERS = [
+      "isStdlib", "owner", "localBinding", "importedBinding", "importedName", "languageNamespace",
+      "projectIndexResolution", "projectLocalModule", "isImportFile", "importOutsideProject",
+      "remoteRef", "sourcePath", "cause",
+    ]
+    const mdKeys = (md: any): string[] => Object.keys(md ?? {})
     for (const r of ctx.relationships) {
       const md = r.metadata as Record<string, any> | undefined
-      if (!md || (md.isExternalTarget !== true && md.isStdlib !== true && md.externalReason === undefined)) continue
+      if (!md) continue
+      if (mdKeys(md).some((k) => CLAIM_MARKERS.some((c) => k === c || k.startsWith(c)))) continue
       const target = String(r.target ?? "")
       if (target.length === 0) continue
       // BARE NAME only: `module:item` rows belong to the namespace citation, dotted routes are
       // member access, not an imported name.
       if (target.includes(":") || target.includes(".")) continue
       if (md.importedName !== undefined) continue
-      // THE CLAIM IS ABOUT AN IMPORTED NAME, so the evidence must BE the imported-name marker: an
-      // imported-MODULE-member leaf (`json.dumps` names `dumps`) is a member access, not a name the
-      // file's import brought into scope — claiming it would be a claim the arbiter REFUTES.
-      if (md.externalReason !== "imported-name") continue
+      // FROM-IMPORT ITEMS ONLY. `import json` binds the MODULE `json` (its import row carries item
+      // `*`), and the arbiter's evidence map does not record `json` as an imported NAME — the 2
+      // cap-50 bindFAIL rows were exactly this shape (`claim {specifier: m, name: m}` refuted). A
+      // from-import item always differs from its module's basename (`from os import path`), so the
+      // shape test is the same evidence test.
+      if (target === specifier || target === (specifier.split(".").pop() ?? "")) continue
       // FAIL-CLOSED AGAINST DECOYS THE LANE CAN SEE: a name THIS FILE declares itself resolves
       // locally; claiming it would withdraw a real resolution (the decoy class the Lead's
       // "resolved must not fall" guard names). Cross-file declarations are not visible without the
