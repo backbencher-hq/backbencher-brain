@@ -33,3 +33,12 @@ first-parent-guess @0.5 with machine-readable reasonCode.
 - Corpus: Exposed@1be66471 differential 99.5% coverage / 0.2% fabrication
 - Grammar audit: PASS (0 unknown node-type references, fieldless flag cleared)
 - Mutation hardening: drop-declared-types mutant CAUGHT via type-usage-graph fixture
+
+## Imported-binding claims (fleet depth task-40, flag-gated)
+
+`BB_KOTLIN_IMPORT_CLAIM=1` enables the arbiter-verifiable imported-binding claim; default OFF and
+byte-identical off. On EXTERNAL imports only (reserved roots `java./javax./jakarta./jdk./sun./com.sun./
+kotlin./android./androidx.`) the analyzer publishes `metadata.importedBindings` + `metadata.module` on the
+imports edge, and `metadata.importedBinding {specifier, binding}` on a receiver-less call (or bare read)
+whose target is the imported binding. Project-local imports, on-demand imports, file-shadowed names and
+receiver-carrying rows are fail-closed unclaimed. Evidence: `validation/m14/verification/KOTLIN-IMPORT-CLAIM.md`.

@@ -178,6 +178,17 @@ export interface KotlinContext {
   // Removed dead state; kept currentFile/packageStack/classStack (read).
 }
 
+/**
+ * EXTERNAL IMPORT ROOTS for the imported-binding claim (Lead task-40). RESERVED vocabulary only:
+ * JVM/platform namespaces that no project-local import can own in these corpora. A project package
+ * (`com.acme.*`, `org.jetbrains.exposed.*`, `kotlinx.coroutines.*` in its own repo) is NOT listed — the
+ * per-file no-index model cannot tell a project module from a third-party library, so a broader list
+ * would launder project-resolvable names, which the Lead ruling forbids.
+ */
+const KOTLIN_EXTERNAL_IMPORT_ROOTS: readonly string[] = [
+  "java.", "javax.", "jakarta.", "jdk.", "sun.", "com.sun.", "kotlin.", "android.", "androidx.",
+]
+
 export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   private findChildByType(node: Node, types: string[]): Node | null {
     for (let i = 0; i < node.namedChildCount; i++) {
@@ -497,6 +508,9 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
+    // IMPORTED-BINDING CLAIM (fleet depth, task-40): flag-gated, DEFAULT OFF, measured byte-identical off.
+    // The gate must never see a claim it was not asked for, and the off arm must be reproducible.
+    const importClaimEnabled = process.env.BB_KOTLIN_IMPORT_CLAIM === "1"
 
     // ========================================================================
     // STAGE 3: RESILIENT PARSING & ERROR NODE BYPASS
@@ -679,7 +693,12 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
                 confidence: 0.7,
                 // M59 (#825): the call is written at the callee leaf.
                 ...this.lineField(this.calleeLeafNode(n, leaf), n),
-                metadata: { kotlinSpecific: true },
+                metadata: {
+                  kotlinSpecific: true,
+                  // cut-1 claim eligibility: only a RECEIVER-LESS call can be the imported binding itself
+                  // (a receiver-carrying call's target is a member leaf, not the bound name).
+                  ...(importClaimEnabled && !isQualified ? { kotlinBareCallee: true } : {}),
+                },
               })
             }
             }
@@ -1209,6 +1228,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the two measured guards, and the arbiter branch that makes the marker inert on any
     // edge whose target IS a project declaration.
     this.markPlatformTargets(relationships, symbols, imports)
+
+    if (importClaimEnabled) {
+      this.attachKotlinImportedBindingClaims(relationships, symbols, imports)
+    }
 
     return {
       symbols,
@@ -4666,6 +4689,83 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const decl = this.findChildByType(node, ["variable_declaration"])
     if (!decl) return undefined
     return this.findChildByType(decl, ["simple_identifier", "type_identifier"])?.text
+  }
+
+  /**
+   * THE IMPORTED-BINDING CLAIM FOR KOTLIN IMPORTS (fleet depth task-40, flag-gated `BB_KOTLIN_IMPORT_CLAIM=1`).
+   *
+   * Two halves, both needed because the arbiter verifies one against the other:
+   *  1. EVIDENCE on the imports edge: `metadata.importedBindings = [binding]` + `metadata.module = <the
+   *     module path as written>` for EXTERNAL imports only. The gate builds file -> specifier -> bound
+   *     names from exactly this pair and verifies claims against it.
+   *  2. CLAIM on the use row: `metadata.importedBinding = { specifier, binding }` on a calls row whose
+   *     callee is BARE (no receiver) or a uses row that is a BARE READ (`isBareRead`), whose target IS the
+   *     imported binding and whose file does not declare a shadowing name.
+   *
+   * REFUSALS (each a way the claim could become false, fail-closed):
+   *  - container root NOT in the EXTERNAL allowlist (only JVM/platform-reserved roots are listed; a
+   *    project-local import is project-resolvable and claiming it would launder — that is why the list is
+   *    the reserved vocabulary and not "anything that looks like a package");
+   *  - an on-demand import (`import a.b.*`) binds no name this file states;
+   *  - the FILE declares the name (the declaration shadows the import — the use is not the binding);
+   *  - a receiver-carrying call / field access row (its target is a member leaf, cut 2);
+   *  - a row that already carries a claim.
+   */
+  private attachKotlinImportedBindingClaims(
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    imports: ASTEngine.ImportInfo[],
+  ): void {
+    const bindings = new Map<string, string>() // binding name -> specifier (module path as written)
+    const isExternal = (module: string): boolean => {
+      for (const root of KOTLIN_EXTERNAL_IMPORT_ROOTS) if (module === root || module.startsWith(root)) return true
+      return false
+    }
+    for (const imp of imports) {
+      const module = String(imp?.module ?? "")
+      if (module.length === 0) continue
+      if (imp.isNamespaceImport === true) continue // on-demand import binds nothing
+      const dot = module.lastIndexOf(".")
+      const leaf = dot > 0 ? module.slice(dot + 1) : module
+      const binding = String((imp as any).metadata?.alias ?? (imp as any).alias ?? "") || leaf
+      if (!binding || binding === "*") continue
+      if (!isExternal(module)) continue
+      bindings.set(binding, module)
+    }
+    if (bindings.size === 0) return
+    // 1) evidence on the import edges (target is the module path as written in this lane)
+    for (const r of relationships) {
+      if (String(r.type ?? "") !== "imports") continue
+      const specifier = String(r.target ?? "")
+      if (!isExternal(specifier)) continue
+      const dot = specifier.lastIndexOf(".")
+      const leaf = dot > 0 ? specifier.slice(dot + 1) : specifier
+      let binding = leaf
+      for (const [b, spec] of bindings) if (spec === specifier) { binding = b; break }
+      if (!specifier || !binding || binding === "*") continue
+      const md = (r.metadata = (r.metadata ?? {}) as Record<string, unknown>)
+      if (md.importedBindings !== undefined) continue
+      md.importedBindings = [binding]
+      md.module = specifier
+    }
+    // 2) claims on the use edges
+    const fileDeclared = new Set<string>()
+    for (const sym of symbols) if (sym?.name) fileDeclared.add(sym.name)
+    for (const r of relationships) {
+      const label = String(r.type ?? "")
+      if (label !== "calls" && label !== "uses") continue
+      const md = (r.metadata ?? {}) as Record<string, unknown>
+      if (md.importedBinding !== undefined) continue
+      const target = String(r.target ?? "")
+      if (!target || !bindings.has(target)) continue
+      if (fileDeclared.has(target)) continue
+      if (label === "calls") {
+        if (md.kotlinBareCallee !== true) continue
+      } else if (md.isBareRead !== true) {
+        continue
+      }
+      r.metadata = { ...md, importedBinding: { specifier: bindings.get(target)!, binding: target } }
+    }
   }
 
   private processImportsExports(
