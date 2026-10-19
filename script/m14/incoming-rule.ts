@@ -130,6 +130,8 @@ export type ExternalClaim =
   // ROOT is the imported binding; JS receiver-position contract 2026-10-19). Same evidence kind,
   // same binding column — one mechanism, one verification, one column.
   | { kind: "importedBinding"; specifier: string; binding: string; position?: "target" | "receiver" }
+  // THE IMPORTED-NAME CLAIM: the target is a name this file imports from `specifier` (no local alias).
+  | { kind: "importedName"; specifier: string; name: string }
   // THE EXPORT-SURFACE CLAIM: an exports row names the export surface, not a declaration.
   | { kind: "exportSurface"; surface: "default"; form: string; localName?: string }
   | { kind: "exportSurface"; surface: "moduleExports"; property: string; form: string }
@@ -227,6 +229,18 @@ export const IMPORTED_BINDING_CLAIM_KEY = "importedBinding"
  * BINDING family (nothing resolves; the claim asserts a surface) with
  * `verifiedBy: "exportSurface"` — counted in `bindOK`, NEVER in `resolved`.
  */
+/**
+ * THE IMPORTED-NAME CLAIM — "this target names a NAME imported from `specifier`" (2026-10-19).
+ *
+ * The mirror of the imported-binding claim for languages whose imports bring a NAME into scope
+ * without a local-binding spelling (`from module import Item` — the row's target IS the imported
+ * name, e.g. python's `Optional`, a dart SDK type, a C++ symbol). Evidence is the file's OWN import
+ * evidence: an `imports` edge whose module/specifier is `specifier` and whose item name is the
+ * target. Verified from THAT map, never from the row's own word; outcomes ride the binding family
+ * (nothing resolves to a declaration — the name is an import binding) and NEVER raise `resolved`.
+ */
+export const IMPORTED_NAME_CLAIM_KEY = "importedName"
+
 export const DEFAULT_EXPORT_CLAIM_KEY = "defaultExport"
 export const MODULE_EXPORTS_CLAIM_KEY = "moduleExports"
 /** The forms the analyzer may state; a form outside these sets is REFUTED (never a blanket excuse). */
@@ -545,6 +559,15 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
       binding: String((recvImp as any).binding), position: "receiver",
     }
   }
+  // THE IMPORTED-NAME CLAIM: `metadata.importedName {specifier, name}`.
+  const impName = md[IMPORTED_NAME_CLAIM_KEY]
+  if (
+    impName !== null && typeof impName === "object" &&
+    typeof (impName as any).specifier === "string" && (impName as any).specifier.length > 0 &&
+    typeof (impName as any).name === "string" && (impName as any).name.length > 0
+  ) {
+    return { kind: "importedName", specifier: String((impName as any).specifier), name: String((impName as any).name) }
+  }
   // THE NAMESPACE CLAIM, read before the population claims for the file claim's own reason: it
   // makes a statement the LIST can check, and routing such an edge to the weaker `owner` marker
   // would let a lane be excused by the very mechanism this claim exists to replace.
@@ -671,6 +694,29 @@ export function verifyBindingClaim(tgt: string): Outcome {
   const at = tgt.lastIndexOf(BINDING_SEP)
   if (at < 0) return "bindingRefuted"
   return at === tgt.length - 1 ? "bindingUnverified" : "bindingVerified"
+}
+
+/**
+ * VERIFY AN IMPORTED-NAME CLAIM from the run's own import evidence: the edge's file must have an
+ * import of `specifier` that brings `name` into scope (the gate records module→names from the
+ * analyzer's imports edges). The target must be the claimed name and name-shaped. No project-
+ * declaration refutation: an imported name occupies its file's name scope (the decoy class).
+ */
+export function verifyImportedNameClaim(
+  claim: { specifier: string; name: string },
+  tgt: string,
+  facts?: ProjectFacts,
+  edgeFile?: string,
+): Outcome {
+  if (tgt !== claim.name) return "bindingRefuted"
+  if (!/^[A-Za-z_$][\w$]*$/.test(claim.name)) return "bindingRefuted"
+  if (!facts || !facts.importsByFile || !edgeFile || edgeFile.length === 0) return "bindingUnverified"
+  const perFile =
+    facts.importsByFile.get(edgeFile) ?? facts.importsByFile.get(edgeFile.replace(/\\/g, "/"))
+  if (!perFile) return "bindingRefuted"
+  const names = perFile.get(claim.specifier)
+  if (!names) return "bindingRefuted"
+  return names.has(claim.name) ? "bindingVerified" : "bindingRefuted"
 }
 
 /**
@@ -1529,6 +1575,18 @@ export function classifyEdge(
       outcome, decls, kinds: kindText,
       verifiedBy: outcome === "bindingVerified" ? "exportSurface" : undefined,
       ...(decls > 1 ? { claimOnAmbiguous: { kind: "exportSurface", disposition } } : {}),
+    }
+  }
+  // THE IMPORTED-NAME CLAIM IS THE SOLE AUTHORITY FOR ITS EDGES, like the imported-binding claim:
+  // the target names a name this file imports, so a same-named declaration elsewhere is the decoy.
+  if (claim !== null && claim.kind === "importedName") {
+    const outcome = verifyImportedNameClaim(claim, tgt, facts, edgeFile)
+    const disposition: AmbiguousClaimDisposition =
+      outcome === "bindingVerified" ? "verified" : outcome === "bindingUnverified" ? "unverified" : "refuted"
+    return {
+      outcome, decls, kinds: kindText,
+      verifiedBy: outcome === "bindingVerified" ? "importEvidence" : undefined,
+      ...(decls > 1 ? { claimOnAmbiguous: { kind: "importedName", disposition } } : {}),
     }
   }
   // THE IMPORTED-BINDING CLAIM IS THE SOLE AUTHORITY FOR ITS EDGES (2026-10-19), and it is checked

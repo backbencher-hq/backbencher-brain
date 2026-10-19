@@ -1242,21 +1242,30 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       if (label === "imports") {
         const relMdEarly = (rel as any)?.metadata
         const names = Array.isArray(relMdEarly?.importedBindings) ? relMdEarly.importedBindings : null
-        if (names) {
+        // THE IMPORTED-NAME EVIDENCE rides the same module→names map: an imports edge's target is
+        // `module:item` in most lanes, so the ITEM is a name this file imports (python `typing:Optional`,
+        // dart `dart:core:Object`, c++ qualified rows). Recorded whether or not the lane publishes
+        // importedBindings, so the imported-name claim has evidence in every lane that spells items.
+        const itemMatch = tgt.lastIndexOf(":")
+        const tgtItem = itemMatch > 0 && itemMatch < tgt.length - 1 ? tgt.slice(itemMatch + 1) : ""
+        if (names || (tgtItem.length > 0 && tgtItem !== "*")) {
           const repo = repoOf(f)
           let byFile = importEvidence.get(repo)
           if (!byFile) importEvidence.set(repo, (byFile = new Map()))
           let bySpec = byFile.get(f)
           if (!bySpec) byFile.set(f, (bySpec = new Map()))
-          // THE SPECIFIER KEY IS THE MODULE, NOT THE EDGE'S target: an imports edge spells its
-          // target `module:item` (`@glimmer/component:Component`), while the use-edge claim carries
-          // the specifier as written (`@glimmer/component`). Keying by the target made every claim
-          // refute (measured 389/1,299 on a cap-50 smoke). `metadata.module` is the analyzer's own
-          // specifier field; fall back to the target only when it is absent.
-          const specKey = typeof relMdEarly?.module === "string" && relMdEarly.module.length > 0 ? relMdEarly.module : tgt
+          // THE SPECIFIER KEY IS THE MODULE, NOT THE EDGE's target: an imports edge spells its target
+          // `module:item` (`@glimmer/component:Component`), while the claim carries the specifier as
+          // written. `metadata.module` is the analyzer's own field; fall back to the target's module
+          // half (never the whole `module:item`, which no claim would match — measured 389 refutations
+          // when the whole target was used).
+          const specKey = typeof relMdEarly?.module === "string" && relMdEarly.module.length > 0
+            ? relMdEarly.module
+            : (itemMatch > 0 ? tgt.slice(0, itemMatch) : tgt)
           let bindSet = bySpec.get(specKey)
           if (!bindSet) bySpec.set(specKey, (bindSet = new Set()))
-          for (const nm of names) if (typeof nm === "string" && nm.length > 0) bindSet.add(nm)
+          for (const nm of names ?? []) if (typeof nm === "string" && nm.length > 0) bindSet.add(nm)
+          if (tgtItem.length > 0 && tgtItem !== "*") bindSet.add(tgtItem)
         }
       }
       const edgeLine = Number((rel as any)?.line_number ?? (rel as any)?.lineNumber ?? (rel as any)?.line ?? 0) || null
@@ -1738,6 +1747,27 @@ function selfTest(): { ok: boolean; failures: string[] } {
     if (same.outcome !== "bindingRefuted") failures.push(`control: receiver claim whose target IS the binding read ${same.outcome}, expected bindingRefuted`)
     const badName = classifyEdge(declCount, kinds, "a b", { kind: "importedBinding", specifier: "pkg-x", binding: "api", position: "receiver" }, recvFacts, undefined, undefined, undefined, "src/a.js")
     if (badName.outcome !== "bindingRefuted") failures.push(`control: receiver claim with a non-name member spelling read ${badName.outcome}, expected bindingRefuted`)
+  }
+  // IMPORTED-NAME CLAIM (2026-10-19): same import evidence map, name-level. Controls: verified name,
+  // name-not-imported refutes, wrong specifier refutes, no evidence = unverified.
+  {
+    const nameFacts: ProjectFacts = {
+      packages: new Set(),
+      files: new Set(["src/a.py"]),
+      sdkLib: false,
+      importsByFile: new Map([["src/a.py", new Map([["typing", new Set(["Optional", "Union"])]])]]),
+    }
+    const nArms: Array<[string, ExternalClaim, Outcome, string]> = [
+      ["Optional", { kind: "importedName", specifier: "typing", name: "Optional" }, "bindingVerified", "an imported name the file imports verifies"],
+      ["List", { kind: "importedName", specifier: "typing", name: "List" }, "bindingRefuted", "a name the import does not bring in refutes"],
+      ["Optional", { kind: "importedName", specifier: "os", name: "Optional" }, "bindingRefuted", "a specifier the file does not import refutes"],
+    ]
+    for (const [t, claim, want, why] of nArms) {
+      const c = classifyEdge(declCount, kinds, t, claim, nameFacts, undefined, undefined, undefined, "src/a.py")
+      if (c.outcome !== want) failures.push(`control: importedName ${t} read ${c.outcome}, expected ${want} — ${why}`)
+    }
+    const noFacts = classifyEdge(declCount, kinds, "Optional", { kind: "importedName", specifier: "typing", name: "Optional" }, undefined, undefined, undefined, undefined, "src/a.py")
+    if (noFacts.outcome !== "bindingUnverified") failures.push("control: an imported-name claim with no evidence must be UNVERIFIED")
   }
   // IMPORTED-BINDING CLAIM (charter §18.10): verified from the RUN'S OWN import evidence, never from
   // the use edge's word. Plants: a name the file's import binds (VERIFIED), a name it does not bind
