@@ -1,0 +1,94 @@
+{
+  "_what": "RUBY_DECLARATION_SPEC proposal for script/m14/project-index.ts (Lead applies; lane does not edit Lead-owned files). Charter-first deliverable of the ruby index scoping phase. Every field is derived from the pinned tree-sitter-ruby grammar's named nodes and the ruby analyzer's existing per-file rules; nothing here invents a construct.",
+  "language": "ruby",
+  "status": "PROPOSAL — analyzer-side consumption must stay behind a flag and fail-closed; no analyzer change until Lead approves the patch",
+  "typeNodes": [
+    { "node": "class", "name": "name field (constant or scope_resolution)", "kind": "Class" },
+    { "node": "module", "name": "name field (constant or scope_resolution)", "kind": "Module" },
+    { "node": "assignment", "when": "LHS constant, RHS call on Class/Struct/Data/Module (`K = Class.new(Base)`, `Point = Struct.new(:x)`, `Cfg = Data.define(:h)`)", "kind": "factory-declared Class/Module, carries base relation when RHS is Class.new(constant)" },
+    { "node": "assignment", "when": "LHS constant, RHS simple constant (`Alias = Other`)", "kind": "Constant alias — nameOnly, NOT a type declaration" }
+  ],
+  "memberNodes": [
+    { "node": "method", "spelling": "Owner#name (instance)", "dotted": "Owner.name only for `def self.m`/singleton scope" },
+    { "node": "singleton_method", "spelling": "Owner.name", "note": "`def obj.m` with obj not `self`/constant is UNNAMEABLE and refused (analyzer refuses it today)" },
+    { "node": "class << self body", "scope": "singleton", "spelling": "Owner.name for each def inside" },
+    { "node": "alias", "spelling": "as the alias name, member of the enclosing scope; record aliased target as metadata, never as a separate declaration" },
+    { "node": "call", "when": "alias_method :new, :old (first literal symbol)", "spelling": "Owner#new" },
+    { "node": "call", "when": "attr_reader/attr_writer/attr_accessor/attr with literal symbols", "spelling": "property members Owner#x and Owner#x= per accessor kind" },
+    { "node": "call", "when": "define_method(:name) with literal symbol", "spelling": "Owner#name" },
+    { "node": "assignment", "when": "LHS constant inside a class/module body", "spelling": "Owner::CONST (a member constant)" }
+  ],
+  "baseNodes": [
+    { "node": "class", "field": "superclass (the grammar wraps it: superclass -> constant/scope_resolution)", "spelling": "static constant path only; a call base (`(expr)`, `Struct.new(...)`) is UNNAMEABLE for `extends` and refused" },
+    { "node": "call", "when": "include/prepend/extend with a constant/scope_resolution argument at any class/module/body scope", "spelling": "source = composing type, target = the constant path; role recorded (include|prepend|extend) as metadata.mixinType — RUBY-D1" },
+    { "node": "assignment factory", "when": "`K = Class.new(Base)` with a static constant base", "spelling": "extends K -> Base" }
+  ],
+  "scopeNodes": [
+    { "node": "class", "kind": "type scope; reopens the SAME declaration" },
+    { "node": "module", "kind": "type scope; reopens the SAME declaration" },
+    { "node": "singleton_class (`class << self`)", "kind": "singleton scope of the enclosing type — NOT a new type, no own name" },
+    { "node": "method/singleton_method", "kind": "binding scope (locals; never a type scope)" },
+    { "node": "block/do_block/lambda", "kind": "binding scope, inherits enclosing type scope" }
+  ],
+  "nameOnlyNodes": [
+    { "node": "assignment", "when": "top-level or class-body constant assignment", "use": "name + line + visibility only" },
+    { "node": "call", "when": "private_constant :X", "use": "REMOVES X from the exported/constant surface (record as a visibility fact, not a declaration)" },
+    { "node": "alias / attr_* / define_method", "use": "member declaration names (see memberNodes); the CALL itself is not a declaration" }
+  ],
+  "nestingAndReopening": {
+    "rule": "The nesting stack (class/module/singleton_class, entering methods does NOT open a type scope) builds the qualified path. A declaration occurrence is recorded as a SITE under its qualified path; OCCURRENCES OF THE SAME (kind, qualified path) IN THE SAME PROJECT ARE ONE DECLARATION WITH MULTIPLE SITES (file,line). Ruby reopens classes by design; reading reopens as separate declarations would manufacture false ambiguity — the sizing instrument shows exactly how much false ambiguity a naive multi-site count creates (instantiates 481, extends 986, mixes_in 123 rows are WEAK only because of this).",
+    "anonymous": "A scope without a static name (bare `Class.new do ... end`, `class << obj`) is UNNAMEABLE: its members are not declared in the project space (the analyzer's namable-owner rule, reused unchanged).",
+    "topLevel": "A file-scope `def` is a private method of Object; spell it `Object#name` (record also `isTopLevel=true`) so it can never collide with a class-named member."
+  },
+  "spellingContract": {
+    "types": "A::B::C — constant path from the nesting stack; the LEAF is also indexed for leaf-name lookup and the FULL path for qualified lookup.",
+    "instanceMembers": "A::B#m (hash form is mandatory; it is the only thing distinguishing instance from singleton)",
+    "singletonMembers": "A::B.m",
+    "membersWrittenAsAccessors": "A::B#x (reader), A::B#x= (writer) per attr kind; singleton accessors A::B.x",
+    "constants": "A::B::CONST; top-level CONST indexed both as CONST and ::CONST",
+    "aliases": "declared under their NEW name only (the aliased target is metadata; a resolution that binds the alias target to the original spelling would double-count one member)"
+  },
+  "visibility": {
+    "forms": ["bare `private`/`protected`/`public` (applies to following defs)", "argument form `private :a, :b`", "`private_class_method`, `module_function`", "`class << self` visibility context"],
+    "record": "per member: public|protected|private (+ module_function flag); the declaration SPACE includes private members (they are real declarations); resolution may use visibility for ranking but must never delete a declaration on visibility",
+    "private_constant": "removes the constant from the reachable space for exports only; the declaration remains for type/member resolution"
+  },
+  "indexFactsRequested": {
+    "symbols": "one row per declaration: qualified path(s), kind, sites[], visibility, enclosing type, basePaths[] (superclass/mixins), factory flag",
+    "typeExists": "set of declared type paths + leaf map (for classic leaf-name lookup)",
+    "memberOf": "owner path -> member qualified names (both # and . forms)",
+    "reopenSafe": "multi-site rows are ONE declaration — resolution must never read site count as ambiguity",
+    "completeness": "the index exposes a completeness flag (all admitted files indexed); consumers FAIL CLOSED when false (no partial resolution, no new edges, metadata unchanged)"
+  },
+  "analyzerConsumptionSketch": {
+    "flag": "behind a lane flag/env (fail-closed on incomplete index), metadata-only like the cpp pattern: facts are read, no edge is fabricated by the index itself",
+    "uses": [
+      "overrides: verify the first-parent GUESS against the index (base class declared + base declares the method) -> structural confidence instead of a declared cause",
+      "instantiates/extends/mixes_in: resolve a static constant path against declared types (reopen-safe) instead of name-only ambiguity",
+      "calls: ONLY where the analyzer already carries owner/type evidence (it currently does not for bare calls) — leave name-based rows untouched; no owner inference from the index alone"
+    ],
+    "never": ["no cross-file method binding for bare calls without owner evidence", "no ivar resolution from the index (the @sigil wall is not a declaration-space problem)", "no dynamic send/method_missing targets"]
+  },
+  "preCommittedArmTable": {
+    "population": "ruby arm A: 989/989 .rb · 15 repos · no-index",
+    "edges": "INVARIANT at 85,234 (an index must not add or drop a row)",
+    "predictedMovement": "resolved 24,328 -> up to +4,844 (upper bound = residual rows the sizing classified decidable: overrides 3,013 base-verified + instantiates 481 + extends 987 + mixes_in 130 + calls 231 unique-declaration + uses 2); causeOK 2,943 -> falls by the verified overrides guesses; amb(decl) falls by the reopened-declaration rows that become unique; unresolved falls by the rows whose declaration the index supplies",
+    "mustNotMove": "TOTAL/edges, extOK/ext?/extFAIL/bind*/causeFAIL (all 0/unchanged), arbitraryTwin must NOT rise (expect fall), closure identity exact",
+    "declined": "every row the index could not decide is reported as declined BY REASON (owner-absent, not-declared, reopen-ambiguous, visibility-only, dynamic) and counted — never merged into resolved",
+    "falsifier": "if edges move, or arbitraryTwin rises, or any failure column is nonzero, or resolved rises above the decidable upper bound, the consumption is over-reaching and is reverted"
+  },
+  "fixturesPlan": [
+    "cross-file-override-verified: subclass in file A, base class+method in file B -> overrides resolved structurally; same fixture with the index absent -> unchanged first-parent cause (fail-closed)",
+    "cross-file-instantiation-class: `Foo.new` in file A, `class Foo` in file B -> instantiates resolves; a same-named class in TWO namespaces in the repo stays ambiguous (reopen is not ambiguity, distinct paths are)",
+    "reopen-is-one-declaration: `class Foo` split across two files with members in each -> NOT ambiguous, all members resolve",
+    "mixin-module-sibling: `include Mod` with `module Mod` in a sibling file -> mixes_in resolves; dynamic `include(local_mod)` still refused",
+    "fail-closed: index completeness=false -> every one of the above gives the pre-index result byte-identically (this is a RED-capable control)"
+  ],
+  "secondaryLocalBindingCensus": {
+    "question": "can ruby honestly emit LOCAL-BINDING claims?",
+    "ruled": "YES — the analyzer already carries the evidence: its method-body walker builds a per-method `locals` set (parameters, param defaults, assignment LHS, block params) and suppresses `calls` for bound names. So a bare read is distinguishable from a method call at the analyzer's own evidence tier, exactly the property a binding claim needs.",
+    "measuredNow": "text-level over-approximation: 17,579 residual calls/uses rows whose target spelling also appears as an assignment word somewhere in the row's repo (NOT scope-exact; the repo-wide local set cannot distinguish a same-named local in another method).",
+    "whatItProves": "a scope-exact instrument (analyzer-run, per-method locals) is required before pricing claims; the count above is an UPPER bound and is labelled as such. No claim kind is invented lane-side; if the Lead wants the class claimed, the existing binding claim path is the mechanism.",
+    "falsifier": "a residual bare call whose name is provably a method-scope local in the ROW'S OWN METHOD yet was emitted as a call = a binding gap in the analyzer, reportable row by row."
+  }
+}
