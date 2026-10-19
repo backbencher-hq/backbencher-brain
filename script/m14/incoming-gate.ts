@@ -1768,14 +1768,15 @@ function selfTest(): { ok: boolean; failures: string[] } {
       ["List", { kind: "importedName", specifier: "typing", name: "List" }, "bindingRefuted", "a name the import does not bring in refutes"],
       ["Optional", { kind: "importedName", specifier: "os", name: "Optional" }, "bindingRefuted", "a specifier the file does not import refutes"],
     ]
+    const zeroDecls = new Map<string, number>()
     for (const [t, claim, want, why] of nArms) {
-      const c = classifyEdge(0, kinds, t, claim, nameFacts, undefined, undefined, undefined, "src/a.py")
+      const c = classifyEdge(zeroDecls, kinds, t, claim, nameFacts, undefined, undefined, undefined, "src/a.py")
       if (c.outcome !== want) failures.push(`control: importedName ${t} read ${c.outcome}, expected ${want} — ${why}`)
     }
     // NEGATIVE PRECEDENCE control: the SAME claim on a row WITH declarations must NOT become a claim.
-    const withDecl = classifyEdge(declCount, kinds, "Optional", { kind: "importedName", specifier: "typing", name: "Optional" }, nameFacts, undefined, undefined, undefined, "src/a.py")
+    const withDecl = classifyEdge(declCount, kinds, "alpha", { kind: "importedName", specifier: "typing", name: "alpha" }, nameFacts, undefined, undefined, undefined, "src/a.py")
     if (withDecl.outcome === "bindingVerified") failures.push("control: importedName claim displaced a row that HAS declarations (must fall through to the name model)")
-    const noFacts = classifyEdge(0, kinds, "Optional", { kind: "importedName", specifier: "typing", name: "Optional" }, undefined, undefined, undefined, undefined, "src/a.py")
+    const noFacts = classifyEdge(zeroDecls, kinds, "Optional", { kind: "importedName", specifier: "typing", name: "Optional" }, undefined, undefined, undefined, undefined, "src/a.py")
     if (noFacts.outcome !== "bindingUnverified") failures.push("control: an imported-name claim with no evidence must be UNVERIFIED")
   }
   // IMPORTED-BINDING CLAIM (charter §18.10): verified from the RUN'S OWN import evidence, never from

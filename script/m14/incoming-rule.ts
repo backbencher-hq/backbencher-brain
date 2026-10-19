@@ -1583,7 +1583,7 @@ export function classifyEdge(
   // owns the classification and the claim falls through — otherwise the claim column eats verified
   // external claims (measured: python extOK −16,277) and re-labels rows that already had answers.
   // The claim's own evidence still decides when it does apply; it never resolves to a declaration.
-  if (claim !== null && claim.kind === "importedName" && declCount === 0) {
+  if (claim !== null && claim.kind === "importedName" && decls === 0) {
     const outcome = verifyImportedNameClaim(claim, tgt, facts, edgeFile)
     const disposition: AmbiguousClaimDisposition =
       outcome === "bindingVerified" ? "verified" : outcome === "bindingUnverified" ? "unverified" : "refuted"
