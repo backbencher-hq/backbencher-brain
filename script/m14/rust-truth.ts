@@ -153,9 +153,12 @@ export function deriveRustImportsTruth(root: any): RustTruthEdge[] {
             return
           }
           if (t === "use_wildcard") {
+            // WILDCARD CONVENTION (analyzer contract, module-surface fixture): the dependency is the
+            // written path MINUS `::*` — `use ignore::WalkState::*` names the enum's module path
+            // `ignore::WalkState`, not the truncated module prefix `ignore` (the D4 residual's one
+            // imports row was exactly this spelling difference).
             const p = pathOf(node.namedChild(0))
-            const { module } = splitLeaf(p)
-            push(source, module)
+            push(source, p)
             return
           }
           if (t === "identifier" || t === "type_identifier" || t === "crate" || t === "super" || t === "self" || t === "scoped_identifier") {

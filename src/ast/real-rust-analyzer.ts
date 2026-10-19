@@ -847,6 +847,22 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (name) {
           const sym = this.createSymbol(name, ASTEngine.SymbolKind.Type, node, parent, { type: "type_alias" })
           ctx.symbols.push(sym)
+          // TASK-41 / §21.19 NAMED DEFECT: a top-level `pub type Alias = T;` is a declaration,
+          // is public, and IS importable (`use crate::Alias;`), but this branch never joined the
+          // publication surface — the struct/enum/trait/fn/mod/const/static handlers all push
+          // ctx.exports under the same D3 gate, so `pub type TomlLockfileMetadata` had a type_alias
+          // symbol and NO exports row (falsifier: cargo-util-schemas/lockfile.rs:44; ~30 rows per
+          // 300-file cargo sample, measured in the D4 residual classification). Same gate as
+          // `handleEnum`: `isUnrestrictedPublic` and file scope only — a type alias inside an impl or
+          // trait is a member (contains), and a nested one is imported through its module.
+          if (this.isUnrestrictedPublic(node) && !parent) {
+            ctx.exports.push({
+              name,
+              type: ASTEngine.SymbolKind.Type,
+              range: sym.range,
+              isType: true,
+            })
+          }
         }
       } else if (node.type === "closure_expression") {
         // Anonymous closures have generated names (closure_68_23) and are
