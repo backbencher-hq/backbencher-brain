@@ -1065,7 +1065,8 @@ export function deriveClojureContainsTruth(root: Node): { edges: TruthEdge[]; na
     // pointing at the declare would claim the namespace defines `cat` where it
     // only promises to.
     if (nm === "declare") return
-    if (!DEF_HEADS.has(nm) && !isDefLikeHead(nm)) return
+    const defnSpelling = /^(?:s|mu)\/defn-?$/.test(nm)
+    if (!DEF_HEADS.has(nm) && !isDefLikeHead(nm) && !defnSpelling) return
     const dn = defNameOf(node)
     if (!dn) return
     // THE OWNER IS THE NAMESPACE, AT EVERY DEPTH. A `defn` interns a var in the
@@ -1077,7 +1078,9 @@ export function deriveClojureContainsTruth(root: Node): { edges: TruthEdge[]; na
     // `clickhouse-temporal-bucketing-server-tz -> start-of-year!` for a
     // `defn-` inside a `deftest` body, and the analyzer — correctly — owned it
     // by the namespace. 62 edges across metabase.
-    const src = nsAt(timeline, node.startIndex)
+    // The analyzer's currentNamespace defaults to `user` when a file has NO ns form
+    // (script/update-templates.clj is a real corpus script); the two must agree.
+    const src = nsAt(timeline, node.startIndex) || "user"
     if (!src) return
     const k = `${src}->${dn}`
     const prev = earliest.get(k)
@@ -1091,6 +1094,93 @@ export function deriveClojureContainsTruth(root: Node): { edges: TruthEdge[]; na
     const startLine = node.startPosition.row + 1
     if (prev === undefined || startLine < prev) earliest.set(k, startLine)
   })
+  // ── OWNER → MEMBER CONTAINMENTS (2026-10-20, D4 draw classification) ─────────────────────────
+  //
+  // The walk above derives NS → NAME containment because a def-family form interns a var in the
+  // namespace. The analyzer ALSO publishes OWNER → MEMBER containments from each symbol's
+  // `ownerName`, and this truth derived NONE of them: measured on the canonical clojure draw, 151
+  // of 142 unexplained rows (clojure) / 51 (clj-kondo) were exactly this class — record fields
+  // (`A -> b`), protocol/interface methods (`Bar -> b`), type method implementations and
+  // proxy/reify method impls (`clojure.xml -> startElement`). They are real edges, not
+  // fabrications, and the truth was the side under-deriving.
+  //
+  // Ownership is read from the tree the way the analyzer reads it:
+  //   · defrecord / deftype          → the TYPE owns its FIELD names and its METHOD impls;
+  //   · defprotocol / definterface   → the PROTOCOL owns its declared METHODS;
+  //   · proxy / reify                → there is no named type, so the NAMESPACE owns the impls;
+  //   · extend-type / extend-protocol → each named TYPE owns its method impls.
+  // Nothing else is invented: a form this list does not name contributes no member containment.
+  const memberEarliest = new Map<string, number>()
+  const pushMember = (owner: string, name: string, line: number): void => {
+    if (!owner || !name || owner === name) return
+    const k = `${owner}->${name}`
+    const prev = memberEarliest.get(k)
+    if (prev === undefined || line < prev) memberEarliest.set(k, line)
+  }
+  const membersOf = (n: Node): void => {
+    const h = executionHead(n)
+    const head = h && h.type === "sym_lit" ? symName(h) : ""
+    const lineOf = (x: Node): number => x.startPosition.row + 1
+    const implMethods = (from: number): void => {
+      for (let i = from; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c || c.type !== "list_lit") continue
+        const mh = executionHead(c)
+        const m = mh && mh.type === "sym_lit" ? symName(mh) : ""
+        if (m) pushMember(owner, m, lineOf(c))
+      }
+    }
+    let owner = ""
+    if (head === "defrecord" || head === "deftype") {
+      owner = defNameOf(n)
+      const fields = n.namedChild(2)
+      if (fields && fields.type === "vec_lit") {
+        for (let i = 0; i < fields.namedChildCount; i++) {
+          const f = fields.namedChild(i)
+          if (f && f.type === "sym_lit") {
+            const fname = symName(f)
+            if (fname) pushMember(owner, fname, lineOf(n))
+          }
+        }
+      }
+      implMethods(3)
+    } else if (head === "defprotocol" || head === "definterface") {
+      owner = defNameOf(n)
+      implMethods(1)
+    } else if (head === "proxy" || head === "reify") {
+      owner = nsAt(timeline, n.startIndex) || "user"
+      implMethods(1)
+    } else if (head === "extend-type") {
+      const t = n.namedChild(1)
+      owner = t && t.type === "sym_lit" ? symName(t) : ""
+      implMethods(2)
+    } else if (head === "extend-protocol") {
+      const proto = n.namedChild(1)
+      const protoName = proto && proto.type === "sym_lit" ? symName(proto) : ""
+      let currentType = ""
+      for (let i = 2; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (c.type === "sym_lit") { currentType = symName(c); continue }
+        if (c.type === "list_lit") {
+          const mh = executionHead(c)
+          const m = mh && mh.type === "sym_lit" ? symName(mh) : ""
+          if (m && currentType) pushMember(currentType, m, lineOf(c))
+          void protoName
+        }
+      }
+    }
+  }
+  const recMembers = (n: Node): void => {
+    if (n.type === "dis_expr" || n.type === "quoting_lit") return
+    if (n.type === "list_lit") membersOf(n)
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) recMembers(c) }
+  }
+  recMembers(root)
+  for (const [k, line] of memberEarliest) {
+    const prev = earliest.get(k)
+    if (prev === undefined || line < prev) earliest.set(k, line)
+  }
   const edges: TruthEdge[] = []
   for (const [k, line] of earliest) {
     const split = k.indexOf("->")
@@ -2354,26 +2444,31 @@ export function deriveClojureExportsTruth(root: Node): RelEdge[] {
   const exportsByName = new Map<string, { ns: string; name: string; line: number }>()
 
   const privateMeta = (n: Node): boolean => {
-    const hasPrivateText = (text: string): boolean =>
-      // The metadata spelling is `^:private`, `^{:private true}`, or the SAME metadata folded into
-      // the name symbol's text (`sym_lit: "^:private private-by-meta"` — measured). The name may
-      // then continue with a `-` (`private-by-meta`), so the boundary test must allow a hyphen in
-      // the spelling itself; matching only whitespace/`}` after `private` missed that shape.
-      /(^|[\s{^:])private(?=[\s}],?$|\s+true|\s|\}|$)/.test(text) || /:private\s+true/.test(text)
-    // ^:private / ^{:private true} can sit on the FORM (leading meta, child 0) or on the NAME
-    // (child 1, or wrapped inside it). Scanning only `n` itself missed the second spelling and
-    // fabricated `private.private-defs -> private-by-meta`.
+    // METADATA-ONLY MATCHING. The first version searched the first three children's TEXT for the
+    // bare word `private`, and a BODY can contain it — `hooks_test.clj` has a test whose body
+    // string says "Unused private var …", and `reflect.clj`'s `def` carries a docstring discussing
+    // private access. Those false positives DROPPED three real exports from the truth (unexplained
+    // rows on the canonical draw). The metadata forms this function recognises are exactly:
+    //   ^:private  ·  ^{:private true}  ·  the same metadata folded into the NAME symbol's own text
+    // (`sym_lit: "^:private private-by-meta"`), and the legacy `#^` reader spelling. A `:private`
+    // keyword inside arbitrary body text is not metadata and must not count.
+    const hasMetaPrivate = (text: string): boolean =>
+      /(^|[^A-Za-z0-9_])private(?=\s+true[\s}]|[\s}])/.test(text.replace(/^\^?\{:?/, "{").replace(/^#\^/, "^"))
+      && (text.startsWith("^") || text.startsWith("#^") || text.startsWith("{") || text.startsWith(":") || text.includes("{:") || text.includes(":private"))
+    const metaPrivate = (text: string): boolean =>
+      text.includes(":private") || (text.startsWith("^") && /private(?=[\s}]|$)/.test(text))
     for (let i = 0; i < Math.min(3, n.namedChildCount); i++) {
       const c = n.namedChild(i)
       if (!c) continue
       if (c.type === "meta_lit") {
-        if (hasPrivateText(c.text ?? "")) return true
+        if (metaPrivate(c.text ?? "")) return true
         const inner = c.namedChild(c.namedChildCount - 1)
-        if (inner && hasPrivateText(inner.text ?? "")) return true
+        if (inner && metaPrivate(inner.text ?? "")) return true
+      } else if (i === 1) {
+        // name position only: the folded spelling, never a body
+        if (metaPrivate(c.text ?? "")) return true
       }
-      // MEASURED shape: `(defn ^:private private-by-meta [])` folds the metadata into the NAME
-      // SYMBOL'S OWN TEXT (`sym_lit: "^:private private-by-meta"`), so no meta_lit node exists.
-      if (hasPrivateText(c.text ?? "")) return true
+      void hasMetaPrivate
     }
     return false
   }
@@ -2387,7 +2482,8 @@ export function deriveClojureExportsTruth(root: Node): RelEdge[] {
       const h = executionHead(n)
       const head = h && h.type === "sym_lit" ? symName(h) : ""
       if (head === "comment") return
-      if (isDefLikeHead(head) && head !== "defmethod") {
+      const defnSpelling = /^(?:s|mu)\/defn-?$/.test(head)
+      if ((isDefLikeHead(head) || defnSpelling) && head !== "defmethod") {
         const name = defNameOf(n)
         const ns = nsAt(timeline, n.startIndex) || "user"
         const priv = head === "defn-" || privateMeta(n)
