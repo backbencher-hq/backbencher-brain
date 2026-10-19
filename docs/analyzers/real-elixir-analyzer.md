@@ -731,3 +731,36 @@ findings are left visible instead of smoothed over: which label the lane publish
 a directive is the owner's call, and the third instance in this group (`references`, in
 the same pin) points at a vocabulary question rather than at this analyzer's reading of
 the language.
+
+
+## Round 2 (fleet phase, 2026-10-19) — fake call targets removed (X14/X15)
+
+Two call-emission holes were measured on the post-wiring draws (19 elixir + 8 phoenix rows) and fixed in
+`recordCall`:
+
+* **X14 — capture placeholders and special-variable field reads are not calls.** `& &1.status` and
+  `& &1.fetch!()` are an anonymous function's field access / dynamic dispatch on its argument; the `&`
+  root is equal to its own uppercase, so the legacy root test let it through and published
+  `calls -> &1.status`, a target that names no symbol. `__ENV__.lexical_tracker` (and
+  `__CALLER__`/`__DIR__`/`__STACKTRACE__` field reads) are compile-time environment reads, not calls.
+  Both are now dropped at the top of `recordCall`; a NAMED capture (`&Kernel.LexicalTracker.references/1`,
+  `&String.trim/1`) still publishes its remote call.
+* **X15 — an operator leaf after `Kernel.` is not a callable name.** `Kernel.<>`, `Kernel.||`,
+  `Kernel.*`, `Kernel.--` are operator macros; the Kernel skip set is an identifier set and could not
+  catch them. A leaf with no letter/underscore character is now skipped (pure character scan — the no-regex
+  contract holds). `Kernel.length`/`Kernel.raise` were already skipped by EX-D2 and stay skipped.
+
+Fixture pair `x14-capture-and-operator-calls` pins both directions: the five fake targets are forbidden,
+while `Enum.map`, `:lists.reverse`, the named capture `String.trim`, and the `@impl` override stay present.
+Whole-project tsc exit 0; fixtures 83 pass / 0 fail.
+
+## Round 2 — truth side (D4 wiring record)
+
+The differential's elixir truth is now SIX oracles: `deriveElixirEdges` (calls/implements/instantiates/
+references) plus `oracles/elixir-contains.ts` (contains/exports/uses), `oracles/elixir-gap-truth.ts`
+(imports + the ruled raise/struct instantiation spellings + erlang-atom remote calls) and
+`oracles/elixir-overrides.ts` (overrides: in-file `defoverridable` redefinition, use-of-provider, `@impl`
+with explicit/single-behaviour/defimpl contract). The overrides oracle is validated whole-corpus against
+the analyzer: 146 truth rows, 145 analyzer rows, 0 MISSING / 0 UNEXPLAINED under the harness match rule.
+Wiring request: import + push `deriveElixirOverridesTruth`, re-admit `overrides` to the elixir compared
+set (it was withheld while unaudited) — see `validation/m14/verification/ELIXIR-D7.md` §D4.

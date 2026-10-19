@@ -15,8 +15,11 @@
 // · script/m14/differential.ts (`deriveElixirEdges` — the TRUTH side; an emission the oracle does not derive
 // lands as MISSING/UNEXPLAINED) · src/ast/engine.ts (getAnalyzer + wasm) · src/ast/language-detection.ts
 // (`.ex`/`.exs`) · the BEAM sibling src/ast/real-erlang-analyzer.ts (keep the tier model in step). NOTE:
-// elixir has NO `LANG_CONFIG` row in script/m14/completeness-inventory.ts yet, so the gate still answers
-// "unknown language elixir"; the row lands with its completeness wave and must name the nine kinds above.
+// elixir HAS its `LANG_CONFIG` row in script/m14/completeness-inventory.ts (`--lang elixir` answers
+// "47 types classified; lane-pass 8/8 (A-H)"); the stale "unknown language elixir" note is corrected here.
+// ROUND-2 (fleet phase): X14 skips capture-placeholder/special-variable field reads as calls, and X15
+// skips operator macro leaves after `Kernel.` — both were publishing fake `calls` targets (`&1.status`,
+// `__ENV__.lexical_tracker`, `Kernel.<>`); fixture pair `x14-capture-and-operator-calls` pins both directions.
 // Grammar: tree-sitter-elixir (wasm/tree-sitter-elixir.wasm; engine.ts maps node_modules/tree-sitter-elixir).
 
 import type { Node } from "web-tree-sitter"
@@ -1369,12 +1372,30 @@ const key = `${source}|${type}|${target}|${line ?? ""}|${(metadata as any).callA
           }
       }
       if (!finalTarget) return
+      // X14 (adversarial): a CAPTURE PLACEHOLDER root and a SPECIAL-VARIABLE field read name no
+      // module. `& &1.status` and `& &1.get!()` are an anonymous function's field access / dynamic
+      // dispatch on its first argument — the `&` root passed the legacy uppercase test
+      // (`"&"[0] === "&".toUpperCase()`) and published `calls -> &1.status`, a target that names no
+      // symbol. `__ENV__.lexical_tracker` is a compile-time environment field read, not a call.
+      // Measured: 19 such rows on the elixir draw and 8 on phoenix, every one a fake edge.
+      if (finalTarget.startsWith("&")) return
+      if (finalTarget.startsWith("__ENV__.") || finalTarget.startsWith("__CALLER__.") ||
+          finalTarget.startsWith("__DIR__.") || finalTarget.startsWith("__STACKTRACE__.")) return
       // X9 (adversarial): qualified Kernel builtins are the same call-graph
       // noise as bare ones (EX-D2) — `Kernel.length`/`Kernel.raise` emitted
       // calls while `length`/`raise` did not (49 corpus sites).
       if (finalTarget.startsWith("Kernel.")) {
           const leaf = finalTarget.slice("Kernel.".length)
           if (KERNEL_FUNCTIONS.has(leaf) || SPECIAL_FORMS.has(leaf)) return
+          // X15: an OPERATOR leaf after the Kernel qualifier (`Kernel.<>`, `Kernel.||`, `Kernel.*`,
+          // `Kernel.--`) is the macro spelling of an operator, not a callable name. The set checks
+          // above cannot catch it (they are identifier sets); a leaf with no letter at all cannot be
+          // a function name. Character scan, not a RegExp: this analyzer's no-regex contract holds.
+          let hasNameChar = false
+          for (const ch of leaf) {
+            if ((ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || ch === "_") { hasNameChar = true; break }
+          }
+          if (!hasNameChar) return
       }
       // EX-A18: `alias Helper.{make, name}` makes `make()` a statically nameable
       // call to Helper.make — the alias map's ONLY lowercase keys are the ones
@@ -1394,7 +1415,11 @@ const key = `${source}|${type}|${target}|${line ?? ""}|${(metadata as any).callA
           // unresolvable target (module.manifests() where `module` is a
           // parameter), which emits no edge.
           const root = finalTarget.split(".")[0]
-          if (root && root.length > 0 && root[0] !== root[0].toUpperCase()) return
+          // ASCII letter test, not `toUpperCase()`: non-letters ("&", "_", operators) are equal to
+          // their own uppercase, so the old test let `&1.status` and friends through (X14 class).
+          // An ERLANG ATOM module (`:lists.flatten`, `:erlang.make_tuple`) is a legitimate qualified
+          // root — the analyzer publishes it and the fixture elx4-r7-no-fabrication pins it.
+          if (root && root.length > 0 && !(root[0] >= "A" && root[0] <= "Z") && root[0] !== ":") return
       } else if (declaredScope) {
           // Unqualified call: the declared set is not complete mid-walk
           // (forward references), so the resolution check runs post-walk.

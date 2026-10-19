@@ -73,6 +73,20 @@ const attrNameOf = (n: any): string => {
   return ""
 }
 
+/** A `, do: body` PAIR ends the declaration head: the body is code (the analyzer's isDoPair
+ *  relaxation). The grammar nests this pair inside the def's arguments node, so a blanket
+ *  "arguments are the head" walk would silence every single-line definition body. */
+const isDoPairNode = (c: any): boolean => {
+  if (!c) return false
+  // `def f(...), do: body` nests the pair inside a KEYWORDS node of the arguments child;
+  // `defmodule X, do: …` can nest it directly. Either spelling ends the declaration head.
+  if (c.type === "keywords") return kids(c).some((k: any) => isDoPairNode(k))
+  if (c.type !== "pair") return false
+  const kw = findChild(c, (x: any) => x.type === "keyword")
+  const t = kw ? String(kw.text) : ""
+  return t === "do" || t.startsWith("do:")
+}
+
 /** `quote do … end` is DATA; `unquote` inside it executes. The nearest boundary wins (mirrors the
  *  analyzer's own upward walk). Module-level helpers so every derivation shares one rule. */
 const callHeadName = (n: any): string => {
@@ -342,10 +356,15 @@ export function deriveElixirCallInstantiationTruth(root: any): OracleEdge[] {
         }
         frames.push({ ...frames[frames.length - 1], module: currentModule(frames as any), defName, defArity: headArity(head), aliases: new Map(frames[frames.length - 1].aliases) })
         for (const c of kids(n)) {
-          // the HEAD is a declaration, not an evaluation (the analyzer's isDefHead guard)
+          // the HEAD is a declaration, not an evaluation (the analyzer's isDefHead guard) — but a
+          // `, do: body` pair inside the arguments node is CODE (isDoPair), so descend per child.
           const isHeadArgs = c && c.type === "arguments"
-          if (isHeadArgs) { frames.push({ ...frames[frames.length - 1], inert: true, headInert: true }); walk(c); frames.pop() }
-          else walk(c)
+          if (isHeadArgs) {
+            for (const hc of kids(c)) {
+              if (isDoPairNode(hc)) walk(hc)
+              else { frames.push({ ...frames[frames.length - 1], inert: true, headInert: true }); walk(hc); frames.pop() }
+            }
+          } else walk(c)
         }
         frames.pop()
         return
@@ -448,10 +467,15 @@ export function deriveElixirAtomRemoteCallsTruth(root: any): OracleEdge[] {
         }
         frames.push({ ...frames[frames.length - 1], module: currentModule(frames as any), defName, defArity: headArity(head), aliases: new Map(frames[frames.length - 1].aliases) })
         for (const c of kids(n)) {
-          // the HEAD is a declaration, not an evaluation (the analyzer's isDefHead guard)
+          // the HEAD is a declaration, not an evaluation (the analyzer's isDefHead guard) — but a
+          // `, do: body` pair inside the arguments node is CODE (isDoPair), so descend per child.
           const isHeadArgs = c && c.type === "arguments"
-          if (isHeadArgs) { frames.push({ ...frames[frames.length - 1], inert: true, headInert: true }); walk(c); frames.pop() }
-          else walk(c)
+          if (isHeadArgs) {
+            for (const hc of kids(c)) {
+              if (isDoPairNode(hc)) walk(hc)
+              else { frames.push({ ...frames[frames.length - 1], inert: true, headInert: true }); walk(hc); frames.pop() }
+            }
+          } else walk(c)
         }
         frames.pop()
         return
