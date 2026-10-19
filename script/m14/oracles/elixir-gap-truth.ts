@@ -54,6 +54,25 @@ function keywordArg(args: any, key: string): any | null {
 }
 
 const isUpper = (s: string): boolean => s.length > 0 && s[0] >= "A" && s[0] <= "Z"
+/** The attributes whose VALUE is a declaration, not a call site (the analyzer's
+ *  DECLARATION_ATTRIBUTES): a docstring is text, a typespec's `%Duration{}` is a TYPE reference,
+ *  @behaviour/@derive/@deprecated are compile-time contracts. Every OTHER attribute value is
+ *  compile-time CODE and the analyzer publishes the calls/instantiations inside it (EX-A17). */
+const DECLARATION_ATTRIBUTES = new Set([
+  "moduledoc", "doc", "spec", "type", "typep", "opaque", "callback", "macrocallback",
+  "optional_callbacks", "behaviour", "behavior", "derive", "deprecated",
+])
+/** The attribute name of a `@name value` unary_operator node. */
+const attrNameOf = (n: any): string => {
+  const value = n.child(1)
+  if (!value) return ""
+  if (value.type === "call") {
+    const id = findChild(value, (c: any) => c.type === "identifier")
+    return id ? String(id.text) : ""
+  }
+  return ""
+}
+
 /** `quote do … end` is DATA; `unquote` inside it executes. The nearest boundary wins (mirrors the
  *  analyzer's own upward walk). Module-level helpers so every derivation shares one rule. */
 const callHeadName = (n: any): string => {
@@ -132,7 +151,7 @@ const DEF_ANY = new Set(["def", "defp", "defmacro", "defmacrop", "defguard", "de
 export function deriveElixirImportsTruth(root: any): OracleEdge[] {
   const out: OracleEdge[] = []
   const seen = new Set<string>()
-  type F = { module: string | null; aliases: Map<string, string>; defName: string | null; defArity?: number; quoted?: boolean; inert?: boolean }
+  type F = { module: string | null; aliases: Map<string, string>; defName: string | null; defArity?: number; quoted?: boolean; inert?: boolean; attrInert?: boolean; headInert?: boolean }
   const frames: F[] = [{ module: null, aliases: new Map(), defName: null, quoted: false }]
   const isQuoted = (): boolean => frames[frames.length - 1].quoted === true
   const isInert = (): boolean => frames[frames.length - 1].inert === true
@@ -160,7 +179,10 @@ export function deriveElixirImportsTruth(root: any): OracleEdge[] {
     // `@type`, `@doc`…): the analyzer's isInDeclarationAttributeValue guard keeps calls inside it
     // out of the graph, so the truth must not derive them.
     if (t === "unary_operator" && String(n.child(0)?.text ?? "") === "@") {
-      frames.push({ ...frames[frames.length - 1], inert: true })
+      // An attribute VALUE is a declaration for raise/struct construction and for directives,
+      // but a CALL inside it is evaluated at compile time and the analyzer publishes it — so the
+      // flags are distinct rather than one blanket inert.
+      frames.push({ ...frames[frames.length - 1], inert: true, attrInert: true })
       for (const c of kids(n)) walk(c)
       frames.pop()
       return
@@ -191,7 +213,7 @@ export function deriveElixirImportsTruth(root: any): OracleEdge[] {
           const last = full.split(".").pop()!
           if (isUpper(last)) aliases.set(last, full)
         }
-        frames.push({ module: full.length > 0 ? full : (parent ?? null), aliases, defName: null })
+        frames.push({ ...frames[frames.length - 1], module: full.length > 0 ? full : (parent ?? null), aliases, defName: null })
         for (const c of kids(n)) walk(c)
         frames.pop()
         return
@@ -205,13 +227,13 @@ export function deriveElixirImportsTruth(root: any): OracleEdge[] {
           const inner = findChild(head, (c) => c.type === "identifier")
           if (inner) defName = String(inner.text)
         }
-        frames.push({ module: currentModule(frames as any), aliases: new Map(frames[frames.length - 1].aliases), defName, defArity: headArity(head) })
+        frames.push({ ...frames[frames.length - 1], module: currentModule(frames as any), aliases: new Map(frames[frames.length - 1].aliases), defName, defArity: headArity(head) })
         for (const c of kids(n)) walk(c)
         frames.pop()
         return
       }
       if (target === "import") {
-        if (isQuoted()) return
+        if (isQuoted() || isInert()) return
         const args = findChild(n, (c) => c.type === "arguments")
         const modArg = args ? kids(args)[0] : null
         if (modArg && (modArg.type === "alias" || modArg.type === "atom" || modArg.type === "dot")) {
@@ -222,7 +244,7 @@ export function deriveElixirImportsTruth(root: any): OracleEdge[] {
         return // do not descend into import arguments (only the module matters)
       }
       if (target === "alias" || target === "require") {
-        if (isQuoted()) return
+        if (isQuoted() || isInert()) return
         // alias directive: record lexical alias bindings for later resolution
         const args = findChild(n, (c) => c.type === "arguments")
         const modArg = args ? kids(args)[0] : null
@@ -253,7 +275,7 @@ export function deriveElixirImportsTruth(root: any): OracleEdge[] {
 export function deriveElixirCallInstantiationTruth(root: any): OracleEdge[] {
   const out: OracleEdge[] = []
   const seen = new Set<string>()
-  type F = { module: string | null; defName: string | null; defArity?: number; aliases: Map<string, string>; quoted?: boolean; inert?: boolean }
+  type F = { module: string | null; defName: string | null; defArity?: number; aliases: Map<string, string>; quoted?: boolean; inert?: boolean; attrInert?: boolean; headInert?: boolean }
   const frames: F[] = [{ module: null, defName: null, aliases: new Map(), quoted: false }]
   const isQuoted = (): boolean => frames[frames.length - 1].quoted === true
   const isInert = (): boolean => frames[frames.length - 1].inert === true
@@ -276,7 +298,10 @@ export function deriveElixirCallInstantiationTruth(root: any): OracleEdge[] {
     // `@type`, `@doc`…): the analyzer's isInDeclarationAttributeValue guard keeps calls inside it
     // out of the graph, so the truth must not derive them.
     if (t === "unary_operator" && String(n.child(0)?.text ?? "") === "@") {
-      frames.push({ ...frames[frames.length - 1], inert: true })
+      // EX-A17: a NON-declaration attribute value is compile-time CODE — the analyzer publishes
+      // the calls/instantiations inside it; only the DECLARATION attributes keep their silence.
+      const decl = DECLARATION_ATTRIBUTES.has(attrNameOf(n))
+      frames.push({ ...frames[frames.length - 1], inert: decl, attrInert: decl })
       for (const c of kids(n)) walk(c)
       frames.pop()
       return
@@ -301,7 +326,7 @@ export function deriveElixirCallInstantiationTruth(root: any): OracleEdge[] {
         }
         const parent = currentModule(frames as any)
         const full = modName.length === 0 ? null : (parent && !modName.includes(".") ? `${parent}.${modName}` : modName)
-        frames.push({ module: full ?? parent, defName: null, aliases: new Map(frames[frames.length - 1].aliases) })
+        frames.push({ ...frames[frames.length - 1], module: full ?? parent, defName: null, aliases: new Map(frames[frames.length - 1].aliases) })
         for (const c of kids(n)) walk(c)
         frames.pop()
         return
@@ -315,11 +340,11 @@ export function deriveElixirCallInstantiationTruth(root: any): OracleEdge[] {
           const inner = findChild(head, (c) => c.type === "identifier")
           if (inner) defName = String(inner.text)
         }
-        frames.push({ module: currentModule(frames as any), defName, defArity: headArity(head), aliases: new Map(frames[frames.length - 1].aliases) })
+        frames.push({ ...frames[frames.length - 1], module: currentModule(frames as any), defName, defArity: headArity(head), aliases: new Map(frames[frames.length - 1].aliases) })
         for (const c of kids(n)) {
           // the HEAD is a declaration, not an evaluation (the analyzer's isDefHead guard)
           const isHeadArgs = c && c.type === "arguments"
-          if (isHeadArgs) { frames.push({ ...frames[frames.length - 1], inert: true }); walk(c); frames.pop() }
+          if (isHeadArgs) { frames.push({ ...frames[frames.length - 1], inert: true, headInert: true }); walk(c); frames.pop() }
           else walk(c)
         }
         frames.pop()
@@ -363,7 +388,7 @@ export function deriveElixirCallInstantiationTruth(root: any): OracleEdge[] {
 export function deriveElixirAtomRemoteCallsTruth(root: any): OracleEdge[] {
   const out: OracleEdge[] = []
   const seen = new Set<string>()
-  type F = { module: string | null; defName: string | null; defArity?: number; aliases: Map<string, string>; quoted?: boolean; inert?: boolean }
+  type F = { module: string | null; defName: string | null; defArity?: number; aliases: Map<string, string>; quoted?: boolean; inert?: boolean; attrInert?: boolean; headInert?: boolean }
   const frames: F[] = [{ module: null, defName: null, aliases: new Map(), quoted: false }]
   const isQuoted = (): boolean => frames[frames.length - 1].quoted === true
   const isInert = (): boolean => frames[frames.length - 1].inert === true
@@ -379,7 +404,10 @@ export function deriveElixirAtomRemoteCallsTruth(root: any): OracleEdge[] {
     // `@type`, `@doc`…): the analyzer's isInDeclarationAttributeValue guard keeps calls inside it
     // out of the graph, so the truth must not derive them.
     if (t === "unary_operator" && String(n.child(0)?.text ?? "") === "@") {
-      frames.push({ ...frames[frames.length - 1], inert: true })
+      // EX-A17: a NON-declaration attribute value is compile-time CODE — the analyzer publishes
+      // the calls/instantiations inside it; only the DECLARATION attributes keep their silence.
+      const decl = DECLARATION_ATTRIBUTES.has(attrNameOf(n))
+      frames.push({ ...frames[frames.length - 1], inert: decl, attrInert: decl })
       for (const c of kids(n)) walk(c)
       frames.pop()
       return
@@ -404,7 +432,7 @@ export function deriveElixirAtomRemoteCallsTruth(root: any): OracleEdge[] {
         }
         const parent = currentModule(frames as any)
         const full = modName.length === 0 ? null : (parent && !modName.includes(".") ? `${parent}.${modName}` : modName)
-        frames.push({ module: full ?? parent, defName: null, aliases: new Map(frames[frames.length - 1].aliases) })
+        frames.push({ ...frames[frames.length - 1], module: full ?? parent, defName: null, aliases: new Map(frames[frames.length - 1].aliases) })
         for (const c of kids(n)) walk(c)
         frames.pop()
         return
@@ -418,11 +446,11 @@ export function deriveElixirAtomRemoteCallsTruth(root: any): OracleEdge[] {
           const inner = findChild(head, (c) => c.type === "identifier")
           if (inner) defName = String(inner.text)
         }
-        frames.push({ module: currentModule(frames as any), defName, defArity: headArity(head), aliases: new Map(frames[frames.length - 1].aliases) })
+        frames.push({ ...frames[frames.length - 1], module: currentModule(frames as any), defName, defArity: headArity(head), aliases: new Map(frames[frames.length - 1].aliases) })
         for (const c of kids(n)) {
           // the HEAD is a declaration, not an evaluation (the analyzer's isDefHead guard)
           const isHeadArgs = c && c.type === "arguments"
-          if (isHeadArgs) { frames.push({ ...frames[frames.length - 1], inert: true }); walk(c); frames.pop() }
+          if (isHeadArgs) { frames.push({ ...frames[frames.length - 1], inert: true, headInert: true }); walk(c); frames.pop() }
           else walk(c)
         }
         frames.pop()

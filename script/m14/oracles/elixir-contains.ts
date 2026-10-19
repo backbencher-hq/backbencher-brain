@@ -226,6 +226,11 @@ export function deriveElixirContainsTruth(root: any): TruthEdge[] {
   const push = (from: string, target: string): void => {
     if (from.length === 0 || target.length === 0) return
     if (from === target) return
+    // MACRO SYNTAX IS NOT A MEMBER NAME (the analyzer's EX-EX11 guard): a def-shaped call
+    // inside a macro head can read `unquote`/`unquote_splicing` as a definition name, and the
+    // analyzer excludes both spellings from every endpoint. The oracle must apply the same
+    // terminal-name rule or it derives a member the analyzer correctly never publishes.
+    if (target === "unquote" || target === "unquote_splicing") return
     // NO `target === "unknown"` guard here, and that is a correction with a
     // measurement behind it. R7 as written ("no edge endpoint equal to the
     // placeholder literal `unknown`") reads like a string test, and the first
@@ -469,9 +474,192 @@ function isDoPair(node: any): boolean {
   return t === "do" || t.indexOf("do:") === 0
 }
 
+/** `binary_operator`'s operator/side reads relative to its anonymous operator token. */
+function elixirBinaryOp(n: any): string {
+  for (let i = 0; i < n.childCount; i++) {
+    const c = n.child(i)
+    if (c && !c.isNamed) return c.text
+  }
+  return ""
+}
+function elixirBinarySides(n: any): { left: any; right: any } {
+  const named = kids(n)
+  return { left: named[0], right: named[1] }
+}
+/** A def-shaped call inside a DECLARATION HEAD is the head, not a definition. */
+function isDefHeadNode(n: any): boolean {
+  let cur = n.parent
+  while (cur) {
+    if (cur.type === "call") {
+      const nm = callName(cur)
+      if (DEF_FORMS.has(nm)) {
+        // the head is under the def's arguments subtree; a nested call there is the head
+        for (const c of kids(cur)) if (c.type === "arguments" && n.startIndex >= c.startIndex && n.endIndex <= c.endIndex) return true
+        return false
+      }
+    }
+    cur = cur.parent
+  }
+  return false
+}
+/** The signature CALL of a def (unwraps the arguments node and a `when` guard). */
+function defSignatureCall(defCall: any): any {
+  let sig: any = undefined
+  for (const c of kids(defCall)) if (c.type !== "identifier" && c.type !== "do_block") { sig = c; break }
+  if (!sig) return undefined
+  if (sig.type === "arguments" && sig.namedChildCount > 0) sig = sig.namedChild(0)
+  if (!sig) return undefined
+  if (sig.type === "binary_operator") {
+    const { left } = elixirBinarySides(sig)
+    return left && left.type === "call" ? left : undefined
+  }
+  return sig.type === "call" ? sig : undefined
+}
+
+/**
+ * FILE-LEVEL facts the analyzer's `uses` resolution applies, derived independently here:
+ *
+ *  - DECLARED STRUCT FIELDS: when the file declares at least one `defstruct`/`defexception`
+ *    field, the analyzer DROPS a member read whose leaf the file does not declare (the
+ *    ontology-uses gate); when the file declares none, the read is PUBLISHED at 0.7. An oracle
+ *    that emits every read therefore over-derives exactly in files that carry struct vocabulary.
+ *  - FILE-LEVEL ALIASES: `use Mod` rows publish the alias-RESOLVED module name, so the oracle
+ *    needs the same lexical alias bindings.
+ */
+function elixirUsesFileFacts(root: any): {
+  declaredStructFields: Set<string>
+  aliasOf: Map<string, string>
+  mapBoundByScope: Map<string, Set<string>>
+} {
+  const declaredStructFields = new Set<string>()
+  const aliasOf = new Map<string, string>()
+  const mapBoundByScope = new Map<string, Set<string>>()
+  const resolve = (name: string): string => {
+    if (name.length === 0) return name
+    const parts = name.split(".")
+    const root0 = parts[0]
+    if (root0.length > 0 && root0[0] >= "A" && root0[0] <= "Z" && aliasOf.has(root0)) {
+      parts[0] = aliasOf.get(root0)!
+      return parts.join(".")
+    }
+    return name
+  }
+  const walk = (n: any): void => {
+    if (!n) return
+    if (n.type === "call") {
+      const nm = callName(n)
+      if (nm === "defstruct" || nm === "defexception") for (const f of structFieldNames(n)) declaredStructFields.add(f)
+      if (nm === "alias") {
+        const args = argumentsOf(n)
+        const first = args ? kids(args)[0] : undefined
+        if (first && (first.type === "alias" || first.type === "atom" || first.type === "dot" || first.type === "identifier")) {
+          const raw = first.text
+          const resolved = resolve(raw)
+          const parts = raw.split(".")
+          const key = parts[parts.length - 1]
+          if (key && key.length > 0 && key[0] >= "A" && key[0] <= "Z") aliasOf.set(key, resolved)
+        }
+      }
+    }
+    for (const c of kids(n)) walk(c)
+  }
+  /** The identifiers a subtree NAMES: a pair's key (`:day` in `%{day: day}`) is not a
+   *  binding, so only the value side is walked (mirrors the analyzer's identifiersIn). */
+  const identifiersIn = (n: any): string[] => {
+    const out: string[] = []
+    const stack: any[] = [n]
+    while (stack.length > 0) {
+      const cur = stack.pop()
+      if (!cur) continue
+      if (cur.type === "identifier" && cur.text) out.push(cur.text)
+      if (cur.type === "pair") {
+        const kw = firstOfType(cur, "keyword") ?? firstOfType(cur, "quoted_keyword")
+        for (const c of kids(cur)) if (c !== kw) stack.push(c)
+        continue
+      }
+      for (const c of kids(cur)) stack.push(c)
+    }
+    return out
+  }
+  /** Vars bound to a BARE map literal (`%{...}`, no `struct` child) anywhere inside one def —
+   *  the analyzer drops a member read whose receiver is such a binding (a map key is not a
+   *  struct field), so the truth must make the same distinction. */
+  const mapBoundWithin = (within: any): Set<string> => {
+    const out = new Set<string>()
+    const scan = (n: any): void => {
+      if (!n) return
+      if (n !== within && n.type === "call") {
+        const kwt = callName(n)
+        if (DEF_FORMS.has(kwt) && !isDefHeadNode(n)) return
+      }
+      if (n.type === "binary_operator" && elixirBinaryOp(n) === "=") {
+        const { left, right } = elixirBinarySides(n)
+        const leftIsMap = left?.type === "map" && !firstOfType(left, "struct")
+        const rightIsMap = right?.type === "map" && !firstOfType(right, "struct")
+        if (leftIsMap || rightIsMap) {
+          const pattern = leftIsMap ? left : right
+          const bound = leftIsMap ? right : left
+          for (const name of identifiersIn(pattern)) out.add(name)
+          if (bound?.type === "identifier") out.add(bound.text)
+          else if (bound) for (const name of identifiersIn(bound)) out.add(name)
+        }
+      }
+      for (const c of kids(n)) scan(c)
+    }
+    scan(within)
+    return out
+  }
+  // scope walk: identical naming to the uses walk (module-qualified, arity-qualified defs)
+  const scopes: string[] = []
+  const walkScopes = (n: any, inDefHead: boolean): void => {
+    if (!n) return
+    let pushed = ""
+    if (n.type === "call") {
+      const nm = callName(n)
+      const cur = scopes.length > 0 ? scopes[scopes.length - 1] : ""
+      if ((nm === "defmodule" || nm === "defprotocol") && !inDefHead) {
+        const mod = moduleNameOf(n)
+        if (mod.length > 0) pushed = scopes.length > 0 ? `${cur}.${mod}` : mod
+      } else if (DEF_FORMS.has(nm) && !inDefHead) {
+        const dn = defNameOf(n)
+        if (dn.length > 0 && dn !== "Unknown") {
+          const sig = defSignatureCall(n)
+          const arity = sig ? signatureArity(sig) : 0
+          pushed = `${cur}.${dn}/${arity}`
+          const bound = mapBoundWithin(n)
+          if (bound.size > 0) {
+            const key = pushed
+            const set = mapBoundByScope.get(key) ?? new Set<string>()
+            for (const b of Array.from(bound)) set.add(b)
+            mapBoundByScope.set(key, set)
+          }
+        }
+      }
+    }
+    if (pushed.length > 0) scopes.push(pushed)
+    const isDefish = n.type === "call" && DEF_FORMS.has(callName(n))
+    for (const c of kids(n)) walkScopes(c, inDefHead || (isDefish && c.type === "arguments"))
+    if (pushed.length > 0) scopes.pop()
+  }
+  walkScopes(root, false)
+  walk(root)
+  return { declaredStructFields, aliasOf, mapBoundByScope }
+}
+
 export function deriveElixirUsesTruth(root: any): TruthEdge[] {
   const edges: TruthEdge[] = []
   const seen = new Set<string>()
+  const { declaredStructFields, aliasOf, mapBoundByScope } = elixirUsesFileFacts(root)
+  const verifyAgainstDeclaredFields = declaredStructFields.size > 0
+  const resolveUseTarget = (name: string): string => {
+    const parts = name.split(".")
+    const root0 = parts[0]
+    if (root0.length > 0 && root0[0] >= "A" && root0[0] <= "Z" && aliasOf.has(root0)) {
+      parts[0] = aliasOf.get(root0)!
+      return parts.join(".")
+    }
+    return name
+  }
   // The enclosing DECLARED scope, arity-qualified the way the analyzer's symbol
   // identity is (`Module.fn/2`). The arity COUNT is a shared rule — both sides
   // must count the signature's argument children — but the traversal, the stack
@@ -544,10 +732,41 @@ export function deriveElixirUsesTruth(root: any): TruthEdge[] {
       }
       // The uses edge itself — evaluated on the scope that is CURRENT here, which
       // for a def-shaped call is the enclosing one (the def pushes after).
+      // ELX-EXPORTS `uses`: `use Mod` is Elixir's MIXIN APPLICATION — the analyzer publishes it
+      // as a uses row (isMixin/via:use) beside the directive reference. An oracle that omits it
+      // leaves the mixin class UNEXPLAINED on every draw that uses a module (32 elixir / 55
+      // phoenix rows after wiring): measured, not hypothesised.
+      if (name === "use" && !inDefHead && !inDeclarationAttributeValue(node) && !inQuote) {
+        const args = argumentsOf(node)
+        const first = args ? kids(args)[0] : undefined
+        if (first && (first.type === "alias" || first.type === "identifier" || first.type === "atom" || first.type === "dot")) {
+          const target = resolveUseTarget(first.text)
+          if (target.length > 0 && target !== cur) {
+            const k = `uses|${cur}|${target}`
+            if (!seen.has(k)) { seen.add(k); edges.push({ label: "uses", from: cur, target }) }
+          }
+        }
+      }
       const leaf = memberLeaf(node)
       if (leaf && !inDefHead && !inDeclarationAttributeValue(node) && !inArrowPattern(node)) {
-        const k = `uses|${cur}|${leaf.leaf}`
-        if (!seen.has(k)) { seen.add(k); edges.push({ label: "uses", from: cur, target: leaf.leaf }) }
+        // THE MAP-BOUND GATE (analyzer EX-EX12, applied in BOTH file branches): a receiver
+        // bound to a bare `%{...}` literal is a MAP, so `m.id` is a map-key read, not a struct
+        // field read — the analyzer drops it and the oracle must too. `%`-prefixed receivers are
+        // literals, not bindings, and are exempt (same charCode test the analyzer uses).
+        const receiver = leaf.root
+        const mapBound = receiver.length > 0 && receiver.charCodeAt(0) !== 37 && (mapBoundByScope.get(cur)?.has(receiver) ?? false)
+        if (!mapBound) {
+        // THE DECLARED-FIELD GATE (analyzer's file-level branch): a file that declares struct
+        // vocabulary drops a read whose field it does not declare. Publishing it here is the
+        // oracle over-derivation the post-wiring draws measured as MISSING (19 elixir / 29
+        // phoenix rows).
+        if (verifyAgainstDeclaredFields && !declaredStructFields.has(leaf.leaf)) {
+          // gate applies; nothing published
+        } else {
+          const k = `uses|${cur}|${leaf.leaf}`
+          if (!seen.has(k)) { seen.add(k); edges.push({ label: "uses", from: cur, target: leaf.leaf }) }
+        }
+      }
       }
     }
     if (pushed.length > 0) scopes.push(pushed)
@@ -631,6 +850,9 @@ export function deriveElixirExportsTruth(root: any): TruthEdge[] {
     if (from.length === 0 || target.length === 0) return
     if (from === target) return
     if (target === "unknown") return
+    // MACRO SYNTAX IS NOT A MEMBER NAME (the analyzer's EX-EX11 guard, mirrored): `def
+    // unquote(...)` in a macro template reads the syntax keyword as a definition name.
+    if (target === "unquote" || target === "unquote_splicing") return
     const k = `exports|${from}|${target}`
     if (seen.has(k)) return
     seen.add(k)
