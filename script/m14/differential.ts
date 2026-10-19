@@ -144,6 +144,9 @@ import { deriveGoExportsTruth, deriveGoOverridesTruth } from "./go-truth"
 // typescript's 846 lines and clojure's three.
 // M60: erlang `contains` — see script/m14/oracles/erlang-contains.ts for the rule.
 import { deriveErlangContainsTruth } from "./oracles/erlang-contains"
+// ERLANG fleet-phase (2026-10-19): the exports oracle existed with no consumer — the same
+// imported-but-never-pushed defect class rust's contains had. imports truth is in the same module.
+import { deriveErlangExportsTruth } from "./oracles/erlang-exports-imports"
 // M60 python lane: the lane's OWN oracle (`script/m14/oracles/python-truth.ts`, ~1,100
 // lines) is imported here, replacing the in-file copy `derivePythonEdges`, DELETED in round 2
 // (2026-10-10): with the lane oracle wired, the copy was dead and its stub was removed entirely.
@@ -16597,6 +16600,53 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
     }
     return false
   }
+  // ERLANG fleet-phase (2026-10-19): the analyzer suppresses calls/uses/records inside a -define body
+  // (macroDepth>0 in processCall/processRecordExpr/processRecordRead). The oracle had no such gate, so
+  // calls inside -define(...) bodies (logger:allow, logger:add_default_metadata inside
+  // -define(LOG_INTERNAL(Level,Report), ...)) were truth-only rows. Mirror the analyzer's gate.
+  const inMacroDefinition = (n: any): boolean => {
+    let cur = n.parent
+    while (cur) {
+      if (cur.type === "pp_define") return true
+      if (cur.type === "source_file" || cur.type === "fun_decl") return false
+      cur = cur.parent
+    }
+    return false
+  }
+  // ERLANG fleet-phase (2026-10-19): the analyzer's isPatternPosition also treats the PATTERN
+  // side of a `match_expr` as a non-construction ({ok, #file_info{mode=M}} = file:read_file_info(F)
+  // is a MATCH, and the record_expr on the left is a pattern — the analyzer emits nothing, so the
+  // oracle must too). Measured: this gap was the truth-only instantiates class (file_info, options,
+  // abst rows on the draws). The analyzer's rule is the analyzer's own isOnPatternSide: within the
+  // nearest match_expr, the node is on the pattern side when its start is BEFORE the match operator.
+  const isMatchPattern = (n: any): boolean => {
+    let cur = n.parent
+    while (cur) {
+      const t = cur.type
+      if (t === "clause_body" || t === "source_file") return false
+      if (t === "match_expr" || t === "cond_match_expr") {
+        for (let i = 0; i < cur.childCount; i++) {
+          const c = cur.child(i)
+          if (c && (c.type === "match_operator" || c.type === "=")) return n.startIndex < c.startIndex
+        }
+        return false
+      }
+      if (t === "function_clause" || t === "fun_clause" || t === "guard") return false
+      // ERLANG fleet-phase: a CASE-CLAUSE pattern is the same non-construction the analyzer's
+      // isPatternPosition already refuses (cr_clause head — {ok, #file_info{type=directory}} ->
+      // is a match arm, not a construction; measured on mod_head.erl:70/dialyzer_incremental.erl).
+      if (t === "cr_clause") {
+        // inside a cr_clause: patterns sit before the -> clause body; find the clause body
+        for (let i = 0; i < cur.childCount; i++) {
+          const c = cur.child(i)
+          if (c && (c.type === "->" || c.type === "clause_body")) return n.startIndex < c.startIndex
+        }
+        return false
+      }
+      cur = cur.parent
+    }
+    return false
+  }
   const stripLeadingHash = (t: string) => (t.startsWith("#") ? t.slice(1) : t)
   const stripFirstParen = (t: string) => (t.includes("(") ? t.slice(0, t.indexOf("(")) : t).trim()
   const stripQuotes = (t: string) => { let o = ""; for (const ch of t) if (ch !== '"' && ch !== "'") o += ch; return o }
@@ -16731,7 +16781,7 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
     } else if (t === "record_expr") {
       // ER3: a record_expr inside type syntax is a record TYPE (a declaration of
       // the record's shape), never a construction — mirrored on both sides.
-      if (!inHead(n) && !inTypeSyntax(n)) {
+      if (!inHead(n) && !inTypeSyntax(n) && !isMatchPattern(n) && !inMacroDefinition(n)) {
         const nameNode = childByType(n, "record_name") || childByType(n, "atom")
         const r = nameNode ? stripLeadingHash(nameNode.text) : ""
         if (r) push("instantiates", fn || rec || modName || "Global", r)
@@ -16741,7 +16791,7 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
       const name = tn?.text ? stripFirstParen(tn.text) : (childByType(n, "atom")?.text ?? "")
       if (name) typeRefs(n, tn, name)
     } else if (t === "call") {
-      if (!inHead(n) && !inTypeSyntax(n)) {
+      if (!inHead(n) && !inTypeSyntax(n) && !inMacroDefinition(n)) {
         const callee = firstNamed(n)
         const arity = argCount(childByType(n, "expr_args"))
         if (callee?.type === "remote") {
@@ -24737,6 +24787,15 @@ async function main() {
         for (const e of deriveErlangEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // ERLANG fleet-phase (2026-10-19): the contains oracle is imported and allowlisted but was
+        // NEVER PUSHED — every analyzer contains row read as unexplained (measured 1,019/3,241 rebar3
+        // and 1,820/4,568 otp). And the exports oracle existed with no consumer at all. Both wired now.
+        for (const e of deriveErlangContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveErlangExportsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "clojure") {
         // F5-cert wave (CLJ): dedicated clojure
@@ -25084,6 +25143,10 @@ async function main() {
           // existed in zig-truth.ts, wired only to tmp probes.
           ...(lang === "zig" ? ["contains", "imports", "exports"] : []),
           ...(lang === "erlang" ? ["contains"] : []),
+          // ERLANG fleet-phase (2026-10-19): the exports/imports oracles are now pushed above
+          // (erlang-exports-imports.ts — the exports oracle existed with no consumer); both
+          // labels join the compared set so their truth can match.
+          ...(lang === "erlang" ? ["exports", "imports"] : []),
           ...(lang === "rust" ? ["contains", "imports", "exports", "overrides"] : []),
           // SQL-G14 / M14.0.F5: sql joins the compared set with the TWO labels its first-half oracle
           // derives — `contains` and `references`. THE ARM IS DELIBERATELY NARROW: the oracle's header
