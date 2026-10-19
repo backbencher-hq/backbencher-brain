@@ -159,7 +159,7 @@ let bbDumped = 0
 // count them the same way, so the classification lives in incoming-rule.ts and this file
 // consumes it. Re-exported below so a caller of this module keeps working unchanged.
 import {
-  EXTERNAL_KEYS, NAMESPACE_CLAIM_KEY, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
+  EXTERNAL_KEYS, NAMESPACE_CLAIM_KEY, NAMESPACE_POLICY_KEY, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
   NAME_CAP,
   FILE_CLAIM_KEY, REMOTE_REF_CLAIM_KEY,
   emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY, isContainsEdge,
@@ -1690,6 +1690,20 @@ function selfTest(): { ok: boolean; failures: string[] } {
   // (Dart SDK annotation shape), and — the important one — an UNDECLARED root that must refute.
   if (externalClaimOf({ metadata: { [NAMESPACE_CLAIM_KEY]: ["java", "override"] } })?.kind !== "namespace") {
     failures.push("control: `languageNamespace` did not route to the namespace citation claim")
+  }
+  // STRICT-ABSENT NAMESPACE POLICY (cpp citation narrowing 2026-10-19): a claim carrying
+  // `languageNamespacePolicy: "strict-absent"` verifies ONLY where the run declares nothing for the
+  // target; with a declaration answer it falls through (the claim may not displace the name model).
+  {
+    const strictClaim = externalClaimOf({ metadata: { [NAMESPACE_CLAIM_KEY]: ["move"], [NAMESPACE_POLICY_KEY]: "strict-absent" } })
+    if (!(strictClaim?.kind === "namespace" && (strictClaim as any).strictAbsent === true)) {
+      failures.push("control: strict-absent namespace policy did not route on the claim")
+    }
+    const empty = new Map<string, number>()
+    const free = classifyEdge(empty, kinds, "move", strictClaim, undefined, undefined, undefined, undefined, "src/x.cpp")
+    if (free.outcome !== "externalVerified") failures.push(`control: strict-absent namespace claim on a declaration-free target read ${free.outcome}, expected externalVerified`)
+    const answered = classifyEdge(declCount, kinds, "alpha", { kind: "namespace", roots: ["alpha"], strictAbsent: true }, undefined, undefined, undefined, undefined, "src/x.cpp")
+    if (answered.outcome === "externalVerified") failures.push("control: strict-absent namespace claim displaced a declaration-answered target (must fall through)")
   }
   // EXPORT-SURFACE CLAIMS (charter §18.16, JS lane contract): `defaultExport`/`moduleExports` rows
   // name an export SURFACE, not a declaration. Controls: a valid named default verifies; a

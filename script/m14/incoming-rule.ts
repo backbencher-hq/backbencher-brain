@@ -145,7 +145,7 @@ export type ExternalClaim =
   // THE NAMESPACE CLAIM — the target's ROOT is a language namespace, and `roots` IS the analyzer's
   // declared list. Checked against that list INSTEAD of the symbol table; see NAMESPACE_CLAIM_KEY
   // for the four required properties and the four lanes' measurements that produced the design.
-  | { kind: "namespace"; roots: string[] }
+  | { kind: "namespace"; roots: string[]; strictAbsent?: boolean }
   // THE SOURCE-PATH CLAIM — evidence is the WRITTEN SOURCE STRING as the document spells it, and the
   // verdict is the inverse of a file claim: a candidate the project admits REFUTES it.
   | { kind: "sourcePath"; sources: string[] }
@@ -398,6 +398,20 @@ export const CAUSE_CLAIM_KEY = "baseBeyondRunScope"
 export const NAMESPACE_CLAIM_KEY = "languageNamespace"
 
 /**
+ * THE NAMESPACE POLICY MARKER (`languageNamespacePolicy === "strict-absent"`, 2026-10-19).
+ *
+ * The cpp lane's own pre-committed falsifier fired on its first citation arm: `std::move` claims
+ * displaced 12,883 name-model resolutions (duckdb declares its own `move` in namespace duckdb, so the
+ * name model bound a project declaration while the source spelling says `std::move`). The decoy
+ * reading is correct, but the discipline is not re-scoped after the fact: a claim may not displace a
+ * NAME-MODEL answer. So the lane emits this marker beside `languageNamespace`, and the arbiter then
+ * honors the namespace claim ONLY where the run declares nothing for the target (`decls === 0`,
+ * the imported-name precedent) — otherwise the claim falls through and the name model keeps its
+ * answer. The rule is LANE-SCOPED by the marker, so java/C/dart/python citation arms are untouched.
+ */
+export const NAMESPACE_POLICY_KEY = "languageNamespacePolicy"
+
+/**
  * THE `source-path` CLAIM — "nothing the project ADMITS resolves to this written source string".
  *
  * WHY IT EXISTS. The same SHAPE blocked three lanes independently: protobuf's 581 unresolved module paths,
@@ -576,7 +590,9 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
     const roots = nsRoots
       .filter((r: any): r is string => typeof r === "string" && r.trim().length > 0)
       .map((r: string) => r.trim())
-    if (roots.length > 0) return { kind: "namespace", roots }
+    if (roots.length > 0) {
+      return { kind: "namespace", roots, ...(md[NAMESPACE_POLICY_KEY] === "strict-absent" ? { strictAbsent: true } : {}) }
+    }
   }
   const srcPaths = md[SOURCE_PATH_CLAIM_KEY]
   if (Array.isArray(srcPaths)) {
@@ -1623,7 +1639,9 @@ export function classifyEdge(
   // branch because the design's whole point is that the ROOT is checked against the LIST and never
   // against the symbol table (property 1). Refutable by construction: a root the analyzer did not
   // declare reads `externalRefuted`, so the claim can never become a blanket excuse.
-  if (claim !== null && claim.kind === "namespace") {
+  // A `strict-absent` namespace claim (cpp citation narrowing) may not displace a name-model
+  // answer: with decls > 0 the row keeps its declaration answer and the claim falls through.
+  if (claim !== null && claim.kind === "namespace" && !(claim.strictAbsent === true && decls > 0)) {
     const listed = namespaceMatchOf(tgt, claim.roots) !== null
     // PROPERTY 4 — CROSS-TABBED LIKE ANY OTHER CLAIM. This branch returns before the shared
     // cross-tab block, because the claim is the sole authority for the OUTCOME and returning early
