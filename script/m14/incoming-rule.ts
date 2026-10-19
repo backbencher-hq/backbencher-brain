@@ -145,7 +145,7 @@ export type ExternalClaim =
   // THE NAMESPACE CLAIM — the target's ROOT is a language namespace, and `roots` IS the analyzer's
   // declared list. Checked against that list INSTEAD of the symbol table; see NAMESPACE_CLAIM_KEY
   // for the four required properties and the four lanes' measurements that produced the design.
-  | { kind: "namespace"; roots: string[]; strictAbsent?: boolean }
+  | { kind: "namespace"; roots: string[]; strictAbsent?: boolean; slash?: boolean }
   // THE OWNER-MEMBER-ABSENCE CLAIM: a verifiable statement that a known owner type declares no
   // member of the row's target name. Checked against the caller's ownerMembers evidence, never the
   // claim's own word; read only where the name model has nothing (decls === 0).
@@ -416,6 +416,20 @@ export const NAMESPACE_CLAIM_KEY = "languageNamespace"
 export const NAMESPACE_POLICY_KEY = "languageNamespacePolicy"
 
 /**
+ * THE SLASH-SEPARATOR OPT-IN (`languageNamespaceSlash === true`, 2026-10-19).
+ *
+ * Go module paths are written with `/` (`encoding/json`, `io/ioutil`), and `namespaceMatchOf` splits
+ * on `.`/`::`/`:` only — so no namespace claim could cite a Go path (measured:
+ * `namespaceMatchOf("encoding/json", ["encoding"]) === null`). A GLOBAL separator change would alter
+ * every existing lane's namespace matching (accepted java/c/python/dart/cpp citation arms are
+ * records we do not want to disturb), so this is OPT-IN: only a claim carrying this marker splits on
+ * `/`. Without it every other lane is byte-identical. Safety stays the lane's: CLOSED stdlib root
+ * set, imports-only emission — no shape heuristic ("no dot => stdlib" would claim project-internal
+ * paths; measured `internal/util`).
+ */
+export const NAMESPACE_SLASH_KEY = "languageNamespaceSlash"
+
+/**
  * THE OWNER-MEMBER-ABSENCE CLAIM (`ownerMemberAbsent = {owner, member}`, 2026-10-19).
  *
  * The shape it exists for: a calls/uses row carries `metadata.owner` (the receiver type is known),
@@ -500,7 +514,7 @@ export function namespaceRootOf(tgt: string): string {
  * A target matching NO entry is still `externalRefuted` — property 1 is untouched: the claim carries
  * the namespaces it certifies, and anything outside them is refused rather than sheltered.
  */
-export function namespaceMatchOf(tgt: string, roots: readonly string[]): string | null {
+export function namespaceMatchOf(tgt: string, roots: readonly string[], opts?: { slash?: boolean }): string | null {
   if (tgt.length === 0 || roots.length === 0) return null
   // SPLIT ON `::` AS WELL AS `.`, because a language namespace is not always dotted. Rust spells a
   // namespace `std::fs`, `core::fmt`, `alloc::vec`; with a dot-only split those targets yielded ONE
@@ -519,7 +533,9 @@ export function namespaceMatchOf(tgt: string, roots: readonly string[]): string 
   // citation vocabulary reached only 116 rows under the old split, and **+11,167 rows, ALL imports**
   // with `:` in the separator set. `::` is matched before `:` so rust's `std::fs` still splits
   // correctly. A claim that cannot reach the rows it cites is a citation nobody can use.
-  const segs = tgt.split(/\.|::|:/)
+  // THE SLASH OPT-IN (go stdlib multi-segment imports, 2026-10-19): only a claim that declares
+  // `languageNamespaceSlash` splits on `/`; every other lane's matching stays byte-identical.
+  const segs = opts?.slash === true ? tgt.split(/\/|\.|::|:/) : tgt.split(/\.|::|:/)
   for (let n = segs.length; n >= 1; n--) {
     const cand = segs.slice(0, n).join(".")
     if (roots.includes(cand)) return cand
@@ -611,7 +627,11 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
       .filter((r: any): r is string => typeof r === "string" && r.trim().length > 0)
       .map((r: string) => r.trim())
     if (roots.length > 0) {
-      return { kind: "namespace", roots, ...(md[NAMESPACE_POLICY_KEY] === "strict-absent" ? { strictAbsent: true } : {}) }
+      return {
+        kind: "namespace", roots,
+        ...(md[NAMESPACE_POLICY_KEY] === "strict-absent" ? { strictAbsent: true } : {}),
+        ...(md[NAMESPACE_SLASH_KEY] === true ? { slash: true } : {}),
+      }
     }
   }
   const srcPaths = md[SOURCE_PATH_CLAIM_KEY]
@@ -1681,7 +1701,7 @@ export function classifyEdge(
   // A `strict-absent` namespace claim (cpp citation narrowing) may not displace a name-model
   // answer: with decls > 0 the row keeps its declaration answer and the claim falls through.
   if (claim !== null && claim.kind === "namespace" && !(claim.strictAbsent === true && decls > 0)) {
-    const listed = namespaceMatchOf(tgt, claim.roots) !== null
+    const listed = namespaceMatchOf(tgt, claim.roots, { slash: claim.slash === true }) !== null
     // PROPERTY 4 — CROSS-TABBED LIKE ANY OTHER CLAIM. This branch returns before the shared
     // cross-tab block, because the claim is the sole authority for the OUTCOME and returning early
     // is the point; the disposition therefore has to be attached HERE, or an ambiguous

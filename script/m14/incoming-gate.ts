@@ -159,7 +159,7 @@ let bbDumped = 0
 // count them the same way, so the classification lives in incoming-rule.ts and this file
 // consumes it. Re-exported below so a caller of this module keeps working unchanged.
 import {
-  EXTERNAL_KEYS, NAMESPACE_CLAIM_KEY, NAMESPACE_POLICY_KEY, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
+  EXTERNAL_KEYS, NAMESPACE_CLAIM_KEY, NAMESPACE_POLICY_KEY, NAMESPACE_SLASH_KEY, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
   NAME_CAP,
   FILE_CLAIM_KEY, REMOTE_REF_CLAIM_KEY,
   emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY, isContainsEdge,
@@ -1760,6 +1760,22 @@ function selfTest(): { ok: boolean; failures: string[] } {
     if (free.outcome !== "externalVerified") failures.push(`control: strict-absent namespace claim on a declaration-free target read ${free.outcome}, expected externalVerified`)
     const answered = classifyEdge(declCount, kinds, "alpha", { kind: "namespace", roots: ["alpha"], strictAbsent: true }, undefined, undefined, undefined, undefined, "src/x.cpp")
     if (answered.outcome === "externalVerified") failures.push("control: strict-absent namespace claim displaced a declaration-answered target (must fall through)")
+  }
+  // SLASH-SEPARATOR OPT-IN (go stdlib multi-segment imports, §21.21): a namespace claim carrying
+  // `languageNamespaceSlash` splits the target on `/`; the SAME claim without the marker must NOT
+  // verify (every other lane is byte-identical), and a wrong root must REFUTE.
+  {
+    const slashClaim = externalClaimOf({ metadata: { [NAMESPACE_CLAIM_KEY]: ["encoding"], [NAMESPACE_SLASH_KEY]: true } })
+    if (!(slashClaim?.kind === "namespace" && (slashClaim as any).slash === true)) {
+      failures.push("control: languageNamespaceSlash did not route to the slash opt-in")
+    }
+    const emptyD = new Map<string, number>()
+    const slashOk = classifyEdge(emptyD, kinds, "encoding/json", slashClaim, undefined, undefined, undefined, undefined, "src/a.go")
+    if (slashOk.outcome !== "externalVerified") failures.push(`control: slash claim on encoding/json read ${slashOk.outcome}, expected externalVerified`)
+    const noMarker = classifyEdge(emptyD, kinds, "encoding/json", { kind: "namespace", roots: ["encoding"] }, undefined, undefined, undefined, undefined, "src/a.go")
+    if (noMarker.outcome === "externalVerified") failures.push("control: namespace claim WITHOUT the slash opt-in verified a slash path (global behaviour must be unchanged)")
+    const wrongRoot = classifyEdge(emptyD, kinds, "github.com/x/y", { kind: "namespace", roots: ["encoding"], slash: true }, undefined, undefined, undefined, undefined, "src/a.go")
+    if (wrongRoot.outcome !== "externalRefuted") failures.push(`control: slash claim with a wrong root read ${wrongRoot.outcome}, expected externalRefuted`)
   }
   // EXPORT-SURFACE CLAIMS (charter §18.16, JS lane contract): `defaultExport`/`moduleExports` rows
   // name an export SURFACE, not a declaration. Controls: a valid named default verifies; a
