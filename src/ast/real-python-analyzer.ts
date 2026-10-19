@@ -6551,12 +6551,6 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // member access, not an imported name.
       if (target.includes(":") || target.includes(".")) continue
       if (md.importedName !== undefined) continue
-      // FROM-IMPORT ITEMS ONLY. `import json` binds the MODULE `json` (its import row carries item
-      // `*`), and the arbiter's evidence map does not record `json` as an imported NAME — the 2
-      // cap-50 bindFAIL rows were exactly this shape (`claim {specifier: m, name: m}` refuted). A
-      // from-import item always differs from its module's basename (`from os import path`), so the
-      // shape test is the same evidence test.
-      if (target === specifier || target === (specifier.split(".").pop() ?? "")) continue
       // FAIL-CLOSED AGAINST DECOYS THE LANE CAN SEE: a name THIS FILE declares itself resolves
       // locally; claiming it would withdraw a real resolution (the decoy class the Lead's
       // "resolved must not fall" guard names). Cross-file declarations are not visible without the
@@ -6565,6 +6559,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       const specifier = ctx.moduleImportBindings.get(target)
       if (specifier === undefined || specifier.length === 0) continue
       if (specifier.startsWith(".")) continue
+      // FROM-IMPORT ITEMS ONLY. `import json` binds the MODULE `json` (its import row carries item
+      // `*`), and the arbiter's evidence map does not record `json` as an imported NAME — the 2
+      // cap-50 bindFAIL rows were exactly this shape (`claim {specifier: m, name: m}` refuted). A
+      // from-import item always differs from its module's basename (`from os import path`), so the
+      // shape test is the same evidence test.
+      if (target === specifier || target === (specifier.split(".").pop() ?? "")) continue
+
       const root = specifier.split(".")[0] ?? ""
       if (!PY_STDLIB_CITATION_ROOTS.has(root)) continue
       md.importedName = { specifier, name: target }
