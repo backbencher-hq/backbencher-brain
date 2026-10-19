@@ -1028,35 +1028,12 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(imp.range?.startLine ? { line_number: imp.range.startLine } : {}),
         metadata: { isImportDep: true },
       })
-      // The `imports` row: source = this compilation unit, target = the path AS
-      // WRITTEN in the source. `import a.b.C.d` names a declaration inside a
-      // package and `import a.b.*` names a package, so the whole dotted path is
-      // the name — splitting it into `module:item` would invent a separator the
-      // language does not write (the typescript shape, where `module:item` is
-      // genuine because a TS import names both halves separately).
-      if (compilationUnit && imp.module) {
-        relationships.push({
-          source: compilationUnit,
-          target: imp.module,
-          type: ASTEngine.RelationshipType.Imports,
-          // 1.0: the path is written verbatim in the file. Nothing is inferred.
-          confidence: 1.0,
-          ...(imp.range?.startLine ? { line_number: imp.range.startLine } : {}),
-          metadata: {
-            module: imp.module,
-            isImportDep: true,
-            // Set here so `classifyEvidenceTier` does not relabel it: the class
-            // falls through to `usage_contextual`, which would claim the target
-            // was read out of call context. The path is written verbatim in the
-            // file — that is structural evidence, and the sibling `references`
-            // row for the same import keeps `import_based` because IT is the
-            // dependency-shaped view. Two rows, two questions, two labels.
-            evidenceClass: "structural",
-            ...(imp.alias ? { alias: imp.alias } : {}),
-            ...(imp.isNamespaceImport ? { isNamespaceImport: true } : {}),
-          },
-        })
-      }
+      // DUPLICATE IMPORTS CHANNEL REMOVED (fleet-phase KOTLIN4 contract 2026-10-19): this block used to
+      // publish a second `imports` row sourced at the compilation-unit base name while
+      // processImportsExports publishes the single identity-sourced channel (primary top-level type when
+      // the file declares one, else the compilation-unit name). Two spellings of one fact made the label
+      // unauditable (one row matched, the duplicate charged). The `references` row above is a DIFFERENT
+      // label and stays.
     }
 
     // M60 (#924, kotlin half): the published name surface — quoting syntax is
@@ -1196,11 +1173,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // ExportInfo array above still carries every name, because that array is the
     // surface `import-resolution.ts:314` gates symbol joins on.
     const unitIdentity = this.primaryTopLevelType(symbols)
+    // KOTLIN4 identity: a file WITH a primary top-level type keeps the `(file)` file-level spelling
+    // (kotlin/exports-visibility pins it); a file WITHOUT one is sourced at its compilation-unit
+    // identity (the base name without extension) instead of being withheld entirely
+    // (kotlin/exports-file-identity pins that half).
+    const fileLevelSource = unitIdentity ? "(file)" : (kotlinCompilationUnitName(filePath) || "(file)")
     for (const e of exportedSymbols) {
       exports.push({ name: e.name, kind: e.kind, range: e.range, visibility: e.visibility })
-      if (!unitIdentity) continue
       relationships.push({
-        source: "(file)",
+        source: fileLevelSource,
         target: e.name,
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
@@ -4724,7 +4705,14 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // contract §4 requires a machine-readable reason code with any confidence
     // below 1.0, hence `declared-import-path`.
     const packageName = ctx.packageStack.join(".")
-    const importSource = packageName || "root"
+    // FLEET-PHASE KOTLIN4 CONTRACT (fixtures exports-file-identity / imports-exports-ontology, 2026-10-19):
+    // an `imports` edge is sourced at the FILE's IDENTITY — the primary top-level type when the file
+    // declares one, else the compilation-unit name (base name without the extension). A Kotlin
+    // `package` is a header, not a declaration (it has no symbol and an edge from it could never
+    // resolve), so the package-source channel is superseded; the identity is also the spelling the
+    // lane's own module-edges oracle emits, which is what makes the label auditable.
+    const unitIdentityForImports = this.primaryTopLevelType(symbols)
+    const importSource = unitIdentityForImports?.name || kotlinCompilationUnitName(ctx.currentFile) || packageName || "root"
 
     while (stack.length > 0) {
       const n = stack.pop()!
@@ -4979,34 +4967,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           dottedName: `${packageName}.${s.name}`,
         },
       })
-      // THE SAME NAME UNDER ITS PACKAGE IDENTITY, and the two rows are NOT a
-      // duplicate: `Pandora -> Published` says the UNIT publishes the name, while
-      // `com.acme.x -> Published` says the PACKAGE does, and the second is the one
-      // that joins against this lane's `imports` rows (whose source IS the
-      // package, because `source + "." + target` has to reconstruct the dotted
-      // path an import names — measured: 10,853 of 10,885 `import_header`s sit in
-      // a package-bearing file). Both spellings are pinned by this lane's own
-      // fixtures — kotlin/ontology-imports-exports and kotlin/context-parameters
-      // require the package row, kotlin/exports-published-surface and
-      // kotlin/imports-exports-ontology require the unit row — and the pair is
-      // written from ONE predicate so they cannot drift into disagreeing about
-      // which names are published.
-      relationships.push({
-        source: packageName,
-        target: s.name,
-        type: ASTEngine.RelationshipType.Exports,
-        confidence: 1.0,
-        ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
-        metadata: {
-          isKotlinExport: true,
-          relationshipType: "exported_declaration",
-          moduleIdentity: "package",
-          kind: String(s.kind),
-          exportKind: String(s.kind),
-          visibility: s.visibility || "public",
-          dottedName: `${packageName}.${s.name}`,
-        },
-      })
+      // PACKAGE-IDENTITY EXPORT CHANNEL REMOVED (fleet-phase defect fix 2026-10-19): a package is a
+      // header, not a declaration, and the store's defensive export filter drops a package-named
+      // source (parallel-indexer.ts) — the row read as emitted at ZERO stored rows. The unit identity
+      // (`moduleIdentity: "primary-top-level-type"`) and the file-level channel above are the two
+      // publishers that survive; kotlin/exports-visibility forbids the package spelling.
     }
   }
 
