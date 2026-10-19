@@ -171,6 +171,14 @@ type Scope = {
 }
 type Classes = Record<string, number>
 const classes: Classes = {}
+/** `namespace-qualified` callee roots, counted for the NAMESPACE-CITATION item (a separate question from
+ *  receiver typing: a `std::move(...)` call's problem is that the target leaf names no project symbol AND
+ *  its owner is a platform namespace — the citation mechanism's territory, not a receiver type's). */
+const namespaceRoots: Record<string, number> = {}
+/** repo -> the NAMESPACE names it DECLARES (so a project's own namespace is never called a platform
+ *  citation), and the per-row (root, repo) list the citation census is computed from after the walk. */
+const declaredNamespaces = new Map<string, Set<string>>()
+const namespaceRows: Array<{ root: string; repo: string }> = []
 const note = (k: string) => { classes[k] = (classes[k] ?? 0) + 1 }
 
 type Residue = { file: string; line: number; target: string; cls: string; detail: string }
@@ -238,6 +246,15 @@ for (const abs of files) {
 
   const visit = (n: any) => {
     const t = String(n.type)
+    if (t === "namespace_definition") {
+      const nameField = n.childForFieldName?.("name")
+      const nsName = nameField ? (String(nameField.text ?? "").split("::")[0] || String(nameField.text ?? "")) : ""
+      if (nsName !== "" && /^[A-Za-z_$][\w$]*$/.test(nsName)) {
+        const set = declaredNamespaces.get(repo) ?? new Set<string>()
+        set.add(nsName)
+        declaredNamespaces.set(repo, set)
+      }
+    }
     if (t === "class_specifier" || t === "struct_specifier" || t === "union_specifier") {
       const name = n.childForFieldName?.("name")?.text?.trim?.() ?? ""
       stack.push({ kind: "type", className: name, vars: new Map() })
@@ -335,6 +352,22 @@ for (const abs of files) {
               } else { cls = "opaque"; detail = "object name has no written type in this function" }
             } else { cls = "opaque"; detail = `object node ${obj?.type}` }
             void op
+          } else if (fn.type === "qualified_identifier" ||
+            (fn.type === "template_function" && fn.namedChildCount > 0 && fn.namedChild(0)?.type === "qualified_identifier") ||
+            (fn.type === "field_expression" && (() => { const o = fn.childForFieldName?.("argument") ?? fn.namedChild(0); return o && o.type === "qualified_identifier" })())) {
+            // A QUALIFIED callee/free function (`std::move`, `ns::detail::f`, `std::chrono::steady_clock::now`):
+            // the owner is a NAMESPACE (or a class, checked elsewhere) spelled in the source. Record the ROOT
+            // segment — the citation-census unit — and classify as namespace-qualified, not opaque.
+            const qtext = fn.type === "field_expression"
+              ? String((fn.childForFieldName?.("argument") ?? fn.namedChild(0))?.text ?? "")
+              : String(fn.text ?? "")
+            const root = qtext.replace(/^::/, "").split("::")[0].trim()
+            cls = "namespace-qualified"
+            detail = root
+            if (root !== "") {
+              namespaceRoots[root] = (namespaceRoots[root] ?? 0) + 1
+              namespaceRows.push({ root, repo })
+            }
           } else if (fn.type === "identifier") {
             // bare callee: implicit-this if the enclosing class declares the leaf
             const enclosing = cur().className ?? ""
@@ -393,6 +426,23 @@ const report = {
   population: { residualCallsInDump: residualCalls, residualCallsInSelectedFiles: selectedResidualCalls, filesSelected: files.length, sample: SAMPLE, repos: ONLY_REPOS.length ? ONLY_REPOS : "all", machine: { loadAvg1: Number(os.loadavg()[0].toFixed(2)), availableGB: Number((os.freemem() / (1024 ** 3)).toFixed(2)) } },
   rule: "Each residual call row is classified by the receiver evidence the SYNTAX already provides: implicit-this (bare callee, enclosing class declares it in-file) · constructor-temp · typed-local (written local/param type) · smart-or-container (written wrapper type naming its pointee/element) · opaque. The |declares suffix is a SECOND fact: does the in-file owner actually declare the leaf. No project index is used.",
   classes,
+  namespaceRoots,
+  namespaceCitation: (() => {
+    const projectDeclared: Record<string, number> = {}
+    const undeclaredCandidates: Record<string, number> = {}
+    for (const { root, repo } of namespaceRows) {
+      if (declaredNamespaces.get(repo)?.has(root) === true) projectDeclared[root] = (projectDeclared[root] ?? 0) + 1
+      else undeclaredCandidates[root] = (undeclaredCandidates[root] ?? 0) + 1
+    }
+    const sortTop = (m: Record<string, number>) => Object.fromEntries(Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 40))
+    return {
+      rule: "namespace-qualified residual call roots, split by whether the ROOT is a namespace this repo DECLARES (project namespace — not a citation) or not (candidate platform namespace — the citation question). Roots are the unit the fleet's `languageNamespace` citation claim matches; a candidate still needs a committed vocabulary before a lane may claim it (citations.ts).",
+      projectNamespaceRows: Object.values(projectDeclared).reduce((a, b) => a + b, 0),
+      candidateRows: Object.values(undeclaredCandidates).reduce((a, b) => a + b, 0),
+      projectDeclaredRoots: sortTop(projectDeclared),
+      candidateRoots: sortTop(undeclaredCandidates),
+    }
+  })(),
   samples,
   control: { ok: failures.length === 0, failures },
 }
