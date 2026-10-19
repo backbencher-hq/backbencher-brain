@@ -190,7 +190,7 @@ import { deriveScalaImportTruth, deriveScalaExportTruth } from "./scala-truth"
 // nothing), plus the lane's new gap-truth module for imports and the ruled raise/struct
 // instantiation spellings. This is the same "finished-but-unconnected" shape the M60 notes record.
 import { deriveElixirContainsTruth, deriveElixirUsesTruth, deriveElixirExportsTruth } from "./oracles/elixir-contains"
-import { deriveElixirImportsTruth, deriveElixirCallInstantiationTruth } from "./oracles/elixir-gap-truth"
+import { deriveElixirImportsTruth, deriveElixirCallInstantiationTruth, deriveElixirAtomRemoteCallsTruth } from "./oracles/elixir-gap-truth"
 import { deriveSolidityImportTruth } from "./oracles/solidity-imports-truth"
 import { deriveSolidityEdges, deriveSolidityCallReferenceEdges } from "./oracles/solidity"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
@@ -15696,6 +15696,27 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
     }
     return false
   }
+  // ELIXIR round-2 (EX-A17 mirror): an attribute VALUE is compile-time code — `@version Mix.Project.config()`
+  // and `@rules_files Map.new(File.ls!(...))` call real functions at compile time, and the analyzer publishes
+  // those calls. Only the DECLARATION attributes stay silent; the old blanket isAttr gate hid four phoenix
+  // unexplained calls. Mirror the analyzer's DECLARATION_ATTRIBUTES predicate exactly.
+  const ELIXIR_DECLARATION_ATTRIBUTES = new Set([
+    "moduledoc", "doc", "spec", "type", "typep", "opaque", "callback", "macrocallback",
+    "optional_callbacks", "behaviour", "behavior", "derive", "deprecated",
+  ])
+  const isDeclarationAttributeValue = (n: any): boolean => {
+    let cur = n.parent
+    while (cur) {
+      if (cur.type === "unary_operator" && cur.child(0)?.text === "@") {
+        const value = cur.child(1)
+        if (!value || value.type !== "call") return true
+        const id = find(value, (c: any) => c?.type === "identifier")
+        return ELIXIR_DECLARATION_ATTRIBUTES.has(id?.text ?? "")
+      }
+      cur = cur.parent
+    }
+    return false
+  }
   const isHead = (n: any): boolean => {
     let cur = n.parent
     while (cur) {
@@ -16122,7 +16143,9 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
     if (SPECIAL.has(target)) return true
     if (KERNEL.has(target)) return true
     if (isQuoted(node)) return true
-    if (isAttr(node)) return true
+    // ELIXIR round-2 patch 1: only DECLARATION attribute values are silent; a compile-time attribute value
+    // (`@version Mix.Project.config()`) publishes its calls (EX-A17).
+    if (isDeclarationAttributeValue(node)) return true
     if (isHead(node)) return true
     // ELXD18 mirror: only a lowercase-rooted dot without arguments is a
     // field read / dynamic dispatch — capitalized (or atom/sigil) roots
@@ -16159,6 +16182,10 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
     // X9 mirror: qualified Kernel builtins are the same noise as bare ones.
     if (finalTarget.startsWith("Kernel.")) {
       const leaf = finalTarget.slice("Kernel.".length)
+      // ELIXIR round-2 patch 3: an operator leaf is not a callable name (`Kernel.<>`).
+      // Elixir callables may END in `!`/`?` (`File.ls!`, `Version.parse!`) — the first version of this
+      // guard rejected those legitimate names and turned 181 analyzer calls into false `unexplained`.
+      if (!/^[A-Za-z_][A-Za-z0-9_]*[!?]?$/.test(leaf)) return
       if (KERNEL.has(leaf) || SPECIAL.has(leaf)) return
     }
     const parts = finalTarget.split(".")
@@ -16170,9 +16197,14 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
       }
     }
     if (!finalTarget) return
+    // ELIXIR round-2 patch 3: an operator leaf (`&1.`, `<`) is not a callable name.
+    const callLeaf = finalTarget.includes(".") ? (finalTarget.split(".").pop() ?? "") : finalTarget
+    if (!/^[A-Za-z_][A-Za-z0-9_]*[!?]?$/.test(callLeaf)) return
     if (finalTarget.indexOf(".") !== -1) {
+      // ELIXIR round-2 patch 2: ASCII letter test, not toUpperCase (`"&"[0] === "&".toUpperCase()` was true,
+      // which let `& &1.(&2)` publish a `&` call).
       const r = finalTarget.split(".")[0]
-      if (!r || r[0] !== r[0].toUpperCase()) return
+      if (!r || r[0] < "A" || r[0] > "Z") return
     } else {
       const enclosing = ownerOf(stack)
       if (enclosing && !(declaredByScope.get(enclosing)?.has(finalTarget))) {
@@ -24392,6 +24424,10 @@ async function main() {
           ;(truth as any[]).push(e)
         }
         for (const e of deriveElixirCallInstantiationTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // ELIXIR round-2 patch 4: erlang/atom remote calls (:erlang.make_tuple, :elixir_erl.checker_version).
+        for (const e of deriveElixirAtomRemoteCallsTruth(root)) {
           ;(truth as any[]).push(e)
         }
       }
