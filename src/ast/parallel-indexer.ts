@@ -1674,7 +1674,7 @@ export async function processWithWorkerPool(
     // (production path-only .h->c vs the engine's content sniff) and is priced in
     // CPP-INDEX-PROPOSAL.md §1b; adding it here would silently answer a crossover question one lane
     // cannot settle alone.
-    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java", ".dart": "dart", ".py": "python", ".ts": "typescript", ".tsx": "typescript", ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript", ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".c++": "cpp", ".hpp": "cpp", ".hxx": "cpp", ".ipp": "cpp", ".inl": "cpp", ".cu": "cpp" }
+    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java", ".dart": "dart", ".py": "python", ".ts": "typescript", ".tsx": "typescript", ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript", ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".c++": "cpp", ".hpp": "cpp", ".hxx": "cpp", ".ipp": "cpp", ".inl": "cpp", ".cu": "cpp", ".rb": "ruby" }
     // THE THREE NEW EXTENSIONS BUILD ONLY ON A COMPLETE WALK (see `indexScope`). The five pre-existing
     // lanes consume the index for RESOLUTION and tolerate an incomplete one — behaviour that must not
     // change — while python/typescript have no consumer yet and their index exists only to support a
@@ -1708,6 +1708,8 @@ export async function processWithWorkerPool(
         // it is correct whether the code runs from `src/ast` or from `dist`.
         const repoRoot = path.resolve(path.dirname(require("url").fileURLToPath(import.meta.url)), "..", "..")
         const wasmByLang: Record<string, string> = {
+          // RUBY (task-22): the same wasm the ruby analyzer loads (wasm/tree-sitter-ruby.wasm).
+          ruby: path.join(repoRoot, "wasm", "tree-sitter-ruby.wasm"),
           solidity: path.join(repoRoot, "wasm", "tree-sitter-solidity.wasm"),
           fsharp: path.join(repoRoot, "wasm", "tree-sitter-fsharp.wasm"),
           protobuf: path.join(repoRoot, "wasm", "tree-sitter-protobuf.wasm"),
@@ -1729,6 +1731,10 @@ export async function processWithWorkerPool(
         // here keeps Solidity's spec, which is what every pre-existing entry did and is why this
         // map is additive rather than a rewrite.
         const specByLang: Record<string, unknown> = {
+          // RUBY (task-22), wired WITH its extension entry and wasm in the same change — all three
+          // halves, for the `.scss`/`.groovy` reason recorded above: a spec without its entry indexes
+          // nothing, and an extension without its spec indexes ruby declarations with the wrong rules.
+          ruby: mod.RUBY_DECLARATION_SPEC,
           solidity: mod.SOLIDITY_DECLARATION_SPEC,
           fsharp: mod.FSHARP_DECLARATION_SPEC,
           // `.scss` was added to PROJECT_INDEX_EXTENSIONS without an entry here, so the lookup below

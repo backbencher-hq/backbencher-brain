@@ -193,6 +193,16 @@ export interface DeclarationSpec {
    */
   nameOnlyNodes?: string[]
   /**
+   * RUBY (task-22 RUBY_DECLARATION_SPEC): a same-KIND redeclaration of the SAME name is ONE declaration,
+   * not several. Ruby REOPENS a class in as many files as it likes; `symbolCounts` answers "declared
+   * once" for the claim paths (python/typescript use it), so counting reopens would turn every reopened
+   * ruby class into false ambiguity. When true, the type branch below does not increment `symbolCounts`
+   * for a redeclaration whose kind matches. The index is shallow BY DESIGN (no site list, no line
+   * numbers — see the file header), so "multiple sites" is expressed as "one declaration, occurrences
+   * not retained"; a future `typeSites` field would retain them and is NOT needed for the ruby bound.
+   */
+  mergeSameKindTypeDecls?: boolean
+  /**
    * REQUIRE a name-only declaration's name to be IDENTIFIER-SHAPED (dotted allowed) before it is
    * recorded. Added for TYPESCRIPT, and the reason is a measured shape rather than tidiness: TS's
    * binding node is `variable_declarator`, whose `name` field is an `identifier` for
@@ -442,6 +452,114 @@ export const CPP_DECLARATION_SPEC: DeclarationSpec = {
  *     class PROPERTY is not something a subclass overrides, and indexing it as one is the PY-21
  *     defect-4 fabrication this repo already paid for once.
  */
+/** Static constant path of a ruby base/type node, or null when the node is not nameable (`Struct.new(...)`,
+ *  a parenthesised expression). Character/grammar walk only — no regex. */
+function staticRubyConstantPath(n: Node | null): string | null {
+  if (!n) return null
+  if (n.type === "constant") return n.text
+  if (n.type === "scope_resolution") {
+    const scope = n.childForFieldName("scope")
+    const name = n.childForFieldName("name")
+    const left = staticRubyConstantPath(scope)
+    const right = name ? name.text : null
+    if (left && right) return `${left}::${right}`
+    return right ?? left ?? null
+  }
+  return null
+}
+
+/**
+ * RUBY (task-22, RUBY_DECLARATION_SPEC — proposal; the Lead applies this patch).
+ *
+ * WHAT IT IS FOR. The ruby analyzer is per-file, so on the 989-file/15-repo arm A 3,013 `overrides` are
+ * declared first-parent GUESSES and 1,590 type-relation rows (instantiates/extends/mixes_in) are ambiguous
+ * from REOPENED declarations. The index facts let a consumer VERIFY a base class and its members, and
+ * resolve a static constant path, without a second parse.
+ *
+ * WHY nameResolver IS THE WHOLE SPEC. The ruby grammar does not put names in `name` fields for most
+ * declarations: `def`/`def self.m` have a `name` field, but `alias new old` names itself by its first
+ * identifier, `attr_reader :x` / `alias_method :a, :b` / `define_method(:m)` name a member through a
+ * CALL's first symbol argument, and a constant assignment names itself through an upper-cased LHS. The
+ * resolver returns "" for every other node, which is what keeps `call` in `memberNodes` from indexing
+ * every call in the project as a member.
+ *
+ * REOPENING. `mergeSameKindTypeDecls` is the one build-machinery bit ruby needs (see the interface note
+ * and the type branch in `indexTree`): a class reopened across files is ONE declaration. Members land in
+ * the `typeMembers` Set, which already dedupes across reopens.
+ *
+ * NOT MODELLED HERE (priced, not claimed): include/prepend/extend are CALL nodes in a class body, not a
+ * base field on the type node, so they do not enter `typeBases`; mixes_in resolution needs only MODULE
+ * EXISTENCE (`typeKinds`/`typeMembers` of the module), which this spec supplies. Fully-qualified
+ * NESTING composition (`A::B::C` from the nesting stack) is also not modelled by `indexTree`, whose type
+ * name is the node's own name field as written; resolution here is per-repo LEAF spelling, which is the
+ * assumption the ruby sizing (4,611 bound) was computed against.
+ */
+export const RUBY_DECLARATION_SPEC: DeclarationSpec = {
+  typeNodes: { class: "class", module: "module" },
+  // `call` is listed for attr_*/alias_method/define_method ONLY; nameResolver returns "" for every other
+  // call, so a call that names nothing is not a member.
+  memberNodes: ["method", "singleton_method", "alias", "call"],
+  scopeNodes: ["method", "singleton_method", "block", "do_block", "lambda"],
+  nameOnlyNodes: ["assignment"],
+  mergeSameKindTypeDecls: true,
+  nameResolver: (node: Node): string => {
+    const t = node.type
+    if (t === "class" || t === "module" || t === "method" || t === "singleton_method") {
+      return node.childForFieldName("name")?.text ?? ""
+    }
+    if (t === "alias") {
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && (c.type === "identifier" || c.type === "method_identifier")) return c.text
+      }
+      return ""
+    }
+    if (t === "assignment") {
+      // Constants only: a lower-cased LHS is a local/binding, and `scopeNodes` already keeps method
+      // bodies out of the name-only channel.
+      const left = node.childForFieldName("left")
+      if (!left) return ""
+      const text = left.text
+      if (text.length === 0) return ""
+      const c0 = text.charCodeAt(0)
+      return c0 >= 65 && c0 <= 90 ? text : ""
+    }
+    if (t === "call") {
+      const m = node.childForFieldName("method")?.text ?? ""
+      const args = node.childForFieldName("arguments")
+      const firstLiteral = (): string => {
+        if (!args || args.namedChildCount === 0) return ""
+        const a = args.namedChild(0)
+        if (!a) return ""
+        if (a.type === "simple_symbol") {
+          const t2 = a.text
+          let k = 0
+          while (k < t2.length && t2[k] === ":") k++
+          return t2.slice(k)
+        }
+        if (a.type === "string") {
+          const t2 = a.text
+          return t2.length >= 2 ? t2.slice(1, t2.length - 1) : ""
+        }
+        return ""
+      }
+      if (m === "attr_reader" || m === "attr_writer" || m === "attr_accessor" || m === "attr" ||
+          m === "alias_method" || m === "define_method") return firstLiteral()
+      return ""
+    }
+    return ""
+  },
+  baseResolver: (node: Node): string[] => {
+    if (node.type !== "class") return []
+    const sup = node.childForFieldName("superclass")
+    // The grammar wraps the base: `superclass -> constant/scope_resolution`. A non-static base (a call,
+    // a parenthesised expression) is UNNAMEABLE and contributes nothing (RUBY-D1's refusal, reused).
+    const inner = sup ? sup.namedChild(0) : null
+    const path = staticRubyConstantPath(inner)
+    return path ? [path] : []
+  },
+}
+
 export const TYPESCRIPT_DECLARATION_SPEC: DeclarationSpec = {
   typeNodes: {
     class_declaration: "class",
@@ -1177,10 +1295,14 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
         // recording `unknown` rather than letting the last writer win means a
         // downstream consumer sees the ambiguity instead of a confident wrong answer.
         const prior = index.typeKinds.get(name)
+        // RUBY REOPEN: a same-kind redeclaration of the same name is ONE declaration (ruby reopens a
+        // class across files by design). Only a spec that sets `mergeSameKindTypeDecls` reads it that
+        // way; every other language keeps the byte-identical counting behaviour.
+        const reopened = prior !== undefined && prior === kind && spec.mergeSameKindTypeDecls === true
         if (prior === undefined) index.typeKinds.set(name, kind)
         else if (prior !== kind) index.typeKinds.set(name, "unknown")
         index.symbolNames.add(name)
-        index.symbolCounts.set(name, (index.symbolCounts.get(name) ?? 0) + 1)
+        if (!reopened) index.symbolCounts.set(name, (index.symbolCounts.get(name) ?? 0) + 1)
         nextOwner = name
         // A class body starts its own member scope, so a class nested inside a method is
         // indexed under its OWN name and not smeared onto the enclosing class.

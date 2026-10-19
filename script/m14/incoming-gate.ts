@@ -787,6 +787,9 @@ const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> =
   // task-24) is verified from the index's facts; without this entry `--index` builds 0 indexes for the
   // lane and the arm that exercises either mechanism cannot be produced at all.
   cpp: { spec: async () => (await import("../../src/ast/project-index")).CPP_DECLARATION_SPEC, wasm: "tree-sitter-cpp/tree-sitter-cpp.wasm" },
+  // RUBY (task-22): the lane's index facts; without this entry `--index` builds 0 indexes for ruby and
+  // the arm that exercises the consumption cannot be produced at all.
+  ruby: { spec: async () => (await import("../../src/ast/project-index")).RUBY_DECLARATION_SPEC, wasm: "tree-sitter-ruby.wasm" },
 }
 const INDEX_CACHE = process.env.BB_INDEX_CACHE ?? "/tmp/bb-project-index"
 
