@@ -1577,9 +1577,13 @@ export function classifyEdge(
       ...(decls > 1 ? { claimOnAmbiguous: { kind: "exportSurface", disposition } } : {}),
     }
   }
-  // THE IMPORTED-NAME CLAIM IS THE SOLE AUTHORITY FOR ITS EDGES, like the imported-binding claim:
-  // the target names a name this file imports, so a same-named declaration elsewhere is the decoy.
-  if (claim !== null && claim.kind === "importedName") {
+  // THE IMPORTED-NAME CLAIM IS A WALL-CLASS CONVERTER, NOT A DISPLACER (python arm measurement
+  // 2026-10-19): it may only SPEAK FOR A ROW THE NAME MODEL HAS NOTHING TO SAY ABOUT (declCount === 0).
+  // When the row already has a declaration answer (decls > 0) the name model / an external marker
+  // owns the classification and the claim falls through — otherwise the claim column eats verified
+  // external claims (measured: python extOK −16,277) and re-labels rows that already had answers.
+  // The claim's own evidence still decides when it does apply; it never resolves to a declaration.
+  if (claim !== null && claim.kind === "importedName" && declCount === 0) {
     const outcome = verifyImportedNameClaim(claim, tgt, facts, edgeFile)
     const disposition: AmbiguousClaimDisposition =
       outcome === "bindingVerified" ? "verified" : outcome === "bindingUnverified" ? "unverified" : "refuted"
