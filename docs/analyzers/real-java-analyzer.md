@@ -723,6 +723,12 @@ against a project declaration is wrong. The lane now publishes the Lead's import
 The arbiter verifies the claim from the run's own import evidence into its own column (`bindOK`),
 never folds it into `resolved`, and a contradicted claim is a failure. Fixture
 `java/library-import-binding` pins the evidence (array + scalar), the project-static-import refusal,
-the file-shadowed refusal and the receiver refusal; the positive claim is an object-valued field the
-fixture matcher cannot yet compare, so it is verified by the arm's `bindOK` column and the lane
-probe (recorded in the commit) until the matcher gains object comparison.
+the file-shadowed refusal and the receiver refusal; the positive claim is now pinned in the fixture
+too (object-meta matcher added by the Lead).
+
+MEASURED AND CLOSED (Lead-reproduced population arm at `e6a586379`): **bindOK 391 · bindFAIL 0**,
+with resolved −85 · amb −47 · extOK −259 (85+47+259 = 391 exactly) — 259 rows moved from a verified
+external owner claim to the strictly stronger import-evidence class, 85 are accepted name-model decoys
+(JLS 6.4.1/6.5.5 import precedence), 47 came from ambiguous. **Verified class unchanged at 72.64%**
+(displacement between verified classes). The corpus's 2,194 project-container static imports are a
+RULED non-claim class (they must resolve internally).
