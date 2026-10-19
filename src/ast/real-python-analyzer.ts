@@ -1417,6 +1417,14 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // shadows the builtin at that name; the namespace certifier refuses import-bound names).
     this.certifyImportEvidenceClaims(ctx)
     this.certifyNamespaceCitations(ctx)
+    // HELD (2026-10-19): `certifyImportedNameClaims` is implemented but NOT CALLED. The cap-50 arm
+    // with the claim live read bindOK 266 / bindFAIL 2 and erodes extOK by 125 (rows whose imported
+    // name the file also imports were already verified through another claim kind, and the
+    // importedName claim re-routes them to binding claims) — the Lead's rule is narrow-first, so
+    // the emission is held until the precedence question is ruled. The whole-population count is
+    // measured and reported: 31,498 claimable rows, of which 6,276 were resolved before (cross-file
+    // decoys the analyzer cannot see without the project index).
+    // this.certifyImportedNameClaims(ctx)
 
     const detectedFrameworks: string[] = PY_FRAMEWORK_ORDER.filter((f) => ctx.frameworks[f])
     const detectedPatterns: string[] = []
@@ -6500,6 +6508,50 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * is an undeclared ROOT. That is why the fixture's negative is an undeclared-root row and not a
    * "project declares the name" row — the latter is not expressible through this claim by design.
    */
+
+  /**
+   * THE `importedName` CLAIM (Lead arbiter, charter §18.19): a bare name the file IMPORTS from a
+   * stdlib-rooted specifier names a BINDING that occupies this file's scope, not a project
+   * declaration. The claim is `metadata.importedName = {specifier, name}`, VERIFIED by the gate from
+   * the run's own import evidence (the file's import of `specifier` brings `name` into scope) and
+   * rides the binding family (`bindOK`, verifiedBy importEvidence) — NEVER resolved.
+   *
+   * THE EVIDENCE IS THIS LANE'S OWN IMPORT TABLE: `moduleImportBindings` maps exactly the names a
+   * module-level import binds to the specifier it came from (`from tempfile import mkstemp` ->
+   * mkstemp -> tempfile), which the analyzer already certifies. A row is claimed only when that map
+   * resolves the name, and only for specifiers whose ROOT is in the committed `python-stdlib`
+   * vocabulary — the principled restriction the Lead set: third-party roots can be the project's own
+   * code in their checkout (kotlinx precedent) and project-rooted imports are local, so neither is
+   * cited; those stay NAMED in the D7 ledger until a project-module test exists.
+   */
+  private certifyImportedNameClaims(ctx: PythonContext): void {
+    for (const r of ctx.relationships) {
+      const md = r.metadata as Record<string, any> | undefined
+      if (!md || (md.isExternalTarget !== true && md.isStdlib !== true && md.externalReason === undefined)) continue
+      const target = String(r.target ?? "")
+      if (target.length === 0) continue
+      // BARE NAME only: `module:item` rows belong to the namespace citation, dotted routes are
+      // member access, not an imported name.
+      if (target.includes(":") || target.includes(".")) continue
+      if (md.importedName !== undefined) continue
+      // THE CLAIM IS ABOUT AN IMPORTED NAME, so the evidence must BE the imported-name marker: an
+      // imported-MODULE-member leaf (`json.dumps` names `dumps`) is a member access, not a name the
+      // file's import brought into scope — claiming it would be a claim the arbiter REFUTES.
+      if (md.externalReason !== "imported-name") continue
+      // FAIL-CLOSED AGAINST DECOYS THE LANE CAN SEE: a name THIS FILE declares itself resolves
+      // locally; claiming it would withdraw a real resolution (the decoy class the Lead's
+      // "resolved must not fall" guard names). Cross-file declarations are not visible without the
+      // project index, and that residual is MEASURED and reported rather than hidden.
+      if (ctx.declaredTypes.has(target)) continue
+      const specifier = ctx.moduleImportBindings.get(target)
+      if (specifier === undefined || specifier.length === 0) continue
+      if (specifier.startsWith(".")) continue
+      const root = specifier.split(".")[0] ?? ""
+      if (!PY_STDLIB_CITATION_ROOTS.has(root)) continue
+      md.importedName = { specifier, name: target }
+    }
+  }
+
   private certifyNamespaceCitations(ctx: PythonContext): void {
     for (const r of ctx.relationships) {
       const md = r.metadata as Record<string, any> | undefined
