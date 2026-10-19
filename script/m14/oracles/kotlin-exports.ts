@@ -88,7 +88,13 @@ const DECLARATIONS = new Set([
 ])
 
 /** Bodies that make a declaration a MEMBER rather than a top-level export. */
-const BODIES = new Set(["class_body", "enum_class_body"])
+const BODIES = new Set([
+  "class_body", "enum_class_body",
+  // A declaration inside a FUNCTION body / lambda / initializer is LOCAL, not a module export.
+  // (Measured over-derivation: local classes/functions inside `fun` bodies were projected.)
+  "function_declaration", "function_body", "block", "lambda_literal", "control_structure_body",
+  "secondary_constructor", "anonymous_initializer", "property_declaration",
+])
 
 /** Visibility keywords that remove a declaration from the module surface.
  *  `public` is absent on purpose: it is the default, so "no modifier" and
@@ -155,17 +161,27 @@ function declaredName(n: any): string | undefined {
  *  spellings put the keyword in a `visibility_modifier` and nowhere else, so
  *  reading the class would conflate `data` with `private`. */
 function declaredVisibility(n: any): string {
-  const stack: any[] = [n]
-  while (stack.length > 0) {
-    const x = stack.pop()
-    if (x && x.type === "visibility_modifier") {
+  // The visibility that decides THIS declaration's surface is the one in its OWN modifier wrapper —
+  // never a modifier belonging to a MEMBER. (Measured bug: a full-subtree scan made
+  // `class WithPrivateMember { private fun hidden() }` read as private and dropped the class from the
+  // projected surface; kotlin/exports-visibility pins the class as exported.)
+  const check = (x: any): string | null => {
+    if (!x) return null
+    if (x.type === "visibility_modifier") {
       const t = String(x.text ?? "").trim()
       if (t === "private" || t === "internal" || t === "protected" || t === "public") return t
     }
-    if (!x) continue
-    for (let i = 0; i < x.namedChildCount; i++) {
-      const c = x.namedChild(i)
-      if (c) stack.push(c)
+    return null
+  }
+  for (let i = 0; i < (n?.namedChildCount ?? 0); i++) {
+    const c = n.namedChild(i)
+    const direct = check(c)
+    if (direct) return direct
+    if (c && c.type === "modifiers") {
+      for (let j = 0; j < c.namedChildCount; j++) {
+        const v = check(c.namedChild(j))
+        if (v) return v
+      }
     }
   }
   return "public"
