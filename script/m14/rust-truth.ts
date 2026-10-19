@@ -182,20 +182,42 @@ export function deriveRustExportsTruth(root: any): RustTruthEdge[] {
       if (nm) names.add(text(nm))
     }
     if (t === "use_declaration" && isPublicItem(c)) {
-      // the re-bound names of a file-scope pub use (alias-aware; "*" binds no name)
-      const stack = [c]
-      while (stack.length > 0) {
-        const n = stack.pop()!
-        const nt = String(n.type)
+      // the re-bound names of a file-scope pub use, ALIAS-AWARE and BINDINGS-ONLY: a path's own
+      // segments are not published names (`pub use self::decompress::X` publishes X, never "self" or
+      // "decompress"); a wildcard binds no name.
+      const boundNames = (node: any): string[] => {
+        if (!node) return []
+        const nt = String(node.type)
         if (nt === "use_as_clause") {
-          const al = n.childForFieldName?.("alias") ?? n.namedChild(n.namedChildCount - 1)
-          if (al) names.add(text(al))
-          continue
+          const al = node.childForFieldName?.("alias") ?? node.namedChild(node.namedChildCount - 1)
+          return al ? [text(al)] : []
         }
-        if (nt === "use_wildcard") continue
-        if (nt === "identifier" || nt === "type_identifier" || nt === "self") { names.add(text(n)); continue }
-        for (let j = n.namedChildCount - 1; j >= 0; j--) stack.push(n.namedChild(j))
+        if (nt === "use_wildcard") return []
+        if (nt === "identifier" || nt === "type_identifier") return [text(node)]
+        if (nt === "scoped_identifier") {
+          const nm = node.childForFieldName?.("name") ?? node.namedChild(node.namedChildCount - 1)
+          return nm && nm.type !== "scoped_identifier" ? [text(nm)] : []
+        }
+        if (nt === "scoped_use_list") {
+          const list = node.childForFieldName?.("list") ?? node.namedChild(node.namedChildCount - 1)
+          const base = pathOf(node.childForFieldName?.("path") ?? node.namedChild(0))
+          const out: string[] = []
+          for (let j = 0; j < (list?.namedChildCount ?? 0); j++) {
+            const leaf = list.namedChild(j)
+            if (!leaf) continue
+            if (leaf.type === "self") { const last = leaf === null ? "" : base.split("::").filter(Boolean).pop() ?? ""; if (last) out.push(last); continue }
+            out.push(...boundNames(leaf))
+          }
+          return out
+        }
+        if (nt === "use_list") {
+          const out: string[] = []
+          for (let j = 0; j < node.namedChildCount; j++) out.push(...boundNames(node.namedChild(j)))
+          return out
+        }
+        return []
       }
+      for (const nm of boundNames(c.namedChild(0))) if (nm) names.add(nm)
     }
   }
   const edges = [...names].sort().map((name) => ({ label: "exports", from: RUST_FILE_SOURCE, target: name }))
@@ -282,18 +304,20 @@ export function deriveRustOverridesTruth(root: any): RustTruthEdge[] {
           const tn = nominalTypeNode(typeNode)
           const typeName = tn ? stripGenerics(text(tn)).split("::").filter(Boolean).pop() ?? "" : ""
           const traitName = stripGenerics(text(traitNode)).split("::").filter(Boolean).pop() ?? ""
-          // a generic PARAMETER of the impl is not a type (refuse the source endpoint)
+          // a generic PARAMETER of the impl is not a type (refuse the source endpoint):
+          // collect the impl's OWN `type_parameters` bindings and compare by name.
           let genericParam = false
           for (let i = 0; i < n.namedChildCount; i++) {
             const tp = n.namedChild(i)
-            if (tp && tp.type === "type_parameters") {
-              let g = tp
-              let count = 0
-              while (g && count++ < 30) {
-                const id = g.namedChild?.(0)
+            if (!tp || tp.type !== "type_parameters") continue
+            const stack2 = [tp]
+            while (stack2.length > 0) {
+              const g = stack2.pop()!
+              if (g.type === "type_parameter") {
+                const id = g.namedChild(0)
                 if (id && (id.type === "type_identifier" || id.type === "identifier") && text(id) === typeName) genericParam = true
-                g = id
               }
+              for (let j = 0; j < g.namedChildCount; j++) { const c = g.namedChild(j); if (c) stack2.push(c) }
             }
           }
           for (let i = 0; i < n.namedChildCount; i++) {

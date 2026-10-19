@@ -516,7 +516,7 @@ interface RustContext {
   // M59.A7 (#825): the constructor candidate carries the 1-based line of the
   // node that NAMES the type it constructs — the edge is emitted in a deferred
   // pass (after the symbol table exists), long after the node is in hand.
-  pendingInstantiations: Array<{ source: string; target: string; qualified: string; line?: number; bareSpelling?: boolean }>
+  pendingInstantiations: Array<{ source: string; target: string; qualified: string; line?: number; bareSpelling?: boolean; callScope?: string[] }>
   // startIndex of call_expression / macro_invocation nodes that sit directly
   // inside an await_expression (`.await`). The DFS visits the inner call node
   // anyway, so the await branch must NOT push a second edge — instead it
@@ -642,6 +642,43 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // reads, lambda params applied function-wide, UPPERCASE locals read
     // as path-pattern uses.
     const fnBindings = this.collectFunctionBindings(rootNode, valueOwners, useImported)
+
+    // THE BARE TUPLE-CONSTRUCTOR RULE (fixture `bare-tuple-constructor`, post-RUST-D30 contract):
+    // a bare PascalCase CALL is a construction only when this file declares a TUPLE-shape struct of
+    // that name AND the declaration is VISIBLE where the call is written (Rust scopes the local item
+    // to its own module and its descendants; the prelude's `Ok` is what a sibling module sees).
+    const tupleShapeScopes = ((): Map<string, string[][]> => {
+      const out = new Map<string, string[][]>()
+      const walkShapes = (n: any, scopePath: string[]): void => {
+        if (!n) return
+        if (n.type === "mod_item") {
+          const nm = n.childForFieldName?.("name") ?? n.namedChild(0)
+          const childPath = [...scopePath, nm ? String(nm.text) : ""]
+          for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c && c.type === "declaration_list") walkShapes(c, childPath) }
+          return
+        }
+        if (n.type === "struct_item") {
+          let tupleShape = false
+          for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c && c.type === "ordered_field_declaration_list") tupleShape = true }
+          if (tupleShape) {
+            const nm = n.childForFieldName?.("name") ?? n.namedChild(0)
+            if (nm) { const list = out.get(String(nm.text)) ?? []; list.push(scopePath); out.set(String(nm.text), list) }
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) walkShapes(n.namedChild(i), scopePath)
+      }
+      walkShapes(rootNode, [])
+      return out
+    })()
+    const scopePrefixOf = (outer: string[], inner: string[]): boolean => {
+      if (outer.length > inner.length) return false
+      for (let i = 0; i < outer.length; i++) if (outer[i] !== inner[i]) return false
+      return true
+    }
+    const bareTupleCtorVisible = (name: string, callScope: string[]): boolean => {
+      for (const declScope of tupleShapeScopes.get(name) ?? []) if (scopePrefixOf(declScope, callScope)) return true
+      return false
+    }
 
     if (rootNode.hasError) {
       const errStack: Node[] = [rootNode]
@@ -1035,11 +1072,12 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (const cand of ctx.pendingInstantiations) {
         if (!inFile.has(cand.target)) continue
-        // RUST-D30: a bare single-segment callee never resolves to a same-named
-        // local type — the prelude owns those spellings (`Ok`, `Some`, `None`,
-        // `Err`). Dropped here rather than at the candidate, so the rule sits
-        // where the ambiguity actually becomes visible.
-        if (cand.bareSpelling) continue
+        // POST-RUST-D30 (fixture `bare-tuple-constructor`): a bare single-segment callee IS a
+        // construction when this file declares a TUPLE-shape struct of that name that is VISIBLE at
+        // the call site (module scoping decides; the prelude owns the spelling elsewhere). A bare
+        // callee with no visible in-file tuple shape stays dropped — the old blanket ban survives
+        // exactly where it was right.
+        if (cand.bareSpelling && !bareTupleCtorVisible(cand.target, cand.callScope ?? [])) continue
         ctx.relationships.push({
           source: cand.source,
           target: cand.target,
@@ -1398,8 +1436,13 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
      * carries `relationshipType: re_export`, the row is the unit.
      */
     const pushedExportNames = new Set(ctx.exports.map((e) => e.name))
-    const publishExport = (source: string, name: string, line: number | undefined, kind: string, symbolKind: string): void => {
-      if (!name || !importableUnits.has(name)) return
+    const publishExport = (source: string, name: string, line: number | undefined, kind: string, symbolKind: string, allowForeignName = false): void => {
+      // `allowForeignName` is for RE-EXPORTS: `pub use dep::Thing` publishes `Thing` through this
+      // module even when this file does not DECLARE it — the name is what a consumer imports through
+      // this module, and dropping it made the export surface narrower than the source contract
+      // (measured exports divergence 271 truth vs 140 analyzer on ripgrep). A plain pub ITEM still
+      // must be a file-scope importable unit.
+      if (!name || (!allowForeignName && !importableUnits.has(name))) return
       const key = `${source}::exports::${name}`
       if (seenExports.has(key)) return
       seenExports.add(key)
@@ -1431,16 +1474,36 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         // The enclosing inline module, outermost first — the same walk the R1
         // read surface uses, so an `imports` source and a `calls` source agree.
         const mods = this.enclosingMods(n)
-        // R7: the importer of a `use` path is the MODULE that writes it, and at
-        // file scope that module is the file. `"(file)"` is the family's declared
-        // spelling for that (real-graphql-analyzer.ts:1045) and `fileLevel: true`
-        // is the M60/#910 flag the store acts on — it rewrites `source_external`
-        // to the project-relative path, which is the column
-        // src/lsp/graph_request.ts's file-level reader joins on. The previous
-        // literal `"global"` was the source of 503 of 610 ripgrep `imports` rows
-        // and is not a name any declaration has.
+        // R7: the importer of a `use` path is the SCOPE that writes it — Rust's own three scopes
+        // (RUST-D31, the `use-import-edges` fixture): a function body's `use` is scoped to the
+        // FUNCTION, an inline `mod`'s to the MODULE, and only a file-top-level `use` to the file.
+        // `"(file)"` is the family's declared spelling for the file scope (the M60/#910 flag
+        // `fileLevel: true` tells the store to rewrite it to the project-relative path). Before
+        // this, every `use` without an enclosing inline `mod` — INCLUDING every function-local use —
+        // was sourced at the file, which contradicted the documented contract and made the
+        // differential report one MISSING + one UNEXPLAINED pair per function-scope use.
+        const scope = ((): { kind: "file" | "module" | "function"; name: string } => {
+          let cur: any = n.parent ?? null
+          let guard = 0
+          while (cur && guard++ < 64) {
+            if (cur.type === "function_item") {
+              const fnName = cur.childForFieldName?.("name")
+              return { kind: "function", name: fnName ? String(fnName.text) : RUST_FILE_SOURCE }
+            }
+            if (cur.type === "mod_item") {
+              const modName = cur.childForFieldName?.("name") ?? cur.namedChild(0)
+              return { kind: "module", name: modName ? String(modName.text) : RUST_FILE_SOURCE }
+            }
+            cur = cur.parent
+          }
+          return { kind: "file", name: RUST_FILE_SOURCE }
+        })()
+        // THE FILE CLAIM KEEPS ITS OWN FILE-SCOPE ARITHMETIC (the verified 7,491 claims are priced on
+        // it): the claim is about the PATH's file, which is the same dependency at any scope, so the
+        // crate-root candidate selection stays file-scope-based. The SOURCE spelling and the declared
+        // scope metadata are the scope facts above; they never feed the claim.
         const atFileScope = mods.length === 0
-        const source = atFileScope ? RUST_FILE_SOURCE : mods[mods.length - 1]
+        const source = scope.name
         const isPublic = this.isUnrestrictedPublic(n)
         // A `pub use` publishes its RE-BINDS; everything else publishes nothing.
         const exportSource = isPublic && atFileScope ? RUST_FILE_SOURCE : null
@@ -1462,7 +1525,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           // all, which meant the mutant was measuring a dead branch.
           if (exportSource) {
             for (const item of reExports) {
-              publishExport(exportSource, item, row.line, "re_export", "symbol")
+              publishExport(exportSource, item, row.line, "re_export", "symbol", true)
               if (importableUnits.has(item) && !pushedExportNames.has(item)) {
                 pushedExportNames.add(item)
                 ctx.exports.push({
@@ -1513,12 +1576,17 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: {
               rustSpecific: true,
               isImport: true,
-              relationshipType: "use_declaration",
+              // RUST-D31 declared scope contract (file / module / function) — the fixture pins all three.
+              importScope: scope.kind,
+              evidenceClass: "import_based",
+              relationshipType: "use_import",
               modulePath: row.module,
               moduleKind: row.kind,
-              // R7 / M60 #910: the source of a file-scope dependency is the
-              // IMPORTING FILE, and this flag is what makes the store write it.
-              ...(atFileScope ? { fileLevel: true } : {}),
+              // R7 / M60 #910: the source of a FILE-SCOPE dependency is the IMPORTING FILE, and this
+              // flag is what makes the store write the project-relative path. It keys on the DECLARED
+              // scope, not on "no inline mod": a function-local `use` is sourced at the function, so
+              // it must not be rewritten as a file-level edge.
+              ...(scope.kind === "file" ? { fileLevel: true } : {}),
               // The names the declaration brings into scope. Carried, not
               // emitted as edges: a binding is not a dependency, and the same
               // binding is re-declared by every file that imports it.
@@ -1764,7 +1832,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     /** trait name (this file) -> its method names. */
     const localTraitMethods = new Map<string, Set<string>>()
     /** impl (type, trait) -> its method names. */
-    const impls: Array<{ type: string; trait: string; methods: Set<string> }> = []
+    const impls: Array<{ type: string; trait: string; methods: Set<string> ; node: any }> = []
     const seen = new Set<string>()
 
     const walk: Node[] = [rootNode]
@@ -1810,7 +1878,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
                 }
               }
             }
-            impls.push({ type: typeName, trait: traitName, methods: ms })
+            impls.push({ type: typeName, trait: traitName, methods: ms, node: n })
           }
         }
       }
@@ -1820,7 +1888,29 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // A GENERIC PARAMETER is not a type: `impl<'a, M: Greeter> Greeter for &'a M` supplies the method
+    // for one caller's reference to whatever M is bound to. Publishing `M.method` names a type
+    // parameter as a type (fixture `trait-impl-overrides`, R8 applied to the SOURCE endpoint).
+    const genericParamsOfImpl = (implNode: any): Set<string> => {
+      const out = new Set<string>()
+      for (let i = 0; i < implNode.namedChildCount; i++) {
+        const tp = implNode.namedChild(i)
+        if (!tp || tp.type !== "type_parameters") continue
+        const stack2 = [tp]
+        while (stack2.length > 0) {
+          const n = stack2.pop()!
+          if (n.type === "type_parameter") {
+            const id = n.namedChild(0)
+            if (id && (id.type === "type_identifier" || id.type === "identifier")) out.add(String(id.text))
+          }
+          for (let j = 0; j < n.namedChildCount; j++) { const c = n.namedChild(j); if (c) stack2.push(c) }
+        }
+      }
+      return out
+    }
     for (const impl of impls) {
+      const genericParams = genericParamsOfImpl(impl.node)
+      if (genericParams.has(impl.type)) continue
       for (const m of impl.methods) {
         const declared = localTraitMethods.get(impl.trait)
         // A trait declared here that does NOT declare this method is not an
@@ -2232,8 +2322,10 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     let ownerName = parent?.name
     let ownerKind = parent?.kind
 
-    if (parent?.kind === ASTEngine.SymbolKind.Class && parent.metadata?.type === "impl") {
-      ownerName = parent.metadata?.target
+    if (parent?.metadata?.type === "impl") {
+      // the impl block is a CONTAINER: its members are owned by the implemented TYPE (nominal name),
+      // never by the container's distinct `<Type>::impl` identity.
+      ownerName = parent.metadata?.target ?? parent.name
     }
     // Trait symbols should expose themselves as Interface for ownerKind
     if (parent?.kind === ASTEngine.SymbolKind.Trait) {
@@ -2487,7 +2579,15 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `anonymous`), and its source spelling is kept in metadata — a NAME field
     // may only carry a name.
     const nominal = this.implTypeSymbolName(typeNode)
-    const implName = nominal ?? RUST_UNNAMED_IMPL
+    // IMPL-SYMBOL DUPLICATION FIX (task-36 defect 1, Lead-approved direction): the impl block is a
+    // CONTAINER for its members, not a second DECLARATION of the type. Publishing it under the type's
+    // own name put a duplicate declaration in the project key space — `struct Foo` + `impl Foo` read as
+    // TWO declarations, so the unique-bare-name rule refused every Foo (the measured 1,672-row
+    // instantiates artifact and the same-file ambiguity across instantiates/exports/references/uses).
+    // The block keeps a distinct qualified identity `<Type>::impl`; its members keep the NOMINAL type as
+    // their owner (`metadata.target` below), and the `implements` edge keeps the type as its SOURCE —
+    // so every observable edge surface is unchanged except the duplicate declaration itself.
+    const implName = nominal === null ? RUST_UNNAMED_IMPL : `${nominal}::impl`
 
     // Use SymbolKind.Impl for Rust impl blocks
     const symbol = this.createSymbol(
@@ -2495,13 +2595,13 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       ASTEngine.SymbolKind.Impl,
       node,
       parent,
-      nominal ? { type: "impl" } : { type: "impl", implementedType: typeNode.text },
+      nominal ? { type: "impl", target: nominal } : { type: "impl", implementedType: typeNode.text },
     )
     ctx.symbols.push(symbol)
 
     if (traitNode && traitName) {
       ctx.relationships.push({
-        source: implName,
+        source: nominal ?? implName,
         target: this.extractTraitName(traitNode),
         type: ASTEngine.RelationshipType.Implements,
         // INCOMING_RUST: same absent-confidence defect as `calls` — 252 of 252
@@ -3806,6 +3906,19 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         qualified,
         line: this.nodeLine(instNameNode),
         bareSpelling,
+        ...(bareSpelling ? { callScope: ((): string[] => {
+          const scopePath: string[] = []
+          let cur: any = node.parent ?? null
+          let guard = 0
+          while (cur && guard++ < 128) {
+            if (cur.type === "mod_item") {
+              const nm = cur.childForFieldName?.("name") ?? cur.namedChild(0)
+              scopePath.push(nm ? String(nm.text) : "")
+            }
+            cur = cur.parent
+          }
+          return scopePath.reverse()
+        })() } : {}),
       })
     }
   }
