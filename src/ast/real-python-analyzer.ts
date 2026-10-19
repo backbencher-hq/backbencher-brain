@@ -6565,6 +6565,11 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // from-import item always differs from its module's basename (`from os import path`), so the
       // shape test is the same evidence test.
       if (target === specifier || target === (specifier.split(".").pop() ?? "")) continue
+      // THE ARBITER'S MAP IS KEYED BY THE CERTIFIER'S OWN EVIDENCE: only rows the analyzer certified
+      // as an imported NAME are guaranteed to have a matching `module:item` item in the run's import
+      // map. Anything else (aliased/relative/conditional imports, `import m` attribute uses, dotted
+      // module spellings the gate normalises) is WITHHELD — the 1,524 bindFAIL class.
+      if (md.externalReason !== "imported-name") continue
 
       const root = specifier.split(".")[0] ?? ""
       if (!PY_STDLIB_CITATION_ROOTS.has(root)) continue
