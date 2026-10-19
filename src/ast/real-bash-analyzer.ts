@@ -2946,6 +2946,33 @@ private extractAssignment(
   private externalCommandEvidence(cmdName: string, isLocal: boolean): Record<string, unknown> {
     if (isLocal) return {}
     if (!cmdName.includes("/")) return {}
+    // BD12-RELATIVE (fleet baseline 2026-10-19, the 102 whole-population refutations): a RELATIVE
+    // path invocation (`./test.sh`, `./build.sh`, `./hack/pin-dependency.sh`, `../common/setup.sh`)
+    // names a file of THIS PROJECT as often as not — the gate's admitted-file check found every one
+    // of the 102 refuted rows inside the corpus, from Paket's `./build.sh` to ansible's
+    // `./test.sh` ×9. A single-file analyzer cannot know whether a relative path resolves inside
+    // the project; only the gate can. Withholding the claim for RELATIVE paths is the same rule
+    // the function already applies to bare names ("the wider rule's 82 refuted claims are the price
+    // of pretending otherwise"): the claim is kept for paths a project cannot contain — absolute
+    // (`/usr/bin/env`) and rooted tool paths — and withheld where the corpus is the only one that
+    // can answer.
+    // THE GENERAL RULE (measured refinement): ANY path without a leading separator is RELATIVE —
+    // `./x.sh`, `../x.sh`, `.ci/scripts/x.sh`, `hack/x.sh`, `build/run.sh` are all spellings of
+    // "resolve from here", and the whole-population arm refuted 35 MORE of them after the
+    // ./-prefix cut removed the first 102. A project file is the likeliest referent of every one.
+    // The claim is kept ONLY for paths a project cannot contain: ABSOLUTE unix (`/usr/bin/env`)
+    // and Windows-drive (`C:\...`) spellings.
+    if (cmdName.startsWith("/")) return { isExternal: true, externalEvidence: "pathInvokedCommand" }
+    // Windows drive (`C:\x` / `C:/x`), CHAR SCAN not a regex (the no-regex policy caught this
+    // line once already — the Lead runs the census with every edit now).
+    if (
+      cmdName.length >= 3 &&
+      ((cmdName.charCodeAt(0) >= 65 && cmdName.charCodeAt(0) <= 90) || (cmdName.charCodeAt(0) >= 97 && cmdName.charCodeAt(0) <= 122)) &&
+      cmdName.charCodeAt(1) === 58 /* : */ &&
+      (cmdName.charCodeAt(2) === 92 /* \ */ || cmdName.charCodeAt(2) === 47 /* / */)
+    ) return { isExternal: true, externalEvidence: "pathInvokedCommand" }
+    // everything else that carries a separator is RELATIVE -> withheld
+    return {}
     return { isExternal: true, externalEvidence: "pathInvokedCommand" }
   }
 
