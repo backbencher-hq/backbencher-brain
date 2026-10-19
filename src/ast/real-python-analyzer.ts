@@ -1417,6 +1417,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // shadows the builtin at that name; the namespace certifier refuses import-bound names).
     this.certifyImportEvidenceClaims(ctx)
     this.certifyNamespaceCitations(ctx)
+    this.certifyOwnerMemberAbsentClaims(ctx, context)
     // HELD (2026-10-19): `certifyImportedNameClaims` is implemented but NOT CALLED. The cap-50 arm
     // with the claim live read bindOK 266 / bindFAIL 2 and erodes extOK by 125 (rows whose imported
     // name the file also imports were already verified through another claim kind, and the
@@ -6579,6 +6580,94 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       const root = specifier.split(".")[0] ?? ""
       if (!PY_STDLIB_CITATION_ROOTS.has(root)) continue
       md.importedName = { specifier, name: target }
+    }
+  }
+
+
+  /**
+   * THE `ownerMemberAbsent` CLAIM (Lead instrument, charter §18.32; INDEXED ARM ONLY, FAIL-CLOSED).
+   *
+   * A calls/uses row that carries `metadata.owner` is a row whose receiver type the lane PROVED, and
+   * the production owner channel DECLINED it because no member of the target name is declared under
+   * that owner. "This owner type (inheritance-closed) declares no member with this name" is a fact
+   * the project index can VERIFY, so the row is a CLAIM, not a resolution: the arbiter counts it in
+   * the ext/claimed family, and reads it only where the name model has nothing (decls === 0), so it
+   * cannot displace a binding.
+   *
+   * EVIDENCE, and why it is right by construction: the index carries `typeKinds`, `typeMembers` and
+   * `typeBases` (PYTHON_DECLARATION_SPEC HAS a baseResolver — so the closure is INHERITANCE-CLOSED,
+   * not direct-members-only), and it is built from the same project the run's symbols come from.
+   * The gate's own evidence is the same closure (gate: `ownerMembers`, built from run symbols +
+   * `superTypes`, leaf names). Divergences that could REFUTE are withheld rather than risked:
+   *   - owner not a class in the index, or declared more than once (`symbolCounts != 1`) => skip;
+   *   - an ancestor name the index cannot RESOLVE while the project declares symbols of that name
+   *     (`symbolCounts > 0`) => skip (the two closures could differ on its members);
+   *   - the member is declared somewhere in this file's own published symbols => skip;
+   *   - the row already carries a specific claim marker => skip (never displace a claim kind);
+   *   - any ancestor could not be resolved but contributed nothing — the gate's closure does the
+   *     same (unknown names contribute no members), so this is the shared reading, not a shortcut.
+   * FAIL-CLOSED CONTROL: without `BB_PY_OWNER_MEMBER_ABSENT=1` or without a COMPLETE index this
+   * method returns immediately, so the no-index arm and every fixture are byte-identical.
+   */
+  private certifyOwnerMemberAbsentClaims(ctx: PythonContext, context?: ASTEngine.AnalyzeContext): void {
+    if (process.env.BB_PY_OWNER_MEMBER_ABSENT !== "1") return
+    const index = context?.projectIndex
+    if (!index || index.complete !== true) return
+    const kinds = index.typeKinds
+    const members = index.typeMembers
+    const bases = index.typeBases
+    if (!kinds || !members || !bases) return
+    const counts = index.symbolCounts
+    // The gate's own closure shape: leaf names, cycle-safe, unknown names contribute nothing.
+    const leaf = (n: string): string => {
+      const t = n.replace(/[<[].*$/, "").trim()
+      const segs = t.split(/[.:]/).filter((x) => x.length > 0)
+      return segs.length > 0 ? segs[segs.length - 1]! : t
+    }
+    const closureOf = (owner: string): Set<string> | null => {
+      const out = new Set<string>()
+      const seen = new Set<string>([owner])
+      const stack = [owner]
+      let unresolvedAncestorRisk = false
+      while (stack.length > 0) {
+        const cur = stack.pop() as string
+        for (const m of members.get(cur) ?? []) out.add(m)
+        for (const raw of bases.get(cur) ?? []) {
+          const up = leaf(raw)
+          if (up === "" || seen.has(up)) continue
+          seen.add(up)
+          if (kinds.has(up) || (counts?.get(up) ?? 0) === 0) {
+            stack.push(up)
+          } else {
+            // declared in the project but not class-like in the index: its member set is unknowable
+            // here while the gate may still hold it => the claim could be REFUTED. Withhold.
+            unresolvedAncestorRisk = true
+          }
+        }
+      }
+      return unresolvedAncestorRisk ? null : out
+    }
+    const CLAIM_MARKERS = [
+      "isExternalTarget", "isStdlib", "externalReason", "externalSpecifier",
+      "localBinding", "importedBinding", "importedName", "languageNamespace",
+      "projectIndexResolution", "projectLocalModule", "isImportFile", "importOutsideProject",
+      "remoteRef", "sourcePath", "cause", "ownerMemberAbsent",
+    ]
+    const ownNames = new Set<string>()
+    for (const sym of ctx.symbols ?? []) if (sym?.name) ownNames.add(String(sym.name))
+    for (const r of ctx.relationships) {
+      const md = r.metadata as Record<string, any> | undefined
+      if (!md || typeof md.owner !== "string" || md.owner.length === 0) continue
+      const keys = Object.keys(md)
+      if (keys.some((k) => CLAIM_MARKERS.some((c) => k === c || k.startsWith(c)))) continue
+      const target = String(r.target ?? "")
+      if (target.length === 0 || target.includes(":") || target.includes(".")) continue
+      if (ownNames.has(target)) continue
+      if (!kinds.has(md.owner)) continue
+      if ((counts?.get(md.owner) ?? 0) !== 1) continue
+      const closed = closureOf(md.owner)
+      if (closed === null || closed.has(target)) continue
+      md.ownerMemberAbsent = { owner: md.owner, member: target }
     }
   }
 
