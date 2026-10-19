@@ -749,6 +749,33 @@ export interface CSharpDeclaredTypeRef {
 /** Built-ins the grammar spells as ordinary identifiers, so no node type excludes them. */
 const CSHARP_BUILTIN_TYPE_SPELLINGS = new Set(["dynamic", "nint", "nuint", "var"])
 
+/**
+ * CITATION VOCABULARY — literal copy of `DOTNET_PLATFORM_LIBRARIES` from `script/m14/citations.ts`
+ * (vocabulary id `dotnet-platform-libraries`, Lead-committed 2026-10-19). Analyzers must not import
+ * `script/`, so the committed list is copied here; it is the SEVEN namespaces the csharp verdict arm
+ * measured as `externalUnverified` (`ext?`) imports — System.Text.Json 635 · Newtonsoft.Json 43 ·
+ * System.Xml 17 · System.Net.Http.Json 8 · Microsoft.AspNetCore.Http.Json 1 ·
+ * BenchmarkDotNet.Exporters.Csv 1 · .Json 1. A target outside this list gets NO marker (fail-closed),
+ * and every claimed row also carries `languageNamespacePolicy: "strict-absent"` so the citation can
+ * never displace a name-model resolution (the cpp `std::move` decoy discipline).
+ */
+const DOTNET_CITATION_ROOTS: readonly string[] = [
+  "System.Text.Json",
+  "Newtonsoft.Json",
+  "System.Xml",
+  "System.Net.Http.Json",
+  "Microsoft.AspNetCore.Http.Json",
+  "BenchmarkDotNet.Exporters.Csv",
+  "BenchmarkDotNet.Exporters.Json",
+]
+
+/** The committed roots a namespace import's target falls under (prefix match on dot boundaries). */
+function dotnetCitationRoots(target: string): string[] {
+  const t = String(target ?? "")
+  if (t.length === 0) return []
+  return DOTNET_CITATION_ROOTS.filter((root) => t === root || t.startsWith(`${root}.`))
+}
+
 /** Callables whose name a parameter / return / local attributes its dependency to. */
 const CSHARP_CALLABLE_DECLARATIONS = new Set([
   "method_declaration", "constructor_declaration", "delegate_declaration",
@@ -1338,6 +1365,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // earned: a `using` directive is a DECLARATION written verbatim in the file,
           // while the references row carries R9's normalisation (D3 strips a generic
           // alias's type arguments off the module name).
+          // CITATION CLAIM (task-37 follow-up 2): a `using` directive naming a COMMITTED .NET
+          // platform/library namespace carries the namespace claim with `strict-absent`, so the
+          // arbiter verifies the external target from the committed list and never lets the claim
+          // displace a name-model answer. Emitted on `imports` edges ONLY, and only when the target
+          // falls under a committed root (no match ⇒ NO marker: unaffected edges are byte-identical;
+          // the extern-alias row below is an assembly alias, never a namespace, and stays unmarked).
+          const citationRoots = dotnetCitationRoots(text)
           relationships.push({
             source: "root",
             target: text,
@@ -1350,6 +1384,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               relationshipType: "using_import",
               importKind: usingKind,
               ...(usingAlias ? { isUsingAlias: true, usingAlias } : {}),
+              ...(citationRoots.length > 0
+                ? { languageNamespace: citationRoots, languageNamespacePolicy: "strict-absent" }
+                : {}),
             },
           })
         }
