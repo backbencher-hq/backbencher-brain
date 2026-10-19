@@ -2470,6 +2470,22 @@ export function deriveClojureExportsTruth(root: Node): RelEdge[] {
       }
       void hasMetaPrivate
     }
+    // ATTRIBUTE-MAP spelling (analyzer A2 parity, task-35 Part B): the map between the
+    // name/docstring and the params is the var's attr-map, and Clojure merges it into the
+    // metadata — `(defmacro mk-am {:private true} [t] …)` is PRIVATE. The analyzer now
+    // computes this too; a truth that kept exporting those names would fabricate MISSING.
+    const nameAt = (() => {
+      let head = 0
+      while (head < n.namedChildCount && n.namedChild(head)?.type === "meta_lit") head++
+      return head + 1
+    })()
+    for (let i = nameAt + 1; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (!c) continue
+      if (c.type === "vec_lit" || c.type === "list_lit") break
+      if (c.type === "str_lit") continue
+      if (c.type === "map_lit" && /:private(?:\s+true)?[\s}]/.test(c.text ?? "")) return true
+    }
     return false
   }
   // DATA IS NOT CODE: a definition inside quote/comment/#_ is a value, not this file's export.
