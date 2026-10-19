@@ -707,3 +707,22 @@ Lead's narrowed arm measures **ext? 2,446 → 0 · extOK 507,159 → 510,787 (+3
 withdrawals were restored, the remaining 135 are the correct readings of the 127 external-citation
 pairs (JLS 6.5.5.1). Fixtures: flat fail-closed pin + new sub-directory `java/citation-project`
 (positive citations against a real project index + a file-shadowing negative), 75/0.
+
+### 2026-10-19d — STATIC-IMPORT IMPORTED-BINDING CLAIM (Lead claim kind)
+
+`import static pkg.Type.member;` brings a member name into the file's scope; when that name is used
+unqualified the calls/uses edge's target IS the imported binding, and a name model that resolves it
+against a project declaration is wrong. The lane now publishes the Lead's imported-binding claim:
+* **evidence** on every static single-member import edge — `metadata.importedBindings: [member]` and
+  `metadata.module: <container as written>`, the exact key/specifier the gate builds its
+  `importsByFile` evidence map from;
+* **claim** on the target row — `metadata.importedBinding: {specifier, binding}` — only for EXTERNAL
+  containers (JVM roots + `java-platform-libraries`), only when the FILE does not declare the name
+  (a declaration shadows the import), only for receiverless calls / bare reads (a receiver call's
+  target is a member leaf), and never for on-demand static imports.
+The arbiter verifies the claim from the run's own import evidence into its own column (`bindOK`),
+never folds it into `resolved`, and a contradicted claim is a failure. Fixture
+`java/library-import-binding` pins the evidence (array + scalar), the project-static-import refusal,
+the file-shadowed refusal and the receiver refusal; the positive claim is an object-valued field the
+fixture matcher cannot yet compare, so it is verified by the arm's `bindOK` column and the lane
+probe (recorded in the commit) until the matcher gains object comparison.

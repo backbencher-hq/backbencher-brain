@@ -599,6 +599,15 @@ type JavaReceiverTypeIndex = {
  */
 const JAVA_LIBRARY_NAMESPACE_CITATIONS: readonly string[] = ["jakarta", "androidx", "dotty.tools", "org.yaml"]
 
+/**
+ * EXTERNAL STATIC-IMPORT CONTAINERS — the roots a `staticImport` / imported-binding claim may
+ * cite. An import from one of these roots names a library/platform member, so the bound name is
+ * NOT a project declaration; a static import from any other root may name the project's own class
+ * and must resolve internally instead of being claimed. Both lists are Lead-owned vocabulary
+ * (JLS §6.1 reserved roots; `script/m14/citations.ts` `java-platform-libraries`).
+ */
+const JAVA_EXTERNAL_STATIC_IMPORT_ROOTS: readonly string[] = ["java.", "javax.", "jakarta.", "jdk.", "sun.", "com.sun.", "androidx.", "dotty.tools.", "org.yaml."]
+
 export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -2581,6 +2590,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // existing `namespace` channel — a CITATION, never a resolution. Subset-only: the list above
     // is copied from `script/m14/citations.ts` and an undeclared root REFUTES.
     this.attachJavaLibraryNamespaceCitations(relationships, symbols, receiverTypes, context?.projectIndex)
+    // IMPORTED-BINDING CLAIM (Lead imported-binding claim kind, 2026-10-19): static single-member
+    // imports bind names the file uses unqualified; the claim states exactly that and the arbiter
+    // verifies it from the run's OWN import evidence published below.
+    this.attachJavaImportedBindingClaims(relationships, symbols, receiverTypes)
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
@@ -3526,6 +3539,80 @@ currentPackage,
     }
     visit(node)
     return out
+  }
+
+  /**
+   * THE IMPORTED-BINDING CLAIM FOR STATIC IMPORTS (Lead claim kind, live 2026-10-19).
+   *
+   * Two halves, and BOTH are needed because the arbiter verifies one against the other:
+   *
+   * 1. EVIDENCE ON THE IMPORT EDGE. For every `import static pkg.Type.member;` the analyzer
+   *    publishes `metadata.importedBindings = [member]` and `metadata.module = pkg.Type` (the
+   *    CONTAINER as written — the gate's evidence map is keyed by exactly that specifier). The
+   *    written target stays the full member path; this is additive metadata.
+   *
+   * 2. THE CLAIM ON THE USE EDGE. A calls row whose call expression is a BARE name (no receiver)
+   *    or a uses row that is a BARE READ, whose target is the bound name and whose import's
+   *    container root is EXTERNAL, carries
+   *       metadata.importedBinding = { specifier: pkg.Type, binding: member }.
+   *    The arbiter verifies it against the evidence map (own column: bindOK), never folds it into
+   *    resolved, and refutes a claim whose evidence contradicts it.
+   *
+   * REFUSALS, each a way the claim could become FALSE: a container that is NOT external (a project
+   * class's static member is project code and must resolve internally); a name the FILE itself
+   * declares (the declaration shadows the import — the call/read is not the imported binding); a
+   * receiver-carrying call (its target is a member leaf, not the bound name); an on-demand static
+   * import (`import static X.*` binds no name this file states).
+   */
+  private attachJavaImportedBindingClaims(
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    index: JavaReceiverTypeIndex,
+  ): void {
+    if (index.staticImportPaths.size === 0) return
+    const fileDeclared = new Set<string>()
+    for (const s of symbols) if (s && s.name) fileDeclared.add(s.name)
+    const isExternalContainer = (container: string): boolean => {
+      for (const root of JAVA_EXTERNAL_STATIC_IMPORT_ROOTS) if (container.startsWith(root)) return true
+      for (const root of JAVA_LIBRARY_NAMESPACE_CITATIONS) if (container.startsWith(`${root}.`)) return true
+      return false
+    }
+    // 1) evidence on the import edges
+    for (const r of relationships) {
+      if (String(r.type ?? "") !== "imports") continue
+      const md = r.metadata as Record<string, unknown> | undefined
+      if (!md || typeof md !== "object") continue
+      if (md.isStatic !== true || md.isWildcard === true) continue
+      const target = String(r.target ?? "")
+      const dot = target.lastIndexOf(".")
+      if (dot <= 0 || dot >= target.length - 1) continue
+      const container = target.slice(0, dot)
+      const member = target.slice(dot + 1)
+      if (!isExternalContainer(container)) continue
+      md.importedBindings = [member]
+      md.module = container
+    }
+    // 2) claims on the use edges
+    for (const r of relationships) {
+      const label = String(r.type ?? "")
+      if (label !== "calls" && label !== "uses") continue
+      const md = r.metadata as Record<string, unknown> | undefined
+      if (!md || typeof md !== "object") continue
+      if (md.importedBinding !== undefined) continue
+      const target = String(r.target ?? "")
+      if (!isPlainJavaIdentifier(target)) continue
+      if (fileDeclared.has(target)) continue
+      const container = index.staticImportPaths.get(target)
+      if (!container || !isExternalContainer(container)) continue
+      // THE TARGET MUST BE THE BINDING ITSELF, not a member leaf of some receiver.
+      if (label === "calls") {
+        const callExpr = typeof md.javaCallExpression === "string" ? md.javaCallExpression : ""
+        if (callExpr.length === 0 || callExpr.indexOf(".") !== -1) continue // receiver-carrying call
+      } else if (md.isBareRead !== true) {
+        continue // a field-access read's target is a member leaf, not the bound name
+      }
+      md.importedBinding = { specifier: container, binding: target }
+    }
   }
 
   /**
