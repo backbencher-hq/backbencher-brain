@@ -185,6 +185,12 @@ import { deriveRubyEdges as deriveRubyLaneEdges, RUBY_ORACLE_LABELS as RUBY_LANE
 // SCALA lane oracle additions (2026-10-19, fleet phase): imports/exports emitted-but-unaudited labels,
 // derived by the lane-owned syntax truth — one implementation, imported rather than mirrored.
 import { deriveScalaImportTruth, deriveScalaExportTruth } from "./scala-truth"
+// ELIXIR fleet-phase wiring (2026-10-19): three MATURE but UNWIRED oracles already existed in
+// oracles/elixir-contains.ts (contains 14,389 · exports 7,451 · uses 6,032 edges were audited by
+// nothing), plus the lane's new gap-truth module for imports and the ruled raise/struct
+// instantiation spellings. This is the same "finished-but-unconnected" shape the M60 notes record.
+import { deriveElixirContainsTruth, deriveElixirUsesTruth, deriveElixirExportsTruth } from "./oracles/elixir-contains"
+import { deriveElixirImportsTruth, deriveElixirCallInstantiationTruth } from "./oracles/elixir-gap-truth"
 import { deriveSolidityImportTruth } from "./oracles/solidity-imports-truth"
 import { deriveSolidityEdges, deriveSolidityCallReferenceEdges } from "./oracles/solidity"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
@@ -15727,7 +15733,10 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
     if (a) return a.text
     if (args.namedChildCount > 0) {
       const f = args.namedChild(0)
-      if (f?.type === "alias" || f?.type === "identifier" || f?.type === "dot") return f.text
+      // ELIXIR fleet-phase fix (2026-10-19): the analyzer's extractDirectiveName accepts an ATOM as
+      // the first argument (`import :lists, as: MyList`), so the truth must too — the text fallback
+      // composed ":lists, as: MyList" and surfaced as a permanent MISSING (measured: 1 on the draw).
+      if (f?.type === "alias" || f?.type === "identifier" || f?.type === "dot" || f?.type === "atom") return f.text
     }
     let out = ""
     for (const ch of args.text) { if (ch === "(" || ch === ")") continue; out += ch }
@@ -24368,6 +24377,23 @@ async function main() {
         for (const e of deriveElixirEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // FLEET PHASE (2026-10-19): the three oracles that already existed and were wired to nothing
+        // (contains/exports/uses), plus the lane's imports + ruled instantiation spellings.
+        for (const e of deriveElixirContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveElixirUsesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveElixirExportsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveElixirImportsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveElixirCallInstantiationTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "erlang") {
         // ER wave (M14 #275 F5): dedicated erlang
@@ -24559,7 +24585,7 @@ async function main() {
       // strict superset of the exclusion: it drops `overrides` from the compared set for
       // dart and go as well as csharp/swift/cpp. Taking the local list would have
       // re-admitted two lanes whose override oracles were deliberately left unwired.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" && lang !== "go" ? ["overrides"] : []), ...(lang === "hcl" ? ["calls", "uses", "references", "imports", "exports"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" && lang !== "go" && lang !== "elixir" ? ["overrides"] : []), ...(lang === "hcl" ? ["calls", "uses", "references", "imports", "exports"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
@@ -24750,6 +24776,10 @@ async function main() {
           // FLEET PHASE (2026-10-19): imports and exports were emitted but compared by nothing;
           // mixes_in is the new canonical label from the heritage reclassification (§21.4).
           ...(lang === "scala" ? ["imports", "exports", "mixes_in"] : []),
+          // FLEET PHASE (2026-10-19): elixir's three mature-but-unwired oracles are now pushed above,
+          // so the labels become comparable; overrides is REMOVED until its oracle lands (named D4
+          // residual in the verdict rather than a compared-with-no-truth disclosure).
+          ...(lang === "elixir" ? ["contains", "exports", "uses", "imports"] : []),
           // JD14 (M60, 2026-09-26): javascript joins the CONTAINS-audited set.
           // The label was excluded by construction before this change, so the
           // lane could not have caught containment going missing even once — and
