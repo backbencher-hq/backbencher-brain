@@ -124,12 +124,25 @@ export function stripKotlinBackticks(text: string): string {
  *  a `receiver_type` / `user_type` node, which is not in NAME_NODES, so the
  *  walk past it lands on the function's own `simple_identifier`. */
 function declaredName(n: any): string | undefined {
-  for (let i = 0; i < n.namedChildCount; i++) {
-    const c = n.namedChild(i)
-    if (c && NAME_NODES.has(c.type)) {
-      const t = stripKotlinBackticks(String(c.text ?? "")).trim()
-      if (t) return t
+  const direct = (node: any): string | undefined => {
+    for (let i = 0; i < (node?.namedChildCount ?? 0); i++) {
+      const c = node.namedChild(i)
+      if (c && NAME_NODES.has(c.type)) {
+        const t = stripKotlinBackticks(String(c.text ?? "")).trim()
+        if (t) return t
+      }
     }
+    return undefined
+  }
+  const d = direct(n)
+  if (d) return d
+  // A property's name lives INSIDE its `variable_declaration` child (`val x: Int`), and a
+  // construct's name can sit under modifiers/type-parameter wrappers — one bounded descent keeps
+  // properties and structured declarations on the surface instead of silently missing them.
+  for (let i = 0; i < (n?.namedChildCount ?? 0); i++) {
+    const c = n.namedChild(i)
+    const found = direct(c)
+    if (found) return found
   }
   return undefined
 }
@@ -187,7 +200,31 @@ export interface KotlinExportsTruthRow {
   declarationKind: string
 }
 
-export function deriveKotlinExportsTruth(root: any): KotlinExportsTruthRow[] {
+/** KOTLIN4 identity half shared with the module-edges oracle: a file WITH a primary top-level type
+ *  keeps the `(file)` file-level source (kotlin/exports-visibility pins it); a file WITHOUT one is
+ *  sourced at its compilation-unit name (kotlin/exports-file-identity pins that half). */
+function hasPackageClause(root: any): boolean {
+  const kids: any[] = root?.namedChildren ?? []
+  for (const k of kids) if (k.type === "package_header") return true
+  return false
+}
+
+function fileLevelSource(root: any, filePath?: string): string {
+  const TYPE_DECLS = new Set(["class_declaration", "interface_declaration", "object_declaration", "enum_class"])
+  const kids: any[] = root?.namedChildren ?? []
+  for (const n of kids) {
+    if (!TYPE_DECLS.has(n.type)) continue
+    if (declaredName(n)) return "(file)"
+  }
+  let norm = ""
+  const fp = filePath ?? ""
+  for (let i = 0; i < fp.length; i++) norm += fp[i] === "\\" ? "/" : fp[i]
+  const base = norm.slice(norm.lastIndexOf("/") + 1)
+  const dot = base.lastIndexOf(".")
+  return dot > 0 ? base.slice(0, dot) : base
+}
+
+export function deriveKotlinExportsTruth(root: any, filePath?: string): KotlinExportsTruthRow[] {
   const out: KotlinExportsTruthRow[] = []
   const seen = new Set<string>()
   const walk = (n: any): void => {
@@ -199,7 +236,18 @@ export function deriveKotlinExportsTruth(root: any): KotlinExportsTruthRow[] {
         const k = `${name}|${line}`
         if (!seen.has(k)) {
           seen.add(k)
-          out.push({ label: "exports", from: "(file)", target: name, line, visibility: vis, declarationKind: n.type })
+          out.push({ label: "exports", from: fileLevelSource(root, filePath), target: name, line, visibility: vis, declarationKind: n.type })
+          // PACKAGE-BEARING FILES also publish the UNIT-identity row (the analyzer's primary-top-level-type
+          // channel): the file-level row and the unit row are two publishers of one surface, and the
+          // differential must see both or one channel reads as unexplained. A no-package file has no unit
+          // row (the analyzer emits none), so this half is gated on a package clause.
+          if (hasPackageClause(root)) {
+            const units: string[] = []
+            const kids: any[] = root?.namedChildren ?? []
+            const TYPE_DECLS = new Set(["class_declaration", "interface_declaration", "object_declaration", "enum_class"])
+            for (const k of kids) if (TYPE_DECLS.has(k.type)) { const nm2 = declaredName(k); if (nm2) { units.push(nm2); break } }
+            if (units.length > 0) out.push({ label: "exports", from: units[0], target: name, line, visibility: vis, declarationKind: n.type })
+          }
         }
       }
     }

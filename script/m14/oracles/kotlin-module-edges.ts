@@ -173,10 +173,24 @@ function declaredName(n: any): string | null {
  * targets are derived — enough for the harness's comparison, which never reads the
  * source half, and not enough for anything that does.
  */
+/** The FILE IDENTITY the KOTLIN4 contract sources imports/exports at: the primary top-level
+ *  type/class/interface/object/enum name when the file declares one, else the compilation-unit
+ *  (base) name. Derived independently of the analyzer's symbol table — a direct-child scan of
+ *  `source_file`, so the two sides cannot agree by construction. */
+function fileIdentity(root: any, filePath?: string): string {
+  const TYPE_DECLS = new Set(["class_declaration", "interface_declaration", "object_declaration", "enum_class"])
+  for (const c of named(root)) {
+    if (!TYPE_DECLS.has(c.type)) continue
+    const nm = declaredName(c)
+    if (nm) return nm
+  }
+  return kotlinUnitName(filePath)
+}
+
 export function deriveKotlinModuleEdges(root: any, filePath?: string): TruthEdge[] {
   const edges: TruthEdge[] = []
   const seen = new Set<string>()
-  const unit = kotlinUnitName(filePath)
+  const unit = fileIdentity(root, filePath)
   const push = (label: string, from: string, target: string): void => {
     const t = unquote(String(target ?? "").trim())
     if (!t) return
@@ -202,18 +216,8 @@ export function deriveKotlinModuleEdges(root: any, filePath?: string): TruthEdge
     }
   }
 
-  // ── the export class ──────────────────────────────────────────────────────
-  // Direct children of `source_file` only: a nested declaration is a member of
-  // its owner, not a module export, and a declaration inside a function body is
-  // local. That is decision 3 above, and it is a scoping fact rather than a
-  // convention — kotlin's own visibility rules say so.
-  for (const c of named(root)) {
-    if (!TOP_LEVEL.has(c.type)) continue
-    if (hasModifier(c, "private") || hasModifier(c, "internal")) continue
-    const nm = declaredName(c)
-    if (!nm) continue
-    push("exports", unit, nm)
-  }
-
+  // EXPORTS ARE NOT DERIVED HERE: the independent `kotlin-exports` oracle owns that label (visibility
+  // contract + file-level identity). This module's job is the import half only, which keeps one label per
+  // oracle and no double-derived rows.
   return edges
 }
