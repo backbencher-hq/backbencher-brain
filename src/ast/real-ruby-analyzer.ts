@@ -1449,6 +1449,12 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     metadata.exportsOverlappingContains = exportDuplicateOfContains
 
+    // --- PROJECT INDEX consumption (task-22 phase 2). Behind BB_RUBY_INDEX_CONSUME=1, metadata-only,
+    // FAIL-CLOSED on an absent or incomplete index (the index's own `complete` flag). A claim/consume
+    // that could not verify falls back to the pre-index output, never to a guessed binding.
+    const indexFacts = this.applyProjectIndexFacts(relationships, context)
+    if (indexFacts !== undefined) (metadata as any).projectIndex = indexFacts
+
     // Evidence-tier classification (managed-OO family contract — swift/dart/
     // csharp/objc/php precedent; M14 section D requires >=2 distinct
     // evidenceClass values).
@@ -3079,6 +3085,71 @@ private rubyNameFromLiteral(node: Node): string | undefined {
    * Evidence-tier classification — same rules as the swift/dart/csharp/objc
    * family (see swift wave #266 for the full rationale).
    */
+  /**
+   * PROJECT INDEX CONSUMPTION (task-22 phase 2) — facts, never fabrications.
+   *
+   * Behind `BB_RUBY_INDEX_CONSUME=1` ONLY, and FAIL-CLOSED: no context, no index, or `index.complete`
+   * not strictly true ⇒ touches nothing and the file's output is byte-identical to the pre-index run.
+   * What it does, in the pre-committed shape of the phase-1 sizing (4,611-row bound):
+   *   · overrides — VERIFY the first-parent guess: base type declared AND the base declares the member
+   *     (`typeKinds` + `typeMembers`, NOT counts) ⇒ `metadata.projectIndexVerified`/`ownerEvidence`,
+   *     confidence raised to structural; otherwise DECLINED with a reason (the 102 none-base rows stay
+   *     declared causes, they are not overwritten).
+   *   · instantiates/extends/mixes_in — a static constant path that the index declares gets
+   *     `metadata.projectIndexDeclared` (module existence is all mixes_in needs; typeBases is not read).
+   *   · calls — NOT TOUCHED. Name-only binding would bind decoys (the ruby D4 lesson); ruby has no
+   *     static receiver typing, so the index may not manufacture a call binding.
+   * Declined rows are COUNTED BY REASON in `metadata.projectIndex.declined`, never merged into a result.
+   */
+  private applyProjectIndexFacts(
+    relationships: ASTEngine.UniversalRelationship[],
+    context: ASTEngine.AnalyzeContext | undefined,
+  ): Record<string, unknown> | undefined {
+    if (process.env.BB_RUBY_INDEX_CONSUME !== "1") return undefined
+    const index = (context as any)?.projectIndex as import("./project-index").ProjectIndex | undefined
+    if (!index || index.complete !== true) return undefined
+    const leafOf = (name: string): string => {
+      const at = name.lastIndexOf("::")
+      return at >= 0 ? name.slice(at + 2) : name
+    }
+    const hasType = (name: string): boolean => index.typeKinds.has(name) || index.typeKinds.has(leafOf(name))
+    const membersOf = (name: string): Set<string> | undefined =>
+      index.typeMembers.get(name) ?? index.typeMembers.get(leafOf(name))
+    let verifiedOverrides = 0
+    let declaredTargets = 0
+    const declined: Record<string, number> = {}
+    const decline = (reason: string): void => { declined[reason] = (declined[reason] ?? 0) + 1 }
+    for (const r of relationships) {
+      const type = String(r.type ?? "")
+      const md: any = (r.metadata ??= {})
+      if (type === "overrides") {
+        const target = String(r.target ?? "")
+        const dot = target.lastIndexOf(".")
+        if (dot <= 0) { decline("overrideTargetUnnameable"); continue }
+        const base = target.slice(0, dot)
+        const method = target.slice(dot + 1)
+        if (!hasType(base)) { decline("baseNotDeclared"); continue }
+        const members = membersOf(base)
+        if (!members || !members.has(method)) { decline("memberNotOnBase"); continue }
+        md.projectIndexVerified = true
+        md.ownerEvidence = "projectIndex"
+        r.confidence = Math.max(r.confidence ?? 0, 0.95)
+        verifiedOverrides++
+      } else if (type === "instantiates" || type === "extends" || type === "mixes_in") {
+        if (!hasType(String(r.target ?? ""))) { decline(`${type}:typeNotDeclared`); continue }
+        md.projectIndexDeclared = true
+        declaredTargets++
+      }
+    }
+    return {
+      complete: true,
+      verifiedOverrides,
+      declaredTargets,
+      callsUntouched: true,
+      declined,
+    }
+  }
+
   private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
     for (const r of relationships) {
       const type = r.type ?? r.relationshipType ?? ""
