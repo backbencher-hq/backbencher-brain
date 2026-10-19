@@ -3360,10 +3360,15 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         relationships.push({
           source: symbol.name,
           target: supertypes[i].name,
-          // Scala: extends covers classes AND traits; first supertype =
-          // extends is the documented convention (parenless class extends is
-          // legal, so kotlin's ctor-invocation signal does not transfer).
-          type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
+          // FLEET MIXIN RULING (2026-10-19, Lead): position 0 is the single
+          // supertype `extends`; positions >=1 are MIXIN COMPOSITION and publish
+          // `mixes_in`, the canonical value for `class A with M` / Ruby
+          // `include/extend/prepend` / Dart `with`. They are NOT `implements`
+          // conformance (the implements value is ruled NOT-APPLICABLE for scala;
+          // the false-negative-if-conformance-without-composition falsifier is in
+          // the lane's SCALA-CENSUS.md). This shape is the same for the
+          // object handler below.
+          type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.MixesIn,
           // S1.4: explicit structural confidence (1.0) — undefined is
           // classifier-defaulted today but downstream >= 0.7 filters read
           // the field directly.
@@ -3435,10 +3440,15 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         relationships.push({
           source: symbol.name,
           target: supertypes[i].name,
-          // Scala: extends covers classes AND traits; first supertype =
-          // extends is the documented convention (parenless class extends is
-          // legal, so kotlin's ctor-invocation signal does not transfer).
-          type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
+          // FLEET MIXIN RULING (2026-10-19, Lead): position 0 is the single
+          // supertype `extends`; positions >=1 are MIXIN COMPOSITION and publish
+          // `mixes_in`, the canonical value for `class A with M` / Ruby
+          // `include/extend/prepend` / Dart `with`. They are NOT `implements`
+          // conformance (the implements value is ruled NOT-APPLICABLE for scala;
+          // the false-negative-if-conformance-without-composition falsifier is in
+          // the lane's SCALA-CENSUS.md). This shape is the same for the
+          // object handler below.
+          type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.MixesIn,
           confidence: 1.0,
           line_number: extendsClause.startPosition.row + 1,
           metadata: { isTrait: i > 0 },
@@ -3495,7 +3505,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         relationships.push({
           source: symbol.name,
           target: supertypes[i].name,
-          type: ASTEngine.RelationshipType.Extends, // trait supertypes: ALL are extends
+          // FLEET MIXIN RULING (2026-10-19): a trait's own supertype list is
+          // the same composition construct — position 0 stays `extends`, every
+          // further trait in the list is `mixes_in` (it is not interface
+          // conformance; implements is ruled NOT-APPLICABLE for scala).
+          type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.MixesIn,
           confidence: 1.0,
           // M59 (#825): the parent's OWN line, not the clause's.
           line_number: supertypes[i].line,
@@ -3536,11 +3550,14 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (enumExtends) {
       const supertypes = this.extractSupertypes(enumExtends)
       symbol.metadata!.superTypes = supertypes.map((s) => s.name)
-      for (const st of supertypes) {
+      for (let i = 0; i < supertypes.length; i++) {
+        const st = supertypes[i]
         relationships.push({
           source: name,
           target: st.name,
-          type: ASTEngine.RelationshipType.Extends,
+          // FLEET MIXIN RULING (2026-10-19): same extends_clause composition
+          // construct — first supertype extends, further ones mixes_in.
+          type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.MixesIn,
           confidence: 1.0,
           // M59 (#825): the parent's OWN line, not the clause's.
           line_number: st.line,

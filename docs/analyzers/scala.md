@@ -4,10 +4,14 @@
 - **Symbols**: classes, traits, objects, enums, case classes, annotation types,
   type aliases, functions (including extension methods), constructor params as
   properties, enum members
-- **Relationships**: extends, implements, instantiates, calls, uses, contains,
-  overrides, references (imports)
-- **Payloads**: ScalaDoc comments, decorators/annotations, genericParameters,
-  visibility, complexity (per-function cyclomatic), reasonCode on override edges
+- **Relationships**: calls, uses, contains, references, imports, exports, extends, overrides,
+  instantiates, **mixes_in**. Fleet MIXIN RULING (2026-10-19): a with-clause trait is composition,
+  not interface conformance — `implements` is RULED NOT-APPLICABLE for scala; position 0 of an
+  extends clause stays `extends` and every further supertype is `mixes_in`.
+- **Payloads**: ScalaDoc comments, annotation names as symbol metadata (annotations are TYPE MENTIONS
+  and publish `references`; `decorates` is RULED NOT-APPLICABLE — reserved for runtime callable
+  wrappers per the Java owner ruling), genericParameters, visibility, complexity (per-function
+  cyclomatic), reasonCode on override edges
 
 ## Evidence tiers
 Same rules as JVM family. Extension methods = usage_contextual Uses @0.9.
