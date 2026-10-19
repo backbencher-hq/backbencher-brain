@@ -430,6 +430,14 @@ const isAsciiUpper = (c: number): boolean => c >= 65 && c <= 90
  */
 const externalReadingOf = (t: string): "cmdlet" | "qualified" | null => {
   if (t.charCodeAt(0) === 34 /* " */ || t.charCodeAt(0) === 39 /* ' */) return null
+  // PS-RELATIVE-PATH (fleet baseline 2026-10-19, the two whole-population refutations): a
+  // dot-sourced RELATIVE path ending in .ps1 (`.\hack\make\.go-autogen.ps1`,
+  // `.\eng\common\tools.ps1`) is a PROJECT FILE reference, not an external target. The
+  // "qualified" reading fired on it because a backslash is a qualifier byte, and the gate's
+  // case-1 path check correctly found the file in the project and REFUTED the claim — the
+  // emission was false. A path-shaped .ps1 target is a dependency the arbiter answers by the
+  // admitted file list, so no externality reading may attach to it.
+  if (/\.ps1$/i.test(t) && (t.includes("\\") || t.includes("/"))) return null
   for (let i = 1; i < t.length; i++) {
     if (t.charCodeAt(i) !== 45 /* - */) continue
     if (isAsciiUpper(t.charCodeAt(0)) && isAsciiUpper(t.charCodeAt(i + 1))) return "cmdlet"
