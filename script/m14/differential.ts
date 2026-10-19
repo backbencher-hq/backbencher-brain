@@ -24102,13 +24102,13 @@ async function main() {
         // labels; the divergences the wiring counts are the named defect classes (imports function-scope source,
         // exports publication breadth, override impl-target name surface).
         for (const e of deriveRustImportsTruth(root)) {
-          ;(truth as any[]).push({ label: "imports", from: e.from, target: e.to })
+          ;(truth as any[]).push({ label: "imports", from: e.from, target: e.target })
         }
         for (const e of deriveRustExportsTruth(root)) {
-          ;(truth as any[]).push({ label: "exports", from: e.from, target: e.to })
+          ;(truth as any[]).push({ label: "exports", from: e.from, target: e.target })
         }
         for (const e of deriveRustOverridesTruth(root)) {
-          ;(truth as any[]).push({ label: "overrides", from: e.from, target: e.to })
+          ;(truth as any[]).push({ label: "overrides", from: e.from, target: e.target })
         }
       }
       if (lang === "go") {

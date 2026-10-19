@@ -177,17 +177,17 @@ export function deriveRustContainsTruth(root: any): RustContainsEdge[] {
    * look like noise and is not: each one is a real nested declaration.
    */
   const FUNCTION_CONTAINER = new Set(["function_item", "function_signature_item"])
-  /** What a function body can OWN: nested types and nested functions, not values. */
-  const NESTED_TYPE_OR_FN = new Set([
-    "function_item",
-    "function_signature_item",
-    "mod_item",
-    "struct_item",
-    "enum_item",
-    "union_item",
-    "trait_item",
-    "impl_item",
-  ])
+  /**
+   * What a function body can OWN. The analyzer's owner rule is `ownerName || scope`, and since
+   * the R7 change a function-local `const`/`static` IS a named declaration owned by the enclosing
+   * function (the analyzer publishes 43 function-local `const` + 22 `static` corpus-wide and the
+   * `contains` owner row with them). This oracle originally excluded VALUES here and produced
+   * truth-only rows on an older analyzer; the current analyzer publishes them, so the truth must
+   * too — measured on the 60-file draws: `contains` unexplained 20 (ripgrep) / 7 (cargo), all
+   * function-local value declarations (`set_windows_exe_options -> MANIFEST`, ...). `let` stays
+   * excluded (a local binding is not a declaration; it is not in MEMBER_ITEM at all).
+   */
+  const FUNCTION_LOCAL_ITEMS = MEMBER_ITEM
 
   const walk = (n: any): void => {
     if (FUNCTION_CONTAINER.has(n.type)) {
@@ -201,7 +201,7 @@ export function deriveRustContainsTruth(root: any): RustContainsEdge[] {
           // truth-only rows on a 40-file ripgrep draw (`MANIFEST`, `BINARY`,
           // `ALPHABET`) — a fabrication on the truth side, which is the direction
           // that quietly inflates coverage.
-          if (!NESTED_TYPE_OR_FN.has(c.type)) continue
+          if (!FUNCTION_LOCAL_ITEMS.has(c.type)) continue
           const nm = itemName(c)
           if (nm) add(owner, nm)
         }
