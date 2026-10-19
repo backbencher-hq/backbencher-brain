@@ -112,7 +112,7 @@
 
 import type { Node, Tree } from "web-tree-sitter"
 import * as path from "path"
-import { existsSync } from "node:fs"
+import { existsSync, statSync } from "node:fs"
 import { createRequire } from "node:module"
 import { ASTEngine } from "./engine"
 // THE ROUTER'S OWN TABLE, imported rather than restated: which extensions this lane's admitted
@@ -1002,8 +1002,18 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (network) return { sourcePathClaim: [value] }
     if (this.claimProjectRoot.length > 0 && HTML_DOCUMENT_EXTS.has(resourceExtension(value))) {
       const rebased = rebaseToProject(this.claimDocumentPath, this.claimProjectRoot, value)
-      if (rebased !== null && existsSync(path.join(this.claimProjectRoot, rebased))) {
-        return { importProjectFile: [rebased] }
+      // ADMISSION-BOUNDED EXISTENCE (fleet baseline 2026-10-19): the probe must apply the gate's
+      // own 1 MB admission cap, not the raw disk. A file over the cap EXISTS but is NOT ADMITTED,
+      // so its importProjectFile claim would refute in the gate (measured: dart-sdk
+      // third_party/trace_viewer_full.html, 2.62 MB, on disk, over cap, unadmitted — the one
+      // whole-population extFAIL). A claim whose verification depends on the gate's admission may
+      // only be published for files the gate can admit.
+      const absCandidate = rebased !== null ? path.join(this.claimProjectRoot, rebased) : null
+      if (absCandidate !== null && existsSync(absCandidate)) {
+        const size = statSync(absCandidate).size
+        if (size > 0 && size <= 1_048_576) return { importProjectFile: [rebased] }
+        // over the cap (or empty): real on disk but unadmittable — publish NO claim; the
+        // edge stays unresolved with its evidence, which is the honest reading.
       }
     }
     // HTML-RELATIVE (fleet baseline 2026-10-19, the 2 whole-population refutations): a RELATIVE
