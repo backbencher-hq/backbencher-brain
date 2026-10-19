@@ -1557,8 +1557,14 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     collectSurface(rootNode)
 
     const seen = new Set<string>()
+    // FLEET SENTINEL RULING (2026-10-19): for a file with NO package clause the surface channel's
+    // moduleName IS FILE_MODULE "(file)", which the export-array channel already publishes for the same
+    // names — emitting both would double every default-package export. Skip the surface channel there;
+    // the array channel carries the (file) rows (fixture scala/exports-default-package: exactly 1).
+    const surfaceChannelDuplicated = moduleName === RealScalaAnalyzer.FILE_MODULE
     const key = (name: string): string => `${moduleName} ${name}`
     for (const e of exports) {
+      if (surfaceChannelDuplicated) continue
       const name = stripScalaQuoting(String(e.name ?? ""))
       if (name.length === 0) continue
       // The array's own start index is `declarationLineNode`'s (M59/#825), which
