@@ -20,6 +20,40 @@
 // validation/m14/grammar-pins.json; wired in engine.ts getAnalyzer -> RealCppAnalyzer.
 
 /**
+ * CITATION vocabulary — a COPY of `ISO_CPP_STDLIB` from `script/m14/citations.ts` (id `iso-cpp-stdlib`,
+ * source ISO/IEC 14882, Lead-committed from this lane's whole-population namespace census `69af5a208`).
+ * Analyzers must not import `script/`, so the lane copies the list and a change there must land here;
+ * the lane's `cpp-citation-verify.ts` asserts the two lists are IDENTICAL (so the copy cannot drift).
+ *
+ * CONTRACT: the lane may cite ONLY these exact symbols, and only when its own SOURCE spelling has root
+ * `std` (`std::move`, `std::string`, `std::forward<T>`); a listed symbol reached through another root
+ * cannot be claimed here. The arbiter verifies the declared root against the committed vocabulary and
+ * counts a match as `extOK` / `verifiedBy: "namespace"` — NEVER a resolution; an unlisted claimed root
+ * would REFUTE (extFAIL), which is why the vocabulary test is the analyzer-side guard. `absl`/`json`/
+ * `testing` are deliberately NOT admitted (vendoring caveat, Lead ruling §18.23).
+ */
+const CPP_CITATION_STDLIB_ROOTS: ReadonlySet<string> = new Set([
+  "move", "string", "max", "infinity", "min", "quiet_NaN", "make_pair", "isnan", "signaling_NaN",
+  "swap", "make_tuple", "sort", "to_string", "forward", "make_shared", "make_unique", "size_t",
+  "vector", "map", "unordered_map", "set", "pair", "tuple", "optional", "variant", "function",
+  "shared_ptr", "unique_ptr", "string_view", "numeric_limits", "find", "begin", "end", "size",
+  "copy", "fill", "count", "abs", "fabs", "sqrt", "pow", "floor", "ceil", "round", "log", "exp",
+])
+
+/** `metadata.languageNamespace` for a call this lane may CITE, or {} — see the block above. Flag-gated
+ *  (`BB_CPP_CITATION=1`) so the accepted D1–D6 behaviour is byte-identical without it. */
+function cppCitationFacts(qualified: string, leaf: string): Record<string, unknown> {
+  if (process.env.BB_CPP_CITATION !== "1") return {}
+  if (leaf === "" || !CPP_CITATION_STDLIB_ROOTS.has(leaf)) return {}
+  let t = String(qualified ?? "").trim()
+  if (t.startsWith("::")) t = t.slice(2)
+  const lt = t.indexOf("<")          // template arguments are not part of the root
+  if (lt > 0) t = t.slice(0, lt)
+  if (t.split("::")[0]?.trim() !== "std") return {}
+  return { languageNamespace: [leaf] }
+}
+
+/**
  * task-22: the OWNER a qualified callee spelling names, when it names one at all.
  * `StringUtil::Format(...)` names its owner syntactically; `Format(...)` does not. Returns the LAST
  * owner segment (the spelling a class-like symbol carries) and requires a CLEAN `A::B` path whose
@@ -4679,6 +4713,9 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
                 // task-22 milestone 5: the three declaration-bearing RECEIVER classes (constructor-temp,
                 // typed-local, implicit-this). Empty for opaque receivers — the owner is never guessed.
                 ...indexReceiverOwnerFacts(funcNode, targetName),
+                // ISO C++ citation claim (Lead vocabulary `iso-cpp-stdlib`, flag-gated): ONLY a listed
+                // symbol whose own spelling root is std; verified by the arbiter as extOK, never resolved.
+                ...cppCitationFacts(qualifiedName, targetName),
               },
             })
             // #383 payload: qualified path WITHOUT argument text (C++ keeps
