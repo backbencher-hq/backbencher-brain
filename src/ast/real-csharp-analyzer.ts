@@ -302,6 +302,10 @@ interface OverrideTask {
   methodName: string
   signature: string
   ownerFqn: string
+  /** C# overridable member kinds: method/property/indexer/field/event. The historical machinery was
+   *  METHOD-ONLY, so an `override` property/field/event produced a symbol, a contains edge and a
+   *  declared-type reference but NO overrides edge (csharp/override-member-kinds is the pin). */
+  memberKind?: "method" | "property" | "indexer" | "field" | "event"
   /** M59.A7 (#825): the line of the OVERRIDING declaration — the node that
    *  writes the overriding name. The target (the base member) is external, so
    *  the overriding symbol's own declaration is the family contract's site
@@ -1401,7 +1405,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           fileScopedNamespace = undefined
         }
         const rawName = this.extractNamespaceName(node)
-        const fullName = this.buildFullName(scopeStack, rawName)
+        const fullName = rawName.indexOf(".") >= 0 ? rawName : this.buildFullName(scopeStack, rawName)
         symbols.push({
           name: rawName,
           kind: ASTEngine.SymbolKind.Namespace,
@@ -1430,7 +1434,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           fileScopedNamespace = undefined
         }
         const rawName = this.extractNamespaceName(node)
-        const fullName = this.buildFullName(scopeStack, rawName)
+        const fullName = rawName.indexOf(".") >= 0 ? rawName : this.buildFullName(scopeStack, rawName)
         symbols.push({
           name: rawName,
           kind: ASTEngine.SymbolKind.Namespace,
@@ -1640,15 +1644,14 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           },
         }
         symbols.push(sym)
-        // M49 exports invariant: only NAMESPACE-free top-level types export
-        // (a type inside `namespace Acme.Things` is imported as
-        // Acme.Things.Widget, not bare Widget — the namespace is the unit
-        // the using-directive binds). The pre-fix push exported
-        // namespace-nested types under bare names, which the F3 gate
-        // correctly rejects as unresolvable; membership rides Contains.
-        // CS-B4: `file`-scoped types never export (file-only visibility).
-        if (!parentContext && !this.hasModifier(node, "file")) {
-          exports.push({ name: sym.name, kind: sym.kind, range: sym.range, visibility: visibility || "public" })
+        // M49 exports invariant: a TOP-LEVEL public type is an assembly export, published under
+        // its FULLY-QUALIFIED name (a namespaced type is imported as `Acme.Things.Widget`; the bare
+        // leaf is not a name the assembly exports). A type nested inside another TYPE is not
+        // top-level; `file`-scoped types and non-public visibility never export (CS-B4).
+        const exportTopLevel = (!parentContext || parentContext.kind === ASTEngine.SymbolKind.Namespace) &&
+          !this.hasModifier(node, "file") && visibility === "public"
+        if (exportTopLevel) {
+          this.pushExportInfo(exports, fullName, genericTypes.length, this.nodeLine(node.childForFieldName("name") ?? this.declarationNameNode(node)), kind, visibility)
         }
         newContext = {
           node,
@@ -1689,10 +1692,10 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           decorators: this.extractAttributes(node),
           metadata: { isEnum: true, baseType, fullName },
         })
-        // M49 exports invariant: same namespace-nesting rule as the class
-        // branch above — only namespace-free top-level enums export.
-        if (!parentContext) {
-          exports.push({ name: rawName, kind: ASTEngine.SymbolKind.Enum, range: this.nodeToRange(node), visibility: visibility || "public" })
+        // Same assembly-surface rule as the class branch: a top-level public enum is exported
+        // under its fully-qualified name (arity 0).
+        if ((!parentContext || parentContext.kind === ASTEngine.SymbolKind.Namespace) && visibility === "public") {
+          this.pushExportInfo(exports, fullName, 0, this.nodeLine(node.childForFieldName("name") ?? this.declarationNameNode(node)), ASTEngine.SymbolKind.Enum, visibility)
         }
         newContext = {
           node,
@@ -1737,6 +1740,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             : fileScopedNamespace && !parentContext
               ? fileScopedNamespace
               : undefined
+        const delegateFullName = this.buildFullName(scopeStack, name)
+        const delegateTypeParams = this.findChild(node, "type_parameter_list")
+        const delegateArity = delegateTypeParams ? delegateTypeParams.namedChildCount : 0
         symbols.push({
           name,
           kind: ASTEngine.SymbolKind.Delegate,
@@ -1747,8 +1753,11 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           parameters,
           returnType,
           decorators: this.extractAttributes(node),
-          metadata: { isDelegate: true, returnType },
+          metadata: { isDelegate: true, returnType, fullName: delegateFullName, genericTypes: delegateArity > 0 ? delegateArity : undefined },
         })
+        if ((!parentContext || parentContext.kind === ASTEngine.SymbolKind.Namespace) && !this.hasModifier(node, "file") && visibility === "public") {
+          this.pushExportInfo(exports, delegateFullName, delegateArity, this.nodeLine(node.childForFieldName("name") ?? this.declarationNameNode(node)), ASTEngine.SymbolKind.Delegate, visibility)
+        }
       } else if (type === "event_field_declaration") {
         const varDecl = this.findChild(node, "variable_declaration")
         const visibility = this.extractVisibility(node)
@@ -1779,6 +1788,16 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
                 decorators: this.extractAttributes(node),
                 metadata: { isEvent: true },
               })
+              if (this.hasModifier(node, "override")) {
+                overrideTasks.push({
+                  fqn: parentContext ? `${parentContext.rawName}.${name}` : name,
+                  methodName: name,
+                  signature: "",
+                  memberKind: "event",
+                  ownerFqn: parentContext ? parentContext.fqn : "",
+                  line: this.nodeLine(this.findChild(child, (n) => n.type === "identifier") ?? child),
+                })
+              }
             }
           }
         }
@@ -1861,6 +1880,16 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           decorators: this.extractAttributes(node),
           metadata: { isEvent: true, isAccessorForm: true, dataType: typeNode?.text },
         })
+        if (this.hasModifier(node, "override")) {
+          overrideTasks.push({
+            fqn: parentContext ? `${parentContext.rawName}.${name}` : name,
+            methodName: name,
+            signature: "",
+            memberKind: "event",
+            ownerFqn: parentContext ? parentContext.fqn : "",
+            line: this.nodeLine(nameNode ?? this.declarationNameNode(node)),
+          })
+        }
       } else if (type === "constructor_initializer") {
         // CSD8 (re-review 2026-09-04, probe: 120 corpus occurrences):
         // `public Sub() : base(42) { }` / `: this()` — a real constructor-to-
@@ -2029,6 +2058,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             fqn: localOwnerPrefix,
             methodName: name,
             signature,
+            memberKind: "method",
             ownerFqn,
             // M59.A7 (#825): the NAME node, not the declaration's start — an
             // attribute above the override would otherwise be the claimed site
@@ -2236,6 +2266,16 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           interfaceMembers,
           classMembers,
         )
+        if (this.hasModifier(node, "override")) {
+          overrideTasks.push({
+            fqn: parentContext ? `${parentContext.rawName}.${name}` : name,
+            methodName: name,
+            signature: "",
+            memberKind: type === "indexer_declaration" ? "indexer" : "property",
+            ownerFqn: parentContext ? parentContext.fqn : "",
+            line: this.nodeLine(this.declarationNameNode(node)),
+          })
+        }
         // Push a property/indexer scope so calls inside a getter/setter/accessor
         // body attribute to the property (csharp #264 Station-6: setter bodies
         // like `this.NotifyPropertyChanged(...)` were dropped because the
@@ -2273,6 +2313,19 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
                 decorators: this.extractAttributes(node),
                 metadata: { dataType, isField: true },
               })
+              // ONE declaration, N declarators = N members (`public override int A, B;` is two
+              // overridable fields on ONE line; a task per declaration keeps only the first).
+              if (this.hasModifier(node, "override")) {
+                const declNameNode = this.findChild(child, (n) => n.type === "identifier") ?? child
+                overrideTasks.push({
+                  fqn: parentContext ? `${parentContext.rawName}.${name}` : name,
+                  methodName: name,
+                  signature: "",
+                  memberKind: "field",
+                  ownerFqn: parentContext ? parentContext.fqn : "",
+                  line: this.nodeLine(declNameNode),
+                })
+              }
             }
           }
         }
@@ -2293,7 +2346,17 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Override resolution: exact-signature BFS first (in-file), then the
     // cross-file companion (interface-over-superclass), then deterministic
     // first-parent fallback. Mirrors Java/Kotlin/Scala/Groovy semantics.
-    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion)
+    // The five overridable member kinds resolve by NAME for four of them (property/indexer/field/
+    // event carry no signature in the published label); the map is the same declaration table the
+    // symbols pass produced, keyed by owner.
+    const membersByOwner = new Map<string, Set<string>>()
+    for (const sym of symbols) {
+      if (!sym.ownerName || !sym.name) continue
+      let set = membersByOwner.get(sym.ownerName)
+      if (!set) { set = new Set<string>(); membersByOwner.set(sym.ownerName, set) }
+      set.add(sym.name)
+    }
+    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, membersByOwner, context?.overrideCompanion)
     // C923 (#923): the member-level implements contract — explicit always (the interface is
     // written in the source), implicit only where the contract is KNOWN (in-file always; a
     // cross-file interface only when the caller supplies the member companion, the family's
@@ -2415,53 +2478,26 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // declarations, gated by F3 on name resolution (CS-B4 / M49) — and it is
     // recorded here because the two are easy to confuse: on roslyn the channel
     // carries 302 rows and this emits 0, because roslyn's 302 are `internal`.
-    for (const s of symbols) {
-      // `public` and only `public`. `extractVisibility` already normalises the
-      // two C# modifiers that must never reach an export surface: `file` maps to
-      // `private` (CS-B4), and a top-level type with NO modifier leaves
-      // `visibility` undefined — which is correct, because C#'s default
-      // accessibility for a top-level type declaration is `internal`, not
-      // `public`. So an unannotated type is correctly excluded by requiring the
-      // literal value rather than by a default.
-      if (s.visibility !== "public") continue
-      // A namespace symbol carries `visibility: "public"` by construction
-      // (namespace_declaration / file_scoped_namespace_declaration branches above),
-      // and a namespace exports nothing, so kind is filtered explicitly.
-      const k = s.kind as ASTEngine.SymbolKind
-      if (
-        k !== ASTEngine.SymbolKind.Class &&
-        k !== ASTEngine.SymbolKind.Struct &&
-        k !== ASTEngine.SymbolKind.Interface &&
-        k !== ASTEngine.SymbolKind.Enum &&
-        k !== ASTEngine.SymbolKind.Delegate
-      ) continue
-      // TOP-LEVEL is a grammar fact, not a heuristic: the analyzer gives a nested
-      // type its OUTER TYPE as owner, so `ownerKind === Namespace` selects
-      // namespaced top-level types and "no owner at all" selects the global scope.
-      //
-      // The first version of this predicate was `ownerKind === Namespace ? ownerName
-      // : "global"`, which is WRONG and was caught by measurement rather than by
-      // reading: it accepted every nested public type and gave it the file-scope
-      // source, i.e. it claimed `Outer.Nested` was a global-scope export. On
-      // aspnetcore that was 299 emitted against 275 real top-level public types —
-      // 24 fabricated rows, exactly the R2-vs-R1 gap the construct census counted
-      // (299 = R2 "every public type including nested", 275 = R1). The count
-      // matched a plausible number while the SET was wrong, which is the failure
-      // mode a count-only check cannot see.
-      const isNamespacedTopLevel = s.ownerKind === ASTEngine.SymbolKind.Namespace && !!s.ownerName
-      const isGlobalTopLevel = !s.ownerKind && !s.ownerName && !s.scope
-      if (!isNamespacedTopLevel && !isGlobalTopLevel) continue
-      const source = isNamespacedTopLevel ? (s.ownerName as string) : "global"
+    // Assembly-export surface: one edge per exported TYPE. `source` is the FILE ROOT (the
+    // namespace qualifies the NAME, it does not own the edge — csharp/import-export-edges and
+    // csharp/export-arity-collision pin `from: "root"`), `target` is the FULLY-QUALIFIED name,
+    // and the arity rides metadata (a name is exported at an arity; the two are different
+    // types). The payload pass has already deduped (name, arity) and kept the FIRST
+    // declaration's line, so a `partial` split publishes ONE edge on that line.
+    for (const e of exports) {
+      if (typeof e.name !== "string" || typeof e.arity !== "number") continue
       relationships.push({
-        source,
-        target: s.name,
+        source: "root",
+        target: e.name,
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
-        line_number: this.containmentLine(s, containmentSites),
+        line_number: typeof e.line === "number" ? e.line : undefined,
         metadata: {
-          relationshipType: "csharp_public_type_export",
-          exportForm: isNamespacedTopLevel ? "public_top_level_type" : "public_global_scope_type",
+          relationshipType: "assembly_public_surface",
+          evidenceClass: "structural",
+          exportForm: "public_top_level_type",
           visibility: "public",
+          arity: e.arity,
         },
       })
     }
@@ -3014,12 +3050,17 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     classHierarchy: Map<string, string[]>,
     symbolMap: Map<string, ASTEngine.UniversalSymbol>,
     relationships: ASTEngine.UniversalRelationship[],
+    membersByOwner: Map<string, Set<string>>,
     companion?: Map<string, Set<string>>,
   ) {
     for (const task of tasks) {
       let targetFqn: string | null = null
+      const memberKind = task.memberKind ?? "method"
+      const isMethod = memberKind === "method"
 
-      // Pass 1: exact-signature BFS over the in-file hierarchy.
+      // Pass 1: exact-signature BFS over the in-file hierarchy (methods) or name-keyed BFS for the
+      // other four overridable member kinds. A property/field/event/indexer has no parameter
+      // signature in its published label, so the declaration NAME is the member identity.
       const queue: string[] = []
       const ownerH = classHierarchy.get(task.ownerFqn)
       if (ownerH) {
@@ -3032,9 +3073,14 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (seen.has(parent)) continue
         seen.add(parent)
 
-        const potentialTargetFqn = `${parent}.${task.methodName}${task.signature}`
-        if (symbolMap.has(potentialTargetFqn)) {
-          targetFqn = potentialTargetFqn
+        if (isMethod) {
+          const potentialTargetFqn = `${parent}.${task.methodName}${task.signature}`
+          if (symbolMap.has(potentialTargetFqn)) {
+            targetFqn = potentialTargetFqn
+            break
+          }
+        } else if (membersByOwner.get(parent)?.has(task.methodName)) {
+          targetFqn = `${parent}.${task.methodName}`
           break
         }
         const pH = classHierarchy.get(parent)
@@ -3043,8 +3089,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      // Pass 2: cross-file companion declaring-parent resolution.
-      if (!targetFqn && companion && ownerH && ownerH.length > 0) {
+      // Pass 2: cross-file companion declaring-parent resolution (methods only — the companion is
+      // a member-name map, which is what the name-keyed kinds already are).
+      if (!targetFqn && isMethod && companion && ownerH && ownerH.length > 0) {
         const declaring = findDeclaringParent(
           task.methodName,
           ownerH,
@@ -3056,7 +3103,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       // Pass 3: deterministic per-file fallback — first hierarchy parent.
       if (!targetFqn && ownerH && ownerH.length > 0) {
-        targetFqn = `${ownerH[0]}.${task.methodName}${task.signature}`
+        targetFqn = `${ownerH[0]}.${task.methodName}${isMethod ? task.signature : ""}`
       }
 
       if (targetFqn) {
@@ -3077,7 +3124,11 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 1.0,
           line_number: task.line,
-          metadata: { relationshipType: "method_override", isCSharpOverride: true },
+          metadata: {
+            relationshipType: isMethod ? "method_override" : `${memberKind}_override`,
+            isCSharpOverride: true,
+            overriddenMemberKind: memberKind,
+          },
         })
       }
     }
@@ -4316,11 +4367,37 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     return segs.join(".")
   }
 
+  /**
+   * One assembly-export row per exported TYPE: the fully-qualified name, the declaration's
+   * ARITY (generic arity is identity — `Reporter` and `Reporter<T>` are two types), the NAME's
+   * own line, and the symbol kind. Deduped on (name, arity): `partial` declarations of one type
+   * are ONE exported unit (on the FIRST declaration's line), while a partial split that crosses
+   * arity stays two units. The M49 duplicate-provider invariant is why the dedupe is here.
+   */
+  private pushExportInfo(
+    exports: Array<Record<string, any>>,
+    name: string,
+    arity: number,
+    line: number | undefined,
+    kind: ASTEngine.SymbolKind,
+    visibility: string,
+  ): void {
+    if (!name || visibility !== "public") return
+    for (const e of exports) if (e.name === name && e.arity === arity) return
+    exports.push({ name, kind, arity, line, visibility })
+  }
+
   private buildFullName(scopeStack: { rawName: string }[], name: string): string {
     if (scopeStack.length === 0) return name
     let res = ""
     for (let i = 0; i < scopeStack.length; i++) {
-      res += scopeStack[i].rawName + "."
+      const raw = scopeStack[i].rawName
+      // A DOTTED declaration name is already qualified — it resets the prefix instead of
+      // being appended to it. Before this, the nested-namespace shape (which tree-sitter
+      // accepts although C# rejects it) published one type under two names; the export
+      // edge is what made the second visible (csharp/import-export-edges pins it).
+      if (raw.indexOf(".") >= 0) res = raw + "."
+      else res += raw + "."
     }
     return res + name
   }

@@ -12,7 +12,7 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import * as path from "node:path"
-import { parseFile } from "../../src/ast/pool-worker"
+import { getParser } from "../../src/ast/engine"
 import { normTarget, auditTarget } from "./differential"
 import { deriveCSharpExportsTruth, deriveCSharpImportsTruth, deriveCSharpOverridesTruth } from "./csharp-truth"
 
@@ -55,18 +55,24 @@ type Stats = { truth: number; analyzer: number; matched: number; missing: number
 const stats: Record<string, Stats> = { exports: blank(), imports: blank(), overrides: blank() }
 function blank(): Stats { return { truth: 0, analyzer: 0, matched: 0, missing: 0, unexplained: 0, missingSamples: [], unexplainedSamples: [] } }
 
+const parser = await getParser("csharp" as any)
+const AnalyzerMod: any = await import("../../src/ast/real-csharp-analyzer")
+const analyzer = new AnalyzerMod.RealCSharpAnalyzer()
 for (const f of files) {
+  let content = ""
+  try { content = readFileSync(f, "utf8") } catch { continue }
+  let tree: any
+  try { tree = parser.parse(content) } catch { continue }
+  // The differential and the fixture harness both call analyzer.analyze DIRECTLY (with the
+  // cross-file interface-kind companion); the pool-worker path is a different entry point and
+  // must not be used as the comparison's analyzer side.
   let analysis: any = null
-  try { analysis = await parseFile(f, path.dirname(f)) } catch { continue }
+  try { analysis = await analyzer.analyze(tree.rootNode, content, path.basename(f), {}) } catch { continue }
   const rel = path.relative(CORPUS, f).replace(/\\/g, "/")
-  const analyzer = ((analysis?.relationships ?? []) as any[])
+  const analyzerRels = ((analysis?.relationships ?? []) as any[])
     .filter((r) => LABELS.has(String(r.type)))
     .map((r) => ({ label: String(r.type), target: String(r.target ?? "") }))
     .filter((r, i, arr) => i === arr.findIndex((x) => x.label + "|" + x.target === r.label + "|" + r.target))
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { getParser } = await import("../../src/ast/engine")
-  const parser = await getParser("csharp" as any)
-  const tree = parser.parse(readFileSync(f, "utf8"))
   const truth = [
     ...deriveCSharpExportsTruth(tree.rootNode),
     ...deriveCSharpImportsTruth(tree.rootNode),
@@ -74,7 +80,7 @@ for (const f of files) {
   ].filter((t, i, arr) => i === arr.findIndex((x) => x.label + "|" + x.target === t.label + "|" + t.target))
   for (const label of LABELS) {
     const t = truth.filter((x) => x.label === label)
-    const a = analyzer.filter((x) => x.label === label)
+    const a = analyzerRels.filter((x) => x.label === label)
     const s = stats[label]
     s.truth += t.length; s.analyzer += a.length
     for (const te of t) {
