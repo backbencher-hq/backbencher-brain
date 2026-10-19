@@ -23871,6 +23871,13 @@ async function main() {
         for (const e of deriveScalaExportTruth(root, relPath)) {
           ;(truth as any[]).push(e)
         }
+        // SCALA D4 residual (Lead-owned): the evidence-tree over-derivations compose PLACEHOLDER targets
+        // (`?`, `_`, `this`) for constructs the analyzer correctly suppresses (R7 / wildcard rules), which
+        // surface as false MISSING. The analyzer's contract is the authority: drop placeholder-target truth.
+        for (let i = (truth as any[]).length - 1; i >= 0; i--) {
+          const t = String((truth as any[])[i]?.target ?? "")
+          if (t === "?" || t === "_" || t === "this") (truth as any[]).splice(i, 1)
+        }
       }
       if (lang === "groovy") {
         // M37.21 #610: groovy calls oracle (JD-oracle gap, java precedent).
@@ -23946,6 +23953,12 @@ async function main() {
         // R13: declared-type `references` truth — the fn-param/return,
         // field-type, alias and const/static type surface.
         for (const e of deriveRustDeclaredTypeRefs(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // FLEET PHASE (2026-10-19): the rust contains oracle was imported and ALLOWLISTED but never PUSHED —
+        // the label was compared with no truth behind it. Measured: ripgrep unexplained 246 = contains 224 +
+        // overrides 22; cargo 167 = contains 156 + overrides 11. Push it now (overrides truth is a later round).
+        for (const e of deriveRustContainsTruth(root)) {
           ;(truth as any[]).push(e)
         }
       }
