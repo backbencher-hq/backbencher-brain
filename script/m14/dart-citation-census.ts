@@ -188,7 +188,11 @@ const claimable = (m: Map<string, NameStat>) => [...m.entries()].filter(([n]) =>
 const claimedButDeclared = (m: Map<string, NameStat>) => [...m.entries()].filter(([n]) => VOCAB.has(n) && projectDeclared.has(n))
 const unlisted = (m: Map<string, NameStat>) => [...m.entries()].filter(([n]) => !VOCAB.has(n)).sort((a, b) => b[1].rows - a[1].rows)
 const sumRows = (a: [string, NameStat][]) => a.reduce((n, [, s]) => n + s.rows, 0)
-const fmt = (a: [string, NameStat], top = 25) =>
+// THE LIST, not one entry: every call site passes the whole class (`claimable(ann)`,
+// `unlisted(typ)`, …) and the formatter takes the first `top` of it. The signature said a single
+// TUPLE, which the compiler rejected at every call site — and the runtime was right, because a
+// tuple IS an array. The type is brought to the call sites; the OUTPUT is unchanged.
+const fmt = (a: [string, NameStat][], top = 25) =>
   a.slice(0, top).map(([n, s]) => `${n} ${s.rows}${s.projectType ? " (PROJECT-DECLARED)" : ""}`).join(" · ")
 
 console.log(`dart-citation-census — repo ${REPO} · ${rows.length} non-resolved row(s) · ${tracked.length} project file(s)`)
@@ -213,10 +217,13 @@ console.log(`VOCABULARY: ${DART_SDK_CORE.id} — ${DART_SDK_CORE.roots.length} c
 if (JSON_OUT) {
   const dump = (m: Map<string, NameStat>) => [...m.entries()].sort((a, b) => b[1].rows - a[1].rows)
     .map(([name, s]) => ({ name, rows: s.rows, projectDeclared: projectDeclared.has(name), labels: [...s.labels.entries()] }))
+  // THE DUMPS take a MAP, and the class helpers return ARRAYS. The arrays are unique by name
+  // (they come from a Map's own entries), so wrapping them in a Map loses nothing and the dump's
+  // own sort by rows is unaffected.
   console.log(JSON.stringify({
     repo: REPO, dump: DUMP_PATH, rows: rows.length, buckets, vocabulary: DART_SDK_CORE.id,
-    annotation: { claimable: dump(claimableNames(ann)), projectDeclared: dump(claimedButDeclared(ann)), unlisted: dump(unlisted(ann)) },
-    typeShaped: { claimable: dump(claimableNames(typ)), projectDeclared: dump(claimedButDeclared(typ)), unlisted: dump(unlisted(typ)) },
+    annotation: { claimable: dump(claimableNames(ann)), projectDeclared: dump(new Map(claimedButDeclared(ann))), unlisted: dump(new Map(unlisted(ann))) },
+    typeShaped: { claimable: dump(claimableNames(typ)), projectDeclared: dump(new Map(claimedButDeclared(typ))), unlisted: dump(new Map(unlisted(typ))) },
   }, null, 2))
 }
 function claimableNames(m: Map<string, NameStat>): Map<string, NameStat> {

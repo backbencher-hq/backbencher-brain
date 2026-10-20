@@ -126,12 +126,16 @@ async function bindingsFor(file: string): Promise<Set<string>> {
 }
 
 const classes = { W1_file_binds_it: 0, W2_project_member: 0, W3_project_declares_nothing: 0 }
-const byName = new Map<string, { cls: string; rows: number }>()
+// THE CLASS IS ONE OF THE THREE KEYS, and the type says so: `classes[cls]++` on a plain `string`
+// index is the shape that lets a FOURTH class be counted into a Map the census does not have —
+// the counter would silently create the key. The union is the class list itself.
+type WallClass = keyof typeof classes
+const byName = new Map<string, { cls: WallClass; rows: number }>()
 for (const r of rows) {
   if (r.label !== "uses" || r.outcome !== "unresolved") continue
   const repo = repoOf(r.srcFile)
   const boundHere = (await bindingsFor(r.srcFile)).has(r.target)
-  let cls: string
+  let cls: WallClass
   if (boundHere) cls = "W1_file_binds_it"
   else if ((projectMembers.get(repo)?.has(r.target) ?? false) || (projectNames.get(repo)?.has(r.target) ?? false)) cls = "W2_project_member"
   else cls = "W3_project_declares_nothing"

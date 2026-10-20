@@ -77,7 +77,19 @@ type Type = (typeof ALL_TYPES)[number]
 const LABEL_ALIASES: Record<string, string> = {
   calls: "calls", call: "calls",
   uses: "uses",
-  contains: "contains", composition: "contains", part_of: "contains",
+  // `part_of` MOVED 2026-10-18, exactly as in the gate's own map: it used to collapse to
+  // `contains`, on the pre-ruling ontology claim that "part-of is containment". That claim is
+  // measured false for the construct the spelling denotes (a Dart `part` directive includes a
+  // compile unit; it contains no symbol), and the canonical value now exists. Leaving the
+  // collapse would make every emitted `part_of` read as a `contains` edge — a wrong measurement
+  // that still adds up.
+  //
+  // THIS MAP CARRIED BOTH SPELLINGS, and a DUPLICATE OBJECT KEY IS LEGAL JAVASCRIPT: the LAST one
+  // wins, so the stale `part_of: "contains"` was dropped with no error anywhere and the map read
+  // as if the collapse were still in force. The value the runtime used was the CORRECT one
+  // (`part_of` → `part_of`), so no number this census printed was wrong — but the source said
+  // something the runtime did not do, which is the class of defect this fix removes.
+  contains: "contains", composition: "contains",
   imports: "imports", brain_import: "imports",
   references: "references", depends_on: "references", related: "references",
   exports: "exports", provides: "exports",

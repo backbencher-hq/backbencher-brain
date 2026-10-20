@@ -37,11 +37,13 @@ for (const name of readdirSync(FIXTURES).sort()) {
   // the runner does not pass the real on-disk path, and the resolution rule is anchored from it).
   const synthetic = `fixtures/dart/${name}`
   const result: any = analyzer.analyze(root, src, synthetic)
-  const analyzers = (result?.relationships ?? [])
+  // THE TWO LISTS ARE `string[]` — spelled here rather than inferred from `any`, so the
+  // comparison below is typed and the callback's parameters are not implicitly `any`.
+  const analyzers: string[] = (result?.relationships ?? [])
     .filter((r: any) => r.type === "imports" || r.type === "exports")
     .map((r: any) => `${r.type}|${r.target}`)
     .sort()
-  const truth = deriveDartImportsTruth(root, synthetic)
+  const truth: string[] = deriveDartImportsTruth(root, synthetic)
     .filter((e: any) => e.label === "imports" || e.label === "exports")
     .map((e: any) => `${e.label}|${e.target}`)
     .sort()
