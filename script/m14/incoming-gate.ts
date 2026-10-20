@@ -176,7 +176,15 @@ export type { ExternalClaim, ProjectFacts, Outcome, Classified, Outcomes }
 /** Laptop B's 23 lanes, from docs/analyzers/PROMPT-LAPTOP-B.md:15 — asserted, not inferred. */
 export const LANES_B: Record<string, string> = {
   bash: "sh,bash,zsh", fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble",
-  php: "php", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql,graphqls",
+  // RUBY AND SOLIDITY ADDED 2026-10-20 (Lead). The engine has an analyzer for both and BOTH HOLD
+  // AN ACCEPTED D1-D6 VERDICT (ruby §20, solidity §19), yet NEITHER WAS IN EITHER MAP — so the
+  // fleet sweep never measured them, and the population gate could not see them either (it only
+  // compared the lanes an instrument DECLARES). The extension lists are read from the router.
+  ruby: "rb", solidity: "sol",
+  // PHP ADMISSES `phpt` — the router maps it to php and the ENGINE reads it with the php
+  // analyzer, so the lane was measuring 5,114 files while production's php surface is 6,424
+  // (1,310 `.phpt` files, 1 repo, measured). The population gate named it as MISSING.
+  php: "php,phpt", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql,graphqls",
   // `.graphqls` ADDED. The lane definition carried `graphql` and `gql`, and the ROUTER carried the same two —
   // so `.graphqls` was invisible to BOTH, which is why fixing one place would not have moved the gate's own
   // population. MEASURED: 97 corpus `.graphqls` files, worth 83,371 SYMBOLS and 195,108 RELATIONSHIPS, read by
@@ -209,7 +217,14 @@ export const LANES_B: Record<string, string> = {
   // contained one and the board reported 26 lanes, three of them sentences. Comments here stay
   // free of `key: "value"` shapes and of backticks.
   yaml: "yaml,yml",
-  css: "css,less", scss: "scss,sass",
+  // CSS AND SCSS, AND THE `sass` EXTENSION, MOVED (2026-10-20, Lead). The router gives `.sass` to
+  // its OWN language, and the ENGINE reads it with the CSS analyzer and the CSS grammar — the
+  // router's own comment records that the indented syntax parses there with ERROR nodes. So the
+  // scss lane must NOT admit `sass` (it was measuring 67 files production never gives that
+  // analyzer) and the css lane MUST (production reads all 67). The population gate names both
+  // halves of this move; the css baseline of 1,175 files becomes 1,242 and the scss baseline of
+  // 4,433 becomes 4,366, so BOTH are VOID-PENDING-RERUN until the lanes re-measure.
+  css: "css,less,sass", scss: "scss",
   // `.sass` ADDED. The ROUTER already maps it — to its own language, which `language-detection.ts` records as a
   // fix in its own right — and NO LANE ADMITTED IT, so 67 corpus files were routed to a language nothing
   // measured. Third instance of this shape in one day: the router and the lane definition are separate lists and
@@ -262,13 +277,44 @@ export const LANES_A: Record<string, string> = {
   // the plain-C headers it is entitled to. Found by c's lane (proposals/c-h-boundary.md), which measured
   // 2,936 genuine C++ headers inside C's 15,098 (19.45%) and priced extension-only routing as a
   // 12,162-plain-C-header regression.
-  c: "c,h", clojure: "clj,cljs,cljc,edn", cpp: "cpp,cc,cxx,hpp,hxx,hh,h", csharp: "cs,csx",
+  // CPP ADMISSES THE FOUR EXTENSIONS THE ROUTER GIVES IT AND THIS MAP DID NOT (2026-10-20, Lead):
+  // `c++`, `ipp`, `inl`, `cu` — 20 corpus files, of which `c++` is 0, so the population change is
+  // SMALL; but the lane's own ACCEPTED VERDICT ARM (§14.1) was measured on the FULL set
+  // (cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu), so this map was NARROWER THAN THE VERDICT THAT EXISTS
+  // and the fleet sweep could not reproduce the lane's own number. `hh` stays (the engine
+  // content-sniffs it) and `h` stays (see the note above it).
+  c: "c,h", clojure: "clj,cljs,cljc,edn", cpp: "cpp,cc,cxx,c++,hpp,hxx,hh,h,ipp,inl,cu", csharp: "cs,csx",
   elixir: "ex,exs", erlang: "erl,hrl", go: "go", groovy: "groovy,gvy,gradle", haskell: "hs,lhs",
-  html: "html,htm", java: "java", javascript: "js,mjs,cjs,jsx", kotlin: "kt,kts",
-  "objective-c": "m,mm", perl: "pl,pm,t,pod", python: "py,pyi,pyw", rust: "rs",
+  // HTML ADMISSES THE ELEVEN TEMPLATE EXTENSIONS THE ROUTER GIVES IT (2026-10-20, Lead): the
+  // router maps xhtml, hbs, twig, pug, erb, mustache, ejs, liquid, njk, jinja and j2 to html, and
+  // the ENGINE reads every one of them with the html analyzer (the router's own comment: routing
+  // them cannot lose a row, only add). MEASURED: 2,099 corpus files (hbs 1,531 · twig 274 · j2 139
+  // · pug 70 · erb 49 · xhtml 30 · jinja 3 · liquid 3), so the html lane was measuring 6,789 files
+  // while production's html surface is 8,888 — a 31% shortfall. The html baseline is
+  // VOID-PENDING-RERUN until the lane re-measures.
+  html: "html,htm,xhtml,hbs,twig,pug,erb,mustache,ejs,liquid,njk,jinja,j2", java: "java", javascript: "js,mjs,cjs,jsx", kotlin: "kt,kts",
+  // PERL ADMISSES `perl` (the router maps it to perl; 0 corpus files, so the population is
+  // unchanged and the correction is free — but the list said one thing and the router another).
+  "objective-c": "m,mm", perl: "pl,pm,t,pod,perl", python: "py,pyi,pyw", rust: "rs",
   scala: "scala,sc,sbt", svelte: "svelte", swift: "swift",
   typescript: "ts,tsx,mts,cts", vb: "vb", vue: "vue",
 }
+
+/**
+ * THE FLEET'S LANE SET — the UNION of the two maps above.
+ *
+ * The two maps exist because the programme began on two machines ("laptop A" and "laptop B"), and
+ * every sweep path iterated `LANES_B` ONLY. So the 23 lanes in `LANES_A` — java, typescript,
+ * javascript, python, cpp, c, dart, go, groovy, haskell, html, kotlin, scala, clojure, csharp,
+ * elixir, erlang, rust, svelte, swift, vb, vue, objective-c, perl — were MEASURABLE BY NAME but
+ * never swept, and the population gate could not see them either (it compared only the lanes an
+ * instrument declared, and the instrument declared one map).
+ *
+ * `FLEET_LANES` is the union, and every sweep path now iterates it, so the fleet sweep covers
+ * every lane the engine has an analyzer for. `LANES_A` and `LANES_B` stay as the two named maps
+ * they have always been — the union is derived, never hand-maintained a third time.
+ */
+export const FLEET_LANES: Record<string, string> = { ...LANES_A, ...LANES_B }
 
 
 const ALL_TYPES = [
@@ -901,6 +947,17 @@ const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> =
   // therefore could not be measured AT ALL, and a fix proven only by unit test is not measured.
   typescript: { spec: async () => (await import("../../src/ast/project-index")).TYPESCRIPT_DECLARATION_SPEC, wasm: "tree-sitter-typescript.wasm" },
   python: { spec: async () => (await import("../../src/ast/project-index")).PYTHON_DECLARATION_SPEC, wasm: "tree-sitter-python.wasm" },
+  // FSHARP — ADDED 2026-10-20 (Lead). Production ALREADY builds this index: `PROJECT_INDEX_EXTENSIONS`
+  // carries `.fs: "fsharp"` and `parallel-indexer.ts` wires `FSHARP_DECLARATION_SPEC` + the
+  // `wasm/tree-sitter-fsharp.wasm` asset. This table had NO entry, so `--index` built 0 repo indexes
+  // for the lane and the arm that measures the analyzer's real indexed behaviour could not be
+  // produced — the SAME "fake non-arm" shape the `.scss` and `.solidity` notes above record, and
+  // the gate's own output names the rule: "a language in that list with no INDEX_SPECS entry here is
+  // a gap in THIS instrument, not in production". The fsharp baseline recorded in the ledger
+  // (11,807 files / 26 repos / TOTAL 1,305,221 / vc 42.57%) is therefore a NO-INDEX number, and the
+  // gate could not say so. With the entry present, the lane's indexed arm becomes measurable and
+  // the difference between the two populations is a per-column pair (R1), not a guess.
+  fsharp: { spec: async () => (await import("../../src/ast/project-index")).FSHARP_DECLARATION_SPEC, wasm: "tree-sitter-fsharp.wasm" },
   // CPP — the lane the index instrument was PROPOSED for. Its analyzer reads the project index only
   // behind BB_CPP_INDEX_CONSUME=1 (task-22), and the W1 wall's claim (`projectIndexDeclaration`,
   // task-24) is verified from the index's facts; without this entry `--index` builds 0 indexes for the
@@ -3575,10 +3632,10 @@ if (BOARD_LOG) {
   const ONLY_INDEX = argv.indexOf("--only")
   const ONLY = ONLY_INDEX >= 0 ? argv[ONLY_INDEX + 1] : undefined
   const lanes = ONLY
-    ? Object.entries(LANES_B).filter(([l]) => l === ONLY)
-    : Object.entries(LANES_B)
+    ? Object.entries(FLEET_LANES).filter(([l]) => l === ONLY)
+    : Object.entries(FLEET_LANES)
   if (lanes.length === 0) {
-    console.error(`--only ${ONLY} names no lane; known: ${Object.keys(LANES_B).join(" ")}`)
+    console.error(`--only ${ONLY} names no lane; known: ${Object.keys(FLEET_LANES).join(" ")}`)
     process.exit(2)
   }
   for (const [lang, ext] of lanes) {
@@ -3606,7 +3663,7 @@ if (ALL) {
   let failed = 0
   let unmeasured = 0
   const summary: string[] = []
-  for (const [lang, ext] of Object.entries(LANES_B)) {
+  for (const [lang, ext] of Object.entries(FLEET_LANES)) {
     const max = Number(rest[0] ?? 120)
     const rep = await measure(lang, ext, max, USE_INDEX, ONLY_REPOS)
     const v = verdict(rep)
@@ -3625,7 +3682,7 @@ if (ALL) {
       `[${rep.parsed} files]`,
     )
   }
-  console.log(`incoming gate — ${Object.keys(LANES_B).length} laptop-B lanes\n`)
+  console.log(`incoming gate — ${Object.keys(FLEET_LANES).length} fleet lanes (the union of LANES_A and LANES_B)\n`)
   for (const s of summary) console.log(s)
   console.log()
   console.log(`PASS: ${summary.filter((s) => s.includes("PASS")).length}   FAIL: ${failed}   UNMEASURED: ${unmeasured}`)

@@ -149,7 +149,12 @@ function derivedExts(lane: string): string | null {
 }
 
 function runLane(lang: string): { rows: Array<{ type: string; edges: number; resolved: number; ambColl?: number; amb: number; ambKind: number; unres: number; extOK: number; extQ: number; extFAIL: number; bindOK: number; bindQ: number; bindFAIL: number; causeOK: number; causeFAIL: number }>; total: any; intent: Map<string, { intended: number; sameFileUnproven: number; arbitraryTwin: number; noDeclaration: number }>; intentBlockSeen: boolean; intentWidthBad: number; population: Population; intentClosure: string | null; claimBlock: string[] } {
-  const ext = { fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble", php: "php", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql", protobuf: "proto", json: "json,jsonc", yaml: "yaml,yml", css: "css,less", scss: "scss", hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl", bash: "sh,bash,zsh" }[lang] ?? derivedExts(lang) ?? lang
+  // FOUR ENTRIES WIDENED 2026-10-20 (Lead) to the router's own sets, which the population gate
+  // named as MISSING: php (phpt — 1,310 corpus files), graphql (graphqls — 97), json (jsonl 31 +
+  // jsonlog 5 — 36) and css (sass — 67). This table OVERRODE the `derivedExts(lang)` fallback with
+  // narrower lists, so the residual arm measured a population the router does not define — the
+  // §21.38 defect class, in the very instrument the population gate checks.
+  const ext = { fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble", php: "php,phpt", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql,graphqls", protobuf: "proto", json: "json,jsonc,jsonl,jsonlog", yaml: "yaml,yml", css: "css,less,sass", scss: "scss", hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl", bash: "sh,bash,zsh" }[lang] ?? derivedExts(lang) ?? lang
   let out = ""
   try {
     out = execFileSync("npx", ["tsx", "script/m14/incoming-gate.ts", lang, ext, "0"], { cwd: ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, // THE RUNNER'S STDERR IS NO LONGER DISCARDED. It was `stdio: ["ignore","pipe","ignore"]`, which meant a
