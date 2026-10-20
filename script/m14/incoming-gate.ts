@@ -360,7 +360,8 @@ const ontologyName = (raw: string): Type | null => (LABEL_ALIASES[raw] as Type) 
  *  A gate that admits files the analyzer will not measure is measuring its own patience. */
 const SIZE_CAP = 1024 * 1024
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const DEFAULT_CORPUS_ROOT = "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? DEFAULT_CORPUS_ROOT
 
 /**
  * The file set. DISCOVERED, never listed.
@@ -2828,6 +2829,25 @@ const w = (s: string | number, n: number) => (String(s) + " ".repeat(n)).slice(0
 function printReport(rep: Report, control: { ok: boolean; failures: string[] }) {
   const v = verdict(rep)
   console.log(`incoming gate — ${rep.lang}`)
+  // THE CORPUS ROOT IS PART OF THE POPULATION CLAIM, and until 2026-10-20 the header did not say
+  // which one it walked. Measured consequence: the corpus has TWO roots — the default
+  // (`$HOME/fixtures/repositories`, 199 repos) and the symlink farm the campaign's own
+  // commands select with `BB_CORPUS_ROOT=$PWD/.corpus` (202 repos: the 199 plus three LOCAL
+  // checkouts — `pixie`, `plack`, `tf-aws-components`). They are DIFFERENT POPULATIONS, and 24 of
+  // the 48 lanes admit a different number of files under each (perl 427 vs 656; hcl 9,329 vs
+  // 11,139; protobuf 847 vs 907; typescript 17,350 vs 17,689). Every recorded population that
+  // differs between the roots matches the FARM, and none matches the default — so the record and
+  // the gate's own default have quietly measured different things, and a run without the
+  // environment override is not a re-run of the recorded arm. A population claim that does not name
+  // its root cannot be compared with anything. (See
+  // validation/m14/verification/FLEET-POPULATION-TABLE-2026-10-20.md.)
+  console.log(
+    `corpus root: ${CR}` +
+    (CR === DEFAULT_CORPUS_ROOT
+      ? ` (the DEFAULT)`
+      : ` (OVERRIDDEN by BB_CORPUS_ROOT — a DIFFERENT population from the default ` +
+        `${DEFAULT_CORPUS_ROOT}; a rate measured here is not comparable with a rate measured there)`),
+  )
   console.log(
     `population: ${rep.parsed} parsed of ${rep.files.length} sampled ` +
     `(corpus has ${rep.total} .${rep.ext} files across ${rep.repos} repos; stride sample)`,
@@ -2840,8 +2860,9 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     `(${rep.admittedExts.length === 1 ? "ONE spelling — check the lane does not carry another" : "both spellings admitted"}) ` +
     `— PLUS a bare BASENAME equal to any of them WHEN THE ROUTER'S OWN DETECTION GIVES IT TO ` +
     `THIS LANE (\`Makefile\` has no extension to match, and an extension-only rule measured 129 ` +
-    `files where the production router admits 697 — but the router's verdict is a LANGUAGE, not a ` +
-    `spelling: \`dart-sdk/sdk/bin/dart\` is a bash script and is NOT this lane's file).`,
+    `files where the production router admits ${rep.total} for THIS lane in THIS run — but the ` +
+    `router's verdict is a LANGUAGE, not a spelling: \`dart-sdk/sdk/bin/dart\` is a bash script and ` +
+    `is NOT this lane's file).`,
   )
   console.log(
     rep.index === null
