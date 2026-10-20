@@ -183,7 +183,29 @@ case "$cmd" in
     exit 0
     ;;
   force)
-    [ -n "$lane" ] || { echo "usage: arm-token.sh force <lane>"; exit 2; }
+    [ -n "$lane" ] || { echo "usage: arm-token.sh force <lane> [--urgent]"; exit 2; }
+    # ── THE LEAD BROKE THE ONE-ARM INVARIANT WITH THIS COMMAND, AND THE FIX IS HERE. ──
+    # On 2026-10-20 the Lead ran `arm-token.sh force test` to EXERCISE THE QUEUE, while the dart lane's
+    # 33,738-file arm was legitimately holding the token and running. `force` deleted the token directory
+    # UNCONDITIONALLY, so the holder's heartbeat — which lives in that directory — vanished, the token looked
+    # FREE, and the java lane took it and started an arm: TWO ARMS AT ONCE, caused by the Lead's test.
+    #
+    # THE FIX IS THE INVARIANT, NOT THE EXPLANATION. A holder that is GONE stops beating, so a fresh
+    # heartbeat PROVES the holder is alive — and `force` must REFUSE a fresh heartbeat. The TTL path
+    # already reclaims a dead holder; `force` exists only for the rarer case of a holder that is FROZEN
+    # (alive, not beating), and it says so loudly and takes the displaced holder's place in the queue.
+    h_lane="$(holder | sed -n 1p)"; h_beat="$(holder | sed -n 4p)"
+    if token_fresh "$h_beat"; then
+      if [ "${2:-}" != "--urgent" ]; then
+        echo "REFUSED — the token is held by ${h_lane:-nobody} and its heartbeat is FRESH ($(( $(now) - h_beat ))s ago; TTL ${TTL}s)."
+        echo "  A holder that is GONE stops beating, so a fresh heartbeat PROVES it is alive."
+        echo "  If you KNOW the holder is frozen and the heartbeat is lying, re-run with --urgent."
+        exit 5
+      fi
+      echo "*** URGENT FORCE — the token is being pulled from ${h_lane:-nobody}, whose heartbeat is FRESH ($(( $(now) - h_beat ))s ago)."
+      echo "*** If that lane has an arm running, two arms are about to run at once."
+      queue_add "$h_lane" 2>/dev/null || true
+    fi
     rm -rf "$TOKEN_DIR" 2>/dev/null || true
     echo "ARM TOKEN FORCED FREE by $lane"; exit 0
     ;;
