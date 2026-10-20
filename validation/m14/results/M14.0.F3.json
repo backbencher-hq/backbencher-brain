@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "9a8a184a4d7cd8ce66faff55200d01d8d971fbd59d165e78e68b0518d0f52219",
-    "sealedAt": "2026-10-17T19:27:14.000Z"
+    "contentSha256": "8ba96c17fd24150480e57044ac2ed6cdb5d2dfaf366f829201bf6192fa6c501a",
+    "sealedAt": "2026-10-20T23:19:14.000Z"
   },
   "checks": [
     {
@@ -13,13 +13,13 @@
     },
     {
       "description": "clojure adversarial fixtures",
-      "detail": "72/72 fixtures pass",
+      "detail": "79/79 fixtures pass",
       "id": "fixtures-clojure",
       "status": "pass"
     },
     {
       "description": "javascript adversarial fixtures",
-      "detail": "77/78 fixtures pass",
+      "detail": "91/93 fixtures pass",
       "id": "fixtures-javascript",
       "status": "fail"
     },
@@ -31,21 +31,21 @@
     },
     {
       "description": "svelte adversarial fixtures",
-      "detail": "47/53 fixtures pass",
+      "detail": "53/53 fixtures pass",
       "id": "fixtures-svelte",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "100/103 fixtures pass",
+      "detail": "117/119 fixtures pass",
       "id": "fixtures-typescript",
       "status": "fail"
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "59/63 fixtures pass",
+      "detail": "79/79 fixtures pass",
       "id": "fixtures-java",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
@@ -55,43 +55,43 @@
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "61/64 fixtures pass",
+      "detail": "70/70 fixtures pass",
       "id": "fixtures-kotlin",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "71/77 fixtures pass",
+      "detail": "81/81 fixtures pass",
       "id": "fixtures-scala",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "44/47 fixtures pass",
+      "detail": "52/52 fixtures pass",
       "id": "fixtures-c",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "50/51 fixtures pass",
+      "detail": "54/55 fixtures pass",
       "id": "fixtures-cpp",
       "status": "fail"
     },
     {
       "description": "rust adversarial fixtures",
-      "detail": "26/30 fixtures pass",
+      "detail": "30/30 fixtures pass",
       "id": "fixtures-rust",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "python adversarial fixtures",
-      "detail": "56/56 fixtures pass",
+      "detail": "63/63 fixtures pass",
       "id": "fixtures-python",
       "status": "pass"
     },
     {
       "description": "go adversarial fixtures",
-      "detail": "31/31 fixtures pass",
+      "detail": "32/32 fixtures pass",
       "id": "fixtures-go",
       "status": "pass"
     },
@@ -103,13 +103,13 @@
     },
     {
       "description": "csharp adversarial fixtures",
-      "detail": "21/24 fixtures pass",
+      "detail": "25/25 fixtures pass",
       "id": "fixtures-csharp",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "dart adversarial fixtures",
-      "detail": "32/32 fixtures pass",
+      "detail": "50/50 fixtures pass",
       "id": "fixtures-dart",
       "status": "pass"
     },
@@ -157,7 +157,7 @@
     },
     {
       "description": "ruby adversarial fixtures",
-      "detail": "10/11 fixtures pass",
+      "detail": "11/12 fixtures pass",
       "id": "fixtures-ruby",
       "status": "fail"
     },
@@ -175,9 +175,9 @@
     },
     {
       "description": "elixir adversarial fixtures",
-      "detail": "71/82 fixtures pass",
+      "detail": "83/83 fixtures pass",
       "id": "fixtures-elixir",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "yaml adversarial fixtures",
@@ -199,7 +199,7 @@
     },
     {
       "description": "clean adversarial fixtures",
-      "detail": "13/13 fixtures pass",
+      "detail": "14/14 fixtures pass",
       "id": "fixtures-clean",
       "status": "pass"
     },
@@ -217,9 +217,9 @@
     },
     {
       "description": "make adversarial fixtures",
-      "detail": "8/10 fixtures pass",
+      "detail": "10/10 fixtures pass",
       "id": "fixtures-make",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "fsharp adversarial fixtures",
@@ -241,13 +241,13 @@
     },
     {
       "description": "html adversarial fixtures",
-      "detail": "18/18 fixtures pass",
+      "detail": "19/19 fixtures pass",
       "id": "fixtures-html",
       "status": "pass"
     },
     {
       "description": "toml adversarial fixtures",
-      "detail": "10/10 fixtures pass",
+      "detail": "11/11 fixtures pass",
       "id": "fixtures-toml",
       "status": "pass"
     },
@@ -295,8 +295,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "f8d6f8bc6dfdbe68c0ee4e23a9f971fa54b9903f",
-  "committedAt": "2026-10-17T15:27:14-04:00",
+  "commit": "3c844dc729b634340c35143876ddcd45be81cd7b",
+  "committedAt": "2026-10-20T19:19:14-04:00",
   "data": {
     "details": [
       {
@@ -410,6 +410,11 @@
         "problems": []
       },
       {
+        "fixture": "clojure/declare-containing",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "clojure/def-like-heads",
         "ok": true,
         "problems": []
@@ -436,6 +441,16 @@
       },
       {
         "fixture": "clojure/dotdot",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/dynamic-require",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/edn-data-rule-code",
         "ok": true,
         "problems": []
       },
@@ -490,6 +505,11 @@
         "problems": []
       },
       {
+        "fixture": "clojure/language-namespace-claim",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "clojure/letfn",
         "ok": true,
         "problems": []
@@ -506,6 +526,11 @@
       },
       {
         "fixture": "clojure/meta-visibility",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/method-impl-exports",
         "ok": true,
         "problems": []
       },
@@ -531,6 +556,11 @@
       },
       {
         "fixture": "clojure/non-executable-881",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/non-symbol-names",
         "ok": true,
         "problems": []
       },
@@ -561,6 +591,11 @@
       },
       {
         "fixture": "clojure/prefix-require",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/private-spellings",
         "ok": true,
         "problems": []
       },
@@ -805,6 +840,11 @@
         "problems": []
       },
       {
+        "fixture": "javascript/decorator-arguments-not-decorates",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/decorator-capture",
         "ok": true,
         "problems": []
@@ -890,6 +930,31 @@
         "problems": []
       },
       {
+        "fixture": "javascript/export-claim-cjs",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/export-claim-default-alias",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/export-claim-default-anonymous",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/export-claim-default-expression",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/export-claim-default-named",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/exports-rebind",
         "ok": true,
         "problems": []
@@ -905,6 +970,11 @@
         "problems": []
       },
       {
+        "fixture": "javascript/host-global-claims",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/import-alias-binding",
         "ok": true,
         "problems": []
@@ -916,6 +986,16 @@
       },
       {
         "fixture": "javascript/import-edges",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/import-external-claim",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/imported-binding-claims",
         "ok": true,
         "problems": []
       },
@@ -958,6 +1038,18 @@
         "fixture": "javascript/literal-owner-inside-class",
         "ok": true,
         "problems": []
+      },
+      {
+        "fixture": "javascript/local-binding-claims",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/local-binding-declaration-identity",
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"shadowed\",\"target\":\"shadowed\\u0000value\",\"line_number\":24,\"meta.localBinding\":true,\"comment\":\"R2 POSITIVE: the read of the OUTER declaration is a DIFFERENT declaration, so it is a SECOND row. Before the fix this row did not exist (the outer read was dropped).\"}; got: uses[shadowed->shadowed\u0000limit]@0.6; uses[shadowed->shadowed\u0000value]@0.6; uses[readTwice->readTwice\u0000total]@0.6; uses[readTwice->readTwice\u0000first]@0.6; uses[readTwice->readTwice\u0000second]@0.6"
+        ]
       },
       {
         "fixture": "javascript/member-owner-containment",
@@ -1037,7 +1129,22 @@
         "problems": []
       },
       {
+        "fixture": "javascript/receiver-evidence-depth",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/receiver-owner-from-new",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/receiver-position-claims",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/receiver-type-evidence",
         "ok": true,
         "problems": []
       },
@@ -1053,6 +1160,11 @@
       },
       {
         "fixture": "javascript/require-default-flag",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/runtime-global-claims",
         "ok": true,
         "problems": []
       },
@@ -1210,13 +1322,12 @@
         "fixture": "vue/heuristic-evidence-floor",
         "ok": false,
         "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"peek\",\"target\":\"value\",\"meta.isFieldAccess\":true,\"meta.evidenceClass\":\"inferred\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->mod]@0.6; uses[peek->source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"peek\",\"target\":\"source\",\"meta.chainRoot\":true,\"meta.evidenceClass\":\"inferred\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->mod]@0.6; uses[peek->source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"load\",\"target\":\"mod\",\"meta.evidenceClass\":\"inferred\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->mod]@0.6; uses[peek->source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"HeuristicBox\",\"target\":\"@/vendor/missing:*\",\"meta.unresolved\":true,\"meta.evidenceClass\":\"inferred\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->mod]@0.6; uses[peek->source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"HeuristicBox\",\"target\":\"default\",\"meta.evidenceClass\":\"structural\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->mod]@0.6; uses[peek->source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
-          "forbidden relationship present: {\"type\":\"uses\",\"from\":\"peek\",\"target\":\"value\",\"meta.evidenceClass\":\"usage_contextual\",\"comment\":\"a 0.6 field read is a guess about a property the analyzer cannot see; src/lsp/evidence_tier.ts rule 2 requires `inferred` below the 0.7 floor, and rule 1 means nothing downstream will ever correct a stored confident class\"} (found uses[peek->value]@0.6)",
-          "forbidden relationship present: {\"type\":\"uses\",\"from\":\"load\",\"target\":\"mod\",\"meta.evidenceClass\":\"usage_contextual\",\"comment\":\"same floor, same rule — the confident class is what the pre-F20 state stored on every sub-0.7 row\"} (found uses[load->mod]@0.6)"
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"peek\",\"target\":\"value\",\"meta.isFieldAccess\":true,\"meta.evidenceClass\":\"inferred\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->load\u0000mod]@0.6; uses[peek->peek\u0000source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"peek\",\"target\":\"source\",\"meta.chainRoot\":true,\"meta.evidenceClass\":\"inferred\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->load\u0000mod]@0.6; uses[peek->peek\u0000source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"load\",\"target\":\"mod\",\"meta.evidenceClass\":\"inferred\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->load\u0000mod]@0.6; uses[peek->peek\u0000source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
+          "expected relationship not found: {\"type\":\"imports\",\"from\":\"HeuristicBox\",\"target\":\"@/vendor/missing:*\",\"meta.unresolved\":true,\"meta.evidenceClass\":\"inferred\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->load\u0000mod]@0.6; uses[peek->peek\u0000source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
+          "expected relationship not found: {\"type\":\"exports\",\"from\":\"HeuristicBox\",\"target\":\"default\",\"meta.evidenceClass\":\"structural\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->load\u0000mod]@0.6; uses[peek->peek\u0000source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
+          "forbidden relationship present: {\"type\":\"uses\",\"from\":\"peek\",\"target\":\"value\",\"meta.evidenceClass\":\"usage_contextual\",\"comment\":\"a 0.6 field read is a guess about a property the analyzer cannot see; src/lsp/evidence_tier.ts rule 2 requires `inferred` below the 0.7 floor, and rule 1 means nothing downstream will ever correct a stored confident class\"} (found uses[peek->value]@0.6)"
         ]
       },
       {
@@ -1455,13 +1566,8 @@
       },
       {
         "fixture": "svelte/declaration-tag-shadow",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"counter\",\"line_number\":38,\"meta.isTemplateExpression\":true,\"meta.templateReadLines\":[38]}; got: uses[doubler->n]@0.6; uses[declaration-tag-shadow->counter]@0.95; uses[declaration-tag-shadow->letter]@0.95; uses[declaration-tag-shadow->alpha]@0.95; uses[declaration-tag-shadow->beta]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"letter\",\"line_number\":39,\"meta.templateReadLines\":[39]}; got: uses[doubler->n]@0.6; uses[declaration-tag-shadow->counter]@0.95; uses[declaration-tag-shadow->letter]@0.95; uses[declaration-tag-shadow->alpha]@0.95; uses[declaration-tag-shadow->beta]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"alpha\",\"line_number\":45,\"meta.templateReadLines\":[45]}; got: uses[doubler->n]@0.6; uses[declaration-tag-shadow->counter]@0.95; uses[declaration-tag-shadow->letter]@0.95; uses[declaration-tag-shadow->alpha]@0.95; uses[declaration-tag-shadow->beta]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"beta\",\"line_number\":46,\"meta.templateReadLines\":[46]}; got: uses[doubler->n]@0.6; uses[declaration-tag-shadow->counter]@0.95; uses[declaration-tag-shadow->letter]@0.95; uses[declaration-tag-shadow->alpha]@0.95; uses[declaration-tag-shadow->beta]@0.95"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "svelte/decorator-metadata-868",
@@ -1470,10 +1576,8 @@
       },
       {
         "fixture": "svelte/dedupe-template-read-record",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"count\",\"line_number\":26,\"meta.isTemplateRead\":true,\"meta.templateReadLines\":[29],\"meta.sfcDelegated\":true}; got: uses[dedupe-template-read-record->count]@0.6; uses[dedupe-template-read-record->doubled]@0.95; uses[dedupe-template-read-record->onlyTemplate]@0.95; contains[dedupe-template-read-record->doubled]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "svelte/directive-carriers",
@@ -1512,13 +1616,8 @@
       },
       {
         "fixture": "svelte/handler-param-shadow",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"store\",\"line_number\":36,\"meta.isTemplateExpression\":true,\"meta.templateReadLines\":[36]}; got: calls[handler-param-shadow->save]@0.85; uses[handler-param-shadow->store]@0.95; uses[handler-param-shadow->payload]@0.95; uses[handler-param-shadow->save]@0.95; uses[handler-param-shadow->after]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"payload\",\"line_number\":42,\"meta.templateReadLines\":[38,42]}; got: calls[handler-param-shadow->save]@0.85; uses[handler-param-shadow->store]@0.95; uses[handler-param-shadow->payload]@0.95; uses[handler-param-shadow->save]@0.95; uses[handler-param-shadow->after]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"save\",\"line_number\":44,\"meta.templateReadLines\":[40,44]}; got: calls[handler-param-shadow->save]@0.85; uses[handler-param-shadow->store]@0.95; uses[handler-param-shadow->payload]@0.95; uses[handler-param-shadow->save]@0.95; uses[handler-param-shadow->after]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"after\",\"line_number\":46,\"meta.templateReadLines\":[46]}; got: calls[handler-param-shadow->save]@0.85; uses[handler-param-shadow->store]@0.95; uses[handler-param-shadow->payload]@0.95; uses[handler-param-shadow->save]@0.95; uses[handler-param-shadow->after]@0.95"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "svelte/heritage-implements-overrides",
@@ -1542,14 +1641,8 @@
       },
       {
         "fixture": "svelte/multi-site-read-record",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"total\",\"line_number\":39,\"meta.isTemplateExpression\":true,\"meta.templateReadLines\":[37,38,39]}; got: calls[multi-site-read-record->resolve]@0.9; uses[multi-site-read-record->Promise]@0.6; uses[multi-site-read-record->total]@0.95; uses[multi-site-read-record->promise]@0.95; uses[multi-site-read-record->greeting]@0.95; uses[multi-site-read-record->name]@0.95; uses[multi-site-read-record->snapped]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"greeting\",\"line_number\":46,\"meta.templateReadLines\":[45,46]}; got: calls[multi-site-read-record->resolve]@0.9; uses[multi-site-read-record->Promise]@0.6; uses[multi-site-read-record->total]@0.95; uses[multi-site-read-record->promise]@0.95; uses[multi-site-read-record->greeting]@0.95; uses[multi-site-read-record->name]@0.95; uses[multi-site-read-record->snapped]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"name\",\"line_number\":46,\"meta.templateReadLines\":[45,46]}; got: calls[multi-site-read-record->resolve]@0.9; uses[multi-site-read-record->Promise]@0.6; uses[multi-site-read-record->total]@0.95; uses[multi-site-read-record->promise]@0.95; uses[multi-site-read-record->greeting]@0.95; uses[multi-site-read-record->name]@0.95; uses[multi-site-read-record->snapped]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"snapped\",\"line_number\":48,\"meta.templateReadLines\":[48]}; got: calls[multi-site-read-record->resolve]@0.9; uses[multi-site-read-record->Promise]@0.6; uses[multi-site-read-record->total]@0.95; uses[multi-site-read-record->promise]@0.95; uses[multi-site-read-record->greeting]@0.95; uses[multi-site-read-record->name]@0.95; uses[multi-site-read-record->snapped]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"promise\",\"line_number\":41,\"meta.templateReadLines\":[41]}; got: calls[multi-site-read-record->resolve]@0.9; uses[multi-site-read-record->Promise]@0.6; uses[multi-site-read-record->total]@0.95; uses[multi-site-read-record->promise]@0.95; uses[multi-site-read-record->greeting]@0.95; uses[multi-site-read-record->name]@0.95; uses[multi-site-read-record->snapped]@0.95"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "svelte/namespace-component-tags",
@@ -1558,18 +1651,8 @@
       },
       {
         "fixture": "svelte/object-key-not-a-read",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"foo\",\"line_number\":66,\"meta.isTemplateExpression\":true,\"meta.templateReadLines\":[47,54,66]}; got: uses[object-key-not-a-read->foo]@0.95; uses[object-key-not-a-read->bar]@0.95; uses[object-key-not-a-read->k]@0.95; uses[object-key-not-a-read->v]@0.95; uses[object-key-not-a-read->cond]@0.95; uses[object-key-not-a-read->alpha]@0.95; uses[object-key-not-a-read->beta]@0.95; uses[object-key-not-a-read->list]@0.95; uses[object-key-not-a-read->rows]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"bar\",\"line_number\":54,\"meta.templateReadLines\":[47,54]}; got: uses[object-key-not-a-read->foo]@0.95; uses[object-key-not-a-read->bar]@0.95; uses[object-key-not-a-read->k]@0.95; uses[object-key-not-a-read->v]@0.95; uses[object-key-not-a-read->cond]@0.95; uses[object-key-not-a-read->alpha]@0.95; uses[object-key-not-a-read->beta]@0.95; uses[object-key-not-a-read->list]@0.95; uses[object-key-not-a-read->rows]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"k\",\"line_number\":50,\"meta.templateReadLines\":[50]}; got: uses[object-key-not-a-read->foo]@0.95; uses[object-key-not-a-read->bar]@0.95; uses[object-key-not-a-read->k]@0.95; uses[object-key-not-a-read->v]@0.95; uses[object-key-not-a-read->cond]@0.95; uses[object-key-not-a-read->alpha]@0.95; uses[object-key-not-a-read->beta]@0.95; uses[object-key-not-a-read->list]@0.95; uses[object-key-not-a-read->rows]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"v\",\"line_number\":50,\"meta.templateReadLines\":[50]}; got: uses[object-key-not-a-read->foo]@0.95; uses[object-key-not-a-read->bar]@0.95; uses[object-key-not-a-read->k]@0.95; uses[object-key-not-a-read->v]@0.95; uses[object-key-not-a-read->cond]@0.95; uses[object-key-not-a-read->alpha]@0.95; uses[object-key-not-a-read->beta]@0.95; uses[object-key-not-a-read->list]@0.95; uses[object-key-not-a-read->rows]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"cond\",\"line_number\":57,\"meta.templateReadLines\":[53,54,57]}; got: uses[object-key-not-a-read->foo]@0.95; uses[object-key-not-a-read->bar]@0.95; uses[object-key-not-a-read->k]@0.95; uses[object-key-not-a-read->v]@0.95; uses[object-key-not-a-read->cond]@0.95; uses[object-key-not-a-read->alpha]@0.95; uses[object-key-not-a-read->beta]@0.95; uses[object-key-not-a-read->list]@0.95; uses[object-key-not-a-read->rows]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"alpha\",\"line_number\":57,\"meta.templateReadLines\":[53,57]}; got: uses[object-key-not-a-read->foo]@0.95; uses[object-key-not-a-read->bar]@0.95; uses[object-key-not-a-read->k]@0.95; uses[object-key-not-a-read->v]@0.95; uses[object-key-not-a-read->cond]@0.95; uses[object-key-not-a-read->alpha]@0.95; uses[object-key-not-a-read->beta]@0.95; uses[object-key-not-a-read->list]@0.95; uses[object-key-not-a-read->rows]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"beta\",\"line_number\":57,\"meta.templateReadLines\":[53,57]}; got: uses[object-key-not-a-read->foo]@0.95; uses[object-key-not-a-read->bar]@0.95; uses[object-key-not-a-read->k]@0.95; uses[object-key-not-a-read->v]@0.95; uses[object-key-not-a-read->cond]@0.95; uses[object-key-not-a-read->alpha]@0.95; uses[object-key-not-a-read->beta]@0.95; uses[object-key-not-a-read->list]@0.95; uses[object-key-not-a-read->rows]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"list\",\"line_number\":60,\"meta.templateReadLines\":[60]}; got: uses[object-key-not-a-read->foo]@0.95; uses[object-key-not-a-read->bar]@0.95; uses[object-key-not-a-read->k]@0.95; uses[object-key-not-a-read->v]@0.95; uses[object-key-not-a-read->cond]@0.95; uses[object-key-not-a-read->alpha]@0.95; uses[object-key-not-a-read->beta]@0.95; uses[object-key-not-a-read->list]@0.95; uses[object-key-not-a-read->rows]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"rows\",\"line_number\":63,\"meta.templateReadLines\":[63]}; got: uses[object-key-not-a-read->foo]@0.95; uses[object-key-not-a-read->bar]@0.95; uses[object-key-not-a-read->k]@0.95; uses[object-key-not-a-read->v]@0.95; uses[object-key-not-a-read->cond]@0.95; uses[object-key-not-a-read->alpha]@0.95; uses[object-key-not-a-read->beta]@0.95; uses[object-key-not-a-read->list]@0.95; uses[object-key-not-a-read->rows]@0.95"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "svelte/onclick-handler-lines",
@@ -1578,15 +1661,8 @@
       },
       {
         "fixture": "svelte/pattern-reads",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"count\",\"line_number\":65,\"meta.templateReadLines\":[65]}; got: calls[pattern-reads->counter]@0.9; calls[pattern-reads->withDefault]@0.9; calls[pattern-reads->typed]@0.9; calls[pattern-reads->resolve]@0.9; uses[pattern-reads->Promise]@0.6; uses[pattern-reads->count]@0.95; uses[pattern-reads->default_arg]@0.95; uses[pattern-reads->rows]@0.95; uses[pattern-reads->firstString]@0.95; uses[pattern-reads->labelKey]@0.95; uses[pattern-reads->th]@0.95; uses[pattern-reads->items]@0.95; uses[pattern-reads->defaultHeight]@0.95; uses[pattern-reads->promise]@0.95; uses[pattern-reads->pick]@0.95; uses[pattern-reads->obj]@0.95; contains[pattern-reads->counter]@1; contains[pattern-reads->withDefault]@1; contains[pattern-reads->typed]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"default_arg\",\"line_number\":69,\"meta.templateReadLines\":[69]}; got: calls[pattern-reads->counter]@0.9; calls[pattern-reads->withDefault]@0.9; calls[pattern-reads->typed]@0.9; calls[pattern-reads->resolve]@0.9; uses[pattern-reads->Promise]@0.6; uses[pattern-reads->count]@0.95; uses[pattern-reads->default_arg]@0.95; uses[pattern-reads->rows]@0.95; uses[pattern-reads->firstString]@0.95; uses[pattern-reads->labelKey]@0.95; uses[pattern-reads->th]@0.95; uses[pattern-reads->items]@0.95; uses[pattern-reads->defaultHeight]@0.95; uses[pattern-reads->promise]@0.95; uses[pattern-reads->pick]@0.95; uses[pattern-reads->obj]@0.95; contains[pattern-reads->counter]@1; contains[pattern-reads->withDefault]@1; contains[pattern-reads->typed]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"firstString\",\"line_number\":73,\"meta.templateReadLines\":[73]}; got: calls[pattern-reads->counter]@0.9; calls[pattern-reads->withDefault]@0.9; calls[pattern-reads->typed]@0.9; calls[pattern-reads->resolve]@0.9; uses[pattern-reads->Promise]@0.6; uses[pattern-reads->count]@0.95; uses[pattern-reads->default_arg]@0.95; uses[pattern-reads->rows]@0.95; uses[pattern-reads->firstString]@0.95; uses[pattern-reads->labelKey]@0.95; uses[pattern-reads->th]@0.95; uses[pattern-reads->items]@0.95; uses[pattern-reads->defaultHeight]@0.95; uses[pattern-reads->promise]@0.95; uses[pattern-reads->pick]@0.95; uses[pattern-reads->obj]@0.95; contains[pattern-reads->counter]@1; contains[pattern-reads->withDefault]@1; contains[pattern-reads->typed]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"labelKey\",\"line_number\":102,\"meta.templateReadLines\":[73,102]}; got: calls[pattern-reads->counter]@0.9; calls[pattern-reads->withDefault]@0.9; calls[pattern-reads->typed]@0.9; calls[pattern-reads->resolve]@0.9; uses[pattern-reads->Promise]@0.6; uses[pattern-reads->count]@0.95; uses[pattern-reads->default_arg]@0.95; uses[pattern-reads->rows]@0.95; uses[pattern-reads->firstString]@0.95; uses[pattern-reads->labelKey]@0.95; uses[pattern-reads->th]@0.95; uses[pattern-reads->items]@0.95; uses[pattern-reads->defaultHeight]@0.95; uses[pattern-reads->promise]@0.95; uses[pattern-reads->pick]@0.95; uses[pattern-reads->obj]@0.95; contains[pattern-reads->counter]@1; contains[pattern-reads->withDefault]@1; contains[pattern-reads->typed]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"th\",\"line_number\":88,\"meta.templateReadLines\":[78,88]}; got: calls[pattern-reads->counter]@0.9; calls[pattern-reads->withDefault]@0.9; calls[pattern-reads->typed]@0.9; calls[pattern-reads->resolve]@0.9; uses[pattern-reads->Promise]@0.6; uses[pattern-reads->count]@0.95; uses[pattern-reads->default_arg]@0.95; uses[pattern-reads->rows]@0.95; uses[pattern-reads->firstString]@0.95; uses[pattern-reads->labelKey]@0.95; uses[pattern-reads->th]@0.95; uses[pattern-reads->items]@0.95; uses[pattern-reads->defaultHeight]@0.95; uses[pattern-reads->promise]@0.95; uses[pattern-reads->pick]@0.95; uses[pattern-reads->obj]@0.95; contains[pattern-reads->counter]@1; contains[pattern-reads->withDefault]@1; contains[pattern-reads->typed]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"defaultHeight\",\"line_number\":83,\"meta.templateReadLines\":[83]}; got: calls[pattern-reads->counter]@0.9; calls[pattern-reads->withDefault]@0.9; calls[pattern-reads->typed]@0.9; calls[pattern-reads->resolve]@0.9; uses[pattern-reads->Promise]@0.6; uses[pattern-reads->count]@0.95; uses[pattern-reads->default_arg]@0.95; uses[pattern-reads->rows]@0.95; uses[pattern-reads->firstString]@0.95; uses[pattern-reads->labelKey]@0.95; uses[pattern-reads->th]@0.95; uses[pattern-reads->items]@0.95; uses[pattern-reads->defaultHeight]@0.95; uses[pattern-reads->promise]@0.95; uses[pattern-reads->pick]@0.95; uses[pattern-reads->obj]@0.95; contains[pattern-reads->counter]@1; contains[pattern-reads->withDefault]@1; contains[pattern-reads->typed]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "svelte/payload-pins",
@@ -1849,6 +1925,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/decorator-emission",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/decorator-exact",
         "ok": true,
         "problems": []
@@ -1939,6 +2020,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/heritage-comment-targets",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/heritage-parameterized-leaves",
         "ok": true,
         "problems": []
@@ -1960,6 +2046,11 @@
       },
       {
         "fixture": "typescript/import-target-shapes",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/imported-binding-claim",
         "ok": true,
         "problems": []
       },
@@ -2009,6 +2100,16 @@
         "problems": []
       },
       {
+        "fixture": "typescript/local-binding-claim",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/local-binding-spellings",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/loop-and-catch-shadow-file-symbol",
         "ok": true,
         "problems": []
@@ -2040,6 +2141,11 @@
       },
       {
         "fixture": "typescript/namespace-member-export-boundary",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/nested-scope-local-shadow",
         "ok": true,
         "problems": []
       },
@@ -2079,6 +2185,51 @@
         "problems": []
       },
       {
+        "fixture": "typescript/owner-class-assignment",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/owner-class-cast",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/owner-class-class-static",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/owner-class-destructured",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/owner-class-element",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/owner-class-enum",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/owner-class-factory",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/owner-class-generic",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/owner-scope-shadowing",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/param-prop-default",
         "ok": true,
         "problems": []
@@ -2109,6 +2260,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/process",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/qualified-call-path",
         "ok": true,
         "problems": []
@@ -2132,15 +2288,8 @@
       },
       {
         "fixture": "typescript/re-export-module-dependency",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"re-export-module-dependency\",\"target\":\"alpha\",\"line_number\":29,\"note\":\"THE GAIN: a named re-export is a dependency on ./vendor/alpha for the name `alpha`. Same `path:item` shape a static import uses, so one consumer rule covers both\"}; got: imports[re-export-module-dependency->zeta]@1; exports[re-export-module-dependency->alpha]@1; exports[re-export-module-dependency->renamedBeta]@1; exports[re-export-module-dependency->gammaNs]@1; exports[re-export-module-dependency->delta]@1; exports[re-export-module-dependency->Epsilon]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"re-export-module-dependency\",\"target\":\"beta\",\"line_number\":30,\"note\":\"the item is the name ASKED FOR (`beta`), not the name published (`renamedBeta`). An alias is what THIS file calls the binding; the name is what the exporting module calls it, and only the second can be joined against that module. The exports edge below carries `renamedBeta` — the two halves answer different questions and conflating them asks a module for a name it does not export\"}; got: imports[re-export-module-dependency->zeta]@1; exports[re-export-module-dependency->alpha]@1; exports[re-export-module-dependency->renamedBeta]@1; exports[re-export-module-dependency->gammaNs]@1; exports[re-export-module-dependency->delta]@1; exports[re-export-module-dependency->Epsilon]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"re-export-module-dependency\",\"target\":\"./vendor/gamma:*\",\"line_number\":31,\"note\":\"the STAR form, in the whole-module shape the analyzer already uses for a namespace import and for a side-effect import\"}; got: imports[re-export-module-dependency->zeta]@1; exports[re-export-module-dependency->alpha]@1; exports[re-export-module-dependency->renamedBeta]@1; exports[re-export-module-dependency->gammaNs]@1; exports[re-export-module-dependency->delta]@1; exports[re-export-module-dependency->Epsilon]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"re-export-module-dependency\",\"target\":\"./vendor/gamma-ns:*\",\"line_number\":32,\"note\":\"`export * as ns from` takes the MODULE ITSELF under the alias `ns`, so the dependency is the whole-module `*` shape — the same target a namespace import publishes, because it asks exactly as much of the module. The `*` token is INSIDE namespace_export, so a bare token check on the statement misses this shape entirely\"}; got: imports[re-export-module-dependency->zeta]@1; exports[re-export-module-dependency->alpha]@1; exports[re-export-module-dependency->renamedBeta]@1; exports[re-export-module-dependency->gammaNs]@1; exports[re-export-module-dependency->delta]@1; exports[re-export-module-dependency->Epsilon]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"re-export-module-dependency\",\"target\":\"delta\",\"line_number\":33}; got: imports[re-export-module-dependency->zeta]@1; exports[re-export-module-dependency->alpha]@1; exports[re-export-module-dependency->renamedBeta]@1; exports[re-export-module-dependency->gammaNs]@1; exports[re-export-module-dependency->delta]@1; exports[re-export-module-dependency->Epsilon]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"re-export-module-dependency\",\"target\":\"Epsilon\",\"line_number\":34,\"note\":\"`export type { … } from` — a TYPE-only re-export is still a module dependency: the type cannot be checked without the module\"}; got: imports[re-export-module-dependency->zeta]@1; exports[re-export-module-dependency->alpha]@1; exports[re-export-module-dependency->renamedBeta]@1; exports[re-export-module-dependency->gammaNs]@1; exports[re-export-module-dependency->delta]@1; exports[re-export-module-dependency->Epsilon]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "typescript/receiver-owner-from-new",
@@ -2264,6 +2413,11 @@
         "problems": []
       },
       {
+        "fixture": "java/annotation-references",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/anonymous-and-multihop-overrides",
         "ok": true,
         "problems": []
@@ -2304,6 +2458,16 @@
         "problems": []
       },
       {
+        "fixture": "java/citation-project/ExternalUse",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/citation-project/ShadowedName",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/class-extends-implements",
         "ok": true,
         "problems": []
@@ -2329,23 +2493,24 @@
         "problems": []
       },
       {
+        "fixture": "java/declaration-names-are-not-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/default-package-exports",
         "ok": true,
         "problems": []
       },
       {
+        "fixture": "java/enum-constant-bodies",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/exported-types",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"com.acme.pub\",\"target\":\"Published\",\"meta.relationshipType\":\"exported_type\",\"meta.isJavaExport\":true,\"meta.kind\":\"class\",\"meta.evidenceClass\":\"structural\",\"confidenceMin\":1}; got: references[PublishedRecord->String]@0.95; contains[Published->open]@1; contains[PackagePrivate->hidden]@1; contains[PublishedRecord->id]@1; contains[PublishedRecord->name]@1; contains[PublishedEnum->ONE]@1; contains[PublishedEnum->TWO]@1; contains[PackagePrivateEnum->ONE]@1; contains[Outer->NestedPublic]@1; contains[Outer->NestedHidden]@1; exports[com.acme.pub->Published]@1; exports[com.acme.pub->PackagePrivate]@0.6; exports[com.acme.pub->PublishedRecord]@1; exports[com.acme.pub->PublishedEnum]@1; exports[com.acme.pub->PackagePrivateEnum]@0.6; exports[com.acme.pub->PublishedAnnotation]@1; exports[com.acme.pub->PackagePrivateAnnotation]@0.6; exports[com.acme.pub->Outer]@0.6",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"com.acme.pub\",\"target\":\"PublishedRecord\",\"meta.relationshipType\":\"exported_type\",\"meta.dottedName\":\"com.acme.pub.PublishedRecord\",\"confidenceMin\":1}; got: references[PublishedRecord->String]@0.95; contains[Published->open]@1; contains[PackagePrivate->hidden]@1; contains[PublishedRecord->id]@1; contains[PublishedRecord->name]@1; contains[PublishedEnum->ONE]@1; contains[PublishedEnum->TWO]@1; contains[PackagePrivateEnum->ONE]@1; contains[Outer->NestedPublic]@1; contains[Outer->NestedHidden]@1; exports[com.acme.pub->Published]@1; exports[com.acme.pub->PackagePrivate]@0.6; exports[com.acme.pub->PublishedRecord]@1; exports[com.acme.pub->PublishedEnum]@1; exports[com.acme.pub->PackagePrivateEnum]@0.6; exports[com.acme.pub->PublishedAnnotation]@1; exports[com.acme.pub->PackagePrivateAnnotation]@0.6; exports[com.acme.pub->Outer]@0.6",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"com.acme.pub\",\"target\":\"PublishedEnum\",\"meta.relationshipType\":\"exported_type\",\"meta.kind\":\"enum\",\"confidenceMin\":1}; got: references[PublishedRecord->String]@0.95; contains[Published->open]@1; contains[PackagePrivate->hidden]@1; contains[PublishedRecord->id]@1; contains[PublishedRecord->name]@1; contains[PublishedEnum->ONE]@1; contains[PublishedEnum->TWO]@1; contains[PackagePrivateEnum->ONE]@1; contains[Outer->NestedPublic]@1; contains[Outer->NestedHidden]@1; exports[com.acme.pub->Published]@1; exports[com.acme.pub->PackagePrivate]@0.6; exports[com.acme.pub->PublishedRecord]@1; exports[com.acme.pub->PublishedEnum]@1; exports[com.acme.pub->PackagePrivateEnum]@0.6; exports[com.acme.pub->PublishedAnnotation]@1; exports[com.acme.pub->PackagePrivateAnnotation]@0.6; exports[com.acme.pub->Outer]@0.6",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"com.acme.pub\",\"target\":\"PublishedAnnotation\",\"meta.relationshipType\":\"exported_type\",\"confidenceMin\":1}; got: references[PublishedRecord->String]@0.95; contains[Published->open]@1; contains[PackagePrivate->hidden]@1; contains[PublishedRecord->id]@1; contains[PublishedRecord->name]@1; contains[PublishedEnum->ONE]@1; contains[PublishedEnum->TWO]@1; contains[PackagePrivateEnum->ONE]@1; contains[Outer->NestedPublic]@1; contains[Outer->NestedHidden]@1; exports[com.acme.pub->Published]@1; exports[com.acme.pub->PackagePrivate]@0.6; exports[com.acme.pub->PublishedRecord]@1; exports[com.acme.pub->PublishedEnum]@1; exports[com.acme.pub->PackagePrivateEnum]@0.6; exports[com.acme.pub->PublishedAnnotation]@1; exports[com.acme.pub->PackagePrivateAnnotation]@0.6; exports[com.acme.pub->Outer]@0.6",
-          "forbidden relationship present: {\"type\":\"exports\",\"target\":\"PackagePrivate\"} (found exports[com.acme.pub->PackagePrivate]@0.6)",
-          "forbidden relationship present: {\"type\":\"exports\",\"target\":\"PackagePrivateEnum\"} (found exports[com.acme.pub->PackagePrivateEnum]@0.6)",
-          "forbidden relationship present: {\"type\":\"exports\",\"target\":\"PackagePrivateAnnotation\"} (found exports[com.acme.pub->PackagePrivateAnnotation]@0.6)",
-          "forbidden relationship present: {\"type\":\"exports\",\"target\":\"Outer\"} (found exports[com.acme.pub->Outer]@0.6)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/exports-public-top-level-types",
@@ -2419,18 +2584,8 @@
       },
       {
         "fixture": "java/import-label",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"Shapes\",\"target\":\"java.util.List\",\"meta.relationshipType\":\"single_type\",\"meta.isJavaImport\":true,\"meta.isWildcard\":false,\"meta.isStatic\":false,\"meta.evidenceClass\":\"import_based\",\"confidenceMin\":0.9}; got: imports[Shapes->java.util.List]@1; references[Shapes->java.util.List]@0.9; imports[com.acme.dep->java.util.List]@1; imports[Shapes->java.util.Map]@1; references[Shapes->java.util.Map]@0.9; imports[com.acme.dep->java.util.Map]@1; imports[Shapes->java.util.Set]@1; references[Shapes->java.util.Set]@0.9; imports[com.acme.dep->java.util.Set]@1; imports[Shapes->java.util.concurrent]@1; references[Shapes->java.util.concurrent]@0.9; imports[com.acme.dep->java.util.concurrent]@1; imports[Shapes->java.io]@1; references[Shapes->java.io]@0.9; imports[com.acme.dep->java.io]@1; imports[Shapes->java.util.Collections.sort]@1; references[Shapes->java.util.Collections.sort]@0.9; imports[com.acme.dep->java.util.Collections.sort]@1; imports[Shapes->java.util.Arrays]@1; references[Shapes->java.util.Arrays]@0.9; imports[com.acme.dep->java.util.Arrays]@1; references[Shapes->List]@0.95; references[Shapes->String]@0.95; references[Shapes->Set]@0.95; references[Shapes->String]@0.95; contains[Shapes->single]@1; contains[Shapes->onDemand]@1; exports[com.acme.dep->Shapes]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"Shapes\",\"target\":\"java.util.Map\",\"meta.relationshipType\":\"single_type\",\"meta.isJavaImport\":true,\"confidenceMin\":0.9}; got: imports[Shapes->java.util.List]@1; references[Shapes->java.util.List]@0.9; imports[com.acme.dep->java.util.List]@1; imports[Shapes->java.util.Map]@1; references[Shapes->java.util.Map]@0.9; imports[com.acme.dep->java.util.Map]@1; imports[Shapes->java.util.Set]@1; references[Shapes->java.util.Set]@0.9; imports[com.acme.dep->java.util.Set]@1; imports[Shapes->java.util.concurrent]@1; references[Shapes->java.util.concurrent]@0.9; imports[com.acme.dep->java.util.concurrent]@1; imports[Shapes->java.io]@1; references[Shapes->java.io]@0.9; imports[com.acme.dep->java.io]@1; imports[Shapes->java.util.Collections.sort]@1; references[Shapes->java.util.Collections.sort]@0.9; imports[com.acme.dep->java.util.Collections.sort]@1; imports[Shapes->java.util.Arrays]@1; references[Shapes->java.util.Arrays]@0.9; imports[com.acme.dep->java.util.Arrays]@1; references[Shapes->List]@0.95; references[Shapes->String]@0.95; references[Shapes->Set]@0.95; references[Shapes->String]@0.95; contains[Shapes->single]@1; contains[Shapes->onDemand]@1; exports[com.acme.dep->Shapes]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"Shapes\",\"target\":\"java.util.Set\",\"meta.relationshipType\":\"single_type\",\"meta.isJavaImport\":true,\"confidenceMin\":0.9}; got: imports[Shapes->java.util.List]@1; references[Shapes->java.util.List]@0.9; imports[com.acme.dep->java.util.List]@1; imports[Shapes->java.util.Map]@1; references[Shapes->java.util.Map]@0.9; imports[com.acme.dep->java.util.Map]@1; imports[Shapes->java.util.Set]@1; references[Shapes->java.util.Set]@0.9; imports[com.acme.dep->java.util.Set]@1; imports[Shapes->java.util.concurrent]@1; references[Shapes->java.util.concurrent]@0.9; imports[com.acme.dep->java.util.concurrent]@1; imports[Shapes->java.io]@1; references[Shapes->java.io]@0.9; imports[com.acme.dep->java.io]@1; imports[Shapes->java.util.Collections.sort]@1; references[Shapes->java.util.Collections.sort]@0.9; imports[com.acme.dep->java.util.Collections.sort]@1; imports[Shapes->java.util.Arrays]@1; references[Shapes->java.util.Arrays]@0.9; imports[com.acme.dep->java.util.Arrays]@1; references[Shapes->List]@0.95; references[Shapes->String]@0.95; references[Shapes->Set]@0.95; references[Shapes->String]@0.95; contains[Shapes->single]@1; contains[Shapes->onDemand]@1; exports[com.acme.dep->Shapes]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"Shapes\",\"target\":\"java.util.concurrent\",\"meta.relationshipType\":\"on_demand_type\",\"meta.isWildcard\":true,\"meta.isStatic\":false,\"meta.evidenceClass\":\"import_based\",\"confidenceMin\":0.9}; got: imports[Shapes->java.util.List]@1; references[Shapes->java.util.List]@0.9; imports[com.acme.dep->java.util.List]@1; imports[Shapes->java.util.Map]@1; references[Shapes->java.util.Map]@0.9; imports[com.acme.dep->java.util.Map]@1; imports[Shapes->java.util.Set]@1; references[Shapes->java.util.Set]@0.9; imports[com.acme.dep->java.util.Set]@1; imports[Shapes->java.util.concurrent]@1; references[Shapes->java.util.concurrent]@0.9; imports[com.acme.dep->java.util.concurrent]@1; imports[Shapes->java.io]@1; references[Shapes->java.io]@0.9; imports[com.acme.dep->java.io]@1; imports[Shapes->java.util.Collections.sort]@1; references[Shapes->java.util.Collections.sort]@0.9; imports[com.acme.dep->java.util.Collections.sort]@1; imports[Shapes->java.util.Arrays]@1; references[Shapes->java.util.Arrays]@0.9; imports[com.acme.dep->java.util.Arrays]@1; references[Shapes->List]@0.95; references[Shapes->String]@0.95; references[Shapes->Set]@0.95; references[Shapes->String]@0.95; contains[Shapes->single]@1; contains[Shapes->onDemand]@1; exports[com.acme.dep->Shapes]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"Shapes\",\"target\":\"java.io\",\"meta.relationshipType\":\"on_demand_type\",\"meta.isWildcard\":true,\"confidenceMin\":0.9}; got: imports[Shapes->java.util.List]@1; references[Shapes->java.util.List]@0.9; imports[com.acme.dep->java.util.List]@1; imports[Shapes->java.util.Map]@1; references[Shapes->java.util.Map]@0.9; imports[com.acme.dep->java.util.Map]@1; imports[Shapes->java.util.Set]@1; references[Shapes->java.util.Set]@0.9; imports[com.acme.dep->java.util.Set]@1; imports[Shapes->java.util.concurrent]@1; references[Shapes->java.util.concurrent]@0.9; imports[com.acme.dep->java.util.concurrent]@1; imports[Shapes->java.io]@1; references[Shapes->java.io]@0.9; imports[com.acme.dep->java.io]@1; imports[Shapes->java.util.Collections.sort]@1; references[Shapes->java.util.Collections.sort]@0.9; imports[com.acme.dep->java.util.Collections.sort]@1; imports[Shapes->java.util.Arrays]@1; references[Shapes->java.util.Arrays]@0.9; imports[com.acme.dep->java.util.Arrays]@1; references[Shapes->List]@0.95; references[Shapes->String]@0.95; references[Shapes->Set]@0.95; references[Shapes->String]@0.95; contains[Shapes->single]@1; contains[Shapes->onDemand]@1; exports[com.acme.dep->Shapes]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"Shapes\",\"target\":\"java.util.Collections.sort\",\"meta.relationshipType\":\"static_member\",\"meta.isJavaImport\":true,\"meta.isStatic\":true,\"meta.isWildcard\":false,\"confidenceMin\":0.9}; got: imports[Shapes->java.util.List]@1; references[Shapes->java.util.List]@0.9; imports[com.acme.dep->java.util.List]@1; imports[Shapes->java.util.Map]@1; references[Shapes->java.util.Map]@0.9; imports[com.acme.dep->java.util.Map]@1; imports[Shapes->java.util.Set]@1; references[Shapes->java.util.Set]@0.9; imports[com.acme.dep->java.util.Set]@1; imports[Shapes->java.util.concurrent]@1; references[Shapes->java.util.concurrent]@0.9; imports[com.acme.dep->java.util.concurrent]@1; imports[Shapes->java.io]@1; references[Shapes->java.io]@0.9; imports[com.acme.dep->java.io]@1; imports[Shapes->java.util.Collections.sort]@1; references[Shapes->java.util.Collections.sort]@0.9; imports[com.acme.dep->java.util.Collections.sort]@1; imports[Shapes->java.util.Arrays]@1; references[Shapes->java.util.Arrays]@0.9; imports[com.acme.dep->java.util.Arrays]@1; references[Shapes->List]@0.95; references[Shapes->String]@0.95; references[Shapes->Set]@0.95; references[Shapes->String]@0.95; contains[Shapes->single]@1; contains[Shapes->onDemand]@1; exports[com.acme.dep->Shapes]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"Shapes\",\"target\":\"java.util.Arrays\",\"meta.relationshipType\":\"static_on_demand\",\"meta.isJavaImport\":true,\"meta.isStatic\":true,\"meta.isWildcard\":true,\"confidenceMin\":0.9}; got: imports[Shapes->java.util.List]@1; references[Shapes->java.util.List]@0.9; imports[com.acme.dep->java.util.List]@1; imports[Shapes->java.util.Map]@1; references[Shapes->java.util.Map]@0.9; imports[com.acme.dep->java.util.Map]@1; imports[Shapes->java.util.Set]@1; references[Shapes->java.util.Set]@0.9; imports[com.acme.dep->java.util.Set]@1; imports[Shapes->java.util.concurrent]@1; references[Shapes->java.util.concurrent]@0.9; imports[com.acme.dep->java.util.concurrent]@1; imports[Shapes->java.io]@1; references[Shapes->java.io]@0.9; imports[com.acme.dep->java.io]@1; imports[Shapes->java.util.Collections.sort]@1; references[Shapes->java.util.Collections.sort]@0.9; imports[com.acme.dep->java.util.Collections.sort]@1; imports[Shapes->java.util.Arrays]@1; references[Shapes->java.util.Arrays]@0.9; imports[com.acme.dep->java.util.Arrays]@1; references[Shapes->List]@0.95; references[Shapes->String]@0.95; references[Shapes->Set]@0.95; references[Shapes->String]@0.95; contains[Shapes->single]@1; contains[Shapes->onDemand]@1; exports[com.acme.dep->Shapes]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"Shapes\",\"target\":\"java.util.List\",\"meta.relationshipType\":\"single_type\",\"line_number\":3}; got: imports[Shapes->java.util.List]@1; references[Shapes->java.util.List]@0.9; imports[com.acme.dep->java.util.List]@1; imports[Shapes->java.util.Map]@1; references[Shapes->java.util.Map]@0.9; imports[com.acme.dep->java.util.Map]@1; imports[Shapes->java.util.Set]@1; references[Shapes->java.util.Set]@0.9; imports[com.acme.dep->java.util.Set]@1; imports[Shapes->java.util.concurrent]@1; references[Shapes->java.util.concurrent]@0.9; imports[com.acme.dep->java.util.concurrent]@1; imports[Shapes->java.io]@1; references[Shapes->java.io]@0.9; imports[com.acme.dep->java.io]@1; imports[Shapes->java.util.Collections.sort]@1; references[Shapes->java.util.Collections.sort]@0.9; imports[com.acme.dep->java.util.Collections.sort]@1; imports[Shapes->java.util.Arrays]@1; references[Shapes->java.util.Arrays]@0.9; imports[com.acme.dep->java.util.Arrays]@1; references[Shapes->List]@0.95; references[Shapes->String]@0.95; references[Shapes->Set]@0.95; references[Shapes->String]@0.95; contains[Shapes->single]@1; contains[Shapes->onDemand]@1; exports[com.acme.dep->Shapes]@1",
-          "forbidden relationship present: {\"type\":\"imports\",\"source\":\"com.acme.dep\"} (found imports[com.acme.dep->java.util.List]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/initializer-calls",
@@ -2454,6 +2609,16 @@
       },
       {
         "fixture": "java/jpms-module-exports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/library-import-binding",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/library-namespace-citations",
         "ok": true,
         "problems": []
       },
@@ -2484,25 +2649,13 @@
       },
       {
         "fixture": "java/module-exports-jpms",
-        "ok": false,
-        "problems": [
-          "forbidden relationship present: {\"type\":\"references\",\"target\":\"com.example.widget.api\"} (found references[com.example.widget->com.example.widget.api]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/module-info-directives",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"com.example.app\",\"target\":\"java.logging\",\"meta.relationshipType\":\"module_requires_dependency\",\"meta.fileLevel\":true,\"confidence\":1}; got: imports[com.example.app->java.logging]@1; references[com.example.app->java.logging]@1; imports[com.example.app->com.example.core]@1; references[com.example.app->com.example.core]@1; imports[com.example.app->jdk.unsupported]@0.9; references[com.example.app->jdk.unsupported]@1; exports[com.example.app->com.example.api]@1; references[com.example.app->com.example.api]@1; exports[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.model]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.impl.AltImpl]@1; references[com.example.app->com.example.impl.ServiceImpl]@1; references[com.example.app->com.example.impl.AltImpl]@1; contains[com.example.app->com.example.api]@1; contains[com.example.app->com.example.internal.spi]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"com.example.app\",\"target\":\"com.example.core\",\"meta.relationshipType\":\"module_requires_dependency\",\"meta.fileLevel\":true,\"confidence\":1}; got: imports[com.example.app->java.logging]@1; references[com.example.app->java.logging]@1; imports[com.example.app->com.example.core]@1; references[com.example.app->com.example.core]@1; imports[com.example.app->jdk.unsupported]@0.9; references[com.example.app->jdk.unsupported]@1; exports[com.example.app->com.example.api]@1; references[com.example.app->com.example.api]@1; exports[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.model]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.impl.AltImpl]@1; references[com.example.app->com.example.impl.ServiceImpl]@1; references[com.example.app->com.example.impl.AltImpl]@1; contains[com.example.app->com.example.api]@1; contains[com.example.app->com.example.internal.spi]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"com.example.app\",\"target\":\"jdk.unsupported\",\"meta.relationshipType\":\"module_requires_dependency\",\"meta.fileLevel\":true,\"confidence\":1}; got: imports[com.example.app->java.logging]@1; references[com.example.app->java.logging]@1; imports[com.example.app->com.example.core]@1; references[com.example.app->com.example.core]@1; imports[com.example.app->jdk.unsupported]@0.9; references[com.example.app->jdk.unsupported]@1; exports[com.example.app->com.example.api]@1; references[com.example.app->com.example.api]@1; exports[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.model]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.impl.AltImpl]@1; references[com.example.app->com.example.impl.ServiceImpl]@1; references[com.example.app->com.example.impl.AltImpl]@1; contains[com.example.app->com.example.api]@1; contains[com.example.app->com.example.internal.spi]@1",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"com.example.app\",\"target\":\"java.logging\",\"meta.relationshipType\":\"requires_module\",\"meta.reasonCode\":\"module_directive\"}; got: imports[com.example.app->java.logging]@1; references[com.example.app->java.logging]@1; imports[com.example.app->com.example.core]@1; references[com.example.app->com.example.core]@1; imports[com.example.app->jdk.unsupported]@0.9; references[com.example.app->jdk.unsupported]@1; exports[com.example.app->com.example.api]@1; references[com.example.app->com.example.api]@1; exports[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.model]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.impl.AltImpl]@1; references[com.example.app->com.example.impl.ServiceImpl]@1; references[com.example.app->com.example.impl.AltImpl]@1; contains[com.example.app->com.example.api]@1; contains[com.example.app->com.example.internal.spi]@1",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"com.example.app\",\"target\":\"com.example.core\",\"meta.relationshipType\":\"requires_module\"}; got: imports[com.example.app->java.logging]@1; references[com.example.app->java.logging]@1; imports[com.example.app->com.example.core]@1; references[com.example.app->com.example.core]@1; imports[com.example.app->jdk.unsupported]@0.9; references[com.example.app->jdk.unsupported]@1; exports[com.example.app->com.example.api]@1; references[com.example.app->com.example.api]@1; exports[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.model]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.impl.AltImpl]@1; references[com.example.app->com.example.impl.ServiceImpl]@1; references[com.example.app->com.example.impl.AltImpl]@1; contains[com.example.app->com.example.api]@1; contains[com.example.app->com.example.internal.spi]@1",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"com.example.app\",\"target\":\"jdk.unsupported\",\"meta.relationshipType\":\"requires_module\"}; got: imports[com.example.app->java.logging]@1; references[com.example.app->java.logging]@1; imports[com.example.app->com.example.core]@1; references[com.example.app->com.example.core]@1; imports[com.example.app->jdk.unsupported]@0.9; references[com.example.app->jdk.unsupported]@1; exports[com.example.app->com.example.api]@1; references[com.example.app->com.example.api]@1; exports[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.model]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.impl.AltImpl]@1; references[com.example.app->com.example.impl.ServiceImpl]@1; references[com.example.app->com.example.impl.AltImpl]@1; contains[com.example.app->com.example.api]@1; contains[com.example.app->com.example.internal.spi]@1",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"com.example.app\",\"target\":\"com.example.api\",\"meta.relationshipType\":\"module_exports_package\"}; got: imports[com.example.app->java.logging]@1; references[com.example.app->java.logging]@1; imports[com.example.app->com.example.core]@1; references[com.example.app->com.example.core]@1; imports[com.example.app->jdk.unsupported]@0.9; references[com.example.app->jdk.unsupported]@1; exports[com.example.app->com.example.api]@1; references[com.example.app->com.example.api]@1; exports[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.model]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.impl.AltImpl]@1; references[com.example.app->com.example.impl.ServiceImpl]@1; references[com.example.app->com.example.impl.AltImpl]@1; contains[com.example.app->com.example.api]@1; contains[com.example.app->com.example.internal.spi]@1",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"com.example.app\",\"target\":\"com.example.internal.spi\",\"meta.relationshipType\":\"module_exports_package\"}; got: imports[com.example.app->java.logging]@1; references[com.example.app->java.logging]@1; imports[com.example.app->com.example.core]@1; references[com.example.app->com.example.core]@1; imports[com.example.app->jdk.unsupported]@0.9; references[com.example.app->jdk.unsupported]@1; exports[com.example.app->com.example.api]@1; references[com.example.app->com.example.api]@1; exports[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.internal.spi]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.core]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.model]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.tools]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.spi.Service]@1; references[com.example.app->com.example.impl.AltImpl]@1; references[com.example.app->com.example.impl.ServiceImpl]@1; references[com.example.app->com.example.impl.AltImpl]@1; contains[com.example.app->com.example.api]@1; contains[com.example.app->com.example.internal.spi]@1",
-          "forbidden relationship present: {\"type\":\"exports\",\"target\":\"com.example.api\",\"comment\":\"a JPMS package is not a symbol; an `exports` row naming a path-shaped target is DROPPED by parallel-indexer.ts:3462-3467, so the directive rides `references`\"} (found exports[com.example.app->com.example.api]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/module-info",
@@ -2540,6 +2693,11 @@
         "problems": []
       },
       {
+        "fixture": "java/package-annotation",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/parameters-payload",
         "ok": true,
         "problems": []
@@ -2556,6 +2714,21 @@
       },
       {
         "fixture": "java/qualified-call-path",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/receiver-owner-depth",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/receiver-owner-evidence",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/receiver-owner-type",
         "ok": true,
         "problems": []
       },
@@ -2585,12 +2758,37 @@
         "problems": []
       },
       {
+        "fixture": "java/single-type-import-binding",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/singleimportproject/ExternalUse",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/singleimportproject/ToolOwners",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/static-utility-call",
         "ok": true,
         "problems": []
       },
       {
+        "fixture": "java/throws-references",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/type-endpoint-base-names",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/type-parameter-bounds",
         "ok": true,
         "problems": []
       },
@@ -3202,13 +3400,8 @@
       },
       {
         "fixture": "kotlin/exports-file-identity",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"exports-file-identity\",\"target\":\"kotlin.math.abs\",\"line_number\":3,\"meta.evidenceClass\":\"import_based\",\"confidenceMin\":0.9}; got: imports[com.acme.helpers->kotlin.math.abs]@0.9; calls[helper->abs]@0.7; references[clamp->Int]@0.95; references[clamp->Int]@0.95; references[DEFAULT_LIMIT->Int]@0.95; references[helper->Int]@0.95; references[exports-file-identity->kotlin.math.abs]@0.9; imports[exports-file-identity->kotlin.math.abs]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"exports-file-identity\",\"target\":\"clamp\",\"line_number\":5,\"meta.evidenceClass\":\"structural\",\"confidenceMin\":1}; got: imports[com.acme.helpers->kotlin.math.abs]@0.9; calls[helper->abs]@0.7; references[clamp->Int]@0.95; references[clamp->Int]@0.95; references[DEFAULT_LIMIT->Int]@0.95; references[helper->Int]@0.95; references[exports-file-identity->kotlin.math.abs]@0.9; imports[exports-file-identity->kotlin.math.abs]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"exports-file-identity\",\"target\":\"DEFAULT_LIMIT\",\"line_number\":7,\"meta.evidenceClass\":\"structural\",\"confidenceMin\":1}; got: imports[com.acme.helpers->kotlin.math.abs]@0.9; calls[helper->abs]@0.7; references[clamp->Int]@0.95; references[clamp->Int]@0.95; references[DEFAULT_LIMIT->Int]@0.95; references[helper->Int]@0.95; references[exports-file-identity->kotlin.math.abs]@0.9; imports[exports-file-identity->kotlin.math.abs]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"exports-file-identity\",\"target\":\"helper\",\"line_number\":11,\"meta.evidenceClass\":\"structural\",\"confidenceMin\":1}; got: imports[com.acme.helpers->kotlin.math.abs]@0.9; calls[helper->abs]@0.7; references[clamp->Int]@0.95; references[clamp->Int]@0.95; references[DEFAULT_LIMIT->Int]@0.95; references[helper->Int]@0.95; references[exports-file-identity->kotlin.math.abs]@0.9; imports[exports-file-identity->kotlin.math.abs]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "kotlin/exports-no-module-identity",
@@ -3222,10 +3415,8 @@
       },
       {
         "fixture": "kotlin/exports-visibility",
-        "ok": false,
-        "problems": [
-          "forbidden relationship present: {\"type\":\"exports\",\"from\":\"com.acme.exports\",\"comment\":\"the source is the FILE. an edge whose source is the package name is dropped by the store's own defensive export filter (parallel-indexer.ts:3453), so it would read as emitted at zero rows stored — the one spelling of this edge that cannot survive the store is therefore not the one to emit\"} (found exports[com.acme.exports->Published]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "kotlin/extension-property",
@@ -3248,17 +3439,44 @@
         "problems": []
       },
       {
+        "fixture": "kotlin/import-claim-alias",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/import-claim-external",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/import-claim-project",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/import-claim-receiver",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/import-claim-shadowed",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/import-claim-wildcard",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/import-edges",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "kotlin/imports-exports-ontology",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"Surface\",\"target\":\"java.util.List\",\"line_number\":3,\"meta.evidenceClass\":\"import_based\",\"meta.isKotlinImport\":true,\"confidenceMin\":0.9}; got: imports[com.acme.surface->java.util.List]@0.9; imports[com.acme.surface->kotlinx.coroutines.flow]@0.9; exports[Surface->Surface]@1; exports[com.acme.surface->Surface]@1; exports[Surface->topLevelApi]@1; exports[com.acme.surface->topLevelApi]@1; calls[first->firstOrNull]@0.7; instantiates[helper->Scratch]@0.7; calls[localShape->helper]@0.7; references[Surface->List]@0.95; references[Surface->String]@0.95; references[first->String]@0.95; references[hidden->Int]@0.95; references[secret->Int]@0.95; references[Scratch->Int]@0.95; references[topLevelApi->Int]@0.95; references[moduleOnly->Int]@0.95; references[filePrivate->Int]@0.95; uses[first->items]@0.6; uses[hidden->items]@0.6; contains[Surface->Surface]@1; contains[Surface->items]@1; contains[Surface->first]@1; contains[Surface->hidden]@1; contains[Surface->secret]@1; contains[Surface->localShape]@1; contains[Scratch->Scratch]@1; contains[Scratch->a]@1; references[Surface->java.util.List]@0.9; imports[imports-exports-ontology->java.util.List]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"Surface\",\"target\":\"kotlinx.coroutines.flow\",\"line_number\":4,\"meta.evidenceClass\":\"import_based\",\"meta.isWildcardImport\":true,\"confidenceMin\":0.9}; got: imports[com.acme.surface->java.util.List]@0.9; imports[com.acme.surface->kotlinx.coroutines.flow]@0.9; exports[Surface->Surface]@1; exports[com.acme.surface->Surface]@1; exports[Surface->topLevelApi]@1; exports[com.acme.surface->topLevelApi]@1; calls[first->firstOrNull]@0.7; instantiates[helper->Scratch]@0.7; calls[localShape->helper]@0.7; references[Surface->List]@0.95; references[Surface->String]@0.95; references[first->String]@0.95; references[hidden->Int]@0.95; references[secret->Int]@0.95; references[Scratch->Int]@0.95; references[topLevelApi->Int]@0.95; references[moduleOnly->Int]@0.95; references[filePrivate->Int]@0.95; uses[first->items]@0.6; uses[hidden->items]@0.6; contains[Surface->Surface]@1; contains[Surface->items]@1; contains[Surface->first]@1; contains[Surface->hidden]@1; contains[Surface->secret]@1; contains[Surface->localShape]@1; contains[Scratch->Scratch]@1; contains[Scratch->a]@1; references[Surface->java.util.List]@0.9; imports[imports-exports-ontology->java.util.List]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "kotlin/indexing-uses",
@@ -3497,11 +3715,8 @@
       },
       {
         "fixture": "scala/declaration-name-anchoring",
-        "ok": false,
-        "problems": [
-          "expected Size range startColumn=13; got 1 (full: {\"startLine\":15,\"startColumn\":1,\"endLine\":15,\"endColumn\":23,\"startIndex\":906,\"endIndex\":928})",
-          "expected Guarded range startColumn=19; got 7 (full: {\"startLine\":17,\"startColumn\":7,\"endLine\":17,\"endColumn\":35,\"startIndex\":936,\"endIndex\":964})"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "scala/decorators",
@@ -3530,18 +3745,18 @@
       },
       {
         "fixture": "scala/exports-default-package",
-        "ok": false,
-        "problems": [
-          "expected 1 relationship(s) {\"type\":\"exports\",\"from\":\"(file)\",\"target\":\"Loose\"}; got 2",
-          "forbidden relationship present: {\"type\":\"exports\",\"from\":\"(script)\",\"note\":\"(script) is this lane's FILE-LEVEL symbol sentinel for edges sourced at no declaration; the module sentinel is (file), and conflating the two would merge a module identity with a statement-attribution sentinel\"} (found exports[(script)->Gamma]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "scala/exports-surface",
-        "ok": false,
-        "problems": [
-          "forbidden relationship present: {\"type\":\"exports\",\"target\":\"other.module\",\"note\":\"the clause's PATH is not an export; only the name it introduces is\"} (found exports[(script)->other.module]@0.7)"
-        ]
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/extends-single-parent",
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "scala/extension-method-flag",
@@ -3615,34 +3830,13 @@
       },
       {
         "fixture": "scala/incoming-scala-export-surface",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"(script)\",\"target\":\"Id\",\"meta.relationshipType\":\"scala_public_export\",\"meta.evidenceClass\":\"structural\",\"confidenceMin\":1}; got: extends[Point->Shape]@1; instantiates[Point->Point]@0.7; instantiates[nested->Nested]@0.9; exports[Reexports->Try]@1; exports[Reexports->List]@1; exports[Reexports->M]@1; exports[Reexports->scala.concurrent.duration]@0.7; contains[Point->constructor]@1; contains[Point->x]@1; contains[Point->y]@1; contains[Point->origin]@1; contains[Color->constructor]@1; contains[Color->hex]@1; contains[Color->Red]@1; contains[Color->Blue]@1; contains[Repo->save]@1; contains[Repo->secret]@1; contains[Store->constructor]@1; contains[Store->items]@1; contains[Store->head]@1; contains[Store->hidden]@1; contains[Store->Nested]@1; contains[Store->nested]@1; contains[PackageScoped->visible]@1; contains[Hidden->alsoHidden]@1; exports[(file)->Id]@1; exports[(file)->Shape]@1; exports[(file)->Point]@1; exports[(file)->Color]@1; exports[(file)->Repo]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"(script)\",\"target\":\"strip margin\",\"meta.exportKind\":\"constant\",\"meta.evidenceClass\":\"structural\"}; got: extends[Point->Shape]@1; instantiates[Point->Point]@0.7; instantiates[nested->Nested]@0.9; exports[Reexports->Try]@1; exports[Reexports->List]@1; exports[Reexports->M]@1; exports[Reexports->scala.concurrent.duration]@0.7; contains[Point->constructor]@1; contains[Point->x]@1; contains[Point->y]@1; contains[Point->origin]@1; contains[Color->constructor]@1; contains[Color->hex]@1; contains[Color->Red]@1; contains[Color->Blue]@1; contains[Repo->save]@1; contains[Repo->secret]@1; contains[Store->constructor]@1; contains[Store->items]@1; contains[Store->head]@1; contains[Store->hidden]@1; contains[Store->Nested]@1; contains[Store->nested]@1; contains[PackageScoped->visible]@1; contains[Hidden->alsoHidden]@1; exports[(file)->Id]@1; exports[(file)->Shape]@1; exports[(file)->Point]@1; exports[(file)->Color]@1; exports[(file)->Repo]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"(script)\",\"target\":\"topLevel\",\"meta.exportKind\":\"function\",\"meta.evidenceClass\":\"structural\"}; got: extends[Point->Shape]@1; instantiates[Point->Point]@0.7; instantiates[nested->Nested]@0.9; exports[Reexports->Try]@1; exports[Reexports->List]@1; exports[Reexports->M]@1; exports[Reexports->scala.concurrent.duration]@0.7; contains[Point->constructor]@1; contains[Point->x]@1; contains[Point->y]@1; contains[Point->origin]@1; contains[Color->constructor]@1; contains[Color->hex]@1; contains[Color->Red]@1; contains[Color->Blue]@1; contains[Repo->save]@1; contains[Repo->secret]@1; contains[Store->constructor]@1; contains[Store->items]@1; contains[Store->head]@1; contains[Store->hidden]@1; contains[Store->Nested]@1; contains[Store->nested]@1; contains[PackageScoped->visible]@1; contains[Hidden->alsoHidden]@1; exports[(file)->Id]@1; exports[(file)->Shape]@1; exports[(file)->Point]@1; exports[(file)->Color]@1; exports[(file)->Repo]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"(script)\",\"target\":\"Color\",\"meta.exportKind\":\"enum\",\"meta.evidenceClass\":\"structural\"}; got: extends[Point->Shape]@1; instantiates[Point->Point]@0.7; instantiates[nested->Nested]@0.9; exports[Reexports->Try]@1; exports[Reexports->List]@1; exports[Reexports->M]@1; exports[Reexports->scala.concurrent.duration]@0.7; contains[Point->constructor]@1; contains[Point->x]@1; contains[Point->y]@1; contains[Point->origin]@1; contains[Color->constructor]@1; contains[Color->hex]@1; contains[Color->Red]@1; contains[Color->Blue]@1; contains[Repo->save]@1; contains[Repo->secret]@1; contains[Store->constructor]@1; contains[Store->items]@1; contains[Store->head]@1; contains[Store->hidden]@1; contains[Store->Nested]@1; contains[Store->nested]@1; contains[PackageScoped->visible]@1; contains[Hidden->alsoHidden]@1; exports[(file)->Id]@1; exports[(file)->Shape]@1; exports[(file)->Point]@1; exports[(file)->Color]@1; exports[(file)->Repo]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"Reexports\",\"target\":\"scala.util.Try\",\"meta.relationshipType\":\"scala_export_clause\",\"meta.exportKind\":\"reexport\",\"meta.evidenceClass\":\"structural\"}; got: extends[Point->Shape]@1; instantiates[Point->Point]@0.7; instantiates[nested->Nested]@0.9; exports[Reexports->Try]@1; exports[Reexports->List]@1; exports[Reexports->M]@1; exports[Reexports->scala.concurrent.duration]@0.7; contains[Point->constructor]@1; contains[Point->x]@1; contains[Point->y]@1; contains[Point->origin]@1; contains[Color->constructor]@1; contains[Color->hex]@1; contains[Color->Red]@1; contains[Color->Blue]@1; contains[Repo->save]@1; contains[Repo->secret]@1; contains[Store->constructor]@1; contains[Store->items]@1; contains[Store->head]@1; contains[Store->hidden]@1; contains[Store->Nested]@1; contains[Store->nested]@1; contains[PackageScoped->visible]@1; contains[Hidden->alsoHidden]@1; exports[(file)->Id]@1; exports[(file)->Shape]@1; exports[(file)->Point]@1; exports[(file)->Color]@1; exports[(file)->Repo]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"Reexports\",\"target\":\"List\",\"meta.relationshipType\":\"scala_export_clause\",\"meta.evidenceClass\":\"structural\"}; got: extends[Point->Shape]@1; instantiates[Point->Point]@0.7; instantiates[nested->Nested]@0.9; exports[Reexports->Try]@1; exports[Reexports->List]@1; exports[Reexports->M]@1; exports[Reexports->scala.concurrent.duration]@0.7; contains[Point->constructor]@1; contains[Point->x]@1; contains[Point->y]@1; contains[Point->origin]@1; contains[Color->constructor]@1; contains[Color->hex]@1; contains[Color->Red]@1; contains[Color->Blue]@1; contains[Repo->save]@1; contains[Repo->secret]@1; contains[Store->constructor]@1; contains[Store->items]@1; contains[Store->head]@1; contains[Store->hidden]@1; contains[Store->Nested]@1; contains[Store->nested]@1; contains[PackageScoped->visible]@1; contains[Hidden->alsoHidden]@1; exports[(file)->Id]@1; exports[(file)->Shape]@1; exports[(file)->Point]@1; exports[(file)->Color]@1; exports[(file)->Repo]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"Reexports\",\"target\":\"Map\",\"meta.relationshipType\":\"scala_export_clause\",\"meta.evidenceClass\":\"structural\"}; got: extends[Point->Shape]@1; instantiates[Point->Point]@0.7; instantiates[nested->Nested]@0.9; exports[Reexports->Try]@1; exports[Reexports->List]@1; exports[Reexports->M]@1; exports[Reexports->scala.concurrent.duration]@0.7; contains[Point->constructor]@1; contains[Point->x]@1; contains[Point->y]@1; contains[Point->origin]@1; contains[Color->constructor]@1; contains[Color->hex]@1; contains[Color->Red]@1; contains[Color->Blue]@1; contains[Repo->save]@1; contains[Repo->secret]@1; contains[Store->constructor]@1; contains[Store->items]@1; contains[Store->head]@1; contains[Store->hidden]@1; contains[Store->Nested]@1; contains[Store->nested]@1; contains[PackageScoped->visible]@1; contains[Hidden->alsoHidden]@1; exports[(file)->Id]@1; exports[(file)->Shape]@1; exports[(file)->Point]@1; exports[(file)->Color]@1; exports[(file)->Repo]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"Reexports\",\"target\":\"scala.concurrent.duration\",\"meta.relationshipType\":\"scala_export_clause\",\"meta.exportKind\":\"reexport_wildcard\",\"meta.wildcard\":true,\"meta.evidenceClass\":\"structural\"}; got: extends[Point->Shape]@1; instantiates[Point->Point]@0.7; instantiates[nested->Nested]@0.9; exports[Reexports->Try]@1; exports[Reexports->List]@1; exports[Reexports->M]@1; exports[Reexports->scala.concurrent.duration]@0.7; contains[Point->constructor]@1; contains[Point->x]@1; contains[Point->y]@1; contains[Point->origin]@1; contains[Color->constructor]@1; contains[Color->hex]@1; contains[Color->Red]@1; contains[Color->Blue]@1; contains[Repo->save]@1; contains[Repo->secret]@1; contains[Store->constructor]@1; contains[Store->items]@1; contains[Store->head]@1; contains[Store->hidden]@1; contains[Store->Nested]@1; contains[Store->nested]@1; contains[PackageScoped->visible]@1; contains[Hidden->alsoHidden]@1; exports[(file)->Id]@1; exports[(file)->Shape]@1; exports[(file)->Point]@1; exports[(file)->Color]@1; exports[(file)->Repo]@1",
-          "forbidden relationship present: {\"type\":\"exports\",\"target\":\"M\"} (found exports[Reexports->M]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "scala/incoming-scala-import-clauses",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"root\",\"target\":\"java.util.List\",\"meta.isImport\":true,\"meta.fileLevel\":true,\"meta.evidenceClass\":\"import_based\",\"confidenceMin\":0.9}; got: instantiates[Imports->FiniteDuration]@0.7; instantiates[Imports->JFile]@0.9; instantiates[Imports->Stream]@0.9; calls[shown->hidden]@0.9; contains[Imports->plain]@1; contains[Imports->mutable]@1; contains[Imports->set]@1; contains[Imports->map]@1; contains[Imports->finite]@1; contains[Imports->file]@1; contains[Imports->stream]@1; contains[Imports->hidden]@1; contains[Imports->shown]@1; contains[Nested->Inner]@1; contains[Nested->member]@1; contains[NotPartOfTheApi->hidden]@1; references[root->java.util.List]@0.9; references[root->scala.collection.mutable]@0.9; references[root->scala.collection.immutable.Map]@0.9; references[root->scala.concurrent.duration.FiniteDuration]@0.9; references[root->java.io.File.FileInputStream]@0.9; references[root->scala.util]@0.9; imports[(file)->java.util.List]@1; imports[(file)->scala.collection.mutable]@1; imports[(file)->scala.collection.immutable.Set]@1; imports[(file)->scala.collection.immutable.Map]@1; imports[(file)->scala.concurrent.duration.FiniteDuration]@1; imports[(file)->java.io.File]@1; imports[(file)->java.io.FileInputStream]@1; imports[(file)->scala.util]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"root\",\"target\":\"scala.collection.mutable\",\"meta.evidenceClass\":\"import_based\"}; got: instantiates[Imports->FiniteDuration]@0.7; instantiates[Imports->JFile]@0.9; instantiates[Imports->Stream]@0.9; calls[shown->hidden]@0.9; contains[Imports->plain]@1; contains[Imports->mutable]@1; contains[Imports->set]@1; contains[Imports->map]@1; contains[Imports->finite]@1; contains[Imports->file]@1; contains[Imports->stream]@1; contains[Imports->hidden]@1; contains[Imports->shown]@1; contains[Nested->Inner]@1; contains[Nested->member]@1; contains[NotPartOfTheApi->hidden]@1; references[root->java.util.List]@0.9; references[root->scala.collection.mutable]@0.9; references[root->scala.collection.immutable.Map]@0.9; references[root->scala.concurrent.duration.FiniteDuration]@0.9; references[root->java.io.File.FileInputStream]@0.9; references[root->scala.util]@0.9; imports[(file)->java.util.List]@1; imports[(file)->scala.collection.mutable]@1; imports[(file)->scala.collection.immutable.Set]@1; imports[(file)->scala.collection.immutable.Map]@1; imports[(file)->scala.concurrent.duration.FiniteDuration]@1; imports[(file)->java.io.File]@1; imports[(file)->java.io.FileInputStream]@1; imports[(file)->scala.util]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"root\",\"target\":\"scala.collection.immutable\",\"meta.selectorGroup\":true,\"meta.evidenceClass\":\"import_based\"}; got: instantiates[Imports->FiniteDuration]@0.7; instantiates[Imports->JFile]@0.9; instantiates[Imports->Stream]@0.9; calls[shown->hidden]@0.9; contains[Imports->plain]@1; contains[Imports->mutable]@1; contains[Imports->set]@1; contains[Imports->map]@1; contains[Imports->finite]@1; contains[Imports->file]@1; contains[Imports->stream]@1; contains[Imports->hidden]@1; contains[Imports->shown]@1; contains[Nested->Inner]@1; contains[Nested->member]@1; contains[NotPartOfTheApi->hidden]@1; references[root->java.util.List]@0.9; references[root->scala.collection.mutable]@0.9; references[root->scala.collection.immutable.Map]@0.9; references[root->scala.concurrent.duration.FiniteDuration]@0.9; references[root->java.io.File.FileInputStream]@0.9; references[root->scala.util]@0.9; imports[(file)->java.util.List]@1; imports[(file)->scala.collection.mutable]@1; imports[(file)->scala.collection.immutable.Set]@1; imports[(file)->scala.collection.immutable.Map]@1; imports[(file)->scala.concurrent.duration.FiniteDuration]@1; imports[(file)->java.io.File]@1; imports[(file)->java.io.FileInputStream]@1; imports[(file)->scala.util]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"root\",\"target\":\"scala.concurrent.duration.FiniteDuration\",\"meta.evidenceClass\":\"import_based\"}; got: instantiates[Imports->FiniteDuration]@0.7; instantiates[Imports->JFile]@0.9; instantiates[Imports->Stream]@0.9; calls[shown->hidden]@0.9; contains[Imports->plain]@1; contains[Imports->mutable]@1; contains[Imports->set]@1; contains[Imports->map]@1; contains[Imports->finite]@1; contains[Imports->file]@1; contains[Imports->stream]@1; contains[Imports->hidden]@1; contains[Imports->shown]@1; contains[Nested->Inner]@1; contains[Nested->member]@1; contains[NotPartOfTheApi->hidden]@1; references[root->java.util.List]@0.9; references[root->scala.collection.mutable]@0.9; references[root->scala.collection.immutable.Map]@0.9; references[root->scala.concurrent.duration.FiniteDuration]@0.9; references[root->java.io.File.FileInputStream]@0.9; references[root->scala.util]@0.9; imports[(file)->java.util.List]@1; imports[(file)->scala.collection.mutable]@1; imports[(file)->scala.collection.immutable.Set]@1; imports[(file)->scala.collection.immutable.Map]@1; imports[(file)->scala.concurrent.duration.FiniteDuration]@1; imports[(file)->java.io.File]@1; imports[(file)->java.io.FileInputStream]@1; imports[(file)->scala.util]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"root\",\"target\":\"java.io\",\"meta.selectorGroup\":true,\"meta.evidenceClass\":\"import_based\"}; got: instantiates[Imports->FiniteDuration]@0.7; instantiates[Imports->JFile]@0.9; instantiates[Imports->Stream]@0.9; calls[shown->hidden]@0.9; contains[Imports->plain]@1; contains[Imports->mutable]@1; contains[Imports->set]@1; contains[Imports->map]@1; contains[Imports->finite]@1; contains[Imports->file]@1; contains[Imports->stream]@1; contains[Imports->hidden]@1; contains[Imports->shown]@1; contains[Nested->Inner]@1; contains[Nested->member]@1; contains[NotPartOfTheApi->hidden]@1; references[root->java.util.List]@0.9; references[root->scala.collection.mutable]@0.9; references[root->scala.collection.immutable.Map]@0.9; references[root->scala.concurrent.duration.FiniteDuration]@0.9; references[root->java.io.File.FileInputStream]@0.9; references[root->scala.util]@0.9; imports[(file)->java.util.List]@1; imports[(file)->scala.collection.mutable]@1; imports[(file)->scala.collection.immutable.Set]@1; imports[(file)->scala.collection.immutable.Map]@1; imports[(file)->scala.concurrent.duration.FiniteDuration]@1; imports[(file)->java.io.File]@1; imports[(file)->java.io.FileInputStream]@1; imports[(file)->scala.util]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"root\",\"target\":\"scala.util\",\"meta.wildcard\":true,\"meta.evidenceClass\":\"import_based\"}; got: instantiates[Imports->FiniteDuration]@0.7; instantiates[Imports->JFile]@0.9; instantiates[Imports->Stream]@0.9; calls[shown->hidden]@0.9; contains[Imports->plain]@1; contains[Imports->mutable]@1; contains[Imports->set]@1; contains[Imports->map]@1; contains[Imports->finite]@1; contains[Imports->file]@1; contains[Imports->stream]@1; contains[Imports->hidden]@1; contains[Imports->shown]@1; contains[Nested->Inner]@1; contains[Nested->member]@1; contains[NotPartOfTheApi->hidden]@1; references[root->java.util.List]@0.9; references[root->scala.collection.mutable]@0.9; references[root->scala.collection.immutable.Map]@0.9; references[root->scala.concurrent.duration.FiniteDuration]@0.9; references[root->java.io.File.FileInputStream]@0.9; references[root->scala.util]@0.9; imports[(file)->java.util.List]@1; imports[(file)->scala.collection.mutable]@1; imports[(file)->scala.collection.immutable.Set]@1; imports[(file)->scala.collection.immutable.Map]@1; imports[(file)->scala.concurrent.duration.FiniteDuration]@1; imports[(file)->java.io.File]@1; imports[(file)->java.io.FileInputStream]@1; imports[(file)->scala.util]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"(script)\",\"target\":\"Imports\",\"meta.relationshipType\":\"scala_public_export\",\"meta.evidenceClass\":\"structural\",\"confidenceMin\":1}; got: instantiates[Imports->FiniteDuration]@0.7; instantiates[Imports->JFile]@0.9; instantiates[Imports->Stream]@0.9; calls[shown->hidden]@0.9; contains[Imports->plain]@1; contains[Imports->mutable]@1; contains[Imports->set]@1; contains[Imports->map]@1; contains[Imports->finite]@1; contains[Imports->file]@1; contains[Imports->stream]@1; contains[Imports->hidden]@1; contains[Imports->shown]@1; contains[Nested->Inner]@1; contains[Nested->member]@1; contains[NotPartOfTheApi->hidden]@1; references[root->java.util.List]@0.9; references[root->scala.collection.mutable]@0.9; references[root->scala.collection.immutable.Map]@0.9; references[root->scala.concurrent.duration.FiniteDuration]@0.9; references[root->java.io.File.FileInputStream]@0.9; references[root->scala.util]@0.9; imports[(file)->java.util.List]@1; imports[(file)->scala.collection.mutable]@1; imports[(file)->scala.collection.immutable.Set]@1; imports[(file)->scala.collection.immutable.Map]@1; imports[(file)->scala.concurrent.duration.FiniteDuration]@1; imports[(file)->java.io.File]@1; imports[(file)->java.io.FileInputStream]@1; imports[(file)->scala.util]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"(script)\",\"target\":\"Nested\",\"meta.relationshipType\":\"scala_public_export\",\"meta.evidenceClass\":\"structural\"}; got: instantiates[Imports->FiniteDuration]@0.7; instantiates[Imports->JFile]@0.9; instantiates[Imports->Stream]@0.9; calls[shown->hidden]@0.9; contains[Imports->plain]@1; contains[Imports->mutable]@1; contains[Imports->set]@1; contains[Imports->map]@1; contains[Imports->finite]@1; contains[Imports->file]@1; contains[Imports->stream]@1; contains[Imports->hidden]@1; contains[Imports->shown]@1; contains[Nested->Inner]@1; contains[Nested->member]@1; contains[NotPartOfTheApi->hidden]@1; references[root->java.util.List]@0.9; references[root->scala.collection.mutable]@0.9; references[root->scala.collection.immutable.Map]@0.9; references[root->scala.concurrent.duration.FiniteDuration]@0.9; references[root->java.io.File.FileInputStream]@0.9; references[root->scala.util]@0.9; imports[(file)->java.util.List]@1; imports[(file)->scala.collection.mutable]@1; imports[(file)->scala.collection.immutable.Set]@1; imports[(file)->scala.collection.immutable.Map]@1; imports[(file)->scala.concurrent.duration.FiniteDuration]@1; imports[(file)->java.io.File]@1; imports[(file)->java.io.FileInputStream]@1; imports[(file)->scala.util]@1",
-          "forbidden relationship present: {\"type\":\"imports\",\"target\":\"scala.collection.immutable.Set\"} (found imports[(file)->scala.collection.immutable.Set]@1)",
-          "forbidden relationship present: {\"type\":\"imports\",\"target\":\"java.io.FileInputStream\"} (found imports[(file)->java.io.FileInputStream]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "scala/instantiation-new",
@@ -3720,6 +3914,21 @@
         "problems": []
       },
       {
+        "fixture": "scala/mixin-class-with",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/mixin-object-enum",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/mixin-trait-extends-trait",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/object-singleton",
         "ok": true,
         "problems": []
@@ -3746,10 +3955,8 @@
       },
       {
         "fixture": "scala/qmark-declared-is-a-name",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"target\":\"?\",\"note\":\"`type `?`[A]` is declared in THIS file, so `def useQmark(x: ?[Int])` references a real type name and the edge must stay — the false-positive half of the per-file rule\"}; got: contains[QmarkDeclared->?]@1; contains[QmarkDeclared->useQmark]@1; exports[(file)->QmarkDeclared]@1; exports[com.acme.wildcard->QmarkDeclared]@1; references[useQmark->Int]@0.95; references[useQmark->Int]@0.95"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "scala/qmark-wildcard-is-not-a-name",
@@ -3862,6 +4069,11 @@
         "problems": []
       },
       {
+        "fixture": "c/call-target-refusals-996",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/callsite-lines-825",
         "ok": true,
         "problems": []
@@ -3882,6 +4094,16 @@
         "problems": []
       },
       {
+        "fixture": "c/contains-error-beside-declarator-993",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "c/contains-guarded-enumerators-994",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/contains-name-line-921",
         "ok": true,
         "problems": []
@@ -3898,22 +4120,13 @@
       },
       {
         "fixture": "c/export-linkage-marker-989",
-        "ok": false,
-        "problems": [
-          "expected 3 relationship(s) {\"type\":\"exports\"}; got 2",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"cfx_extern_linkage\",\"target\":\"CFX_EXPORT\",\"meta.markerSource\":\"linkage:extern\",\"comment\":\"THE PINNED ROW. `#define CFX_EXPORT extern` -- the marker grants EXTERNAL LINKAGE, which is C's definition of belonging to a module's interface. 274 such sites on sqlite (CMPP_EXPORT 161 in ext/wasm/libcmpp.c, JIM_EXPORT 113 in autosetup/jimsh0.c).\"}; got: exports[cfx_extern_linkage->CFX_EXPORT]@1; exports[cfx_win_export->CFX_WIN_EXPORT]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"cfx_visibility_default\",\"target\":\"CFX_ATTR_EXPORT\",\"meta.markerSource\":\"linkage:extern\",\"comment\":\"The GCC spelling of the same boundary. ext/wasm/api/sqlite3-wasm.c:236 writes `#define SQLITE_WASM_EXPORT __attribute__((used,visibility(\\\"default\\\")))` and gets 3 edges. This arm needs the #934 line scan rather than the AST: engine.ts blanks `__attribute__((...))` non-greedily to spaces before parsing, so the `preproc_def` value the analyzer sees is the single character `)`.\"}; got: exports[cfx_extern_linkage->CFX_EXPORT]@1; exports[cfx_win_export->CFX_WIN_EXPORT]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"cfx_win_export\",\"target\":\"CFX_WIN_EXPORT\",\"meta.markerSource\":\"linkage:extern\",\"comment\":\"`extern __declspec(dllexport)` -- the two combined, which is libcmpp.c:106's spelling. Kept separate from the dllimport arm below because the difference is one word in the macro's own body and the rule has to be able to read it.\"}; got: exports[cfx_extern_linkage->CFX_EXPORT]@1; exports[cfx_win_export->CFX_WIN_EXPORT]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "c/export-marker-class-965",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"c3_sqlite_api\",\"target\":\"SQLITE_API\",\"comment\":\"17 corpus occurrences across 6 sqlite files. `#define SQLITE_API` is EMPTY, so there is no expansion to read — only the token's own name says what it marks.\"}; got: exports[c3_jim_strdup->JIM_EXPORT]@1; exports[c3_foo_entry->FOO_LIB_API]@1; exports[c3_curl_strequal->CURL_EXTERN]@1; exports[c3_git_version->GIT_EXTERN]@1; uses[global->GIT_EXTERN]@1; exports[c3_redis_alloc->REDISMODULE_API]@1; references[global->c3_aligned]@0.8; references[global->c3_wsd_probe]@0.8; references[global->c3_virtual]@0.8; uses[global->CMPP__EXPORT]@1; uses[global->n]@1; uses[cmpp_malloc->CMPP__EXPORT]@1; uses[cmpp_malloc->n]@1; calls[cmpp_malloc->sqlite3_malloc64]@1; uses[global->SQLITE_CDECL]@1; references[global->cmpp]@0.8; references[global->sqlite3_str]@0.8; exports[cmpp_sqlite3_str_finish->CMPP_EXPORT]@1; exports[cmpp_tizer_errpos->CMPP_EXPORT]@1; exports[cmpp_outfv->CMPP_EXPORT]@1; contains[c3_aligned->a]@1; contains[c3_wsd_probe->n]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"c3_jni_entry\",\"target\":\"JNIEXPORT\",\"comment\":\"31 corpus occurrences. The one marker whose boundary word is a SUFFIX with no underscore in front of it, so a part-only rule misses it.\"}; got: exports[c3_jim_strdup->JIM_EXPORT]@1; exports[c3_foo_entry->FOO_LIB_API]@1; exports[c3_curl_strequal->CURL_EXTERN]@1; exports[c3_git_version->GIT_EXTERN]@1; uses[global->GIT_EXTERN]@1; exports[c3_redis_alloc->REDISMODULE_API]@1; references[global->c3_aligned]@0.8; references[global->c3_wsd_probe]@0.8; references[global->c3_virtual]@0.8; uses[global->CMPP__EXPORT]@1; uses[global->n]@1; uses[cmpp_malloc->CMPP__EXPORT]@1; uses[cmpp_malloc->n]@1; calls[cmpp_malloc->sqlite3_malloc64]@1; uses[global->SQLITE_CDECL]@1; references[global->cmpp]@0.8; references[global->sqlite3_str]@0.8; exports[cmpp_sqlite3_str_finish->CMPP_EXPORT]@1; exports[cmpp_tizer_errpos->CMPP_EXPORT]@1; exports[cmpp_outfv->CMPP_EXPORT]@1; contains[c3_aligned->a]@1; contains[c3_wsd_probe->n]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"c3_benchmark_entry\",\"target\":\"BENCHMARK_EXPORT\",\"comment\":\"37 occurrences on the google-benchmark corpus, which the lane's historical three corpora do not include.\"}; got: exports[c3_jim_strdup->JIM_EXPORT]@1; exports[c3_foo_entry->FOO_LIB_API]@1; exports[c3_curl_strequal->CURL_EXTERN]@1; exports[c3_git_version->GIT_EXTERN]@1; uses[global->GIT_EXTERN]@1; exports[c3_redis_alloc->REDISMODULE_API]@1; references[global->c3_aligned]@0.8; references[global->c3_wsd_probe]@0.8; references[global->c3_virtual]@0.8; uses[global->CMPP__EXPORT]@1; uses[global->n]@1; uses[cmpp_malloc->CMPP__EXPORT]@1; uses[cmpp_malloc->n]@1; calls[cmpp_malloc->sqlite3_malloc64]@1; uses[global->SQLITE_CDECL]@1; references[global->cmpp]@0.8; references[global->sqlite3_str]@0.8; exports[cmpp_sqlite3_str_finish->CMPP_EXPORT]@1; exports[cmpp_tizer_errpos->CMPP_EXPORT]@1; exports[cmpp_outfv->CMPP_EXPORT]@1; contains[c3_aligned->a]@1; contains[c3_wsd_probe->n]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "c/export-preproc-guarded-152",
@@ -3921,12 +4134,14 @@
         "problems": []
       },
       {
+        "fixture": "c/exports-assertion-macro-992",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/exports-attribute-989",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"wasm_reset\",\"target\":\"WASM_EXPORT\",\"line_number\":80,\"comment\":\"Form B, the GNU spelling behind a macro (`#define WASM_EXPORT __attribute__((used, visibility(\\\"default\\\")))`). `used` in the replacement list must not stop the match, and `visibility(\\\"default\\\")` must be found inside a list that also carries other attributes.\"}; got: imports[global->stddef.h]@1; calls[attr_not_an_export->malloc]@1; exports[attr_leading->__declspec(dllexport)]@1; exports[attr_gnu_trailing->__attribute__((visibility(\"default\")))]@1; exports[attr_gnu_prefix->__attribute__((visibility(\"default\")))]@1; exports[attr_with_extern->__declspec(dllexport)]@1; exports[attr_on_definition->__declspec(dllexport)]@1; exports[cmpp_malloc->CMPP_EXPORT]@1; calls[global->attr_selfref_decl]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"single_platform_marker\",\"target\":\"SINGLE_PLATFORM_EXPORT\",\"line_number\":145,\"comment\":\"CONTROL 7's positive half: a marker with ONE definition that says export. It shares every lexical property of PLATFORM_EXPORT and differs only in agreeing with itself, so a rule that refused both would satisfy CONTROL 7's negative half while losing the construct.\"}; got: imports[global->stddef.h]@1; calls[attr_not_an_export->malloc]@1; exports[attr_leading->__declspec(dllexport)]@1; exports[attr_gnu_trailing->__attribute__((visibility(\"default\")))]@1; exports[attr_gnu_prefix->__attribute__((visibility(\"default\")))]@1; exports[attr_with_extern->__declspec(dllexport)]@1; exports[attr_on_definition->__declspec(dllexport)]@1; exports[cmpp_malloc->CMPP_EXPORT]@1; calls[global->attr_selfref_decl]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "c/exports-linkage-marker-989",
@@ -3975,6 +4190,11 @@
       },
       {
         "fixture": "c/instantiates-allocator-register-989",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "c/iso-c-citation-997",
         "ok": true,
         "problems": []
       },
@@ -4105,6 +4325,11 @@
       },
       {
         "fixture": "cpp/callsite-lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/citation/citation",
         "ok": true,
         "problems": []
       },
@@ -4280,6 +4505,21 @@
         "problems": []
       },
       {
+        "fixture": "cpp/package-scope/package_scope",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/package-scope/package_scope_ambiguous",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/package-scope/package_scope_loose",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/payload-and-complexity",
         "ok": true,
         "problems": []
@@ -4356,12 +4596,8 @@
       },
       {
         "fixture": "rust/bare-tuple-constructor",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"build\",\"target\":\"Ok\",\"comment\":\"inside the declaring module: the local tuple struct shadows the prelude, so this IS a construction\"}; got: calls[build->Ok]@1; calls[prelude_side->Ok]@1; calls[seeded->Hasher]@1; calls[mixed->Hasher::default_ish]@1; calls[default_ish->Hasher]@1; uses[shapes->Unit]@1; calls[shapes->Tuple]@1; uses[shapes->Tuple]@1; calls[shapes->make]@1; calls[shapes->PascalFn]@1; contains[makers->Ok]@1; contains[makers->build]@1; contains[Hasher->OFFSET_BASIS]@1; contains[Hasher->seeded]@1; contains[Hasher->mixed]@1; contains[Hasher->default_ish]@1; contains[Kind->Unit]@1; contains[Kind->Tuple]@1; contains[Kind->Named]@1; references[build->Ok]@0.9; references[prelude_side->Result]@0.9; references[seeded->Hasher]@0.9; references[default_ish->Hasher]@0.9; exports[(file)->makers]@1; exports[(file)->prelude_side]@1; exports[(file)->Hasher]@1; exports[(file)->Kind]@1; exports[(file)->Unit]@1; exports[(file)->PascalFn]@1; exports[(file)->shapes]@1",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"seeded\",\"target\":\"Hasher\",\"comment\":\"the decidable site — ripgrep's fnv.rs:15 shape\"}; got: calls[build->Ok]@1; calls[prelude_side->Ok]@1; calls[seeded->Hasher]@1; calls[mixed->Hasher::default_ish]@1; calls[default_ish->Hasher]@1; uses[shapes->Unit]@1; calls[shapes->Tuple]@1; uses[shapes->Tuple]@1; calls[shapes->make]@1; calls[shapes->PascalFn]@1; contains[makers->Ok]@1; contains[makers->build]@1; contains[Hasher->OFFSET_BASIS]@1; contains[Hasher->seeded]@1; contains[Hasher->mixed]@1; contains[Hasher->default_ish]@1; contains[Kind->Unit]@1; contains[Kind->Tuple]@1; contains[Kind->Named]@1; references[build->Ok]@0.9; references[prelude_side->Result]@0.9; references[seeded->Hasher]@0.9; references[default_ish->Hasher]@0.9; exports[(file)->makers]@1; exports[(file)->prelude_side]@1; exports[(file)->Hasher]@1; exports[(file)->Kind]@1; exports[(file)->Unit]@1; exports[(file)->PascalFn]@1; exports[(file)->shapes]@1",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"default_ish\",\"target\":\"Hasher\",\"comment\":\"second call site, second function: the rule is per site, not per type\"}; got: calls[build->Ok]@1; calls[prelude_side->Ok]@1; calls[seeded->Hasher]@1; calls[mixed->Hasher::default_ish]@1; calls[default_ish->Hasher]@1; uses[shapes->Unit]@1; calls[shapes->Tuple]@1; uses[shapes->Tuple]@1; calls[shapes->make]@1; calls[shapes->PascalFn]@1; contains[makers->Ok]@1; contains[makers->build]@1; contains[Hasher->OFFSET_BASIS]@1; contains[Hasher->seeded]@1; contains[Hasher->mixed]@1; contains[Hasher->default_ish]@1; contains[Kind->Unit]@1; contains[Kind->Tuple]@1; contains[Kind->Named]@1; references[build->Ok]@0.9; references[prelude_side->Result]@0.9; references[seeded->Hasher]@0.9; references[default_ish->Hasher]@0.9; exports[(file)->makers]@1; exports[(file)->prelude_side]@1; exports[(file)->Hasher]@1; exports[(file)->Kind]@1; exports[(file)->Unit]@1; exports[(file)->PascalFn]@1; exports[(file)->shapes]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "rust/bare-value-reads",
@@ -4470,25 +4706,13 @@
       },
       {
         "fixture": "rust/trait-impl-overrides",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"En.greet\",\"target\":\"greet\",\"meta.relationshipType\":\"trait_method_implementation\",\"comment\":\"replaces the trait's DEFAULT body\"}; got: calls[greet->from]@1; calls[farewell->from]@1; implements[En->Greeter]@1; calls[farewell->from]@1; calls[greet->farewell]@1; calls[greet->from]@1; calls[name->from]@1; implements[Fr->Greeter]@1; calls[name->from]@1; implements[De->Salut]@1; calls[name->from]@1; implements[Point->Display]@1; calls[fmt->write]@1; calls[name->from]@1; implements[M->Greeter]@1; calls[name->from]@1; implements[Sink->Write]@1; calls[write->extend_from_slice]@1; uses[write->written]@0.9; calls[write->Ok]@1; calls[write->len]@1; calls[flush->Ok]@1; contains[Greeter->greet]@1; contains[Greeter->name]@1; contains[Greeter->farewell]@1; contains[En->greet]@1; contains[greet->farewell]@1; contains[En->name]@1; contains[Fr->name]@1; contains[Salut->name]@1",
-          "forbidden relationship present: {\"type\":\"overrides\",\"target\":\"fmt\",\"comment\":\"the trait is NOT declared in this file (std::fmt::Display) — silence, not a target no symbol here owns. Spelled the family way: the label is Trait.method.\"} (found overrides[Point.fmt->fmt]@0.85)",
-          "forbidden relationship present: {\"type\":\"overrides\",\"from\":\"Fr.name\",\"target\":\"name\",\"comment\":\"the same implementation paired with the WRONG trait — both are declared here, so only the impl header decides\"} (found overrides[Fr.name->name]@1)",
-          "forbidden relationship present: {\"type\":\"overrides\",\"target\":\"flush\",\"comment\":\"the foreign impl's method, spelled with the trait it actually implements: only the header says `Write`, and `Write` is not declared here\"} (found overrides[Sink.flush->flush]@0.85)",
-          "forbidden relationship present: {\"type\":\"overrides\",\"from\":\"M.name\",\"target\":\"name\",\"comment\":\"THE GENERIC-PARAMETER ROW. `impl<'a, M: Greeter> Greeter for &'a M` supplies the method, but the type it supplies it for is one caller's reference to whatever M is bound to. `M` is declared by the impl block's own type_parameters node, so it is a locally bound name and never a type — the R8 rule applied to the SOURCE endpoint instead of the target.\"} (found overrides[M.name->name]@1)",
-          "forbidden relationship present: {\"type\":\"overrides\",\"target\":\"write\",\"comment\":\"the foreign impl's other method: nothing in this file declares `Write`, so nothing here is an override\"} (found overrides[Sink.write->write]@0.85)",
-          "forbidden relationship present: {\"type\":\"overrides\",\"target\":\"flush\",\"comment\":\"THE MISLABELLING ROW. `impl std::io::Write for Sink` supplies a method named `flush`, and this file DOES declare `trait Flusher { fn flush(&self); }` — so a rule that pairs an impl with a trait by name rather than by the impl header publishes a confident `Sink.flush -> Flusher.flush` naming a relation the code does not have. Only the impl header decides.\"} (found overrides[Sink.flush->flush]@0.85)",
-          "forbidden relationship present: {\"type\":\"overrides\",\"from\":\"De.name\",\"target\":\"name\",\"comment\":\"a third cross-pairing: `De` implements Salut only\"} (found overrides[De.name->name]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "rust/trait-override",
-        "ok": false,
-        "problems": [
-          "forbidden relationship present: {\"type\":\"overrides\",\"target\":\"handle\",\"comment\":\"the direction is derived -> base, never the reverse\"} (found overrides[Widget.handle->handle]@1)",
-          "forbidden relationship present: {\"type\":\"overrides\",\"source\":\"Widget.handle\",\"target\":\"handle\",\"comment\":\"a bare method name does not say WHICH type's, so it is not answerable for an incoming query\"} (found overrides[Widget.handle->handle]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "rust/tuple-struct-field-types",
@@ -4502,14 +4726,8 @@
       },
       {
         "fixture": "rust/use-import-edges",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"comment\":\"file scope: the file's own module name, never `global`\",\"type\":\"imports\",\"from\":\"use-import-edges\",\"target\":\"std::collections::HashMap\",\"confidence\":1,\"meta.evidenceClass\":\"import_based\",\"meta.relationshipType\":\"use_import\",\"meta.importScope\":\"file\",\"meta.items\":[\"HashMap\"]}; got: uses[help->Helper]@1; calls[scoped->new]@1; calls[scoped->new]@1; contains[inner->help]@1; references[help->Helper]@0.9; imports[(file)->std::collections]@1; imports[(file)->std::io]@1; imports[inner->crate::outer]@1; imports[(file)->std::path]@1; exports[(file)->inner]@1; exports[(file)->scoped]@1; exports[(file)->Helper]@1",
-          "expected relationship not found: {\"comment\":\"a group is ONE edge, and its target is the group's PREFIX (`std::io`), with the bound names on it (alias-aware: `Write as W` binds `W`)\",\"type\":\"imports\",\"from\":\"use-import-edges\",\"target\":\"std::io\",\"meta.items\":[\"Read\",\"W\"]}; got: uses[help->Helper]@1; calls[scoped->new]@1; calls[scoped->new]@1; contains[inner->help]@1; references[help->Helper]@0.9; imports[(file)->std::collections]@1; imports[(file)->std::io]@1; imports[inner->crate::outer]@1; imports[(file)->std::path]@1; exports[(file)->inner]@1; exports[(file)->scoped]@1; exports[(file)->Helper]@1",
-          "expected relationship not found: {\"comment\":\"module scope: an inline `mod` is a real symbol of this file, so this edge resolves at its source end\",\"type\":\"imports\",\"from\":\"inner\",\"target\":\"crate::outer::Helper\",\"meta.importScope\":\"module\"}; got: uses[help->Helper]@1; calls[scoped->new]@1; calls[scoped->new]@1; contains[inner->help]@1; references[help->Helper]@0.9; imports[(file)->std::collections]@1; imports[(file)->std::io]@1; imports[inner->crate::outer]@1; imports[(file)->std::path]@1; exports[(file)->inner]@1; exports[(file)->scoped]@1; exports[(file)->Helper]@1",
-          "expected relationship not found: {\"comment\":\"function scope: a function-local `use` is a function-scoped fact\",\"type\":\"imports\",\"from\":\"scoped\",\"target\":\"std::path::Path\",\"meta.importScope\":\"function\"}; got: uses[help->Helper]@1; calls[scoped->new]@1; calls[scoped->new]@1; contains[inner->help]@1; references[help->Helper]@0.9; imports[(file)->std::collections]@1; imports[(file)->std::io]@1; imports[inner->crate::outer]@1; imports[(file)->std::path]@1; exports[(file)->inner]@1; exports[(file)->scoped]@1; exports[(file)->Helper]@1",
-          "expected relationship not found: {\"comment\":\"the line is the PATH's line, not the `use` keyword's\",\"type\":\"imports\",\"from\":\"use-import-edges\",\"target\":\"std::collections::HashMap\",\"line_number\":25}; got: uses[help->Helper]@1; calls[scoped->new]@1; calls[scoped->new]@1; contains[inner->help]@1; references[help->Helper]@0.9; imports[(file)->std::collections]@1; imports[(file)->std::io]@1; imports[inner->crate::outer]@1; imports[(file)->std::path]@1; exports[(file)->inner]@1; exports[(file)->scoped]@1; exports[(file)->Helper]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "rust/use-list-imports",
@@ -4577,7 +4795,17 @@
         "problems": []
       },
       {
+        "fixture": "python/decorator-applied",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "python/decorator-column-lines",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/decorators-nested-local-emits-nothing",
         "ok": true,
         "problems": []
       },
@@ -4643,6 +4871,16 @@
       },
       {
         "fixture": "python/import-surface-is-a-set",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/imported-name-claim",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/imported-name-project-collision",
         "ok": true,
         "problems": []
       },
@@ -4732,6 +4970,11 @@
         "problems": []
       },
       {
+        "fixture": "python/namespace-citation",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "python/nested-class-containment",
         "ok": true,
         "problems": []
@@ -4743,6 +4986,16 @@
       },
       {
         "fixture": "python/object-base-guess-refused",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/owner-evidence-classes",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/owner-member-absent",
         "ok": true,
         "problems": []
       },
@@ -4947,6 +5200,11 @@
         "problems": []
       },
       {
+        "fixture": "go/stdlib-multisegment-claim",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "go/sub-unit-reason-codes",
         "ok": true,
         "problems": []
@@ -5062,25 +5320,14 @@
         "problems": []
       },
       {
+        "fixture": "csharp/dotnet-citation-claims",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "csharp/export-arity-collision",
-        "ok": false,
-        "problems": [
-          "expected export not found: {\"name\":\"Acme.Arity.Reporter\",\"arity\":0,\"line\":42}; got: []",
-          "expected export not found: {\"name\":\"Acme.Arity.Reporter\",\"arity\":1,\"line\":51,\"note\":\"THE PIN THAT MAKES THE OTHERS MEANINGFUL: the same export NAME at a different arity is a different exported type, so it is a second entry rather than a duplicate of the first.\"}; got: []",
-          "expected export not found: {\"name\":\"Acme.Arity.Split\",\"arity\":0,\"line\":69,\"note\":\"and `partial` at ONE arity is ONE entry, on the FIRST declaration's line. `equals: 1` below is the pin; this row is where the line comes from.\"}; got: []",
-          "expected export not found: {\"name\":\"Acme.Arity.SplitGeneric\",\"arity\":1,\"line\":81}; got: []",
-          "expected 2 relationship(s) {\"type\":\"exports\",\"from\":\"root\",\"target\":\"Acme.Arity.Reporter\"}; got 0",
-          "expected 2 relationship(s) {\"type\":\"exports\",\"from\":\"root\",\"target\":\"Acme.Arity.Handler\"}; got 0",
-          "expected 1 relationship(s) {\"type\":\"exports\",\"from\":\"root\",\"target\":\"Acme.Arity.Split\"}; got 0",
-          "expected 2 relationship(s) {\"type\":\"exports\",\"from\":\"root\",\"target\":\"Acme.Arity.SplitGeneric\"}; got 0",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Arity.Reporter\",\"line_number\":42,\"meta.evidenceClass\":\"structural\",\"meta.arity\":0,\"note\":\"the NON-GENERIC declaration's line. Pre-fix this edge carried line 51 — the generic declaration's — because `exportLineByName` was keyed by name.\"}; got: contains[Acme.Arity->Reporter]@1; contains[Reporter->Report]@1; contains[Acme.Arity->Reporter]@1; contains[Reporter->Send]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Split]@1; contains[Split->A]@1; contains[Acme.Arity->Split]@1; contains[Split->B]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->A]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->B]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->SplitGeneric]@1; exports[Acme.Arity->SplitGeneric]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Arity.Reporter\",\"line_number\":51,\"meta.arity\":1,\"note\":\"the GENERIC declaration's line, on its own edge\"}; got: contains[Acme.Arity->Reporter]@1; contains[Reporter->Report]@1; contains[Acme.Arity->Reporter]@1; contains[Reporter->Send]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Split]@1; contains[Split->A]@1; contains[Acme.Arity->Split]@1; contains[Split->B]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->A]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->B]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->SplitGeneric]@1; exports[Acme.Arity->SplitGeneric]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Arity.Handler\",\"line_number\":57,\"meta.arity\":0}; got: contains[Acme.Arity->Reporter]@1; contains[Reporter->Report]@1; contains[Acme.Arity->Reporter]@1; contains[Reporter->Send]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Split]@1; contains[Split->A]@1; contains[Acme.Arity->Split]@1; contains[Split->B]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->A]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->B]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->SplitGeneric]@1; exports[Acme.Arity->SplitGeneric]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Arity.Handler\",\"line_number\":60,\"meta.arity\":1}; got: contains[Acme.Arity->Reporter]@1; contains[Reporter->Report]@1; contains[Acme.Arity->Reporter]@1; contains[Reporter->Send]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Split]@1; contains[Split->A]@1; contains[Acme.Arity->Split]@1; contains[Split->B]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->A]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->B]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->SplitGeneric]@1; exports[Acme.Arity->SplitGeneric]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Arity.Split\",\"line_number\":69,\"meta.arity\":0,\"note\":\"ONE edge for a `partial` pair, on the first declaration's line — never line 71\"}; got: contains[Acme.Arity->Reporter]@1; contains[Reporter->Report]@1; contains[Acme.Arity->Reporter]@1; contains[Reporter->Send]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Split]@1; contains[Split->A]@1; contains[Acme.Arity->Split]@1; contains[Split->B]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->A]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->B]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->SplitGeneric]@1; exports[Acme.Arity->SplitGeneric]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Arity.SplitGeneric\",\"line_number\":79,\"meta.arity\":0}; got: contains[Acme.Arity->Reporter]@1; contains[Reporter->Report]@1; contains[Acme.Arity->Reporter]@1; contains[Reporter->Send]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Split]@1; contains[Split->A]@1; contains[Acme.Arity->Split]@1; contains[Split->B]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->A]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->B]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->SplitGeneric]@1; exports[Acme.Arity->SplitGeneric]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Arity.SplitGeneric\",\"line_number\":81,\"meta.arity\":1}; got: contains[Acme.Arity->Reporter]@1; contains[Reporter->Report]@1; contains[Acme.Arity->Reporter]@1; contains[Reporter->Send]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Handler]@1; contains[Acme.Arity->Split]@1; contains[Split->A]@1; contains[Acme.Arity->Split]@1; contains[Split->B]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->A]@1; contains[Acme.Arity->SplitGeneric]@1; contains[SplitGeneric->B]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Reporter]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Handler]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->Split]@1; exports[Acme.Arity->SplitGeneric]@1; exports[Acme.Arity->SplitGeneric]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "csharp/export-global-scope",
@@ -5109,19 +5356,8 @@
       },
       {
         "fixture": "csharp/import-export-edges",
-        "ok": false,
-        "problems": [
-          "expected export not found: {\"name\":\"Acme.Surface.PublicType\",\"comment\":\"block-namespace form, public: exported under the FULLY QUALIFIED name, because `PublicType` alone is not a name this assembly exports\"}; got: [\"FileScopedPublic\",\"FileScopedInternal\"]",
-          "expected export not found: {\"name\":\"Acme.Surface.IPublicContract\",\"comment\":\"an interface is an exported type exactly as a class is\"}; got: [\"FileScopedPublic\",\"FileScopedInternal\"]",
-          "expected export not found: {\"name\":\"Acme.Surface.PublicEnum\",\"comment\":\"an enum is an exported type too — the enum branch's rule is stated, not inherited by luck\"}; got: [\"FileScopedPublic\",\"FileScopedInternal\"]",
-          "expected export not found: {\"name\":\"Acme.FileScoped.FileScopedPublic\",\"comment\":\"THE PIN THAT MATTERS: the file-scoped namespace spelling selects the SAME set as the block form. The pre-fix guard could not see a file-scoped namespace at all and published 300 of 300 top-level declarations on the first 300 roslyn files (which are file-scoped-namespace files) as exports, under BARE names, including `internal` ones.\"}; got: [\"FileScopedPublic\",\"FileScopedInternal\"]",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Surface.PublicType\",\"line_number\":33,\"meta.evidenceClass\":\"structural\",\"meta.relationshipType\":\"assembly_public_surface\",\"note\":\"the line is the one the NAME is written on, not the declaration's first line — the doc comment sits above it\"}; got: references[PublicType->System]@0.9; imports[root->System]@1; references[PublicType->System.Collections.Generic]@0.9; imports[root->System.Collections.Generic]@1; references[PublicType->System.Math]@0.9; imports[root->System.Math]@1; references[PublicType->System.Text]@0.9; imports[root->System.Text]@1; references[PublicType->System.IO]@0.9; imports[root->System.IO]@1; references[PublicType->System.Threading]@0.9; imports[root->System.Threading]@1; references[PublicType->System.Environment]@0.9; imports[root->System.Environment]@1; references[PublicType->System.Text.RegularExpressions]@0.9; imports[root->System.Text.RegularExpressions]@1; imports[root->LegacyLib]@1; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Surface.IPublicContract\",\"line_number\":47}; got: references[PublicType->System]@0.9; imports[root->System]@1; references[PublicType->System.Collections.Generic]@0.9; imports[root->System.Collections.Generic]@1; references[PublicType->System.Math]@0.9; imports[root->System.Math]@1; references[PublicType->System.Text]@0.9; imports[root->System.Text]@1; references[PublicType->System.IO]@0.9; imports[root->System.IO]@1; references[PublicType->System.Threading]@0.9; imports[root->System.Threading]@1; references[PublicType->System.Environment]@0.9; imports[root->System.Environment]@1; references[PublicType->System.Text.RegularExpressions]@0.9; imports[root->System.Text.RegularExpressions]@1; imports[root->LegacyLib]@1; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Surface.PublicEnum\",\"line_number\":51}; got: references[PublicType->System]@0.9; imports[root->System]@1; references[PublicType->System.Collections.Generic]@0.9; imports[root->System.Collections.Generic]@1; references[PublicType->System.Math]@0.9; imports[root->System.Math]@1; references[PublicType->System.Text]@0.9; imports[root->System.Text]@1; references[PublicType->System.IO]@0.9; imports[root->System.IO]@1; references[PublicType->System.Threading]@0.9; imports[root->System.Threading]@1; references[PublicType->System.Environment]@0.9; imports[root->System.Environment]@1; references[PublicType->System.Text.RegularExpressions]@0.9; imports[root->System.Text.RegularExpressions]@1; imports[root->LegacyLib]@1; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.FileScoped.FileScopedPublic\",\"line_number\":63}; got: references[PublicType->System]@0.9; imports[root->System]@1; references[PublicType->System.Collections.Generic]@0.9; imports[root->System.Collections.Generic]@1; references[PublicType->System.Math]@0.9; imports[root->System.Math]@1; references[PublicType->System.Text]@0.9; imports[root->System.Text]@1; references[PublicType->System.IO]@0.9; imports[root->System.IO]@1; references[PublicType->System.Threading]@0.9; imports[root->System.Threading]@1; references[PublicType->System.Environment]@0.9; imports[root->System.Environment]@1; references[PublicType->System.Text.RegularExpressions]@0.9; imports[root->System.Text.RegularExpressions]@1; imports[root->LegacyLib]@1; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"target\":\"Acme.Inner.Doubled\",\"line_number\":82,\"meta.evidenceClass\":\"structural\",\"note\":\"the nested-namespace shape: ONE spelling. `contains` publishes the namespace as `Acme.Inner` (the innermost declaration's own name, which already contains the outer one), and the export target agrees with it. The pre-fix value was `Acme.Outer.Acme.Inner.Doubled` — same type, two names in one result.\"}; got: references[PublicType->System]@0.9; imports[root->System]@1; references[PublicType->System.Collections.Generic]@0.9; imports[root->System.Collections.Generic]@1; references[PublicType->System.Math]@0.9; imports[root->System.Math]@1; references[PublicType->System.Text]@0.9; imports[root->System.Text]@1; references[PublicType->System.IO]@0.9; imports[root->System.IO]@1; references[PublicType->System.Threading]@0.9; imports[root->System.Threading]@1; references[PublicType->System.Environment]@0.9; imports[root->System.Environment]@1; references[PublicType->System.Text.RegularExpressions]@0.9; imports[root->System.Text.RegularExpressions]@1; imports[root->LegacyLib]@1; contains[Acme.Surface->PublicType]@1; contains[PublicType->Visible]@1; contains[PublicType->NestedPublic]@1; contains[Acme.Surface->InternalType]@1; contains[InternalType->Hidden]@1; contains[Acme.Surface->IPublicContract]@1; contains[Acme.Surface->IInternalContract]@1; contains[Acme.Surface->PublicEnum]@1; contains[PublicEnum->First]@1; contains[Acme.Surface->InternalEnum]@1; contains[InternalEnum->Second]@1; contains[Acme.FileScoped->FileScopedPublic]@1; contains[Acme.FileScoped->FileScopedInternal]@1",
-          "forbidden relationship present: {\"type\":\"exports\",\"target\":\"PublicType\",\"note\":\"a BARE name is not an export name for a namespaced type: `PublicType` is not a name this assembly exports, `Acme.Surface.PublicType` is. This forbid is the whole reason the published name changed.\"} (found exports[Acme.Surface->PublicType]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "csharp/interface-member-implementation",
@@ -5140,19 +5376,8 @@
       },
       {
         "fixture": "csharp/override-member-kinds",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"target\":\"Prop\",\"from\":\"DerivedThing.Prop\",\"line_number\":34,\"meta.overriddenMemberKind\":\"property\"}; got: extends[DerivedThing->BaseThing]@1; extends[FieldPair->BaseThing]@1; overrides[DerivedThing.Method->Method]@1; overrides[DerivedThing.Overloaded->Overloaded]@1; contains[Acme.Overrides->BaseThing]@1; contains[BaseThing->Prop]@1; contains[BaseThing->this]@1; contains[BaseThing->this]@1; contains[BaseThing->Field]@1; contains[BaseThing->Changed]@1; contains[BaseThing->Method]@1; contains[BaseThing->Overloaded]@1; contains[BaseThing->Overloaded]@1; contains[Acme.Overrides->DerivedThing]@1; contains[DerivedThing->Prop]@1; contains[DerivedThing->this]@1; contains[DerivedThing->Field]@1; contains[DerivedThing->Changed]@1; contains[DerivedThing->Method]@1; contains[DerivedThing->Overloaded]@1; contains[DerivedThing->NewVirtual]@1; contains[DerivedThing->Shadow]@1; contains[DerivedThing->Hider]@1; contains[Acme.Overrides->FieldPair]@1; contains[FieldPair->Field]@1; contains[FieldPair->Other]@1; contains[FieldPair->MultiA]@1; contains[FieldPair->MultiB]@1; exports[Acme.Overrides->BaseThing]@1; exports[Acme.Overrides->DerivedThing]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"target\":\"this\",\"from\":\"DerivedThing.this\",\"line_number\":35,\"meta.overriddenMemberKind\":\"indexer\",\"note\":\"the indexer's parameter list is part of its signature in C# — `this[int]` and `this[string]` are different members — and the STATED LIMIT is that the published label is name-keyed, so the signature is used to RESOLVE and then dropped from the label\"}; got: extends[DerivedThing->BaseThing]@1; extends[FieldPair->BaseThing]@1; overrides[DerivedThing.Method->Method]@1; overrides[DerivedThing.Overloaded->Overloaded]@1; contains[Acme.Overrides->BaseThing]@1; contains[BaseThing->Prop]@1; contains[BaseThing->this]@1; contains[BaseThing->this]@1; contains[BaseThing->Field]@1; contains[BaseThing->Changed]@1; contains[BaseThing->Method]@1; contains[BaseThing->Overloaded]@1; contains[BaseThing->Overloaded]@1; contains[Acme.Overrides->DerivedThing]@1; contains[DerivedThing->Prop]@1; contains[DerivedThing->this]@1; contains[DerivedThing->Field]@1; contains[DerivedThing->Changed]@1; contains[DerivedThing->Method]@1; contains[DerivedThing->Overloaded]@1; contains[DerivedThing->NewVirtual]@1; contains[DerivedThing->Shadow]@1; contains[DerivedThing->Hider]@1; contains[Acme.Overrides->FieldPair]@1; contains[FieldPair->Field]@1; contains[FieldPair->Other]@1; contains[FieldPair->MultiA]@1; contains[FieldPair->MultiB]@1; exports[Acme.Overrides->BaseThing]@1; exports[Acme.Overrides->DerivedThing]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"target\":\"Field\",\"from\":\"DerivedThing.Field\",\"line_number\":36,\"meta.overriddenMemberKind\":\"field\"}; got: extends[DerivedThing->BaseThing]@1; extends[FieldPair->BaseThing]@1; overrides[DerivedThing.Method->Method]@1; overrides[DerivedThing.Overloaded->Overloaded]@1; contains[Acme.Overrides->BaseThing]@1; contains[BaseThing->Prop]@1; contains[BaseThing->this]@1; contains[BaseThing->this]@1; contains[BaseThing->Field]@1; contains[BaseThing->Changed]@1; contains[BaseThing->Method]@1; contains[BaseThing->Overloaded]@1; contains[BaseThing->Overloaded]@1; contains[Acme.Overrides->DerivedThing]@1; contains[DerivedThing->Prop]@1; contains[DerivedThing->this]@1; contains[DerivedThing->Field]@1; contains[DerivedThing->Changed]@1; contains[DerivedThing->Method]@1; contains[DerivedThing->Overloaded]@1; contains[DerivedThing->NewVirtual]@1; contains[DerivedThing->Shadow]@1; contains[DerivedThing->Hider]@1; contains[Acme.Overrides->FieldPair]@1; contains[FieldPair->Field]@1; contains[FieldPair->Other]@1; contains[FieldPair->MultiA]@1; contains[FieldPair->MultiB]@1; exports[Acme.Overrides->BaseThing]@1; exports[Acme.Overrides->DerivedThing]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"target\":\"Changed\",\"from\":\"DerivedThing.Changed\",\"line_number\":37,\"meta.overriddenMemberKind\":\"event\",\"note\":\"an EVENT is overridable in C#, in both the field-like and accessor forms; this is the accessor form\"}; got: extends[DerivedThing->BaseThing]@1; extends[FieldPair->BaseThing]@1; overrides[DerivedThing.Method->Method]@1; overrides[DerivedThing.Overloaded->Overloaded]@1; contains[Acme.Overrides->BaseThing]@1; contains[BaseThing->Prop]@1; contains[BaseThing->this]@1; contains[BaseThing->this]@1; contains[BaseThing->Field]@1; contains[BaseThing->Changed]@1; contains[BaseThing->Method]@1; contains[BaseThing->Overloaded]@1; contains[BaseThing->Overloaded]@1; contains[Acme.Overrides->DerivedThing]@1; contains[DerivedThing->Prop]@1; contains[DerivedThing->this]@1; contains[DerivedThing->Field]@1; contains[DerivedThing->Changed]@1; contains[DerivedThing->Method]@1; contains[DerivedThing->Overloaded]@1; contains[DerivedThing->NewVirtual]@1; contains[DerivedThing->Shadow]@1; contains[DerivedThing->Hider]@1; contains[Acme.Overrides->FieldPair]@1; contains[FieldPair->Field]@1; contains[FieldPair->Other]@1; contains[FieldPair->MultiA]@1; contains[FieldPair->MultiB]@1; exports[Acme.Overrides->BaseThing]@1; exports[Acme.Overrides->DerivedThing]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"target\":\"Method\",\"from\":\"DerivedThing.Method\",\"line_number\":38,\"meta.overriddenMemberKind\":\"method\",\"note\":\"the historical case, unchanged: still emitted, still 1.0, still `method_override`\"}; got: extends[DerivedThing->BaseThing]@1; extends[FieldPair->BaseThing]@1; overrides[DerivedThing.Method->Method]@1; overrides[DerivedThing.Overloaded->Overloaded]@1; contains[Acme.Overrides->BaseThing]@1; contains[BaseThing->Prop]@1; contains[BaseThing->this]@1; contains[BaseThing->this]@1; contains[BaseThing->Field]@1; contains[BaseThing->Changed]@1; contains[BaseThing->Method]@1; contains[BaseThing->Overloaded]@1; contains[BaseThing->Overloaded]@1; contains[Acme.Overrides->DerivedThing]@1; contains[DerivedThing->Prop]@1; contains[DerivedThing->this]@1; contains[DerivedThing->Field]@1; contains[DerivedThing->Changed]@1; contains[DerivedThing->Method]@1; contains[DerivedThing->Overloaded]@1; contains[DerivedThing->NewVirtual]@1; contains[DerivedThing->Shadow]@1; contains[DerivedThing->Hider]@1; contains[Acme.Overrides->FieldPair]@1; contains[FieldPair->Field]@1; contains[FieldPair->Other]@1; contains[FieldPair->MultiA]@1; contains[FieldPair->MultiB]@1; exports[Acme.Overrides->BaseThing]@1; exports[Acme.Overrides->DerivedThing]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"target\":\"Overloaded\",\"from\":\"DerivedThing.Overloaded\",\"line_number\":39,\"meta.overriddenMemberKind\":\"method\",\"note\":\"`public override void Overloaded()` resolves to the PARAMETERLESS base overload, not the `int` one: C# requires the signatures to match for an override, so the base with the same name AND signature is the only legal target\"}; got: extends[DerivedThing->BaseThing]@1; extends[FieldPair->BaseThing]@1; overrides[DerivedThing.Method->Method]@1; overrides[DerivedThing.Overloaded->Overloaded]@1; contains[Acme.Overrides->BaseThing]@1; contains[BaseThing->Prop]@1; contains[BaseThing->this]@1; contains[BaseThing->this]@1; contains[BaseThing->Field]@1; contains[BaseThing->Changed]@1; contains[BaseThing->Method]@1; contains[BaseThing->Overloaded]@1; contains[BaseThing->Overloaded]@1; contains[Acme.Overrides->DerivedThing]@1; contains[DerivedThing->Prop]@1; contains[DerivedThing->this]@1; contains[DerivedThing->Field]@1; contains[DerivedThing->Changed]@1; contains[DerivedThing->Method]@1; contains[DerivedThing->Overloaded]@1; contains[DerivedThing->NewVirtual]@1; contains[DerivedThing->Shadow]@1; contains[DerivedThing->Hider]@1; contains[Acme.Overrides->FieldPair]@1; contains[FieldPair->Field]@1; contains[FieldPair->Other]@1; contains[FieldPair->MultiA]@1; contains[FieldPair->MultiB]@1; exports[Acme.Overrides->BaseThing]@1; exports[Acme.Overrides->DerivedThing]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"target\":\"Field\",\"from\":\"FieldPair.Field\",\"line_number\":54,\"meta.overriddenMemberKind\":\"field\"}; got: extends[DerivedThing->BaseThing]@1; extends[FieldPair->BaseThing]@1; overrides[DerivedThing.Method->Method]@1; overrides[DerivedThing.Overloaded->Overloaded]@1; contains[Acme.Overrides->BaseThing]@1; contains[BaseThing->Prop]@1; contains[BaseThing->this]@1; contains[BaseThing->this]@1; contains[BaseThing->Field]@1; contains[BaseThing->Changed]@1; contains[BaseThing->Method]@1; contains[BaseThing->Overloaded]@1; contains[BaseThing->Overloaded]@1; contains[Acme.Overrides->DerivedThing]@1; contains[DerivedThing->Prop]@1; contains[DerivedThing->this]@1; contains[DerivedThing->Field]@1; contains[DerivedThing->Changed]@1; contains[DerivedThing->Method]@1; contains[DerivedThing->Overloaded]@1; contains[DerivedThing->NewVirtual]@1; contains[DerivedThing->Shadow]@1; contains[DerivedThing->Hider]@1; contains[Acme.Overrides->FieldPair]@1; contains[FieldPair->Field]@1; contains[FieldPair->Other]@1; contains[FieldPair->MultiA]@1; contains[FieldPair->MultiB]@1; exports[Acme.Overrides->BaseThing]@1; exports[Acme.Overrides->DerivedThing]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"target\":\"Other\",\"from\":\"FieldPair.Other\",\"line_number\":55,\"meta.overriddenMemberKind\":\"field\",\"note\":\"`Other` does NOT exist on `BaseThing`. C# would reject this code (CS0115), so the edge is the lane's documented deterministic first-parent default rather than a verified target — and it is pinned, because a rule whose behaviour on non-compiling input is unspecified is a rule that drifts\"}; got: extends[DerivedThing->BaseThing]@1; extends[FieldPair->BaseThing]@1; overrides[DerivedThing.Method->Method]@1; overrides[DerivedThing.Overloaded->Overloaded]@1; contains[Acme.Overrides->BaseThing]@1; contains[BaseThing->Prop]@1; contains[BaseThing->this]@1; contains[BaseThing->this]@1; contains[BaseThing->Field]@1; contains[BaseThing->Changed]@1; contains[BaseThing->Method]@1; contains[BaseThing->Overloaded]@1; contains[BaseThing->Overloaded]@1; contains[Acme.Overrides->DerivedThing]@1; contains[DerivedThing->Prop]@1; contains[DerivedThing->this]@1; contains[DerivedThing->Field]@1; contains[DerivedThing->Changed]@1; contains[DerivedThing->Method]@1; contains[DerivedThing->Overloaded]@1; contains[DerivedThing->NewVirtual]@1; contains[DerivedThing->Shadow]@1; contains[DerivedThing->Hider]@1; contains[Acme.Overrides->FieldPair]@1; contains[FieldPair->Field]@1; contains[FieldPair->Other]@1; contains[FieldPair->MultiA]@1; contains[FieldPair->MultiB]@1; exports[Acme.Overrides->BaseThing]@1; exports[Acme.Overrides->DerivedThing]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"target\":\"MultiA\",\"from\":\"FieldPair.MultiA\",\"meta.overriddenMemberKind\":\"field\",\"note\":\"the multi-declarator field, FIRST member: `public override int MultiA, MultiB;` is one declaration and TWO overridable members\"}; got: extends[DerivedThing->BaseThing]@1; extends[FieldPair->BaseThing]@1; overrides[DerivedThing.Method->Method]@1; overrides[DerivedThing.Overloaded->Overloaded]@1; contains[Acme.Overrides->BaseThing]@1; contains[BaseThing->Prop]@1; contains[BaseThing->this]@1; contains[BaseThing->this]@1; contains[BaseThing->Field]@1; contains[BaseThing->Changed]@1; contains[BaseThing->Method]@1; contains[BaseThing->Overloaded]@1; contains[BaseThing->Overloaded]@1; contains[Acme.Overrides->DerivedThing]@1; contains[DerivedThing->Prop]@1; contains[DerivedThing->this]@1; contains[DerivedThing->Field]@1; contains[DerivedThing->Changed]@1; contains[DerivedThing->Method]@1; contains[DerivedThing->Overloaded]@1; contains[DerivedThing->NewVirtual]@1; contains[DerivedThing->Shadow]@1; contains[DerivedThing->Hider]@1; contains[Acme.Overrides->FieldPair]@1; contains[FieldPair->Field]@1; contains[FieldPair->Other]@1; contains[FieldPair->MultiA]@1; contains[FieldPair->MultiB]@1; exports[Acme.Overrides->BaseThing]@1; exports[Acme.Overrides->DerivedThing]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"target\":\"MultiB\",\"from\":\"FieldPair.MultiB\",\"meta.overriddenMemberKind\":\"field\",\"note\":\"the SECOND member of the same declaration, on the SAME line as the first. A rule that pushes one task per field DECLARATION drops this row and keeps the first, so the two rows sharing a line are exactly what pins that rule — and the mutant csharp/override-field-tasks-per-declaration, which collapses them to one per line, is caught only by this second row\"}; got: extends[DerivedThing->BaseThing]@1; extends[FieldPair->BaseThing]@1; overrides[DerivedThing.Method->Method]@1; overrides[DerivedThing.Overloaded->Overloaded]@1; contains[Acme.Overrides->BaseThing]@1; contains[BaseThing->Prop]@1; contains[BaseThing->this]@1; contains[BaseThing->this]@1; contains[BaseThing->Field]@1; contains[BaseThing->Changed]@1; contains[BaseThing->Method]@1; contains[BaseThing->Overloaded]@1; contains[BaseThing->Overloaded]@1; contains[Acme.Overrides->DerivedThing]@1; contains[DerivedThing->Prop]@1; contains[DerivedThing->this]@1; contains[DerivedThing->Field]@1; contains[DerivedThing->Changed]@1; contains[DerivedThing->Method]@1; contains[DerivedThing->Overloaded]@1; contains[DerivedThing->NewVirtual]@1; contains[DerivedThing->Shadow]@1; contains[DerivedThing->Hider]@1; contains[Acme.Overrides->FieldPair]@1; contains[FieldPair->Field]@1; contains[FieldPair->Other]@1; contains[FieldPair->MultiA]@1; contains[FieldPair->MultiB]@1; exports[Acme.Overrides->BaseThing]@1; exports[Acme.Overrides->DerivedThing]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "csharp/param-type-honesty",
@@ -5195,6 +5420,11 @@
         "problems": []
       },
       {
+        "fixture": "dart/annotation-references",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/bare-member-read-uses",
         "ok": true,
         "problems": []
@@ -5205,7 +5435,22 @@
         "problems": []
       },
       {
+        "fixture": "dart/catch-clause-types",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/citation-claims",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/const-pattern-constructor-head",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/constant-pattern-forms",
         "ok": true,
         "problems": []
       },
@@ -5255,6 +5500,11 @@
         "problems": []
       },
       {
+        "fixture": "dart/library-annotation",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/library-implicit",
         "ok": true,
         "problems": []
@@ -5270,6 +5520,11 @@
         "problems": []
       },
       {
+        "fixture": "dart/local-read-same-declaration/local_read_same_declaration",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/local-read/declares",
         "ok": true,
         "problems": []
@@ -5280,7 +5535,17 @@
         "problems": []
       },
       {
+        "fixture": "dart/local-shadow-scope/local_shadow_scope",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/member-value-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/mixes-in",
         "ok": true,
         "problems": []
       },
@@ -5295,12 +5560,42 @@
         "problems": []
       },
       {
+        "fixture": "dart/override-mixin-base-choice/applier",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/override-mixin-base-choice/mixins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/override-mixin-base-choice/override_mixin_base_choice",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/override-witness-shapes",
         "ok": true,
         "problems": []
       },
       {
+        "fixture": "dart/part-of-named",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/part-of-roles",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/part-of",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/pattern-bindings",
         "ok": true,
         "problems": []
       },
@@ -5320,7 +5615,27 @@
         "problems": []
       },
       {
+        "fixture": "dart/receiver-element-types",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/receiver-owner-metadata",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/receiver-spelling",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/record-literal",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/record-type-alias",
         "ok": true,
         "problems": []
       },
@@ -6029,6 +6344,11 @@
         "problems": []
       },
       {
+        "fixture": "ruby/mixes-in-modules",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "ruby/ontology-factory-and-names",
         "ok": false,
         "reason": "missing expectation file"
@@ -6337,25 +6657,18 @@
       },
       {
         "fixture": "elixir/elx4-exports-surface",
-        "ok": false,
-        "problems": [
-          "forbidden relationship present: {\"type\":\"exports\",\"target\":\"ELX4.Nested.Inner\"} (found exports[ELX4.Nested->ELX4.Nested.Inner]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "elixir/elx4-imports-directive",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"ELX4.ImportsDirective\",\"target\":\"GenServer\",\"line_number\":7,\"meta.evidenceClass\":\"usage_contextual\"}; got: references[ELX4.ImportsDirective->Enum]@0.9; imports[ELX4.ImportsDirective->Enum]@1; references[ELX4.ImportsDirective->Enum]@0.9; imports[ELX4.ImportsDirective->Enum]@1; references[ELX4.ImportsDirective->String]@0.9; imports[ELX4.ImportsDirective->String]@1; references[ELX4.ImportsDirective->ELX4.Opts]@0.9; references[ELX4.ImportsDirective->Logger]@0.9; references[ELX4.ImportsDirective->GenServer]@0.9; uses[ELX4.ImportsDirective->GenServer]@0.9; calls[ELX4.ImportsDirective.run/1->Enum.map]@0.8; contains[ELX4.ImportsDirective->run]@1; exports[ELX4.ImportsDirective->run]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "elixir/elx4-overrides-defoverridable",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"ELX4.Overridable.sample\",\"target\":\"sample\",\"line_number\":10,\"meta.overridesLine\":2,\"meta.evidenceClass\":\"structural\"}; got: overrides[ELX4.Overridable.sample/0->sample]@1; overrides[ELX4.Overridable.with_args/2->with_args]@1; contains[ELX4.Overridable->sample]@1; contains[ELX4.Overridable->with_args]@1; contains[ELX4.Overridable->never_replaced]@1; exports[ELX4.Overridable->sample]@1; exports[ELX4.Overridable->with_args]@1; exports[ELX4.Overridable->never_replaced]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"ELX4.Overridable.with_args\",\"target\":\"with_args\",\"line_number\":12,\"meta.overridesLine\":4,\"meta.evidenceClass\":\"structural\"}; got: overrides[ELX4.Overridable.sample/0->sample]@1; overrides[ELX4.Overridable.with_args/2->with_args]@1; contains[ELX4.Overridable->sample]@1; contains[ELX4.Overridable->with_args]@1; contains[ELX4.Overridable->never_replaced]@1; exports[ELX4.Overridable->sample]@1; exports[ELX4.Overridable->with_args]@1; exports[ELX4.Overridable->never_replaced]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "elixir/elx4-r7-no-fabrication",
@@ -6369,12 +6682,8 @@
       },
       {
         "fixture": "elixir/elx4-uses-mixin",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"ELX4.UsesMixin\",\"target\":\"GenServer\",\"line_number\":2,\"meta.isMixin\":true,\"meta.evidenceClass\":\"usage_contextual\"}; got: references[ELX4.UsesMixin->GenServer]@0.9; uses[ELX4.UsesMixin->GenServer]@0.9; references[ELX4.UsesMulti->Supervisor]@0.9; uses[ELX4.UsesMulti->Supervisor]@0.9; references[ELX4.UsesMulti->ELX4.Opts]@0.9; references[ELX4.UsesMulti->Enum]@0.9; imports[ELX4.UsesMulti->Enum]@1; references[ELX4.UsesMulti->Logger]@0.9; references[ELX4.UsesSelf->ELX4.UsesMixin]@0.9; uses[ELX4.UsesSelf->ELX4.UsesMixin]@0.9; contains[ELX4.UsesMixin->init]@1; exports[ELX4.UsesMixin->init]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"ELX4.UsesMulti\",\"target\":\"Supervisor\",\"line_number\":9,\"meta.isMixin\":true,\"meta.evidenceClass\":\"usage_contextual\"}; got: references[ELX4.UsesMixin->GenServer]@0.9; uses[ELX4.UsesMixin->GenServer]@0.9; references[ELX4.UsesMulti->Supervisor]@0.9; uses[ELX4.UsesMulti->Supervisor]@0.9; references[ELX4.UsesMulti->ELX4.Opts]@0.9; references[ELX4.UsesMulti->Enum]@0.9; imports[ELX4.UsesMulti->Enum]@1; references[ELX4.UsesMulti->Logger]@0.9; references[ELX4.UsesSelf->ELX4.UsesMixin]@0.9; uses[ELX4.UsesSelf->ELX4.UsesMixin]@0.9; contains[ELX4.UsesMixin->init]@1; exports[ELX4.UsesMixin->init]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"ELX4.UsesSelf\",\"target\":\"ELX4.UsesMixin\",\"line_number\":17,\"meta.isMixin\":true,\"meta.evidenceClass\":\"usage_contextual\"}; got: references[ELX4.UsesMixin->GenServer]@0.9; uses[ELX4.UsesMixin->GenServer]@0.9; references[ELX4.UsesMulti->Supervisor]@0.9; uses[ELX4.UsesMulti->Supervisor]@0.9; references[ELX4.UsesMulti->ELX4.Opts]@0.9; references[ELX4.UsesMulti->Enum]@0.9; imports[ELX4.UsesMulti->Enum]@1; references[ELX4.UsesMulti->Logger]@0.9; references[ELX4.UsesSelf->ELX4.UsesMixin]@0.9; uses[ELX4.UsesSelf->ELX4.UsesMixin]@0.9; contains[ELX4.UsesMixin->init]@1; exports[ELX4.UsesMixin->init]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "elixir/ex2-alias-resolution",
@@ -6443,17 +6752,13 @@
       },
       {
         "fixture": "elixir/export-surface",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"Cc1.ExportSurface\",\"target\":\"pub_alias\",\"line_number\":16,\"confidence\":1,\"meta.exportKind\":\"type\",\"meta.evidenceClass\":\"syntactic_declaration\"}; got: calls[Cc1.ExportSurface.pub_delegate/1->Kernel.abs]@0.9; contains[Cc1.ExportSurface->pub_alias]@1; contains[Cc1.ExportSurface->priv_alias]@1; contains[Cc1.ExportSurface->opaque_alias]@1; contains[Cc1.ExportSurface->on_start]@1; contains[Cc1.ExportSurface->pub_fun]@1; contains[Cc1.ExportSurface->priv_fun]@1; contains[Cc1.ExportSurface->pub_delegate]@1; contains[Cc1.ExportSurface->pub_macro]@1; contains[Cc1.ExportSurface->priv_macro]@1; contains[Cc1.ExportSurface->pub_guard]@1; contains[Cc1.ExportSurface->priv_guard]@1; contains[Cc1.ExportSurface->pub_field]@1; contains[Cc1.ExportSurface->priv_field]@1; contains[Cc1.ExportSurface->Cc1.ExportSurface.Inner]@1; contains[Cc1.ExportSurface.Inner->inner_fun]@1; contains[Cc1.ExportSurface.Inner->inner_priv]@1; exports[Cc1.ExportSurface->pub_alias]@1; exports[Cc1.ExportSurface->opaque_alias]@1; exports[Cc1.ExportSurface->on_start]@1; exports[Cc1.ExportSurface->pub_fun]@1; exports[Cc1.ExportSurface->pub_delegate]@1; exports[Cc1.ExportSurface->pub_macro]@1; exports[Cc1.ExportSurface->pub_guard]@1; exports[Cc1.ExportSurface->Cc1.ExportSurface.Inner]@1; exports[Cc1.ExportSurface.Inner->inner_fun]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "elixir/exports-public-surface",
-        "ok": false,
-        "problems": [
-          "forbidden relationship present: {\"type\":\"exports\",\"target\":\"handle\"} (found exports[ExportsSurface->handle]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "elixir/framework-forms",
@@ -6517,45 +6822,23 @@
       },
       {
         "fixture": "elixir/ontology-directives",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"OntoDirectives\",\"target\":\"Onto.Helper\",\"meta.evidenceClass\":\"import_directive\"}; got: references[OntoDirectives->Onto.Framework]@0.9; uses[OntoDirectives->Onto.Framework]@0.9; references[OntoDirectives->Onto.Helper]@0.9; imports[OntoDirectives->Onto.Helper]@1; references[OntoDirectives->Onto.Narrow]@0.9; imports[OntoDirectives->Onto.Narrow]@1; references[OntoDirectives->Onto.Alias]@0.9; references[OntoDirectives->Onto.Macros]@0.9; calls[OntoDirectives.run/1->Onto.Narrow.thing]@0.8; contains[OntoDirectives->run]@1; contains[OntoHeadDirective->import]@1; contains[OntoHeadDirective->require]@1; exports[OntoDirectives->run]@1; exports[OntoHeadDirective->import]@1; exports[OntoHeadDirective->require]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"OntoDirectives\",\"target\":\"Onto.Narrow\",\"meta.evidenceClass\":\"import_directive\"}; got: references[OntoDirectives->Onto.Framework]@0.9; uses[OntoDirectives->Onto.Framework]@0.9; references[OntoDirectives->Onto.Helper]@0.9; imports[OntoDirectives->Onto.Helper]@1; references[OntoDirectives->Onto.Narrow]@0.9; imports[OntoDirectives->Onto.Narrow]@1; references[OntoDirectives->Onto.Alias]@0.9; references[OntoDirectives->Onto.Macros]@0.9; calls[OntoDirectives.run/1->Onto.Narrow.thing]@0.8; contains[OntoDirectives->run]@1; contains[OntoHeadDirective->import]@1; contains[OntoHeadDirective->require]@1; exports[OntoDirectives->run]@1; exports[OntoHeadDirective->import]@1; exports[OntoHeadDirective->require]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"OntoDirectives\",\"target\":\"Onto.Framework\",\"meta.evidenceClass\":\"module_directive\"}; got: references[OntoDirectives->Onto.Framework]@0.9; uses[OntoDirectives->Onto.Framework]@0.9; references[OntoDirectives->Onto.Helper]@0.9; imports[OntoDirectives->Onto.Helper]@1; references[OntoDirectives->Onto.Narrow]@0.9; imports[OntoDirectives->Onto.Narrow]@1; references[OntoDirectives->Onto.Alias]@0.9; references[OntoDirectives->Onto.Macros]@0.9; calls[OntoDirectives.run/1->Onto.Narrow.thing]@0.8; contains[OntoDirectives->run]@1; contains[OntoHeadDirective->import]@1; contains[OntoHeadDirective->require]@1; exports[OntoDirectives->run]@1; exports[OntoHeadDirective->import]@1; exports[OntoHeadDirective->require]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"OntoDirectives\",\"target\":\"Onto.Alias\",\"meta.evidenceClass\":\"module_directive\"}; got: references[OntoDirectives->Onto.Framework]@0.9; uses[OntoDirectives->Onto.Framework]@0.9; references[OntoDirectives->Onto.Helper]@0.9; imports[OntoDirectives->Onto.Helper]@1; references[OntoDirectives->Onto.Narrow]@0.9; imports[OntoDirectives->Onto.Narrow]@1; references[OntoDirectives->Onto.Alias]@0.9; references[OntoDirectives->Onto.Macros]@0.9; calls[OntoDirectives.run/1->Onto.Narrow.thing]@0.8; contains[OntoDirectives->run]@1; contains[OntoHeadDirective->import]@1; contains[OntoHeadDirective->require]@1; exports[OntoDirectives->run]@1; exports[OntoHeadDirective->import]@1; exports[OntoHeadDirective->require]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"OntoDirectives\",\"target\":\"Onto.Macros\",\"meta.evidenceClass\":\"module_directive\"}; got: references[OntoDirectives->Onto.Framework]@0.9; uses[OntoDirectives->Onto.Framework]@0.9; references[OntoDirectives->Onto.Helper]@0.9; imports[OntoDirectives->Onto.Helper]@1; references[OntoDirectives->Onto.Narrow]@0.9; imports[OntoDirectives->Onto.Narrow]@1; references[OntoDirectives->Onto.Alias]@0.9; references[OntoDirectives->Onto.Macros]@0.9; calls[OntoDirectives.run/1->Onto.Narrow.thing]@0.8; contains[OntoDirectives->run]@1; contains[OntoHeadDirective->import]@1; contains[OntoHeadDirective->require]@1; exports[OntoDirectives->run]@1; exports[OntoHeadDirective->import]@1; exports[OntoHeadDirective->require]@1",
-          "expected relationship not found: {\"type\":\"calls\",\"from\":\"OntoDirectives.run/1\",\"target\":\"Onto.Narrow.thing\",\"meta.evidenceClass\":\"import_resolved_call\",\"note\":\"the emission was an unqualified local call; the post-walk :only-import resolution named the remote target, and the reason code is re-stated to match the published edge (honesty §4.1)\"}; got: references[OntoDirectives->Onto.Framework]@0.9; uses[OntoDirectives->Onto.Framework]@0.9; references[OntoDirectives->Onto.Helper]@0.9; imports[OntoDirectives->Onto.Helper]@1; references[OntoDirectives->Onto.Narrow]@0.9; imports[OntoDirectives->Onto.Narrow]@1; references[OntoDirectives->Onto.Alias]@0.9; references[OntoDirectives->Onto.Macros]@0.9; calls[OntoDirectives.run/1->Onto.Narrow.thing]@0.8; contains[OntoDirectives->run]@1; contains[OntoHeadDirective->import]@1; contains[OntoHeadDirective->require]@1; exports[OntoDirectives->run]@1; exports[OntoHeadDirective->import]@1; exports[OntoHeadDirective->require]@1",
-          "forbidden relationship present: {\"type\":\"references\",\"from\":\"OntoDirectives\",\"target\":\"Onto.Helper\"} (found references[OntoDirectives->Onto.Helper]@0.9)",
-          "forbidden relationship present: {\"type\":\"references\",\"from\":\"OntoDirectives\",\"target\":\"Onto.Narrow\"} (found references[OntoDirectives->Onto.Narrow]@0.9)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "elixir/ontology-exports",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"ExpSurface\",\"target\":\"new\",\"meta.evidenceClass\":\"public_visibility\"}; got: instantiates[ExpSurface.new/1->ExpSurface]@0.9; calls[ExpSurface.delegated/1->ExpTarget.target]@0.9; contains[ExpSurface->id]@1; contains[ExpSurface->name]@1; contains[ExpSurface->t]@1; contains[ExpSurface->secret]@1; contains[ExpSurface->handle]@1; contains[ExpSurface->new]@1; contains[ExpSurface->internal]@1; contains[ExpSurface->mac]@1; contains[ExpSurface->priv_mac]@1; contains[ExpSurface->is_thing]@1; contains[ExpSurface->is_priv]@1; contains[ExpSurface->delegated]@1; contains[ExpSurface->__using__]@1; contains[ExpSurface.Nested->inner]@1; contains[ExpSurface.Nested->hidden]@1; contains[ExpSurface.Other->documented_away]@1; exports[ExpSurface->t]@1; exports[ExpSurface->handle]@1; exports[ExpSurface->new]@1; exports[ExpSurface->mac]@1; exports[ExpSurface->is_thing]@1; exports[ExpSurface->delegated]@1; exports[ExpSurface->__using__]@1; exports[ExpSurface.Nested->inner]@1; exports[ExpSurface.Other->documented_away]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"ExpSurface\",\"target\":\"mac\",\"meta.evidenceClass\":\"public_visibility\"}; got: instantiates[ExpSurface.new/1->ExpSurface]@0.9; calls[ExpSurface.delegated/1->ExpTarget.target]@0.9; contains[ExpSurface->id]@1; contains[ExpSurface->name]@1; contains[ExpSurface->t]@1; contains[ExpSurface->secret]@1; contains[ExpSurface->handle]@1; contains[ExpSurface->new]@1; contains[ExpSurface->internal]@1; contains[ExpSurface->mac]@1; contains[ExpSurface->priv_mac]@1; contains[ExpSurface->is_thing]@1; contains[ExpSurface->is_priv]@1; contains[ExpSurface->delegated]@1; contains[ExpSurface->__using__]@1; contains[ExpSurface.Nested->inner]@1; contains[ExpSurface.Nested->hidden]@1; contains[ExpSurface.Other->documented_away]@1; exports[ExpSurface->t]@1; exports[ExpSurface->handle]@1; exports[ExpSurface->new]@1; exports[ExpSurface->mac]@1; exports[ExpSurface->is_thing]@1; exports[ExpSurface->delegated]@1; exports[ExpSurface->__using__]@1; exports[ExpSurface.Nested->inner]@1; exports[ExpSurface.Other->documented_away]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"ExpSurface\",\"target\":\"is_thing\",\"meta.evidenceClass\":\"public_visibility\"}; got: instantiates[ExpSurface.new/1->ExpSurface]@0.9; calls[ExpSurface.delegated/1->ExpTarget.target]@0.9; contains[ExpSurface->id]@1; contains[ExpSurface->name]@1; contains[ExpSurface->t]@1; contains[ExpSurface->secret]@1; contains[ExpSurface->handle]@1; contains[ExpSurface->new]@1; contains[ExpSurface->internal]@1; contains[ExpSurface->mac]@1; contains[ExpSurface->priv_mac]@1; contains[ExpSurface->is_thing]@1; contains[ExpSurface->is_priv]@1; contains[ExpSurface->delegated]@1; contains[ExpSurface->__using__]@1; contains[ExpSurface.Nested->inner]@1; contains[ExpSurface.Nested->hidden]@1; contains[ExpSurface.Other->documented_away]@1; exports[ExpSurface->t]@1; exports[ExpSurface->handle]@1; exports[ExpSurface->new]@1; exports[ExpSurface->mac]@1; exports[ExpSurface->is_thing]@1; exports[ExpSurface->delegated]@1; exports[ExpSurface->__using__]@1; exports[ExpSurface.Nested->inner]@1; exports[ExpSurface.Other->documented_away]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"ExpSurface\",\"target\":\"delegated\",\"meta.evidenceClass\":\"public_visibility\"}; got: instantiates[ExpSurface.new/1->ExpSurface]@0.9; calls[ExpSurface.delegated/1->ExpTarget.target]@0.9; contains[ExpSurface->id]@1; contains[ExpSurface->name]@1; contains[ExpSurface->t]@1; contains[ExpSurface->secret]@1; contains[ExpSurface->handle]@1; contains[ExpSurface->new]@1; contains[ExpSurface->internal]@1; contains[ExpSurface->mac]@1; contains[ExpSurface->priv_mac]@1; contains[ExpSurface->is_thing]@1; contains[ExpSurface->is_priv]@1; contains[ExpSurface->delegated]@1; contains[ExpSurface->__using__]@1; contains[ExpSurface.Nested->inner]@1; contains[ExpSurface.Nested->hidden]@1; contains[ExpSurface.Other->documented_away]@1; exports[ExpSurface->t]@1; exports[ExpSurface->handle]@1; exports[ExpSurface->new]@1; exports[ExpSurface->mac]@1; exports[ExpSurface->is_thing]@1; exports[ExpSurface->delegated]@1; exports[ExpSurface->__using__]@1; exports[ExpSurface.Nested->inner]@1; exports[ExpSurface.Other->documented_away]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"ExpSurface\",\"target\":\"t\",\"meta.evidenceClass\":\"public_visibility\"}; got: instantiates[ExpSurface.new/1->ExpSurface]@0.9; calls[ExpSurface.delegated/1->ExpTarget.target]@0.9; contains[ExpSurface->id]@1; contains[ExpSurface->name]@1; contains[ExpSurface->t]@1; contains[ExpSurface->secret]@1; contains[ExpSurface->handle]@1; contains[ExpSurface->new]@1; contains[ExpSurface->internal]@1; contains[ExpSurface->mac]@1; contains[ExpSurface->priv_mac]@1; contains[ExpSurface->is_thing]@1; contains[ExpSurface->is_priv]@1; contains[ExpSurface->delegated]@1; contains[ExpSurface->__using__]@1; contains[ExpSurface.Nested->inner]@1; contains[ExpSurface.Nested->hidden]@1; contains[ExpSurface.Other->documented_away]@1; exports[ExpSurface->t]@1; exports[ExpSurface->handle]@1; exports[ExpSurface->new]@1; exports[ExpSurface->mac]@1; exports[ExpSurface->is_thing]@1; exports[ExpSurface->delegated]@1; exports[ExpSurface->__using__]@1; exports[ExpSurface.Nested->inner]@1; exports[ExpSurface.Other->documented_away]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"ExpSurface\",\"target\":\"handle\",\"meta.evidenceClass\":\"public_visibility\"}; got: instantiates[ExpSurface.new/1->ExpSurface]@0.9; calls[ExpSurface.delegated/1->ExpTarget.target]@0.9; contains[ExpSurface->id]@1; contains[ExpSurface->name]@1; contains[ExpSurface->t]@1; contains[ExpSurface->secret]@1; contains[ExpSurface->handle]@1; contains[ExpSurface->new]@1; contains[ExpSurface->internal]@1; contains[ExpSurface->mac]@1; contains[ExpSurface->priv_mac]@1; contains[ExpSurface->is_thing]@1; contains[ExpSurface->is_priv]@1; contains[ExpSurface->delegated]@1; contains[ExpSurface->__using__]@1; contains[ExpSurface.Nested->inner]@1; contains[ExpSurface.Nested->hidden]@1; contains[ExpSurface.Other->documented_away]@1; exports[ExpSurface->t]@1; exports[ExpSurface->handle]@1; exports[ExpSurface->new]@1; exports[ExpSurface->mac]@1; exports[ExpSurface->is_thing]@1; exports[ExpSurface->delegated]@1; exports[ExpSurface->__using__]@1; exports[ExpSurface.Nested->inner]@1; exports[ExpSurface.Other->documented_away]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"ExpSurface.Nested\",\"target\":\"inner\",\"meta.evidenceClass\":\"public_visibility\"}; got: instantiates[ExpSurface.new/1->ExpSurface]@0.9; calls[ExpSurface.delegated/1->ExpTarget.target]@0.9; contains[ExpSurface->id]@1; contains[ExpSurface->name]@1; contains[ExpSurface->t]@1; contains[ExpSurface->secret]@1; contains[ExpSurface->handle]@1; contains[ExpSurface->new]@1; contains[ExpSurface->internal]@1; contains[ExpSurface->mac]@1; contains[ExpSurface->priv_mac]@1; contains[ExpSurface->is_thing]@1; contains[ExpSurface->is_priv]@1; contains[ExpSurface->delegated]@1; contains[ExpSurface->__using__]@1; contains[ExpSurface.Nested->inner]@1; contains[ExpSurface.Nested->hidden]@1; contains[ExpSurface.Other->documented_away]@1; exports[ExpSurface->t]@1; exports[ExpSurface->handle]@1; exports[ExpSurface->new]@1; exports[ExpSurface->mac]@1; exports[ExpSurface->is_thing]@1; exports[ExpSurface->delegated]@1; exports[ExpSurface->__using__]@1; exports[ExpSurface.Nested->inner]@1; exports[ExpSurface.Other->documented_away]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"ExpSurface.Other\",\"target\":\"documented_away\",\"meta.evidenceClass\":\"public_visibility\"}; got: instantiates[ExpSurface.new/1->ExpSurface]@0.9; calls[ExpSurface.delegated/1->ExpTarget.target]@0.9; contains[ExpSurface->id]@1; contains[ExpSurface->name]@1; contains[ExpSurface->t]@1; contains[ExpSurface->secret]@1; contains[ExpSurface->handle]@1; contains[ExpSurface->new]@1; contains[ExpSurface->internal]@1; contains[ExpSurface->mac]@1; contains[ExpSurface->priv_mac]@1; contains[ExpSurface->is_thing]@1; contains[ExpSurface->is_priv]@1; contains[ExpSurface->delegated]@1; contains[ExpSurface->__using__]@1; contains[ExpSurface.Nested->inner]@1; contains[ExpSurface.Nested->hidden]@1; contains[ExpSurface.Other->documented_away]@1; exports[ExpSurface->t]@1; exports[ExpSurface->handle]@1; exports[ExpSurface->new]@1; exports[ExpSurface->mac]@1; exports[ExpSurface->is_thing]@1; exports[ExpSurface->delegated]@1; exports[ExpSurface->__using__]@1; exports[ExpSurface.Nested->inner]@1; exports[ExpSurface.Other->documented_away]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "elixir/ontology-overrides",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"OntoDefer.over/1\",\"target\":\"OntoDefer.over\",\"meta.evidenceClass\":\"defoverridable_marker\"}; got: implements[OntoImpl->OntoBehaviour]@0.9; overrides[OntoImpl.fetch/1->OntoBehaviour.fetch]@1; implements[OntoExplicit->OntoBehaviour]@0.9; overrides[OntoExplicit.push/1->OntoBehaviour.push]@1; overrides[OntoDefer.over/1->over]@1; contains[OntoBehaviour->fetch]@1; contains[OntoBehaviour->push]@1; contains[OntoImpl->fetch]@1; contains[OntoImpl->not_a_callback]@1; contains[OntoImpl->push]@1; contains[OntoImpl->secret_helper]@1; contains[OntoExplicit->push]@1; contains[OntoUnnamed->size]@1; contains[OntoDefer->over]@1; contains[OntoDefer->unrelated]@1; exports[OntoBehaviour->fetch]@1; exports[OntoBehaviour->push]@1; exports[OntoImpl->fetch]@1; exports[OntoImpl->not_a_callback]@1; exports[OntoImpl->push]@1; exports[OntoExplicit->push]@1; exports[OntoUnnamed->size]@1; exports[OntoDefer->over]@1; exports[OntoDefer->unrelated]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "elixir/ontology-placeholder-names",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"OntoPlaceholder\",\"target\":\"unknown\",\"meta.evidenceClass\":\"public_visibility\",\"note\":\"EX-EX11b: a function genuinely named `unknown` is a public member; the lowercase spelling is not this analyzer's placeholder\"}; got: contains[OntoPlaceholder->unknown]@1; contains[OntoPlaceholder->named]@1; contains[OntoGenerated->generated]@1; exports[OntoPlaceholder->unknown]@1; exports[OntoPlaceholder->named]@1; exports[OntoGenerated->generated]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "elixir/ontology-uses",
@@ -6664,10 +6947,8 @@
       },
       {
         "fixture": "elixir/struct-update",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"Cc1.StructUpdate.bump/1\",\"target\":\"Cc1.Point\",\"line_number\":5,\"meta.reasonCode\":\"elixir_instantiates_heuristic\",\"meta.reasonCodeSource\":\"default_at_pushrel\",\"meta.evidenceClass\":\"structural_inference\"}; got: instantiates[Cc1.StructUpdate.bump/1->Cc1.Point]@0.9; contains[Cc1.StructUpdate->bump]@1; exports[Cc1.StructUpdate->bump]@1; uses[Cc1.StructUpdate.bump/1->x]@0.7"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "elixir/top-level-forms",
@@ -6701,6 +6982,11 @@
       },
       {
         "fixture": "elixir/uses-mixin-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/x14-capture-and-operator-calls",
         "ok": true,
         "problems": []
       },
@@ -7205,6 +7491,11 @@
         "problems": []
       },
       {
+        "fixture": "clean/constructor-instantiation",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "clean/declaration-forms",
         "ok": true,
         "problems": []
@@ -7436,21 +7727,13 @@
       },
       {
         "fixture": "make/recipe-eof-no-newline",
-        "ok": false,
-        "problems": [
-          "expectNoParseErrors: the tree has 2 ERROR/MISSING node(s) — line 27, line 27. Error RECOVERY still produced the expected symbols, so every other assertion in this file passes on a broken grammar."
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "make/recipeprefix",
-        "ok": false,
-        "problems": [
-          "expectNoParseErrors: the tree has 6 ERROR/MISSING node(s) — line 26, line 26, line 31, line 31, line 34, line 34. Error RECOVERY still produced the expected symbols, so every other assertion in this file passes on a broken grammar.",
-          "expected symbol not found: {\"name\":\"clean\",\"kind\":\"function\"}; got: recipeprefix.mk:module, CC:constant, SRC:constant, build:function, echo:function, still:function",
-          "expected 1 symbol(s) named \"clean\"; got 0",
-          "expected relationship not found: {\"type\":\"contains\",\"from\":\"recipeprefix.mk\",\"target\":\"clean\",\"line_number\":33}; got: contains[recipeprefix.mk->CC]@1; contains[recipeprefix.mk->SRC]@1; contains[recipeprefix.mk->build]@1; contains[recipeprefix.mk->echo]@1; contains[recipeprefix.mk->still]@1; references[build->SRC]@1; references[build->CC]@1; references[build->SRC]@1; uses[build->$@]@1; uses[build->$<]@1; exports[recipeprefix.mk->build]@1; exports[recipeprefix.mk->echo]@1; exports[recipeprefix.mk->still]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"recipeprefix.mk\",\"target\":\"clean\",\"line_number\":33}; got: contains[recipeprefix.mk->CC]@1; contains[recipeprefix.mk->SRC]@1; contains[recipeprefix.mk->build]@1; contains[recipeprefix.mk->echo]@1; contains[recipeprefix.mk->still]@1; references[build->SRC]@1; references[build->CC]@1; references[build->SRC]@1; uses[build->$@]@1; uses[build->$<]@1; exports[recipeprefix.mk->build]@1; exports[recipeprefix.mk->echo]@1; exports[recipeprefix.mk->still]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "make/substitution-and-automatic",
@@ -7648,6 +7931,11 @@
         "problems": []
       },
       {
+        "fixture": "html/embedded-module-export",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "html/embedded-origin-marks",
         "ok": true,
         "problems": []
@@ -7724,6 +8012,11 @@
       },
       {
         "fixture": "toml/arrays-and-values",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "toml/bare-name-and-claim-shapes",
         "ok": true,
         "problems": []
       },
@@ -8544,24 +8837,24 @@
         "pass": 35
       },
       "c": {
-        "fail": 3,
-        "pass": 44
+        "fail": 0,
+        "pass": 52
       },
       "clean": {
         "fail": 0,
-        "pass": 13
+        "pass": 14
       },
       "clojure": {
         "fail": 0,
-        "pass": 72
+        "pass": 79
       },
       "cpp": {
         "fail": 1,
-        "pass": 50
+        "pass": 54
       },
       "csharp": {
-        "fail": 3,
-        "pass": 21
+        "fail": 0,
+        "pass": 25
       },
       "css": {
         "fail": 0,
@@ -8569,11 +8862,11 @@
       },
       "dart": {
         "fail": 0,
-        "pass": 32
+        "pass": 50
       },
       "elixir": {
-        "fail": 11,
-        "pass": 71
+        "fail": 0,
+        "pass": 83
       },
       "erlang": {
         "fail": 0,
@@ -8585,7 +8878,7 @@
       },
       "go": {
         "fail": 0,
-        "pass": 31
+        "pass": 32
       },
       "graphql": {
         "fail": 0,
@@ -8605,15 +8898,15 @@
       },
       "html": {
         "fail": 0,
-        "pass": 18
+        "pass": 19
       },
       "java": {
-        "fail": 4,
-        "pass": 59
+        "fail": 0,
+        "pass": 79
       },
       "javascript": {
-        "fail": 1,
-        "pass": 77
+        "fail": 2,
+        "pass": 91
       },
       "json": {
         "fail": 0,
@@ -8624,16 +8917,16 @@
         "pass": 5
       },
       "kotlin": {
-        "fail": 3,
-        "pass": 61
+        "fail": 0,
+        "pass": 70
       },
       "lua": {
         "fail": 0,
         "pass": 15
       },
       "make": {
-        "fail": 2,
-        "pass": 8
+        "fail": 0,
+        "pass": 10
       },
       "markdown": {
         "fail": 0,
@@ -8665,7 +8958,7 @@
       },
       "python": {
         "fail": 0,
-        "pass": 56
+        "pass": 63
       },
       "r": {
         "fail": 0,
@@ -8673,15 +8966,15 @@
       },
       "ruby": {
         "fail": 1,
-        "pass": 10
+        "pass": 11
       },
       "rust": {
-        "fail": 4,
-        "pass": 26
+        "fail": 0,
+        "pass": 30
       },
       "scala": {
-        "fail": 6,
-        "pass": 71
+        "fail": 0,
+        "pass": 81
       },
       "scss": {
         "fail": 0,
@@ -8696,8 +8989,8 @@
         "pass": 17
       },
       "svelte": {
-        "fail": 6,
-        "pass": 47
+        "fail": 0,
+        "pass": 53
       },
       "swift": {
         "fail": 4,
@@ -8705,11 +8998,11 @@
       },
       "toml": {
         "fail": 0,
-        "pass": 10
+        "pass": 11
       },
       "typescript": {
-        "fail": 3,
-        "pass": 100
+        "fail": 2,
+        "pass": 117
       },
       "vb": {
         "fail": 3,
@@ -8746,8 +9039,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-17T15:27:14-04:00",
-  "regeneratedAtCommit": "f8d6f8bc6dfdbe68c0ee4e23a9f971fa54b9903f",
+  "regeneratedAt": "2026-10-20T19:19:14-04:00",
+  "regeneratedAtCommit": "3c844dc729b634340c35143876ddcd45be81cd7b",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
