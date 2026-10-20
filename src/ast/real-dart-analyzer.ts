@@ -3624,13 +3624,44 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             // DT-F: string interpolation reads (`'hello $name'`,
             // `'sum ${n + 1}'`) — every bare identifier inside a template
             // substitution is evaluated. Declaration-shaped names still bind.
+            //
+            // A LOCAL INSIDE THE INTERPOLATION IS A BINDING, AND THIS ARM WAS NOT
+            // ASKING. Every other read arm in this pass consults `locals` before it
+            // publishes, and publishes the family's binding spelling
+            // (`<callable>\u0000<binding>`) when the name is one. This arm did not,
+            // so a local read inside `'...'` was published as a BARE name — and a bare
+            // name is a DECLARATION's spelling, which the store resolves by name
+            // against whatever single declaration happens to carry it.
+            //
+            // MEASURED (proxicall, whole project, `--index` arm): **2,777 rows** of
+            // `uses -> _temp0` unresolved, every one of them a local declared
+            // `String _temp0 = intl.Intl.pluralLogic(...)` in the SAME function and
+            // read back inside the interpolation `'$_temp0'`
+            // (`lib/l10n/generated/app_localizations_ar.dart` and its siblings —
+            // the intl pluralization the Flutter gen-l10n tooling emits). The read is
+            // a local read; the row said it was a name the project must declare.
+            //
+            // WHY IT MATTERS BEYOND THE COUNT: the bare spelling is not merely
+            // unresolved, it is RESOLVABLE-BY-MISTAKE. The store's bare-name rule
+            // admits a bare name declared exactly once in the project, so a local
+            // named `_temp0` could bind to an unrelated declaration named `_temp0` —
+            // the `local-read-phantom.ts` failure, reached through a different door.
+            //
+            // The fix is the one the other arms already implement: consult `locals`
+            // and publish the binding spelling when the name is bound here. NOTHING
+            // else moves — the row count, the line, the confidence and the
+            // `isInterpolationRead` marker are all unchanged, and a name the file
+            // does not bind still publishes the bare row exactly as before.
+            const isLocal = locals.has(n.text)
             relationships.push({
               source: callSource,
-              target: n.text,
+              target: isLocal ? `${callSource}${BINDING_SEP}${n.text}` : n.text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               line_number: this.nodeLine(n),
-              metadata: { isInterpolationRead: true },
+              metadata: isLocal
+                ? { isInterpolationRead: true, isLocalRead: true, localBinding: true }
+                : { isInterpolationRead: true },
             })
           }
         }
@@ -3641,13 +3672,22 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         const raw = n.text
         const name = raw.startsWith("$") ? raw.slice(1) : raw
         if (name) {
+          // THE SAME LOCAL QUESTION AS THE ARM ABOVE. A `$name` placeholder reads a
+          // local exactly as a bare identifier inside `'${...}'` does, and this arm was
+          // not asking either. The binding spelling is what keeps a local read from
+          // being resolved by name against an unrelated declaration — see the
+          // `isInterpolationRead` arm above for the measurement (2,777 rows on
+          // proxicall's whole project).
+          const isLocal = locals.has(name)
           relationships.push({
             source: callSource,
-            target: name,
+            target: isLocal ? `${callSource}${BINDING_SEP}${name}` : name,
             type: ASTEngine.RelationshipType.Uses,
             confidence: 0.9,
             line_number: this.nodeLine(n),
-            metadata: { isInterpolationRead: true },
+            metadata: isLocal
+              ? { isInterpolationRead: true, isLocalRead: true, localBinding: true }
+              : { isInterpolationRead: true },
           })
         }
       }
