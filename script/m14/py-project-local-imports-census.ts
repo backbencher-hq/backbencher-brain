@@ -45,6 +45,8 @@ const ROOT = process.cwd()
 const argv = process.argv.slice(2)
 const argOf = (f: string): string | undefined => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : undefined }
 const OUT = argOf("--out")
+/** A SCOPED RUN: `--repo <name>` measures ONE repository, whole (not a stride). */
+const ONLY = argOf("--repo")
 const CR = process.env.BB_CORPUS_ROOT ?? path.join(ROOT, ".corpus")
 const SIZE_CAP = 1_048_576
 
@@ -181,6 +183,7 @@ const perRepo: Array<{ repo: string; files: number; c: Class }> = []
 const untargetableSamples: string[] = []
 
 const repoNames = [...new Set(pop.files.map((f) => f.slice(CR.length + 1).split(path.sep)[0]!))].sort()
+  .filter((r) => !ONLY || r === ONLY)
 for (const repo of repoNames) {
   const files = pop.files.filter((f) => f.slice(CR.length + 1).split(path.sep)[0] === repo)
   const trees: any[] = []
