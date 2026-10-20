@@ -223,6 +223,19 @@ const aliasesOf = (pkg: string, namespaces: string[]): Set<string> => {
   return out
 }
 
+// ── the COMMITTED standard-library vocabulary (read, not forked) ─────────────────────────────────────
+// The D7 partition's bucket B is the names the committed `iso-cpp-stdlib` vocabulary lists, and it is
+// read from the shared registry — so the D-ELIGIBLE rows (the W1 rows that the vocabulary does NOT
+// cover) can be counted LIGHTLY, per ecosystem, without the project index. Bucket D is a SUBSET of them
+// (the index removes the rows the project declares and the member leaves), so this is an UPPER BOUND per
+// ecosystem, and the exact D split is the index's table.
+const { ISO_CPP_STDLIB } = await import(path.join(ROOT, "script/m14/citations.ts"))
+const STDLIB_ROOTS = new Set<string>(ISO_CPP_STDLIB.roots)
+if (STDLIB_ROOTS.size < 10) {
+  console.error(`CONTROL DID NOT FIRE: the committed iso-cpp-stdlib vocabulary reads ${STDLIB_ROOTS.size} roots.`)
+  process.exit(3)
+}
+
 // ── the dump's W1 rows ─────────────────────────────────────────────────────────────────────────────
 type Row = { target: string; src: string; line: number; outcome: string }
 const w1: Row[] = []
@@ -256,10 +269,12 @@ if (w1.length === 0) { console.error("cpp-wall-ecosystem: 0 W1 rows — check th
 type Verdict = "CLAIM-SOUND-REACH" | "UNIT-ATTRIBUTION-UNIQUE" | "UNIT-ATTRIBUTION-AMBIGUOUS" | "NO-DECLARED-PACKAGE" | "NO-PROVENANCE" | "FOREIGN-MANIFEST" | "UNVERIFIABLE-NO-MANIFEST"
 const VERDICTS: Verdict[] = ["CLAIM-SOUND-REACH", "UNIT-ATTRIBUTION-UNIQUE", "UNIT-ATTRIBUTION-AMBIGUOUS", "NO-DECLARED-PACKAGE", "NO-PROVENANCE", "FOREIGN-MANIFEST", "UNVERIFIABLE-NO-MANIFEST"]
 const byVerdict: Record<string, number> = {}
-const byEcosystem = new Map<string, { rows: number; verdicts: Record<string, number>; repos: Set<string> }>()
+const byEcosystem = new Map<string, { rows: number; verdicts: Record<string, number>; repos: Set<string>; dEligible: number }>()
 const includeCache = new Map<string, Set<string>>()
 /** THE ROWS A NEGATIVE CLAIM WOULD BE REFUTED ON — the name IS a declared package of the manifest. */
 let refutedByManifest = 0
+/** THE D-ELIGIBLE ROWS — the W1 rows the committed stdlib vocabulary does not cover (bucket D's parent). */
+let dEligibleTotal = 0
 const rootsOf = (abs: string): Set<string> => {
   const cached = includeCache.get(abs)
   if (cached) return cached
@@ -303,7 +318,7 @@ for (const r of w1) {
   const repoDir = path.join(CR, repo)
   const kind = nearestKind(path.dirname(r.src), repoDir)
   const eco = kind ?? "no-manifest"
-  const rep = byEcosystem.get(eco) ?? { rows: 0, verdicts: {}, repos: new Set<string>() }
+  const rep = byEcosystem.get(eco) ?? { rows: 0, verdicts: {}, repos: new Set<string>(), dEligible: 0 }
   rep.rows++
   rep.repos.add(repo)
   const bump = (v: Verdict): void => {
@@ -317,6 +332,12 @@ for (const r of w1) {
       nameInManifest.set(r.target, (nameInManifest.get(r.target) ?? 0) + 1)
       refutedByManifest++
     }
+  }
+  // THE D-ELIGIBLE ROWS: the W1 rows the committed stdlib vocabulary does NOT cover — bucket D's PARENT
+  // class, counted per ecosystem without the index.
+  if (!STDLIB_ROOTS.has(r.target)) {
+    rep.dEligible++
+    dEligibleTotal++
   }
   if (kind !== null && kind !== "CMakeLists.txt") { bump("FOREIGN-MANIFEST"); byEcosystem.set(eco, rep); continue }
   const facts = factsFor(path.dirname(r.src), repoDir)
@@ -349,13 +370,18 @@ const report = {
   population: { residualRowsInDump: residualRows, callsResidualRows: callsResidual, w1Rows: w1.length, repos: new Set(w1.map((r) => repoOf(r.src))).size },
   rule: "the W1 class re-derived from the ANALYZER's own exported sets; the ECOSYSTEM is the kind of the FIRST manifest above the file; the claim's unit attribution matches the unit's external include roots against the governing manifest's declared packages.",
   verdicts: byVerdict,
+  dEligible: {
+    rows: dEligibleTotal,
+    byEcosystem: Object.fromEntries([...byEcosystem.entries()].map(([k, v]) => [k, v.dEligible])),
+    note: "the W1 rows the COMMITTED stdlib vocabulary does not cover — bucket D's PARENT class, counted per ecosystem with NO index. Bucket D is a SUBSET of it (the index removes the rows the project declares and the member leaves), so this is an UPPER BOUND per ecosystem; the exact D split is the index's table (script/m14/cpp-d-package-scope.ts).",
+  },
   negativeClaimSurface: {
     refutedByManifestRows: refutedByManifest,
     distinctNames: nameInManifest.size,
     names: Object.fromEntries([...nameInManifest.entries()].sort((a, b) => b[1] - a[1])),
     note: "THE NEGATIVE PROJECT-FACT CLAIM'S REFUTATION SURFACE: a W1 row whose TARGET is one of the governing manifest's declared package names — the project DOES declare that name, so a negative claim on it would be REFUTED. Measured over the WHOLE W1 class, so it is the number the claim kind's owner needs, and it is the C++ lane's answer to the fleet's first refuted-claim incident.",
   },
-  perEcosystem: Object.fromEntries([...byEcosystem.entries()].sort((a, b) => b[1].rows - a[1].rows).map(([k, v]) => [k, { rows: v.rows, repos: [...v.repos].sort(), verdicts: v.verdicts }])),
+  perEcosystem: Object.fromEntries([...byEcosystem.entries()].sort((a, b) => b[1].rows - a[1].rows).map(([k, v]) => [k, { rows: v.rows, dEligible: v.dEligible, repos: [...v.repos].sort(), verdicts: v.verdicts }])),
   note: "the WALL (the W1 class) per ecosystem, priced against the package-scope claim. NO INDEX IS NEEDED for this table: the W1 class is a spelling rule, the ecosystem is the nearest manifest's kind, and the unit attribution is the manifest and the source. The A/C/D REFINEMENT (which needs the index) is script/m14/cpp-d-package-scope.ts's table.",
 }
 const json = JSON.stringify(report, null, 1) + "\n"
@@ -371,5 +397,5 @@ for (const v of VERDICTS) console.log(`  ${v.padEnd(28)} ${String(byVerdict[v] ?
 console.log("PER ECOSYSTEM")
 for (const [eco, v] of Object.entries(report.perEcosystem)) {
   const parts = VERDICTS.map((x) => `${x.replace("UNIT-ATTRIBUTION-", "ua-").replace("NO-DECLARED-PACKAGE", "no-declared").replace("UNVERIFIABLE-NO-MANIFEST", "no-manifest").replace("CLAIM-SOUND-REACH", "sound")}=${v.verdicts[x] ?? 0}`).join(" ")
-  console.log(`  ${eco.padEnd(20)} rows=${String(v.rows).padStart(7)}  repos=${String(v.repos.length).padStart(3)}  ${parts}`)
+  console.log(`  ${eco.padEnd(20)} rows=${String(v.rows).padStart(7)}  D-eligible<=${String(v.dEligible).padStart(7)}  repos=${String(v.repos.length).padStart(3)}  ${parts}`)
 }
