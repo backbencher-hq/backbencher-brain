@@ -38,7 +38,16 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -u
 TOKEN_DIR="${BB_ARM_TOKEN_DIR:-$PWD/.tmp-lead/arm-token}"
-TTL="${BB_ARM_TOKEN_TTL:-900}"   # 15 minutes without a beat => reclaimable
+TTL="${BB_ARM_TOKEN_TTL:-2700}"  # 45 minutes without a beat => reclaimable
+#
+# WHY 45, AND NOT 15. The TTL was 900s, and on 2026-10-20 the python lane's arm LAPSED IT — the lane
+# stopped beating while it was writing prose, the dart lane reclaimed the token, and the python arm ran
+# its last few minutes WITHOUT the token. The lane disclosed this itself and checked the arm's
+# integrity (edge count identical, class sum exact, intent closure exact, the deltas exactly as
+# predicted), which is the right conduct; but the WINDOW was too short for the fleet's heaviest arms —
+# the dart lane's is 33,738 files and the python lane's is 11,559 — so a long arm could lose the token
+# mid-run, which is the one thing the token exists to prevent. 45 minutes is longer than any arm the
+# fleet has run, and a crashed or vanished holder still releases itself. BEAT EVERY TWO MINUTES.
 mkdir -p "$(dirname "$TOKEN_DIR")" 2>/dev/null || true
 
 now() { date +%s; }

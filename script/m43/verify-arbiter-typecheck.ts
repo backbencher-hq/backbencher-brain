@@ -29,7 +29,8 @@
 // gate prints them with their owners so the Lead can hand them over, and it does NOT fail on them.
 
 import { execFileSync } from "node:child_process"
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -88,32 +89,44 @@ function arbiterErrors(byFile: Map<string, string[]>): string[] {
 }
 
 // ── ONE tsc RUN, TWO READINGS ────────────────────────────────────────────────────────────────────
-// The probe file is planted BEFORE the single typecheck, so the ONE run's output carries BOTH the
-// arbiter's errors (the control) and the probe's own error (n1). Two runs would double the gate's
-// cost for the same evidence. The probe is DELETED in a finally, and it is a REAL filename (not a
-// dotfile) because TypeScript's `**/*` glob does NOT match dotfiles — the first version of this
-// probe was named `.m43-t1-probe.ts`, was therefore never IN the program, and n1 FAILED. The gate
-// caught its own premise failing, which is the whole reason n1 exists.
-const PROBE_REL = "script/m14/m43-t1-probe.ts"
-const PROBE = path.join(ROOT, PROBE_REL)
+// The control reads the ONE typecheck's output twice: the arbiter's errors are the control, and the
+// FILE LIST the same run prints is the proof that the arbiter is IN the program at all.
+//
+// WHY THERE IS NO PROBE FILE IN THE TREE. The first version planted a temp file under script/m14/ and
+// read the typecheck's error for it as the negative control. It worked — and it was WRONG: for the ~90
+// seconds the gate runs, a file with a deliberate type error EXISTS in script/m14/, so every other tool
+// that typechecks that tree sees a NEW error. The fleet's ratchet printed it, a lane's tsc run listed it,
+// and a lane's message reported it back as an error in a file it did not own. A gate that makes the tree
+// look broken while it runs is a gate that corrupts other instruments' readings — the same principle as
+// not mutating the arbiter.
+//
+// SO THE PREMISE IS PROVED WITHOUT AN ARTEFACT: `--listFiles` prints every file in the program, so the
+// arbiter's two files are ASSERTED TO BE IN IT (if they are not, the control is vacuous — nothing would
+// ever report their errors), and tsc's own error-reporting is proved on a TEMP PROJECT OUTSIDE THE TREE,
+// where a deliberate error is planted and the SAME tsc binary must report it. Two proofs, zero files
+// added to the repository, and the tree is never in a broken state while the gate runs.
+const PROBE_DIR = mkdtempSync(path.join(tmpdir(), "bb-t1-probe-"))
 let tscOut = ""
+let fileList = ""
 let parsed = { lines: [] as string[], byFile: new Map<string, string[]>() }
 try {
-  writeFileSync(PROBE, "export const M43_T1_PROBE: number = \"not a number\"\n")
   try {
-    tscOut = execFileSync(
+    const r = execFileSync(
       "npx",
-      ["tsc", "--noEmit", "-p", "tsconfig.scripts.json"],
-      { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 64 * 1024 * 1024 },
+      ["tsc", "--noEmit", "-p", "tsconfig.scripts.json", "--listFiles"],
+      { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 128 * 1024 * 1024 },
     )
+    tscOut = r
   } catch (e: any) {
     // tsc exits non-zero WHEN IT HAS ERRORS — that is the normal path here, and the output is the
     // evidence. A failure that is not a type error is a different thing and must not be read as one.
     tscOut = `${e.stdout ?? ""}\n${e.stderr ?? ""}`
   }
   parsed = parse(tscOut)
+  // the file list is on stdout, one absolute path per line
+  fileList = tscOut.split("\n").filter((l) => l.startsWith("/") && l.endsWith(".ts")).join("\n")
 } finally {
-  rmSync(PROBE, { force: true })
+  rmSync(PROBE_DIR, { recursive: true, force: true })
 }
 
 // ── the control: the arbiter typechecks clean ────────────────────────────────────────────────────
@@ -135,15 +148,47 @@ check(
   crashErrs.slice(0, 2).join(" | "),
 )
 
-// ── n1: tsc REALLY reported a type error in a file under script/m14/ ─────────────────────────────
+// ── n1: the arbiter IS IN THE PROGRAM, and tsc DOES report type errors ───────────────────────────
+// n1a: `--listFiles` printed the program, and the arbiter's two files are IN it. If they were not, the
+//      control would be VACUOUS — nothing would ever report their errors, so "zero errors" would mean
+//      "never checked" and would look exactly like a pass.
+// n1b: the SAME tsc binary reports a type error when given one — proved on a TEMP PROJECT OUTSIDE THE
+//      TREE, so no file is ever added to the repository and the tree is never left looking broken.
 {
-  const probeErrs = parsed.byFile.get(PROBE_REL) ?? []
+  const inProgram = ARBITER_FILES.filter((f) => fileList.includes(path.join(ROOT, f)))
   negative(
-    "n1: tsc reported a type error in a file under script/m14/ (the premise the control rests on)",
-    probeErrs.length > 0,
-    "the probe file was planted and tsc did not report it — the control would be VACUOUS",
+    "n1a: the arbiter's files ARE in the tsc program (so a zero-error verdict means CHECKED, not unchecked)",
+    inProgram.length === ARBITER_FILES.length,
+    `only ${inProgram.length} of ${ARBITER_FILES.length} arbiter file(s) are in the program: ${inProgram.join(", ")}`,
   )
-  check("n1: the probe file was removed", !existsSync(PROBE))
+  let reported = false
+  // A FRESH temp dir: the first one was removed in the earlier finally, and reusing it made the write
+  // throw ENOENT, which the catch turned into "tsc did not report it". The gate was failing its own
+  // negative control for a bookkeeping reason, and said so in the detail.
+  const probeDir = mkdtempSync(path.join(tmpdir(), "bb-t1-probe-"))
+  try {
+    writeFileSync(path.join(probeDir, "probe.ts"), "export const P: number = \"not a number\"\n")
+    writeFileSync(path.join(probeDir, "tsconfig.json"), JSON.stringify({
+      compilerOptions: { noEmit: true, strict: true, skipLibCheck: true, target: "es2022", module: "esnext" },
+      include: ["probe.ts"],
+    }))
+    let out = ""
+    try {
+      // THE PROJECT'S OWN tsc, BY ABSOLUTE PATH. `npx` resolves the local typescript only from inside
+      // the project; run from a temp directory it tries to FETCH one, which is both slow and a network
+      // dependency in a gate. The javascript lane reached the same conclusion independently.
+      const TSC = path.join(ROOT, "node_modules/.bin/tsc")
+      out = execFileSync(TSC, ["--noEmit", "-p", path.join(probeDir, "tsconfig.json")], {
+        cwd: probeDir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 8 * 1024 * 1024,
+      })
+    } catch (e: any) { out = `${e.stdout ?? ""}\n${e.stderr ?? ""}` }
+    reported = /error TS\d+/.test(out)
+  } catch { reported = false } finally { rmSync(probeDir, { recursive: true, force: true }) }
+  negative(
+    "n1b: tsc really does report a type error (proved OUTSIDE the tree, so no file is added to it)",
+    reported,
+    "the temp project had a deliberate type error and tsc did not report it",
+  )
 }
 
 // ── n2: the verdict REJECTS an arbiter error line ────────────────────────────────────────────────

@@ -68,7 +68,44 @@ import { execFileSync } from "node:child_process"
 import { readFileSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
-import { GO_ORACLE_LABELS, deriveGoExportsTruth, deriveGoOverridesTruth } from "./go-truth"
+import { deriveGoExportsTruth, deriveGoOverridesTruth } from "./go-truth"
+
+/**
+ * THE GO ORACLE'S LABEL SET — the ten labels this audit compares the analyzer against.
+ *
+ * IT USED TO BE AN EXPORT FROM `go-truth.ts`, AND IT IS NOT ANY MORE, AND THAT IS NOT A TYPO. `dc828089e`
+ * (the go lane's task-38 baseline chunk) rewrote `go-truth.ts` down to the TWO truth derivations the
+ * shared differential does not carry — `exports` and `overrides` — and dropped the export with the rest.
+ * But the SET WAS NEVER "what go-truth.ts derives": it is "what the go ORACLE covers", and the truth side
+ * of this audit comes from TWO places — the eight go derivations in `script/m14/differential.ts`
+ * (`deriveGoEdges`, `deriveGoImplements`, `deriveGoDeclaredTypeRefs`, `deriveGoContains`, `deriveGoUses`,
+ * `deriveGoImports`) plus the two in `go-truth.ts`. Ten.
+ *
+ * **THE BREAK WAS HARD, NOT COSMETIC.** `go-oracle-audit.ts` IMPORTED the removed name, and a missing
+ * named export is an ESM SyntaxError — so this module COULD NOT LOAD AT ALL. `npx tsc --noEmit -p
+ * tsconfig.scripts.json` named it as TS2305 and the ratchet `script/m14/verify-script-typecheck-baseline.ts`
+ * counted it as a new error, and the fleet's declared standard is ZERO for the whole scripts tree.
+ *
+ * `script/m14/verify-go-lane-coverage.ts` also probes for the export BY SOURCE TEXT, and its "does go have
+ * its own labels" answer silently became NO — which is the m60 coverage gate's DESIGNED behaviour for a
+ * lane that has moved its oracle out of the shared file, so that one is right as it stands.
+ *
+ * **THE GO LANE OWES A DECISION ON THE LIST ITSELF** when it takes its slot: whether the oracle's other
+ * eight labels are still derivable, now that the truth module carries two. The list below is the one the
+ * oracle covered, restored where it is actually used.
+ */
+const GO_ORACLE_LABELS = [
+  "calls",
+  "contains",
+  "extends",
+  "exports",
+  "implements",
+  "imports",
+  "instantiates",
+  "overrides",
+  "references",
+  "uses",
+] as const
 // The eight labels go has derived since the wave. `differential.ts` guards its
 // sweep with `process.argv[1]?.endsWith("differential.ts")`, so importing the
 // derivations does NOT start a 42-language run — verified by reading the guard,
