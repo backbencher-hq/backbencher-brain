@@ -146,6 +146,16 @@ export type ExternalClaim =
   // declared list. Checked against that list INSTEAD of the symbol table; see NAMESPACE_CLAIM_KEY
   // for the four required properties and the four lanes' measurements that produced the design.
   | { kind: "namespace"; roots: string[]; strictAbsent?: boolean; slash?: boolean }
+  // THE PACKAGE-SCOPE CLAIM — the target names a member of a DEPENDENCY THIS PROJECT DECLARES, and
+  // the claim is about the project's own MANIFEST (go.mod's require lines, package.json,
+  // pyproject/requirements, Cargo.toml, composer.json, pubspec.yaml). It exists because the fleet
+  // measured that the biggest un-resolvable wall is a VOCABULARY wall, not a typing wall: the dart
+  // lane priced 84.9% of its 16,395 unresolved `uses` rows as "members of types the PROJECT DOES
+  // NOT DECLARE" (only 155 = 0.9% addressable by any evidence class), and the C++ lane's bucket D
+  // (122,227 rows) is the same class. For those rows there is no declaration for any evidence class
+  // to point at — the only true statement available is "this name belongs to a package the project
+  // depends on", and THAT is a project fact.
+  | { kind: "packageScope"; package: string; name: string; position?: "target" | "receiver" }
   // THE OWNER-MEMBER-ABSENCE CLAIM: a verifiable statement that a known owner type declares no
   // member of the row's target name. Checked against the caller's ownerMembers evidence, never the
   // claim's own word; read only where the name model has nothing (decls === 0).
@@ -430,6 +440,39 @@ export const NAMESPACE_POLICY_KEY = "languageNamespacePolicy"
 export const NAMESPACE_SLASH_KEY = "languageNamespaceSlash"
 
 /**
+ * THE PACKAGE-SCOPE CLAIM KEY (`packageScope = {package, name}`, 2026-10-20).
+ *
+ * WHAT IT STATES: "this target is a member of the DEPENDENCY named `package`, and this project
+ * declares that dependency." The evidence is the PROJECT's own manifest, not the analyzer's word
+ * and not a lane-maintained vocabulary — so the claim is REFUTABLE by the checkout: a name from a
+ * package the project does not depend on cannot be claimed, and the arbiter says so.
+ *
+ * WHY IT EXISTS, MEASURED: the fleet's largest un-resolvable class is a VOCABULARY wall, not a
+ * typing wall. The dart lane priced 84.9% of its 16,395 unresolved `uses` rows as "members of types
+ * the PROJECT DOES NOT DECLARE" — only 155 (0.9%) is addressable by any evidence class, because for
+ * the other 84.9% there is NO DECLARATION for an evidence class to point at. The C++ lane's bucket D
+ * (122,227 rows of 614,081) is the same class. The only true statement available for those rows is
+ * "this name belongs to a package this project depends on", and the manifest is what can check it.
+ *
+ * WHY IT IS NOT THE NAMESPACE CLAIM: a namespace claim cites a CLOSED list the lane maintains (a
+ * stdlib's roots) — a statement about the LANGUAGE. A package-scope claim cites the CHECKOUT's own
+ * dependency list — a statement about the PROJECT. The difference is precisely where the laundering
+ * risk lives: a vocabulary that grows to cover whatever the corpus contains can claim anything,
+ * while a manifest can only confirm what the project itself declared.
+ *
+ * THE FOUR PROPERTIES (the namespace claim's own requirements, applied here):
+ *   1. The claim is a DISTINCT KIND, never a flag on the generic external marker, so a reader can
+ *      see WHICH mechanism verified what (`verifiedBy: "packageScope"`).
+ *   2. The LIST IS PART OF THE CLAIM — `package` names the dependency, and the manifest must
+ *      contain it. A claim with no package is not a claim.
+ *   3. It is read ONLY where the name model has nothing (`decls === 0`), exactly like
+ *      `importedName` — a claim may never displace a name-model answer.
+ *   4. It is REFUTABLE by the project: a dependency the manifest does not declare REFUTES the
+ *      claim, and the row is counted as the defect it is.
+ */
+export const PACKAGE_SCOPE_CLAIM_KEY = "packageScope"
+
+/**
  * THE OWNER-MEMBER-ABSENCE CLAIM (`ownerMemberAbsent = {owner, member}`, 2026-10-19).
  *
  * The shape it exists for: a calls/uses row carries `metadata.owner` (the receiver type is known),
@@ -617,6 +660,23 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
     typeof (impName as any).name === "string" && (impName as any).name.length > 0
   ) {
     return { kind: "importedName", specifier: String((impName as any).specifier), name: String((impName as any).name) }
+  }
+  // THE PACKAGE-SCOPE CLAIM, read BEFORE the namespace claim: it makes a statement the PROJECT's
+  // OWN MANIFEST can check, and routing such an edge to the namespace claim (a lane-maintained
+  // vocabulary) or to the generic owner marker would let a lane be excused by the very mechanism
+  // this claim exists to replace — and would make a CHECKOUT-fact verifiable by a LANE's list.
+  const pkgScope = md[PACKAGE_SCOPE_CLAIM_KEY]
+  if (
+    pkgScope !== null && typeof pkgScope === "object" &&
+    typeof (pkgScope as any).package === "string" && (pkgScope as any).package.trim().length > 0 &&
+    typeof (pkgScope as any).name === "string" && (pkgScope as any).name.trim().length > 0
+  ) {
+    return {
+      kind: "packageScope",
+      package: String((pkgScope as any).package).trim(),
+      name: String((pkgScope as any).name).trim(),
+      ...((pkgScope as any).position === "receiver" ? { position: "receiver" as const } : {}),
+    }
   }
   // THE NAMESPACE CLAIM, read before the population claims for the file claim's own reason: it
   // makes a statement the LIST can check, and routing such an edge to the weaker `owner` marker
@@ -902,6 +962,25 @@ export type ProjectFacts = {
    * unverifiable.
    */
   ownerMembers?: Map<string, Set<string>>
+  /**
+   * PACKAGE-SCOPE EVIDENCE, built by the caller from the project's own MANIFEST (go.mod's `require`
+   * lines, package.json dependencies, pyproject/requirements, Cargo.toml, composer.json,
+   * pubspec.yaml): the set of DEPENDENCY NAMES the project declares. The `packageScope` claim says
+   * "this name belongs to this dependency", and this map is what decides it: the dependency IS in
+   * the manifest = VERIFIED; the dependency is NOT = REFUTED (the claim is then false — the project
+   * does not depend on it); no map at all = UNVERIFIABLE (never quietly accepted).
+   *
+   * WHY IT IS ITS OWN KIND AND NOT A NAMESPACE CLAIM: a namespace claim cites a CLOSED vocabulary
+   * the LANE maintains (a stdlib's roots), which is a statement about the LANGUAGE. A package-scope
+   * claim cites the PROJECT's own manifest, which is a statement about the CHECKOUT — and the
+   * difference is exactly where the laundering risk lives. A namespace list grows to cover whatever
+   * the corpus contains; a manifest is the project's own declaration, so a name from a package the
+   * project does not depend on CANNOT be claimed. The dart lane's 320 unlisted rows (JsonKey 210,
+   * JsonValue 44, JsonSerializable 19, freezed 9, staticIconProvider 6, useResult 6, TestOn 14,
+   * internal 3, JS 2, GenerateMocks 2, experimental 1, Default 2) are the worked example: they are
+   * third-party PACKAGE annotations, and the manifest is what can verify them.
+   */
+  packageDependencies?: Set<string>
 }
 
 /**
@@ -935,6 +1014,41 @@ export type ProjectFacts = {
  * from a lane's own conventions, and folding a path check into it would make one function two
  * rules, which is the shape this programme keeps paying for.
  */
+/**
+ * CAN THE PROJECT'S MANIFEST CONFIRM A PACKAGE-SCOPE CLAIM?
+ *
+ * VERIFIED      the dependency the claim names IS in the project's manifest. The project has
+ *                declared it, so "this name belongs to that dependency" is confirmed by the
+ *                checkout's own evidence — not by the analyzer's word and not by a lane's list.
+ * REFUTED       the dependency is NOT in the manifest. The claim is then FALSE (the project does
+ *                not depend on it) and the row is counted as the defect it is. This is the check
+ *                that makes the claim safe: a vocabulary can grow to cover anything, a manifest
+ *                cannot.
+ * UNVERIFIABLE  no manifest evidence was built at all. Never quietly accepted — the row lands in
+ *                the unverified column and stays visible.
+ */
+export function verifyPackageScopeClaim(
+  facts: ProjectFacts,
+  dependency: string,
+): "externalVerified" | "externalRefuted" {
+  const deps = facts.packageDependencies
+  if (deps === undefined) return "externalUnverified"
+  const want = dependency.trim().toLowerCase()
+  if (want.length === 0) return "externalUnverified"
+  for (const d of deps) {
+    const norm = d.trim().toLowerCase()
+    if (norm.length === 0) continue
+    // EXACT OR SCOPE-EXACT: a manifest names `json_annotation` (dart), `org.slf4j` (maven) or
+    // `github.com/pkg/errors` (go). The claim names the same thing, and the two spellings that
+    // differ are the SCOPED ones — so a scoped name matches when the manifest's name is its
+    // prefix at a PATH BOUNDARY (`json_annotation` vs `json_annotation/freezed`), never inside a
+    // longer word (`json` must not match `jsonc`).
+    if (norm === want) return "externalVerified"
+    if (norm.startsWith(want + "/") || want.startsWith(norm + "/")) return "externalVerified"
+  }
+  return "externalRefuted"
+}
+
 export function verifyFileClaim(
   facts: ProjectFacts,
   candidates: string[],
@@ -1458,6 +1572,17 @@ function claimDispositionOnAmbiguous(
     }
     return { kind: "sourcePath", disposition: admitted ? "refuted" : "verified" }
   }
+  if (claim.kind === "packageScope") {
+    // PROPERTY 4, cross-tabbed like every other claim: an ambiguous edge carrying a package-scope
+    // claim reports which way the MANIFEST settled it, exactly as the other kinds report theirs —
+    // never merged into the raw column. The disposition is attached HERE, because this branch
+    // returns before the shared cross-tab block and an ambiguous package-claimed edge would
+    // otherwise report no disposition at all.
+    const disposition: AmbiguousClaimDisposition = facts
+      ? (verifyPackageScopeClaim(facts, claim.package) === "externalVerified" ? "verified" : "refuted")
+      : "unverified"
+    return { kind: "packageScope", disposition }
+  }
   if (claim.kind === "namespace") {
     // PROPERTY 4, cross-tabbed: an ambiguous edge carrying a namespace claim reports which way the
     // LIST settled it, exactly as the other kinds report theirs — never merged into the raw column.
@@ -1692,6 +1817,30 @@ export function classifyEdge(
       outcome, decls, kinds: kindText,
       verifiedBy: outcome === "bindingVerified" ? "importEvidence" : undefined,
       ...(decls > 1 ? { claimOnAmbiguous: { kind: "importedBinding", disposition } } : {}),
+    }
+  }
+  // THE PACKAGE-SCOPE CLAIM IS THE SOLE AUTHORITY FOR ITS EDGES, and it is checked before every
+  // count-based branch for the same reason the namespace claim is: the claim makes a statement the
+  // PROJECT'S MANIFEST can check, so the check must be the manifest's verdict and never the symbol
+  // table's.
+  //
+  // IT NEVER DISPLACES A NAME-MODEL ANSWER: with `decls > 0` the row keeps its declaration answer
+  // and the claim falls through — the same rule the `strict-absent` namespace claim follows, and the
+  // same reason the cpp lane's pre-committed falsifier fired (a claim that displaced 12,883
+  // name-model resolutions was a false claim). A claim may not win where the project already has an
+  // answer.
+  //
+  // AND IT IS FAIL-CLOSED IN BOTH DIRECTIONS: no manifest evidence = UNVERIFIABLE (never quietly
+  // accepted); a dependency the manifest does not declare = REFUTED (the claim is false, and the row
+  // is counted as the defect it is).
+  if (claim !== null && claim.kind === "packageScope" && decls === 0) {
+    if (!facts) return { outcome: "externalUnverified", decls, kinds: kindText }
+    const outcome = verifyPackageScopeClaim(facts, claim.package)
+    return {
+      outcome,
+      decls,
+      kinds: kindText,
+      verifiedBy: outcome === "externalVerified" ? "packageScope" : undefined,
     }
   }
   // THE NAMESPACE CLAIM IS THE SOLE AUTHORITY FOR ITS EDGES, checked before every count-based

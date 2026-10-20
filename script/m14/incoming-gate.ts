@@ -515,7 +515,126 @@ function projectFactsForFiles(repoRoot: string, admitted: string[]): ProjectFact
     const rel = path.relative(repoRoot, abs)
     if (rel.length > 0) files.add(rel.split(path.sep).join("/"))
   }
-  return { packages: new Set<string>(), files, sdkLib: false }
+  return { packages: new Set<string>(), files, sdkLib: false, packageDependencies: manifestDependencies(repoRoot) }
+}
+
+/**
+ * THE PROJECT'S OWN DECLARED DEPENDENCIES, read from its MANIFEST — the evidence the
+ * `packageScope` claim is verified against.
+ *
+ * WHY THIS IS THE INSTRUMENT FOR THE FLEET'S BIGGEST REMAINING CLASS: the dart lane priced 84.9% of
+ * its 16,395 unresolved `uses` rows as "members of types the PROJECT DOES NOT DECLARE" (only 155 =
+ * 0.9% is addressable by any evidence class, because for the other 84.9% there is NO DECLARATION for
+ * an evidence class to point at), and the C++ lane's bucket D (122,227 of 614,081) is the same class.
+ * The only true statement available for those rows is "this name belongs to a package this project
+ * depends on" — and a MANIFEST is what can check it. A lane-maintained vocabulary could not: it
+ * grows to cover whatever the corpus contains, and a name from a package the project does not depend
+ * on could be claimed. A manifest can only confirm what the checkout itself declared.
+ *
+ * THE MANIFESTS, and what each names:
+ *   go.mod                    `require`/`replace` lines -> the module path (`github.com/pkg/errors`)
+ *   package.json              `dependencies`/`devDependencies`/`peerDependencies` keys (`json_annotation`)
+ *   pubspec.yaml              `dependencies:` keys (`json_annotation`, `freezed`)
+ *   Cargo.toml                `[dependencies]` keys (`serde`)
+ *   composer.json             `require`/`require-dev` keys (`monolog/monolog`)
+ *   pyproject.toml / requirements*.txt  distribution names (`requests`)
+ *
+ * READ, NOT GUESSED: the values are the manifest's own keys, and the set is empty when the project
+ * has no manifest — so a claim in a project with no manifest is UNVERIFIABLE, never quietly
+ * accepted.
+ */
+function manifestDependencies(repoRoot: string): Set<string> {
+  const deps = new Set<string>()
+  const add = (v: string): void => {
+    const t = v.trim()
+    if (t.length > 0) deps.add(t)
+  }
+  // ── go.mod: `require`/`replace` blocks and single-line forms ──────────────────────────────────
+  const goMod = path.join(repoRoot, "go.mod")
+  try {
+    const text = readFileSync(goMod, "utf8")
+    for (const raw of text.split(/\r?\n/)) {
+      const line = raw.trim()
+      if (line.length === 0) continue
+      if (line.startsWith("require (")) continue
+      const m = /^(?:require|replace)\s+([^\s]+)/.exec(line)
+      if (m) { add(m[1]); continue }
+      const inBlock = /^(?:require|replace)\s+\(([^)]*)\)/.exec(line)
+      if (inBlock) { for (const part of inBlock[1].split(/\s+/)) if (part.length > 0) add(part) }
+    }
+  } catch { /* no go.mod: the set stays empty and every claim is unverifiable */ }
+  // ── package.json / pubspec.yaml / composer.json: JSON-ish and YAML-ish key reads ───────────────
+  const jsonManifests: [string, string[]][] = [
+    ["package.json", ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"]],
+    ["composer.json", ["require", "require-dev"]],
+  ]
+  for (const [name, sections] of jsonManifests) {
+    try {
+      const text = readFileSync(path.join(repoRoot, name), "utf8")
+      const parsed = JSON.parse(text) as Record<string, any>
+      for (const sec of sections) {
+        const block = parsed?.[sec]
+        if (block && typeof block === "object") {
+          for (const key of Object.keys(block)) add(key)
+        }
+      }
+    } catch { /* absent or unparseable: the set stays as it is */ }
+  }
+  // pubspec.yaml: `dependencies:` and `dev_dependencies:` blocks, each `  name:` or `  name: version`
+  try {
+    const text = readFileSync(path.join(repoRoot, "pubspec.yaml"), "utf8")
+    let inBlock = false
+    for (const raw of text.split(/\r?\n/)) {
+      if (/^(dependencies|dev_dependencies):\s*$/.test(raw)) { inBlock = true; continue }
+      if (inBlock && /^\S/.test(raw)) { inBlock = false }   // a new top-level key ends the block
+      if (!inBlock) continue
+      const m = /^\s{2}([A-Za-z0-9_-]+):/.exec(raw)
+      if (m) add(m[1])
+    }
+  } catch { /* no pubspec: unverifiable */ }
+  // Cargo.toml: `[dependencies]` and `[dev-dependencies]` sections, `name = "version"` or `name = { … }`
+  try {
+    const text = readFileSync(path.join(repoRoot, "Cargo.toml"), "utf8")
+    let inBlock = false
+    for (const raw of text.split(/\r?\n/)) {
+      const sec = /^\s*\[([^\]]+)\]\s*$/.exec(raw)
+      if (sec) { inBlock = sec[1] === "dependencies" || sec[1] === "dev-dependencies" || sec[1] === "build-dependencies"; continue }
+      if (!inBlock) continue
+      const m = /^\s*([A-Za-z0-9_-]+)\s*=/.exec(raw)
+      if (m) add(m[1])
+    }
+  } catch { /* no Cargo.toml: unverifiable */ }
+  // pyproject.toml: `[project] dependencies = [ "x", … ]` and `[tool.poetry.dependencies]`
+  try {
+    const text = readFileSync(path.join(repoRoot, "pyproject.toml"), "utf8")
+    const arr = /dependencies\s*=\s*\[([^\]]*)\]/s.exec(text)
+    if (arr) {
+      for (const q of arr[1].split(",")) {
+        const m = /["']([A-Za-z0-9_.-]+)/.exec(q)
+        if (m) add(m[1])
+      }
+    }
+    const poetry = /\[tool\.poetry\.dependencies\]([\s\S]*?)(?:\n\[|$)/.exec(text)
+    if (poetry) {
+      for (const raw of poetry[1].split(/\r?\n/)) {
+        const m = /^\s*([A-Za-z0-9_.-]+)\s*=/.exec(raw)
+        if (m) add(m[1])
+      }
+    }
+  } catch { /* no pyproject: unverifiable */ }
+  // requirements*.txt: one distribution per line, `name==1.0` / `name>=1.0` / `name`
+  try {
+    for (const f of readdirSync(repoRoot)) {
+      if (!/^requirements.*\.txt$/.test(f)) continue
+      for (const raw of readFileSync(path.join(repoRoot, f), "utf8").split(/\r?\n/)) {
+        const line = raw.trim()
+        if (line.length === 0 || line.startsWith("#") || line.startsWith("-")) continue
+        const m = /^([A-Za-z0-9_.-]+)/.exec(line)
+        if (m) add(m[1])
+      }
+    }
+  } catch { /* no requirements: unverifiable */ }
+  return deps
 }
 
 /**
@@ -1760,6 +1879,50 @@ function selfTest(): { ok: boolean; failures: string[] } {
     if (free.outcome !== "externalVerified") failures.push(`control: strict-absent namespace claim on a declaration-free target read ${free.outcome}, expected externalVerified`)
     const answered = classifyEdge(declCount, kinds, "alpha", { kind: "namespace", roots: ["alpha"], strictAbsent: true }, undefined, undefined, undefined, undefined, "src/x.cpp")
     if (answered.outcome === "externalVerified") failures.push("control: strict-absent namespace claim displaced a declaration-answered target (must fall through)")
+  }
+  // THE PACKAGE-SCOPE CLAIM (2026-10-20): "this name belongs to a DEPENDENCY this project
+  // declares", verified against the PROJECT'S OWN MANIFEST. It exists because the fleet's largest
+  // remaining class is a VOCABULARY wall (dart: 84.9% of its 16,395 unresolved `uses` rows name
+  // members of types the project does not declare; C++ bucket D: 122,227 of 614,081), and for those
+  // rows there is no declaration for ANY evidence class to point at.
+  //
+  // FOUR DIRECTIONS, because a claim that cannot be refuted is a blanket excuse:
+  //   1. the manifest DECLARES the dependency -> VERIFIED;
+  //   2. the manifest does NOT declare it -> REFUTED (the claim is false — this is the check that
+  //      makes the claim safe where a lane-maintained vocabulary could not be);
+  //   3. the target has a DECLARATION answer -> the claim FALLS THROUGH (a claim may never
+  //      displace the name model — the cpp lane's 12,883-decoy precedent);
+  //   4. NO manifest evidence at all -> UNVERIFIABLE, never quietly accepted.
+  {
+    const pkgClaim = externalClaimOf({ metadata: { [PACKAGE_SCOPE_CLAIM_KEY]: { package: "json_annotation", name: "JsonKey" } } })
+    if (!(pkgClaim?.kind === "packageScope" && (pkgClaim as any).package === "json_annotation")) {
+      failures.push("control: `packageScope` did not route to the package-scope claim")
+    }
+    // A claim with no package is NOT a claim — the dependency is part of the statement.
+    const noPkg = externalClaimOf({ metadata: { [PACKAGE_SCOPE_CLAIM_KEY]: { name: "JsonKey" } } })
+    if (noPkg?.kind === "packageScope") {
+      failures.push("control: a package-scope claim with no package was accepted (the list is part of the claim)")
+    }
+    const deps = new Set<string>(["json_annotation", "github.com/pkg/errors"])
+    const facts: ProjectFacts = { packages: new Set<string>(), files: new Set<string>(), sdkLib: false, packageDependencies: deps }
+    const empty = new Map<string, number>()
+    // 1. DECLARED -> VERIFIED
+    const declared = classifyEdge(empty, kinds, "JsonKey", { kind: "packageScope", package: "json_annotation", name: "JsonKey" }, undefined, facts, undefined, undefined, "lib/x.dart")
+    if (declared.outcome !== "externalVerified") failures.push(`control: package-scope claim on a manifest-declared dependency read ${declared.outcome}, expected externalVerified`)
+    // 2. NOT DECLARED -> REFUTED (the claim is false; the row is counted as the defect it is)
+    const undeclared = classifyEdge(empty, kinds, "JsonKey", { kind: "packageScope", package: "not_a_dependency", name: "JsonKey" }, undefined, facts, undefined, undefined, "lib/x.dart")
+    if (undeclared.outcome !== "externalRefuted") failures.push(`control: package-scope claim on a manifest-UNDECLARED dependency read ${undeclared.outcome}, expected externalRefuted`)
+    // 3. A DECLARATION ANSWER -> THE CLAIM FALLS THROUGH (it may not displace the name model)
+    const answered = classifyEdge(declCount, kinds, "alpha", { kind: "packageScope", package: "json_annotation", name: "alpha" }, undefined, facts, undefined, undefined, "src/x.ts")
+    if (answered.outcome === "externalVerified") failures.push("control: package-scope claim displaced a declaration-answered target (must fall through)")
+    // 4. NO MANIFEST EVIDENCE -> UNVERIFIABLE, never quietly accepted
+    const noFacts: ProjectFacts = { packages: new Set<string>(), files: new Set<string>(), sdkLib: false }
+    const unverifiable = classifyEdge(empty, kinds, "JsonKey", { kind: "packageScope", package: "json_annotation", name: "JsonKey" }, undefined, noFacts, undefined, undefined, "lib/x.dart")
+    if (unverifiable.outcome !== "externalUnverified") failures.push(`control: package-scope claim with no manifest evidence read ${unverifiable.outcome}, expected externalUnverified`)
+    // THE SCOPED SPELLING: a manifest names `github.com/pkg/errors`, and the claim may name either the
+    // full path or its leaf — but only at a PATH BOUNDARY (`json` must NOT match `jsonc`).
+    const scoped = classifyEdge(empty, kinds, "errors.New", { kind: "packageScope", package: "github.com/pkg/errors", name: "errors.New" }, undefined, facts, undefined, undefined, "main.go")
+    if (scoped.outcome !== "externalVerified") failures.push(`control: package-scope claim on a scoped manifest name read ${scoped.outcome}, expected externalVerified`)
   }
   // SLASH-SEPARATOR OPT-IN (go stdlib multi-segment imports, §21.21): a namespace claim carrying
   // `languageNamespaceSlash` splits the target on `/`; the SAME claim without the marker must NOT
