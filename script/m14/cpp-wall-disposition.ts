@@ -353,7 +353,12 @@ const report = {
     disposition: w.disposition,
     falsifier: w.falsifier,
     note: w.note,
-    subClassification: Object.fromEntries(Object.entries(w.subs).map(([k, v]) => [k, v.rows]).sort((a, b) => b[1] - a[1])),
+    // The TUPLE ANNOTATION is what makes the sort's arithmetic legal: `Object.entries(...).map(...)`
+    // infers `(string | number)[][]`, so `a[1]` is `string | number` and `b[1] - a[1]` is a type error
+    // (TS2362/TS2363) — and the campaign's declared standard is ZERO type errors in the scripts tree
+    // (`script/m14/verify-script-typecheck-baseline.ts`, reported per owner by
+    // `script/m43/verify-arbiter-typecheck.ts`), so the pair is written as a tuple.
+    subClassification: Object.fromEntries(Object.entries(w.subs).map(([k, v]) => [k, v.rows] as [string, number]).sort((a, b) => b[1] - a[1])),
     samples: Object.fromEntries(Object.entries(w.subs).map(([k, v]) => [k, v.samples])),
   })),
   totals: { wallRows: totalWallRows, residualRowsInDump: residualRows, closureHolds: totalWallRows === residualRows },
