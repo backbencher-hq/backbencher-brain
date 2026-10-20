@@ -764,6 +764,38 @@ export const DART_DECLARATION_SPEC: DeclarationSpec = {
     extension_type_declaration: "extension_type",
     enum_declaration: "enum",
   },
+  // DART'S MIXIN NAMES LIVE IN A DIRECT `identifier` CHILD, NOT IN A `name` FIELD.
+  //
+  // MEASURED (dart-http, whole project, `--index` arm; the dart lane's diagnosis): the index's
+  // `typeKinds` census was `class 524 · extension_type 278 · extension 183 · enum 16 · unknown 11`
+  // — **mixin 0** — and `typeKinds.has("TerminatableMixin") === false`. The generic
+  // `childForFieldName("name")` reads "" for a `mixin_declaration`, because the grammar puts the
+  // name in a direct `identifier` child (`(mixin_declaration (mixin) (identifier) (class_body))`,
+  // probed). So the spec indexed the right SHAPE and held NOTHING for the name — the failure mode
+  // this file's own header names for a spec that does not match the grammar.
+  //
+  // THE COST WAS A CLAUSE-4 RED, and the arbiter was right: the analyzer's 0.8 first-parent
+  // fallback named the FIRST mixin in a `with A, B` clause, and `isExternalBase` ("the project does
+  // not publish this base") was REFUTED for every row whose base the project does publish. Measured
+  // 5 refuted rows on dart-http (all `TerminatableMixin.*`, whose member is declared by
+  // `ClosableMixin` — the SECOND mixin), and 86 on the whole-population `--index` arm.
+  //
+  // The other Dart declarations DO have a `name` field, so the resolver returns it for them and
+  // changes nothing about them. This is the same `nameResolver` hook the ruby, F#, C++ and protobuf
+  // specs use for exactly this reason.
+  nameResolver: (node: Node): string => {
+    if (node.type === "mixin_declaration") {
+      // The name is the DIRECT `identifier` child — the same rule the analyzer's own symbol contract
+      // states ("`mixin_declaration` → direct `identifier` child (no name field in the grammar)").
+      // A `type_identifier` child is the `on` CONSTRAINT, not the name, so it is not read here.
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && c.type === "identifier") return c.text
+      }
+      return ""
+    }
+    return node.childForFieldName("name")?.text ?? ""
+  },
   // Methods and accessors only. `getter_signature` and `setter_signature` count
   // (Dart overrides both); constructors and fields do not.
   memberNodes: [
