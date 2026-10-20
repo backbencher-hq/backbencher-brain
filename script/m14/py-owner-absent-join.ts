@@ -112,6 +112,34 @@ function admittedPythonFiles(): { files: string[]; absent: number; overCap: numb
   return { files: found, ...excluded, repos }
 }
 
+/**
+ * THE PROJECT'S MODULE-NAME SET — the names the project's own files and directories publish, read
+ * the way the ARBITER'S OWN PROJECT-ABSOLUTE REFINER reads them (`projectModuleNames(facts)` in
+ * `incoming-rule.ts`): for every admitted file, the STEM (the basename without its extension) and
+ * the basename of the file's IMMEDIATE parent directory. The refiner's test is
+ * `projectModuleNames(facts).has(root)` where `root` is the claim's specifier's FIRST segment —
+ * that is the ONE condition that decides whether a bare imported name is a verified external claim
+ * (extOK) or an unverifiable one (ext?).
+ */
+function projectModuleNames(modules: Set<string> | undefined): Set<string> {
+  const out = new Set<string>()
+  for (const raw of modules ?? new Set<string>()) {
+    let m = ""
+    for (let i = 0; i < raw.length; i++) m += raw[i] === "\\" ? "/" : raw[i]
+    if (m.length === 0) continue
+    const slash = m.lastIndexOf("/")
+    const base = slash >= 0 ? m.slice(slash + 1) : m
+    const dot = base.lastIndexOf(".")
+    if (dot > 0) { const stem = base.slice(0, dot); if (stem.length > 0) out.add(stem) }
+    if (slash > 0) {
+      const dir = m.slice(0, slash)
+      const dSlash = dir.lastIndexOf("/")
+      out.add(dSlash >= 0 ? dir.slice(dSlash + 1) : dir)
+    }
+  }
+  return out
+}
+
 /** THE GATE'S OWN LEAF SPELLING (`incoming-gate.ts`'s `leaf`), copied so the key space is the gate's. */
 const leaf = (n: string): string => {
   const t = n.replace(/[<[].*$/, "").trim()
@@ -227,6 +255,66 @@ type ClaimRow = {
 
 const key = (r: ClaimRow): string => `${r.file}\u0000${r.line}\u0000${r.label}\u0000${r.target}\u0000${r.owner}`
 
+/**
+ * THE IMPORT-EVIDENCE ROWS — the rows the `importedName` claim is EMITTED ON, and the rows it is
+ * WITHHELD from. The arbiter puts a row in `ext?` for ONE reason (the project-absolute demotion:
+ * the claim's SPECIFIER names a module the project itself ships), and this instrument can compute
+ * that condition per row from the SAME index the analyzer used — so the residual `ext?` class can
+ * be split by the guard that stopped the claim, on the whole population, in the same pass.
+ */
+type Candidate = {
+  file: string; line: number; label: string; target: string; specifier: string
+  markers: string[]; hasClaim: boolean
+  /** the analyzer's own import table, read from the emitted IMPORT edges of this file */
+  itemNames: Set<string>          // the names the file imports as ITEMS (`from m import n`)
+  aliasNames: Set<string>         // the names the file imports under an ALIAS
+  namespaceModules: Set<string>   // the modules the file imports as a NAMESPACE (`import m.n`)
+}
+
+function collectCandidates(rows: any[], file: string): Candidate[] {
+  const out: Candidate[] = []
+  const itemNames = new Set<string>()
+  const aliasNames = new Set<string>()
+  const namespaceModules = new Set<string>()
+  // THE ANALYZER'S OWN IMPORT EDGES: the gate's evidence map is built from exactly these, so the
+  // shape of each binding is readable from them — the ITEM in the target's item half, the ALIAS in
+  // `metadata.importedAs`, and a NAMESPACE import's `module:*` target.
+  for (const rel of rows) {
+    if (String(rel.type ?? rel.relationshipType ?? "") !== "imports") continue
+    const md = rel.metadata as Record<string, any> | undefined
+    if (!md) continue
+    const target = String(rel.target ?? "")
+    const colon = target.lastIndexOf(":")
+    if (colon <= 0) continue
+    const item = target.slice(colon + 1)
+    if (item === "*") {
+      const module = typeof md.module === "string" ? md.module : target.slice(0, colon)
+      namespaceModules.add(module)
+      continue
+    }
+    const alias = typeof md.importedAs === "string" ? md.importedAs : ""
+    if (alias.length > 0) aliasNames.add(alias)
+    else itemNames.add(item)
+  }
+  for (const rel of rows) {
+    const md = rel.metadata as Record<string, any> | undefined
+    if (!md) continue
+    if (md.externalReason !== "imported-name") continue
+    const target = String(rel.target ?? "")
+    if (target.length === 0) continue
+    const specifier = typeof md.externalSpecifier === "string" ? md.externalSpecifier : ""
+    if (specifier.length === 0) continue
+    out.push({
+      file, line: Number(rel.line_number ?? rel.lineNumber ?? rel.line ?? 0) || 0,
+      label: String(rel.type ?? rel.relationshipType ?? ""),
+      target, specifier, markers: Object.keys(md),
+      hasClaim: md.importedName !== undefined && md.importedName !== null,
+      itemNames, aliasNames, namespaceModules,
+    })
+  }
+  return out
+}
+
 function collectRun(rows: any[], file: string): { claims: ClaimRow[]; all: Map<string, ClaimRow> } {
   const claims: ClaimRow[] = []
   const all = new Map<string, ClaimRow>()
@@ -265,6 +353,9 @@ const notReadByCause = new Map<string, number>()
 /** WHAT THE PROPOSED ARBITER RULE WOULD DECIDE on the not-read rows. */
 let wouldVerify = 0, wouldRefute = 0, wouldUnverifiable = 0
 let diffRealOnly = 0, diffSynthOnly = 0, diffBoth = 0
+/** THE RESIDUAL `ext?` CLASS, split by the guard that stopped the claim. */
+let extqClass = 0
+const extqByGuard = new Map<string, number>()
 
 const addSample = (k: string, s: string): void => {
   const arr = samples.get(k) ?? []
@@ -291,11 +382,13 @@ for (const repo of reposToRun) {
   const realIndex: any = buildProjectIndex(trees as any, PYTHON_DECLARATION_SPEC)
   realIndex.complete = true
 
-  const runOne = (index: any): { claims: ClaimRow[]; all: Map<string, ClaimRow>; symbols: any[] } => {
+  const projectNames = projectModuleNames(realIndex.modules)
+  const runOne = (index: any): { claims: ClaimRow[]; all: Map<string, ClaimRow>; symbols: any[]; candidates: Candidate[] } => {
     const analyzer = new RealPythonAnalyzer()
     const claims: ClaimRow[] = []
     const all = new Map<string, ClaimRow>()
     const symbols: any[] = []
+    const candidates: Candidate[] = []
     for (let i = 0; i < trees.length; i++) {
       let r: any
       try { r = analyzer.analyze(trees[i]!.tree.rootNode, contents[i]!, files[i]!, { projectIndex: index } as any) } catch { continue }
@@ -304,8 +397,9 @@ for (const repo of reposToRun) {
       const c = collectRun(r.relationships ?? [], files[i]!)
       claims.push(...c.claims)
       for (const [k, v] of c.all) all.set(k, v)
+      candidates.push(...collectCandidates(r.relationships ?? [], files[i]!))
     }
-    return { claims, all, symbols }
+    return { claims, all, symbols, candidates }
   }
 
   const real = runOne(realIndex)
@@ -364,6 +458,34 @@ for (const repo of reposToRun) {
     addSample(cause, `${path.relative(CR, c.file)}:${c.line} ${c.label} ${c.target} owner=${c.owner}`)
   }
 
+  // ── THE RESIDUAL `ext?` CLASS, split by the guard that stopped the claim ──────────────────────
+  //
+  // The arbiter puts a bare imported name in `ext?` for ONE reason: the claim's SPECIFIER's root
+  // names a module the PROJECT ITSELF SHIPS (the project-absolute demotion). This instrument
+  // computes that condition per row from the same index the analyzer used, so the rows below are
+  // the arbiter's `ext?` class — and each one is then asked WHICH GUARD stopped the claim.
+  const CLAIM_MARKERS = [
+    "isStdlib", "owner", "localBinding", "importedBinding", "importedName", "languageNamespace",
+    "projectIndexResolution", "projectLocalModule", "isImportFile", "importOutsideProject",
+    "remoteRef", "sourcePath", "cause", "packageScope",
+  ]
+  for (const cand of real.candidates) {
+    const root = cand.specifier.split(/[.:/\\]/)[0] ?? ""
+    if (root.length === 0) continue
+    if (!projectNames.has(root)) continue        // a THIRD-PARTY specifier: the marker VERIFIES it (extOK)
+    extqClass++
+    if (cand.hasClaim) { extqByGuard.set("claimed (moved to bindOK)", (extqByGuard.get("claimed (moved to bindOK)") ?? 0) + 1); continue }
+    // WHICH GUARD STOPPED IT?
+    const marker = cand.markers.find((k) => CLAIM_MARKERS.some((c) => k === c || k.startsWith(c)))
+    if (cand.aliasNames.has(cand.target)) { extqByGuard.set("evidence shape: an ALIASED import", (extqByGuard.get("evidence shape: an ALIASED import") ?? 0) + 1); continue }
+    if (cand.namespaceModules.has(cand.specifier)) { extqByGuard.set("evidence shape: a NAMESPACE import", (extqByGuard.get("evidence shape: a NAMESPACE import") ?? 0) + 1); continue }
+    if (marker !== undefined) { extqByGuard.set(`another claim marker on the row: ${marker}`, (extqByGuard.get(`another claim marker on the row: ${marker}`) ?? 0) + 1); continue }
+    if (!cand.itemNames.has(cand.target)) { extqByGuard.set("the binding is not an import ITEM (no evidence to verify)", (extqByGuard.get("the binding is not an import ITEM (no evidence to verify)") ?? 0) + 1); continue }
+    if (realIndex.symbolNames?.has(cand.target) === true) { extqByGuard.set("the PROJECT declares the name (the name model owns the row)", (extqByGuard.get("the PROJECT declares the name (the name model owns the row)") ?? 0) + 1); continue }
+    extqByGuard.set("unclassified", (extqByGuard.get("unclassified") ?? 0) + 1)
+    addSample("residual-unclassified", `${path.relative(CR, cand.file)}:${cand.line} ${cand.label} ${cand.target} specifier=${cand.specifier} markers=${cand.markers.join("|")}`)
+  }
+
   // THE 69 — THE SYNTHETIC-vs-REAL CLAIM-SET DIFF, WITH THE GUARD THAT DIFFERED.
   const realKeys = new Set(real.claims.map(key))
   const synthKeys = new Set(synth.claims.map(key))
@@ -400,6 +522,8 @@ console.log(`claims (real index): ${totalClaims} · VERIFIED ${totalVerified} ·
 console.log(`closure: ${totalVerified} + ${totalRefuted} + ${totalUnverified} + ${totalNotRead} = ${totalVerified + totalRefuted + totalUnverified + totalNotRead} (claims ${totalClaims})`)
 console.log(`\nUNVERIFIED by named cause: ${JSON.stringify(sum(unverifiedByCause), null, 2)}`)
 console.log(`\nWHAT THE PROPOSED ARBITER RULE WOULD DECIDE on the NOT-READ rows: would VERIFY ${wouldVerify} · would REFUTE (extFAIL) ${wouldRefute} · would read UNVERIFIABLE ${wouldUnverifiable}`)
+console.log(`\nTHE RESIDUAL ext? CLASS (the arbiter's own demotion condition, computed per row): ${extqClass} rows`)
+console.log(`split by the guard that stopped the claim: ${JSON.stringify(sum(extqByGuard), null, 2)}`)
 console.log(`\nSYNTHETIC-vs-REAL claim-set diff: real-only ${diffRealOnly} · synth-only ${diffSynthOnly} · both ${diffBoth}`)
 console.log(`diff by named cause: ${JSON.stringify(sum(diffByCause), null, 2)}`)
 for (const [k, v] of samples) console.log(`\nsample[${k}]:\n  ${v.join("\n  ")}`)
@@ -411,6 +535,7 @@ if (OUT) {
     notReadByCause: sum(notReadByCause),
     proposedRule: { wouldVerify, wouldRefute, wouldUnverifiable },
     unverifiedByCause: sum(unverifiedByCause), diff: { realOnly: diffRealOnly, synthOnly: diffSynthOnly, both: diffBoth, byCause: sum(diffByCause) },
+    extqClass, extqByGuard: sum(extqByGuard),
     samples: Object.fromEntries(samples), perRepo,
   }, null, 2))
   console.log(`\nwrote ${OUT}`)
