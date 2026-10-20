@@ -159,7 +159,7 @@ let bbDumped = 0
 // count them the same way, so the classification lives in incoming-rule.ts and this file
 // consumes it. Re-exported below so a caller of this module keeps working unchanged.
 import {
-  EXTERNAL_KEYS, NAMESPACE_CLAIM_KEY, NAMESPACE_POLICY_KEY, NAMESPACE_SLASH_KEY, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
+  EXTERNAL_KEYS, NAMESPACE_CLAIM_KEY, NAMESPACE_POLICY_KEY, NAMESPACE_SLASH_KEY, PACKAGE_SCOPE_CLAIM_KEY, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
   NAME_CAP,
   FILE_CLAIM_KEY, REMOTE_REF_CLAIM_KEY,
   emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY, isContainsEdge,
@@ -1907,21 +1907,21 @@ function selfTest(): { ok: boolean; failures: string[] } {
     const facts: ProjectFacts = { packages: new Set<string>(), files: new Set<string>(), sdkLib: false, packageDependencies: deps }
     const empty = new Map<string, number>()
     // 1. DECLARED -> VERIFIED
-    const declared = classifyEdge(empty, kinds, "JsonKey", { kind: "packageScope", package: "json_annotation", name: "JsonKey" }, undefined, facts, undefined, undefined, "lib/x.dart")
+    const declared = classifyEdge(empty, kinds, "JsonKey", { kind: "packageScope", package: "json_annotation", name: "JsonKey" }, facts, undefined, undefined, undefined, "lib/x.dart")
     if (declared.outcome !== "externalVerified") failures.push(`control: package-scope claim on a manifest-declared dependency read ${declared.outcome}, expected externalVerified`)
     // 2. NOT DECLARED -> REFUTED (the claim is false; the row is counted as the defect it is)
-    const undeclared = classifyEdge(empty, kinds, "JsonKey", { kind: "packageScope", package: "not_a_dependency", name: "JsonKey" }, undefined, facts, undefined, undefined, "lib/x.dart")
+    const undeclared = classifyEdge(empty, kinds, "JsonKey", { kind: "packageScope", package: "not_a_dependency", name: "JsonKey" }, facts, undefined, undefined, undefined, "lib/x.dart")
     if (undeclared.outcome !== "externalRefuted") failures.push(`control: package-scope claim on a manifest-UNDECLARED dependency read ${undeclared.outcome}, expected externalRefuted`)
     // 3. A DECLARATION ANSWER -> THE CLAIM FALLS THROUGH (it may not displace the name model)
-    const answered = classifyEdge(declCount, kinds, "alpha", { kind: "packageScope", package: "json_annotation", name: "alpha" }, undefined, facts, undefined, undefined, "src/x.ts")
+    const answered = classifyEdge(declCount, kinds, "alpha", { kind: "packageScope", package: "json_annotation", name: "alpha" }, facts, undefined, undefined, undefined, "src/x.ts")
     if (answered.outcome === "externalVerified") failures.push("control: package-scope claim displaced a declaration-answered target (must fall through)")
     // 4. NO MANIFEST EVIDENCE -> UNVERIFIABLE, never quietly accepted
     const noFacts: ProjectFacts = { packages: new Set<string>(), files: new Set<string>(), sdkLib: false }
-    const unverifiable = classifyEdge(empty, kinds, "JsonKey", { kind: "packageScope", package: "json_annotation", name: "JsonKey" }, undefined, noFacts, undefined, undefined, "lib/x.dart")
+    const unverifiable = classifyEdge(empty, kinds, "JsonKey", { kind: "packageScope", package: "json_annotation", name: "JsonKey" }, noFacts, undefined, undefined, undefined, "lib/x.dart")
     if (unverifiable.outcome !== "externalUnverified") failures.push(`control: package-scope claim with no manifest evidence read ${unverifiable.outcome}, expected externalUnverified`)
     // THE SCOPED SPELLING: a manifest names `github.com/pkg/errors`, and the claim may name either the
     // full path or its leaf — but only at a PATH BOUNDARY (`json` must NOT match `jsonc`).
-    const scoped = classifyEdge(empty, kinds, "errors.New", { kind: "packageScope", package: "github.com/pkg/errors", name: "errors.New" }, undefined, facts, undefined, undefined, "main.go")
+    const scoped = classifyEdge(empty, kinds, "errors.New", { kind: "packageScope", package: "github.com/pkg/errors", name: "errors.New" }, facts, undefined, undefined, undefined, "main.go")
     if (scoped.outcome !== "externalVerified") failures.push(`control: package-scope claim on a scoped manifest name read ${scoped.outcome}, expected externalVerified`)
   }
   // SLASH-SEPARATOR OPT-IN (go stdlib multi-segment imports, §21.21): a namespace claim carrying
