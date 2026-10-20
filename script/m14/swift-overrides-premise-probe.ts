@@ -273,6 +273,13 @@ const projectIndex: ProjectIndex | undefined = WITH_PROJECT_INDEX
       symbolNames: declaredSymbolNames(),
       damagedFiles,
       stats: { files: files.length, damaged: grammarErrorFiles },
+      // THE TWO FIELDS `ProjectIndex` REQUIRES AND THIS PROBE DOES NOT COMPUTE. The probe builds a
+      // PARTIAL index by hand — the types, their members, their bases, the names and the damage count —
+      // and it does not build MODULES or SYMBOL COUNTS. They are EMPTY, and they are empty on purpose:
+      // a hand-built index that invented a module map would be a claim the probe never measured. The
+      // probe's own prints read only the fields it computes.
+      modules: new Set<string>(),
+      symbolCounts: new Map<string, number>(),
     }
   : undefined
 if (WITH_PROJECT_INDEX) {
