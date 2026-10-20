@@ -48,7 +48,28 @@ TTL="${BB_ARM_TOKEN_TTL:-2700}"  # 45 minutes without a beat => reclaimable
 # the dart lane's is 33,738 files and the python lane's is 11,559 — so a long arm could lose the token
 # mid-run, which is the one thing the token exists to prevent. 45 minutes is longer than any arm the
 # fleet has run, and a crashed or vanished holder still releases itself. BEAT EVERY TWO MINUTES.
+QUEUE_FILE="${BB_ARM_QUEUE:-$PWD/.tmp-lead/arm-queue}"
 mkdir -p "$(dirname "$TOKEN_DIR")" 2>/dev/null || true
+mkdir -p "$(dirname "$QUEUE_FILE")" 2>/dev/null || true
+
+# THE QUEUE. Eight lanes, ONE arm slot, and arms take 7 to 45 minutes — so without a queue the lanes
+# POLL, and a lane can be overtaken by a later arrival (the Lead did it to toml). The queue is a plain
+# file, one lane per line, in arrival order, and `take` REFUSES a lane that is not at the head. It is
+# also the Lead's situational awareness: `status` prints the whole queue, so the Lead can see who is
+# next and WHY a lane has not run yet.
+queue_add() {
+  local l="$1"
+  [ -f "$QUEUE_FILE" ] || : > "$QUEUE_FILE"
+  grep -qxF "$l" "$QUEUE_FILE" || echo "$l" >> "$QUEUE_FILE"
+}
+queue_remove() {
+  local l="$1"
+  [ -f "$QUEUE_FILE" ] || return 0
+  grep -vxF "$l" "$QUEUE_FILE" > "$QUEUE_FILE.tmp" 2>/dev/null || : > "$QUEUE_FILE.tmp"
+  mv "$QUEUE_FILE.tmp" "$QUEUE_FILE"
+}
+queue_head() { [ -f "$QUEUE_FILE" ] && head -1 "$QUEUE_FILE" || echo ''; }
+queue_list() { [ -f "$QUEUE_FILE" ] && cat "$QUEUE_FILE" || echo '(nobody waiting)'; }
 
 now() { date +%s; }
 
@@ -83,8 +104,19 @@ cmd="${1:-status}"; lane="${2:-}"
 case "$cmd" in
   take)
     [ -n "$lane" ] || { echo "usage: arm-token.sh take <lane>"; exit 2; }
+    # THE HEAD OF THE QUEUE GOES FIRST. A lane that is not at the head is REFUSED, and told the order.
+    # Polling and hoping was how a lane could be overtaken by a later arrival.
+    head="$(queue_head)"
+    if [ -n "$head" ] && [ "$head" != "$lane" ]; then
+      echo "ARM TOKEN: the QUEUE is not empty and $lane is not at the head."
+      echo "  head: $head"
+      echo "  queue:"; queue_list | sed 's/^/    /'
+      echo "  WAIT for $head. Your arm runs when the head releases it; do not poll — the queue is the order."
+      exit 3
+    fi
     if mkdir "$TOKEN_DIR" 2>/dev/null; then
       write_holder "$lane" "$$" "$(proc_start_ticks $$ 2>/dev/null || echo 0)"
+      queue_remove "$lane"
       echo "ARM TOKEN TAKEN by $lane — run ONE arm, then: arm-token.sh release $lane"
       exit 0
     fi
@@ -120,7 +152,19 @@ case "$cmd" in
       echo "NOT RELEASED — the token is held by '${h_lane:-nobody}', not by $lane."; exit 4
     fi
     rm -rf "$TOKEN_DIR" 2>/dev/null || true
+    queue_remove "$lane"
     echo "ARM TOKEN RELEASED by $lane"; exit 0
+    ;;
+  queue)
+    if [ -n "$lane" ]; then
+      queue_add "$lane"
+      head="$(queue_head)"
+      echo "QUEUED: $lane (position $(queue_list | grep -nxF "$lane" | cut -d: -f1) of $(queue_list | grep -c .))"
+      [ "$head" = "$lane" ] && echo "  you are at the HEAD — the token is free the moment it is released."
+      exit 0
+    fi
+    echo "ARM QUEUE (first is next):"; queue_list | sed 's/^/  /'
+    exit 0
     ;;
   status)
     if [ -d "$TOKEN_DIR" ]; then
@@ -134,6 +178,8 @@ case "$cmd" in
     else
       echo "ARM TOKEN: FREE"
     fi
+    echo "ARM QUEUE (first is next):"
+    queue_list | sed 's/^/  /'
     exit 0
     ;;
   force)
