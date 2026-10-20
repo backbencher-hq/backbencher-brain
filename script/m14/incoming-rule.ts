@@ -1063,7 +1063,7 @@ export function verifyPackageScopeClaim(
    * behaviour every caller had before this parameter existed.
    */
   edgeFile?: string,
-): "externalVerified" | "externalRefuted" {
+): "externalVerified" | "externalRefuted" | "externalUnverified" {
   const deps = facts.packageDependencies
   if (deps === undefined && facts.packageDependenciesByFile === undefined) return "externalUnverified"
   let scope: Set<string> | undefined = deps
@@ -1536,7 +1536,7 @@ export type Classified = {
   kinds: string
   /** WHICH evidence confirmed a verified external claim — reported so a lane can audit the
    *  mechanism that produced the number, not only the number. */
-  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling" | "namespace" | "sourcePath" | "ownerChannel" | "importEvidence" | "exportSurface"
+  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling" | "namespace" | "sourcePath" | "ownerChannel" | "importEvidence" | "exportSurface" | "packageScope" | "ownerMembers"
   /**
    * WHAT A CLAIM SAYS ABOUT A TARGET THAT NAMES TWO OR MORE DECLARATIONS — recorded WITH ITS KIND,
    * and deliberately NOT allowed to move the outcome. See `claimDispositionOnAmbiguous`.
@@ -1598,6 +1598,10 @@ function claimDispositionOnAmbiguous(
   /** does the EDGE'S OWN FILE declare the target? `undefined` means the caller could not say, and the
    *  disposition then stays `contradicted` only if the project does — never a claim of refutation. */
   ownFileDeclares?: boolean,
+  /** THE FILE THE EDGE LIVES IN — the evidence for a package-scope claim is the manifest that GOVERNS
+   *  THAT FILE, not the repository root's. Without it the `packageScope` branch below would name a
+   *  free variable and THROW mid-arm; it is the same file the `decls === 0` branch already has. */
+  edgeFile?: string,
 ): { kind: string; disposition: AmbiguousClaimDisposition } | undefined {
   // `declCount` is read to STATE THE BRANCH INVARIANT rather than to verify anything: every caller
   // reaches here from `decls > 1`, and if that ever stops being true the kind below is wrong.
@@ -2064,7 +2068,7 @@ export function classifyEdge(
     return {
       outcome: (kindSet?.size ?? 0) > 1 ? "ambBoth" : "ambDeclOnly",
       decls, kinds: kindText,
-      claimOnAmbiguous: claimDispositionOnAmbiguous(declCount, tgt, claim, facts, ownFileDeclares),
+      claimOnAmbiguous: claimDispositionOnAmbiguous(declCount, tgt, claim, facts, ownFileDeclares, edgeFile),
     }
   }
   return { outcome: "resolved", decls, kinds: kindText }

@@ -2440,6 +2440,7 @@ function selfTest(): { ok: boolean; failures: string[] } {
     const refinerFacts: ProjectFacts = {
       packages: new Set(["declared_pkg"]),
       files: new Set(["sdk/lib/async/async.dart", "src/main/java/Foo.java", "src/com/Foo.java"]),
+      sdkLib: false,
     }
     const refinerArms: Array<[string, Outcome, string]> = [
       ["java.util", "externalVerified", "a reserved platform specifier must stay verified even though the project has a directory named `java`"],
