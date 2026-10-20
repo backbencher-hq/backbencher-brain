@@ -100,6 +100,20 @@
  *   npx tsx script/m14/incoming-gate.ts --all            # every laptop-B lane
  *   npx tsx script/m14/incoming-gate.ts --json <lang> <ext> [maxFiles]
  *
+ * ## `--selftest` IS NOT A CONTROL-ONLY MODE
+ *
+ * The instrument's own control runs on EVERY arm and is reported at the end of every run
+ * ("instrument self-test: PASS (control fired)"), and `--selftest` is accepted for compatibility — **it does
+ * NOT skip the arm.** This is stated because the clojure lane expected a control-only mode, ran one without
+ * holding the arm token, and thereby started a whole-population arm on the DEFAULT corpus root, concurrently
+ * with another lane's arm. It disclosed that itself, which is the right conduct, and the disclosure is why the
+ * flag is now documented rather than left to be guessed at.
+ *
+ * **A CONTROL-ONLY MODE THAT PRINTS A PASS LINE WITH NO ARM BEHIND IT IS EXACTLY THE TRAP THE toml LANE FOUND IN
+ * ITS OWN DEAD MUTATION SUITE** — a dead suite reads like a green one. The control belongs WITH the measurement,
+ * on the population the measurement is about, so that "the instrument is broken" and "this population is
+ * unresolved" can never be confused for one another.
+ *
  * Exit: 0 pass · 1 fail (a real unresolved/ambiguous edge class) · 2 usage/environment ·
  *       3 THE INSTRUMENT'S OWN CONTROL DID NOT FIRE.
  */
@@ -4065,6 +4079,8 @@ function t0(rep: Report): number {
 // census reads the rule rather than executing a walk.
 if (rest.length < 2) {
   console.error("usage: npx tsx script/m14/incoming-gate.ts <lang> <extension> [maxFiles]")
+  console.error("       --selftest is accepted but is NOT control-only: it runs the ARM and reports the")
+  console.error("       control at the end. A control-only mode would print a pass line with no arm behind it.")
   console.error("       <extension> may be a COMMA-SEPARATED LIST — `yaml,yml` for one language whose")
   console.error("       files carry two spellings, `.yaml` for a question about one of them.")
   console.error("       npx tsx script/m14/incoming-gate.ts --all [maxFiles]")
