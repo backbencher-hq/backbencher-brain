@@ -244,6 +244,9 @@ function nearestGateReadableManifest(absDir: string, repoDir: string): string | 
  *  This is the Lead's condition measured on the corpus's own manifests — what the extended reader would
  *  NOT turn into a dependency name. */
 const refusedSurface: Record<string, number> = {}
+/** THE MISJUDGED FILES — the ones whose governing manifest the gate reads is FARTHER than the
+ *  CMakeLists.txt that actually governs them. */
+const misjudgedFiles: string[] = []
 const refuse = (shape: string, name: string): void => {
   if (name.length === 0) return
   const k = `${shape}:${name}`
@@ -252,6 +255,7 @@ const refuse = (shape: string, name: string): void => {
 const ecoRows = new Map<string, number>()
 type RepoRow = {
   repo: string; files: number; cmakeGoverned: number; gateGoverned: number; neither: number; nearestIsCMake: number; gateManifestAbove: number
+  misjudged: number
   gateManifestKinds: Record<string, number>; findPackage: string[]; pkgConfig: string[]; importedNamespaces: string[]
 }
 const perRepo = new Map<string, RepoRow>()
@@ -262,7 +266,7 @@ for (const abs of admitted) {
   const repo = repoOf(abs)
   const repoDir = path.join(CR, repo)
   const row = perRepo.get(repo) ?? {
-    repo, files: 0, cmakeGoverned: 0, gateGoverned: 0, neither: 0, nearestIsCMake: 0, gateManifestAbove: 0, gateManifestKinds: {},
+    repo, files: 0, cmakeGoverned: 0, gateGoverned: 0, neither: 0, nearestIsCMake: 0, gateManifestAbove: 0, misjudged: 0, gateManifestKinds: {},
     findPackage: [], pkgConfig: [], importedNamespaces: [],
   }
   row.files++
@@ -284,6 +288,12 @@ for (const abs of admitted) {
     if (nearest.kind === "CMakeLists.txt") {
       nearestIsCMake++
       row.nearestIsCMake++
+      // THE MISJUDGED FILES: a gate-readable manifest exists above, but the CMakeLists.txt that governs
+      // the file sits NEARER — so today's answer for these files comes from the FARTHER, foreign manifest.
+      if (gateNearest && gateNearest !== nearest.path) {
+        misjudgedFiles.push(relOf(abs))
+        row.misjudged++
+      }
     } else {
       gateGoverned++
       row.gateGoverned++
@@ -316,6 +326,7 @@ const report = {
   },
   perEcosystem: Object.fromEntries([...ecoRows.entries()].sort((a, b) => b[1] - a[1])),
   refusedSurface,
+  misjudged: { files: misjudgedFiles.length, sample: misjudgedFiles.slice(0, 20), byRepo: Object.fromEntries([...perRepo.entries()].filter(([, r]) => r.misjudged > 0).map(([k, r]) => [k, r.misjudged]).sort((a, b) => (b[1] as number) - (a[1] as number))) },
   packageUniverse: Object.fromEntries([...packageUniverse.entries()].sort((a, b) => b[1].size - a[1].size)),
   perRepo: [...perRepo.values()].sort((a, b) => b.files - a.files),
 }
