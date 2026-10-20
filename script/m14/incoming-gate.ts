@@ -556,7 +556,7 @@ const DART_FACT_WALK_SKIP = new Set([
  * of the tree: the admitted list IS the answer, and a walk would answer a different question
  * ("what is on disk", including files this programme refuses to parse).
  */
-function projectFactsForFiles(repoRoot: string, admitted: string[]): ProjectFacts {
+async function projectFactsForFiles(repoRoot: string, admitted: string[]): Promise<ProjectFacts> {
   const files = new Set<string>()
   for (const abs of admitted) {
     const rel = path.relative(repoRoot, abs)
@@ -575,14 +575,23 @@ function projectFactsForFiles(repoRoot: string, admitted: string[]): ProjectFact
   // A FILE WITH NO GOVERNING MANIFEST GETS NO ENTRY, and its claim is then UNVERIFIABLE (never quietly
   // accepted) — exactly as it is today for a project with no manifest at all.
   const byFile = new Map<string, Set<string>>()
+  // THE PROJECT-FACT map, kept APART: the union of the package manifests and the CMake forms. It is
+  // what a NEGATIVE project-fact claim grounds itself on. A CMake name is in HERE and NOT in the
+  // package map, so it can never verify a package-scope claim (whose reach over the C++ wall is
+  // measured at ZERO rows).
+  const byFileFacts = new Map<string, Set<string>>()
   for (const abs of admitted) {
-    const governed = manifestDependenciesForFile(repoRoot, abs)
-    if (governed !== undefined) byFile.set(abs, governed)
+    const governed = await manifestResolutionForFile(repoRoot, abs)
+    if (governed === undefined) continue
+    byFile.set(abs, governed.packages)
+    byFileFacts.set(abs, governed.projectFacts)
   }
   return {
     packages: new Set<string>(), files, sdkLib: false,
     packageDependencies: manifestDependencies(repoRoot),
     packageDependenciesByFile: byFile,
+    projectFactDependencies: await projectFactDependencies(repoRoot),
+    projectFactDependenciesByFile: byFileFacts,
   }
 }
 
@@ -830,6 +839,85 @@ function manifestDependencies(repoRoot: string): Set<string> {
  * governs all of them.
  */
 const manifestByDirCache = new Map<string, Set<string> | null>()
+/**
+ * THE CMAKE MANIFEST'S DECLARED DEPENDENCY NAMES — read by the LANE'S OWN reader, which implements
+ * exactly the field list it published (a WHITELIST of (form, field) pairs, not a scan for
+ * name-shaped strings): `find_package(<Name>)` argument 1 only · `pkg_check_modules(<PREFIX> … <module>…)`
+ * the MODULES · `target_link_libraries(… Ns::Tgt)` the NAMESPACE AS CORROBORATION ONLY, never as an
+ * introducer. Everything else is REFUSED: `find_library`/`find_path` NAMES (a file stem),
+ * `add_library`/`add_executable` (a project target), `add_subdirectory` (a directory of this project),
+ * `FetchContent_*`/`ExternalProject_Add` (a fetched dependency, whose sources are IN the checkout),
+ * a `#` COMMENT (the measured trap: ghostty's root CMakeLists.txt carries
+ * `#   find_package(ghostty-vt REQUIRED)`), and every other token.
+ *
+ * The reader is the lane's instrument and is verified by its own `cpp-cmake-names-verify.ts` (35/35,
+ * `--prove-red` exits 3). The gate CALLS it; it does not re-implement it, and it does not widen it.
+ *
+ * WHY THE GATE READS IT AT ALL: the C++ lane's NEGATIVE project-fact claim needs the manifest's NAME
+ * SET to ground itself for a CMake-governed file, and 1,029 files are misjudged today because a
+ * CMakeLists.txt sits NEARER than the manifest the gate reads. The reader is the REQUEST; the
+ * package-scope claim is not (its reach over the C++ wall is measured at ZERO rows).
+ */
+const cmakeNamesByDirCache = new Map<string, Set<string> | null>()
+async function manifestCmakeNamesIn(dir: string): Promise<Set<string> | null> {
+  const cached = cmakeNamesByDirCache.get(dir)
+  if (cached !== undefined) return cached
+  let out: Set<string> | null = null
+  try {
+    const text = readFileSync(path.join(dir, "CMakeLists.txt"), "utf8")
+    const mod: any = await import("./cpp-cmake-names")
+    const read = mod.cmakeDependencyNames(text)
+    out = new Set<string>(read.names as string[])
+  } catch {
+    out = null // no CMakeLists.txt here, or the reader is unavailable
+  }
+  cmakeNamesByDirCache.set(dir, out)
+  return out
+}
+
+/**
+ * THE GOVERNING MANIFEST for one file: the NEAREST ancestor directory that holds ANY manifest the
+ * gate can read — INCLUDING a CMakeLists.txt.
+ *
+ * TWO SETS COME BACK, and they are kept apart on purpose. `packages` is the PACKAGE-manifest set and
+ * is what the package-scope claim consults; it is package-only, so a CMake name can never verify a
+ * package-scope claim. `projectFacts` is the union, and it is what a NEGATIVE project-fact claim
+ * grounds itself on.
+ *
+ * A CMakeLists.txt ALSO COUNTS AS A MANIFEST FOR THE WALK, which is the point: a file under a
+ * CMake-only directory is governed by THAT directory, not by a root manifest belonging to another
+ * ecosystem. That is the 1,029 misjudged files, and the fix is here rather than in the claim.
+ */
+type ManifestResolution = { dir: string; packages: Set<string>; projectFacts: Set<string> }
+async function manifestResolutionForFile(repoRoot: string, absFile: string): Promise<ManifestResolution | undefined> {
+  let dir = path.dirname(absFile)
+  const root = path.resolve(repoRoot)
+  for (;;) {
+    const packages = manifestDependenciesIn(dir)
+    const cmake = await manifestCmakeNamesIn(dir)
+    if (packages !== null || cmake !== null) {
+      const projectFacts = new Set<string>(packages ?? [])
+      for (const n of cmake ?? []) projectFacts.add(n)
+      return { dir, packages: packages ?? new Set<string>(), projectFacts }
+    }
+    if (path.resolve(dir) === root) return undefined
+    const up = path.dirname(dir)
+    if (up === dir) return undefined
+    dir = up
+  }
+}
+
+/**
+ * THE REPO-LEVEL PROJECT-FACT SET: the root manifest's package names UNION the root's CMake names.
+ * It is the fallback for a file with no governing manifest, exactly as the repo-level package set is
+ * — and it is the ONLY set that carries CMake names.
+ */
+async function projectFactDependencies(repoRoot: string): Promise<Set<string>> {
+  const out = new Set<string>(manifestDependencies(repoRoot))
+  for (const n of (await manifestCmakeNamesIn(repoRoot)) ?? []) out.add(n)
+  return out
+}
+
 function manifestDependenciesForFile(repoRoot: string, absFile: string): Set<string> | undefined {
   let dir = path.dirname(absFile)
   const root = path.resolve(repoRoot)
@@ -1294,7 +1382,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   // analyzer makes that claim (`importOutsideProject`). Built from the UNSAMPLED admitted
   // list, because "is this path in the project?" is a fact about the project, not about
   // how many files this run had budget for.
-  const projectFacts: Map<string, ProjectFacts> | null = (() => {
+  const projectFacts: Map<string, ProjectFacts> | null = await (async () => {
     const admittedByRepo = new Map<string, string[]>()
     for (const f of admitted) {
       const repo = repoOf(f)
@@ -1310,7 +1398,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     // — and that is the shape the yaml lane hit with two `!include` edges it was right about.
     const out = new Map<string, ProjectFacts>()
     for (const [repo, list] of admittedByRepo) {
-      out.set(repo, ext.toLowerCase() === "dart" ? projectFactsForDart(repo, list) : projectFactsForFiles(repo, list))
+      out.set(repo, ext.toLowerCase() === "dart" ? projectFactsForDart(repo, list) : await projectFactsForFiles(repo, list))
     }
     return out
   })()
@@ -2167,6 +2255,37 @@ function selfTest(): { ok: boolean; failures: string[] } {
     const rootOnly = classifyEdge(empty, kinds, "Widget", { kind: "packageScope", package: "root-dep", name: "Widget" }, mono, undefined, undefined, undefined, "/repo/packages/foo/src/x.ts")
     if (rootOnly.outcome !== "externalRefuted") {
       failures.push(`control: a claim on a dependency only the REPO ROOT declares read ${rootOnly.outcome}, expected externalRefuted (a sibling package's manifest must not launder another package's dependency)`)
+    }
+    // ── THE CMAKE READER'S WIRING, IN BOTH DIRECTIONS (2026-10-20, Lead) ──────────────────────────
+    // The C++ lane's NEGATIVE project-fact claim needs the manifest's NAME SET to ground itself for a
+    // CMake-governed file, and 1,029 files are misjudged today because a CMakeLists.txt sits NEARER
+    // than the manifest the gate reads. The reader is the REQUEST; the package-scope claim is NOT —
+    // its reach over the C++ wall is measured at ZERO rows.
+    //
+    // SO THE CONTROL IS: a CMake name is in the PROJECT-FACT set and NOT in the PACKAGE set, and a
+    // package-scope claim naming it is therefore NOT verified by it. A reader that put CMake names
+    // into the package set would VERIFY a claim the checkout cannot support — the exact false claim
+    // the C++ lane's hand-read falsifier is about.
+    {
+      const cmakeOnly: ProjectFacts = {
+        packages: new Set<string>(), files: new Set<string>(), sdkLib: false,
+        packageDependencies: new Set<string>(["root-dep"]),
+        packageDependenciesByFile: new Map<string, Set<string>>([
+          ["/repo/src/x.cpp", new Set<string>()], // governed by its CMakeLists.txt, which declares no PACKAGE
+        ]),
+        projectFactDependencies: new Set<string>(["root-dep", "Boost"]),
+        projectFactDependenciesByFile: new Map<string, Set<string>>([
+          ["/repo/src/x.cpp", new Set<string>(["Boost"])],
+        ]),
+      }
+      const cmakeNamed = classifyEdge(empty, kinds, "Widget", { kind: "packageScope", package: "Boost", name: "Widget" }, cmakeOnly, undefined, undefined, undefined, "/repo/src/x.cpp")
+      if (cmakeNamed.outcome === "externalVerified") {
+        failures.push("control: a CMAKE name VERIFIED a package-scope claim — the package set must never carry a CMake name")
+      }
+      const cmakeFact = classifyEdge(empty, kinds, "Widget", { kind: "packageScope", package: "root-dep", name: "Widget" }, cmakeOnly, undefined, undefined, undefined, "/repo/src/x.cpp")
+      if (cmakeFact.outcome !== "externalRefuted") {
+        failures.push(`control: a file governed by a CMAKE-ONLY manifest read ${cmakeFact.outcome} for a root-only package, expected externalRefuted (the governing manifest is the CMAKE one)`)
+      }
     }
     // A FILE WITH NO GOVERNING MANIFEST has no entry, and its claim is UNVERIFIABLE — never quietly
     // accepted, exactly as for a project with no manifest at all.

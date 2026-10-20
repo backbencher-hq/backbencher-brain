@@ -1003,6 +1003,24 @@ export type ProjectFacts = {
    * back to the repo-level `packageDependencies` — so no existing caller changes behaviour.
    */
   packageDependenciesByFile?: Map<string, Set<string>>
+  /**
+   * THE PROJECT'S DECLARED DEPENDENCY NAMES — the union of the PACKAGE manifests and the CMAKE forms.
+   *
+   * IT IS DELIBERATELY A SEPARATE SET, and the reason is a measured one. The `packageDependencies`
+   * set above is the PACKAGE set and stays package-only: **a CMake `find_package` name must NEVER be
+   * able to verify a package-scope claim**, because a CMake package name is not a package the checkout
+   * declares in the package sense — the cpp lane MEASURED the package-scope claim's sound reach over
+   * the C++ wall at ZERO rows, with a hand-read falsifier that fires on the C library, a bare
+   * container member, and the Python C API. Adding CMake names to the package set would give the
+   * claim a reach it has been RULED out of, and could VERIFY a claim the checkout cannot support.
+   *
+   * THIS set is what a NEGATIVE project-fact claim ("this project does NOT declare that name")
+   * grounds itself on, and it is the whole reason the CMake reader is read at all: ONE reader serves
+   * the negative claim, while the package-scope claim stays ruled. Absent means the caller built no
+   * such evidence and a negative claim is UNVERIFIABLE (never quietly accepted).
+   */
+  projectFactDependencies?: Set<string>
+  projectFactDependenciesByFile?: Map<string, Set<string>>
 }
 
 /**
