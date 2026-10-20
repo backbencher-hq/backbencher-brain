@@ -2594,6 +2594,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // imports bind names the file uses unqualified; the claim states exactly that and the arbiter
     // verifies it from the run's OWN import evidence published below.
     this.attachJavaImportedBindingClaims(relationships, symbols, receiverTypes)
+    // THE EXTERNAL SINGLE-TYPE-IMPORT BINDING CLAIM (java lane, 2026-10-20): the same claim
+    // shape the static-import arm proved (391 claims, bindFAIL 0), applied to the OTHER import
+    // form java has. `import java.util.List;` binds the simple name `List` (JLS 6.4.1), and the
+    // file's own import is the evidence the arbiter verifies the claim against. The analyzer
+    // half is the emission below; the arbiter half is the claim kind that already exists.
+    this.attachJavaSingleTypeImportBindingClaims(relationships, symbols, receiverTypes, context?.projectIndex)
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
@@ -3612,6 +3618,142 @@ currentPackage,
         continue // a field-access read's target is a member leaf, not the bound name
       }
       md.importedBinding = { specifier: container, binding: target }
+    }
+  }
+
+  /**
+   * THE PROJECT'S OWN KEY SPACE, read the way the ARBITER reads it: how many declarations answer
+   * to a name. The arbiter's key space counts every published symbol by its SIMPLE name — a type,
+   * a method, a field, a constant, an enum constant, a constructor — and a declaration's simple
+   * name is exactly what the name-keyed resolver looks up.
+   *
+   * THE INDEX'S TWO CHANNELS ARE THE SAME COUNT, SPLIT. `symbolCounts` holds the TYPES by name;
+   * `typeMembers` holds the MEMBERS by owner. A name the project declares ONCE as a type and ONCE
+   * as a field — the `public static final Foo Foo = new Foo();` idiom, which is what most of the
+   * lane's AMBIGUOUS type-shaped rows are (measured: 34,306 of 39,779) — answers to the name
+   * TWICE, and the type channel alone would say once. So the count is the sum of the two, and it
+   * is cached per index because the index is per REPOSITORY and the answer is per name.
+   */
+  private static readonly javaDeclCountCache = new WeakMap<ProjectIndex, Map<string, number>>()
+  private static javaDeclCounts(index: ProjectIndex): Map<string, number> {
+    const hit = RealJavaAnalyzer.javaDeclCountCache.get(index)
+    if (hit) return hit
+    const counts = new Map<string, number>()
+    for (const [name, n] of index.symbolCounts) counts.set(name, (counts.get(name) ?? 0) + n)
+    for (const members of index.typeMembers.values()) {
+      for (const name of members) counts.set(name, (counts.get(name) ?? 0) + 1)
+    }
+    RealJavaAnalyzer.javaDeclCountCache.set(index, counts)
+    return counts
+  }
+
+  /**
+   * THE EXTERNAL SINGLE-TYPE-IMPORT BINDING CLAIM (java lane, 2026-10-20).
+   *
+   * THE SHAPE IS THE ARBITER'S, NOT THIS LANE'S. `metadata.importedBinding = { specifier, binding }`
+   * says *"the name `binding` is bound, in this file, by the import `specifier`"*, and the arbiter
+   * verifies it against the run's OWN import evidence — the `importedBindings` + `module` metadata
+   * an `imports` edge publishes — in its OWN column (`bindOK`), never in `resolved`. The
+   * static-import arm proved the shape on this lane: **391 verified claims, bindFAIL 0** (the
+   * `java/library-import-binding` fixture, 76/0). This method applies the SAME shape to the OTHER
+   * import form java has: the SINGLE-TYPE import, `import java.util.List;`, which binds the simple
+   * name `List`.
+   *
+   * WHY IT IS A TRUE STATEMENT (JLS 6.4.1). A single-type-import declaration d in a compilation unit
+   * c of package p that imports a type named n shadows, throughout c, the declarations of any top
+   * level type named n declared in another compilation unit of p, and any type named n imported on
+   * demand in c. A type in another package is not in scope at all unless it is imported. So INSIDE
+   * THE FILE the simple name is UNAMBIGUOUS: it names the imported type and nothing else. The
+   * store's key space is NAME-KEYED and repo-wide, so it answers a different question ("how many
+   * declarations in this repo are called `List`?") — which is why the row stays a tie, and why the
+   * tie is a NAME-MODEL artefact rather than a fact about the file.
+   *
+   * THE CLAIM IS A TIE-BREAKER, AND IT IS ONLY EMITTED WHERE A TIE EXISTS. Three conditions, each
+   * one a way the claim could become FALSE or pointless:
+   *
+   *   1. **THE PROJECT'S KEY SPACE GIVES THE SIMPLE NAME MORE THAN ONE ANSWER.** This is the wall
+   *      the claim exists to close. With EXACTLY ONE answer the name model RESOLVES the row, and a
+   *      claim there would trade a resolution for a claim — the campaign's "claims are never
+   *      merged into resolution", read in the direction that keeps the strongest class. With NO
+   *      answer the analyzer's own external claim ("the project declares no such name") already
+   *      verifies the row, and a second claim on it would replace one verified claim with another
+   *      and move the row between two verified columns for no gain at all. So the claim is emitted
+   *      for the TIE and for nothing else.
+   *      **A COMPLETE PROJECT INDEX IS REQUIRED TO SEE A TIE AT ALL**, so the rule is fail-closed:
+   *      no complete index ⇒ no claim ⇒ the no-index arm is byte-identical to its previous value.
+   *   2. **THE IMPORTED TYPE IS OUTSIDE THE PROJECT.** With the complete index in hand, the
+   *      project must NOT declare the qualified path: the index saw the project's whole admitted
+   *      file set, so "the project declares no such type" is a STATEMENT and not a guess — and it
+   *      REFUTES the claim when the project DOES declare it. A project-internal import names
+   *      project code, which must resolve through the owner/name model.
+   *   3. **THE FILE DOES NOT DECLARE THE NAME, AND NO STATIC IMPORT BINDS IT.** A name the file
+   *      declares shadows the import (JLS 6.4.1); a name a static import also binds is the static
+   *      arm's shape (two imports of one name is a compile error).
+   *
+   * AND THE CLAIM IS ONLY PUT ON A ROW WHERE THE TARGET IS THE BOUND NAME, IN A TYPE POSITION.
+   * `references` / `instantiates` / `extends` / `implements` only: a read or a call target is a
+   * member leaf, and a local variable may shadow a type name in an expression (JLS 6.5.5.1), so
+   * only a type position is safe. A dotted target is not the bound name either.
+   */
+  private attachJavaSingleTypeImportBindingClaims(
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    index: JavaReceiverTypeIndex,
+    projectIndex?: ProjectIndex,
+  ): void {
+    // FAIL-CLOSED: a TIE is a fact about the PROJECT's key space, and a sampled or absent index
+    // cannot see one. No complete index ⇒ no claim.
+    if (projectIndex?.complete !== true) return
+    if (index.importSinglePaths.size === 0) return
+    const fileDeclared = new Set<string>()
+    for (const s of symbols) if (s && s.name) fileDeclared.add(s.name)
+    const declCounts = RealJavaAnalyzer.javaDeclCounts(projectIndex)
+    // THE ELIGIBLE IMPORTS: the simple name the import binds -> the qualified path AS WRITTEN.
+    const eligible = new Map<string, string>()
+    for (const [leaf, path] of index.importSinglePaths) {
+      if (leaf.length === 0 || path.length === 0) continue
+      if (fileDeclared.has(leaf)) continue
+      if (index.staticImportPaths.has(leaf)) continue
+      // CONDITION 1 — THE TIE. The project's own key space, read the way the arbiter reads it: more
+      // than one declaration answering to the simple name is a tie, which is the wall the claim
+      // closes. Exactly one is a resolution (do not touch it) and none is a row the analyzer's own
+      // external claim already verifies.
+      if ((declCounts.get(leaf) ?? 0) < 2) continue
+      // CONDITION 2 — THE IMPORTED TYPE IS OUTSIDE THE PROJECT. The index answers in BOTH
+      // directions: a project-declared path is project code and must RESOLVE.
+      if (projectIndex.typeKinds.has(path) || projectIndex.symbolNames.has(path)) continue
+      eligible.set(leaf, path)
+    }
+    if (eligible.size === 0) return
+    // 1) EVIDENCE on the import edges — the half the arbiter verifies the claim against. The
+    //    specifier key is the module path AS WRITTEN, which is the same string the claim carries.
+    for (const r of relationships) {
+      if (String(r.type ?? "") !== "imports") continue
+      const md = r.metadata as Record<string, unknown> | undefined
+      if (!md || typeof md !== "object") continue
+      if (md.isStatic === true || md.isWildcard === true) continue
+      const target = String(r.target ?? "")
+      const dot = target.lastIndexOf(".")
+      if (dot <= 0 || dot >= target.length - 1) continue
+      const leaf = target.slice(dot + 1)
+      const path = eligible.get(leaf)
+      if (!path || path !== target) continue
+      md.importedBindings = [leaf]
+      md.module = path
+    }
+    // 2) THE CLAIM on the use edges — the target must BE the bound name, in a TYPE position.
+    const TYPE_LABELS = new Set(["references", "instantiates", "extends", "implements"])
+    for (const r of relationships) {
+      const label = String(r.type ?? "")
+      if (!TYPE_LABELS.has(label)) continue
+      const md = r.metadata as Record<string, unknown> | undefined
+      if (!md || typeof md !== "object") continue
+      if (md.importedBinding !== undefined) continue
+      const target = String(r.target ?? "")
+      if (!isPlainJavaIdentifier(target)) continue
+      const path = eligible.get(target)
+      if (!path) continue
+      md.importedBinding = { specifier: path, binding: target }
     }
   }
 
