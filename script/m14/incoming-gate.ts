@@ -3820,7 +3820,17 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     }
     console.log()
   }
-  // THE REFUTED CLAIMS, PRINTED WHOLE AND UNCAPTIONED BY ANYTHING ELSE.
+  // THE REFUTED CLAIMS, WITH THE CAP'S OMISSION COUNTED BESIDE THEM.
+  //
+  // THE HEADER HERE USED TO SAY "PRINTED WHOLE AND UNCAPTIONED BY ANYTHING ELSE", AND THAT WAS
+  // FALSE. The list carries the same per-bucket name cap as the other buckets, and the dart lane
+  // MEASURED 86 refuted rows behind a 25-name list — so a reader sizing the work from the list saw
+  // 25 and could not tell it from the whole. **A LIST THAT IS SILENTLY PARTIAL READS EXACTLY LIKE A
+  // COMPLETE ONE**, and this is the same remedy the worklist already uses for its own two buckets:
+  // the omission is COUNTED and printed beside the list. The dart lane proposed three ways to fix it
+  // (print the omitted count, raise the cap for that bucket, or fix the header); the count is
+  // printed AND the header is now true, because the cap is a real protection (one pathological name
+  // used 40,000 times must not produce a 40,000-line report) and only SILENCE was the defect.
   //
   // A refuted claim is the one outcome that says the analyzer's OWN claim is false, and the verdict
   // counts it against the lane — so a count with no names is not actionable. It was: measured
@@ -3832,8 +3842,15 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     r.project.refutedNames.map((x) => ({ ...x, type: r.type })),
   )
   if (refuted.length) {
+    const refutedOmitted = [...rep.rows.values()].reduce(
+      (n, r) => n + (r.project.namesOmitted?.refuted ?? 0),
+      0,
+    )
     console.log(
-      `EXTERNAL CLAIMS THE POPULATION REFUTES (counted AGAINST the lane — the owner these name IS published):`,
+      `EXTERNAL CLAIMS THE POPULATION REFUTES (counted AGAINST the lane — the owner these name IS published):` +
+        (refutedOmitted > 0
+          ? ` **+ ${refutedOmitted} omitted by the ${NAME_CAP}-name cap and never collected**`
+          : ""),
     )
     for (const x of refuted) console.log(`  ${w(x.type, 14)} ${x.name}`)
     console.log()
