@@ -46,8 +46,23 @@ import { bbProjectsDir } from "../util/bb-data-dir"
  * `token`. Readers accept v0 and v1; a HIGHER version is refused, not
  * guessed at — a future writer may have added a field whose absence here would
  * mean something different.
+ *
+ * v2 (2026-10-20): the payload gained `startTicks` — the HOLDER'S PROCESS START TIME, read from
+ * `/proc/<pid>/stat` field 22. The reason is a MEASURED WEDGE, not a hypothetical one: this module
+ * judged liveness by PID ALONE, and in an environment where pids are recycled (a pid namespace, a
+ * container, a small pid space) a lock left behind by a DEAD index run names a pid that is now a
+ * DIFFERENT, LIVE process — so `classify` saw "alive" and the reclaim path could never fire. The
+ * lock was unrecoverable without deleting the file by hand, and the error text promised the opposite
+ * ("if it crashed the stale lock is reclaimed automatically on the next run"). The start time
+ * distinguishes "the same process that took the lock" from "a later process that inherited its pid".
+ *
+ * The ABSENCE of `startTicks` now means something specific — "the holder's identity is UNKNOWN" —
+ * which is exactly the kind of field whose absence must not be read as the old meaning, so the
+ * version moves. A v1 lock (no start time) is still accepted and still reclaimed by the pid check
+ * when that pid is gone; when that pid is ALIVE it is reported as a lock whose holder cannot be
+ * identified, and the remedy says so instead of claiming the run is still going.
  */
-export const INDEX_LOCK_SCHEMA_VERSION = 1
+export const INDEX_LOCK_SCHEMA_VERSION = 2
 
 export interface IndexLockHandle {
   projectId: string
@@ -66,9 +81,20 @@ export interface LockHolderInfo {
   kind: string
   /** Host that wrote the lockfile. `null` for a pre-versioned (v0) file. */
   host: string | null
+  /**
+   * The HOLDER'S PROCESS START TIME (`/proc/<pid>/stat` field 22, in clock ticks since boot).
+   *
+   * This is the holder's IDENTITY, and the pid is only its name. A pid alone cannot tell "the
+   * process that took this lock is still running" from "the process that took it died and a LATER
+   * process inherited its number" — and the second reading is what wedged `bb index` on 2026-10-20
+   * (a lock left by a dead run naming pid 8, which was by then an unrelated live node process).
+   * `null` means the start time was not recorded (a v0/v1 lockfile), so the holder's identity is
+   * UNKNOWN — which is not the same as "the holder is alive".
+   */
+  startTicks: number | null
   /** Writer's per-acquire token. `null` for a v0 file. */
   token: string | null
-  /** Payload version: 0 = pre-versioned file, 1 = current. */
+  /** Payload version: 0 = pre-versioned file, 1 = host+token, 2 = + the holder's start time. */
   version: number
 }
 
@@ -82,6 +108,7 @@ export interface LockHolderInfo {
 type StaleReason =
   | "holder-dead" // same host, pid confirmed gone
   | "holder-zombie" // same host, pid is a reaped-pending zombie
+  | "holder-recycled" // same host, pid is alive but it is NOT the process that took the lock
   | "unreadable-payload" // no readable pid at all, and older than the grace window
   | "foreign-host-expired" // written by another host and older than the expiry
   | "future-schema" // written by a newer bb; reclaimed only after the expiry
@@ -105,12 +132,20 @@ export class IndexLockHeldError extends Error {
     // payload cannot be parsed (a 0-byte file from a kill between create and
     // write, or a full disk). Such a file named no live process, so the
     // liveness branch was skipped and the refusal was issued forever.
+    //
+    // A SECOND case was false in the same way and was measured on 2026-10-20: a
+    // lockfile whose pid is ALIVE but whose holder cannot be IDENTIFIED (no
+    // recorded start time — a v0/v1 lockfile). The pid may be a RECYCLED one,
+    // belonging to a process that did not take the lock at all. Claiming "wait for
+    // it to finish" there is a promise about a run that may not exist.
     const remedy =
       holder.pid === null
         ? `the lock file names no process, so nothing can be proven to be running. Remove it by hand: rm ${lockPath}`
         : holder.host && holder.host !== hostname()
           ? `it was written on host ${holder.host}, where pid ${holder.pid} means nothing here, so it is reclaimed only after ${Math.round(crossHostExpiryMs() / 3_600_000)}h. If that run is gone, remove it by hand: rm ${lockPath}`
-          : "wait for it to finish, or if it crashed the stale lock is reclaimed automatically on the next run"
+          : holder.startTicks === null
+            ? `the lock file records no start time, so the holder cannot be identified — pid ${holder.pid} may be a RECYCLED pid belonging to a process that did not take the lock. Remove it by hand if that run is gone: rm ${lockPath}`
+            : "wait for it to finish, or if it crashed the stale lock is reclaimed automatically on the next run"
     super(
       `another index run is already active for this project (${name}${host}${started}, kind=${holder.kind ?? "index"}); ${remedy}`,
     )
@@ -202,9 +237,34 @@ function pidIsAliveLocally(pid: number): boolean {
   }
 }
 
+/**
+ * THE HOLDER'S PROCESS START TIME — `/proc/<pid>/stat` field 22, in clock ticks since boot.
+ *
+ * This is what makes a pid an IDENTITY rather than a NAME. A lockfile that names pid 8 is only
+ * meaningful together with the start time of the process that WAS pid 8 at the moment the lock was
+ * taken: if the pid is alive now but its start time differs, the pid was RECYCLED and the process
+ * that took the lock is gone. Judging by pid alone made a dead holder look alive forever, which is
+ * the wedge measured on 2026-10-20.
+ *
+ * `null` when the platform has no /proc, or the pid is gone, or the field cannot be read — and
+ * `null` means UNKNOWN, never "alive".
+ */
+function processStartTicks(pid: number): number | null {
+  if (!Number.isInteger(pid) || pid <= 0) return null
+  try {
+    const stat = readFileSync(`/proc/${pid}/stat`, "utf8")
+    // after the comm field, the remaining fields start at field 3 (state), so field N is index N-3
+    const fields = stat.slice(stat.lastIndexOf(")") + 2).trim().split(/\s+/)
+    const ticks = Number(fields[19])
+    return Number.isFinite(ticks) ? ticks : null
+  } catch {
+    return null
+  }
+}
+
 function parseHolder(content: string | undefined): LockHolderInfo {
   if (!content || content.trim() === "") {
-    return { pid: null, startedAt: null, kind: "index", host: null, token: null, version: 0 }
+    return { pid: null, startedAt: null, kind: "index", host: null, token: null, startTicks: null, version: 0 }
   }
   try {
     const parsed = JSON.parse(content) as Record<string, unknown>
@@ -217,10 +277,14 @@ function parseHolder(content: string | undefined): LockHolderInfo {
       // it was; only an EXPLICIT foreign host is treated as foreign.
       host: typeof parsed.host === "string" && parsed.host !== "" ? parsed.host : null,
       token: typeof parsed.token === "string" && parsed.token !== "" ? parsed.token : null,
+      // ABSENT means UNKNOWN, not "no start time needed" — a v0/v1 lockfile names a pid whose
+      // identity cannot be checked, and that is a different state from a v2 lockfile whose start
+      // time was read and matched.
+      startTicks: typeof parsed.startTicks === "number" ? parsed.startTicks : null,
       version: typeof parsed.schemaVersion === "number" ? parsed.schemaVersion : 0,
     }
   } catch {
-    return { pid: null, startedAt: null, kind: "index", host: null, token: null, version: 0 }
+    return { pid: null, startedAt: null, kind: "index", host: null, token: null, startTicks: null, version: 0 }
   }
 }
 
@@ -252,6 +316,20 @@ function classify(lockPath: string, holder: LockHolderInfo, now: number): { stal
     return { stale: age >= crossHostExpiryMs() ? "foreign-host-expired" : null }
   }
   if (!pidIsAliveLocally(holder.pid)) return { stale: "holder-dead" }
+  // THE RECYCLED-PID CASE. The pid is alive, but is it the SAME PROCESS? If the lockfile recorded
+  // the holder's start time and the live process's start time DIFFERS, the pid was recycled: the
+  // process that took this lock is gone and a later, unrelated process inherited its number.
+  // Judging by pid alone made such a lock look held forever — measured on 2026-10-20, when a lock
+  // left by a dead index run named pid 8 and pid 8 was by then an unrelated live node process, so
+  // `bb index` refused on that project permanently and the error promised a self-recovery that
+  // could not happen.
+  if (holder.startTicks !== null) {
+    const nowTicks = processStartTicks(holder.pid)
+    // `nowTicks === null` means the start time could not be read NOW (the process may be gone
+    // between the liveness check and this read) — that is not evidence of a live holder, so the
+    // lock is left alone rather than reclaimed on a guess.
+    if (nowTicks !== null && nowTicks !== holder.startTicks) return { stale: "holder-recycled" }
+  }
   return { stale: null }
 }
 
@@ -306,7 +384,8 @@ export async function acquireIndexLock(
       done()
       throw new IndexLockHeldError(projectId, lockPath, {
         pid: process.pid, startedAt: null, kind,
-        host: hostname(), token: null, version: INDEX_LOCK_SCHEMA_VERSION,
+        host: hostname(), token: null, startTicks: processStartTicks(process.pid),
+        version: INDEX_LOCK_SCHEMA_VERSION,
       })
     }
   } else {
@@ -354,6 +433,10 @@ export async function acquireIndexLock(
       host: hostname(),
       token,
       startedAt: holder.startedAt,
+      // THE HOLDER'S IDENTITY, recorded at the moment the lock is taken. Without it a reader can
+      // only see a pid, and a pid can be inherited by a later process — which is exactly how a
+      // dead holder came to look alive forever.
+      startTicks: processStartTicks(process.pid),
       kind,
     })
     const deadline = waitMs > 0 ? Date.now() + waitMs : 0

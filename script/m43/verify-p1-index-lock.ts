@@ -24,7 +24,7 @@
 // tests, or a gate that passes with the lock disabled, is a broken gate.
 
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, unlinkSync } from "node:fs"
-import { tmpdir } from "node:os"
+import { tmpdir, hostname } from "node:os"
 import { execFileSync, spawn, spawnSync } from "node:child_process"
 import path from "node:path"
 
@@ -213,6 +213,63 @@ async function main() {
     const h2 = await acquireIndexLock(pidD, { kind: "second" })
     check("8: re-acquire after release succeeds", h2.pid === process.pid)
     await h2.release()
+  }
+
+  // ── 9. RECYCLED-PID reclaim (2026-10-20) ──
+  // The pid is ALIVE, but it is NOT the process that took the lock. A lockfile left behind by a
+  // dead index run names a pid, and where pids are recycled (a pid namespace, a container, a small
+  // pid space) that pid may belong to a LATER, unrelated process — so a pid-only liveness check sees
+  // "alive" and the reclaim can never fire. MEASURED 2026-10-20: a lock naming pid 8, which was by
+  // then an unrelated live node process, wedged `bb index` on that project permanently, and the
+  // error text promised a self-recovery that could not happen.
+  {
+    // A live child we do NOT wait for: it stays alive across both arms, so the pid cannot be
+    // recycled between them and the ONLY variable is the recorded start time.
+    const live = spawn("bun", ["-e", "setTimeout(() => {}, 120000)"], { stdio: "ignore" })
+    await new Promise((r) => setTimeout(r, 500))
+    const livePid = live.pid
+    // The GROUND TRUTH start time, read HERE and not from the module under test — a test that
+    // reads the implementation's own helper proves nothing about it.
+    let liveTicks = Number.NaN
+    try {
+      const stat = readFileSync(`/proc/${livePid}/stat`, "utf8")
+      const fields = stat.slice(stat.lastIndexOf(")") + 2).trim().split(/\s+/)
+      liveTicks = Number(fields[19])
+    } catch { /* no /proc — the scenario cannot run here */ }
+    const pidE = getProjectId(fixture + "-e")
+    const plantedE = indexLockPath(pidE)
+    mkdirSync(path.dirname(plantedE), { recursive: true })
+
+    if (!Number.isFinite(liveTicks)) {
+      check("9: the live child's start time is readable (scenario precondition)", false, "could not read /proc start time — the scenario cannot run")
+    } else {
+      // CONTROL: the live pid with its REAL start time. The holder is genuinely alive, so the
+      // acquire MUST be refused — reclaiming here would let two index runs interleave, which is
+      // the whole thing the lock exists to prevent.
+      writeFileSync(plantedE, JSON.stringify({ schemaVersion: 2, pid: livePid, host: hostname(), token: "control-token", startedAt: Date.now(), startTicks: liveTicks, kind: "index" }))
+      let refused = false
+      let refusal = ""
+      try {
+        const h = await acquireIndexLock(pidE, { kind: "control" })
+        await h.release()
+      } catch (e: any) {
+        refusal = String(e?.message ?? e)
+        refused = String(e?.name ?? "") === "IndexLockHeldError" || refusal.includes("already active")
+      }
+      check("9: a LIVE holder whose start time matches is REFUSED", refused, refused ? `refused: ${refusal.slice(0, 120)}` : "the lock was RECLAIMED while its holder was alive — two index runs could interleave")
+
+      // THE FIX: the SAME live pid, but the recorded start time belongs to a different process.
+      writeFileSync(plantedE, JSON.stringify({ schemaVersion: 2, pid: livePid, host: hostname(), token: "recycled-token", startedAt: Date.now(), startTicks: liveTicks + 1, kind: "index" }))
+      let reclaimed = false
+      try {
+        const h = await acquireIndexLock(pidE, { kind: "recycled-probe" })
+        reclaimed = h.pid === process.pid
+        await h.release()
+      } catch { reclaimed = false }
+      check("9: a RECYCLED pid is RECLAIMED (the holder is not that process)", reclaimed, reclaimed ? "the stale lock was reclaimed" : "the lock was refused even though its holder is not the recorded process")
+      check("9: the reclaimed lockfile is removed on release", !existsSync(plantedE))
+    }
+    try { live.kill("SIGKILL") } catch { /* already gone */ }
   }
 
   rmSync(fixture, { recursive: true, force: true })
