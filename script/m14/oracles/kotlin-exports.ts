@@ -209,7 +209,7 @@ export interface KotlinExportsTruthRow {
    *  compilation unit is the file. Same spelling and the same argument as zig's
    *  Z33 ruling, kept as a literal so the two lanes can be told apart at a
    *  glance rather than merged by a consumer. */
-  from: "(file)"
+  from: string
   target: string
   line: number
   visibility: string

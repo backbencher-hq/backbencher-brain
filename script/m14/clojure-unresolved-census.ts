@@ -163,10 +163,10 @@ for (const row of rows) {
 }
 
 // ── report ─────────────────────────────────────────────────────────────────────────────────────
-const report: any = { dump: dumpPath, population: { rows: rows.length, files: files.size, unjoinedFiles: unfetched }, labels: {}, extPricing }
+const report: any = { dump: dumpPath, population: { rows: rows.length, files: files.length, unjoinedFiles: unfetched }, labels: {}, extPricing }
 let total = 0
 console.log(`CLOJURE UNRESOLVED CENSUS — ${path.basename(dumpPath)}`)
-console.log(`population: ${rows.length} dumped non-resolved rows over ${files.size} source file(s); re-parsed with the gate's own entry; unfetched: ${unfetched}`)
+console.log(`population: ${rows.length} dumped non-resolved rows over ${files.length} source file(s); re-parsed with the gate's own entry; unfetched: ${unfetched}`)
 for (const [label, l] of [...labels.entries()].sort((a, b) => b[1].rows - a[1].rows)) {
   total += l.rows
   console.log(`\n== ${label}: ${l.rows} rows ==`)

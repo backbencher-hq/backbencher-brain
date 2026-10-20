@@ -269,7 +269,7 @@ const projectIndex: ProjectIndex | undefined = WITH_PROJECT_INDEX
   ? {
       typeKinds,
       typeMembers: members,
-      typeBases: new Map([...bases.entries()].map(([k, v]) => [k, [...v]])),
+      typeBases: new Map<string, string[]>([...bases.entries()].map(([k, v]) => [k, [...v]] as [string, string[]])),
       symbolNames: declaredSymbolNames(),
       damagedFiles,
       stats: { files: files.length, damaged: grammarErrorFiles },

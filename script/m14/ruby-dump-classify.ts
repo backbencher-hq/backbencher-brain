@@ -110,7 +110,7 @@ function family(label: string, target: string): string {
 
 // ── read the dump + TABLE 1 in one streaming pass ───────────────────────────────────────────────
 const table1 = new Map<string, Table1>()
-const tally = new Map<string, Map<string, number>>() // `type\0family` -> count
+const tally = new Map<string, number>() // `type\0family` -> count
 const famSplits = new Map<string, { unresolved: number; ambiguous: number }>()
 const examples = new Map<string, string[]>()
 const outcomeTotals = new Map<string, Map<string, number>>() // type -> outcome -> count
