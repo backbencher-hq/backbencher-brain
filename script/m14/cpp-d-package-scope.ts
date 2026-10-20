@@ -178,7 +178,7 @@ if (STDLIB_ROOTS.size < 10) {
 }
 
 // ── the DUMP: the W1 rows and the gate's own `imports` rows ───────────────────────────────────────
-type Row = { target: string; src: string; line: number; outcome: string }
+type Row = { target: string; src: string; line: number; outcome: string; label?: string }
 type FileImports = { angle: Set<string>; quoted: Set<string> }
 const w1: Row[] = []
 const qualifiedRows: Row[] = []
@@ -210,15 +210,18 @@ let importRows = 0
     }
     if (p[2] !== "unresolved" && p[2] !== "ambDeclOnly" && p[2] !== "ambBoth") continue
     residualRows++
-    if (p[1] !== "calls") continue
-    callsResidual++
     const t = p[3].trim()
-    // THE QUALIFIED rows of the wall (the W4 class) — the spelling names a namespace, and a namespace is
-    // a SPELLING of a package. They are where the package-scope claim can fire, so they are measured too.
+    // THE QUALIFIED rows of the wall (the W4 class) — the spelling names a namespace, and a namespace is a
+    // SPELLING of a package. They are where the package-scope claim can fire, so they are measured too.
+    // MEASURED: they are NOT `calls` rows. A `calls` row's TARGET is the callee LEAF — never the qualified
+    // path (the qualification rides `metadata.qualified`, which the gate's dump does not print) — so the
+    // dump's qualified rows are `references` and `uses`.
     if (t.includes("::")) {
-      qualifiedRows.push({ target: t, src, line: Number(m[2]), outcome: p[2] })
+      qualifiedRows.push({ target: t, src, line: Number(m[2]), outcome: p[2], label: p[1] })
       continue
     }
+    if (p[1] !== "calls") continue
+    callsResidual++
     if (!isW1(t)) continue
     w1.push({ target: t, src, line: Number(m[2]), outcome: p[2] })
   }
@@ -747,9 +750,10 @@ for (const r of dRows) {
 // Bucket D is bare by construction, so the sound claim's reach over it is measured ABOVE — and the
 // QUALIFIED rows (the W4 wall) are where the claim can actually fire. They are measured here, from the
 // SAME dump, so the Lead sees the claim's real reach and not only the class it cannot reach.
-const qualifiedReach = { rows: 0, soundReach: 0, byEcosystem: new Map<string, number>() }
+const qualifiedReach = { rows: 0, soundReach: 0, byEcosystem: new Map<string, number>(), byLabel: new Map<string, number>() }
 for (const line of qualifiedRows) {
   qualifiedReach.rows++
+  qualifiedReach.byLabel.set(line.label ?? "?", (qualifiedReach.byLabel.get(line.label ?? "?") ?? 0) + 1)
   const repo = repoOf(line.src)
   const repoDir = path.join(CR, repo)
   const ecoKind = nearestManifestKind(path.dirname(line.src), repoDir)
@@ -823,7 +827,8 @@ const report = {
     rows: qualifiedReach.rows,
     soundReach: qualifiedReach.soundReach,
     byEcosystem: Object.fromEntries([...qualifiedReach.byEcosystem.entries()].sort((a, b) => b[1] - a[1])),
-    note: "the QUALIFIED rows of the wall (the W4 class) — where the package-scope claim can fire, because the spelling names the package's namespace. Bucket D is BARE, so this is the claim's REAL C++ reach.",
+    byLabel: Object.fromEntries([...qualifiedReach.byLabel.entries()].sort((a, b) => b[1] - a[1])),
+    note: "the QUALIFIED rows of the wall (the W4 class) — where the package-scope claim can fire, because the spelling names the package's namespace. Bucket D is BARE, so this is the claim's REAL C++ reach. MEASURED: the dump's qualified rows are `references` and `uses` — NOT `calls`, because a calls row's TARGET is the callee LEAF and the qualification rides `metadata.qualified`, which the dump does not print. So the claim's reach over the CALLS rows is NOT measurable from the dump: it is measurable only by an arm with the emission ON and a CMake-aware context (the Lead's wiring).",
   },
   perEcosystem: [...ecoReports.values()].sort((a, b) => b.rows - a.rows),
   perRepo: [...reports.values()].sort((a, b) => b.dRows - a.dRows),
