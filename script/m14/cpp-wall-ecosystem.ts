@@ -258,6 +258,8 @@ const VERDICTS: Verdict[] = ["CLAIM-SOUND-REACH", "UNIT-ATTRIBUTION-UNIQUE", "UN
 const byVerdict: Record<string, number> = {}
 const byEcosystem = new Map<string, { rows: number; verdicts: Record<string, number>; repos: Set<string> }>()
 const includeCache = new Map<string, Set<string>>()
+/** THE ROWS A NEGATIVE CLAIM WOULD BE REFUTED ON — the name IS a declared package of the manifest. */
+let refutedByManifest = 0
 const rootsOf = (abs: string): Set<string> => {
   const cached = includeCache.get(abs)
   if (cached) return cached
@@ -274,6 +276,28 @@ const rootsOf = (abs: string): Set<string> => {
   includeCache.set(abs, roots)
   return roots
 }
+/**
+ * THE NEGATIVE PROJECT-FACT CLAIM'S REFUTATION SURFACE.
+ *
+ * The negative claim says "this checkout does NOT carry that name" — and its SECOND half is the
+ * manifest's name set: a name that IS one of the governing manifest's declared packages is a name the
+ * project DOES declare, and a negative claim on it is REFUTED (a clause-4 red against the lane).
+ *
+ * So the surface is measurable without the project index: for every W1 row, is the row's TARGET one of
+ * the governing manifest's declared package names? This is the count the claim kind's owner needs, and it
+ * is the number the fleet's first refuted-claim incident (powershell, 2) is about, at the C++ lane's
+ * scale.
+ */
+const nameInManifest = new Map<string, number>()
+const manifestNameSets = new Map<string, Set<string>>()
+const namesOfManifest = (absDir: string, repoDir: string): Set<string> => {
+  const cached = manifestNameSets.get(absDir)
+  if (cached) return cached
+  const facts = factsFor(absDir, repoDir)
+  const set = new Set<string>((facts?.findPackage ?? []).map((n) => n.toLowerCase()))
+  manifestNameSets.set(absDir, set)
+  return set
+}
 for (const r of w1) {
   const repo = repoOf(r.src)
   const repoDir = path.join(CR, repo)
@@ -285,6 +309,14 @@ for (const r of w1) {
   const bump = (v: Verdict): void => {
     byVerdict[v] = (byVerdict[v] ?? 0) + 1
     rep.verdicts[v] = (rep.verdicts[v] ?? 0) + 1
+  }
+  if (kind === "CMakeLists.txt") {
+    // THE REFUTATION SURFACE: is the row's TARGET one of the manifest's declared package names?
+    const declared = namesOfManifest(path.dirname(r.src), repoDir)
+    if (declared.has(r.target.toLowerCase())) {
+      nameInManifest.set(r.target, (nameInManifest.get(r.target) ?? 0) + 1)
+      refutedByManifest++
+    }
   }
   if (kind !== null && kind !== "CMakeLists.txt") { bump("FOREIGN-MANIFEST"); byEcosystem.set(eco, rep); continue }
   const facts = factsFor(path.dirname(r.src), repoDir)
@@ -317,6 +349,12 @@ const report = {
   population: { residualRowsInDump: residualRows, callsResidualRows: callsResidual, w1Rows: w1.length, repos: new Set(w1.map((r) => repoOf(r.src))).size },
   rule: "the W1 class re-derived from the ANALYZER's own exported sets; the ECOSYSTEM is the kind of the FIRST manifest above the file; the claim's unit attribution matches the unit's external include roots against the governing manifest's declared packages.",
   verdicts: byVerdict,
+  negativeClaimSurface: {
+    refutedByManifestRows: refutedByManifest,
+    distinctNames: nameInManifest.size,
+    names: Object.fromEntries([...nameInManifest.entries()].sort((a, b) => b[1] - a[1])),
+    note: "THE NEGATIVE PROJECT-FACT CLAIM'S REFUTATION SURFACE: a W1 row whose TARGET is one of the governing manifest's declared package names — the project DOES declare that name, so a negative claim on it would be REFUTED. Measured over the WHOLE W1 class, so it is the number the claim kind's owner needs, and it is the C++ lane's answer to the fleet's first refuted-claim incident.",
+  },
   perEcosystem: Object.fromEntries([...byEcosystem.entries()].sort((a, b) => b[1].rows - a[1].rows).map(([k, v]) => [k, { rows: v.rows, repos: [...v.repos].sort(), verdicts: v.verdicts }])),
   note: "the WALL (the W1 class) per ecosystem, priced against the package-scope claim. NO INDEX IS NEEDED for this table: the W1 class is a spelling rule, the ecosystem is the nearest manifest's kind, and the unit attribution is the manifest and the source. The A/C/D REFINEMENT (which needs the index) is script/m14/cpp-d-package-scope.ts's table.",
 }
