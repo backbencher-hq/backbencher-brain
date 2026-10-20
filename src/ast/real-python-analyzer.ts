@@ -365,6 +365,29 @@ interface PythonContext {
    */
   moduleImportBindings: Map<string, string>
   /**
+   * THE SHAPE OF EACH IMPORT BINDING — `item` (`from a import b` binds `b`), `alias`
+   * (`from a import b as c` binds `c`) or `namespace` (`import a` / `import a.b` binds a module
+   * root, not an item).
+   *
+   * WHY IT IS NEEDED (the `importedName` claim's evidence shape, measured). The arbiter verifies
+   * the `importedName` claim against the GATE's own import-evidence map, and that map is built from
+   * the analyzer's IMPORT EDGES: the key is the edge's `metadata.module` and the value is the set
+   * of IMPORTED ITEM names (`metadata.importedBindings`, plus the edge target's item half). So the
+   * evidence exists for an `item` binding and does NOT exist for the other two shapes:
+   *
+   *   · `alias` — the gate's map holds the ITEM (`from a import b as c` -> `a` -> {`b`}), while the
+   *     edge this claim rides names the ALIAS (`c`). The arbiter requires `target === claim.name`,
+   *     so the claim would ask the map for `c` and be REFUTED. Withheld here; the gate-side
+   *     counterpart (recording `metadata.importedAs` in the evidence map) is a proposal, not an edit.
+   *   · `namespace` — `import a.b` publishes the edge target `a.b:*`, whose item half is `*`, and
+   *     the gate's map builder skips a `*` item, so the map has no entry for `a.b` at all. A claim
+   *     on it would be REFUTED. Withheld here, and the shape is reported as a named residual.
+   *
+   * The map is parallel to `moduleImportBindings` and follows the SAME first-wins rule: a name bound
+   * twice keeps the FIRST binding's shape, because that is the binding a reader reaches first.
+   */
+  moduleImportBindingShape: Map<string, "item" | "alias" | "namespace">
+  /**
    * THE COMPLETE PROJECT INDEX'S ANSWER for one imported module: `project-local` (the repo ships
    * the module — resolve, never claim external), `third-party` (the complete index's `modules`
    * says the project does not ship it — claim territory) or `unknown` (a same-named file exists
@@ -1056,6 +1079,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       declaredTypes: new Set(),
       importRoots: new Set(),
       moduleImportBindings: new Map(),
+      moduleImportBindingShape: new Map(),
       functionScopes: [],
       seenRels: new Set(),
       instanceAttrs: new Set(),
@@ -1117,12 +1141,17 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // THE IMPORT-EVIDENCE BINDINGS, before the walk: `certifyImportEvidenceClaims` needs every
     // module-level import this file makes, including the ones written BELOW the name's first use.
-    ctx.moduleImportBindings = this.collectModuleImportBindings(rootNode)
+    const IMPORT_BINDINGS = this.collectModuleImportBindings(rootNode)
+    ctx.moduleImportBindings = IMPORT_BINDINGS.bindings
+    ctx.moduleImportBindingShape = IMPORT_BINDINGS.shapes
     // A NAME THIS FILE REBINDS AT MODULE SCOPE IS NOT THE IMPORT'S ANY MORE. `import os` then
     // `os = build_client()` leaves the import statement in the file and the name bound to a VALUE —
     // the exact shape a rule keyed on the import list would certify. `collectGlobalWriteNames`
     // already covers `global os; os = …` inside a function.
-    for (const nm of this.collectModuleRebindings(rootNode)) ctx.moduleImportBindings.delete(nm)
+    for (const nm of this.collectModuleRebindings(rootNode)) {
+      ctx.moduleImportBindings.delete(nm)
+      ctx.moduleImportBindingShape.delete(nm)
+    }
 
     // PY-D14 (round 7): the local binding set of every function, computed before the walk for the
     // same reason the two pre-passes above are — a bare-name callee's scope is a fact about the
@@ -1418,19 +1447,16 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.certifyImportEvidenceClaims(ctx)
     this.certifyNamespaceCitations(ctx)
     this.certifyOwnerMemberAbsentClaims(rootNode, ctx, context)
-    // HELD (2026-10-19): `certifyImportedNameClaims` is implemented but NOT CALLED. The cap-50 arm
-    // with the claim live read bindOK 266 / bindFAIL 2 and erodes extOK by 125 (rows whose imported
-    // name the file also imports were already verified through another claim kind, and the
-    // importedName claim re-routes them to binding claims) — the Lead's rule is narrow-first, so
-    // the emission is held until the precedence question is ruled. The whole-population count is
-    // measured and reported: 31,498 claimable rows, of which 6,276 were resolved before (cross-file
-    // decoys the analyzer cannot see without the project index).
-    // PARKED (D7, charter §18.30): the full-population arm showed the claim cannot be gated by
-    // marker evidence alone — it converts 7,540 intended ext? rows but also displaces 16,025
-    // externalVerified rows (the arbiter cannot re-verify the marker chain) and produced 361
-    // refutations. Ruled INSTRUMENT GAP by the Lead: emission stays implemented but OFF until an
-    // evidence gate proves verified-vs-unverified without duplicating the arbiter's verification.
-    // this.certifyImportedNameClaims(ctx)
+    // THE `importedName` CLAIM — REBUILT AND LIVE (2026-10-20, the lane's D7 depth round). It was
+    // HELD here from 2026-10-19 ("the cap-50 arm with the claim live read bindOK 266 / bindFAIL 2
+    // and erodes extOK by 125") and PARKED as an INSTRUMENT GAP by the Lead's ruling §18.30
+    // ("extOK −16,025, ext? −7,540, bindOK +23,204, bindFAIL 361" on a full-population arm). The
+    // rebuild replaces the lane-maintained vocabulary gate with the PROJECT's OWN answer, so the
+    // claim lands exactly on the class the arbiter's project-absolute refiner leaves UNVERIFIABLE
+    // and nowhere else — the erosion is removed by construction, not by narrowing after the fact.
+    // FAIL-CLOSED: without a COMPLETE project index the method returns immediately, so every
+    // sampled / index-less / incremental run is byte-identical to the behaviour before it existed.
+    this.certifyImportedNameClaims(ctx, context)
 
     const detectedFrameworks: string[] = PY_FRAMEWORK_ORDER.filter((f) => ctx.frameworks[f])
     const detectedPatterns: string[] = []
@@ -4674,12 +4700,20 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * file order, which is the one a reader reaches first and the one the later import replaces;
    * the ambiguity is why the claim is only ever a statement about where the LAST binding came
    * from. This is deliberately conservative: under-claiming cannot make a false statement.
+   *
+   * THE SHAPE COMES OUT OF THE SAME WALK, because the shape is a property of the binding and a
+   * second walk would be a second chance to disagree with the first: `item` (`from a import b`),
+   * `alias` (`from a import b as c`) or `namespace` (`import a` / `import a.b`). The `importedName`
+   * claim can only be verified for the `item` shape — the gate's evidence map holds IMPORTED ITEM
+   * names, so an alias or a namespace binding has no evidence to be found in. See
+   * `PythonContext.moduleImportBindingShape`.
    */
-  private collectModuleImportBindings(rootNode: Node): Map<string, string> {
+  private collectModuleImportBindings(rootNode: Node): { bindings: Map<string, string>; shapes: Map<string, "item" | "alias" | "namespace"> } {
     const out = new Map<string, string>()
-    const put = (bound: string, module: string): void => {
+    const shapes = new Map<string, "item" | "alias" | "namespace">()
+    const put = (bound: string, module: string, shape: "item" | "alias" | "namespace"): void => {
       if (bound.length === 0 || module.length === 0) return
-      if (!out.has(bound)) out.set(bound, module)
+      if (!out.has(bound)) { out.set(bound, module); shapes.set(bound, shape) }
     }
     const stack: Node[] = [rootNode]
     while (stack.length > 0) {
@@ -4694,13 +4728,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!c) continue
           if (c.type === "dotted_name") {
             const first = c.namedChild(0)
-            if (first?.type === "identifier") put(first.text, c.text)
+            if (first?.type === "identifier") put(first.text, c.text, "namespace")
           } else if (c.type === "aliased_import") {
             const nm = c.childForFieldName("name") ?? c.namedChild(0)
             const alias = c.childForFieldName("alias") ?? c.namedChild(c.namedChildCount - 1)
             const module = nm?.text ?? ""
             const bound = alias?.type === "identifier" ? alias.text : module.split(".")[0] ?? ""
-            if (module.length > 0 && bound.length > 0) put(bound, module)
+            if (module.length > 0 && bound.length > 0) put(bound, module, "alias")
           }
         }
         continue
@@ -4731,13 +4765,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!c) continue
           if (moduleId !== undefined && c.id === moduleId) continue
           if (c.type === "identifier" || c.type === "dotted_name") {
-            put(c.text, module)
+            put(c.text, module, "item")
           } else if (c.type === "aliased_import") {
             const nm = c.childForFieldName("name") ?? c.namedChild(0)
             const alias = c.childForFieldName("alias") ?? c.namedChild(c.namedChildCount - 1)
             const item = nm?.text ?? ""
             const bound = alias?.type === "identifier" ? alias.text : item
-            if (item.length > 0) put(bound, module)
+            if (item.length > 0) put(bound, module, "alias")
           }
           // `wildcard_import` binds no single name: nothing to record.
         }
@@ -4748,7 +4782,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (c) stack.push(c)
       }
     }
-    return out
+    return { bindings: out, shapes }
   }
 
   /**
@@ -6530,7 +6564,51 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * code in their checkout (kotlinx precedent) and project-rooted imports are local, so neither is
    * cited; those stay NAMED in the D7 ledger until a project-module test exists.
    */
-  private certifyImportedNameClaims(ctx: PythonContext): void {
+  private certifyImportedNameClaims(ctx: PythonContext, context?: ASTEngine.AnalyzeContext): void {
+    // ── THE CLAIM IS A PROJECT-SCOPE CLASS, SO IT NEEDS A PROJECT-SCOPE GATE (2026-10-20) ──────────
+    //
+    // WHY THE REBUILD. The claim was implemented, narrowed twice and PARKED as an INSTRUMENT GAP
+    // (D7 W3, Lead ruling §18.30): on a full-population arm the claim's mechanics were right
+    // (resolved / amb / unresolved all unchanged) but it moved **extOK −16,025** and **bindOK
+    // +23,204** with **bindFAIL 361**. The reading was "the emission gate cannot distinguish rows
+    // whose external marker would VERIFY (extOK) from rows whose marker is unverifiable (ext?)",
+    // and "narrowing to rows with NO external marker would target an empty class (all 7,540
+    // intended rows carry markers)".
+    //
+    // THE MISSING NARROWING, FOUND BY READING THE ARBITER'S OWN PROJECT-ABSOLUTE REFINER
+    // (`incoming-rule.ts`, the `claim.kind === "owner"` branch): a bare imported name reaches
+    // `ext?` for ONE reason — the generic external marker verifies it against the SYMBOL key space
+    // ("the project declares no symbol named X") and the refiner then DEMOTES it because the
+    // claim's SPECIFIER names a module the PROJECT ITSELF SHIPS ("the project might ship this
+    // module, so the claim cannot be checked here"). The demotion test is
+    // `projectModuleNames(facts).has(root)` — a PROJECT-scope fact, and the reason a per-file
+    // analyzer could not narrow the claim: the old gate used a LANE-MAINTAINED VOCABULARY
+    // (`PY_STDLIB_CITATION_ROOTS`) instead, which has nothing to do with the class the claim exists
+    // for and therefore selected rows on both sides of the ext?/extOK boundary.
+    //
+    // THE GATE, THEN, IS THE PROJECT'S OWN MODULE-NAME SET — the same set the refiner reads, and
+    // the same set the COMPLETE project index carries (`index.modules` is the lane's admitted file
+    // list, which is what the gate's `facts.files` is). So the claim is emitted EXACTLY where the
+    // arbiter's generic marker cannot verify the row, and NOWHERE ELSE:
+    //   · on an ext? row it converts the class the claim exists for;
+    //   · on an extOK row it is not emitted at all, so there is NO extOK erosion;
+    //   · on a row the project declares elsewhere it is not emitted, so the name model keeps it.
+    //
+    // FAIL-CLOSED, TWICE OVER. No COMPLETE index => no project key space => no claim, and every
+    // sampled / index-less / incremental run is byte-identical to the behaviour before this method
+    // existed. That is also why the claim is an INDEXED-ARM instrument: production's project index
+    // covers python (`PROJECT_INDEX_EXTENSIONS`), so the claim fires where production runs.
+    const index = context?.projectIndex
+    if (!index || index.complete !== true) return
+    if (!index.modules || index.modules.size === 0) return
+    // THE PROJECT'S OWN ANSWER for the specifier, and it is the SAME ANSWER THE ARBITER'S
+    // REFINER GIVES: `projectModuleLocalityOf` reads the index's module stems and directory
+    // basenames, and its `unknown` verdict is exactly "the project shows a trace of this root",
+    // which is the arbiter's `projectModuleNames(facts).has(root)` demotion. So the `unknown`
+    // verdict IS the ext? class — the class the claim exists for — and the `third-party` verdict
+    // is the extOK class the claim must NOT touch.
+    const verdict = ctx.projectModuleVerdict
+    if (!verdict) return
     // NO EXISTING CLAIM MARKER MAY BE PRESENT (Lead precedence ruling): a claim must not shrink
     // existing accounting. A row that already carries isExternal*/moduleNamespace/namespace/
     // projectIndex*/cause*/owner/localBinding/... is ALREADY routed by that marker; attaching
@@ -6544,7 +6622,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     const CLAIM_MARKERS = [
       "isStdlib", "owner", "localBinding", "importedBinding", "importedName", "languageNamespace",
       "projectIndexResolution", "projectLocalModule", "isImportFile", "importOutsideProject",
-      "remoteRef", "sourcePath", "cause",
+      "remoteRef", "sourcePath", "cause", "packageScope",
     ]
     const mdKeys = (md: any): string[] => Object.keys(md ?? {})
     for (const r of ctx.relationships) {
@@ -6562,23 +6640,45 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // "resolved must not fall" guard names). Cross-file declarations are not visible without the
       // project index, and that residual is MEASURED and reported rather than hidden.
       if (ctx.declaredTypes.has(target)) continue
+      // THE ARBITER READS THIS CLAIM ONLY WHERE THE NAME MODEL HAS NOTHING (`decls === 0`), so a
+      // name the PROJECT declares elsewhere keeps its name-model answer. The index's `symbolNames`
+      // is the project's declaration set, and it is a SUBSET of the arbiter's key space, so this
+      // test withholds at least as much as the arbiter would ignore — the claim never displaces a
+      // name-model answer, and a row it is emitted on but the arbiter ignores reads exactly as it
+      // read before.
+      if (index.symbolNames?.has(target) === true) continue
       const specifier = ctx.moduleImportBindings.get(target)
       if (specifier === undefined || specifier.length === 0) continue
       if (specifier.startsWith(".")) continue
-      // FROM-IMPORT ITEMS ONLY. `import json` binds the MODULE `json` (its import row carries item
-      // `*`), and the arbiter's evidence map does not record `json` as an imported NAME — the 2
-      // cap-50 bindFAIL rows were exactly this shape (`claim {specifier: m, name: m}` refuted). A
-      // from-import item always differs from its module's basename (`from os import path`), so the
-      // shape test is the same evidence test.
-      if (target === specifier || target === (specifier.split(".").pop() ?? "")) continue
+      // THE EVIDENCE SHAPE, AND IT IS THE REFUTATION CLASS. The arbiter verifies this claim against
+      // the GATE's import-evidence map, which is built from the run's IMPORT EDGES: the key is the
+      // edge's `metadata.module` and the value is the set of IMPORTED ITEM names. Only an `item`
+      // binding (`from a import b`) is in that map: an ALIAS (`from a import b as c`) leaves the map
+      // holding `b` while the edge this claim rides names `c`, and a NAMESPACE import (`import a.b`)
+      // publishes the target `a.b:*`, whose `*` item the map builder skips — so a claim on either
+      // shape would be REFUTED, which is the bindFAIL class the parked arm measured.
+      if (ctx.moduleImportBindingShape.get(target) !== "item") continue
+      // THE GATE'S EVIDENCE KEY IS THE MODULE, and the certifier published it on the row: the
+      // import edge's `metadata.module` and the claim's specifier are the same string, which is
+      // what makes the map lookup land.
+      const published = typeof md.externalSpecifier === "string" ? md.externalSpecifier : ""
+      if (published.length === 0 || published !== specifier) continue
       // THE ARBITER'S MAP IS KEYED BY THE CERTIFIER'S OWN EVIDENCE: only rows the analyzer certified
       // as an imported NAME are guaranteed to have a matching `module:item` item in the run's import
       // map. Anything else (aliased/relative/conditional imports, `import m` attribute uses, dotted
-      // module spellings the gate normalises) is WITHHELD — the 1,524 bindFAIL class.
+      // module spellings the gate normalises) is WITHHELD — the 1,524 bindFAIL class. Requiring
+      // the marker also INHERITS every guard the import-evidence certifier already applied: the
+      // name is not declared in this file, is not a local at the edge's own line, and the module is
+      // not project-local.
       if (md.externalReason !== "imported-name") continue
-
-      const root = specifier.split(".")[0] ?? ""
-      if (!PY_STDLIB_CITATION_ROOTS.has(root)) continue
+      // ── THE CLASS THE CLAIM EXISTS FOR ──────────────────────────────────────────────────────────
+      // The specifier must be the `unknown` verdict — "the project shows a trace of this root" —
+      // which is the arbiter's own project-absolute demotion, so the claim lands exactly on the
+      // rows the generic external marker CANNOT verify (ext?). A `third-party` specifier is
+      // VERIFIED by the generic marker (extOK), and claiming it there is the erosion this rebuild
+      // exists to remove. A `project-local` specifier never reaches here: the import-evidence
+      // certifier suppresses the external marker for it, so the row carries no marker to claim.
+      if (verdict(specifier) !== "unknown") continue
       md.importedName = { specifier, name: target }
     }
   }

@@ -38,7 +38,6 @@
 import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
-import { readFileSync } from "node:fs"
 import { ASTEngine } from "../../src/ast/engine"
 import { RealPythonAnalyzer } from "../../src/ast/real-python-analyzer"
 
