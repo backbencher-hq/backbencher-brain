@@ -155,6 +155,141 @@ function stripIncludeChars(text: string): string {
   return out
 }
 
+/**
+ * THE PACKAGE-SCOPE CLAIM — the C++ lane's half of the fleet's biggest lever.
+ *
+ * WHAT IT STATES: `packageScope = {package, name}` — "this target is a member of the DEPENDENCY named
+ * `package`, and this project declares that dependency". The evidence is the PROJECT'S OWN MANIFEST, so a
+ * name from a package the project does not depend on cannot be claimed, and the checkout can refute it.
+ *
+ * WHY C++ NEEDS ITS OWN MEMBERSHIP TEST (the lane's ruling — CPP-PACKAGE-SCOPE-RULING.md §1). Dart's
+ * import says `package:json_annotation/…`, so the package is IN the spelling. **A C++ translation unit
+ * says which library a name comes from by the HEADER it includes**, and a header names a PATH, not a
+ * package. So the C++ analogue of dart's `package:` URI is the `#include` directive, and the test is:
+ *
+ *   the translation unit includes an EXTERNAL (angle-bracketed) header whose first path segment is the
+ *   package's include root, and the governing manifest declares that package.
+ *
+ * TWO MATCH LEVELS, because the relation between a package's name and its include root is a CONVENTION
+ * and the convention does not always hold: STRICT is an equality (case-insensitively, `_`/`-` variants);
+ * LOOSE is a word-boundary PREFIX (`nlohmann` for `nlohmann_json`). The package name the claim carries is
+ * **the manifest's own spelling**, never the include root — so the arbiter's exact-match verification
+ * works by construction and a claim can never be refuted by its own spelling.
+ *
+ * **THE ATTRIBUTION MUST BE UNAMBIGUOUS, AND THAT IS THE WHOLE RULE.** The include test is a UNIT-level
+ * fact: the translation unit includes a header under a package's include root. It does NOT say which
+ * header a given NAME came from — the headers of a dependency that is not in the checkout cannot be read.
+ * So a unit that includes TWO declared packages' headers attributes its bare names to NEITHER, and the
+ * claim is withheld: **the claim fires IFF EXACTLY ONE declared package matches the unit's external
+ * include roots.** (The lane's own verifier caught the looser version: a unit that included both
+ * `acme/widget.h` and `nlohmann/json.hpp` claimed EVERY bare call as `acme`'s member, which is false for
+ * the names that came from the other header. `validation/m14/fixtures/cpp/package-scope/` and
+ * `script/m14/cpp-package-scope-verify.ts` pin both directions of the rule.)
+ *
+ * THE PACKAGE LIST COMES FROM THE CONTEXT (`context.cppPackageScopePackages`), NOT FROM A FILE READ HERE.
+ * The manifest is read ONCE, by the gate that has to read it anyway to verify the claim; the analyzer's
+ * job is the MEMBERSHIP decision alone. A context with no package list produces no claim — the absence is
+ * the report, and the emission is INERT until the gate is wired.
+ *
+ * FLAG-GATED (`BB_CPP_PACKAGE_SCOPE=1`), METADATA-ONLY, and byte-identical when off — the same contract
+ * the citation emission holds, so the accepted D1–D6 behaviour does not move.
+ */
+/** ONE CHARACTER SWAPPED for another — the ZERO-REGEX way to spell the `_`/`-` package-name variants. */
+function swapChar(text: string, from: string, to: string): string {
+  let out = ""
+  for (let i = 0; i < text.length; i++) out += text[i] === from ? to : text[i]
+  return out
+}
+
+function cppPackageScopeFacts(
+  leaf: string,
+  qualified: string,
+  includeRoots: ReadonlySet<string>,
+  declaredPackages: readonly string[],
+): Record<string, unknown> {
+  if (process.env.BB_CPP_PACKAGE_SCOPE !== "1") return {}
+  if (leaf === "" || qualified === "" || includeRoots.size === 0 || declaredPackages.length === 0) return {}
+  // ── THE SOUND CASE, AND ONLY THE SOUND CASE ──────────────────────────────────────────────────
+  //
+  // A QUALIFIED spelling (`ns::name`) names its own namespace, and the namespace is a SPELLING of the
+  // package. A BARE spelling names nothing, and the include test cannot substitute: the test is a
+  // UNIT-level fact ("this unit includes a header under a package's include root"), and it does not say
+  // WHICH header a given name came from — the headers of a dependency that is not in the checkout cannot
+  // be read. **THE LANE'S OWN VERIFIER PRODUCED THE COUNTEREXAMPLE**: a unit that included
+  // `<acme/widget.h>` and `<vector>` claimed a name that came from `<vector>` as `acme`'s member. So the
+  // BARE spelling is WITHHELD — and with it the whole of bucket D, which is bare by construction.
+  //
+  // The qualified case has TWO INDEPENDENT SPELLINGS of the same package: the namespace in the source
+  // (`acme::make`) and the include root in the checkout (`<acme/widget.h>`). They must AGREE, and exactly
+  // one declared package must match — the attribution must be unambiguous.
+  const cut = qualified.lastIndexOf("::")
+  if (cut <= 0) return {}
+  const ns = qualified.slice(0, cut).trim().toLowerCase()
+  if (ns.length === 0) return {}
+  // The namespace's FIRST segment is the include root it must agree with (`a::b::c` → `a`).
+  const sep = ns.indexOf("::")
+  const root = (sep >= 0 ? ns.slice(0, sep) : ns).trim()
+  if (root.length === 0) return {}
+  // THE CHECKOUT'S SPELLING: the unit must include a header under that root.
+  if (!includeRoots.has(root)) return {}
+  // THE MANIFEST'S SPELLING: exactly one declared package must match that root.
+  const matched: string[] = []
+  for (const raw of declaredPackages) {
+    const pkg = String(raw ?? "").trim()
+    if (pkg.length === 0) continue
+    const lower = pkg.toLowerCase()
+    // STRICT: the root IS the package's name (with the `_`/`-` spellings a package name may take).
+    if (root === lower || root === swapChar(lower, "_", "-") || root === swapChar(lower, "-", "_")) { matched.push(pkg); continue }
+    // LOOSE: the root is a word-boundary PREFIX of the package's name — `nlohmann` for `nlohmann_json`.
+    // The boundary is the same discipline the arbiter uses for a scoped package name: a prefix matches at
+    // a word boundary, never inside a longer word.
+    if (root.length >= 3 && lower.startsWith(root)) {
+      const next = lower.charAt(root.length)
+      if (next === "_" || next === "-" || next === "." || next === "/") matched.push(pkg)
+    }
+  }
+  if (matched.length !== 1) return {}
+  return { packageScope: { package: matched[0], name: leaf } }
+}
+
+/**
+ * THE EXTERNAL INCLUDE ROOTS of a translation unit — the first path segment of every angle-bracketed
+ * `#include`. A QUOTED include names a file in THIS project, so it is not external provenance; a
+ * single-root system header (`<zlib.h>`, `<Python.h>`) names no directory and therefore no package root.
+ *
+ * A PRE-PASS, and it must be one: the analyzer's main traversal emits a `calls` row when it reaches the
+ * call, which can be BEFORE the include that names the library — and an include that comes later in the
+ * file is still an include of the translation unit. So the roots are collected from the whole tree first.
+ *
+ * ZERO-REGEX (the file's D5 contract): every string rule here is a character scan.
+ */
+function cppExternalIncludeRoots(root: Node): Set<string> {
+  const roots = new Set<string>()
+  const stack: Node[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()
+    if (!n) continue
+    if (n.type === "preproc_include") {
+      const pathNode = n.childForFieldName("path")
+      const raw = (pathNode?.text ?? "").trim()
+      if (raw.startsWith("<")) {
+        const p = stripIncludeChars(raw).trim()
+        const slash = p.indexOf("/")
+        if (slash > 0) {
+          const seg = p.slice(0, slash).toLowerCase()
+          if (seg.length > 0) roots.add(seg)
+        }
+      }
+    }
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i)
+      if (c) stack.push(c)
+    }
+  }
+  return roots
+}
+
+
 // Strip a leading access-specifier keyword from a base-class node text
 // (`private Repository` → `Repository`). Pure-String scan — replaces the
 // legacy `/^public\s+|^protected\s+|^private\s+/` regex.
@@ -1636,6 +1771,22 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     // inheritance-closed declaring base on `overrides`. It does not emit or suppress a single row,
     // which is what keeps the population invariant the arms depend on.
     // ═══════════════════════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════════════════════════
+    // THE PACKAGE-SCOPE CLAIM (the C++ lane's ruling — CPP-PACKAGE-SCOPE-RULING.md). Flag-gated
+    // (`BB_CPP_PACKAGE_SCOPE=1`), metadata-only, and INERT unless the caller supplies the governing
+    // manifest's package names in `context.cppPackageScopePackages` — which is the gate's fact, because
+    // the gate is what has to read `CMakeLists.txt` anyway to VERIFY the claim. With no package list the
+    // emission produces NOTHING: the absence is the report, and no claim is ever asserted from a
+    // manifest the analyzer has not been told about.
+    const PACKAGE_SCOPE = process.env.BB_CPP_PACKAGE_SCOPE === "1"
+    const packageScopePackages: string[] = PACKAGE_SCOPE && Array.isArray((context as any)?.cppPackageScopePackages)
+      ? ((context as any).cppPackageScopePackages as unknown[]).map((x) => String(x ?? "").trim()).filter((x) => x.length > 0)
+      : []
+    // The EXTERNAL include roots of this translation unit, collected from the WHOLE tree before the
+    // traversal: an include that comes after a call in the file is still an include of the unit.
+    const packageScopeRoots: Set<string> = PACKAGE_SCOPE && packageScopePackages.length > 0
+      ? cppExternalIncludeRoots(rootNode)
+      : new Set<string>()
     const INDEX_CONSUME = process.env.BB_CPP_INDEX_CONSUME === "1"
     const indexCandidate: any = INDEX_CONSUME ? (context as any)?.projectIndex : undefined
     const indexUsable = !!indexCandidate && indexCandidate.complete === true
@@ -4776,6 +4927,11 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
                 // ISO C++ citation claim (Lead vocabulary `iso-cpp-stdlib`, flag-gated): ONLY a listed
                 // symbol whose own spelling root is std; verified by the arbiter as extOK, never resolved.
                 ...cppCitationFacts(qualifiedName, targetName),
+                // The package-scope claim (flag-gated): the callee is a member of a dependency the
+                // GOVERNING MANIFEST declares, on the evidence of the translation unit's external
+                // include roots. The package name carried is the MANIFEST'S OWN SPELLING, so the
+                // arbiter's exact-match verification holds and the claim cannot refute itself.
+                ...cppPackageScopeFacts(targetName, qualifiedName, packageScopeRoots, packageScopePackages),
               },
             })
             // #383 payload: qualified path WITHOUT argument text (C++ keeps

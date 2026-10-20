@@ -48,6 +48,12 @@ const DUMP = argOf("--dump")
 const SAMPLE = Number(argOf("--sample") ?? "0")
 const ONLY_REPOS = (argOf("--repos") ?? "").split(",").map((s) => s.trim()).filter(Boolean)
 const JSON_OUT = argOf("--json")
+/** `--rows-out=<path>`: the PER-ROW class of every residual call row, as a TSV
+ *  (`file \t line \t target \t class-key`). It exists so the class counts can be JOINED with another
+ *  instrument's rows — the W1 wall's bucket partition, for instance — without re-running the census.
+ *  The class counts alone cannot answer "how many of BUCKET C are receiver-decidable", because a count
+ *  over the whole population cannot be intersected with a subset that was defined elsewhere. */
+const ROWS_OUT = argOf("--rows-out")
 /** `--index`: evaluate the three declaration-bearing evidence classes against the per-repo index's
  *  inheritance-closed member view (the same rule the implementation applies). A MEASUREMENT only —
  *  it does not emit anything; the number decides whether a wider emission pass is worth it. */
@@ -180,6 +186,8 @@ const namespaceRoots: Record<string, number> = {}
 const declaredNamespaces = new Map<string, Set<string>>()
 const namespaceRows: Array<{ root: string; repo: string; leaf: string }> = []
 const note = (k: string) => { classes[k] = (classes[k] ?? 0) + 1 }
+/** The per-row class of every classified row, for the join above. */
+const rowClasses: string[] = []
 
 type Residue = { file: string; line: number; target: string; cls: string; detail: string }
 const samples: Residue[] = []
@@ -423,6 +431,7 @@ for (const abs of files) {
           const indexState = cls === "opaque" || cls === "implicit-this-evidence-no-declaration" ? "not-evaluated" : indexStateOf(repoOf(abs), ownerCandidate, leaf)
           const key = `${cls}|${declares ? "declares" : "does-not-declare"}|${indexState}`
           note(key)
+          rowClasses.push(`${path.relative(CR, abs)}\t${r.line}\t${r.target}\t${key}`)
           if (samples.length < 16 && declares) samples.push({ file: path.relative(CR, abs), line: r.line, target: r.target, cls, detail })
         }
       }
@@ -435,6 +444,7 @@ for (const abs of files) {
   for (const r of fileRows) {
     if (matched.has(r)) continue
     note("unclassified|no-ast-match-at-line")
+    rowClasses.push(`${path.relative(CR, abs)}\t${r.line}\t${r.target}\tunclassified|no-ast-match-at-line`)
     if (samples.length < 16) samples.push({ file: path.relative(CR, abs), line: r.line, target: r.target, cls: "unclassified", detail: "no call_expression at the row's line+target in the parsed tree" })
   }
   tree.delete?.()
@@ -509,5 +519,11 @@ const report = {
 }
 const json = JSON.stringify(report, null, 1) + "\n"
 if (JSON_OUT) { const t = path.resolve(ROOT, JSON_OUT); fs.mkdirSync(path.dirname(t), { recursive: true }); fs.writeFileSync(t, json) }
+if (ROWS_OUT) {
+  const t = path.resolve(ROOT, ROWS_OUT)
+  fs.mkdirSync(path.dirname(t), { recursive: true })
+  fs.writeFileSync(t, rowClasses.join("\n") + "\n")
+  console.log(`rows-out: ${rowClasses.length} row classes written to ${ROWS_OUT}`)
+}
 process.stdout.write(json)
 if (failures.length > 0) process.exit(3)
