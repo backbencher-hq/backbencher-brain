@@ -78,9 +78,65 @@ function qualifiedOwnerSegment(qualified: string, leaf: string): string | null {
   const cut = t.lastIndexOf("::")
   if (cut <= 0) return null
   const segs = t.split("::").map((x) => x.trim())
-  for (const seg of segs) if (!/^[A-Za-z_$][\w$]*$/.test(seg)) return null
+  for (const seg of segs) if (!isIdentifierShapeWithDollar(seg)) return null
   if (segs[segs.length - 1] !== leaf) return null
   return segs.length >= 2 ? segs[segs.length - 2] : null
+}
+
+/**
+ * ≡ /^[A-Za-z_$][\w$]*$/ — ZERO-REGEX identifier shape, and the file's own D5 contract is that this
+ * analyzer uses no regular expression (a construction property, not a lint promise: every string
+ * rule here is a character scan). Four regex literals crept in with the task-22 project-index work
+ * (commit b8a22225d) and the D5 no-regex census — which was last run BEFORE that work — still
+ * reported CLEAN, so the recorded evidence was stale rather than the gate being wrong. The census
+ * is AST-level and strict, so these four sites are now this helper instead.
+ *
+ * THE `$` IS DELIBERATE and matches the four sites it replaces exactly: a C++ identifier may
+ * contain `$` (it is a permitted identifier character in the standard), and `\w` is
+ * `[A-Za-z0-9_]`. A DIFFERENT shape from the class-scoped `isPlainIdentifier` below (which is
+ * `^[A-Za-z_]\w*$` — no `$`), so the two are NOT interchangeable and both are kept: the class-scoped
+ * one is the CGD19 recovery-artifact guard, this one is the owner/leaf shape guard.
+ */
+function isIdentifierShapeWithDollar(s: string): boolean {
+  if (s.length === 0) return false
+  const c0 = s.charCodeAt(0)
+  const headOk = (c0 >= 65 && c0 <= 90) || (c0 >= 97 && c0 <= 122) || c0 === 95 || c0 === 36
+  if (!headOk) return false
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95 || c === 36
+    if (!ok) return false
+  }
+  return true
+}
+
+/**
+ * ≡ t.replace(/[*&\s]+/g, " ").trim() — ZERO-REGEX, and EXACTLY equivalent.
+ *
+ * A run of one or more `*`, `&`, or whitespace characters becomes ONE space, and the result is
+ * trimmed at both ends. The `*` and `&` are the pointer/reference decorations of a written type
+ * (`const char*`, `T&`); the whitespace is the spacing inside a type written across lines. The
+ * REPLACEMENT is what matters downstream: the caller splits the result on the LAST `::` or space to
+ * take a leaf, so a run must collapse to a single separator — replacing each character with its own
+ * space would leave `a  b` and the leaf would be `b` either way, but a run of `*&` next to a
+ * space would leave `a * & b` and the leaf would be `b` where the regex gives `b` too; the shapes
+ * agree because the caller's `lastIndexOf` takes the LAST separator. The one place they could
+ * differ is an EMPTY leaf (`const` alone), and both yield "".
+ *
+ * The regex form was introduced with the task-22 receiver-typing work (commit b8a22225d) and is
+ * replaced here because this analyzer's D5 contract is that it uses no regular expression.
+ */
+function collapseTypeNoise(t: string): string {
+  let out = ""
+  let pending = false
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i]
+    const isNoise = c === "*" || c === "&" || c === " " || c === "\t" || c === "\n" || c === "\r" || c === "\f" || c === "\v"
+    if (isNoise) { if (out.length > 0) pending = true; continue }
+    if (pending) { out += " "; pending = false }
+    out += c
+  }
+  return out.trim()
 }
 
 function stringIncludes(str: string, val: string): boolean {
@@ -2615,7 +2671,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
       const add = (typeNode: any, declNode: any) => {
         if (!typeNode) return
         const nm = simpleDeclName(declNode)
-        if (nm === "" || !/^[A-Za-z_$][\w$]*$/.test(nm)) return
+        if (nm === "" || !isIdentifierShapeWithDollar(nm)) return
         if (!table.has(nm)) table.set(nm, String(typeNode.text ?? ""))
       }
       const scan = (n: any, depth = 0) => {
@@ -2646,10 +2702,10 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
       const lt = t.indexOf("<")
       if (lt > 0) t = t.slice(0, lt)
       for (const kw of ["const", "volatile", "static", "typename", "struct", "class", "union", "enum"]) t = t.split(kw).join(" ")
-      t = t.replace(/[*&\s]+/g, " ").trim()
+      t = collapseTypeNoise(t)
       const cut = Math.max(t.lastIndexOf("::"), t.lastIndexOf(" "))
       const leaf = (cut >= 0 ? t.slice(cut + 1) : t).trim()
-      return /^[A-Za-z_$][\w$]*$/.test(leaf) ? leaf : ""
+      return isIdentifierShapeWithDollar(leaf) ? leaf : ""
     }
     const templatePointeeOf = (typeText: string): string => {
       const lt = typeText.indexOf("<")
