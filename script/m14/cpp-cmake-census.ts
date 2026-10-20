@@ -34,6 +34,7 @@
  * EXIT: 0 census · 2 usage/environment · 3 CONTROL DID NOT FIRE.
  */
 import { execFileSync } from "node:child_process"
+import { cmakeDependencyNames } from "./cpp-cmake-names.ts"
 import { existsSync, readFileSync, statSync } from "node:fs"
 import * as os from "node:os"
 import * as path from "node:path"
@@ -127,6 +128,7 @@ function scanCmake(text: string, command: string): string[][] {
 }
 type ManifestFacts = {
   path: string
+  commentOnlyFindPackage: string[]
   findPackage: string[]
   pkgConfig: string[]
   importedNamespaces: string[]
@@ -144,16 +146,11 @@ function manifestFor(absDir: string, repoDir: string): ManifestFacts | null {
     if (existsSync(candidate)) {
       let text = ""
       try { text = readFileSync(candidate, "utf8") } catch { text = "" }
-      const findPackage = scanCmake(stripCmakeComments(text), "find_package").map((a) => a[0])
-        .filter((s): s is string => typeof s === "string" && s.length > 0 && s.toUpperCase() !== "COMPONENTS")
+      // THE READER, not a second scanner: the census uses the SAME implementation the Lead would wire
+      // (`script/m14/cpp-cmake-names.ts`), so the corpus's package universe IS what the wiring would read.
+      const reader = cmakeDependencyNames(text)
+      const findPackage = reader.names
       const pkgConfig: string[] = []
-      for (const args of scanCmake(stripCmakeComments(text), "pkg_check_modules")) {
-        for (const a of args.slice(1)) {
-          if (a.toUpperCase() === "REQUIRED" || a.toUpperCase() === "QUIET" || a.toUpperCase() === "IMPORTED_TARGET") continue
-          if (a.startsWith("-")) continue
-          pkgConfig.push(a)
-        }
-      }
       const importedNamespaces: string[] = []
       for (const args of scanCmake(stripCmakeComments(text), "target_link_libraries")) {
         for (const a of args.slice(1)) {
@@ -168,14 +165,23 @@ function manifestFor(absDir: string, repoDir: string): ManifestFacts | null {
         for (const args of scanCmake(text, cmd)) {
           const ni = args.findIndex((a) => a.toUpperCase() === "NAMES")
           if (ni < 0) continue
-          for (const a of args.slice(ni + 1)) if (!a.toUpperCase().startsWith("PATH_SUFFIXES")) refusedLibraryNames.push(a)
+          for (const a of args.slice(ni + 1)) if (!a.toUpperCase().startsWith("PATH_SUFFIXES")) { refusedLibraryNames.push(a); refuse("file-stem", a) }
         }
       }
       const projectTargets: string[] = []
-      for (const cmd of ["add_library", "add_executable"]) for (const a of scanCmake(text, cmd)) if (typeof a[0] === "string") projectTargets.push(a[0])
+      for (const cmd of ["add_library", "add_executable"]) for (const a of scanCmake(text, cmd)) if (typeof a[0] === "string") { projectTargets.push(a[0]); refuse("project-target", a[0]) }
+      // THE REFUSED SURFACE — every name-shaped string the reader reads NOTHING from, and why. This is the
+      // false-claim surface the Lead's condition is about, measured on the corpus's own manifests.
+      const commentOnlyFindPackage: string[] = []
+      for (const a of scanCmake(stripCmakeComments(text), "find_package")) {
+        const name = a[0]
+        if (typeof name === "string" && name.length > 0) { commentOnlyFindPackage.push(name); refuse("find_package-arg", name) }
+      }
       const fetched = scanCmake(stripCmakeComments(text), "FetchContent_Declare").map((a) => a[0]).filter((s): s is string => typeof s === "string")
+      for (const f of fetched) refuse("fetched-dependency", f)
       found = {
         path: candidate,
+        commentOnlyFindPackage: [...new Set(commentOnlyFindPackage)],
         findPackage: [...new Set(findPackage)], pkgConfig: [...new Set(pkgConfig)],
         importedNamespaces: [...new Set(importedNamespaces)], refusedLibraryNames: [...new Set(refusedLibraryNames)],
         projectTargets: [...new Set(projectTargets)], fetched: [...new Set(fetched)],
@@ -234,6 +240,15 @@ function nearestGateReadableManifest(absDir: string, repoDir: string): string | 
 }
 
 // ── the census ────────────────────────────────────────────────────────────────────────────────────
+/** THE FALSE-CLAIM SURFACE: the name-shaped strings the READER reads nothing from, counted by shape.
+ *  This is the Lead's condition measured on the corpus's own manifests — what the extended reader would
+ *  NOT turn into a dependency name. */
+const refusedSurface: Record<string, number> = {}
+const refuse = (shape: string, name: string): void => {
+  if (name.length === 0) return
+  const k = `${shape}:${name}`
+  refusedSurface[k] = (refusedSurface[k] ?? 0) + 1
+}
 const ecoRows = new Map<string, number>()
 type RepoRow = {
   repo: string; files: number; cmakeGoverned: number; gateGoverned: number; neither: number; nearestIsCMake: number; gateManifestAbove: number
@@ -300,6 +315,7 @@ const report = {
     anyCMakeAbove: { files: cmakeGoverned, share: pct(cmakeGoverned), note: "a CMakeLists.txt exists above the file (not necessarily the nearest manifest)" },
   },
   perEcosystem: Object.fromEntries([...ecoRows.entries()].sort((a, b) => b[1] - a[1])),
+  refusedSurface,
   packageUniverse: Object.fromEntries([...packageUniverse.entries()].sort((a, b) => b[1].size - a[1].size)),
   perRepo: [...perRepo.values()].sort((a, b) => b.files - a.files),
 }
