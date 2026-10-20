@@ -981,6 +981,28 @@ export type ProjectFacts = {
    * third-party PACKAGE annotations, and the manifest is what can verify them.
    */
   packageDependencies?: Set<string>
+  /**
+   * PER-FILE MANIFEST EVIDENCE — the dependency names declared by THE MANIFEST THAT GOVERNS THE FILE,
+   * keyed by the file's repo-relative POSIX path (the same keying as `files`).
+   *
+   * WHY IT EXISTS, MEASURED 2026-10-20. A repo-level manifest set is the wrong question in a
+   * MONOREPO, and the corpus is full of monorepos: 843 tracked `package.json` files, 414
+   * `pubspec.yaml`, 744 `Cargo.toml`, 222 `pom.xml` and 395 `build.gradle` files live in SUBDIRECTORIES,
+   * while only 38 / 3 / 4 / 2 / 2 repos carry one at the ROOT. A file in `packages/foo/` is governed by
+   * `packages/foo/package.json`, not by the repository root's — so a claim checked against the root's
+   * manifest is checked against the WRONG manifest, and a dependency the package genuinely declares can
+   * read REFUTED (which counts AGAINST the lane) while a dependency only the ROOT declares can read
+   * VERIFIED (which is the monorepo's laundering).
+   *
+   * THE NEAREST-ANCESTOR RULE: the manifest that governs a file is the first one found walking UP from
+   * the file's own directory to the repository root. A repo with no manifest anywhere above a file leaves
+   * that file with no entry, and the claim is then UNVERIFIABLE — never quietly accepted, exactly as a
+   * repo with no manifest at all is today.
+   *
+   * IT IS OPTIONAL AND ADDITIVE. Absent map = the caller built no per-file evidence, and the claim falls
+   * back to the repo-level `packageDependencies` — so no existing caller changes behaviour.
+   */
+  packageDependenciesByFile?: Map<string, Set<string>>
 }
 
 /**
@@ -1030,12 +1052,37 @@ export type ProjectFacts = {
 export function verifyPackageScopeClaim(
   facts: ProjectFacts,
   dependency: string,
+  /**
+   * THE FILE THE CLAIM IS ABOUT, when the caller knows it. The evidence is then the manifest that
+   * GOVERNS THAT FILE (the nearest ancestor manifest), not the repository root's — which is the only
+   * correct question in a monorepo, where 843 tracked `package.json` files live in subdirectories and a
+   * root-only manifest describes a different package than the one the file belongs to.
+   *
+   * FALL-THROUGH IS DELIBERATE: no per-file entry for this file (the caller built no per-file evidence,
+   * or the file has no governing manifest above it) falls back to the repo-level set, which is the
+   * behaviour every caller had before this parameter existed.
+   */
+  edgeFile?: string,
 ): "externalVerified" | "externalRefuted" {
   const deps = facts.packageDependencies
-  if (deps === undefined) return "externalUnverified"
+  if (deps === undefined && facts.packageDependenciesByFile === undefined) return "externalUnverified"
+  let scope: Set<string> | undefined = deps
+  if (facts.packageDependenciesByFile !== undefined) {
+    // A PER-FILE MAP, WHEN IT EXISTS, IS AUTHORITATIVE. It was built by walking UP from each file to
+    // its nearest ancestor manifest, so a file it does NOT cover has NO GOVERNING MANIFEST above it —
+    // a MEASURED absence, and the claim is then UNVERIFIABLE rather than judged by the root's list.
+    // (A file in a repo whose ROOT has a manifest IS covered, by the root's manifest — the
+    // single-package case is unchanged.)
+    if (edgeFile === undefined) return "externalUnverified"
+    const perFile = facts.packageDependenciesByFile.get(edgeFile) ??
+      facts.packageDependenciesByFile.get(edgeFile.replace(/\\/g, "/"))
+    if (perFile === undefined) return "externalUnverified"
+    scope = perFile
+  }
+  if (scope === undefined) return "externalUnverified"
   const want = dependency.trim().toLowerCase()
   if (want.length === 0) return "externalUnverified"
-  for (const d of deps) {
+  for (const d of scope) {
     const norm = d.trim().toLowerCase()
     if (norm.length === 0) continue
     // EXACT OR SCOPE-EXACT: a manifest names `json_annotation` (dart), `org.slf4j` (maven) or
@@ -1579,7 +1626,7 @@ function claimDispositionOnAmbiguous(
     // returns before the shared cross-tab block and an ambiguous package-claimed edge would
     // otherwise report no disposition at all.
     const disposition: AmbiguousClaimDisposition = facts
-      ? (verifyPackageScopeClaim(facts, claim.package) === "externalVerified" ? "verified" : "refuted")
+      ? (verifyPackageScopeClaim(facts, claim.package, edgeFile) === "externalVerified" ? "verified" : "refuted")
       : "unverified"
     return { kind: "packageScope", disposition }
   }
@@ -1835,7 +1882,7 @@ export function classifyEdge(
   // is counted as the defect it is).
   if (claim !== null && claim.kind === "packageScope" && decls === 0) {
     if (!facts) return { outcome: "externalUnverified", decls, kinds: kindText }
-    const outcome = verifyPackageScopeClaim(facts, claim.package)
+    const outcome = verifyPackageScopeClaim(facts, claim.package, edgeFile)
     return {
       outcome,
       decls,

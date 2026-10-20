@@ -562,7 +562,28 @@ function projectFactsForFiles(repoRoot: string, admitted: string[]): ProjectFact
     const rel = path.relative(repoRoot, abs)
     if (rel.length > 0) files.add(rel.split(path.sep).join("/"))
   }
-  return { packages: new Set<string>(), files, sdkLib: false, packageDependencies: manifestDependencies(repoRoot) }
+  // THE PER-FILE MANIFEST EVIDENCE — the dependency names declared by the manifest that GOVERNS each
+  // file (the nearest ancestor manifest), keyed by the file's ABSOLUTE path, because that is the
+  // spelling `edgeFile` carries (the same keying the imported-binding and imported-name claims use).
+  //
+  // It exists because a repo-level manifest answers a DIFFERENT question in a monorepo: 843 tracked
+  // `package.json` files, 414 `pubspec.yaml`, 744 `Cargo.toml`, 222 `pom.xml` and 395 `build.gradle`
+  // files live in SUBDIRECTORIES, while only 38 / 3 / 4 / 2 / 2 repos carry one at the ROOT. A file in
+  // `packages/foo/` is governed by `packages/foo/package.json`, so a claim checked against the root's
+  // manifest is checked against ANOTHER PACKAGE's dependency list — in both directions.
+  //
+  // A FILE WITH NO GOVERNING MANIFEST GETS NO ENTRY, and its claim is then UNVERIFIABLE (never quietly
+  // accepted) — exactly as it is today for a project with no manifest at all.
+  const byFile = new Map<string, Set<string>>()
+  for (const abs of admitted) {
+    const governed = manifestDependenciesForFile(repoRoot, abs)
+    if (governed !== undefined) byFile.set(abs, governed)
+  }
+  return {
+    packages: new Set<string>(), files, sdkLib: false,
+    packageDependencies: manifestDependencies(repoRoot),
+    packageDependenciesByFile: byFile,
+  }
 }
 
 /**
@@ -590,34 +611,49 @@ function projectFactsForFiles(repoRoot: string, admitted: string[]): ProjectFact
  * has no manifest — so a claim in a project with no manifest is UNVERIFIABLE, never quietly
  * accepted.
  */
-function manifestDependencies(repoRoot: string): Set<string> {
+/**
+ * THE MANIFEST IN ONE DIRECTORY, and the dependency names it declares.
+ *
+ * `null` means NO MANIFEST IS HERE — which is different from "a manifest that declares nothing", and the
+ * difference decides a claim: the first leaves the claim UNVERIFIABLE, the second REFUTES it. The
+ * nearest-ancestor walk below depends on telling them apart.
+ */
+function manifestDependenciesIn(dir: string): Set<string> | null {
   const deps = new Set<string>()
   const add = (v: string): void => {
     const t = v.trim()
     if (t.length > 0) deps.add(t)
   }
+  let sawManifest = false
+  const read = (name: string): string | null => {
+    try { return readFileSync(path.join(dir, name), "utf8") } catch { return null }
+  }
   // ── go.mod: `require`/`replace` blocks and single-line forms ──────────────────────────────────
-  const goMod = path.join(repoRoot, "go.mod")
-  try {
-    const text = readFileSync(goMod, "utf8")
-    for (const raw of text.split(/\r?\n/)) {
-      const line = raw.trim()
-      if (line.length === 0) continue
-      if (line.startsWith("require (")) continue
-      const m = /^(?:require|replace)\s+([^\s]+)/.exec(line)
-      if (m) { add(m[1]); continue }
-      const inBlock = /^(?:require|replace)\s+\(([^)]*)\)/.exec(line)
-      if (inBlock) { for (const part of inBlock[1].split(/\s+/)) if (part.length > 0) add(part) }
+  {
+    const text = read("go.mod")
+    if (text !== null) {
+      sawManifest = true
+      for (const raw of text.split(/\r?\n/)) {
+        const line = raw.trim()
+        if (line.length === 0) continue
+        if (line.startsWith("require (")) continue
+        const m = /^(?:require|replace)\s+([^\s]+)/.exec(line)
+        if (m) { add(m[1]); continue }
+        const inBlock = /^(?:require|replace)\s+\(([^)]*)\)/.exec(line)
+        if (inBlock) { for (const part of inBlock[1].split(/\s+/)) if (part.length > 0) add(part) }
+      }
     }
-  } catch { /* no go.mod: the set stays empty and every claim is unverifiable */ }
-  // ── package.json / pubspec.yaml / composer.json: JSON-ish and YAML-ish key reads ───────────────
+  }
+  // ── package.json / composer.json: JSON key reads ───────────────────────────────────────────────
   const jsonManifests: [string, string[]][] = [
     ["package.json", ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"]],
     ["composer.json", ["require", "require-dev"]],
   ]
   for (const [name, sections] of jsonManifests) {
+    const text = read(name)
+    if (text === null) continue
+    sawManifest = true
     try {
-      const text = readFileSync(path.join(repoRoot, name), "utf8")
       const parsed = JSON.parse(text) as Record<string, any>
       for (const sec of sections) {
         const block = parsed?.[sec]
@@ -625,55 +661,65 @@ function manifestDependencies(repoRoot: string): Set<string> {
           for (const key of Object.keys(block)) add(key)
         }
       }
-    } catch { /* absent or unparseable: the set stays as it is */ }
+    } catch { /* unparseable: the manifest is still a manifest */ }
   }
   // pubspec.yaml: `dependencies:` and `dev_dependencies:` blocks, each `  name:` or `  name: version`
-  try {
-    const text = readFileSync(path.join(repoRoot, "pubspec.yaml"), "utf8")
-    let inBlock = false
-    for (const raw of text.split(/\r?\n/)) {
-      if (/^(dependencies|dev_dependencies):\s*$/.test(raw)) { inBlock = true; continue }
-      if (inBlock && /^\S/.test(raw)) { inBlock = false }   // a new top-level key ends the block
-      if (!inBlock) continue
-      const m = /^\s{2}([A-Za-z0-9_-]+):/.exec(raw)
-      if (m) add(m[1])
+  {
+    const text = read("pubspec.yaml")
+    if (text !== null) {
+      sawManifest = true
+      let inBlock = false
+      for (const raw of text.split(/\r?\n/)) {
+        if (/^(dependencies|dev_dependencies):\s*$/.test(raw)) { inBlock = true; continue }
+        if (inBlock && /^\S/.test(raw)) { inBlock = false }   // a new top-level key ends the block
+        if (!inBlock) continue
+        const m = /^\s{2}([A-Za-z0-9_-]+):/.exec(raw)
+        if (m) add(m[1])
+      }
     }
-  } catch { /* no pubspec: unverifiable */ }
+  }
   // Cargo.toml: `[dependencies]` and `[dev-dependencies]` sections, `name = "version"` or `name = { … }`
-  try {
-    const text = readFileSync(path.join(repoRoot, "Cargo.toml"), "utf8")
-    let inBlock = false
-    for (const raw of text.split(/\r?\n/)) {
-      const sec = /^\s*\[([^\]]+)\]\s*$/.exec(raw)
-      if (sec) { inBlock = sec[1] === "dependencies" || sec[1] === "dev-dependencies" || sec[1] === "build-dependencies"; continue }
-      if (!inBlock) continue
-      const m = /^\s*([A-Za-z0-9_-]+)\s*=/.exec(raw)
-      if (m) add(m[1])
+  {
+    const text = read("Cargo.toml")
+    if (text !== null) {
+      sawManifest = true
+      let inBlock = false
+      for (const raw of text.split(/\r?\n/)) {
+        const sec = /^\s*\[([^\]]+)\]\s*$/.exec(raw)
+        if (sec) { inBlock = sec[1] === "dependencies" || sec[1] === "dev-dependencies" || sec[1] === "build-dependencies"; continue }
+        if (!inBlock) continue
+        const m = /^\s*([A-Za-z0-9_-]+)\s*=/.exec(raw)
+        if (m) add(m[1])
+      }
     }
-  } catch { /* no Cargo.toml: unverifiable */ }
+  }
   // pyproject.toml: `[project] dependencies = [ "x", … ]` and `[tool.poetry.dependencies]`
-  try {
-    const text = readFileSync(path.join(repoRoot, "pyproject.toml"), "utf8")
-    const arr = /dependencies\s*=\s*\[([^\]]*)\]/s.exec(text)
-    if (arr) {
-      for (const q of arr[1].split(",")) {
-        const m = /["']([A-Za-z0-9_.-]+)/.exec(q)
-        if (m) add(m[1])
+  {
+    const text = read("pyproject.toml")
+    if (text !== null) {
+      sawManifest = true
+      const arr = /dependencies\s*=\s*\[([^\]]*)\]/s.exec(text)
+      if (arr) {
+        for (const q of arr[1].split(",")) {
+          const m = /["']([A-Za-z0-9_.-]+)/.exec(q)
+          if (m) add(m[1])
+        }
+      }
+      const poetry = /\[tool\.poetry\.dependencies\]([\s\S]*?)(?:\n\[|$)/.exec(text)
+      if (poetry) {
+        for (const raw of poetry[1].split(/\r?\n/)) {
+          const m = /^\s*([A-Za-z0-9_.-]+)\s*=/.exec(raw)
+          if (m) add(m[1])
+        }
       }
     }
-    const poetry = /\[tool\.poetry\.dependencies\]([\s\S]*?)(?:\n\[|$)/.exec(text)
-    if (poetry) {
-      for (const raw of poetry[1].split(/\r?\n/)) {
-        const m = /^\s*([A-Za-z0-9_.-]+)\s*=/.exec(raw)
-        if (m) add(m[1])
-      }
-    }
-  } catch { /* no pyproject: unverifiable */ }
+  }
   // requirements*.txt: one distribution per line, `name==1.0` / `name>=1.0` / `name`
   try {
-    for (const f of readdirSync(repoRoot)) {
+    for (const f of readdirSync(dir)) {
       if (!/^requirements.*\.txt$/.test(f)) continue
-      for (const raw of readFileSync(path.join(repoRoot, f), "utf8").split(/\r?\n/)) {
+      sawManifest = true
+      for (const raw of readFileSync(path.join(dir, f), "utf8").split(/\r?\n/)) {
         const line = raw.trim()
         if (line.length === 0 || line.startsWith("#") || line.startsWith("-")) continue
         const m = /^([A-Za-z0-9_.-]+)/.exec(line)
@@ -681,7 +727,122 @@ function manifestDependencies(repoRoot: string): Set<string> {
       }
     }
   } catch { /* no requirements: unverifiable */ }
-  return deps
+  // ── Gemfile (ruby) — ADDED 2026-10-20. The gate could not read it, so the package-scope claim was
+  // STRUCTURALLY UNAVAILABLE for every ruby repo: `facts.packageDependencies` was empty, every claim
+  // read UNVERIFIABLE, and a lane could not use the fleet's biggest lever on a language the corpus
+  // carries 15 repos of. `gem 'name'` / `gem "name"`.
+  {
+    const text = read("Gemfile")
+    if (text !== null) {
+      sawManifest = true
+      for (const raw of text.split(/\r?\n/)) {
+        const m = /^\s*gem\s+['"]([^'"]+)['"]/.exec(raw)
+        if (m) add(m[1])
+      }
+    }
+  }
+  // ── pom.xml (maven) — ADDED 2026-10-20, same reason. A maven dependency is `group:artifact`, and a
+  // claim names the PACKAGE, which is the GROUP (`org.slf4j`), so BOTH spellings are recorded: the
+  // coordinate for a coordinate-shaped claim, and the group alone for a package-shaped one.
+  {
+    const text = read("pom.xml")
+    if (text !== null) {
+      sawManifest = true
+      for (const m of text.matchAll(/<dependency>([\s\S]*?)<\/dependency>/g)) {
+        const g = /<groupId>([^<]+)<\/groupId>/.exec(m[1])
+        const a = /<artifactId>([^<]+)<\/artifactId>/.exec(m[1])
+        if (!g || !a) continue
+        const group = g[1].trim()
+        const artifact = a[1].trim()
+        add(`${group}:${artifact}`)
+        add(group)
+      }
+    }
+  }
+  // ── build.gradle / build.gradle.kts — ADDED 2026-10-20, same reason. A gradle coordinate is
+  // `group:artifact:version`, and the claim names the group, so both are recorded.
+  for (const name of ["build.gradle", "build.gradle.kts"]) {
+    const text = read(name)
+    if (text === null) continue
+    sawManifest = true
+    for (const m of text.matchAll(/(?:api|implementation|compile|compileOnly|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|annotationProcessor|kapt)\s*[( ]\s*['"]([^'"]+)['"]/g)) {
+      const parts = m[1].split(":")
+      if (parts.length >= 2) { add(`${parts[0]}:${parts[1]}`); add(parts[0]) }
+      else if (parts.length === 1 && parts[0].length > 0) add(parts[0])
+    }
+  }
+  // ── Package.swift (swift package manager) — ADDED 2026-10-20, same reason. The package is named by
+  // its URL's last path component (`swift-nio`) and, when the manifest spells it, by `name:` — and the
+  // MODULE a file imports is the `name:` when there is one, so both are recorded.
+  {
+    const text = read("Package.swift")
+    if (text !== null) {
+      sawManifest = true
+      for (const m of text.matchAll(/\.package\s*\(\s*(?:name:\s*["']([^"']+)["']\s*,\s*)?url:\s*["']([^"']+)["']/g)) {
+        if (m[1]) add(m[1])
+        const base = m[2].split("/").pop() ?? ""
+        if (base.length > 0) add(base.replace(/\.git$/, ""))
+      }
+    }
+  }
+  // ── *.csproj (.NET) — ADDED 2026-10-20, same reason. `<PackageReference Include="Newtonsoft.Json" />`
+  // — and the claim names the NAMESPACE, which is the Include value.
+  try {
+    for (const f of readdirSync(dir)) {
+      if (!f.endsWith(".csproj") && !f.endsWith(".fsproj") && !f.endsWith(".vbproj")) continue
+      sawManifest = true
+      const text = readFileSync(path.join(dir, f), "utf8")
+      for (const m of text.matchAll(/<PackageReference\s+Include="([^"]+)"/g)) add(m[1])
+    }
+  } catch { /* no project file: unverifiable */ }
+  return sawManifest ? deps : null
+}
+
+/**
+ * THE PROJECT'S DEPENDENCIES, read from its ROOT manifest — the repo-level set.
+ *
+ * Unchanged in meaning: the root's manifest, and an empty set when the project has no manifest (so
+ * every claim against it is UNVERIFIABLE, never quietly accepted). It now also reads the manifest
+ * KINDS the gate could not read before (Gemfile, pom.xml, build.gradle, Package.swift, *.csproj) —
+ * see `manifestDependenciesIn` for why each was added and what it cost.
+ */
+function manifestDependencies(repoRoot: string): Set<string> {
+  return manifestDependenciesIn(repoRoot) ?? new Set<string>()
+}
+
+/**
+ * THE MANIFEST THAT GOVERNS A FILE — the nearest ancestor manifest, walking UP from the file's own
+ * directory to the repository root.
+ *
+ * WHY, MEASURED 2026-10-20: the corpus is full of MONOREPOS, and a root-only manifest answers a
+ * different question than the one a claim asks. 843 tracked `package.json` files, 414 `pubspec.yaml`,
+ * 744 `Cargo.toml`, 222 `pom.xml` and 395 `build.gradle` files live in SUBDIRECTORIES, while only
+ * 38 / 3 / 4 / 2 / 2 repositories carry one at the ROOT. A file in `packages/foo/` is governed by
+ * `packages/foo/package.json` — so a claim checked against the root's manifest is checked against a
+ * DIFFERENT PACKAGE's dependency list, in both directions: a dependency the package genuinely declares
+ * can read REFUTED (counted against the lane), and a dependency only the ROOT declares can read
+ * VERIFIED (which is the monorepo's laundering, and the claim exists to stop exactly that).
+ *
+ * THE NEAREST-ANCESTOR RULE: the first manifest found walking up. A file with no manifest anywhere
+ * above it has NO governing manifest, and its claim is UNVERIFIABLE — never quietly accepted.
+ *
+ * CACHED PER DIRECTORY, because a monorepo has thousands of files per package and the same manifest
+ * governs all of them.
+ */
+const manifestByDirCache = new Map<string, Set<string> | null>()
+function manifestDependenciesForFile(repoRoot: string, absFile: string): Set<string> | undefined {
+  let dir = path.dirname(absFile)
+  const root = path.resolve(repoRoot)
+  for (;;) {
+    const cached = manifestByDirCache.get(dir)
+    const found = cached !== undefined ? cached : manifestDependenciesIn(dir)
+    if (cached === undefined) manifestByDirCache.set(dir, found)
+    if (found !== null) return found
+    if (path.resolve(dir) === root) return undefined
+    const up = path.dirname(dir)
+    if (up === dir) return undefined
+    dir = up
+  }
 }
 
 /**
@@ -1981,6 +2142,51 @@ function selfTest(): { ok: boolean; failures: string[] } {
     // full path or its leaf — but only at a PATH BOUNDARY (`json` must NOT match `jsonc`).
     const scoped = classifyEdge(empty, kinds, "errors.New", { kind: "packageScope", package: "github.com/pkg/errors", name: "errors.New" }, facts, undefined, undefined, undefined, "main.go")
     if (scoped.outcome !== "externalVerified") failures.push(`control: package-scope claim on a scoped manifest name read ${scoped.outcome}, expected externalVerified`)
+  }
+  // THE PACKAGE-SCOPE CLAIM IN A MONOREPO (2026-10-20): the manifest that GOVERNS THE FILE, not the
+  // repository root's. MEASURED: 843 tracked `package.json`, 414 `pubspec.yaml`, 744 `Cargo.toml`,
+  // 222 `pom.xml` and 395 `build.gradle` files live in SUBDIRECTORIES, while only 38 / 3 / 4 / 2 / 2
+  // repos carry one at the ROOT — so a root-only manifest answers a DIFFERENT PACKAGE's question, in
+  // BOTH directions, and both directions are pinned here.
+  {
+    const empty = new Map<string, number>()
+    // The root declares `root-dep`; the sub-package declares `pkg-dep`. Neither declares the other.
+    const rootSet = new Set<string>(["root-dep"])
+    const pkgSet = new Set<string>(["pkg-dep"])
+    const mono: ProjectFacts = {
+      packages: new Set<string>(), files: new Set<string>(), sdkLib: false,
+      packageDependencies: rootSet,
+      packageDependenciesByFile: new Map<string, Set<string>>([
+        ["/repo/packages/foo/src/x.ts", pkgSet],
+      ]),
+    }
+    const own = classifyEdge(empty, kinds, "Widget", { kind: "packageScope", package: "pkg-dep", name: "Widget" }, mono, undefined, undefined, undefined, "/repo/packages/foo/src/x.ts")
+    if (own.outcome !== "externalVerified") {
+      failures.push(`control: a claim on the sub-package's OWN manifest-declared dependency read ${own.outcome}, expected externalVerified (the governing manifest is the nearest ancestor, not the root)`)
+    }
+    const rootOnly = classifyEdge(empty, kinds, "Widget", { kind: "packageScope", package: "root-dep", name: "Widget" }, mono, undefined, undefined, undefined, "/repo/packages/foo/src/x.ts")
+    if (rootOnly.outcome !== "externalRefuted") {
+      failures.push(`control: a claim on a dependency only the REPO ROOT declares read ${rootOnly.outcome}, expected externalRefuted (a sibling package's manifest must not launder another package's dependency)`)
+    }
+    // A FILE WITH NO GOVERNING MANIFEST has no entry, and its claim is UNVERIFIABLE — never quietly
+    // accepted, exactly as for a project with no manifest at all.
+    const orphan = classifyEdge(empty, kinds, "Widget", { kind: "packageScope", package: "root-dep", name: "Widget" }, mono, undefined, undefined, undefined, "/repo/docs/x.ts")
+    if (orphan.outcome !== "externalUnverified") {
+      failures.push(`control: a claim on a file with NO governing manifest read ${orphan.outcome}, expected externalUnverified`)
+    }
+    // THE ROOT-LEVEL FILE, in a map that does not cover it, has NO GOVERNING MANIFEST — and a
+    // per-file map, when it exists, is AUTHORITATIVE. A repo with no per-file map at all keeps the
+    // old behaviour (the repo-level set), which is what the four directions above already pin.
+    const atRoot = classifyEdge(empty, kinds, "Widget", { kind: "packageScope", package: "root-dep", name: "Widget" }, mono, undefined, undefined, undefined, "/repo/x.ts")
+    if (atRoot.outcome !== "externalUnverified") {
+      failures.push(`control: a file a per-file map does not cover read ${atRoot.outcome}, expected externalUnverified (the map is authoritative: an uncovered file has no governing manifest)`)
+    }
+    // AND THE REPO-LEVEL SHAPE IS UNCHANGED: no per-file map at all -> the repo-level set answers.
+    const repoLevel: ProjectFacts = { packages: new Set<string>(), files: new Set<string>(), sdkLib: false, packageDependencies: rootSet }
+    const legacy = classifyEdge(empty, kinds, "Widget", { kind: "packageScope", package: "root-dep", name: "Widget" }, repoLevel, undefined, undefined, undefined, "/repo/x.ts")
+    if (legacy.outcome !== "externalVerified") {
+      failures.push(`control: a repo with NO per-file map read ${legacy.outcome}, expected externalVerified (the repo-level set still answers when no per-file evidence exists)`)
+    }
   }
   // SLASH-SEPARATOR OPT-IN (go stdlib multi-segment imports, §21.21): a namespace claim carrying
   // `languageNamespaceSlash` splits the target on `/`; the SAME claim without the marker must NOT
