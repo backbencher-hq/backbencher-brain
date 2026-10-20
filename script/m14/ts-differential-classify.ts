@@ -35,6 +35,7 @@ import {
   deriveTypeScriptRendersTruth,
   deriveTypeScriptDecoratorTruth,
   normTarget,
+  auditTarget,
 } from "./differential"
 import { deriveTypeScriptReferencesTruth } from "./oracles/typescript-references"
 import { deriveTypeScriptUsesTruth } from "./oracles/typescript-uses"
@@ -161,7 +162,12 @@ for (const repo of REPOS) {
     const typeParams = typeParameterNames(root)
     const members = memberNames(root)
     for (const te of truth) {
-      const hit = rels.some((r: any) => r.label === te.label && normTarget(r.target) === normTarget(te.target))
+      // THE DIFFERENTIAL'S OWN MATCH KEY, verbatim: `normTarget(auditTarget(t))` — the BINDING_SEP
+      // strip on BOTH sides (differential.ts:25527, :25535). The classifier used the bare
+      // `normTarget`, so a binding-spelled analyzer row never matched the truth's bare name, and
+      // the row was charged as MISSING *and* its analyzer twin as UNEXPLAINED. MEASURED on the
+      // 40-file/repo draw: 80 MISSING and 123 UNEXPLAINED rows were this instrument's gap.
+      const hit = rels.some((r: any) => r.label === te.label && normTarget(auditTarget(r.target)) === normTarget(auditTarget(te.target)))
       if (hit) {
         covered++
         continue
@@ -177,7 +183,10 @@ for (const repo of REPOS) {
       bump(missingBuckets, bucket, `${te.from} -> ${te.target} @ ${rel}`)
     }
     for (const r of rels) {
-      const hit = truth.some((te) => te.label === r.label && (normTarget(te.target) === normTarget(r.target) || te.target.includes(normTarget(r.target))))
+      const hit = truth.some((te) => te.label === r.label && (
+        normTarget(auditTarget(te.target)) === normTarget(auditTarget(r.target)) ||
+        te.target.includes(normTarget(auditTarget(r.target)))
+      ))
       if (hit) continue
       unexplainedTotal++
       let bucket: string
