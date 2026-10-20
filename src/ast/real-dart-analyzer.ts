@@ -1193,8 +1193,50 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           (r as any).from === R7_PLACEHOLDER_NAME || (r as any).to === R7_PLACEHOLDER_NAME
         ) continue
         const key = `${r.type}|${r.source}|${r.target}|${r.confidence}`
-        if (seenRel.has(key)) continue
-        seenRel.add(key)
+        // A LOCAL READ'S BINDING SCOPE IS THE FACT, so two reads that bind DIFFERENT
+        // declarations are two facts — and a key that carries neither the scope nor the
+        // line cannot tell them apart.
+        //
+        // WHY THIS IS NEEDED, and it is the Lead's condition on the interpolation fix
+        // ("a dedup that merges two distinct declarations is a resolution LOSS wearing a
+        // dedup's clothes"). The spelling of a local read is `<callable>\u0000<name>`, and
+        // the CALLABLE is the enclosing function — so two reads of two DIFFERENT
+        // declarations that share a name inside one function spell IDENTICALLY, and the
+        // key collapses them:
+        //
+        //     void f(int p) {
+        //       final x = 1;
+        //       print(x);            // the OUTER x
+        //       { final x = 2;
+        //         print(x); }        // the INNER x — a DIFFERENT declaration
+        //     }
+        //
+        // MEASURED: that file published ONE row for `x`, at the first site, and the
+        // shadowed read was LOST. Dart's rule is that an inner scope SHADOWS an outer
+        // binding of the same name, and the inner declaration is a DIFFERENT
+        // declaration — so two reads are two facts, and one of them is a resolution loss.
+        //
+        // WHY THE SCOPE AND NOT THE LINE. A LINE would OVER-CORRECT: two reads of the SAME
+        // declaration at two different lines are ONE relationship, and the family's dedup
+        // exists exactly because N sites of the same callee push N identical rows — 192,761
+        // redundant rows across the proxicall corpus (35% of all relationships), which the
+        // family calls payload pollution because the oracle and the fixtures are
+        // PRESENCE-based. So the key carries the BINDING SCOPE — the innermost enclosing
+        // scope that declares the name, plus that declaration's own line — which is the
+        // DECLARATION's identity. Two reads of the same declaration share it; two reads of
+        // different declarations do not. Measured on the lane's own
+        // `nested-block-shadows-member` fixture: the reads at 48 and 53 share the body
+        // local's scope (ONE row) and the read at 51 has the nested local's scope (a
+        // SECOND row) — 2 rows, which is the count the Lead's ruling asks for.
+        //
+        // SO THE SCOPE JOINS THE KEY ONLY FOR A ROW WHOSE IDENTITY IS THE OCCURRENCE — a
+        // row carrying the local-binding claim. Every other row keeps the key it had, byte
+        // for byte, so the 192,761-row dedup is untouched and the change is confined to
+        // the class where the scope carries the fact.
+        const scope = (r.metadata as any)?.localBindingScope
+        const dedupKey = scope !== undefined && scope !== null ? `${key}|${scope}` : key
+        if (seenRel.has(dedupKey)) continue
+        seenRel.add(dedupKey)
         uniq.push(r)
       }
       relationships.splice(0, relationships.length, ...uniq)
@@ -3466,7 +3508,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               line_number: this.nodeLine(n),
               // A read of a PARAMETER is a binding too: `locals` holds the function's bound
               // names (parameters and `var`s alike), which is why both land here.
-              metadata: { isLocalRead: true, localBinding: true },
+              metadata: { isLocalRead: true, localBinding: true, ...(this.localBindingScope(n, txt) ?? {}) },
             })
           } else if (this.isPatternTestConstant(n)) {
             // DARTGAP2 — THE CONSTANT A PATTERN TESTS.
@@ -3660,7 +3702,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               confidence: 0.9,
               line_number: this.nodeLine(n),
               metadata: isLocal
-                ? { isInterpolationRead: true, isLocalRead: true, localBinding: true }
+                ? { isInterpolationRead: true, isLocalRead: true, localBinding: true, ...(this.localBindingScope(n, n.text) ?? {}) }
                 : { isInterpolationRead: true },
             })
           }
@@ -3686,7 +3728,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             confidence: 0.9,
             line_number: this.nodeLine(n),
             metadata: isLocal
-              ? { isInterpolationRead: true, isLocalRead: true, localBinding: true }
+              ? { isInterpolationRead: true, isLocalRead: true, localBinding: true, ...(this.localBindingScope(n, name) ?? {}) }
               : { isInterpolationRead: true },
           })
         }
@@ -4893,6 +4935,85 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       p = p.parent
     }
     return false
+  }
+
+  /**
+   * THE DECLARATION A LOCAL READ BINDS TO — the innermost enclosing scope that declares the
+   * name, and the identity that makes two reads of the same name DIFFERENT facts when they
+   * read DIFFERENT declarations.
+   *
+   * WHY IT EXISTS. A local read's spelling is `<callable>\u0000<name>`, and the CALLABLE is the
+   * enclosing FUNCTION — so two reads of two different declarations that share a name inside one
+   * function spell IDENTICALLY. The relationship dedup key (`type|source|target|confidence`)
+   * carried no line, so the two collapsed into one row and the second was LOST: a resolution
+   * loss wearing a dedup's clothes.
+   *
+   * THE SCOPE RULE, measured on the dart lane's own `nested-block-shadows-member` fixture (its
+   * line numbers are the fixture's):
+   *
+   *     44:  int value = 0;    // the FIELD
+   *     47:  var value = 1;    // the BODY local
+   *     48:  print(value);      // -> the body local
+   *     50:    var value = 2;  // the NESTED declaration, shadowing the body local
+   *     51:    print(value);    // -> the NESTED local
+   *     53:  print(value);      // -> the BODY local again
+   *
+   * Dart's block scope: an inner declaration shadows an outer binding of the same name for the
+   * whole of the inner block. So the read at 51 reads a DIFFERENT declaration from the reads at
+   * 48 and 53 — and the read at 53 reads the SAME declaration as the read at 48, so those two
+   * are ONE relationship and must still collapse.
+   *
+   * WHY A BLOCK'S OWN DECLARATIONS, not its whole subtree. The scope of a declaration is the
+   * block that holds it, so the nested block's `value` is NOT a declaration of the outer block.
+   * A subtree scan would find it and attribute the read at 53 to the nested declaration — which
+   * is the same class of mistake as the analyzer's own `heritageByClass` comment records
+   * ("a `uses` edge is evidence that a type is relevant to this file — but it is not a BASE").
+   *
+   * THE RESULT IS A SCOPE IDENTITY, not a line: the enclosing scope's own start position, plus
+   * the declaration's own line. Two reads of the SAME declaration share it; two reads of
+   * DIFFERENT declarations do not. It rides the row as `localBindingScope` and joins the dedup
+   * key ONLY for a `localBinding` row — every other row keeps its key byte for byte, so the
+   * 192,761-row payload-pollution dedup is untouched.
+   */
+  private localBindingScope(n: Node, name: string): { localBindingScope?: string } | null {
+    // The nearest enclosing scope that declares `name` BEFORE this read.
+    let p: Node | null | undefined = n.parent
+    let guard = 0
+    while (p && guard++ < 64) {
+      if (p.type === "block" || p.type === "function_body") {
+        const decl = this.scopeOwnDeclaration(p, name, n.startIndex)
+        if (decl !== null) {
+          return { localBindingScope: `${p.startIndex}:${decl.startIndex}` }
+        }
+      }
+      p = p.parent
+    }
+    return null
+  }
+
+  /**
+   * THE DECLARATION OF `name` THAT BELONGS TO THIS SCOPE — the block's OWN declarations, not
+   * the ones in a nested block (a nested block is a DIFFERENT scope, and a declaration there
+   * does not belong to this one).
+   */
+  private scopeOwnDeclaration(scope: Node, name: string, before: number): Node | null {
+    let found: Node | null = null
+    let foundStart = -1
+    const walk = (n: Node, depth: number): void => {
+      if (depth > 64) return
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        // A NESTED SCOPE IS NOT THIS SCOPE'S DECLARATION.
+        if (c.type === "block" || c.type === "function_body" || c.type === "class_body") continue
+        if (c.type === "identifier" && c.text === name && this.isDartDeclaredName(c) && c.startIndex < before) {
+          if (c.startIndex > foundStart) { found = c; foundStart = c.startIndex }
+        }
+        walk(c, depth + 1)
+      }
+    }
+    walk(scope, 0)
+    return found
   }
 
   /**
