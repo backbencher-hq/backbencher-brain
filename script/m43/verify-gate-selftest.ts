@@ -110,6 +110,25 @@ const GATES: GateSpec[] = [
     // missing-scenario assertion must fail.
     mutation: { env: "BB_M43_MUTATE_A4_SKIP_S5=1", from: "", to: "" },
   },
+  {
+    code: "T1",
+    script: "script/m43/verify-arbiter-typecheck.ts",
+    // The arbiter's `verifiedBy` union loses the two claim kinds that were added to it after the
+    // union was written, so the two sites that use them become TYPE ERRORS in the arbiter and the
+    // gate's zero-floor must fail.
+    //
+    // WHY A TYPE-ONLY MUTATION IS SAFE HERE, WHEN A BEHAVIOURAL ONE WOULD NOT BE. Eight lane
+    // teammates are running arms against this arbiter right now. TypeScript types are ERASED at
+    // runtime, so a mutation that only changes a type annotation leaves the arbiter's behaviour
+    // byte-equivalent — a measurement taken through it is the same measurement. A mutation that
+    // changed the arbiter's BEHAVIOUR would be a mutation of the instrument a live measurement is
+    // reading, and that would be a wrong measurement. This one cannot be.
+    mutation: {
+      file: "script/m14/incoming-rule.ts",
+      from: "\"exportSurface\" | \"packageScope\" | \"ownerMembers\"",
+      to: "\"exportSurface\" // MUT43: the packageScope and ownerMembers verdicts dropped",
+    },
+  },
 ]
 
 function childEnv(mutationEnv?: string): Record<string, string> {

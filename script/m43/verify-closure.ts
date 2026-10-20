@@ -104,6 +104,10 @@ const GATES: Array<{ code: string; script: string }> = [
   { code: "A2", script: "verify-a2-cli-auto-refresh.ts" },
   { code: "A3", script: "verify-a3-flag-semantics.ts" },
   { code: "A4", script: "verify-a4-corpus.ts" },
+  // T1 — THE ARBITER'S TYPE STATE. The shared instrument every lane's number flows through, and the
+  // place a live ReferenceError shipped on 2026-10-20 because nothing typechecked it. It is listed
+  // here so the closure re-runs it live, like every other subordinate gate.
+  { code: "T1", script: "verify-arbiter-typecheck.ts" },
 ]
 for (const g of GATES) {
   const r = spawnSync("bun", ["run", `script/m43/${g.script}`], {

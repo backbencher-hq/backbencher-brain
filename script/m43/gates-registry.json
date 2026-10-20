@@ -8,6 +8,7 @@
     { "code": "A2", "script": "verify-a2-cli-auto-refresh.ts", "infra": false },
     { "code": "A3", "script": "verify-a3-flag-semantics.ts", "infra": false },
     { "code": "A4", "script": "verify-a4-corpus.ts", "infra": false },
+    { "code": "T1", "script": "verify-arbiter-typecheck.ts", "infra": false },
     { "code": "X1", "script": "verify-closure.ts", "infra": true }
   ]
 }
