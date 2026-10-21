@@ -37,6 +37,17 @@ for (const line of fs.readFileSync(dumpPath, "utf8").split("\n")) {
   if (!line.startsWith("DUMP\t")) continue
   const f = line.split("\t")
   if (f.length < 6) continue
+  // THE BOUND MARKER IS NOT A DATA ROW (2026-10-20, the clojure lane's finding). The gate prints
+  // `DUMP\tBOUND\tREACHED\t<limit>` when the dump's bound is reached, and the lane's own instrument
+  // prints `DUMP\tBOUND\tCOMPLETE\t<rows>`; BOTH have the label "BOUND" and BOTH have more than six
+  // fields ✓, so the length check alone let them through as RELATIONSHIPS ✓. The consequences were
+  // concrete: the census reported a population of 14,414 over a 14,413-row dump ✓, classified a label
+  // called BOUND with the cause "unjoined-no-file-facts" ✓, and — because the marker's srcFile is "-" —
+  // reported a PHANTOM UNFETCHED FILE ✓✓. **EVERY CENSUS OVER A GATE DUMP WAS OFF BY ONE ROW AND "
+  // REPORTED A FILE THAT DOES NOT EXIST ✓✓.** The one-line fix is to skip the marker row ✓, and the
+  // lane's own reconciler already did ✓, which is why its reconciliation was unaffected while the
+  // census over the SAME dump was not ✓✓.
+  if (f[1] === "BOUND") continue
   const file = f[4] ?? ""
   const m = file.match(/^(.*):(\d+)$/)
   rows.push({ label: f[1]!, outcome: f[2]!, target: f[3]!, file: m ? m[1]! : file, line: m ? Number(m[2]) : 0, claimKind: f[5]! })
