@@ -70,6 +70,59 @@ const TYPES = VOCAB
 const TOTAL = VOCAB.length
 const VOCAB_NAME = LEGACY ? "the ten types" : "the fourteen values"
 
+/* THE DRIFT CHECK — THE GATE's LITERAL VOCABULARY MUST STILL EQUAL THE ENGINE's ENUM.
+ *
+ * The sql lane proposed DERIVING the vocabulary from the enum in `src/ast/types.ts`. The Lead's
+ * ruling is the STRONGER form: derive NOTHING, ASSERT everything. A literal is auditable — a reader
+ * sees exactly which fourteen values this instrument judges — but a literal can drift, and a DERIVED
+ * list can change SILENTLY, which is the failure this gate exists to catch. So the literal stays, and
+ * the gate PROVES it still matches the engine's own `RelationshipType` values, naming any difference
+ * instead of ignoring it. A vocabulary change then fails this gate LOUDLY — including a change the
+ * gate's own author never saw.
+ *
+ * NO REGEX (this file's own rule): the enum is read as LINES, and each value is taken as the text
+ * between the first `= "` and the next `"`.
+ */
+const ENUM_VALUES: string[] = (() => {
+  try {
+    const src = readFileSync(resolve(ROOT, "src", "ast", "types.ts"), "utf8")
+    const out: string[] = []
+    let inside = false
+    for (const line of src.split("\n")) {
+      if (!inside) {
+        if (line.indexOf("export enum RelationshipType") >= 0) inside = true
+        continue
+      }
+      const t = line.trim()
+      // ONLY the enum's own closing brace ends the block. A doc comment can carry a "}" (the
+      // mixin's `uses{isMixin:true}` example does) and ending there would silently drop the
+      // members after it.
+      if (t === "}") break
+      // COMMENT LINES CARRY EXAMPLE VALUES — `Imports = "brain_import"` sits in a comment above
+      // the real member — so a comment line is skipped, never read as a value.
+      if (t === "" || t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) continue
+      const eq = t.indexOf('= "')
+      if (eq < 0) continue
+      const rest = t.slice(eq + 3)
+      const close = rest.indexOf('"')
+      if (close > 0) {
+        const v = rest.slice(0, close)
+        if (out.indexOf(v) < 0) out.push(v)
+      }
+    }
+    return out
+  } catch {
+    return []
+  }
+})()
+// The assertion is against the FOURTEEN — the engine's whole vocabulary — not against whichever limb
+// is running: the ten-limb is a HISTORICAL COMPARATOR and is EXPECTED to judge fewer values than the
+// engine stores, so under it the difference is reported as a fact, not as a failure.
+const VOCAB_DRIFT: string[] = ENUM_VALUES.length
+  ? ENUM_VALUES.filter((v) => TYPES_FOURTEEN.indexOf(v) < 0).concat(TYPES_FOURTEEN.filter((v) => ENUM_VALUES.indexOf(v) < 0))
+  : []
+const UNJUDGED_BY_COMPARATOR: string[] = ENUM_VALUES.filter((v) => TYPES_TEN.indexOf(v) < 0)
+
 /** The lane set is read from the same source the board reads it from, for the same reason: the CLI
  *  cannot be imported (its module body runs a self-test and exits). The stripper mirrors
  *  `language-board.ts`'s, INCLUDING the lesson that cost the board a 24th lane: a comment is not
@@ -724,6 +777,12 @@ if (JSON_MODE) {
   const w = (s: string | number, n: number) => (String(s) + " ".repeat(n)).slice(0, n)
   console.log(`coverage-block gate — ${allLanes.length} lanes, reading ${SPEC_DIR} directly (not the board's rendering)`)
   console.log(`VOCABULARY LIMB: ${TOTAL} (${VOCAB_NAME})${LEGACY ? " — the HISTORICAL comparator: unclassified STILL subtracts" : " — THE OWNER's BAR: unclassified does NOT shrink the denominator, and an unclassified label is a GAP"}`)
+  console.log(
+    VOCAB_DRIFT.length
+      ? `VOCABULARY DRIFT — THE GATE's FOURTEEN AND src/ast/types.ts's RelationshipType DISAGREE: ${VOCAB_DRIFT.join(", ")} — the engine cannot store it or the gate cannot judge it.`
+      : `VOCABULARY DRIFT CHECK: the gate's FOURTEEN MATCH src/ast/types.ts's RelationshipType exactly (${ENUM_VALUES.length} enum values).`,
+  )
+  if (LEGACY) console.log(`  (the historical comparator judges ${TYPES_TEN.length} of the engine's ${ENUM_VALUES.length} values — it does NOT judge ${UNJUDGED_BY_COMPARATOR.join(", ")}, which is what a comparator is for)`)
   console.log(`firing log ${FIRING_LOG} — ${fires.size} lane rows\n`)
   console.log(`${w("lane", 12)} ${w("declared", 9)} ${w("impl", 5)} ${w("appl", 5)} ${w("excl", 5)} ${w("silent-but-implemented", 40)} problems`)
   console.log(`${" ".repeat(12)} ${" ".repeat(9)} ${" ".repeat(5)} ${" ".repeat(5)} ${" ".repeat(5)} (plain = per-type count · ~ = prose-attributed · ? = UNSUBSTANTIATED for this type)`)
