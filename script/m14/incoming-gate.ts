@@ -1527,6 +1527,30 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     /** the FILE the edge was emitted from and its own line — the exact intent test's two inputs */
     srcFile: string
     line: number | null
+    /**
+     * THE ANALYZER's OWN BIND REASON - `metadata.bindReason` on the relationship, carried VERBATIM.
+     * THIS IS THE BINDING VOCABULARY: it answers "WHY COULD THE ARBITER NOT BIND THIS TARGET", and
+     * it is the field that can NAME a wall row. THE GO LANE MEASURED WHY IT IS ITS OWN FIELD: every
+     * one of the 3,820 wall rows that carried no `reasonCode` was confidence 1.0, and the go
+     * analyzer's reasonCode loop skips `conf >= 1.0` (a confidence-1.0 row must carry NO code - the
+     * invariant script/m14/go9-census.ts checks). So a bind reason carried in the reasonCode field
+     * would either be empty on exactly the rows that need naming, or would break the analyzer's own
+     * invariant.
+     *
+     * DUMP FIELD INDEX 7 - the position `script/m14/go-wall-census.ts` ALREADY READS. That reader was
+     * written BEFORE the column existed; this column is the one that makes its contract true.
+     */
+    bindReason: string
+    /**
+     * THE ANALYZER's OWN CONFIDENCE REASON - `metadata.reasonCode` on the relationship, carried
+     * VERBATIM. THIS IS A DIFFERENT QUESTION FROM THE BIND REASON: it answers "WHY IS THIS EDGE
+     * SUB-1.0", not "why could the arbiter not bind the target". ONE VOCABULARY, TWO QUESTIONS, TWO
+     * FIELDS, TWO POSITIONS - they are never collapsed into one column, because a collapsed column
+     * forces the reader to guess which question a value answers.
+     *
+     * DUMP FIELD INDEX 8.
+     */
+    reasonCode: string
   }
   const pending: PendingEdge[] = []
   /** file -> specifier -> local names bound, from the run's own IMPORT edges. The evidence the
@@ -1789,7 +1813,15 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       const edgeLine = Number((rel as any)?.line_number ?? (rel as any)?.lineNumber ?? (rel as any)?.line ?? 0) || null
       const ownerRaw = md.owner
       const owner = typeof ownerRaw === "string" && ownerRaw.length > 0 ? ownerRaw : null
-      pending.push({ label, tgt, claim, owner, sig, repo: repoOf(f), srcFile: f, line: edgeLine })
+      // THE ANALYZER's OWN TWO REASONS, VERBATIM, ON THE EDGE - the dump's eighth and ninth
+      // columns. The values are CARRIED, not derived: the gate does not decide what a reason MEANS,
+      // it only makes the analyzer's own reason visible to whoever has to dispose of the row. The two
+      // come from two different metadata fields because they answer two different questions (the
+      // BIND reason names a wall; the CONFIDENCE reason explains a sub-1.0 edge), and one column
+      // cannot carry both without making every reader guess which one it is holding.
+      const edgeBindReason = String((rel as any)?.metadata?.bindReason ?? "")
+      const edgeReasonCode = String((rel as any)?.metadata?.reasonCode ?? "")
+      pending.push({ label, tgt, claim, owner, sig, repo: repoOf(f), srcFile: f, line: edgeLine, bindReason: edgeBindReason, reasonCode: edgeReasonCode })
       continue
     }
   }
@@ -1992,7 +2024,10 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
         bbDumpSkipped++
         if (!bbDumpTruncated) {
           bbDumpTruncated = true
-          console.log(`DUMP\tBOUND\tREACHED\t${BB_DUMP_LIMIT}\t-\t-\t-`)
+          // THE BOUND MARKER CARRIES THE SAME FIELD COUNT AS A DATA ROW - a reader that parses by
+          // POSITION must see ONE SHAPE on every line, and a marker with a shorter shape makes the
+          // marker's last column look like a data field.
+          console.log(`DUMP\tBOUND\tREACHED\t${BB_DUMP_LIMIT}\t-\t-\t-\t-\t-`)
           console.log(`DUMP TRUNCATED at the ${BB_DUMP_LIMIT}-row bound — THIS DUMP IS NOT THE WHOLE NON-RESOLVED SET, and a reconciler over it will under-count the movement.`)
         }
         tally(row.project, pc, e.tgt, e.label)
@@ -2003,7 +2038,15 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // not name a residual class of ext? rows because the live claim's specifier was invisible; a
       // dump that hides the claim turns a classifiable row into a mystery.
       const claimSpec = e.claim && typeof (e.claim as any).specifier === "string" ? String((e.claim as any).specifier) : "-"
-      console.log(`DUMP\t${e.label}\t${pc.outcome}\t${e.tgt}\t${e.srcFile}:${e.line}\t${e.claim?.kind ?? "-"}\t${claimSpec}`)
+      // THE 8TH COLUMN IS THE BIND REASON (`metadata.bindReason`, VERBATIM) AND THE 9TH IS THE
+      // CONFIDENCE REASON (`metadata.reasonCode`, VERBATIM). The go lane's census ALREADY READS INDEX
+      // 7 (script/m14/go-wall-census.ts), and its stated purpose - splitting a wall row into a NAMED
+      // class - is served by the BIND reason, because the go lane MEASURED that the 3,820 wall rows
+      // carry no reasonCode at all. The confidence reason sits BESIDE it, not inside it: one column
+      // per question, so no reader ever has to guess which vocabulary a value belongs to.
+      const dumpBindReason = e.bindReason.length > 0 ? e.bindReason : "-"
+      const dumpReasonCode = e.reasonCode.length > 0 ? e.reasonCode : "-"
+      console.log(`DUMP\t${e.label}\t${pc.outcome}\t${e.tgt}\t${e.srcFile}:${e.line}\t${e.claim?.kind ?? "-"}\t${claimSpec}\t${dumpBindReason}\t${dumpReasonCode}`)
     }
     tally(row.project, pc, e.tgt, e.label)
     row.intent[classifyIntent(e.tgt, e.srcFile, e.line, e.label, declPos)]++
