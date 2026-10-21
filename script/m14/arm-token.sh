@@ -61,7 +61,16 @@ mkdir -p "$(dirname "$QUEUE_FILE")" 2>/dev/null || true
 queue_add() {
   local l="$1"
   [ -f "$QUEUE_FILE" ] || : > "$QUEUE_FILE"
-  grep -qxF "$l" "$QUEUE_FILE" || echo "$l" >> "$QUEUE_FILE"
+  # IDEMPOTENT, AND **AUDITED** (2026-10-21, the Lead) ✓✓. `queue_remove` prints what it did because
+  # "A QUEUE THAT CHANGES SILENTLY IS A QUEUE NOBODY CAN TRUST" ✓✓ — but an ADD that printed nothing
+  # was the SAME defect in the other direction ✓✓: a lane's place being RESTORED is a queue change
+  # nobody can see, and the fleet's arms' fairness is the queue ✓✓ ⇒ ⇒ ⇒ BOTH SIDES NOW PRINT ✓✓.
+  if grep -qxF "$l" "$QUEUE_FILE"; then return 0; fi
+  local before after
+  before="$(queue_list | tr '\n' ' ')"
+  echo "$l" >> "$QUEUE_FILE"
+  after="$(queue_list | tr '\n' ' ')"
+  echo "QUEUE AUDIT — added '$l' · before: ${before:-（empty）} · after: ${after:-（empty）}" >&2
 }
 queue_remove() {
   local l="$1"
@@ -213,7 +222,16 @@ case "$cmd" in
     if [ "${h_granted:-0}" = "1" ]; then
       echo "ARM TOKEN RELEASED by $lane — a GRANTED turn ✓; the lane's queue place is KEPT ✓."
     else
-      queue_remove "$lane"
+      # A LANE THAT SPENT ITS TURN COMES BACK — AT THE BACK (2026-10-21, the Lead) ✓✓.
+      # `take` REMOVES the holder from the queue (it is running its arm now) ✓✓, so a plain `release`
+      # that ALSO removed it DROPPED THE LANE OUT OF THE QUEUE ENTIRELY ✓✓ — MEASURED: `java` took the
+      # token, ran, released, and VANISHED ⇒ the queue LOST a lane, the head jumped to `cpp`, and seven
+      # lanes were queued behind a head nobody was serving ✓✓ ⇒ THE TOKEN TOOK A LANE'S PLACE AND THEN
+      # TOOK THE LANE ITSELF ✓✓ ⇒ THAT IS NOT WHAT A TURN IS ✓✓.
+      # A LANE THAT HAS HAD ITS TURN IS NOT A LANE THAT HAS LEFT THE FLEET ✓✓ ⇒ `queue_add` (idempotent,
+      # appends at the BACK) ✓✓. The GRANTED branch above keeps its place because a granted turn never
+      # consumed one ✓✓ — ONE RULE PER CASE, AND EACH CASE IS NAMED ✓✓.
+      queue_add "$lane"
     fi
     echo "ARM TOKEN RELEASED by $lane"; exit 0
     ;;
