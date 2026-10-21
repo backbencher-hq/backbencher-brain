@@ -181,7 +181,14 @@ case "$cmd" in
       echo "NOT BEATEN — the token is held by '${h_lane:-nobody}', not by $lane."; exit 4
     fi
     h_pid="$(holder | sed -n 2p)"; h_ticks="$(holder | sed -n 3p)"
-    write_holder "$lane" "$h_pid" "$h_ticks"
+    # THE GRANTED FLAG MUST SURVIVE THE BEAT (2026-10-21, the dart lane's finding). `write_holder` takes
+    # the granted flag as its FOURTH argument (line 111 ✓✓) and writes it as the holder file's FIFTH line
+    # ✓✓, and the BEAT passed NO FOURTH ARGUMENT ✓✗ — so the FIRST BEAT turned a GRANTED turn into an ORDINARY
+    # one ✓✗, and the release then CONSUMED the lane's queue place ✓✗ — PRECISELY the defect `take-granted`
+    # was written to fix ✓✗, REAPPEARING THROUGH THE BEAT ✓✗. THE FIX IS ONE ARGUMENT ✓✓: carry the CURRENT
+    # flag through ✓✓ (`holder_granted` reads the fifth line ✓✓) — and the ordinary `take` still writes 0 ✓✓
+    # explicitly ✓✓, so a lane that was never granted cannot inherit one ✓✓.
+    write_holder "$lane" "$h_pid" "$h_ticks" "$(holder_granted)"
     echo "ARM TOKEN BEAT by $lane"; exit 0
     ;;
   release)
