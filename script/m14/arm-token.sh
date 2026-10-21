@@ -309,8 +309,22 @@ case "$cmd" in
     # heartbeat PROVES the holder is alive — and `force` must REFUSE a fresh heartbeat. The TTL path
     # already reclaims a dead holder; `force` exists only for the rarer case of a holder that is FROZEN
     # (alive, not beating), and it says so loudly and takes the displaced holder's place in the queue.
-    h_lane="$(holder | sed -n 1p)"; h_beat="$(holder | sed -n 4p)"
-    if token_fresh "$h_beat"; then
+    h_lane="$(holder | sed -n 1p)"; h_beat="$(holder | sed -n 4p)"; h_pid="$(holder | sed -n 2p)"
+    h_ticks="$(holder | sed -n 3p)"; now_ticks="$(proc_start_ticks "$h_pid" 2>/dev/null || echo 0)"
+    # ── THE CRASH RULE (2026-10-21, after the laptop restart) ────────────────────────────────────────
+    # A holder whose PROCESS IS GONE stops beating, and its beat is then "fresh" BY AGE — so the
+    # fresh-beat refusal above BLOCKED THE RECLAIM OF A HOLDER THAT NO LONGER EXISTS ✓✗, and the
+    # token stayed held by a pid that the restart had killed ✓✗ (measured: the python lane's pid 3901
+    # was GONE from /proc ✓, and the token still read HELD ✓✗). So the refusal must apply only to a
+    # holder that is ALIVE ✓✓ — checked by pid AND by its START TICKS ✓✓, so a REUSED pid cannot
+    # impersonate the holder ✓✓ (the start-ticks check is what makes the pid safe to trust ✓✓).
+    holder_alive=0
+    if [ -n "$h_pid" ] && [ "$now_ticks" != "0" ] && [ "$h_ticks" = "$now_ticks" ]; then holder_alive=1; fi
+    if [ "$holder_alive" = "0" ] && [ -n "$h_pid" ]; then
+      echo "NOTE — the holder '${h_lane}' (pid $h_pid) is GONE (no /proc entry, or its start-ticks do not match the holder's) ✓✓."
+      echo "       A CRASHED HOLDER IS NOT A LIVE HOLDER ✓✓, so the fresh-beat refusal does not apply ✓✓, and the reclaim proceeds ✓✓."
+    fi
+    if [ "$holder_alive" = "1" ] && token_fresh "$h_beat"; then
       if [ "${2:-}" != "--urgent" ]; then
         echo "REFUSED — the token is held by ${h_lane:-nobody} and its heartbeat is FRESH ($(( $(now) - h_beat ))s ago; TTL ${TTL}s)."
         echo "  A holder that is GONE stops beating, so a fresh heartbeat PROVES it is alive."
