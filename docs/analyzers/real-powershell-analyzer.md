@@ -1587,7 +1587,7 @@ sweep supplies; the baseline's existing `powershell:javascript`, `powershell:c`,
 analyzers over the powershell corpus.
 
 **The spec-shape audit** (the four shapes the fleet keeps finding) is clean: `handled_verified.types` and
-`internal_silent.types` are string arrays (50 / 86), `design_decision.decisions` exists (10), and
+`internal_silent.types` are string arrays (50 / 86), `design_decision.decisions` exists (11), and
 `gaps[].node_type` holds type names, not prose. Coverage is real: **154 wasm types, 154 classified, 0
 unclassified, 0 stale**, of which 18 are classified by PSD1-PS6's decision rows.
 
@@ -1598,3 +1598,48 @@ the same shape as lua's sentence-valued `gaps[].node_type`, one bucket over. Har
 rulings remain intact in each record's `question`/`resolution`, and the spec records the removal in
 `_spec_shape_2026_10_17`. Section A is unchanged after the edit. Full record:
 `validation/m14/verification/POWERSHELL-STATE.md`.
+
+---
+
+## PS-B18 (append-only record, 2026-10-20) — the relative-path escape, and the SECOND refuted claim
+
+**THE RULE, AND WHY IT IS NOT A RULE ABOUT SPELLINGS.** A dot-sourced path is a PROJECT FILE
+reference, not an external target. The 2026-10-19 form of the rule read "a relative path ending in
+`.ps1`"; the ARBITER asks a different question — "is this path one of the PROJECT's admitted files?"
+(`pathTargetInProject`, `script/m14/incoming-rule.ts`) — and the two disagreed on three axes, each
+MEASURED:
+
+- **THE EXTENSION.** The gate admits `powershell: "ps1,psm1,psd1"` (`incoming-gate.ts:134`) and
+  `pathTargetInProject` matches the admitted list by SUFFIX, so the extension is irrelevant to the
+  arbiter and decisive to the rule. Population census by the arbiter's own match (1,181 files /
+  30 repos): **47** distinct target spellings name an admitted project file — **26** `.ps1`,
+  **13** `.psm1`, **8** `.psd1`.
+- **THE SEPARATOR.** The old rule required one; the arbiter's suffix match does not — a bare
+  `Helper.psm1` matches any admitted file with that basename.
+- **THE ABSOLUTE CASE.** `/usr/lib/x.ps1` and `C:\x.ps1` were WITHHELD — a TRUE claim thrown away,
+  because the gate's project facts are REPO-RELATIVE (`path.relative(repoRoot, abs)`,
+  `incoming-gate.ts:577`) and no admitted path can answer an absolute norm.
+
+**THE SECOND REFUTED CLAIM.** `powershell/test/powershell/Modules/Microsoft.PowerShell.Security/
+FileCatalog.Tests.ps1:365` and `:366` publish `uses -> DSCResources\UserConfigProviderModVersion1\
+UserConfigProviderModVersion1.psm1` with `externalTarget: true`, and that file IS in the project; the
+arbiter's own `verifyExternalClaim` answers `externalRefuted` on both. The lane's `extFAIL` column
+read 0 anyway, because PS38 withholds the arbiter-readable key on a bare owner and `externalTarget`
+is not in `EXTERNAL_KEYS` — **the false claim was published AND INVISIBLE.**
+
+**THE RULE AS IT NOW STANDS.** Withhold the externality reading when the target ends in one of the
+lane's ADMITTED spellings (`.ps1`, `.psm1`, `.psd1`) AND its spelling is a RELATIVE path — not
+`/unix-rooted`, not `C:\drive`, not a URI scheme. This is the bash lane's rule ("withheld for all
+non-absolute paths now, kept only for /unix-rooted and C:\ drive", RESOLUTION-LEDGER) applied to
+powershell's own admitted spellings.
+
+**THE CLASS, NAMED.** THE ESCAPE WAS WRITTEN FROM A SPELLING RATHER THAN FROM THE ARBITER'S
+QUESTION, and a spelling-keyed answer to a project-keyed question hides in BOTH directions: it
+publishes false claims and discards true ones.
+
+**PINS.** Fixture `powershell/relative-path-psb18` — 9 path rows, the production shape (a
+CONSTANT-KEY ELEMENT ACCESS, published UNQUOTED), **8 of the 9 FLIP** between the 2026-10-19 rule and
+this one, and the 9th is a control that does not. Two mutants, both CAUGHT, each failing only that
+fixture: `relative-path-psb18-escape-narrowed` (the 2026-10-19 rule VERBATIM) and
+`relative-path-psb18-escape-widened`. Arms, the row-level reconciliation and the wall dispositions:
+`validation/m14/verification/POWERSHELL-VERDICT-2026-10-20.md`.
