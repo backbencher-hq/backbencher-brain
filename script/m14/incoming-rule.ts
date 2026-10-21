@@ -64,6 +64,15 @@ export const EXTERNAL_KEYS = [
   "stdlibModule",
   "moduleNamingEdges",
   "markAsExternal",
+  // powershell: the analyzer publishes `externalTarget`/`externalVia` for a target it believes is
+  // OUTSIDE the project ✓. The key space did not carry them ✓, so the arbiter's own rule could not
+  // SEE those claims at all ✓ — and a claim the arbiter cannot see is a claim it can neither verify
+  // NOR refute ✓✓, which is a THIRD answer and not a verdict ✓. The analyzer's key is the more
+  // specific one ✓, so the ARBITER learns the ANALYZER's key ✓ (the same shape as the clojure lane's
+  // `js/…` finding ✓✓). Named here rather than in the analyzer because a key the analyzer emits must
+  // be named in the arbiter's space ✓, and because the powershell lane's own census is the control ✓.
+  "externalTarget",
+  "externalVia",
   // dart: the first-heritage fallback in `real-dart-analyzer.ts`, which fires only where
   // NO evidence refutes the base (the base is a name this run cannot see) and only for a
   // member carrying the `@override` annotation. Named `isExternalBase` rather than one of
