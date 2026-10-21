@@ -118,7 +118,8 @@
  *       3 THE INSTRUMENT'S OWN CONTROL DID NOT FIRE.
  */
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 // THE ROUTER'S OWN DETECTION, imported rather than re-spelled: the basename clause below has to
@@ -647,9 +648,59 @@ function manifestDependenciesIn(dir: string): Set<string> | null {
     const t = v.trim()
     if (t.length > 0) deps.add(t)
   }
+  /**
+   * A MAVEN COORDINATE `group/artifact`, recorded in every spelling a Clojure libspec may use.
+   *
+   * ADDED 2026-10-20 (the clojure lane's proposal, wired by the Lead). A Clojure dependency is a MAVEN
+   * COORDINATE and the libspec a file writes is a NAMESPACE, so the coordinate is recorded as the
+   * coordinate itself (`babashka/fs`), the group-with-a-dot form (`babashka.fs`), the namespace form the
+   * convention implies (`<last group segment>.artifact` — `io.replikativ/datalog-parser` ->
+   * `replikativ.datalog-parser`) and the artifact alone (`fs`, which is what makes
+   * `borkdude/missing.test.assertions` -> `missing.test.assertions` match). The arbiter's matcher is
+   * EXACT or `/`-boundary and knows nothing about Clojure's group/artifact convention, so the reader
+   * must supply every spelling — the same thing the pom.xml reader already does for a maven coordinate.
+   */
+  const addCoord = (group: string, artifact: string): void => {
+    const g = group.trim()
+    const a = artifact.trim()
+    if (a.length === 0) return
+    if (g.length > 0) {
+      add(`${g}/${a}`)
+      add(`${g}.${a}`)
+      add(`${g.split("/").pop()}.${a}`)
+    }
+    add(a)
+  }
   let sawManifest = false
   const read = (name: string): string | null => {
     try { return readFileSync(path.join(dir, name), "utf8") } catch { return null }
+  }
+  // ── deps.edn (Clojure / tools.deps) — ADDED 2026-10-20 (clojure lane). A Clojure dependency is
+  // a MAVEN COORDINATE `group/artifact`, and the libspec a file writes is a NAMESPACE — so a
+  // coordinate is recorded in the spellings a Clojure libspec may use (see `addCoord`).
+  {
+    const text = read("deps.edn")
+    if (text !== null) {
+      sawManifest = true
+      for (const m of text.matchAll(/([A-Za-z0-9._-]+)\/([A-Za-z0-9._-]+)\s*\{/g)) addCoord(m[1]!, m[2]!)
+    }
+  }
+  // ── project.clj (Clojure / Leiningen) — ADDED 2026-10-20 (clojure lane). `:dependencies
+  // [[artifact "v"] [group/artifact "v"]]`, AND the PROFILE dependencies: clj-kondo's own
+  // `project.clj` puts ring-mock, next-jdbc, schema, compojure, potemkin, expectations, rum and
+  // clojure-lsp in the `:test` PROFILE, and the corpus's test fixtures require exactly those. **A READER
+  // THAT READ ONLY THE ROOT LIST WOULD REFUTE 977 ROWS THE PROJECT PLAINLY HAS.**
+  {
+    const text = read("project.clj")
+    if (text !== null) {
+      sawManifest = true
+      for (const m of text.matchAll(/\[\s*([A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)?)\s+"/g)) {
+        const spec = m[1]!
+        const slash = spec.indexOf("/")
+        if (slash > 0) addCoord(spec.slice(0, slash), spec.slice(slash + 1))
+        else addCoord("", spec)
+      }
+    }
   }
   // ── go.mod: `require`/`replace` blocks and single-line forms ──────────────────────────────────
   {

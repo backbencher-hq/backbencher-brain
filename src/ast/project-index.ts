@@ -1061,6 +1061,89 @@ export const SCSS_DECLARATION_SPEC: DeclarationSpec = {
 }
 
 /**
+ * THE OWN NAME OF A JAVA TYPE NODE — the LAST `type_identifier` of the name, and NEVER one that
+ * lives inside the type's type ARGUMENTS (`extends Foo<Bar>` is the base `Foo`, not `Bar`).
+ */
+const javaTypeOwnName = (n: Node): string => {
+  if (n.type === "type_identifier") return n.text.trim()
+  let last = ""
+  const walk = (x: Node): void => {
+    if (x.type === "type_arguments") return
+    if (x.type === "type_identifier") { last = x.text.trim(); return }
+    for (let i = 0; i < x.namedChildCount; i++) {
+      const c = x.namedChild(i)
+      if (c) walk(c)
+    }
+  }
+  walk(n)
+  return last
+}
+
+/**
+ * THE JAVA BASE NAMES — a java type's DIRECT base names, read from the grammar's OWN shape.
+ *
+ * MEASURED (java lane, 2026-10-20, on the farm corpus): tree-sitter-java's `superclass` node is
+ * `seq("extends", <type>)` — the base is an UNLABELLED child, and the node carries NO `ancestor`
+ * field. So the shared `baseNodes` path ENTERED once per superclass node and once per
+ * interface-list node and read NOTHING, and java's `typeBases` was EMPTY: 0 over clojure (190
+ * files) and 0 over grails-core (1,942 files). **A spec that declares `baseNodes` in a grammar
+ * whose base is an unlabelled child enters the path and reads nothing — a SILENT EMPTY.**
+ *
+ * THIS IS THE SPEC-LOCAL HALF, and the shared base branch is NOT touched: it is the instrument
+ * every lane's numbers flow through, and a spec-local resolver cannot move another lane's number
+ * (the control is that the other languages' `typeBases` stay byte-identical). Modelled on cpp's
+ * `cppBaseNames`, which reads the base clause off the TYPE node — the index calls `baseResolver` on
+ * the TYPE node, never on the clause node.
+ *
+ * THE CONTRACT:
+ *   - the DIRECT base names only, never transitive;
+ *   - a type with NO `extends` clause contributes NO base — java's implicit `java.lang.Object` is
+ *     not a base the project declares;
+ *   - each listed interface is recorded (a class's `implements` clause, an interface's `extends`
+ *     clause);
+ *   - the base's OWN name is the LAST segment of a written path (`Outer.Inner` -> `Inner`), the
+ *     same rule this file's other resolvers apply, so the lookup keys on a name a project would
+ *     have declared;
+ *   - TYPE ARGUMENTS are not bases: `extends Foo<Bar>` is the base `Foo`.
+ */
+const javaBaseNames = (n: Node): string[] => {
+  const out: string[] = []
+  const push = (name: string): void => {
+    if (name === "" || out.includes(name)) return
+    out.push(name)
+  }
+  for (let i = 0; i < n.childCount; i++) {
+    const clause = n.child(i)
+    if (!clause) continue
+    if (clause.type === "superclass") {
+      // `seq("extends", <type>)` — the base is the one non-keyword child.
+      for (let j = 0; j < clause.childCount; j++) {
+        const c = clause.child(j)
+        if (!c || c.type === "extends" || c.type === "implements") continue
+        push(javaTypeOwnName(c))
+      }
+      continue
+    }
+    if (clause.type === "super_interfaces" || clause.type === "extends_interfaces") {
+      // `seq(<keyword>, <type_list>)` — each listed type is one base.
+      for (let j = 0; j < clause.childCount; j++) {
+        const c = clause.child(j)
+        if (!c || c.type === "implements" || c.type === "extends") continue
+        if (c.type === "type_list") {
+          for (let k = 0; k < c.namedChildCount; k++) {
+            const t = c.namedChild(k)
+            if (t) push(javaTypeOwnName(t))
+          }
+          continue
+        }
+        push(javaTypeOwnName(c))
+      }
+    }
+  }
+  return out
+}
+
+/**
  * JAVA. The type unit is a compilation unit, the members are its declared members, and the bases live
  * in `superclass`/`super_interfaces`. `qualifyTypeWithFile` is what makes the index able to answer a
  * LOCALITY question at all: `import java.util.List` and `import org.grails.Foo` are the same shape and
@@ -1078,7 +1161,11 @@ export const JAVA_DECLARATION_SPEC: DeclarationSpec = {
   },
   memberNodes: ["method_declaration", "field_declaration", "constructor_declaration", "enum_constant", "annotation_type_element_declaration"],
   memberNodesCallable: ["method_declaration", "constructor_declaration"],
-  baseNodes: ["superclass", "super_interfaces", "extends_interfaces"],
+  // NO `baseNodes`: tree-sitter-java's `superclass` node carries the base as an UNLABELLED child and
+  // has no `ancestor` field, so the baseNodes path read nothing and java's `typeBases` was EMPTY
+  // (measured: 0 over clojure's 190 files and grails-core's 1,942). `baseResolver` — called on the
+  // TYPE node — is the working half, exactly as it is for cpp.
+  baseResolver: javaBaseNames,
   qualifyTypeWithFile: true,
 }
 
