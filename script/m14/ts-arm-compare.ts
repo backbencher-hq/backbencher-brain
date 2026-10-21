@@ -157,5 +157,15 @@ else fail(`*** arbitraryTwin RISEN by ${(at - refAt).toLocaleString()} ***`)
 
 console.log(`\nSELF-TEST: ${arm.selfTest ?? "(not in the log)"}`)
 if (arm.verdictLine) console.log(`THE GATE'S OWN VERDICT LINE: ${arm.verdictLine}`)
-console.log(`\nTHE ARM'S VERDICT: ${allSame && failures.length === 0 ? "REPRODUCED — every criterion holds" : failures.length ? "FAILURES ABOVE" : "MATCHES THE REFERENCE ON EVERY COLUMN, BUT A CRITERION FAILED — SEE ABOVE"}`)
+// THE SUMMARY'S THREE BRANCHES MUST EACH MATCH THE TABLE ABOVE THEM ✓✓ (the lane's own harness
+// printed "MATCHES THE REFERENCE ON EVERY COLUMN" on a run whose table showed DIFFERS on nine
+// columns ✓✗ — a summary that contradicts its own table is worse than no summary ✓✓).
+const verdict = allSame && failures.length === 0
+  ? "REPRODUCED — every criterion holds"
+  : failures.length
+    ? "FAILURES ABOVE — SEE THE MARKED ROWS"
+    : allSame
+      ? "MATCHES THE REFERENCE ON EVERY COLUMN, AND EVERY CRITERION HOLDS"
+      : "THE COLUMNS DIFFER FROM THE REFERENCE (see the DIFFERS rows above), AND EVERY CRITERION HOLDS ON THIS ARM"
+console.log(`\nTHE ARM'S VERDICT: ${verdict}`)
 if (failures.length) { console.log("\nFAILURES:"); for (const f of failures) console.log(`  - ${f}`) }
