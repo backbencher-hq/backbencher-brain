@@ -1451,9 +1451,26 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (node.type !== "source_file") {
+        // A `package` STATEMENT governs the rest of its ENCLOSING BLOCK, so a
+        // block's children are walked with a COPY of the state and the
+        // statement's mutation cannot escape the block.
+        //
+        // MEASURED (2026-10-21): the analyzer attributed a WHOLE FILE to a
+        // `package` statement declared LATER in it -- in
+        // mojo/t/mojo/base_util.t, `use Sub::Util qw(subname);` at line 3 and
+        // `subtest 'class_to_path' => sub {` at line 4 were filed under
+        // `MojoMonkeyTest`, while the `package MojoMonkeyTest;` statement is at
+        // line 19, inside a `{ }` inside a `subtest` sub: 12 edges the analyzer
+        // published that it should not have (8 `calls`, 4 `references`).
+        //
+        // THE FILE SCOPE keeps the SHARED state, so a top-level `package NAME;`
+        // still governs the rest of the file -- perl's rule -- and only a
+        // package inside a block is confined to that block.
+        const childState: WalkState =
+          node.type === "block" || node.type === "block_statement" ? { ...state } : state
         for (let i = 0; i < node.namedChildCount; i++) {
           const child = node.namedChild(i)
-          if (child) walk(child, state)
+          if (child) walk(child, childState)
         }
       }
     }
