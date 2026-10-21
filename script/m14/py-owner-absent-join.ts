@@ -169,6 +169,51 @@ const leaf = (n: string): string => {
  *   · the closure map is keyed on the owners THAT HAVE MEMBERS — a class-like symbol with no
  *     member symbol is NOT a key, and that is exactly the `c1 NO-MEMBER-KEY` class.
  */
+/** THE PUBLISHERS OF EACH (OWNER, MEMBER) PAIR — the file and the kind of every symbol published
+ *  under that owner with that name. This is the FACT the closure question turns on: a member the
+ *  gate's map holds and the claim's own file-local closure does not is either visible in the
+ *  claim's OWN file (the producer's closure is INCOMPLETE — a defect) or published from ANOTHER
+ *  file (the two closures have DIFFERENT SCOPES — a scope question). The two are different
+ *  problems and they need different fixes, so they are counted separately. */
+function buildMemberPublishers(symbols: any[]): Map<string, Array<{ owner: string; file: string; kind: string }>> {
+  const out = new Map<string, Array<{ owner: string; file: string; kind: string }>>()
+  for (const s of symbols) {
+    const name = String(s?.name ?? "")
+    const owner = String(s?.ownerName ?? s?.scope ?? "").trim()
+    if (name.length === 0 || owner.length === 0) continue
+    for (const k of new Set([owner, leaf(owner)])) {
+      const key = `${k}\u0000${name}`
+      let list = out.get(key)
+      if (!list) out.set(key, (list = []))
+      list.push({ owner, file: String(s?._laneFile ?? ""), kind: String(s?.kind ?? "") })
+    }
+  }
+  return out
+}
+
+/** THE QUALIFIED BASE CHAIN — the classes a class REALLY inherits from, by their written names.
+ *  The gate's own map keys owners by the name AND ITS LEAF, so the gate's inheritance chain is
+ *  LEAF-keyed; this map keeps the written (qualified) names, so a row can say WHICH class the
+ *  member really belongs to — and whether it belongs to a real ancestor at all. */
+function buildQualifiedBases(symbols: any[]): Map<string, string[]> {
+  const out = new Map<string, string[]>()
+  for (const s of symbols) {
+    const name = String(s?.name ?? "")
+    if (name.length === 0) continue
+    const owner = String(s?.ownerName ?? s?.scope ?? "").trim()
+    if (owner.length > 0) continue
+    const sup = (Array.isArray(s?.superTypes) ? s.superTypes : Array.isArray(s?.metadata?.superTypes) ? s.metadata.superTypes : [])
+      .filter((x: unknown): x is string => typeof x === "string" && x.length > 0)
+    if (sup.length === 0) continue
+    for (const k of new Set([name, leaf(name)])) {
+      const cur = out.get(k) ?? []
+      for (const b of sup) if (!cur.includes(b)) cur.push(b)
+      out.set(k, cur)
+    }
+  }
+  return out
+}
+
 function buildOwnerMembers(symbols: any[]): Map<string, Set<string>> {
   const supers = new Map<string, string[]>()
   const membersByName = new Map<string, Set<string>>()
@@ -367,6 +412,9 @@ let totalClaims = 0, totalVerified = 0, totalRefuted = 0, totalUnverified = 0, t
 const notReadByCause = new Map<string, number>()
 /** WHAT THE PROPOSED ARBITER RULE WOULD DECIDE on the not-read rows. */
 let wouldVerify = 0, wouldRefute = 0, wouldUnverifiable = 0
+/** WHY THE WOULD-REFUTE ROWS WOULD BE REFUTED — the closure question, counted. */
+const refuteCause = new Map<string, number>()
+const refuteKind = new Map<string, number>()
 let diffRealOnly = 0, diffSynthOnly = 0, diffBoth = 0
 /** THE RESIDUAL `ext?` CLASS, split by the guard that stopped the claim. */
 let extqClass = 0
@@ -408,7 +456,10 @@ for (const repo of reposToRun) {
       let r: any
       try { r = analyzer.analyze(trees[i]!.tree.rootNode, contents[i]!, files[i]!, { projectIndex: index } as any) } catch { continue }
       if (!r) continue
-      symbols.push(...(r.symbols ?? []))
+      // THE SYMBOL'S FILE — the run's own ABSOLUTE path, so a publisher is compared with the
+      // claim's file by the SAME PATH (two files in different directories can share a basename, and
+      // a basename comparison would misfile a row).
+      for (const sym of (r.symbols ?? [])) symbols.push({ ...sym, _laneFile: files[i]! })
       const c = collectRun(r.relationships ?? [], files[i]!)
       claims.push(...c.claims)
       for (const [k, v] of c.all) all.set(k, v)
@@ -432,6 +483,44 @@ for (const repo of reposToRun) {
   const synthIndex: any = { complete: true, typeKinds: synthKinds, typeMembers: new Map(), typeBases: new Map(), symbolCounts: synthCounts }
   const synth = runOne(synthIndex)
   const closed = buildOwnerMembers(real.symbols)
+  const publishers = buildMemberPublishers(real.symbols)
+  const qualifiedBases = buildQualifiedBases(real.symbols)
+  /** THE GATE'S OWN LEAF-KEYED INHERITANCE CHAIN from an owner. */
+  const ancestorChain = (owner: string): string[] => {
+    const out = [owner]
+    const seen = new Set([owner])
+    const st = [owner]
+    while (st.length > 0) {
+      const cur = st.pop() as string
+      for (const b of qualifiedBases.get(cur) ?? []) {
+        const k = leaf(b)
+        if (seen.has(k)) continue
+        seen.add(k)
+        out.push(k)
+        st.push(k)
+      }
+    }
+    return out
+  }
+  /** THE CLASSES A CLASS REALLY INHERITS FROM — the WRITTEN names only, closed over the written
+   *  bases. The leaf forms are DELIBERATELY NOT INCLUDED: the gate's map is leaf-keyed, so a
+   *  class that merely shares an ancestor's leaf name is NOT that ancestor, and comparing against
+   *  the leaf forms would let a name collision pass itself off as a real inheritance. */
+  const qualifiedAncestors = (owner: string): Set<string> => {
+    const out = new Set<string>()
+    const seen = new Set([owner])
+    const st = [owner]
+    while (st.length > 0) {
+      const cur = st.pop() as string
+      for (const b of qualifiedBases.get(cur) ?? []) {
+        if (seen.has(b)) continue
+        seen.add(b)
+        out.add(b)
+        st.push(b)
+      }
+    }
+    return out
+  }
   const owners = classLikeOwners(real.symbols)
 
   const counts: ClassCounts = { verified: 0, refuted: 0, unverified: 0, notRead: 0 }
@@ -451,7 +540,39 @@ for (const repo of reposToRun) {
       // failure, extFAIL, and must be counted as one), UNVERIFIABLE when the owner is unknown.
       const m = closed.get(c.owner)
       if (m === undefined) wouldUnverifiable++
-      else if (m.has(c.target)) wouldRefute++
+      else if (m.has(c.target)) {
+        wouldRefute++
+        // WHY DOES THE GATE'S MAP HOLD A MEMBER THE CLAIM'S CLOSURE DID NOT? The publishers of the
+        // (owner, member) pair are named from the run's own symbols, and the class is decided by
+        // WHERE the member is published: in the CLAIM's OWN file (the producer's closure is
+        // INCOMPLETE — a defect in the claim's own evidence) or in ANOTHER file only (the two
+        // closures have different SCOPES — the gate's map is repository-wide and the claim's
+        // closure is file-local). The two need different fixes, so they are counted apart.
+        // WHICH CLASS DOES THE GATE'S MAP THINK OWNS THE MEMBER? The gate's map is keyed by the
+        // owner name AND ITS LEAF, and its inheritance chain is LEAF-keyed too, so the member can
+        // come from a REAL ancestor or from a class that merely SHARES that ancestor's leaf name.
+        // The two are different facts with different fixes, so they are counted apart.
+        const chain = ancestorChain(c.owner)
+        let holderKey = ""
+        let pubs: Array<{ owner: string; file: string; kind: string }> = []
+        for (const a of chain) {
+          const p = publishers.get(`${a}\u0000${c.target}`) ?? []
+          if (p.length > 0) { holderKey = a; pubs = p; break }
+        }
+        const realAncestors = qualifiedAncestors(c.owner)
+        const real = pubs.filter((x) => realAncestors.has(x.owner))
+        const claimFile = String(c.file ?? "")
+        const inOwnFile = pubs.some((x) => x.file === claimFile)
+        const bucket = pubs.length === 0
+          ? "the gate's map holds the member through a chain this instrument could not name"
+          : real.length > 0
+            ? "the member comes from a REAL ancestor of the owner (the two closures have different SCOPES)"
+            : "the member comes from a class that is NOT an ancestor — a LEAF-NAME COLLISION in the gate's map"
+        refuteCause.set(bucket, (refuteCause.get(bucket) ?? 0) + 1)
+        const kindBucket = `published as: ${[...new Set(pubs.map((x) => x.kind))].sort().join("/") || "(no kind)"}`
+        refuteKind.set(kindBucket, (refuteKind.get(kindBucket) ?? 0) + 1)
+        addSample(`would-refute:${pubs.length === 0 ? "unnamed" : real.length > 0 ? "real-ancestor" : "leaf-collision"}`, `${path.relative(CR, c.file)}:${c.line} ${c.label} ${c.target} owner=${c.owner} gate-key=${holderKey} real-ancestors=${[...realAncestors].join(",")} publishers=${pubs.map((x) => `${x.owner}:${x.kind}@${path.relative(CR, x.file)}`).join(",") || "(none recorded)"}`)
+      }
       else wouldVerify++
       addSample("not-read", `${path.relative(CR, c.file)}:${c.line} ${c.label} ${c.target} owner=${c.owner} decls=${decls}`)
       continue
@@ -539,6 +660,9 @@ console.log(`claims (real index): ${totalClaims} · VERIFIED ${totalVerified} ·
 console.log(`closure: ${totalVerified} + ${totalRefuted} + ${totalUnverified} + ${totalNotRead} = ${totalVerified + totalRefuted + totalUnverified + totalNotRead} (claims ${totalClaims})`)
 console.log(`\nUNVERIFIED by named cause: ${JSON.stringify(sum(unverifiedByCause), null, 2)}`)
 console.log(`\nWHAT THE PROPOSED ARBITER RULE WOULD DECIDE on the NOT-READ rows: would VERIFY ${wouldVerify} · would REFUTE (extFAIL) ${wouldRefute} · would read UNVERIFIABLE ${wouldUnverifiable}`)
+console.log(`\nTHE WOULD-REFUTE ROWS, BY WHY THE GATE'S MAP HOLDS A MEMBER THE CLAIM'S CLOSURE DID NOT:`)
+console.log(`  ${JSON.stringify(sum(refuteCause), null, 2)}`)
+console.log(`  the member's published kind: ${JSON.stringify(sum(refuteKind), null, 2)}`)
 console.log(`\nTHE RESIDUAL ext? CLASS (the arbiter's own demotion condition, computed per row): ${extqClass} rows`)
 console.log(`split by the guard that stopped the claim: ${JSON.stringify(sum(extqByGuard), null, 2)}`)
 console.log(`\nSYNTHETIC-vs-REAL claim-set diff: real-only ${diffRealOnly} · synth-only ${diffSynthOnly} · both ${diffBoth}`)
@@ -550,7 +674,7 @@ if (OUT) {
     population: { files: pop.files.length, repos: pop.repos.length, absent: pop.absent, overCap: pop.overCap, reposRun: reposToRun.length },
     claims: totalClaims, verified: totalVerified, refuted: totalRefuted, unverified: totalUnverified, notRead: totalNotRead,
     notReadByCause: sum(notReadByCause),
-    proposedRule: { wouldVerify, wouldRefute, wouldUnverifiable },
+    proposedRule: { wouldVerify, wouldRefute, wouldUnverifiable, wouldRefuteByCause: sum(refuteCause), wouldRefuteByKind: sum(refuteKind) },
     unverifiedByCause: sum(unverifiedByCause), diff: { realOnly: diffRealOnly, synthOnly: diffSynthOnly, both: diffBoth, byCause: sum(diffByCause) },
     extqClass, extqByGuard: sum(extqByGuard),
     samples: Object.fromEntries(samples), perRepo,
