@@ -1,11 +1,20 @@
 // CLOJURE LANE — the pure-AST analyzer for Clojure (.clj/.cljc/.cljs).
 // Author: Muhammad Ishaq Khan
 // What this file is: parses the pinned tree-sitter-clojure grammar and publishes
-// the lane's symbols and all TEN relationship types: calls, uses, contains,
+// the lane's symbols and the TEN canonical relationship types: calls, uses, contains,
 // imports, references, exports, extends, implements, overrides and instantiates
 // (tagged-constructor forms; CLJ-D1 rules the rest out). Reader payloads are never
 // walked as code.
-// Grammar: wasm/tree-sitter-clojure.wasm (sha256 90f8866b74d04e16…).
+// NOT the four extended vocabulary values — decorates, renders, mixes_in, part_of.
+// This analyzer emits none of them, and the reason is a MEASURED ruling, not an omission:
+// the pinned grammar's own node-type inventory (35 named types) has no node that can
+// produce any of the four constructs, and the whole admitted population (646 files,
+// 3 repositories, 0 parse errors) publishes 0 rows of each.
+// Where that evidence lives: script/m14/clojure-census.ts (the lane's own whole-population
+// census) → validation/m14/measurements/clojure-census-whole.json, and the ruling with
+// its falsifiers in validation/m14/verification/CLOJURE-VERDICT-2026-10-20.md §2.2.
+// Grammar: wasm/tree-sitter-clojure.wasm
+// (sha256 90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27).
 // Docs / spec / fixtures / validations: docs/analyzers/real-clojure-analyzer.md ·
 // script/m14/spec/clojure-completeness.json · validation/m14/fixtures/clojure/** ·
 // validation/m14/verification/CLOJURE-STATE.md.
