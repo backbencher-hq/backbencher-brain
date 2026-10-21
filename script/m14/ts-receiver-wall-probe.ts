@@ -169,6 +169,31 @@ const NON_CLASS_TYPE_NODES = new Set([
   "predefined_type",
 ])
 
+/** THE NAMES A BINDING PATTERN INTRODUCES — the identifiers a destructuring pattern binds. */
+const collectPatternNames = (p: any, out: Set<string>): void => {
+  if (!p) return
+  if (p.type === "identifier" || p.type === "shorthand_property_identifier" || p.type === "shorthand_property_identifier_pattern") {
+    out.add(p.text)
+    return
+  }
+  if (p.type === "pair_pattern" || p.type === "pair") {
+    const v = p.childForFieldName?.("value") ?? p.namedChild(1) ?? p.namedChild(0)
+    if (v) collectPatternNames(v, out)
+    return
+  }
+  if (p.type === "object_assignment_pattern" || p.type === "assignment_pattern") {
+    const l = p.childForFieldName?.("left") ?? p.namedChild(0)
+    if (l) collectPatternNames(l, out)
+    return
+  }
+  if (p.type === "rest_pattern" || p.type === "spread_pattern" || p.type === "object_pattern" || p.type === "array_pattern") {
+    for (let i = 0; i < p.namedChildCount; i++) {
+      const c = p.namedChild(i)
+      if (c) collectPatternNames(c, out)
+    }
+  }
+}
+
 type Bucket = { count: number; samples: string[] }
 const buckets = new Map<string, Bucket>()
 const bump = (name: string, sample: string) => {
@@ -177,6 +202,46 @@ const bump = (name: string, sample: string) => {
   b.count++
   if (b.samples.length < 6) b.samples.push(sample)
 }
+
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// R5 · THE BOUND (charter §21.41 R5, 2026-10-20) — "a receiver-typing evidence class is bounded
+// by the DECLARED-POPULATION SHARE; the undeclared share is a VOCABULARY PROBLEM."
+//
+// THE DART MEASUREMENT THIS MIRRORS (`DART-DEPTH-D7.md` §5b, over proxicall's 16,395 unresolved
+// `uses` rows): W1 the FILE BINDS the name (a local/parameter of that file) · W2 the PROJECT
+// declares it (a member of a project-declared type; the SITE does not say which) · W3 the project
+// declares it NOWHERE (an SDK or third-party package member). Dart's answer: the receiver-typing
+// class could move 155 rows (0.9 %), not 16,395 — for the other 84.9 % there is no declaration for
+// ANY evidence class to point at, and the instrument for that share is the PACKAGE-SCOPE claim.
+//
+// THE SAME QUESTION, ASKED OF THIS LANE'S OWN WALL: the member calls with no owner. The NAME in
+// question is the RECEIVER ROOT (`cfg` in `cfg.run()`), because the row's own target is the member
+// LEAF and the leaf is not what a receiver-typing rule could point at.
+//
+// THE THREE CLASSES, AND WHAT EACH ONE MEANS FOR THE WALL:
+//   W1  the FILE binds the name   → the site COULD state the receiver's type: the lane's own
+//                                    file-local receiver classes are the evidence class, and their
+//                                    reach is the analyzer's own.
+//   W2  the PROJECT declares the name, the site does not say which
+//                                 → a CROSS-FILE receiver-typing evidence class could point at a
+//                                    declaration. **THIS IS THE BOUND R5 ASKS FOR.**
+//   W3  the project declares the name NOWHERE
+//                                 → an SDK / third-party member: a VOCABULARY question. The
+//                                    instrument for that share is the package-scope claim
+//                                    (charter §21.42), not a typing heuristic.
+//
+// THE KEY SPACE IS PER REPOSITORY, because production's scope IS the project: a name declared in
+// ANOTHER repository is not something this project's resolution could have used.
+// ─────────────────────────────────────────────────────────────────────────────────────────
+type WallRow = { root: string; sample: string; file: string; boundHere: boolean }
+const w1 = { count: 0, samples: [] as string[] }
+const w2 = { count: 0, samples: [] as string[] }
+const w3 = { count: 0, samples: [] as string[] }
+/** Rows whose receiver root is NOT a plain identifier (`expect(x).toBe`) carry no NAME at all, so
+ *  they are not W1/W2/W3 — they are outside the partition, and they are counted separately rather
+ *  than folded into W3, which would read as a declaration claim about a name that was never there. */
+const w0 = { count: 0, samples: [] as string[] }
+let wallRows = 0
 
 const disc = discover()
 let files = disc.files
@@ -195,8 +260,34 @@ let uses = 0
 let usesWithOwner = 0
 const parseFailures: string[] = []
 
+// ── R5's PER-REPOSITORY KEY SPACE AND ROW BUFFER ──────────────────────────────────────────────
+// production's scope is the PROJECT, so "the project declares it" is answered against THIS
+// repository's own declarations. The rows are buffered per repository and classified when the
+// repository's key space is complete — a name declared in a LATER file of the same repository
+// still counts, which a per-file answer would get wrong.
+let currentRepo = ""
+let repoDeclaredTypes = new Set<string>()
+let repoWallRows: WallRow[] = []
+const flushRepo = () => {
+  for (const r of repoWallRows) {
+    if (r.root.length === 0) { w0.count++; if (w0.samples.length < 6) w0.samples.push(r.sample); continue }
+    if (r.boundHere) { w1.count++; if (w1.samples.length < 6) w1.samples.push(r.sample); continue }
+    if (repoDeclaredTypes.has(r.root)) { w2.count++; if (w2.samples.length < 6) w2.samples.push(r.sample); continue }
+    w3.count++
+    if (w3.samples.length < 6) w3.samples.push(r.sample)
+  }
+  repoWallRows = []
+}
+
 for (const file of files) {
   const rel = file.startsWith(CR) ? file.slice(CR.length + 1) : file
+  const repoName = rel.split(path.sep)[0] ?? ""
+  if (repoName !== currentRepo) {
+    if (currentRepo !== "") flushRepo()
+    currentRepo = repoName
+    repoDeclaredTypes = new Set<string>()
+    repoWallRows = []
+  }
   let content: string
   try { content = fs.readFileSync(file, "utf8") } catch { parseFailures.push(`${rel}: unreadable`); continue }
   let tree: any
@@ -360,6 +451,47 @@ for (const file of files) {
     }
   }
   walkTypes(tree.rootNode)
+  // THE REPOSITORY'S KEY SPACE — the declared TYPE names, for R5's W2/W3 split.
+  for (const n of declaredTypeNames) repoDeclaredTypes.add(n)
+
+  // ── THE NAMES THIS FILE BINDS (R5's W1) ─────────────────────────────────────────────────────
+  // "the FILE binds the name" — a local, a parameter, a catch binding, a loop binding, a nested
+  // declaration, or an IMPORT. It is read from the AST (the file's own binding sites), because the
+  // analyzer publishes no binding table, and because a member access `cfg.run()` publishes the
+  // LEAF as its target — the receiver root is bound here but never appears in a row's own spelling.
+  const fileBoundNames = new Set<string>()
+  const collectBound = (node: any): void => {
+    const t = node?.type
+    if (t === "required_parameter" || t === "optional_parameter") {
+      const pat = node.childForFieldName("pattern") ?? node.childForFieldName("name") ?? node.namedChild(0)
+      if (pat) collectPatternNames(pat, fileBoundNames)
+    } else if (t === "variable_declarator") {
+      const nm = node.childForFieldName("name") ?? node.namedChild(0)
+      if (nm) collectPatternNames(nm, fileBoundNames)
+    } else if (t === "catch_clause") {
+      const pat = node.childForFieldName("parameter") ?? node.namedChild(0)
+      if (pat) collectPatternNames(pat, fileBoundNames)
+    } else if (t === "for_in_statement") {
+      const left = node.childForFieldName("left") ?? node.namedChild(0)
+      if (left?.type === "identifier") fileBoundNames.add(left.text)
+      else if (left) collectPatternNames(left, fileBoundNames)
+    } else if (
+      t === "function_declaration" || t === "generator_function_declaration" ||
+      t === "class_declaration" || t === "abstract_class_declaration" ||
+      t === "interface_declaration" || t === "enum_declaration" || t === "type_alias_declaration"
+    ) {
+      const nm = node.childForFieldName("name")
+      if (nm?.text) fileBoundNames.add(nm.text)
+    } else if (t === "import_specifier" || t === "namespace_import" || t === "import_clause") {
+      const nm = node.childForFieldName("name") ?? node.namedChild(0)
+      if (nm?.text) fileBoundNames.add(nm.text)
+    }
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c) collectBound(c)
+    }
+  }
+  collectBound(tree.rootNode)
 
   // THE LINE -> SCOPE MAP. The analyzer does not publish the scope of a row, so the scope of a
   // row is read from its LINE: the function-like node whose extent covers that line. Built from
@@ -411,6 +543,11 @@ for (const file of files) {
     const root = receiverRootOf(callee)
     const depth = chainDepth(callee)
     const sample = `${root}.… -> ${String(edge?.target ?? "")} @ ${rel}:${Number(md?.line ?? 0)}`
+    // ── R5's ROW: every member call with no owner enters the W1/W2/W3 partition. The row is
+    // recorded BEFORE the cause classification, so the partition covers the WHOLE wall and not
+    // only the rows that survived the cause buckets.
+    wallRows++
+    repoWallRows.push({ root, sample, file: rel, boundHere: fileBoundNames.has(root) })
     if (root.length === 0) { bump("receiver root is not a plain identifier", sample); continue }
     if (root === "this") { bump("receiver is `this` — the field's type is not stated (or the field is untyped)", sample); continue }
     if (isCallReceiver(callee)) { bump("receiver is a CALL result — the return type is not stated in this file", sample); continue }
@@ -483,6 +620,8 @@ for (const file of files) {
     bump("receiver is a LOCAL with NO type stated in this file — the type is not in the file", sample)
   }
 }
+// THE LAST REPOSITORY'S ROWS — flushed with its key space complete.
+if (currentRepo !== "") flushRepo()
 
 const pct = (n: number, d: number): string => (d === 0 ? "n/a" : `${((100 * n) / d).toFixed(1)}%`)
 console.log(`TS RECEIVER-WALL PROBE — corpus ${CR}`)
@@ -500,11 +639,31 @@ console.log(`\nTHE FALSIFIER: ${defect?.count ?? 0} rows where the file STATES t
 console.log(`  ZERO here means the analyzer reads every type the file states, and the wall is a TYPE-INFERENCE wall.`)
 console.log(`  NON-ZERO means the wall has a defect component: ${defect?.count ?? 0} stated types the analyzer did not read.`)
 
+// ── R5's BOUND (charter §21.41 R5) ────────────────────────────────────────────────────────────
+console.log(`\nR5's BOUND — the RECEIVER-TYPING EVIDENCE CLASS, bounded by the DECLARED-POPULATION SHARE:`)
+console.log(`  the wall: member calls with NO owner = ${wallRows}`)
+console.log(`  W0 no identifier root (no NAME)     ${String(w0.count).padStart(9)}  ${pct(w0.count, wallRows).padStart(6)}  (outside the partition — a call result or a literal receiver)`)
+console.log(`  W1 the FILE binds the name            ${String(w1.count).padStart(9)}  ${pct(w1.count, wallRows).padStart(6)}  (the lane's OWN file-local receiver classes are the evidence class)`)
+console.log(`  W2 the PROJECT declares it             ${String(w2.count).padStart(9)}  ${pct(w2.count, wallRows).padStart(6)}  (a CROSS-FILE receiver-typing class could point at a declaration)`)
+console.log(`  W3 the project declares it NOWHERE     ${String(w3.count).padStart(9)}  ${pct(w3.count, wallRows).padStart(6)}  (an SDK / third-party member — a VOCABULARY question; the instrument is the package-scope claim)`)
+console.log(`  a receiver-typing evidence class could move at most the W2 rows: ${w2.count} — not ${wallRows}.`)
+for (const [label, b] of [["W0", w0], ["W1", w1], ["W2", w2], ["W3", w3]] as const) {
+  for (const s of b.samples.slice(0, 3)) console.log(`    ${label} · ${s}`)
+}
+
 const report = {
   corpus: CR,
   population: { filesParsed: files.length, admitted: disc.admitted, repos: disc.repos, parseFailures: parseFailures.length },
   calls, memberCalls, ownerCarrying, uses, usesWithOwner,
   wall: { total: memberCalls - ownerCarrying, byCause: Object.fromEntries([...buckets.entries()].map(([k, v]) => [k, v.count])) },
+  r5Bound: {
+    wallRows,
+    W0_noIdentifierRoot: w0.count,
+    W1_fileBindsTheName: w1.count,
+    W2_projectDeclaresIt: w2.count,
+    W3_projectDeclaresItNowhere: w3.count,
+    samples: { W0: w0.samples, W1: w1.samples, W2: w2.samples, W3: w3.samples },
+  },
   falsifier: { defectClass: defect?.count ?? 0, samples: defect?.samples ?? [] },
 }
 if (JSON_OUT) {

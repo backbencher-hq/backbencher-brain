@@ -12,23 +12,24 @@
  *
  * ## The hypothesis this probe tests (and can REFUTE)
  *
- * `real-typescript-analyzer.ts` runs its claim passes in this order:
+ * `real-typescript-analyzer.ts` runs its claim passes in this order (the line numbers were re-read
+ * at HEAD on 2026-10-20; the first edition of this header cited lines ~50 earlier):
  *
- *   2828  publishImportedBindingEvidence   (evidence only — publishes `metadata.importedBindings`
+ *   2879  publishImportedBindingEvidence   (evidence only — publishes `metadata.importedBindings`
  *                                            on the imports rows; no marker of its own)
- *   2834  markExternalTargets              (file-local external markers: test-runner globals,
+ *   2885  markExternalTargets              (file-local external markers: test-runner globals,
  *                                            runtime globals, lib types)
- *   2840  applyProjectIndexClaims          (THE INDEX PASS — PASS 1 claims `imports` rows whose
- *                                            module root is not a project module (`module-namespace`);
- *                                            PASS 2 stamps `md.isExternalTarget` +
+ *   2891  applyProjectIndexClaims          (THE INDEX PASS — PASS 1 claims `imports` rows whose
+ *                                            module root is not a project module (`module-namespace`,
+ *                                            line 2512); PASS 2 stamps `md.isExternalTarget` +
  *                                            `externalReason: "imported-from-external-module"` on
  *                                            every row whose target is a binding imported from an
- *                                            EXTERNAL module)
- *   2845  applyLocalBindingSpellings       (re-spells to `<callable>\0<binding>` + `md.localBinding`)
- *   2846  applyImportedBindingClaims       (stamps `md.importedBinding = {specifier, binding}`)
+ *                                            EXTERNAL module (line 2539))
+ *   2896  applyLocalBindingSpellings       (re-spells to `<callable>\0<binding>` + `md.localBinding`)
+ *   2897  applyImportedBindingClaims       (stamps `md.importedBinding = {specifier, binding}`)
  *
  * `carriesClaimMarker()` (line 218) returns TRUE for `md.isExternalTarget === true`, and BOTH
- * binding passes consult it (lines 4740 and 4609). So a row the index pass already claimed is
+ * binding passes consult it (lines 4791 and 4660). So a row the index pass already claimed is
  * SKIPPED by the binding passes. THE CONSEQUENCE: in the `--index` arm a row that would have been a
  * BINDING CLAIM is instead an EXTERNAL CLAIM — a move between two CLAIM columns, decided purely
  * by PASS ORDER. The javascript analyzer has no index pass of this shape (its `markExternalClaims`
@@ -81,6 +82,7 @@
  *   BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/ts-claim-class-probe.ts 50 --json /tmp/probe.json
  */
 import * as fs from "node:fs"
+import { readFileSync } from "node:fs"
 import * as path from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 import { resolveWasmAsset } from "../../src/util/wasm"
@@ -96,6 +98,10 @@ const argv = process.argv.slice(2)
 const jsonIdx = argv.indexOf("--json")
 const JSON_OUT = jsonIdx >= 0 ? argv[jsonIdx + 1] : null
 const MAX_FILES = Number(argv.find((a) => /^\d+$/.test(a)) ?? 0)
+/** `--assert-table <gate-log>` — the clojure lane's template: the probe's OWN TABLE 1 is compared
+ *  with the GATE'S TABLE 1 for the same run, and the process exits 4 on any mismatch. Without it the
+ *  probe's table is the PROBE's attribution and is never presented as the gate's number. */
+const ASSERT_TABLE = (() => { const i = argv.indexOf("--assert-table"); return i >= 0 ? (argv[i + 1] ?? null) : null })()
 
 /** THE MARKER VOCABULARY, in the analyzer's own order. The first one present IS the claim that
  *  owns the row, because the arbiter's `externalClaimOf` reads them in the same precedence
@@ -199,13 +205,108 @@ type Arm = {
   byOutcome: Map<string, number>
   /** THE CLAIMS THE PROJECT WOULD REFUTE — the `extFAIL` risk, with samples. */
   refutedSamples: string[]
+  /**
+   * THE ROUTING SPLIT (charter R7, 2026-10-20) — for EVERY edge, which claim the ARBITER routed
+   * it to, and what that claim produced. `externalClaimOf` IS the routing decision (it is the
+   * arbiter's own function, imported above, never copied), so this tally is the shared
+   * instrument's routing measured, per arm.
+   *
+   * WHY IT IS A SEPARATE TALLY AND NOT THE OUTCOME TALLY: the outcome says where a row LANDED;
+   * the routing says which MECHANISM owned it. A row can land in `resolved` and still have been
+   * routed to a claim that was then read only to be recorded (`claimOnAmbiguous`) or not read at
+   * all (a name-model answer with `decls > 0`), so the two numbers are not two views of one
+   * number. The charter's rule is that a CLAIM is never merged into a RESOLUTION, and this
+   * tally is what keeps the two apart at the row level.
+   */
+  byClaim: Map<string, number>
+  /** For each claim kind, the outcome distribution it produced — the routing and its effect. */
+  claimOutcome: Map<string, Map<string, number>>
+  /**
+   * THE DISPLACEMENT, over EVERY row and not only the outcome-changed ones: rows the index pass
+   * claimed (`owner` + `imported-from-external-module`) whose SUPPRESSED claim would have verified
+   * too. The 2,885 figure the D7 page quotes was measured on a 376-file sample; this is the same
+   * question asked of the whole population, and it is asked in BOTH directions (index arm: what
+   * would the binding claim have said? no-index arm: what would the external claim have said?).
+   */
+  displacedByIndex: Map<string, number>
+  displacedByIndexTotal: number
+  /** The same, for the no-index arm's rows: what the index pass's claim would have said. */
+  displacedByNoIndex: Map<string, number>
+  displacedByNoIndexTotal: number
+  /**
+   * R5's BOUND (charter §21.41 R5) over the UNRESOLVED, NAME-SHAPED rows — the same partition the
+   * dart lane measured (`script/m14/dart-uses-wall-classes.ts`), asked of this lane's population:
+   *   W1 the FILE binds the name      → the analyzer published a binding-spelled row for that name
+   *                                     in that file, so the row is a read of a LOCAL.
+   *   W2 the PROJECT declares it as a MEMBER → the project declares the name as a member of some
+   *                                     type and the site does not say WHICH: THE RECEIVER-WALL
+   *                                     CLASS, and the only one a receiver-typing evidence class
+   *                                     could move.
+   *   W3 the project declares it NOWHERE → an SDK / third-party member: a VOCABULARY question, and
+   *                                     the instrument for that share is the package-scope claim.
+   */
+  r5: {
+    total: number
+    W1: number
+    W2: number
+    W3: number
+    byLabel: Map<string, Map<string, number>>
+    samples: string[]
+  }
+  /**
+   * THE `amb(decl)` CEILING (the clojure lane's correction, 2026-10-20). Production's name pass
+   * PREFERS THE EDGE'S OWN FILE, so an ambiguous row whose target is declared in the row's own file
+   * IS PRODUCTION-BOUND — the project's name space is ambiguous, production's resolution is not.
+   * The clojure lane measured 82.0 % of its ambiguous rows that way, which makes `amb(decl)` a
+   * CEILING on the production residual rather than the residual itself.
+   *
+   * `ambOwnFile` = production-bound (the row's own file declares the target) · `ambGenuine` = the
+   * name is ambiguous even for production (no file-local declaration to prefer).
+   */
+  ambCeiling: {
+    ambRows: number
+    ambOwnFile: number
+    ambGenuine: number
+    byLabel: Map<string, { own: number; genuine: number }>
+  }
+  /** THE PROBE'S OWN TABLE 1 — the per-type class table, for the assertion against the gate's. */
+  table: Record<string, number[]>
 }
 
 const stableKey = (label: string, file: string, line: number): string => `${label}\0${file}\0${line}`
 
+/**
+ * IS THE TARGET A PLAIN NAME? — the shape R5's partition is asked over.
+ *
+ * A name-shaped target is a single identifier: no dot (not a qualified path), no colon (not a
+ * `module:item`), no slash (not a path), and no NUL (not a binding spelling). The rows this
+ * excludes are a DIFFERENT class — a module path, an `imports` target, a binding spelling — and
+ * they are counted in the report as excluded rather than silently folded into a class.
+ */
+const isNameShaped = (t: string): boolean => {
+  if (t.length === 0) return false
+  for (const ch of t) {
+    const ok = (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || (ch >= "0" && ch <= "9") || ch === "_" || ch === "$"
+    if (!ok) return false
+  }
+  return true
+}
+
 const runArm = async (useIndex: boolean): Promise<Arm> => {
   const groups = new Map<string, RowRec[]>()
   const byOutcome = new Map<string, number>()
+  const byClaim = new Map<string, number>()
+  const claimOutcome = new Map<string, Map<string, number>>()
+  const displacedByIndex = new Map<string, number>()
+  const displacedByNoIndex = new Map<string, number>()
+  let displacedByIndexTotal = 0
+  let displacedByNoIndexTotal = 0
+  const r5 = { total: 0, W1: 0, W2: 0, W3: 0, byLabel: new Map<string, Map<string, number>>(), samples: [] as string[] }
+  const ambCeiling = { ambRows: 0, ambOwnFile: 0, ambGenuine: 0, byLabel: new Map<string, { own: number; genuine: number }>() }
+  /** THE PROBE'S OWN TABLE 1 — the per-type class table. */
+  const table: Record<string, number[]> = {}
+  const TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates", "decorates", "renders", "mixes_in", "part_of"]
+  for (const t of TYPES) table[t] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   /** THE CLAIMS THE PROJECT WOULD REFUTE — the `extFAIL` risk. */
   const refutedSamples: string[] = []
   let files = 0
@@ -234,8 +335,30 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
     // (PER-PROJECT scope: production's scope). The probe builds it the same way so its
     // `classifyEdge` answers the same question the gate's does.
     const pDecl = new Map<string, number>()
+    /** THE FILES THAT DECLARE EACH NAME — production's name pass prefers the edge's OWN FILE, so a
+     *  row whose target is declared in its own file is PRODUCTION-BOUND even when the project's name
+     *  space is ambiguous. The clojure lane measured 82.0 % of its ambiguous rows this way
+     *  (2026-10-20), which makes `amb(decl)` a CEILING on the production residual and not the
+     *  residual itself. This map is the same fact, for this lane. */
+    const declFiles = new Map<string, Set<string>>()
     const pKinds = new Map<string, Set<string>>()
     const pFiles = new Set<string>()
+    /** THE PROJECT'S MEMBER NAMES — the names the project declares as a MEMBER of some type. This is
+     *  a DIFFERENT key space from `pDecl` (which counts any declaration by name): it is the space a
+     *  member read is resolved against, and it is what R5's W2 class asks ("the project declares it
+     *  as a member; the site does not say WHICH type"). */
+    const pMembers = new Set<string>()
+    /** THE CLASS-LIKE NAMES OF THIS REPOSITORY — the owners a member can belong to. Accumulated
+     *  across the repository's files, because a member's owner may be declared in ANOTHER file. */
+    const CLASSLIKE_KINDS = new Set(["class", "interface", "enum", "namespace", "module", "internal_module", "record", "struct", "trait", "abstract_class"])
+    let repoClassLike = new Set<string>()
+    let repoMemberCandidates: { name: string; owner: string }[] = []
+    /** THE NAMES THE FILE BINDS — from the analyzer's OWN output for that file: a BINDING-SPELLED row
+     *  (`<callable>\0<binding>` + `metadata.localBinding`) is the family's own spelling for a local
+     *  read, so the name IS a local of that file. This is R5's W1 class, measured from the analyzer's
+     *  own rows rather than guessed from the name's spelling (a name's shape says nothing: the dart
+     *  lane measured 77.7 % "local" by shape and every hand-read sample was an SDK member). */
+    const fileLocalNames = new Map<string, Set<string>>()
     const importEvidence = new Map<string, Map<string, Set<string>>>()
     const repoRows: { rec: RowRec; rel: any }[] = []
     for (const abs of filesIn) {
@@ -254,10 +377,27 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
         const key = String(s?.name ?? "")
         if (key.length === 0) continue
         pDecl.set(key, (pDecl.get(key) ?? 0) + 1)
+        let dFiles = declFiles.get(key)
+        if (!dFiles) declFiles.set(key, (dFiles = new Set()))
+        dFiles.add(relFile)
         const ks = pKinds.get(key)
         const kind = String((s as any)?.kind ?? "")
         if (ks) ks.add(kind)
         else pKinds.set(key, new Set([kind]))
+        // THE MEMBER KEY SPACE (R5's W2) — a symbol that BELONGS to a TYPE is a MEMBER of it. The
+        // owner must be a CLASS-LIKE declaration (the arbiter's own owner-channel rule: a member set
+        // lives in a class, an interface, an enum or a namespace), so the test is the owner's KIND
+        // and not "the symbol has an ownerName" — a top-level symbol's owner is the FILE, and a file
+        // is not a type. (Measured: the analyzer publishes a top-level class with `ownerName` = the
+        // file's stem, so the looser test would put every FILE NAME in the member space.)
+        //
+        // THE OWNER MAY LIVE IN ANOTHER FILE, so the class-like set is the REPOSITORY's and the
+        // member candidates are resolved when the repository's key space is complete.
+        if (CLASSLIKE_KINDS.has(kind)) repoClassLike.add(key)
+        const ownerName = typeof (s as any)?.ownerName === "string" && String((s as any).ownerName).length > 0
+          ? String((s as any).ownerName)
+          : null
+        if (ownerName !== null) repoMemberCandidates.push({ name: key, owner: ownerName })
       }
       for (const r of parsed.relationships ?? []) {
         const md: any = r.metadata ?? {}
@@ -267,6 +407,17 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
         const target = String(r.target ?? "")
         const line = Number(r.line ?? r.lineStart ?? 0)
         total++
+        // THE FILE'S OWN BOUND NAMES (R5's W1) — collected from the analyzer's OWN rows for THIS
+        // file, before any classification, so the test is made against the same output the rows came
+        // from. A BINDING-SPELLED row is the family's spelling for a local read.
+        if (md.localBinding === true) {
+          const at = target.lastIndexOf("\0")
+          if (at > 0 && at < target.length - 1) {
+            let set = fileLocalNames.get(relFile)
+            if (!set) fileLocalNames.set(relFile, (set = new Set()))
+            set.add(target.slice(at + 1))
+          }
+        }
         const rec: RowRec = {
           marker, reason, label, target, file: relFile, line, source,
           outcome: "", claimKind: "", altOutcome: "", altClaimKind: "", extClaimRisk: "", extClaimActual: "",
@@ -296,6 +447,11 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
       }
     }
     // ── THE ARBITER'S CLASSIFICATION, over the finished key space (the gate's own order).
+    // THE REPOSITORY'S MEMBER SET — resolved now, with the repository's OWN class-like names
+    // complete (a member's owner may be declared in another file of the same repository).
+    for (const c of repoMemberCandidates) {
+      if (repoClassLike.has(c.owner)) pMembers.add(c.name)
+    }
     const facts = { packages: new Set<string>(), files: pFiles, sdkLib: false, importsByFile: importEvidence }
     for (const { rec, rel } of repoRows) {
       const claim = externalClaimOf(rel)
@@ -304,6 +460,69 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
       rec.outcome = c.outcome
       rec.claimKind = claim?.kind ?? "-"
       byOutcome.set(c.outcome, (byOutcome.get(c.outcome) ?? 0) + 1)
+      // ── THE ROUTING SPLIT (charter R7) ───────────────────────────────────────────────────────
+      // The claim the ARBITER routed the row to. `externalClaimOf` is that decision (imported from
+      // the shared instrument, never copied), so this tally is the routing itself, measured.
+      const claimKey = claim?.kind ?? "(no claim)"
+      byClaim.set(claimKey, (byClaim.get(claimKey) ?? 0) + 1)
+      // THE PROBE'S OWN TABLE 1 — the same columns the gate prints, from the same `classifyEdge`.
+      {
+        const row = table[rec.label]
+        if (row) {
+          row[0]! += 1
+          switch (c.outcome) {
+            case "resolved": row[1]! += 1; break
+            case "ambDeclOnly": row[3]! += 1; break
+            case "ambBoth": row[3]! += 1; row[4]! += 1; break
+            case "unresolved": row[5]! += 1; break
+            case "externalVerified": row[6]! += 1; break
+            case "externalUnverified": row[7]! += 1; break
+            case "externalRefuted": row[8]! += 1; break
+            case "bindingVerified": row[9]! += 1; break
+            case "bindingUnverified": row[10]! += 1; break
+            case "bindingRefuted": row[11]! += 1; break
+            case "causeDeclared": row[12]! += 1; break
+            case "causeRefuted": row[13]! += 1; break
+            default: break
+          }
+        }
+      }
+      // THE `amb(decl)` CEILING — an ambiguous row whose OWN FILE declares the target is
+      // PRODUCTION-BOUND (production prefers the row's own file), so the column is a CEILING.
+      if (c.outcome === "ambDeclOnly" || c.outcome === "ambBoth") {
+        ambCeiling.ambRows++
+        const files = declFiles.get(rec.target)
+        const own = files !== undefined && files.has(rec.file)
+        if (own) ambCeiling.ambOwnFile++
+        else ambCeiling.ambGenuine++
+        let byL = ambCeiling.byLabel.get(rec.label)
+        if (!byL) ambCeiling.byLabel.set(rec.label, (byL = { own: 0, genuine: 0 }))
+        if (own) byL.own++
+        else byL.genuine++
+      }
+      let co = claimOutcome.get(claimKey)
+      if (!co) claimOutcome.set(claimKey, (co = new Map()))
+      co.set(c.outcome, (co.get(c.outcome) ?? 0) + 1)
+      // ── R5's BOUND over the UNRESOLVED NAME-SHAPED rows ─────────────────────────────────────
+      // A row whose target is a plain IDENTIFIER and that NOTHING declares is the class R5 asks
+      // about: is there a declaration for ANY evidence class to point at? The three answers are
+      // measured against this arm's OWN key spaces (the file's binding-spelled names, the project's
+      // member names, and the project's name space).
+      if (c.outcome === "unresolved" && isNameShaped(rec.target)) {
+        r5.total++
+        const bound = fileLocalNames.get(rec.file)
+        let cls: "W1" | "W2" | "W3"
+        if (bound && bound.has(rec.target)) cls = "W1"
+        else if (pMembers.has(rec.target)) cls = "W2"
+        else cls = "W3"
+        if (cls === "W1") r5.W1++
+        else if (cls === "W2") r5.W2++
+        else r5.W3++
+        let byL = r5.byLabel.get(rec.label)
+        if (!byL) r5.byLabel.set(rec.label, (byL = new Map()))
+        byL.set(cls, (byL.get(cls) ?? 0) + 1)
+        if (r5.samples.length < 12) r5.samples.push(`${cls} ${rec.label} ${rec.source} -> ${rec.target} @ ${rec.file}:${rec.line}`)
+      }
       const alt0 = counterfactualClaim(rel.metadata ?? {}, claim)
       if (alt0) {
         // The DIRECT case's binding name is the row's own target.
@@ -311,6 +530,22 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
         const c2 = classifyEdge(pDecl, pKinds, rec.target, alt, facts, isContains, undefined, undefined, rec.file)
         rec.altOutcome = c2.outcome
         rec.altClaimKind = alt.kind
+        // ── THE DISPLACEMENT, EVERY ROW, NOT ONLY THE OUTCOME-CHANGED ONES ───────────────────
+        // THE INDEX ARM: the index pass claimed the row (`owner` + `imported-from-external-module`),
+        // so the binding passes SKIPPED it. The counterfactual is the claim the guard suppressed —
+        // and the question is not "did the row move" but "would the suppressed claim have
+        // VERIFIED", because a row that moves between two columns where BOTH claims are true is a
+        // ROUTING effect, not a truth effect (charter R7).
+        if (useIndex && claim?.kind === "owner" && String((rel.metadata as any)?.externalReason ?? "") === "imported-from-external-module") {
+          displacedByIndex.set(c2.outcome, (displacedByIndex.get(c2.outcome) ?? 0) + 1)
+          displacedByIndexTotal++
+        }
+        // THE NO-INDEX ARM: the row carries the imported-binding claim here, and the index arm
+        // routes it to the external claim instead. The counterfactual is that external claim.
+        if (!useIndex && claim?.kind === "importedBinding") {
+          displacedByNoIndex.set(c2.outcome, (displacedByNoIndex.get(c2.outcome) ?? 0) + 1)
+          displacedByNoIndexTotal++
+        }
       }
       // ── THE EXTERNAL CLAIM'S OWN RISK. The index pass's claim is answered through the SYMBOL
       // KEY SPACE, so a declaration of that name ANYWHERE in the project REFUTES it — and a
@@ -334,7 +569,7 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
       }
     }
   }
-  return { groups, files, total, byOutcome, refutedSamples }
+  return { groups, files, total, byOutcome, refutedSamples, byClaim, claimOutcome, displacedByIndex, displacedByIndexTotal, displacedByNoIndex, displacedByNoIndexTotal, r5, ambCeiling, table }
 }
 
 console.log(`TS CLAIM-CLASS PROBE — corpus ${CR} · maxFiles ${MAX_FILES} per repo (0 = whole population)`)
@@ -435,6 +670,153 @@ for (const o of OUTCOME_COLS) {
   const b = withIndex.byOutcome.get(o) ?? 0
   if (a === 0 && b === 0) continue
   console.log(`    ${o.padEnd(20)} ${String(a).padStart(9)} -> ${String(b).padStart(9)}   delta ${b - a > 0 ? "+" : ""}${b - a}`)
+}
+
+// ── THE ROUTING SPLIT (charter R7, 2026-10-20) ─────────────────────────────────────────────────
+// "The arbiter's preference is already correct; the movement is visible only because the gate does
+// not report the routing split — so the routing-split print is owed, and the number is per-arm."
+//
+// THIS IS THAT NUMBER. `externalClaimOf` IS the routing decision — the shared instrument's own
+// function, imported above — so the tally below is the routing MEASURED, per arm, over EVERY edge.
+//
+// WHY IT IS NOT THE OUTCOME TALLY: the outcome says where a row LANDED; the routing says which
+// MECHANISM owned it. A row that landed in `resolved` may still have been routed to a claim that
+// was then only recorded (`claimOnAmbiguous`) or never read (a name-model answer with decls > 0).
+// The charter's rule — a claim is never merged into a resolution — is exactly the statement that
+// these two numbers must be read as two numbers.
+console.log(`\nROUTING SPLIT (the arbiter's routing decision — every edge, by the claim that owns it):`)
+const claimKeys = [...new Set([...noIndex.byClaim.keys(), ...withIndex.byClaim.keys()])]
+  .sort((a, b) => (withIndex.byClaim.get(b) ?? 0) - (withIndex.byClaim.get(a) ?? 0)
+    || (noIndex.byClaim.get(b) ?? 0) - (noIndex.byClaim.get(a) ?? 0))
+for (const k of claimKeys) {
+  const a = noIndex.byClaim.get(k) ?? 0
+  const b = withIndex.byClaim.get(k) ?? 0
+  const d = b - a
+  console.log(`  ${k.padEnd(20)} no-index ${String(a).padStart(9)}   --index ${String(b).padStart(9)}   delta ${d > 0 ? "+" : ""}${d}`)
+}
+const noClaimTotal = (noIndex.byClaim.get("(no claim)") ?? 0)
+const idxClaimTotal = (withIndex.byClaim.get("(no claim)") ?? 0)
+console.log(`  ${"TOTAL".padEnd(20)} no-index ${String(noIndex.total).padStart(9)}   --index ${String(withIndex.total).padStart(9)}`)
+console.log(`  a CLAIM-carrying row: no-index ${noIndex.total - noClaimTotal} · --index ${withIndex.total - idxClaimTotal}   (the name model owns the rest)`)
+
+console.log(`\nWHAT EACH ROUTED CLAIM PRODUCED (the --index arm; the outcome the routed claim produced):`)
+for (const k of claimKeys) {
+  const co = withIndex.claimOutcome.get(k)
+  if (!co) continue
+  const parts = [...co.entries()].sort((a, b) => b[1] - a[1]).map(([o, n]) => `${o} ${n}`).join(" · ")
+  console.log(`  ${k.padEnd(20)} ${parts}`)
+}
+
+// ── THE DISPLACEMENT, WHOLE POPULATION, BOTH DIRECTIONS ────────────────────────────────────────
+// The D7 page's 2,885 figure was measured on a 376-file sample. This is the same question asked of
+// every row of the arm, in BOTH directions, so the two can be checked against each other.
+console.log(`\nTHE DISPLACEMENT — rows the index pass claimed, and what the SUPPRESSED claim would have said:`)
+console.log(`  --index arm · rows the index pass claimed (owner + imported-from-external-module): ${withIndex.displacedByIndexTotal}`)
+for (const [k, n] of [...withIndex.displacedByIndex.entries()].sort((a, b) => b[1] - a[1])) {
+  console.log(`      the suppressed claim would have said: ${k.padEnd(22)} ${String(n).padStart(9)}`)
+}
+console.log(`  no-index arm · rows carrying the imported-binding claim: ${noIndex.displacedByNoIndexTotal}`)
+for (const [k, n] of [...noIndex.displacedByIndex.entries()].sort((a, b) => b[1] - a[1])) {
+  console.log(`      the index pass's claim would have said: ${k.padEnd(20)} ${String(n).padStart(9)}`)
+}
+for (const [k, n] of [...noIndex.displacedByNoIndex.entries()].sort((a, b) => b[1] - a[1])) {
+  console.log(`      the index pass's claim would have said: ${k.padEnd(20)} ${String(n).padStart(9)}`)
+}
+
+// ── R5's BOUND (charter §21.41 R5) ─────────────────────────────────────────────────────────────
+// "A RECEIVER-TYPING EVIDENCE CLASS IS BOUNDED BY THE DECLARED-POPULATION SHARE; THE UNDECLARED
+// SHARE IS A VOCABULARY PROBLEM." MEASURED (dart lane, proxicall's 16,395 unresolved `uses` rows):
+// W1 the file binds it 2,316 (14.1%) · W2 the PROJECT declares it 155 (0.9%) · W3 the project
+// declares it NOWHERE 13,924 (84.9%). "So a receiver-typing evidence class could move at most 155
+// rows, not 16,395."
+//
+// THE SAME PARTITION, ASKED OF THIS LANE'S OWN POPULATION, over the UNRESOLVED rows whose target is
+// a plain NAME (a module path, an `imports` target and a binding spelling are a different class and
+// are not in this partition).
+// ── THE `amb(decl)` CEILING (the clojure lane's correction) ───────────────────────────────────
+console.log(`\nTHE amb(decl) CEILING — production PREFERS THE EDGE'S OWN FILE, so an ambiguous row whose own file declares the target is PRODUCTION-BOUND:`)
+for (const [armName, arm] of [["no-index", noIndex], ["--index", withIndex]] as const) {
+  const a = arm.ambCeiling
+  const pctOf = (n: number) => (a.ambRows === 0 ? "n/a" : `${((100 * n) / a.ambRows).toFixed(1)}%`)
+  console.log(`  ${armName}: ${a.ambRows} ambiguous rows`)
+  console.log(`    the row's OWN FILE declares the target (production-bound)  ${String(a.ambOwnFile).padStart(9)}  ${pctOf(a.ambOwnFile).padStart(6)}`)
+  console.log(`    genuinely ambiguous (no file-local declaration)             ${String(a.ambGenuine).padStart(9)}  ${pctOf(a.ambGenuine).padStart(6)}`)
+  for (const [label, v] of [...a.byLabel.entries()].sort((x, y) => y[1].own + y[1].genuine - (x[1].own + x[1].genuine))) {
+    console.log(`      ${label.padEnd(14)} own-file ${String(v.own).padStart(8)} · genuinely ambiguous ${String(v.genuine).padStart(8)}`)
+  }
+}
+
+// ── THE PROBE'S OWN TABLE 1, AND THE ASSERTION AGAINST THE GATE'S ──────────────────────────────
+console.log(`\nTHE PROBE'S OWN TABLE 1 (the same columns the gate prints, from the same classifyEdge):`)
+const TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates", "decorates", "renders", "mixes_in", "part_of"]
+const COLS = ["edges", "resolved", "collRes", "ambDecl", "ambKind", "unresolved", "extOK", "extQ", "extFAIL", "bindOK", "bindQ", "bindFAIL", "causeOK", "causeFAIL"]
+console.log(`  ${"type".padEnd(13)} ${COLS.map((c) => c.padStart(9)).join(" ")}`)
+for (const t of TYPES) {
+  const row = withIndex.table[t] ?? []
+  console.log(`  ${t.padEnd(13)} ${row.map((n) => String(n).padStart(9)).join(" ")}`)
+}
+{
+  const totals = COLS.map((_, i) => TYPES.reduce((a, t) => a + (withIndex.table[t]?.[i] ?? 0), 0))
+  console.log(`  ${"TOTAL".padEnd(13)} ${totals.map((n) => String(n).padStart(9)).join(" ")}`)
+  const classSum = totals[0]! - (totals[1]! + totals[3]! + totals[5]! + totals[6]! + totals[7]! + totals[8]! + totals[9]! + totals[10]! + totals[11]! + totals[12]! + totals[13]!)
+  console.log(`  the probe's own closure: ${classSum === 0 ? "EXACT — the class sum equals the edge count" : `NOT EXACT — delta ${classSum}`}`)
+}
+if (ASSERT_TABLE) {
+  let gateLog = ""
+  try { gateLog = readFileSync(ASSERT_TABLE, "utf8") } catch (e) {
+    console.log(`  THE ASSERTION AGAINST THE GATE'S OWN TABLE 1: the log ${ASSERT_TABLE} could not be read — ${(e as Error).message}`)
+    process.exitCode = 4
+  }
+  if (gateLog.length > 0) {
+    const gateTable: Record<string, number[]> = {}
+    // THE HARNESS: the gate prints one row per type, whitespace-separated, with a "." for a zero
+    // in some tables — so the row is read by SPLITTING ON WHITESPACE and taking the first 15
+    // tokens, and a "." reads as 0. (The first version of this harness used a 14-group regex and
+    // matched NOTHING — the harness was wrong, not the probe.)
+    for (const line of gateLog.split("\n")) {
+      const t = line.trim().split(/\s+/)
+      if (t.length < 15) continue
+      if (!TYPES.includes(t[0]!)) continue
+      const nums: number[] = []
+      let ok = true
+      for (let i = 1; i <= 14; i++) {
+        const raw = t[i]!
+        if (raw === ".") { nums.push(0); continue }
+        const n = Number(raw.replace(/,/g, ""))
+        if (!Number.isFinite(n)) { ok = false; break }
+        nums.push(n)
+      }
+      if (ok && nums.length === 14) gateTable[t[0]!] = nums
+    }
+    let mismatches = 0
+    for (const t of TYPES) {
+      const probeRow = withIndex.table[t] ?? []
+      const gateRow = gateTable[t]
+      if (!gateRow) { console.log(`  ${t.padEnd(13)} the GATE'S LOG HAS NO ROW FOR IT — the assertion cannot be made for this type`); mismatches++; continue }
+      for (let i = 0; i < COLS.length; i++) {
+        if ((probeRow[i] ?? 0) !== (gateRow[i] ?? 0)) {
+          console.log(`  ${t.padEnd(13)} ${COLS[i]}: probe ${probeRow[i] ?? 0} vs gate ${gateRow[i] ?? 0} — MISMATCH`)
+          mismatches++
+        }
+      }
+    }
+    console.log(`  THE ASSERTION AGAINST THE GATE'S OWN TABLE 1 (${ASSERT_TABLE}): ${mismatches === 0 ? "REPRODUCED — every column of every type matches the gate's own table" : `${mismatches} MISMATCH(ES) — the probe's table is NOT the gate's table, and the numbers above are the PROBE's attribution, not the gate's`}`)
+    if (mismatches > 0) process.exitCode = 4
+  }
+}
+
+console.log(`\nR5's BOUND — the RECEIVER-TYPING EVIDENCE CLASS, over the UNRESOLVED NAME-SHAPED rows:`)
+for (const [armName, arm] of [["no-index", noIndex], ["--index", withIndex]] as const) {
+  const r = arm.r5
+  const pctOf = (n: number) => (r.total === 0 ? "n/a" : `${((100 * n) / r.total).toFixed(1)}%`)
+  console.log(`  ${armName}: ${r.total} unresolved name-shaped rows`)
+  console.log(`    W1 the FILE binds the name        ${String(r.W1).padStart(9)}  ${pctOf(r.W1).padStart(6)}  (a read of a LOCAL)`)
+  console.log(`    W2 the PROJECT declares it         ${String(r.W2).padStart(9)}  ${pctOf(r.W2).padStart(6)}  (a member of a project type; the site does not say WHICH — the receiver-wall class)`)
+  console.log(`    W3 the project declares it NOWHERE ${String(r.W3).padStart(9)}  ${pctOf(r.W3).padStart(6)}  (an SDK / third-party member — a VOCABULARY question; the instrument is the package-scope claim)`)
+  console.log(`    => a receiver-typing evidence class could move at most the W2 rows: ${r.W2} — not ${r.total}.`)
+  for (const [label, byL] of [...r.byLabel.entries()].sort((a, b) => (b[1].get("W2") ?? 0) - (a[1].get("W2") ?? 0))) {
+    console.log(`      ${label.padEnd(14)} W1 ${String(byL.get("W1") ?? 0).padStart(8)} · W2 ${String(byL.get("W2") ?? 0).padStart(8)} · W3 ${String(byL.get("W3") ?? 0).padStart(8)}`)
+  }
 }
 
 console.log(`\nOUTCOME MOVEMENT (no-index outcome -> --index outcome), by label:`)
@@ -544,6 +926,34 @@ const report = {
   arms: {
     noIndex: { files: noIndex.files, relationships: noIndex.total, byOutcome: Object.fromEntries(noIndex.byOutcome) },
     withIndex: { files: withIndex.files, relationships: withIndex.total, byOutcome: Object.fromEntries(withIndex.byOutcome) },
+  },
+  routingSplit: {
+    noIndex: Object.fromEntries(noIndex.byClaim),
+    withIndex: Object.fromEntries(withIndex.byClaim),
+    delta: Object.fromEntries([...new Set([...noIndex.byClaim.keys(), ...withIndex.byClaim.keys()])]
+      .map((k) => [k, (withIndex.byClaim.get(k) ?? 0) - (noIndex.byClaim.get(k) ?? 0)])),
+    outcomesByClaim: {
+      noIndex: Object.fromEntries([...noIndex.claimOutcome.entries()].map(([k, v]) => [k, Object.fromEntries(v)])),
+      withIndex: Object.fromEntries([...withIndex.claimOutcome.entries()].map(([k, v]) => [k, Object.fromEntries(v)])),
+    },
+  },
+  displacement: {
+    indexArmRowsClaimedByIndexPass: withIndex.displacedByIndexTotal,
+    indexArmSuppressedClaimWouldHaveSaid: Object.fromEntries(withIndex.displacedByIndex),
+    noIndexArmRowsWithImportedBindingClaim: noIndex.displacedByNoIndexTotal,
+    noIndexArmIndexClaimWouldHaveSaid: Object.fromEntries(noIndex.displacedByNoIndex),
+  },
+  r5Bound: {
+    noIndex: {
+      total: noIndex.r5.total, W1: noIndex.r5.W1, W2: noIndex.r5.W2, W3: noIndex.r5.W3,
+      byLabel: Object.fromEntries([...noIndex.r5.byLabel.entries()].map(([k, v]) => [k, Object.fromEntries(v)])),
+      samples: noIndex.r5.samples,
+    },
+    withIndex: {
+      total: withIndex.r5.total, W1: withIndex.r5.W1, W2: withIndex.r5.W2, W3: withIndex.r5.W3,
+      byLabel: Object.fromEntries([...withIndex.r5.byLabel.entries()].map(([k, v]) => [k, Object.fromEntries(v)])),
+      samples: withIndex.r5.samples,
+    },
   },
   join: { matched: joined, noIndexOnly, indexOnly },
   arbiterColumns: {

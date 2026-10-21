@@ -36,6 +36,7 @@ import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { buildOwnerProjectPools, ownerChannelVerdict, type OwnerSymbolRecord } from "./owner-channel"
+import { laneExtensions } from "./ts-lane-extensions"
 
 const CR = process.env.BB_CORPUS_ROOT ?? path.join(process.cwd(), ".corpus")
 const SIZE_CAP = 1024 * 1024
@@ -48,6 +49,32 @@ const maxFiles = Number(argOf("--max-files") ?? 50)
 const onlyRepo = argOf("--repo")
 const jsonOut = argOf("--json")
 const perRepo = argv.includes("--per-repo")
+
+/**
+ * THE EXTENSION SET — the gate's OWN map, read LIVE, never from memory.
+ *
+ * **THE DEFAULT IS THE GATE'S OWN LIST** (`--ext gate`): `ts,tsx,mts,cts`, the population
+ * production parses for this lane — 17,689 files on the farm. **THE INSTRUMENT'S HISTORICAL
+ * POPULATION WAS `.ts` ONLY** (13,950 files), and every number recorded in
+ * `TYPESCRIPT-D7-WALLS-PROD.md` §2.4 was measured on it; `--ext ts` reproduces those exactly, and
+ * the reproduction was RE-VERIFIED after this round's speed fix (the per-evidence split is
+ * byte-identical).
+ *
+ * WHY THE DEFAULT CHANGED: the wall's disposition must be stated on production's population, and a
+ * percentage is comparable only between arms of the SAME population (R1). The two sets are named
+ * in the instrument's own header, so a reader always knows which one a number is about.
+ *
+ * `--ext gate` reads the typescript lane's entry out of `script/m14/incoming-gate.ts`'s `LANES_A`
+ * — the SAME live-parse the programme's own `language-board.ts` uses, because `incoming-gate.ts`
+ * is a CLI whose module body RUNS the gate, so it cannot be imported (and must not be).
+ */
+const extArg = argOf("--ext") ?? "gate"
+const EXTENSIONS: string[] = extArg === "gate"
+  ? laneExtensions("typescript", ["ts"]).list
+  : extArg.split(",").map((s) => s.trim()).filter((s) => s.length > 0)
+const EXTENSIONS_SOURCE = extArg === "gate"
+  ? laneExtensions("typescript", ["ts"]).source
+  : "the command line (--ext)"
 
 /** Same admission rule the fleet gate uses for this lane: extension match, size cap, present file. */
 function discover(): { files: string[]; admitted: number; repos: number; overCap: number; absent: number } {
@@ -84,8 +111,12 @@ function discover(): { files: string[]; admitted: number; repos: number; overCap
     }
     for (const rel of tracked) {
       const low = rel.toLowerCase()
-      if (!low.endsWith(".ts")) continue
-      if (detectLanguageFromPath(rel) !== "typescript") continue
+      // THE GATE'S OWN ADMISSION RULE (`admitByExtension`): the extension matches, OR the file's
+      // BASENAME is the extension AND the router attributes the path to this lane.
+      const base = low.slice(low.lastIndexOf("/") + 1)
+      const admitted = EXTENSIONS.some((e) => low.endsWith(`.${e}`))
+        || (EXTENSIONS.some((e) => base === e) && detectLanguageFromPath(rel) === "typescript")
+      if (!admitted) continue
       const abs = path.join(dir, rel)
       try {
         const size = fs.statSync(abs).size
@@ -212,11 +243,35 @@ for (const file of files) {
 // ── D7 PER-CLASS RESOLUTION: the production owner rule over this run's own pools ──────────────
 // Declined rows fall back to the name model in production; here they are counted as declined so a
 // class whose owners do not resolve is visible instead of being folded into "carried".
+//
+// THE POOLS ARE BUILT ONCE PER REPOSITORY, AND THAT IS A SPEED FIX THAT CHANGES NOTHING MEASURED.
+// The first version called `buildOwnerProjectPools(repoRecords)` INSIDE the row loop — once per
+// OWNER-CARRYING ROW — so the cost was O(rows × the repository's records). On the whole population
+// (tens of thousands of owner rows over 42 repositories) that is hours, not minutes, and it made
+// the owed `--max-files 0` arm impractical. The pools are a PURE function of the repository's
+// records, and the records are complete before this loop runs, so ONE build per repository gives
+// byte-identical verdicts to one build per row.
+//
+// THE REVERIFICATION: after the fix, the 2,000-file stride's per-evidence split is BYTE-IDENTICAL
+// to the table recorded in `TYPESCRIPT-D7-WALLS-PROD.md` §2.4 (annotation 691/8/683 · assignment
+// 2,410/75/2,335 · cast 121/0/121 · class-static 19/19/0 · destructured 14/6/8 · element 12/5/7 ·
+// factory 31/13/18 · param 865/204/661 · this 376/76/300). The instrument's numbers did not move.
+//
+// ONE POOL AT A TIME: the owner rows arrive in the run's own file order, which is repository by
+// repository, so the pool of the repository being walked is built when the walk enters it and
+// released when it leaves. Holding all 42 pools at once would multiply the memory the whole-
+// population arm needs, on a box that runs EIGHT lanes at once.
+let poolsRepo: string | null = null
+let pools: ReturnType<typeof buildOwnerProjectPools> | null = null
 for (const row of ownerRows) {
   const repoName = row.fileRel.split(path.sep)[0] ?? ""
-  const repoRecords = recordsByRepo.get(repoName)
-  if (!repoRecords) continue
-  const pools = buildOwnerProjectPools(repoRecords)
+  if (repoName !== poolsRepo) {
+    const repoRecords = recordsByRepo.get(repoName)
+    if (!repoRecords) continue
+    pools = buildOwnerProjectPools(repoRecords)
+    poolsRepo = repoName
+  }
+  if (!pools) continue
   const verdict = ownerChannelVerdict(pools, { type: "calls", target: row.target, owner: row.owner, srcFile: row.fileRel, line: row.line })
   const tally = perRepoTally.get(repoName)
   if (!tally) continue
@@ -260,6 +315,8 @@ const report = {
     repos: disc.repos,
     stride: maxFiles > 0 && total > maxFiles ? Math.max(1, Math.floor(total / maxFiles)) : 1,
     repo_filter: onlyRepo ?? null,
+    extensions: EXTENSIONS,
+    extensions_source: EXTENSIONS_SOURCE,
     over_cap: disc.overCap,
     absent: disc.absent,
     parse_failures: parseFailures.length,
@@ -278,10 +335,11 @@ const report = {
 
 console.log("TS OWNER-COVERAGE — the STORE's receiver channel (metadata.owner), counted by evidence class")
 console.log(
-  `population: ${files.length} parsed of ${total} admitted .ts file(s) across ${disc.repos} repo(s)` +
+  `population: ${files.length} parsed of ${total} admitted file(s) across ${disc.repos} repo(s)` +
     ` · stride ${report.population.stride}${onlyRepo ? ` · REPO-FILTERED to ${onlyRepo} (not the corpus)` : ""}` +
     ` · over size cap ${disc.overCap} · absent ${disc.absent} · parse failures ${parseFailures.length}`,
 )
+console.log(`extensions: ${EXTENSIONS.join(",")}   (source: ${EXTENSIONS_SOURCE})`)
 if (maxFiles > 0 && total > maxFiles) {
   console.log(`SAMPLE, NOT POPULATION: ${files.length} of ${total} files. A stride truncates each project's file set, so per-repo shares are less stable than the whole-repo arm.`)
 }
