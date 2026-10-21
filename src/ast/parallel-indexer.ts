@@ -1797,7 +1797,6 @@ export async function processWithWorkerPool(
         }
         if (Object.keys(byExt).length > 0) projectIndexes = byExt
       },
-      // FILE (a manifest) with no `(ns ...)` form, so its index is EMPTY BY CONSTRUCTION, and an index that
     } catch (e: any) {
       // A failure here must not fail the run: no index is exactly the pre-SOL-21
       // behaviour, and enrichment is additive by construction.
