@@ -1717,7 +1717,9 @@ export async function processWithWorkerPool(
         const wasmByLang: Record<string, string> = {
           // RUBY (task-22): the same wasm the ruby analyzer loads (wasm/tree-sitter-ruby.wasm).
           ruby: path.join(repoRoot, "wasm", "tree-sitter-ruby.wasm"),
-          // sha256 90f8866b74d04e16…), so the indexer and the analyzer parse with ONE grammar ✓.
+          // CLOJURE - the same asset the clojure analyzer loads (wasm/tree-sitter-clojure.wasm,
+          // sha256 90f8866b74d04e16...), so the indexer and the analyzer parse with ONE grammar.
+          clojure: path.join(repoRoot, "wasm", "tree-sitter-clojure.wasm"),
           solidity: path.join(repoRoot, "wasm", "tree-sitter-solidity.wasm"),
           fsharp: path.join(repoRoot, "wasm", "tree-sitter-fsharp.wasm"),
           protobuf: path.join(repoRoot, "wasm", "tree-sitter-protobuf.wasm"),
@@ -1743,7 +1745,11 @@ export async function processWithWorkerPool(
           // halves, for the `.scss`/`.groovy` reason recorded above: a spec without its entry indexes
           // nothing, and an extension without its spec indexes ruby declarations with the wrong rules.
           ruby: mod.RUBY_DECLARATION_SPEC,
-          // without its entry indexes nothing ✓. The spec is in the shared index, not the analyzer ✓.
+          // CLOJURE - all three halves wired in the same change (the .scss/.groovy reason recorded
+          // above): an extension without its spec indexes clojure declarations with the WRONG rules, and
+          // a spec without its entry indexes nothing. The spec lives in the SHARED INDEX, not in the
+          // analyzer, so it is read from ./project-index - the java/dart/solidity precedent.
+          clojure: mod.CLOJURE_DECLARATION_SPEC,
           solidity: mod.SOLIDITY_DECLARATION_SPEC,
           fsharp: mod.FSHARP_DECLARATION_SPEC,
           // `.scss` was added to PROJECT_INDEX_EXTENSIONS without an entry here, so the lookup below
