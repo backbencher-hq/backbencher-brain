@@ -525,12 +525,147 @@ function precedingPreprocExportAttribute(decl: any, content: string): string {
   return preprocGuardAttributeInText(decl, content)
 }
 
+/**
+ * #989 (2026-10-21, the c lane's PROPOSAL — applied verbatim from `src/ast/real-c-analyzer.ts`):
+ * the export-marker verdict, read from the SOURCE TEXT.
+ *
+ * The analyzer's rule is the rule of record, and the oracle must apply the SAME rule to stay an
+ * oracle of the CURRENT analyzer. The oracle stays STANDALONE — it must not import the
+ * implementation it checks — so the analyzer's helpers are reproduced here, with the source line
+ * each came from named.
+ */
+
+/** `src/ast/real-c-analyzer.ts:29` — stringIncludes. */
+function stringIncludes(str: string, val: string): boolean {
+  return str.indexOf(val) !== -1
+}
+
+/** `src/ast/real-c-analyzer.ts:33` — stringIndexOf. */
+function stringIndexOf(str: string, val: string): number {
+  return str.indexOf(val)
+}
+
+/** `src/ast/real-c-analyzer.ts:147` — replacementListOf. */
+function replacementListOf(defineText: string): string {
+  const n = defineText.length
+  let i = 0
+  while (i < n && (defineText[i] === " " || defineText[i] === "\t")) i++
+  if (defineText[i] !== "#") return ""
+  i++
+  while (i < n && (defineText[i] === " " || defineText[i] === "\t")) i++
+  if (defineText.slice(i, i + 6) !== "define") return ""
+  i += 6
+  while (i < n && (defineText[i] === " " || defineText[i] === "\t")) i++
+  // the macro NAME
+  while (i < n) {
+    const c = defineText[i]
+    const ok = (c >= "A" && c <= "Z") || (c >= "a" && c <= "z") || (c >= "0" && c <= "9") || c === "_"
+    if (!ok) break
+    i++
+  }
+  // A FUNCTION-LIKE macro's parameter list, and only when the `(` touches the name.
+  if (defineText[i] === "(") {
+    let depth = 0
+    while (i < n) {
+      const c = defineText[i]
+      if (c === "(") depth++
+      else if (c === ")") {
+        depth--
+        if (depth === 0) {
+          i++
+          break
+        }
+      }
+      i++
+    }
+  }
+  return defineText.slice(i)
+}
+
+/** `src/ast/real-c-analyzer.ts:209` — replacementIsReadable. */
+function replacementIsReadable(replacement: string): boolean {
+  let run = 0
+  for (let i = 0; i < replacement.length; i++) {
+    if (replacement[i] === " ") {
+      run++
+      if (run >= 4) return false
+    } else {
+      run = 0
+    }
+  }
+  return true
+}
+
+/** `src/ast/real-c-analyzer.ts:237` — hasExportAttributeSpelling. */
+function hasExportAttributeSpelling(text: string): boolean {
+  if (text.length === 0) return false
+  if (stringIncludes(text, "dllexport")) return true
+  if (stringIncludes(text, "export_name")) return true
+  const at = stringIndexOf(text, "visibility")
+  if (at >= 0 && stringIncludes(text.slice(at, at + 48), "default")) return true
+  return false
+}
+
+/** `src/ast/real-c-analyzer.ts:455` — EXPORT_BOUNDARY_WORDS. */
+const EXPORT_BOUNDARY_WORDS = ["EXTERN", "EXTERNAL", "EXPORT", "PUBLIC", "API", "VISIBLE", "DLLEXPORT", "DLLIMPORT"]
+
+/** `src/ast/real-c-analyzer.ts:465` — isExportMarker. */
+function isExportMarker(token: string): boolean {
+  if (!token) return false
+  let hasUpper = false
+  for (let i = 0; i < token.length; i++) {
+    const c = token[i]
+    if (c >= "a" && c <= "z") return false
+    if (c >= "A" && c <= "Z") hasUpper = true
+  }
+  if (!hasUpper) return false
+  for (let i = 0; i < token.length; i++) {
+    const c = token[i]
+    const ok = (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_"
+    if (!ok) return false
+  }
+  let end = token.length
+  while (end > 0 && token[end - 1] === "_") end--
+  if (end === 0) return false
+  let part = ""
+  for (let i = 0; i <= end; i++) {
+    const c = i < end ? token[i] : "_"
+    if (c === "_") {
+      if (EXPORT_BOUNDARY_WORDS.indexOf(part) !== -1) return true
+      part = ""
+      continue
+    }
+    part += c
+  }
+  for (let w = 0; w < EXPORT_BOUNDARY_WORDS.length; w++) {
+    const word = EXPORT_BOUNDARY_WORDS[w]
+    if (end < word.length) continue
+    let match = true
+    for (let i = 0; i < word.length; i++) if (token[end - word.length + i] !== word[i]) { match = false; break }
+    if (match) return true
+  }
+  return false
+}
+
 export function deriveCExportTruth(root: any, content?: string): CTruthEdge[] {
   const edges: CTruthEdge[] = []
   const seen = new Set<string>()
 
   // ── pass 1: the file's OWN linkage markers (the #989 agreement rule over EVERY definition) ──
-  const verdicts = new Map<string, { defs: number; allExtern: boolean; anyImport: boolean }>()
+  // #989 (2026-10-21, the c lane's PROPOSAL): the verdict is read from the SOURCE TEXT, exactly as
+  // the analyzer reads it. The AST's `value` node is NOT the source of truth — on the production
+  // path `engine.ts` blanks the attribute spellings out of it — so a definition's replacement list
+  // comes from the text the ORACLE was handed (`content`), and the analyzer's classification is
+  // reproduced verbatim (`src/ast/real-c-analyzer.ts:2197-2234`).
+  const verdicts = new Map<string, {
+    defs: number
+    boundary: boolean
+    empty: boolean
+    allExtern: boolean
+    allAttribute: boolean
+    nonBoundary: boolean
+    unreadable: boolean
+  }>()
   const preStack: any[] = [root]
   while (preStack.length > 0) {
     const n = preStack.pop()!
@@ -538,19 +673,63 @@ export function deriveCExportTruth(root: any, content?: string): CTruthEdge[] {
       const nm = declaredMacroNameNode(n)
       if (nm && String(nm.text ?? "").trim()) {
         const key = String(nm.text).trim()
-        const val = n.childForFieldName?.("value")
-        const v = verdicts.get(key) ?? { defs: 0, allExtern: true, anyImport: false }
+        const defineText = typeof n.startIndex === "number" && typeof n.endIndex === "number"
+          ? (content ?? "").slice(n.startIndex, n.endIndex)
+          : ""
+        const replacement = replacementListOf(defineText)
+        const readable = replacementIsReadable(replacement)
+        const trimmed = replacement.trim()
+        const isEmpty = trimmed.length === 0
+        const lead = firstWord(trimmed)
+        const isExportAttribute = !isEmpty && hasExportAttributeSpelling(trimmed)
+        const isImport = stringIncludes(trimmed, "dllimport")
+        // A definition that states NOTHING (empty) or states an export boundary is "boundary"; one
+        // that states anything else — `static`, `const`, a NEGATIVE attribute such as
+        // `visibility("hidden")` — is "nonBoundary".
+        const statesBoundary = !isEmpty && (isExportAttribute || lead === "extern")
+        const statesNonBoundary = !isEmpty && !statesBoundary
+        const v = verdicts.get(key) ?? {
+          defs: 0,
+          boundary: true,
+          empty: true,
+          allExtern: true,
+          allAttribute: true,
+          nonBoundary: false,
+          unreadable: false,
+        }
         v.defs++
-        if (!(val && firstWord(String(val.text ?? "")) === "extern")) v.allExtern = false
-        if (val && String(val.text ?? "").includes("dllimport")) v.anyImport = true
+        if (!readable) {
+          v.unreadable = true
+          v.boundary = false
+          v.empty = false
+          v.allExtern = false
+          v.allAttribute = false
+        } else {
+          if (!statesBoundary) v.boundary = false
+          if (!isEmpty) v.empty = false
+          if (lead !== "extern") v.allExtern = false
+          if (!isExportAttribute) v.allAttribute = false
+          if (statesNonBoundary || isImport) v.nonBoundary = true
+        }
         verdicts.set(key, v)
       }
     }
     for (const c of namedChildrenOf(n)) preStack.push(c)
   }
-  const linkageMarkers = new Set<string>()
-  for (const [name, v] of verdicts) if (v.defs > 0 && v.allExtern && !v.anyImport) linkageMarkers.add(name)
-  const isMarkerClass = (name: string): boolean => EXPORT_MACROS.has(name) || linkageMarkers.has(name)
+  // #989 (2026-10-21, the c lane's PROPOSAL): `isMarkerClass` becomes the analyzer's own
+  // `exportMarkerVerdict` (`src/ast/real-c-analyzer.ts:4202-4214`) — the convention list first,
+  // then the FILE's OWN definition, and the NAME only when the file states nothing.
+  const isMarkerClass = (name: string): boolean => {
+    if (!name) return false
+    if (EXPORT_MACROS.has(name)) return true
+    const v = verdicts.get(name)
+    if (v) {
+      if (v.unreadable || v.nonBoundary) return false
+      if (v.boundary) return true
+      // `empty`: the file states nothing, so the NAME decides.
+    }
+    return isExportMarker(name)
+  }
   const text = content ?? ""
 
   const emit = (nameNode: any, marker: string): void => {
