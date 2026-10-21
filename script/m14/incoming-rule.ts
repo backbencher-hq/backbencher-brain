@@ -1630,6 +1630,18 @@ export function isContainsEdge(label: string): boolean {
  * what it is. The disposition is computed through the SAME verifiers the `decls === 0` branch uses, so
  * there is one rule and not two.
  */
+/**
+ * IS THIS TARGET A PLAIN IDENTIFIER — i.e. a NAME a declaration can bind?
+ *
+ * A target that carries source text (`(fn)`, `define()`, `"text"`, `[]`) or a synthetic local
+ * identity (`name\0value`) is not a name: binding it would turn a refused source-text callee or a
+ * deliberately-distinct local into a relationship. The check is Unicode-aware, because a declaration
+ * may legitimately be named in a non-ASCII script.
+ */
+function isPlainIdentifier(t: string): boolean {
+  return /^[\p{L}\p{Nl}_$][\p{L}\p{Nl}\p{Nd}\p{Mn}\p{Mc}\p{Pc}_$]*$/u.test(t)
+}
+
 function claimDispositionOnAmbiguous(
   declCount: Map<string, number>, tgt: string, claim: ExternalClaim | null, facts?: ProjectFacts,
   /** does the EDGE'S OWN FILE declare the target? `undefined` means the caller could not say, and the
@@ -2101,6 +2113,37 @@ export function classifyEdge(
     return { outcome: "unresolved", decls, kinds: kindText }
   }
   if (decls > 1) {
+    // ── THE OWN-FILE TIE-BREAK (2026-10-20, Lead) ────────────────────────────────────────────────
+    // PRODUCTION BINDS THE ROW'S OWN FILE'S DECLARATION FIRST. The resolver walks the own file's
+    // statements before the project's, so an edge whose OWN FILE declares the target IS bound — the
+    // project's OTHER declarations of the same name do not make it ambiguous. The gate's model could
+    // not see that: it counted declarations by NAME across the whole project, so a name declared in
+    // the row's own file AND in one other file was `amb(decl)` even though production resolves it.
+    //
+    // MEASURED, INDEPENDENTLY, BY TWO LANES ON TWO POPULATIONS: clojure 3,491 of 4,259 ambiguous
+    // rows are own-file-declared (82.0 %); c 65,719 of 95,381 (68.9 %, calls 82.6 %). And the c
+    // lane's JOINT (38,067 of bucket C's 56,488 = 67.4 %) shows the c lever is ONE instrument with
+    // ONE price — 57,817 + 65,719, the 38,067 appearing once, inside the second term.
+    //
+    // THE GATE ALREADY COMPUTED `ownFileDeclares` AND PASSED IT IN — the argument existed, and the
+    // AMBIGUOUS BRANCH NEVER CONSULTED IT. So this is not a new capability: it is the gate's model
+    // being made to MATCH PRODUCTION'S, which is what the owner asked for ("incoming and outgoing
+    // all together": the OUTGOING view — the source's own file declares the name — must be able to
+    // decide a row the INCOMING view cannot).
+    //
+    // THE ORDER MATTERS AND IS EXPLICIT: the OWNER CHANNEL'S DECLINE IS CHECKED FIRST (above), so a
+    // binding the store WITHDREW is not resurrected here ✓ — production withdrew it, and the name
+    // model may not put it back.
+    // THE NARROWING, AND IT IS NOT COSMETIC: the fixture suite caught the first form of this rule
+    // firing on targets that are NOT NAMES — a source-text callee (`(fn)`, `(0, helper.other)`,
+    // `define()`, `"text"`, `[]`) and a synthetic LOCAL name (`shadowed\0value`). The gate's flag is
+    // EXACT (the own file declares that exact string ✓), so these are real declarations of real
+    // strings — but a source-text callee is not a binding to a declaration, and the local identity
+    // is deliberately distinct from the name it shadows. **SO THE TIE-BREAK APPLIES ONLY TO A TARGET
+    // THAT IS A PLAIN IDENTIFIER** — which is what a declaration can bind in production anyway ✓.
+    if (ownFileDeclares === true && isPlainIdentifier(tgt)) {
+      return { outcome: "resolved", decls, kinds: kindText }
+    }
     // THE CLAIM IS READ ON THIS PATH FOR THE FIRST TIME — to RECORD it, never to move the outcome.
     return {
       outcome: (kindSet?.size ?? 0) > 1 ? "ambBoth" : "ambDeclOnly",
