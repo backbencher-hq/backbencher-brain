@@ -118,11 +118,20 @@ export const TS_MUTANTS: TsMutant[] = [
     language: "typescript",
     defectClass: "fabrication",
     description:
-      "THE OPPOSITE ERROR, pinned because a suite that only ever loses edges cannot see a fabrication. `export * from \"./m\"` re-exports a set the file cannot name, so an `exports` edge target of `*` would be the unresolvable-endpoint class the family rules out for anonymous constructors (X8) and placeholder literals (R7) — and `*` passes every universal target rule in pool-worker, so nothing downstream would have caught it. The analyzer refuses it; this mutant adds it, and typescript/re-export-module-dependency must fail on the forbid row.",
+      "THE OPPOSITE ERROR, pinned because a suite that only ever loses edges cannot see a fabrication. `export * from \"./m\"` re-exports a set the file cannot name, so an `exports` edge target of `*` would be the unresolvable-endpoint class the family rules out for anonymous constructors (X8) and placeholder literals (R7) — and `*` passes every universal target rule in pool-worker, so nothing downstream would have caught it. The analyzer refuses it; this mutant adds it, and typescript/re-export-module-dependency must fail on the forbid row. " +
+      "THE FIRST VERSION OF THIS MUTANT WAS A NO-OP, AND A NO-OP MUTANT IS NOT A PASS (L-2026-10-21-07). It keyed the star re-export on `metadata.isStarReExport === true` — a metadata key THE ANALYZER NEVER PUBLISHES. MEASURED 2026-10-21: `grep -rn isStarReExport src/` returns nothing, so the guard never fired, the mutant changed nothing, and the battery reported it as a SURVIVOR — which is the same reading as 'the suite cannot detect this defect', and is false: the suite never exercised the defect at all. The guard now keys on the SPELLING THE ANALYZER ACTUALLY EMITS: an `imports` row carrying `metadata.isReExport === true`, with NO `metadata.alias` (the namespace form `export * as ns from` carries one), whose target ends in the whole-module `:*` shape. Those three conditions are the analyzer's own star form and nothing else, so the mutant fires on a star re-export and on nothing else.",
     transform: (r: any) => {
       const already = rels(r).filter((x: any) => normRel(x) === "exports" && String(x.target ?? "") === "*")
       if (already.length > 0) return r
-      const star = rels(r).find((x: any) => normRel(x) === "imports" && x?.metadata?.isStarReExport === true)
+      // THE ANALYZER's OWN SPELLING, all three conditions — measured, not guessed. See the
+      // description: the earlier `isStarReExport` key existed in NO analyzer source, so the
+      // mutant was a no-op and the battery's "SURVIVED" verdict was a statement about the
+      // mutant, not about the suite.
+      const star = rels(r).find((x: any) =>
+        normRel(x) === "imports" &&
+        x?.metadata?.isReExport === true &&
+        x?.metadata?.alias === undefined &&
+        String(x.target ?? "").endsWith(":*"))
       if (!star) return r
       return {
         ...r,

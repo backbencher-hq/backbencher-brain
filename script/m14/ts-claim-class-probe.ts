@@ -298,6 +298,19 @@ type Arm = {
   }
   /** THE PROBE'S OWN TABLE 1 — the per-type class table, for the assertion against the gate's. */
   table: Record<string, number[]>
+  /** THE TIE-BREAK'S MOVEMENT, counted per row and directly (L-2026-10-21-03). */
+  tieBreak: {
+    moved: number
+    movedCarryingClaim: number
+    movedClaimFree: number
+    byLabel: Map<string, number>
+    fromTo: Map<string, number>
+    samples: string[]
+    claimKinds: Map<string, number>
+    claimCarryingSamples: string[]
+  }
+  /** THE SAME TABLE WITH THE TIE-BREAK DISABLED — the second, independent derivation. */
+  tableNoTie: Record<string, number[]>
 }
 
 const stableKey = (label: string, file: string, line: number): string => `${label}\0${file}\0${line}`
@@ -329,6 +342,37 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
   let displacedByIndexTotal = 0
   let displacedByNoIndexTotal = 0
   const r5 = { total: 0, W1: 0, W2: 0, W3: 0, byLabel: new Map<string, Map<string, number>>(), samples: [] as string[] }
+  // ── THE TIE-BREAK'S MOVEMENT, COUNTED PER ROW AND DIRECTLY (L-2026-10-21-03) ────────────────
+  // THE ROW IS CLASSIFIED TWICE OVER THE SAME KEY SPACE — once with the gate's own
+  // `ownFileDeclares` fact, and once with it `undefined`, which disables the tie-break and
+  // changes NOTHING ELSE. A row whose OUTCOME DIFFERS between the two classifications IS A MOVED
+  // ROW, and it is counted HERE, per row, from the row's own facts.
+  //
+  // **TWO COUNTERS ARE NOT THE MOVEMENT, AND NEITHER IS THIS ONE.** `collRes` is set only by the
+  // contains LIMIT-1 rule (`incoming-rule.ts:1904`); the tie-break's return does not set it, so a
+  // reader who took `collRes` for the movement would read ZERO. And TABLE 1 − TABLE 2 is not the
+  // movement either, because TABLE 2 is the pre-tie-break view over a DIFFERENT key space (the
+  // pool, not the project). The count below is neither: it is the SAME key space, the SAME arbiter,
+  // and the SAME rows — classified twice, and the DIFFERENCES are the movement.
+  //
+  // **THE FALSIFIER, and it is the instrument's own.** The second table (the same rows with the
+  // tie-break disabled) is counted independently, so the difference of the two tables' `resolved`
+  // columns MUST equal the directly-counted moved rows. Two derivations that do not agree mean
+  // the instrument is wrong, and the instrument says so rather than publishing a number.
+  const tieBreak = {
+    moved: 0,
+    movedCarryingClaim: 0,
+    movedClaimFree: 0,
+    byLabel: new Map<string, number>(),
+    fromTo: new Map<string, number>(),
+    samples: [] as string[],
+    claimKinds: new Map<string, number>(),
+    claimCarryingSamples: [] as string[],
+  }
+  /** THE SAME TABLE, THE SAME ROWS, THE TIE-BREAK DISABLED — the second derivation. Its row
+   *  vectors are allocated where `TYPES` is declared, because `TYPES` is a `const` and a use
+   *  before its declaration is a temporal-dead-zone error, not a hoisted one. */
+  const tableNoTie: Record<string, number[]> = {}
   const ambCeiling = {
     ambRows: 0, ambOwnFile: 0, ambGenuine: 0,
     byLabel: new Map<string, { own: number; genuine: number }>(),
@@ -340,6 +384,7 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
   const table: Record<string, number[]> = {}
   const TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates", "decorates", "renders", "mixes_in", "part_of"]
   for (const t of TYPES) table[t] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  for (const t of TYPES) tableNoTie[t] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   /** THE CLAIMS THE PROJECT WOULD REFUTE — the `extFAIL` risk. */
   const refutedSamples: string[] = []
   let files = 0
@@ -612,6 +657,56 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
           else byC.genuine++
         }
       }
+      // ── THE TWIN CLASSIFICATION — the row, the same key space, the tie-break DISABLED ────────
+      const cNoTie = classifyEdge(pDecl, pKinds, rec.target, claim, facts, isContains, undefined,
+        ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, rec.file)
+      {
+        const row2 = tableNoTie[rec.label]
+        if (row2) {
+          row2[0]! += 1
+          switch (cNoTie.outcome) {
+            case "resolved": row2[1]! += 1; break
+            case "ambDeclOnly": row2[3]! += 1; break
+            case "ambBoth": row2[3]! += 1; row2[4]! += 1; break
+            case "unresolved": row2[5]! += 1; break
+            case "externalVerified": row2[6]! += 1; break
+            case "externalUnverified": row2[7]! += 1; break
+            case "externalRefuted": row2[8]! += 1; break
+            case "bindingVerified": row2[9]! += 1; break
+            case "bindingUnverified": row2[10]! += 1; break
+            case "bindingRefuted": row2[11]! += 1; break
+            case "causeDeclared": row2[12]! += 1; break
+            case "causeRefuted": row2[13]! += 1; break
+            default: break
+          }
+        }
+      }
+      if (cNoTie.outcome !== c.outcome) {
+        tieBreak.moved++
+        if (claim !== null) tieBreak.movedCarryingClaim++
+        else tieBreak.movedClaimFree++
+        tieBreak.byLabel.set(rec.label, (tieBreak.byLabel.get(rec.label) ?? 0) + 1)
+        const k = `${cNoTie.outcome} -> ${c.outcome}`
+        tieBreak.fromTo.set(k, (tieBreak.fromTo.get(k) ?? 0) + 1)
+        if (tieBreak.samples.length < 12) {
+          tieBreak.samples.push(`${rec.label} ${rec.source} -> ${rec.target} @ ${rec.file}:${rec.line}  (${k})`)
+        }
+        // ── THE C4 ROW — a MOVED ROW THAT CARRIED A CLAIM. The claim's disposition is READ
+        // AFTER the tie-break in the arbiter (`incoming-rule.ts:2248` attaches `claimOnAmbiguous`),
+        // and the tie-break RETURNS at :2223 — so on a moved row the claim's verdict is never
+        // attached at all. The row was ambiguous, so the claim fell through its own branch (every
+        // claim branch that would have spoken is guarded by `decls === 0` or is checked earlier),
+        // and the tie-break then resolved the row on the NAME model. The claim is therefore not
+        // MERGED into the resolution — it is DISCARDED on it. Both facts are recorded here.
+        if (claim !== null) {
+          if (tieBreak.claimCarryingSamples.length < 20) {
+            tieBreak.claimCarryingSamples.push(
+              `${rec.label} ${rec.source} -> ${rec.target} @ ${rec.file}:${rec.line}  claim=${claim.kind}/${(claim as any).specifier ?? "-"}  (${k})`,
+            )
+          }
+          tieBreak.claimKinds.set(claim.kind, (tieBreak.claimKinds.get(claim.kind) ?? 0) + 1)
+        }
+      }
       let co = claimOutcome.get(claimKey)
       if (!co) claimOutcome.set(claimKey, (co = new Map()))
       co.set(c.outcome, (co.get(c.outcome) ?? 0) + 1)
@@ -684,7 +779,7 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
       }
     }
   }
-  return { groups, files, filesParsed: files, admitted, repos: reposSeen, total, byOutcome, refutedSamples, byClaim, claimOutcome, displacedByIndex, displacedByIndexTotal, displacedByNoIndex, displacedByNoIndexTotal, r5, ambCeiling, table }
+  return { groups, files, filesParsed: files, admitted, repos: reposSeen, total, byOutcome, refutedSamples, byClaim, claimOutcome, displacedByIndex, displacedByIndexTotal, displacedByNoIndex, displacedByNoIndexTotal, r5, ambCeiling, table, tieBreak, tableNoTie }
 }
 
 console.log(`TS CLAIM-CLASS PROBE — corpus ${CR} · maxFiles ${MAX_FILES} per repo (0 = whole population)`)
@@ -894,6 +989,61 @@ for (const t of TYPES) {
   const classSum = totals[0]! - (totals[1]! + totals[3]! + totals[5]! + totals[6]! + totals[7]! + totals[8]! + totals[9]! + totals[10]! + totals[11]! + totals[12]! + totals[13]!)
   console.log(`  the probe's own closure: ${classSum === 0 ? "EXACT — the class sum equals the edge count" : `NOT EXACT — delta ${classSum}`}`)
 }
+// ── THE TIE-BREAK'S MOVEMENT — COUNTED PER ROW, COUNTED DIRECTLY (L-2026-10-21-03) ────────────
+console.log(`\nTHE TIE-BREAK'S MOVEMENT — COUNTED PER ROW, COUNTED DIRECTLY (L-2026-10-21-03):`)
+console.log(`  Every row is classified TWICE over the SAME key space with the SAME arbiter: once with`)
+console.log(`  the gate's own ownFileDeclares fact, and once with it undefined (the tie-break disabled,`)
+console.log(`  nothing else changed). A row whose OUTCOME DIFFERS IS A MOVED ROW.`)
+console.log(`  NOT collRes (set only by the contains LIMIT-1 rule) and NOT TABLE 1 - TABLE 2 (a`)
+console.log(`  different key space). The count below is a COUNT OF ROWS, and the two derivations`)
+console.log(`  below it are the instrument's OWN falsifier.`)
+{
+  const tieBreak = withIndex.tieBreak
+  const tableNoTie = withIndex.tableNoTie
+  console.log(`    MOVED ROWS (counted per row, directly)              ${String(tieBreak.moved).padStart(9)}`)
+  console.log(`      of which the row CARRIED A CLAIM                 ${String(tieBreak.movedCarryingClaim).padStart(9)}   <-- C4: a claim carried by a moved row would be a CLAIM MERGED INTO RESOLUTION`)
+  console.log(`      of which the row carried NO claim                ${String(tieBreak.movedClaimFree).padStart(9)}`)
+  for (const [label, v] of [...tieBreak.byLabel.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`      ${label.padEnd(14)} ${String(v).padStart(9)}`)
+  }
+  for (const [k, v] of [...tieBreak.fromTo.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`      ${k.padEnd(34)} ${String(v).padStart(9)}`)
+  }
+  for (const s2 of tieBreak.samples) console.log(`        e.g. ${s2}`)
+  console.log(`    THE C4 ROWS — the moved rows that CARRIED A CLAIM. The arbiter attaches a claim's`)
+  console.log(`    disposition to an ambiguous row at \`incoming-rule.ts:2248\`, and the tie-break RETURNS`)
+  console.log(`    at :2223 — so on a moved row the claim's verdict is NEVER ATTACHED. The claim is not`)
+  console.log(`    MERGED into the resolution (it fell through its own branch, which is guarded by`)
+  console.log(`    \`decls === 0\` or is read earlier); it is DISCARDED on a row that became a resolution.`)
+  console.log(`    The javascript lane measured 0 such rows on bulma; this lane's count is BELOW.`)
+  for (const [kind, v] of [...tieBreak.claimKinds.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`      claim kind ${kind.padEnd(18)} ${String(v).padStart(6)}`)
+  }
+  for (const s2 of tieBreak.claimCarryingSamples) console.log(`        e.g. ${s2}`)
+
+  // ── THE FALSIFIER: TWO INDEPENDENT DERIVATIONS MUST AGREE ──────────────────────────────────
+  const resolvedWith = TYPES.reduce((a, t) => a + (withIndex.table[t]?.[1] ?? 0), 0)
+  const resolvedWithout = TYPES.reduce((a, t) => a + (tableNoTie[t]?.[1] ?? 0), 0)
+  const tableDelta = resolvedWith - resolvedWithout
+  console.log(`    THE FALSIFIER — the two derivations, independently counted:`)
+  console.log(`      derivation 1: the rows classified TWICE, the differences counted per row  ${String(tieBreak.moved).padStart(9)}`)
+  console.log(`      derivation 2: the two tables' resolved columns, differenced              ${String(tableDelta).padStart(9)}   (${resolvedWith.toLocaleString()} with the tie-break − ${resolvedWithout.toLocaleString()} without)`)
+  console.log(`      ${tieBreak.moved === tableDelta ? "THEY AGREE — the movement is the same number by two independent derivations ✓✓" : `THEY DISAGREE BY ${Math.abs(tieBreak.moved - tableDelta)} — THE INSTRUMENT IS WRONG AND ITS NUMBER MAY NOT BE PUBLISHED ✗✗`}`)
+  if (tieBreak.moved !== tableDelta) process.exitCode = 5
+  console.log(`    THE SECOND TABLE, printed so a reader can check the difference by eye:`)
+  console.log(`      ${"type".padEnd(13)} ${COLS.map((c) => c.padStart(9)).join(" ")}`)
+  for (const t of TYPES) {
+    const row = tableNoTie[t] ?? []
+    console.log(`      ${t.padEnd(13)} ${row.map((n) => String(n).padStart(9)).join(" ")}`)
+  }
+  {
+    const totals = COLS.map((_, i) => TYPES.reduce((a, t) => a + (tableNoTie[t]?.[i] ?? 0), 0))
+    console.log(`      ${"TOTAL".padEnd(13)} ${totals.map((n) => String(n).padStart(9)).join(" ")}`)
+    const classSum = totals[0]! - (totals[1]! + totals[3]! + totals[5]! + totals[6]! + totals[7]! + totals[8]! + totals[9]! + totals[10]! + totals[11]! + totals[12]! + totals[13]!)
+    console.log(`      the tie-break-disabled closure: ${classSum === 0 ? "EXACT" : `NOT EXACT — delta ${classSum}`}`)
+  }
+}
+
 if (ASSERT_TABLE) {
   let gateLog = ""
   try { gateLog = readFileSync(ASSERT_TABLE, "utf8") } catch (e) {
