@@ -23,10 +23,15 @@ import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const argv = process.argv.slice(2)
-const dumpPath = argv.find((a) => !a.startsWith("--"))
+const keyspaceIdx = argv.indexOf("--keyspace")
+/** The key-space file, when one is supplied (see the reuse note below). */
+const keyspaceArg = keyspaceIdx >= 0 ? argv[keyspaceIdx + 1] : undefined
+// The dump path is the first positional that is NOT the key-space file's VALUE - otherwise
+// `--keyspace <file> <dump>` would read the key space as the dump.
+const dumpPath = argv.find((a, i) => !a.startsWith("--") && i !== keyspaceIdx + 1)
 const asJson = argv.includes("--json")
 if (!dumpPath) {
-  console.error("usage: csharp-arm-classify.ts <dump> [--json]")
+  console.error("usage: csharp-arm-classify.ts <dump> [--keyspace <keyspace.jsonl>] [--json]")
   process.exit(2)
 }
 const CORPUS = process.env.BB_CORPUS_ROOT ?? path.resolve(".corpus")
@@ -76,6 +81,49 @@ const files = walkCorpus(CORPUS).sort()
 // production key space: symbol names + kinds per repo (the gate builds it from the SAME analyzer)
 const repoDecl = new Map<string, Map<string, Set<string>>>()
 const fileDecl = new Map<string, Set<string>>()
+
+/**
+ * THE KEY-SPACE REUSE PATH (--keyspace <file>), added 2026-10-21.
+ *
+ * WHY. This classifier needs the DECLARATION key space (name -> symbol kind, per repo and per
+ * file) to name a wall, and the original instrument rebuilt it with a SECOND full corpus pass
+ * (`parseFile` on every admitted file) - so a whole-population arm cost two corpus passes.
+ * `script/m14/csharp-emission-census.ts` already walks the admitted population through the same
+ * production analyzer and can write that key space as JSONL, so the second pass is not needed.
+ *
+ * WHAT IT DOES AND DOES NOT CHANGE. The key space is the SAME data (the analyzer's own symbol
+ * names and kinds), read from a file instead of recomputed, so the classification is unchanged -
+ * but the two paths are NOT assumed equal: when a key space file is supplied, the instrument
+ * prints the number of files the key space covers and the number of dump rows whose file is
+ * absent from it, so a stale or partial key space is visible instead of silently reclassifying
+ * rows as "nowhere-declared".
+ */
+let keyspaceFiles = 0
+let keyspaceEntries = 0
+if (keyspaceArg) {
+  const raw = readFileSync(keyspaceArg, "utf8")
+  for (const line of raw.split("\n")) {
+    if (!line.trim()) continue
+    let row: any
+    try { row = JSON.parse(line) } catch { continue }
+    const repo = String(row.r ?? "")
+    const rel = String(row.f ?? "")
+    const name = String(row.n ?? "")
+    if (!name) continue
+    const kinds = String(row.k ?? "").split("|").filter(Boolean)
+    const abs = path.join(CORPUS, rel)
+    let map = repoDecl.get(repo)
+    if (!map) { map = new Map(); repoDecl.set(repo, map) }
+    let set = map.get(name)
+    if (!set) { set = new Set(); map.set(name, set) }
+    for (const k of kinds) set.add(k)
+    let own = fileDecl.get(abs)
+    if (!own) { own = new Set(); fileDecl.set(abs, own) }
+    own.add(name)
+    keyspaceEntries++
+  }
+  keyspaceFiles = fileDecl.size
+} else {
 for (const f of files) {
   const repo = repoOf(f)
   const map = repoDecl.get(repo) ?? new Map<string, Set<string>>()
@@ -93,6 +141,13 @@ for (const f of files) {
   } catch { /* unreadable: no declarations */ }
   repoDecl.set(repo, map)
   fileDecl.set(f, own)
+}
+}
+
+/** How many dump rows name a file the key space does not cover (a stale key space must be visible). */
+let rowsWithoutFile = 0
+for (const row of rows) {
+  if (!fileDecl.has(row.file)) rowsWithoutFile++
 }
 
 const OPERATOR_CHARS = "+-*/%=<>!&|^~?:"
@@ -162,10 +217,21 @@ for (const g of groups) {
   byLabelClass.set(g.label, e)
 }
 const summary = [...byLabelClass.entries()].map(([label, v]) => ({ label, ...v })).sort((a, b) => b.total - a.total)
+const TOTAL_NONRESOLVED = summary.reduce((n, s) => n + s.total, 0)
 if (asJson) {
-  console.log(JSON.stringify({ dump: dumpPath, corpusFiles: files.length, rows: rows.length, summary, groups }, null, 2))
+  console.log(JSON.stringify({
+    dump: dumpPath,
+    corpusFiles: keyspaceArg ? keyspaceFiles : files.length,
+    keyspace: keyspaceArg ? { path: keyspaceArg, files: keyspaceFiles, entries: keyspaceEntries, rowsWithoutFile } : null,
+    rows: rows.length,
+    nonResolvedRows: TOTAL_NONRESOLVED,
+    summary,
+    groups,
+  }, null, 2))
 } else {
-  console.log(`corpus files: ${files.length} · dump rows: ${rows.length}`)
+  console.log(`corpus files: ${keyspaceArg ? keyspaceFiles : files.length} · dump rows: ${rows.length}` +
+    (keyspaceArg ? ` · key space ${keyspaceArg} (${keyspaceEntries} entries, ${rowsWithoutFile} dump rows outside it)` : ""))
+  console.log(`non-resolved rows classified: ${TOTAL_NONRESOLVED}`)
   for (const s of summary) {
     console.log(`\n${s.label} total ${s.total}: ` + Object.entries(s.classes).map(([k, v]) => `${k}=${v}`).join(" · ") +
       (Object.keys(s.receivers).length > 0 ? " | " + Object.entries(s.receivers).map(([k, v]) => `${k}=${v}`).join(" · ") : ""))

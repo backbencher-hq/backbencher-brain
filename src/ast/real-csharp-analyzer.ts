@@ -1,21 +1,37 @@
-// C# LANE — the pure-AST analyzer for C# (M12 per-analyzer perfection contract).
+// C# LANE - the pure-AST analyzer for C# (M12 per-analyzer perfection contract).
 // Author: Muhammad Ishaq Khan
 // What this file is: parses the pinned tree-sitter-c_sharp grammar and publishes
 // the M12 contract's symbols (namespace/class/interface/struct/record/enum/
 // member/delegate/event/method/constructor/property; NO locals, parameters or
-// accessor scopes) and all TEN relationship types: contains, extends, implements,
-// calls, instantiates, overrides, uses, references, imports and exports.
+// accessor scopes) and TEN of the live FOURTEEN-value relationship vocabulary:
+// contains, extends, implements, calls, instantiates, overrides, uses, references,
+// imports and exports.
+// THE OTHER FOUR VALUES - decorates, renders, mixes_in, part_of - are NOT emitted
+// here, and this header does not claim them. Each is RULED for C# with a cited,
+// measured basis (the pinned grammar's own node-type inventory + the whole-population
+// construct counts): C# has no decorator-application construct (its ATTRIBUTE is
+// passive metadata, published as symbol metadata `decorators`, not as an applied
+// callable), no component-render site, no mixin construct, and no part-of
+// (compilation-unit inclusion) directive - the `partial` MODIFIER is a DECLARATION
+// SPLIT of ONE type, which merges into one symbol and is not a part-of edge.
+// Evidence: validation/m14/verification/CSHARP-VERDICT-2026-10-21.md (the four
+// cells + the D7 dispositions), validation/m14/measurements/csharp-grammar-inventory.json
+// (the positive grammar inventory) and csharp-emission-census-whole.json (the
+// whole-population counts).
 // Base lists are kind-resolved through the optional type-kind companion (first
-// base = extends, remaining = implements; unknown externals follow the C# rule) —
+// base = extends, remaining = implements; unknown externals follow the C# rule) -
 // the same harness pre-pass that builds the override companion.
-// Grammar: wasm/tree-sitter-c_sharp.wasm (sha256 6f69e1cae44e1c32…).
+// Grammar: wasm/tree-sitter-c_sharp.wasm (sha256 6f69e1cae44e1c32...).
 // Docs / spec / fixtures / validations: docs/analyzers/real-csharp-analyzer.md ·
 // script/m14/spec/csharp-completeness.json · validation/m14/fixtures/csharp/** ·
-// validation/m14/verification/CSHARP-FIX.md.
-// CO-EDIT LIST — when this file changes, review in the SAME pass: those docs, the
+// validation/m14/verification/CSHARP-FIX.md · validation/m14/verification/CSHARP-D7.md ·
+// validation/m14/verification/CSHARP-VERDICT-2026-10-21.md.
+// CO-EDIT LIST - when this file changes, review in the SAME pass: those docs, the
 // spec and fixtures above, src/ast/override-context.ts (the companion this file
-// imports) and its pre-pass producer, and CSHARP-FIX.md. Registration:
-// src/ast/engine.ts (getAnalyzer) and routing: src/ast/language-detection.ts.
+// imports) and its pre-pass producer, CSHARP-FIX.md, CSHARP-D7.md and the lane's
+// own instruments script/m14/csharp-*.ts (census, grammar inventory, wall
+// classifier). Registration: src/ast/engine.ts (getAnalyzer) and routing:
+// src/ast/language-detection.ts.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
