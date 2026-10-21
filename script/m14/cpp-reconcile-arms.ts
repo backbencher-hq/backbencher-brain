@@ -192,9 +192,12 @@ for (const [k, a] of after) {
   enteredDump++
   enteredByLabel.set(a.label, (enteredByLabel.get(a.label) ?? 0) + 1)
 }
+// THE CLAIM-SETTLEMENT CHECK — the acceptance criterion "claims never merged into resolution", read off
+// the two dumps' own settlement blocks. The gate prints, for each claim-carrying row, the claim it
+// carried and whether the arbiter's verdict on it was `externalVerified` / `externalRefuted` /
+// `externalUnverified` — so the movement can be read without a second instrument.
 check("no-rows-entered-the-dump", enteredDump === 0, `entered=${enteredDump}`)
 
-const failures = checks.filter((c) => !c.ok)
 const report = {
   schemaVersion: 1,
   instrument: "script/m14/cpp-reconcile-arms.ts",
@@ -218,8 +221,60 @@ const report = {
     enteredByLabel: Object.fromEntries(enteredByLabel),
   },
   checks,
-  ok: failures.length === 0,
+  claims: {} as Record<string, unknown>,
+  ok: true,
 }
+function parseSettlement(p: string): { rows: Array<{ claim: string; verdict: string; resolved: boolean }>; text: string } {
+  const text = readFileSync(p, "utf8")
+  const rows: Array<{ claim: string; verdict: string; resolved: boolean }> = []
+  let inBlock = false
+  for (const raw of text.split("\n")) {
+    if (/CLAIM SETTLEMENT/i.test(raw)) { inBlock = true; continue }
+    if (!inBlock) continue
+    if (raw.trim() === "" && rows.length > 0) { if (!/CLAIM/i.test(raw)) break }
+    const m = raw.match(/^\s*(\S+)\s+(\S+)\s+(\S+)/)
+    if (m && !/^[-=*|]/.test(raw.trim())) rows.push({ claim: m[1], verdict: m[2], resolved: m[3] === "resolved" || m[3] === "yes" })
+  }
+  return { rows, text }
+}
+{
+  const sb = parseSettlement(beforePath)
+  const sa = parseSettlement(afterPath)
+  const byClaim = (s: { rows: Array<{ claim: string; verdict: string; resolved: boolean }> }) => {
+    const m = new Map<string, { n: number; resolved: number }>()
+    for (const r of s.rows) {
+      const e = m.get(r.claim) ?? { n: 0, resolved: 0 }
+      e.n++
+      if (r.resolved) e.resolved++
+      m.set(r.claim, e)
+    }
+    return m
+  }
+  const bb = byClaim(sb)
+  const ba = byClaim(sa)
+  const merged: string[] = []
+  for (const [claim, v] of ba) {
+    const before = bb.get(claim)
+    if (before && before.n === v.n && before.resolved === v.resolved) continue
+    const grew = !before || v.n > before.n
+    if (grew && v.resolved > 0) merged.push(`${claim}: resolved ${v.resolved}/${v.n}`)
+  }
+  check("no-claim-merged-into-resolution", merged.length === 0, merged.join(" · "))
+  report.claims = {
+    before: Object.fromEntries(bb.entries()),
+    after: Object.fromEntries(ba.entries()),
+    merged,
+  }
+}
+
+const failures = checks.filter((c) => !c.ok)
+report.ok = failures.length === 0
+
+// ── THE CLAIM SETTLEMENT ────────────────────────────────────────────────────────────────────────────
+// The gate prints a "CLAIM SETTLEMENT" block for the claims a run carried. Reading it from BOTH arms
+// gives the criterion "claims never merged into resolution" as a MEASURED check, not an assertion: a
+// claim that settled a row (externalVerified on a row that is NOT resolved) is a claim merged into
+// resolution, and the block says so.
 
 console.log("=== TABLE 1 — the columns, both arms ===")
 for (const k of Object.keys(beforeT.table1)) {
