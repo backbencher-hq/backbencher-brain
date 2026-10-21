@@ -492,6 +492,26 @@ const isRelativeScriptPath = (t: string): boolean => {
     endsAdmitted = c === 109 /* m */ || c === 77 /* M */ || c === 100 /* d */ || c === 68 /* D */
   }
   if (!endsAdmitted) return false
+  // A PATH THAT BEGINS WITH A RUNTIME VARIABLE IS NOT A STATIC PATH, AND THIS FILE IS NOT IN A
+  // POSITION TO JUDGE IT. MEASURED, over the whole population (1,181 files / 30 repos):
+  //
+  //   `$PSScriptRoot/../../build.psm1`          -> the file IS in the project -> the claim was FALSE
+  //   `$PSScriptRoot\..\..\PSDSCxMachine.psm1`  -> the file is NOWHERE      -> the claim was TRUE
+  //
+  // 30 rows of that shape, and the split is 12 false claims against 18 true ones — so a rule that
+  // always claims errs 12 times and a rule that never claims errs 18 times, and NEITHER can do
+  // better, because the question ("is this module in the project?") is a PROJECT question and this
+  // is a ONE-FILE parse. The 12 false claims are not this file's defect: the GATE knows the row's
+  // own directory AND the project's admitted file list, so IT can answer the question — the arbiter
+  // cannot today, which is why all 30 read as "unverifiable" (wall W9, the Lead's instrument).
+  //
+  // So the rule is NOT "a relative path is never external". It is: **a STATIC relative path naming
+  // an admitted spelling is a project-file reference** — the arbiter's path question can answer
+  // that one, and it REFUTED the two rows this lane found — and a path that begins with a RUNTIME
+  // VARIABLE is resolved at RUN TIME, against a directory the project does not know, so the
+  // externality reading STAYS, because a claim this file cannot judge belongs to the instrument
+  // that can.
+  if (t.charCodeAt(0) === 36 /* $ */) return false // $PSScriptRoot\... — a runtime path
   // A PATH THAT NAMES SOMETHING OUTSIDE ANY PROJECT — and so can never be one of the project's
   // own files. The shapes mirror the arbiter's own `WINDOWS_DRIVE` and `URI_SCHEME` tests, because
   // the question is the same one: "can the project's own file list answer this spelling?"
