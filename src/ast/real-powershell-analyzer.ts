@@ -428,31 +428,101 @@ const isAsciiUpper = (c: number): boolean => c >= 65 && c <= 90
  *
  * Zero regex, and no word list: every predicate here is a byte test over the published name.
  */
-/** PS-RELATIVE-PATH (fleet baseline 2026-10-19): a dot-sourced RELATIVE path ending in .ps1 —
- *  `.\hack\make\.go-autogen.ps1`, `.\eng\common\tools.ps1` — is a PROJECT FILE reference, not an
+/** PS-RELATIVE-PATH (fleet baseline 2026-10-19; WIDENED 2026-10-20 — the second refuted claim):
+ *  a RELATIVE path naming one of the lane's ADMITTED spellings is a PROJECT FILE reference, not an
  *  external target. Character scan, not a regex: the fleet's no-regex policy applies to the Lead's
- *  own edits exactly as it does to a lane's. */
+ *  own edits exactly as it does to a lane's.
+ *
+ *  ## WHY THE FIRST VERSION OF THIS PREDICATE WAS TOO NARROW, AND WHAT THE ARBITER ACTUALLY ASKS
+ *
+ *  The first version read: "is this a relative path ending in `.ps1`?" The arbiter asks a
+ *  DIFFERENT question — "is this path one of the PROJECT's admitted files?"
+ *  (`pathTargetInProject`, `script/m14/incoming-rule.ts`) — and the two disagreed on two axes.
+ *  Both were MEASURED, not argued:
+ *
+ *  1. THE EXTENSION. The arbiter's project facts hold the lane's ADMITTED files, and the gate's own
+ *     map admits `powershell: "ps1,psm1,psd1"` (`script/m14/incoming-gate.ts:134`) — so a project
+ *     owns `.psm1` and `.psd1` files exactly as it owns `.ps1` ones. `pathTargetInProject` matches
+ *     by SUFFIX, so the extension is irrelevant to the arbiter and decisive to the old predicate.
+ *     MEASURED, whole population, 1,181 files / 30 repos: two rows —
+ *     `powershell/test/powershell/Modules/Microsoft.PowerShell.Security/FileCatalog.Tests.ps1:365`
+ *     and `:366` — publish `uses -> DSCResources\UserConfigProviderModVersion1\UserConfigProvider
+ *     ModVersion1.psm1` with `externalTarget: true`, and that file IS in the project. The
+ *     arbiter's own `verifyExternalClaim` answers `externalRefuted` on both. The lane's extFAIL
+ *     column read 0 anyway, because PS38 withholds the arbiter-readable key on a bare owner and
+ *     the spelling the analyzer DOES publish (`externalTarget`) is not in `EXTERNAL_KEYS` — so the
+ *     false claim was published AND INVISIBLE. That is the second refuted claim, and the first
+ *     incident's fix is what made it hard to see: the fix answered the wrong question.
+ *  2. THE SEPARATOR. The old predicate also required a path separator, so a BARE `Helper.psm1`
+ *     was marked. The arbiter's suffix match does not care: `nf.endsWith("/" + norm)` matches a
+ *     bare `Helper.psm1` against ANY admitted file with that basename.
+ *
+ *  ## AND THE ABSOLUTE CASE, WHICH THE OLD PREDICATE GOT WRONG THE OTHER WAY
+ *
+ *  An ABSOLUTE path can never be refuted by the path branch: the gate's facts are REPO-RELATIVE
+ *  (`path.relative(repoRoot, abs)`, `incoming-gate.ts:577`), so no admitted path ends with `/` plus
+ *  an absolute norm. The old predicate withheld the claim on `/usr/lib/x.ps1` — a TRUE claim thrown
+ *  away, for a shape the arbiter can check and answer.
+ *
+ *  ## THE RULE THIS SHIPS
+ *
+ *  Withhold the externality reading when the target ends in one of the lane's ADMITTED spellings
+ *  and its spelling is a RELATIVE path — not `/unix-rooted`, not `C:\drive`, not a URI scheme.
+ *  This is the bash lane's rule ("externalCommandEvidence withheld for all non-absolute paths now,
+ *  kept only for /unix-rooted and C:\ drive", RESOLUTION-LEDGER) applied to powershell's own
+ *  admitted spellings.
+ */
 const isRelativeScriptPath = (t: string): boolean => {
-  // ends with ".ps1" (case-insensitive) — compared byte-wise, no pattern engine
-  if (t.length < 4) return false
-  const ext = t.slice(-4)
-  if (!(ext[0] === "." && (ext[1] === "p" || ext[1] === "P") && (ext[2] === "s" || ext[2] === "S") && ext[3] === "1")) return false
-  // and carries a path separator anywhere (relative or not)
-  for (let i = 0; i < t.length; i++) {
+  const n = t.length
+  if (n < 4) return false
+  // THE THREE ADMITTED SPELLINGS, byte-wise and case-insensitive: ".ps1", ".psm1", ".psd1".
+  const isPs = (i: number): boolean => {
     const c = t.charCodeAt(i)
-    if (c === 92 /* \ */ || c === 47 /* / */) return true
+    return c === 112 /* p */ || c === 80 /* P */
   }
-  return false
+  const isS = (i: number): boolean => {
+    const c = t.charCodeAt(i)
+    return c === 115 /* s */ || c === 83 /* S */
+  }
+  const isDot = (i: number): boolean => t.charCodeAt(i) === 46 /* . */
+  const isOne = (i: number): boolean => t.charCodeAt(i) === 49 /* 1 */
+  let endsAdmitted = isDot(n - 4) && isPs(n - 3) && isS(n - 2) && isOne(n - 1) // .ps1
+  if (!endsAdmitted && n >= 5 && isDot(n - 5) && isPs(n - 4) && isS(n - 3) && isOne(n - 1)) {
+    const c = t.charCodeAt(n - 2)
+    endsAdmitted = c === 109 /* m */ || c === 77 /* M */ || c === 100 /* d */ || c === 68 /* D */
+  }
+  if (!endsAdmitted) return false
+  // A PATH THAT NAMES SOMETHING OUTSIDE ANY PROJECT — and so can never be one of the project's
+  // own files. The shapes mirror the arbiter's own `WINDOWS_DRIVE` and `URI_SCHEME` tests, because
+  // the question is the same one: "can the project's own file list answer this spelling?"
+  if (t.charCodeAt(0) === 47 /* / */) return false // /unix-rooted
+  if (t.charCodeAt(0) === 92 /* \ */) return false // \\UNC\share
+  const colon = t.indexOf(":")
+  if (colon > 0) {
+    if (colon === 1) return false // C:\ or C:/ — a Windows DRIVE
+    // A URI SCHEME is two or more scheme-legal characters before the colon; it names a host.
+    for (let i = 0; i < colon; i++) {
+      const c = t.charCodeAt(i)
+      const legal =
+        (c >= 97 && c <= 122) /* a-z */ || (c >= 65 && c <= 90) /* A-Z */ ||
+        (c >= 48 && c <= 57) /* 0-9 */ || c === 43 /* + */ || c === 45 /* - */ || c === 46 /* . */
+      if (!legal) return true // NOT a scheme — a colon inside a relative path: keep the escape
+    }
+    return false // a URI scheme
+  }
+  return true
 }
 const externalReadingOf = (t: string): "cmdlet" | "qualified" | null => {
   if (t.charCodeAt(0) === 34 /* " */ || t.charCodeAt(0) === 39 /* ' */) return null
-  // PS-RELATIVE-PATH (fleet baseline 2026-10-19, the two whole-population refutations): a
-  // dot-sourced RELATIVE path ending in .ps1 (`.\hack\make\.go-autogen.ps1`,
-  // `.\eng\common\tools.ps1`) is a PROJECT FILE reference, not an external target. The
-  // "qualified" reading fired on it because a backslash is a qualifier byte, and the gate's
-  // case-1 path check correctly found the file in the project and REFUTED the claim — the
-  // emission was false. A path-shaped .ps1 target is a dependency the arbiter answers by the
-  // admitted file list, so no externality reading may attach to it.
+  // PS-RELATIVE-PATH (fleet baseline 2026-10-19, the two whole-population refutations; WIDENED
+  // 2026-10-20 to every ADMITTED spelling): a RELATIVE path naming one of the lane's admitted
+  // files (`.\hack\make\.go-autogen.ps1`, `.\eng\common\tools.ps1`,
+  // `DSCResources\UserConfigProviderModVersion1\UserConfigProviderModVersion1.psm1`) is a PROJECT
+  // FILE reference, not an external target. The "qualified" reading fired on it because a
+  // backslash is a qualifier byte, and the gate's case-1 path check correctly found the file in
+  // the project and REFUTED the claim — the emission was false. A path-shaped target the project
+  // may own is a dependency the arbiter answers by the admitted file list, so no externality
+  // reading may attach to it.
   if (isRelativeScriptPath(t)) return null
   for (let i = 1; i < t.length; i++) {
     if (t.charCodeAt(i) !== 45 /* - */) continue
