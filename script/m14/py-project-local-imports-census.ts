@@ -35,7 +35,7 @@
  *     --out validation/m14/results/PYTHON-PROJECT-LOCAL-IMPORTS.json
  */
 import { execFileSync } from "node:child_process"
-import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { appendFileSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 import { RealPythonAnalyzer } from "../../src/ast/real-python-analyzer"
@@ -45,8 +45,23 @@ const ROOT = process.cwd()
 const argv = process.argv.slice(2)
 const argOf = (f: string): string | undefined => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : undefined }
 const OUT = argOf("--out")
+/**
+ * THE PER-REPO LEDGER — so a KILLED RUN RESUMES instead of losing its work.
+ *
+ * The harness SIGTERMs a detached job, and this census takes ~35 minutes on the whole population, so
+ * a run can die with most of the population measured. A partial partition is NOT a measurement (the
+ * charter's "a failed arm that reports a partial number is a WRONG measurement"), so each repo's
+ * counts are written to a JSON-LINES ledger as they are measured, and a later run reads the ledger
+ * back, SKIPS the repos already done, and continues. The instrument's own header prints how many
+ * repos were resumed and how many were measured this time, so a reader always knows which.
+ */
+const LEDGER = OUT ? `${OUT}.repos.jsonl` : ".tmp-py/census-repos.jsonl"
+const RESUME = process.argv.includes("--resume")
 /** A SCOPED RUN: `--repo <name>` measures ONE repository, whole (not a stride). */
 const ONLY = argOf("--repo")
+/** A SET OF WHOLE REPOS: `--repos a,b,c` measures those repositories, whole (never a stride). */
+const REPOS = argOf("--repos")
+const SCOPE = REPOS ? new Set(REPOS.split(",").map((x) => x.trim()).filter(Boolean)) : null
 const CR = process.env.BB_CORPUS_ROOT ?? path.join(ROOT, ".corpus")
 const SIZE_CAP = 1_048_576
 
@@ -179,12 +194,30 @@ const zero = (): Class => ({
 })
 const global = zero()
 const perRepo: Array<{ repo: string; files: number; c: Class }> = []
+/** THE RESUMED REPOS: their counts are already in the ledger, so they are summed and skipped. */
+const done = new Map<string, { repo: string; files: number; c: Class }>()
+if (RESUME) {
+  try {
+    for (const line of readFileSync(LEDGER, "utf8").split("\n")) {
+      if (line.trim().length === 0) continue
+      try { const row = JSON.parse(line); if (row?.repo) done.set(String(row.repo), row) } catch { /* a torn line is re-measured */ }
+    }
+  } catch { /* no ledger yet */ }
+}
 /** THE UNTARGETABLE SAMPLES — the rows a retarget would leave unresolved, named. */
 const untargetableSamples: string[] = []
 
 const repoNames = [...new Set(pop.files.map((f) => f.slice(CR.length + 1).split(path.sep)[0]!))].sort()
-  .filter((r) => !ONLY || r === ONLY)
+  .filter((r) => (!ONLY || r === ONLY) && (!SCOPE || SCOPE.has(r)))
 for (const repo of repoNames) {
+  if (done.has(repo)) {
+    // THE RESUMED REPO: its counts are already measured, so they are summed and the repo is SKIPPED.
+    const prior = done.get(repo)!
+    for (const k of Object.keys(global) as Array<keyof Class>) global[k] += prior.c[k]
+    perRepo.push(prior)
+    console.error(`  ${repo.padEnd(26)} files=${String(prior.files).padEnd(6)} imports=${String(prior.c.total).padStart(7)} (RESUMED from the ledger)`)
+    continue
+  }
   const files = pop.files.filter((f) => f.slice(CR.length + 1).split(path.sep)[0] === repo)
   const trees: any[] = []
   const contents: string[] = []
@@ -253,7 +286,10 @@ for (const repo of repoNames) {
     }
   }
   for (const k of Object.keys(global) as Array<keyof Class>) global[k] += c[k]
-  perRepo.push({ repo, files: trees.length, c })
+  const row = { repo, files: trees.length, c }
+  perRepo.push(row)
+  // THE LEDGER IS WRITTEN AS EACH REPO FINISHES, so a kill costs at most the repo in flight.
+  try { appendFileSync(LEDGER, JSON.stringify(row) + "\n") } catch { /* the ledger is best-effort */ }
   console.error(`  ${repo.padEnd(26)} files=${String(trees.length).padEnd(6)} imports=${String(c.total).padStart(7)} local=${String(c.retargeted + c.ambiguousItem + c.absentItem + c.namespace + c.dottedItem).padStart(7)} retargeted=${String(c.retargeted).padStart(6)} targetable=${String(c.retargetedTargetable).padStart(6)} unknown=${String(c.unknown).padStart(6)}`)
 }
 

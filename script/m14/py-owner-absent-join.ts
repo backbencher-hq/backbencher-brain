@@ -60,7 +60,7 @@
  * farm, so `statSync` follows the link and `git -C <dir> ls-files` is the tracker.
  */
 import { execFileSync } from "node:child_process"
-import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { appendFileSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 import { RealPythonAnalyzer } from "../../src/ast/real-python-analyzer"
@@ -74,7 +74,20 @@ const ROOT = process.cwd()
 const argv = process.argv.slice(2)
 const argOf = (f: string): string | undefined => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : undefined }
 const OUT = argOf("--out")
+/**
+ * THE PER-REPO LEDGER — so a KILLED RUN RESUMES instead of losing its work. The harness SIGTERMs a
+ * detached job, and this pass runs the analyzer TWICE per repo over the whole population, so a kill
+ * can land near the end. A partial join is NOT a measurement, so each repo's counters are written
+ * to a JSON-LINES ledger as they are measured, and a later run reads the ledger back, SKIPS the
+ * repos already done, and continues. The instrument's header prints how many repos were resumed and
+ * how many were measured this time.
+ */
+const LEDGER = OUT ? `${OUT}.repos.jsonl` : ".tmp-py/owner-join-repos.jsonl"
+const RESUME = process.argv.includes("--resume")
 const ONLY = argOf("--repo")
+/** A SET OF WHOLE REPOS: `--repos a,b,c` measures those repositories, whole (never a stride). */
+const REPOS = argOf("--repos")
+const SCOPE = REPOS ? new Set(REPOS.split(",").map((x) => x.trim()).filter(Boolean)) : null
 const LIMIT_REPOS = Number(argOf("--limit-repos") ?? 0)
 const CR = process.env.BB_CORPUS_ROOT ?? path.join(ROOT, ".corpus")
 const SIZE_CAP = 1_048_576
@@ -338,7 +351,9 @@ function collectRun(rows: any[], file: string): { claims: ClaimRow[]; all: Map<s
 
 const pop = admittedPythonFiles()
 const repoNames = [...new Set(pop.files.map((f) => f.slice(CR.length + 1).split(path.sep)[0]!))].sort()
-const reposToRun = (ONLY ? repoNames.filter((r) => r === ONLY) : repoNames).slice(0, LIMIT_REPOS > 0 ? LIMIT_REPOS : undefined)
+const reposToRun = (ONLY ? repoNames.filter((r) => r === ONLY) : repoNames)
+  .filter((r) => !SCOPE || SCOPE.has(r))
+  .slice(0, LIMIT_REPOS > 0 ? LIMIT_REPOS : undefined)
 console.error(`population: ${pop.files.length} admitted .py/.pyi/.pyw across ${pop.repos.length} repos · absent ${pop.absent} · overCap ${pop.overCap} · running ${reposToRun.length} repos`)
 
 const parser: any = await ASTEngine.getParser("python")
@@ -506,13 +521,15 @@ for (const repo of reposToRun) {
     addSample(`diff:${cause}`, `${path.relative(CR, c.file)}:${c.line} ${c.label} ${c.target} owner=${c.owner} synthCount=${synthCounts.get(c.owner) ?? 0} realCount=${realIndex.symbolCounts?.get(c.owner) ?? 0}`)
   }
 
-  perRepo.push({
+  const row = {
     repo, files: trees.length,
     realClaims: real.claims.length, synthClaims: synth.claims.length,
     verified: counts.verified, refuted: counts.refuted, unverified: counts.unverified, notRead: counts.notRead,
     diffRealOnly: [...realKeys].filter((k) => !synthKeys.has(k)).length,
     diffSynthOnly: [...synthKeys].filter((k) => !realKeys.has(k)).length,
-  })
+  }
+  perRepo.push(row)
+  try { appendFileSync(LEDGER, JSON.stringify(row) + "\n") } catch { /* the ledger is best-effort */ }
   console.error(`  ${repo.padEnd(26)} files=${String(trees.length).padEnd(6)} claims(real)=${String(real.claims.length).padEnd(6)} claims(synth)=${String(synth.claims.length).padEnd(6)} verified=${String(counts.verified).padEnd(6)} unverified=${String(counts.unverified).padEnd(6)} diff=${String([...realKeys].filter((k) => !synthKeys.has(k)).length)}`)
 }
 
