@@ -6,8 +6,11 @@
  * sense (psql's `\i`/`\ir` and `CREATE EXTENSION` are the two file/unit dependencies it does emit).
  *
  * Relationship types it EMITS — eight of the live fourteen, and this list is MEASURED, not
- * asserted (whole admitted population: 2,125 `.sql` files across 202 repositories, 0 parse
- * failures, 199 symlinked directories followed; `script/m14/sql-population.ts`):
+ * asserted (whole admitted population: 2,125 `.sql` files across the **21 repositories that carry
+ * them** — the corpus holds 202 git checkouts, 199 of them symlinked, and the other 181 carry no
+ * `.sql` file at all; the gate's own walk counts the same 21 (`incoming-gate.ts:526` adds a repo per
+ * ADMITTED file), and the two must agree or the cell's repo count is a different number from the
+ * gate's. 0 parse failures, 199 symlinked directories followed; `script/m14/sql-population.ts`):
  * ⚠ THE COUNTS ARE ONLY THE COUNTS **IF THE GRAMMAR IS HANDED OVER**, and that is not a detail:
  * `analyze` is SYNCHRONOUS and cannot build a parser for its own recovery passes, so the
  * declaration-resync pass and the EXECUTE-literal pass are SILENTLY INERT without the hand-over

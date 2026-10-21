@@ -59,6 +59,8 @@ type WalkStats = {
   symlinkedDirs: string[]
   symlinkedFilesFollowed: number
   repos: number
+  /** the number of git repositories in the corpus, INCLUDING the ones that carry no `.sql` file */
+  corpusGitRepos: number
   /** PATHS — every tracked `.sql` path the walk found, before dedup and before the size cap. */
   paths: number
   /** DISTINCT FILES — PATHS after dedup by realpath, so a repository reachable through two
@@ -74,7 +76,7 @@ type WalkStats = {
 }
 
 const stats: WalkStats = {
-  symlinkedDirsFollowed: 0, symlinkedDirs: [], symlinkedFilesFollowed: 0, repos: 0,
+  symlinkedDirsFollowed: 0, symlinkedDirs: [], symlinkedFilesFollowed: 0, repos: 0, corpusGitRepos: 0,
   paths: 0, distinctFiles: 0, admitted: 0, overCap: 0, overCapLargest: 0, absent: 0,
   excluded: { overCap: [], absent: [], duplicate: 0 },
 }
@@ -83,6 +85,8 @@ const stats: WalkStats = {
 const pathSet = new Set<string>()
 const realSet = new Set<string>()
 const admittedAbs: string[] = []
+const repoSeen = new Set<string>()
+const perRepoFiles: Record<string, number> = {}
 const repoOfAbs = new Map<string, string>()
 
 function gitTracked(dir: string): string[] {
@@ -111,7 +115,7 @@ function isRepo(dir: string): boolean {
     const isLink = (() => { try { return statSync(dir).isDirectory() && !readdirSync(dir).length ? false : false } catch { return false } })()
     void isLink
     if (!isRepo(dir)) continue
-    stats.repos++
+    stats.corpusGitRepos++
     for (const rel of gitTracked(dir)) {
       if (!rel.endsWith(EXT)) continue
       const abs = join(dir, rel)
@@ -128,6 +132,16 @@ function isRepo(dir: string): boolean {
         stats.excluded.overCap.push(abs); continue
       }
       admittedAbs.push(abs)
+      // THE REPO COUNT THE CELL MUST CARRY: the repositories that CARRY an admitted `.sql` file — NOT
+      // the number of git repositories in the corpus. Measured 2026-10-21: the corpus holds 202 git
+      // repositories (199 of them symlinked) and only **21** carry an admitted `.sql` file — duckdb 594 ·
+      // boundary 486 · proxicall 438 · hasura-engine 347 · pixie 161 · postgrest 32 · sqlite 13 · 14 more
+      // with 1–9 each. The gate's own walk counts it the same way (`incoming-gate.ts:526` —
+      // `repos.add(name)` per ADMITTED file) and prints 21, and the two must agree or the cell's repo
+      // count is a different number from the gate's. A census that reported 202 here would over-count
+      // the projects by an order of magnitude, and the per-type REPOS rows would be the same number
+      // while the population line was not.
+      if (!repoSeen.has(name)) { repoSeen.add(name); stats.repos++; perRepoFiles[name] = (perRepoFiles[name] ?? 0) + 1 }
       repoOfAbs.set(abs, name)
     }
   }
@@ -282,6 +296,9 @@ const report = {
     distinctFiles: stats.distinctFiles,
     admitted: stats.admitted,
     repos: stats.repos,
+    corpusGitRepos: stats.corpusGitRepos,
+    reposWithAdmittedSql: stats.repos,
+    perRepoAdmittedFiles: perRepoFiles,
     symlinkedDirsFollowed: stats.symlinkedDirsFollowed,
     symlinkedDirs: stats.symlinkedDirs,
     symlinkedFilesFollowed: stats.symlinkedFilesFollowed,
@@ -297,7 +314,7 @@ console.log("═".repeat(78))
 console.log("SQL LANE — POPULATION CENSUS AND 14-TYPE CLASSIFICATION INPUT")
 console.log("═".repeat(78))
 console.log(`corpus root (ABSOLUTE) : ${report.corpus_root_absolute}`)
-console.log(`repos (git checkouts)  : ${stats.repos}`)
+console.log(`repos carrying .sql     : ${stats.repos}   (of ${stats.corpusGitRepos} git checkouts in the corpus)`)
 console.log(`PATHS                  : ${stats.paths}   (tracked .sql paths)`)
 console.log(`DISTINCT FILES         : ${stats.distinctFiles}   (deduped by realpath)`)
 console.log(`ADMITTED               : ${stats.admitted}   (<= 1,048,576 bytes, present on disk)`)

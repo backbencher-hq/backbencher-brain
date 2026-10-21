@@ -132,6 +132,18 @@ for (const f of admitted) {
   for (const n of all) {
     const t = String(n.type)
     if (t.startsWith("plpgsql_")) { bump("G19.plpgsql_node_produced", f, `${n.startPosition.row + 1}`); bump(`G19.type.${t}`, f, "") }
+    // THE PLAN's row set, measured: the LOCAL-VARIABLE arm (G7/G19 plan P3) would read exactly the
+    // nodes that NAME a variable — `DECLARE x int` and `x := …` — and those two node types are the
+    // ones that have no relation in the 14-type vocabulary. The counter is the UNION, so the file
+    // count is the number of files a local-variable arm would touch, not the sum of two overlapping
+    // per-type file counts.
+    if (t === "plpgsql_declarations" || t === "plpgsql_assignment") bump("PLAN.P3_local_variable_sites", f, `${n.startPosition.row + 1}`)
+    // P1: the dynamic-SQL arm's row set — the nodes whose `query` field carries a LITERAL the tree
+    // can hand over, so the EXECUTE-literal pass could read it from the tree instead of the text.
+    if (t === "plpgsql_execute") {
+      const q = n.childForFieldName?.("query")
+      bump(q && String(q.type) === "literal" ? "PLAN.P1_plpgsql_execute_with_literal_query" : "PLAN.P1_plpgsql_execute_without_literal_query", f, `${n.startPosition.row + 1}`)
+    }
   }
   // the CONTROL for G19: the node types EXIST in the pinned grammar (13 of them) but are not produced
   bump("G19.control_create_function", f, "")

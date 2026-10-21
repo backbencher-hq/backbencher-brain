@@ -101,7 +101,18 @@ const report = {
     part_of_present: named.includes("part_of"),
     part_any: named.filter((n) => n.includes("part")),
   },
-  named,
+  // THE `named` LIST IS WHAT THE SHARED `.tmp-census/grammar-nodes.json` CARRIES FOR ITS OTHER SIX
+  // KEYS, and a consumer that iterates `named` gets nothing for a key without it. The Lead asked for
+  // it on 2026-10-21 and it is here.
+  //
+  // IT IS SORTED, because the shared file's six lists are (typescript's begins
+  // `abstract_class_declaration, abstract_method_signature, accessibility_modifier, …`), so a
+  // drop-in merge has to agree on the ORDER or the merged file is not byte-comparable with the rows
+  // already in it. The enumeration order is kept too — `namedInEnumerationOrder` — because the
+  // ORDER IS EVIDENCE: the pinned grammar lists `psql_meta_command` first, which is the wasm's own
+  // layout, and a reader diffing the two orders sees the grammar's shape rather than a re-sort.
+  named: [...named].sort(),
+  namedInEnumerationOrder: named,
   anonymousSample: anonymous.slice(0, 40),
 }
 
