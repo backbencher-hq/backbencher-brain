@@ -130,10 +130,28 @@ try {
 }
 
 // ── the control: the arbiter typechecks clean ────────────────────────────────────────────────────
+// ── THE CONTROL: DID THE TYPECHECK ACTUALLY RUN? ──────────────────────────────────────────────────
+//
+// FOUND BY THE POWERSHELL LANE (2026-10-20), AND IT WAS THE LEAD'S OWN BUG. The control's LABEL says
+// "the typecheck ran and produced parseable output" and its PREDICATE was `/error TS\d+/.test(tscOut)`
+// — **which DEMANDS A TYPE ERROR BE PRESENT**. The run is `tsc … --listFiles`, so on a CLEAN tree the
+// output is the FILE LIST and the control was FALSE. **THE CONTROL WAS RED EXACTLY WHEN THE TREE WAS
+// CLEAN, AND GREEN ONLY WHEN THE TREE WAS BROKEN** — and it sat beside a check that requires the arbiter
+// to have ZERO type errors, so the two demanded opposite things and the gate could only pass on a broken
+// tree. That is why it read 7/7 earlier: the tree still had six errors in four lanes' files. The Lead
+// CLEARED those errors, and the gate went red — **A CONTROL THAT IS RED WHEN THE TREE IS CLEAN CANNOT BE
+// TRUSTED TO GO RED WHEN THE TREE IS DIRTY.** The same shape as the toml lane's DEAD MUTATION SUITE: a
+// broken instrument that reads as a working one.
+//
+// THE PREDICATE IS NOW WHAT THE LABEL SAYS: **tsc RAN**, which the `--listFiles` output proves (a
+// non-empty program file list). It is true on a clean tree AND on a dirty one ✓. The error-reporting
+// half is proved separately by n1b (the same tsc binary must report a deliberate error in a temp project
+// OUTSIDE the tree), and the verdict's own refusal is proved by n2 (a synthetic arbiter error line).
 check(
   "the typecheck ran and produced parseable output",
-  /error TS\d+/.test(tscOut),
-  tscOut.slice(0, 300),
+  fileList.length > 0,
+  `tsc printed ${fileList.split("\n").filter(Boolean).length} program file(s); ${parsed.lines.length} diagnostic line(s)` +
+    (parsed.lines.length > 0 ? ` — first: ${parsed.lines[0]}` : ""),
 )
 const arbErrs = arbiterErrors(parsed.byFile)
 check(
