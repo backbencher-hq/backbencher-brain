@@ -268,6 +268,21 @@ type Arm = {
     ambOwnFile: number
     ambGenuine: number
     byLabel: Map<string, { own: number; genuine: number }>
+    /**
+     * THE POPULATION DISTINCTION (the Lead's ask, 2026-10-20). The fleet's 82 % / 68.9 % figures
+     * are WHOLE-CLASS shares — (own-file-declares) ÷ (ALL ambiguous rows). **THE TIE-BREAK'S
+     * POPULATION IS THE CLAIM-FREE SUBSET**: a row that carries an EXTERNAL or a BINDING claim
+     * RETURNS BEFORE THE COUNT, so the tie-break can only move the rows the name model answers.
+     * So the number that PRICES the tie-break is the CLAIM-FREE own-file share, and the
+     * claim-carrying share is the part the change CANNOT touch.
+     */
+    claimFree: number
+    claimFreeOwnFile: number
+    claimFreeGenuine: number
+    claimed: number
+    claimedOwnFile: number
+    claimedGenuine: number
+    byLabelClaimFree: Map<string, { own: number; genuine: number }>
   }
   /** THE PROBE'S OWN TABLE 1 — the per-type class table, for the assertion against the gate's. */
   table: Record<string, number[]>
@@ -302,7 +317,13 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
   let displacedByIndexTotal = 0
   let displacedByNoIndexTotal = 0
   const r5 = { total: 0, W1: 0, W2: 0, W3: 0, byLabel: new Map<string, Map<string, number>>(), samples: [] as string[] }
-  const ambCeiling = { ambRows: 0, ambOwnFile: 0, ambGenuine: 0, byLabel: new Map<string, { own: number; genuine: number }>() }
+  const ambCeiling = {
+    ambRows: 0, ambOwnFile: 0, ambGenuine: 0,
+    byLabel: new Map<string, { own: number; genuine: number }>(),
+    claimFree: 0, claimFreeOwnFile: 0, claimFreeGenuine: 0,
+    claimed: 0, claimedOwnFile: 0, claimedGenuine: 0,
+    byLabelClaimFree: new Map<string, { own: number; genuine: number }>(),
+  }
   /** THE PROBE'S OWN TABLE 1 — the per-type class table. */
   const table: Record<string, number[]> = {}
   const TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates", "decorates", "renders", "mixes_in", "part_of"]
@@ -499,6 +520,23 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
         if (!byL) ambCeiling.byLabel.set(rec.label, (byL = { own: 0, genuine: 0 }))
         if (own) byL.own++
         else byL.genuine++
+        // ── THE TIE-BREAK'S POPULATION — a row that CARRIES A CLAIM returns before the count, so the
+        // tie-break can only move the CLAIM-FREE ambiguous rows. Its price is the claim-free
+        // own-file share, and the claim-carrying share is the part the change CANNOT touch.
+        const carriesClaim = claim !== null
+        if (carriesClaim) {
+          ambCeiling.claimed++
+          if (own) ambCeiling.claimedOwnFile++
+          else ambCeiling.claimedGenuine++
+        } else {
+          ambCeiling.claimFree++
+          if (own) ambCeiling.claimFreeOwnFile++
+          else ambCeiling.claimFreeGenuine++
+          let byC = ambCeiling.byLabelClaimFree.get(rec.label)
+          if (!byC) ambCeiling.byLabelClaimFree.set(rec.label, (byC = { own: 0, genuine: 0 }))
+          if (own) byC.own++
+          else byC.genuine++
+        }
       }
       let co = claimOutcome.get(claimKey)
       if (!co) claimOutcome.set(claimKey, (co = new Map()))
@@ -743,6 +781,24 @@ for (const [armName, arm] of [["no-index", noIndex], ["--index", withIndex]] as 
   console.log(`    genuinely ambiguous (no file-local declaration)             ${String(a.ambGenuine).padStart(9)}  ${pctOf(a.ambGenuine).padStart(6)}`)
   for (const [label, v] of [...a.byLabel.entries()].sort((x, y) => y[1].own + y[1].genuine - (x[1].own + x[1].genuine))) {
     console.log(`      ${label.padEnd(14)} own-file ${String(v.own).padStart(8)} · genuinely ambiguous ${String(v.genuine).padStart(8)}`)
+  }
+  // ── THE TIE-BREAK'S POPULATION. A row that carries a claim RETURNS BEFORE THE COUNT, so the
+  // own-file tie-break can only move the CLAIM-FREE ambiguous rows. The fleet's headline share
+  // (the clojure lane's 82.0 %, the c lane's 68.9 %) is a WHOLE-CLASS share; the price of the
+  // change is the CLAIM-FREE share, and the two are different populations.
+  const pct = (n: number, d: number) => (d === 0 ? "n/a" : `${((100 * n) / d).toFixed(1)}%`)
+  console.log(`  ${armName}: THE TIE-BREAK'S POPULATION — a row that CARRIES A CLAIM returns before the count:`)
+  console.log(`    CLAIM-FREE ambiguous rows (the tie-break can move these)   ${String(a.claimFree).padStart(9)}`)
+  console.log(`      of which the row's OWN FILE declares the target          ${String(a.claimFreeOwnFile).padStart(9)}  ${pct(a.claimFreeOwnFile, a.claimFree).padStart(6)}   <-- THE TIE-BREAK'S PRICE ON THIS LANE`)
+  console.log(`      genuinely ambiguous                                    ${String(a.claimFreeGenuine).padStart(9)}  ${pct(a.claimFreeGenuine, a.claimFree).padStart(6)}`)
+  console.log(`    CLAIM-CARRYING ambiguous rows (the change CANNOT touch these) ${String(a.claimed).padStart(9)}`)
+  console.log(`      of which the row's OWN FILE declares the target          ${String(a.claimedOwnFile).padStart(9)}  ${pct(a.claimedOwnFile, a.claimed).padStart(6)}`)
+  console.log(`      genuinely ambiguous                                    ${String(a.claimedGenuine).padStart(9)}  ${pct(a.claimedGenuine, a.claimed).padStart(6)}`)
+  console.log(`    WHOLE-CLASS own-file share (the fleet's headline shape)     ${pct(a.ambOwnFile, a.ambRows).padStart(6)}   <-- NOT the tie-break's price; a different population`)
+  console.log(`    THE PRICE = the whole-class own-file count MINUS the claim-carrying own-file count`)
+  console.log(`      ${String(a.ambOwnFile).padStart(9)} − ${String(a.claimedOwnFile).padStart(9)} = ${String(a.claimFreeOwnFile).padStart(9)}   <-- THE TIE-BREAK'S PRICE ON THIS LANE (and the claim-free own-file count IS the difference, by construction)`)
+  for (const [label, v] of [...a.byLabelClaimFree.entries()].sort((x, y) => y[1].own + y[1].genuine - (x[1].own + x[1].genuine))) {
+    console.log(`      ${label.padEnd(14)} (claim-free) own-file ${String(v.own).padStart(8)} · genuinely ambiguous ${String(v.genuine).padStart(8)}`)
   }
 }
 
