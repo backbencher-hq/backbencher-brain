@@ -119,6 +119,107 @@ function isDigitLedNameFragment(text: string): boolean {
 }
 
 /**
+ * #989 (2026-10-20): the replacement list of a `#define`, read from the SOURCE TEXT the
+ * analyzer was handed — NOT from the AST node.
+ *
+ * **WHY THE AST NODE IS NOT ENOUGH, and the measurement that says so.**
+ * `engine.ts`'s `parseRaw` blanks every `__attribute__((...))` and `__declspec(...)` out of the
+ * content it hands the PARSER — space-for-space, so offsets and line numbers stay honest. The
+ * analyzer is handed the ORIGINAL content (`parseFile` keeps its own `content` parameter and passes
+ * that to `enhancedAnalyzer.analyze(tree.rootNode, content, …)`), so **the text is here and the
+ * TREE is not**: on the production path the `preproc_def`'s VALUE NODE spells an attribute as a
+ * run of spaces, and the analyzer cannot tell `extern __declspec(dllexport)` (an export boundary)
+ * from `extern __declspec(dllimport)` (an IMPORT boundary): the two are byte-identical to it.
+ *
+ * MEASURED — `validation/m14/fixtures/c/probe-c-attribute-blanking.ts`, the production path
+ * (`pool-worker.parseFile` → `engine.ts` → analyzer) against the fixture path (the analyzer
+ * called directly with the raw text):
+ *
+ *     export-linkage-marker-989.c   fixture 2 edges · production 3 edges
+ *                                 — production's third is `cfx_dll_import -> CFX_IMPORT`, a
+ *                                   FALSE edge the fixture forbids, and it is false precisely
+ *                                   because the AST's value node could not spell `dllimport`.
+ *
+ * So the replacement list is read from the analyzer's own text, where it is intact. **This also
+ * means the analyzer's verdict is about the SOURCE, not about the blanked tree** — which is the
+ * only reason the same rule can be correct on both paths.
+ */
+function replacementListOf(defineText: string): string {
+  const n = defineText.length
+  let i = 0
+  while (i < n && (defineText[i] === " " || defineText[i] === "\t")) i++
+  if (defineText[i] !== "#") return ""
+  i++
+  while (i < n && (defineText[i] === " " || defineText[i] === "\t")) i++
+  if (defineText.slice(i, i + 6) !== "define") return ""
+  i += 6
+  while (i < n && (defineText[i] === " " || defineText[i] === "\t")) i++
+  // the macro NAME
+  while (i < n) {
+    const c = defineText[i]
+    const ok = (c >= "A" && c <= "Z") || (c >= "a" && c <= "z") || (c >= "0" && c <= "9") || c === "_"
+    if (!ok) break
+    i++
+  }
+  // A FUNCTION-LIKE macro's parameter list, and only when the `(` touches the name —
+  // `#define X (a + b)` is an OBJECT-like macro whose replacement begins with a paren.
+  if (defineText[i] === "(") {
+    let depth = 0
+    while (i < n) {
+      const c = defineText[i]
+      if (c === "(") depth++
+      else if (c === ")") {
+        depth--
+        if (depth === 0) {
+          i++
+          break
+        }
+      }
+      i++
+    }
+  }
+  return defineText.slice(i)
+}
+
+/**
+ * #989 (2026-10-20): can the analyzer READ this replacement list?
+ *
+ * A replacement list the analyzer cannot read is one whose text carries a run of spaces where a
+ * word should be — the analyzer then cannot tell what the macro says, and the marker must be
+ * REFUSED rather than guessed.
+ *
+ * **WHEN IT HAPPENS, stated honestly.** The analyzer is handed the ORIGINAL content, so the
+ * common case is a perfectly readable list and this rule does not fire. It fires when the SOURCE
+ * itself carries a long run of spaces in a replacement list, and — measured — when the node's span
+ * covers MORE than one definition: on the production path a `#define` whose whole value is an
+ * attribute is blanked to spaces, and tree-sitter-c's `preproc_arg` token then swallows the NEXT
+ * LINE into the macro's own argument (`probe-c-marker-verdict.ts` prints the tree), so the slice
+ * this reads spans a line the analyzer did not mean to read.
+ *
+ * **WHAT THE ANALYZER DOES WITH AN UNREADABLE LIST: it refuses the marker.** It does not guess,
+ * and it does not fall back to the name, because the name is exactly what the file's own
+ * definition was supposed to OVERRIDE — `HIDDEN_API` names an API boundary and is defined to
+ * `visibility("hidden")`, so a rule that fell back to the name would publish an export edge for a
+ * symbol the file explicitly denies. A refusal can only LOSE an edge; an acceptance can only ADD
+ * one, and the charter ranks a false edge above a missing one.
+ *
+ * The stated limit, and it is a real one: this reads a REPLACEMENT LIST, so a macro whose
+ * boundary is established by something other than its replacement list is not covered by it.
+ */
+function replacementIsReadable(replacement: string): boolean {
+  let run = 0
+  for (let i = 0; i < replacement.length; i++) {
+    if (replacement[i] === " ") {
+      run++
+      if (run >= 4) return false
+    } else {
+      run = 0
+    }
+  }
+  return true
+}
+
+/**
  * Does a piece of text SPELL an export attribute?
  *
  * A character scan, not a pattern, which is what this file's own P11 property
@@ -1576,6 +1677,34 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `hasExportAttributeSpelling` is what decides it rather than a name list.
    */
   private exportAttributeMacros: Map<string, boolean> = new Map()
+  /**
+   * #989 (2026-10-20): WHAT THIS FILE SAYS ABOUT EACH MACRO IT DEFINES.
+   *
+   * The verdict is per NAME and covers EVERY definition of that name in the file, because the
+   * agreement rule is the whole point: a marker redefined in mutually exclusive platform arms
+   * states a boundary only where every arm agrees. The four verdicts and their meaning are
+   * stated at the declaration in `analyze()`; this is the same structure, held on the instance so
+   * the helper methods can read it.
+   *
+   * `boundary` — every definition states an export boundary (external linkage or an export
+   *               attribute). The marker IS an export marker and THE FILE says so.
+   * `empty`    — every definition's replacement list is empty. The file states NOTHING, so the
+   *               marker's own NAME decides.
+   * `nonBoundary` — some definition states something that is not an export boundary (`static`,
+   *               `const`, `dllimport`, a NEGATIVE attribute such as `visibility("hidden")`).
+   * `unreadable`  — some definition's replacement list the analyzer cannot read (the production
+   *               path's blanked attribute). The marker is REFUSED: the file states something and
+   *               the analyzer cannot tell what, and a guess here is a false edge.
+   */
+  private exportMarkerVerdicts: Map<string, {
+    defs: number
+    boundary: boolean
+    empty: boolean
+    allExtern: boolean
+    allAttribute: boolean
+    nonBoundary: boolean
+    unreadable: boolean
+  }> = new Map()
   private enumConstantValues: Map<string, number> = new Map()
 
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
@@ -1968,7 +2097,49 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     //       non-Windows build (c/exports-attribute-989 CONTROL 7, forbidden row).
     // So a name enters `linkageMarkerNames` iff it has at least one definition, EVERY definition
     // opens with `extern`, and NO definition names `dllimport`.
-    const linkageVerdicts = new Map<string, { defs: number; allExtern: boolean; anyImport: boolean }>()
+    //
+    // #989 (2026-10-20): THE MARKER VERDICT — what this FILE says about a macro, over EVERY
+    // definition of it, read from the SOURCE TEXT the analyzer was handed.
+    //
+    // The old shape was a LINKAGE verdict, and it could not express the three things the
+    // fixtures need: that a macro is defined to an EXPORT ATTRIBUTE (`#define WASM_EXPORT
+    // __attribute__((used, visibility("default")))`), that a macro's definition says NOTHING
+    // (`#define SQLITE_API` — empty, so the file states no visibility either way), and that a
+    // macro's definition is UNREADABLE (the production path's blanked attribute, above).
+    //
+    // The four verdicts, and what each one means for the marker:
+    //
+    //   "boundary"  — every definition states an export boundary (external linkage, or an
+    //                 export attribute). The marker IS an export marker, and the FILE says so.
+    //   "empty"     — every definition's replacement list is empty. The file states NOTHING, so
+    //                 the marker's own NAME decides (this is the `SQLITE_API` case: an empty
+    //                 macro that names an API boundary).
+    //   "refused"   — the file states something that is NOT an export boundary (`static`,
+    //                 `const`, `dllimport`, a NEGATIVE attribute such as
+    //                 `visibility("hidden")`), or the arms DISAGREE, or the replacement list is
+    //                 UNREADABLE. The marker is not an export marker, and the name may not
+    //                 override the file.
+    //   absent      — the file does not define the macro at all. The NAME decides.
+    //
+    // The name class is the LAST resort and never overrides the file: that ordering is what
+    // keeps `HIDDEN_API` (an API-named macro the file defines as `visibility("hidden")`) from
+    // becoming an export edge, and it is the whole of the `CMPP_PRIVATE` / `PRIVATE` refusal.
+    type MarkerVerdict = {
+      defs: number
+      /** every definition states an export boundary */
+      boundary: boolean
+      /** every definition's replacement list is empty */
+      empty: boolean
+      /** every definition opens with `extern` (the linkage spelling) */
+      allExtern: boolean
+      /** every definition is an export attribute (the attribute spelling) */
+      allAttribute: boolean
+      /** some definition states something that is not an export boundary */
+      nonBoundary: boolean
+      /** some definition's replacement list the analyzer cannot read */
+      unreadable: boolean
+    }
+    const markerVerdicts = new Map<string, MarkerVerdict>()
     // #989 `overrides`, second shape: the `#undef` + `#define` redefinition of one
     // macro, in source order. Filled by the same pre-pass.
     const macroRedefinitions: Array<{ name: string; row: number; undef: boolean }> = []
@@ -1994,15 +2165,73 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             // consumer of `macroDefOffsets` and exactly wrong here: after an `#undef`
             // the later `#define` is the live one, and the chain is the whole fact.
             preprocOrder.push({ idx: n.startIndex, name: key, row: n.startPosition.row + 1, undef: false })
-            // #989 false-edge half: record EVERY definition's linkage verdict, not the first.
-            // A definition whose replacement is absent (`#define CFX_EMPTY`) decides nothing, so it
-            // cannot be part of an agreement that says "export".
+            // #989 (2026-10-20): THE MARKER VERDICT IS READ FROM THE SOURCE TEXT, AND ONLY FROM
+            // THERE.
+            //
+            // THE AST-BASED VERDICT THAT USED TO STAND HERE IS GONE, AND ITS REMOVAL IS A FACT
+            // ABOUT THE INSTRUMENT, NOT A CLEAN-UP. It computed, for every definition of every
+            // macro, whether the replacement opened with `extern` and whether it named
+            // `dllimport` — and then NOTHING READ IT: the agreement rule (below) is driven by
+            // `markerVerdicts`, which reads the ORIGINAL TEXT. So it was a second, weaker
+            // measurement of the same fact that no consumer consulted, and the comment above it
+            // claimed it was "kept as the CROSS-CHECK that the two agree" — **it was not a
+            // cross-check, because no code compared the two verdicts.** A cross-check that
+            // compares nothing is decoration, and decoration in an instrument is a defect: a
+            // reader would reasonably believe the two paths were being compared.
+            //
+            // WHY THE AST-BASED READING COULD NOT HAVE BEEN THE AUTHORITY: THE TREE IS PARSED FROM
+            // THE BLANKED CONTENT (`engine.ts`'s `parseRaw` blanks the attribute spellings), so the
+            // AST's value node spells an attribute as a run of spaces, while the analyzer's OWN
+            // content is the original text — so a verdict read from the node cannot tell
+            // `extern __declspec(dllexport)` from `extern __declspec(dllimport)`. MEASURED: the
+            // production path published the forbidden `cfx_dll_import -> CFX_IMPORT` edge for
+            // exactly that reason. The source-text verdict below refuses a replacement list it
+            // cannot READ, so both edges go.
+            //
+            // #989 (2026-10-20): THE MARKER VERDICT, read from the SOURCE TEXT.
+            //
+            // The replacement list comes from `this.analyzeContent` — the string the analyzer was
+            // handed — and NOT from the AST's `value` node, because on the production path
+            // `engine.ts` blanks the attribute spellings out of BOTH (see `replacementListOf`).
+            // Reading the AST there would make the analyzer judge a run of spaces.
             {
-              const verdict = linkageVerdicts.get(key) ?? { defs: 0, allExtern: true, anyImport: false }
-              verdict.defs++
-              if (!(val && firstWordOf(val.text) === "extern")) verdict.allExtern = false
-              if (val && stringIncludes(val.text, "dllimport")) verdict.anyImport = true
-              linkageVerdicts.set(key, verdict)
+              const sourceText = this.analyzeContent.slice(n.startIndex, n.endIndex)
+              const replacement = replacementListOf(sourceText)
+              const readable = replacementIsReadable(replacement)
+              const trimmed = replacement.trim()
+              const isEmpty = trimmed.length === 0
+              const firstWord = firstWordOf(trimmed)
+              const isExportAttribute = !isEmpty && hasExportAttributeSpelling(trimmed)
+              const isImport = stringIncludes(trimmed, "dllimport")
+              // A definition that states NOTHING (empty) or states an export boundary is
+              // "boundary"; one that states anything else — `static`, `const`, a NEGATIVE
+              // attribute such as `visibility("hidden")` — is "nonBoundary".
+              const statesBoundary = !isEmpty && (isExportAttribute || firstWord === "extern")
+              const statesNonBoundary = !isEmpty && !statesBoundary
+              const v = markerVerdicts.get(key) ?? {
+                defs: 0,
+                boundary: true,
+                empty: true,
+                allExtern: true,
+                allAttribute: true,
+                nonBoundary: false,
+                unreadable: false,
+              }
+              v.defs++
+              if (!readable) {
+                v.unreadable = true
+                v.boundary = false
+                v.empty = false
+                v.allExtern = false
+                v.allAttribute = false
+              } else {
+                if (!statesBoundary) v.boundary = false
+                if (!isEmpty) v.empty = false
+                if (firstWord !== "extern") v.allExtern = false
+                if (!isExportAttribute) v.allAttribute = false
+                if (statesNonBoundary || isImport) v.nonBoundary = true
+              }
+              markerVerdicts.set(key, v)
             }
             if (!macroDefOffsets.has(key)) {
               macroDefOffsets.set(key, {
@@ -2041,9 +2270,21 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       // #989 false-edge half: THE AGREEMENT RULE, applied after the walk so EVERY definition has
       // been seen. A name is a linkage export marker only when its definitions all say the same
       // thing — at least one definition, every one opening with `extern`, none naming `dllimport`.
-      for (const [name, v] of linkageVerdicts) {
-        if (v.defs > 0 && v.allExtern && !v.anyImport) linkageMarkerNames.add(name)
+      //
+      // #989 (2026-10-20): THE SOURCE-TEXT VERDICT IS THE AUTHORITY, and the AST-based verdict
+      // above is NOT used to build the marker set. On the production path `engine.ts` blanks the
+      // attribute spellings, so an AST-read replacement list cannot tell
+      // `extern __declspec(dllexport)` from `extern __declspec(dllimport)` — and MEASURED, the
+      // AST-read rule published the forbidden `cfx_dll_import -> CFX_IMPORT` edge and the
+      // forbidden `platform_marker -> PLATFORM_EXPORT` edge (CONTROL 7) for exactly that reason.
+      // The source-text verdict refuses a replacement list it cannot READ, so both edges go.
+      for (const [name, v] of markerVerdicts) {
+        if (v.defs <= 0) continue
+        if (!v.boundary || v.unreadable || v.nonBoundary) continue
+        if (v.allExtern) linkageMarkerNames.add(name)
+        if (v.allAttribute) this.exportAttributeMacros.set(name, true)
       }
+      this.exportMarkerVerdicts = markerVerdicts
     }
 
     // #934: the AST pre-pass above is NOT the whole macro inventory, and the gap
@@ -2487,9 +2728,18 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               // `linkageMarkerNames` for the measurement that made the list
               // insufficient (0 of 7 marker names in sqlite) and for the empty-
               // replacement case that is deliberately NOT here.
+              //
+              // #989 (2026-10-20): THE ACCEPT TEST IS THE FULL VERDICT, not the list.
+              // `exportMarkerVerdict` orders the three sources — the cross-file convention
+              // list, what THIS FILE says about the macro, and the marker's own name as a
+              // CLASS — and it is the file's own statement that comes before the name, so
+              // `HIDDEN_API` (defined to `visibility("hidden")`) and `CMPP_PRIVATE`
+              // (defined to `static`) stay refusals while `SQLITE_API` (defined EMPTY, so
+              // the file says nothing) is accepted on its name.
+              const markerVerdict = marker ? this.exportMarkerVerdict(marker) : { accept: false, source: "convention" as const }
               if (
                 marker &&
-                (inArray(EXPORT_MACROS, marker) || linkageMarkerNames.has(marker)) &&
+                markerVerdict.accept &&
                 node.childForFieldName("declarator") &&
                 // #989 false-edge half: A MARKER ON A LOCAL DECLARATION IS NOT AN EXPORT.
                 // `CFX_EXPORT int local = 0;` inside a function body publishes an edge to the
@@ -2520,6 +2770,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                         relationshipType: "module_export",
                         exportMacro: marker,
                         exportMarkerKind: this.exportMarkerKind(marker),
+                        markerSource: markerVerdict.source,
                       },
                     })
                   }
@@ -3135,7 +3386,14 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   // target is the macro as written, so a consumer can tell an
                   // `__declspec(dllexport)` boundary from a kernel `EXPORT_SYMBOL` one.
                   line_number: this.nodeLine(nameNode),
-                  metadata: { relationshipType: "module_export", exportMacro: target },
+                  metadata: {
+                    relationshipType: "module_export",
+                    exportMacro: target,
+                    // #989 (2026-10-20): the same two-axis metadata the declaration branch
+                    // carries, so a consumer can tell WHICH mechanism named this marker.
+                    exportMarkerKind: this.exportMarkerKind(target),
+                    markerSource: this.exportMarkerVerdict(target).source,
+                  },
                 })
               }
             } else if (inArray(FORMAT_FUNCTIONS, target)) {
@@ -3914,14 +4172,60 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private isExportMarkerName(name: string): boolean {
     if (!name) return false
-    if (inArray(EXPORT_MACROS, name)) return true
-    return this.exportAttributeMacros.get(name) === true
+    return this.exportMarkerVerdict(name).accept
+  }
+
+  /**
+   * #989 (2026-10-20): IS THIS MARKER AN EXPORT MARKER, AND WHICH MECHANISM SAID SO?
+   *
+   * The ORDER is the whole rule, and it is the order the fixtures demand:
+   *
+   *   1. the five cross-file project CONVENTIONS (`EXPORT_MACROS`) — a name another project
+   *      invented, which no grammar can know;
+   *   2. what THIS FILE says about the macro (the agreement verdict above): a boundary is a
+   *      boundary, a non-boundary is a refusal, and an UNREADABLE replacement list is a
+   *      refusal too;
+   *   3. the marker's own NAME, as a CLASS rather than as a list (`isExportMarker`) — which
+   *      applies only when the file states nothing (the macro is undefined here, or defined
+   *      EMPTY), because a file that DOES say something has already had its say.
+   *
+   * Step 3 last is what keeps `HIDDEN_API` — an API-named macro the file defines as
+   * `visibility("hidden")` — from becoming an export edge, and it is what keeps `CMPP_PRIVATE`
+   * (53 corpus sites) and `PRIVATE` (22) out: the file defines them to `static`, and no name
+   * class may override that.
+   *
+   * The returned `source` is the axis the fixtures pin as `meta.markerSource`:
+   *   "linkage:extern" — the file's OWN definition established the boundary (external linkage
+   *                       or an export attribute). This is the #989 structural rule.
+   *   "convention"      — the marker was accepted by NAME (the list, or the class rule).
+   */
+  private exportMarkerVerdict(name: string): { accept: boolean; source: "linkage:extern" | "convention" } {
+    if (!name) return { accept: false, source: "convention" }
+    if (inArray(EXPORT_MACROS, name)) return { accept: true, source: "convention" }
+    const v = this.exportMarkerVerdicts.get(name)
+    if (v) {
+      if (v.unreadable || v.nonBoundary) return { accept: false, source: "convention" }
+      if (v.boundary) return { accept: true, source: "linkage:extern" }
+      // `empty`: the file states nothing, so the NAME decides.
+    }
+    if (isExportMarker(name)) return { accept: true, source: "convention" }
+    return { accept: false, source: "convention" }
   }
 
   /** #989: which of the two sources named this marker, recorded on the edge so a
    *  consumer can tell a project convention from an attribute the file defines. */
-  private exportMarkerKind(name: string): "convention" | "attribute_macro" {
-    return inArray(EXPORT_MACROS, name) ? "convention" : "attribute_macro"
+  private exportMarkerKind(name: string): "convention" | "attribute_macro" | "linkage" {
+    const v = this.exportMarkerVerdicts.get(name)
+    if (v && v.boundary && !v.unreadable && !v.nonBoundary) {
+      // A macro whose definition opens with `extern` is the LINKAGE spelling; one defined to
+      // an export attribute is the ATTRIBUTE spelling. A definition that is both
+      // (`extern __declspec(dllexport)`) is reported as the linkage spelling, which is the
+      // primary one — and the OLD code reported it as "attribute_macro", which was simply
+      // wrong: `CFX_EXPORT` is a linkage marker and was labelled an attribute macro.
+      if (v.allExtern) return "linkage"
+      if (v.allAttribute) return "attribute_macro"
+    }
+    return "convention"
   }
 
   /**
@@ -4016,6 +4320,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     scanDepth(decl, 0)
     // ---- Form B: the declaration's macro prefix is a marker THIS FILE defines.
+    //
+    // #989 (2026-10-20): `exportAttributeMacros` is now WRITTEN (it was declared and never
+    // written, which made this branch dead code and `isExportMarkerName` unable to return true
+    // through it). It holds the macros this file defines to an export attribute, over EVERY
+    // definition of the name, so the agreement rule applies here too.
     if (!markerText) {
       const prefix =
         this.macroPrefixName(decl) ??
@@ -4048,6 +4357,12 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         relationshipType: "module_export",
         exportMacro: markerText,
         exportMarkerKind: markerKind,
+        // #989 (2026-10-20): WHICH MECHANISM SAID SO. An attribute written ON the declaration
+        // (Form A / Form C) is the file stating the boundary directly; a macro this file
+        // defines to an export attribute (Form B) is the file's own DEFINITION establishing it,
+        // which is the same mechanism the linkage spelling uses and the one the fixtures pin as
+        // `linkage:extern`.
+        markerSource: markerKind === "attribute_macro" ? "linkage:extern" : "attribute",
       },
     })
   }

@@ -124,6 +124,10 @@ int split(void) { return 1; }
 int split(void) { return 2; }
 #endif
 `,
+    // This case is a PURE REFUSAL, so its derivation half is EMPTY BY CONSTRUCTION — and it is
+    // written out rather than left out, because `ContractCase.expect` is REQUIRED (every case
+    // states both channels) and because "no overrides row is derived" is itself the assertion.
+    expect: { overrides: [] },
     forbid: { overrides: ["split"] },
   },
 ]

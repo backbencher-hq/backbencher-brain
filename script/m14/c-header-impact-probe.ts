@@ -47,6 +47,7 @@
  * READ-ONLY: no index change, no analyzer change, no gate run (the dump is reused; headers are read).
  */
 import { createReadStream, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { declarationKindOf, tokenizeHeader, type Tok } from "./c-header-shape"
 import { execFileSync } from "node:child_process"
 import * as path from "node:path"
 import { createInterface } from "node:readline"
@@ -56,6 +57,20 @@ const CR = process.env.BB_CORPUS_ROOT ?? path.join(ROOT, ".corpus")
 const args = process.argv.slice(2)
 const FILE = args.find((a) => !a.startsWith("--"))
 const OUT = args.find((a) => a.startsWith("--out="))?.slice("--out=".length) ?? ""
+/**
+ * THE OPTIONAL PER-ROW DUMP (`--rows=<file.tsv>`) — the probe's own per-row classification, written
+ * out so a JOIN can be measured on THIS index rather than on a second copy of it.
+ *
+ * WHY IT EXISTS (2026-10-20, the c lane): the c lane's own-file-declares probe measures, for every
+ * ambiguous row, whether the row's OWN FILE declares the target. **The JOINT the c lane's Ruling 5
+ * needs is that measurement ∧ this probe's HEADER DECLARATION** — and the joint must be measured on
+ * ONE index, because a second copy of the index is a second number. So the index stays here and this
+ * flag publishes the per-row facts the join needs.
+ *
+ * COLUMNS: label · outcome · repo · target · file · headerEntries · headerDefinitionEntries ·
+ *          headerFiles · sameRepoToken · globalToken
+ */
+const ROWS_OUT = args.find((a) => a.startsWith("--rows="))?.slice("--rows=".length) ?? ""
 // STRICT vs INFORMATIONAL CONTROLS. On the I1 instrument's OWN dump (`--expect-i1`), C1/C2 must equal
 // the lane artifact exactly (method validation). On a LATER dump refresh (the ledger baseline dump) the
 // frame/token counts are reported against the I1 numbers as a MEASURED DIFFERENCE, not a failure — the
@@ -241,114 +256,7 @@ for (const name of (() => { try { return readdirSync(CR) } catch { return [] as 
  * A declaration whose written shape the rules do not model is UNDER-counted: conservative for an
  * upper bound.
  */
-const TYPE_WORDS = new Set([
-  "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "const",
-  "volatile", "struct", "union", "enum", "register", "extern", "static", "inline", "restrict",
-  "_Bool", "_Complex", "size_t", "ssize_t", "ptrdiff_t", "intptr_t", "uintptr_t", "wchar_t",
-])
-const DECL_KEYWORDS = new Set(["extern", "static", "const", "volatile", "register", "inline", "typedef"])
-
-type Tok = { t: string; line: number; depth: number }
 type DeclInfo = { entries: number; definitionEntries: number; files: number; kinds: Record<string, number>; weakTokens: number }
-
-/** tokenize one header: identifiers + punctuation, skipping //, block comments and string/char literals */
-function tokenizeHeader(text: string): Tok[] {
-  const toks: Tok[] = []
-  let i = 0
-  let line = 1
-  let depth = 0
-  const n = text.length
-  while (i < n) {
-    const c = text[i]
-    if (c === "\n") { line++; i++; continue }
-    if (c === "/" && text[i + 1] === "/") { while (i < n && text[i] !== "\n") i++; continue }
-    if (c === "/" && text[i + 1] === "*") { i += 2; while (i < n && !(text[i] === "*" && text[i + 1] === "/")) { if (text[i] === "\n") line++; i++ } i += 2; continue }
-    if (c === "\"" || c === "'") { const q = c; i++; while (i < n) { if (text[i] === "\\") { i += 2; continue } if (text[i] === q) { i++; break } if (text[i] === "\n") { line++; break } i++ } continue }
-    const code = text.charCodeAt(i)
-    const isIdStart = (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code === 95
-    if (isIdStart) {
-      let j = i + 1
-      while (j < n) { const d = text.charCodeAt(j); if ((d >= 65 && d <= 90) || (d >= 97 && d <= 122) || (d >= 48 && d <= 57) || d === 95) j++; else break }
-      toks.push({ t: text.slice(i, j), line, depth })
-      i = j
-      continue
-    }
-    if (c === "{") { depth++; toks.push({ t: "{", line, depth }); i++; continue }
-    if (c === "}") { toks.push({ t: "}", line, depth }); depth = Math.max(0, depth - 1); i++; continue }
-    if (c === "(" || c === ")" || c === ";" || c === "," || c === "*" || c === "=" || c === "[" || c === "]" || c === "#" || c === "&" || c === "|") {
-      toks.push({ t: c, line, depth }); i++; continue
-    }
-    i++
-  }
-  return toks
-}
-
-/** is the occurrence a declaration? returns [kind, isDefinition] or null for weak */
-function declarationKindOf(toks: Tok[], i: number, lines: string[], name: string): [string, boolean] | null {
-  const cur = toks[i]
-  const prev = i > 0 ? toks[i - 1] : null
-  const next = i + 1 < toks.length ? toks[i + 1] : null
-  // macro: the line (trimmed) starts with #define and the token right after `define` is the name
-  const ln = lines[cur.line - 1] ?? ""
-  const trimmed = ln.replace(/^\s+/, "")
-  if (trimmed.startsWith("#define")) {
-    const after = trimmed.slice("#define".length).replace(/^\s+/, "")
-    if (after.startsWith(name) && (after.length === name.length || !/[\w$]/.test(after[name.length]))) {
-      return ["macro", true]
-    }
-  }
-  // tag: struct/union/enum NAME
-  if (prev && (prev.t === "struct" || prev.t === "union" || prev.t === "enum")) return ["tag", false]
-  // function/prototype: NAME ( ... ) ; | {
-  if (next && next.t === "(") {
-    let k = i + 1
-    let depthP = 0
-    let close = -1
-    for (; k < toks.length; k++) {
-      if (toks[k].t === "(") depthP++
-      else if (toks[k].t === ")") { depthP--; if (depthP === 0) { close = k; break } }
-    }
-    if (close > 0) {
-      const after = close + 1 < toks.length ? toks[close + 1] : null
-      const atTop = cur.depth === 0 || cur.depth === 1
-      if (after && (after.t === ";" || after.t === "{") && atTop) {
-        // avoid treating a parameter-name occurrence as a prototype: require a type-ish previous token
-        const prevOk = !prev || prev.t === "*" || prev.t === ")" || TYPE_WORDS.has(prev.t) || (prev.t.length > 0 && !DECL_KEYWORDS.has(prev.t) && prev.t !== "(" && prev.t !== ",")
-        if (prevOk) return ["function", after.t === "{"]
-      }
-    }
-    return null
-  }
-  // typedef: scan back to statement start
-  {
-    let k = i - 1
-    let sawTypedef = false
-    while (k >= 0 && toks[k].t !== ";" && toks[k].t !== "{" && toks[k].t !== "}") {
-      if (toks[k].t === "typedef") { sawTypedef = true; break }
-      k--
-    }
-    if (sawTypedef) return ["typedef", false]
-  }
-  // variable/extern declaration: declaration-keyword/type context then a declarator terminator
-  if (next && (next.t === ";" || next.t === "=" || next.t === "," || next.t === "[")) {
-    let k = i - 1
-    let sawDecl = false
-    while (k >= 0 && toks[k].t !== ";" && toks[k].t !== "{" && toks[k].t !== "}") {
-      if (DECL_KEYWORDS.has(toks[k].t) || TYPE_WORDS.has(toks[k].t)) { sawDecl = true; break }
-      k--
-    }
-    if (sawDecl && (cur.depth === 0 || cur.depth === 1)) return ["variable", next.t === "="]
-    // enum constant: at depth 1 inside an enum body
-    if (cur.depth === 1 && (next.t === "," || next.t === "}")) {
-      let k = i - 1
-      while (k >= 0 && toks[k].t !== "{" && toks[k].t !== "}") {
-        if (toks[k].t === "enum") return ["enum-constant", false]
-        k--
-      }
-    }
-  }
-  return null
-}
 
 // ── scan headers: per-repo declaration index for in-scope names + global token presence (I1 control) ─
 const declIndex = new Map<string, Map<string, DeclInfo>>()          // repo -> name -> DeclInfo
@@ -503,6 +411,22 @@ for (const r of frameRows) {
   rowClassCounts[key] = (rowClassCounts[key] ?? 0) + 1
   const fam = labelFamilies.get(r.label) ?? new Map<string, number>()
   labelFamilies.set(r.label, fam)
+}
+
+// ── THE OPTIONAL PER-ROW DUMP ──────────────────────────────────────────────────────────────────────
+if (ROWS_OUT) {
+  const out = ["label\toutcome\trepo\ttarget\tfile\theaderEntries\theaderDefinitionEntries\theaderFiles\tsameRepoToken\tglobalToken"]
+  for (const r of frameRows) {
+    const info = declIndex.get(r.repo)?.get(r.target)
+    out.push([
+      r.label, r.outcome, r.repo, r.target, r.file,
+      String(info?.entries ?? 0), String(info?.definitionEntries ?? 0), String(info?.files ?? 0),
+      sameRepoToken.has(`${r.repo}\u0000${r.target}`) ? "1" : "0",
+      globalToken.has(r.target) ? "1" : "0",
+    ].join("\t"))
+  }
+  writeFileSync(ROWS_OUT, out.join("\n") + "\n")
+  console.error(`per-row dump: ${ROWS_OUT} (${out.length - 1} rows)`)
 }
 
 // ── CONTROLS ───────────────────────────────────────────────────────────────────────────────────────
