@@ -14,6 +14,11 @@
 // fixture expectations (evidence-tier pins included), and CLOJURE-STATE.md.
 // Shared registration/routing: src/ast/engine.ts and src/ast/language-detection.ts.
 import type { Node } from "web-tree-sitter"
+// THE CLOJURE GRAMMAR RULES ARE NOT COPIED HERE — they live in the shared index's CLOJURE REGION
+// (`src/ast/project-index.ts`), beside the declaration spec that reads them, and the analyzer
+// READS THEM FROM THERE. One implementation, two readers: a second copy of "what is this form's
+// head" would be a second instrument, and this lane has already paid for that defect class twice.
+import { clojureExecutionHead, clojureSymName } from "./project-index"
 import { ASTEngine } from "./engine"
 
 // ── The clojure.core surface (CLJ-D17, 2026-09-28) ─────────────────────────
@@ -473,31 +478,13 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // qualified_symbol nodes — dotted names and constructor idioms (`Date.`,
     // `->ClojureService`) are single sym_lit nodes.
     const symName = (node: Node | null): string => {
-      if (!node) return ""
-      if (node.type === "sym_lit") {
-        const name = node.childForFieldName("name")
-        const ns = node.childForFieldName("namespace")
-        // CLJ-D54: A QUALIFIED SYMBOL'S PREFIX MAY CARRY METADATA, and the metadata is
-        // not the namespace. metabase/util/yaml.clj requires
-        // `^{:clj-kondo/ignore [:discouraged-namespace]} [clj-yaml.core :as yaml]`, so the
-        // symbol `yaml/YAMLCodec` has a metadata-decorated prefix and this returned
-        // `^{:clj-kondo/ignore [:discouraged-namespace]}/YAMLCodec` as an `implements`
-        // TARGET - a type that is not a type, unresolvable by anything that reads the
-        // graph. The prefix's own `name` field is the bare symbol, so read that instead
-        // of the node text; it costs nothing when there is no metadata.
-        // CLJ-D54: a qualified symbol's PREFIX may carry metadata, and the metadata is
-        // not the namespace. Stripping it here is correct in principle and measured to
-        // change nothing in this corpus, so it stays as a guard rather than a claimed fix
-        // - the one metabase target that carried decoration is NOT produced by this path,
-        // which is recorded in the review instead of being patched blind.
-        const nsText = ns && (ns.text ?? "").startsWith("^{")
-          ? (ns.childForFieldName("name")?.text ?? ns.text)
-          : (ns?.text ?? "")
-        if (name && nsText) return `${nsText}/${name.text}`
-        if (name) return name.text
-        return node.text
-      }
-      return node.text
+      // THE RULE IS THE SHARED INDEX'S, NOT A SECOND COPY HERE (2026-10-20, the clojure lane).
+      // The analyzer and the DECLARATION SPEC must read a symbol's name by ONE rule, or the spec
+      // is a second instrument: the spec records `ns/name` and the analyzer publishes `ns/name`,
+      // and a drift between them would make the index answer a question about a spelling nobody
+      // asks. The rule itself — including CLJ-D54's metadata-decorated prefix — is documented at
+      // `clojureSymName` in `src/ast/project-index.ts`.
+      return clojureSymName(node)
     }
 
     // W24-mr3 (review CLJ-MR3): `^{:private true}` / `^:private` IS the
@@ -1195,11 +1182,11 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     const executionHead = (list: Node): Node | null => {
-      for (let i = 0; i < list.namedChildCount; i++) {
-        const child = list.namedChild(i)
-        if (child && child.type !== "comment" && child.type !== "dis_expr" && child.type !== "meta_lit") return child
-      }
-      return null
+      // THE RULE IS THE SHARED INDEX'S, NOT A SECOND COPY HERE — the same reason as `symName`
+      // above. A form's head is decided after discard/trivia (`(#_ignored quote (trivia-ghost))`
+      // is a `quote` form, and a `meta_lit` occupies no execution position), and the DECLARATION
+      // SPEC decides the same thing when it asks "is this form a declaration?".
+      return clojureExecutionHead(list)
     }
     // The head's byte offset — the position the suppression gate needs, because
     // "is this bare head the file's own var" is a question about WHERE the
@@ -3463,3 +3450,45 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 }
+
+
+/* ═════════════════════════════════════════════════════════════════════════════════════════════
+ * THE CLOJURE DECLARATION SPEC — IT LIVES IN THE SHARED INDEX, AND THIS FILE READS IT FROM THERE.
+ *
+ * (2026-10-20, the clojure lane.) The spec and the two grammar rules it reads —
+ * `clojureExecutionHead` and `clojureSymName` — are in `src/ast/project-index.ts`'s CLOJURE
+ * REGION, beside `JAVA_DECLARATION_SPEC` and `DART_DECLARATION_SPEC` (the java/dart precedent),
+ * and the shared files that USE a spec (`script/m14/incoming-gate.ts`'s `INDEX_SPECS`,
+ * `src/ast/parallel-indexer.ts`'s `specByLang`) import it from there.
+ *
+ * WHY IT LIVES THERE. The spec is a DECLARATION RULE, and the rule is the lane's to write — the
+ * Lead does not guess at Clojure's declaration rules, and a spec written by the wrong author is a
+ * second instrument. Keeping the rules in ONE place also keeps the analyzer and the spec reading a
+ * form's head and a symbol's name by the SAME CODE: this file IMPORTS the two rules rather than
+ * keeping a second copy, which is the defect class this lane has already paid for twice (the
+ * alias key space, and the extension-list assertion).
+ *
+ * WHAT THE SPEC IS FOR, AND THE NUMBER THAT DECIDES IT. The 768 genuinely-ambiguous rows
+ * (§3.1 of CLOJURE-VERDICT-2026-10-20.md) are BARE NAMES the project declares 2+ times, so the
+ * gate's name-keyed count model cannot bind them. **THE ONLY INSTRUMENT THAT CAN ANSWER THEM IS A
+ * PROJECT INDEX**, and the answer is a CLOJURE-SPECIFIC one: a Clojure name is qualified by its
+ * NAMESPACE, so `helper` declared in `ns.a` and `helper` in `ns.b` are TWO DIFFERENT NAMES, and a
+ * call to `helper` inside `(ns ns.a)` means `ns.a/helper`.
+ *
+ * **⇒ THE INDEX MUST CARRY THE NAMESPACE-QUALIFIED NAMES, so that "is `ns.a/helper` declared
+ * EXACTLY ONCE in the project?" is a question it can answer** (`symbolCounts`), and the analyzer
+ * can then publish the qualified target, which production's project-wide QUALIFIED lookup (r1)
+ * resolves. The analyzer ALREADY publishes `ns/name` as each symbol's `qualifiedName` — what it
+ * cannot do alone is answer "declared exactly once", because that is a PROJECT question.
+ *
+ * THE MEASURED EFFECT, STATED HERE SO A READER DOES NOT HAVE TO TAKE IT ON FAITH. Over the lane's
+ * own corpus (646 admitted files, 3 repos, the gate's `clj,cljs,cljc,edn` set) the spec answers
+ * **1 of the 768** rows; the 767 are accounted for by three DISJOINT reasons, none of which an
+ * index can reach — 232 name a LOCAL or a SYNTHETIC name (the analyzer publishes 9,526 such names
+ * over the corpus; an anonymous fn's `lambda_50_13` is not a project declaration), 264 `uses` rows
+ * are JAVA MEMBER READS (`.field`) rather than a name question, and the rest are names declared in
+ * MANY namespaces with no `:refer` to disambiguate. **THE SPEC'S PRICE AND THE TIE-BREAK'S PRICE
+ * ARE DIFFERENT NUMBERS**: the tie-break moved 2,120 rows OUT of the CEILING and did not move the
+ * FLOOR (768 in both views); the spec answers the FLOOR (1 of 768). They are measured in SEPARATE
+ * arms, and the spec's own arm is `validation/m14/fixtures/clojure/clojure-project-index-probe.ts`.
+ */
