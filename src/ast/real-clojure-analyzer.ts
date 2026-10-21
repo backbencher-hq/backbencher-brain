@@ -3236,14 +3236,42 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `implements` 64, `extends` 16, `uses` 4. The list is the sole authority; the arbiter
     // checks the target's ROOT against it; a mismatch refutes the claim, so the arm's
     // extFAIL staying 0 is the pre-registered condition of this emission rule.
+    // THE CLOSED LANGUAGE/RUNTIME ROOT SET — ONE LIST, TWO CLAIMS. It is hoisted out of the
+    // CLJ-EX2 block so the CLJ-EX5 dependency-membership claim below uses the SAME list rather
+    // than a second copy: a duplicated constant is a second source of truth, and this one decides
+    // which rows are the LANGUAGE's business and which are a DEPENDENCY's.
+    const LANGUAGE_NAMESPACE_ROOTS = ["clojure", "cljs", "js", "goog", "java", "javax"]
     {
       // Mirrors `incoming-rule.ts namespaceMatchOf` exactly: split the target on `.`, `::`
       // and `:`, and test prefixes longest-first. A claim attached only where a prefix
       // matches cannot be refuted by the verifier's own rule.
-      const LANGUAGE_NAMESPACE_ROOTS = ["clojure", "cljs", "js", "goog", "java", "javax"]
       const rootOf = (target: string): string | null => {
         if (target.length === 0) return null
-        const segs = target.split(/\.|::|:/)
+        // THE SLASH-SPLIT, AND IT IS NOT OPTIONAL FOR THIS LANGUAGE.
+        //
+        // Clojure spells a namespaced var `ns/name` — the SAME shape Go spells a module path
+        // (`encoding/json`), and the arbiter already has an opt-in for it: the
+        // `languageNamespaceSlash` marker (2026-10-19, `incoming-rule.ts`'s `NAMESPACE_SLASH_KEY`),
+        // which makes `namespaceMatchOf` split on `/` as well as on `.`/`::`/`:`. Without the
+        // marker the matcher cannot see the root of `js/require`, because the dotted split leaves
+        // ONE segment (`js/require`) and no prefix of it is in the list.
+        //
+        // THE D7 WALL TABLE SAID THIS FIX WAS LEAD-OWNED — "a slash-aware root match in the
+        // shared claim contract (Lead-owned rule) would certify these". THAT WAS TRUE ON THE DAY
+        // IT WAS WRITTEN AND IS NOT TRUE NOW: the opt-in EXISTS, it was added for Go, and using it
+        // is a LANE-SIDE change — three metadata keys and one split. Measured at whole population
+        // (646 files, 3 repos, the farm root) BEFORE this edit: **23 rows** the dotted matcher
+        // cannot reach and the slash matcher can — `calls` 19 (`js/require`, `js/parseInt`,
+        // `js/isNaN`, `js/String.fromCharCode`, `js/Object`, …) and `instantiates` 4.
+        //
+        // THE SPLIT MUST BE THE ARBITER'S SPLIT, CHARACTER FOR CHARACTER, or the claim can be
+        // published on a target the arbiter REFUTES — and a refuted claim is charged against the
+        // lane. The order matters: `::` must be matched before `:`, and the candidate is the
+        // first N segments joined with `.`, longest prefix first. This is a transcription of
+        // `incoming-rule.ts`'s `namespaceMatchOf`, and the lane's own instrument
+        // (`validation/m14/fixtures/clojure/production-binding-split.ts`) re-implements the pair
+        // and ASSERTS that the two agree over the whole population.
+        const segs = target.split(/\/|\.|::|:/)
         for (let n = segs.length; n >= 1; n--) {
           const cand = segs.slice(0, n).join(".")
           if (LANGUAGE_NAMESPACE_ROOTS.includes(cand)) return cand
@@ -3263,6 +3291,10 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (root === null) continue
         md.languageNamespace = LANGUAGE_NAMESPACE_ROOTS
         md.languageNamespacePolicy = "strict-absent"
+        // THE SLASH OPT-IN MARKER — the arbiter's own key (`NAMESPACE_SLASH_KEY`). It is
+        // LANE-SCOPED: only a claim carrying it splits on `/`, so every other lane's namespace
+        // matching stays byte-identical.
+        md.languageNamespaceSlash = true
         // Keep the generic marker too: production consumers read `isExternalTarget`, and the
         // claim kind is chosen by the gate from the more specific key above it.
         if (md.isExternalTarget !== true) {
@@ -3270,6 +3302,59 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           md.externalReason = "language-platform-namespace"
           md.externalSpecifier = root
         }
+      }
+    }
+
+    // ── CLJ-EX5 (2026-10-20): THE DEPENDENCY-MEMBERSHIP CLAIM ──────────────────────────────────
+    //
+    // WHAT IT STATES. "This target is a MEMBER of the DEPENDENCY named `package`" — and the only
+    // evidence that can answer it is the PROJECT'S OWN MANIFEST. The claim already exists in the
+    // shared arbiter (`incoming-rule.ts`'s `PACKAGE_SCOPE_CLAIM_KEY`); what was missing was a lane
+    // that emits it and a manifest reader that can check it.
+    //
+    // THE EMISSION CONTRACT, MEASURED BEFORE THE CLAIM WAS PROPOSED (the lane's own price
+    // instrument, `validation/m14/fixtures/clojure/package-scope-price.ts`, whole admitted
+    // population, farm root): publishing the claim on EVERY libspec the file declares gives
+    // **629 rows the project's manifest confirms** (calls 299 · references 290 · imports 40) and
+    // **977 rows it does not** — which, under the Lead's 2026-10-20 semantics ruling, are
+    // UNVERIFIABLE rather than REFUTED, so they stay unresolved and count against clause 1. The
+    // lane GAINS on the 629 and LOSES NOTHING on the 977, and it CANNOT filter them: whether a
+    // project declares a dependency is a PROJECT fact a one-file analyzer cannot see. The 629/977
+    // split is therefore the CONTROL on the shared change — it must not move.
+    //
+    // WHY IT MUST NOT OVERLAP THE NAMESPACE CLAIM. The arbiter reads `packageScope` BEFORE
+    // `languageNamespace` (the manifest is the stronger evidence), so a row carrying both would
+    // lose the namespace claim's answer. The two are DISJOINT by construction: the namespace claim
+    // fires only for a root IN the closed language/runtime set, and this one only for a root
+    // OUTSIDE it.
+    //
+    // THE LIBSPEC IS MATCHED, NOT SPLIT. A Clojure libspec is `babashka.fs` (a namespace) OR
+    // `io.replikativ/datalog-parser` (a maven coordinate), and a coordinate contains a `/` of its
+    // own — so splitting the TARGET at a fixed slash would cut the namespace in half. The libspec
+    // set is matched instead, LONGEST FIRST, and the member is what follows it.
+    {
+      const libspecs = new Set<string>()
+      for (const im of imports) {
+        const m = String((im as any)?.module ?? "")
+        if (m.length > 0) libspecs.add(m)
+      }
+      const libspecList = [...libspecs].sort((a, b) => b.length - a.length)
+      for (const r of relationships) {
+        const md = r.metadata as Record<string, any> | undefined
+        if (!md || md.packageScope !== undefined) continue
+        const tgt = typeof r.target === "string" ? r.target : ""
+        if (tgt.length === 0) continue
+        let member = ""
+        let lib = ""
+        for (const l of libspecList) {
+          if (tgt === l) { member = l; lib = l; break }
+          if (tgt.startsWith(l + "/")) { member = tgt.slice(l.length + 1); lib = l; break }
+        }
+        if (member.length === 0 || lib.length === 0) continue
+        // A LANGUAGE/RUNTIME namespace is the `languageNamespace` claim's business, not this one's.
+        const root = lib.split(".")[0]!
+        if (LANGUAGE_NAMESPACE_ROOTS.includes(root)) continue
+        md.packageScope = { package: lib, name: member }
       }
     }
 
