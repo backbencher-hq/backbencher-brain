@@ -2330,18 +2330,50 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 first !== DART_OBJECT_TYPE &&
                 DART_OBJECT_INTERFACE_MEMBERS.has(s.name)
               ) {
-                // The BASE name, not the qualified member: the push below appends
+                // THE BASE name, not the qualified member: the push below appends
                 // `.${s.name}` itself. Writing `Object.toString` here produced the
                 // target `Object.toString.toString`, which the fixture caught on
                 // its first run.
                 target = DART_OBJECT_TYPE
+                // THE CLAIM IS ABOUT THE PROJECT, SO THE PROJECT GETS ASKED ✓✓.
+                //
+                // `isExternalBase` says "the PROJECT does not publish this base" — and the
+                // ARBITER checks exactly that against the project's key space ✓. So when the
+                // project DOES publish `Object`, the claim is KNOWN FALSE before it is made,
+                // and publishing it anyway is publishing a claim the arbiter will refute — which
+                // is the clause-4 red, produced by the analyzer rather than by the arbiter ✗✗.
+                //
+                // MEASURED, and this is the exact shape: the Dart SDK's own
+                // `sdk/lib/core/object.dart` DECLARES `class Object` ✓, so in the ONE project
+                // whose checkout contains dart:core, the retarget published
+                // `DartMigrateParams.hashCode -> Object.hashCode` as an EXTERNAL claim
+                // (`isExternalBase: true`, 0.8) and the arbiter refuted all 6 such rows
+                // (`externalRefuted: 6` over the whole population, every one of them
+                // `Object.hashCode` / `Object.operator ==` / `Object.toString`) ✓✓. In the
+                // OTHER projects `Object` is not published, the claim is TRUE, and the arbiter
+                // verified 301 such rows ✓ — the same row shape, two answers, and the answer
+                // turns on a fact the index already holds ✓.
+                //
+                // SO THE PROJECT IS ASKED, THROUGH THE COMPANION, AND THE ANSWER IS PROJECT-SCOPED
+                // ✓✓: the companion exists only when this run was handed the project's index ✓
+                // (a companion map IS the project's type inventory ✓), and the member test is the
+                // same one the other passes use — "does the base EXPOSE this member" ✓ — so a
+                // project that declares a name `Object` WITHOUT those members (a benchmark's
+                // `t_Object__int`, a collision) does not buy the row an exemption it has not
+                // earned ✓✓.
+                const projectPublishesObject =
+                  companionForPass2 !== undefined &&
+                  this.companionHas(companionForPass2, DART_OBJECT_TYPE, s.name)
                 metadata = {
                   isOverride: true,
                   relationshipType: "method_override",
-                  isExternalBase: true,
+                  ...(projectPublishesObject ? {} : { isExternalBase: true }),
                   isObjectInterfaceBase: true,
                   firstHeritageParent: first,
                 }
+                // A PROJECT-VERIFIED BASE IS A VERIFIED BASE ✓ — the same confidence the other
+                // index-verified overrides carry, and not the fallback's 0.8 ✓.
+                if (projectPublishesObject) confidence = 0.95
               }
             }
           }

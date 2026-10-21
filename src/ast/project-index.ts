@@ -826,6 +826,23 @@ export const DART_DECLARATION_SPEC: DeclarationSpec = {
       }
       return first ? first.text : ""
     }
+    if (node.type === "operator_signature") {
+      // AN OPERATOR MEMBER'S NAME IS `operator <SYMBOL>`, and the SYMBOL is not in a `name` field.
+      //
+      // MEASURED: the index named 6 dart operator members "operator" (the bare keyword) and ZERO
+      // "operator ==", while the ANALYZER names them `operator ==`, `operator []`, `operator +`,
+      // `operator []=` — so the companion could never confirm an operator override, and a base that
+      // declares `operator ==` looked to the index like a base that declares no such member ✓✓.
+      // The index and the analyzer must name a member the SAME WAY, or the cross-file question
+      // ("does the base expose this member?") is answered about two different names ✓.
+      //
+      // THE GRAMMAR, PROBED: `(operator_signature (type_identifier) (binary_operator)
+      // (formal_parameter_list …))` — the symbol is a `binary_operator` child for `==` and `+` ✓,
+      // and there is NO operator child AT ALL for `[]` and `[]=` ✗. So the symbol is read from the
+      // node's own TEXT, which is the text the analyzer's own symbol naming reads ✓.
+      const m = /operator\s*([^\s(]+)/.exec(node.text)
+      return m ? `operator ${m[1]}` : "operator"
+    }
     return node.childForFieldName("name")?.text ?? ""
   },
   // Methods and accessors only. `getter_signature` and `setter_signature` count
