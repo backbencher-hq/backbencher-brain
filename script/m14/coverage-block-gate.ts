@@ -43,8 +43,32 @@ const ROOT = resolve(HERE, "..", "..")
 const SPEC_DIR = "script/m14/spec"
 const FIRING_LOG = "validation/m14/results/firing-laptop-b.current.log"
 
-const TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"]
-const TOTAL = 10
+/* THE VOCABULARY LIMB — THE OWNER's BAR (2026-10-21), AND THE HISTORICAL COMPARATOR BESIDE IT.
+ *
+ * THE BAR MOVED. The denominator is no longer the flat ten: it is each language's OWN expressible set
+ * n, measured against the LIVE FOURTEEN-value vocabulary — the ten canonical plus `decorates`,
+ * `renders`, `mixes_in`, `part_of` (admitted 2026-10-18). A type leaves a denominator ONLY with a
+ * cited grammar-absence or zero-sites ruling, and an UNCLASSIFIED type STAYS IN IT.
+ *
+ * TWO LIMBS, AND THE OLD ONE IS PRESERVED BYTE-FOR-BYTE. `--vocabulary=10` reproduces the historical
+ * arithmetic exactly (including `unclassified` SUBTRACTING from the denominator and being excluded
+ * from the gaps), because the ten-value fleet number is the programme's historical comparator and is
+ * already published. `--vocabulary=14` (the DEFAULT) is the owner's bar: `unclassified` no longer
+ * shrinks the denominator, and an unclassified label is counted as a GAP — which is the honest
+ * reading of an UNMEASURED ruling on a type that is still applicable.
+ *
+ * MEASURED, NOT PREDICTED: with the ten, a block written against the fourteen reports "implemented
+ * names renders/decorates, which is not one of the ten types" AND "DOES NOT CLOSE" (10 - 3
+ * exclusions = 7 != 11). With the fourteen it closes at 11 = 11. The javascript lane hit exactly
+ * that and asked the Lead for the instrument — which is the Lead's to change.
+ */
+const TYPES_TEN = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"]
+const TYPES_FOURTEEN = [...TYPES_TEN, "decorates", "renders", "mixes_in", "part_of"]
+const LEGACY = process.argv.slice(2).includes("--vocabulary=10")
+const VOCAB: string[] = LEGACY ? TYPES_TEN : TYPES_FOURTEEN
+const TYPES = VOCAB
+const TOTAL = VOCAB.length
+const VOCAB_NAME = LEGACY ? "the ten types" : "the fourteen values"
 
 /** The lane set is read from the same source the board reads it from, for the same reason: the CLI
  *  cannot be imported (its module body runs a self-test and exits). The stripper mirrors
@@ -512,14 +536,14 @@ for (const lane of allLanes) {
     continue
   }
   const impl: string[] = blk.implemented.filter((t: any) => TYPES.includes(t))
-  for (const t of blk.implemented) if (!TYPES.includes(t)) problems.push(`implemented names "${t}", which is not one of the ten types`)
+  for (const t of blk.implemented) if (!TYPES.includes(t)) problems.push(`implemented names "${t}", which is not one of ${VOCAB_NAME}`)
   const excluded: any[] = Array.isArray(blk.excluded) ? blk.excluded : []
   const unex: any[] = Array.isArray(blk.corpusUnexercised) ? blk.corpusUnexercised : []
 
   const gAbs: string[] = [], zero: string[] = [], unclassified: string[] = []
   for (const x of excluded) {
     const label = typeof x === "string" ? x : x?.label
-    if (!TYPES.includes(label)) { problems.push(`excluded names "${label}", which is not one of the ten types`); continue }
+    if (!TYPES.includes(label)) { problems.push(`excluded names "${label}", which is not one of ${VOCAB_NAME}`); continue }
     const cls = typeof x === "string" ? "" : x?.evidence
     const from = typeof x === "string" ? "" : x?.from
     if (cls === "grammar-absence") gAbs.push(label)
@@ -542,7 +566,9 @@ for (const lane of allLanes) {
     // carrying a corpus measurement, and `unclassified` is by definition unmeasured.
     else {
       unclassified.push(label)
-      problems.push(`excluded "${label}" is classed "${cls ?? "(none)"}" — only grammar-absence and zero-sites are evidence classes. NOTE this exclusion STILL shrinks the denominator (the board's arithmetic subtracts it), so an unmeasured claim currently buys the same ratio improvement as a measured one. Classify it.`)
+      problems.push(`excluded "${label}" is classed "${cls ?? "(none)"}" — only grammar-absence and zero-sites are evidence classes. ${LEGACY
+        ? "NOTE this exclusion STILL shrinks the denominator (the board's arithmetic subtracts it), so an unmeasured claim currently buys the same ratio improvement as a measured one."
+        : "UNDER THE FOURTEEN-LIMB IT DOES NOT SHRINK THE DENOMINATOR — it is counted as a GAP, which is the honest reading of an UNMEASURED ruling on a type that is still applicable. A ruling the gate cannot check is still a ruling the gate cannot check, and it is now a gap in your lane rather than a discount in it."} Classify it.`)
     }
     // 4. CORPUS-CITED. Rule-book §6: "A ruling without a count is prose." A grammar-absence (or
     // zero-sites) claim must therefore carry BOTH a COUNT and, where it names an artifact, an
@@ -603,7 +629,7 @@ for (const lane of allLanes) {
   for (const t of zero) if (impl.includes(t)) problems.push(`"${t}" is BOTH implemented and excluded (zero-sites)`)
   for (const x of unex) {
     const t = typeof x === "string" ? x : x?.label
-    if (!TYPES.includes(t)) { problems.push(`corpusUnexercised names "${t}", which is not one of the ten types`); continue }
+    if (!TYPES.includes(t)) { problems.push(`corpusUnexercised names "${t}", which is not one of ${VOCAB_NAME}`); continue }
     if (impl.includes(t)) problems.push(`"${t}" is BOTH implemented and corpusUnexercised`)
     /**
      * THE SAME EVIDENCE STANDARD `excluded` CARRIES, WHICH THIS LIST DID NOT.
@@ -636,13 +662,17 @@ for (const lane of allLanes) {
     }
   }
 
-  const applicable = TOTAL - gAbs.length - unclassified.length
+  /* THE DENOMINATOR, UNDER THE OWNER's BAR. An UNCLASSIFIED exclusion does NOT shrink it: only a
+   CITED grammar-absence does. (The historical ten-limb keeps the old subtraction — see LEGACY.) */
+  const applicable = LEGACY ? TOTAL - gAbs.length - unclassified.length : TOTAL - gAbs.length
   const unexCount = unex.filter((x) => TYPES.includes(typeof x === "string" ? x : x?.label)).length
   const claimedGaps = unex.length === 0 && problems.length === 0
     ? undefined : undefined
   // 1. CLOSURE. `gaps` is what is left after implemented, grammar-absence, unclassified and
   // unexercised — the board computes it; here it is computed and REQUIRED to close.
-  const gaps = TYPES.filter((t) => !impl.includes(t) && !gAbs.includes(t) && !unclassified.includes(t) && !unex.map((x) => (typeof x === "string" ? x : x?.label)).includes(t))
+  // Under the fourteen-limb an unclassified label IS a gap: it is a type the language may express, on
+  // which no admissible ruling has been made. (The ten-limb keeps excluding it — LEGACY.)
+  const gaps = TYPES.filter((t) => !impl.includes(t) && !gAbs.includes(t) && (LEGACY ? !unclassified.includes(t) : true) && !unex.map((x) => (typeof x === "string" ? x : x?.label)).includes(t))
   if (impl.length + unexCount + gaps.length !== applicable) {
     problems.push(`DOES NOT CLOSE: implemented ${impl.length} + unexercised ${unexCount} + gaps ${gaps.length} ≠ applicable ${applicable}`)
   }
@@ -689,10 +719,11 @@ for (const lane of allLanes) {
 const JSON_MODE = process.argv.slice(2).includes("--json")
 const STRICT = process.argv.slice(2).includes("--strict")
 if (JSON_MODE) {
-  console.log(JSON.stringify({ gate: "coverage-block-gate", strict: STRICT, lanes: rows, firingLog: FIRING_LOG }, null, 2))
+  console.log(JSON.stringify({ gate: "coverage-block-gate", strict: STRICT, vocabulary: TOTAL, vocabularyValues: VOCAB, legacyArithmetic: LEGACY, lanes: rows, firingLog: FIRING_LOG }, null, 2))
 } else {
   const w = (s: string | number, n: number) => (String(s) + " ".repeat(n)).slice(0, n)
   console.log(`coverage-block gate — ${allLanes.length} lanes, reading ${SPEC_DIR} directly (not the board's rendering)`)
+  console.log(`VOCABULARY LIMB: ${TOTAL} (${VOCAB_NAME})${LEGACY ? " — the HISTORICAL comparator: unclassified STILL subtracts" : " — THE OWNER's BAR: unclassified does NOT shrink the denominator, and an unclassified label is a GAP"}`)
   console.log(`firing log ${FIRING_LOG} — ${fires.size} lane rows\n`)
   console.log(`${w("lane", 12)} ${w("declared", 9)} ${w("impl", 5)} ${w("appl", 5)} ${w("excl", 5)} ${w("silent-but-implemented", 40)} problems`)
   console.log(`${" ".repeat(12)} ${" ".repeat(9)} ${" ".repeat(5)} ${" ".repeat(5)} ${" ".repeat(5)} (plain = per-type count · ~ = prose-attributed · ? = UNSUBSTANTIATED for this type)`)
