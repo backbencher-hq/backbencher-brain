@@ -3506,7 +3506,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
  * **⇒ AND THE SPEC's BRIDGE TO THE WALL IS THE JOIN, WHICH IS PRICED ✓✓: a project-scoped
  * QUALIFIED-NAME exact match (or a bare name whose project-scoped count is EXACTLY ONE ✓✓ — the
  * production's own resolution rule ✓✓) answers **841 rows** on this same population and root ✓✓ =
- * **+1.9447 points** on the verified class ✓✓ (83.2979 % → 85.2426 % ✓✓; bindOK = 0, so the two
+ * **+1.9412 points** on the verified class ✓✓ (83.2979 % → 85.2391 % ✓✓; bindOK = 0, so the two
  * class formulas coincide ✓✓). **⇒ AND THE PRICE IS **841**, NOT 854 ✓✓ — CORRECTED IN THE OPEN
  * (2026-10-21) ✓✓: THE FIRST PRICE (854 ✓✓) WAS MEASURED IN THE **INDEX's** KEY SPACE (the spec's
  * extraction ✓✓), BUT THE JOIN LOOKS IN THE **GATE's** KEY SPACE (the gate's `countKey` IS the
