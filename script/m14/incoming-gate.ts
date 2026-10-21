@@ -1248,6 +1248,12 @@ const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> =
   // PROJECT_INDEX_EXTENSIONS already carried `.scss`. The spec lives in project-index.ts and is
   // exported as of this change.
   scss: { spec: async () => (await import("../../src/ast/project-index")).SCSS_DECLARATION_SPEC, wasm: "tree-sitter-scss.wasm" },
+  // CLOJURE — the lane's own spec, in the shared index's clojure region (the java/dart precedent).
+  // THE GATE HAD NO CLOJURE ENTRY, and `projectIndexesFor` returns ZERO indexes for a language with
+  // no entry — so every recorded clojure arm was a NO-INDEX arm, and the 768 could not have been
+  // asked of a project index. The spec answers 1 of the 768 (the probe's own arm); the other 767 are
+  // accounted for by three reasons no index can reach. See CLOJURE-VERDICT-2026-10-20.md §4.
+  clojure: { spec: async () => (await import("../../src/ast/project-index")).CLOJURE_DECLARATION_SPEC, wasm: "tree-sitter-clojure.wasm" },
   // SOLIDITY — the OPPOSITE of the cpp gap: production ALREADY builds this index (`PROJECT_INDEX_EXTENSIONS`
   // carries `.sol: "solidity"` and `parallel-indexer.ts` wires `SOLIDITY_DECLARATION_SPEC` + wasm),
   // and the analyzer CONSUMES it (SOL-21: 507 undecided kinds → 0, 99 mis-typed fixed, external

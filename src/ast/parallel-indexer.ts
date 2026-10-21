@@ -1674,7 +1674,14 @@ export async function processWithWorkerPool(
     // (production path-only .h->c vs the engine's content sniff) and is priced in
     // CPP-INDEX-PROPOSAL.md §1b; adding it here would silently answer a crossover question one lane
     // cannot settle alone.
-    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java", ".dart": "dart", ".py": "python", ".ts": "typescript", ".tsx": "typescript", ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript", ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".c++": "cpp", ".hpp": "cpp", ".hxx": "cpp", ".ipp": "cpp", ".inl": "cpp", ".cu": "cpp", ".rb": "ruby" }
+    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java", ".dart": "dart", ".py": "python", ".ts": "typescript", ".tsx": "typescript", ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript", ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".c++": "cpp", ".hpp": "cpp", ".hxx": "cpp", ".ipp": "cpp", ".inl": "cpp", ".cu": "cpp", ".rb": "ruby",
+      // CLOJURE - the .clj/.cljs/.cljc files only. THE `.edn` FILES ARE RULED OUT: an .edn file is a DATA
+      // FILE (a manifest) with no `(ns ...)` form, so its index is EMPTY BY CONSTRUCTION, and an index that
+      // cannot hold a declaration is not a small index - it is a MISLEADING one. The .edn content is read by
+      // the MANIFEST READER (validation/m14/fixtures/clojure/clojure-manifest-facts.ts), which is where the
+      // clojure claim's evidence comes from - not by an indexer.
+      ".clj": "clojure", ".cljs": "clojure", ".cljc": "clojure",
+    }
     // THE THREE NEW EXTENSIONS BUILD ONLY ON A COMPLETE WALK (see `indexScope`). The five pre-existing
     // lanes consume the index for RESOLUTION and tolerate an incomplete one — behaviour that must not
     // change — while python/typescript have no consumer yet and their index exists only to support a
@@ -1710,6 +1717,7 @@ export async function processWithWorkerPool(
         const wasmByLang: Record<string, string> = {
           // RUBY (task-22): the same wasm the ruby analyzer loads (wasm/tree-sitter-ruby.wasm).
           ruby: path.join(repoRoot, "wasm", "tree-sitter-ruby.wasm"),
+          // sha256 90f8866b74d04e16…), so the indexer and the analyzer parse with ONE grammar ✓.
           solidity: path.join(repoRoot, "wasm", "tree-sitter-solidity.wasm"),
           fsharp: path.join(repoRoot, "wasm", "tree-sitter-fsharp.wasm"),
           protobuf: path.join(repoRoot, "wasm", "tree-sitter-protobuf.wasm"),
@@ -1735,6 +1743,7 @@ export async function processWithWorkerPool(
           // halves, for the `.scss`/`.groovy` reason recorded above: a spec without its entry indexes
           // nothing, and an extension without its spec indexes ruby declarations with the wrong rules.
           ruby: mod.RUBY_DECLARATION_SPEC,
+          // without its entry indexes nothing ✓. The spec is in the shared index, not the analyzer ✓.
           solidity: mod.SOLIDITY_DECLARATION_SPEC,
           fsharp: mod.FSHARP_DECLARATION_SPEC,
           // `.scss` was added to PROJECT_INDEX_EXTENSIONS without an entry here, so the lookup below
@@ -1787,7 +1796,8 @@ export async function processWithWorkerPool(
           log.info("project index built", { ext, files: subset.length, types: built.typeKinds.size })
         }
         if (Object.keys(byExt).length > 0) projectIndexes = byExt
-      }
+      },
+      // FILE (a manifest) with no `(ns ...)` form, so its index is EMPTY BY CONSTRUCTION, and an index that
     } catch (e: any) {
       // A failure here must not fail the run: no index is exactly the pre-SOL-21
       // behaviour, and enrichment is additive by construction.
@@ -4399,7 +4409,6 @@ export async function storeResults(
              const LANGUAGES_WITH_SQL = new Set([
                "java", "python", "go", "php", "ruby", "csharp", "kotlin", "scala",
                "typescript", "javascript", "tsx", "jsx", "rust", "swift", "dart",
-               "perl", "lua", "groovy", "cpp", "c", "elixir", "clojure", "r",
              ])
              const fileLang = (result.language || "").toLowerCase()
  
@@ -4503,7 +4512,6 @@ export async function storeResults(
                imp.importType ??
                (imp.isDefault || imp.isDefaultImport ? "default" : imp.isNamespace || imp.isNamespaceImport ? "namespace" : "named")
              // M60/#910: `is_external` was HARDCODED 0, so every analyzer that
-             // already classifies its dependencies — clojure (`isExternal`),
              // sql (`isExternal`), c/cpp (`metadata.isSystemInclude`: `<stdio.h>`
              // vs `"util.h"`) — had its declaration silently discarded, and
              // the one consumer that reads the flag (the file-dependency
