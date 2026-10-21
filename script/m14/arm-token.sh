@@ -80,6 +80,7 @@ queue_remove() {
   after="$(queue_list | tr '\n' ' ')"
   echo "QUEUE AUDIT — removed '$l' · before: ${before:-（empty）} · after: ${after:-（empty）}" >&2
 }
+holder_granted() { [ -f "$TOKEN_DIR/holder" ] && sed -n 5p "$TOKEN_DIR/holder" || echo 0; }
 queue_head() { [ -f "$QUEUE_FILE" ] && head -1 "$QUEUE_FILE" || echo ''; }
 queue_list() { [ -f "$QUEUE_FILE" ] && cat "$QUEUE_FILE" || echo '(nobody waiting)'; }
 
@@ -107,7 +108,7 @@ token_fresh() {  # live if the last beat is within TTL
   [ "$age" -ge 0 ] && [ "$age" -lt "$TTL" ]
 }
 
-write_holder() {  # lane pid ticks
+write_holder() {  # lane pid ticks [granted]
   # THE ATOMIC WRITE (2026-10-20, the javascript lane's finding). A plain `printf > holder` is NOT
   # atomic, and a reader CAN CATCH THE FILE MID-WRITE: the javascript lane saw the dart lane's
   # holder read as "last beat 1792547563s ago" — a garbage beat that made a LIVE holder look
@@ -115,7 +116,7 @@ write_holder() {  # lane pid ticks
   # read is exactly what would authorise a force against a live holder — the failure the token
   # exists to prevent ✓✓. So the holder file is now written to a TEMP file and RENAMED ✓, which is
   # atomic on every filesystem the fleet runs on ✓✓.
-  printf '%s\n%s\n%s\n%s\n' "$1" "$2" "$3" "$(now)" > "$TOKEN_DIR/holder.tmp" 2>/dev/null \
+  printf '%s\n%s\n%s\n%s\n%s\n' "$1" "$2" "$3" "$(now)" "${4:-0}" > "$TOKEN_DIR/holder.tmp" 2>/dev/null \
     && mv "$TOKEN_DIR/holder.tmp" "$TOKEN_DIR/holder" 2>/dev/null \
     || { rm -f "$TOKEN_DIR/holder.tmp" 2>/dev/null || true; }
 }
@@ -197,7 +198,12 @@ case "$cmd" in
       echo "NOT RELEASED — the token is held by '${h_lane:-nobody}', not by $lane."; exit 4
     fi
     rm -rf "$TOKEN_DIR" 2>/dev/null || true
-    queue_remove "$lane"
+    # A GRANTED TURN DOES NOT CONSUME THE LANE'S QUEUE PLACE ✓✓ (the holder records it ✓).
+    if [ "${h_granted:-0}" = "1" ]; then
+      echo "ARM TOKEN RELEASED by $lane — a GRANTED turn ✓; the lane's queue place is KEPT ✓."
+    else
+      queue_remove "$lane"
+    fi
     echo "ARM TOKEN RELEASED by $lane"; exit 0
     ;;
   take-small)
@@ -237,6 +243,26 @@ case "$cmd" in
       exit 0
     fi
     echo "REFUSED — the small slot is held. Its holder: $(cat "$SMALL_TOKEN_DIR/holder/holder" 2>/dev/null | tr '\n' ' ')"
+    exit 3
+    ;;
+  take-granted)
+    # ── A GRANTED TURN (2026-10-20, the Lead's ruling: "a cheap gate that can prevent an expensive
+    # spend should not wait behind that spend") ──────────────────────────────────────────────────────
+    # THE GAP THIS FIXES: the ordinary `take` REMOVES THE LANE FROM THE QUEUE ✓ (correct for a queue
+    # turn ✓), so a lane taking a GRANTED turn through it SILENTLY LOST ITS OWN PLACE ✓✓ — and the
+    # granted turn then could not start at all ✓, because the tool's bookkeeping had undone the
+    # ruling that granted it ✓✓. The dart lane caught this ✓ and did NOT edit the queue file for
+    # itself ✓✓ — a lane editing the queue for itself is the defect the queue exists to prevent ✓.
+    # SO A GRANTED TURN TAKES A FREE TOKEN AND KEEPS THE LANE'S QUEUE PLACE ✓✓, and the holder file
+    # records that it was granted ✓ so the release does not consume the place either ✓✓.
+    [ -n "$lane" ] || { echo "usage: arm-token.sh take-granted <lane>"; exit 2; }
+    if mkdir "$TOKEN_DIR" 2>/dev/null; then
+      write_holder "$lane" "$$" "$(proc_start_ticks $$ 2>/dev/null || echo 0)" 1
+      echo "ARM TOKEN TAKEN by $lane — A GRANTED TURN ✓ (the queue's place is KEPT ✓; the lane's ordinary turn is still owed ✓)."
+      exit 0
+    fi
+    h_lane="$(holder | sed -n 1p)"; h_pid="$(holder | sed -n 2p)"; h_beat="$(holder | sed -n 4p)"
+    echo "REFUSED — the token is held by '${h_lane:-nobody}' (pid $h_pid, last beat $h_beat s ago)."
     exit 3
     ;;
   queue)
