@@ -174,6 +174,23 @@ const declWitness = new Map<string, { file: string; line: number; kind: string; 
 type Pending = { label: string; tgt: string; claim: any; owner: string | null; repo: string; srcFile: string; line: number | null }
 const pending: Pending[] = []
 
+/**
+ * THE ANALYZER's QUALIFICATION SKIP — THE 13-ROW PUBLICATION GAP's ROOT, MEASURED ✓✓.
+ *
+ * THE ANALYZER's OWN RULE (`src/ast/real-clojure-analyzer.ts`, the CLJ-IN1 block): a symbol whose
+ * SCOPE EQUALS ITS OWN NAME is NOT qualified (`if (sc.length === 0 || sc === s.name) continue`) ⇒ ⇒
+ * it keeps the store's DOT fallback (`foo.foo`) instead of the language's SLASH spelling (`foo/foo`)
+ * ⇒ ⇒ ⇒ THE JOIN's KEY (`ns/name`) IS NOT IN THE KEY SPACE ⇒ ⇒ THE ROW IS NOT ANSWERED ✓✓.
+ *
+ * THIS INSTRUMENT MEASURES THE BLAST RADIUS OF THAT SKIP OVER THE WHOLE POPULATION, AND RE-PRICES
+ * THE JOIN WITH THE SKIP REMOVED ✓✓ — so the cost of the fix is a NUMBER, not an argument ✓✓. The
+ * price the fix WOULD reach is NOT applied here: the gate's price stays the measured one ✓✓.
+ */
+const projectDeclFixed = new Map<string, Map<string, number>>()
+const skippedQualifications: { repo: string; file: string; line: number; name: string; scope: string; kind: string; publishedAs: string }[] = []
+/** THE ROWS THE FIX WOULD ANSWER — the delta, by row ✓✓. */
+const fixWouldAnswer: { label: string; target: string; file: string; line: number | null; key: string }[] = []
+
 const disc = discover()
 console.log(`THE JOIN's DISCRIMINATING COLUMN — the gate's own population rule, over ${CR}`)
 console.log(`  population: ${disc.files.length} file(s) · ${disc.repos.size} repo(s) · by extension ${JSON.stringify(Object.fromEntries([...disc.byExt].sort()))}`)
@@ -227,6 +244,22 @@ for (const f of disc.files) {
     if (symKind.toLowerCase() === "module" && !nsByFile.has(f)) nsByFile.set(f, name)
     if (symKind.toLowerCase() === "module") moduleNames.push(name)
     if (genuineQual.length > 0) countKey(genuineQual, symKind, f, symLine, { name, qualifiedName: symQual })
+    // THE SKIP, MEASURED ✓✓ — the analyzer declines to qualify a symbol whose scope is its own
+    // name ⇒ the store's DOT fallback survives ⇒ the language's SLASH spelling is absent ✓✓.
+    const symScope = String((s as any)?.scope ?? "")
+    // THE SKIP, DETECTED BY THE SPELLING ✓✓ — the analyzer's own rule would publish
+    // `${scope}/${name}` (the language's SLASH spelling); the skip means the STORE's DOT
+    // fallback (`${scope}.${name}`) survives instead ⇒ ⇒ the check is the SPELLING, not the
+    // ABSENCE of a qualified name ✓✓ (the fallback IS a qualified name, and the gate counts
+    // it as one ✓✓).
+    if (symScope.length > 0 && symScope === name && symQual !== `${symScope}/${name}`) {
+      skippedQualifications.push({ repo: repoOf(f), file: f, line: symLine ?? -1, name, scope: symScope, kind: symKind, publishedAs: symQual })
+      let fx = projectDeclFixed.get(repoOf(f))
+      if (!fx) { fx = new Map(); projectDeclFixed.set(repoOf(f), fx) }
+      fx.set(name, (fx.get(name) ?? 0) + 1)
+      const skippedKey = `${symScope}/${name}`
+      fx.set(skippedKey, (fx.get(skippedKey) ?? 0) + 1)
+    }
   }
   moduleNamesByFile.set(f, moduleNames)
   // THE PRODUCTION's NAMESPACE SOURCE — the production's own function, over the production's own tree.
@@ -332,7 +365,16 @@ for (const e of pending) {
       ambiguousRows++
     }
   }
-  if (!pc.joined) continue
+  if (!pc.joined) {
+    // THE FIX's REACH — the ambiguous rows the SKIP's removal would answer ✓✓.
+    if (decls > 1 && qj !== undefined && qj.branch === "namespace") {
+      const fx = projectDeclFixed.get(e.repo)?.get(qj.qualified) ?? 0
+      if (fx === 1 && qj.count !== 1) {
+        fixWouldAnswer.push({ label: e.label, target: e.tgt, file: e.srcFile, line: e.line, key: qj.qualified })
+      }
+    }
+    continue
+  }
   gateResolved++
   if (qj?.branch === "slash") resolvedSlash++
   else resolvedNamespace++
@@ -456,6 +498,24 @@ const report = {
     byNamespaceProvenance: Object.fromEntries([...byProvenance].sort()),
     byVerdictAndProvenance: Object.fromEntries([...byVerdictProvenance].sort()),
   },
+  /**
+   * THE ANALYZER's QUALIFICATION SKIP — THE 13-ROW PUBLICATION GAP's ROOT ✓✓.
+   * THE SKIP: a symbol whose SCOPE EQUALS ITS OWN NAME is not qualified by the analyzer ⇒ the
+   * store's DOT fallback (`foo.foo`) survives instead of the language's SLASH spelling
+   * (`foo/foo`) ⇒ ⇒ the join's key is not in the key space ⇒ ⇒ the row is not answered ✓✓.
+   * MEASURED HERE: the skip's BLAST RADIUS over the whole admitted population, and the number
+   * of AMBIGUOUS ROWS THE FIX WOULD ANSWER — a number, not an argument ✓✓. THE FIX IS NOT
+   * APPLIED: the gate's price stays the measured one ✓✓. */
+  theQualificationSkip: {
+    rule: "src/ast/real-clojure-analyzer.ts, the CLJ-IN1 block: `if (sc.length === 0 || sc === s.name) continue` — a symbol whose scope equals its own name keeps the store's DOT fallback instead of the language's SLASH spelling",
+    symbolsSkipped: skippedQualifications.length,
+    filesAffected: new Set(skippedQualifications.map((s) => s.file)).size,
+    byKind: Object.fromEntries([...skippedQualifications.reduce((m, s) => m.set(s.kind, (m.get(s.kind) ?? 0) + 1), new Map<string, number>())].sort()),
+    theRowsTheFixWouldAnswer: fixWouldAnswer.length,
+    theFixWouldRaiseThePriceTo: gateResolved + fixWouldAnswer.length,
+    theRows: fixWouldAnswer,
+    theSkippedSymbols: skippedQualifications,
+  },
   rows: joined,
 }
 
@@ -467,6 +527,7 @@ if (gateCounter !== null) {
 console.log(`  THE SAME ROWS PRICED UNDER THE PRODUCTION's NAMESPACE SOURCE: ${prodPriced} ⇒ the namespace source's effect: ${notPricedByProduction.length} row(s)`)
 console.log(`  THE VERDICT: RIGHT ${right.length} · GUESSED ${guessed.length} · by provenance ${JSON.stringify(Object.fromEntries([...byProvenance].sort()))}`)
 console.log(`  THE OWN-FILE TIE-BREAK (e1e2f7a19): PER ROW — ${tieBreakRows} row(s) resolved by it · the join ${gateResolved} · still ambiguous ${ambiguousRows} · the ceiling ${ambiguousCeiling} ⇒ the sum closes: ${tieBreakRows + gateResolved + ambiguousRows === ambiguousCeiling}`)
+console.log(`  THE ANALYZER's QUALIFICATION SKIP (scope === name): ${skippedQualifications.length} symbol(s) in ${new Set(skippedQualifications.map((s) => s.file)).size} file(s) ⇒ the fix WOULD answer ${fixWouldAnswer.length} row(s) ⇒ the price would become ${gateResolved + fixWouldAnswer.length} (NOT applied — the measured price stands) ✓✓`)
 console.log(`  THE ${notPricedByProduction.length} NOT PRICED UNDER THE PRODUCTION's SOURCE — by reason:`)
 for (const [k, n] of [...byReason].sort((a, b) => b[1] - a[1])) console.log(`    ${String(n).padStart(5)}  ${k}`)
 

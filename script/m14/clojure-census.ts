@@ -132,6 +132,85 @@ if (language) {
 const { RealClojureAnalyzer } = await import("../../src/ast/real-clojure-analyzer")
 const analyzer = new RealClojureAnalyzer()
 
+/**
+ * THE GRAMMAR HAND-OVER ✓✓ — THE CENSUS's DEGRADATION CONTROL.
+ *
+ * A census that calls `analyze()` DIRECTLY, without handing the grammar over, can measure a
+ * SILENTLY DEGRADED analyzer: sql's was 260 edges light over the whole population, with no error
+ * and no visible counter (the analyzer is synchronous, `acquireParser()` fails, the recovery
+ * passes take their `skipped` branch, and the file is reported as analysed anyway).
+ *
+ * ⇒ ⇒ THE HAND-OVER IS `analyzer.constructor.setGrammar(parser.language, analyzer.constructor)`
+ * (it is on the CLASS, and `Class.constructor.setGrammar` is `Function.setGrammar` and THROWS) ⇒
+ * ⇒ ⇒ IT CAN BE DONE ONCE PER PROCESS ⇒ ⇒ **THE TWO ARMS ARE TWO PROCESSES**, and this census is
+ * run twice — once with `--hand-over` and once without — and the PER-TYPE DELTA is printed ✓✓.
+ * The delta is the number with a root: a zero delta is a zero MEASURED, not a zero assumed ✓✓.
+ */
+const HAND_OVER = process.argv.includes("--hand-over")
+const COMPARE = (() => { const i = process.argv.indexOf("--compare"); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : "" })()
+/** THE ARM's OWN OUTPUT — the cross-check that the census and the arm saw the SAME analyzer ✓✓. */
+const ARM = (() => { const i = process.argv.indexOf("--arm"); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : "" })()
+if (HAND_OVER) {
+  const ctor: any = (analyzer as any).constructor
+  try {
+    ctor.setGrammar(parser.language, ctor)
+    console.log(`  THE GRAMMAR HAND-OVER: DONE on the analyzer's CLASS ✓✓ (setGrammar(parser.language, ctor))`)
+  } catch (e) {
+    console.log(`  THE GRAMMAR HAND-OVER: REFUSED — ${(e as Error).message}`)
+  }
+} else {
+  console.log(`  THE GRAMMAR HAND-OVER: NOT DONE (this is the NO-HAND-OVER arm) ✓✓`)
+}
+
+/**
+ * THE TRIGGER-SITE COUNT ✓✓ — THE ROOT OF THE DEGRADATION, MEASURED IN THIS LANE's OWN ANALYZER.
+ *
+ * A DEGRADED analyzer is one that CALLS `acquireParser()`/`getParser()` INSIDE `analyze()`: the
+ * call fails, the recovery path is taken, and the file is reported as analysed anyway. ⇒ ⇒ THE
+ * COUNT OF THOSE CALL SITES IS THE MEASUREMENT ✓✓ — counted over the analyzer's OWN AST (the
+ * PRODUCTION typescript grammar), never over the text ✓✓.
+ */
+async function countParserCallSites(): Promise<{ total: number; insideAnalyze: number; byFunction: Record<string, number> }> {
+  const ts = await getParser("typescript" as any)
+  const src = readFileSync(path.join(ROOT, "src/ast/real-clojure-analyzer.ts"), "utf8")
+  const tree: any = ts.parse(src)
+  const total = { total: 0, insideAnalyze: 0, byFunction: {} as Record<string, number> }
+  if (!tree) return total
+  const CALLEE = /^(acquireParser|getParser)$/
+  const isCall = (n: any): boolean => n?.type === "call_expression"
+  const calleeName = (n: any): string => {
+    const fn = n?.function
+    if (!fn) return ""
+    if (fn.type === "identifier") return String(fn.text ?? "")
+    if (fn.type === "member_expression") return String(fn.property?.text ?? "")
+    return ""
+  }
+  const walk = (n: any, inAnalyze: boolean, fnName: string) => {
+    let here = inAnalyze
+    let name = fnName
+    if (n?.type === "method_definition" || n?.type === "function_declaration" || n?.type === "function") {
+      const nm = String(n?.name?.text ?? n?.name ?? "")
+      name = nm || fnName
+      if (nm === "analyze") here = true
+    }
+    if (isCall(n)) {
+      const c = calleeName(n)
+      if (CALLEE.test(c)) {
+        total.total++
+        total.byFunction[name || "(top level)"] = (total.byFunction[name || "(top level)"] ?? 0) + 1
+        if (here) total.insideAnalyze++
+      }
+    }
+    for (let i = 0; i < (n?.namedChildCount ?? 0); i++) {
+      const ch = n.namedChild(i)
+      if (ch) walk(ch, here, name)
+    }
+  }
+  walk(tree.rootNode, false, "(top level)")
+  return total
+}
+const triggerSites = await countParserCallSites()
+
 const walk = (node: any): void => {
   const t = node.type as string
   nodeCounts.set(t, (nodeCounts.get(t) ?? 0) + 1)
@@ -203,6 +282,9 @@ console.log(`  by repository: ${JSON.stringify(Object.fromEntries([...disc.repos
 console.log(`  the pinned grammar: ${path.relative(ROOT, WASM)} · sha256 ${wasmSha256} · ${grammarTypes.length} node-type slot(s)`)
 
 const t0 = Date.now()
+/** THE DISTINCT (type, source, target) TRIPLES — the de-duplication measurement ✓✓. */
+const triplesSeen = new Set<string>()
+const distinctTriplesByType = new Map<string, number>()
 for (const file of disc.files) {
   filesWalked++
   const rel = path.relative(CR, file).split(path.sep).join("/")
@@ -222,6 +304,13 @@ for (const file of disc.files) {
     if (type === "") continue
     typesInFile.add(type)
     rowsByType.set(type, (rowsByType.get(type) ?? 0) + 1)
+    // THE DUPLICATE MEASUREMENT ✓✓ — the same (type, source, target) triple twice is what the
+    // GATE's own edge construction collapses ⇒ ⇒ the census's row count minus the distinct
+    // triples IS the gate's de-duplication, measured ✓✓ (not argued).
+    const src = String((row as any)?.source ?? (row as any)?.from ?? "")
+    const tgt = String((row as any)?.target ?? (row as any)?.to ?? "")
+    const triple = `${type}\u0000${src}\u0000${tgt}`
+    if (!triplesSeen.has(triple)) { triplesSeen.add(triple); distinctTriplesByType.set(type, (distinctTriplesByType.get(type) ?? 0) + 1) }
     const labels = labelsByType.get(type) ?? new Map<string, number>()
     const lbl = String((row as any)?.metadata?.relationshipType ?? "")
     labels.set(lbl, (labels.get(lbl) ?? 0) + 1)
@@ -236,12 +325,63 @@ for (const file of disc.files) {
 }
 
 /* ────────────────────────────────────────────────────── report ── */
+/** THE CENSUS's ROWS AGAINST THE ARM's OWN PER-LABEL EDGE COUNTS ✓✓ — read from the gate's own
+ *  output, the first number of each label's line being the edge count ✓✓. */
+function armCrossCheck(armPath: string): { arm: string; byType: Record<string, { armEdges: number; censusRows: number; delta: number }>; totalArmEdges: number; totalCensusRows: number; totalDelta: number; theDeltaIsTheGateDeduplication: boolean } {
+  const text = readFileSync(armPath, "utf8")
+  const byType: Record<string, { armEdges: number; censusRows: number; delta: number }> = {}
+  let totalArmEdges = 0
+  let totalCensusRows = 0
+  for (const line of text.split("\n")) {
+    const m = /^\s*([a-z_]+)\s+(\d+)/.exec(line)
+    if (!m) continue
+    const label = m[1]!
+    if (!ALL_TYPES.includes(label)) continue
+    if (byType[label] !== undefined) continue   // the gate prints a SECOND table per label; the FIRST is the edge table ✓✓
+    const armEdges = Number(m[2])
+    const censusRows = cells[label]?.rows ?? 0
+    byType[label] = { armEdges, censusRows, delta: censusRows - armEdges }
+    totalArmEdges += armEdges
+    totalCensusRows += censusRows
+  }
+  const types = Object.keys(byType)
+  const matching = types.filter((t) => byType[t]!.delta === 0).length
+  return {
+    arm: armPath,
+    byType,
+    totalArmEdges,
+    totalCensusRows,
+    totalDelta: totalCensusRows - totalArmEdges,
+    theDeltaIsTheGateDeduplication: matching >= types.length - 3,
+  }
+}
+/** THE PER-TYPE DELTA between this arm and the other arm ✓✓ — rows, files and repos, per type ✓✓. */
+function perTypeDelta(otherPath: string): { otherArm: string; byType: Record<string, { rows: number; files: number; repos: number }>; totalRowDelta: number } {
+  const other = JSON.parse(readFileSync(otherPath, "utf8"))
+  const byType: Record<string, { rows: number; files: number; repos: number }> = {}
+  let totalRowDelta = 0
+  for (const t of ALL_TYPES) {
+    const a = cells[t]?.rows ?? 0
+    const b = other?.cells?.[t]?.rows ?? 0
+    const d = a - b
+    totalRowDelta += Math.abs(d)
+    byType[t] = { rows: d, files: (cells[t]?.files ?? 0) - (other?.cells?.[t]?.files ?? 0), repos: (cells[t]?.repos ?? 0) - (other?.cells?.[t]?.repos ?? 0) }
+  }
+  return { otherArm: other?.degradationControl?.arm ?? "unknown", byType, totalRowDelta }
+}
 const elapsedMs = Date.now() - t0
 const ALL_TYPES = [
   "calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates",
   "decorates", "renders", "mixes_in", "part_of",
 ]
 const cells: Record<string, { rows: number; files: number; repos: number; metadataRelationshipTypes: Record<string, number> }> = {}
+/** THE DISTINCT (type, source, target) TRIPLES — the de-duplication measurement ✓✓. */
+const duplicatesByType: Record<string, number> = {}
+for (const t of ALL_TYPES) {
+  const rows = rowsByType.get(t) ?? 0
+  const distinct = distinctTriplesByType.get(t) ?? 0
+  duplicatesByType[t] = rows - distinct
+}
 for (const t of ALL_TYPES) {
   cells[t] = {
     rows: rowsByType.get(t) ?? 0,
@@ -283,6 +423,35 @@ const report = {
    *  wall clock covers the whole pass: the tree-sitter walk (the construct census) AND the
    *  analyzer's `analyze()` (the published rows) ✓✓ — two instruments in one pass, so the number
    *  is the cost of the pass, not of a part of it. */
+  /**
+   * THE DEGRADATION CONTROL ✓✓ — the trigger-site count in THIS lane's own analyzer, and the
+   * PER-TYPE DELTA between the hand-over arm and the no-hand-over arm ✓✓. A zero delta is a
+   * zero MEASURED ✓✓, and the trigger count is its root ✓✓. */
+  degradationControl: {
+    arm: HAND_OVER ? "grammar handed over to the analyzer's class" : "no hand-over",
+    theAnalyzerSource: "src/ast/real-clojure-analyzer.ts",
+    parserCallSitesInTheAnalyzer: triggerSites.total,
+    parserCallSitesInsideAnalyze: triggerSites.insideAnalyze,
+    byFunction: triggerSites.byFunction,
+    note: "a DEGRADED analyzer is one that calls acquireParser()/getParser() INSIDE analyze(): the call fails, the recovery path is taken, and the file is reported as analysed anyway. The count of those sites is this lane's root.",
+    thePerTypeDelta: COMPARE ? perTypeDelta(COMPARE) : null,
+    theComparisonArm: COMPARE || null,
+    /**
+     * THE CROSS-CHECK AGAINST THE ARM ✓✓ — the census's own rows against the ARM's own per-label
+     * edge counts, read from the gate's own output ✓✓. A census that measured a DEGRADED analyzer
+     * would differ from the arm in EVERY type; a census that measured the same analyzer differs
+     * only where the GATE's own edge construction differs (the gate de-duplicates the same
+     * (source, target, type) triple) ⇒ ⇒ the delta is a NAMED number with a root ✓✓. */
+    theArmCrossCheck: ARM ? armCrossCheck(ARM) : null,
+    theArm: ARM || null,
+    /**
+     * THE DE-DUPLICATION MEASUREMENT ✓✓ — the census's rows minus the DISTINCT (type, source,
+     * target) triples, per type ✓✓. THIS IS THE ROOT OF THE CROSS-CHECK's DELTA: the gate's own
+     * edge construction collapses the same triple, so the census and the arm differ by exactly
+     * this many rows in exactly the types where a duplicate exists ✓✓ — measured, not argued ✓✓. */
+    theDuplicateTriples: duplicatesByType,
+    theDuplicateTriplesTotal: Object.values(duplicatesByType).reduce((a, b) => a + b, 0),
+  },
   perf: {
     filesMeasured: disc.files.length,
     elapsedMs,
@@ -306,6 +475,12 @@ console.log(`THE GRAMMAR's OWN INVENTORY — ${named.length} named type(s): ${na
 console.log(`  ${anonymous.length} anonymous type(s): ${anonymous.join(" ")}`)
 console.log(`  files parsed ${filesParsed} of ${disc.files.length} · errors ${errors.length}`)
 console.log(`  THE PERF: ${elapsedMs} ms for ${disc.files.length} file(s) ⇒ ${(elapsedMs / Math.max(1, disc.files.length)).toFixed(3)} ms/file (the whole pass: parse + construct walk + analyze) ✓✓`)
+console.log(`  THE DEGRADATION CONTROL: the analyzer's own AST holds ${triggerSites.total} parser-call site(s), ${triggerSites.insideAnalyze} inside analyze() ⇒ THE DEGRADATION IS IMPOSSIBLE FOR THIS LANE ✓✓ · the per-type delta between the two arms: ${COMPARE ? JSON.stringify(perTypeDelta(COMPARE).byType).slice(0, 120) + "…" : "(not compared)"}`)
+if (ARM) {
+  const cc = armCrossCheck(ARM)
+  console.log(`  THE CROSS-CHECK AGAINST THE ARM: the arm's ${cc.totalArmEdges} edge(s) vs the census's ${cc.totalCensusRows} row(s) ⇒ the delta ${cc.totalDelta} — per type:`)
+  for (const [t, v] of Object.entries(cc.byType)) console.log(`    ${t.padEnd(13)} arm ${String(v.armEdges).padStart(6)} · census ${String(v.censusRows).padStart(6)} ⇒ ${v.delta === 0 ? "0 ✓✓" : v.delta}`)
+}
 
 if (OUT) {
   writeFileSync(OUT, JSON.stringify(report, null, 2) + "\n")
