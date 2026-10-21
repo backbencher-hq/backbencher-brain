@@ -667,6 +667,45 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // PERL_BUILTINS misses `reset` — a builtin — so `Mojo::IOLoop->reset` stopped
     // being suppressed. The builtin test has always been about the method being
     // invoked, never about the shape of the edge's target.
+    // THE QUALIFIED CLASS NAMES THIS RUN BOUND TO AN EDGE.
+    //
+    // WHY THIS EXISTS (2026-10-20, the lane's own measurement — see
+    // validation/m14/verification/PERL-VERDICT-2026-10-20.md section 5.2).
+    //
+    // This lane publishes a receiver's class as its LEAF: `Mojo::UserAgent->new`
+    // becomes the target `UserAgent.constructor`, and `use Mojolicious::Controller`
+    // becomes the base leaf `Controller`. That truncation is the lane's own
+    // convention and it is priced (the qualifier repair resolves 153 `extends` and
+    // 536 `calls`/`overrides`/`instantiates` rows, and raises `arbitraryTwin` by
+    // +149 / +531 — PERL-FIX.md section 3.2 — which the lane's own axis forbids).
+    //
+    // The DECLARED CAUSE channel (`metadata.baseBeyondRunScope`) then claimed, on
+    // every such row, that "the base is beyond this run's reach". MEASURED OVER THE
+    // WHOLE POPULATION, THAT CLAIM IS FALSE for 178 of the lane's 182 named causes
+    // and 2222 of its 2251 cause edges: the base is declared by the PROJECT
+    // (Base 712 edges <- Mojo::Base at mojo/lib/Mojo/Base.pm; EventEmitter 233;
+    // IOLoop 166), and the SOURCE wrote it qualified within fifteen lines of the
+    // edge. The run did not fail to REACH the base; it REACHED it and published its
+    // LEAF. A cause that is true of the spelling the analyzer synthesised and false
+    // of the class the edge means is a claim the reader cannot act on — and the
+    // fleet's own ruling (finding 3.20) is that a claim refuted by the corpus is a
+    // claim the ANALYZER should not have emitted, fixed LANE-SIDE, with claims
+    // replaced by honest unresolved rows as the correct direction.
+    //
+    // SO THE FIX IS TO STATE THE CAUSE ONLY WHERE THE RUN COULD NOT NAME THE CLASS
+    // AT ALL. This set holds the qualified class names the run bound to an edge, so
+    // the cause channel can see that the run DID hold a name for that class — and
+    // the row is then honestly `unresolved`, carrying its own reasonCode, instead of
+    // carrying a claim that is not true.
+    //
+    // THE PRICE IS MEASURED AND IT IS ON THE PAGE: `causeOK` 2251 -> 29 over the
+    // whole population, the gate's clause-1 residual 5534 -> 7756, and the
+    // PRODUCTION VIEW UNCHANGED at 46.0798 % — because a declared cause was never a
+    // resolution, and dropping it moves no resolution number. It moves rows from
+    // "classified" to "honest", which is the direction the python lane took when it
+    // retired its `decorates` claims.
+    const qualifiedClassNames = new Set<string>()
+
     const addCall = (
       target: string,
       state: WalkState,
@@ -1168,11 +1207,13 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               // not also be walked as a call of its own, or the class is filed
               // twice under two labels.
               indirectObjectClassNodes.add(nodeKey(inner))
+              if (indirect.name.includes("::")) qualifiedClassNames.add(indirect.name)
               addRelationship(state.functionName || state.packageName || "global", `${this.leafName(indirect.name)}.constructor`, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.indirectObjectInvocation }, 0.9, node)
               break
             }
             const requestedType = this.firstValue(node)
             const instanceTarget = requestedType && !requestedType.includes("$") ? `${this.leafName(requestedType)}.constructor` : "constructor"
+            if (requestedType && requestedType.includes("::")) qualifiedClassNames.add(requestedType)
             addRelationship(state.functionName || state.packageName || "global", instanceTarget, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.concreteInvocant }, 0.9, node)
           } else {
             if (indirectObjectClassNodes.has(nodeKey(node))) break
@@ -1209,7 +1250,10 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               // token stands for, and where there is no package to name it, the
               // edge is not derivable and is not emitted.
               const owner = state.packageName
-              if (owner && owner !== "main") addRelationship(state.functionName || owner, `${this.leafName(owner)}.constructor`, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.magicTokenInvocant }, 0.9, invocant ?? node)
+              if (owner && owner !== "main") {
+                if (owner.includes("::")) qualifiedClassNames.add(owner)
+                addRelationship(state.functionName || owner, `${this.leafName(owner)}.constructor`, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.magicTokenInvocant }, 0.9, invocant ?? node)
+              }
             } else if (invocant && this.namesAClass(invocant) && target && !target.includes("$") && !target.includes("->")) {
               // A POSITIVE allowlist, not a "does the text look wrong" test.
               //
@@ -1221,6 +1265,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               // named `use_module`. A negative test can only enumerate the
               // dynamic cases someone already hit; this enumerates the cases
               // that actually NAME a class, and everything else is a value.
+              if (target.includes("::")) qualifiedClassNames.add(target)
               addRelationship(state.functionName || state.packageName || "global", `${this.leafName(target)}.constructor`, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.concreteInvocant }, 0.9, invocant ?? node)
             }
           } else {
@@ -1273,6 +1318,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               !recvTarget.includes("$") &&
               !recvTarget.includes("->")
             if (provableClass) {
+              if (recvTarget.includes("::")) qualifiedClassNames.add(recvTarget)
               addCall(`${this.leafName(recvTarget)}.${method}`, state, methodNode ?? node, false, node, method)
             } else {
               addCall(method, state, methodNode ?? node, true, node, method)
@@ -1446,6 +1492,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // patterns.ts threshold (0.7): visible in raw output, counted as heuristic
         // (honest suspicion) by the differential. Pre-M37.10 this edge was
         // silently dropped for every externally-declared base package.
+        if (base.includes("::")) qualifiedClassNames.add(base)
         addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.firstParentGuess }, 0.5, undefined, nameLineOf(symbol))
       }
     }
@@ -1493,7 +1540,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // walk, the deferred base pass, the override pass) and before the return, because it is a
     // statement ABOUT the edges that already exist: it adds one metadata key and changes no
     // source, target, label, line or confidence.
-    this.publishStatedCauses(symbols, relationships)
+    this.publishStatedCauses(symbols, relationships, qualifiedClassNames)
 
     return { symbols, relationships, imports, exports, errors, metadata }
   }
@@ -2086,7 +2133,11 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * the edge also carries an external claim — the lane publishes none, which is why the conflict
    * branch cannot fire here.
    */
-  private publishStatedCauses(symbols: ASTEngine.UniversalSymbol[], relationships: ASTEngine.UniversalRelationship[]): void {
+  private publishStatedCauses(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    qualifiedClassNames: ReadonlySet<string>,
+  ): void {
     // THE CLASSES THIS FILE ITSELF PUBLISHES, BY LEAF. A perl package symbol's `name` is its full
     // package name (`Mojo::Base`), so the leaf is what a `leaf.member` target can name.
     const declaredHere = new Set<string>()
@@ -2096,6 +2147,26 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const name = String(symbol.name ?? "")
       if (name) declaredHere.add(this.leafName(name))
     }
+    // AND THE CLASSES THIS RUN BOUND TO AN EDGE, BY LEAF — the second guard, and the one the
+    // lane's own whole-population measurement added on 2026-10-20.
+    //
+    // THE CLAIM IS "THE BASE IS BEYOND THIS RUN'S REACH", and it is only true where the run could
+    // not NAME the class at all. Where the run held a QUALIFIED name for the class and published
+    // only its LEAF, the run did not fail to reach the base — it REACHED the base and truncated
+    // the spelling, and the claim is then true of the spelling it invented and false of the class
+    // the edge means. MEASURED over the whole population: 178 of the 182 named causes and 2222 of
+    // the 2251 cause edges are refuted exactly that way (the class is declared by the PROJECT, and
+    // the SOURCE wrote it qualified within fifteen lines of the edge).
+    //
+    // So the cause is stated only where neither guard fires: the file does not declare the class
+    // AND the run did not bind a qualified name for it. The rows that lose the claim are not
+    // silenced — they keep their `reasonCode` and read `unresolved`, which is the honest class.
+    //
+    // A CLAIM'S SCOPE MUST MATCH ITS EVIDENCE'S SCOPE (the fleet's own ruling), and this is the
+    // lane paying it: the claim is removed where the corpus can refute it, rather than left in
+    // place where a reader would believe it.
+    const heldQualified = new Set<string>()
+    for (const qualified of qualifiedClassNames) heldQualified.add(this.leafName(qualified))
     for (const relationship of relationships) {
       const type = relationship.type
       // THE THREE LABELS WHOSE TARGET IS `leaf.member`. `extends` targets a bare leaf and
@@ -2106,6 +2177,8 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!metadata || metadata.baseBeyondRunScope !== undefined) continue
       const owner = this.statedOwnerOf(String(relationship.target ?? ""))
       if (owner === null || declaredHere.has(owner)) continue
+      // THE SECOND GUARD: the run HELD a qualified name for this class, so the claim is not true.
+      if (heldQualified.has(owner)) continue
       metadata.baseBeyondRunScope = owner
     }
   }
