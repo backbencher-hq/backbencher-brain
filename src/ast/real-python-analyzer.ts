@@ -2534,6 +2534,22 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           // lane spec for the half of this that is NOT fixed here (the worker projection
           // drops `alias`, so the STORE still cannot see it).
           ...(alias ? { importedAs: alias } : {}),
+          // THE ROOT A NAMESPACE IMPORT BINDS — `import a.b` binds the LOCAL NAME `a` (python's
+          // rule: the root of the dotted path is what enters the scope; `a.b` is not a name), and
+          // the edge's target is the `module:*` pair, so the bound name rides NO edge today: the
+          // target's item half is `*`, and the gate's import-evidence map SKIPS a `*` item. So a
+          // claim about the name `a` was UNVERIFIABLE against a map that could not hold it — the
+          // mirror of the alias case the gate now reads (`metadata.importedAs`, Lead 838b72ac3).
+          //
+          // Published as `metadata.importedBindings` — THE CONTRACT java, typescript and kotlin
+          // ALREADY USE for exactly this fact ("the local names this import binds") — so the
+          // gate's map holds it through its EXISTING generic path, with no gate change at all.
+          // Published ONLY for the un-aliased shape: `import a.b as c` binds `c` (published above
+          // as `importedAs`) and does NOT bind the root, so publishing the root there would
+          // publish a name the file does not bind.
+          ...(alias || moduleName.startsWith(".") || moduleName.length === 0
+            ? {}
+            : { importedBindings: [moduleName.split(".")[0]!] }),
         }, this.nodeLine(name))
       }
     } else if (node.type === "import_from_statement" || node.type === "future_import_statement") {
