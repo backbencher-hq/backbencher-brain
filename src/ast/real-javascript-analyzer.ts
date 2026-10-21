@@ -3589,9 +3589,23 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             // a local-binding row, so two reads of two different declarations that share a name are
             // two rows, while every other row keeps the payload-pollution key byte for byte.
             const recvScopeId = this.localBindingScopeId(root, head)
-            const recvKey = recvScopeId ? `${recvSource}.#${head}|${recvScopeId}` : `${recvSource}.#${head}`
+            const recvBaseKey = `${recvSource}.#${head}`
+            const recvKey = recvScopeId ? `${recvBaseKey}|${recvScopeId}` : recvBaseKey
             if (!seen.has(recvKey)) {
               seen.add(recvKey)
+              // THE BASE KEY IS CLAIMED AS WELL — AND THIS IS THE SECOND HALF OF THE CONFINEMENT.
+              // `seen` is ONE set for the whole file, shared by every emission site, and the
+              // payload-pollution key is `${source}.#${name}` — so a site that stops claiming the
+              // BASE key RELEASES every other site's row for that (callable, name) pair. The scoped
+              // key is a DIFFERENT string, so the other site's row is no longer suppressed by this
+              // one, and the fix would silently publish rows it never promised to touch: a member
+              // segment or a plain read whose name collides with a local binding in the same
+              // callable. The whole-population arm measured the leak: 346 such rows, of which 119
+              // RESOLVED and 224 became ARBITRARY TWINS — new rows that carry no claim, which is
+              // the opposite of what the fix is for. Claiming the base key as well leaves every
+              // other site's occupancy EXACTLY as it was, so the fix's footprint is the recovered
+              // local-binding reads and nothing else.
+              seen.add(recvBaseKey)
               const boundRecv = this.localBindingTarget(root, head, recvSource)
               const importedRecv = boundRecv ? null : this.importedBindingFor(root, head)
               relationships.push({
@@ -3663,9 +3677,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // R2 (charter §21.41) — the DECLARATION's scope identity joins the dedup key ONLY
                 // for a local-binding row (see the call-receiver site for the full statement).
                 const rootScopeId = this.localBindingScopeId(cur, head)
-                const rootKey = rootScopeId ? `${rootSource}.#${head}|${rootScopeId}` : `${rootSource}.#${head}`
+                const rootBaseKey = `${rootSource}.#${head}`
+                const rootKey = rootScopeId ? `${rootBaseKey}|${rootScopeId}` : rootBaseKey
                 if (!seen.has(rootKey)) {
                   seen.add(rootKey)
+                  // THE BASE KEY IS CLAIMED AS WELL — see the call-receiver site for the whole
+                  // statement: `seen` is shared by every site, so a site that stops claiming the
+                  // base key releases every other site's row for that (callable, name) pair.
+                  seen.add(rootBaseKey)
                   // The chain ROOT is a read of the identifier — a local binding when the file
                   // binds it lexically (same claim contract as the bare-read site below).
                   const boundRoot = cur?.type === "identifier" ? this.localBindingTarget(cur, head, rootSource) : null
@@ -3836,9 +3855,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             //   · the `calls` sites do not use this dedup at all and already publish one row per
             //     read site, so nothing there changes.
             const bScopeId = this.localBindingScopeId(node, txt)
-            const bKey = bScopeId ? `${bSource}.#${txt}|${bScopeId}` : `${bSource}.#${txt}`
+            const bBaseKey = `${bSource}.#${txt}`
+            const bKey = bScopeId ? `${bBaseKey}|${bScopeId}` : bBaseKey
             if (!seen.has(bKey)) {
               seen.add(bKey)
+              // THE BASE KEY IS CLAIMED AS WELL — see the call-receiver site for the whole
+              // statement: `seen` is shared by every site, so a site that stops claiming the
+              // base key releases every other site's row for that (callable, name) pair.
+              seen.add(bBaseKey)
               const boundRead = this.localBindingTarget(node, txt, bSource)
               const importedRead = boundRead ? null : this.importedBindingFor(node, txt)
               relationships.push({
