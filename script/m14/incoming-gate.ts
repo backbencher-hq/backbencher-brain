@@ -580,6 +580,21 @@ const DART_FACT_WALK_SKIP = new Set([
  * of the tree: the admitted list IS the answer, and a walk would answer a different question
  * ("what is on disk", including files this programme refuses to parse).
  */
+/**
+ * W9 — THE EDGE'S OWN FILE, IN THE SPELLING `facts.files` HOLDS.
+ *
+ * `edgeFile` carries the ABSOLUTE path (the per-file manifest evidence is keyed by it), while the
+ * admitted file list is REPO-RELATIVE, so a runtime-variable path has to be resolved against the
+ * REPO-RELATIVE spelling of the edge's own file. `undefined` means the edge has no file of its
+ * own, and the row is then answered exactly as it is today.
+ */
+function edgeRelFile(repo: string, srcFile: string | undefined): string | undefined {
+  if (typeof srcFile !== "string" || srcFile.length === 0) return undefined
+  const rel = path.relative(path.join(CR, repo), srcFile)
+  if (rel.length === 0 || rel.startsWith("..")) return undefined
+  return rel.split(path.sep).join("/")
+}
+
 async function projectFactsForFiles(repoRoot: string, admitted: string[]): Promise<ProjectFacts> {
   const files = new Set<string>()
   for (const abs of admitted) {
@@ -2072,7 +2087,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     const pc = classifyEdge(
       projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares,
       ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, e.srcFile,
-      qj,
+      qj, edgeRelFile(e.repo, e.srcFile),
     )
     if (qj !== undefined) {
       if (qj.branch === "slash") joinAskedSlash++
@@ -2130,7 +2145,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     // The pooled table is the historical comparison key space, but the owner channel's verdict is a
     // property of the ROW, not of the key space — passing it here keeps the two tables from telling
     // different stories about the same edge.
-    tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, e.tgt, e.claim, facts, isContains, undefined, ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, e.srcFile), e.tgt, e.label)
+    tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, e.tgt, e.claim, facts, isContains, undefined, ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, e.srcFile, undefined, edgeRelFile(e.repo, e.srcFile)), e.tgt, e.label)
     switch (pc.outcome) {
       case "resolved": marks.resolved++; break
       case "ambDeclOnly": case "ambBoth": marks.amb++; break

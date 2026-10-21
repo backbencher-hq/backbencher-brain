@@ -1385,13 +1385,55 @@ const URI_SCHEME = /^[a-z][a-z0-9+.-]*:/i
 const WINDOWS_DRIVE = /^[a-zA-Z]:[\\/]/
 /** Is this path-shaped target one of the project's OWN admitted files? Suffix match, separator-
  *  normalised, because a target is written project-relative while the admitted list may be absolute. */
-export function pathTargetInProject(facts: ProjectFacts, tgt: string): boolean {
+/**
+ * W9 — THE RUNTIME-VARIABLE PATH RESOLUTION.
+ *
+ * A path that begins with a RUNTIME VARIABLE (`$PSScriptRoot\..\..\X.psm1`) is resolved at RUN
+ * TIME, against a directory the project does not know, so it is not in the repo-relative admitted
+ * list and `pathTargetInProject` has nothing to compare it against. The edge's OWN FILE is the
+ * other half: `$PSScriptRoot` IS that file's directory, so the path IS derivable — and the gate
+ * knows both halves.
+ *
+ * `edgeFile` is REPO-RELATIVE (the spelling `facts.files` holds). `null` means the row cannot be
+ * resolved, and the caller then keeps its UNVERIFIABLE answer.
+ */
+export function resolveRuntimePath(src: string, edgeFile: string | undefined): string | null {
+  if (edgeFile === undefined) return null
+  if (src.charCodeAt(0) !== 36 /* $ */) return null
+  let i = 1
+  while (i < src.length) {
+    const c = src.charCodeAt(i)
+    const isWord = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+    if (!isWord) break
+    i++
+  }
+  if (i === 1) return null
+  const variable = src.slice(1, i)
+  const rest = src.slice(i)
+  if (variable.toLowerCase() !== "psscriptroot") return null
+  if (!(rest.startsWith("/") || rest.startsWith("\\") || rest.startsWith(":"))) return null
+  const dir = edgeFile.split("/").slice(0, -1).join("/")
+  const segs = (dir + "/" + rest.replace(/\\/g, "/").replace(/^:/, "")).split("/")
+  const out: string[] = []
+  for (const seg of segs) {
+    if (seg === "" || seg === ".") continue
+    if (seg === "..") { if (out.length === 0) return null; out.pop(); continue }
+    out.push(seg)
+  }
+  const joined = out.join("/")
+  return joined.length > 0 ? joined : null
+}
+
+export function pathTargetInProject(facts: ProjectFacts, tgt: string, edgeFile?: string): boolean {
   const norm = tgt.replace(/\\/g, "/").replace(/^\.\//, "").trim()
   if (norm === "" || norm.endsWith("/")) return false
   for (const f of facts.files) {
     const nf = f.replace(/\\/g, "/")
     if (nf === norm || nf.endsWith(`/${norm}`)) return true
   }
+  // W9 — AND THE RUNTIME-VARIABLE PATH, RESOLVED AGAINST THE EDGE'S OWN FILE.
+  const resolved = resolveRuntimePath(tgt, edgeFile)
+  if (resolved !== null && facts.files.has(resolved)) return true
   return false
 }
 
@@ -1401,6 +1443,10 @@ export function verifyExternalClaim(
   /** THE PROJECT'S ADMITTED FILES. Without them a path can only be refused; with them, case 1 below
    *  becomes an ANSWER about the case that is actually measurable. */
   facts?: ProjectFacts,
+  /** W9 — THE EDGE'S OWN FILE, REPO-RELATIVE, so a runtime-variable path can be resolved against the
+   *  project's admitted file list. Absent means the row cannot be resolved, and the answer is then
+   *  the UNVERIFIABLE one, exactly as it is today. */
+  edgeFile?: string,
 ): "externalVerified" | "externalRefuted" | "externalUnverified" {
   // A FILE TARGET IS NOT A NAME CLAIM — but it is still a QUESTION, and refusing to ask it was a
   // CLASSIFIER BUG rather than a bar that is too strict.
@@ -1470,7 +1516,7 @@ export function verifyExternalClaim(
   if (reservedPlatform) return "externalVerified"
   if (pathLikeTarget(tgt)) {
     if (URI_SCHEME.test(tgt) && !WINDOWS_DRIVE.test(tgt)) return "externalUnverified"
-    if (facts) return pathTargetInProject(facts, tgt) ? "externalRefuted" : "externalUnverified"
+    if (facts) return pathTargetInProject(facts, tgt, edgeFile) ? "externalRefuted" : "externalUnverified"
     return "externalUnverified"
   }
   const owner = targetOwner(tgt)
@@ -1850,6 +1896,9 @@ export function classifyEdge(
    * caller did not compute it. The row then behaves EXACTLY as before the join existed.
    */
   qualifiedJoin?: { qualified: string; count: number },
+  /** W9 — THE EDGE'S OWN FILE IN THE REPO-RELATIVE SPELLING `facts.files` HOLDS, so a path that
+   *  begins with a runtime variable can be resolved. Absent means the row cannot be resolved. */
+  edgeRelFile?: string,
 ): Classified {
   const decls = declCount.get(tgt) ?? 0
   if (containsLike === true && decls >= 1) {
@@ -2102,7 +2151,7 @@ export function classifyEdge(
     // `facts` IS PASSED THROUGH: it is what lets a path-shaped target be ANSWERED (case 1 = the file is
     // in the project, so the external marker is provably wrong) instead of only refused. Where the
     // caller built no file list, the verdict is the old refusal — unchanged, never quietly accepted.
-    let outcome = verifyExternalClaim(declCount, tgt, facts)
+    let outcome = verifyExternalClaim(declCount, tgt, facts, edgeRelFile)
     // THE PROJECT-ABSOLUTE REFINER. A claim can be TRUE of the symbol key space and FALSE of the project: a
     // package/module root is a DIRECTORY, not a declaration, so the key space cannot answer it and the claim
     // verifies while the edge names the project's own code. FAIL-CLOSED, NEVER REFUTED — the verdict becomes
