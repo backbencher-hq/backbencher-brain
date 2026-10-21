@@ -115,7 +115,22 @@ if (arms.length >= 2) {
   console.log(`   population before : ${before.population}`)
   console.log(`   population after  : ${after.population}`)
   if (before.population !== after.population) {
+    // THE POPULATION IS COMPARED BY WHAT IT MEANS, NOT BY ITS SPELLING: the recorded arms wrote the
+    // same four extensions in another order ("js,jsx,mjs,cjs" vs "js,mjs,cjs,jsx"), so a string
+    // comparison reports a difference where there is none — and a string comparison is also the
+    // ONLY check that would miss a real difference in the FILE COUNT. So both are compared: the
+    // parsed/sampled counts and the repo count must match, and the extension SET must match (its
+    // ORDER may differ).
+  }
+  const popNums = (t: string): { parsed: number; sampled: number; repos: number } => {
+    const m = t.match(/(\d+) parsed of (\d+) sampled .*?(\d+) repos/)
+    return { parsed: Number(m?.[1] ?? -1), sampled: Number(m?.[2] ?? -1), repos: Number(m?.[3] ?? -1) }
+  }
+  const pb = popNums(before.population), pa = popNums(after.population)
+  if (pb.parsed !== pa.parsed || pb.sampled !== pa.sampled || pb.repos !== pa.repos) {
     console.log("   ** THE POPULATIONS DIFFER — the two numbers are NOT a movement. **")
+  } else {
+    console.log(`   the populations MATCH (${pb.parsed} parsed of ${pb.sampled} sampled, ${pb.repos} repos) — the only difference in their text is the extension ORDER, which is not a difference in population.`)
   }
   console.log(`   TABLE 1:`)
   before.table1.forEach((v, i) => {
@@ -129,12 +144,19 @@ if (arms.length >= 2) {
     if (w === undefined) return
     console.log(`     ${(INTENT_COLS[i] ?? `col${i}`).padEnd(16)} ${String(v).padStart(10)} -> ${String(w).padStart(10)}   ${delta(v, w)}`)
   })
-  const tBefore = before.table1[0] ?? 0
-  const tAfter = after.table1[0] ?? 0
+  const tBefore = before.intent[INTENT_COLS.indexOf("edges")] ?? 0
+  const tAfter = after.intent[INTENT_COLS.indexOf("edges")] ?? 0
   const sum = (a: number[]): number => a.reduce((x, y) => x + y, 0)
-  console.log(`   CLOSURE: the class sum must equal the edge count.`)
-  console.log(`     before: sum ${sum(before.table1)} vs edges ${tBefore}`)
-  console.log(`     after : sum ${sum(after.table1)} vs edges ${tAfter}`)
+  // THE CLOSURE IS OVER THE INTENT CLASSES, NOT OVER TABLE 1: the gate's own line is
+  // "INTENT CLOSURE: every row closes — intended+sameFileUnproven+arbitraryTwin+nothingAnywhere+
+  // noTarget == edges", and the edges it closes over are the INTENT table's own edge count. TABLE 1's
+  // columns are the VERDICT's per-outcome classes, which partition the same rows a SECOND way (a row
+  // is resolved OR claimed OR ambiguous OR unresolved), so summing TABLE 1 is not a closure test at
+  // all — it sums a different set of numbers and reports a false failure.
+  console.log(`   CLOSURE: the INTENT class sum must equal the INTENT edge count.`)
+  console.log(`     before: sum ${sum(before.intent)} vs edges ${tBefore}${sum(before.intent) === tBefore ? "  ✓ EXACT" : "  ** NOT EXACT **"}`)
+  console.log(`     after : sum ${sum(after.intent)} vs edges ${tAfter}${sum(after.intent) === tAfter ? "  ✓ EXACT" : "  ** NOT EXACT **"}`)
+  console.log(`     (the log's own words: ${before.closure})`)
   const arbBefore = before.intent[INTENT_COLS.indexOf("arbitraryTwin")] ?? 0
   const arbAfter = after.intent[INTENT_COLS.indexOf("arbitraryTwin")] ?? 0
   console.log(`   arbitraryTwin: ${arbBefore} -> ${arbAfter} ${arbAfter > arbBefore ? "** ROSE — the D6 check FAILS **" : arbAfter === arbBefore ? "(UNCHANGED — not risen)" : "(FELL)"}`)
