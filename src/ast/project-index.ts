@@ -1394,6 +1394,227 @@ export const FSHARP_DECLARATION_SPEC: DeclarationSpec = {
   },
 }
 
+/* ═════════════════════════════════════════════════════════════════════════════════════════════
+ * THE CLOJURE DECLARATION SPEC (2026-10-20, the clojure lane) — THE PROJECT INDEX'S CLOJURE HALF.
+ *
+ * Author: Muhammad Ishaq Khan (the clojure lane).
+ *
+ * ## WHY THE SPEC LIVES HERE — THE JAVA AND DART PRECEDENT
+ *
+ * `JAVA_DECLARATION_SPEC` and `DART_DECLARATION_SPEC` live in THIS file, and the shared files that
+ * USE them (`script/m14/incoming-gate.ts`'s `INDEX_SPECS`, `src/ast/parallel-indexer.ts`'s
+ * `specByLang`) import them FROM HERE. The protobuf lane's spec lives in its own analyzer file
+ * instead, and both shapes are defensible; the java/dart one is the shape this lane takes, because
+ * the CLOJURE SPEC IS NOT LANGUAGE-LOCAL AND THE LEAD COMMITS THE SHARED FILE: the spec is a
+ * DECLARATION RULE, and the rule is the lane's to write — a spec written by the wrong author is a
+ * second instrument. The Lead does not guess at Clojure's declaration rules; this file's clojure
+ * region is that author, and the Lead commits it.
+ *
+ * ## THE SPEC IS BUILT FROM THE EXISTING HOOKS — IT ADDS NO BUILDER FEATURE
+ *
+ * `nameOnlyNodes: ["list_lit"]` plus a `nameResolver` that returns "" for everything that is not
+ * a declaration. **EVERY CLOJURE FORM IS A `list_lit`** — a call and a `defn` are the same node
+ * type — so the node type alone cannot say "this is a declaration", and the RESOLVER says it by
+ * the form's HEAD. The builder skips a name-only node whose name is "" (it requires `name !== ""`),
+ * so a non-declaration contributes nothing. **NO CHANGE TO `indexTree`, NO CHANGE TO THE
+ * `DeclarationSpec` INTERFACE, AND THEREFORE NO POSSIBILITY OF MOVING ANOTHER LANE'S NUMBER.**
+ *
+ * ## THE TWO GRAMMAR RULES ARE SHARED, NOT COPIED
+ *
+ * `clojureExecutionHead` and `clojureSymName` are the rules the ANALYZER also reads by, and the
+ * analyzer imports THEM FROM HERE (`src/ast/real-clojure-analyzer.ts`) rather than keeping a
+ * second copy. **The spec and the analyzer read a form's head and a symbol's name by the SAME
+ * code**, so the two cannot drift — which is the defect class this lane has now paid for twice (the
+ * alias key space, and the extension-list assertion). A helper that existed in two files would be
+ * two instruments, and the whole point of a declaration spec is that it is ONE.
+ *
+ * ## WHAT THE SPEC IS FOR, AND THE NUMBER THAT DECIDES IT
+ *
+ * The 768 genuinely-ambiguous rows (§3.1 of CLOJURE-VERDICT-2026-10-20.md) are BARE NAMES that
+ * the project declares 2+ times, so the gate's name-keyed count model cannot bind them. **THE ONLY
+ * INSTRUMENT THAT CAN ANSWER THEM IS A PROJECT INDEX**, and the answer is a CLOJURE-SPECIFIC one:
+ * a Clojure name is qualified by its NAMESPACE, so `helper` declared in `ns.a` and `helper` in
+ * `ns.b` are TWO DIFFERENT NAMES, and a call to `helper` inside `(ns ns.a)` means `ns.a/helper`.
+ *
+ * **⇒ THE INDEX MUST CARRY THE NAMESPACE-QUALIFIED NAMES, so that "is `ns.a/helper` declared
+ * EXACTLY ONCE in the project?" is a question it can answer** (`symbolCounts`), and the analyzer
+ * can then publish the qualified target, which production's project-wide QUALIFIED lookup (r1)
+ * resolves. The analyzer ALREADY publishes `ns/name` as each symbol's `qualifiedName` — what it
+ * cannot do alone is answer "declared exactly once", because that is a PROJECT question.
+ *
+ * ## THE MEASURED EFFECT, STATED HERE SO A READER DOES NOT HAVE TO TAKE IT ON FAITH
+ *
+ * Over the lane's own corpus (646 admitted files, 3 repos, the gate's `clj,cljs,cljc,edn` set),
+ * this spec answers **1 of the 768** rows. The measurement is in the lane's own instrument
+ * (`validation/m14/fixtures/clojure/clojure-project-index-probe.ts`) and the 767 are accounted for
+ * by three DISJOINT reasons, none of which an index can reach: 232 rows name a LOCAL or a
+ * SYNTHETIC name (9,526 such names are published by the analyzer across the corpus — an anonymous
+ * fn's `lambda_50_13` is not a project declaration and no index can bind it), 264 `uses` rows are
+ * JAVA MEMBER READS (`.field`), not a name question at all, and the remainder are names declared
+ * in MANY namespaces with no `:refer` to disambiguate — the ambiguity is REAL at the project level.
+ * **THE SPEC'S PRICE AND THE TIE-BREAK'S PRICE ARE DIFFERENT NUMBERS**: the tie-break moved 2,120
+ * rows OUT of the CEILING and did not move the FLOOR (768 in both views); this spec answers the
+ * FLOOR (1 of 768). The two are measured in SEPARATE arms.
+ */
+
+/**
+ * THE FIRST EXECUTABLE CHILD OF A FORM. A form's head is decided after discard/trivia, not
+ * before it: `(#_ignored quote (trivia-ghost))` is a `quote` form, and a `meta_lit` occupies no
+ * execution position. Hoisted to module level so the DECLARATION SPEC and the analyzer read a
+ * form's head by ONE rule.
+ */
+export const clojureExecutionHead = (list: Node): Node | null => {
+  for (let i = 0; i < list.namedChildCount; i++) {
+    const child = list.namedChild(i)
+    if (child && child.type !== "comment" && child.type !== "dis_expr" && child.type !== "meta_lit") return child
+  }
+  return null
+}
+
+/**
+ * A SYMBOL'S NAME, AND A QUALIFIED SYMBOL'S FULL SPELLING. CLJ-D54: a qualified symbol's PREFIX
+ * may carry metadata, and the metadata is not the namespace — so the prefix's own `name` field is
+ * read rather than the node's text. Hoisted to module level for the same reason as
+ * `clojureExecutionHead`.
+ */
+export const clojureSymName = (node: Node | null): string => {
+  if (!node) return ""
+  if (node.type === "sym_lit") {
+    const name = node.childForFieldName("name")
+    const ns = node.childForFieldName("namespace")
+    const nsText = ns && (ns.text ?? "").startsWith("^{")
+      ? (ns.childForFieldName("name")?.text ?? ns.text)
+      : (ns?.text ?? "")
+    if (name && nsText) return `${nsText}/${name.text}`
+    if (name) return name.text
+    return node.text
+  }
+  return node.text
+}
+
+/**
+ * THE CLOJURE DECLARATION FORMS — the forms whose SECOND element declares a name the project can
+ * be asked about. `def`/`defn`/`defmacro` and their variants declare a VAR; `defprotocol`,
+ * `defrecord`, `deftype` and `definterface` declare a TYPE; `declare` declares a name without
+ * defining it.
+ *
+ * `defmethod` and `defmulti` are DELIBERATELY PRESENT, and the reason is a MEASUREMENT rather than
+ * a preference: a method's identity in Clojure is `TYPE/METHOD` — the PROTOCOL's qualified name
+ * plus the method name (`my.app.core.Greeter/greet`) — and the namespace-qualified spelling this
+ * spec records for it IS the analyzer's own spelling, so the index carries a name the lookup will
+ * ask for. **A SPEC THAT RECORDS A NAME NOBODY LOOKS UP IS A SECOND INSTRUMENT.**
+ */
+export const CLOJURE_DECLARATION_FORMS: ReadonlySet<string> = new Set([
+  "def", "defn", "defn-", "defmacro", "defonce", "defmulti", "defmethod", "definterface", "definline",
+  "defprotocol", "defrecord", "deftype", "defstruct", "declare", "defvar",
+])
+
+/**
+ * THE FORMS THAT DECLARE A TYPE — a protocol, a record, a type, an interface. Their METHOD
+ * SIGNATURES are declarations too (`(defprotocol Greeter (greet [this]))` declares `greet`), and
+ * they are what the analyzer publishes as `ns.Type/method` — the TYPE's qualified name plus the
+ * method, NOT the namespace's.
+ */
+const CLOJURE_TYPE_FORMS: ReadonlySet<string> = new Set([
+  "defprotocol", "defrecord", "deftype", "definterface",
+])
+
+/** THE EXECUTABLE CHILD AFTER A GIVEN ONE — the second element of a form. */
+const clojureExecutableAfter = (list: Node, after: Node): Node | null => {
+  let seen = false
+  for (let i = 0; i < list.namedChildCount; i++) {
+    const child = list.namedChild(i)
+    if (!child) continue
+    if (child.type === "comment" || child.type === "dis_expr" || child.type === "meta_lit") continue
+    if (!seen) { if (child.id === after.id) seen = true; continue }
+    return child
+  }
+  return null
+}
+
+/**
+ * THE FILE'S NAMESPACE — the name in its `(ns …)` form, which is the FACT (the path is a
+ * convention: `src/clj/clj_kondo/impl/foo.clj` is `clj-kondo.impl.foo` under the convention, and a
+ * convention is not evidence).
+ *
+ * The `(ns …)` form is a SIBLING of the declaration, not an ancestor of it, so the namespace is
+ * found by walking UP to the file's root and scanning the root's top-level forms for the one
+ * whose head is `ns`. No cache: a module-level cache keyed on a tree-sitter node id would go
+ * STALE across index builds (the ids are per-tree, so two trees' ids collide), and a wrong
+ * namespace is worse than a slow one.
+ */
+export const clojureFileNamespace = (node: Node): string => {
+  let root: Node = node
+  while (root.parent) root = root.parent
+  for (let i = 0; i < root.namedChildCount; i++) {
+    const child = root.namedChild(i)
+    if (!child || child.type !== "list_lit") continue
+    const head = clojureExecutionHead(child)
+    if (!head || head.type !== "sym_lit" || clojureSymName(head) !== "ns") continue
+    const nameNode = clojureExecutableAfter(child, head)
+    if (!nameNode || nameNode.type !== "sym_lit") return ""
+    return clojureSymName(nameNode)
+  }
+  return ""
+}
+
+/**
+ * THE DECLARATION NAME A FORM DECLARES, NAMESPACE-QUALIFIED — or "" when the form declares
+ * nothing. This is the spec's `nameResolver`, and it is the ONLY thing the spec needs beyond two
+ * existing hooks.
+ */
+export const clojureDeclarationName = (node: Node, _fileName?: string): string => {
+  if (node.type !== "list_lit") return ""
+  const head = clojureExecutionHead(node)
+  if (!head || head.type !== "sym_lit") return ""
+  const ns = clojureFileNamespace(node)
+
+  // ── A METHOD SIGNATURE inside a type form: `(defprotocol Greeter (greet [this]))` ────────────
+  // THE PARENT FORM DECIDES, and the method's OWN HEAD is its name — so the method is a
+  // declaration whose name is the head of a list that is not a call. The spelling is the analyzer's:
+  // the TYPE's qualified name plus the method (`my.app.core.Greeter/greet`).
+  const parent = node.parent
+  if (parent && parent.type === "list_lit") {
+    const parentHead = clojureExecutionHead(parent)
+    if (parentHead && parentHead.type === "sym_lit" && CLOJURE_TYPE_FORMS.has(clojureSymName(parentHead))) {
+      const typeNode = clojureExecutableAfter(parent, parentHead)
+      const typeName = typeNode && typeNode.type === "sym_lit" ? clojureSymName(typeNode) : ""
+      const method = clojureSymName(head)
+      if (typeName === "" || method === "") return ""
+      return ns === "" ? method : `${ns}.${typeName}/${method}`
+    }
+  }
+
+  if (!CLOJURE_DECLARATION_FORMS.has(clojureSymName(head))) return ""
+  const nameNode = clojureExecutableAfter(node, head)
+  if (!nameNode || nameNode.type !== "sym_lit") return ""
+  const name = clojureSymName(nameNode)
+  if (name === "") return ""
+  if (ns === "") return name
+  // A NAME THAT IS ALREADY QUALIFIED (`defmethod`'s `Greeter/greet`) is qualified by the TYPE's
+  // qualified name, not the namespace's — the analyzer's spelling, and the only one the lookup
+  // will ever ask for.
+  const slash = name.lastIndexOf("/")
+  if (slash > 0) return `${ns}.${name.slice(0, slash)}/${name.slice(slash + 1)}`
+  return `${ns}/${name}`
+}
+
+/**
+ * CLOJURE. The declaration unit is a NAMESPACE, not a type: a file declares vars and types into
+ * the namespace its `(ns …)` form names, and every one of them is qualified by it. So the index
+ * carries NO types and NO members — it carries NAMES, and the names are qualified.
+ *
+ * `typeNodes` is empty and `memberNodes` is empty ON PURPOSE: a Clojure namespace is not a type,
+ * and a `defn` is not a member of one, so recording them as such would make the index answer
+ * "is `ns.a` a class?" wrongly. The namespace is the scope, and the scope is the qualification.
+ */
+export const CLOJURE_DECLARATION_SPEC: DeclarationSpec = {
+  typeNodes: {},
+  memberNodes: [],
+  nameOnlyNodes: ["list_lit"],
+  nameResolver: clojureDeclarationName,
+}
+
 function addTo<K>(map: Map<K, Set<string>>, key: K, value: string): void {
   let set = map.get(key)
   if (!set) {
