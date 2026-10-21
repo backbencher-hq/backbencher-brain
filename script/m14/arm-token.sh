@@ -66,8 +66,19 @@ queue_add() {
 queue_remove() {
   local l="$1"
   [ -f "$QUEUE_FILE" ] || return 0
+  # THE QUEUE AUDIT (2026-10-20, Lead). A lane found ITS OWN PLACE GONE from the queue with no
+  # explanation — the file's mtime had moved and the lane was not there any more. The removal
+  # functions were verified to remove ONLY the named lane, so something had removed it EXPLICITLY
+  # and the queue file could not say who. **A QUEUE THAT CHANGES SILENTLY IS A QUEUE NOBODY CAN
+  # TRUST**, and the queue IS the fleet's arms' fairness — so every change now PRINTS the lane, the
+  # queue before and the queue after ✓✓. A change that is not accounted for is still not explained,
+  # but it is now VISIBLE ✓, and a lane that sees its name removed can point at the line.
+  local before after
+  before="$(queue_list | tr '\n' ' ')"
   grep -vxF "$l" "$QUEUE_FILE" > "$QUEUE_FILE.tmp" 2>/dev/null || : > "$QUEUE_FILE.tmp"
   mv "$QUEUE_FILE.tmp" "$QUEUE_FILE"
+  after="$(queue_list | tr '\n' ' ')"
+  echo "QUEUE AUDIT — removed '$l' · before: ${before:-（empty）} · after: ${after:-（empty）}" >&2
 }
 queue_head() { [ -f "$QUEUE_FILE" ] && head -1 "$QUEUE_FILE" || echo ''; }
 queue_list() { [ -f "$QUEUE_FILE" ] && cat "$QUEUE_FILE" || echo '(nobody waiting)'; }
