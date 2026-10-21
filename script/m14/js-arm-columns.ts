@@ -146,7 +146,9 @@ if (arms.length >= 2) {
   })
   const tBefore = before.intent[INTENT_COLS.indexOf("edges")] ?? 0
   const tAfter = after.intent[INTENT_COLS.indexOf("edges")] ?? 0
-  const sum = (a: number[]): number => a.reduce((x, y) => x + y, 0)
+  // The INTENT table's first column IS the edge count, so the class sum EXCLUDES it: the gate's
+  // closure is intended+sameFileUnproven+arbitraryTwin+nothingAnywhere+noTarget == edges.
+  const sum = (a: number[]): number => a.slice(1).reduce((x, y) => x + y, 0)
   // THE CLOSURE IS OVER THE INTENT CLASSES, NOT OVER TABLE 1: the gate's own line is
   // "INTENT CLOSURE: every row closes — intended+sameFileUnproven+arbitraryTwin+nothingAnywhere+
   // noTarget == edges", and the edges it closes over are the INTENT table's own edge count. TABLE 1's
