@@ -2832,7 +2832,42 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
           add(n.childForFieldName?.("type"), n.childForFieldName?.("declarator"))
           return
         }
-        if (t === "declaration") add(n.childForFieldName?.("type"), n.childForFieldName?.("declarator"))
+        if (t === "declaration") {
+          // EVERY DECLARATOR, not only the first. A `declaration` names its type ONCE (the `type`
+          // field) and then lists its declarators: the FIRST is the `declarator` field, and any
+          // further ones are POSITIONAL named children with no field of their own. Reading only the
+          // field therefore types the first name and silently DROPS the rest — `Widget a, b;` typed
+          // `a` and left `b` untyped, so `b.draw()` carried no receiver evidence. MEASURED (the
+          // lane's own control `script/m14/cpp-receiver-wave-verify.ts`): the second declarator was
+          // the one shape the written-type table missed.
+          const typeNode = n.childForFieldName?.("type")
+          const firstDecl = n.childForFieldName?.("declarator")
+          add(typeNode, firstDecl)
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c === typeNode || c === firstDecl) continue
+            add(typeNode, c)
+          }
+          return
+        }
+        if (t === "for_range_loop") {
+          // THE RANGE-FOR'S TYPE AND DECLARATOR ARE POSITIONAL, NOT FIELDS. The `for_range_loop`
+          // node's `type` field is the RANGE EXPRESSION (`widgets()`) and its `declarator` field is
+          // the BODY — so the two fields name the wrong things entirely, and a table built from
+          // them typed the loop's BODY and left the loop VARIABLE untyped. The written type and the
+          // declared name are the first two named children that are NEITHER field, in order.
+          const typeField = n.childForFieldName?.("type")
+          const declField = n.childForFieldName?.("declarator")
+          let written: any = null
+          let declared: any = null
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c === typeField || c === declField) continue
+            if (!written) { written = c; continue }
+            if (!declared) { declared = c; break }
+          }
+          add(written, declared)
+        }
         for (let i = 0; i < n.namedChildCount; i++) scan(n.namedChild(i), depth + 1)
       }
       const decl = fnNode.childForFieldName?.("declarator")
