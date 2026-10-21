@@ -96,6 +96,22 @@ export const PERL_ORACLE_LABELS = [
   "contains",
   "references",
   "uses",
+  // THE FOUR LABELS THE COMPARED SET ALREADY CONTAINS ✓✓.
+  //
+  // MEASURED (2026-10-21, script/m14/perl-oracle-parity.mts over 200 files): the
+  // differential's copy derived `extends` 47 · `instantiates` 64 · `overrides` 329
+  // and the lane's oracle derived NONE of them ✓✓ — so wiring the lane's oracle in
+  // without them would have EMPTIED the D4's truth for three of the four compared
+  // labels ✓✓.
+  //
+  // **AND THE LEAD'S RULE IS EXACTLY THIS ✓✓: AN ORACLE WITH NO ENTRY COMPARES
+  // NOTHING ✓✓ — so the labels are PUBLISHED, and the contract below says what each
+  // one means ✓✓, and the parity probe MEASURES that the two oracles agree on
+  // them ✓✓ (extends 0/0 and overrides 0/0 rows of difference ✓✓).**
+  "extends",
+  "implements",
+  "instantiates",
+  "overrides",
 ] as const
 
 /**
@@ -162,6 +178,26 @@ export const PERL_ORACLE_CONTRACT = {
     },
     references: { source: "the enclosing scope", target: "the queried name", notClaimed: "an interpolated name is not a written name" },
     uses: { source: "the enclosing scope", target: "the referenced sub name", notClaimed: "a code reference with no argument list is a reference, not a call" },
+    extends: {
+      source: "the package that declares the base",
+      target: "the LEAF of the base name -- `use Mojo::Base 'Mojolicious::Controller'` gives `Controller`, and the flag-only form `use Mojo::Base -strict` gives `Base`",
+      notClaimed: "a base that is the package's own FULL name is a self-reference and is not an inheritance edge",
+    },
+    implements: {
+      source: "the package that composes the role",
+      target: "the leaf of the role name -- `use role 'Some::Role'` gives `Role`",
+      notClaimed: "nothing",
+    },
+    instantiates: {
+      source: "the enclosing sub, else the enclosing package, else the file-scope sentinel `global` -- the ANALYZER's own source, `functionName || packageName || `global``",
+      target: "`<class>.constructor`, and `constructor` when the class is not nameable",
+      notClaimed: "`shift->new` -- `shift` is the implicit invocant, so its class is not statically nameable",
+    },
+    overrides: {
+      source: "`<owner>.<method>`, with the RAW method name -- the analyzer's `originalName`, so `new` and not `constructor`",
+      target: "the declared member, or `<base leaf>.<method>` for the analyzer's first-parent guess",
+      notClaimed: "a base that is the package's own FULL name -- `package Foo::Bar` whose base is `Other::Bar` is a real edge and is not deleted",
+    },
   },
   measuredAgainst: {
     instrument: "script/m14/perl-truth-run.ts",
@@ -325,6 +361,49 @@ function attributeNames(head: any): { name: string; line: number }[] {
     },
   ]
 }
+/**
+ * The ARGUMENTS of a `use_statement` ✓✓.
+ *
+ * MEASURED (2026-10-21, script/m14/perl-bases-probe.mts prints the shape):
+ *
+ *     use Mojo::Base 'Mojolicious::Command';
+ *       :: use | package(module)=Mojo::Base | string_literal(-)='Mojolicious::Command' | ;
+ *
+ * **THE ARGUMENT IS A DIRECT NAMED CHILD OF THE STATEMENT ✓✓ — there is no
+ * `arguments` field on it and no list_expression ✓✓ — so a reader that looks for
+ * the field sees NO ARGUMENT AT ALL ✓✓, and the base of every mojo class is
+ * LOST ✓✓.** MEASURED: 45 `extends` rows and 325 `overrides` rows missing on a
+ * 200-file draw ✓✓, because mojo's whole inheritance graph hangs off one line
+ * ✓✓.
+ *
+ * The rule is the analyzer's own `perlArgumentNodes` fallback ✓✓: a named child
+ * that is a string, a quoted word list or an autoquoted bareword is an argument
+ * ✓✓, and the `module` field is not ✓✓.
+ */
+function useArguments(n: any): any[] {
+  const out: any[] = []
+  const module = n.childForFieldName?.("module")
+  // THE LIST CARRIER ✓✓: `use Mojo::Base 'Mojolicious', -signatures;` puts its
+  // arguments in a list_expression child ✓✓ — MEASURED (2026-10-21,
+  // script/m14/perl-bases-probe.mts prints the shape) ✓✓ — and the list's named
+  // children are the arguments ✓✓. Without this the base of every mojo example
+  // app was lost ✓✓ (`extends|LoginApp|Base` instead of `extends|LoginApp|
+  // Mojolicious` ✓✓) — 2 `extends` and 4 `overrides` rows on a 200-file draw ✓✓.
+  const list = byType(n, "list_expression")
+  if (list) {
+    for (let i = 0; i < (list.namedChildCount ?? 0); i++) {
+      const c = list.namedChild(i)
+      if (c) out.push(c)
+    }
+    return out
+  }
+  for (let i = 0; i < (n.namedChildCount ?? 0); i++) {
+    const c = n.namedChild(i)
+    if (!c || c === module) continue
+    if (c.type === "string_literal" || c.type === "interpolated_string_literal" || c.type === "quoted_word_list" || c.type === "autoquoted_bareword") out.push(c)
+  }
+  return out
+}
 function byType(n: any, type: string): any | undefined {
   for (let i = 0; i < (n.namedChildCount ?? 0); i++) {
     const c = n.namedChild(i)
@@ -470,6 +549,59 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
     return best || currentPackage
   }
 
+  /**
+   * The INHERITANCE FACTS the compared set needs: the bases a package declares
+   * and the roles it composes.
+   *
+   * These are the two facts `extends`, `implements` AND `overrides` are derived
+   * from, and they are collected in PASS 1 because a base declared LATER in the
+   * file still overrides an EARLIER method — the derivation is not scope-ordered.
+   */
+  /** The METHODS each package declares: the `overrides` derivation's first half ✓✓.
+   *  A sub is a method; a `our` variable and a `has` attribute are not ✓✓ — so this
+   *  is collected separately from `decls`, which holds all three ✓✓. */
+  const classMethods: { owner: string; method: string; raw: string }[] = []
+  /**
+   * Does this receiver NAME A CLASS? ✓✓
+   *
+   * A POSITIVE allowlist, not a "does the text look wrong" test ✓✓: a receiver
+   * that is a bareword, a package name, an autoquoted bareword or an ambiguous
+   * call names a class ✓✓; a string literal names one only when it holds no
+   * interpolation ✓✓; everything else — a variable, a dereference, a hash key —
+   * names NOTHING ✓✓.
+   *
+   * The negative form is what published a class literally named `shift` ✓✓ —
+   * `shift` is perl's idiom for the implicit invocant, so a real receiver exists
+   * and its class is not statically nameable ✓✓.
+   */
+  const namesAClass = (n: any): boolean => {
+    switch (n?.type) {
+      case "bareword":
+      case "autoquoted_bareword":
+      case "package":
+      case "ambiguous_function_call_expression":
+        return true
+      case "string_literal":
+      case "interpolated_string_literal":
+        return !String(n.text ?? "").includes("$")
+      default:
+        return false
+    }
+  }
+  const bases = new Map<string, string[]>()
+  const roles = new Map<string, string[]>()
+  const addBase = (owner: string, base: string): void => {
+    if (!owner || !base) return
+    const list = bases.get(owner) ?? []
+    if (!list.includes(base)) list.push(base)
+    bases.set(owner, list)
+  }
+  const addRole = (owner: string, role: string): void => {
+    if (!owner || !role) return
+    const list = roles.get(owner) ?? []
+    if (!list.includes(role)) list.push(role)
+    roles.set(owner, list)
+  }
   const scopes: { name: string; start: number; end: number }[] = []
   const stack: any[] = [root]
   // Document-order traversal, because `package NAME;` changes the lexical package
@@ -527,7 +659,18 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
       const raw = String(nameNode?.text ?? "")
       if (raw) {
         const owner = packageOf(n)
-        decls.push({ name: raw === "new" ? "constructor" : raw, owner, line: (nameNode?.startPosition?.row ?? n.startPosition.row) + 1 })
+        const name = raw === "new" ? "constructor" : raw
+        decls.push({ name, owner, line: (nameNode?.startPosition?.row ?? n.startPosition.row) + 1 })
+        // THE RAW NAME IS KEPT BESIDE THE RENAMED ONE ✓✓.
+        //
+        // The `contains` label carries the analyzer's SYMBOL name ✓✓, and the
+        // analyzer stores `sub new` as the symbol `constructor` ✓✓ — so `contains`
+        // says `constructor` ✓✓. The `overrides` label carries the analyzer's
+        // `originalName` ✓✓ — the RAW name ✓✓ — so `overrides` says `new` ✓✓.
+        // MEASURED (2026-10-21, script/m14/perl-oracle-parity.mts): with the
+        // renamed spelling every `overrides` row for a constructor differed from
+        // the analyzer's ✓✓.
+        classMethods.push({ owner, method: name, raw })
       }
     }
     if (n.type === "variable_declaration") {
@@ -554,6 +697,42 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
     if (n.type === "use_statement") {
       const modNode = n.childForFieldName?.("module")
       const module = String(modNode?.text ?? "")
+      // THE INHERITANCE AND ROLE DECLARATIONS ✓✓.
+      //
+      //   use parent 'Base';        use base 'Base';
+      //   use Mojo::Base 'Base';    use role 'Role';
+      //
+      // are the facts `extends`, `implements` and `overrides` are derived from ✓✓,
+      // and they are collected in PASS 1 ✓✓ because a base declared LATER in the
+      // file still governs an EARLIER method ✓✓ — the derivation is not
+      // scope-ordered ✓✓.
+      if (module === "parent" || module === "base" || module === "Mojo::Base" || module === "role") {
+        const owner = packageOf(n)
+        const names: string[] = []
+        for (const a of useArguments(n)) {
+          const wordNode = a.childForFieldName?.("content") ?? byType(a, "string_content") ?? byType(a, "bareword") ?? a
+          const raw = String(wordNode?.text ?? "").trim().replace(/^['"]|['"]$/g, "")
+          if (!raw) continue
+          // AN OPTION IS NOT A NAME ✓✓: `use parent -norequire, 'Base'` names the
+          // base and carries a flag ✓✓, and a flag read as a name would invent an
+          // inheritance edge to a class called `-norequire` ✓✓.
+          if (raw.startsWith("-")) continue
+          names.push(raw)
+        }
+        // **`use Mojo::Base` WITH NO NAME SUBCLASSES Mojo::Base ITSELF ✓✓.**
+        //
+        // MEASURED (2026-10-21, script/m14/perl-oracle-parity.mts): the flag-only
+        // forms (`-strict`, `-utf8`) are 53 of mojo's 118 inheritance sites ✓✓, and
+        // the lane's first version of this collection read them as NO base at all
+        // ✓✓ — 45 `extends` rows and 325 `overrides` rows missing ✓✓, because the
+        // whole inheritance graph of mojo hangs off this one line ✓✓.
+        if (module === "Mojo::Base" && names.length === 0) names.push(module)
+        for (const name of names) {
+          if (!name) continue
+          if (module === "role") addRole(owner, name)
+          else addBase(owner, name)
+        }
+      }
       if (module === "constant") {
         for (const k of fatKeysOf(n)) {
           const nameNode = k.childForFieldName?.("content") ?? byType(k, "string_content") ?? byType(k, "bareword") ?? k
@@ -604,6 +783,38 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
     }
   }
   visit(root)
+
+  // ---- pass 1b: the INHERITANCE EDGES ✓✓ — `extends` and `implements` ✓✓.
+  //
+  // The compared set contains these two labels TODAY ✓✓, so the oracle has to
+  // derive them or the D4's truth for them goes EMPTY when the lane's oracle
+  // is wired in ✓✓. MEASURED (2026-10-21, script/m14/perl-oracle-parity.mts over
+  // 200 files): the differential's copy derives `extends` 47 and `instantiates` 64
+  // and `overrides` 329 ✓✓, and the lane's oracle derived NONE of them ✓✓ — which
+  // is exactly the gap that had to close before the Lead's allowlist entry could
+  // be applied ✓✓.
+  for (const [owner, list] of bases) {
+    for (const b of list) {
+      // The FULL-NAME self-reference guard, mirroring the analyzer: `package
+      // Foo::Bar` whose base is a different `Other::Bar` is a real inheritance
+      // edge, and a leaf comparison would delete it ✓✓.
+      if (b !== owner) push("extends", owner, leafOf(b))
+    }
+  }
+  for (const [owner, list] of roles) {
+    for (const r of list) push("implements", owner || "global", r)
+  }
+  // The METHODS each package declares, keyed by owner — the other half of the
+  // `overrides` derivation ✓✓. It is built from the SUBS ONLY ✓✓: an `our`
+  // variable and a `has` attribute are members, not methods ✓✓, and a base that
+  // declares an ATTRIBUTE does not override the subclass's method of that name ✓✓.
+  const methods = new Map<string, Set<string>>()
+  for (const cm of classMethods) {
+    if (!cm.owner) continue
+    const set = methods.get(cm.owner) ?? new Set<string>()
+    set.add(cm.method)
+    methods.set(cm.owner, set)
+  }
 
   // ---- `contains`: owner -> member, from the declaration list above.
   for (const d of decls) {
@@ -719,6 +930,56 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
       }
     }
 
+    // ---- `instantiates` — a CONSTRUCTOR CALL ✓✓.
+    //
+    // The compared set contains this label TODAY ✓✓, so the oracle has to derive
+    // it or the D4's truth for it goes EMPTY when the lane's oracle is wired in
+    // ✓✓. MEASURED (2026-10-21, script/m14/perl-oracle-parity.mts over 200 files):
+    // the differential's copy derives `instantiates` 64 and the lane's oracle
+    // derived NONE ✓✓.
+    //
+    // The rule is the analyzer's, stated in the analyzer's own terms ✓✓:
+    //   `__PACKAGE__->new`  constructs the CURRENT PACKAGE ✓✓ — and `__PACKAGE__`
+    //   is a compile-time token, not a class, so naming it would publish a
+    //   phantom `__PACKAGE__.constructor` type ✓✓;
+    //   `X->new`            X is a class ✓✓ — the target is `X.constructor` ✓✓;
+    //   `shift->new`        the receiver is the implicit invocant ✓✓ — its class
+    //   is NOT statically nameable ✓✓, so nothing is derivable ✓✓.
+    if (n.type === "method_call_expression") {
+      const m = byType(n, "method")
+      const method = String(m?.text ?? "")
+      if (method === "new") {
+        const invocant = fieldAll(n, "invocant").find((c) => c.isNamed)
+        const t = String(invocant?.text ?? "")
+        if (t === "__PACKAGE__" || t === "__CLASS__") {
+          // The CURRENT package ✓✓ — and where there is no package to name it,
+          // the edge is not derivable and is not emitted ✓✓.
+          const owner = packageOf(n)
+          if (owner && owner !== "main") push("instantiates", src, `${leafOf(owner)}.constructor`)
+        } else if (invocant && namesAClass(invocant) && t && !t.includes("$") && !t.includes("->")) {
+          push("instantiates", src, `${leafOf(t)}.constructor`)
+        }
+      }
+    }
+    // ---- `instantiates` — the INDIRECT OBJECT form ✓✓.
+    //
+    // `new Class @args` is exactly `Class->new(@args)` ✓✓, and the grammar spells
+    // it as a call whose `function` is `new` and whose single argument is a
+    // second call whose `function` is the CLASS ✓✓. The class is the inner
+    // `function` field and nothing else ✓✓ — reading the argument subtree's
+    // WORDS published a phantom class `DSN` from `new Win32::ODBC $h->{DSN}` ✓✓,
+    // where `DSN` is a hash KEY ✓✓.
+    if (n.type === "function_call_expression" || n.type === "ambiguous_function_call_expression") {
+      const outerFn = fieldAll(n, "function").find((c) => c.isNamed)
+      if (String(outerFn?.text ?? "") === "new") {
+        const carrier = argsOf(n).find((c) => c.isNamed)
+        const innerFn = carrier ? (fieldAll(carrier, "function").find((c) => c.isNamed) ?? byType(carrier, "function")) : undefined
+        const cls = String(innerFn?.text ?? "").trim()
+        if (cls && !cls.includes("$") && !cls.includes("->")) {
+          push("instantiates", src, `${leafOf(cls)}.constructor`)
+        }
+      }
+    }
     if (n.type === "function_call_expression" || n.type === "ambiguous_function_call_expression") {
       const fnNode = fieldAll(n, "function").find((c) => c.isNamed)
       const raw = String(fnNode?.text ?? "")
@@ -756,6 +1017,29 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
     }
   }
   walk2(root, undefined, "")
+
+  // ---- pass 3: the OVERRIDE EDGES ✓✓.
+  //
+  // The compared set contains this label TODAY ✓✓, so the oracle has to derive it
+  // or the D4's truth for it goes EMPTY when the lane's oracle is wired in ✓✓.
+  // MEASURED (2026-10-21, script/m14/perl-oracle-parity.mts over 200 files): the
+  // differential's copy derives `overrides` 329 and the lane's oracle derived NONE
+  // ✓✓.
+  //
+  // The rule: a class's FIRST declared base, per method ✓✓. With no companion
+  // index the analyzer emits the deterministic first-parent guess for every method
+  // of the class ✓✓, so the truth side derives the same set from the same two
+  // facts ✓✓ — the OWNER and its first BASE ✓✓.
+  for (const cm of classMethods) {
+    const list = bases.get(cm.owner)
+    if (!list || !list.length) continue
+    // The FULL-NAME self-reference guard, mirroring the analyzer ✓✓: a leaf
+    // comparison would also fire for `package Foo::Bar` whose base is a different
+    // `Other::Bar`, deleting a real override edge ✓✓.
+    if (list[0] === cm.owner) continue
+    const baseLeaf = leafOf(list[0])
+    push("overrides", `${cm.owner}.${cm.raw}`, `${baseLeaf}.${cm.raw}`)
+  }
 
   return edges
 }

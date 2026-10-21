@@ -48,7 +48,14 @@ const LIMIT = (() => { const i = process.argv.indexOf("--limit"); return i >= 0 
 const argOut = (() => { const i = process.argv.indexOf("--out"); return i >= 0 ? process.argv[i + 1] : undefined })()
 const OUT = argOut ?? SUMMARY
 
-const LABELS = ["calls", "contains", "uses", "references"]
+// THE EIGHT LABELS THE ORACLE CLAIMS ✓✓.
+//
+// MEASURED (2026-10-21): the runner measured FOUR labels while the oracle claimed
+// FOUR MORE ✓✓, so the four the COMPARED SET already contains were never compared
+// against the analyzer by the lane's own instrument ✓✓ — a coverage gap in the
+// instrument, not in the oracle ✓✓. **AN ORACLE THAT CLAIMS A LABEL THE LANE NEVER
+// CHECKS IS A CLAIM NOBODY READS ✓✓.**
+const LABELS = ["calls", "contains", "uses", "references", "extends", "implements", "instantiates", "overrides"]
 
 // ------------------------------------------------------------------ population
 const { detectLanguageFromPath } = await import(path.join(ROOT, "src/ast/language-detection.ts"))

@@ -147,6 +147,36 @@ const out = {
   perLabel: labels.map(l => ({ label: l, laneOracle: lane.get(l) ?? 0, differentialOracle: diff.get(l) ?? 0 })),
   onlyInLaneOracle: { count: onlyLane.length, samples: onlyLane.slice(0, 40) },
   onlyInDifferentialOracle: { count: onlyDiff.length, samples: onlyDiff.slice(0, 40) },
+  // THE FULL SET DIFFERENCE, PER LABEL ✓✓.
+  //
+  // The two lists above are SAMPLED (40 rows each ✓✓), and a sample that happens
+  // to be forty `calls` rows says NOTHING about the `overrides` label ✗✗ — which
+  // is exactly what happened on the first run of this probe: the per-label counts
+  // said `overrides` 4 against 329 ✓✓ and the samples showed nothing ✗✗, because
+  // the sample was capped and the difference was not in it ✗✗.
+  //
+  // **A CONTROL THAT CANNOT SEE ITS OWN DIFFERENCE IS BLIND ✓✓ — SO THE DIFFERENCE IS
+  // COUNTED PER LABEL ✓✓, IN FULL ✓✓, WITH SAMPLES BESIDE EACH COUNT ✓✓.** The count
+  // is the measurement ✓✓; the samples are the reader's way into it ✓✓.
+  byLabel: labels.map((l) => {
+    // The sample line is `<repo>/<rel>  <label>|<from>|<target>` — the LABEL IS THE
+    // KEY'S FIRST FIELD ✓✓, not a field between pipes ✓✓, and the first version of
+    // this filter looked for it between pipes ✓✓ and so counted ZERO for every
+    // label ✓✓ while the per-label counts said `overrides` 4 against 329 ✓✓.
+    // **A CONTROL THAT FILTERS WRONGLY IS WORSE THAN NO CONTROL ✓✓, because it
+    // reports a difference of zero where there is one ✓✓.**
+    const labelOf = (r: string): string => {
+      const keyPart = r.slice(r.indexOf("  ") + 2)
+      return keyPart.split("|")[0] ?? ""
+    }
+    const inLane = onlyLane.filter((r) => labelOf(r) === l)
+    const inDiff = onlyDiff.filter((r) => labelOf(r) === l)
+    return {
+      label: l,
+      onlyInLaneOracle: { count: inLane.length, samples: inLane.slice(0, 12) },
+      onlyInDifferentialOracle: { count: inDiff.length, samples: inDiff.slice(0, 12) },
+    }
+  }),
   verdict: onlyLane.length === 0 && onlyDiff.length === 0
     ? "THE TWO ORACLES AGREE on every admitted file — the lane's measurement transfers to the D4 as it stands"
     : "THE TWO ORACLES DISAGREE — the lane's measurement does NOT transfer, and the Lead's two-line edit must point at the reconciled oracle",
