@@ -70,10 +70,10 @@
  * Nothing into the analyzer; it changes no count of any other tool.
  */
 import * as path from "node:path"
-import { readFileSync, statSync, readdirSync } from "node:fs"
+import { readFileSync, statSync, readdirSync, writeFileSync, mkdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { parseFile } from "../../src/ast/pool-worker"
-import { buildProjectIndexStreaming, deserializeProjectIndex, DART_DECLARATION_SPEC } from "../../src/ast/project-index"
+import { buildProjectIndexStreaming, deserializeProjectIndex, DART_DECLARATION_SPEC, serializeProjectIndex } from "../../src/ast/project-index"
 import { resolveWasmAsset } from "../../src/util/wasm"
 import { verifyExternalClaim, NAME_CAP } from "./incoming-rule"
 
@@ -153,8 +153,12 @@ function preFixView(index: any): { view: any; removed: string[] } {
   const typeMembers = new Map(index.typeMembers)
   const typeBases = new Map(index.typeBases)
   const removed: string[] = []
+  // THE PRE-FIX SPEC NAMED NEITHER A MIXIN NOR AN ALIAS, so the derived pre-fix view must remove
+  // BOTH: a view that keeps the typedefs is not the state the pre-fix arm measured, and it would
+  // under-count the refuted rows (the alias rows were refuted in that state too, because the index
+  // held nothing for the alias).
   for (const [name, kind] of [...typeKinds]) {
-    if (String(kind) === "mixin") {
+    if (String(kind) === "mixin" || String(kind) === "typedef") {
       typeKinds.delete(name); typeMembers.delete(name); typeBases.delete(name); removed.push(String(name))
     }
   }
@@ -194,7 +198,18 @@ async function indexForRepo(repo: Repo, wasm: string): Promise<any> {
     }
   } catch { /* no usable cache: build below */ }
   console.log(`  index: BUILT (${repo.files.length} files) — no usable cache at ${cachePath}`)
-  return buildProjectIndexStreaming(wasm, repo.files, DART_DECLARATION_SPEC)
+  const built = await buildProjectIndexStreaming(wasm, repo.files, DART_DECLARATION_SPEC)
+  // WRITE THE CACHE THE GATE CAN REUSE, in the gate's own format (`files`, `newest`, the
+  // SERIALIZED index). The gate's cache key is the file set plus the newest mtime and NOT the
+  // spec — so a cache built with a different spec is reused SILENTLY. The lane's rule is
+  // therefore: a cache is FRESH (a new directory) and DECLARED, and the lane's own instrument
+  // prints which path it took, because a stale index is a wrong measurement that looks right.
+  try {
+    mkdirSync(cacheDir, { recursive: true })
+    writeFileSync(cachePath, JSON.stringify({ files: repo.files.length, newest, index: serializeProjectIndex(built) }))
+    console.log(`  index: CACHED (${cachePath}) — written in the gate's format, for the arm that follows`)
+  } catch { /* a cache that cannot be written is not a failed measurement */ }
+  return built
 }
 
 const repos = discover()
@@ -219,10 +234,20 @@ const rows: Row[] = []
 /** WHICH INDEX VIEW THE ANALYSIS USES — `pre` (the derived pre-fix view: the state the
  *  pre-fix arm measured, and the state the 86 were named in) or `fixed` (the index as committed:
  *  the state the FIXED arm measured, and the state the rows that SURVIVE the fix are named in). */
-/** THE FIXED ARM'S OWN COUNT — the number the fixed production arm measured for `externalRefuted`
- *  (`.tmp-lane/dart-prod-index-FIXED.json`, the `overrides` row). The instrument must find the
- *  SAME number independently, or one of the two is wrong. */
+/** THE COUNT THE COMMITTED SPEC MUST PRODUCE — and the number the arm measured BEFORE the alias
+ *  fix, kept because the difference between the two IS the measurement.
+ *
+ *  · `FIXED_ARM_EXTFAIL` — the number the production arm measured for `externalRefuted` with the
+ *    MIXIN fix in but the ALIAS fix OUT: **25** (`.tmp-lane/dart-prod-index-FIXED.json`, the
+ *    `overrides` row). Those 25 are the SDK's own `ListMixin`/`SetMixin` aliases.
+ *  · `ALIAS_FIXED_EXTFAIL` — the number the COMMITTED spec must produce: **0**, because the alias
+ *    fix (`type_alias` in the dart spec) puts the alias's target's members where the companion
+ *    lookup can see them, so the analyzer no longer publishes an external base for an alias.
+ *
+ *  The instrument must find this number INDEPENDENTLY, or one of the two is wrong — and when the
+ *  two disagree, THE INSTRUMENT'S CONTROL SAYS SO rather than printing a quiet number. */
 const FIXED_ARM_EXTFAIL = 25
+const ALIAS_FIXED_EXTFAIL = 0
 const VIEW = (process.argv.find((a) => a.startsWith("--view="))?.split("=")[1] ?? "pre") as "pre" | "fixed"
 if (VIEW !== "pre" && VIEW !== "fixed") {
   console.error(`--view= must be "pre" or "fixed", not "${VIEW}"`)
@@ -231,6 +256,7 @@ if (VIEW !== "pre" && VIEW !== "fixed") {
 const declCounts = new Map<string, Map<string, number>>()
 let preFixHasMixin = false
 let fixedHasMixin = false
+let preFixHasTypedef = false
 let candidateTotal = 0
 
 for (const repo of selected) {
@@ -239,9 +265,18 @@ for (const repo of selected) {
   declCounts.set(repo.name, declCount)
   // THE CANDIDATE SET: every admitted file that contains the text `@override` — a superset of the
   // files that can publish a refuted row (the fallback is gated on the annotation).
-  const candRel = execFileSync("git", ["-C", repo.dir, "grep", "-l", "-F", "@override", "--", "*.dart"], {
-    encoding: "utf8", maxBuffer: 512 * 1024 * 1024,
-  }).split("\n").filter(Boolean)
+  // `git grep` EXITS 1 WHEN IT MATCHES NOTHING — which is not an error, it is a repository with no
+  // `@override` (nvim-treesitter). MEASURED: the instrument crashed on it with execFileSync's
+  // "Command failed", so the exit code is now read rather than thrown.
+  let candRel: string[] = []
+  try {
+    candRel = execFileSync("git", ["-C", repo.dir, "grep", "-l", "-F", "@override", "--", "*.dart"], {
+      encoding: "utf8", maxBuffer: 512 * 1024 * 1024,
+    }).split("\n").filter(Boolean)
+  } catch (e: any) {
+    if (e?.status === 1) candRel = []
+    else throw e
+  }
   const candAbs = new Set(candRel.map((r) => path.join(repo.dir, r)))
   const candidates = repo.files.filter((f) => candAbs.has(f))
   candidateTotal += candidates.length
@@ -263,6 +298,7 @@ for (const repo of selected) {
   console.log(`  ANALYSIS VIEW: ${VIEW === "fixed" ? "FIXED (the committed spec — the state the fixed arm measured)" : "PRE-FIX (derived — the state the pre-fix arm measured)"}`)
   if (removed.length) console.log(`  mixin names removed: ${removed.slice(0, 8).join(", ")}${removed.length > 8 ? ` … (+${removed.length - 8})` : ""}`)
   if ([...view.typeKinds.values()].some((k) => String(k) === "mixin")) preFixHasMixin = true
+  if ([...view.typeKinds.values()].some((k) => String(k) === "typedef")) preFixHasTypedef = true
   if ([...index.typeKinds.values()].some((k) => String(k) === "mixin")) fixedHasMixin = true
 
   // THE FIXED VIEW'S MEMBER OWNERS — which type really declares a member, IN THIS PROJECT.
@@ -381,6 +417,8 @@ console.log(`\n=== CONTROL 1 — THE CENSUS OF THE STATE THIS RUN CLAIMS TO BE I
 if (VIEW === "pre") {
   if (!preFixHasMixin) ok("the derived pre-fix view's typeKinds census carries NO mixin — the measured pre-fix state (mixin 0)")
   else fail("the derived pre-fix view still carries a mixin — the derivation does not reproduce the pre-fix index")
+  if (!preFixHasTypedef) ok("the derived pre-fix view's census carries NO typedef either — the pre-fix spec named neither a mixin nor an alias")
+  else fail("the derived pre-fix view still carries a typedef — the derivation does not reproduce the pre-fix index")
   if (fixedHasMixin) ok("the fixed view's census DOES carry the mixins — so the fix's contribution is the difference")
   else fail("the fixed view carries no mixin either — the index was not built with the committed spec")
 } else {
@@ -409,8 +447,9 @@ if (VIEW === "pre") {
   if (refuted.length === 86) ok(`86 refuted rows — the number the pre-fix arm measured independently`)
   else fail(`${refuted.length} refuted rows, expected 86 (the pre-fix arm's own count)`)
 } else {
-  if (refuted.length === FIXED_ARM_EXTFAIL) ok(`${refuted.length} refuted rows — the number the FIXED arm measured (externalRefuted ${FIXED_ARM_EXTFAIL}), found independently by this instrument`)
-  else fail(`${refuted.length} refuted rows, expected ${FIXED_ARM_EXTFAIL} (the fixed arm's own externalRefuted)`)
+  if (refuted.length === ALIAS_FIXED_EXTFAIL) ok(`ZERO refuted rows — the committed spec produces none, where the arm with the mixin fix alone produced ${FIXED_ARM_EXTFAIL} (the SDK's own ListMixin/SetMixin aliases), found independently by this instrument`)
+  else if (refuted.length === FIXED_ARM_EXTFAIL) fail(`${refuted.length} refuted rows — the count the arm measured BEFORE the alias fix, so the alias fix did NOT reach the population`)
+  else fail(`${refuted.length} refuted rows, expected ${ALIAS_FIXED_EXTFAIL} (the committed spec's own count)`)
 }
 
 console.log(`\n=== CONTROL 4 — THE ARM'S PRINTED LIST IS COVERED`)
