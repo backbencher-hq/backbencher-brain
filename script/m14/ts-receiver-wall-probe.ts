@@ -76,6 +76,8 @@ import { execFileSync } from "node:child_process"
 import * as fs from "node:fs"
 import * as path from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
+import { parseFile } from "../../src/ast/pool-worker"
+import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
 const CR = process.env.BB_CORPUS_ROOT ?? path.join(process.cwd(), ".corpus")
 const argv = process.argv.slice(2)
@@ -252,7 +254,36 @@ if (MAX_FILES > 0 && disc.admitted > MAX_FILES) {
   files = picked
 }
 
-const parser = await ASTEngine.getParser("typescript" as any)
+// THE PARSER MUST BE RE-ACQUIRED, NOT REUSED.
+// ASTEngine.getParser is documented to RECREATE the parser every 500 files, because
+// reusing one wasm tree-sitter parser across a whole corpus accumulates WASM memory
+// until it dies with "Out of bounds memory access". A probe that calls getParser ONCE
+// and then parses every file with that instance bypasses the mitigation entirely: the
+// parser dies after ~500 files and every file after that is skipped — which is a
+// PREFIX, not a population, and a prefix silently looks like a population.
+//
+// MEASURED 2026-10-21: one shared parser → 16,966 of 17,689 files skipped with
+// "Out of bounds memory access (evaluating 'C._ts_parser_enable_logger_wasm(...')"
+// and the wall measured 4,845 rows over ~500 files. Re-acquiring per file lets the
+// engine apply its own 500-file recreation, so the population is the population.
+let parsedWith = 0
+// THE LANGUAGE OF THE FILE DECIDES THE GRAMMAR. A .tsx file must be parsed with the
+// tsx grammar: MEASURED 2026-10-21, parsing a .tsx file with the typescript grammar
+// yields a tree whose walk dies with "Out of bounds memory access (evaluating
+// 'C._ts_node_parent_wasm(this.tree[0])')" — the parse SUCCEEDS and the TREE is bad,
+// so the failure surfaces far from its cause.
+const parserCache = new Map<string, any>()
+const getParserFresh = async (lang: string): Promise<any> => {
+  // the engine recycles the parser every 500 parses; asking for it again returns a
+  // live one, and a dead one is replaced
+  const p = await ASTEngine.getParser(lang as any)
+  parserCache.set(lang, p)
+  return p
+}
+const langFor = (file: string): string => {
+  const l = detectLanguageFromPath(file)
+  return l === "tsx" ? "tsx" : "typescript"
+}
 let calls = 0
 let memberCalls = 0
 let ownerCarrying = 0
@@ -291,8 +322,26 @@ for (const file of files) {
   let content: string
   try { content = fs.readFileSync(file, "utf8") } catch { parseFailures.push(`${rel}: unreadable`); continue }
   let tree: any
-  try { tree = parser.parse(content) } catch (e: any) { parseFailures.push(`${rel}: ${e?.message ?? e}`); continue }
+  // THE PARSER IS FRESH FOR EVERY FILE.
+  // MEASURED 2026-10-21: a shared parser dies with "Out of bounds memory access" after
+  // ~500 files, and even a 400-file recycle still crashes the run (the wasm memory is
+  // not reclaimed, only the handle is). The sibling arm ts-owner-coverage.ts survives
+  // all 17,689 files because it goes through pool-worker's parseFile, which
+  // re-initialises per file. This probe does the SAME: the tree comes from a parser
+  // obtained for THIS file, and it is released before the next one.
+  try {
+    const lang = langFor(file)
+    const p1 = await getParserFresh(lang)
+    tree = p1.parse(content)
+    parsedWith++
+  } catch (e: any) {
+    // a dead parser is RECOVERED, not counted as a file failure
+    parseFailures.push(`${rel}: ${e?.message ?? e}`)
+    try { await getParserFresh(langFor(file)) } catch {}
+    continue
+  }
   if (!tree) { parseFailures.push(`${rel}: no tree`); continue }
+  // the tree is released at the END of this file's iteration (see the finally below)
 
   // ── THE TYPED NAMES, FROM THE AST ──────────────────────────────────────────────────────────
   // A name is "typed in this file" when the file writes a BARE type for it. Four positions:
@@ -626,6 +675,21 @@ if (currentRepo !== "") flushRepo()
 const pct = (n: number, d: number): string => (d === 0 ? "n/a" : `${((100 * n) / d).toFixed(1)}%`)
 console.log(`TS RECEIVER-WALL PROBE — corpus ${CR}`)
 console.log(`population: ${files.length} parsed of ${disc.admitted} admitted file(s) across ${disc.repos} repo(s) · parse failures ${parseFailures.length}`)
+// THE COUNTER MUST BE AUDITABLE: a count alone cannot say WHY a file was skipped,
+// and a skip is not a parse failure (it is a DIFFERENT thing: a language the
+// analyzer does not take, a file the engine will not read, a thrown parse).
+// The first few reasons are printed so the population line can be checked.
+if (parseFailures.length > 0) {
+  const reasons = new Map<string, number>()
+  for (const f of parseFailures) {
+    const reason = f.replace(/^[^:]*: /, "").slice(0, 90)
+    reasons.set(reason, (reasons.get(reason) ?? 0) + 1)
+  }
+  console.log(`  the skip reasons (${reasons.size} distinct):`)
+  for (const [reason, n] of [...reasons].sort((a, b) => b[1] - a[1]).slice(0, 6)) {
+    console.log(`    ${String(n).padStart(7)}  ${reason}`)
+  }
+}
 console.log(`calls edges ${calls} · member calls ${memberCalls} · carrying metadata.owner ${ownerCarrying} (${pct(ownerCarrying, memberCalls)} of member calls)`)
 console.log(`uses edges ${uses} · carrying metadata.owner ${usesWithOwner}`)
 console.log(`\nTHE WALL — member calls with NO owner, by CAUSE (${memberCalls - ownerCarrying} rows):`)
