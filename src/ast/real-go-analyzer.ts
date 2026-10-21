@@ -143,6 +143,63 @@ const GO_SUB_UNIT_REASON: Record<string, string> = {
   // name merely starts upper-case.
   "instantiates|go_instantiation": "pascal_case_name_is_a_constructor_convention_with_no_declaration",
   "instantiates|go_package_scope_instantiation": "pascal_case_name_is_a_constructor_convention_with_no_declaration",
+
+  // ── THE BIND REASONS (2026-10-21) — the same eleven facts, asked of a second question.
+  //
+  // The table above answers "WHY IS THIS EDGE BELOW 1.0". The D7 wall needs a
+  // different answer: "WHY DID THE ARBITER NOT BIND THIS EDGE's TARGET" — and
+  // those are NOT the same question, because an edge can be at confidence 1.0
+  // (the analyzer is certain the edge is real) and still have a target the
+  // arbiter cannot resolve to a declaration.
+  //
+  // MEASURED on the gql-gqlgen chunk (888 files, the gate's own run at the
+  // pre-claim analyzer): 3,820 wall rows carried NO reasonCode, and EVERY ONE
+  // OF THEM WAS confidence 1.0 — so the reasonCode publication loop, which
+  // skips `conf >= 1.0`, CANNOT reach them, and a reasonCode stamped there
+  // would break this analyzer's own invariant (a confidence-1.0 row must carry
+  // no code — see the census at script/m14/go9-census.ts).
+  //
+  // SO THE BIND REASON IS A SECOND FIELD, `metadata.bindReason`, published on
+  // every edge whose target is a REFERENCE to something rather than the
+  // declaration itself. `contains` is excluded: its target IS the declaration
+  // it contains, so there is no binding question to answer.
+  //
+  // The two fields share this table on purpose. One vocabulary, two questions.
+  // A per-type `*` fallback makes the publication COMPLETE BY CONSTRUCTION:
+  // no edge of a covered type can escape a named class, which is the property
+  // the D7 census needs.
+  //
+  // A used identifier is a plain name; the file that declares it is not read.
+  "uses|identifier_usage": "used_identifier_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope",
+  // A goroutine's call and a deferred call are calls; their owner is not
+  // resolved per file, exactly as for a direct call.
+  "uses|go_goroutine": "goroutine_call_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file",
+  "uses|go_defer": "deferred_call_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file",
+  // An exported name is the package's own; the edge records the name alone, so
+  // which of the project's same-named exports it is, is not carried.
+  "exports|go_exported_identifier": "exported_name_recorded_as_a_leaf_whose_owning_package_is_not_the_target",
+  // An implemented interface is named by its leaf; the file that declares it is
+  // not read here.
+  "implements|go_interface_implementation": "implemented_interface_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope",
+  // A promoted method is recorded with its qualified owner (`Type.Method`);
+  // the file declaring that type is not read.
+  "overrides|go_method_promotion_shadowing": "promoted_method_recorded_with_its_qualified_owner_whose_declaring_file_is_out_of_scope",
+  // A qualified type reference names a package and a type; the package's own
+  // file is not carried on the edge.
+  "references|reference_qualified": "qualified_type_reference_whose_declaring_file_is_out_of_scope",
+
+  // ── THE PER-TYPE FALLBACKS: the general truth for the type, used when a
+  // label of that type has no specific entry above. They make the bind
+  // publication complete: a NEW label of a covered type still gets a named
+  // class instead of escaping unclassified.
+  "calls|*": "callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file",
+  "uses|*": "used_name_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope",
+  "references|*": "declared_type_leaf_whose_declaring_file_is_out_of_scope",
+  "exports|*": "exported_name_recorded_as_a_leaf_whose_owning_package_is_not_the_target",
+  "extends|*": "embedded_name_recorded_as_a_promotion_rather_than_a_declared_supertype",
+  "implements|*": "implemented_interface_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope",
+  "overrides|*": "promoted_method_recorded_with_its_qualified_owner_whose_declaring_file_is_out_of_scope",
+  "instantiates|*": "instantiated_name_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope",
 }
 
 /**
@@ -865,6 +922,37 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       const label = String(md.relationshipType ?? "")
       const code = GO_SUB_UNIT_REASON[`${t}|${label}`] ?? GO_SUB_UNIT_REASON[`${t}|*`]
       if (code) md.reasonCode = code
+    }
+    // VERIFY_GO9 — THE BIND REASON (2026-10-21). The loop above answers "WHY
+    // IS THIS EDGE BELOW 1.0". This one answers the ARBITER's question: "WHY
+    // DID THIS EDGE's TARGET NOT BIND TO A DECLARATION". They are different
+    // questions, and the difference is measurable, not stylistic.
+    //
+    // MEASURED on the gql-gqlgen chunk (888 files, the gate's own run at the
+    // pre-claim analyzer, the arbiter of 2026-10-19): 3,820 WALL rows carried
+    // NO reasonCode, and EVERY ONE OF THEM WAS confidence 1.0. The loop above
+    // skips `conf >= 1.0`, so it cannot reach them; and a reasonCode stamped
+    // there would break this analyzer's own invariant — a confidence-1.0 row
+    // must carry NO code (the observable half is checked by
+    // script/m14/go9-census.ts).
+    //
+    // SO THE BIND REASON IS ITS OWN FIELD, `metadata.bindReason`, and it is
+    // published on every edge whose target is a REFERENCE rather than the
+    // declaration itself. `contains` is excluded on purpose: its target IS the
+    // declaration it contains, so there is no binding question to answer.
+    //
+    // The field is CLASS-NEUTRAL: the arbiter reads no metadata field, so
+    // publishing it moves no edge between classes. That is the point — the
+    // publication exists so that a wall row can be NAMED, not so that a number
+    // moves.
+    for (const r of relationships) {
+      const t = String(r.type ?? "")
+      if (t === "contains") continue
+      const md = r.metadata ?? (r.metadata = {})
+      if (typeof md.bindReason === "string" && md.bindReason.length) continue
+      const label = String(md.relationshipType ?? "")
+      const code = GO_SUB_UNIT_REASON[`${t}|${label}`] ?? GO_SUB_UNIT_REASON[`${t}|*`]
+      if (code) md.bindReason = code
     }
   }
 
