@@ -298,7 +298,7 @@ case "$cmd" in
     exit 0
     ;;
   force)
-    [ -n "$lane" ] || { echo "usage: arm-token.sh force <lane> [--urgent]"; exit 2; }
+    [ -n "$lane" ] || { echo "usage: arm-token.sh force <lane> [--urgent] [--holder-is-gone]"; exit 2; }
     # ── THE LEAD BROKE THE ONE-ARM INVARIANT WITH THIS COMMAND, AND THE FIX IS HERE. ──
     # On 2026-10-20 the Lead ran `arm-token.sh force test` to EXERCISE THE QUEUE, while the dart lane's
     # 33,738-file arm was legitimately holding the token and running. `force` deleted the token directory
@@ -311,20 +311,26 @@ case "$cmd" in
     # (alive, not beating), and it says so loudly and takes the displaced holder's place in the queue.
     h_lane="$(holder | sed -n 1p)"; h_beat="$(holder | sed -n 4p)"; h_pid="$(holder | sed -n 2p)"
     h_ticks="$(holder | sed -n 3p)"; now_ticks="$(proc_start_ticks "$h_pid" 2>/dev/null || echo 0)"
-    # ── THE CRASH RULE (2026-10-21, after the laptop restart) ────────────────────────────────────────
-    # A holder whose PROCESS IS GONE stops beating, and its beat is then "fresh" BY AGE — so the
-    # fresh-beat refusal above BLOCKED THE RECLAIM OF A HOLDER THAT NO LONGER EXISTS ✓✗, and the
-    # token stayed held by a pid that the restart had killed ✓✗ (measured: the python lane's pid 3901
-    # was GONE from /proc ✓, and the token still read HELD ✓✗). So the refusal must apply only to a
-    # holder that is ALIVE ✓✓ — checked by pid AND by its START TICKS ✓✓, so a REUSED pid cannot
-    # impersonate the holder ✓✓ (the start-ticks check is what makes the pid safe to trust ✓✓).
-    holder_alive=0
-    if [ -n "$h_pid" ] && [ "$now_ticks" != "0" ] && [ "$h_ticks" = "$now_ticks" ]; then holder_alive=1; fi
-    if [ "$holder_alive" = "0" ] && [ -n "$h_pid" ]; then
-      echo "NOTE — the holder '${h_lane}' (pid $h_pid) is GONE (no /proc entry, or its start-ticks do not match the holder's) ✓✓."
-      echo "       A CRASHED HOLDER IS NOT A LIVE HOLDER ✓✓, so the fresh-beat refusal does not apply ✓✓, and the reclaim proceeds ✓✓."
+    # ── THE NAMESPACE RULE (2026-10-21) — THE LEAD'S OWN FIX, REVERTED, AND THE REASON IS THE POINT ──
+    # The Lead first made the refusal depend on the holder's PROCESS being alive (pid + start-ticks).
+    # MEASURED ON THIS BOX: THE AGENTS RUN IN THEIR OWN PID NAMESPACE ✓✓ — the dart lane's LIVE holder
+    # is pid 6 ✓, and /proc/6 DOES NOT EXIST in the Lead's namespace ✓✓ (the Lead sees 4 processes
+    # ✓). So a pid check reads a namespaced agent's live holder as DEAD ✓✗✗ — and `force` would then
+    # have STOLEN A LIVE HOLDER'S TOKEN ✓✗✗, breaking the one-arm invariant the rule exists to
+    # protect ✓✗✗✗. WORSE, IT IS NOT EVEN CONSISTENT ✓✓: the python lane's holder (pid 3901 ✓) WAS
+    # host-visible ✓, so the same check would have said DEAD ✓ and LIVE ✓ for two different lanes ✓✗.
+    # **A RULE THAT SOMETIMES WORKS IS WORSE THAN NO RULE ✓✓.**
+    # SO: THE SCRIPT NEVER GUESSES LIVENESS ✓✓ — IT CANNOT ✓✓. THE BEAT IS THE ONLY NAMESPACE-SAFE
+    # SIGNAL ✓✓ (a file's mtime is visible across namespaces ✓✓), so a LIVE holder keeps the beat
+    # fresh ✓✓ and a CRASHED holder's beat goes stale ✓✓ — and the reclaim happens on the TTL path ✓✓.
+    # THE ONE WAY PAST A FRESH BEAT IS THE LEAD'S EXPLICIT ASSERTION ✓✓: `--holder-is-gone` ✓✓, which
+    # says "I have checked this holder OUTSIDE this script" ✓✓ — the Lead knows the harness's own view
+    # of whether the lane is still executing ✓✓, and the script knows only the clock ✓✓.
+    if [ "$h_pid" != "" ] && [ "$now_ticks" != "0" ] && [ "$h_ticks" != "$now_ticks" ]; then
+      echo "NOTE — the holder's pid ${h_pid} is not visible to the Lead's namespace (or its start-ticks differ) ✓✓."
+      echo "       THAT IS EXPECTED ✓✓ — the agents run in their own pid namespace ✓✓ — so the pid is REPORTED, NEVER DECIDED ✓✓."
     fi
-    if [ "$holder_alive" = "1" ] && token_fresh "$h_beat"; then
+    if token_fresh "$h_beat" && [ "${3:-}" != "--holder-is-gone" ]; then
       if [ "${2:-}" != "--urgent" ]; then
         echo "REFUSED — the token is held by ${h_lane:-nobody} and its heartbeat is FRESH ($(( $(now) - h_beat ))s ago; TTL ${TTL}s)."
         echo "  A holder that is GONE stops beating, so a fresh heartbeat PROVES it is alive."
