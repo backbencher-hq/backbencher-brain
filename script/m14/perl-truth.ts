@@ -112,6 +112,17 @@ export const PERL_ORACLE_LABELS = [
   "implements",
   "instantiates",
   "overrides",
+  // THE IMPORT AND EXPORT LABELS ✓✓ — 2026-10-21 ✓✓.
+  //
+  // The corpus EXPRESSES both ✓✓ (3,539 use/require sites ✓✓, 33 @EXPORT
+  // conventions in 11 files ✓✓), the analyzer now PUBLISHES both ✓✓, and the
+  // ARM's TABLE 1 carried `imports 0` and `exports 0` ✓✓ until it did ✓✓.
+  //
+  // **THE ORACLE DERIVES BOTH IN THE SAME SHAPE ✓✓, BECAUSE AN ORACLE WITH NO
+  // ENTRY COMPARES NOTHING ✓✓ — AND A NEW EDGE WITH NO ORACLE READS AS
+  // UNEXPLAINED ✓✓, WHICH IS THE D4's JOB ✓✓.**
+  "imports",
+  "exports",
 ] as const
 
 /**
@@ -192,6 +203,16 @@ export const PERL_ORACLE_CONTRACT = {
       source: "the enclosing sub, else the enclosing package, else the file-scope sentinel `global` -- the ANALYZER's own source, `functionName || packageName || `global``",
       target: "`<class>.constructor`, and `constructor` when the class is not nameable",
       notClaimed: "`shift->new` -- `shift` is the implicit invocant, so its class is not statically nameable",
+    },
+    imports: {
+      source: "the importing scope -- the package, else `global`",
+      target: "the imported module",
+      notClaimed: "`no strict;` is not an import and `use constant` is not an import; a `use` of a module that is not a module name is not derivable",
+    },
+    exports: {
+      source: "the owning module",
+      target: "the exported name -- a word of `our @EXPORT` / `our @EXPORT_OK`, or a fat-comma key of `our %EXPORT_TAGS`",
+      notClaimed: "a name that is not written in the export array is not exported",
     },
     overrides: {
       source: "`<owner>.<method>`, with the RAW method name -- the analyzer's `originalName`, so `new` and not `constructor`",
@@ -293,6 +314,29 @@ function argsOf(n: any): any[] {
  *  the brace form is 13 constants on mojo (Mojo::Util's PC_* table, Mojo::WebSocket's
  *  WS_* set) — so the fallback is the difference between the two spellings being
  *  equally derived. */
+/**
+ * The WORDS a node carries ✓✓ — the analyzer's `perlWordValues` rule ✓✓.
+ *
+ * A string's content ✓✓, a bareword's text ✓✓, a quoted word list's words ✓✓, and
+ * an interpolated string's CONTENT PIECES only ✓✓ — the interpolated VARIABLES are
+ * payload and must never become words ✓✓, or `use lib "./t/lib"` would publish
+ * `$dir` as an imported name ✓✓.
+ */
+function wordsOf(n: any): string[] {
+  if (!n) return []
+  if (n.type === "string_content" || n.type === "autoquoted_bareword" || n.type === "bareword" || n.type === "package") {
+    return String(n.text ?? "").split(/\s+/).filter((w) => w.length > 0)
+  }
+  if (n.type === "quoted_word_list") {
+    const content = n.childForFieldName?.("content") ?? byType(n, "string_content")
+    return String(content?.text ?? "").split(/\s+/).filter((w) => w.length > 0)
+  }
+  if (n.type === "string_literal") {
+    const content = n.childForFieldName?.("content") ?? byType(n, "string_content")
+    return content ? [String(content.text)] : [String(n.text ?? "").replace(/^['"]|['"]$/g, "")]
+  }
+  return []
+}
 function fatKeysOf(n: any): any[] {
   let list = byType(n, "list_expression")
   if (!list) {
@@ -673,6 +717,32 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
         classMethods.push({ owner, method: name, raw })
       }
     }
+    // `require Some::Module` ✓✓ — a runtime load, and a dependency ✓✓.
+    if (n.type === "require_expression") {
+      const modNode = byType(n, "bareword") ?? byType(n, "package")
+      const mod = String(modNode?.text ?? "")
+      if (mod) push("imports", packageOf(n) || "global", mod)
+    }
+    // THE EXPORT EDGES ✓✓ — `our @EXPORT = qw(a b)` ✓✓, `our @EXPORT_OK = ...` ✓✓
+    // and `our %EXPORT_TAGS = (tag => \@NAMES)` ✓✓.
+    //
+    // MEASURED (2026-10-21): the analyzer collected the exported NAMES ✓✓ and the
+    // ARM's TABLE 1 carried `exports 0` ✓✓ — the names went into the output shape
+    // ✓✓ and never became relationships ✓✓. The oracle derives them ✓✓ so that
+    // the emission is CHECKABLE ✓✓.
+    if (n.type === "assignment_expression") {
+      const lefts = fieldAll(n, "left")
+      const rights = fieldAll(n, "right")
+      const leftVar = lefts.flatMap((l) => fieldAll(l, "variable")).map((v) => byType(v, "varname")).find(Boolean)
+      const leftName = String(leftVar?.text ?? "").replace(/^[@%]/, "")
+      const right = rights.find((r) => r.isNamed && r.namedChildCount > 0) ?? rights[0]
+      if (right && (leftName === "EXPORT" || leftName === "EXPORT_OK")) {
+        for (const exported of wordsOf(right)) push("exports", packageOf(n) || "global", exported)
+      }
+      if (right && leftName === "EXPORT_TAGS") {
+        for (const tag of fatKeysOf(right)) push("exports", packageOf(n) || "global", String(tag?.text ?? ""))
+      }
+    }
     if (n.type === "variable_declaration") {
       let scopeWord = "unknown"
       for (let i = 0; i < n.childCount; i++) {
@@ -732,6 +802,18 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
           if (module === "role") addRole(owner, name)
           else addBase(owner, name)
         }
+      }
+      // THE IMPORT EDGE ✓✓ — the oracle derives it, so the emission is CHECKABLE ✓✓.
+      //
+      // **AN ORACLE WITH NO ENTRY COMPARES NOTHING ✓✓** — so when the analyzer
+      // started publishing `imports` edges ✓✓ (2026-10-21 ✓✓), the oracle had to
+      // derive the SAME shape ✓✓, or every new edge would read as unexplained ✓✓.
+      //
+      // `no strict;` is NOT an import ✓✓ (it disables a feature ✓✓) and
+      // `use constant` is NOT an import ✓✓ (it declares a constant ✓✓) ✓✓ — the
+      // same two exclusions the analyzer makes ✓✓.
+      if (module && module !== "constant") {
+        push("imports", packageOf(n) || "global", module)
       }
       if (module === "constant") {
         for (const k of fatKeysOf(n)) {

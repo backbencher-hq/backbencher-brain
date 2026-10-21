@@ -132,6 +132,14 @@ export const PERL_REASON_CODES = {
   mooExtendsKeyword: "moo-extends-keyword",
   indirectObjectInvocation: "indirect-object-invocation",
   useRoleComposition: "use-role-composition",
+  // THE IMPORT AND EXPORT EDGES ✓✓ — 2026-10-21 ✓✓.
+  //
+  // The corpus EXPRESSES both ✓✓ (3,539 use/require sites ✓✓, 33 @EXPORT
+  // conventions in 11 files ✓✓) and the ARM's TABLE 1 carried `imports 0` and
+  // `exports 0` ✓✓, because the facts went into the analyzer's OUTPUT SHAPE ✓✓
+  // and never became RELATIONSHIPS ✓✓. These two codes are the receipt ✓✓.
+  moduleImport: "module-import",
+  exportedSymbol: "exported-symbol",
   baseDeclaresMethod: "base-declares-method",
   firstParentGuess: "first-parent-guess",
   magicTokenInvocant: "magic-token-invocant",
@@ -997,6 +1005,22 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { perlSpecific: true, type: "use" },
           })
           patterns.add("Module Includes")
+          // **THE IMPORT EDGE ✓✓ — THE FACTS WERE COLLECTED AND NEVER PUBLISHED ✓✓.**
+          //
+          // The `imports` array above ✓✓ already holds every use/require site the
+          // corpus expresses ✓✓ — 3,539 of them ✓✓ — and the ARM's TABLE 1 has
+          // carried the row `imports 0` ✓✓ since the lane's first arm ✓✓, because
+          // the facts went into the analyzer's OUTPUT SHAPE ✓✓ and never became
+          // RELATIONSHIPS ✓✓.
+          //
+          // THE SHAPE IS THE FLEET'S ✓✓: the source is the IMPORTING SCOPE and the
+          // target is the IMPORTED MODULE ✓✓ — the same shape the bash and clean
+          // lanes publish `Imports` with ✓✓.
+          //
+          // `no strict;` never reaches here ✓✓ (it breaks out above ✓✓) and
+          // `use constant` never reaches here ✓✓ (it breaks out above ✓✓) ✓✓,
+          // because neither loads a module ✓✓.
+          addRelationship(state.packageName || "global", module, ASTEngine.RelationshipType.Imports, { reasonCode: REASON.moduleImport, perlSpecific: true, items: imports[imports.length - 1]?.items ?? [] }, 0.9, node)
           if (module === "Moose" || module === "Moo" || module === "Mojo::Base") frameworks.add(module === "Mojo::Base" ? "Mojolicious" : "Moose/Moo OOP")
           if (module === "parent" || module === "base") {
             const parents = args.filter((arg) => !this.isOption(arg))
@@ -1076,6 +1100,13 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             range: this.nodeToRange(node),
             metadata: { perlSpecific: true, type: "require" },
           })
+          // THE REQUIRE EDGE ✓✓ — the same gap as the `use` edge ✓✓.
+          //
+          // `require Some::Module` is a runtime load ✓✓ and it IS a dependency ✓✓
+          // (the file cannot run without it ✓✓), and the analyzer's own comment
+          // says so ✓✓ — but the fact went into the output shape ✓✓ and never
+          // became a relationship ✓✓, so the ARM's TABLE 1 carried `imports 0` ✓✓.
+          addRelationship(state.packageName || "global", module, ASTEngine.RelationshipType.Imports, { reasonCode: REASON.moduleImport, perlSpecific: true, items: [] }, 0.9, node)
           patterns.add("Module Includes")
           return
         }
@@ -1107,6 +1138,16 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             // `@EXPORT` lost the whole optional half of every Exporter module.
             for (const exported of this.wordValues(right)) {
               exports.push({ name: exported, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), metadata: { perlSpecific: true, exportArray: leftName } })
+              // **THE EXPORT EDGE ✓✓ — THE SAME GAP, THE OTHER SIDE ✓✓.**
+              //
+              // The exported NAME was collected above ✓✓ and the ARM's TABLE 1 has
+              // carried the row `exports 0` ✓✓ — the names went into the analyzer's
+              // OUTPUT SHAPE ✓✓ and never became RELATIONSHIPS ✓✓.
+              //
+              // THE SHAPE IS THE FLEET'S ✓✓: the source is the OWNING MODULE and the
+              // target is the EXPORTED NAME ✓✓ — the same shape the bash lane
+              // publishes `Exports` with ✓✓.
+              addRelationship(state.packageName || "global", exported, ASTEngine.RelationshipType.Exports, { reasonCode: REASON.exportedSymbol, perlSpecific: true, exportArray: leftName }, 0.9, node)
             }
             patterns.add("Exports")
           }
@@ -1115,6 +1156,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             // opt-in tag names callers pass to `import`.
             for (const tag of this.fatCommaKeys(right)) {
               exports.push({ name: tag.text, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), metadata: { perlSpecific: true, exportTag: "EXPORT_TAGS" } })
+              addRelationship(state.packageName || "global", tag.text, ASTEngine.RelationshipType.Exports, { reasonCode: REASON.exportedSymbol, perlSpecific: true, exportTag: "EXPORT_TAGS" }, 0.9, node)
             }
             patterns.add("Exports")
           }

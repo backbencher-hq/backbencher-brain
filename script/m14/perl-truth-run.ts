@@ -55,7 +55,7 @@ const OUT = argOut ?? SUMMARY
 // against the analyzer by the lane's own instrument ✓✓ — a coverage gap in the
 // instrument, not in the oracle ✓✓. **AN ORACLE THAT CLAIMS A LABEL THE LANE NEVER
 // CHECKS IS A CLAIM NOBODY READS ✓✓.**
-const LABELS = ["calls", "contains", "uses", "references", "extends", "implements", "instantiates", "overrides"]
+const LABELS = ["calls", "contains", "uses", "references", "extends", "implements", "instantiates", "overrides", "imports", "exports"]
 
 // ------------------------------------------------------------------ population
 const { detectLanguageFromPath } = await import(path.join(ROOT, "src/ast/language-detection.ts"))
