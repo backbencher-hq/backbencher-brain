@@ -150,14 +150,6 @@ const zero = (): Tally => ({
   byLabel: new Map(),
 })
 
-const pop = admittedPythonFiles()
-const repoNames = [...new Set(pop.files.map((f) => f.slice(CR.length + 1).split(path.sep)[0]!))].sort()
-  .filter((r) => (!ONLY || r === ONLY) && (!SCOPE || SCOPE.has(r)))
-console.error(`population: ${pop.files.length} admitted .py/.pyi/.pyw across ${pop.repos.length} repos · absent ${pop.absent} · overCap ${pop.overCap} · running ${repoNames.length} repo(s)${RESUME ? ` · RESUMED ${done.size} repo(s) from ${LEDGER}` : ""}`)
-
-const parser: any = await ASTEngine.getParser("python")
-const global = zero()
-const perRepo: Array<{ repo: string; files: number; t: Tally }> = []
 /** THE RESUMED REPOS: their tallies are already measured, so they are summed and skipped. */
 const done = new Map<string, { repo: string; files: number; t: any }>()
 if (RESUME) {
@@ -169,6 +161,14 @@ if (RESUME) {
   } catch { /* no ledger yet */ }
 }
 
+const pop = admittedPythonFiles()
+const repoNames = [...new Set(pop.files.map((f) => f.slice(CR.length + 1).split(path.sep)[0]!))].sort()
+  .filter((r) => (!ONLY || r === ONLY) && (!SCOPE || SCOPE.has(r)))
+console.error(`population: ${pop.files.length} admitted .py/.pyi/.pyw across ${pop.repos.length} repos · absent ${pop.absent} · overCap ${pop.overCap} · running ${repoNames.length} repo(s)${RESUME ? ` · RESUMED ${done.size} repo(s) from ${LEDGER}` : ""}`)
+
+const parser: any = await ASTEngine.getParser("python")
+const global = zero()
+const perRepo: Array<{ repo: string; files: number; t: Tally }> = []
 for (const repo of repoNames) {
   if (done.has(repo)) {
     // THE RESUMED REPO: its tallies are already measured, so they are summed and the repo is SKIPPED.
@@ -178,12 +178,12 @@ for (const repo of repoNames) {
       if (k === "movedTo" || k === "byLabel") continue
       ;(global as any)[k] += (pt as any)[k] ?? 0
     }
-    for (const [label, v] of Object.entries((pt as any).byLabel ?? {})) {
+    for (const [label, v] of Object.entries((pt as any).byLabel ?? {}) as Array<[string, any]>) {
       let g = global.byLabel.get(label)
       if (!g) global.byLabel.set(label, (g = { own: 0, genuine: 0, free: 0, freeOwn: 0, price: 0 }))
       g.own += v.own ?? 0; g.genuine += v.genuine ?? 0; g.free += v.free ?? 0; g.freeOwn += v.freeOwn ?? 0; g.price += v.price ?? 0
     }
-    for (const [k, v] of Object.entries((pt as any).movedTo ?? {})) global.movedTo.set(k, (global.movedTo.get(k) ?? 0) + v)
+    for (const [k, v] of Object.entries((pt as any).movedTo ?? {}) as Array<[string, number]>) global.movedTo.set(k, (global.movedTo.get(k) ?? 0) + v)
     perRepo.push(prior)
     console.error(`  ${repo.padEnd(26)} (RESUMED from the ledger)`)
     continue
