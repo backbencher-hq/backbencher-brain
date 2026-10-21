@@ -492,26 +492,29 @@ const isRelativeScriptPath = (t: string): boolean => {
     endsAdmitted = c === 109 /* m */ || c === 77 /* M */ || c === 100 /* d */ || c === 68 /* D */
   }
   if (!endsAdmitted) return false
-  // A PATH THAT BEGINS WITH A RUNTIME VARIABLE IS NOT A STATIC PATH, AND THIS FILE IS NOT IN A
-  // POSITION TO JUDGE IT. MEASURED, over the whole population (1,181 files / 30 repos):
+  // THE PRICE OF THIS RULE, MEASURED, AND PAID DELIBERATELY.
   //
-  //   `$PSScriptRoot/../../build.psm1`          -> the file IS in the project -> the claim was FALSE
-  //   `$PSScriptRoot\..\..\PSDSCxMachine.psm1`  -> the file is NOWHERE      -> the claim was TRUE
+  // A path that begins with a RUNTIME VARIABLE (`$PSScriptRoot\..\..\X.psm1`) is resolved at RUN
+  // TIME, against a directory the project does not know, so this file is NOT in a position to judge
+  // whether the project owns it. A rule that kept the claim on that shape, and a rule that dropped
+  // it, were BOTH measured over the whole population (1,181 files / 30 repos), by RESOLVING each
+  // released path against the corpus and asking the FILESYSTEM whether the file is there:
   //
-  // 30 rows of that shape, and the split is 12 false claims against 18 true ones — so a rule that
-  // always claims errs 12 times and a rule that never claims errs 18 times, and NEITHER can do
-  // better, because the question ("is this module in the project?") is a PROJECT question and this
-  // is a ONE-FILE parse. The 12 false claims are not this file's defect: the GATE knows the row's
-  // own directory AND the project's admitted file list, so IT can answer the question — the arbiter
-  // cannot today, which is why all 30 read as "unverifiable" (wall W9, the Lead's instrument).
+  //   37 of the 55 rows of that shape point at a file that EXISTS  -> the externality claim was FALSE
+  //   18 of them point at a file that does NOT exist             -> the externality claim was TRUE
   //
-  // So the rule is NOT "a relative path is never external". It is: **a STATIC relative path naming
-  // an admitted spelling is a project-file reference** — the arbiter's path question can answer
-  // that one, and it REFUTED the two rows this lane found — and a path that begins with a RUNTIME
-  // VARIABLE is resolved at RUN TIME, against a directory the project does not know, so the
-  // externality reading STAYS, because a claim this file cannot judge belongs to the instrument
-  // that can.
-  if (t.charCodeAt(0) === 36 /* $ */) return false // $PSScriptRoot\... — a runtime path
+  // So dropping the claim on that shape removes 37 FALSE claims and loses 18 TRUE ones, and keeping
+  // it does the reverse. **THE VERIFIED CLASS IS THE SAME EITHER WAY** — (resolved + extOK) / edges
+  // is 60.4361 % under both, and so is the TOTAL wall — so the choice is not a rate, it is a
+  // question of what a lane is for: **A PUBLISHED FALSE CLAIM IS A LIE, AND A LOST TRUE CLAIM IS A
+  // MISSED OPPORTUNITY, AND THE FLEET'S FIRST REFUTED-CLAIM INCIDENT WAS A LIE.** 37 lies for 18
+  // opportunities is the right trade, and the price is a NUMBER rather than an argument.
+  //
+  // AND THE 18 ARE NOT LOST FOREVER: the GATE knows the row's own directory AND the project's
+  // admitted file list, so IT can resolve a `$PSScriptRoot` path and settle all 55 — turning the 37
+  // false claims into VISIBLE refutations and the 18 true ones into VERIFIED claims. The arbiter
+  // does not do that today, which is why all 55 read as "unverifiable" (wall W9, the Lead's
+  // instrument, filed as a proposal with its number).
   // A PATH THAT NAMES SOMETHING OUTSIDE ANY PROJECT — and so can never be one of the project's
   // own files. The shapes mirror the arbiter's own `WINDOWS_DRIVE` and `URI_SCHEME` tests, because
   // the question is the same one: "can the project's own file list answer this spelling?"
