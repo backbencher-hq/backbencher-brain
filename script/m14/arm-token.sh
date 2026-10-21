@@ -49,6 +49,7 @@ TTL="${BB_ARM_TOKEN_TTL:-2700}"  # 45 minutes without a beat => reclaimable
 # mid-run, which is the one thing the token exists to prevent. 45 minutes is longer than any arm the
 # fleet has run, and a crashed or vanished holder still releases itself. BEAT EVERY TWO MINUTES.
 QUEUE_FILE="${BB_ARM_QUEUE:-$PWD/.tmp-lead/arm-queue}"
+SMALL_TOKEN_DIR="${TOKEN_DIR}.small"   # the SMALL arm slot: a SEPARATE lock
 mkdir -p "$(dirname "$TOKEN_DIR")" 2>/dev/null || true
 mkdir -p "$(dirname "$QUEUE_FILE")" 2>/dev/null || true
 
@@ -107,6 +108,17 @@ case "$cmd" in
     # THE HEAD OF THE QUEUE GOES FIRST. A lane that is not at the head is REFUSED, and told the order.
     # Polling and hoping was how a lane could be overtaken by a later arrival.
     head="$(queue_head)"
+    # THE QUEUE ORDERS LANES. The LEAD'S VERIFICATION IS NOT A LANE'S ARM: the floor moves only when the
+    # Lead has INDEPENDENTLY REPRODUCED a lane's movement, and that reproduction is a read-only re-run of
+    # the lane's own command — it decides no lane's verdict and it does not consume a lane's slot. So the
+    # Lead may take a FREE token with the queue non-empty, and it says so out loud, because a SILENT
+    # carve-out is what broke the one-arm invariant once already. It may NEVER take a HELD token.
+    if [ "$lane" = "lead" ] && [ ! -d "$TOKEN_DIR" ]; then
+      echo "ARM TOKEN TAKEN by lead — THE LEAD'S OWN VERIFICATION, jumping the queue (the queue is LANE order)."
+      echo "  head: ${head:-nobody} — the lane at the head waits for this arm and keeps its place."
+      mkdir "$TOKEN_DIR" 2>/dev/null && write_holder "lead" "$$" "$(proc_start_ticks $$ 2>/dev/null || echo 0)"
+      exit 0
+    fi
     if [ -n "$head" ] && [ "$head" != "$lane" ]; then
       echo "ARM TOKEN: the QUEUE is not empty and $lane is not at the head."
       echo "  head: $head"
@@ -136,6 +148,12 @@ case "$cmd" in
     echo "ARM TOKEN RECLAIM RACE — another lane took it. Retry."; exit 3
     ;;
   beat)
+    # THE SMALL SLOT IS BEATEN TOO, or its holder would look dead to the TTL.
+    if [ -f "$SMALL_TOKEN_DIR/holder/holder" ] && grep -q "lane=$lane" "$SMALL_TOKEN_DIR/holder/holder" 2>/dev/null; then
+      sed -i "s/^beat=.*/beat=$(date +%s)/" "$SMALL_TOKEN_DIR/holder/holder" 2>/dev/null || true
+      echo "beat ok (small slot)"
+      exit 0
+    fi
     [ -n "$lane" ] || { echo "usage: arm-token.sh beat <lane>"; exit 2; }
     h_lane="$(holder | sed -n 1p)"
     if [ "$h_lane" != "$lane" ]; then
@@ -147,6 +165,13 @@ case "$cmd" in
     ;;
   release)
     [ -n "$lane" ] || { echo "usage: arm-token.sh release <lane>"; exit 2; }
+    # THE SMALL SLOT IS CHECKED FIRST: a lane may hold the small slot while the HEAVY token is held by
+    # another lane entirely, and the heavy holder's name must not block the small slot's release.
+    if [ -f "$SMALL_TOKEN_DIR/holder/holder" ] && grep -q "lane=$lane" "$SMALL_TOKEN_DIR/holder/holder" 2>/dev/null; then
+      rm -rf "$SMALL_TOKEN_DIR" 2>/dev/null || true
+      echo "ARM SMALL SLOT RELEASED by $lane"
+      exit 0
+    fi
     h_lane="$(holder | sed -n 1p)"
     if [ "$h_lane" != "$lane" ]; then
       echo "NOT RELEASED — the token is held by '${h_lane:-nobody}', not by $lane."; exit 4
@@ -154,6 +179,45 @@ case "$cmd" in
     rm -rf "$TOKEN_DIR" 2>/dev/null || true
     queue_remove "$lane"
     echo "ARM TOKEN RELEASED by $lane"; exit 0
+    ;;
+  take-small)
+    # ── THE SMALL ARM SLOT (2026-10-20, Lead; approved by the owner) ──────────────────────────────
+    # THE FLOOR'S RATE IS ARM-BOUND. Nine lanes were queued behind ONE 33,738-file / 3.7 M-edge arm,
+    # and the floor's gate is the LEAD's reproduction — so the Lead's verifications for the SMALL lanes
+    # (toml 1,485 files · clojure 646 · powershell 1,181 — about a MINUTE each) were queued behind
+    # arms that take an HOUR. This slot is a SEPARATE lock, so a small arm runs BESIDE a heavy one.
+    #
+    # THE BOUND IS ENFORCED HERE, NOT BY CONVENTION: the arm must DECLARE its population, and the
+    # slot refuses a population of 0 (which means "the whole population" — a heavy arm in disguise) or
+    # more than 2,000 files. The memory arithmetic: the arm that was OOM-killed had THREE residents
+    # (the 33,738-file dart arm and TWO 11,155-file arms) at 14.7 GB used with 12.6 GB of swap in
+    # use; a 646-file arm is a fraction of one 11,155-file arm, so the bound is generous and the
+    # pairing is safe.
+    #
+    # AND THE DECLARATION IS CHECKABLE: the arm PRINTS ITS OWN POPULATION, so a false declaration is
+    # caught by reading the arm's header against the number the slot was given.
+    # `lane` is the SECOND argument and the population is the THIRD (`cmd="${1:-}"; lane="${2:-}"`).
+    files="${3:-}"
+    if [ -z "$lane" ] || [ -z "$files" ]; then
+      echo "usage: arm-token.sh take-small <lane> <declaredPopulationFiles>"; exit 2
+    fi
+    if ! printf '%s' "$files" | grep -Eq '^[0-9]+$'; then
+      echo "REFUSED — the declared population must be a NUMBER of files (got '$files')."; exit 4
+    fi
+    if [ "$files" -le 0 ]; then
+      echo "REFUSED — 0 means the WHOLE population, which is a HEAVY arm. Take the ordinary token for that."; exit 4
+    fi
+    if [ "$files" -gt 2000 ]; then
+      echo "REFUSED — the SMALL slot is for a population of 2,000 files or fewer (declared: $files)."; exit 4
+    fi
+    mkdir -p "$SMALL_TOKEN_DIR" 2>/dev/null || true
+    if mkdir "$SMALL_TOKEN_DIR/holder" 2>/dev/null; then
+      printf 'lane=%s\npid=%s\nstarted=%s\nbeat=%s\npopulation=%s\n' "$lane" "$$" "$(date +%s)" "$(date +%s)" "$files" > "$SMALL_TOKEN_DIR/holder/holder"
+      echo "ARM SMALL SLOT TAKEN by $lane (declared population $files files) — a SEPARATE lock, so a HEAVY arm may run beside it."
+      exit 0
+    fi
+    echo "REFUSED — the small slot is held. Its holder: $(cat "$SMALL_TOKEN_DIR/holder/holder" 2>/dev/null | tr '\n' ' ')"
+    exit 3
     ;;
   queue)
     if [ -n "$lane" ]; then
@@ -180,6 +244,11 @@ case "$cmd" in
     fi
     echo "ARM QUEUE (first is next):"
     queue_list | sed 's/^/  /'
+    if [ -f "$SMALL_TOKEN_DIR/holder/holder" ]; then
+      echo "ARM SMALL SLOT: HELD by $(grep '^lane=' "$SMALL_TOKEN_DIR/holder/holder" | cut -d= -f2) (population $(grep '^population=' "$SMALL_TOKEN_DIR/holder/holder" | cut -d= -f2) files, last beat $(( $(date +%s) - $(grep '^beat=' "$SMALL_TOKEN_DIR/holder/holder" | cut -d= -f2) ))s ago)"
+    else
+      echo "ARM SMALL SLOT: FREE (a population of 2,000 files or fewer, declared when taken)"
+    fi
     exit 0
     ;;
   force)
