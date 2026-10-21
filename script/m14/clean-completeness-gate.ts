@@ -116,8 +116,19 @@ for (let i = 0; i < grammar.nodeTypeCount; i++) {
   declared.push(n)
 }
 
-const gapTypes = spec.gap.gaps.flatMap((g) => g.node_type.split(/[,\s]+/).filter(Boolean))
-const decisionTypes = spec.design_decision.decisions.flatMap((d) => d.node_type.split(/[,\s]+/).filter(Boolean))
+// A `node_type` MAY BE null — AND IT IS THE CORRECT VALUE FOR A METADATA RULE. The 2026-10-17
+// spec-shape fix set `node_type` to null on PSD7-PSD10 precisely because this field is comma-split
+// into the classified-type set, and a prose rule must not be read as type names. **BUT THE SPLIT HAD
+// NO NULL GUARD, SO A SPEC WITH A null `node_type` MADE THIS EXPRESSION THROW** — found by the
+// powershell lane, whose own audit guards it. A gate that crashes on a legal spec is worse than a
+// gate that fails: it reports nothing, and "nothing" reads like "nothing to report".
+const splitTypes = (v: unknown): string[] => (typeof v === "string" ? v.split(/[,\s]+/).filter(Boolean) : [])
+// A FIXED GAP IS NOT A SECOND CLASSIFICATION. A gap records that a type WAS broken and what fixed
+// it — so its type is ALSO in handled_verified or internal_silent, and counting it in the gap bucket
+// makes the partition report collisions that are the NORMAL shape of a closed gap. (The powershell
+// spec's eight gaps are ALL `severity: "fixed"` and every one of their types is classified.)
+const gapTypes = spec.gap.gaps.filter((g: any) => g?.severity !== "fixed").flatMap((g: any) => splitTypes(g?.node_type))
+const decisionTypes = spec.design_decision.decisions.flatMap((d: any) => splitTypes(d?.node_type))
 
 const buckets: Array<[string, string[]]> = [
   ["handled_verified", spec.handled_verified.types],
@@ -138,13 +149,20 @@ const unclassified = declared.filter((t) => !owner.has(t))
 if (unclassified.length > 0) {
   problems.push(`${unclassified.length} declared type(s) in NO bucket: ${unclassified.join(", ")}`)
 }
-const unknown = [...owner.keys()].filter((t) => !seenType.has(t))
+// THE UNIVERSAL PAIR. The gate's universe is the grammar's unique names PLUS the universal
+// ERROR/MISSING pair the loader appends — so the pair is IN the declared set and NOT in the grammar's
+// own, and the clean spec's own `_population_check._universal_pair_note` says so ("143 slots = 141
+// named + 2"). The clean gate did not append it, so the pair was reported as two spec types the
+// grammar does not declare AND the count was compared against 141 instead of 143. Found by the
+// powershell lane.
+const UNIVERSAL_PAIR = new Set(["ERROR", "MISSING"])
+const unknown = [...owner.keys()].filter((t) => !seenType.has(t) && !UNIVERSAL_PAIR.has(t))
 if (unknown.length > 0) {
   problems.push(`${unknown.length} spec type(s) the pinned grammar does not declare: ${unknown.join(", ")}`)
 }
 const declaredCounts = spec._population_check?.declared_named_types
-if (typeof declaredCounts === "number" && declaredCounts !== declared.length) {
-  problems.push(`spec says ${declaredCounts} declared named types; the grammar exposes ${declared.length}`)
+if (typeof declaredCounts === "number" && declaredCounts !== declared.length + UNIVERSAL_PAIR.size) {
+  problems.push(`spec says ${declaredCounts} declared named types; the grammar exposes ${declared.length} + the universal pair (${UNIVERSAL_PAIR.size})`)
 }
 
 // ---------------------------------------------------------------------------
