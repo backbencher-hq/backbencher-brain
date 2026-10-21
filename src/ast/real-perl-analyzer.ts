@@ -1069,6 +1069,20 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             const named = args.find((arg) => arg && !this.isOption(arg))
             addBase(state.packageName, [named ?? module], REASON.mojoBaseDeclaration, moduleNode)
           }
+          // A `use` STATEMENT's ARGUMENT LIST IS WALKED, so a CODE REFERENCE
+          // inside it -- `use overload '&{}' => \&to_app_auto, fallback => 1;` --
+          // is VISITED and published as a `uses` edge.
+          //
+          // MEASURED (2026-10-21): the branch RETURNED here, so the argument list
+          // was never walked, and the 2 `uses` rows the oracle derives
+          // (`uses|Plack::Component|to_app_auto` .
+          // `uses|Plack::Recursive::ForwardRequest|as_string`) had no analyzer
+          // edge -- a real EMISSION GAP, and the oracle is right.
+          //
+          // The arguments live in a `list_expression` DIRECT NAMED CHILD with no
+          // `arguments` field -- measured on the grammar, not assumed.
+          const useArgList = this.findChildByType(node, "list_expression")
+          if (useArgList) walk(useArgList, state)
           return
         }
 
