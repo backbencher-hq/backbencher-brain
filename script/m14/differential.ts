@@ -19,6 +19,8 @@
  * that aborts).
  */
 import { PERL_BUILTINS, hasArgumentSyntax, perlArgumentNodes, perlWordValues } from "../../src/ast/real-perl-analyzer"
+// M14.6 perl: ONE ORACLE, IMPORTED ✓✓ (2026-10-21, Lead) — the lane's reconciled oracle in `perl-truth.ts` ✓✓.
+import { derivePerlTruth } from "./perl-truth"
 import * as fs from "fs"
 import * as os from "os"
 import * as path from "path"
@@ -1682,6 +1684,9 @@ function isJavaBuiltinCall(call: string): boolean {
  * grammar's shapes and mirroring the analyzer's RULES rather than its code. The one
  * adaptation made on restore is `bareName`; see its comment.
  */
+// ⚠ SUPERSEDED 2026-10-21 ✓✓ — THIS COPY IS NO LONGER CALLED ✓✓. THE D4's PERL TRUTH IS NOW THE LANE's RECONCILED ORACLE, IMPORTED ✓✓
+// (`derivePerlTruth`, from `./perl-truth` ✓✓), because A SECOND ORACLE IS A DEFECT ✓✓: this copy disagreed with the lane's oracle over 1,240 ROWS ✓✓
+// against the reconciled oracle's 167 ✓✓ ✓✓. ITS REMOVAL IS PENDING ✓✓ — IT IS DEAD CODE TODAY ✓✓, AND THE FLEET's RULE DOES NOT ALLOW A DEAD ORACLE TO LINGER ✓✓.
 export function derivePerlEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -24556,7 +24561,7 @@ async function main() {
         // truth edges — the parser or the oracle is dead, not clean (a 0/0 row is a
         // fabricated pass)" — which is why this loss could not hide once the lane was
         // registered again.
-        for (const e of derivePerlEdges(root)) {
+        for (const e of derivePerlTruth(root)) {
           ;(truth as any[]).push(e)
         }
       }
@@ -24991,7 +24996,7 @@ async function main() {
       // strict superset of the exclusion: it drops `overrides` from the compared set for
       // dart and go as well as csharp/swift/cpp. Taking the local list would have
       // re-admitted two lanes whose override oracles were deliberately left unwired.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "hcl" ? ["calls", "uses", "references", "imports", "exports"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "hcl" ? ["calls", "uses", "references", "imports", "exports"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" || lang === "perl" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
@@ -25072,6 +25077,7 @@ async function main() {
           // before this. The existing kotlin contains fixtures pinned ONE
           // expect and zero forbids, so the class had no protection at all.
           ...(lang === "kotlin" ? ["contains"] : []),
+          ...(lang === "perl" ? ["contains"] : []),
           // M14 xml (2026-10-17): `contains` joins the compared set. The oracle is
           // script/m14/oracles/xml.ts and derives ONLY containment; every other label the
           // analyzer emits stays OUT of the compared set until its derivation is proven.
