@@ -1757,7 +1757,15 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
         // importedBindings, so the imported-name claim has evidence in every lane that spells items.
         const itemMatch = tgt.lastIndexOf(":")
         const tgtItem = itemMatch > 0 && itemMatch < tgt.length - 1 ? tgt.slice(itemMatch + 1) : ""
-        if (names || (tgtItem.length > 0 && tgtItem !== "*")) {
+        // THE ALIAS THE IMPORT BINDS — `from a import b as c` binds `c`, and this map holds only the
+        // ITEM `b`, so a claim about `c` was REFUTED against a map that never held it ✓✓. The analyzer
+        // publishes the alias on the import edge as `metadata.importedAs` (the python lane's own
+        // contract ✓✓), so the gate needs no analyzer change for this shape ✓✓. The claim is a
+        // statement about the FILE'S OWN SCOPE — "this name is the binding my import introduces" ✓✓ —
+        // and an alias is exactly that statement ✓✓. (the python lane's proposal §2 ✓✓, Lead ✓✓)
+        const importedAs = (relMdEarly as any)?.importedAs
+        const aliasName = typeof importedAs === "string" && importedAs.length > 0 ? importedAs : ""
+        if (names || aliasName || (tgtItem.length > 0 && tgtItem !== "*")) {
           const repo = repoOf(f)
           let byFile = importEvidence.get(repo)
           if (!byFile) importEvidence.set(repo, (byFile = new Map()))
@@ -1775,6 +1783,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
           if (!bindSet) bySpec.set(specKey, (bindSet = new Set()))
           for (const nm of names ?? []) if (typeof nm === "string" && nm.length > 0) bindSet.add(nm)
           if (tgtItem.length > 0 && tgtItem !== "*") bindSet.add(tgtItem)
+          if (aliasName) bindSet.add(aliasName)
         }
       }
       const edgeLine = Number((rel as any)?.line_number ?? (rel as any)?.lineNumber ?? (rel as any)?.line ?? 0) || null
