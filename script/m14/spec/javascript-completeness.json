@@ -12,55 +12,84 @@
    "extends",
    "overrides",
    "instantiates",
-   "renders",
-   "decorates"
+   "decorates",
+   "renders"
   ],
   "excluded": [
    {
     "label": "implements",
     "evidence": "grammar-absence",
-    "from": "JavaScript has NO nominal conformance construct: no `implements` keyword, no grammar node, no semantics that would produce one (class A implements B is TypeScript-only syntax), and structural typing is not a declaration. MEASURED: `incoming-gate javascript js,jsx,mjs,cjs 50` reads IMPLEMENTS 0 edges / 0 resolved / 0 ambiguous / 0 unresolved -- the population emits none, while the analyzer's conditional mention of the token never fires. Before this ruling the type was in NEITHER `implemented` nor `excluded`: the silent-sink defect, declared nowhere and measurable nowhere. Ruled 2026-10-18 on the whole admitted population."
+    "from": "GRAMMAR-ABSENCE, MEASURED. THE GRAMMAR HALF: the grammar the PRODUCTION PARSER loads (node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm, sha256 4a378293fe7853cbee2836023be072dafa0e53b3b5edb245920838ca834ed121, 358909 bytes) declares 122 named node types (digest cdbb7400fb6de9237631071f4c3df69516d2d1b52e594c067e753787610b5f19) and 0 of them match this type's OWN vocabulary (implement) — the match list is []. THE COUNTERFACTUAL: the same grammar on [\"class A extends B { }\",\"class A implements B { }\",\"class A extends B implements C { }\"] — PARSES · ERRORS · ERRORS. THE POSITIVE CONTROL: the same node-type scan on node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm declares \"implements_clause\" — PRESENT, so the scan is not blind. THE CORPUS HALF: 0 construct site(s) over 12374 admitted js/jsx/mjs/cjs files over 95 repos (the gate's own discovery rule) (the construct's own token in the grammar's own node). MEASURED BY script/m14/javascript-grammar-ruling.ts — validation/m14/measurements/javascript-grammar-ruling.json. FALSIFIER: a named node type matching /implement/ appears in the gate's grammar inventory, OR a corpus class_heritage carries an `implements` token, OR the gate's TABLE 1 shows a non-zero `implements` row for javascript"
+   },
+   {
+    "label": "mixes_in",
+    "evidence": "grammar-absence",
+    "from": "GRAMMAR-ABSENCE, MEASURED. THE GRAMMAR HALF: the grammar the PRODUCTION PARSER loads (node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm, sha256 4a378293fe7853cbee2836023be072dafa0e53b3b5edb245920838ca834ed121, 358909 bytes) declares 122 named node types (digest cdbb7400fb6de9237631071f4c3df69516d2d1b52e594c067e753787610b5f19) and 0 of them match this type's OWN vocabulary (mixin) — the match list is []. THE COUNTERFACTUAL: the same grammar on [\"class C with M { }\",\"class C extends mixin(Base) { }\"] — ERRORS · PARSES. THE POSITIVE CONTROL: the same node-type scan on wasm/tree-sitter-dart.wasm declares \"mixin_application\" — PRESENT, so the scan is not blind. THE CORPUS HALF: 0 construct site(s) over 12374 admitted js/jsx/mjs/cjs files over 95 repos (the gate's own discovery rule) (the construct's own token in the grammar's own node). MEASURED BY script/m14/javascript-grammar-ruling.ts — validation/m14/measurements/javascript-grammar-ruling.json. FALSIFIER: a named node type matching /mixin/ appears in the gate's grammar inventory, OR a corpus class_heritage carries a `with` token, OR the gate's TABLE 1 shows a non-zero `mixes_in` row for javascript"
+   },
+   {
+    "label": "part_of",
+    "evidence": "grammar-absence",
+    "from": "GRAMMAR-ABSENCE, MEASURED. THE GRAMMAR HALF: the grammar the PRODUCTION PARSER loads (node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm, sha256 4a378293fe7853cbee2836023be072dafa0e53b3b5edb245920838ca834ed121, 358909 bytes) declares 122 named node types (digest cdbb7400fb6de9237631071f4c3df69516d2d1b52e594c067e753787610b5f19) and 0 of them match this type's OWN vocabulary (part_directive, part_of_directive, part) — the match list is []. THE COUNTERFACTUAL: the same grammar on [\"part 'x.js';\",\"part of 'x.js';\",\"import 'x.js';\"] — ERRORS · ERRORS · PARSES. THE POSITIVE CONTROL: the same node-type scan on wasm/tree-sitter-dart.wasm declares \"part_directive\" — PRESENT, so the scan is not blind. THE CORPUS HALF: 2 construct site(s) over 12374 admitted js/jsx/mjs/cjs files over 95 repos (the gate's own discovery rule) (the construct's own token in the grammar's own node). MEASURED BY script/m14/javascript-grammar-ruling.ts — validation/m14/measurements/javascript-grammar-ruling.json. FALSIFIER: a named node type matching /part/ appears in the gate's grammar inventory, OR a corpus statement carries a `part` directive token, OR the gate's TABLE 1 shows a non-zero `part_of` row for javascript"
    }
   ],
   "corpusUnexercised": [],
-  "_from": "NINE OF TEN MEASURED OVER THE WHOLE ADMITTED POPULATION, AND THE TENTH IS A REPORTED GAP. Reading: .tmp-covb/census.mts --lane javascript, the production path (engine.getParser -> RealJavaScriptAnalyzer.analyze) over 12,348 files (11,891 .js + 284 .mjs + 126 .jsx + 47 .cjs) across 93 repos — 12,348 parsed of 12,348, 0 read failures, 0 parse throws, 0 analyze throws. Per-type totals: calls 757,774 edges in 10,950 files · uses 566,383 in 10,623 · imports 43,264 in 10,593 · contains 27,745 in 1,850 · instantiates 17,461 in 1,408 · exports 15,836 in 8,737 · references 6,310 in 1,289 · overrides 4,670 in 1,111 · extends 1,728 in 1,418. THE FIRING LOG'S ROW IS A LOWER BOUND, NOT A LANE FACT, AND THIS IS THE THIRD TYPE IT GOT WRONG THIS SESSION: validation/m14/results/firing-laptop-b.current.log reads `JAVASCRIPT 7 types fired 51/51 parsed` with `extends implements overrides` SILENT — a 51-file stride — while the whole population fires extends 1,728 and overrides 4,670. THE TENTH, `implements`, IS 0 EDGES OVER 12,348 FILES AND IS KEPT IN THE DENOMINATOR AS A GAP. The evidence was measured in full and is recorded here, but it is NOT claimed as a grammar-absence exclusion, because the toml lane was offered exactly that route and the owner refused it: (1) THE ANALYZER HAS NO EMISSION SITE — `RelationshipType.Implements` appears nowhere in src/ast/real-javascript-analyzer.ts; (2) THE PINNED GRAMMAR CANNOT EXPRESS IT — 0 of its 116 distinct named node types match the conformance vocabulary, and a CONTROL through the production parser shows `class A implements B {}` parses with hasError=true and an ERROR node, while the sibling `class A extends B {}` parses clean and produces `class_heritage`; (3) THE CORPUS HAS NO DECLARATION — a whole-population text census found 372 sites of `implements`/`@implements` in 66 files, and EVERY one of them is a comment, a JSDoc tag, GraphQL SDL inside a string or template, a syntax-highlighter keyword list for another language, an ESLint rule name, or a codemod regex — none is a JavaScript conformance declaration. WHY IT IS A GAP ANYWAY: the ecosystem convention (`@implements`, the ICSS precedent that kept css's `exports` in the denominator) means the construct's carrier exists in the corpus, and this programme's rule is that a construct which exists but which the analyzer does not implement is a GAP, never an exclusion. AN AUDITOR WHO DISAGREES CAN MOVE IT WITH ONE LINE — the grammar-absence evidence above is complete; the conservative reading is the one this block takes. THIS BLOCK AGREES WITH `gap.gaps`: every javascript entry J1..J12, JSD-744, J10 and JSD54 carries status CLOSED or RESOLVED and each is a NODE-LEVEL fix inside a type this walk measured FIRING (imports 43,264 · uses 566,383 · calls 757,774 · overrides 4,670 · extends 1,728), so no CLOSED entry is contradicted at the type level. THE VERIFICATION WAS TYPE-LEVEL, NOT FIXTURE-LEVEL, and is stated as such: the measurement above establishes that each closed entry's LABEL emits and fires; it does not re-run that entry's fixture or mutant.",
+  "_from": "javascript's APPLICABLE SET IS n = 11, OVER THE LIVE 14-TYPE VOCABULARY (src/ast/types.ts): 14 MINUS the 3 types this grammar cannot express, EACH RULED WITH A CITATION (grammar-absence, each carrying the grammar half, the counterfactual, the positive control, the corpus half and a falsifier) — `implements` (no implements clause), `mixes_in` (no mixin clause) and `part_of` (no part directive). The other ELEVEN are IMPLEMENTED: the analyzer emits each one and each one is measured over the WHOLE ADMITTED POPULATION — see `_implemented_measured` below, which carries a per-type edge count AND a per-type file count for all eleven, and `_unit`, which names the population the counts are over. THE EVIDENCE LIVES IN: validation/m14/measurements/javascript-arm-current.json (the cell — edges, the class sum, the VIEW, the three denominators, the tie-break's per-row movement) · validation/m14/measurements/javascript-grammar-ruling.json (the three rulings, the two javascript grammars' inventories, the counterfactuals, the positive controls, the corpus half) · script/m14/javascript-grammar-ruling.ts (the instrument that measured them) · script/m14/javascript-tiebreak-twin.ts and validation/m14/fixtures/javascript/tiebreak-twin.patch (the tie-break's per-row movement) · validation/m14/verification/JAVASCRIPT-*.md (the lane's pages). AUTHOR: Muhammad Ishaq Khan.",
   "_implemented_measured": {
-   "_unit": "edges published through the production path over the WHOLE admitted javascript population — 12,348 files (11,891 .js + 284 .mjs + 126 .jsx + 47 .cjs) across 93 repos, 12,348 parsed of 12,348, 0 parse failures, 0 analyze throws. Instrument .tmp-covb/census.mts --lane javascript, which constructs the PRODUCTION parser (engine.getParser) and enumerates the grammar through that parser's own Language.",
+   "_unit": "TWO INSTRUMENTS, EACH NAMED WITH ITS OWN POPULATION, AND NO NUMBER BORROWED ACROSS. THE `edges` HALF: the gate's own TABLE 1 (per-project scope — the verdict's scope) over the WHOLE ADMITTED POPULATION — 12374 admitted js/jsx/mjs/cjs files over 95 repos — the gate's own discovery rule (git-tracked, real checkouts, 1 MB cap), file limit 0. THE `files` HALF: the number of DISTINCT FILES in which the type fired at all, measured by the lane's own census instrument script/m14/javascript-ontology-census.ts over ITS OWN population — 12,348 files (11,891 .js + 284 .mjs + 126 .jsx + 47 .cjs) across 93 repos, 12,348 parsed of 12,348, 0 read failures, 0 parse throws, 0 analyze throws. THE CENSUS's INSTRUMENT IS NAMED AND IT EXISTS; THE RUN's ARTEFACT IS NOT IN THE TREE (the census writes validation/m14/tmp/javascript-census-<tag>.json, and that directory is not carried), SO THE FILE HALF's PROVENANCE IS THE INSTRUMENT, NOT AN ARTEFACT, AND THIS SAYS SO. THE CENSUS READS THE PRODUCTION PATH (src/ast/pool-worker.parseFile — the same entry the gate uses), so it is not in the class a census can silently degrade (an analyzer that acquires the parser INSIDE analyze()): this analyzer has ZERO such sites, and the census does not call analyze() at all. THE TWO POPULATIONS DIFFER (12,374 / 95 repos versus 12,348 / 93 repos) and NEITHER NUMBER IS SILENTLY THE OTHER'S. THE TIE-BREAK TWIN's PER-TYPE FILE COUNTS (the same population as the edges half) supersede this half when the twin arm lands; the block is then regenerated and the two halves agree on one population.",
    "calls": {
-    "edges": 757774,
-    "files": 10950
+    "edges": 749804,
+    "files": 10950,
+    "_why": "the gate's own TABLE 1 row for calls over the whole admitted population (749804 edges, 104440 resolved, 72315 ambiguous, 286424 unresolved), and the number of distinct files in which the type fired"
    },
    "uses": {
-    "edges": 566383,
-    "files": 10623
-   },
-   "imports": {
-    "edges": 43264,
-    "files": 10593
+    "edges": 797950,
+    "files": 10623,
+    "_why": "the gate's own TABLE 1 row for uses over the whole admitted population (797950 edges, 55399 resolved, 21025 ambiguous, 164999 unresolved), and the number of distinct files in which the type fired"
    },
    "contains": {
-    "edges": 27745,
-    "files": 1850
+    "edges": 28342,
+    "files": 1850,
+    "_why": "the gate's own TABLE 1 row for contains over the whole admitted population (28342 edges, 28342 resolved, 0 ambiguous, 0 unresolved), and the number of distinct files in which the type fired"
    },
-   "instantiates": {
-    "edges": 17461,
-    "files": 1408
-   },
-   "exports": {
-    "edges": 15836,
-    "files": 8737
+   "imports": {
+    "edges": 43614,
+    "files": 10593,
+    "_why": "the gate's own TABLE 1 row for imports over the whole admitted population (43614 edges, 6714 resolved, 2626 ambiguous, 14146 unresolved), and the number of distinct files in which the type fired"
    },
    "references": {
-    "edges": 6310,
-    "files": 1289
+    "edges": 1574,
+    "files": 1289,
+    "_why": "the gate's own TABLE 1 row for references over the whole admitted population (1574 edges, 157 resolved, 1 ambiguous, 610 unresolved), and the number of distinct files in which the type fired"
    },
-   "overrides": {
-    "edges": 4670,
-    "files": 1111
+   "exports": {
+    "edges": 15863,
+    "files": 8737,
+    "_why": "the gate's own TABLE 1 row for exports over the whole admitted population (15863 edges, 7615 resolved, 395 ambiguous, 471 unresolved), and the number of distinct files in which the type fired"
    },
    "extends": {
-    "edges": 1728,
-    "files": 1418
+    "edges": 1736,
+    "files": 1418,
+    "_why": "the gate's own TABLE 1 row for extends over the whole admitted population (1736 edges, 468 resolved, 103 ambiguous, 1084 unresolved), and the number of distinct files in which the type fired"
+   },
+   "overrides": {
+    "edges": 4679,
+    "files": 1111,
+    "_why": "the gate's own TABLE 1 row for overrides over the whole admitted population (4679 edges, 4674 resolved, 5 ambiguous, 0 unresolved), and the number of distinct files in which the type fired"
+   },
+   "instantiates": {
+    "edges": 17993,
+    "files": 1408,
+    "_why": "the gate's own TABLE 1 row for instantiates over the whole admitted population (17993 edges, 4671 resolved, 199 ambiguous, 3879 unresolved), and the number of distinct files in which the type fired"
+   },
+   "decorates": {
+    "edges": 4815,
+    "files": 984,
+    "_why": "the gate's own TABLE 1 row for decorates over the whole admitted population (4815 edges, 1697 resolved, 151 ambiguous, 2967 unresolved), and the number of distinct files in which the type fired"
+   },
+   "renders": {
+    "edges": 1759,
+    "files": 399,
+    "_why": "the gate's own TABLE 1 row for renders over the whole admitted population (1759 edges, 85 resolved, 0 ambiguous, 8 unresolved), and the number of distinct files in which the type fired"
    }
   }
  },
