@@ -398,7 +398,28 @@
       "overrides",
       "instantiates"
     ],
-    "excluded": [],
+    "excluded": [
+      {
+        "label": "renders",
+        "evidence": "grammar-absence",
+        "from": "THE PINNED GRAMMAR'S OWN INVENTORY, MEASURED from the pinned bytes: wasm/tree-sitter-cpp.wasm, sha256 0821b6f64ea5444e8c79d1f4362b1a19d3e9ba5b406a8c371082454d81a71a6b (3,520,521 bytes), enumerated through web-tree-sitter's Language API (nodeTypeCount / nodeTypeIsNamed / nodeTypeForId): 210 named + 286 anonymous = 496 unique node types, and the pin's own surface record says namedUnique 210 / anonUnique 286 - the two agree exactly. The inventory contains NO jsx* node type (0 of 496), so no JSX element production exists and no corpus count for it can exist. Corpus half: 0 edges of the label over the whole admitted population. Instrument: script/m14/cpp-grammar-inventory.ts (lane-owned). Falsifier: a grammar build producing a jsx_element node type, or a single corpus edge of the label, retires the ruling and puts the value back in the denominator."
+      },
+      {
+        "label": "decorates",
+        "evidence": "adjudication (grammar-absence does NOT apply)",
+        "from": "THE GRAMMAR-ABSENCE BASIS DOES NOT HOLD HERE, and the difference is stated rather than glossed: C++ DOES have attributes - the measured inventory carries attribute_specifier, attributed_declarator, attribute_declaration, attributed_statement and the GNU __attribute__ tokens (the probe's list is in the instrument's output). What is measured instead is the ADJUDICATION half: an attribute names no callable declaration of its own (it is a keyword/macro-written specifier), so the analyzer records export attributes as the `exports` edge plus symbol METADATA, and it EMITS NO `decorates` EDGE AT ALL - the six occurrences of the word `decorates` in src/ast/real-cpp-analyzer.ts (lines 4257, 5603, 5633, 5658, 5737, 6741) are ALL SIX PROSE IN COMMENTS and not one is an emission site. Corpus half: 0 edges of the label over the whole admitted population. Instrument: script/m14/cpp-grammar-inventory.ts. Falsifier: a single corpus edge of the label, or an analyzer emission site that binds an attribute to another declaration, retires the ruling."
+      },
+      {
+        "label": "mixes_in",
+        "evidence": "grammar-absence",
+        "from": "THE SAME MEASURED INVENTORY: no mixin* node type (0 of 496), so no mixin production exists. Corpus half: 0 edges of the label over the whole admitted population. Instrument: script/m14/cpp-grammar-inventory.ts. Falsifier: a grammar build producing a mixin node type, or a single corpus edge of the label."
+      },
+      {
+        "label": "part_of",
+        "evidence": "grammar-absence",
+        "from": "THE SAME MEASURED INVENTORY: no part* node type (0 of 496), so no `part` directive exists. Corpus half: 0 edges of the label over the whole admitted population. Instrument: script/m14/cpp-grammar-inventory.ts. Falsifier: a grammar build producing a part node type, or a single corpus edge of the label."
+      }
+    ],
     "corpusUnexercised": [],
     "_emissionSites": {
       "calls": [
@@ -438,38 +459,63 @@
     },
     "_emissionSites_revision": "Lines re-derived 2026-10-18 from script/m14/cpp-applicable-set.ts's source scan (the same read the D1 spec table uses). The 2026-10-17 values were taken before the head comment and the overrides spelling restoration moved the pushes; every current line names a `type: ...RelationshipType.X` emission.",
     "_overridesSpelling": "2026-10-17: an `overrides` edge targets the DECLARED MEMBER's leaf (`run`), not `Base.run`, and carries metadata.overriddenOwner = the matched base. Measured reason: `Base.run` answers to no symbol's `name`, and a cpp member symbol publishes no distinct qualifiedName alias, so the dotted spelling resolved 0 of 1,875 edges on the whole population (CPP-RESIDUAL.md). This restores commit a29357562, which the 0b597d2e4 take-main merge dropped; a29357562 measured 86 edges as 86 unresolved -> 0 and fixtures 36/11 -> 41/6. Leaf targets are AMBIGUOUS when several classes declare the member (C++ member names repeat), so the intended base is carried in metadata for a resolver that can read it. WHOLE-POPULATION AFTER (residual-gate --lane cpp, cap 0, rc=0, same command as the baseline): overrides 1,875 edges / 0 resolved / 0 collRes / 1,875 amb / 0 unresolved / 0 noDecl (was 1,875 unresolved); lane unresolved 339,896 -> 338,021, resolved and collRes unchanged, arbitraryTwin for this type 0 -> 0. Fixtures 42/9 -> 50/1. The hand-read of ten edges surfaced two further in-lane defects (a macro-prefixed class named after its BASE, and a qualified external base binding to a same-file sibling leaf), recorded as C8/C9 in CPP-STATE.md.",
-    "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-cpp-analyzer.ts, named per type in `_emissionSites`; the pinned grammar wasm/tree-sitter-cpp.wasm (sha256 0821b6f64ea5444e) carries the productions each of them keys on — base_class_clause for `extends` (1 of its 210 distinct named types), pure_virtual_clause/virtual_specifier for `overrides`, new_expression/template_instantiation for `instantiates`, preproc_include/using_declaration for `imports` (8 probe hits), class_specifier/access_specifier for `exports` (25 probe hits) — so there is no absent construct to exclude and nothing here to reclassify. NO EXCLUSIONS. NOT YET CLAIMED: a per-type whole-corpus or stride edge count for this lane, because the pinned firing log validation/m14/results/firing-laptop-b.current.log records CPP as NO CORPUS under cpp-example (0 of 10 types fired) and no whole-population run has been recorded for it in this block; the emission sites are the evidence, and a measured edge count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified.",
+    "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-cpp-analyzer.ts, named per type in `_emissionSites`; the pinned grammar wasm/tree-sitter-cpp.wasm (sha256 0821b6f64ea5444e) carries the productions each of them keys on — base_class_clause for `extends` (1 of its 210 distinct named types), pure_virtual_clause/virtual_specifier for `overrides`, new_expression/template_instantiation for `instantiates`, preproc_include/using_declaration for `imports` (8 probe hits), class_specifier/access_specifier for `exports` (25 probe hits) — so there is no absent construct to exclude and nothing here to reclassify. NO EXCLUSIONS. NOT YET CLAIMED: a per-type whole-corpus or stride edge count for this lane, because the pinned firing log validation/m14/results/firing-laptop-b.current.log records CPP as NO CORPUS under cpp-example (0 of 10 types fired) and no whole-population run has been recorded for it in this block; the emission sites are the evidence, and a measured edge count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified. DERIVATION, EXTENDED 2026-10-21: the denominator is the language's own expressible set n = 10, and the FOUR EXTENDED VALUES ARE RULED WITH CITATIONS - rendered renders, decorates, mixes_in and part_of are NOT APPLICABLE to C++ (the Lead's ruling, LEAD-RULINGS-2026-10-21.md L-2026-10-21-01 and LANGUAGE-MATRIX-EXTENDED.md §1's cpp column), and the four rulings are now MEASURED by script/m14/cpp-grammar-inventory.ts against the pinned bytes and recorded in `excluded` with their falsifiers. An UNCLASSIFIED type would STAY in the denominator; there is none. CLOSURE: implemented 10 + excluded 4 = the canonical 14, with 0 unclassified and 0 corpus-unexercised.",
     "_implemented_measured": {
-      "_unit": "STRIDE SAMPLE, NOT POPULATION, and a LOWER BOUND by construction: `npx tsx script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 400` — the instrument's own disclosure reads `population: 400 parsed of 400 sampled (corpus has 6641 .cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu files across 30 repos; stride sample)` and `SAMPLE, NOT POPULATION: 400 of 6641 files`. Per-type edges are TABLE 1 (the per-project scope production resolves in) of that run, read 2026-10-14; wall clock 217s. All ten types fire on the stride, the smallest margin being `references` at 80 edges, so every one of the ten is measured present rather than inferred from code.",
+      "_unit": "WHOLE-POPULATION, not a stride: the D2 emission census and the D3 incoming-gate arm over the 7,435 admitted cpp files / 31 repos at $HOME/mcp/backbencher-brain/.corpus (cap 0, stride sample NONE), and the two independent pipelines AGREE EXACTLY on the total (1,282,777 edges). Read on the tree that includes this lane's receiver-wave commit 81cc4aea9. The per-type edge counts and the per-type FILE/REPO counts are the cpp column of validation/m14/verification/LANGUAGE-MATRIX-EXTENDED.md §1.",
+      "_population": "7,435 admitted files (7,435 parsed of 7,435; 2,071 tracked-but-absent and 8 over the engine's 1 MB cap excluded AND COUNTED) · 31 repos · corpus root $HOME/mcp/backbencher-brain/.corpus · the three denominators, each with its rule: PATHS 8,248 (on-disk, once per reachable path, find -L semantics) · DISTINCT FILES 8,248 (by real path) · ADMITTED 7,435 (git-tracked + the lane's extension map + the 1 MB cap, from the UNSAMPLED list). Measured by script/m14/cpp-census-denominators.ts.",
+      "_implements_is_adapted": "`implements` is ADAPTED SEMANTICS for C++: there is no `implements` keyword, and the analyzer emits the edge for a PURE-VIRTUAL CONTRACT (a class that declares a pure virtual function, `= 0`, is a contract a derived class implements). The fixture that pins it is validation/m14/fixtures/cpp/implements-pure-virtual-interface.expectation.json. The ruling is the Lead's, in LANGUAGE-MATRIX-EXTENDED.md §1's cpp column: \"implements by adapted semantics with pure-virtual contracts\".",
       "calls": {
-        "edges": 58007
+        "edges": 931193,
+        "files": 6233,
+        "repos": 27
       },
       "uses": {
-        "edges": 5235
+        "edges": 117705,
+        "files": 4613,
+        "repos": 22
       },
       "contains": {
-        "edges": 9156
+        "edges": 168351,
+        "files": 6263,
+        "repos": 27
       },
       "imports": {
-        "edges": 2725
+        "edges": 51143,
+        "files": 7354,
+        "repos": 30
       },
       "references": {
-        "edges": 80
+        "edges": 3174,
+        "files": 1163,
+        "repos": 14
       },
       "exports": {
-        "edges": 146
+        "edges": 1528,
+        "files": 161,
+        "repos": 6
       },
       "extends": {
-        "edges": 242
+        "edges": 4331,
+        "files": 1746,
+        "repos": 13
       },
       "implements": {
-        "edges": 16
+        "edges": 375,
+        "files": 73,
+        "repos": 8
       },
       "overrides": {
-        "edges": 94
+        "edges": 1884,
+        "files": 125,
+        "repos": 9
       },
       "instantiates": {
-        "edges": 132
+        "edges": 3093,
+        "files": 587,
+        "repos": 16
+      },
+      "TOTAL": {
+        "edges": 1282777
       }
     }
   }

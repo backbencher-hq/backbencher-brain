@@ -88,9 +88,24 @@ if (!DUMP) {
   process.exit(2)
 }
 const availGB = os.freemem() / (1024 ** 3)
-if (availGB < 3) {
-  console.error(`cpp-scope-form-census: REFUSING — ${availGB.toFixed(2)} GB available, the index builds need >= 3 GB.`)
+// THE FLOOR IS A SAFETY RAIL AGAINST AN OOM, and it stays at 3 GB by default. `--min-gb` lowers it
+// EXPLICITLY, and a run below the default floor is RECORDED IN THE REPORT with the number that
+// authorised it — a floor that can be lowered silently is a floor nobody can trust.
+const DEFAULT_MIN_GB = 3
+const minGb = Number(argOf("--min-gb") ?? DEFAULT_MIN_GB)
+if (!Number.isFinite(minGb) || minGb <= 0) {
+  console.error(`cpp-scope-form-census: REFUSING — --min-gb=${argOf("--min-gb")} is not a positive number.`)
   process.exit(2)
+}
+if (availGB < minGb) {
+  console.error(`cpp-scope-form-census: REFUSING — ${availGB.toFixed(2)} GB available, the index builds need >= ${minGb} GB.`)
+  process.exit(2)
+}
+const belowDefaultFloor = minGb < DEFAULT_MIN_GB
+if (belowDefaultFloor) {
+  console.log(
+    `cpp-scope-form-census: NOTE — running BELOW the default ${DEFAULT_MIN_GB} GB floor on an explicit --min-gb=${minGb} (available ${availGB.toFixed(2)} GB). The run is recorded as below-floor in the report.`,
+  )
 }
 
 const ADMITTED = new Set(["cpp", "cc", "cxx", "c++", "hpp", "hxx", "ipp", "inl", "cu"])
@@ -337,6 +352,117 @@ if (Object.keys(buckets).length === 0) {
   process.exit(3)
 }
 
+// ── the grammar-integrity measurement: this census cannot be a SILENTLY DEGRADED analyzer ────────
+// The sql lane measured that a census which calls `analyze()` DIRECTLY, without handing the grammar
+// over, can measure a silently degraded analyzer: 260 edges light over the whole population, with
+// NO error and NO visible counter (the analyzer is synchronous, `acquireParser()` fails, the
+// recovery passes take their `skipped` branch, and the file is reported as analysed anyway).
+//
+// THIS CENSUS CANNOT BE DEGRADED THAT WAY, and the reason is a COUNT with a ROOT, not a promise:
+//   * TRIGGER SITES — an analyzer calling `acquireParser()` / `getParser()` INSIDE its own
+//     `analyze()` — are 0 for cpp, and
+//   * the analyzer does not acquire a parser AT ALL: `analyze()` RECEIVES a parse TREE, so there
+//     is no acquisition inside it that can fail. The grammar is wired in the ENGINE
+//     (`engine.ts` getAnalyzer -> RealCppAnalyzer), and this census reads the GATE's dump, which
+//     is produced through `pool-worker.parseFile` — the production path.
+//
+// THE DELTA IS MEASURED ANYWAY, because a zero with a root beats a zero with a promise: the same
+// files are analysed through the production path and through a direct call that BYPASSES the
+// engine's grammar wiring, and the per-type edge counts are printed side by side.
+const ANALYZER_SRC = path.join(ROOT, "src/ast/real-cpp-analyzer.ts")
+const analyzerSrc = fs.readFileSync(ANALYZER_SRC, "utf8")
+const analyzeBody = (() => {
+  const i = analyzerSrc.indexOf("async analyze(")
+  if (i < 0) return ""
+  // the method body, to its closing brace at the method's own indentation
+  const start = analyzerSrc.indexOf("{", i)
+  let depth = 0
+  for (let j = start; j < analyzerSrc.length; j++) {
+    if (analyzerSrc[j] === "{") depth++
+    else if (analyzerSrc[j] === "}") {
+      depth--
+      if (depth === 0) return analyzerSrc.slice(i, j + 1)
+    }
+  }
+  return analyzerSrc.slice(i)
+})()
+const triggerSites = (analyzeBody.match(/acquireParser\s*\(|getParser\s*\(/g) ?? []).length
+const analyzeSignature = (() => {
+  const m = /async analyze\s*\(([^)]*)\)/.exec(analyzerSrc)
+  return m ? m[0].replace(/\s+/g, " ") : "NOT FOUND"
+})()
+
+const DELTA_SAMPLE_CAP = 400
+const deltaFiles = [...rowsByFile.keys()].sort().slice(0, DELTA_SAMPLE_CAP)
+const perType = (rels: any[]): Map<string, number> => {
+  const m = new Map<string, number>()
+  for (const r of rels ?? []) {
+    const t = String(r?.type ?? "unknown")
+    m.set(t, (m.get(t) ?? 0) + 1)
+  }
+  return m
+}
+const directPath: any = await import(path.join(ROOT, "script/m14/run-fixtures.ts")).then((m: any) => m.getParser?.("cpp"))
+const deltaTypes = new Set<string>()
+const deltaProd = new Map<string, number>()
+const deltaDirect = new Map<string, number>()
+let deltaFilesMeasured = 0
+let deltaDirectFailed = 0
+for (const src of deltaFiles) {
+  const repo = repoOf(src)
+  const repoDir = path.join(CR, repo)
+  let prod: any
+  try {
+    prod = await parseFile(src, repoDir)
+  } catch {
+    continue
+  }
+  let direct: any
+  try {
+    const content = fs.readFileSync(src, "utf8")
+    const tree = directPath.parse(content)
+    const mod: any = await import(path.join(ROOT, "src/ast/real-cpp-analyzer.ts"))
+    const a: any = new mod.RealCppAnalyzer()
+    direct = await a.analyze(tree.rootNode, content, src, {})
+  } catch {
+    deltaDirectFailed++
+    continue
+  }
+  deltaFilesMeasured++
+  const A = perType(prod?.relationships)
+  const B = perType(direct?.relationships)
+  for (const k of new Set([...A.keys(), ...B.keys()])) {
+    deltaTypes.add(k)
+    deltaProd.set(k, (deltaProd.get(k) ?? 0) + (A.get(k) ?? 0))
+    deltaDirect.set(k, (deltaDirect.get(k) ?? 0) + (B.get(k) ?? 0))
+  }
+}
+const deltaRows = [...deltaTypes].sort().map((t) => ({
+  type: t,
+  productionPath: deltaProd.get(t) ?? 0,
+  directNoHandOver: deltaDirect.get(t) ?? 0,
+  delta: (deltaProd.get(t) ?? 0) - (deltaDirect.get(t) ?? 0),
+}))
+const deltaTotal = deltaRows.reduce((a, r) => a + r.productionPath, 0) - deltaRows.reduce((a, r) => a + r.directNoHandOver, 0)
+
+// ── the symlink count, read from the DENOMINATORS artifact when one is present ──────────────────
+// The three denominators are PATHS (a file counted once per reachable path, `find -L` semantics),
+// DISTINCT FILES (the same census by real path) and ADMITTED (the gate's own rule). The
+// difference between the first two IS the symlink count, and it is printed here so the buckets and
+// the path count are read together.
+let symlinkCount: number | null = null
+let symlinkSource: string | null = null
+const DEN = argOf("--denominators")
+if (DEN && fs.existsSync(DEN)) {
+  const d = JSON.parse(fs.readFileSync(DEN, "utf8"))
+  const paths = d?.population?.paths ?? d?.paths
+  const files = d?.population?.distinctFiles ?? d?.distinctFiles
+  if (typeof paths === "number" && typeof files === "number") {
+    symlinkCount = paths - files
+    symlinkSource = DEN
+  }
+}
+
 // ── the rows-out (per-row class, so another instrument can JOIN) ────────────────────────────────
 if (ROWS_OUT) {
   const lines = ["file\tline\tlabel\ttarget\toutcome\tclass"]
@@ -368,6 +494,36 @@ const report = {
     ]),
   ),
   buckets,
+  grammarIntegrity: {
+    question:
+      "Can this census measure a SILENTLY DEGRADED analyzer, the way the sql lane's census did (260 edges light over the whole population, with no error and no visible counter)?",
+    triggerSitesInsideAnalyze: triggerSites,
+    triggerSiteRule:
+      "an analyzer calling `acquireParser()` / `getParser()` INSIDE its own `analyze()`. The Lead's census: sql 4 · ruby 1 · typescript 0 · javascript 0 · python 0 · dart 0 · java 0 · clojure 0 · cpp 0 · csharp 0.",
+    analyzeSignature,
+    root:
+      "the cpp analyzer does not acquire a parser at all: `analyze()` RECEIVES a parse TREE, so there is no acquisition inside it that can fail. The grammar is wired in the ENGINE (`engine.ts` getAnalyzer -> RealCppAnalyzer) and this census reads the GATE's dump, produced through `pool-worker.parseFile` — the production path.",
+    perTypeDelta: {
+      sampleFiles: deltaFilesMeasured,
+      sampleCap: DELTA_SAMPLE_CAP,
+      directPathFailures: deltaDirectFailed,
+      rows: deltaRows,
+      totalDelta: deltaTotal,
+      reading:
+        "production path (`pool-worker.parseFile`, the engine's grammar wiring) MINUS direct call (`getParser('cpp')` + `analyze(tree, ...)`, the engine's wiring bypassed). A non-zero delta would mean the direct path is degraded and the census's numbers would have to be re-taken; a zero delta with the trigger-site count above is the SAME statement as a number.",
+    },
+  },
+  symlinkCount,
+  symlinkCountSource: symlinkSource,
+  memoryFloor: {
+    defaultMinGB: DEFAULT_MIN_GB,
+    authorisedMinGB: minGb,
+    availableGBAtStart: availGB,
+    belowDefaultFloor,
+    note: belowDefaultFloor
+      ? "THIS RUN WAS AUTHORISED BELOW THE DEFAULT FLOOR by an explicit --min-gb flag, because the machine was shared and the population was smaller than the floor assumes. The floor is a safety rail against an OOM, not a claim about the result."
+      : "the default floor was met.",
+  },
   verdict: {
     scopeFormDecided: decided,
     scopeFormDecidedUniqueLeaf: leafOwnersOne,
@@ -386,5 +542,16 @@ for (const [k, b] of Object.entries(buckets)) {
   console.log(`  ${String(b.rows).padStart(9)}  ${k}  ${JSON.stringify(b.byLabel)}`)
 }
 console.log(`  DECIDED by the "::" form: ${decided} of ${total} (${((decided / total) * 100).toFixed(2)} %) — unique-leaf ${leafOwnersOne}, many-leaf ${leafOwnersMany}`)
+console.log(`  SYMLINK count (PATHS - DISTINCT FILES): ${symlinkCount === null ? "not measured (pass --denominators=<json>)" : symlinkCount}`)
+console.log(
+  `  GRAMMAR INTEGRITY: trigger sites inside analyze() = ${triggerSites}; analyze() ${analyzeSignature}`,
+)
+console.log(
+  `    the per-type delta (production path MINUS direct call, ${deltaFilesMeasured} file(s) sampled, ${deltaDirectFailed} direct failure(s)):`,
+)
+for (const r of deltaRows) {
+  console.log(`      ${String(r.productionPath).padStart(9)}  ${r.type}  (direct ${r.directNoHandOver}, delta ${r.delta})`)
+}
+console.log(`      total delta = ${deltaTotal}`)
 console.log("PASS — every residual row landed in exactly one class and the classes sum to the row count")
 process.exit(0)

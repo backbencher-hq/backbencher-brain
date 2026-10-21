@@ -54,6 +54,17 @@ import { GROOVY_ONTOLOGY_MUTANTS, GROOVY_R7_MUTANTS, GROOVY_RECEIVER_MUTANTS } f
 // in mutate-analyzer.ts is REPORTED to master, not made here". It was reported and never made, so
 // the 16 mutants were correct, lane-owned, and executed by nothing.
 import { SWIFT_ONTOLOGY_MUTANTS } from "./swift-mutants"
+// The cpp lane's mutants live in script/m14/cpp-mutants.ts and are spread in here — the same
+// two-line footprint the fsharp lane's comment above describes, for the same reason: a registry
+// several lanes edit at once loses a 259-line block silently, and a mutant that is not registered
+// is indistinguishable from a defect class with no mutant. TWO of the ten are the SPELLING PAIR
+// (qualified target / qualified source), and their shape is the Lead's ruling L-2026-10-21-07 in
+// this lane's own vocabulary: WALL W4 means the analyzer publishes a member's target as its LEAF,
+// so a defect that re-spells it `owner::member` hides behind every forbid that pins the bare
+// spelling. The csharp lane measured that hole (73 mutants, 1 survivor, invisible) and this lane
+// measured ITS OWN copy of it — 77 holes across 43 fixtures, closed by the SPELLING-CONTRACT
+// forbid rows the lane added (script/m14/cpp-forbid-spelling-audit.ts).
+import { CPP_MUTANTS } from "./cpp-mutants"
 // DO NOT add imports for php-mutants.ts's other three exports. The file assembles PHP_MUTANTS by
 // MUTATION at module load -- `PHP_MUTANTS.push(...PHP_RECEIVER_OWNER_MUTANTS)` and six more, line
 // 604 onward -- so its four `export const`s are SOURCE ORGANISATION and PHP_MUTANTS already carries
@@ -2545,6 +2556,10 @@ export const MUTANTS: Mutant[] = [
   // while the lane read as a suite with no php reds. Same shape, and same fix, as the
   // fsharp/css/nim/protobuf/json/clean wiring above.
   ...PHP_MUTANTS,
+  // The cpp lane's ten mutants (script/m14/cpp-mutants.ts). Spread HERE because an import with no
+  // spread is still an orphan and a spread with no import does not compile: both lines or
+  // neither, and both are in this commit.
+  ...CPP_MUTANTS,
   ...POWERSHELL_MUTANTS,
   ...JULIA_MUTANTS,
   ...MARKDOWN_MUTANTS,
@@ -4528,6 +4543,19 @@ export const MUTANTS: Mutant[] = [
     language: "cpp",
     defectClass: "relationship-loss",
     description: "CPPD11 regression: virtual registry keeps one signature per method name (last-declared wins), so an override of the FIRST-declared base overload f(int) is silently dropped when the base also declares f(double)",
+    // RETIRED 2026-10-21, MEASURED NO-OP (not a judgement call). This mutant filters the override
+    // rows whose `metadata.reasonCode` is EXACTLY `signature-match` AND whose source starts with
+    // `Derived.f`. The cpp lane MEASURED the current analyzer's row: `Derived.f`'s reasonCode is
+    // `override-keyword+signature-match` (the `override-keyword+` prefix was added later), so the
+    // filter matches NOTHING and the battery reports 0 -> 0 failures. A no-op is not a pass -- the
+    // Lead's ruling L-2026-10-21-07 says so, and says the REPLACEMENT travels with it. The
+    // replacement is `cpp/last-sig-wins-overrides-respelled` in script/m14/cpp-mutants.ts: the same
+    // defect class at the CURRENT spelling, CAUGHT by cpp/ctor-and-overload-regressions. Unretire
+    // this one and un-retire that one TOGETHER; do not re-add a second copy of the replacement.
+    retired: true,
+    retiredOn: "2026-10-21",
+    retirementReason:
+      "MEASURED NO-OP: the filter's reasonCode spelling ('signature-match') no longer occurs on the row it targets (the current spelling is 'override-keyword+signature-match'), so the mutant drops nothing. Replacement: cpp/last-sig-wins-overrides-respelled (script/m14/cpp-mutants.ts).",
     transform: r => ({
       ...r,
       relationships: (r.relationships ?? []).filter(x => !(x.type === "overrides" && (x as any).metadata?.reasonCode === "signature-match" && String(x.source).startsWith("Derived.f"))),
@@ -18362,6 +18390,19 @@ export const MUTANTS: Mutant[] = [
     id: "cpp/d13-friend-body-owned-by-class",
     language: "cpp",
     defectClass: "fabricated-relationship",
+    // RETIRED 2026-10-21, MEASURED NO-OP (not a judgement call). This mutant re-owns the friend
+    // definition's body reads by matching `x.source === "global"` at `line_number === 26` — the
+    // PRE-2026-10-13 spelling, when the friend body had no owner and the walk attributed its reads
+    // to the file scope. The current analyzer publishes the friend symbol itself as the owner
+    // (`operator==`), so no row matches and the battery reports 0 -> 0 failures. A no-op is not a
+    // pass -- the Lead's ruling L-2026-10-21-07 says so, and says the REPLACEMENT travels with it.
+    // The replacement is `cpp/friend-body-owned-by-class` in script/m14/cpp-mutants.ts: the same
+    // defect class at the CURRENT spelling (the CLASS owns the friend's body reads), CAUGHT by
+    // cpp/friend-definition-body-owner. Unretire this one and un-retire that one TOGETHER.
+    retired: true,
+    retiredOn: "2026-10-21",
+    retirementReason:
+      "MEASURED NO-OP: it matches the pre-2026-10-13 spelling (source 'global' at line 26), which the current analyzer no longer publishes, so it drops nothing. Replacement: cpp/friend-body-owned-by-class (script/m14/cpp-mutants.ts), which re-owns the reads to the CLASS at the current spelling and is CAUGHT.",
     description: "D13 regression: re-own a friend DEFINITION's body to the enclosing class. CP2 correctly refuses to mint a member for a friend declaration, and the same blanket suppression meant a friend function DEFINED inside a class body — which has a body, and so has reads — left those reads with no owner at all, and the walk attributed them to the class. Measured on absl/random/uniform_int_distribution.h:87: `uses param_type -> b` for a read of a PARAMETER of `operator==`, where `param_type` also has member functions named `a()` and `b()` (lines 81-82), so the edge could not be told apart from reading those. It surfaced as the single UNEXPLAINED analyzer edge on abseil-cpp. Reverted generically: the friend body reads go back under the class. This is the second arm of the fixture on purpose — the first version of the FIX also failed it, because it re-attributed to the containing CLASS from a helper that returned the one scope a friend's body can never belong to, so the fixture's CONTROL (an out-of-line member definition, already owned correctly) is what keeps an over-broad re-owner from passing.",
     transform: r => ({
       ...r,
