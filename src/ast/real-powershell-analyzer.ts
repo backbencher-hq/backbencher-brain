@@ -3079,7 +3079,27 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         const target = String(rel.target ?? "")
         // A bare identifier only: a dotted or scoped target is already an identity, and `$env:PATH`
         // is not a variable this file declares.
-        if (target.length === 0 || /[.:$[\]()]/.test(target)) continue
+        //
+        // M60 #278 — NO REGEX IN THIS FILE DECIDES A FACT, and this one DID: the character class
+        // `/[.:$[\]()]/` was deciding whether a target is a bare identifier, which is a fact about
+        // the target's spelling. The policy in this file's own header is that normalising
+        // AST-derived text belongs in a character loop, and every other predicate here is one —
+        // `isPs`, `isS`, `isDot`, `isOne` in `isRelativeScriptPath` are all code-point reads for
+        // exactly this reason. So the class becomes a loop over the same SEVEN characters, in the
+        // same order, with the same meaning: `.` 46 · `:` 58 · `$` 36 · `[` 91 · `]` 93 · `(` 40 ·
+        // `)` 41. **The behaviour is identical and the gate's row count is the proof** — the
+        // zero-regex census reads `regex OPERATIONS in code: 0` and the fixture suite and the
+        // arms are unchanged.
+        if (target.length === 0) continue
+        let isBareIdentifier = true
+        for (let i = 0; i < target.length; i++) {
+          const c = target.charCodeAt(i)
+          if (c === 46 || c === 58 || c === 36 || c === 91 || c === 93 || c === 40 || c === 41) {
+            isBareIdentifier = false
+            break
+          }
+        }
+        if (!isBareIdentifier) continue
         const source = String(rel.source ?? "")
         const visible = (variablesByName.get(target.toLowerCase()) ?? []).filter(
           (c) => c.scope.length === 0 || source === c.scope || source.startsWith(`${c.scope}.`),
