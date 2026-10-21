@@ -201,6 +201,11 @@ type Arm = {
    *  several relationships can share it (two calls of the same callee on one line). */
   groups: Map<string, RowRec[]>
   files: number
+  /** THE POPULATION THIS ARM MEASURED — the probe's OWN numbers, so the caller's arguments can be
+   *  asserted against the gate's log before the tables are compared. */
+  filesParsed: number
+  admitted: number
+  repos: number
   total: number
   byOutcome: Map<string, number>
   /** THE CLAIMS THE PROJECT WOULD REFUTE — the `extFAIL` risk, with samples. */
@@ -332,6 +337,12 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
   const refutedSamples: string[] = []
   let files = 0
   let total = 0
+  /** THE POPULATION COUNTS — the probe's OWN numbers, so the caller's arguments can be asserted
+   *  against the gate's log (the Lead's ask, 2026-10-20: a probe must assert the CALLER'S
+   *  ARGUMENTS as well as the rule). `admitted` is the number of files the probe offered the
+   *  analyzer, `files` the number it parsed, `repos` the number of repositories it walked. */
+  let admitted = 0
+  let reposSeen = 0
   const repos = fs.readdirSync(CR).filter((r) => { try { return fs.statSync(path.join(CR, r)).isDirectory() } catch { return false } }).sort()
   for (const repo of repos) {
     const dir = path.join(CR, repo)
@@ -345,6 +356,8 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
       .filter((abs) => { try { return fs.statSync(abs).size <= 1024 * 1024 } catch { return false } })
     if (filesIn.length === 0) continue
     if (MAX_FILES > 0) filesIn = filesIn.slice(0, MAX_FILES)
+    admitted += filesIn.length
+    reposSeen++
     let projectIndex: any
     if (useIndex) {
       try {
@@ -607,7 +620,7 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
       }
     }
   }
-  return { groups, files, total, byOutcome, refutedSamples, byClaim, claimOutcome, displacedByIndex, displacedByIndexTotal, displacedByNoIndex, displacedByNoIndexTotal, r5, ambCeiling, table }
+  return { groups, files, filesParsed: files, admitted, repos: reposSeen, total, byOutcome, refutedSamples, byClaim, claimOutcome, displacedByIndex, displacedByIndexTotal, displacedByNoIndex, displacedByNoIndexTotal, r5, ambCeiling, table }
 }
 
 console.log(`TS CLAIM-CLASS PROBE — corpus ${CR} · maxFiles ${MAX_FILES} per repo (0 = whole population)`)
@@ -845,6 +858,45 @@ if (ASSERT_TABLE) {
       if (ok && nums.length === 14) gateTable[t[0]!] = nums
     }
     let mismatches = 0
+    // ── THE CALLER'S ARGUMENTS, ASSERTED FIRST (the Lead's ask, 2026-10-20): a probe that only
+    // asserts the RULE can disagree with the gate because its ARGUMENTS differ — the key space, the
+    // file set, the repository count. The gate's own log prints the population it ran on, so the
+    // probe asserts ITS population against it BEFORE it compares the tables: a mismatch here says
+    // "the two runs did not measure the same thing", which is a different failure from "the rule
+    // disagrees", and the two must not be confused.
+    {
+      const popLine = /^population:\s+(\d+) parsed of (\d+) sampled \(corpus has (\d+) [^)]*? across (\d+) repos/m.exec(gateLog)
+      const indexLine = /project index: USED — (\d+) repo index\(es\)/.exec(gateLog)
+      if (!popLine) {
+        console.log(`  THE POPULATION ASSERTION: the gate's log has no 'population:' line — the caller's arguments CANNOT be asserted`)
+        mismatches++
+      } else {
+        const gateParsed = Number(popLine[1])
+        const gateSampled = Number(popLine[2])
+        const gateFiles = Number(popLine[3])
+        const gateRepos = Number(popLine[4])
+        const gateIndexes = indexLine ? Number(indexLine[1]) : -1
+        const probeParsed = withIndex.filesParsed
+        const probeRepos = withIndex.repos
+        const probeFiles = withIndex.admitted
+        const checks: [string, number, number][] = [
+          ["files parsed", probeParsed, gateParsed],
+          ["files admitted (the corpus)", probeFiles, gateFiles],
+          ["repositories", probeRepos, gateRepos],
+        ]
+        for (const [what, probeV, gateV] of checks) {
+          if (probeV !== gateV) {
+            console.log(`  THE CALLER'S ARGUMENTS: ${what} — probe ${probeV} vs gate ${gateV} — MISMATCH (the two runs did not measure the same thing)`)
+            mismatches++
+          }
+        }
+        if (gateIndexes >= 0 && gateIndexes !== probeRepos) {
+          console.log(`  THE CALLER'S ARGUMENTS: repo indexes — probe ${probeRepos} vs gate ${gateIndexes} — MISMATCH`)
+          mismatches++
+        }
+        console.log(`  THE CALLER'S ARGUMENTS, ASSERTED: probe ${probeParsed} parsed of ${probeFiles} admitted across ${probeRepos} repos vs the gate's ${gateParsed} parsed of ${gateSampled} sampled (corpus ${gateFiles} files across ${gateRepos} repos${gateIndexes >= 0 ? `, ${gateIndexes} indexes` : ""}) — ${mismatches === 0 ? "THE SAME POPULATION" : "SEE THE MISMATCHES ABOVE"}`)
+      }
+    }
     for (const t of TYPES) {
       const probeRow = withIndex.table[t] ?? []
       const gateRow = gateTable[t]
