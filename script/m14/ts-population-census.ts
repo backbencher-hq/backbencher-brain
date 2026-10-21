@@ -154,7 +154,10 @@ function walkRepo(root: string, exts: Set<string>): WalkCounts {
     if (!real) continue
     if (seen.has(real)) continue
     seen.add(real)
-    let entries: ReturnType<typeof readdirSync>
+    // THE Dirent TYPE, SPELLED. `ReturnType<typeof readdirSync>` is the OVERLOAD set, so the
+    // `withFileTypes: true` call is not assignable to it under --strict; the element type is
+    // named here instead of being inferred through the overload.
+    let entries: { name: string; isDirectory(): boolean; isSymbolicLink(): boolean; isFile(): boolean }[]
     try {
       entries = readdirSync(real, { withFileTypes: true })
     } catch { continue }

@@ -21,6 +21,38 @@
  * its own deterministic 60-file stride and PRINTS that population — the counts here classify the
  * same ROW CLASSES, and the differential's own counts remain the Lead's measurement.
  *
+ * ## THE BUCKETS THIS ROUND ADDED, AND WHY THE OLD "other" WAS NOT A DISPOSITION
+ *
+ * The first version of this instrument ended with an `other (sample for manual read)` bucket, and
+ * that bucket was where the residue lived: on the 60-file vue-core draw, 221 of the 258
+ * disagreeing rows were in it. **A BUCKET NAMED "other" IS NOT A DISPOSITION** — it is the place
+ * where a measurement stops looking, and a wall that is merely named is a failure. So three
+ * buckets were added, each of which is a QUESTION WITH A YES/NO ANSWER, and each of which can be
+ * wrong:
+ *
+ *   1 · **THE EDGE EXISTS, THE LABEL DIFFERS.** The two sides are matched LABEL-BLIND first: a
+ *       truth row and an analyzer row that name the same ENDPOINT are the same edge even when the
+ *     labels differ, and the bucket records the label pair (`truthLabel -> analyzerLabel`). This
+ *     matters because the old per-side matching charged ONE disagreeing edge TWICE — once as
+ *     MISSING (the truth's label) and once as UNEXPLAINED (the analyzer's label) — so the old
+ *     "other" bucket was mostly a bookkeeping artefact of a same-label match rule, not 221
+ *     separate mysteries.
+ *   2 · **THE TARGET IS NOT DECLARED ANYWHERE IN THE PROJECT.** A name no file in the repository
+ *     declares is a GLOBAL or a BUILTIN (`clearTimeout`, `window`, `console`). The oracles derive
+ *     a `references` row to it; the analyzer does not publish a project reference to something the
+ *     project does not declare. The bucket is computed from a whole-repo pass over the DECLARED
+ *     names, so it is a fact about the population, not a guess about one file.
+ *   3 · **THE TARGET IS A LOCAL BINDING.** The analyzer RE-SPELLS an edge whose target is a local
+ *     binding (a parameter, a local variable, a catch binding, a loop binding) to the family
+ *     spelling `<callable>\u0000<binding>` and marks it `metadata.localBinding`
+ *     (`real-typescript-analyzer.ts:4772` `applyLocalBindingSpellings`). The predicate used here
+ *     is THE ANALYZER's own (`collectLocalBindingNames`, `real-typescript-analyzer.ts:4710-4755`),
+ *     re-implemented in the classifier — and that is stated rather than hidden: **this bucket
+ *     exists to name the CONTRACT QUESTION, not to certify the analyzer's rule.** A bucket built
+ *     on the analyzer's own predicate cannot decide whether the contract is right; it can only
+ *     decide how many rows the contract question accounts for. The ORACLE is untouched by it, and
+ *     the oracle is what the differential compares against.
+ *
  * Usage:
  *   BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/ts-differential-classify.ts [--repo NAME] [--files 60] [--json out]
  */
@@ -107,6 +139,85 @@ function memberNames(root: any): Set<string> {
   return out
 }
 
+
+/**
+ * THE PROJECT's DECLARED NAMES — a whole-repo pass, because "is this name declared anywhere in
+ * the project?" is a question about the REPOSITORY and not about one file. A file-local answer
+ * would call a sibling file's declaration "undeclared" and inflate the global bucket.
+ */
+function projectDeclaredNames(files: string[]): Set<string> {
+  const out = new Set<string>()
+  const declareNode = (n: any) => {
+    if (!n) return
+    const t = n.type
+    if (
+      t === "class_declaration" || t === "abstract_class_declaration" || t === "interface_declaration" ||
+      t === "enum_declaration" || t === "type_alias_declaration" || t === "function_declaration" ||
+      t === "function_signature" || t === "method_signature" || t === "method_definition" ||
+      t === "generator_function_declaration" || t === "abstract_method_signature" ||
+      t === "property_signature" || t === "public_field_definition" || t === "enum_assignment"
+    ) {
+      const nm = n.childForFieldName("name") ?? n.childForFieldName("property") ?? n.namedChild(0)
+      if (nm && (nm.type === "identifier" || nm.type === "property_identifier")) out.add(String(nm.text))
+    }
+    if (t === "variable_declarator") {
+      const nm = n.childForFieldName("name") ?? n.namedChild(0)
+      if (nm && nm.type === "identifier") out.add(String(nm.text))
+    }
+    for (let i = 0; i < n.namedChildCount; i++) declareNode(n.namedChild(i))
+  }
+  for (const abs of files) {
+    let content = ""
+    try { content = fs.readFileSync(abs, "utf8") } catch { continue }
+    let tree: any = null
+    try { tree = parser.parse(content) } catch { continue }
+    if (!tree) continue
+    declareNode(tree.rootNode)
+  }
+  return out
+}
+
+/**
+ * THE ANALYZER's OWN LOCAL-BINDING PREDICATE — re-implemented from
+ * `real-typescript-analyzer.ts:4710-4755` (`collectLocalBindingNames`): a parameter, a local
+ * variable, a nested declaration, a catch binding, a loop binding, or a shadowed name. The
+ * classifier states plainly that it is the analyzer's predicate: the bucket's job is to SIZE the
+ * contract question, not to adjudicate it.
+ */
+function localBindingNames(root: any): Set<string> {
+  const out = new Set<string>()
+  const bind = (nm: any) => { if (nm && nm.type === "identifier") out.add(String(nm.text)) }
+  const walk = (n: any, insideFunction: boolean) => {
+    if (!n) return
+    const t = n.type
+    let next = false
+    if (t === "function_declaration" || t === "function_expression" || t === "generator_function" ||
+        t === "arrow_function" || t === "method_definition") {
+      if (insideFunction) {
+        const nm = n.childForFieldName("name") ?? n.namedChild(0)
+        if (nm && (nm.type === "identifier" || nm.type === "property_identifier")) bind(nm.type === "identifier" ? nm : null)
+      }
+      next = true
+    } else if (t === "variable_declarator" && insideFunction) {
+      bind(n.childForFieldName("name") ?? n.namedChild(0))
+    } else if (t === "catch_clause") {
+      bind(n.childForFieldName("parameter") ?? n.namedChild(0))
+    } else if (t === "for_in_statement" && insideFunction) {
+      const left = n.childForFieldName("left") ?? n.namedChild(0)
+      if (left && left.type === "identifier") bind(left)
+      else if (left) {
+        for (let i = 0; i < left.namedChildCount; i++) {
+          const c = left.namedChild(i)
+          if (c && c.type === "variable_declarator") bind(c.childForFieldName("name") ?? c.namedChild(0))
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) walk(n.namedChild(i), next)
+  }
+  walk(root, false)
+  return out
+}
+
 type Row = { label: string; from: string; target: string }
 type Tally = { count: number; samples: string[] }
 const missingBuckets = new Map<string, Tally>()
@@ -121,6 +232,9 @@ const breakdown: any[] = []
 
 for (const repo of REPOS) {
   const files = filesOf(repo)
+  // THE WHOLE-REPO PASS — the declared names of every file this instrument will look at, so the
+  // "not declared in the project" bucket is a fact about the population and not about one file.
+  const projectNames = projectDeclaredNames(files)
   let truthTotal = 0
   let covered = 0
   let missingTotal = 0
@@ -161,6 +275,7 @@ for (const repo of REPOS) {
     analyzerTotal += rels.length
     const typeParams = typeParameterNames(root)
     const members = memberNames(root)
+    const locals = localBindingNames(root)
     for (const te of truth) {
       // THE DIFFERENTIAL'S OWN MATCH KEY, verbatim: `normTarget(auditTarget(t))` — the BINDING_SEP
       // strip on BOTH sides (differential.ts:25527, :25535). The classifier used the bare
@@ -175,10 +290,21 @@ for (const repo of REPOS) {
       missingTotal++
       const tn = normTarget(te.target)
       const bindingSeen = rels.some((r: any) => r.label === te.label && r.target.includes("\u0000") && String(r.target).slice(String(r.target).lastIndexOf("\u0000") + 1) === te.target)
+      // THE LABEL-BLIND CROSS-MATCH: the same ENDPOINT under a DIFFERENT label is ONE disagreeing
+      // edge, not two. The old per-side rule charged it twice, once MISSING and once UNEXPLAINED,
+      // and the "other" bucket absorbed both charges.
+      const otherLabel = rels.find((r: any) => r.label !== te.label &&
+        normTarget(auditTarget(r.target)) === normTarget(auditTarget(te.target)))
+      const importedTarget = rels.some((r: any) => r.label === "imports" &&
+        normTarget(auditTarget(r.target)) === normTarget(auditTarget(te.target)))
       let bucket: string
       if (bindingSeen) bucket = `${te.label}: analyzer emitted it BINDING-SPELLED (truth derives the bare name)`
+      else if (otherLabel) bucket = `${te.label}: THE EDGE EXISTS, THE LABEL DIFFERS (${te.label} -> ${otherLabel.label})`
+      else if (importedTarget) bucket = `${te.label}: the analyzer routes this target to the \`imports\` label`
       else if (typeParams.has(tn)) bucket = `${te.label}: target is a FILE TYPE PARAMETER (a local binding, not a project reference)`
+      else if (locals.has(tn)) bucket = `${te.label}: target is a LOCAL BINDING (the contract question: the analyzer re-spells it, the oracle publishes it)`
       else if (members.has(tn)) bucket = `${te.label}: target is a DECLARED MEMBER NAME (reached by contains, not a reference)`
+      else if (!projectNames.has(tn)) bucket = `${te.label}: target is NOT DECLARED ANYWHERE IN THE PROJECT (a global or builtin the oracle over-derives)`
       else bucket = `${te.label}: other (sample for manual read)`
       bump(missingBuckets, bucket, `${te.from} -> ${te.target} @ ${rel}`)
     }
@@ -189,8 +315,14 @@ for (const repo of REPOS) {
       ))
       if (hit) continue
       unexplainedTotal++
+      const otherLabel = truth.find((te) => te.label !== r.label &&
+        normTarget(auditTarget(te.target)) === normTarget(auditTarget(r.target)))
+      const rn = normTarget(auditTarget(r.target))
       let bucket: string
       if (String(r.target).includes("\u0000")) bucket = `${r.label}: analyzer BINDING-SPELLED target (truth derives a bare name or nothing)`
+      else if (otherLabel) bucket = `${r.label}: THE EDGE EXISTS, THE LABEL DIFFERS (${otherLabel.label} -> ${r.label})`
+      else if (locals.has(rn)) bucket = `${r.label}: target is a LOCAL BINDING (the contract question: the analyzer re-spells it, the oracle publishes it)`
+      else if (!projectNames.has(rn)) bucket = `${r.label}: target is NOT DECLARED ANYWHERE IN THE PROJECT (a global or builtin the analyzer does not publish a project reference to)`
       else bucket = `${r.label}: other (sample for manual read)`
       bump(unexplainedBuckets, bucket, `${r.from} -> ${String(r.target).replace(/\u0000/g, "\\0")} @ ${rel}`)
     }

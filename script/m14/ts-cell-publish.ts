@@ -158,10 +158,13 @@ function main() {
   const scopeLines = grab(dump, "resolution scope:")
   const twinLines = grab(dump, "  type          edges    intended  sameFileUnproven arbitraryTwin")
 
-  const perType = table.rows.map((r) => {
+  // THE ROW TYPE, SPELLED — a spread of a `Record<string, number>` loses the index signature,
+  // so the per-type table's own columns would not typecheck under --strict.
+  type PerTypeRow = { type: string } & Record<string, number>
+  const perType: PerTypeRow[] = table.rows.map((r) => {
     const o: Record<string, number> = {}
     COLUMNS.forEach((c, i) => { o[c] = r.n[i]! })
-    return { type: r.type, ...o }
+    return { type: r.type, ...o } as PerTypeRow
   })
 
   const verifiedClass = RESOLVED + EXT_OK + BIND_OK

@@ -280,8 +280,9 @@ async function corpusCensus(): Promise<{
     let src = ""
     try { src = readFileSync(f.abs, "utf8") } catch { parseFailures++; continue }
     if (src.trim().length === 0) continue
-    let tree: { rootNode: { hasError: boolean; walk(cb: (n: { type: string; hasError: boolean }) => boolean): void } } | null = null
-    try { tree = (await parser.parse(src)) as never } catch { parseFailures++; continue }
+    type CensusTree = { rootNode: { hasError: boolean; walk(cb: (n: { type: string; hasError: boolean }) => boolean): void } }
+    let tree: CensusTree | null = null
+    try { tree = (await parser.parse(src)) as unknown as CensusTree } catch { parseFailures++; continue }
     if (!tree || tree.rootNode.hasError) { parseFailures++; continue }
     tree.rootNode.walk((n) => {
       nodeTypeCounts.set(n.type, (nodeTypeCounts.get(n.type) ?? 0) + 1)
@@ -353,8 +354,9 @@ async function main() {
   const parser = await ASTEngine.getParser("typescript" as never)
   for (const cf of COUNTERFACTUALS) {
     say(`     ${cf.label}: ${cf.question}`)
-    let tree: { rootNode: { hasError: boolean; toString(): string } } | null = null
-    try { tree = (await parser.parse(cf.source)) as never } catch { say("       PARSE THREW"); continue }
+    type CfTree = { rootNode: { hasError: boolean; toString(): string } }
+    let tree: CfTree | null = null
+    try { tree = (await parser.parse(cf.source)) as unknown as CfTree } catch { say("       PARSE THREW"); continue }
     if (!tree) { say("       NO TREE"); continue }
     const seen: string[] = []
     const walk = (n: { type: string; children: unknown[] }, depth: number) => {

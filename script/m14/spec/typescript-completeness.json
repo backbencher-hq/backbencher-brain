@@ -109,9 +109,9 @@
       "union_type",
       "variable_declaration",
       "variable_declarator",
-      "while_statement"
-    ,
-      "ERROR"],
+      "while_statement",
+      "ERROR"
+    ],
     "_notes": {
       "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-typescript-analyzer.ts:2142-2144), and `error-ranges.ts` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
     }
@@ -189,9 +189,9 @@
       "unary_expression",
       "update_expression",
       "with_statement",
-      "yield_expression"
-    ,
-      "MISSING"],
+      "yield_expression",
+      "MISSING"
+    ],
     "_notes": {
       "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-typescript-analyzer.ts:2142-2144); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
     }
@@ -609,42 +609,61 @@
       "extends",
       "implements",
       "overrides",
-      "instantiates"
+      "instantiates",
+      "decorates",
+      "renders"
     ],
-    "excluded": [],
+    "excluded": [
+      {
+        "label": "mixes_in",
+        "evidence": "grammar-absence",
+        "from": "TypeScript has NO mixin construct, and the ruling carries a FIRED CONTROL so it is a fact about the grammar and not an artefact of the instrument. MEASURED by script/m14/ts-mixin-part-ruling.ts (published: validation/m14/measurements/typescript-mixin-part-ruling.md): the PINNED grammars read through the production parser path declare NO node matching /mix/ of ANY name — tree-sitter-typescript.wasm sha256 778025db5a8be0e70f8ccc3671e486dfeddd048c25d9e8a70c26de2e1bf6f97d, 191 named types of 385 ids; tree-sitter-tsx.wasm sha256 79e5da75ea62855a0cd67177685f0164eac87d5f630b3cbe1e0a099751ad30f8, 203 named of 405 ids — while the SAME scan against the control grammar that HAS the constructs (dart, sha256 7d05aa385f3b59a6fa9c10263c1cbabcd002ca5d0880b8b9cd61b3db169d98f1, 222 named of 527 ids) reports mixin_declaration, mixin_application, mixin_application_class and mixins PRESENT. COUNTERFACTUAL: the pinned grammar parses `mixin M {}` with an ERROR and `mixin` as an ordinary identifier, and the nearest TypeScript spelling of a mixin — declaration merging, `interface M {}` + `class M implements M {}` — is already carried by the `implements` type, so nothing is lost by the ruling. CORPUS HALF: 0 edges on the whole admitted population (17,689 files / 42 repos), in the gate's own TABLE 1. Ruled 2026-10-21."
+      },
+      {
+        "label": "part_of",
+        "evidence": "grammar-absence",
+        "from": "TypeScript has NO part directive, and the ruling carries the SAME FIRED CONTROL. MEASURED by script/m14/ts-mixin-part-ruling.ts (published: validation/m14/measurements/typescript-mixin-part-ruling.md): neither the typescript grammar (sha256 778025db5a8be0e70f8ccc3671e486dfeddd048c25d9e8a70c26de2e1bf6f97d) nor the tsx grammar (sha256 79e5da75ea62855a0cd67177685f0164eac87d5f630b3cbe1e0a099751ad30f8) declares any node matching /part/ of ANY name, while the dart control declares part_directive, part_of_directive and part_of_builtin PRESENT. COUNTERFACTUAL: the pinned grammar parses `part of 'x';` as an ordinary expression statement with an ERROR, and the nearest TypeScript spelling of 'this file belongs to another compilation unit' — the triple-slash reference directive — is lexed as a COMMENT, so the file-to-file relationship it denotes is already carried by `imports` / `references` and nothing is lost by the ruling. CORPUS HALF: 0 edges on the whole admitted population (17,689 files / 42 repos), in the gate's own TABLE 1. Ruled 2026-10-21."
+      }
+    ],
     "corpusUnexercised": [],
-    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 0ae9ad09a. WHOLE admitted population on the production path (`npx tsx script/m14/residual-gate.ts --lane typescript`): 13,973 parsed of 13,973 admitted .ts/.mts/.cts files across 39 repos, 0 parse failures, 0 degraded; artifact validation/m14/measurements/task105/typescript-whole-population-gate.txt. ALL TEN types fire, each measured with its own count: calls 446,250 · uses 24,678 · contains 85,368 · imports 75,116 · references 114,743 · exports 33,715 · extends 3,176 · implements 268 · overrides 671 · instantiates 15,838 — TOTAL 799,823, exactly the sum of the ten rows. THIS READING SUPERSEDES A 600-FILE STRIDE and says so: the stride artifact (validation/m14/measurements/task105/typescript-stride600-incoming-table1.txt, 600 of 17,350 admitted .ts/.tsx/.mts/.cts files, all ten firing with implements 5 and overrides 6) was the basis of the first version of this block; the population run is the stronger instrument and the two agree on the classification. TWO THINGS THE POPULATION RUN ADMITS AND THIS BLOCK CARRIES RATHER THAN SMOOTHS. (1) IT IS A LOWER BOUND: 321 files hold CONTENT and returned nothing (19 further hold no content at all, which is not a defect); the gate refuses to decide whether those 321 are parse failures or content that cannot declare anything, names five and states that 335 further are COUNTED BUT NOT NAMED, and this block does not decide for it. (2) THE RUN'S OWN CLOSURE IS ONE EDGE SHORT ON `references`: the CLOSURE block prints `references ** 1 edge(s) UNACCOUNTED ** — 114,743 edges vs 114,742 dispositioned` and the INTENT CLOSURE prints the same row (`references 1`). `references` is therefore reported at its emitted count with a measured one-edge bookkeeping gap in the instrument, not rounded away. THE ADMITTED SET IS THE `typescript` LANGUAGE ID (.ts, .mts, .cts); `.tsx` routes to the language `tsx` and the tsx grammar (src/ast/engine.ts:947, :2263-2264) with this same analyzer, so the `.tsx` share is NOT in these counts — a boundary of the population, not of the analyzer. NO TYPE IS EXCLUDED: the language expresses all ten and the whole admitted population fires all ten, so there is no grammar-absence claim to make and no zero-sites entry to file. ARITHMETIC: 10 implemented + 0 corpus-unexercised + 0 gaps = 10 applicable = 10 − 0 grammar-absence − 0 unclassified. Every implemented type carries its own `_implemented_measured` count, so the per-type silence attribution has a pointer for each of the ten instead of a prose sentence to share.",
+    "_from": "TWELVE OF TWELVE, MEASURED ON THE WHOLE ADMITTED POPULATION, AND THE TWO SUBTRACTIONS ARE CITED. THE OLD BLOCK SAID '10 implemented' WHILE THE ANALYZER HAS EMITTED `decorates` AND `renders` SINCE 2026-10-18 — A HEADER THAT UNDER-DECLARES IS A HEADER THAT CANNOT BE CHECKED, AND THE BAR IS n/n AGAINST THE LIVE 14-TYPE VOCABULARY (src/ast/types.ts). THE CLASSIFICATION OF ALL FOURTEEN, FOR THIS LANGUAGE, IS: calls · uses · contains · imports · references · exports · extends · implements · overrides · instantiates · decorates · renders = TWELVE IMPLEMENTED, MEASURED; mixes_in and part_of = RULED grammar-absence, each with a CITATION THAT CARRIES A FIRED CONTROL (see `excluded` below and validation/m14/measurements/typescript-mixin-part-ruling.md). ⇒ n = 14 − 2 = 12, and the target is 12/12. THE MEASUREMENT: the whole-population production arm over the ADMITTED population (17,689 files / 42 repos — git-tracked, extension-admitted .ts/.tsx/.mts/.cts, at most the gate's 1 MB SIZE_CAP, present; 0 parse failures; 1 file over the cap and therefore never parsed), read with `BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts typescript ts,tsx,mts,cts 0 --index --dump`, published as validation/m14/measurements/typescript-cell-3bb68c27fdc4.md: 988,696 edges, 467,389 resolved, residual 204,718 (20.7059 %), verified class 78.1678 %, extFAIL = bindFAIL = causeFAIL = 0, the class sum closing EXACTLY to the edge count with `amb(kind)` REPORTED BESIDE `amb(decl)` AND NEVER ADDED (the arm states it is a subset), and the claims (extOK 253,074 + ext? 11,136 + bindOK 52,379) in THEIR OWN columns, never merged into resolution. EVERY ONE OF THE TWELVE TYPES FIRES ON THE POPULATION — the two smallest are `implements` 312 and `overrides` 687, SMALL BUT NOT ZERO, and measured rather than assumed. THE POPULATION IS PUBLISHED WITH ALL THREE OF ITS DENOMINATORS AND THEIR RULES (on-disk four-spelling 71,734 · on-disk three-spelling / the router's `typescript` language id 68,102 · admitted 17,689) in validation/m14/measurements/typescript-population-census.md, and the arithmetic between them closes exactly: 71,734 − 54,044 not tracked by git = 17,690 tracked-and-extension-matched, − 1 over the cap = 17,689 admitted.",
     "_implemented_measured": {
-      "_unit": "edges published through the production path over the WHOLE admitted 13,973-file typescript population (.ts/.mts/.cts, 39 repos, 0 parse failures, 0 degraded; 321 content-bearing files returned nothing, so this is a LOWER BOUND) — CLOSURE block of validation/m14/measurements/task105/typescript-whole-population-gate.txt, whose ten per-type rows sum to its own TOTAL of 799,823 (one edge of `references` is UNACCOUNTED by the run's own closure and is reported there, not hidden)",
+      "_unit": "edges published through the production path over the WHOLE ADMITTED population (17,689 files / 42 repos — git-tracked, extension-admitted .ts/.tsx/.mts/.cts, at most the gate's 1 MB SIZE_CAP, present; 0 parse failures; 1 file over the cap and never parsed) — the arm's own TABLE 1, published in validation/m14/measurements/typescript-cell-3bb68c27fdc4.md, whose twelve rows sum to its own TOTAL of 988,696 and whose class sum closes to the edge count EXACTLY. Command: BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts typescript ts,tsx,mts,cts 0 --index --dump",
       "calls": {
-        "edges": 446250
+        "edges": 532701
       },
       "uses": {
-        "edges": 24678
+        "edges": 41131
       },
       "contains": {
-        "edges": 85368
+        "edges": 94481
       },
       "imports": {
-        "edges": 75116
+        "edges": 110599
       },
       "references": {
-        "edges": 114743
+        "edges": 125746
       },
       "exports": {
-        "edges": 33715
+        "edges": 41698
       },
       "extends": {
-        "edges": 3176
+        "edges": 3444
       },
       "implements": {
-        "edges": 268
+        "edges": 312
       },
       "overrides": {
-        "edges": 671
+        "edges": 687
       },
       "instantiates": {
-        "edges": 15838
+        "edges": 17034
+      },
+      "decorates": {
+        "edges": 2119
+      },
+      "renders": {
+        "edges": 18744
       }
     }
   }
