@@ -585,6 +585,21 @@ type BindingScope = {
   published: boolean
   parent: BindingScope | null
   names: Set<string>
+  /**
+   * R2 (charter §21.41) — THE DECLARATION'S OWN OFFSET for each name this scope declares.
+   *
+   * A scope holds each name at most once (the model's own `names` is a Set, and JavaScript's own
+   * rules make a second declaration in the same scope the SAME binding: `var` hoists to the
+   * function scope, a parameter and a `var` of the same name are one binding, and a second `let`
+   * in one block is a syntax error). So the scope's identity plus the declaration's offset IS the
+   * declaration's identity: two reads of ONE declaration share it, two reads of TWO declarations
+   * do not.
+   *
+   * This is the dart lane's R2 shape (the innermost enclosing scope that declares the name, plus
+   * that declaration's own position), computed from the scope model this lane ALREADY builds — no
+   * new pass and no new AST walk.
+   */
+  decls: Map<string, number>
 }
 
 type BindingModel = {
@@ -606,6 +621,15 @@ type BindingModel = {
    * channel an owner it cannot verify).
    */
   publishedClasses: Set<string>
+  /**
+   * R2 (charter §21.41) — THE NAMES THIS FILE DECLARES IN MORE THAN ONE SCOPE.
+   *
+   * Only these names can be the two reads of TWO DIFFERENT declarations that a name-only dedup
+   * key would collapse, so only these names pay for the scope-identity lookup. Every other name
+   * keeps the payload-pollution dedup key byte for byte, and the change is confined to the class
+   * where the scope carries the fact.
+   */
+  multiScopeNames: Set<string>
 }
 type ReceiverEvidence = "new" | "assignment" | "this" | "jsdoc" | "class-static" | "this-alias"
 
@@ -2497,7 +2521,6 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             // garbage leaf": the token-membership proxy this replaces could not see a
             // parenthesised callee, and 31 svelte `calls` rows and 550 ts-corpus rows carried
             // source text because of it.
-
           } else if (this.isJSBuiltinCall(targetName, fullCallee)) {
             // filtered builtins
           } else {
@@ -3562,7 +3585,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const head = root && root.type === "identifier" ? root.text : ""
           if (head && head !== "this" && head !== "super") {
             const recvSource = method || owner || moduleName
-            const recvKey = `${recvSource}.#${head}`
+            // R2 (charter §21.41) — the DECLARATION's scope identity joins the dedup key ONLY for
+            // a local-binding row, so two reads of two different declarations that share a name are
+            // two rows, while every other row keeps the payload-pollution key byte for byte.
+            const recvScopeId = this.localBindingScopeId(root, head)
+            const recvKey = recvScopeId ? `${recvSource}.#${head}|${recvScopeId}` : `${recvSource}.#${head}`
             if (!seen.has(recvKey)) {
               seen.add(recvKey)
               const boundRecv = this.localBindingTarget(root, head, recvSource)
@@ -3576,6 +3603,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: {
                   isFieldAccess: true, bareRead: true, callReceiver: true,
                   ...(boundRecv ? { localBinding: true } : {}),
+                  ...(recvScopeId ? { localBindingScope: recvScopeId } : {}),
                   ...(importedRecv ? { importedBinding: importedRecv } : {}),
                 },
               })
@@ -3632,7 +3660,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // carries the calls edge.
                 if (head && head !== "this" && head !== "super" && cur?.type === "identifier") {
                   const rootSource = method || owner || moduleName
-                const rootKey = `${rootSource}.#${head}`
+                // R2 (charter §21.41) — the DECLARATION's scope identity joins the dedup key ONLY
+                // for a local-binding row (see the call-receiver site for the full statement).
+                const rootScopeId = this.localBindingScopeId(cur, head)
+                const rootKey = rootScopeId ? `${rootSource}.#${head}|${rootScopeId}` : `${rootSource}.#${head}`
                 if (!seen.has(rootKey)) {
                   seen.add(rootKey)
                   // The chain ROOT is a read of the identifier — a local binding when the file
@@ -3650,6 +3681,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                     metadata: {
                       isFieldAccess: true, chainRoot: true,
                       ...(boundRoot ? { localBinding: true } : {}),
+                      ...(rootScopeId ? { localBindingScope: rootScopeId } : {}),
                       ...(importedRoot ? { importedBinding: importedRoot } : {}),
                     },
                   })
@@ -3785,7 +3817,26 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isBindingSite = isImportBinding || isParamBinding || isPatternBinding || isExportSpecifier
           if (!isCallee && !isWrite2 && !isDeclName && !isPropKey && !isMemberPart && !isPropName && !isLabel && !isShorthandProp && !isJsxName && !isBindingSite) {
             const bSource = method || owner || moduleName
-            const bKey = `${bSource}.#${txt}`
+            // R2 (charter §21.41) — THE DECLARATION'S SCOPE IDENTITY JOINS THE DEDUP KEY, AND ONLY
+            // FOR A LOCAL-BINDING ROW.
+            //
+            // The payload-pollution dedup key is `${source}.#${name}`: the SOURCE and the NAME, never
+            // the DECLARATION. So two reads of TWO DIFFERENT declarations that share a name in one
+            // callable spell IDENTICALLY, and the second read was DROPPED — a lost fact, not a wrong
+            // one (the dart lane measured the same loss on its own population, 1,246 rows on
+            // dart-http). The scope identity is the innermost scope that DECLARES the name at the
+            // read's position, plus that declaration's own offset: two reads of ONE declaration
+            // share it, two reads of TWO declarations do not.
+            //
+            // The join is confined on purpose:
+            //   · `localBindingScopeId` answers null for a name the file declares in only ONE scope
+            //     (the base key already separates it), for a read that resolves to the PROGRAM scope
+            //     (a published symbol — not a local-binding row), and for a name that is not bound at
+            //     the site at all. Every one of those keeps the payload-pollution key byte for byte;
+            //   · the `calls` sites do not use this dedup at all and already publish one row per
+            //     read site, so nothing there changes.
+            const bScopeId = this.localBindingScopeId(node, txt)
+            const bKey = bScopeId ? `${bSource}.#${txt}|${bScopeId}` : `${bSource}.#${txt}`
             if (!seen.has(bKey)) {
               seen.add(bKey)
               const boundRead = this.localBindingTarget(node, txt, bSource)
@@ -3799,6 +3850,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: {
                   isFieldAccess: true, bareRead: true,
                   ...(boundRead ? { localBinding: true } : {}),
+                  ...(bScopeId ? { localBindingScope: bScopeId } : {}),
                   ...(importedRead ? { importedBinding: importedRead } : {}),
                 },
               })
@@ -3911,16 +3963,20 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     const publishedClasses = new Set<string>()
     const program: BindingScope = {
       kind: "program", startIndex: rootNode.startIndex, endIndex: rootNode.endIndex,
-      published: true, parent: null, names: new Set(),
+      published: true, parent: null, names: new Set(), decls: new Map(),
     }
     scopes.push(program)
-    const addName = (scope: BindingScope, name: string): void => {
+    const addName = (scope: BindingScope, name: string, declNode?: Node | null): void => {
       if (!name) return
       scope.names.add(name)
+      // R2 — the DECLARATION's own offset, so two reads of two different declarations that share
+      // a name can be told apart. `declNode` is the declaration's own identifier node when the
+      // call site has it; the scope's own start is the fallback (a scope holds a name once).
+      if (!scope.decls.has(name)) scope.decls.set(name, declNode?.startIndex ?? scope.startIndex)
       allNames.add(name)
     }
     const newScope = (node: Node, kind: BindingScope["kind"], parent: BindingScope, published: boolean): BindingScope => {
-      const scope: BindingScope = { kind, startIndex: node.startIndex, endIndex: node.endIndex, published, parent, names: new Set() }
+      const scope: BindingScope = { kind, startIndex: node.startIndex, endIndex: node.endIndex, published, parent, names: new Set(), decls: new Map() }
       scopes.push(scope)
       return scope
     }
@@ -3936,12 +3992,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let i = 0; i < paramsNode.namedChildCount; i++) {
           const param = paramsNode.namedChild(i)
           if (!param) continue
-          for (const pair of this.collectPatternPairs(param)) addName(fnScope, pair.name)
+          for (const pair of this.collectPatternPairs(param)) addName(fnScope, pair.name, pair.node)
         }
       }
       // Arrow single-parameter form: `x => ...` has a `parameter` field, not `parameters`.
       const single = fnNode.childForFieldName("parameter")
-      if (single) for (const pair of this.collectPatternPairs(single)) addName(fnScope, pair.name)
+      if (single) for (const pair of this.collectPatternPairs(single)) addName(fnScope, pair.name, pair.node)
     }
     /** import bindings: default / named (alias = local binding) / namespace, all module-scope. */
     const addImportBindings = (importNode: Node): void => {
@@ -3949,9 +4005,9 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!clause) return
       const sourceNode = importNode.childForFieldName("source")
       const specifier = sourceNode ? stringContent(sourceNode) : ""
-      const add = (name: string): void => {
+      const add = (name: string, declNode?: Node | null): void => {
         if (!name) return
-        addName(program, name)
+        addName(program, name, declNode)
         moduleBindings.add(name)
         // THE CLAIM'S EVIDENCE: only a LITERAL specifier can be verified by the run's import rows.
         if (specifier) moduleBindingSpecs.set(name, specifier)
@@ -3959,10 +4015,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < clause.namedChildCount; i++) {
         const c = clause.namedChild(i)
         if (!c) continue
-        if (c.type === "identifier") add(c.text)
+        if (c.type === "identifier") add(c.text, c)
         else if (c.type === "namespace_import") {
           const nm = c.childForFieldName("name") ?? c.namedChild(0)
-          if (nm) add(nm.text)
+          if (nm) add(nm.text, nm)
         } else if (c.type === "named_imports") {
           for (let j = 0; j < c.namedChildCount; j++) {
             const spec = c.namedChild(j)
@@ -3970,7 +4026,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const alias = spec.childForFieldName("alias")
             const nm = spec.childForFieldName("name") ?? spec.namedChild(0)
             const local = alias ?? nm
-            if (local) add(local.text)
+            if (local) add(local.text, local)
           }
         }
       }
@@ -3995,7 +4051,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       const t = n.type
       if (t === "function_declaration" || t === "generator_function_declaration") {
         const nm = n.childForFieldName("name")
-        if (nm) addName(scope, nm.text)
+        if (nm) addName(scope, nm.text, nm)
         const fnScope = newScope(n, "function", scope, false)
         addParams(n, fnScope)
         for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, fnScope) }
@@ -4004,7 +4060,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "function_expression" || t === "generator_function") {
         const fnScope = newScope(n, "function", scope, false)
         const nm = n.childForFieldName("name")
-        if (nm) addName(fnScope, nm.text)  // a NAMED function expression binds inside itself
+        if (nm) addName(fnScope, nm.text, nm)  // a NAMED function expression binds inside itself
         addParams(n, fnScope)
         for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, fnScope) }
         return
@@ -4032,7 +4088,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         const moduleSpec = moduleBound ? moduleLoadSpecifier(value) : ""
         if (nameNode) {
           for (const pair of this.collectPatternPairs(nameNode)) {
-            addName(target, pair.name)
+            addName(target, pair.name, pair.node)
             if (moduleBound) {
               moduleBindings.add(pair.name)
               if (moduleSpec) moduleBindingSpecs.set(pair.name, moduleSpec)
@@ -4045,14 +4101,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "catch_clause") {
         const catchScope = newScope(n, "catch", scope, false)
         const param = n.childForFieldName("parameter")
-        if (param) for (const pair of this.collectPatternPairs(param)) addName(catchScope, pair.name)
+        if (param) for (const pair of this.collectPatternPairs(param)) addName(catchScope, pair.name, pair.node)
         for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, catchScope) }
         return
       }
       if (t === "class_declaration") {
         const nm = n.childForFieldName("name")
         if (nm) {
-          addName(scope, nm.text)
+          addName(scope, nm.text, nm)
           if (scope.published) publishedClasses.add(nm.text)
         }
         for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, scope) }
@@ -4071,7 +4127,17 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, scope) }
     }
     walk(rootNode, program)
-    return { scopes, allNames, moduleBindings, moduleBindingSpecs, publishedClasses }
+    // R2 — THE NAMES DECLARED IN MORE THAN ONE SCOPE. Only these names can be the two reads of
+    // TWO DIFFERENT declarations that a name-only dedup key would collapse, so only these names
+    // pay for the scope-identity lookup; every other name keeps the payload-pollution dedup key
+    // byte for byte. One pass over the scopes, counting the scopes that declare each name.
+    const declScopeCounts = new Map<string, number>()
+    for (const s of scopes) {
+      for (const n of s.names) declScopeCounts.set(n, (declScopeCounts.get(n) ?? 0) + 1)
+    }
+    const multiScopeNames = new Set<string>()
+    for (const [n, count] of declScopeCounts) if (count > 1) multiScopeNames.add(n)
+    return { scopes, allNames, moduleBindings, moduleBindingSpecs, publishedClasses, multiScopeNames }
   }
 
   /**
@@ -4093,15 +4159,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   private localBindingTarget(node: Node | null | undefined, name: string, source: string | null | undefined): string | null {
     const model = this.bindingModel
     if (!model || !node || !name || !source) return null
-    if (name === "this" || name === "super" || name === "arguments" || name === "undefined") return null
-    // A name the file binds FROM A MODULE is the imported-binding class, never a local binding: its
-    // claim is evidence-verified and its target stays bare. This covers `import`, `require()` and a
-    // DYNAMIC `require(expr)` (which has no evidence entry and therefore can never be claimed).
-    if (model.moduleBindings.has(name)) return null
-    const kind = this.resolveBindingKind(model, node.startIndex, name)
-    // ONLY a lexical (unpublishable) binding is a LOCAL-binding claim; program-scope names are
-    // published symbols whose edges may resolve normally.
-    if (kind !== "lexical") return null
+    // THE ONE SHARED TEST (see `isLocalBindingName`): a name the file binds FROM A MODULE is the
+    // imported-binding class, never a local binding (its claim is evidence-verified and its target
+    // stays bare — `import`, `require()` and a DYNAMIC `require(expr)`, which has no evidence entry
+    // and therefore can never be claimed); `this` / `super` / `arguments` / `undefined` are not
+    // names a declaration can bind; and ONLY a lexical (unpublishable) binding is a LOCAL-binding
+    // claim, because program-scope names are published symbols whose edges may resolve normally.
+    if (!this.isLocalBindingName(node, name)) return null
     return `${source}${BINDING_SEP}${name}`
   }
 
@@ -4174,6 +4238,18 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** innermost scope containing `index`, then the scope chain — "published" | "lexical" | null. */
   private resolveBindingKind(model: BindingModel, index: number, name: string): "published" | "lexical" | null {
+    const scope = this.resolveBindingScope(model, index, name)
+    if (!scope) return null
+    return scope.published ? "published" : "lexical"
+  }
+
+  /**
+   * R2 (charter §21.41) — THE SCOPE THAT DECLARES `name` AT `index`: the innermost scope that
+   * contains the position, then the scope chain, exactly the resolution `resolveBindingKind` uses
+   * — but it returns the SCOPE, not the kind, because the scope is what carries the declaration's
+   * identity.
+   */
+  private resolveBindingScope(model: BindingModel, index: number, name: string): BindingScope | null {
     let best: BindingScope | null = null
     for (const scope of model.scopes) {
       if (index < scope.startIndex || index > scope.endIndex) continue
@@ -4181,10 +4257,65 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     let cur: BindingScope | null = best
     while (cur) {
-      if (cur.names.has(name)) return cur.published ? "published" : "lexical"
+      if (cur.names.has(name)) return cur
       cur = cur.parent
     }
     return null
+  }
+
+  /**
+   * R2 (charter §21.41) — THE DECLARATION'S SCOPE IDENTITY for a read of `name` at `node`, or null.
+   *
+   * The identity is the innermost scope that DECLARES the name at this position, plus that
+   * declaration's own offset — the dart lane's shape. Two reads of ONE declaration share it; two
+   * reads of TWO declarations do not. It joins the DEDUP KEY only, and only for a row whose
+   * identity is the occurrence (a local-binding row), so the payload-pollution dedup stays byte for
+   * byte for every other row.
+   *
+   * `null` in three cases, and every one of them keeps the old key:
+   *   · the name is declared in only ONE scope in the file — the base key already separates it;
+   *   · the read resolves to the PROGRAM scope — a published symbol, not a local-binding row, and
+   *     a claim there would deny a real declaration;
+   *   · the name is not bound at this site at all.
+   */
+  private localBindingScopeId(node: Node | null | undefined, name: string): string | null {
+    const model = this.bindingModel
+    if (!model || !node || !name) return null
+    if (!model.multiScopeNames.has(name)) return null
+    // THE SCOPE IDENTITY JOINS THE DEDUP KEY ONLY FOR A ROW THAT IS A LOCAL-BINDING ROW, AND THAT IS
+    // THE SAME TEST THAT DECIDES THE TARGET'S SPELLING — `isLocalBindingName`, shared with
+    // `localBindingTarget`. WITHOUT THIS THE FIX OVER-REACHES, AND THE WHOLE-POPULATION ARM
+    // MEASURED IT: a read whose name is ALSO A MODULE BINDING in this file (and shadowed by a local
+    // in an inner scope) resolves to the local's scope, so it got a scope id, so the dedup key
+    // changed, so the row was published — with a BARE target and NO claim at all (the analyzer
+    // declines to spell a module-binding name as a local binding, and the imported-binding claim
+    // declines it too, because a local shadows the import at this site). The arbiter then bound
+    // that bare name to whatever same-named declaration the project has: the DECOY class. The arm
+    // measured 1,463 such rows, of which 958 RESOLVED and 543 became arbitrary twins — new rows
+    // that no claim covers, which is the opposite of what the fix is for.
+    if (!this.isLocalBindingName(node, name)) return null
+    const scope = this.resolveBindingScope(model, node.startIndex, name)
+    if (!scope || scope.published) return null
+    return `${scope.startIndex}:${scope.decls.get(name) ?? scope.startIndex}`
+  }
+
+  /**
+   * IS THIS READ A LOCAL-BINDING ROW? — the ONE test both the TARGET's spelling and the DEDUP KEY's
+   * scope identity must agree on.
+   *
+   * The refusals, each a false statement the row must not make:
+   *   · `this` / `super` / `arguments` / `undefined` are not names a declaration can bind;
+   *   · a name the file binds FROM A MODULE is the imported-binding class, never a local binding
+   *     (its claim is evidence-verified and its target stays bare);
+   *   · a name that resolves to the PROGRAM scope is a published symbol, not a local binding — a
+   *     claim there would deny a real declaration.
+   */
+  private isLocalBindingName(node: Node | null | undefined, name: string): boolean {
+    const model = this.bindingModel
+    if (!model || !node || !name) return false
+    if (name === "this" || name === "super" || name === "arguments" || name === "undefined") return false
+    if (model.moduleBindings.has(name)) return false
+    return this.resolveBindingKind(model, node.startIndex, name) === "lexical"
   }
 
   /**
