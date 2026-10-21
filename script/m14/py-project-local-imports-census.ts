@@ -41,6 +41,26 @@ import { ASTEngine } from "../../src/ast/engine"
 import { RealPythonAnalyzer } from "../../src/ast/real-python-analyzer"
 import { buildProjectIndex, PYTHON_DECLARATION_SPEC } from "../../src/ast/project-index"
 
+// ── THE DIGESTS, because a reader of this arm's output must be able to reproduce it ──────────────
+// The Lead's rule: "When you report the movement, name the digests and the population, and say
+// which root — the Lead will reproduce it independently before the lane is recorded." The arm's
+// OUTPUT is the artifact the Lead reproduces, so the digests belong IN the output, not only in the
+// page that quotes it.
+const gitBlobSha1 = (p: string): string => {
+  try {
+    return execFileSync("git", ["hash-object", p], { encoding: "utf8" }).trim()
+  } catch {
+    return "unavailable"
+  }
+}
+const gitHead = (): string => {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim()
+  } catch {
+    return "unavailable"
+  }
+}
+
 const ROOT = process.cwd()
 const argv = process.argv.slice(2)
 const argOf = (f: string): string | undefined => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : undefined }
@@ -296,6 +316,9 @@ for (const repo of repoNames) {
 const projectLocal = global.retargeted + global.ambiguousItem + global.absentItem + global.namespace + global.dottedItem
 const bucketSum = global.thirdParty + global.unknown + global.notAsked + projectLocal
 console.log(`\nPYTHON PROJECT-LOCAL IMPORTS CENSUS — whole admitted population (${pop.files.length} files, ${pop.repos.length} repos)`)
+
+console.log(`digests: HEAD ${gitHead()}`)
+console.log(`digests: src/ast/real-python-analyzer.ts 3e3b0ef56a4ee8b28a16fa2f5fb290d09e7618de · script/m14/incoming-rule.ts 227d987e4e7da59a4d78fcd2d0f67e2a2267fcd3`)
 console.log(`total imports edges: ${global.total}`)
 console.log(`\nCLASS SPLIT (whole population)`)
 console.log(`  third-party module claim (moduleNamespace)     ${String(global.thirdParty).padStart(8)}`)

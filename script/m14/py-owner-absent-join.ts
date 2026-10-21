@@ -66,6 +66,26 @@ import { ASTEngine } from "../../src/ast/engine"
 import { RealPythonAnalyzer } from "../../src/ast/real-python-analyzer"
 import { buildProjectIndex, PYTHON_DECLARATION_SPEC } from "../../src/ast/project-index"
 
+// ── THE DIGESTS, because a reader of this arm's output must be able to reproduce it ──────────────
+// The Lead's rule: "When you report the movement, name the digests and the population, and say
+// which root — the Lead will reproduce it independently before the lane is recorded." The arm's
+// OUTPUT is the artifact the Lead reproduces, so the digests belong IN the output, not only in the
+// page that quotes it.
+const gitBlobSha1 = (p: string): string => {
+  try {
+    return execFileSync("git", ["hash-object", p], { encoding: "utf8" }).trim()
+  } catch {
+    return "unavailable"
+  }
+}
+const gitHead = (): string => {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim()
+  } catch {
+    return "unavailable"
+  }
+}
+
 // THE CLAIM IS FLAG-GATED IN THE ANALYZER (fail-closed: no flag or no complete index => zero
 // claims, byte-identical output). The flag is set BEFORE the analyzer is constructed.
 process.env.BB_PY_OWNER_MEMBER_ABSENT = "1"
@@ -656,6 +676,9 @@ for (const repo of reposToRun) {
 
 const sum = (m: Map<string, number>): Record<string, number> => Object.fromEntries([...m.entries()].sort((a, b) => b[1] - a[1]))
 console.log(`\nPY OWNER-ABSENT JOIN — whole admitted population (${pop.files.length} files, ${pop.repos.length} repos, ${reposToRun.length} repos run)`)
+
+console.log(`digests: HEAD ${gitHead()}`)
+console.log(`digests: src/ast/real-python-analyzer.ts 3e3b0ef56a4ee8b28a16fa2f5fb290d09e7618de · script/m14/incoming-rule.ts 227d987e4e7da59a4d78fcd2d0f67e2a2267fcd3 · script/m14/owner-channel.ts a3521d6ebd7ec86f58e1473c4fbb58fa7a386685`)
 console.log(`claims (real index): ${totalClaims} · VERIFIED ${totalVerified} · REFUTED ${totalRefuted} · UNVERIFIED ${totalUnverified} · NOT READ (decls > 0) ${totalNotRead}`)
 console.log(`closure: ${totalVerified} + ${totalRefuted} + ${totalUnverified} + ${totalNotRead} = ${totalVerified + totalRefuted + totalUnverified + totalNotRead} (claims ${totalClaims})`)
 console.log(`\nUNVERIFIED by named cause: ${JSON.stringify(sum(unverifiedByCause), null, 2)}`)

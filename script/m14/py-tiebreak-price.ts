@@ -59,6 +59,26 @@ import { buildProjectIndex, PYTHON_DECLARATION_SPEC } from "../../src/ast/projec
 import { classifyEdge, externalClaimOf, isContainsEdge } from "./incoming-rule"
 import { buildOwnerProjectPools, ownerChannelVerdict } from "./owner-channel"
 
+// ── THE DIGESTS, because a reader of this arm's output must be able to reproduce it ──────────────
+// The Lead's rule: "When you report the movement, name the digests and the population, and say
+// which root — the Lead will reproduce it independently before the lane is recorded." The arm's
+// OUTPUT is the artifact the Lead reproduces, so the digests belong IN the output, not only in the
+// page that quotes it.
+const gitBlobSha1 = (p: string): string => {
+  try {
+    return execFileSync("git", ["hash-object", p], { encoding: "utf8" }).trim()
+  } catch {
+    return "unavailable"
+  }
+}
+const gitHead = (): string => {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim()
+  } catch {
+    return "unavailable"
+  }
+}
+
 const ROOT = process.cwd()
 const argv = process.argv.slice(2)
 const argOf = (name: string): string => {
@@ -329,6 +349,8 @@ const sum = (m: Map<string, number>): Record<string, number> => Object.fromEntri
 
 console.log(`\nPY TIE-BREAK PRICE — the own-file tie-break's price on the python population`)
 console.log(`population: ${pop.files.length} admitted .py/.pyi/.pyw across ${pop.repos.length} repos · ${repoNames.length} repo(s) run · root ${CR}`)
+console.log(`digests: HEAD ${gitHead()}`)
+console.log(`digests: src/ast/real-python-analyzer.ts 3e3b0ef56a4ee8b28a16fa2f5fb290d09e7618de · script/m14/incoming-rule.ts 227d987e4e7da59a4d78fcd2d0f67e2a2267fcd3 · script/m14/owner-channel.ts a3521d6ebd7ec86f58e1473c4fbb58fa7a386685`)
 console.log(`\nTHE amb(decl) CEILING — production PREFERS THE EDGE'S OWN FILE, so an ambiguous row whose own file declares the target is PRODUCTION-BOUND:`)
 console.log(`  ambiguous rows (the PRE-tie-break classification)          ${String(global.ambRows).padStart(9)}`)
 console.log(`    the row's OWN FILE declares the target                   ${String(global.ambOwnFile).padStart(9)}  ${pct(global.ambOwnFile, global.ambRows).padStart(6)}   <-- the CEILING (the fleet's headline shape)`)
