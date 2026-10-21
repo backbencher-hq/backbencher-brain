@@ -204,6 +204,10 @@ case "$cmd" in
     if [ "$h_lane" != "$lane" ]; then
       echo "NOT RELEASED — the token is held by '${h_lane:-nobody}', not by $lane."; exit 4
     fi
+    # THE GRANTED FLAG MUST BE READ **BEFORE** THE HOLDER IS REMOVED ✓✓ (2026-10-21, the dart lane measured this ✓✓).
+    # The holder file lives INSIDE $TOKEN_DIR ✓✓, so the `rm -rf` below DELETES it ✓✓ — a read after that returns 0 ✓✓
+    # and the granted branch below is DEAD CODE ✓✓. The flag was WRITTEN ✓✓, CARRIED ✓✓, and NEVER READ ✓✓.
+    h_granted="$(holder_granted)"
     rm -rf "$TOKEN_DIR" 2>/dev/null || true
     # A GRANTED TURN DOES NOT CONSUME THE LANE'S QUEUE PLACE ✓✓ (the holder records it ✓).
     if [ "${h_granted:-0}" = "1" ]; then
