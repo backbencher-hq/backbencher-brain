@@ -1594,6 +1594,14 @@ export type Classified = {
    * becomes a misleading claim**, so the kind travels with the disposition and the report groups by it.
    */
   claimOnAmbiguous?: { kind: string; disposition: AmbiguousClaimDisposition }
+  /**
+   * TRUE WHEN THE QUALIFIED-NAME JOIN RESOLVED THIS ROW — the row the JOIN answered, not the name
+   * model. It is a DISCLOSURE, not a class: the row is still `resolved`, and the fleet's class table
+   * does not move because of it. It is here so that EVERY arm says out loud how many rows the join
+   * moved in ITS OWN language — the join is NOT clojure-scoped (ANY target carrying a `/` can answer
+   * it), so an arm that does not report this number cannot honestly say "my numbers did not move".
+   */
+  joined?: boolean
 }
 
 /**
@@ -2182,7 +2190,7 @@ export function classifyEdge(
     // A COUNT OF ZERO LEAVES THE ROW UNCHANGED — the join narrows nothing when it answers nothing.
     // A COUNT ABOVE ONE LEAVES THE ROW AMBIGUOUS — the join does not narrow a collision.
     if (qualifiedJoin !== undefined && qualifiedJoin.count === 1) {
-      return { outcome: "resolved", decls, kinds: kindText }
+      return { outcome: "resolved", decls, kinds: kindText, joined: true }
     }
     // THE CLAIM IS READ ON THIS PATH FOR THE FIRST TIME — to RECORD it, never to move the outcome.
     return {

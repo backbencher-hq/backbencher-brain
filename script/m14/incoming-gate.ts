@@ -1987,6 +1987,13 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   // name count could not see, and a row it DECLINED is a binding production WITHDREW — the second is
   // the one a reader must not have to guess about, because it can turn a name-looking `resolved` into
   // an honest NULL. Counted by reason so the channel's mechanisms are priced, not just totalled.
+  /**
+   * THE QUALIFIED-NAME JOIN's PRICE, IN THIS ARM'S OWN LANGUAGE. Counted here because the join is
+   * NOT clojure-scoped: ANY target that carries a `/` can answer it, so a language that publishes
+   * path-shaped targets (go, c, cpp, java, javascript, powershell) can have rows moved by it, and
+   * an arm that cannot SHOW the count cannot claim that its numbers did not move.
+   */
+  let joinResolved = 0
   let ownerRows = 0
   let ownerResolved = 0
   let ownerDeclined = 0
@@ -2054,6 +2061,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, e.srcFile,
       qualifiedJoinFor(e.repo, e.tgt, e.srcFile),
     )
+    if (pc.joined) joinResolved++
     if (ownerVerdict !== undefined) {
       ownerRows++
       ownerReasons.set(ownerVerdict.reason, (ownerReasons.get(ownerVerdict.reason) ?? 0) + 1)
@@ -2163,6 +2171,12 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       `${ownerDeclinedButNameWouldResolve} row(s) the channel DECLINED whose name would have resolved — production holds those NULL (withdrawn binding)\n`,
     )
   }
+  // THE JOIN's OWN PRICE, PRINTED EVEN WHEN IT IS ZERO — a reader must be able to see "0" rather
+  // than infer it from an absent line, and an arm that shows a number can be compared with another
+  // arm that shows a number.
+  process.stderr.write(
+    `  qualified-name join: ${joinResolved} row(s) resolved by the qualified-name join (the name model alone would not have resolved them)\n`,
+  )
 
   return {
     lang, ext: exts.join(","), admittedExts: exts, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, bindingCollapse: BINDING_COLLAPSE, bindingCollapsedKeys: collapsedKeys, rows, fallbackRows, emptyResults,
