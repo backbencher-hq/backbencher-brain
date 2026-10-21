@@ -2266,8 +2266,15 @@ function selfTest(): { ok: boolean; failures: string[] } {
     if (own.outcome !== "externalVerified") {
       failures.push(`control: a claim on the sub-package's OWN manifest-declared dependency read ${own.outcome}, expected externalVerified (the governing manifest is the nearest ancestor, not the root)`)
     }
+    // A CLAIM WHOSE PACKAGE THE GOVERNING MANIFEST DOES NOT NAME IS **UNVERIFIABLE**, NOT REFUTED
+    // (the semantics ruling, 2026-10-20): a manifest's silence about a package is not evidence about
+    // that package's membership, so the project's evidence CANNOT answer the claim. The old expectation
+    // here was `externalRefuted`, and the clojure lane measured 977 rows where that refutation charged
+    // the LANE for the PROJECT's incompleteness — clj-kondo's test fixtures require libraries its
+    // manifest does not list. **UNVERIFIABLE IS ALSO THE SAFER VERDICT AGAINST LAUNDERING**: the row does
+    // not resolve, so a lane gains nothing by publishing a claim it cannot support.
     const rootOnly = classifyEdge(empty, kinds, "Widget", { kind: "packageScope", package: "root-dep", name: "Widget" }, mono, undefined, undefined, undefined, "/repo/packages/foo/src/x.ts")
-    if (rootOnly.outcome !== "externalRefuted") {
+    if (rootOnly.outcome !== "externalUnverified") {
       failures.push(`control: a claim on a dependency only the REPO ROOT declares read ${rootOnly.outcome}, expected externalRefuted (a sibling package's manifest must not launder another package's dependency)`)
     }
     // ── THE CMAKE READER'S WIRING, IN BOTH DIRECTIONS (2026-10-20, Lead) ──────────────────────────

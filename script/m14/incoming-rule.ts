@@ -1111,7 +1111,26 @@ export function verifyPackageScopeClaim(
     if (norm === want) return "externalVerified"
     if (norm.startsWith(want + "/") || want.startsWith(norm + "/")) return "externalVerified"
   }
-  return "externalRefuted"
+  // ── THE PACKAGE IS NOT AMONG THE PROJECT'S DECLARED DEPENDENCIES → UNVERIFIABLE, NOT REFUTED ──
+  //
+  // THE SEMANTICS RULING (2026-10-20, Lead). A `packageScope` claim asserts MEMBERSHIP — "this name is a
+  // member of the package P" — and the MANIFEST is the evidence that the package is available to the
+  // project. **A MANIFEST'S SILENCE ABOUT P IS NOT EVIDENCE ABOUT P's MEMBERSHIP**, so when the
+  // governing manifest does not name P, the project's evidence CANNOT ANSWER the claim: it is
+  // UNVERIFIABLE, which is the third outcome and is neither a pass nor a fail.
+  //
+  // IT WAS REFUTED BEFORE, AND THE CLOJURE LANE MEASURED WHY THAT WAS WRONG: 977 of its 16,533
+  // non-resolved edges would have been refuted, because clj-kondo's TEST FIXTURES require libraries its
+  // manifest does not list — so the refutation charged the LANE for the PROJECT's incompleteness. The
+  // lane's 629/977 split is not a refutation surface; it is the claim's EMISSION SURFACE.
+  //
+  // THIS IS SAFE AGAINST LAUNDERING, WHICH WAS CHECKED RATHER THAN ASSUMED: a lane that published a claim
+  // for a package the project does not depend on now gets UNVERIFIABLE, not VERIFIED — so the row does NOT
+  // resolve, clause 1 still fails, and the lane gains nothing. THE VERDICT NARROWS; IT DOES NOT LOOSEN.
+  //
+  // AND IT CHANGES NO CURRENT NUMBER: no analyzer emits this claim kind yet, so the semantics are fixed
+  // BEFORE the first publication, and the first arm that carries the claim already has them.
+  return "externalUnverified"
 }
 
 export function verifyFileClaim(
