@@ -72,10 +72,10 @@
 import * as path from "node:path"
 import { readFileSync, statSync, readdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
-import { parseFile } from "../../../../src/ast/pool-worker"
-import { buildProjectIndexStreaming, DART_DECLARATION_SPEC } from "../../../../src/ast/project-index"
-import { resolveWasmAsset } from "../../../../src/util/wasm"
-import { verifyExternalClaim, NAME_CAP } from "../../../../script/m14/incoming-rule"
+import { parseFile } from "../../src/ast/pool-worker"
+import { buildProjectIndexStreaming, deserializeProjectIndex, DART_DECLARATION_SPEC } from "../../src/ast/project-index"
+import { resolveWasmAsset } from "../../src/util/wasm"
+import { verifyExternalClaim, NAME_CAP } from "./incoming-rule"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const SIZE_CAP = 1024 * 1024
@@ -172,6 +172,31 @@ function census(index: any): string {
   return [...c.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(" · ")
 }
 
+/** THE INDEX FOR A REPOSITORY — the gate's own cache when it holds exactly this file set, and the
+ *  gate's own builder otherwise. The cache key is the file set plus the newest mtime, and it does
+ *  NOT include the spec — so a cache is only reused when the file set is the same, and the
+ *  instrument says which path it took, because an index built with a DIFFERENT spec would be a
+ *  silent wrong measurement. */
+async function indexForRepo(repo: Repo, wasm: string): Promise<any> {
+  const cacheDir = process.env.BB_INDEX_CACHE ?? "/tmp/bb-project-index"
+  const cachePath = path.join(cacheDir, `dart-${repo.name}.json`)
+  let newest = 0
+  for (const f of repo.files) { try { newest = Math.max(newest, statSync(f).mtimeMs) } catch { /* counted by the gate */ } }
+  try {
+    const raw = JSON.parse(readFileSync(cachePath, "utf8"))
+    if (raw?.files === repo.files.length && raw?.newest === newest) {
+      const back = deserializeProjectIndex(raw.index)
+      if (back !== null) {
+        back.complete = true
+        console.log(`  index: REUSED the gate's cache (${cachePath}) — the same file set and the same newest mtime`)
+        return back
+      }
+    }
+  } catch { /* no usable cache: build below */ }
+  console.log(`  index: BUILT (${repo.files.length} files) — no usable cache at ${cachePath}`)
+  return buildProjectIndexStreaming(wasm, repo.files, DART_DECLARATION_SPEC)
+}
+
 const repos = discover()
 const repoFilter = process.argv.find((a) => a.startsWith("--repo="))?.slice("--repo=".length)
 const selected = repoFilter ? repos.filter((r) => repoFilter.split(",").includes(r.name)) : repos
@@ -186,13 +211,32 @@ type Row = {
 }
 const rows: Row[] = []
 /** THE PROJECT'S DECLARATION COUNTS — the arbiter's key space, built from the ANALYZER'S OWN
- *  symbols exactly as the gate builds it (`incoming-gate.ts:1478-1493`). */
-const declCount = new Map<string, number>()
+ *  symbols exactly as the gate builds it (`incoming-gate.ts:1478-1493`). **PER PROJECT**, because
+ *  the gate's resolution scope is per project ("the file's OWN PROJECT — production's scope"), and
+ *  the arbiter's refutation is a statement about THIS project: a row in one repository is not
+ *  refuted by a same-named declaration in another one. A single global map would have made the
+ *  instrument refute rows the gate never refutes. */
+/** WHICH INDEX VIEW THE ANALYSIS USES — `pre` (the derived pre-fix view: the state the
+ *  pre-fix arm measured, and the state the 86 were named in) or `fixed` (the index as committed:
+ *  the state the FIXED arm measured, and the state the rows that SURVIVE the fix are named in). */
+/** THE FIXED ARM'S OWN COUNT — the number the fixed production arm measured for `externalRefuted`
+ *  (`.tmp-lane/dart-prod-index-FIXED.json`, the `overrides` row). The instrument must find the
+ *  SAME number independently, or one of the two is wrong. */
+const FIXED_ARM_EXTFAIL = 25
+const VIEW = (process.argv.find((a) => a.startsWith("--view="))?.split("=")[1] ?? "pre") as "pre" | "fixed"
+if (VIEW !== "pre" && VIEW !== "fixed") {
+  console.error(`--view= must be "pre" or "fixed", not "${VIEW}"`)
+  process.exit(2)
+}
+const declCounts = new Map<string, Map<string, number>>()
 let preFixHasMixin = false
 let fixedHasMixin = false
 let candidateTotal = 0
 
 for (const repo of selected) {
+  // THIS PROJECT'S KEY SPACE. The gate's is per project, so this one is too.
+  const declCount = new Map<string, number>()
+  declCounts.set(repo.name, declCount)
   // THE CANDIDATE SET: every admitted file that contains the text `@override` — a superset of the
   // files that can publish a refuted row (the fallback is gated on the annotation).
   const candRel = execFileSync("git", ["-C", repo.dir, "grep", "-l", "-F", "@override", "--", "*.dart"], {
@@ -204,11 +248,19 @@ for (const repo of selected) {
   if (!candidates.length) continue
 
   const t0 = Date.now()
-  const index = await buildProjectIndexStreaming(wasm, repo.files, DART_DECLARATION_SPEC)
+  const index = await indexForRepo(repo, wasm)
   const { view, removed } = preFixView(index)
+  // WHICH INDEX VIEW THE ANALYSIS USES. `--view=pre` (the default) analyses with the DERIVED
+  // pre-fix view (the mixins removed) — that is the state the pre-fix arm measured, and it is how
+  // the 86 were named. `--view=fixed` analyses with the index AS COMMITTED (the mixins present) —
+  // that is the state the FIXED arm measured, and it is how the rows that SURVIVE the fix are
+  // named. The two modes are the same instrument pointed at two states, and each one's control
+  // checks the census of the state it claims to be in.
+  const analysisView = VIEW === "fixed" ? index : view
   console.log(`\n=== ${repo.name}: ${repo.files.length} files indexed in ${Date.now() - t0}ms · ${candidates.length} candidate files (of ${repo.files.length})`)
   console.log(`  FIXED view  census: ${census(index)}`)
   console.log(`  PRE-FIX view census: ${census(view)}  (mixin entries removed: ${removed.length})`)
+  console.log(`  ANALYSIS VIEW: ${VIEW === "fixed" ? "FIXED (the committed spec — the state the fixed arm measured)" : "PRE-FIX (derived — the state the pre-fix arm measured)"}`)
   if (removed.length) console.log(`  mixin names removed: ${removed.slice(0, 8).join(", ")}${removed.length > 8 ? ` … (+${removed.length - 8})` : ""}`)
   if ([...view.typeKinds.values()].some((k) => String(k) === "mixin")) preFixHasMixin = true
   if ([...index.typeKinds.values()].some((k) => String(k) === "mixin")) fixedHasMixin = true
@@ -224,7 +276,7 @@ for (const repo of selected) {
   for (const f of candidates) {
     const rel = path.relative(repo.dir, f)
     let r: any
-    try { r = await parseFile(f, repo.dir, { projectIndex: view, projectRoot: repo.dir } as any) } catch { continue }
+    try { r = await parseFile(f, repo.dir, { projectIndex: analysisView, projectRoot: repo.dir } as any) } catch { continue }
     for (const s of Array.isArray(r?.symbols) ? r.symbols : []) {
       const name = String(s?.name ?? "")
       if (!name) continue
@@ -270,7 +322,7 @@ for (const repo of selected) {
       if (!repo.files.includes(f)) continue
       ownerFiles++
       let r: any
-      try { r = await parseFile(f, repo.dir, { projectIndex: view, projectRoot: repo.dir } as any) } catch { continue }
+      try { r = await parseFile(f, repo.dir, { projectIndex: analysisView, projectRoot: repo.dir } as any) } catch { continue }
       for (const s of Array.isArray(r?.symbols) ? r.symbols : []) {
         const name = String(s?.name ?? "")
         if (!name) continue
@@ -287,7 +339,11 @@ for (const repo of selected) {
 // later would read `externalVerified` (the owner not yet in the key space) and the same row would
 // read `externalRefuted` if the file order changed. The gate asks after the whole population is in
 // the key space, and so does this.
-for (const r of rows) r.verdict = verifyExternalClaim(declCount, r.target)
+for (const r of rows) {
+  const keySpace = declCounts.get(r.repo)
+  if (!keySpace) { r.verdict = "NO KEY SPACE FOR THIS PROJECT"; continue }
+  r.verdict = verifyExternalClaim(keySpace, r.target)
+}
 const refuted = rows.filter((r) => r.verdict === "externalRefuted")
 const other = rows.filter((r) => r.verdict !== "externalRefuted")
 const byTarget = new Map<string, Row[]>()
@@ -321,27 +377,52 @@ let failures = 0
 const fail = (m: string): void => { failures++; console.error(`FAIL ${m}`) }
 const ok = (m: string): void => console.log(`  ok  ${m}`)
 
-console.log(`\n=== CONTROL 1 — THE PRE-FIX CENSUS (the pre-fix index NAMED NO MIXIN)`)
-if (!preFixHasMixin) ok("the derived pre-fix view's typeKinds census carries NO mixin — the measured pre-fix state (mixin 0)")
-else fail("the derived pre-fix view still carries a mixin — the derivation does not reproduce the pre-fix index")
-if (fixedHasMixin) ok("the fixed view's census DOES carry the mixins — so the fix's contribution is the difference")
-else fail("the fixed view carries no mixin either — the index was not built with the committed spec")
+console.log(`\n=== CONTROL 1 — THE CENSUS OF THE STATE THIS RUN CLAIMS TO BE IN`)
+if (VIEW === "pre") {
+  if (!preFixHasMixin) ok("the derived pre-fix view's typeKinds census carries NO mixin — the measured pre-fix state (mixin 0)")
+  else fail("the derived pre-fix view still carries a mixin — the derivation does not reproduce the pre-fix index")
+  if (fixedHasMixin) ok("the fixed view's census DOES carry the mixins — so the fix's contribution is the difference")
+  else fail("the fixed view carries no mixin either — the index was not built with the committed spec")
+} else {
+  if (fixedHasMixin) ok("the analysis view (the committed spec) carries the mixins — the FIXED state, which is what this run claims to measure")
+  else fail("the analysis view carries no mixin — the index was not built with the committed spec, so a FIXED-state measurement is impossible")
+  if (!preFixHasMixin) ok("the derived pre-fix view carries no mixin — so the two views really are different states")
+  else fail("the derived pre-fix view carries a mixin — the derivation is broken")
+}
 
 console.log(`\n=== CONTROL 2 — THE PUBLISHED FIVE (dart-http)`)
 const httpRows = refuted.filter((r) => r.repo === "dart-http").map((r) => `${r.file}:${r.line}`)
 for (const k of KNOWN_FIVE) {
-  if (httpRows.includes(k)) ok(k)
-  else fail(`${k} — the published dart-http row is NOT among the rows found`)
+  if (VIEW === "pre") {
+    if (httpRows.includes(k)) ok(k)
+    else fail(`${k} — the published dart-http row is NOT among the rows found`)
+  } else {
+    // In the FIXED state the mixin IS named, so these five rows must NO LONGER be refuted. A row
+    // that is still refuted here means the fix did not reach it — and that is the whole claim.
+    if (!httpRows.includes(k)) ok(`${k} — no longer refuted in the FIXED state (the mixin is named, so the base is not "external")`)
+    else fail(`${k} — STILL REFUTED in the FIXED state — the fix did not reach this row`)
+  }
 }
 
 console.log(`\n=== CONTROL 3 — THE COUNT`)
-if (refuted.length === 86) ok(`86 refuted rows — the number the pre-fix arm measured independently`)
-else fail(`${refuted.length} refuted rows, expected 86 (the pre-fix arm's own count)`)
+if (VIEW === "pre") {
+  if (refuted.length === 86) ok(`86 refuted rows — the number the pre-fix arm measured independently`)
+  else fail(`${refuted.length} refuted rows, expected 86 (the pre-fix arm's own count)`)
+} else {
+  if (refuted.length === FIXED_ARM_EXTFAIL) ok(`${refuted.length} refuted rows — the number the FIXED arm measured (externalRefuted ${FIXED_ARM_EXTFAIL}), found independently by this instrument`)
+  else fail(`${refuted.length} refuted rows, expected ${FIXED_ARM_EXTFAIL} (the fixed arm's own externalRefuted)`)
+}
 
 console.log(`\n=== CONTROL 4 — THE ARM'S PRINTED LIST IS COVERED`)
 const missing = ARM_PRINTED.filter((t) => !byTarget.has(t))
-if (!missing.length) ok(`all ${ARM_PRINTED.length} targets the pre-fix arm printed are covered by the rows found`)
-else fail(`not covered: ${missing.join(" · ")}`)
+if (VIEW === "pre") {
+  if (!missing.length) ok(`all ${ARM_PRINTED.length} targets the pre-fix arm printed are covered by the rows found`)
+  else fail(`not covered: ${missing.join(" · ")}`)
+} else {
+  const overlap = ARM_PRINTED.filter((t) => byTarget.has(t))
+  if (!overlap.length) ok(`NONE of the ${ARM_PRINTED.length} targets the pre-fix arm printed is still refuted — so the rows that survive the fix are a DIFFERENT CLASS from the 86, not a residue of them`)
+  else fail(`still refuted from the pre-fix list: ${overlap.join(" · ")} — the fix did not clear these`)
+}
 if (ARM_PRINTED.length === NAME_CAP) ok(`the arm printed exactly NAME_CAP (${NAME_CAP}) names — the LIST was capped, so it is a SAMPLE of the ${byTarget.size} distinct targets, and the gate's own "printed whole" header is not true`)
 else fail(`the arm printed ${ARM_PRINTED.length} names, which is not NAME_CAP (${NAME_CAP}) — the cap explanation is not the one to report`)
 

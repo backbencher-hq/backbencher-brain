@@ -58,6 +58,13 @@ export type DeclarationKind =
   // class, and "unknown" would read as "we looked and could not tell", which is a
   // different and worse claim than "this is a mixin".
   | "mixin"
+  // Dart's ALIAS kind. Added to the union for the reason "class" and "mixin" were: a shared type
+  // is not the place to pretend Dart's `typedef` is another language's "class", and "unknown"
+  // would read as "we looked and could not tell" — which is a different and worse claim than
+  // "this is an alias". A Dart alias IS a declaration of a name (`typedef ListMixin<E> =
+  // ListBase<E>;` declares `ListMixin` for the whole library), and the dart spec's `typeNodes`
+  // needs a kind to say so.
+  | "typedef"
   // F#'s declaration kinds. Added to the union for the reason "class" and "mixin" were: a
   // shared type is not the place to pretend one language's record is another's struct, and
   // "unknown" would read as "we looked and could not tell", which a record is not.
@@ -763,6 +770,18 @@ export const DART_DECLARATION_SPEC: DeclarationSpec = {
     extension_declaration: "extension",
     extension_type_declaration: "extension_type",
     enum_declaration: "enum",
+    // A `type_alias` IS A TYPE DECLARATION IN DART — `typedef ListMixin<E> = ListBase<E>;`
+    // DECLARES the name `ListMixin` for the whole library. The SDK's own `ListMixin` and
+    // `SetMixin` are exactly this (`sdk/lib/collection/list.dart:586` and `set.dart:322`).
+    //
+    // WITHOUT THIS ENTRY THE INDEX HOLDS NOTHING FOR AN ALIAS, and the failure is a REFUTED
+    // CLAIM, not a missing row: a class that applies the alias (`class _BoolArrayList with
+    // ListMixin<bool>`) asks the index whether the base declares the member, the index says
+    // "no such base", the analyzer's first-parent fallback publishes "this base is OUTSIDE the
+    // project", and the arbiter REFUTES it because the project DOES publish the name — as an
+    // alias. MEASURED on the fixed production arm (2026-10-20): 25 refuted rows over 11
+    // distinct targets, every one of them a `ListMixin.*` or `SetMixin.*` member.
+    type_alias: "typedef",
   },
   // DART'S MIXIN NAMES LIVE IN A DIRECT `identifier` CHILD, NOT IN A `name` FIELD.
   //
@@ -794,6 +813,19 @@ export const DART_DECLARATION_SPEC: DeclarationSpec = {
       }
       return ""
     }
+    if (node.type === "type_alias") {
+      // `(type_alias (type_identifier) (type_parameters …) (type_identifier) (type_arguments …))` —
+      // PROBED against the grammar, not remembered: the FIRST direct `type_identifier` is the
+      // ALIAS NAME and the LAST one is the alias TARGET. The target's own `type_arguments` hold
+      // further `type_identifier`s, but they are NESTED, not direct children, so the direct-child
+      // rule is enough. (A `type_alias` has no `name` field, so the generic resolver reads "".)
+      let first: Node | null = null
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && c.type === "type_identifier") { first = c; break }
+      }
+      return first ? first.text : ""
+    }
     return node.childForFieldName("name")?.text ?? ""
   },
   // Methods and accessors only. `getter_signature` and `setter_signature` count
@@ -814,6 +846,21 @@ export const DART_DECLARATION_SPEC: DeclarationSpec = {
   scopeNodes: ["function_body", "function_expression_body", "block"],
   baseResolver: (node: Node): string[] => {
     const out: string[] = []
+    // A `type_alias` HAS NO HERITAGE — it ALIASES another type, and the alias target is the type
+    // whose members the alias HAS (`typedef ListMixin<E> = ListBase<E>;` — `ListMixin` HAS
+    // `ListBase`'s members). Recording that as the alias's base is what makes the index's
+    // inheritance closure carry the target's members to the alias, which is what the analyzer's
+    // companion lookup asks. The TARGET is the LAST direct `type_identifier` child (the FIRST is
+    // the alias name); the target's own `type_arguments` are nested, not direct.
+    if (node.type === "type_alias") {
+      let last: Node | null = null
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && c.type === "type_identifier") last = c
+      }
+      if (last && last.text) out.push(last.text)
+      return out
+    }
     const pushLeaf = (group: any): void => {
       if (!group) return
       // the LAST type_identifier in a group is the real type name; earlier ones in
