@@ -5,9 +5,47 @@
  * relationships are containment plus data dependencies, and there is no import graph in the language
  * sense (psql's `\i`/`\ir` and `CREATE EXTENSION` are the two file/unit dependencies it does emit).
  *
- * Relationship types it covers: contains (the largest), uses, references, calls, imports, overrides,
- * instantiates. It does NOT emit `exports` or `extends` — both are RULED non-derivable (SQL-D16,
- * SQL-D14), not forgotten.
+ * Relationship types it EMITS — eight of the live fourteen, and this list is MEASURED, not
+ * asserted (whole admitted population: 2,125 `.sql` files across 202 repositories, 0 parse
+ * failures, 199 symlinked directories followed; `script/m14/sql-population.ts`):
+ * ⚠ THE COUNTS ARE ONLY THE COUNTS **IF THE GRAMMAR IS HANDED OVER**, and that is not a detail:
+ * `analyze` is SYNCHRONOUS and cannot build a parser for its own recovery passes, so the
+ * declaration-resync pass and the EXECUTE-literal pass are SILENTLY INERT without the hand-over
+ * (`acquireParser()` fails, the pass takes its `resyncSkipped`/`executeSkipped` branch, and the file
+ * is reported as analysed anyway). An instrument that calls the analyzer directly MUST do what
+ * `src/ast/engine.ts:1705-1714` and `script/m14/run-fixtures.ts:765-769` do — `setGrammar` on the
+ * CLASS, not on `Class.constructor`. Measured with the hand-over MISSING, this lane's own census
+ * under-counted the whole population by 260 edges (calls 3,894 vs 3,929 · uses 9,254 vs 9,317 ·
+ * contains 12,142 vs 12,255 · references 5,992 vs 6,041) with no error and no visible counter.
+ * The numbers below are the HANDED-OVER ones.
+ *   calls 3,929 · uses 9,317 · contains 12,255 · references 6,041 · imports 63 · instantiates 21 ·
+ *   overrides 8 · **extends 0**.
+ * `extends` IS emitted (the `ALTER TABLE c INHERIT p` clause the wired grammar mis-parses as a
+ * column named INHERIT; see `processAlterTable` and SQL-D14/SQL-D17). It fires ZERO times on this
+ * corpus because the corpus has no inheritance to fire it from — that is a MEASURED ZERO-SITES,
+ * not a missing emission, and the type STAYS IN THE DENOMINATOR. This header used to say the
+ * analyzer "does NOT emit `extends`" and it was FALSE: the claim contradicted this file's own code
+ * at the emission site. The measurement that decides it is in
+ * `validation/m14/verification/SQL-VERDICT-2026-10-21.md`.
+ *
+ * Relationship types it does NOT emit, each with the citation that removes it from the DENOMINATOR
+ * (an UNCLASSIFIED type stays in it — see the lane brief §1). Each ruling cites the PINNED GRAMMAR's
+ * node-type inventory under the GATE's own rule (named node types only, no `_` prefix, deduped, plus
+ * the universal ERROR/MISSING pair) = **592 named node types** — `validation/m14/measurements/sql-grammar-nodes.json`:
+ *   `exports`   — no emission site; SQL's visibility scope is the DATABASE and nothing in a SQL file
+ *                 enumerates what it publishes; 0 of the 592 node types contain `export` (SQL-D29).
+ *   `implements`— no emission site; SQL has no interface type and no supertype clause; 0 of the 592
+ *                 contain `implement`, `interface` or `super` (SQL-D16, re-measured 2026-10-21).
+ *   `renders`   — the pinned grammar has no `jsx_*` and no `template*` node type (SQL-D27).
+ *   `decorates` — the pinned grammar has no `decorator` node type (SQL-D27).
+ *   `mixes_in`  — the pinned grammar has no `mixin*` and no `with_clause` node type (SQL-D27).
+ *   `part_of`   — the value's source construct is a Dart file-level `part_directive`/`part_of_directive`
+ *                 and the pinned grammar carries NEITHER; the four "part" node types it DOES have
+ *                 (`keyword_partition`, `keyword_partitioned`, `table_partition`, `partition_by`) are
+ *                 PostgreSQL's PARTITIONING, a different construct, and the `PARTITION OF <parent>`
+ *                 form's parent name does NOT survive the parse (2 sites in the whole population, 0
+ *                 recoverable) (SQL-D28).
+ *
  * Grammar: `wasm/tree-sitter-sql.wasm`, patched — provenance and the patch list are in the spec's
  * `grammar_provenance`.
  *
@@ -18,17 +56,28 @@
  * keyword/type-token class — a keyword is never a table and never a function (SQL-D3), and a type token
  * is not a declaration.
  *
- * ⚠ NO DIFFERENTIAL ORACLE — A RULED ABSENCE, NOT MISSING WORK. SQL-G14: `script/m14/differential.ts`
- * carries 34 `derive*Edges` and NONE derives SQL, so a scoped SQL run ends "derived ZERO truth edges".
- * Consequence: no floor and no avgMsPerFile can be produced, so #419 sections E and F are UNMEASURABLE
- * for this lane and its residual is UNFLOORED. That is recorded and accepted — do NOT read a missing
- * floor as work not yet done, and never invent a floor row. The remedy is scoped in
- * validation/m14/verification/SQL-STATE.md §6 (6-8 oracle modules, ~800-1,500 lines).
+ * ⚠ THE DIFFERENTIAL ORACLE IS **PARTIAL**, NOT ABSENT — this paragraph used to say it did not exist
+ * and that was STALE. `script/m14/oracles/sql-truth.ts` (the lane's own, ~190 lines, sharing no
+ * import and no helper with this file) landed on 2026-10-17 and is WIRED into
+ * `script/m14/differential.ts` (:179 the import, :24679 the `lang === "sql"` branch, :25165 the
+ * compared-label set `["contains", "references"]`). It derives table→column, table→index,
+ * table→NAMED-constraint and column/constraint-level `REFERENCES`, reading the `object_reference`
+ * POSITIONALLY after `keyword_references` — which is what keeps it independent while still
+ * agreeing with SQL-D1 that a column's custom TYPE is not a reference. MEASURED on a 60-file draw
+ * (`--repo duckdb --lang sql --sample 60`): files 60 · tree-truth 97 · covered 97 (100%) ·
+ * MISSING 0 · analyzer-edges 101 · unexplained 4 (4%, all `contains`) · heuristic 0.
+ * WHAT IS STILL UNDERIVED, and named so a partial oracle reads as partial and not as clean:
+ * `calls`, `uses`, `imports`, `overrides`, `instantiates` — the oracle does not derive them, and
+ * the compared set admits only the two labels it can support, because admitting a label with no
+ * truth behind it would drop every analyzer edge of that label from the comparison and make the
+ * lane read cleaner than the oracle can support. The lane's residual therefore stays UNFLOORED
+ * until the canonical UNSCOPED sweep runs with a truth side for all eight emitted labels.
  *
  * Where the rest of the lane lives: docs/analyzers/sql.md · docs/analyzers/real-sql-analyzer.md · spec
- * script/m14/spec/sql-completeness.json (buckets + SQL-D1..D25 + SQL-G1..G19) · fixtures
- * validation/m14/fixtures/sql/ (17 .sql, expectation pins, and the lane's census instruments) ·
- * validation validation/m14/verification/SQL-STATE.md.
+ * script/m14/spec/sql-completeness.json (buckets + SQL-D1..D29 + SQL-G1..G19) · fixtures
+ * validation/m14/fixtures/sql/ (18 .sql, expectation pins, and the lane's census instruments) ·
+ * measurements validation/m14/measurements/sql-{population,grammar-nodes,part-of-sites,construct-sites,gap-sites}.json ·
+ * verification validation/m14/verification/SQL-STATE.md and SQL-VERDICT-2026-10-21.md.
  *
  * WHEN THIS FILE CHANGES, EDIT THESE TOO — a change here that skips them publishes a contract nobody
  * updated: `script/m14/spec/sql-completeness.json` (a new or removed emission moves a bucket or a gap
@@ -639,24 +688,31 @@ const CONSTRUCTOR_VALUE_NODES = new Set(["list", "array"])
  * custom_type:(object_reference "p")` — and `processColumn` read that as a column
  * named `LIKE` of type `p`, with a fabricated `sqlType`. Measured corpus-wide: 6
  * phantom columns named `LIKE` in 2 files, each carrying the source table's name
- * as its type. `ALTER TABLE c INHERIT p` parses the same way (`INHERIT p` as a
- * column named `INHERIT`).
+ * as its type.
  *
- * Both words are reserved in every dialect the wired grammar serves — `LIKE` in
- * SQL:2016, in PostgreSQL and in MySQL; `INHERIT` in PostgreSQL — so a column
- * that really carries one must be quoted, and a quoted name arrives as a
- * `literal`, not an `identifier`. That is what makes this guard narrow rather than
- * a keyword sweep: `key`, `name`, `range`, `type` and `value` are all legal
- * unquoted column names in PostgreSQL and a broad keyword guard would delete real
- * symbols, which is why the one other phantom this lane has — `ALTER TABLE log ADD
- * KEY useragent_id (useragent_id)`, which the grammar reads as a column named
- * `KEY` of type `useragent_id` — is NOT guarded here and is reported instead. The
- * tree cannot tell that shape from `ALTER TABLE t ADD key my_type`, which is
- * legal PostgreSQL, so a text guard would trade one wrong symbol for a missing
- * one. One phantom symbol corpus-wide is the cheaper of the two and is stated
- * rather than hidden.
+ * `LIKE` is RESERVED in PostgreSQL ("reserved (can be function or type)", PostgreSQL 18 keyword
+ * appendix, Table C.1) and in SQL:2016, so a column that really carries one must be quoted, and a
+ * quoted name arrives as a `literal`, not an `identifier`. That is what makes this guard narrow
+ * rather than a keyword sweep: `key`, `name`, `range`, `type` and `value` are all legal unquoted
+ * column names in PostgreSQL and a broad keyword guard would delete real symbols, which is why the
+ * one other phantom this lane has — `ALTER TABLE log ADD KEY useragent_id (useragent_id)`, which
+ * the grammar reads as a column named `KEY` of type `useragent_id` — is NOT guarded here and is
+ * reported instead. The tree cannot tell that shape from `ALTER TABLE t ADD key my_type`, which is
+ * legal PostgreSQL, so a text guard would trade one wrong symbol for a missing one. One phantom
+ * symbol corpus-wide is the cheaper of the two and is stated rather than hidden.
+ *
+ * ⚠ `INHERIT` WAS IN THIS SET AND IT WAS WRONG (SQL-D17, 2026-10-21). The comment above used to
+ * claim "`INHERIT` in PostgreSQL" is reserved, and it is NOT: the same appendix says
+ * `INHERIT | non-reserved`. `ALTER TABLE c ADD COLUMN inherit int;` is therefore LEGAL PostgreSQL,
+ * and the guard was DELETING A REAL SYMBOL — and, worse, the `extends` rule that sat next to it
+ * was reading the very same mis-parse, so a legal column named `inherit` produced a FABRICATED
+ * `extends` edge naming the column's TYPE as a parent table (measured: `extends c -> int`).
+ * `INHERIT` is therefore NO LONGER a reserved-name guard. It is now identified STRUCTURALLY, by
+ * `isInheritanceClause`: the phantom is the mis-parse of a real `INHERIT` clause, and the tree
+ * says so — an `add_column` with NO `ADD`/`COLUMN` keyword and no `keyword_no`. A column that
+ * really carries the name `inherit` carries an explicit `ADD COLUMN`, so it is published.
  */
-const RESERVED_AS_COLUMN_NAME = new Set(["like", "inherit"])
+const RESERVED_AS_COLUMN_NAME = new Set(["like"])
 
 /** ASCII letter or `_`, the first character of an unquoted SQL identifier. */
 function isTagIdentStart(code: number): boolean {
@@ -3331,7 +3387,18 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       if (!definition) continue
       const nameNode = definition.childForFieldName?.("name") ?? this.firstIdentifier(definition)
       if (!nameNode || !identifierTypes.has(nameNode.type)) continue
-      if (this.reservedColumnName(nameNode)) {
+      /**
+       * IS THIS COLUMN THE GRAMMAR'S MIS-PARSE OF AN `INHERIT` CLAUSE? The answer is structural
+       * (`inheritClauseKind`), and it is the answer that separates the two legal SQL statements
+       * that share this tree shape:
+       *   `ALTER TABLE child INHERIT parent;`   → the mis-parse, and the parent is recoverable.
+       *   `ALTER TABLE c ADD COLUMN inherit int;` → a REAL column, and `inherit` is a
+       *     NON-RESERVED PostgreSQL keyword (PostgreSQL 18 keyword appendix, Table C.1), so the
+       *     column must be PUBLISHED. Before 2026-10-21 it was not: the name guard deleted it and
+       *     the `extends` rule read its type as a parent table.
+       */
+      const inheritKind = this.inheritClauseKind(nameNode, add, node)
+      if (inheritKind === "inherit" || inheritKind === "noInherit" || this.reservedColumnName(nameNode)) {
         state.ambiguity.reservedNameSymbolsSuppressed++
         /**
          * `ALTER TABLE c INHERIT p` ARRIVES HERE AS A COLUMN NAMED `INHERIT` WHOSE TYPE IS THE
@@ -3361,8 +3428,39 @@ private markDeclaration(node: Node, state: ParseState): boolean {
          * `CREATE TABLE child (...) INHERITS (parent)` — note the plural, a different clause —
          * error-recovers to a TOP-LEVEL `(ERROR)` whose only children are `"INHERITS" "(" ")"`;
          * the parent identifier does not survive, so no name can be recovered from the tree.
+         *
+         * ⚠ TWO FABRICATED EDGES THIS USED TO PUBLISH, FOUND AND FIXED 2026-10-21 (SQL-D17).
+         * The name test alone is NOT the discriminator, and this lane's own falsifier had only
+         * ONE negative control — the `LIKE` copy — so it never asked the other two questions.
+         *
+         *   (a) A COLUMN THAT IS CALLED `inherit`. `ALTER TABLE c ADD COLUMN inherit int;` is
+         *       legal PostgreSQL (`inherit` is a non-reserved keyword) and it parses to
+         *         (add_column (keyword_add) (keyword_column)
+         *                    (column_definition name:(identifier "inherit") type:(int ...)))
+         *       — the IDENTICAL shape the inheritance clause produces, and the analyzer took the
+         *       column's TYPE as the parent table: a FABRICATED `extends c -> int`.
+         *       `ADD COLUMN inherit some_type` fabricated `extends c -> some_type` the same way.
+         *
+         *   (b) `ALTER TABLE c NO INHERIT p;` — the clause that REMOVES inheritance. It parses to
+         *         (alter_table (keyword_alter) (keyword_table) (object_reference)
+         *                    (ERROR (keyword_no))
+         *                    (add_column (column_definition name:(identifier "INHERIT")
+         *                                 custom_type:(object_reference name:(identifier "p")))))
+         *       and the analyzer published `extends c -> p` for it — asserting the OPPOSITE of
+         *       what the statement says.
+         *
+         * THE DISCRIMINATOR IS STRUCTURAL, and both halves are read off the tree:
+         *   1. an explicit `ADD`/`COLUMN` keyword means the grammar SAW a column, so this is a
+         *      column and the mis-parse did not happen; the inheritance clause has NEITHER
+         *      keyword, because the grammar had nothing else to call it;
+         *   2. a `keyword_no` anywhere in the `alter_table` means the clause is `NO INHERIT`, which
+         *      removes the relation rather than asserting it.
+         * With both guards, the only remaining shape is the mis-parse of a real `INHERIT` clause.
+         * Fixtures: `sqld18-inherit-constructs.sql` — one positive control and FOUR negative
+         * controls, each of which FAILED against the pre-fix code (measured, before/after, in
+         * validation/m14/verification/SQL-VERDICT-2026-10-21.md §3).
          */
-        if (nameNode.text.toLowerCase() === "inherit") {
+        if (inheritKind === "inherit") {
           const parentNode = definition.childForFieldName?.("type") ?? definition.childForFieldName?.("custom_type")
           const parentName = parentNode ? this.identifierName(parentNode, state) : ""
           if (parentName) {
@@ -3383,6 +3481,41 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       )
       this.addRelationship(ASTEngine.RelationshipType.Contains, table, column.name, state, { memberKind: ASTEngine.SymbolKind.Property }, this.range(nameNode, state).startLine)
     }
+  }
+
+  /**
+   * WHAT IS THIS `ALTER TABLE` COLUMN, really? The wired grammar has no `INHERIT` clause, so
+   * `ALTER TABLE c INHERIT p` arrives as
+   *   (add_column (column_definition name:(identifier "INHERIT")
+   *                custom_type:(object_reference name:(identifier "p"))))
+   * — a column named INHERIT whose type is the parent table. THREE legal SQL statements arrive in
+   * that shape, and the answer is STRUCTURAL, never a name list:
+   *
+   *   "column"    `ALTER TABLE c ADD COLUMN inherit int;` — a REAL column. `inherit` is a
+   *               NON-RESERVED PostgreSQL keyword (PostgreSQL 18 keyword appendix, Table C.1:
+   *               `INHERIT | non-reserved`), so this is legal SQL and the column is PUBLISHED.
+   *               The grammar SAW the column: the `add_column` carries `keyword_add` and/or
+   *               `keyword_column`.
+   *   "inherit"   `ALTER TABLE c INHERIT p;` — the mis-parse of a real inheritance clause. The
+   *               grammar saw NEITHER `ADD` nor `COLUMN`, because it had nothing else to call it,
+   *               and there is no `NO`. The parent's name survives in `custom_type`, so the
+   *               RELATION is recoverable and `extends` is published from it.
+   *   "noInherit" `ALTER TABLE c NO INHERIT p;` — the clause that REMOVES inheritance. It parses
+   *               to (alter_table … (ERROR (keyword_no)) (add_column (column_definition
+   *               name:(identifier "INHERIT") custom_type:(object_reference "p")))), and it is
+   *               NEITHER a column NOR a relation: publishing either asserts the opposite of what
+   *               the statement says.
+   *
+   * `null` means the column is not one of these three — an ordinary column, and the caller's
+   * business.
+   */
+  private inheritClauseKind(nameNode: Node, addColumn: Node, alterTable: Node): "column" | "inherit" | "noInherit" | null {
+    if (nameNode.type !== "identifier") return null
+    if (nameNode.text.toLowerCase() !== "inherit") return null
+    if (this.directChild(addColumn, "keyword_add") !== null) return "column"
+    if (this.directChild(addColumn, "keyword_column") !== null) return "column"
+    if (this.descendants(alterTable, "keyword_no").length > 0) return "noInherit"
+    return "inherit"
   }
 
   // ---------------------------------------------------------------- queries

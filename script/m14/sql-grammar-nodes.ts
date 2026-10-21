@@ -1,0 +1,136 @@
+#!/usr/bin/env bun
+/**
+ * SQL LANE — THE PINNED GRAMMAR'S NODE-TYPE INVENTORY.
+ *
+ * WHY IT EXISTS. The extended vocabulary (`decorates`, `renders`, `mixes_in`, `part_of`) is
+ * adjudicated per lane against a POSITIVE grammar-inventory basis: a cell is `RULED` only when the
+ * PINNED GRAMMAR cannot express the construct, so no corpus count can exist. The census keeps that
+ * inventory at `.tmp-census/grammar-nodes.json`, keyed by language — and it has no `sql` key, because
+ * the census instrument (`.tmp-census/census.mts`) imports the ts/js/dart/python/java analyzers and
+ * nothing else. This lane therefore produces its OWN inventory, from the SAME wasm, under the SAME
+ * rule, and writes it in the SAME shape — so the Lead can merge it as the `sql` key without
+ * re-deriving anything.
+ *
+ * THE RULE, and it is the GATE's rule — `script/m14/completeness-inventory.ts:1360-1373`:
+ *   1. `nodeTypeIsNamed(i)` — NAMED node types only. The anonymous tokens (the `(` `)` `,` `;` of
+ *      every grammar) are NOT rows and never were.
+ *   2. `!n.startsWith("_")` — the `_`-prefixed hidden types are NOT rows. tree-sitter uses a
+ *      leading underscore for a node the grammar hides from the tree; counting them would inflate
+ *      the denominator with things a query can never reach.
+ *   3. DEDUP — four spellings are enumerated more than once by the wasm ABI (`dollar_quote`,
+ *      `cast`, `field`, `from` for sql), and a duplicate is one type, not two.
+ *   4. `ERROR` and `MISSING` are ADDED — they are produced by every tree-sitter parser but are NOT
+ *      listed by `nodeTypeForId` in the wasm ABI, and the analyzer consults them, so they are rows.
+ *
+ * THE COUNTS DIFFER FROM THE RAW ENUMERATION, and the difference is stated rather than reconciled
+ * by assertion: the wasm's `nodeTypeCount` is the TOTAL (named + anonymous + hidden), and this
+ * file prints all three numbers — `totalCount` (every `nodeTypeForId` entry), `namedCount` (the
+ * gate's rule), and `namedRawCount` (named entries before dedup) — so a reader can check which
+ * number they are comparing against.
+ *
+ * THE CONTROL. A zero from an unreadable enumeration is not a zero. The script prints the
+ * node types it DID read, and the caller can assert on a KNOWN type (`create_table`) being present.
+ *
+ * USAGE  bun run script/m14/sql-grammar-nodes.ts [--json <out>]
+ */
+import { readFileSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
+import { loadWebTreeSitter } from "../../src/util/wasm.ts"
+
+const args = process.argv.slice(2)
+const jsonOut = args.includes("--json") ? args[args.indexOf("--json") + 1] : ""
+const ROOT = process.cwd()
+const WASM = join(ROOT, "wasm", "tree-sitter-sql.wasm")
+
+const W: any = await loadWebTreeSitter()
+const Language = W.Language ?? W.default?.Language
+const initFn = W.init ?? W.Parser?.init ?? W.default?.init
+if (initFn) await initFn()
+const lang: any = await Language.load(readFileSync(WASM))
+
+const all: string[] = []
+const namedRaw: string[] = []
+const anonymous: string[] = []
+for (let i = 0; i < lang.nodeTypeCount; i++) {
+  const t = lang.nodeTypeForId(i)
+  if (!t) continue
+  all.push(t)
+  if (lang.nodeTypeIsNamed(i)) namedRaw.push(t)
+  else anonymous.push(t)
+}
+const seen = new Set<string>()
+const named: string[] = []
+for (const n of namedRaw) {
+  if (n.startsWith("_")) continue
+  if (seen.has(n)) continue
+  seen.add(n)
+  named.push(n)
+}
+for (const u of ["ERROR", "MISSING"]) if (!named.includes(u)) named.push(u)
+
+const duplicates = namedRaw.filter((n, i) => namedRaw.indexOf(n) !== i)
+const hidden = namedRaw.filter((n) => n.startsWith("_"))
+
+const report = {
+  language: "sql",
+  wasm: "wasm/tree-sitter-sql.wasm",
+  rule: "nodeTypeIsNamed && !startsWith('_') && dedup, then + ERROR/MISSING (script/m14/completeness-inventory.ts:1360-1373)",
+  namedCount: named.length,
+  namedRawCount: namedRaw.length,
+  totalCount: all.length,
+  anonymousCount: anonymous.length,
+  hiddenCount: hidden.length,
+  duplicateSpellings: [...new Set(duplicates)].sort(),
+  control: {
+    create_table_present: named.includes("create_table"),
+    table_partition_present: named.includes("table_partition"),
+    keyword_inherits_present: named.includes("keyword_inherits"),
+    keyword_no_present: named.includes("keyword_no"),
+    keyword_add_present: named.includes("keyword_add"),
+    keyword_column_present: named.includes("keyword_column"),
+    keyword_by_present: named.includes("keyword_by"),
+    keyword_of_present: named.includes("keyword_of"),
+    keyword_replace_present: named.includes("keyword_replace"),
+    keyword_export_present: named.includes("keyword_export"),
+    keyword_implements_present: named.includes("keyword_implements"),
+    jsx_any: named.filter((n) => n.startsWith("jsx")).length,
+    template_any: named.filter((n) => n.startsWith("template")).length,
+    decorator_any: named.filter((n) => n.includes("decorat")).length,
+    mixin_any: named.filter((n) => n.startsWith("mixin")).length,
+    with_clause_present: named.includes("with_clause"),
+    part_of_present: named.includes("part_of"),
+    part_any: named.filter((n) => n.includes("part")),
+  },
+  named,
+  anonymousSample: anonymous.slice(0, 40),
+}
+
+console.log("═".repeat(78))
+console.log("SQL — THE PINNED GRAMMAR'S NODE-TYPE INVENTORY (the gate's rule)")
+console.log("═".repeat(78))
+console.log(`wasm                : ${WASM}`)
+console.log(`total nodeTypeCount : ${report.totalCount}`)
+console.log(`named (raw)         : ${report.namedRawCount}`)
+console.log(`hidden (_-prefixed) : ${report.hiddenCount}`)
+console.log(`anonymous           : ${report.anonymousCount}`)
+console.log(`duplicate spellings : ${report.duplicateSpellings.join(", ") || "(none)"}`)
+console.log(`NAMED COUNT (gate)  : ${report.namedCount}   ← this is the denominator's node-type base`)
+console.log("─".repeat(78))
+console.log("CONTROLS:")
+for (const [k, v] of Object.entries(report.control)) console.log(`  ${k.padEnd(30)} ${v}`)
+console.log("─".repeat(78))
+console.log("THE FOUR EXTENDED VALUES — their grammar-inventory basis:")
+for (const [label, needles] of [
+  ["renders", ["jsx", "template"]],
+  ["decorates", ["decorat"]],
+  ["mixes_in", ["mixin", "with_clause"]],
+  ["part_of", ["part", "partition"]],
+] as const) {
+  const hits = named.filter((n) => needles.some((x) => n.includes(x)))
+  console.log(`  ${label.padEnd(12)} node types matching [${needles.join(", ")}]: ${hits.length ? hits.join(", ") : "(NONE)"}`)
+}
+console.log("═".repeat(78))
+if (jsonOut) {
+  writeFileSync(jsonOut, JSON.stringify(report, null, 2))
+  console.log(`JSON written: ${jsonOut}`)
+}
