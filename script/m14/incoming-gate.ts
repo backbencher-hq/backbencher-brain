@@ -1427,9 +1427,17 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
    */
   const qualifiedJoinFor = (
     repo: string, target: string, file: string | undefined,
-  ): { qualified: string; count: number } | undefined => {
+  ): { qualified: string; count: number; branch: "slash" | "namespace" } | undefined => {
     let qualified: string
-    if (target.includes("/")) {
+    // THE BRANCH, NAMED, BECAUSE A COUNT OF ZERO IS ONLY MEANINGFUL WITH THE BRANCH IT CAME FROM.
+    //  "slash"     — the target ALREADY carries a `/`: it is its own qualification, and the key
+    //                space is asked for that exact spelling.
+    //  "namespace" — the target is BARE, and the file's namespace qualifies it: the key space is
+    //                asked for `ns/target`. A file that declares no module-kind symbol (the
+    //                `(ns …)` form is the fleet's one) cannot be asked at all, and the row is left
+    //                exactly as it was.
+    const branch: "slash" | "namespace" = target.includes("/") ? "slash" : "namespace"
+    if (branch === "slash") {
       qualified = target
     } else {
       if (file === undefined) return undefined
@@ -1438,7 +1446,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       qualified = `${ns}/${target}`
     }
     const count = projectDecl.get(repo)?.get(qualified) ?? 0
-    return { qualified, count }
+    return { qualified, count, branch }
   }
   const projectKinds = new Map<string, Map<string, Set<string>>>()
   /**
@@ -1994,6 +2002,10 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
    * an arm that cannot SHOW the count cannot claim that its numbers did not move.
    */
   let joinResolved = 0
+  let joinAskedSlash = 0
+  let joinAskedNamespace = 0
+  let joinResolvedSlash = 0
+  let joinResolvedNamespace = 0
   let ownerRows = 0
   let ownerResolved = 0
   let ownerDeclined = 0
@@ -2056,12 +2068,21 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
           line: e.line,
         })
       : undefined
+    const qj = qualifiedJoinFor(e.repo, e.tgt, e.srcFile)
     const pc = classifyEdge(
       projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares,
       ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, e.srcFile,
-      qualifiedJoinFor(e.repo, e.tgt, e.srcFile),
+      qj,
     )
-    if (pc.joined) joinResolved++
+    if (qj !== undefined) {
+      if (qj.branch === "slash") joinAskedSlash++
+      else joinAskedNamespace++
+    }
+    if (pc.joined) {
+      joinResolved++
+      if (qj?.branch === "slash") joinResolvedSlash++
+      else joinResolvedNamespace++
+    }
     if (ownerVerdict !== undefined) {
       ownerRows++
       ownerReasons.set(ownerVerdict.reason, (ownerReasons.get(ownerVerdict.reason) ?? 0) + 1)
@@ -2175,7 +2196,11 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   // than infer it from an absent line, and an arm that shows a number can be compared with another
   // arm that shows a number.
   process.stderr.write(
-    `  qualified-name join: ${joinResolved} row(s) resolved by the qualified-name join (the name model alone would not have resolved them)\n`,
+    `  qualified-name join: ${joinResolved} row(s) resolved by the qualified-name join (the name model alone would not have resolved them) — ` +
+    `slash branch: ${joinResolvedSlash} of ${joinAskedSlash} row(s) asked · ` +
+    `namespace branch: ${joinResolvedNamespace} of ${joinAskedNamespace} row(s) asked` +
+    (joinAskedNamespace === 0 ? " (the namespace branch is STRUCTURALLY IMPOSSIBLE in this language: no file publishes a module-kind symbol, so no bare target can be qualified)" : "") +
+    `\n`,
   )
 
   return {
