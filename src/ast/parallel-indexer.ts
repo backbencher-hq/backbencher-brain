@@ -1796,7 +1796,7 @@ export async function processWithWorkerPool(
           log.info("project index built", { ext, files: subset.length, types: built.typeKinds.size })
         }
         if (Object.keys(byExt).length > 0) projectIndexes = byExt
-      },
+      }
     } catch (e: any) {
       // A failure here must not fail the run: no index is exactly the pre-SOL-21
       // behaviour, and enrichment is additive by construction.
