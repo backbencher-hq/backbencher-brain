@@ -164,6 +164,15 @@ import {
 // ============================================================
 const BB_DUMP = process.argv.includes("--dump")
 const BB_DUMP_LIMIT = Number(process.env.BB_DUMP_LIMIT ?? 40)
+// THE BOUND MARKER'S STATE (2026-10-20, the powershell lane). THE HEADER PROMISED "the bound is
+// PRINTED when reached, so a short list is never mistaken for the set" — AND NO SUCH PRINT EXISTED:
+// `BB_DUMP_LIMIT` appeared in exactly three places (that comment, this constant, and the guard below)
+// and no `console.log` mentioned it. **A TRUNCATED DUMP WAS THEREFORE INDISTINGUISHABLE FROM A COMPLETE
+// ONE** — and every lane's row-level reconciliation reads this dump, so a truncated one would under-count
+// the movement AND look complete. The marker is printed when the bound is first reached ✓ and the
+// skipped count is printed with the verdict ✓.
+let bbDumpTruncated = false
+let bbDumpSkipped = 0
 // RESTRICT THE DUMP TO ONE LABEL. Without this the limit is consumed by whichever type happens to have the
 // most unresolved edges (typescript `calls` alone has 1,688), so a `--dump | grep extends` returns NOTHING and
 // reads as "no unresolved extends edges" when the truth is "the bound was reached before extends was seen".
@@ -1962,7 +1971,18 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       if (ownerVerdict.outcome === "declined" && nameOnly.outcome === "resolved") ownerDeclinedButNameWouldResolve++
       if (ownerVerdict.outcome === "resolved" && (nameOnly.outcome === "ambBoth" || nameOnly.outcome === "ambDeclOnly" || nameOnly.outcome === "unresolved")) ownerResolvedButNameSaidAmbiguous++
     }
-    if (BB_DUMP && pc.outcome !== "resolved" && bbDumped < BB_DUMP_LIMIT && (BB_DUMP_LABEL === "" || e.label === BB_DUMP_LABEL)) {
+    if (BB_DUMP && pc.outcome !== "resolved" && (BB_DUMP_LABEL === "" || e.label === BB_DUMP_LABEL)) {
+      if (bbDumped >= BB_DUMP_LIMIT) {
+        // THE BOUND WAS REACHED — THIS ROW IS NOT Dumped, AND THE DUMP IS NOT THE WHOLE SET.
+        bbDumpSkipped++
+        if (!bbDumpTruncated) {
+          bbDumpTruncated = true
+          console.log(`DUMP\tBOUND\tREACHED\t${BB_DUMP_LIMIT}\t-\t-\t-`)
+          console.log(`DUMP TRUNCATED at the ${BB_DUMP_LIMIT}-row bound — THIS DUMP IS NOT THE WHOLE NON-RESOLVED SET, and a reconciler over it will under-count the movement.`)
+        }
+        tally(row.project, pc, e.tgt, e.label)
+        continue
+      }
       bbDumped++
       // THE 7TH COLUMN IS THE CLAIM'S OWN SPECIFIER (java lane's request, 2026-10-19): a lane could
       // not name a residual class of ext? rows because the live claim's specifier was invisible; a
@@ -3930,6 +3950,9 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     )
     for (const x of refuted) console.log(`  ${w(x.type, 14)} ${x.name}`)
     console.log()
+  }
+  if (bbDumpTruncated) {
+    console.log(`DUMP TRUNCATED — ${bbDumpSkipped} eligible row(s) were NOT dumped (the ${BB_DUMP_LIMIT}-row bound was reached). The dump above is NOT the whole non-resolved set.`)
   }
   console.log(`VERDICT: ${v.pass ? "PASS" : "FAIL"} — ${v.reason}`)
   // EVERY CLAUSE ON ITS OWN LINE, WITH ITS OWN NUMBER. `bad === 0 && …` produced one boolean, and the
