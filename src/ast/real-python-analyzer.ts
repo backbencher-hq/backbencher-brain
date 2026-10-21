@@ -1940,6 +1940,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const docstring = this.extractDocstring(node)
     const baseClasses: string[] = []
+    // THE SAME BASES, AS WRITTEN — the identity, with the qualifier kept. `baseClasses` (and the
+    // `superTypes` column copied from it) is the LEAF form every existing walk reads; this list is
+    // the form a consumer keys by when it must not confuse two classes that share a leaf name.
+    const baseClassesWritten: string[] = []
     let isEnum = false
 
     const argsNode = this.findChildByType(node, "argument_list")
@@ -1959,6 +1963,8 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         const baseLeaf = this.baseClassLeaf(arg)
         if (!baseLeaf) continue
         baseClasses.push(baseLeaf)
+        const baseWritten = this.baseClassWritten(arg)
+        if (baseWritten) baseClassesWritten.push(baseWritten)
         if (baseLeaf === "Enum") isEnum = true
         // Name-collision suppression (#299): `class _X(_X):` (the real
         // IpythonMagic.py PGO shadowing idiom) rebinds the name — the inner
@@ -2066,6 +2072,12 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: {
         pythonSpecific: true,
         baseClasses,
+        // THE BASES AS WRITTEN — the identity behind the leaf. Published ALONGSIDE `baseClasses`
+        // and `superTypes` (which stay in the leaf form, because the walks that read them resolve
+        // by name), so a consumer that must not fold a qualified name onto a local class of the
+        // same leaf has the written form to key by. The `ownerMemberAbsent` claim's closure and
+        // the gate's owner map are the two consumers this exists for.
+        basesAsWritten: baseClassesWritten,
         // PY-35 — THE WALKABLE HERITAGE COLUMN, and it is published from the FULL base list.
         //
         // `metadata.superTypes` is the one field the store copies into
@@ -5879,6 +5891,37 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * which is how the call case silently named its callee; the fallback was the
    * defect, exactly as it was in callLeafName.
    */
+  /**
+   * The base's name **AS WRITTEN** — the qualifier KEPT.
+   *
+   * `baseClassLeaf` answers "which class is this?" for the WALK that resolves a member by name
+   * (`unittest.TestCase` → `TestCase`), and that walk needs the leaf because a name in the source
+   * is written without its module. But a name is not an identity: `unittest.TestCase` and a local
+   * `class TestCase` are TWO DIFFERENT CLASSES that share a leaf, and a consumer that folds the
+   * qualified name to its leaf cannot tell them apart — the lane's own owner-claim closure did
+   * exactly that, and the gate's owner map does it too.
+   *
+   * So the written form is published ALONGSIDE the leaf, never INSTEAD of it: `baseClasses` and
+   * `superTypes` keep the leaf form every existing walk reads, and `metadata.basesAsWritten` holds
+   * the form a consumer must key by when it wants the identity (`unittest.TestCase` → the class in
+   * `unittest`, `Base` → the local `Base`).
+   */
+  private baseClassWritten(node: Node | null | undefined): string | undefined {
+    if (!node) return undefined
+    if (node.type === "identifier") return node.text
+    if (node.type === "subscript") {
+      // `Base[int]` names the class `Base`; the type arguments are not part of the name.
+      const first = node.namedChild(0)
+      return first ? this.baseClassWritten(first) : undefined
+    }
+    if (node.type === "attribute") {
+      // `a.b.c` — the WHOLE chain, because the chain IS the name.
+      const text = node.text.trim()
+      return text.length > 0 ? text : undefined
+    }
+    return undefined
+  }
+
   private baseClassLeaf(node: Node | null | undefined): string | undefined {
     if (!node) return undefined
     if (node.type === "identifier") return node.text
