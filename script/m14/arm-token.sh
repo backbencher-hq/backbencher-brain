@@ -206,6 +206,19 @@ case "$cmd" in
     # another lane entirely, and the heavy holder's name must not block the small slot's release.
     if [ -f "$SMALL_TOKEN_DIR/holder/holder" ] && grep -q "lane=$lane" "$SMALL_TOKEN_DIR/holder/holder" 2>/dev/null; then
       rm -rf "$SMALL_TOKEN_DIR" 2>/dev/null || true
+      # THE LANE COMES BACK — AT THE BACK ✓✓ (2026-10-21, the Lead). The small-slot `take` YIELDED the
+      # lane's ordinary-queue place ✓✓, so the small-slot `release` must RETURN it ✓✓ ⇒ ⇒ ⇒ otherwise the
+      # yield would DROP THE LANE OUT OF THE QUEUE ENTIRELY ✓✓ — which is EXACTLY the defect the ordinary
+      # release was already fixed for (MEASURED: `java` took the token, ran, released, and VANISHED ✓✓) ⇒
+      # ⇒ ⇒ A LANE THAT HAS HAD ITS TURN IS NOT A LANE THAT HAS LEFT THE FLEET ✓✓ ⇒ ⇒ ONE RULE PER CASE ✓✓.
+      # THE LEAD IS NOT A LANE ✓✓ — the Lead's own verification does not consume a lane's slot ✓✓, so
+      # the Lead does not take a QUEUE place either ✓✓ ⇒ ⇒ ⇒ the Lead's own release MUST NOT add it ✓✓
+      # (MEASURED: the Lead's first small-slot release added 'lead' to the lane queue ✓✓, and the Lead
+      # does not own an arm to come back for ✓✓ ⇒ ⇒ ⇒ a queue entry the holder cannot serve is a wall ✓✓).
+      if [ "$lane" != "lead" ]; then
+        queue_add "$lane"
+        echo "  ORDINARY-QUEUE PLACE RESTORED — at the BACK ✓✓ (audited above) ✓✓."
+      fi
       echo "ARM SMALL SLOT RELEASED by $lane"
       exit 0
     fi
@@ -292,7 +305,25 @@ case "$cmd" in
     fi
     if mkdir "$SMALL_TOKEN_DIR/holder" 2>/dev/null; then
       printf 'lane=%s\npid=%s\nstarted=%s\nbeat=%s\npopulation=%s\n' "$lane" "$$" "$(date +%s)" "$(date +%s)" "$files" > "$SMALL_TOKEN_DIR/holder/holder.tmp" && mv "$SMALL_TOKEN_DIR/holder/holder.tmp" "$SMALL_TOKEN_DIR/holder/holder"
+      # ── THE SMALL SLOT YIELDS THE ORDINARY-QUEUE PLACE (2026-10-21, the Lead) ──────────────────────
+      # THE DEADLOCK THIS FIXES, MEASURED: the ORDINARY queue orders the ORDINARY (heavy) token ✓✓, and a
+      # lane whose arm is SMALL-SLOT-SIZED never takes that token ✓✓ ⇒ ⇒ ⇒ SO A SMALL-SLOT LANE AT THE
+      # HEAD OF THE ORDINARY QUEUE IS A HEAD NOBODY CAN EVER SERVE ✓✓ ⇒ ⇒ ⇒ AND EVERY HEAVY LANE BEHIND
+      # IT STARVES ✓✓.
+      # MEASURED ON THIS FLEET: the queue read `clojure · python · dart · typescript · javascript · go ·
+      # java · c` ✓✓, the HEAD was `clojure` ✓✓, and the clojure lane's OWN ARM SCRIPT takes the SMALL
+      # slot (`take-small clojure 646` ✓✓ — its population is 646 files ✓✓) ⇒ ⇒ ⇒ **SEVEN LANES WERE
+      # BLOCKED BEHIND A HEAD THAT COULD NOT TAKE THE TOKEN** ✓✓ ⇒ ⇒ ⇒ AND THE ORDINARY TOKEN WAS
+      # FREE THE WHOLE TIME ✓✓ ⇒ ⇒ ⇒ A LOCK THAT NOBODY CAN OPEN IS NOT A QUEUE, IT IS A WALL ✓✓.
+      # SO A SMALL-SLOT ARM **YIELDS** THE ORDINARY-QUEUE PLACE while it runs ✓✓ (the queue is the ORDINARY
+      # token's order ✓✓, and a lane running a SMALL arm is not waiting for the ORDINARY token ✓✓) — and
+      # it COMES BACK AT THE BACK when it releases ✓✓, by the SAME rule the ordinary release already
+      # carries ✓✓ ⇒ ⇒ ⇒ ONE RULE PER CASE, AND EACH CASE IS NAMED ✓✓.
+      # THE REMOVAL IS **AUDITED** (the queue prints what it did ✓✓) ⇒ a lane that finds its place gone
+      # can point at the line ✓✓ ⇒ ⇒ ⇒ a queue that changes silently is a queue nobody can trust ✓✓.
+      queue_remove "$lane"
       echo "ARM SMALL SLOT TAKEN by $lane (declared population $files files) — a SEPARATE lock, so a HEAVY arm may run beside it."
+      echo "  ORDINARY-QUEUE PLACE YIELDED while the SMALL arm runs ✓✓ — the head advances to the next lane ✓✓."
       exit 0
     fi
     echo "REFUSED — the small slot is held. Its holder: $(cat "$SMALL_TOKEN_DIR/holder/holder" 2>/dev/null | tr '\n' ' ')"
