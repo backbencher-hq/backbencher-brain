@@ -266,6 +266,30 @@ case "$cmd" in
       echo "REFUSED — the SMALL slot is for a population of 2,000 files or fewer (declared: $files)."; exit 4
     fi
     mkdir -p "$SMALL_TOKEN_DIR" 2>/dev/null || true
+    # ── THE SMALL SLOT's STALE-HOLDER RECLAIM (2026-10-21, the Lead) ─────────────────────────────────
+    # THE DEFECT THIS FIXES, MEASURED: the ORDINARY `take` HAS a TTL reclaim path (a stale beat is
+    # reclaimable ✓✓) — and `take-small` DID NOT ✓✓ ⇒ ⇒ ⇒ A CRASHED small arm's HOLDER DIRECTORY
+    # BLOCKED THE SMALL SLOT **FOREVER** ✓✓, because `mkdir` fails on an existing directory and the
+    # old path had no other way in ✓✓.
+    # MEASURED ON THIS FLEET: the go lane's small holder (population 888) had a beat 9,209 s old
+    # (152 min) with NO LIVE PROCESS behind it ⇒ ⇒ THE SLOT WAS HELD BY A HOLDER THAT IS GONE, AND
+    # THE SMALL SLOT IS THE ONLY SLOT THE VERIFICATION ARMS CAN USE (toml 1,485 · clojure 646 ·
+    # powershell 1,181) ⇒ ⇒ ⇒ THREE LANES' ARMS WERE BLOCKED BY A CRASHED ARM'S DIRECTORY ✓✓.
+    # SO THE SMALL SLOT GETS THE **SAME** LIVENESS RULE AS THE ORDINARY ONE: THE BEAT IS THE TEST,
+    # THE PID IS INFORMATION ONLY ✓✓ (the same rule the ordinary path already carries ✓✓), AND THE
+    # RECLAIM IS **AUDITED** — a silent reclaim of a lock is a lock nobody can trust ✓✓ ⇒ ⇒ ⇒ the
+    # fleet's own rule, applied to the fleet's own instrument ✓✓.
+    if [ -f "$SMALL_TOKEN_DIR/holder/holder" ]; then
+      s_lane="$(grep '^lane=' "$SMALL_TOKEN_DIR/holder/holder" 2>/dev/null | cut -d= -f2)"
+      s_beat="$(grep '^beat=' "$SMALL_TOKEN_DIR/holder/holder" 2>/dev/null | cut -d= -f2)"
+      s_pop="$(grep '^population=' "$SMALL_TOKEN_DIR/holder/holder" 2>/dev/null | cut -d= -f2)"
+      s_now="$(now)"
+      s_age=$(( s_now - ${s_beat:-0} ))
+      if [ "$s_age" -ge 0 ] && [ "$s_age" -ge "$TTL" ]; then
+        echo "SMALL SLOT RECLAIM — the holder '${s_lane:-nobody}' (declared population ${s_pop:-?} files) has not beaten for ${s_age}s (TTL ${TTL}s) ⇒ IT IS GONE, AND THE SLOT IS RELEASED ✓✓"
+        rm -rf "$SMALL_TOKEN_DIR/holder" 2>/dev/null || true
+      fi
+    fi
     if mkdir "$SMALL_TOKEN_DIR/holder" 2>/dev/null; then
       printf 'lane=%s\npid=%s\nstarted=%s\nbeat=%s\npopulation=%s\n' "$lane" "$$" "$(date +%s)" "$(date +%s)" "$files" > "$SMALL_TOKEN_DIR/holder/holder.tmp" && mv "$SMALL_TOKEN_DIR/holder/holder.tmp" "$SMALL_TOKEN_DIR/holder/holder"
       echo "ARM SMALL SLOT TAKEN by $lane (declared population $files files) — a SEPARATE lock, so a HEAVY arm may run beside it."
@@ -320,7 +344,12 @@ case "$cmd" in
     echo "ARM QUEUE (first is next):"
     queue_list | sed 's/^/  /'
     if [ -f "$SMALL_TOKEN_DIR/holder/holder" ]; then
-      echo "ARM SMALL SLOT: HELD by $(grep '^lane=' "$SMALL_TOKEN_DIR/holder/holder" | cut -d= -f2) (population $(grep '^population=' "$SMALL_TOKEN_DIR/holder/holder" | cut -d= -f2) files, last beat $(( $(date +%s) - $(grep '^beat=' "$SMALL_TOKEN_DIR/holder/holder" | cut -d= -f2) ))s ago)"
+      _ss_age=$(( $(date +%s) - $(grep '^beat=' "$SMALL_TOKEN_DIR/holder/holder" | cut -d= -f2) ))
+      if [ "$_ss_age" -ge "$TTL" ]; then
+        echo "ARM SMALL SLOT: HELD by $(grep '^lane=' "$SMALL_TOKEN_DIR/holder/holder" | cut -d= -f2) (population $(grep '^population=' "$SMALL_TOKEN_DIR/holder/holder" | cut -d= -f2) files, last beat ${_ss_age}s ago) — **STALE (TTL ${TTL}s) ⇒ RECLAIMABLE**"
+      else
+        echo "ARM SMALL SLOT: HELD by $(grep '^lane=' "$SMALL_TOKEN_DIR/holder/holder" | cut -d= -f2) (population $(grep '^population=' "$SMALL_TOKEN_DIR/holder/holder" | cut -d= -f2) files, last beat ${_ss_age}s ago)"
+      fi
     else
       echo "ARM SMALL SLOT: FREE (a population of 2,000 files or fewer, declared when taken)"
     fi
