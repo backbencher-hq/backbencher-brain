@@ -2232,7 +2232,11 @@ function selfTest(): { ok: boolean; failures: string[] } {
     if (declared.outcome !== "externalVerified") failures.push(`control: package-scope claim on a manifest-declared dependency read ${declared.outcome}, expected externalVerified`)
     // 2. NOT DECLARED -> REFUTED (the claim is false; the row is counted as the defect it is)
     const undeclared = classifyEdge(empty, kinds, "JsonKey", { kind: "packageScope", package: "not_a_dependency", name: "JsonKey" }, facts, undefined, undefined, undefined, "lib/x.dart")
-    if (undeclared.outcome !== "externalRefuted") failures.push(`control: package-scope claim on a manifest-UNDECLARED dependency read ${undeclared.outcome}, expected externalRefuted`)
+    // A MANIFEST THAT DOES NOT NAME THE PACKAGE -> UNVERIFIABLE, NOT REFUTED (the semantics ruling,
+    // 2026-10-20): a manifest's silence about a package is not evidence about that package's membership.
+    // The clojure lane measured 977 rows where the old REFUTED verdict charged the LANE for the
+    // PROJECT's incompleteness -- clj-kondo's test fixtures require libraries its manifest does not list.
+    if (undeclared.outcome !== "externalUnverified") failures.push(`control: package-scope claim on a manifest-UNDECLARED dependency read ${undeclared.outcome}, expected externalUnverified (a manifest's silence is not evidence about the package's membership)`)
     // 3. A DECLARATION ANSWER -> THE CLAIM FALLS THROUGH (it may not displace the name model)
     const answered = classifyEdge(declCount, kinds, "alpha", { kind: "packageScope", package: "json_annotation", name: "alpha" }, facts, undefined, undefined, undefined, "src/x.ts")
     if (answered.outcome === "externalVerified") failures.push("control: package-scope claim displaced a declaration-answered target (must fall through)")
@@ -2304,8 +2308,8 @@ function selfTest(): { ok: boolean; failures: string[] } {
         failures.push("control: a CMAKE name VERIFIED a package-scope claim — the package set must never carry a CMake name")
       }
       const cmakeFact = classifyEdge(empty, kinds, "Widget", { kind: "packageScope", package: "root-dep", name: "Widget" }, cmakeOnly, undefined, undefined, undefined, "/repo/src/x.cpp")
-      if (cmakeFact.outcome !== "externalRefuted") {
-        failures.push(`control: a file governed by a CMAKE-ONLY manifest read ${cmakeFact.outcome} for a root-only package, expected externalRefuted (the governing manifest is the CMAKE one)`)
+      if (cmakeFact.outcome !== "externalUnverified") {
+        failures.push(`control: a file governed by a CMAKE-ONLY manifest read ${cmakeFact.outcome} for a root-only package, expected externalUnverified (the governing manifest is the CMAKE one, and a manifest's silence is not evidence about the package's membership)`)
       }
     }
     // A FILE WITH NO GOVERNING MANIFEST has no entry, and its claim is UNVERIFIABLE — never quietly
