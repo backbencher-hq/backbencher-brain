@@ -89,6 +89,13 @@ import { resolveWasmAsset } from "../../src/util/wasm"
 // THE ARBITER'S OWN CLASSIFIER — imported, not copied, so the probe cannot disagree with the
 // gate by construction (the same rule `incoming-gate.ts` states about `classifyEdge`).
 import { classifyEdge, externalClaimOf, isContainsEdge } from "./incoming-rule"
+import {
+  buildOwnerProjectPools,
+  EMPTY_OWNER_POOLS,
+  OWNER_CLASS_LIKE,
+  ownerChannelVerdict,
+  type OwnerSymbolRecord,
+} from "./owner-channel"
 
 const CR = process.env.BB_CORPUS_ROOT ?? path.join(process.cwd(), ".corpus")
 const mod: any = await import("../../src/ast/project-index")
@@ -369,6 +376,11 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
     // (PER-PROJECT scope: production's scope). The probe builds it the same way so its
     // `classifyEdge` answers the same question the gate's does.
     const pDecl = new Map<string, number>()
+    /** THE OWNER CHANNEL'S SYMBOL RECORDS — collected exactly as `incoming-gate.ts` collects them
+     *  (the gate's own lines 1684-1707: only what the channel in `script/m14/owner-channel.ts` reads
+     *  is kept — class-like declarations, symbols carrying an owner, and symbols with a heritage
+     *  payload) — so the probe's channel call is the CALLER'S call, not an approximation of it. */
+    const ownerRecords: OwnerSymbolRecord[] = []
     /** THE FILES THAT DECLARE EACH NAME — production's name pass prefers the edge's OWN FILE, so a
      *  row whose target is declared in its own file is PRODUCTION-BOUND even when the project's name
      *  space is ambiguous. The clojure lane measured 82.0 % of its ambiguous rows this way
@@ -418,6 +430,29 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
         const kind = String((s as any)?.kind ?? "")
         if (ks) ks.add(kind)
         else pKinds.set(key, new Set([kind]))
+        // THE OWNER CHANNEL'S RECORD — the gate's own collection rule, copied as a CALL and not as a
+        // rule (the rule itself lives in `script/m14/owner-channel.ts` and is never re-implemented here).
+        {
+          const symOwner = String((s as any)?.ownerName ?? (s as any)?.scope ?? "").trim()
+          const symSuperTypes = Array.isArray((s as any)?.superTypes)
+            ? ((s as any).superTypes as unknown[])
+            : Array.isArray((s as any)?.metadata?.superTypes)
+              ? ((s as any).metadata.superTypes as unknown[])
+              : []
+          const symSupers = symSuperTypes.filter((x): x is string => typeof x === "string" && x.length > 0)
+          if (OWNER_CLASS_LIKE.has(kind) || symOwner.length > 0 || symSupers.length > 0) {
+            const symEndLine = Number((s as any)?.range?.endLine ?? (s as any)?.endLine ?? (s as any)?.line_end ?? 0) || (Number((s as any)?.line ?? 0))
+            ownerRecords.push({
+              file: relFile,
+              name: key,
+              kind,
+              line: Number((s as any)?.line ?? 0),
+              endLine: symEndLine,
+              ownerName: symOwner.length > 0 ? symOwner : null,
+              superTypes: symSupers,
+            })
+          }
+        }
         // THE MEMBER KEY SPACE (R5's W2) — a symbol that BELONGS to a TYPE is a MEMBER of it. The
         // owner must be a CLASS-LIKE declaration (the arbiter's own owner-channel rule: a member set
         // lives in a class, an interface, an enum or a namespace), so the test is the owner's KIND
@@ -487,10 +522,36 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
       if (repoClassLike.has(c.owner)) pMembers.add(c.name)
     }
     const facts = { packages: new Set<string>(), files: pFiles, sdkLib: false, importsByFile: importEvidence }
+    /** THE OWNER CHANNEL'S POOLS — built once per project over the finished symbol set, exactly
+     *  where the gate builds them (`incoming-gate.ts:1895`) ✓ — the same position production's pass
+     *  runs in (after every name strategy, over the complete table) ✓. */
+    const ownerPools = buildOwnerProjectPools(ownerRecords)
     for (const { rec, rel } of repoRows) {
       const claim = externalClaimOf(rel)
       const isContains = isContainsEdge(rec.label)
-      const c = classifyEdge(pDecl, pKinds, rec.target, claim, facts, isContains, undefined, undefined, rec.file)
+      // ── THE CALLER'S ARGUMENTS, THE GATE'S OWN FORMS (`incoming-gate.ts:1949-1966`) ✓✓ ──
+      // **THE OWN-FILE DECLARATION TEST — the gate's own expression**
+      //   `(declPos.get(e.tgt) ?? []).some((d) => d.file === e.srcFile)`
+      // expressed over the probe's own map (the same fact: the files that declare the name) ✓.
+      // **THE OWNER CHANNEL'S VERDICT — the arbiter's own module, called the gate's way ✓.**
+      // **BOTH WERE `undefined` IN THE 2026-10-21 ARM, AND THAT IS WHY ITS TABLE DID NOT REPRODUCE
+      // THE GATE'S ✓ — the fix is ONE ARGUMENT EACH, and the arbiter's own doc says what `undefined`
+      // costs ✓✓.**
+      const declFileSet = declFiles.get(rec.target)
+      const ownFileDeclares = declFileSet !== undefined && declFileSet.has(rec.file)
+      const md = (rel.metadata ?? {}) as any
+      const rowOwner = md.owner ?? null
+      const ownerVerdict = rowOwner !== null && (rec.label === "calls" || rec.label === "uses")
+        ? ownerChannelVerdict(ownerPools, {
+            type: rec.label,
+            target: rec.target,
+            owner: String(rowOwner),
+            srcFile: rec.file,
+            line: rec.line ?? null,
+          })
+        : undefined
+      const c = classifyEdge(pDecl, pKinds, rec.target, claim, facts, isContains, ownFileDeclares,
+        ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, rec.file)
       rec.outcome = c.outcome
       rec.claimKind = claim?.kind ?? "-"
       byOutcome.set(c.outcome, (byOutcome.get(c.outcome) ?? 0) + 1)
@@ -578,7 +639,10 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
       if (alt0) {
         // The DIRECT case's binding name is the row's own target.
         const alt = alt0.binding === "__TARGET__" ? { ...alt0, binding: rec.target } : alt0
-        const c2 = classifyEdge(pDecl, pKinds, rec.target, alt, facts, isContains, undefined, undefined, rec.file)
+        // THE COUNTERFACTUAL USES THE SAME CALLER'S ARGUMENTS ✓✓ — a counterfactual computed with
+        // DIFFERENT arguments would answer a different question ✓.
+        const c2 = classifyEdge(pDecl, pKinds, rec.target, alt, facts, isContains, ownFileDeclares,
+          ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, rec.file)
         rec.altOutcome = c2.outcome
         rec.altClaimKind = alt.kind
         // ── THE DISPLACEMENT, EVERY ROW, NOT ONLY THE OUTCOME-CHANGED ONES ───────────────────
