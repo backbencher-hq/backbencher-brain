@@ -108,7 +108,16 @@ token_fresh() {  # live if the last beat is within TTL
 }
 
 write_holder() {  # lane pid ticks
-  printf '%s\n%s\n%s\n%s\n' "$1" "$2" "$3" "$(now)" > "$TOKEN_DIR/holder"
+  # THE ATOMIC WRITE (2026-10-20, the javascript lane's finding). A plain `printf > holder` is NOT
+  # atomic, and a reader CAN CATCH THE FILE MID-WRITE: the javascript lane saw the dart lane's
+  # holder read as "last beat 1792547563s ago" — a garbage beat that made a LIVE holder look
+  # ANCIENT ✓✓. That is not a cosmetic reading: `force` refuses a FRESH heartbeat, so a garbage
+  # read is exactly what would authorise a force against a live holder — the failure the token
+  # exists to prevent ✓✓. So the holder file is now written to a TEMP file and RENAMED ✓, which is
+  # atomic on every filesystem the fleet runs on ✓✓.
+  printf '%s\n%s\n%s\n%s\n' "$1" "$2" "$3" "$(now)" > "$TOKEN_DIR/holder.tmp" 2>/dev/null \
+    && mv "$TOKEN_DIR/holder.tmp" "$TOKEN_DIR/holder" 2>/dev/null \
+    || { rm -f "$TOKEN_DIR/holder.tmp" 2>/dev/null || true; }
 }
 
 cmd="${1:-status}"; lane="${2:-}"
@@ -223,7 +232,7 @@ case "$cmd" in
     fi
     mkdir -p "$SMALL_TOKEN_DIR" 2>/dev/null || true
     if mkdir "$SMALL_TOKEN_DIR/holder" 2>/dev/null; then
-      printf 'lane=%s\npid=%s\nstarted=%s\nbeat=%s\npopulation=%s\n' "$lane" "$$" "$(date +%s)" "$(date +%s)" "$files" > "$SMALL_TOKEN_DIR/holder/holder"
+      printf 'lane=%s\npid=%s\nstarted=%s\nbeat=%s\npopulation=%s\n' "$lane" "$$" "$(date +%s)" "$(date +%s)" "$files" > "$SMALL_TOKEN_DIR/holder/holder.tmp" && mv "$SMALL_TOKEN_DIR/holder/holder.tmp" "$SMALL_TOKEN_DIR/holder/holder"
       echo "ARM SMALL SLOT TAKEN by $lane (declared population $files files) — a SEPARATE lock, so a HEAVY arm may run beside it."
       exit 0
     fi
