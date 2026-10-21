@@ -2425,7 +2425,7 @@
     "evidencePage": "validation/m14/verification/CPP-D3.md"
    },
    "indexedArm": {
-    "status": "MEASURED — STRUCTURALLY INERT, and that is the finding: production builds NO cpp project index (PROJECT_INDEX_EXTENSIONS in src/ast/parallel-indexer.ts has no .cpp/.cc/.hpp spelling), the gate's INDEX_SPECS has no cpp entry (the arm reports 'project index: USED — 0 repo index(es) (0 built, 0 from cache, 0 damaged) over 0 file(s)'), and the analyzer reads no projectIndex (0 occurrences). The arm was RUN, not skipped: TABLE 1, binding intent, claim-carrying block and verdict are IDENTICAL to the no-index arm, and the A->B delta is 0 in every column.",
+    "status": "SUPERSEDED — the 'measured STRUCTURAL NON-ARM' reading was TRUE when production's PROJECT_INDEX_EXTENSIONS carried no C++ spelling and the gate's INDEX_SPECS had no cpp entry. BOTH halves are now wired (PROJECT_INDEX_EXTENSIONS carries .cpp/.cc/.cxx/.c++/.hpp/.hxx/.ipp/.inl/.cu -> cpp, specByLang.cpp = CPP_DECLARATION_SPEC, and the gate's INDEX_SPECS.cpp carries the spec + the tree-sitter-cpp wasm), so the `--index` arm now BUILDS 31 repo indexes (0 damaged) over the 7,435-file population and the analyzer CONSUMES the index behind BB_CPP_INDEX_CONSUME=1. The A->B delta is still 0 in every column for the INDEX ALONE (measured: arm A == arm B-off, column for column) — the index is an INSTRUMENT and the movement comes from the CONSUMPTION, which is a separate flag and a separate arm (+17,955 resolved, -22,656 amb, +4,701 honest NULLs). The POPULATION caveat is measured and stated in CPP-POPULATION-RECONCILIATION.md: the gate's discovery admits 7,435 extension-only files while production's ROUTER admits 11,146 (a difference of exactly 3,711 C++-looking .h headers), so the arm is production-parsed for the 7,435 and the .h boundary is the one open population question.",
     "command": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --index --dump",
     "population": [
      "population: 7435 parsed of 7435 sampled (corpus has 7435 .cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu files across 31 repos; stride sample)",
@@ -2467,6 +2467,100 @@
     }
    }
   },
-  "noNewValueConfirmations": "The constructs that carry NO relationship (or a DIFFERENT one than their spelling suggests) and are therefore carried as METADATA/symbol facts rather than as a vocabulary value — each counted at whole population by the same census, so the ruling is a number and not a silence: concepts+requires (concept_definition 2 · requires_clause 10 · requires_expression 2 — RULED construct, no symbol/no edge); template instantiation (template_instantiation 267 sites, versus `instantiates` 3,093 rows emitted from new_expression only — CPP-R2); structured bindings (structured_binding_declarator 389 sites; binding names are declarations, the initializer read is the uses edge); lambda expressions (lambda_expression 5,614 · lambda_capture_specifier 5,670 — captures of declared names are uses, the lambda publishes no symbol); operator/destructor names (operator_name 3,335 · operator_cast 159 · destructor_name 2,873 — symbols contained, no `overloads` value exists); friend declarations (573 — a friend declaration publishes no edge); namespace aliases (83 — a namespace is not a published declaration); pure-virtual clauses (75 — the pure-virtual CONTRACT is why `implements` fires, CPP-R1); multiple inheritance (114 classes with >1 base in 58 files across 5 repos — N extends edges, CPP-R4)."
+  "noNewValueConfirmations": "The constructs that carry NO relationship (or a DIFFERENT one than their spelling suggests) and are therefore carried as METADATA/symbol facts rather than as a vocabulary value — each counted at whole population by the same census, so the ruling is a number and not a silence: concepts+requires (concept_definition 2 · requires_clause 10 · requires_expression 2 — RULED construct, no symbol/no edge); template instantiation (template_instantiation 267 sites, versus `instantiates` 3,093 rows emitted from new_expression only — CPP-R2); structured bindings (structured_binding_declarator 389 sites; binding names are declarations, the initializer read is the uses edge); lambda expressions (lambda_expression 5,614 · lambda_capture_specifier 5,670 — captures of declared names are uses, the lambda publishes no symbol); operator/destructor names (operator_name 3,335 · operator_cast 159 · destructor_name 2,873 — symbols contained, no `overloads` value exists); friend declarations (573 — a friend declaration publishes no edge); namespace aliases (83 — a namespace is not a published declaration); pure-virtual clauses (75 — the pure-virtual CONTRACT is why `implements` fires, CPP-R1); multiple inheritance (114 classes with >1 base in 58 files across 5 repos — N extends edges, CPP-R4).",
+  "d7": {
+   "fourBucketPartition": {
+    "instrument": "script/m14/cpp-w1-price.ts",
+    "measuredAt": "2026-10-20T04:11:16.526Z",
+    "w1RowsPriced": 614081,
+    "fourWay": {
+     "A": 113646,
+     "B": 7962,
+     "C": 370246,
+     "D": 122227
+    },
+    "buckets": {
+     "C/member-leaf-many-owners-receiver-typing": 267083,
+     "C/member-leaf-one-owner-receiver-typing": 103163,
+     "D/free-callable-needs-project-fact-claim": 70493,
+     "A/index-declares-TYPE-construction": 51966,
+     "D/type-shaped-needs-project-fact-claim": 51734,
+     "A/index-declares-FREE-FNCE-MULTI": 39018,
+     "A/index-declares-FREE-FNCE-ONCE": 22662,
+     "B/committed-stdlib-vocabulary": 7962
+    },
+    "partitionHolds": true,
+    "reposIndexed": 26,
+    "vocabulary": {
+     "id": "iso-cpp-stdlib",
+     "source": "ISO/IEC 14882 C++ standard library (namespace std; measured top spellings from the cpp namespace census)",
+     "roots": 46
+    },
+    "evidencePage": "validation/m14/verification/CPP-D7-WALLS.md"
+   },
+   "wallLedger": {
+    "instrument": "script/m14/cpp-wall-disposition.ts",
+    "measuredAt": "2026-10-20T04:41:19.782Z",
+    "wallRows": 871129,
+    "closureHolds": true,
+    "walls": [
+     {
+      "wall": "W1-callable-not-declared-in-run",
+      "rows": 614081,
+      "share": "70.5%",
+      "disposition": "SPLIT (see subs): the project-fact part is an INSTRUMENT GAP priced by the four-bucket partition; the receiver part is an INSTRUMENT GAP (receiver typing); the vocabulary part is CLAIMED; the rest is a NEW CLAIM KIND"
+     },
+     {
+      "wall": "W10-macro-defined-name",
+      "rows": 114398,
+      "share": "13.1%",
+      "disposition": "RULED UNDECIDABLE (macros are not declarations)"
+     },
+     {
+      "wall": "W11-member-leaf-owner-unresolved",
+      "rows": 83169,
+      "share": "9.5%",
+      "disposition": "INSTRUMENT GAP (receiver typing) — the rows the index CAN bound but cannot choose"
+     },
+     {
+      "wall": "W2-module-path-not-a-symbol",
+      "rows": 50915,
+      "share": "5.8%",
+      "disposition": "RULED UNDECIDABLE (by construction of the type)"
+     },
+     {
+      "wall": "W1-type-not-declared-in-run",
+      "rows": 4776,
+      "share": "0.5%",
+      "disposition": "INSTRUMENT GAP (the index has no cross-run TYPE declarations) — the same project-fact question as W1, in type position"
+     },
+     {
+      "wall": "W4-qualified-name-not-published",
+      "rows": 2771,
+      "share": "0.3%",
+      "disposition": "INSTRUMENT GAP (the analyzer publishes LEAF names; a cpp member symbol has no distinct qualifiedName)"
+     },
+     {
+      "wall": "W5-export-marker-not-a-declaration",
+      "rows": 835,
+      "share": "0.1%",
+      "disposition": "RULED UNDECIDABLE (the target is the export MARKER as written)"
+     },
+     {
+      "wall": "W9-operator-name-not-a-symbol",
+      "rows": 180,
+      "share": "0.0%",
+      "disposition": "RULED UNDECIDABLE (an operator spelling is not a published symbol)"
+     },
+     {
+      "wall": "W8-non-class-standard-type",
+      "rows": 4,
+      "share": "0.0%",
+      "disposition": "INSTRUMENT GAP (a guard that escaped) — 4 rows, tracked, not a residual"
+     }
+    ],
+    "evidencePage": "validation/m14/verification/CPP-D7-WALLS.md"
+   }
+  }
  }
 }

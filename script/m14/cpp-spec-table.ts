@@ -30,6 +30,8 @@ const OUT = path.join(ROOT, "script/m14/spec/cpp-spec-table.json")
 const CENSUS = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-emission-census-whole.json")
 const D3_NOINDEX = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-d3-noindex-arm.json")
 const D3_INDEXED = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-d3-indexed-arm.json")
+const D7_PRICE = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-w1-price.json")
+const D7_WALLS = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-wall-disposition.json")
 const CHECK = process.argv.includes("--check")
 
 interface GateRow {
@@ -136,6 +138,10 @@ const census: any = fs.existsSync(CENSUS) ? JSON.parse(fs.readFileSync(CENSUS, "
 /** The D3 no-index whole-population gate arm + its closure-exact classifier. */
 const d3: any = fs.existsSync(D3_NOINDEX) ? JSON.parse(fs.readFileSync(D3_NOINDEX, "utf8")) : null
 const d3Indexed: any = fs.existsSync(D3_INDEXED) ? JSON.parse(fs.readFileSync(D3_INDEXED, "utf8")) : null
+/** The D7 four-bucket partition of the W1 wall + the whole-wall disposition ledger. Both are
+ *  MEASURED on the production population and both carry their own closure controls. */
+const d7Price: any = fs.existsSync(D7_PRICE) ? JSON.parse(fs.readFileSync(D7_PRICE, "utf8")) : null
+const d7Walls: any = fs.existsSync(D7_WALLS) ? JSON.parse(fs.readFileSync(D7_WALLS, "utf8")) : null
 /** TABLE 1 lines of the gate arm, parsed into per-type rows (the table IS the verdict's scope). */
 const d3Table: Record<string, any> = {}
 if (d3?.table1) {
@@ -330,12 +336,19 @@ const spec = {
           indexedArm: d3Indexed
             ? {
                 status:
-                  "MEASURED — STRUCTURALLY INERT, and that is the finding: production builds NO cpp project index " +
-                  "(PROJECT_INDEX_EXTENSIONS in src/ast/parallel-indexer.ts has no .cpp/.cc/.hpp spelling), the gate's " +
-                  "INDEX_SPECS has no cpp entry (the arm reports 'project index: USED — 0 repo index(es) (0 built, 0 from " +
-                  "cache, 0 damaged) over 0 file(s)'), and the analyzer reads no projectIndex (0 occurrences). The arm was " +
-                  "RUN, not skipped: TABLE 1, binding intent, claim-carrying block and verdict are IDENTICAL to the no-index " +
-                  "arm, and the A->B delta is 0 in every column.",
+                  "SUPERSEDED — the 'measured STRUCTURAL NON-ARM' reading was TRUE when production's " +
+                  "PROJECT_INDEX_EXTENSIONS carried no C++ spelling and the gate's INDEX_SPECS had no cpp entry. " +
+                  "BOTH halves are now wired (PROJECT_INDEX_EXTENSIONS carries .cpp/.cc/.cxx/.c++/.hpp/.hxx/.ipp/" +
+                  ".inl/.cu -> cpp, specByLang.cpp = CPP_DECLARATION_SPEC, and the gate's INDEX_SPECS.cpp carries the " +
+                  "spec + the tree-sitter-cpp wasm), so the `--index` arm now BUILDS 31 repo indexes (0 damaged) over " +
+                  "the 7,435-file population and the analyzer CONSUMES the index behind BB_CPP_INDEX_CONSUME=1. The " +
+                  "A->B delta is still 0 in every column for the INDEX ALONE (measured: arm A == arm B-off, column for " +
+                  "column) — the index is an INSTRUMENT and the movement comes from the CONSUMPTION, which is a separate " +
+                  "flag and a separate arm (+17,955 resolved, -22,656 amb, +4,701 honest NULLs). The POPULATION caveat " +
+                  "is measured and stated in CPP-POPULATION-RECONCILIATION.md: the gate's discovery admits 7,435 " +
+                  "extension-only files while production's ROUTER admits 11,146 (a difference of exactly 3,711 " +
+                  "C++-looking .h headers), so the arm is production-parsed for the 7,435 and the .h boundary is the one " +
+                  "open population question.",
                 command: d3Indexed.command,
                 population: d3Indexed.population,
                 table1: d3Indexed.table1,
@@ -347,6 +360,39 @@ const spec = {
       : { status: "OWED — the D3 no-index arm has not landed" },
     noNewValueConfirmations:
       "The constructs that carry NO relationship (or a DIFFERENT one than their spelling suggests) and are therefore carried as METADATA/symbol facts rather than as a vocabulary value — each counted at whole population by the same census, so the ruling is a number and not a silence: concepts+requires (concept_definition 2 · requires_clause 10 · requires_expression 2 — RULED construct, no symbol/no edge); template instantiation (template_instantiation 267 sites, versus `instantiates` 3,093 rows emitted from new_expression only — CPP-R2); structured bindings (structured_binding_declarator 389 sites; binding names are declarations, the initializer read is the uses edge); lambda expressions (lambda_expression 5,614 · lambda_capture_specifier 5,670 — captures of declared names are uses, the lambda publishes no symbol); operator/destructor names (operator_name 3,335 · operator_cast 159 · destructor_name 2,873 — symbols contained, no `overloads` value exists); friend declarations (573 — a friend declaration publishes no edge); namespace aliases (83 — a namespace is not a published declaration); pure-virtual clauses (75 — the pure-virtual CONTRACT is why `implements` fires, CPP-R1); multiple inheritance (114 classes with >1 base in 58 files across 5 repos — N extends edges, CPP-R4).",
+    /**
+     * THE D7 WALL LEDGER — the four-bucket partition of the W1 wall and the disposition of every
+     * named wall, MEASURED on the production population. Both blocks carry their own closure
+     * controls (the partition refuses to report a zero-row bucket; the ledger refuses a wall whose
+     * sub-classes do not sum to its count), and the two instruments agree on all four bucket totals.
+     */
+    d7: d7Price || d7Walls
+      ? {
+          fourBucketPartition: d7Price
+            ? {
+                instrument: d7Price.instrument,
+                measuredAt: d7Price.measuredAt,
+                w1RowsPriced: d7Price.population.w1RowsPriced,
+                fourWay: d7Price.fourWay,
+                buckets: Object.fromEntries(Object.entries(d7Price.buckets).map(([k, v]: any) => [k, v.rows])),
+                partitionHolds: d7Price.totals.partitionHolds,
+                reposIndexed: d7Price.population.reposIndexed,
+                vocabulary: d7Price.rule.vocabulary,
+                evidencePage: "validation/m14/verification/CPP-D7-WALLS.md",
+              }
+            : null,
+          wallLedger: d7Walls
+            ? {
+                instrument: d7Walls.instrument,
+                measuredAt: d7Walls.measuredAt,
+                wallRows: d7Walls.totals.wallRows,
+                closureHolds: d7Walls.totals.closureHolds,
+                walls: d7Walls.walls.map((w: any) => ({ wall: w.wall, rows: w.rows, share: w.share, disposition: w.disposition })),
+                evidencePage: "validation/m14/verification/CPP-D7-WALLS.md",
+              }
+            : null,
+        }
+      : { status: "OWED — the D7 four-bucket partition and the wall ledger have not landed" },
   },
 }
 

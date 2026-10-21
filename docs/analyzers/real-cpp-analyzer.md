@@ -1300,15 +1300,27 @@ residual is measured debt, not claimed clean. The contract instrument `cpp-oracl
 synthetic positive+negative cases and a self-test that proves the matcher can fail. Evidence page:
 `validation/m14/verification/CPP-D4-AUDIT.md` (+ `CPP-D4-ORACLE.md` for the inventory/wiring patch).
 
-**D5 — permissions.** Fixtures **50 pass / 1 fail** (the recorded `friend-definition-body-owner` contract
+**D5 — permissions.** Fixtures **51 pass / 1 fail** (the recorded `friend-definition-body-owner` contract
 conflict, unchanged from baseline; exit 0, "no regressions"); completeness inventory 212 types, lane-pass 8/8;
 **no-regex CLEAN** at the AST level (`script/m14/cpp-no-regex-census.ts`: RegExpLiteral 0 · new RegExp 0 ·
-regex argument 0; 5 allowed STRING arguments to split/replace, i.e. the character scans); perf row measured on
+regex argument 0; 9 allowed STRING arguments to split/replace, i.e. the character scans); perf row measured on
 the differential's fmt extension universe, 60-file draw — mean **146 ms/file**, median 31.14, p90 491.05, max
 1512.54, **3.676 ms/KiB**, analyzer share **85.4%** / parse 14.6%, load 5.67 — ratio **0.95×** against the
 pinned differential baseline 154.1 ms/file, reported **UNSCORED** per the `#871` no-re-pin ruling (shared box);
 `npx tsc --noEmit -p tsconfig.scripts.json` and `-p tsconfig.json` both report **0 errors naming any cpp
 script or this analyzer** (other lanes' pre-existing errors are not this lane's files).
+
+> **THE NO-REGEX RECORD WAS STALE AND WAS RE-MEASURED (2026-10-20).** Four regex literals had entered this
+> analyzer with the task-22 project-index work (commit `b8a22225d`) while the census above was last run
+> BEFORE that commit, so the recorded "CLEAN" was stale evidence rather than a wrong gate. The four sites are
+> now the module-level zero-regex helpers `isIdentifierShapeWithDollar` (≡ `/^[A-Za-z_$][\w$]*$/`) and
+> `collapseTypeNoise` (≡ `t.replace(/[*&\s]+/g, " ").trim()`), proven equivalent over a 499-case
+> character-class-exhaustive corpus, with the whole-population emission census reading `perType == perType`
+> and `totalEdges 1,282,777` against the recorded baseline — byte-identical. The census reads CLEAN again.
+> The fixture count moved 50 → 51 because the citation fixture, which had been committed WITHOUT its
+> `.expectation.json` and therefore pinned nothing, now pins the emission in both directions (the flag-off
+> rows the suite runs, and the flag-on claim state `cpp-citation-verify.ts` asserts at 12/12 PASS).
+> Evidence: `validation/m14/verification/CPP-VERDICT-PROPOSAL.md` §5.
 
 **D6 — truthfulness.** `arbitraryTwin` whole-population baseline recorded **564,803** (arm A = arm B, delta 0);
 `extFAIL`/`bindFAIL`/`causeFAIL` **0** on both arms; claims are never merged into resolutions (this lane emits
