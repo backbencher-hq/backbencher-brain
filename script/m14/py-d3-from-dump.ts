@@ -32,7 +32,6 @@
 import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
-import { readFileSync } from "node:fs"
 import { ASTEngine } from "../../src/ast/engine"
 import { RealPythonAnalyzer } from "../../src/ast/real-python-analyzer"
 
@@ -49,33 +48,61 @@ if (!LOG) {
   process.exit(2)
 }
 const raw = readFileSync(LOG, "utf8")
-const text = raw.replace(/\u0000/g, "")
+// THE NUL IS NOT STRIPPED. It is `BINDING_SEP` — the family's separator for a local-binding
+// target (`<caller>\u0000<binding>`) — and it is the ONLY thing that makes a binding target
+// distinguishable from a bare name. The first version of this instrument stripped the NUL
+// (copied from the no-index arm, where no binding row existed), which silently collapsed
+// `main\u0000model` into `mainmodel`: on the PRODUCTION population (13,217 binding rows) the
+// target no longer joined the analyzer's edge, and the join would have reported misses on rows
+// that are perfectly joinable. The NUL is kept, and the join key uses it.
+const text = raw
 
 // ── TABLE 1 ─────────────────────────────────────────────────────────────────────────────────
+// THE PRODUCTION TABLE 1 HAS FIFTEEN COLUMNS, not ten: `edges resolved collRes amb(decl)
+// amb(kind) unresolved extOK ext? extFAIL bindOK bind? bindFAIL causeOK causeFAIL`. The ten-column
+// shape is the NO-INDEX arm's. This instrument now reads BOTH, because the depth campaign's
+// question is asked of the production population and a classifier that cannot read the table it
+// is asked about is not a classifier.
+//
+// THE COLUMN COUNT IS DISCOVERED, NOT ASSUMED: the first matching label line decides the shape
+// for the whole table, and a line with a different column count is SKIPPED rather than read
+// wrongly. `tableCols` is reported in the output, so the reader knows which arm was read.
 type Row = {
   edges: number; resolved: number; collRes: number; ambDecl: number; ambKind: number
   unresolved: number; extOK: number; extUnv: number; extFail: number
+  bindOK: number; bindUnv: number; bindFail: number; causeOK: number; causeFail: number
 }
+const LABELS = ["calls","uses","contains","imports","references","exports","extends","implements","overrides","instantiates","decorates","renders","mixes_in","part_of"]
+const NUM15 = "(\\d+)".repeat(15)
 const table = new Map<string, Row>()
 const tableOrder: string[] = []
 let totalRow: Row | null = null
+let tableCols = 0
+const parseRow = (nums: string[]): Row => ({
+  edges: +nums[0]!, resolved: +nums[1]!, collRes: +nums[2]!, ambDecl: +nums[3]!, ambKind: +nums[4]!,
+  unresolved: +nums[5]!, extOK: +nums[6]!, extUnv: +nums[7]!, extFail: +nums[8]!,
+  bindOK: nums.length > 9 ? +nums[9]! : 0, bindUnv: nums.length > 10 ? +nums[10]! : 0,
+  bindFail: nums.length > 11 ? +nums[11]! : 0, causeOK: nums.length > 12 ? +nums[12]! : 0,
+  causeFail: nums.length > 13 ? +nums[13]! : 0,
+})
 for (const line of text.split("\n")) {
-  const m = line.match(
-    /^([a-z_]+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$/,
-  )
+  const m = line.match(new RegExp(`^(${LABELS.join("|")})\\s+${NUM15}\\s*$`))
   if (!m) continue
   const label = m[1]!
-  if (!["calls","uses","contains","imports","references","exports","extends","implements","overrides","instantiates","decorates","renders","mixes_in","part_of"].includes(label)) continue
-  const r: Row = {
-    edges: +m[2]!, resolved: +m[3]!, collRes: +m[4]!, ambDecl: +m[5]!, ambKind: +m[6]!,
-    unresolved: +m[7]!, extOK: +m[8]!, extUnv: +m[9]!, extFail: +m[10]!,
-  }
+  const nums = m.slice(2) as string[]
+  if (tableCols === 0) tableCols = nums.length
+  if (nums.length !== tableCols) continue
   if (!table.has(label)) tableOrder.push(label)
-  table.set(label, r)
+  table.set(label, parseRow(nums))
 }
 for (const line of text.split("\n")) {
-  const m = line.match(/^TOTAL\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$/)
-  if (m) { totalRow = { edges:+m[1]!,resolved:+m[2]!,collRes:+m[3]!,ambDecl:+m[4]!,ambKind:+m[5]!,unresolved:+m[6]!,extOK:+m[7]!,extUnv:+m[8]!,extFail:+m[9]! }; break }
+  const m = line.match(new RegExp(`^TOTAL\\s+${NUM15}\\s*$`))
+  if (!m) continue
+  const nums = m.slice(1) as string[]
+  if (tableCols === 0) tableCols = nums.length
+  if (nums.length !== tableCols) continue
+  totalRow = parseRow(nums)
+  break
 }
 if (table.size === 0 || totalRow === null) {
   console.error("CONTROL FAILED: TABLE 1 (or its TOTAL row) not found in the gate log — this must be a --dump run of the gate")
@@ -98,29 +125,42 @@ for (const line of text.split("\n")) {
 
 // ── CONTROL A/B ─────────────────────────────────────────────────────────────────────────────
 const problems: string[] = []
-const perLabelDump = new Map<string, { amb: number; unres: number; extUnv: number; extFail: number; extOk: number }>()
+const perLabelDump = new Map<string, { amb: number; unres: number; extUnv: number; extFail: number; extOk: number; bindOk: number; bindUnv: number; bindFail: number; causeOk: number; causeFail: number }>()
 for (const r of rows) {
   let d = perLabelDump.get(r.label)
-  if (!d) { d = { amb: 0, unres: 0, extUnv: 0, extFail: 0, extOk: 0 }; perLabelDump.set(r.label, d) }
+  if (!d) { d = { amb: 0, unres: 0, extUnv: 0, extFail: 0, extOk: 0, bindOk: 0, bindUnv: 0, bindFail: 0, causeOk: 0, causeFail: 0 }; perLabelDump.set(r.label, d) }
   if (r.outcome === "unresolved") d.unres++
   else if (r.outcome.startsWith("amb")) d.amb++
   else if (r.outcome === "externalUnverified") d.extUnv++
   else if (r.outcome === "externalRefuted") d.extFail++
   else if (r.outcome === "externalVerified") d.extOk++
+  else if (r.outcome === "bindingVerified") d.bindOk++
+  else if (r.outcome === "bindingUnverified") d.bindUnv++
+  else if (r.outcome === "bindingRefuted") d.bindFail++
+  else if (r.outcome === "causeDeclared") d.causeOk++
+  else if (r.outcome === "causeRefuted") d.causeFail++
   else problems.push(`unknown outcome "${r.outcome}" on ${r.label} ${r.file}:${r.line}`)
 }
 for (const [label, row] of table) {
-  const d = perLabelDump.get(label) ?? { amb: 0, unres: 0, extUnv: 0, extFail: 0, extOk: 0 }
+  const d = perLabelDump.get(label) ?? { amb: 0, unres: 0, extUnv: 0, extFail: 0, extOk: 0, bindOk: 0, bindUnv: 0, bindFail: 0, causeOk: 0, causeFail: 0 }
   if (d.amb !== row.ambDecl) problems.push(`CONTROL A: ${label} dump amb=${d.amb} != TABLE amb=${row.ambDecl}`)
   if (d.unres !== row.unresolved) problems.push(`CONTROL A: ${label} dump unresolved=${d.unres} != TABLE unresolved=${row.unresolved}`)
   if (d.extUnv !== row.extUnv) problems.push(`CONTROL A: ${label} dump ext?=${d.extUnv} != TABLE ext?=${row.extUnv}`)
   if (d.extFail !== row.extFail) problems.push(`CONTROL A: ${label} dump extFAIL=${d.extFail} != TABLE extFAIL=${row.extFail}`)
   if (d.extOk !== row.extOK) problems.push(`CONTROL A: ${label} dump externalVerified=${d.extOk} != TABLE extOK=${row.extOK}`)
+  if (d.bindOk !== row.bindOK) problems.push(`CONTROL A: ${label} dump bindingVerified=${d.bindOk} != TABLE bindOK=${row.bindOK}`)
+  if (d.bindUnv !== row.bindUnv) problems.push(`CONTROL A: ${label} dump bindingUnverified=${d.bindUnv} != TABLE bind?=${row.bindUnv}`)
+  if (d.bindFail !== row.bindFail) problems.push(`CONTROL A: ${label} dump bindingRefuted=${d.bindFail} != TABLE bindFAIL=${row.bindFail}`)
+  if (d.causeOk !== row.causeOK) problems.push(`CONTROL A: ${label} dump causeDeclared=${d.causeOk} != TABLE causeOK=${row.causeOK}`)
+  if (d.causeFail !== row.causeFail) problems.push(`CONTROL A: ${label} dump causeRefuted=${d.causeFail} != TABLE causeFAIL=${row.causeFail}`)
+  // THE CLOSURE NOW SPANS EVERY COLUMN THE GATE PRINTS, so a row in a column the classifier
+  // does not understand cannot hide in the difference between the two sums.
   const sum = row.resolved + row.ambDecl + row.unresolved + row.extOK + row.extUnv + row.extFail
+    + row.bindOK + row.bindUnv + row.bindFail + row.causeOK + row.causeFail
   if (sum !== row.edges) problems.push(`CONTROL B: ${label} closure ${sum} != edges ${row.edges}`)
 }
 const colSum = (k: keyof Row) => [...table.values()].reduce((a, r) => a + (r[k] as number), 0)
-for (const k of ["edges","resolved","collRes","ambDecl","ambKind","unresolved","extOK","extUnv","extFail"] as const) {
+for (const k of ["edges","resolved","collRes","ambDecl","ambKind","unresolved","extOK","extUnv","extFail","bindOK","bindUnv","bindFail","causeOK","causeFail"] as const) {
   if (colSum(k) !== (totalRow[k] as number)) problems.push(`CONTROL B: column ${k} sum ${colSum(k)} != TOTAL ${totalRow[k]}`)
 }
 if (problems.length > 0) {
@@ -190,6 +230,18 @@ const claimClass = (kind: string, outcome: string): string => {
   if (outcome === "externalUnverified") return `claim-unverifiable:${kind}`
   if (outcome.startsWith("amb")) return `claim-reported-ambiguous:${kind}`
   if (outcome === "externalRefuted") return `claim-REFUTED:${kind}`
+  // THE BINDING AND CAUSE FAMILIES ARE NOT EXTERNAL CLAIMS. A verified binding is a claim the
+  // arbiter checked against the SPELLING, and it lives in the gate's own bindOK column; a
+  // declared cause is a statement of WHY a row could not reach its base, in the causeOK column.
+  // Counting either in the external-claim buckets would make the claim columns read as if the
+  // lane had published external claims it did not, so they get their own buckets and their own
+  // closure lines. This is the SAME discipline the lane's other claim families already follow
+  // (the `owner` claim's ambiguity disposition is reported, never charged).
+  if (outcome === "bindingVerified") return `binding-verified:${kind}`
+  if (outcome === "bindingUnverified") return `binding-unverifiable:${kind}`
+  if (outcome === "bindingRefuted") return `binding-REFUTED:${kind}`
+  if (outcome === "causeDeclared") return `cause-declared:${kind}`
+  if (outcome === "causeRefuted") return `cause-REFUTED:${kind}`
   return `claim:${kind}:${outcome}`
 }
 const causeOf = (row: DumpRow, md: Meta): string => {
@@ -261,8 +313,15 @@ for (const [ck] of classes) {
 const cProblems: string[] = []
 const refusedTotal = rows.length
 const tableRefused = colSum("ambDecl") + colSum("unresolved") + colSum("extUnv") + colSum("extFail") + colSum("extOK")
+  + colSum("bindOK") + colSum("bindUnv") + colSum("bindFail") + colSum("causeOK") + colSum("causeFail")
 if (refusedTotal !== tableRefused) cProblems.push(`CONTROL C: dump rows ${refusedTotal} != amb+unresolved+ext?+extFAIL+extOK ${tableRefused}`)
 if (refusedTotal !== totalRow.edges - totalRow.resolved) cProblems.push(`CONTROL C: dump rows ${refusedTotal} != edges-resolved ${totalRow.edges - totalRow.resolved}`)
+// THE BINDING AND CAUSE COLUMNS ARE DUMPED ROWS TOO, so they are part of the refusal total and
+// they are part of the claim bookkeeping. A binding row is NOT an external claim, so it must not
+// be counted in the external claim buckets; it gets its own bucket and its own closure line.
+const bindingRows = colSum("bindOK") + colSum("bindUnv") + colSum("bindFail")
+const causeRows = colSum("causeOK") + colSum("causeFail")
+const externalClaimRows = colSum("extOK") + colSum("extUnv") + colSum("extFail")
 if (joinMiss !== 0) cProblems.push(`CONTROL C: ${joinMiss} dumped row(s) found NO analyzer edge (join miss — outcomes cannot be attributed)`)
 if (unclassified !== 0) cProblems.push(`CONTROL C: ${unclassified} row(s) received no named cause`)
 const classSum = [...classes.values()].reduce((a, t) => a + t.count, 0)
@@ -274,12 +333,18 @@ for (const [label, row] of table) {
 // ── THE LEAD-SPECIFIED CLOSURE IDENTITY ─────────────────────────────────────────────────────
 // population == TOTAL - resolved ; sum(label rows) == TOTAL ; claim buckets equal the gate's
 // claim columns ; non-claim rows == amb(decl) + unresolved ; join/unclassified 0 or counted.
-const bucket = { verified: 0, unverified: 0, refuted: 0, reported: 0, nonClaim: 0, reportedAmb: 0 }
+const bucket = { verified: 0, unverified: 0, refuted: 0, reported: 0, nonClaim: 0, reportedAmb: 0,
+  bindVerified: 0, bindUnverified: 0, bindRefuted: 0, causeDeclared: 0, causeRefuted: 0 }
 for (const [ck, t] of classes) {
   const [, cause] = ck.split("|") as [string, string]
   if (cause.startsWith("claim-verified")) bucket.verified += t.count
   else if (cause.startsWith("claim-unverifiable")) bucket.unverified += t.count
   else if (cause.startsWith("claim-REFUTED")) bucket.refuted += t.count
+  else if (cause.startsWith("binding-verified")) bucket.bindVerified += t.count
+  else if (cause.startsWith("binding-unverifiable")) bucket.bindUnverified += t.count
+  else if (cause.startsWith("binding-REFUTED")) bucket.bindRefuted += t.count
+  else if (cause.startsWith("cause-declared")) bucket.causeDeclared += t.count
+  else if (cause.startsWith("cause-REFUTED")) bucket.causeRefuted += t.count
   else if (cause.startsWith("claim-reported-ambiguous")) bucket.reported += t.count
   else if (cause.startsWith("claim-reported")) bucket.reported += t.count
   else bucket.nonClaim += t.count
@@ -307,12 +372,21 @@ const ambPlusUnres = colSum("ambDecl") + colSum("unresolved")
 // than the numbers being massaged.
 const expectedClaimRows = totalExtOK + totalExtUnv + totalExtFail
 if (claimRows !== expectedClaimRows) cProblems.push(`CLOSURE: charged-claim rows ${claimRows} != extOK+ext?+extFAIL ${expectedClaimRows}`)
-if (claimRows + reportedRows + bucket.nonClaim !== rows.length) cProblems.push(`CLOSURE: charged claims ${claimRows} + reported-on-ambiguous ${reportedRows} + non-claim ${bucket.nonClaim} != dumped rows ${rows.length}`)
+// THE BINDING AND CAUSE ROWS ARE DISJOINT FROM THE EXTERNAL CLAIM ROWS, so the grand total is
+// four classes, not three, and the identity is checked over all four.
+const bindingClaimRows = bucket.bindVerified + bucket.bindUnverified + bucket.bindRefuted
+const causeClaimRows = bucket.causeDeclared + bucket.causeRefuted
+if (bindingClaimRows !== bindingRows) cProblems.push(`CLOSURE: binding rows ${bindingClaimRows} != bindOK+bind?+bindFAIL ${bindingRows}`)
+if (causeClaimRows !== causeRows) cProblems.push(`CLOSURE: cause rows ${causeClaimRows} != causeOK+causeFAIL ${causeRows}`)
+if (claimRows + bindingClaimRows + causeClaimRows + reportedRows + bucket.nonClaim !== rows.length) {
+  cProblems.push(`CLOSURE: charged claims ${claimRows} + binding ${bindingClaimRows} + cause ${causeClaimRows} + reported-on-ambiguous ${reportedRows} + non-claim ${bucket.nonClaim} != dumped rows ${rows.length}`)
+}
 
 // ── REPORT ──────────────────────────────────────────────────────────────────────────────────
 const w = (s: string | number, n: number) => (String(s) + " ".repeat(n)).slice(0, n)
 console.log(`py-d3-from-dump — outcomes READ FROM THE GATE'S OWN --dump, causes JOINED to analyzer metadata`)
 console.log(`gate log: ${LOG}`)
+console.log(`TABLE 1 column count read: ${tableCols} (10 = the no-index arm's shape · 15 = the production arm's shape)`)
 console.log(`population (TABLE 1 TOTAL): ${totalRow.edges} edges · resolved ${totalRow.resolved} · collRes ${totalRow.collRes} · amb(decl) ${totalRow.ambDecl} · unresolved ${totalRow.unresolved} · extOK ${totalRow.extOK} · ext? ${totalRow.extUnv} · extFAIL ${totalRow.extFail}`)
 console.log(`dump rows: ${rows.length} (non-resolved) · files parsed for the join: ${parsed} · parse failures: ${parseFailed}`)
 console.log(`\nTABLE 1 CLOSURE — per label: resolved+amb+unresolved+extOK+ext?+extFAIL == edges`)
@@ -353,6 +427,8 @@ console.log(`  CLAIM-externalRefuted == extFAIL                    ${bucket.refu
 console.log(`  CLAIM-reported-on-ambiguous rows (reported, not charged)  ${reportedRows}`)
 console.log(`  charged claims == extOK + ext? + extFAIL            ${claimRows} == ${totalExtOK + totalExtUnv + totalExtFail}`)
 console.log(`  non-claim rows == amb(decl)+unresolved-reported      ${bucket.nonClaim} == ${colSum("ambDecl") + colSum("unresolved") - reportedRows}`)
+console.log(`  BINDING rows (own column, never an external claim)  ${bindingClaimRows} == bindOK+bind?+bindFAIL ${bindingRows}`)
+console.log(`  CAUSE rows   (own column, never an external claim)  ${causeClaimRows} == causeOK+causeFAIL ${causeRows}`)
 console.log(`  charged claims + reported-on-ambiguous + non-claim == dump rows  ${claimRows} + ${reportedRows} + ${bucket.nonClaim} == ${rows.length}`)
 console.log(`  join misses / unclassified (must be 0)              ${joinMiss} / ${unclassified}`)
 
@@ -366,6 +442,7 @@ if (OUT) {
   writeFileSync(OUT, JSON.stringify({
     gateLog: LOG,
     population: totalRow,
+    tableCols,
     dumpRows: rows.length,
     parsed, parseFailed,
     perLabel: Object.fromEntries(tableOrder.map((l) => [l, { table: table.get(l), refused: perLabelRefused.get(l) ?? 0 }])),
