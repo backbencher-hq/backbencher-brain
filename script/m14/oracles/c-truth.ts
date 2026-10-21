@@ -341,15 +341,20 @@ function hasInterveningBlock(node: any): boolean {
   return false
 }
 
-/** `hasExportAttributeSpelling`: the three positive spellings, and `visibility("hidden")` excluded. */
-function hasExportAttributeSpelling(text: string): boolean {
-  if (text.length === 0) return false
-  if (text.includes("dllexport")) return true
-  if (text.includes("export_name")) return true
-  const at = text.indexOf("visibility")
-  if (at >= 0 && text.slice(at, at + 48).includes("default")) return true
-  return false
-}
+/**
+ * `hasExportAttributeSpelling` — THE c LANE's RULE, AND THE ONLY IMPLEMENTATION OF IT IN THIS FILE.
+ *
+ * The oracle's export-marker verdict reads the SOURCE TEXT it was handed (the production path
+ * blanks the AST's value node) and reproduces the analyzer's own helpers, with the analyzer's source
+ * line named. That implementation is kept below, verbatim, with its provenance.
+ *
+ * A SECOND, IDENTICAL-BEHAVIOUR implementation used to stand at this place — the same three
+ * positive spellings and the same `visibility("hidden")` exclusion, written against the built-in
+ * `String.includes` instead of the oracle's own `stringIncludes`/`stringIndexOf` helpers (which are
+ * `indexOf` and `indexOf(...) !== -1`). It was a merge accident with ZERO behavioural difference,
+ * and it made the file fail to compile (TS2393, duplicate implementation), so the fleet's
+ * ZERO-type-error standard was broken. The duplicate is REMOVED, not the rule.
+ */
 
 /** Remove `/* … *​/` and `//` comments (a marker mentioned in a comment is not a marker). */
 function stripComments(rawText: string): string {
