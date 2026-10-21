@@ -1829,6 +1829,19 @@ export function classifyEdge(
    * the edge's own word.
    */
   edgeFile?: string,
+  /**
+   * THE QUALIFIED-NAME JOIN (2026-10-21, clojure lane) — the ONE answer the project-scoped
+   * QUALIFIED-NAME strategy gives this row, computed by the CALLER, because only the caller holds
+   * the FILE's NAMESPACE and the PROJECT's own key space.
+   *
+   * `qualified` is the spelling production would look up — the target itself when it already
+   * carries a `/`, otherwise `<the file's namespace>/<the target>`. `count` is the number of
+   * declarations answering to that spelling in the PROJECT's own key space.
+   *
+   * `undefined` means the join could not be run at all — the file declares no namespace, or the
+   * caller did not compute it. The row then behaves EXACTLY as before the join existed.
+   */
+  qualifiedJoin?: { qualified: string; count: number },
 ): Classified {
   const decls = declCount.get(tgt) ?? 0
   if (containsLike === true && decls >= 1) {
@@ -2151,6 +2164,24 @@ export function classifyEdge(
     // is deliberately distinct from the name it shadows. **SO THE TIE-BREAK APPLIES ONLY TO A TARGET
     // THAT IS A PLAIN IDENTIFIER** — which is what a declaration can bind in production anyway ✓.
     if (ownFileDeclares === true && isPlainIdentifier(tgt)) {
+      return { outcome: "resolved", decls, kinds: kindText }
+    }
+    // ── THE QUALIFIED-NAME JOIN (2026-10-21, clojure lane) ─────────────────────────────────────────
+    // PRODUCTION'S PROJECT-SCOPED QUALIFIED-NAME STRATEGY, AS ONE RULE. A target that is ALREADY
+    // QUALIFIED (it carries a `/`) is a name in a namespace, and production's `_res_qname` resolves
+    // it by an EXACT qualified-name match. A BARE target in a file that DECLARES A NAMESPACE is
+    // qualified by that namespace (`ns/target`) and resolved the same way. Production fills
+    // `target_symbol_id` from that match ONLY when the qualified name is held by EXACTLY ONE
+    // declaration — so the join answers the row only when the count is ONE.
+    //
+    // IT IS BESIDE THE TIE-BREAK, NOT INSIDE IT. The tie-break is production's OWN rule and stays
+    // VERBATIM. The two are DISJOINT: a qualified target is never a plain identifier, so the
+    // tie-break can never reach a row the join reaches ⇒ THE ORDER DOES NOT CHANGE THE REACH ✓✓
+    // (MEASURED on the clojure population: the overlap is ZERO).
+    //
+    // A COUNT OF ZERO LEAVES THE ROW UNCHANGED — the join narrows nothing when it answers nothing.
+    // A COUNT ABOVE ONE LEAVES THE ROW AMBIGUOUS — the join does not narrow a collision.
+    if (qualifiedJoin !== undefined && qualifiedJoin.count === 1) {
       return { outcome: "resolved", decls, kinds: kindText }
     }
     // THE CLAIM IS READ ON THIS PATH FOR THE FIRST TIME — to RECORD it, never to move the outcome.

@@ -1400,6 +1400,46 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   const pooledDecl = new Map<string, number>()
   const pooledKinds = new Map<string, Set<string>>()
   const projectDecl = new Map<string, Map<string, number>>()
+  /**
+   * THE FILE's NAMESPACE, from the ANALYZER's own `(ns …)` MODULE SYMBOL — the symbol whose
+   * NAME is the namespace the analyzer saw at that form.
+   *
+   * WHY THIS SOURCE AND NOT THE PER-SYMBOL `scope`: the namespace is NOT a file-level fact. A file
+   * may declare SEVERAL (`in-ns` switches the namespace mid-file), the analyzer's `scope` is derived
+   * from a RUNNING value, and for the nested type forms it is a DOT-qualified nested name
+   * (`clojure.core.VecNode`) rather than a namespace at all. The `(ns …)` module symbol carries
+   * the namespace exactly, and the FIRST one in the file is the file's FIRST namespace form —
+   * which is what the production's own `clojureFileNamespace` returns.
+   *
+   * A file that declares no namespace at all has NO entry here, and the join then answers nothing
+   * for it — the row is left exactly as it was.
+   */
+  const nsByFile = new Map<string, string>()
+  /**
+   * THE QUALIFIED-NAME JOIN, COMPUTED WHERE THE KEY SPACES ARE.
+   *
+   * THE SHAPE TEST IS "THE TARGET CONTAINS A `/`" — a target that is already qualified IS its own
+   * qualification, and a bare target is qualified by ITS FILE's namespace. (A join gated on "the
+   * target is bare" would answer ONE row instead of 841 — MEASURED.)
+   *
+   * `count` is read from the gate's OWN `projectDecl` map — the same map the name model uses —
+   * so the answer is a lookup, not a second count and not a second key space.
+   */
+  const qualifiedJoinFor = (
+    repo: string, target: string, file: string | undefined,
+  ): { qualified: string; count: number } | undefined => {
+    let qualified: string
+    if (target.includes("/")) {
+      qualified = target
+    } else {
+      if (file === undefined) return undefined
+      const ns = nsByFile.get(file)
+      if (ns === undefined || ns === "") return undefined
+      qualified = `${ns}/${target}`
+    }
+    const count = projectDecl.get(repo)?.get(qualified) ?? 0
+    return { qualified, count }
+  }
   const projectKinds = new Map<string, Map<string, Set<string>>>()
   /**
    * THE SYMBOLS THE OWNER CHANNEL NEEDS, per project — kept as a COMPACT record per relevant symbol,
@@ -1683,6 +1723,13 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // requirement is a spelling that actually QUALIFIES, so it must differ from the symbol's name.
       const genuineQual = symQual && symQual !== name ? symQual : ""
       countKey(name, symKind, f, symLine, genuineQual)
+
+      // THE FILE's NAMESPACE — the ANALYZER's `(ns …)` MODULE SYMBOL's NAME. The FIRST module symbol
+      // in the file is the file's FIRST namespace form ✓✓. `Module = "module"` in the engine's
+      // `SymbolKind`, so the kind string is compared case-insensitively, as the probe does.
+      if (symKind.toLowerCase() === "module" && !nsByFile.has(f)) {
+        nsByFile.set(f, name)
+      }
 
       // THE QUALIFIED-NAME ALIAS, and this gate's first version omitted it — which is
       // worth recording, because the omission did not produce a small error. It produced
@@ -2005,6 +2052,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     const pc = classifyEdge(
       projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares,
       ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, e.srcFile,
+      qualifiedJoinFor(e.repo, e.tgt, e.srcFile),
     )
     if (ownerVerdict !== undefined) {
       ownerRows++
@@ -2014,7 +2062,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // THE TWO CROSS-CHECKS THAT MAKE THIS DISCLOSURE WORTH HAVING: how many rows the channel moved
       // in each direction relative to the name model alone. Not used for any count in the table — a
       // diagnostic, so a reader can see the size of the correction instead of trusting that it is small.
-      const nameOnly = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares, undefined, e.srcFile)
+      const nameOnly = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares, undefined, e.srcFile, qualifiedJoinFor(e.repo, e.tgt, e.srcFile))
       if (ownerVerdict.outcome === "declined" && nameOnly.outcome === "resolved") ownerDeclinedButNameWouldResolve++
       if (ownerVerdict.outcome === "resolved" && (nameOnly.outcome === "ambBoth" || nameOnly.outcome === "ambDeclOnly" || nameOnly.outcome === "unresolved")) ownerResolvedButNameSaidAmbiguous++
     }
