@@ -11039,6 +11039,12 @@
     },
     {
       "description": "mutation coverage currently spans java + groovy (the wave languages); other languages add mutants when their waves start"
+    },
+    {
+      "description": "THIS ARTIFACT IS A FLOOR, NOT A CENSUS: 123 mutants were WIRED INTO THE REGISTRY on 2026-10-13 (commits 4816b51ba, 543c72b62 — csharp, elixir4, perl, go, ts, kotlin, groovy, swift, javascript), AFTER this artifact's run (2026-10-10T18:34:56-04:00). This artifact therefore UNDERSTATES the registry by 123 mutants and CANNOT SHOW the 29 survivors that wiring produced. MEASURED for perl: this artifact carries 39 perl rows, 0 of the 28 perl/ontology-* mutants and 0 survivors, while the LIVE instrument runs 67 perl mutants with 52 CAUGHT and 15 SURVIVED (exit 2). Every mutation claim read off this artifact must name this vintage and the live instrument's row count side by side. The full sweep is being re-run so the artifact carries the 123 and their survivors.",
+      "severity": "floor-not-census",
+      "recordedBy": "lead",
+      "recordedAt": "2026-10-21"
     }
   ],
   "mutationLog": [
