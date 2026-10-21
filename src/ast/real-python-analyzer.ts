@@ -6749,7 +6749,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // can be built and compared like for like. A base the project declares but this file does not
     // makes the closure unknowable => WITHHOLD; a base no project symbol declares contributes no
     // members to the gate either (it is not in membersByName), so it is safe to traverse through.
-    type ClassInfo = { members: Set<string>; bases: string[] }
+    type ClassInfo = { members: Set<string>; bases: Array<{ leaf: string; qualified: boolean }> }
     const classes = new Map<string, ClassInfo>()
     const baseLeaf = (n: Node | null): string | null => {
       if (!n) return null
@@ -6763,6 +6763,18 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         return baseLeaf(v)
       }
       return null
+    }
+    // IS THE BASE WRITTEN WITH A QUALIFIER? `unittest.TestCase` parses as an `attribute` node and
+    // `a.b[int]` as a `subscript` whose inner node is one (MEASURED on the grammar, not assumed) —
+    // and a QUALIFIED NAME IS A NAME IN ANOTHER MODULE. That is the whole point of keeping the
+    // identity: a class named `TestCase` in THIS file is not `unittest.TestCase`, and a closure
+    // that cannot tell them apart mixes two classes' members and can neither prove nor refute an
+    // absence.
+    const baseIsQualified = (n: Node | null): boolean => {
+      if (!n) return false
+      if (n.type === "attribute" || n.type === "dotted_name") return true
+      if (n.type === "subscript" || n.type === "generic_type") return baseIsQualified(n.namedChild(0))
+      return false
     }
     const collectAssigned = (target: Node | null, out: Set<string>): void => {
       if (!target) return
@@ -6789,7 +6801,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         const c = sup.namedChild(i)
         if (!c || c.type === "keyword_argument") continue
         const b = baseLeaf(c)
-        if (b) info.bases.push(b)
+        if (b) info.bases.push({ leaf: b, qualified: baseIsQualified(c) })
       }
       const body = cls.childForFieldName("body")
       if (body) {
@@ -6836,10 +6848,25 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!info) return null
         for (const m of info.members) out.add(m)
         for (const b of info.bases) {
-          if (seen.has(b)) continue
-          seen.add(b)
-          if (classes.has(b)) st.push(b)
-          else if ((counts?.get(b) ?? 0) > 0 || kinds.has(b)) return null
+          if (seen.has(b.leaf)) continue
+          seen.add(b.leaf)
+          // A QUALIFIED BASE (`unittest.TestCase`) NAMES A CLASS IN ANOTHER MODULE, so a local
+          // class with the same LEAF name is a DIFFERENT class and its members are not the base's.
+          // Two consequences, and the second is the expensive one:
+          //   · the local class must NOT be walked as the base (it would put ANOTHER class's members
+          //     into the owner's closure — the mirror of the gate's own leaf-keyed map, which
+          //     measures as a REFUTATION on rows whose claim is true);
+          //   · the base contributes members the file cannot see, so the closure is only comparable
+          //     with the verifier's when the project declares NOTHING under that leaf name. The
+          //     gate's map is keyed by the leaf, so a class with that leaf ANYWHERE in the project
+          //     makes the map's key a MIXTURE of unrelated classes, and the two closures then answer
+          //     different questions about the same owner. ⇒ WITHHOLD: the claim is fail-closed.
+          if (b.qualified) {
+            if ((counts?.get(b.leaf) ?? 0) > 0 || kinds.has(b.leaf)) return null
+            continue
+          }
+          if (classes.has(b.leaf)) st.push(b.leaf)
+          else if ((counts?.get(b.leaf) ?? 0) > 0 || kinds.has(b.leaf)) return null
           // else: no project symbol declares this base — the gate's map has no members for it either
         }
       }
