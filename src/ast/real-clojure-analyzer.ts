@@ -3505,11 +3505,18 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
  *
  * **⇒ AND THE SPEC's BRIDGE TO THE WALL IS THE JOIN, WHICH IS PRICED ✓✓: a project-scoped
  * QUALIFIED-NAME exact match (or a bare name whose project-scoped count is EXACTLY ONE ✓✓ — the
- * production's own resolution rule ✓✓) answers **854 rows** on this same population and root ✓✓ =
- * **+1.9712 points** on the verified class ✓✓ (83.2979 % → 85.2691 % ✓✓; bindOK = 0, so the two
- * class formulas coincide ✓✓). ⇒ **THE SPEC'S PRICE AND THE TIE-BREAK'S PRICE ARE DIFFERENT
+ * production's own resolution rule ✓✓) answers **841 rows** on this same population and root ✓✓ =
+ * **+1.9447 points** on the verified class ✓✓ (83.2979 % → 85.2426 % ✓✓; bindOK = 0, so the two
+ * class formulas coincide ✓✓). **⇒ AND THE PRICE IS **841**, NOT 854 ✓✓ — CORRECTED IN THE OPEN
+ * (2026-10-21) ✓✓: THE FIRST PRICE (854 ✓✓) WAS MEASURED IN THE **INDEX's** KEY SPACE (the spec's
+ * extraction ✓✓), BUT THE JOIN LOOKS IN THE **GATE's** KEY SPACE (the gate's `countKey` IS the
+ * analyzer's publication ✓✓) AND THE **PRODUCTION's** (`_res_qname` over the store's symbols, which
+ * carry `symbol.qualifiedName || symbol.name` ✓✓) ⇒ BOTH ARE THE ANALYZER's PUBLICATION ✓✓ ⇒ THE
+ * 13 DECLARATIONS THE SPEC EXTRACTS AND THE ANALYZER DOES NOT PUBLISH (named in
+ * `validation/m14/fixtures/clojure/clojure-project-index-probe.ts`'s `joinPrice` ✓✓) ARE NOT REACHABLE
+ * BY THE JOIN ✓✓ ⇒ **THE PRICE OF A LEVER IS PRICED IN THE KEY SPACE THE LEVER LOOKS IN ✓✓** ✓✓. ⇒ **THE SPEC'S PRICE AND THE TIE-BREAK'S PRICE ARE DIFFERENT
  * NUMBERS, AND THE JOIN'S IS A THIRD ✓✓: the tie-break moved 2,120 rows OUT of the CEILING and did
  * not move the FLOOR (768 in both views ✓✓); the spec answers the FLOOR (1 of 768 ✓✓); the join
- * answers 854 WALL rows ✓✓. They are measured in SEPARATE arms ✓✓, and the spec's own arm is
+ * answers 841 WALL rows ✓✓. They are measured in SEPARATE arms ✓✓, and the spec's own arm is
  * `validation/m14/fixtures/clojure/clojure-project-index-probe.ts` ✓✓.**
  */
