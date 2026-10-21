@@ -4993,10 +4993,20 @@ currentPackage,
    *   3. otherwise the members collected across the ancestor chain must be EXACTLY ONE —
    *      two ancestors declaring the name is `ambiguousInChain`, a decline.
    *
-   *  Java's ProjectIndex carries no ancestry (measured: `typeBases` empty for
-   *  `JAVA_DECLARATION_SPEC`), so only IN-FILE ancestry can be walked; a project parent's
-   *  own members are readable but its parents are not. Rows whose only chance is a
-   *  cross-file inherited member are therefore refused (missing, never wrong). */
+   *  Java's ProjectIndex CARRIES ancestry since 2026-10-20 — the spec-local `baseResolver` in
+   *  `JAVA_DECLARATION_SPEC` reads each type's DIRECT bases (measured: java's `typeBases` went
+   *  from EMPTY to populated; the fix is confined to the java spec block, and the other
+   *  languages' `typeBases` are byte-identical before and after). **THIS CHANNEL STILL WALKS
+   *  ONLY IN-FILE ANCESTRY**: the walk below reads `index.typeScopesByName`, and when a parent
+   *  is not in this file it consults the project's MEMBERS for that parent but does not walk
+   *  the PROJECT's ancestry. So a row whose only chance is a CROSS-FILE inherited member is
+   *  still refused (missing, never wrong).
+   *
+   *  **THE PROJECT ANCESTRY IS NOW AVAILABLE TO BE USED HERE — AND THAT IS A SEPARATE INSTRUMENT,
+   *  NOT THIS COMMENT.** Walking `projectIndex.typeBases` would let this channel decide the
+   *  cross-file inherited-member rows the project index now knows the shape of; it would also
+   *  change the lane's recorded arm, so it is not a lane's unilateral change. Until it is
+   *  decided, the behaviour is exactly what it was. */
   private javaOwnerResolvable(
     ownerName: string,
     memberName: string,
