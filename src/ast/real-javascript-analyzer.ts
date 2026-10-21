@@ -249,6 +249,29 @@ function jsProjectModuleLocalityOf(index: { modules?: Set<string> }): (spec: str
   return predicate
 }
 
+/**
+ * IS THIS CALL TARGET A NAME — the shape a declaration can bind?
+ *
+ * A `calls` TARGET is read by the graph as a symbol NAME, so a target that is SOURCE TEXT is not a
+ * name: `(fn)`, `(0, helper.other)`, `(cond ? a : b)`, `define()`, `"text"`, `[]`. The guard this
+ * replaces tested TOKEN MEMBERSHIP (a length, a newline, a backtick, `${`, a brace or an `=`) as a
+ * PROXY for "this leaf is error-recovery garbage" — and a parenthesised or conditional callee
+ * contains none of those tokens, so the callee's own SOURCE TEXT was published in the target field
+ * (fixture `javascript/non-name-callee-refused`, which pins exactly this).
+ *
+ * THE `#` CLAUSE IS LOAD-BEARING, and the fixture says why: 123 svelte rows are private-method
+ * calls (`this.#tick()`), and a name test without the `#` clause would have deleted 123 real edges
+ * to remove 31 source-text ones. So a private name is a name.
+ *
+ * UNICODE-AWARE, because a declaration may legitimately be named in a non-ASCII script, and the
+ * arbiter's own plain-identifier test (charter §21.41's own-file tie-break) uses the same shape:
+ * a target that is not a plain identifier cannot name a declaration, so binding it would fabricate
+ * a resolution.
+ */
+function isNameLikeCallTarget(text: string): boolean {
+  return /^#?[\p{L}\p{Nl}_$][\p{L}\p{Nl}\p{Nd}\p{Mn}\p{Mc}\p{Pc}_$]*$/u.test(text)
+}
+
 function hasBraceEquals(text: string): boolean {
   for (let i = 0; i < text.length; i++) {
     const ch = text[i]
@@ -2464,9 +2487,17 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             targetName.includes("\n") ||
             targetName.includes("`") ||
             targetName.includes("${") ||
-            hasBraceEquals(targetName)
+            hasBraceEquals(targetName) ||
+            !isNameLikeCallTarget(targetName)
           ) {
-            // malformed call from error recovery — skip
+            // malformed call from error recovery, or a callee that is SOURCE TEXT rather than a name
+            // — `(fn)`, `(0, helper.other)`, `(cond ? a : b)` (fixture
+            // `javascript/non-name-callee-refused`). A `calls` TARGET is read by the graph as a
+            // symbol name, and a name test is the only rule that tells "not a name" from "a
+            // garbage leaf": the token-membership proxy this replaces could not see a
+            // parenthesised callee, and 31 svelte `calls` rows and 550 ts-corpus rows carried
+            // source text because of it.
+
           } else if (this.isJSBuiltinCall(targetName, fullCallee)) {
             // filtered builtins
           } else {
