@@ -1134,6 +1134,31 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             // the symbol's range must be that name, not the whole statement.
             const nameNode = this.firstArgumentNameNode(node)
             const property = nameNode ? this.wordValues(nameNode)[0] : undefined
+            // **AND `has [qw(a b c)]` DECLARES SEVERAL ATTRIBUTES, AND THE ANALYZER
+            // PUBLISHED ONLY THE FIRST — A REAL EMISSION GAP, FOUND BY THE LANE'S OWN
+            // ORACLE AND NOT BY A MUTANT.**
+            //
+            // MEASURED (2026-10-21, script/m14/perl-truth-run.ts): the lane's oracle
+            // derives every name of a `has [qw(...)]` declaration, the analyzer published
+            // one of them, and the difference was 66 unexplained `contains` rows over the
+            // population. The declarations are real and common: `has [qw(handlers
+            // helpers)]` (mojo/lib/Mojolicious/Renderer.pm:18), `has [qw(conditions
+            // shortcuts)]` (mojo/lib/Mojolicious/Routes.pm:13), `has [qw(constraints
+            // defaults types)]` (mojo/lib/Mojolicious/Routes/Pattern.pm:6) — so
+            // `helpers`, `shortcuts`, `defaults` and `types` were DECLARED MEMBERS THAT
+            // NO EDGE NAMED.
+            //
+            // The first name is published by the code below, exactly as it was; the
+            // REMAINING names are published here, so the one-name forms are unchanged
+            // and only a multi-name declaration gains rows.
+            if (nameNode) {
+              for (const extra of this.wordValues(nameNode).slice(1)) {
+                if (!extra) continue
+                if (state.packageName && !symbolKeys.has(`${ASTEngine.SymbolKind.Property}\u001f${state.packageName}\u001f${extra}`)) {
+                  addSymbol(extra, ASTEngine.SymbolKind.Property, nameNode, { ...state, ownerName: state.packageName, ownerKind: ASTEngine.SymbolKind.Class }, { isMooseProperty: true }, state.packageName)
+                }
+              }
+            }
             if (property && state.packageName && !symbolKeys.has(`${ASTEngine.SymbolKind.Property}\u001f${state.packageName}\u001f${property}`)) {
               addSymbol(property, ASTEngine.SymbolKind.Property, nameNode ?? node, { ...state, ownerName: state.packageName, ownerKind: ASTEngine.SymbolKind.Class }, { isMooseProperty: true }, state.packageName)
             }
@@ -1820,6 +1845,24 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const first = args[0]
     if (!first) return undefined
     if (first.type === "string_literal") return first.childForFieldName("content") || this.findChildByType(first, "string_content") || first
+    // **THE ARGUMENT CARRIER IS A LIST, AND ITS FIRST ELEMENT IS THE NAME ✓✓.**
+    //
+    // MEASURED (2026-10-21, script/m14/perl-contains-shape.mts): the carrier is the
+    // `list_expression` that holds `has name => value`, so reading the CARRIER's words
+    // read the VALUE — `has default_format => 'html'` published a member named `html`
+    // and did not publish `default_format` at all. That is a REAL DEFECT: a declared
+    // member with no edge, and an edge naming something that was never declared.
+    //
+    // The first element of the list is the name, in every spelling: a bareword
+    // (`has attr => ...`), a string (`has 'attr' => ...`) or a qw list
+    // (`has [qw(a b)]`), and `wordValues` of a qw list returns EVERY name it holds ✓✓.
+    if (first.type === "list_expression" && first.namedChildCount > 0) {
+      const head = first.namedChild(0)
+      if (head) {
+        if (head.type === "string_literal") return head.childForFieldName("content") || this.findChildByType(head, "string_content") || head
+        return head
+      }
+    }
     return first
   }
 

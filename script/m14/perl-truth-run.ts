@@ -82,6 +82,15 @@ if (LIMIT) files.length = Math.min(files.length, LIMIT)
 if (!files.length) { console.error(`NO CORPUS under ${CR} — this is NOT a pass.`); process.exit(2) }
 
 const { derivePerlTruth, PERL_ORACLE_LABELS, PERL_ORACLE_BUILTINS, builtinSetDifference } = await import(path.join(ROOT, "script/m14/perl-truth.ts"))
+// THE SECOND ORACLE, MEASURED AGAINST THE SAME ANALYZER (2026-10-21). The tree holds
+// THREE variants of the lane's own perl oracle: this file's `derivePerlTruth`, the copy
+// inside script/m14/differential.ts that the D4 actually runs (`derivePerlEdges`), and a
+// third, wider one in this lane's own history at 69142b833 that derives all ten labels.
+// script/m14/perl-oracle-parity.mts measures the two LIVE ones against each other; this
+// file measures BOTH against the ANALYZER, which is the comparison that decides which one
+// is canonical - an oracle is not better because it is nearer the analyzer in a diff, it
+// is better because it covers more of the analyzer's edges without inventing any.
+const { derivePerlEdges } = await import(path.join(ROOT, "script/m14/differential.ts"))
 const { RealPerlAnalyzer, PERL_BUILTINS } = await import(path.join(ROOT, "src/ast/real-perl-analyzer.ts"))
 const wts: any = await import(path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.js"))
 const ParserClass = wts.Parser ?? wts.default ?? wts
@@ -144,6 +153,30 @@ async function worker(): Promise<void> {
         const k = `${label}|${r.source ?? ""}|${r.target ?? ""}`
         actualKeys.set(k, (actualKeys.get(k) ?? 0) + 1)
       }
+      // The SECOND ORACLE's truth, over the same tree, compared the same way.
+      const truthKeysB = new Map<string, number>()
+      for (const t of derivePerlEdges(tree.rootNode) as any[]) {
+        if (!LABELS.includes(t.label)) continue
+        const k = `${t.label}|${t.from ?? ""}|${t.target}`
+        truthKeysB.set(k, (truthKeysB.get(k) ?? 0) + 1)
+      }
+      let coveredB = 0
+      const missingB: string[] = []
+      for (const [k, n] of truthKeysB) {
+        const have = actualKeys.get(k) ?? 0
+        const hit = Math.min(have, n)
+        coveredB += hit
+        if (hit < n) missingB.push(k)
+      }
+      let unexplainedB = 0
+      const unexplainedBKeys: string[] = []
+      for (const [k, n] of actualKeys) {
+        const have = truthKeysB.get(k) ?? 0
+        const hit = Math.min(have, n)
+        unexplainedB += n - hit
+        if (n > have) unexplainedBKeys.push(k)
+      }
+      const truthTotalB = [...truthKeysB.values()].reduce((a, b) => a + b, 0)
       let covered = 0
       const missing: string[] = []
       for (const [k, n] of truthKeys) {
@@ -170,6 +203,9 @@ async function worker(): Promise<void> {
         unexplained: unexplainedKeys.slice(0, 12),
         perLabelTruth: Object.fromEntries(LABELS.map((l) => [l, [...truthKeys.keys()].filter((k) => k.startsWith(`${l}|`)).length])),
         perLabelActual: Object.fromEntries(LABELS.map((l) => [l, [...actualKeys.keys()].filter((k) => k.startsWith(`${l}|`)).length])),
+        // the SECOND ORACLE, same file, same tree, same rule
+        truthTotalB, coveredB, missingB: missingB.slice(0, 12), unexplainedB: unexplainedBKeys.slice(0, 12),
+        perLabelTruthB: Object.fromEntries(LABELS.map((l) => [l, [...truthKeysB.keys()].filter((k) => k.startsWith(`${l}|`)).length])),
       })
       done.add(f.abs)
     } catch (e) {
@@ -251,6 +287,25 @@ const summary = {
     unexplainedSamples: unexSamples[p.label] ?? [],
   })),
   totals: { truth: truthTotal, analyzer: actualTotal, covered, missing: truthTotal - covered, unexplained: actualTotal - covered },
+  // THE SECOND ORACLE'S TOTALS, over the same population, the same analyzer and the same
+  // rule. The two blocks are the RECONCILIATION'S INPUT: whichever oracle covers more of
+  // the analyzer's edges without inventing any is the one to make canonical, and the
+  // difference between the two blocks IS the reconciliation's remaining work.
+  secondOracle: {
+    which: "script/m14/differential.ts :: derivePerlEdges (the copy the D4 runs)",
+    totals: (() => {
+      let truth = 0, cov = 0, unex = 0
+      for (const r of counted) { truth += r.truthTotalB ?? 0; cov += r.coveredB ?? 0 }
+      for (const r of counted) for (const k of (r.unexplainedB as string[]) ?? []) unex++
+      return { truth, covered: cov, missing: truth - cov, unexplained: unex }
+    })(),
+    perLabel: LABELS.map((l) => ({
+      label: l,
+      truth: counted.reduce((a, r) => a + (r.perLabelTruthB?.[l] ?? 0), 0),
+      missing: counted.reduce((a, r) => a + ((r.missingB as string[]) ?? []).filter((k) => k.startsWith(`${l}|`)).length, 0),
+      unexplained: counted.reduce((a, r) => a + ((r.unexplainedB as string[]) ?? []).filter((k) => k.startsWith(`${l}|`)).length, 0),
+    })),
+  },
   builtinSets: { oracle: PERL_ORACLE_BUILTINS.size, analyzer: (PERL_BUILTINS as ReadonlySet<string>).size, ...diff },
 }
 writeFileSync(OUT, JSON.stringify(summary, null, 2))
@@ -263,6 +318,12 @@ console.log("-".repeat(75))
 for (const p of summary.labels) {
   console.log(`${w(p.label, 13)}${w(p.truth.toLocaleString(), 10)}${w(p.actual.toLocaleString(), 10)}${w(`${p.missing} in ${p.missingFiles}f`, 20)}${w(`${p.unexplained} in ${p.unexplainedFiles}f`, 22)}`)
 }
+console.log(`\nTHE SECOND ORACLE (${summary.secondOracle.which}):`)
+console.log(`${w("label", 13)}${w("truth", 10)}${w("MISSING", 12)}${w("unexplained", 12)}`)
+for (const p of summary.secondOracle.perLabel) {
+  console.log(`${w(p.label, 13)}${w(p.truth.toLocaleString(), 10)}${w(p.missing.toLocaleString(), 12)}${w(p.unexplained.toLocaleString(), 12)}`)
+}
+console.log(`${w("TOTAL", 13)}${w(summary.secondOracle.totals.truth.toLocaleString(), 10)}${w(summary.secondOracle.totals.missing.toLocaleString(), 12)}${w(summary.secondOracle.totals.unexplained.toLocaleString(), 12)}`)
 console.log(`\nTOTAL truth ${truthTotal.toLocaleString()}  analyzer ${actualTotal.toLocaleString()}  covered ${covered.toLocaleString()}`)
 console.log(`MISSING ${(truthTotal - covered).toLocaleString()}   UNEXPLAINED ${(actualTotal - covered).toLocaleString()}`)
 for (const p of summary.labels) {

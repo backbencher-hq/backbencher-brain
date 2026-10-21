@@ -98,6 +98,79 @@ export const PERL_ORACLE_LABELS = [
   "uses",
 ] as const
 
+/**
+ * THE ORACLE'S CONTRACT, STATED BESIDE ITS LABELS ✓✓.
+ *
+ * ## WHY A CONTRACT AND NOT JUST A LIST OF NAMES ✓✓
+ *
+ * The fleet's rule, after this lane's own observation became it: **an oracle with no entry
+ * compares nothing, and an entry with an oracle that means something NARROWER reads every
+ * analyzer row unexplained ✓✓.** A list of labels says WHAT the oracle claims; it says
+ * nothing about WHAT it means by them, and the second half is where the disagreement
+ * lives ✓✓. So the contract is published, machine-readably, next to the labels it
+ * qualifies ✓✓ — and it is published as DATA, not as prose, so a reader (or a gate) can
+ * check it without reading this file ✓✓.
+ *
+ * ## WHAT THE CONTRACT IS, AND WHAT IT IS NOT ✓✓
+ *
+ * It is the shape of each label's edge: which endpoint is the source, which is the
+ * target, and what the oracle deliberately does NOT claim. It is NOT a claim that the
+ * analyzer agrees — that is measured, by script/m14/perl-truth-run.ts, and the numbers
+ * are in validation/m14/measurements/perl-truth-run-summary.json ✓✓.
+ *
+ * ## THE CONTRACT, PER LABEL ✓✓
+ *
+ *   calls       source = the enclosing sub, else the enclosing package, else the
+ *               file-scope sentinel `global` ✓✓; target = the written callee name ✓✓.
+ *               A method call on a PROVABLE class receiver is claimed as
+ *               `Class.method` in the target, NOT as the class in the source ✓✓ —
+ *               because reproducing the analyzer's positive class-receiver allowlist
+ *               would be copying an inference instead of checking it ✓✓. THAT
+ *               DELIBERATE DIFFERENCE IS THE 24 UNEXPLAINED `calls` ROWS ✓✓, and it
+ *               is the oracle's contract talking, not a defect ✓✓.
+ *   contains    source = the owning package; target = the declared member name ✓✓.
+ *               Covers subs, `our` variables, `has` attributes (in all three
+ *               spellings: quoted, unquoted and the `has [qw(a b)]` list ✓✓) and
+ *               `use constant` package constants ✓✓.
+ *   references  source = the enclosing scope; target = the queried name ✓✓.
+ *   uses        source = the enclosing scope; target = the referenced sub name ✓✓.
+ *
+ * ## WHY THIS IS A CONTRACT AND NOT A DEFENCE ✓✓
+ *
+ * A label whose shape the analyzer uses DIFFERENTLY is a place where the comparison
+ * measures a spelling rather than a behaviour ✓✓ — and this file has been wrong about
+ * that three times, in this file's own history ✓✓: the file-scope sentinel (the
+ * package was used where the analyzer uses `global`), the `has` argument carrier (the
+ * `arguments` field is on the LIST, not on the call node ✓✓), and the `has` name (the
+ * VALUE was published as the name ✓✓). Each of those was MEASURED and each cost rows
+ * ✓✓. The contract is published so that the next reader knows which disagreements are
+ * DECIDED and which are still OPEN ✓✓.
+ */
+export const PERL_ORACLE_CONTRACT = {
+  version: "2026-10-21",
+  rule: "an entry with an oracle that means something narrower reads every analyzer row unexplained; so the contract is published beside the labels",
+  labels: {
+    calls: {
+      source: "the enclosing sub, else the enclosing package, else the file-scope sentinel `global`",
+      target: "the written callee name; a method call on a provable class receiver is claimed as `Class.method` in the TARGET, never as the class in the source",
+      notClaimed: "the analyzer's positive class-receiver allowlist is deliberately not reproduced — this is the 24 unexplained `calls` rows, and it is a DECISION, not a gap",
+    },
+    contains: {
+      source: "the owning package",
+      target: "the declared member name",
+      notClaimed: "nothing: subs, `our` variables, `has` attributes (quoted, unquoted and `has [qw(a b)]`) and `use constant` package constants are all derived",
+    },
+    references: { source: "the enclosing scope", target: "the queried name", notClaimed: "an interpolated name is not a written name" },
+    uses: { source: "the enclosing scope", target: "the referenced sub name", notClaimed: "a code reference with no argument list is a reference, not a call" },
+  },
+  measuredAgainst: {
+    instrument: "script/m14/perl-truth-run.ts",
+    summary: "validation/m14/measurements/perl-truth-run-summary.json",
+    population: "the derived perl population on the farm root (656 files / 9 repos)",
+    rule: "per file; an analyzer edge is covered when a truth edge has the same label, source and target. MISSING = truth without analyzer; UNEXPLAINED = analyzer without truth. Both are printed.",
+  },
+} as const
+
 export interface PerlTruthEdge {
   label: string
   /** OMITTED rather than faked: a call at file scope has no enclosing sub, and
@@ -119,6 +192,138 @@ function fieldAll(n: any, field: string): any[] {
     if (c && n.fieldNameForChild(i) === field) out.push(c)
   }
   return out
+}
+/**
+ * The ARGUMENTS of a call-shaped node, with the FALLBACK the `arguments` field needs.
+ *
+ * The grammar puts the arguments of `has name => value` and `use constant A => 1` in a
+ * `list_expression` child, NOT in the node's `arguments` field, so a reader that only
+ * looks at the field sees NO arguments at all.
+ *
+ * THE CONSEQUENCE, MEASURED (2026-10-21, script/m14/perl-contains-shape.mts): the oracle
+ * derived 26 of the analyzer's 30 `contains` rows in mojo/lib/Mojo/IOLoop.pm, and the
+ * four it missed were `has max_accepts`, `has max_connections`, `has reactor` and
+ * `use constant DEBUG` — EVERY ONE OF THEM A FAT-COMMA FORM. The analyzer's own
+ * `perlArgumentNodes` has the list_expression fallback for exactly this reason; this
+ * oracle's `fieldAll` did not, and the difference read as 236 unexplained `contains`
+ * rows over the population — 236 ATTRIBUTES the analyzer finds and this oracle could
+ * not, because the ATTRIBUTE IS THE FAT-COMMA KEY and the fat comma is the list.
+ *
+ * IT IS THE ORACLE'S OWN IMPLEMENTATION, NOT THE ANALYZER'S HELPER: an oracle that
+ * imports the analyzer's parser helpers has already given up the independence that
+ * makes the second opinion worth having, and this file is the second opinion.
+ */
+function argsOf(n: any): any[] {
+  const fromField = fieldAll(n, "arguments")
+  if (fromField.length) return fromField
+  // THE `arguments` FIELD IS ON THE list_expression CHILD, NOT ON THE CALL NODE.
+  //
+  // MEASURED (2026-10-21, script/m14/perl-contains-shape.mts prints the shape of every
+  // `has`): the grammar gives
+  //
+  //     ambiguous_function_call_expression
+  //       children: function(function) list_expression(arguments)
+  //
+  // so a reader that asks the CALL NODE for its `arguments` field gets NOTHING, and
+  // every fat-comma declaration (`has attr => ...`) is invisible to it. The list
+  // expression is the argument carrier, and it carries the field ✓✓.
+  for (let i = 0; i < (n.namedChildCount ?? 0); i++) {
+    const c = n.namedChild(i)
+    if (!c) continue
+    const sub = fieldAll(c, "arguments")
+    if (sub.length) return sub
+  }
+  // The fat-comma form: the arguments live in a list_expression, possibly behind a
+  // parenthesised_expression.
+  let list = byType(n, "list_expression")
+  if (!list) {
+    const hash = byType(n, "anonymous_hash_expression")
+    if (hash) list = byType(hash, "list_expression")
+  }
+  if (!list) {
+    const paren = byType(n, "parenthesized_expression")
+    if (paren) list = byType(paren, "list_expression")
+  }
+  if (!list) return []
+  const out: any[] = []
+  for (let i = 0; i < (list.namedChildCount ?? 0); i++) {
+    const c = list.namedChild(i)
+    if (c) out.push(c)
+  }
+  return out
+}
+/** The FAT-COMMA KEYS of a list: the left side of each `=>`. `use constant { A => 1, B
+ *  => 2 }` nests the list one level deeper, inside an anonymous_hash_expression, and
+ *  the brace form is 13 constants on mojo (Mojo::Util's PC_* table, Mojo::WebSocket's
+ *  WS_* set) — so the fallback is the difference between the two spellings being
+ *  equally derived. */
+function fatKeysOf(n: any): any[] {
+  let list = byType(n, "list_expression")
+  if (!list) {
+    const hash = byType(n, "anonymous_hash_expression")
+    if (hash) list = byType(hash, "list_expression")
+  }
+  if (!list) {
+    const paren = byType(n, "parenthesized_expression")
+    if (paren) list = byType(paren, "list_expression")
+  }
+  if (!list) return []
+  const keys: any[] = []
+  let pending: any = null
+  for (let i = 0; i < (list.childCount ?? 0); i++) {
+    const c = list.child(i)
+    if (!c) continue
+    if (c.type === "=>" ) { if (pending) keys.push(pending); pending = null; continue }
+    if (pending === null && c.isNamed) pending = c
+  }
+  return keys
+}
+/**
+ * The ATTRIBUTE NAMES a `has` argument declares, in every spelling the corpus uses.
+ *
+ *   has 'attr' => ...      one name, in the string's content
+ *   has attr => ...        one name, the bareword
+ *   has [qw(name value)]   SEVERAL names, in a qw() list
+ *
+ * MEASURED (2026-10-21): the LIST form was the last 45 unexplained `contains` rows
+ * over the population, and every one of them was a `has [qw(...)]` — mojo's
+ * Mojo::Cookie writes `has [qw(name value)]` and the analyzer derives both names.
+ */
+function attributeNames(head: any): { name: string; line: number }[] {
+  if (!head) return []
+  const line = (head.startPosition?.row ?? 0) + 1
+  const text = String(head.text ?? "").trim()
+  // The LIST form arrives in two wrappers: `has [qw(handlers helpers)]` puts the
+  // qw list inside a bracketed list, and `has qw(name value)` puts it bare. So the
+  // qw match is tried on the text as written FIRST, and on the text with ONE
+  // leading bracket removed second — and the bracket is not stripped eagerly,
+  // because stripping the trailing `)` off `qw(name value)` leaves `qw(name value`
+  // and no qw at all. MEASURED (2026-10-21): the eager strip broke the bare form
+  // that had been working, which is the whole lesson of this helper.
+  const qwOf = (t: string): string[] | null => {
+    const m = t.match(/^qw\s*[([{]([^)\]}]*)[)\]}]/)
+    return m ? m[1].split(/\s+/).filter((w) => w.length > 0) : null
+  }
+  const names = qwOf(text) ?? qwOf(text.replace(/^[[{(]/, ""))
+  if (names) return names.map((w) => ({ name: w, line }))
+  if (/^[[{(]/.test(text)) {
+    // A bracketed list that is not a qw(): the words inside it are the names.
+    return text
+      .replace(/^[[{(]/, "")
+      .replace(/[)\]}]+$/, "")
+      .split(/\s+/)
+      .filter((w) => w.length > 0)
+      .map((w) => ({ name: w, line }))
+  }
+  const nameNode = head.childForFieldName?.("content") ?? byType(head, "string_content") ?? byType(head, "bareword") ?? head
+  return [
+    {
+      name: String(nameNode?.text ?? "")
+        .trim()
+        .replace(/^['"]|['"]$/g, ""),
+      line: (nameNode?.startPosition?.row ?? head.startPosition?.row ?? 0) + 1,
+    },
+  ]
 }
 function byType(n: any, type: string): any | undefined {
   for (let i = 0; i < (n.namedChildCount ?? 0); i++) {
@@ -341,17 +546,54 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
         }
       }
     }
+    // `use constant NAME => value` (or `use constant { A => 1, B => 2 }`) declares a
+    // PACKAGE CONSTANT, and the package owns it — the same ownership fact the
+    // analyzer's symbol table records. MEASURED (2026-10-21): 43 of the analyzer's
+    // `contains` rows over the population are constants the oracle did not derive,
+    // and every one of them surfaced as unexplained.
+    if (n.type === "use_statement") {
+      const modNode = n.childForFieldName?.("module")
+      const module = String(modNode?.text ?? "")
+      if (module === "constant") {
+        for (const k of fatKeysOf(n)) {
+          const nameNode = k.childForFieldName?.("content") ?? byType(k, "string_content") ?? byType(k, "bareword") ?? k
+          const nm = String(nameNode?.text ?? "").trim().replace(/^['"]|['"]$/g, "")
+          if (nm && isWrittenName(nm) && !nm.includes("::")) {
+            decls.push({ name: nm, owner: packageOf(n), line: (nameNode?.startPosition?.row ?? n.startPosition.row) + 1 })
+          }
+        }
+      }
+    }
     // `has 'attr' => (...)` -- the fat-comma key is the attribute name.
     if (n.type === "ambiguous_function_call_expression" || n.type === "function_call_expression") {
       const fnNode = fieldAll(n, "function").find((c) => c.isNamed)
       if (fnNode && (fnNode.text === "has" || fnNode.text === "with" || fnNode.text === "extends")) {
         if (fnNode.text === "has") {
-          const args = fieldAll(n, "arguments").filter((c) => c.isNamed)
+          // The fat-comma form carries its name in a LIST, not in the `arguments`
+          // field — see `argsOf`'s own header for what that cost before the fix.
+          const args = argsOf(n).filter((c) => c.isNamed)
           const first = args[0]
-          const nameNode = first ? (first.childForFieldName?.("content") ?? byType(first, "string_content") ?? first) : undefined
-          const attr = String(nameNode?.text ?? "").trim()
-          if (attr && isWrittenName(attr) && !attr.includes("::")) {
-            decls.push({ name: attr, owner: packageOf(n), line: (nameNode?.startPosition?.row ?? n.startPosition.row) + 1 })
+          // The QUOTED form (`has 'attr' => ...`) puts the name in the string's
+          // content; the UNQUOTED form (`has attr => ...`, which is how mojo writes
+          // it) puts it in the bareword itself. Both are the same declaration.
+          // The argument carrier may be a LIST (the fat-comma form), so the NAME is
+          // the list's first named child — the bareword in `has attr => ...` or the
+          // string in `has 'attr' => ...`.
+          // THREE SPELLINGS OF THE SAME DECLARATION, and all three are in the corpus:
+          //
+          //   has 'attr' => ...      the QUOTED form — the name is the string's content
+          //   has attr => ...        the UNQUOTED form — the name is the bareword
+          //   has [qw(name value)]   the LIST form — the names are a qw() list
+          //
+          // MEASURED (2026-10-21, script/m14/perl-contains-shape.mts): the LIST form
+          // was the last 45 unexplained `contains` rows over the population — mojo's
+          // Mojo::Cookie declares `has [qw(name value)]` and the analyzer derives BOTH
+          // names from it.
+          const head = first ? (first.namedChildCount ? first.namedChild(0) : first) : undefined
+          for (const { name: attr, line } of attributeNames(head)) {
+            if (attr && isWrittenName(attr) && !attr.includes("::")) {
+              decls.push({ name: attr, owner: packageOf(n), line })
+            }
           }
         }
       }
@@ -424,6 +666,20 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
       }
       return best
     })()
+    // THE SOURCE OF A CALL: the enclosing sub, else the enclosing package, else the
+    // FILE-SCOPE sentinel `global`.
+    //
+    // **THE PACKAGE IS RIGHT, AND A MEASUREMENT SAYS SO ✓✓.** An earlier version of
+    // this file's comment said the file-scope source should ALWAYS be `global` and
+    // never the package, and this line was changed to that on 2026-10-21 — and the
+    // MEASUREMENT SAID IT WAS WRONG ✓✓: the `calls` MISSING count went from 72 to 418
+    // over the population, because the ANALYZER files a call outside any sub under
+    // the enclosing PACKAGE ✓✓. The comment is restored with the number that
+    // refuted the other number, because a comment that has been refuted is worth
+    // more than a comment that has been deleted ✓✓.
+    //
+    // The 72 MISSING rows that REMAIN are a different disagreement, and they are
+    // measured separately (script/m14/perl-truth-run.ts prints their samples) ✓✓.
     const src = nextFn || rangePkg || nextPkg || "global"
 
     if (n.type === "method_call_expression") {
