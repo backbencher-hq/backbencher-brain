@@ -41,7 +41,37 @@ if (!KIND || !OUT || CHUNKS.length === 0) {
 }
 
 interface Bucket { rows: number; files: number }
-const files = CHUNKS.map((c) => JSON.parse(readFileSync(c, "utf8")))
+
+// A SLICE ARTIFACT CARRIES ITS OWN PROVENANCE PREAMBLE, SO THE READER MUST NOT DEMAND A PURE JSON
+// FILE. The arm runs the gate with `--json` and captures its stderr into the SAME file, because the
+// engine's INFO lines are part of what the slice measured (which grammar was bound, which engine
+// ran) and a slice that dropped them would be a number without its instrument. So the file is
+// "INFO lines, then one JSON object", and the JSON object starts at the first line beginning with
+// `{`. Refusing the preamble would make every real slice unreadable — the exact opposite of what a
+// provenance-carrying artifact is for — so the preamble is SKIPPED and the object is parsed, and a
+// file with NO object is refused by name rather than read as an empty chunk.
+function readChunkTolerant(file: string): any {
+  const raw = readFileSync(file, "utf8")
+  try {
+    return JSON.parse(raw)
+  } catch {
+    const lines = raw.split("\n")
+    const start = lines.findIndex((l) => l.startsWith("{"))
+    if (start < 0) {
+      throw new Error(
+        `${file}: no JSON object found — ${raw.length} bytes and not one line starts with "{". ` +
+          `A slice truncated before its object is a killed run, not a result; it must be re-run, not merged.`,
+      )
+    }
+    try {
+      return JSON.parse(lines.slice(start).join("\n"))
+    } catch (e) {
+      throw new Error(`${file}: the JSON object at line ${start + 1} does not parse (${String(e)}) — the slice is truncated; it must be re-run, not merged.`)
+    }
+  }
+}
+
+const files = CHUNKS.map((c) => readChunkTolerant(c))
 console.log(`MERGING ${files.length} CHUNK(S) — ${KIND}`)
 console.log(`  chunks: ${CHUNKS.join(", ")}`)
 
@@ -206,11 +236,18 @@ if (KIND === "constructs") {
     admittedTotal, summedParsed, problems: tilingProblems, tiles: tilingProblems.length === 0,
   }
   console.log("== THE TILING CHECK (a merge over non-tiling chunks refuses to print a population) ==")
-  for (const [repo, v] of merged.tiling.byRepo as any) console.log(`  ${repo.padEnd(18)} ${String(v.slices).padStart(3)} slice(s)  parsed ${String(v.parsed).padStart(7)}  admitted ${String(v.admitted).padStart(7)}`)
+  for (const [repo, v] of Object.entries(merged.tiling.byRepo as Record<string, any>)) console.log(`  ${repo.padEnd(18)} ${String(v.slices).padStart(3)} slice(s)  parsed ${String(v.parsed).padStart(7)}  admitted ${String(v.admitted).padStart(7)}`)
   console.log(`  admitted total ${admittedTotal} · summed parsed ${summedParsed}`)
   for (const p of tilingProblems) console.log(`  *** ${p}`)
   if (tilingProblems.length > 0) {
-    console.log("  *** THE TILING REFUSES THIS MERGE — the numbers below are NOT a population ***")
+    // ⇒⇒ A REFUSAL THAT STILL WRITES THE FILE IS NOT A REFUSAL. The artifact is what a downstream
+    // tool reads and what a reader cites, so the merge withholds it: nothing is written, the exit
+    // code is non-zero, and the next reader sees an error instead of a population-shaped file whose
+    // own text says it is not a population. (The numbers are still printed above, so the refusal is
+    // diagnosable without the artifact.)
+    console.log("  *** THE TILING REFUSES THIS MERGE — the numbers above are NOT a population ***")
+    console.log("  *** NO ARTIFACT WAS WRITTEN: a merge that cannot cover the population must not leave a file behind ***")
+    process.exit(3)
   }
   const causes: Record<string, number> = {}
   for (const f of files) {
