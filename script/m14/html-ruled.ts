@@ -251,7 +251,7 @@ export const HTML_RULED: Ruled[] = [
       "(8,888 git-tracked files, the router's own thirteen admitted spellings, under the engine's " +
       "1 MB cap): the class-heritage clause — the only spelling a class-extends edge can come " +
       "from — is 0 clauses in 0 files over 13,768 embedded blocks in 4,644 files " +
-      "(validation/m14/measurements/html-extended-constructs-2026-10-22.json), and the html arm's " +
+      "(validation/m14/measurements/html-extended-constructs-2026-10-22.txt), and the html arm's " +
       "own `extends` row is 0 edges over the whole population " +
       "(validation/m14/measurements/html-arm-closure-2026-10-22.json). " +
       "THE INVENTORY IS STILL WORTH READING, because it says what HTML ITSELF can spell: " +
@@ -319,7 +319,7 @@ export const HTML_RULED: Ruled[] = [
       "over the whole admitted population (8,888 files): 0 conformance clauses in 0 files over " +
       "13,768 embedded blocks in 4,644 files, of which exactly ONE is a typescript block " +
       "(js 13,461, css 306, ts 1) and that block declares no conformance " +
-      "(validation/m14/measurements/html-extended-constructs-2026-10-22.json); and the html " +
+      "(validation/m14/measurements/html-extended-constructs-2026-10-22.txt); and the html " +
       "arm's own `implements` row is 0 edges over the whole population " +
       "(validation/m14/measurements/html-arm-closure-2026-10-22.json). " +
       "AND WHAT THE PROBE BELOW COUNTS, which is HTML's OWN conformance construct and is NOT " +

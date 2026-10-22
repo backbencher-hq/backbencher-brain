@@ -185,7 +185,7 @@ const c: Counts = {
 }
 
 console.log(`HTML EXTENDED-CONSTRUCT PROBE`)
-console.log(`population: ${files.length} GIT-TRACKED admitted files (git ls-files · ${EXTS.length} admitted spellings · <= ${SIZE_CAP} bytes)`)
+console.log(`population: ${ADMITTED_TOTAL} GIT-TRACKED admitted files (git ls-files · ${EXTS.length} admitted spellings · <= ${SIZE_CAP} bytes)`)
 console.log(`root: ${CORPUS}`)
 
 const parserCache = new Map<string, any>()
@@ -286,14 +286,28 @@ for (const f of MEASURED) {
     if (!tree) continue
     const m = new Map<string, number>()
     countTypes(tree.rootNode, new Set([...JS_DECORATOR, ...TS_IMPLEMENTS, ...JSX, ...MIXIN, ...PART, ...HERITAGE]), m)
+    // ★ THE FILE COUNTERS COUNT FILES, NOT MATCHES. The first version incremented
+    //   `filesWithDecorator` (and its four siblings) INSIDE the per-node-type loop, so a file
+    //   holding three decorators would have counted as THREE files. Every count in this census
+    //   is currently zero, so the measured result is unaffected — but a counter that misreports
+    //   on a non-zero population is a counter that will misreport the day the population changes,
+    //   and the near-miss table is the table a reviewer reads. Each file contributes AT MOST ONE to
+    //   each `filesWith…` counter, and the per-block flag is what makes that true.
+    const seenHere = new Set<string>()
     for (const [k, v] of m) {
-      if (JS_DECORATOR.has(k)) { c.decoratorNodes += v; c.filesWithDecorator++ }
-      if (TS_IMPLEMENTS.has(k)) { c.implementsClauses += v; c.filesWithImplements++ }
-      if (JSX.has(k)) { c.jsxElements += v; c.filesWithJsx++ }
-      if (MIXIN.has(k)) { c.mixinClauses += v; c.filesWithMixin++ }
-      if (PART.has(k)) { c.partDirectives += v; c.filesWithPart++ }
-      if (k === "class_heritage" || k === "extends_clause") { c.classHeritageClauses += v; c.filesWithClassHeritage++ }
+      if (JS_DECORATOR.has(k)) { c.decoratorNodes += v; seenHere.add("decorator") }
+      if (TS_IMPLEMENTS.has(k)) { c.implementsClauses += v; seenHere.add("implements") }
+      if (JSX.has(k)) { c.jsxElements += v; seenHere.add("jsx") }
+      if (MIXIN.has(k)) { c.mixinClauses += v; seenHere.add("mixin") }
+      if (PART.has(k)) { c.partDirectives += v; seenHere.add("part") }
+      if (k === "class_heritage" || k === "extends_clause") { c.classHeritageClauses += v; seenHere.add("heritage") }
     }
+    if (seenHere.has("decorator")) c.filesWithDecorator++
+    if (seenHere.has("implements")) c.filesWithImplements++
+    if (seenHere.has("jsx")) c.filesWithJsx++
+    if (seenHere.has("mixin")) c.filesWithMixin++
+    if (seenHere.has("part")) c.filesWithPart++
+    if (seenHere.has("heritage")) c.filesWithClassHeritage++
     const hs = new Map<string, number>()
     heritageShapes(tree.rootNode, hs)
     for (const [k, v] of hs) c.heritageShapes[k] = (c.heritageShapes[k] ?? 0) + v

@@ -2,7 +2,7 @@
  * THE SPEC'S NUMBERS, FILLED FROM THE MEASUREMENT — never typed by hand.
  *
  * WHAT IT DOES. Reads the merged arm closure (validation/m14/measurements/html-arm-closure-2026-10-22.json)
- * and the merged construct census (validation/m14/measurements/html-extended-constructs-2026-10-22.json),
+ * and the merged construct census (validation/m14/measurements/html-extended-constructs-2026-10-22.txt),
  * and writes each type's `edges` into `script/m14/spec/html-completeness.json`'s
  * `coverage._implemented_measured`, together with the `_why` a ZERO needs.
  *
@@ -25,7 +25,7 @@ import { resolve } from "node:path"
 const ROOT = process.cwd()
 const SPEC = "script/m14/spec/html-completeness.json"
 const ARM = "validation/m14/measurements/html-arm-closure-2026-10-22.json"
-const CENSUS = "validation/m14/measurements/html-extended-constructs-2026-10-22.json"
+const CENSUS = "validation/m14/measurements/html-extended-constructs-2026-10-22.txt"
 
 const arm = JSON.parse(readFileSync(resolve(ROOT, ARM), "utf8"))
 const census = JSON.parse(readFileSync(resolve(ROOT, CENSUS), "utf8"))
@@ -52,7 +52,7 @@ const WHY: Record<string, string> = {
     "THE PREDICATE COULD HAVE RETURNED NON-ZERO, and what it looked for is named: the census counts " +
     "`class_heritage` clauses — the only spelling a class-extends edge can come from — over every " +
     "embedded block in the admitted population, and it found 0 clauses in 0 files over 13,768 blocks " +
-    "in 4,644 files (validation/m14/measurements/html-extended-constructs-2026-10-22.json). The " +
+    "in 4,644 files (validation/m14/measurements/html-extended-constructs-2026-10-22.txt). The " +
     "PATHWAY is not what is missing: the lane's own fixture validation/m14/fixtures/html/embedded-heritage.html " +
     "PASSES and pins the row, and the seam probe publishes `extends` through the delegate on a " +
     "planted document (validation/m14/measurements/html-extended-seam-2026-10-22.json). ⇒ WHAT IS " +
@@ -61,7 +61,7 @@ const WHY: Record<string, string> = {
     "THE PREDICATE COULD HAVE RETURNED NON-ZERO, and what it looked for is named: the census counts " +
     "`implements_clause` / `class_implements_clause` nodes over every embedded block in the admitted " +
     "population and found 0 in 0 files over 13,768 blocks in 4,644 files " +
-    "(validation/m14/measurements/html-extended-constructs-2026-10-22.json). The construct is reachable " +
+    "(validation/m14/measurements/html-extended-constructs-2026-10-22.txt). The construct is reachable " +
     "ONLY through a `<script lang=\"ts\">` block, and the whole admitted population carries exactly ONE " +
     "typescript block, which declares no conformance. The PATHWAY is not what is missing: " +
     "validation/m14/fixtures/html/embedded-extended-types.html PASSES and pins the row by name, by " +
@@ -70,7 +70,7 @@ const WHY: Record<string, string> = {
   decorates:
     "THE PREDICATE COULD HAVE RETURNED NON-ZERO, and what it looked for is named: the census counts " +
     "`decorator` nodes over every embedded block in the admitted population and found 0 in 0 files over " +
-    "13,768 blocks in 4,644 files (validation/m14/measurements/html-extended-constructs-2026-10-22.json). " +
+    "13,768 blocks in 4,644 files (validation/m14/measurements/html-extended-constructs-2026-10-22.txt). " +
     "The PATHWAY is not what is missing: validation/m14/fixtures/html/embedded-extended-types.html " +
     "PASSES and pins the row by name, by direction (decorated declaration → decorator) and by " +
     "meta.embeddedLang=\"js\", the seam probe publishes it " +
@@ -80,7 +80,7 @@ const WHY: Record<string, string> = {
     "THE PREDICATE COULD HAVE RETURNED NON-ZERO, and what it looked for is named: the census counts " +
     "`jsx_element` / `jsx_opening_element` / `jsx_self_closing_element` nodes over every embedded block " +
     "in the admitted population and found 0 in 0 files over 13,768 blocks in 4,644 files, of which 13,461 " +
-    "are javascript (validation/m14/measurements/html-extended-constructs-2026-10-22.json). The PATHWAY " +
+    "are javascript (validation/m14/measurements/html-extended-constructs-2026-10-22.txt). The PATHWAY " +
     "is not what is missing: validation/m14/fixtures/html/embedded-extended-types.html PASSES and pins " +
     "the row by name, by direction (rendering symbol → rendered component) and by meta.embeddedLang=\"js\", " +
     "the seam probe publishes it (validation/m14/measurements/html-extended-seam-2026-10-22.json), and a " +
@@ -89,7 +89,7 @@ const WHY: Record<string, string> = {
     "THE PREDICATE COULD HAVE RETURNED NON-ZERO, and what it looked for is named: the delegate's " +
     "discriminator is POSITIONAL — a call IN the heritage clause IS the mixin — so the census counts " +
     "the `class_heritage` clauses the discriminator is read over, and found 0 in 0 files over 13,768 " +
-    "blocks in 4,644 files (validation/m14/measurements/html-extended-constructs-2026-10-22.json): the " +
+    "blocks in 4,644 files (validation/m14/measurements/html-extended-constructs-2026-10-22.txt): the " +
     "whole admitted population has NO class heritage at all to be a mixin in. The PATHWAY is not what is " +
     "missing: validation/m14/fixtures/html/embedded-extended-types.html PASSES and pins the row by name, " +
     "by direction and by meta.embeddedLang=\"js\", publishing `mixes_in Record → Timestamped` AND " +
