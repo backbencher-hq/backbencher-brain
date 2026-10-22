@@ -226,6 +226,24 @@ write_holder() {  # lane pid ticks [granted]
 }
 
 cmd="${1:-status}"; lane="${2:-}"
+# ★★★ THE FLAGS ARE PARSED FROM ALL ARGUMENTS, AND THE POSITIONAL PARSE WAS OFF BY ONE — WHICH MADE
+# BOTH OF THEM UNREACHABLE. `cmd` is $1 and `lane` is $2, so the force verb's checks on "${2:-}" and
+# "${3:-}" were reading THE LANE NAME and the first flag — never the flags themselves. ⇒ ⇒ ⇒ SO
+# `force <lane> --urgent` and `force <lane> --holder-is-gone` HAVE NEVER WORKED, and the script's
+# own message ("re-run with --urgent --holder-is-gone") advertised a path that could not be taken.
+# ⇒ MEASURED 2026-10-22: the Lead ran `force typescript --urgent --holder-is-gone` against a token
+# whose holder was gone, and it printed REFUSED. ⇒ **A DOCUMENTED ESCAPE HATCH THAT CANNOT BE TAKEN
+# IS THE SAME CLASS OF DEFECT AS A DOCUMENTED FLAG THAT DISABLES THE RECOVERY.**
+#
+# ⇒ THE FIX IS TO PARSE THE FLAGS BY NAME, FROM ANY POSITION, so the caller's order cannot matter.
+BB_FLAG_URGENT=0
+BB_FLAG_GONE=0
+for a in "$@"; do
+  case "$a" in
+    --urgent) BB_FLAG_URGENT=1 ;;
+    --holder-is-gone) BB_FLAG_GONE=1 ;;
+  esac
+done
 
 case "$cmd" in
   take)
@@ -632,7 +650,7 @@ case "$cmd" in
     # LEFT THE FLEET** (the same rule the small-slot release already follows).
     f_fresh=0
     if token_fresh "$h_beat"; then f_fresh=1; fi
-    if [ "$f_fresh" -eq 1 ] && [ "${2:-}" != "--urgent" ] && [ "${3:-}" != "--holder-is-gone" ]; then
+    if [ "$f_fresh" -eq 1 ] && [ "$BB_FLAG_URGENT" -eq 0 ] && [ "$BB_FLAG_GONE" -eq 0 ]; then
       echo "REFUSED — the token is held by ${h_lane:-nobody} and its heartbeat is FRESH ($(( $(now) - h_beat ))s ago; TTL ${TTL}s)."
       echo "  A holder that is GONE stops beating, so a fresh heartbeat PROVES it is alive."
       echo "  If you KNOW the holder is frozen or gone, re-run with --urgent --holder-is-gone."
