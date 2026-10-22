@@ -143,7 +143,14 @@ for (const name of readdirSync(ROOT).sort()) {
   if (!isDir) continue
   if (!isRepo(dir)) continue
   symlinkedDirsFollowed++
-  repos.add(name)
+  /**
+   * THE REPO COUNT IS 21, NOT 202 — AND THE RULE IS "REPOSITORIES CARRYING AN ADMITTED FILE".
+   * A repository that carries NO admitted `.sql` does not count, and a first version of this
+   * instrument counted every git checkout it walked (202) and had it published. The rule is L-13 and
+   * the gate's own walk agrees (`incoming-gate.ts:526` adds a repo per ADMITTED file), so the repo is
+   * counted ONLY once it has actually contributed an admitted file.
+   */
+  let contributed = 0
   for (const rel of tracked(dir)) {
     if (!rel.endsWith(".sql")) continue
     paths++
@@ -156,7 +163,9 @@ for (const name of readdirSync(ROOT).sort()) {
     try { size = statSync(abs).size } catch { absent++; continue }
     if (size > CAP) { overCap++; continue }
     admitted.push(abs)
+    contributed++
   }
+  if (contributed > 0) repos.add(name)
 }
 
 // ── the behavioural red/green: the inheritance forms, per build
@@ -371,6 +380,7 @@ const report = {
     absent,
     duplicate,
     reposCarryingAdmittedFiles: repos.size,
+    reposRule: "a repository counts ONLY if it contributed at least one ADMITTED .sql file (L-13), and the gate's own walk counts the same way (incoming-gate.ts:526 adds a repo per ADMITTED file). A repository with no admitted .sql does not count.",
     parsed,
     failures,
     ms,
