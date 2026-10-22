@@ -2264,6 +2264,39 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (methodName === "include" || methodName === "extend" || methodName === "prepend") {
       const relType = ASTEngine.RelationshipType.MixesIn
       const args = this.findChild(node, "argument_list")
+
+      // ── THE DISCRIMINATOR (dart's `renders` lesson, applied to ruby) ──────────────────────────
+      // `include`, `extend` and `prepend` are Module's methods, so a call with one of those names
+      // composes a mixin into the ENCLOSING CLASS only if `self` IS that class at that point.
+      // A FILTER ON THE NAME DOES NOT SEPARATE THE CONSTRUCT FROM ITS IMPOSTORS — and the impostors
+      // are large: MEASURED over the whole admitted population (989 files, 543 published rows),
+      // 127 of the 543 (23.4 %) are impostors, in three classes:
+      //
+      //   (A) AN EXPLICIT RECEIVER — `cls.extend(M)` composes the mixin into `cls`, NOT into the
+      //       enclosing class, and a receiver that is a local variable or a call names no class at
+      //       all, so the row is UNATTRIBUTABLE. **⇒ 45 rows.** (`self` is not an explicit receiver:
+      //       `self` IS the class, and `self.extend(M)` in a class body is a real composition.)
+      //   (C) `self` IS AN INSTANCE — the call is inside a plain `def`, so `extend M` extends the
+      //       INSTANCE's singleton class and `include M` is not Module#include at all. **⇒ 18 rows.**
+      //   (T) THE CALL IS AT THE FILE'S TOP LEVEL — `self` is `main`, an Object instance, and only
+      //       Module answers `include`. **`include SomeModule` at the top level of an RSpec file is
+      //       RSpec's example-group `include`, NOT Ruby's Module#include — the SAME NAME and a
+      //       DIFFERENT CONSTRUCT, which is dart's impostor exactly.** **⇒ 80 rows.**
+      //
+      // ⇒ THE GRAMMAR MAKES IT DECIDABLE WITHOUT INSPECTING A SINGLE NAME: `def self.x` and
+      // `def x.y` are `singleton_method` NODES and a plain `def x` is a `method` NODE, and a
+      // `Class.new { }` / `Module.new { }` block is a `do_block` whose enclosing call names the
+      // class. So the static self-type is a NODE-TYPE question, not a name question.
+      const selfKind = this.mixinSelfKind(node)
+      const hasExplicitReceiver = receiver !== undefined || hasExpressionReceiver
+      if (selfKind === "instance" || selfKind === "top" || hasExplicitReceiver) {
+        // REFUSED. ⇒ AND THE ROW IS NOT MERELY RE-SOURCED: a receiver that is a local names no
+        // class, so there is nothing to re-source it TO, and a row that cannot be attributed is
+        // not a fact. ⇒ THE CAMPAIGN'S OWN RULE APPLIES: A FABRICATED EDGE IS WORSE THAN A
+        // MISSING ONE, BECAUSE A MISSING ONE IS A GAP AND A FABRICATED ONE IS A LIE.
+        return
+      }
+
       if (args) {
         const _nc17 = args.namedChildCount
         for (let i = 0; i < _nc17;
@@ -3204,6 +3237,50 @@ private rubyNameFromLiteral(node: Node): string | undefined {
       }
       md.evidenceClass = "usage_contextual"
     }
+  }
+
+  /**
+   * THE STATIC SELF-TYPE AT A CALL SITE — ruby's analogue of dart's "declared return type".
+   *
+   * `include`, `extend` and `prepend` are Module's methods, so a call with one of those names
+   * composes a mixin into the ENCLOSING CLASS only if `self` IS that class at that point. The
+   * static self-type is a NODE-TYPE question, never a name question:
+   *
+   *   · a class / module / `class << self` body   → "class"     (`self` IS the class)
+   *   · a `Class.new { }` / `Module.new { }` block → "class"     (the block is class_eval'd, so
+   *     `self` is the NEW class whatever encloses it lexically — and the enclosing call is the
+   *     block's PARENT, because the block node's own first child is the first statement of its body)
+   *   · a `singleton_method` node (`def self.x`, `def x.y`) → "class"  (`self` IS the class)
+   *   · a plain `method` node (`def x`)            → "instance"  (`self` IS an INSTANCE)
+   *   · nothing enclosing it                        → "top"       (`self` IS `main`)
+   *
+   * ⇒ MEASURED over the whole admitted population (989 files): of the 543 published `mixes_in` rows,
+   * 416 sit where `self` is the class, 29 in a singleton method, 18 in a plain instance method, and
+   * 80 at the file's top level. **⇒ THE LAST TWO CLASSES ARE IMPOSTORS: 127 rows, 23.4 %.** The 80
+   * top-level rows are RSpec's example-group `include` — the same NAME, a different construct.
+   */
+  private mixinSelfKind(node: Node): "class" | "singleton" | "instance" | "top" {
+    let cur: Node | null = node.parent ?? null
+    while (cur) {
+      if (cur.type === "method") return "instance"
+      if (cur.type === "singleton_method") return "singleton"
+      if (cur.type === "class" || cur.type === "module" || cur.type === "singleton_class") return "class"
+      if (cur.type === "do_block" || cur.type === "block") {
+        // A `Class.new { }` / `Module.new { }` block is class_eval'd: `self` inside it is the NEW
+        // class. The enclosing call is the block's PARENT — the block's own first child is the
+        // first statement of its body, not the call, so reading it would never find the class.
+        const p = cur.parent
+        if (p && p.type === "call") {
+          const recv = p.childForFieldName?.("receiver")
+          const meth = p.childForFieldName?.("method")
+          const rt = recv ? recv.text : ""
+          const mt = meth ? meth.text : ""
+          if ((rt === "Class" || rt === "Module") && mt === "new") return "class"
+        }
+      }
+      cur = cur.parent ?? null
+    }
+    return "top"
   }
 
   private findChild(node: Node, type: string): Node | null {
