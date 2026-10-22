@@ -44,7 +44,7 @@ mkdir -p "$OUT_DIR"
 # bounded, and a bounded wait that expires leaves the control UNMEASURED and says so.
 take_slot () {
   local waited=0
-  while [ "$waited" -lt 3600 ]; do
+  while [ "$waited" -lt 10800 ]; do
     if bash "$TOKEN" take-small "$LANE" "$WHOLE" >/dev/null 2>&1; then
       echo "--- the small slot is held by this lane (waited ${waited}s)"
       return 0
@@ -58,7 +58,7 @@ take_slot () {
 run_one () {
   local tag="$1"; shift
   if ! take_slot; then
-    echo "SMALL SLOT NOT AVAILABLE for $tag after 3600s — the control is NOT measured."; exit 3
+    echo "SMALL SLOT NOT AVAILABLE for $tag after 10800s — the control is NOT measured."; exit 3
   fi
   ( while true; do sleep 45; bash "$TOKEN" beat "$LANE" >/dev/null 2>&1 || true; done ) &
   local beat_pid=$!
