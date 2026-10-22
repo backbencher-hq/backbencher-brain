@@ -194,6 +194,24 @@ token_fresh() {  # live if the last beat is within TTL
   [ "$age" -ge 0 ] && [ "$age" -lt "$TTL" ]
 }
 
+start_beat_daemon() {  # lane — a DETACHED heartbeat that wants no CPU
+  # ★ THE DAEMON IS WHAT MAKES THE BEAT TRUSTWORTHY. It sleeps and writes a file, so it needs no
+  # scheduler attention and keeps beating under a saturated load; the lane's own beat calls are
+  # OPTIONAL from here on, because the daemon covers them.
+  local d_lane="${1:-}" d_log d_alive
+  [ -n "$d_lane" ] || return 0
+  d_log="${BB_ARM_BEAT_LOG:-$PWD/.tmp-lead/arm-beat-daemon.log}"
+  mkdir -p "$(dirname "$d_log")" 2>/dev/null || true
+  # ONE DAEMON PER LANE: a second one would double the writes for no benefit, and the loop is
+  # idempotent anyway. The check is on the daemon's own marker file, not on a process list, because
+  # a process list cannot see another namespace's processes.
+  d_alive="$TOKEN_DIR.daemon-$d_lane"
+  if [ -f "$d_alive" ]; then return 0; fi
+  : > "$d_alive" 2>/dev/null || true
+  setsid nohup bash "$0" __beat-daemon-loop "$d_lane" >>"$d_log" 2>&1 &
+  return 0
+}
+
 write_holder() {  # lane pid ticks [granted]
   # THE ATOMIC WRITE (2026-10-20, the javascript lane's finding). A plain `printf > holder` is NOT
   # atomic, and a reader CAN CATCH THE FILE MID-WRITE: the javascript lane saw the dart lane's
@@ -236,7 +254,23 @@ case "$cmd" in
     if mkdir "$TOKEN_DIR" 2>/dev/null; then
       write_holder "$lane" "$$" "$(proc_start_ticks $$ 2>/dev/null || echo 0)"
       queue_remove "$lane"
+      # ★★★ THE BEAT DAEMON IS STARTED BY THE TAKE, AUTOMATICALLY, AND THAT IS THE FIX THAT ENDS
+      # THIS CLASS OF DEADLOCK. MEASURED 2026-10-22: typescript's whole-population arm held the
+      # heavy token with a beat 1,219 s old, then 1,302 s, then 2,212 s, on a machine at load 6.14 on
+      # 8 CPUs — the arm was demonstrably RUNNING and its BEAT was CPU-STARVED, because the lane's
+      # beat call was queued behind its own parse. ⇒ ⇒ ⇒ AND THEN THE HOLDER WENT AWAY ENTIRELY: the
+      # lane finished its turn, the beat froze, and SIX LANES SAT BEHIND A STALE LOCK FOR FORTY
+      # MINUTES — because the ONLY liveness signal the script trusts is the beat, and the beat is
+      # exactly the thing a CPU-saturated fleet starves.
+      #
+      # ⇒ THE FIX IS THAT NO HOLDER EVER HAS TO REMEMBER TO BEAT. The take starts a DETACHED loop
+      # that sleeps 120 s and writes the heartbeat — it wants NO CPU, so it keeps beating under a
+      # saturated load, and the token's liveness signal stops depending on the very resource the arm
+      # is consuming. ⇒ A HOLDER THAT STOPS BEATING IS THEN GENUINELY GONE, which is what makes the
+      # TTL path safe to reclaim on.
+      start_beat_daemon "$lane"
       echo "ARM TOKEN TAKEN by $lane — run ONE arm, then: arm-token.sh release $lane"
+      echo "  (the BEAT DAEMON was started for you; it wants no CPU, so your arm cannot be starved)"
       exit 0
     fi
     h_lane="$(holder | sed -n 1p)"; h_pid="$(holder | sed -n 2p)"; h_beat="$(holder | sed -n 4p)"
@@ -307,6 +341,7 @@ case "$cmd" in
       fi
       if [ "$h" != "$lane" ] && [ "$small_held" -eq 0 ]; then
         echo "beat-daemon for $lane stopping: the token is no longer held by $lane (now: ${h:-nobody})."
+        rm -f "$TOKEN_DIR.daemon-$lane" 2>/dev/null || true
         exit 0
       fi
       "$0" beat "$lane" >/dev/null 2>&1 || true
@@ -580,15 +615,33 @@ case "$cmd" in
       echo "NOTE — the holder's pid ${h_pid} is not visible to the Lead's namespace (or its start-ticks differ) ✓✓."
       echo "       THAT IS EXPECTED ✓✓ — the agents run in their own pid namespace ✓✓ — so the pid is REPORTED, NEVER DECIDED ✓✓."
     fi
-    if token_fresh "$h_beat" && [ "${3:-}" != "--holder-is-gone" ]; then
-      if [ "${2:-}" != "--urgent" ]; then
-        echo "REFUSED — the token is held by ${h_lane:-nobody} and its heartbeat is FRESH ($(( $(now) - h_beat ))s ago; TTL ${TTL}s)."
-        echo "  A holder that is GONE stops beating, so a fresh heartbeat PROVES it is alive."
-        echo "  If you KNOW the holder is frozen and the heartbeat is lying, re-run with --urgent."
-        exit 5
-      fi
+    # ★★★ THE TWO FLAGS WERE MUTUALLY EXCLUSIVE IN EFFECT, AND THAT WAS THE THIRD INSTANCE OF THE
+    # SHAPE THAT COST THIS SCRIPT ITS FIRST LANE. `--holder-is-gone` is the documented way past a
+    # fresh beat ("I have checked this holder OUTSIDE this script"), and `--urgent` is what
+    # RE-QUEUES the displaced holder. The old condition put them on opposite sides of one `if`:
+    # `--holder-is-gone` SKIPPED the whole block and so SKIPPED THE RE-QUEUE, and `--urgent` alone
+    # did the re-queue. ⇒ ⇒ ⇒ SO THE FLAG THE SCRIPT DOCUMENTED AS THE LEAD'S EXPLICIT ASSERTION WAS
+    # EXACTLY THE ONE THAT LOST THE HOLDER ITS QUEUE PLACE — the very defect the Lead caused on
+    # 2026-10-20 when `force` deleted typescript's live token, and the reason `--urgent` was added
+    # in the first place. ⇒ A FLAG THAT MEANS "I HAVE CHECKED" MUST NOT DISABLE THE RECOVERY THE
+    # OTHER FLAG PERFORMS.
+    #
+    # ⇒ THE FIX: THE REFUSAL IS BYPASSED BY EITHER FLAG, AND THE RE-QUEUE HAPPENS IN BOTH CASES.
+    # ⇒ AND THE RE-QUEUE IS NOW UNCONDITIONAL ON THE FRESH-BEAT PATH: a displaced holder goes to the
+    # BACK of the queue, never off it, because **A LANE THAT HAS HAD ITS TURN IS NOT A LANE THAT HAS
+    # LEFT THE FLEET** (the same rule the small-slot release already follows).
+    f_fresh=0
+    if token_fresh "$h_beat"; then f_fresh=1; fi
+    if [ "$f_fresh" -eq 1 ] && [ "${2:-}" != "--urgent" ] && [ "${3:-}" != "--holder-is-gone" ]; then
+      echo "REFUSED — the token is held by ${h_lane:-nobody} and its heartbeat is FRESH ($(( $(now) - h_beat ))s ago; TTL ${TTL}s)."
+      echo "  A holder that is GONE stops beating, so a fresh heartbeat PROVES it is alive."
+      echo "  If you KNOW the holder is frozen or gone, re-run with --urgent --holder-is-gone."
+      exit 5
+    fi
+    if [ "$f_fresh" -eq 1 ]; then
       echo "*** URGENT FORCE — the token is being pulled from ${h_lane:-nobody}, whose heartbeat is FRESH ($(( $(now) - h_beat ))s ago)."
       echo "*** If that lane has an arm running, two arms are about to run at once."
+      echo "*** The displaced holder is RE-QUEUED at the BACK — it does not lose its place."
       queue_add "$h_lane" 2>/dev/null || true
     fi
     rm -rf "$TOKEN_DIR" 2>/dev/null || true
