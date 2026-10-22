@@ -31,6 +31,7 @@
  *   bun run script/m14/cpp-heritage-shape-census.ts [--json=out.json]
  */
 import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs"
+import { extensionsFor } from "./language-extensions"
 import * as path from "node:path"
 import { execFileSync } from "node:child_process"
 
@@ -42,7 +43,22 @@ const argOf = (f: string): string | null => {
 const JSON_OUT = argOf("--json")
 
 /** THE LANE'S OWN EXTENSION MAP — the same one the denominators and the gate use. */
-const ADMITTED_EXTS = ["cpp", "cc", "cxx", "c++", "hpp", "hxx", "ipp", "inl", "cu"]
+// ★ THE POPULATION IS THE ONE TABLE'S, NOT THIS FILE'S (2026-10-22, cpp lane).
+//
+// MEASURED, NOT INHERITED: `bun script/m14/shape-agreement-scan.ts --shape=hand-written-extension-map`
+// reports that the ONE TABLE at `script/m14/language-extensions.ts:142` holds ELEVEN cpp spellings
+// (.c++ .cc .cpp .cu .cxx .h .hh .hpp .hxx .inl .ipp) while this lane's hand-written list held NINE —
+// it OMITTED `.h` and `.hh`. Over the farm root's 31 repos that is 18,370 tracked header files that
+// were never in the lane's population, so EVERY count measured before this change — 7,435 admitted
+// files, and the four-types census's 2,843 / 51,874 / 310,252 / 4,279 / 1,262 — is a LOWER BOUND over
+// the source spellings, NOT a whole-population number.
+//
+// ⇒ THE INSTRUMENT AND THE DENOMINATOR MUST COUNT THE SAME POPULATION. A table duplicated in two
+// places is one table that will diverge, and this one had already diverged.
+// ⇒ AND ONE FACT THE RE-MEASUREMENT MUST STATE RATHER THAN ASSUME: `.h` is ALSO claimed by the `c`
+// entry of the SAME table, so adopting the eleven makes the population the ROUTER'S assignment rather
+// than an extension's, and a `.h` file may be the c lane's by content.
+const ADMITTED_EXTS = extensionsFor("cpp").map((e) => (e.startsWith(".") ? e.slice(1) : e))
 const SIZE_CAP = 1024 * 1024
 const CR = process.env.BB_CORPUS_ROOT ?? path.join(ROOT, ".corpus")
 
