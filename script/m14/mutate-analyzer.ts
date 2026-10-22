@@ -33,6 +33,7 @@ import { PHP_MUTANTS } from "./php-mutants"
 import { CSHARP_MUTANTS } from "./csharp-mutants"
 import { ELIXIR4_MUTANTS } from "./elixir4-mutants"
 import { PERL_MUTANTS } from "./perl-mutants"
+import { RUBY_MUTANTS } from "./ruby-mutants"
 // task-7 batch B: locally-typed registries. Their entries carry `id`/`language`/`defectClass`/
 // `description`/`transform` and their `transform` takes `(any, source?)`; `any` is assignable to
 // `MutantPayload`, so the shape matches the canonical interface and `tsc` is the arbiter rather than
@@ -2526,6 +2527,13 @@ export const MUTANTS: Mutant[] = [
   ...CSHARP_MUTANTS,
   ...ELIXIR4_MUTANTS,
   ...PERL_MUTANTS,
+  // The ruby lane's registry (ruby-mutants.ts). Its two entries are BOTH live: `drop-implements-edge`
+  // was re-spelled from `implements` to the LIVE value `mixes_in` because RUBY-D1 made the analyzer
+  // emit 0 `implements` edges — so the old spelling was a NO-OP mutant, which is a statement about
+  // the mutant and not about the suite. `respell-mixin-keyword` re-spells the KEYWORD and leaves the
+  // relationship identical, so it is caught ONLY by forbid rows that pin `meta.mixinType` — which is
+  // why the lane's forbid rows now pin the keyword in every position but its own.
+  ...RUBY_MUTANTS,
   // task-7 batch B.
   ...GO_MUTANTS,
   ...TS_MUTANTS,

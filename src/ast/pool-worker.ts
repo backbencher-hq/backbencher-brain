@@ -942,7 +942,29 @@ export function filterNoiseRelationships(
     // targets; template-literal garbage is still blocked via `{`, `}` and the
     // backtick, and `${x}` contains braces.
     if (leaf.length > 80 || leaf.length < 1) return false
-    if (/[{}`<>\n\r\t]/.test(leaf)) return false
+    // THE ANGLE-BRACKET BAN, AND WHY IT MUST NOT BE UNCONDITIONAL (ruby lane, 2026-10-21).
+    //
+    // `<` and `>` are banned because a target carrying them is usually a SNIPPET or a template
+    // fragment (`${x}`, `<div>`) and not an identifier. **BUT RUBY'S COMPARISON OPERATOR IS A
+    // METHOD NAME — `<=>` — AND IT IS A REAL DECLARATION IN REAL CODE.** The ban deleted every
+    // edge whose target was `<=>`, and the loss was SILENT and TOTAL for that class: the ruby lane
+    // measured **12 rows over 8 files in 4 repos** (calls -2, contains -8, overrides -2; gql-ruby
+    // x2, rack x3, rake x3 — early_time.rb, file_list.rb, late_time.rb, pseudo_status.rb) that the
+    // analyzer emitted and this filter ate. `Comparable#<=>` is the operator behind `sort`,
+    // `between?` and `clamp`, so this deleted real structure, not noise.
+    //
+    // ⇒ THE FIX IS THE OPERATOR SHAPE, NOT A RUBY EXEMPTION: a leaf that is ENTIRELY made of
+    // operator characters is an OPERATOR NAME, and an operator name is a legal method name in
+    // several languages (ruby's `<=>` `<=` `>=` `==` `!=` `===` `=~` `!~` `<<` `>>` `[]` `[]=`,
+    // python's `__lt__`-adjacent spellings are words but `**` is not, and C's operators are not
+    // identifiers at all so they never reach here as leaves). A leaf that MIXES operator characters
+    // with letters (`Array<T>`, `<div>`) is still a fragment and is still banned.
+    //
+    // ⇒ THE BAN ITSELF IS NOT WEAKENED FOR SNIPPETS: a snippet carries braces, a backtick, a
+    // newline or a tab, and those four remain unconditional; only the two angle brackets are
+    // relaxed, and only for a leaf made SOLELY of operator characters.
+    const isOperatorName = /^[<>=!+\-*/%^&|~]+$/.test(leaf)
+    if (!isOperatorName && /[{}`<>\n\r\t]/.test(leaf)) return false
     if (leaf.startsWith(" ") || leaf.includes("  ")) return false
 
     // CSS/SCSS/SASS: no type-based filter. The rule this replaces was "keep
