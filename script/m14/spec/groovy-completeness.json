@@ -74,9 +74,9 @@
       "type_parameters",
       "variable_declarator",
       "void_type",
-      "while_statement"
-    ,
-      "ERROR"],
+      "while_statement",
+      "ERROR"
+    ],
     "_notes": {
       "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-groovy-analyzer.ts:184-185), and `scoped-type-recovery-refusal.groovy` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
     }
@@ -154,10 +154,10 @@
       "update_expression",
       "uses_module_directive",
       "wildcard",
-      "yield_statement"
-    ,
+      "yield_statement",
       "MISSING",
-      "line_continuation"],
+      "line_continuation"
+    ],
     "_notes": {
       "line_continuation": "produced by the pinned groovy grammar and not a construct: it is the grammar's own line-continuation marker, and the analyzer reads it 0 times (measured 2026-10-12). Silent by contract.",
       "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-groovy-analyzer.ts:184-185); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
@@ -374,98 +374,101 @@
       }
     ]
   },
- "coverage": {
-  "implemented": [
-   "calls",
-   "uses",
-   "contains",
-   "imports",
-   "references",
-   "exports",
-   "extends",
-   "implements",
-   "overrides",
-   "instantiates"
-  ],
-  "excluded": [],
-  "corpusUnexercised": [],
-  "_emissionSites": {
-   "calls": [
-    "src/ast/real-groovy-analyzer.ts:1166",
-    "src/ast/real-groovy-analyzer.ts:1188",
-    "src/ast/real-groovy-analyzer.ts:1241",
-    "src/ast/real-groovy-analyzer.ts:1281"
-   ],
-   "uses": [
-    "src/ast/real-groovy-analyzer.ts:1290",
-    "src/ast/real-groovy-analyzer.ts:2276",
-    "src/ast/real-groovy-analyzer.ts:2319"
-   ],
-   "contains": [
-    "src/ast/real-groovy-analyzer.ts:254"
-   ],
-   "imports": [
-    "src/ast/real-groovy-analyzer.ts:529",
-    "src/ast/real-groovy-analyzer.ts:584"
-   ],
-   "references": [
-    "src/ast/real-groovy-analyzer.ts:499",
-    "src/ast/real-groovy-analyzer.ts:1822",
-    "src/ast/real-groovy-analyzer.ts:1900",
-    "src/ast/real-groovy-analyzer.ts:1991"
-   ],
-   "exports": [
-    "src/ast/real-groovy-analyzer.ts:366"
-   ],
-   "extends": [
-    "src/ast/real-groovy-analyzer.ts:639",
-    "src/ast/real-groovy-analyzer.ts:654",
-    "src/ast/real-groovy-analyzer.ts:670"
-   ],
-   "implements": [
-    "src/ast/real-groovy-analyzer.ts:686",
-    "src/ast/real-groovy-analyzer.ts:3040"
-   ],
-   "overrides": [
-    "src/ast/real-groovy-analyzer.ts:1641"
-   ],
-   "instantiates": [
-    "src/ast/real-groovy-analyzer.ts:1318"
-   ]
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates",
+      "decorates"
+    ],
+    "excluded": [
+      {
+        "label": "renders",
+        "evidence": "ontological",
+        "from": "**=> THE CLASS IS ONTOLOGICAL, AND THE REASON IS THE ENUM'S OWN CONTRACT - NOT A LADDER RUNG.** A VOCABULARY RULING IS NOT A GRAMMAR MATTER: no R1, R2 or R3 of the remedy ladder could conjure another language's construct into `.groovy` text, and naming a rung for it would misdescribe the reason. `src/ast/types.ts` - the enum's OWN CONTRACT for `renders`: \"A component RENDERS another component: source = the rendering symbol, target = the rendered component. Measured population is TSX/JSX (`<Button/>` inside a component)\" => THE CONTRACT'S SUBJECT IS A COMPONENT RENDERING A COMPONENT. **=> THE NEAR-MISS CENSUS IS KEPT, IN TWO HALVES, AND BOTH ARE COUNTED.** (1) **THE OTHER DIALECT'S DIALECT: 683 Grails `.gsp` server-page templates in grails-core DO render components** (`<g:render>`, `<g:include>`), and they are NOT this lane's files: the M60 #913 ruling (2026-09-24) stopped routing `.gsp` to groovy because a Grails Server Page is an HTML document carrying `${}`/`<g:...>` tags and `<%--%>` comments, the Groovy grammar has no productions for it, and 39 of 39 sampled grails-core files parse with ERROR nodes (`src/ast/language-detection.ts`, the `.gsp` entry). (2) **THE IN-LANGUAGE NEAREST NEIGHBOUR: 0 `template_expression` nodes** over the admitted population - a Groovy GString interpolation renders a VALUE into a string, not a COMPONENT into a page, so it is not the relation the value names. => AND THE GRAMMAR-SIDE HALF IS MEASURED, NOT ASSUMED: the SERVED build's node-type census names 163 named node types and **0** of them carries a render-ish name (`validation/m14/measurements/groovy-grammar-nodes.json`). => THE COUNTER: `script/m14/groovy-population-census.ts` (the `template_expression` and the `.gsp` counts), run over the admitted population - 8102 admitted files across 8 repositories.\n"
+      },
+      {
+        "label": "part_of",
+        "evidence": "grammar-absence",
+        "from": "**=> THE GRAMMAR HAS NO SUCH CONSTRUCT, AND THE HALF THAT MAKES THIS AN EXCLUSION RATHER THAN AN UNIMPLEMENTED TYPE IS MEASURED.** A LANE THAT MERELY LACKS AN EMISSION SITE HAS AN UNIMPLEMENTED TYPE - a GAP, and a gap does not shrink the denominator. => WHAT SHRINKS IT IS THAT THE LANGUAGE DOES NOT EXPRESS THE TYPE AT ALL. THE GRAMMAR-SIDE HALF: the SERVED build's node-type census (`validation/m14/measurements/groovy-grammar-nodes.json`, 163 named node types, id-ORDER digest bf14e3776f4df1b307ac09c7bcb8d7a9ff1d43e26c73c5f32cb5160859599eb6) names **0** node types carrying a `part` shape, and the contract's subject is a LIBRARY UNIT INCLUDING A PART FILE - Dart's `part 'x.dart'` / `part of` (`src/ast/types.ts`) - which Groovy has no syntax for. => THE NEAR-MISS CENSUS IS COUNTED: **0** occurrences of the `part '<file>'` / `part of` token shapes over the admitted population (`script/m14/groovy-population-census.ts`). => THE COUNTER AND THE POPULATION: `script/m14/groovy-population-census.ts` over the admitted set - 8102 admitted files across 8 repositories, 0 over the 1 MB cap, 3 tracked-but-absent, 137 symlinked directories corpus-wide of which **0** are followed by the git-tracked walk.\n"
+      },
+      {
+        "label": "mixes_in",
+        "evidence": "ontological",
+        "from": "**=> THIS IS A GROOVY QUESTION, AND THE ANSWER IS MEASURED IN GROOVY.** Groovy HAS traits: **0 trait declarations** over the admitted population (`script/m14/groovy-population-census.ts`), and a trait is applied in EXACTLY TWO WAYS, and BOTH ARE ALREADY PUBLISHED: **0** applications through an `implements` clause and **0** through an `extends` clause. => **=> AND THERE IS NO THIRD FORM, AND THE PARSE TREE IS WHY: a trait application is written as an ORDINARY `implements` entry - `super_interfaces` -> `type_list` -> `type_identifier` - with NO grammar-level distinction from an interface implementation** (measured on the served build: `class Service implements Audited, Serializable` parses with `Audited` as a plain `type_identifier`; the SERVED build's census names 0 mixin-ish node types among its 163). => **=> AND THE TIE-BREAK THAT MAKES THIS A RULING AND NOT A PREFERENCE IS THE ENUM'S OWN CONTRACT.** `mixes_in` exists because in Dart a mixin is NEITHER `extends` NOR `implements` - \"no conformance is declared\" (`src/ast/types.ts`) - **and IN GROOVY THE CONFORMANCE IS DECLARED**, so the `implements` edge is the TRUTHFUL one and there is no construct left for `mixes_in` to name. => **=> A CONSTRUCT THAT IS EXPRESSIBLE IN THE SAME WAY AS AN ALREADY-IMPLEMENTED TYPE IS NOT A NEW TYPE - IT IS THAT TYPE, SPELLED DIFFERENTLY.** => THE FALSIFIER, WITH ITS COUNT: if the admitted population carried a class that composed a trait WITHOUT declaring a conformance and WITHOUT a single base - a `with`-shaped clause - the ruling would be false; **COUNTED: 0 trait declarations, 0 applications by `implements`, 0 by `extends`, and 0 applications in any third form** (`script/m14/groovy-population-census.ts`).\n"
+      }
+    ],
+    "corpusUnexercised": [],
+    "_emissionSites": {
+      "calls": [
+        "src/ast/real-groovy-analyzer.ts:1166",
+        "src/ast/real-groovy-analyzer.ts:1188",
+        "src/ast/real-groovy-analyzer.ts:1241",
+        "src/ast/real-groovy-analyzer.ts:1281"
+      ],
+      "uses": [
+        "src/ast/real-groovy-analyzer.ts:1290",
+        "src/ast/real-groovy-analyzer.ts:2276",
+        "src/ast/real-groovy-analyzer.ts:2319"
+      ],
+      "contains": [
+        "src/ast/real-groovy-analyzer.ts:254"
+      ],
+      "imports": [
+        "src/ast/real-groovy-analyzer.ts:529",
+        "src/ast/real-groovy-analyzer.ts:584"
+      ],
+      "references": [
+        "src/ast/real-groovy-analyzer.ts:499",
+        "src/ast/real-groovy-analyzer.ts:1822",
+        "src/ast/real-groovy-analyzer.ts:1900",
+        "src/ast/real-groovy-analyzer.ts:1991"
+      ],
+      "exports": [
+        "src/ast/real-groovy-analyzer.ts:366"
+      ],
+      "extends": [
+        "src/ast/real-groovy-analyzer.ts:639",
+        "src/ast/real-groovy-analyzer.ts:654",
+        "src/ast/real-groovy-analyzer.ts:670"
+      ],
+      "implements": [
+        "src/ast/real-groovy-analyzer.ts:686",
+        "src/ast/real-groovy-analyzer.ts:3040"
+      ],
+      "overrides": [
+        "src/ast/real-groovy-analyzer.ts:1641"
+      ],
+      "instantiates": [
+        "src/ast/real-groovy-analyzer.ts:1318"
+      ]
+    },
+    "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-groovy-analyzer.ts, named per type in `_emissionSites`. The pinned grammar wasm/tree-sitter-groovy.wasm (sha256 f1e68cb398e63f34) carries all ten productions: superclass + extends_interfaces for `extends`, interface_declaration/super_interfaces for `implements`, method_invocation/juxt_function_call for `calls`, import_declaration for `imports`, exports_module_directive for `exports` (Groovy 4 module directives — the `exports` edge is not a JVM visibility flag), object_creation_expression/explicit_constructor_invocation for `instantiates`. NO EXCLUSIONS. NOT YET CLAIMED: a per-type edge count — the firing log validation/m14/results/firing-laptop-b.current.log records GROOVY as NO CORPUS under groovy (0 of 10 fired), so the emission sites are the evidence here and a measured count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified. MEASURED, 2026-10-14: `npx tsx script/m14/incoming-gate.ts groovy groovy,gradle 600` over a 600-file even stride of the 8102 admitted .groovy/.gradle files in 8 repositories (instrument disclosure: `population: 600 parsed of 600 sampled`) fires ALL TEN types, so the code reading and the measurement agree for every one of them: calls 10941, imports 5532, contains 3789, references 2821, uses 2548, instantiates 1917, exports 729, overrides 468, extends 351 and implements 233. The smallest margin is `implements` at 233 edges.",
+    "_implemented_measured": {},
+    "denominator": {
+      "rule": "**THE DENOMINATOR IS THE LANGUAGE'S OWN EXPRESSIBLE SET, AND A PENDING TYPE IS EXPRESSIBLE — THAT IS PRECISELY WHY A RUNG IS AVAILABLE AND BEING TAKEN.** ⇒ A type in GRAMMAR REMEDY PENDING STAYS IN THE DENOMINATOR AND IS COUNTED AS AN UNIMPLEMENTED GAP, so the lane reads n-implemented/n, NOT n/n. The deciding argument is the INCENTIVE: if a pending type left the denominator, a lane could improve its own ratio by DECLARING WORK IN FLIGHT INSTEAD OF DOING IT — the julia-lane failure the coverage-block gate was written to prevent. ⇒ THIS LANE HAS NO PENDING TYPE: every type in the denominator is IMPLEMENTED, and the three types outside it are there because the LANGUAGE DOES NOT EXPRESS THEM, each with a class, a count and a citation. ⇒ THE CLOSURE: implemented 11 + corpusUnexercised 0 + gaps 0 = applicable 11 = 14 - 3 excluded (renders, part_of, mixes_in).",
+      "n": 11,
+      "types": [
+        "calls",
+        "uses",
+        "contains",
+        "imports",
+        "references",
+        "exports",
+        "extends",
+        "implements",
+        "overrides",
+        "instantiates",
+        "decorates"
+      ]
+    }
   },
-  "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-groovy-analyzer.ts, named per type in `_emissionSites`. The pinned grammar wasm/tree-sitter-groovy.wasm (sha256 f1e68cb398e63f34) carries all ten productions: superclass + extends_interfaces for `extends`, interface_declaration/super_interfaces for `implements`, method_invocation/juxt_function_call for `calls`, import_declaration for `imports`, exports_module_directive for `exports` (Groovy 4 module directives \u2014 the `exports` edge is not a JVM visibility flag), object_creation_expression/explicit_constructor_invocation for `instantiates`. NO EXCLUSIONS. NOT YET CLAIMED: a per-type edge count \u2014 the firing log validation/m14/results/firing-laptop-b.current.log records GROOVY as NO CORPUS under groovy (0 of 10 fired), so the emission sites are the evidence here and a measured count is owed. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified. MEASURED, 2026-10-14: `npx tsx script/m14/incoming-gate.ts groovy groovy,gradle 600` over a 600-file even stride of the 8102 admitted .groovy/.gradle files in 8 repositories (instrument disclosure: `population: 600 parsed of 600 sampled`) fires ALL TEN types, so the code reading and the measurement agree for every one of them: calls 10941, imports 5532, contains 3789, references 2821, uses 2548, instantiates 1917, exports 729, overrides 468, extends 351 and implements 233. The smallest margin is `implements` at 233 edges.",
-  "_implemented_measured": {
-   "_unit": "STRIDE SAMPLE, NOT POPULATION: `npx tsx script/m14/incoming-gate.ts groovy groovy,gradle 600` \u2014 instrument disclosure `population: 600 parsed of 600 sampled (corpus has 8102 .groovy,gradle files across 8 repos; stride sample)` and `SAMPLE, NOT POPULATION: 600 of 8102 files`; per-type edges are TABLE 1 of that run, read 2026-10-14, wall clock 86s. A stride is a lower bound by construction; these are lower bounds, not corpus totals.",
-   "calls": {
-    "edges": 10941
-   },
-   "uses": {
-    "edges": 2548
-   },
-   "contains": {
-    "edges": 3789
-   },
-   "imports": {
-    "edges": 5532
-   },
-   "references": {
-    "edges": 2821
-   },
-   "exports": {
-    "edges": 729
-   },
-   "extends": {
-    "edges": 351
-   },
-   "implements": {
-    "edges": 233
-   },
-   "overrides": {
-    "edges": 468
-   },
-   "instantiates": {
-    "edges": 1917
-   }
-  }
- }
+  "population": "THE ADMITTED POPULATION FOR THIS LANE, MEASURED (script/m14/groovy-population-census.ts): the ADMITTED SET is the GIT-TRACKED set (`git ls-files`) restricted to the router's extensions (.groovy, .gvy, .gradle — the incoming-gate's own router-verified table at script/m14/incoming-gate.ts:312) and to files under the 1 MB cap; a cell's REPO COUNT is the repositories that CARRY an admitted file. MEASURED: 8102 admitted files across 8 repositories (grails-core 7018 · geb 693 · graphql-java 367 · dart-http 13 · flutter-packages 6 · pb-grpc 3 · fmt 1 · Exposed 1), 0 over the cap, 3 tracked-but-absent. THE SYMLINKED-DIRECTORY COUNT, WHICH IS THE PART THAT DECIDES WHICH POPULATION A NUMBER IS ABOUT: 137 symlinked directories exist corpus-wide and **0 are followed** — `git ls-files` lists a symlink as an ENTRY, never the files under it, so the git-tracked walk cannot reach a file through a symlinked directory, while a DIRECTORY walk would. ⇒ A DIRECTORY WALK AND A TRACKED WALK ARE DIFFERENT POPULATIONS, and the rule that keeps them apart is the ADMITTED SET, not a flag. The served grammar build: wasm/tree-sitter-groovy.wasm, sha256 f1e68cb398e6, 163 named node types, id-ORDER digest bf14e3776f4df1b307ac09c7bcb8d7a9ff1d43e26c73c5f32cb5160859599eb6 (validation/m14/measurements/groovy-grammar-nodes.json). THE HERITAGE BLIND-SPOT CENSUS, which the fleet's own probe cannot measure for this lane (script/m14/heritage-blindspot-probe.ts has no `groovy` entry, so it answers \"groovy IS NOT CONFIGURED ... NOTHING IS MEASURED\"): 62 `superclass` clauses, 0 of them missed by the analyzer's four-way direct-children lookup — the shape distribution is in the census."
 }

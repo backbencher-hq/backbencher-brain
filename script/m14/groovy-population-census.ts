@@ -38,6 +38,22 @@
  *                            a COMPONENT into a page.
  *   `partTokenOccurrences`   the NEAR MISS for `part_of`: the `part` token, in
  *                            the shapes `part 'x'` / `part of` would have.
+ *   `heritageShapes`         THE HERITAGE BLIND-SPOT CENSUS. The analyzer's
+ *                            superclass lookup is a FOUR-WAY DIRECT-CHILDREN
+ *                            read (src/ast/real-groovy-analyzer.ts: the
+ *                            `type_identifier || identifier || generic_type ||
+ *                            scoped_type_identifier` pair over the DIRECT named
+ *                            children of `superclass`). A base that is spelled
+ *                            in any other shape — `extends (Base)`, a
+ *                            call-shaped base — would publish NO EDGE AT ALL,
+ *                            and the fleet's own heritage blind-spot probe
+ *                            (script/m14/heritage-blindspot-probe.ts) CANNOT
+ *                            MEASURE IT FOR GROOVY: that table has no `groovy`
+ *                            entry, so the probe answers "groovy IS NOT
+ *                            CONFIGURED ... NOTHING IS MEASURED". ⇒ SO THIS
+ *                            CENSUS IS THE LANE'S OWN, and it counts the SHAPE
+ *                            DISTRIBUTION of every `superclass` clause and how
+ *                            many of them the lookup pair would miss.
  *
  * RUN: bun script/m14/groovy-population-census.ts [--limit=N] [--json]
  *      --limit=N caps the number of files MEASURED (a sample; the report says
@@ -55,6 +71,13 @@ const EXTENSIONS = ["groovy", "gvy", "gradle"] // the router's own table (incomi
 
 const argv = process.argv.slice(2)
 const LIMIT = Number(argv.find((a) => a.startsWith("--limit="))?.slice(8) ?? "0") || 0
+// ★ THE CHUNK MODE, AND IT IS THE GATE'S CONVENTION, NOT A NEW ONE: `--offset=N` measures a
+// DISJOINT SLICE of ONE SORTED admitted list, so the slices COVER the population when walked from
+// offset 0, and the SUM of the slices' counts IS the population's counts. The census is a WHOLE-CORPUS
+// PARSE, so it runs under the small arm slot in slices of at most 2,000 files, exactly as the
+// incoming-gate does. The report says which slice it measured, so a slice is never read as a
+// population.
+const OFFSET = Number(argv.find((a) => a.startsWith("--offset="))?.slice(9) ?? "0") || 0
 const AS_JSON = argv.includes("--json")
 
 function gitLsFiles(dir: string): string[] {
@@ -109,6 +132,24 @@ function admitted(): { files: string[]; repos: string[]; overCap: number; absent
   for (const [repo, n] of perRepo) if (n > 0) repos.push(repo)
   files.sort()
   return { files, repos: repos.sort(), overCap, absent, perRepo }
+}
+
+/** How many git-tracked files in the corpus carry this extension (any repo). */
+function countTrackedByExtension(ext: string): number {
+  let n = 0
+  for (const e of readdirSync(CORPUS, { withFileTypes: true })) {
+    if (!e.isDirectory()) continue
+    const dir = path.join(CORPUS, e.name)
+    let tracked: string[]
+    try {
+      execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" })
+      tracked = gitLsFiles(dir)
+    } catch {
+      continue
+    }
+    for (const rel of tracked) if (rel.toLowerCase().endsWith(ext)) n++
+  }
+  return n
 }
 
 function countSymlinkedDirectories(): number {
@@ -166,12 +207,27 @@ async function main() {
   // The SYMLINKED DIRECTORIES the corpus holds, counted, so a reader can see
   // how the two walks differ. The git-tracked walk follows NONE of them.
   const symlinkedDirs = countSymlinkedDirectories()
-  const measured = LIMIT > 0 ? pop.files.slice(0, LIMIT) : pop.files
+  // THE OTHER DIALECT'S NEAR MISS, COUNTED: the Grails Server Page templates
+  // that DO render components, and that the M60 #913 ruling (2026-09-24)
+  // stopped routing to groovy because the Groovy grammar has no productions
+  // for them. They are git-tracked files in the corpus that are NOT in the
+  // admitted set, and the count is what makes the `renders` ruling a
+  // MEASUREMENT rather than a preference.
+  const gspTemplateFiles = countTrackedByExtension(".gsp")
+  const sliced = pop.files.slice(OFFSET, LIMIT > 0 ? OFFSET + LIMIT : undefined)
+  const measured = sliced
 
   // PASS 1 — the trait names, collected over the MEASURED files.
   const traitNames = new Set<string>()
   let traitDeclarations = 0
   const typeNames: string[] = []
+  // THE HERITAGE SHAPE CENSUS — the blind-spot question, counted.
+  const HERITAGE_LOOKUP = new Set(["type_identifier", "identifier", "generic_type", "scoped_type_identifier"])
+  const heritageShapes = new Map<string, number>()
+  let heritageClauses = 0
+  let heritageCovered = 0
+  let heritageMissed = 0
+  const heritageMissedExamples: string[] = []
   for (const f of measured) {
     let content: string
     try {
@@ -192,6 +248,24 @@ async function main() {
         }
       }
       if (n.type === "type_identifier") typeNames.push(n.text)
+      if (n.type === "superclass") {
+        heritageClauses++
+        const kids: string[] = []
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) kids.push(c.type)
+        }
+        const shape = kids.length === 0 ? "(no named children)" : kids.join("+")
+        heritageShapes.set(shape, (heritageShapes.get(shape) ?? 0) + 1)
+        // THE ANALYZER'S OWN PAIR: findChild over the DIRECT named children.
+        if (kids.some((k) => HERITAGE_LOOKUP.has(k))) heritageCovered++
+        else {
+          heritageMissed++
+          if (heritageMissedExamples.length < 20) {
+            heritageMissedExamples.push(`${path.relative(CORPUS, n.file ?? "")}: ${String(n.text).slice(0, 90).replace(/\n/g, " ")}`)
+          }
+        }
+      }
       for (const c of n.children) walk(c)
     }
     walk(tree.rootNode)
@@ -258,6 +332,8 @@ async function main() {
       excluded_over_cap: pop.overCap,
       excluded_absent: pop.absent,
       measured_files: measured.length,
+      measured_slice: measured.length ? [measured[0], measured[measured.length - 1]] : [],
+      slice_offset: OFFSET,
       is_whole_population: measured.length === pop.files.length,
       symlinked_directories_found_corpuswide: symlinkedDirs,
       symlinked_directories_followed: 0,
@@ -279,6 +355,12 @@ async function main() {
       gstringTemplateExpressions,
       partTokenOccurrences,
       parseFailures,
+      heritageClauses,
+      heritageCoveredByTheAnalyzerLookup: heritageCovered,
+      heritageMissedByTheAnalyzerLookup: heritageMissed,
+      heritageShapes: Object.fromEntries([...heritageShapes.entries()].sort((a, b) => b[1] - a[1])),
+      heritageMissedExamples,
+      gspTemplateFiles,
     },
     applied_trait_names: [...appliedTraitNames].sort(),
   }
@@ -293,13 +375,18 @@ async function main() {
   console.log(`  admitted files     ${pop.files.length} across ${pop.repos.length} repositories`)
   console.log(`  per repo           ${[...pop.perRepo.entries()].sort((a, b) => b[1] - a[1]).map(([r, n]) => `${r}=${n}`).join(" · ")}`)
   console.log(`  excluded           ${pop.overCap} over the cap · ${pop.absent} tracked-but-absent`)
-  console.log(`  measured           ${measured.length}${measured.length === pop.files.length ? " (the WHOLE admitted set)" : " (A SAMPLE — the report says so)"}`)
+  console.log(`  measured           ${measured.length}${measured.length === pop.files.length ? " (the WHOLE admitted set)" : ` (A SLICE [${OFFSET}, ${OFFSET + measured.length}) of ${pop.files.length} — a slice is never a population)`}`)
   console.log(`  symlinked dirs     ${symlinkedDirs} exist corpus-wide; 0 followed (the git-tracked walk lists a symlink as an entry, never the files under it)`)
   console.log(`  served wasm        ${report.grammar.sha256}`)
   console.log(`  TRAIT CONSTRUCT    ${traitDeclarations} declarations · ${traitNames.size} distinct names`)
   console.log(`  trait via implements ${traitAppliedByImplements} · via extends ${traitAppliedByExtends} · ${appliedTraitNames.size} distinct names`)
   console.log(`  NEAR MISS renders  ${gstringTemplateExpressions} template_expression nodes (a GString renders a VALUE, not a COMPONENT)`)
   console.log(`  NEAR MISS part_of  ${partTokenOccurrences} 'part <file>' / 'part of' occurrences`)
+  console.log(`  HERITAGE CLAUSES   ${heritageClauses} superclass clauses · ${heritageCovered} covered by the analyzer's 4-way lookup · ${heritageMissed} MISSED`)
+  for (const [shape, n] of [...heritageShapes.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12)) {
+    console.log(`     ${String(n).padStart(6)}  ${shape}`)
+  }
+  console.log(`  NEAR MISS .gsp     ${gspTemplateFiles} git-tracked Grails Server Page templates (they render components, and the M60 #913 ruling stopped routing them to groovy)`)
   console.log(`  parse failures     ${parseFailures}`)
 }
 
