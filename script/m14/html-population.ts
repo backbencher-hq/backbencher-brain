@@ -41,6 +41,15 @@ import { readdirSync, statSync, existsSync, realpathSync, writeFileSync } from "
 import { execFileSync } from "node:child_process"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
+// ★ THE ADMITTED SPELLINGS COME FROM THE ROUTER'S ONE TABLE, AND THIS LANE KEEPS NO COPY OF IT.
+//   The table moved to script/m14/language-extensions.ts on 2026-10-22, because the heritage
+//   blind-spot probe carried its own map, had no `cpp` entry, and measured an EMPTY POPULATION
+//   and printed a clean-looking zero over it. ⇒ A TABLE DUPLICATED IN TWO PLACES IS ONE TABLE
+//   THAT WILL DIVERGE, and this lane's population is measured by three instruments (this one,
+//   the construct census, and the arm) — so all three read the SAME table, and a walk that reads
+//   the ROUTER'S TABLE and a walk that reads the HTML LANE'S TABLE cannot be two different
+//   populations under the same name.
+import { extensionsFor } from "./language-extensions"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
 const CR = process.env.BB_CORPUS_ROOT ?? path.join(ROOT, ".corpus")
@@ -52,12 +61,15 @@ const argOf = (f: string): string | undefined => {
 const JSON_OUT = argOf("--json")
 const SIZE_CAP = 1024 * 1024 // the engine's own full-AST cap (pool-worker.ts FULL_AST_LIMIT)
 
-/** THE ADMITTED EXTENSIONS, READ FROM THE ROUTER'S OWN MAP — the same source the gate reads. */
-const EXT_MAP: Record<string, string> = {
-  html: "html,htm,xhtml,hbs,twig,pug,erb,mustache,ejs,liquid,njk,jinja,j2",
-  java: "java", javascript: "js,mjs,cjs,jsx", kotlin: "kt,kts",
-}
-const EXTS = EXT_MAP.html.split(",")
+// ★ THE LOCAL COPY OF THE EXTENSION MAP IS GONE. It stood here as "the router's own map", and it
+//   WAS the router's own map on 2026-10-15 — and then the router's map MOVED to
+//   script/m14/language-extensions.ts (2026-10-22) and this copy would have silently become a
+//   SECOND TABLE, under the same name, measuring a population that could drift from the gate's
+//   without anything saying so. ⇒ ONE TABLE, READ, NEVER COPIED.
+// THE THIRTEEN SPELLINGS, FROM THE SHARED TABLE. `extensionsFor` returns them with a leading dot
+// (".html"), so the dot is stripped here to keep the suffix test in the shape the gate's own
+// `admitByExtension` uses.
+const EXTS = extensionsFor("html").map((e) => e.replace(/^\./, ""))
 const LANE = "html"
 
 const L: string[] = []
@@ -100,7 +112,7 @@ say()
 say(`  corpus root          ${CR}`)
 say(`  corpus root exists   ${existsSync(CR)}`)
 say(`  size cap             ${SIZE_CAP} bytes (the engine's own FULL_AST_LIMIT)`)
-say(`  admitted extensions  ${EXTS.map((e) => `.${e}`).join(" ")}   rule: the ROUTER's own table (incoming-gate.ts), not a second copy`)
+say(`  admitted extensions  ${EXTS.map((e) => `.${e}`).join(" ")}   rule: the ROUTER's ONE table (script/m14/language-extensions.ts), read — not a second copy`)
 say()
 
 // ─── THE CORPUS ENTRIES ───────────────────────────────────────────────────────────────────────

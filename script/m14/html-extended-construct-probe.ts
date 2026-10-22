@@ -72,7 +72,13 @@ const OFFSET = Number(argOf("offset", "0"))
 const LIMIT = Number(argOf("limit", "0")) // 0 = to the end of the admitted list
 
 /** THE ROUTER'S OWN TABLE for the html lane (incoming-gate.ts:319) — thirteen spellings. */
-const EXTS = ["html", "htm", "xhtml", "hbs", "twig", "pug", "erb", "mustache", "ejs", "liquid", "njk", "jinja", "j2"]
+// ★ THE THIRTEEN SPELLINGS COME FROM THE ROUTER'S ONE TABLE (script/m14/language-extensions.ts),
+//   NOT FROM A SECOND COPY KEPT HERE. A table duplicated in two places is one table that will
+//   diverge, and this lane's population is measured by three instruments — this census, the
+//   population walk, and the arm — so all three must read the SAME table or they are measuring
+//   three populations under one name.
+import { extensionsFor } from "./language-extensions"
+const EXTS = extensionsFor("html").map((e) => e.replace(/^\./, ""))
 const SIZE_CAP = 1024 * 1024
 
 // ─── THE ADMITTED POPULATION, THE GATE'S OWN RULE ────────────────────────────────────────────────

@@ -57,11 +57,38 @@ const TYPES = [
   "overrides", "instantiates", "decorates", "renders", "mixes_in", "part_of",
 ]
 
-type Row = Record<string, number>
+// ★ TWO ROW TYPES, BECAUSE THE FIRST ONE SAID A STRING WAS A NUMBER. The parsed per-type bucket
+//   is a record of COUNTS (`edges`, `resolved`, …) and the type's NAME is its map key, so a
+//   `Record<string, number>` is right for it. The CLOSURE row is a different thing: it carries the
+//   type's NAME as a field (`type`), and the first version typed that field as a number, which is
+//   what made `r.type.padEnd(12)` a type error — a string method on a number. At runtime the cast
+//   changed nothing, so the table printed and the numbers were right, but a cast that CONTRADICTS
+//   the data is a cast that will be copied. ⇒ THE TYPES ARE NOW TRUE.
+type Bucket = Record<string, number>
+type ClosureRow = {
+  type: string
+  edges: number
+  resolved: number
+  collRes: number
+  ambDecl: number
+  ambKind: number
+  unresolved: number
+  extOK: number
+  extUnknown: number
+  extFAIL: number
+  bindOK: number
+  bindUnknown: number
+  bindFAIL: number
+  causeOK: number
+  causeFAIL: number
+  residual: number
+  closureLhs: number
+  closureOk: boolean
+}
 
-function parseChunk(path: string): { rows: Map<string, Row>; slice: [number, number] | null; admitted: number | null; parsed: number | null; degraded: number | null } {
+function parseChunk(path: string): { rows: Map<string, Bucket>; slice: [number, number] | null; admitted: number | null; parsed: number | null; degraded: number | null } {
   const text = readFileSync(path, "utf8")
-  const rows = new Map<string, Row>()
+  const rows = new Map<string, Bucket>()
   // THE POPULATION HEADER — the gate's own admitted total and the chunk's own slice bounds.
   const sliceM = /admitted files \[(\d+), (\d+)\)/.exec(text)
   const slice: [number, number] | null = sliceM ? [Number(sliceM[1]), Number(sliceM[2])] : null
@@ -90,15 +117,15 @@ function parseChunk(path: string): { rows: Map<string, Row>; slice: [number, num
     const type = parts[0]
     if (type === "TOTAL") continue
     if (!TYPES.includes(type)) continue
-    const row: Row = { type: 0 } as unknown as Row
+    const row: Bucket = {} as Bucket
     COLS.forEach((c, i) => { row[c] = Number(parts[i + 1]) })
     rows.set(type, row)
   }
   return { rows, slice, admitted, parsed, degraded }
 }
 
-const sum: Map<string, Row> = new Map()
-for (const t of TYPES) sum.set(t, { type: 0 } as unknown as Row)
+const sum: Map<string, Bucket> = new Map()
+for (const t of TYPES) sum.set(t, {} as Bucket)
 const chunks: unknown[] = []
 let admittedTotal: number | null = null
 let parsedTotal = 0
@@ -130,8 +157,8 @@ for (let i = 0; i < coverage.length; i++) {
 if (admittedTotal != null && coverage.length > 0 && coverage[coverage.length - 1][1] !== admittedTotal) coverageOk = false
 
 // THE CLOSURE — per type and in total.
-const closureRows: unknown[] = []
-let totalRow: Row = { type: 0 } as unknown as Row
+const closureRows: ClosureRow[] = []
+let totalRow: ClosureRow = { type: "TOTAL", edges: 0, resolved: 0, collRes: 0, ambDecl: 0, ambKind: 0, unresolved: 0, extOK: 0, extUnknown: 0, extFAIL: 0, bindOK: 0, bindUnknown: 0, bindFAIL: 0, causeOK: 0, causeFAIL: 0, residual: 0, closureLhs: 0, closureOk: true }
 let closureOk = true
 for (const t of TYPES) {
   const r = sum.get(t)!
@@ -182,7 +209,13 @@ console.log(`  coverage (disjoint slices abut and reach the admitted total): ${c
 for (const c of coverage) console.log(`    [${c[0]}, ${c[1]})`)
 console.log(`  CLOSURE: ${closureOk ? "ADDS UP EXACTLY" : "DOES NOT ADD UP"}`)
 console.log(`  type          edges     resolved   amb(decl)  unresolved  extOK      bindOK    causeOK   residual`)
-for (const r of closureRows as Record<string, number>[]) {
+// ★ THE ROW'S TYPE IS STATED, NOT CAST AWAY. The first version of this loop cast the rows to
+//   `Record<string, number>[]`, which made `r.type` a NUMBER — and `r.type.padEnd(12)` then
+//   failed the typecheck for a method that exists only on a string. At RUNTIME the cast did not
+//   change anything, so the table printed and the numbers were right — but a cast that
+//   contradicts the data is a cast that will be copied, and the compiler is right to refuse it.
+//   ⇒ THE ROW TYPE IS NOW TRUE, AND THE COLUMNS ARE ALIGNED BY A STRING METHOD ON A STRING.
+for (const r of closureRows) {
   console.log(`  ${r.type.padEnd(12)} ${String(r.edges).padStart(8)} ${String(r.resolved).padStart(10)} ${String(r.ambDecl).padStart(10)} ${String(r.unresolved).padStart(11)} ${String(r.extOK).padStart(10)} ${String(r.bindOK).padStart(9)} ${String(r.causeOK).padStart(9)} ${String(r.residual).padStart(10)}   ${r.closureOk ? "" : "CLOSURE FAIL"}`)
 }
 console.log(`  TOTAL         ${String(totalRow.edges).padStart(8)} ${String(totalRow.resolved).padStart(10)} ${String(totalRow.ambDecl).padStart(10)} ${String(totalRow.unresolved).padStart(11)} ${String(totalRow.extOK).padStart(10)} ${String(totalRow.bindOK).padStart(9)} ${String(totalRow.causeOK).padStart(9)} ${String(totalRow.ambDecl + totalRow.unresolved).padStart(10)}`)

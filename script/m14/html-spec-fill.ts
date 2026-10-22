@@ -111,7 +111,13 @@ const WHY: Record<string, string> = {
 
 const m = spec.coverage._implemented_measured
 const written: unknown[] = []
-for (const [type, entry] of Object.entries(m) as Record<string, any>[]) {
+// ★ THE CAST IS RIGHT THIS TIME. `Object.entries` returns an ARRAY OF PAIRS, and the first
+//   version of this line cast it to `Record<string, any>[]` — a RECORD, which is not iterable,
+//   which is why the compiler refused it. At runtime `Object.entries` is an array, so the loop
+//   walked the pairs correctly and the numbers were right — but a cast that contradicts the
+//   value is a cast that will be copied, and a `for...of` over a `Record` is the shape that
+//   counts the KEYS of an object instead of its entries.
+for (const [type, entry] of Object.entries(m) as Array<[string, any]>) {
   if (type === "_unit") continue
   const row = byType[type]
   if (!row) { console.log(`  !! NO ARM ROW for ${type} — left as it was`); continue }

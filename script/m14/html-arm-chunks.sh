@@ -49,7 +49,14 @@ CENSUS_DIR="validation/m14/measurements/html-census"
 POP=2000
 OFFSETS="0 2000 4000 6000 8000"
 TOKEN="script/m14/arm-token.sh"
-EXTS="html,htm,xhtml,hbs,twig,pug,erb,mustache,ejs,liquid,njk,jinja,j2"
+# ★ THE ADMITTED SPELLINGS COME FROM THE ROUTER'S ONE TABLE, AND THIS SCRIPT KEEPS NO COPY OF
+#   THEM. The table is script/m14/language-extensions.ts (it MOVED there on 2026-10-22, because the
+#   heritage probe carried its own map, had no `cpp` entry, and measured an EMPTY POPULATION and
+#   printed a clean-looking zero over it). ⇒ A LIST COPIED INTO A SHELL SCRIPT IS A LIST THAT WILL
+#   DIVERGE, and the arm's population is the fleet's population for this lane: it must be the
+#   router's, read.
+EXTS="$(bun -e 'import { extensionsFor } from "./script/m14/language-extensions.ts"; console.log(extensionsFor("html").map((e) => e.replace(/^\./, "")).join(","))')"
+if [ -z "$EXTS" ]; then echo "THE ROUTER'S TABLE GAVE NO SPELLINGS FOR html — the arm is NOT measured."; exit 3; fi
 
 mkdir -p "$OUT_DIR" "$CENSUS_DIR"
 
