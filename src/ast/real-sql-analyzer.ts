@@ -21,7 +21,7 @@
  * under-counted the whole population by 260 edges (calls 3,894 vs 3,929 · uses 9,254 vs 9,317 ·
  * contains 12,142 vs 12,255 · references 5,992 vs 6,041) with no error and no visible counter.
  * The numbers below are the HANDED-OVER ones.
- *   calls 3,929 · uses 9,317 · contains 12,255 · references 6,041 · imports 63 · instantiates 21 ·
+ *   calls 3,929 · uses 9,317 · contains 12,264 · references 6,041 · imports 63 · instantiates 21 ·
  *   overrides 8 · **extends 0**.
  * `extends` IS emitted (the `ALTER TABLE c INHERIT p` clause the wired grammar mis-parses as a
  * column named INHERIT; see `processAlterTable` and SQL-D14/SQL-D17). It fires ZERO times on this
@@ -914,6 +914,17 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         providedFunctionCallsMarked: 0,
         instantiationsEmitted: 0,
         reservedNameSymbolsSuppressed: 0,
+        /**
+         * A `contains` edge DROPPED because its source and target bare NAMES were equal.
+         *
+         * The counter exists because the drop was SILENT — a legal column that shares its table's
+         * name simply did not appear in the graph, and nothing said so. Measured over the whole
+         * admitted population on 2026-10-21: **9 edges in 7 files**, every one of them a real
+         * declaration the table did not own in the graph. The guard now tests the DECLARATION
+         * IDENTITY where the call site has it, so these edges are published; the counter is what
+         * would catch a case where the identity is not available and the name test still fires.
+         */
+        sameNameContainmentSuppressed: 0,
         indexOwnersAdopted: 0,
         indexOwnersExternalToFile: 0,
         unnamedIndexSkipped: 0,
@@ -2509,7 +2520,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     // `createSymbol` returned early without emitting (an already-seen identity), and a key without
     // the disambiguator would NOT dedup against the one `createSymbol` did emit — the same
     // containment fact stored twice, once with the member's kind and once without.
-    this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, column.name, state, { memberKind: ASTEngine.SymbolKind.Property }, this.range(rawName, state).startLine)
+    this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, column.name, state, { memberKind: ASTEngine.SymbolKind.Property }, this.range(rawName, state).startLine, table.id, column.id)
     if (isPrimaryKey) this.addPattern("Primary Key Constraint", state)
     if (isUnique) this.addPattern("Unique Constraint", state)
     if (references && referenceNode) {
@@ -2625,7 +2636,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
           ...(recovered ? { recoveredFromErrorRegion: true } : {}),
         },
       )
-      this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, constraint.name, state, { memberKind: ASTEngine.SymbolKind.Constant }, this.range(nameNode, state).startLine)
+      this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, constraint.name, state, { memberKind: ASTEngine.SymbolKind.Constant }, this.range(nameNode, state).startLine, table.id, constraint.id)
     }
     if (hasPrimary) this.addPattern("Primary Key Constraint", state)
     if (hasUnique) this.addPattern("Unique Constraint", state)
@@ -2741,7 +2752,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       // is the edge that survives. An index and a column of the same name under the same table is the
       // collision `memberKind` exists to resolve; leaving it off this path would leave exactly those
       // edges ambiguous, which is the case the key was added for.
-      this.addRelationship(ASTEngine.RelationshipType.Contains, tableName, name, state, { memberKind: ASTEngine.SymbolKind.Constant }, this.range(nameNode, state).startLine)
+      this.addRelationship(ASTEngine.RelationshipType.Contains, tableName, name, state, { memberKind: ASTEngine.SymbolKind.Constant }, this.range(nameNode, state).startLine, owner?.id ?? tableName, owner ? `${owner.id}.${name}` : name)
       if (state.metadata.performanceScore !== undefined) state.metadata.performanceScore += 10
     }
   }
@@ -3482,7 +3493,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
         state,
         { type: "column", sqlType: this.columnType(definition, state), addedByAlter: true },
       )
-      this.addRelationship(ASTEngine.RelationshipType.Contains, table, column.name, state, { memberKind: ASTEngine.SymbolKind.Property }, this.range(nameNode, state).startLine)
+      this.addRelationship(ASTEngine.RelationshipType.Contains, table, column.name, state, { memberKind: ASTEngine.SymbolKind.Property }, this.range(nameNode, state).startLine, this.existingSymbol(table, ASTEngine.SymbolKind.Class, state)?.id ?? table, column.id)
     }
   }
 
@@ -3975,7 +3986,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
      */
     // `symbol.range.startLine` is the member's OWN declaration line — the same value `range(node, state)`
     // computed for the symbol four lines up, so the edge and the symbol it names agree on position.
-    if (parent) this.addRelationship(ASTEngine.RelationshipType.Contains, parent.name, name, state, { memberKind: symbol.kind }, symbol.range.startLine)
+    if (parent) this.addRelationship(ASTEngine.RelationshipType.Contains, parent.name, name, state, { memberKind: symbol.kind }, symbol.range.startLine, parent.id, symbol.id)
     return symbol
   }
 
@@ -4016,9 +4027,41 @@ private markDeclaration(node: Node, state: ParseState): boolean {
      * test cannot see it. Every `contains` call site should pass one.
      */
     line?: number,
+    /**
+     * The OWNER's and the MEMBER's declaration ids, for the self-containment test.
+     *
+     * A SELF-CONTAINMENT is a declaration containing ITSELF. Two DECLARATIONS that share a NAME are
+     * not that — a table `keyword` and its column `keyword` are two declarations, two kinds, two ids —
+     * and the bare-name test could not tell them apart, so it DROPPED the containment edge and with it
+     * the member's containment fact. The column then is not in its table's shape, which every
+     * consumer that reads a table's members loses.
+     *
+     * MEASURED, whole admitted population, 2,125 files / 202 repos / 199 symlinked dirs followed
+     * (`script/m14/sql-same-name-containment.ts` → `validation/m14/measurements/sql-same-name-containment.json`):
+     * **4 sites in 2 files over 2 repos** — `cloogle.org/db/install.sql` L12 (a column `useragent` of
+     * a table `useragent`) and `duckdb/benchmark/imdb_plan_cost/init/schema.sql` L81 / L134 / L159
+     * (columns `keyword`, `name` and `title` of tables of the same names). The DIFFERENTIAL measured
+     * one of them as a MISSING row — a truth the analyzer does not publish.
+     *
+     * The ids ARE the declarations' own: a table's id is its name and a column's id is
+     * `<table id>.<column name>`, so a same-named column's id is NEVER the table's id. Where a call
+     * site cannot supply both ids the bare-name test still applies, so the original protection is
+     * kept wherever it was doing real work.
+     */
+    ownerId?: string,
+    memberId?: string,
   ): void {
     if (!source || !target) return
-    if (source === target && type === ASTEngine.RelationshipType.Contains) return
+    if (type === ASTEngine.RelationshipType.Contains) {
+      if (ownerId !== undefined && memberId !== undefined) {
+        if (ownerId === memberId) return
+      } else if (source === target) {
+        // The name test still fires where the call site could not supply both ids. IT IS COUNTED,
+        // because a suppression nobody can see is a number nobody can audit.
+        state.ambiguity.sameNameContainmentSuppressed++
+        return
+      }
+    }
     // A reserved word is never a table and never a function. Guarded here as
     // well as at the call site so an ERROR-recovery keyword cannot reach the
     // graph from any path.

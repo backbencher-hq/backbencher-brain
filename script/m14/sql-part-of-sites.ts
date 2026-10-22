@@ -125,7 +125,7 @@ for (const f of admitted) {
     if (m && m.length) { textCounts[k] += m.length; textFiles[k].add(f) }
   }
   let pr: any
-  try { pr = await parser.parse(content, f) } catch { continue }
+  try { pr = await parser.parse(content) } catch { continue }
   const stack: any[] = [pr.rootNode]
   while (stack.length) {
     const n = stack.pop()!

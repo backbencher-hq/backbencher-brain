@@ -109,7 +109,7 @@ for (const f of admitted) {
   let content: string
   try { content = readFileSync(f, "utf8") } catch { failures++; failureFiles.push(f); continue }
   let pr: any
-  try { pr = await parser.parse(content, f) } catch { failures++; failureFiles.push(f); continue }
+  try { pr = await parser.parse(content) } catch { failures++; failureFiles.push(f); continue }
   parsed++
 
   const root = pr.rootNode

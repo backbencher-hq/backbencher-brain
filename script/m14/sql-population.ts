@@ -155,7 +155,7 @@ admittedAbs.sort()
  *  asking which of the repository directories are symlinks. Printing it is the point: a walk
  *  whose symlink behaviour is invisible cannot be compared against another walk. */
 {
-  let entries: string[] = []
+  let entries: import("node:fs").Dirent[] = []
   try { entries = readdirSync(ROOT, { withFileTypes: true }) } catch { entries = [] }
   for (const e of entries) {
     if (!e.isSymbolicLink()) continue
@@ -192,6 +192,8 @@ for (const k of Object.keys(SITE_NODES)) { siteTally[k] = 0; siteFiles[k] = new 
 /** EVERY node type the grammar produced, so the classification can say what the grammar HAS. */
 const nodeTypeTally = new Map<string, number>()
 
+const ambiguityTotals: Record<string, number> = {}
+const ambiguityFiles: Record<string, Set<string>> = {}
 const perType: Record<string, { edges: number; files: Set<string>; repos: Set<string> }> = {}
 for (const t of FOURTEEN) perType[t] = { edges: 0, files: new Set(), repos: new Set() }
 
@@ -236,7 +238,8 @@ for (const f of admittedAbs) {
   let content: string
   try { content = readFileSync(f, "utf8") } catch { parseFailures++; failures.push(f); continue }
   try {
-    const pr = await parser.parse(content, f)
+    const pr = await parser.parse(content)
+    if (!pr) { parseFailures++; failures.push(f); continue }
     // the node-type census, from the tree
     const stack = [pr.rootNode]
     while (stack.length) {
@@ -253,6 +256,20 @@ for (const f of admittedAbs) {
     }
     const res = new Cls().analyze(pr.rootNode, content, f)
     parsed++
+    // THE ANALYZER'S OWN SUPPRESSION COUNTERS, AGGREGATED. A suppression that is not counted is a
+    // number nobody can audit, and the campaign has already paid for that shape twice in this lane
+    // (the `inherit` reserved-name guard, and the silent same-name containment drop).
+    const amb = (res.metadata as any)?.ambiguity as Record<string, number> | undefined
+    if (amb) {
+      for (const [k, v] of Object.entries(amb)) {
+        if (typeof v !== "number") continue
+        ambiguityTotals[k] = (ambiguityTotals[k] ?? 0) + v
+        if (v > 0) {
+          if (!ambiguityFiles[k]) ambiguityFiles[k] = new Set<string>()
+          ambiguityFiles[k].add(f)
+        }
+      }
+    }
     const repo = repoOfAbs.get(f) ?? "?"
     for (const r of (res.relationships || [])) {
       const t = String((r as any).relationshipType ?? (r as any).type)
@@ -286,6 +303,15 @@ const typeRows = FOURTEEN.map((t) => ({
 
 const report = {
   instrument: "script/m14/sql-population.ts",
+  // THE ANALYZER'S OWN SUPPRESSION COUNTERS over the whole population. `sameNameContainmentSuppressed`
+  // is the one this lane added on 2026-10-21: the `contains` edge whose source and target bare NAMES
+  // were equal, which silently dropped a real declaration. It reads 0 now because the guard tests
+  // the DECLARATION IDENTITY instead of the name.
+  ambiguity: Object.fromEntries(
+    Object.keys(ambiguityTotals)
+      .sort()
+      .map((k) => [k, { total: ambiguityTotals[k], files: ambiguityFiles[k]?.size ?? 0 }]),
+  ),
   corpus_root: ROOT,
   corpus_root_absolute: ROOT.startsWith("/") ? ROOT : join(process.cwd(), ROOT),
   population: {
