@@ -396,7 +396,8 @@
       "extends",
       "implements",
       "overrides",
-      "instantiates"
+      "instantiates",
+      "part_of"
     ],
     "excluded": [
       {
@@ -513,13 +514,19 @@
         "edges": 1282777
       }
     },
-    "grammarRemedyPending": [
-      {
-        "label": "part_of",
-        "rung": "R3 (implement with an EXISTING node type; the node type `preproc_include` is NAMED in the served build - no grammar change is taken)",
-        "state": "THE CONSTRUCT EXISTS IN THE LANGUAGE - MEASURED, NOT ASSUMED - AND THE EMISSION IS BEING BUILT",
-        "from": "CPP-FOUR-TYPES-CENSUS 2026-10-21. **THE CONSTRUCT EXISTS IN THE LANGUAGE, SO THE RUNG IS R3** - `preproc_include` is a NAMED node type of the served build, and NO grammar change is taken. MEASURED over the ADMITTED POPULATION - 7,435 git-tracked files, 0 failed (instrument `script/m14/cpp-four-types-census.ts`, results `validation/m14/measurements/cpp-four-types-census.json`): **51,874** include sites (the NEAR MISS, COUNTED and NAMED), of which **39,665** are QUOTED includes and **12,209** are angle-bracket includes. THE CONTRACT'S OWN TEST DECIDES IT (`src/ast/types.ts:148-160`: a part 'shares the library's single scope, imports nothing, and cannot be resolved as a separate module'): a QUOTED include is a FRAGMENT of the including unit - it shares that unit's scope and is NOT a separate module - so it is the `part_of` shape; an ANGLE-BRACKET include names ANOTHER MODULE'S header, which creates its own binding scope and is the `imports` relation the analyzer already emits. => THE `part_of` POPULATION IS THE 39,665 QUOTED SITES, in the DIRECTIVE'S OWN DIRECTION (the including unit -> the part), and every row must carry `metadata.partRole` ('part' on the part side, 'library' on the library side), which the contract MANDATES. => THE TYPE STAYS IN THE DENOMINATOR AS A GAP until the emission is built and proven with a behavioural fixture whose edge exists only when the construct reaches the analyzer as a REAL NODE."
-      }
-    ]
+    "grammarRemedyPending": [],
+    "_part_of_measured": {
+      "label": "part_of",
+      "rung": "R3 — TAKEN AND LANDED 2026-10-22 (no grammar change: `preproc_include` is a NAMED node type of the served build)",
+      "emissionSite": "src/ast/real-cpp-analyzer.ts — the `preproc_include` branch of `analyze()`; the helper is `cppPartTargetPath` (module level, pure string scan)",
+      "population": "MEASURED before the emission, whole admitted population: 51,874 include sites = 39,665 QUOTED + 12,209 angle-bracket (script/m14/cpp-four-types-census.ts, validation/m14/measurements/cpp-four-types-census.json)",
+      "contract": "src/ast/types.ts:148-160 — a part shares the library's single scope, imports nothing, and cannot be resolved as a separate module; `metadata.partRole` is MANDATORY",
+      "shape": "QUOTED `#include \"x.h\"` ⇒ `part_of`, source = the including unit (file scope), target = the part's PATH (the including file's directory joined with the specifier, normalised), metadata.partRole = \"part\", metadata.relationshipType = \"part_of_directive\", metadata.isImport = false, metadata.specifier = the written form. ANGLE `<x.h>` ⇒ `imports`, unchanged.",
+      "readersExtended": "src/lsp/graph_request.ts (both file-level queries) and src/lsp/graph_usages.ts (classifyFileLevel) now read `part_of` as a FILE-LEVEL DEPENDENCY — without that clause the move would drop these rows out of the one surface that answers what a translation unit depends on, which is the invisibility #910 was filed to remove.",
+      "fixtures": "cpp/part-of-quoted-include (new, both directions) · cpp/imports-include-910 · cpp/include-kind-imports · cpp/include-name-924 (all three re-pinned from `imports` to `part_of` with an `imports`-forbid arm)",
+      "behaviouralProof": "measured directly through the production parser: quoted include ⇒ 1 `part_of` row with partRole \"part\", relationshipType \"part_of_directive\", isImport false, target a PATH, specifier the written form; angle include ⇒ 1 `imports` row. The edge exists only when the directive reaches the analyzer as a REAL `preproc_include` node.",
+      "targetFormGap": "the target is an ABSOLUTE path, because `analyze()` receives an absolute `filePath` and the analyzer does not know the project root. A PROJECT-RELATIVE form needs the engine's root. NAMED GAP, sized at 100% of quoted-include rows, and the resolution split is the ARM's measurement.",
+      "falsifier": "an include site whose target resolves to a separate module in the same project retires `part_of` for that site and puts it back on `imports`."
+    }
   }
 }

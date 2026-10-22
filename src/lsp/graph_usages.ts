@@ -136,7 +136,11 @@ export function classifyFileLevel(raw: FileLevelRawRow[]): { imports: FileLevelR
   const exports: FileLevelRow[] = []
   for (const row of raw) {
     const entry: FileLevelRow = { rowId: row.rowId, relationshipType: row.relationshipType, moduleSpecifier: row.moduleSpecifier ?? "", confidence: row.confidence }
-    if (row.relationshipType === "imports") imports.push(entry)
+    // `part_of` IS A FILE-LEVEL DEPENDENCY KIND (2026-10-22, cpp lane): a QUOTED `#include "x.h"`
+    // is the unit's own fragment (src/ast/types.ts:148-160), and it must appear in the file-level
+    // dependency section exactly as an angle include does — otherwise the classifier is the second
+    // place the vocabulary has to be extended and the first place it is forgotten.
+    if (row.relationshipType === "imports" || row.relationshipType === "part_of") imports.push(entry)
     else if (row.relationshipType === "exports") exports.push(entry)
     else throw new Error(`bb/graph: file-level classifier received unexpected relationship_type ${row.relationshipType} (row ${row.rowId})`)
   }

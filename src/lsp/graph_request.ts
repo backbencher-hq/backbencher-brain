@@ -266,11 +266,25 @@ export async function handleGraphRequest(
   // would hide how the module reaches the codebase (§13.5).
   if (params.mode === GRAPH_MODE_USAGES) {
     const rootNode = (result as GraphTraversalResult).root
+    // PART_OF IS A DEPENDENCY KIND AND THIS READER MUST SEE IT (2026-10-22, cpp lane).
+    //
+    // The cpp lane's R3 emission moves a QUOTED `#include "x.h"` from `imports` to `part_of`
+    // (src/ast/types.ts:148-160 — a part shares the library's single scope, imports nothing, and
+    // cannot be resolved as a separate module; an ANGLE include names another module's header and
+    // stays `imports`). MEASURED before the emission: 51,874 include sites over the admitted
+    // population = 39,665 QUOTED + 12,209 angle-bracket
+    // (script/m14/cpp-four-types-census.ts, validation/m14/measurements/cpp-four-types-census.json).
+    //
+    // ⇒⇒⇒ WITHOUT THIS CLAUSE, MOVING THOSE ROWS WOULD DROP THEM OUT OF THE ONE SURFACE THAT ANSWERS
+    // "WHAT DOES THIS TRANSLATION UNIT DEPEND ON" — the exact invisibility #910 was filed to remove.
+    // A KIND THAT IS DISTINCT IN THE VOCABULARY IS NOT A KIND THE READERS MAY IGNORE; the reader
+    // list is the SECOND place the vocabulary lives, and a vocabulary extended in one place and not
+    // the other is the same two-copy defect the shape-agreement scanner was built to find.
     const fileLevelRaw = db
       .prepare(
         "SELECT id AS rowId, relationship_type AS relationshipType, target_external AS moduleSpecifier, confidence " +
           "FROM brain_relationship WHERE project_id = ? AND source_symbol_id IS NULL AND target_symbol_id = ? " +
-          "AND relationship_type IN ('imports', 'exports')",
+          "AND relationship_type IN ('imports', 'exports', 'part_of')",
       )
       .all(projectId, rootNode.id) as Array<{ rowId: string; relationshipType: string; moduleSpecifier: string | null; confidence: number }>
     const fileLevel = classifyFileLevel(fileLevelRaw)
@@ -302,7 +316,7 @@ export async function handleGraphRequest(
     const fileDepsRaw = db
       .prepare(
         "SELECT id AS rowId, relationship_type AS relationshipType, target_external AS moduleSpecifier, confidence " +
-          "FROM brain_relationship WHERE project_id = ? AND relationship_type = 'imports' AND source_symbol_id IS NULL " +
+          "FROM brain_relationship WHERE project_id = ? AND relationship_type IN ('imports', 'part_of') AND source_symbol_id IS NULL " +
           "AND target_symbol_id IS NULL AND source_external = ?",
       )
       .all(projectId, rootNode.file) as Array<{ rowId: string; relationshipType: string; moduleSpecifier: string | null; confidence: number }>

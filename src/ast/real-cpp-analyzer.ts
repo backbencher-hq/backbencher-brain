@@ -290,6 +290,45 @@ function cppExternalIncludeRoots(root: Node): Set<string> {
 }
 
 
+/**
+ * PART_OF (R3, owner-ruled 2026-10-21 — NO grammar change is taken, because `preproc_include` is a
+ * NAMED node type of the served build and the construct is C++'s own).
+ *
+ * A QUOTED include (`#include "x.h"`) is a FRAGMENT of the including unit: it shares that unit's
+ * single scope, imports nothing, and is not resolvable as a separate module — which is the contract's
+ * own test for `part_of` (`src/ast/types.ts:148-160`: "a part shares the library's single scope,
+ * imports nothing, and cannot be resolved as a separate module"). An ANGLE include (`#include
+ * <x.h>`) names ANOTHER MODULE's header, which creates its own binding scope, and stays `imports`.
+ * MEASURED over the admitted population: 51,874 include sites = 39,665 QUOTED + 12,209 angle.
+ * Instrument: `script/m14/cpp-four-types-census.ts`; results
+ * `validation/m14/measurements/cpp-four-types-census.json`.
+ *
+ * ⇒ AND THE TARGET IS A PATH, NOT THE SPECIFIER, because the fsharp lane measured the same rule on
+ * the same construct: "a specifier is a path and no resolver can bind it" — so a `part_of` row that
+ * names a specifier will not resolve and a row that names a path might. A quoted specifier is
+ * relative to the INCLUDING FILE'S DIRECTORY, so the target is that directory joined with the
+ * specifier and normalised (`.` and `..` collapsed). The written specifier is kept in
+ * `metadata.specifier` so the directive's own text is still evidence rather than being thrown away.
+ *
+ * PURE STRING SCAN (the file's D5 contract): no regex.
+ */
+function cppPartTargetPath(filePath: string, specifier: string): string {
+  const dir = filePath.includes("/") ? filePath.slice(0, filePath.lastIndexOf("/")) : ""
+  const joined = dir === "" ? specifier : `${dir}/${specifier}`
+  const absolute = joined.startsWith("/")
+  const out: string[] = []
+  for (const seg of joined.split("/")) {
+    if (seg === "" || seg === ".") continue
+    if (seg === "..") {
+      if (out.length > 0 && out[out.length - 1] !== "..") out.pop()
+      else out.push("..")
+      continue
+    }
+    out.push(seg)
+  }
+  return `${absolute ? "/" : ""}${out.join("/")}`
+}
+
 // Strip a leading access-specifier keyword from a base-class node text
 // (`private Repository` → `Repository`). Pure-String scan — replaces the
 // legacy `/^public\s+|^protected\s+|^private\s+/` regex.
@@ -3327,10 +3366,16 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
           // "what does this file depend on" (an edge).
           if (!referencesSeen.has(includePath)) {
             referencesSeen.add(includePath)
+            // PART_OF vs IMPORTS, BY THE WRITTEN FORM (see `cppPartTargetPath`):
+            // a QUOTED include is the unit's own fragment ⇒ `part_of`, in the DIRECTIVE'S OWN
+            // direction (the including library unit → the part), with `metadata.partRole` MANDATORY
+            // ("part" for `part_of_directive`, "library" for `part_directive` — the contract's own
+            // spelling). An ANGLE include is another module's header ⇒ `imports`, unchanged.
+            const isQuotedPart = !isSystem
             relationships.push({
               source: "global",
-              target: includePath,
-              type: ASTEngine.RelationshipType.Imports,
+              target: isQuotedPart ? cppPartTargetPath(filePath, includePath) : includePath,
+              type: isQuotedPart ? ASTEngine.RelationshipType.PartOf : ASTEngine.RelationshipType.Imports,
               confidence: 1.0,
               // M59.A7 (#825), the C lane's rule: the include directive is the
               // source construct and its WRITTEN NAME is the path token — take
@@ -3338,11 +3383,22 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
               // the path last).
               line_number: this.nodeLine(pathNode ?? node),
               metadata: {
-                relationshipType: "include_dependency",
+                relationshipType: isQuotedPart ? "part_of_directive" : "include_dependency",
                 isSystem,
                 isSystemInclude: isSystem,
-                isImport: true,
+                // A part is NOT an import: the contract keeps `imports` and `part_of` DISTINCT, and
+                // a quoted include that also claimed `isImport` would be the second fact that can
+                // differ from the first.
+                isImport: !isQuotedPart,
                 isIncludeDependency: true,
+                // THE MANDATORY PART ROLE (src/ast/types.ts:148-160). "part" is the directive that
+                // NAMES a part (`part 'x.dart'` / `#include "x.h"`); "library" is the directive that
+                // names the library a part belongs to (`part of 'y.dart'`). C++ has only the first
+                // written form: the including unit names its fragments, never the reverse.
+                ...(isQuotedPart ? { partRole: "part", partFile: true, isQuotedInclude: true } : {}),
+                // THE SPECIFIER IS KEPT BESIDE THE PATH: the path is what might resolve, the
+                // specifier is what was WRITTEN, and only one of them is evidence.
+                specifier: includePath,
                 module: includePath,
                 fileLevel: true,
               },
