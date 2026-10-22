@@ -893,4 +893,49 @@ export const FSHARP_MUTANTS: Mutant[] = [
       return { ...r, relationships }
     },
   },
+  {
+    id: "fsharp/load-directive-published-as-an-import",
+    language: "fsharp",
+    defectClass: "wrong-relationship",
+    description:
+      "THE R3 REMEDY (2026-10-22), REVERTED: a `#load` directive is a TEXTUAL INCLUDE — the named file is compiled as part of THIS compilation unit, shares this file's single scope, imports nothing, and cannot be resolved as a separate module — so it is a `part_of` row, not an `imports` row. Before the remedy the analyzer read the directive's keyword and published ALL THREE of `#r`/`#load`/`#I` as `imports` (measured over the whole admitted population: 838 `#r` sites, 99 `#I` sites, 236 `#load` sites in 135 files), and `#r` and `#I` are still `imports` — they name an assembly and an include path. The defect this mutant injects is EXACTLY that: the `#load` row is published under the old label, so ONE CONSTRUCT CARRIES TWO LABELS, and a dependency graph that reads both sees a file coupling twice and cannot tell which of the two is the file coupling. THE MUTANT REVERTS THE LABEL AND NOT THE TARGET SPELLING, and the reason is stated rather than papered over: the pre-fix row's target was the RAW SPECIFIER (`Other.fsx`), a string the post-fix row does not contain (it carries the PROJECT-RELATIVE PATH the directive resolves to), so a transform over the result cannot recover it — the same reason the `repl-control-directive-imports-a-resource` mutant is an injection rather than a byte-faithful revert. What it asserts is the defect itself: does the suite go red when a `#load` also reads as an import? Caught by fsharp/part-of-load/host, whose forbid row for the `imports` shape exists for this and nothing else, and by fsharp/import-and-use, whose `part_of` row for `#load` cannot be satisfied by an `imports` row.",
+    transform: (r: any) => {
+      let touched = 0
+      const relationships = (r.relationships ?? []).map((x: any) => {
+        if (String(x?.type) !== "part_of") return x
+        if (String(x?.metadata?.relationshipType ?? "") !== "part_directive") return x
+        touched++
+        return {
+          ...x,
+          type: "imports",
+          metadata: {
+            ...x.metadata,
+            relationshipType: "resource_directive",
+            directive: "#load",
+            targetResolution: "resource-path",
+          },
+        }
+      })
+      if (touched === 0) return r
+      return { ...r, relationships }
+    },
+  },
+  {
+    id: "fsharp/load-directive-direction-reversed",
+    language: "fsharp",
+    defectClass: "wrong-relationship",
+    description:
+      "THE R3 REMEDY'S DIRECTION, REVERTED: the `part_of` contract says the DIRECTION IS THE DIRECTIVE'S OWN — the source is the file carrying the directive, the target is what it names, and every row carries `metadata.partRole` (src/ast/types.ts:170-190). F# has only ONE of DART's TWO FORMS: there is no `part of` in F#, so EVERY F# row is the host that INCLUDES the part and the role is `library`. A rule that could not tell the two ends apart would publish the included part as the source and the host as the target, and `partRole: \"part\"` on a host file is the same fact with the sign flipped. The mutant injects EXACTLY that: the role is flipped to `part`, which is the whole of the claim. Caught by fsharp/part-of-load/host, whose forbid row for `partRole: \"part\"` exists for this and nothing else.",
+    transform: (r: any) => {
+      let touched = 0
+      const relationships = (r.relationships ?? []).map((x: any) => {
+        if (String(x?.type) !== "part_of") return x
+        if (String(x?.metadata?.partRole ?? "") !== "library") return x
+        touched++
+        return { ...x, metadata: { ...x.metadata, partRole: "part" } }
+      })
+      if (touched === 0) return r
+      return { ...r, relationships }
+    },
+  },
 ]

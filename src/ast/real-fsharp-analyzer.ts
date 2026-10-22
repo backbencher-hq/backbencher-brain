@@ -20,7 +20,43 @@
 // Grammar: tree-sitter-fsharp (wasm/tree-sitter-fsharp.wasm; engine.ts resolves node_modules/tree-sitter-fsharp).
 
 import type { Node } from "web-tree-sitter"
+import * as path from "node:path"
+import { existsSync } from "node:fs"
 import { ASTEngine } from "./engine"
+
+/** THE PROJECT ROOT OF A FILE, DISCOVERED BY WALKING UP TO THE NEAREST `.git` — the DART
+ *  SIBLING'S RULE (src/ast/real-dart-analyzer.ts:531-554), used for the same reason and with
+ *  the same cache. IT EXISTS FOR ONE REASON: A `part_of` TARGET IS A PROJECT-RELATIVE PATH,
+ *  and the caller that can say WHICH PROJECT a file is in is the one that knows the root.
+ *  PRODUCTION SAYS IT (pool-worker.ts:2041-2072 hands every analyzer `{ projectRoot }`); a
+ *  FIXTURE DOES NOT, and without the walk the fixture could not exercise the rule at all.
+ *  The walk is a filesystem READ of a directory marker, never of source text — the analyzer's
+ *  purity claim ("pure AST, no regex on source text") is untouched. */
+const FSHARP_PROJECT_ROOT_CACHE = new Map<string, string | null>()
+function fsharpProjectRootOf(filePath: string): string | null {
+  const start = path.dirname(path.resolve(filePath))
+  const seen: string[] = []
+  let dir = start
+  for (let i = 0; i < 64; i++) {
+    const cached = FSHARP_PROJECT_ROOT_CACHE.get(dir)
+    if (cached !== undefined) {
+      for (const d of seen) FSHARP_PROJECT_ROOT_CACHE.set(d, cached)
+      return cached
+    }
+    seen.push(dir)
+    if (existsSync(path.join(dir, ".git"))) {
+      if (FSHARP_PROJECT_ROOT_CACHE.size > 20000) FSHARP_PROJECT_ROOT_CACHE.clear()
+      for (const d of seen) FSHARP_PROJECT_ROOT_CACHE.set(d, dir)
+      return dir
+    }
+    const parent = path.dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  if (FSHARP_PROJECT_ROOT_CACHE.size > 20000) FSHARP_PROJECT_ROOT_CACHE.clear()
+  for (const d of seen) FSHARP_PROJECT_ROOT_CACHE.set(d, null)
+  return null
+}
 // THE BINDING SEPARATOR, IMPORTED RATHER THAN SPELLED. Task-99: this file used a literal `#` in
 // the binding spelling while its own comment (below) named `BINDING_SEP` as the convention — and
 // `BINDING_SEP` is `"\u0000"` (types.ts:190). `incoming-rule.verifyBindingClaim` refutes a marked
@@ -1812,19 +1848,67 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // resource the language never reads. The keyword is therefore read off the tree
         // (the first unnamed child token) and the other three are refused, rather than
         // the whole node being accepted because it is the right node type.
-        const resourceKeywords = new Set(["#r", "#load", "#I"])
+        //
+        // ★★ `#load` IS NOT ONE OF THEM ANY MORE — IT IS A `part_of`, AND THAT IS THE R3 REMEDY
+        // (2026-10-22). THE THREE KEYWORDS ARE NOT ONE KIND, AND THE VOCABULARY HAS A NAME FOR
+        // THE OTHER ONE.
+        //
+        //   `#r "assembly"`  — a REFERENCE to an assembly: a separate module this unit is
+        //                      compiled AGAINST. That is `imports` ("an import names a module
+        //                      and creates binding scope").
+        //   `#I "dir"`       — an INCLUDE PATH: a directory searched for references. `imports`.
+        //   `#load "x.fs"`   — a TEXTUAL INCLUDE: the named file's source is compiled as
+        //                      PART OF THIS COMPILATION UNIT. It is not a module: it shares
+        //                      this file's single scope, it imports nothing, and it cannot be
+        //                      resolved as a separate module. That is EXACTLY the
+        //                      `part_of` contract (src/ast/types.ts:164-190 — "A library unit
+        //                      INCLUDES a part file … a part shares the library's single
+        //                      scope, imports nothing, and cannot be resolved as a separate
+        //                      module"), and it is the DART LANE'S SPELLING of the same fact
+        //                      (dart `part 'x.dart'`).
+        //
+        // ⇒ SO THE `#load` ROW IS RELABELLED `imports` → `part_of`, 1:1, keeping its source,
+        // its line, its confidence (1.0) and its evidence class, and CHANGING ONLY THE STORED
+        // TYPE — which is the contract's relabel discipline
+        // (validation/m14/verification/VOCABULARY-EXTENSION-PROPOSAL.md §2.4). The ImportInfo
+        // PAYLOAD stays: it is not a relationship (it is the parsed file's directive list),
+        // and `src/ast/parallel-indexer.ts` persists it into the brain_import table, so a
+        // consumer reading the directive list loses nothing.
+        //
+        // ⇒ AND THE DIRECTION IS THE DIRECTIVE'S OWN (types.ts:170-183): the source is the file
+        // carrying the directive, the target is what it names, and every row carries
+        // `metadata.partRole`. F# has only ONE of Dart's two forms — there is no `part of` in
+        // F# — so every F# row is the host that INCLUDES the part: `partRole: "library"`.
+        //
+        // ⇒ AND A TARGET NO PROJECT KEY CAN ANSWER PUBLISHES NO ROW (types.ts:187-190 and the
+        // proposal's MUST NOT). The target is resolved against the INCLUDING FILE'S OWN
+        // DIRECTORY and expressed as a PROJECT-RELATIVE path; a specifier that escapes the
+        // project, or that names nothing this checkout can place, is refused rather than
+        // published as a path that resolves to nothing.
+        const resourceKeywords = new Set(["#r", "#I"])
+        const partKeywords = new Set(["#load"])
         let directiveKeyword = ""
         for (let i = 0; i < node.childCount; i++) {
           const c = node.child(i)
           if (c && !c.isNamed) { directiveKeyword = c.text; break }
         }
-        const specifier =
-          this.findChild(node, (n) => n.type === "string" || n.type === "verbatim_string") ??
-          (node.namedChildCount > 0 ? node.namedChild(0) : null)
-        if (specifier && (specifier.type === "string" || specifier.type === "verbatim_string") &&
-            resourceKeywords.has(directiveKeyword)) {
-          const specifierValue = this.stringLiteralValue(specifier)
-          if (specifierValue) {
+        const specifiers = this.filterChildren(
+          node,
+          (n) => n.type === "string" || n.type === "verbatim_string",
+        )
+        const isPart = partKeywords.has(directiveKeyword)
+        if (specifiers.length > 0 && (resourceKeywords.has(directiveKeyword) || isPart)) {
+          const dirOwner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
+          const source = qualifyScope(dirOwner) || qualifyScope(fileScope) || "Global"
+          // A `#load` MAY NAME MORE THAN ONE FILE (`#load "a.fs" "b.fs"`), so THE PART IS ONE ROW
+          // PER NAMED FILE, not one row per directive. (The wired grammar MIS-LEXES the
+          // multi-file form — the second string arrives as a sibling `const` and the directive
+          // carries a MISSING node — so the loop is correct for the shape the grammar produces
+          // and leaves the mis-lex itself a GRAMMAR fact, recorded in the lane's spec.)
+          const named = isPart ? specifiers : specifiers.slice(0, 1)
+          for (const specifier of named) {
+            const specifierValue = this.stringLiteralValue(specifier)
+            if (!specifierValue) continue
             imports.push({
               module: specifierValue,
               items: [],
@@ -1834,15 +1918,37 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               range: this.nodeToRange(node),
               metadata: { fsharpSpecific: true, directive: directiveKeyword },
             })
-            const dirOwner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
-            pushRel(
-              qualifyScope(dirOwner) || qualifyScope(fileScope) || "Global",
-              specifierValue,
-              ASTEngine.RelationshipType.Imports,
-              1.0,
-              { nodeType: type, relationshipType: "resource_directive", directive: directiveKeyword, targetResolution: "resource-path" },
-              lineOf(specifier),
-            )
+            if (isPart) {
+              // THE `part_of` ROW. A `#load` WITH NO RESOLVABLE TARGET PUBLISHES NO ROW — the
+              // contract's declared drop, and the reason a path the checkout cannot place is
+              // exactly the shape this label exists to stop publishing.
+              const partTarget = this.fsharpPartTargetPath(filePath, context, specifierValue)
+              if (partTarget) {
+                pushRel(
+                  source,
+                  partTarget,
+                  ASTEngine.RelationshipType.PartOf,
+                  1.0,
+                  {
+                    nodeType: type,
+                    relationshipType: "part_directive",
+                    directive: directiveKeyword,
+                    partRole: "library",
+                    targetResolution: "project-relative-path",
+                  },
+                  lineOf(specifier),
+                )
+              }
+            } else {
+              pushRel(
+                source,
+                specifierValue,
+                ASTEngine.RelationshipType.Imports,
+                1.0,
+                { nodeType: type, relationshipType: "resource_directive", directive: directiveKeyword, targetResolution: "resource-path" },
+                lineOf(specifier),
+              )
+            }
           }
         }
       } else if (type === "import_decl") {
@@ -2865,6 +2971,16 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       if (t === "imports") {
+        md.evidenceClass = "import_based"
+        continue
+      }
+      if (t === "part_of") {
+        // THE `part_of` TIER IS THE `imports` TIER, AND IT IS NOT A DEFAULT. A `part_of` row is
+        // a FILE-COUPLING fact the source WRITES — `#load "x.fs"` names the file it includes —
+        // so it is `import_based` (the source writes a module/file dependency), exactly as
+        // dart's `part_of` rows are. The default branch would call it `usage_contextual`, which
+        // says the target was INFERRED from how the source uses the name — the opposite of
+        // the fact, and the tier is a property of the RULE.
         md.evidenceClass = "import_based"
         continue
       }
@@ -4173,6 +4289,52 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * corpus's 193 `fsi_directive_decl` nodes), and a wrong-but-visible path is better
    * than a silently truncated one.
    */
+  /**
+   * THE FILE A `#load` NAMES, AS A PROJECT-RELATIVE PATH — or null when this checkout cannot
+   * place it, in which case NO `part_of` ROW IS PUBLISHED.
+   *
+   * THE RULES, IN THE ORDER THEY APPLY:
+   *
+   * 1. A SPECIFIER WITH A SCHEME (`nuget:`, `http:`) names something that is not a path in
+   *    this checkout. Refused.
+   * 2. A RELATIVE SPECIFIER IS RESOLVED AGAINST THE INCLUDING FILE'S OWN DIRECTORY — F#'s
+   *    `#load` is relative to the file that writes it, not to the project root.
+   * 3. THE RESULT IS EXPRESSED RELATIVE TO THE PROJECT ROOT, so the spelling does not depend
+   *    on where the checkout lives (the same reason the yaml lane's document identity is
+   *    project-relative — src/ast/engine.ts:2405-2429).
+   * 4. A TARGET THAT ESCAPES THE PROJECT (`..`) IS REFUSED: it is not a file of this project,
+   *    and a `part_of` row whose target no project key can answer is exactly the shape this
+   *    label exists to stop publishing (types.ts:187-190).
+   * 5. WITHOUT A PROJECT ROOT THERE IS NO PROJECT-RELATIVE PATH TO PUBLISH, and the row is
+   *    REFUSED. Fail-closed: a `part_of` edge is a fact about two files of one project, and a
+   *    caller that cannot say which project the file is in cannot make that fact. The root
+   *    comes from `context.projectRoot` (production always supplies it — pool-worker.ts:2041)
+   *    and, failing that, from the nearest `.git` above the file (the dart sibling's rule).
+   *
+   * NO SOURCE TEXT IS READ: this is a pure path computation over the two strings the caller
+   * already has, so the resolution cannot differ between two runs of the same file.
+   */
+  private fsharpPartTargetPath(
+    filePath: string,
+    context: ASTEngine.AnalyzeContext | undefined,
+    specifier: string,
+  ): string | null {
+    if (specifier.length === 0) return null
+    // a scheme names something that is not a path in this checkout
+    if (specifier.indexOf(":") >= 0) return null
+    const contextRoot = context?.projectRoot
+    const projectRoot =
+      typeof contextRoot === "string" && contextRoot.length > 0
+        ? contextRoot
+        : fsharpProjectRootOf(filePath)
+    if (projectRoot === null) return null
+    const abs = path.resolve(path.dirname(path.resolve(filePath)), specifier)
+    const rel = path.relative(path.resolve(projectRoot), abs)
+    if (rel.length === 0 || path.isAbsolute(rel)) return null
+    if (rel === ".." || rel.startsWith(`..${path.sep}`)) return null
+    return rel.split(path.sep).join("/")
+  }
+
   private stringLiteralValue(node: Node): string | null {
     if (node.type !== "string" && node.type !== "verbatim_string") return null
     if (node.childCount === 0) return null
