@@ -193,7 +193,7 @@ const doc = {
     chunks: chunks.length,
     coverageOk,
     coverage,
-    note: "A repository longer than one chunk STRADDLES a chunk boundary, and a straddling repository's PER-PROJECT key space is split across two chunks. A split key space can only move edges OUT of `resolved`, so the summed `resolved` is a LOWER BOUND on the whole-population figure and the summed `unresolved` an UPPER BOUND.",
+    note: "A repository longer than one chunk STRADDLES a chunk boundary, and a straddling repository's PER-PROJECT key space is split across two chunks. A collision that lives in the half that is NOT in the chunk is INVISIBLE to it, so a name that would be ambiguous reads UNIQUE and the edge RESOLVES — the gate's own population line says so: \"A stride sample truncates each project's symbol table too, so its project-scoped RESOLVED share is biased UP — a name whose collision lives in an unsampled file of the same repository reads unique here.\" ⇒ THE SUMMED `resolved` IS BIASED UPWARD and the summed `unresolved` and `amb(decl)` are biased downward, relative to a whole-population run in one project scope. THE EDGE COUNTS ARE UNBIASED: every admitted file is measured exactly once across the chunks, and an edge is a per-file fact. The straddle control (script/m14/html-straddle-control.sh) measures the SIZE of the effect on one repository of this population, whole against split, over the same files.",
   },
   closureIdentity: "resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges; amb(kind) is a SUBSET of amb(decl) and is reported BESIDE, never added; collRes is a subset of resolved and is likewise reported beside; residual = amb(decl) + unresolved.",
   closureOk,
