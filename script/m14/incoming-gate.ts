@@ -1948,6 +1948,11 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
 
   return {
     lang, ext: exts.join(","), admittedExts: exts, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, bindingCollapse: BINDING_COLLAPSE, bindingCollapsedKeys: collapsedKeys, rows, fallbackRows, emptyResults,
+    // ★ THE POPULATION'S SOURCE, AND THE TABLE'S OWN SET BESIDE IT. `extSource` says WHERE the
+    // admitted spellings came from, and `tableExts` says what the ONE TABLE says the lane's
+    // spellings are — so a run over a subset can be READ as a run over a subset, and the two can
+    // never disagree without the disagreement being visible in the output.
+    extSource: "", tableExts: [] as string[],
     // ★ THE CHUNK'S OWN BOUNDS, so the report can say WHETHER IT IS A CHUNK. `sliceStart === 0 &&
     // sliceEnd === total` means the run measured the WHOLE admitted population; anything else means it
     // measured a CHUNK of it, and the numbers are a chunk's. A reader who cannot tell is a reader who
@@ -3190,9 +3195,14 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   // THE ADMITTED SPELLINGS ARE PART OF THE POPULATION CLAIM (HANDOFF §5.2). Printed on their own
   // line so a run against half the lane's files cannot be read as a run against the lane: on
   // ansible `.yaml` alone is 13 files and `.yaml,.yml` is 2,082, same language, same lane.
+  const tableSet: string[] = (rep as any).tableExts ?? []
+  const tableSetText = tableSet.length > 0 ? tableSet.map((e) => `.${e}`).join(", ") : "(the ONE TABLE has no entry for this lane)"
+  const sameAsTable = tableSet.length > 0 && tableSet.join(",") === rep.admittedExts.join(",")
   console.log(
     `population: admitted extensions = ${rep.admittedExts.map((e) => `.${e}`).join(", ")} ` +
-    `(${rep.admittedExts.length === 1 ? "ONE spelling — check the lane does not carry another" : "both spellings admitted"}) ` +
+    `(SOURCE: ${(rep as any).extSource ?? "unknown"}) ` +
+    `(the ROUTER'S ONE TABLE says: ${tableSetText} — ${sameAsTable ? "SAME as this run" : (tableSet.length > 0 ? "*** THIS RUN IS A SUBSET OF THE LANE'S SPELLINGS ***" : "no table entry")}) ` +
+    `(${rep.admittedExts.length === 1 ? "ONE spelling" : `${rep.admittedExts.length} spellings`}) ` +
     `— PLUS a bare BASENAME equal to any of them WHEN THE ROUTER'S OWN DETECTION GIVES IT TO ` +
     `THIS LANE (\`Makefile\` has no extension to match, and an extension-only rule measured 129 ` +
     `files where the production router admits ${rep.total} for THIS lane in THIS run — but the ` +
@@ -4190,9 +4200,58 @@ if (rest.length < 2) {
   process.exit(2)
 }
 const lang = rest[0]
-const ext = rest[1]
-const maxFiles = Number(rest[2] ?? 120)
-const rep = await measure(lang, ext, maxFiles, USE_INDEX, ONLY_REPOS)
+/**
+ * ★⇒⇒⇒ THE POSITIONAL ARGS ARE `lang ext maxFiles`, AND OMITTING THE EXTENSION MUST NOT SHIFT THE
+ * COUNT INTO THE EXTENSION SLOT. This was measured the minute the table-derived default was added:
+ * `incoming-gate.ts cpp 40` took `40` as the EXTENSION and printed "corpus has 0 .40 files across 0
+ * repos" — **A MISSING ARGUMENT SILENTLY BECAME A DIFFERENT ARGUMENT**, and the gate RAN on it and
+ * printed a population claim about it. ⇒⇒⇒ ⇒⇒⇒ **A MISSING ARGUMENT THAT LANDS IN ANOTHER
+ * ARGUMENT'S SLOT IS A DEFECT IN THE PARSER, AND IT IS THE SAME CLASS AS EVERY OTHER ONE THE FLEET
+ * HAS FOUND**: the gate's own header says a measurement whose population came from a spelling is
+ * measuring the spelling, and here the spelling was a NUMBER.
+ * ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **SO THE EXTENSION SLOT IS TYPED BY ITS CONTENT: a token that is a bare integer is
+ * the COUNT, and the extension is absent.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THE COUNT SLOT IS READ THE SAME WAY,
+ * so `lang ext count` and `lang count` both mean what they look like.
+ */
+const extArgRaw = rest[1]
+const countArgRaw = rest[2]
+const extArg = extArgRaw !== undefined && /^\d+$/.test(extArgRaw) ? undefined : extArgRaw
+const maxFiles = Number(
+  (extArg === undefined ? (extArgRaw !== undefined ? extArgRaw : countArgRaw) : countArgRaw) ?? 120,
+)
+
+/**
+ * ★⇒⇒⇒ THE POPULATION IS THE LANE'S, AND IT COMES FROM THE ROUTER'S ONE TABLE UNLESS THE CALLER
+ * NAMES A SET. This is the cpp lane's finding, and it is a REAL GAP IN THE ARBITER, not in the
+ * caller: the gate was given `.cpp` and measured **3,425 files in 22 repos**, while the lane's own
+ * denominators measure **7,435 files in 31 repos across NINE spellings** (cpp, cc, cxx, c++, hpp,
+ * hxx, ipp, inl, cu) — the gate PRINTS the warning ("ONE spelling — check the lane does not carry
+ * another") and the lane DOES carry eight more, so the two numbers were never comparable and
+ * neither was subtracted from the other.
+ *
+ * ⇒⇒⇒ ⇒⇒⇒ **THE INSTRUMENT AND THE DENOMINATOR MUST COUNT THE SAME POPULATION**, and the one table
+ * is where the lane's spellings are WRITTEN DOWN — so the gate reads it rather than taking the
+ * caller's word for a subset.
+ *
+ * ⇒⇒⇒ ⇒⇒⇒ **AND THE CALLER'S EXPLICIT SET IS STILL HONOURED**, because a lane may DELIBERATELY
+ * measure one spelling — the html lane's thirteen-spelling measurement and the sql fork both do —
+ * and a gate that refused a named set would be a gate that cannot be pointed at a question. ⇒⇒⇒ ⇒⇒⇒
+ * **BUT THE NAMED SET IS NOW PRINTED BESIDE THE TABLE'S SET, AND THE SOURCE IS PRINTED WITH IT**,
+ * because a warning is not a fix and a number whose population's source is not in the output is a
+ * claim. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **A NUMBER WITHOUT ITS POPULATION'S SOURCE IS A CLAIM.**
+ */
+const tableExts = lang && Object.prototype.hasOwnProperty.call(FLEET_LANES, lang)
+  ? FLEET_LANES[lang].split(",").map((t) => t.trim().toLowerCase().replace(/^\./, "")).filter(Boolean)
+  : []
+const ext = extArg ?? (tableExts.length > 0 ? tableExts.join(",") : undefined)
+const extSource = extArg
+  ? "the CALLER'S ARGUMENT (an explicit set — deliberate, and the table's set is printed beside it)"
+  : (tableExts.length > 0
+      ? "the ROUTER'S ONE TABLE (no argument was given, so the lane's own spellings were used)"
+      : "NOTHING — there is no lane and no argument, so the population is whatever the walk finds")
+const rep = await measure(lang, ext ?? "", maxFiles, USE_INDEX, ONLY_REPOS)
+;(rep as any).extSource = extSource
+;(rep as any).tableExts = tableExts
 const v = verdict(rep)
 
 if (JSON_OUT) {
@@ -4218,7 +4277,26 @@ if (JSON_OUT) {
   printReport(rep, control)
 }
 
-if (rep.parsed === 0) process.exit(2)
+if (rep.parsed === 0) {
+  // ★⇒⇒⇒ A POPULATION OF ZERO IS A CONTROL FAILURE, NOT A MEASUREMENT. The gate was just measured
+  // printing "population: 0 parsed of 0 sampled (corpus has 0 .40 files across 0 repos)" and
+  // continuing — **A CLEAN-LOOKING ZERO OVER AN EMPTY POPULATION**, the same defect the Lead's own
+  // heritage probe had over cpp, and the Lead's own fix for that probe is the rule here. ⇒⇒⇒ ⇒⇒⇒
+  // **AND THE ZERO WAS A NONSENSE EXTENSION BECAUSE A MISSING ARGUMENT HAD LANDED IN THE
+  // EXTENSION SLOT** — so this refusal is also the second half of that fix: the parser is fixed AND
+  // the empty population is refused, because either alone would let a nonsense run print a claim.
+  console.error("")
+  console.error("*** THE POPULATION IS EMPTY — THIS IS A CONTROL FAILURE, NOT A FINDING. ***")
+  console.error(`    language        : ${lang ?? "(none)"}`)
+  console.error(`    admitted exts   : ${rep.admittedExts.join(", ") || "(none)"}`)
+  console.error(`    extension source: ${(rep as any).extSource ?? "unknown"}`)
+  console.error(`    the ONE TABLE   : ${((rep as any).tableExts ?? []).join(", ") || "(no entry for this lane)"}`)
+  console.error("    ⇒⇒⇒ a run that admits no files measures nothing, and a gate that prints a")
+  console.error("    ⇒⇒⇒ population claim about an empty population is worse than a gate that stays")
+  console.error("    ⇒⇒⇒ silent, because the reader has nothing to distrust.")
+  console.error("")
+  process.exit(5)
+}
 // A DEGRADED POPULATION MAY CLAIM NEITHER A PASS, NOR AN EXCUSE FROM A FAIL.
 //
 // This line read `process.exit(v.pass || rep.degraded > 0 ? 0 : 1)`, which by operator
