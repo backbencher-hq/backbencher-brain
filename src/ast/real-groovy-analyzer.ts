@@ -512,6 +512,58 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // ── DERIV_DECORATES_GROOVY1 — the `decorates` PUBLICATION edge ───────────
+    //
+    // WHAT GROOVY HAS, measured rather than argued. Groovy annotations are
+    // APPLIED TO a declaration: `@Service class FqService`, `@Transactional
+    // void save()`, `@Column String name`. The grammar has the node
+    // (`annotation` / `marker_annotation` under `modifiers`) — the SERVED
+    // build's node-type inventory names both
+    // (validation/m14/measurements/groovy-grammar-nodes.json) — and this
+    // analyzer ALREADY collected the names (the symbols' `decorators` list).
+    //
+    // ⇒ SO THE RUNG IS R3: the construct is implemented with an EXISTING node
+    // type, and NO GRAMMAR CHANGE IS NEEDED. The names were in hand; only the
+    // EDGE was missing, so the edge is published here.
+    //
+    // THE SHAPE IS THE FAMILY'S, not a local invention: source = the decorated
+    // declaration's name, target = the decorator's NAME LEAF, line_number =
+    // the decorator's OWN line, metadata = { isDecorator: true, decoratorLine }.
+    // The family emitters are javascript
+    // (src/ast/real-javascript-analyzer.ts:3003) and python
+    // (src/ast/real-python-analyzer.ts:6112), and the DIRECTION is the one
+    // src/ast/types.ts states — the decorated declaration → the decorator.
+    //
+    // WHY A POST-PASS over the SYMBOLS rather than a site inside each
+    // handler: the decorator list and its LINES are already on the symbol, so
+    // one pass over `symbols` publishes one row per (declaration, decorator)
+    // and cannot miss a declaration form the handlers treat differently —
+    // the same reason the javascript lane does it that way.
+    //
+    // ONE ROW PER DECORATOR, AND NEVER ONE FOR THE DECORATOR'S ARGUMENTS:
+    // `@Transactional(readOnly = true)` names `Transactional`, and the
+    // decorator's own arguments are not decorated declarations.
+    for (const sym of symbols) {
+      const decs = sym.decorators
+      if (!decs || decs.length === 0) continue
+      const lines = sym.metadata?.decoratorLines as Array<number | null> | undefined
+      for (let i = 0; i < decs.length; i++) {
+        const line = lines?.[i]
+        relationships.push({
+          source: sym.name,
+          target: decs[i],
+          type: ASTEngine.RelationshipType.Decorates,
+          confidence: 1.0,
+          ...(typeof line === "number" ? { line_number: line } : {}),
+          metadata: {
+            isDecorator: true,
+            decoratorLine: typeof line === "number" ? line : null,
+            isGroovyDecorator: true,
+          },
+        })
+      }
+    }
+
     this.classifyEvidenceTier(relationships)
 
     return {
@@ -759,7 +811,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       classHierarchy.set(fqn, parents)
           // Class/trait/enum annotations: previously only methods carried
           // them, so Spring/Grails service classes had no annotation data.
-      const classAnnotations = this.extractAnnotations(node)
+      const classAnnotationRefs = this.extractAnnotationRefs(node)
+      const classAnnotations = classAnnotationRefs.map((a) => a.name)
 
           // extends (superclass / interface-extends)
       if (type === "class_declaration") {
@@ -837,7 +890,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         decorators: classAnnotations,
         ownerName: scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined,
         ownerKind: scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined,
-        metadata: { nodeType: type, annotations: classAnnotations, isRecord: type === "record_declaration" },
+        metadata: { nodeType: type, annotations: classAnnotations, isRecord: type === "record_declaration", decoratorLines: classAnnotationRefs.map((a) => a.line) },
       }
       symbols.push(sym)
       symbolMap.set(fqn, sym)
@@ -972,7 +1025,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       const name = "constructor"
       const modifiers = this.extractModifiers(node)
       const visibility = this.extractVisibility(node)
-      const annotations = this.extractAnnotations(node)
+      const annotationRefs = this.extractAnnotationRefs(node)
+      const annotations = annotationRefs.map((a) => a.name)
 
           // #841 round 3 (def-method contract): a class-body method declared
           // `def name() {}` parses as constructor_declaration because Java's
@@ -1175,7 +1229,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         decorators: annotations,
         ownerName,
         ownerKind,
-        metadata: { nodeType: type, modifiers, annotations, isAbstract },
+        metadata: { nodeType: type, modifiers, annotations, isAbstract, decoratorLines: annotationRefs.map((a) => a.line) },
       }
       symbols.push(sym)
       symbolMap.set(fqn, sym)
@@ -1209,7 +1263,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Field annotations (@Column on fields = THE GORM/JPA idiom) were
         // never extracted — classes and methods carried decorators, fields
         // did not.
-    const fieldAnnotations = this.extractAnnotations(node)
+    const fieldAnnotationRefs = this.extractAnnotationRefs(node)
+    const fieldAnnotations = fieldAnnotationRefs.map((a) => a.name)
     const ownerName = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined
     const ownerKind = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined
 
@@ -1265,7 +1320,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         ownerName,
         ownerKind,
         decorators: fieldAnnotations,
-        metadata: { nodeType: type, modifiers, isConstant, annotations: fieldAnnotations },
+        metadata: { nodeType: type, modifiers, isConstant, annotations: fieldAnnotations, decoratorLines: fieldAnnotationRefs.map((a) => a.line) },
       })
     }
   }
@@ -1618,6 +1673,24 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (t === "instantiates") {
         md.evidenceClass = md.isNew || conf >= 0.9 ? "structural" : "usage_contextual"
+        continue
+      }
+      if (t === "decorates") {
+        // A decorator is WRITTEN in the declaration's header — `@Transactional void
+        // save()` applies `Transactional` by the source itself, at confidence 1.0 — so
+        // it is a DECLARATION FACT, the same tier `extends`/`implements`-from-header
+        // get. The python lane's classifier says so in its own words
+        // (src/ast/real-python-analyzer.ts:6493): "A decorator is WRITTEN in the
+        // declaration's header ... so it is a declaration fact, the same tier
+        // `extends`/`implements`-from-header get. It is not a call: the ARGUMENTS are a
+        // different dependency (and are not rows), the decorator application is not
+        // dispatched through a value at this site."
+        //
+        // ⇒ It is NOT `usage_contextual` (the default this would have fallen
+        // through to), because that tier says "a name was used here", and a
+        // `decorates` row says "this decorator is applied to this declaration" —
+        // a different claim, and the one the source makes outright.
+        md.evidenceClass = "structural"
         continue
       }
       md.evidenceClass = "usage_contextual"
@@ -2933,7 +3006,38 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private extractAnnotations(node: Node): string[] {
-    const anns: string[] = []
+    return this.extractAnnotationRefs(node).map((a) => a.name)
+  }
+
+  /**
+   * THE ANNOTATIONS, WITH THE LINE EACH IS WRITTEN ON — 2026-10-22.
+   *
+   * The `decorates` edge is the family shape for "a decorator is applied to a
+   * declaration" (src/ast/types.ts: the direction is the DECORATED DECLARATION
+   * → THE DECORATOR, and the family's emitters are javascript
+   * `src/ast/real-javascript-analyzer.ts:3003` and python
+   * `src/ast/real-python-analyzer.ts:6112`):
+   *
+   *     source = the decorated declaration's name
+   *     target = the decorator's NAME LEAF
+   *     line_number = the DECORATOR's own line
+   *     metadata = { isDecorator: true, decoratorLine }
+   *
+   * ⇒ SO THE NAME IS THE LEAF, NOT THE WRITTEN PATH: the same rule this
+   * method already applies to the symbol's `decorators` list (the last dotted
+   * segment), and the same rule the lane's own fixture pins
+   * (groovy/fq-annotations: `expectDecorators` says the class `FqService`
+   * "contains" `Service` for `@Service`, and the short-name normalizer is what
+   * the fixture's own rationale records: "The short-name normalizer (last
+   * dotted segment) must feed both"). ⇒ The EDGE and the SYMBOL LIST therefore
+   * agree, which is what lets a consumer join them.
+   *
+   * ⇒ AND THE LINE IS THE ANNOTATION'S OWN LINE, not the declaration's: the
+   * decorator is spelled there, and the family's emitters put the decorator's
+   * line on the row (javascript: `decoratorLine`).
+   */
+  private extractAnnotationRefs(node: Node): Array<{ name: string; line: number }> {
+    const anns: Array<{ name: string; line: number }> = []
     const modifiers = this.findChild(node, (n) => n.type === "modifiers")
     if (modifiers) {
       for (let i = 0; i < modifiers.namedChildCount; i++) {
@@ -2947,7 +3051,10 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (nameNode) {
             const text = nameNode.text
             const dot = text.lastIndexOf(".")
-            anns.push(dot === -1 ? text : text.slice(dot + 1))
+            anns.push({
+              name: dot === -1 ? text : text.slice(dot + 1),
+              line: nameNode.startPosition.row + 1,
+            })
           }
         }
       }
