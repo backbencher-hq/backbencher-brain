@@ -680,8 +680,25 @@ case "$cmd" in
     # ⇒ AND THE RE-QUEUE IS NOW UNCONDITIONAL ON THE FRESH-BEAT PATH: a displaced holder goes to the
     # BACK of the queue, never off it, because **A LANE THAT HAS HAD ITS TURN IS NOT A LANE THAT HAS
     # LEFT THE FLEET** (the same rule the small-slot release already follows).
+    # THE BEAT HAS TWO AGE LIMITS, AND ONLY ONE OF THEM WAS BEING APPLIED. The TTL (default 2700s)
+    # is how long a HELD TOKEN is honoured, and the DAEMON'S OWN PULSE goes stale at
+    # BB_ARM_DAEMON_STALE (default 300s). A beat of 811s is PAST THE DAEMON'S OWN STALE MARK and the
+    # force verb called it "FRESH" — **A MESSAGE THAT NAMES THE OPPOSITE OF WHAT ITS OWN NUMBER
+    # SHOWS.** So a dead daemon's token was "fresh" for three quarters of an hour, and the warning
+    # told the Lead the opposite of the truth.
     f_fresh=0
     if token_fresh "$h_beat"; then f_fresh=1; fi
+    DAEMON_STALE="${BB_ARM_DAEMON_STALE:-300}"
+    h_age=$(( $(now) - h_beat ))
+    f_daemon_stale=0
+    if [ "$h_age" -gt "$DAEMON_STALE" ]; then f_daemon_stale=1; fi
+    if [ "$f_daemon_stale" -eq 1 ]; then
+      echo "*** THE HOLDER'S BEAT IS ${h_age}s OLD — PAST THE DAEMON'S OWN STALE MARK (${DAEMON_STALE}s) — SO THE BEAT DAEMON IS NOT RUNNING, WHATEVER THE TOKEN'S TTL SAYS. ***"
+      echo "*** The token is being freed and the displaced holder is RE-QUEUED at the BACK. ***"
+      queue_add "$h_lane" 2>/dev/null || true
+      rm -rf "$TOKEN_DIR" 2>/dev/null || true
+      echo "ARM TOKEN FORCED FREE by $lane (holder ${h_lane:-nobody} beat was ${h_age}s old)"; exit 0
+    fi
     if [ "$f_fresh" -eq 1 ] && [ "$BB_FLAG_URGENT" -eq 0 ] && [ "$BB_FLAG_GONE" -eq 0 ]; then
       echo "REFUSED — the token is held by ${h_lane:-nobody} and its heartbeat is FRESH ($(( $(now) - h_beat ))s ago; TTL ${TTL}s)."
       echo "  A holder that is GONE stops beating, so a fresh heartbeat PROVES it is alive."
@@ -689,7 +706,7 @@ case "$cmd" in
       exit 5
     fi
     if [ "$f_fresh" -eq 1 ]; then
-      echo "*** URGENT FORCE — the token is being pulled from ${h_lane:-nobody}, whose heartbeat is FRESH ($(( $(now) - h_beat ))s ago)."
+      echo "*** URGENT FORCE — the token is being pulled from ${h_lane:-nobody}, whose heartbeat is ${h_age}s old (TTL ${TTL}s, daemon stale mark ${DAEMON_STALE}s)."
       echo "*** If that lane has an arm running, two arms are about to run at once."
       echo "*** The displaced holder is RE-QUEUED at the BACK — it does not lose its place."
       queue_add "$h_lane" 2>/dev/null || true
