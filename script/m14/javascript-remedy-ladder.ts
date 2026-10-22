@@ -162,6 +162,8 @@ const main = async (): Promise<void> => {
     let importExportOfAnotherModule = 0
     const implementsSamples: string[] = []
     const partSamples: string[] = []
+    const partIdentifierSamples: string[] = []
+    const partTextSamples: string[] = []
     for (const f of admitted) {
       let src: string
       let tree: any
@@ -184,17 +186,54 @@ const main = async (): Promise<void> => {
             if (c.type === "implements_clause" || c.type === "implements") implementsClassHeritage++
           }
         }
-        if (n.type === "statement" || n.type === "expression_statement" || n.type === "lexical_declaration") {
-          // A part directive would be a STATEMENT whose first token is `part`. The check asks the
-          // STATEMENT, not the text: a `part` that is an assignment target or a call is not a
-          // directive, and a directive is not a call.
-          const first = n.namedChild(0)
-          if (first && first.type === "identifier" && first.text === "part") {
-            const isCall = first.parent?.type === "call_expression" && first.parent.childForFieldName?.("function") === first
-            const isAssignTarget = first.parent?.type === "variable_declarator" || first.parent?.type === "assignment_expression"
-            if (isCall) partIdentifier++
-            else if (isAssignTarget) partIdentifier++
-            else {
+        if (n.type === "expression_statement" || n.type === "lexical_declaration") {
+          // A part directive would be a STATEMENT whose leading expression is the bare word
+          // `part`. The check asks the STATEMENT and the NODE, never the text: a `part` that is
+          // a CALL (`part(5, true)`) or an ASSIGNMENT TARGET is not a directive, and a directive
+          // is not a call.
+          //
+          // THE IDENTIFIER IS NOT ALWAYS THE STATEMENT'S DIRECT NAMED CHILD: `part(5, true);`
+          // parses as expression_statement -> call_expression -> identifier, so a check that
+          // only looked at `namedChild(0)` for an identifier saw NOTHING and reported 0 of
+          // the 2 sites that exist. The walk therefore descends to the FIRST identifier whose
+          // text is `part` and classifies THAT identifier by its own parent.
+          //
+          // AND THE WALK MUST NOT DESCEND INTO A COMMENT: a `comment` node is a named child of
+          // the statement it sits in, and prose inside a comment ("this is NOT part of the
+          // prism.js main script") is not a construct. The descent stops at a comment, so a
+          // statement whose only `part` is inside a comment is not a directive.
+          let ident: any = null
+          const probe = [n]
+          while (probe.length > 0 && !ident) {
+            const q = probe.shift()
+            for (let i = 0; i < q.namedChildCount; i++) {
+              const c = q.namedChild(i)
+              if (!c) continue
+              if (c.type === "comment") continue
+              if (c.type === "identifier" && c.text === "part") {
+                ident = c
+                break
+              }
+              if (c.type === "call_expression" || c.type === "variable_declarator" || c.type === "assignment_expression") probe.push(c)
+            }
+          }
+          if (ident) {
+            const p = ident.parent
+            // THE IDENTITY OF A TREE-SITTER NODE IS ITS POSITION, NOT ITS WRAPPER: every
+            // `namedChild()` / `childForFieldName()` call returns a NEW wrapper object, so
+            // `p.childForFieldName("function") === ident` is FALSE for the very node it
+            // names — and the check that asked "is this identifier the CALLEE?" said no, so
+            // the 2 `part(5, true)` CALLS were counted as DIRECTIVES. The comparison is
+            // therefore over `startIndex`, which is the node's identity in the tree.
+            const callee = p?.type === "call_expression" ? p.childForFieldName?.("function") : null
+            const isCall = !!callee && callee.startIndex === ident.startIndex
+            const isAssignTarget = p?.type === "variable_declarator" || p?.type === "assignment_expression"
+            if (isCall || isAssignTarget) {
+              partIdentifier++
+              if (partIdentifierSamples.length < 8) {
+                partIdentifierSamples.push(`${path.relative(CR, f)} :: ${n.text.replace(/\s+/g, " ").slice(0, 90)}`)
+              }
+            } else {
               partDirective++
               if (partSamples.length < 8) partSamples.push(`${path.relative(CR, f)} :: ${n.text.replace(/\s+/g, " ").slice(0, 90)}`)
             }
@@ -215,7 +254,7 @@ const main = async (): Promise<void> => {
       }
       if (/\bpart\b/.test(src)) {
         const m = src.match(/^.*\bpart\b.*$/m)
-        if (m && partSamples.length < 12) partSamples.push(`${path.relative(CR, f)} :: ${m[0].trim().slice(0, 90)}`)
+        if (m && partTextSamples.length < 12) partTextSamples.push(`${path.relative(CR, f)} :: ${m[0].trim().slice(0, 90)}`)
       }
       if (/(^|\n)\s*(import|export)\b[^\n]*from\s+['"][^'"]+['"]/.test(src)) importExportOfAnotherModule++
     }
@@ -239,7 +278,9 @@ const main = async (): Promise<void> => {
       part_of: {
         statementWhoseFirstTokenIsPart: partDirective,
         partThatIsACallOrAnAssignmentTarget: partIdentifier,
-        samples: partSamples,
+        directiveSamples: partSamples,
+        partThatIsACallOrAnAssignmentTargetSamples: partIdentifierSamples,
+        textSitesCarryingTheWord: partTextSamples,
         note:
           "JavaScript has no part directive. The nearest construct in the language is the ES module " +
           "import/export, which names ANOTHER MODULE — and that relation is ALREADY PUBLISHED under " +
