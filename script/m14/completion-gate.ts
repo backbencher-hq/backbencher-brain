@@ -108,12 +108,33 @@ const readCoverageGate = (): { rows: Map<string, GateRow>; raw: string } => {
   // FOUND 46, SO THE COUNT WAS COMPARED AGAINST THE PRODUCER'S OWN COUNT.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
   // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
   // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **THE COUNT IS THE CROSS-CHECK, AND IT MUST BE LOUD.**
-  const raw = execFileSync("bun", [resolve(REPO, "script/m14/coverage-block-gate.ts"), "--json"], {
-    cwd: REPO,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-    stdio: ["ignore", "pipe", "ignore"],
-  })
+  // ⇒⇒⇒ **THE EXIT CODE IS A VERDICT, NOT THE DATA.** The coverage gate exits 1 when ANY lane has a
+  // problem, and a lane having a problem is the NORMAL STATE OF A WORKING FLEET. So the first version
+  // of this reader, which let `execFileSync` throw on a non-zero exit, made the completion gate CRASH
+  // EXACTLY WHEN THE FLEET WAS WORKING — and a gate that can only read its source when the source is
+  // happy is a gate that goes blind at the moment its verdict matters. ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ **THE DATA IS THE STDOUT, AND IT IS THERE WHATEVER THE VERDICT IS.** The exit code is read
+  // and reported; it never decides whether the rows are read.
+  let raw = ""
+  let coverageExit = 0
+  try {
+    raw = execFileSync("bun", [resolve(REPO, "script/m14/coverage-block-gate.ts"), "--json"], {
+      cwd: REPO,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+  } catch (e: any) {
+    // A NON-ZERO EXIT IS THE COVERAGE GATE'S VERDICT, NOT A FAILURE TO MEASURE. Its JSON is on
+    // stdout and it is the data this gate needs.
+    coverageExit = Number(e?.status ?? e?.code ?? 1)
+    raw = typeof e?.stdout === "string" ? e.stdout : ""
+    if (!raw.trim()) {
+      throw new Error(
+        `the coverage gate produced NO JSON on stdout (exit ${coverageExit}). Its stderr was:\n${String(e?.stderr ?? "").slice(0, 4000)}`,
+      )
+    }
+  }
   const doc = JSON.parse(raw)
   const rows = new Map<string, GateRow>()
   for (const r of doc.lanes ?? []) {

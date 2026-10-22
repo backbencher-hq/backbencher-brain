@@ -91,6 +91,23 @@ const VOCAB_NAME = LEGACY ? "the ten types" : "the fourteen values"
  */
 const RULING_CLASSES = new Set<string>(["grammar-remedy-ruled", "ontological", "informational", "adjudication"])
 
+/* THE CLASS FOR THE LIST THAT IS A DIFFERENT KIND OF CLAIM.
+ *
+ * The csharp lane's `renders` entry is "the analyzer publishes the type and the CORPUS DOES NOT
+ * EXERCISE IT" — a property of an implemented row, NOT an exclusion, because the language may express
+ * it perfectly well and the corpus simply does not contain a site. The gate was making that entry
+ * carry a class out of the EXCLUSION vocabulary, so the lane could only fill the field honestly by
+ * writing prose there, and the gate reported the prose as a class it could not check.
+ *
+ * THE LANE NAMED THE CLASS AND SAID OUT LOUD THAT THE FLEET HAD NEVER WRITTEN IT DOWN — "the fleet's
+ * own class for a value the analyzer publishes and the corpus does not exercise it". IT WAS RIGHT, AND
+ * THE GAP WAS THE LEAD'S. So the class is published here, FOR THIS LIST ONLY: an entry in `excluded`
+ * still carries one of the four exclusion classes, and a `corpusUnexercised` entry carries this one.
+ * The two lists are different kinds of claim, and a contract that cannot express a claim is a
+ * contract that forces a lane to write prose.
+ */
+const CORPUS_UNEXERCISED_CLASS = "corpus-unexercised"
+
 /* THE DRIFT CHECK — THE GATE's LITERAL VOCABULARY MUST STILL EQUAL THE ENGINE's ENUM.
  *
  * The sql lane proposed DERIVING the vocabulary from the enum in `src/ast/types.ts`. The Lead's
@@ -815,8 +832,8 @@ for (const lane of allLanes) {
     const cls = typeof x === "string" ? "" : x?.evidence
     const from = typeof x === "string" ? "" : x?.from
     const clsKey = typeof cls === "string" ? cls.trim().split(/[(\s]/)[0].toLowerCase() : ""
-    if (cls !== "grammar-absence" && cls !== "zero-sites" && !RULING_CLASSES.has(clsKey)) {
-      problems.push(`corpusUnexercised "${t}" has no evidence class in {grammar-absence, zero-sites, grammar-remedy-ruled, ontological, informational, adjudication} (read ${JSON.stringify(cls ?? null)}); a bare string or a missing class is a ruling the gate cannot check`)
+    if (cls !== "grammar-absence" && cls !== "zero-sites" && !RULING_CLASSES.has(clsKey) && clsKey !== CORPUS_UNEXERCISED_CLASS) {
+      problems.push(`corpusUnexercised "${t}" has no evidence class in {grammar-absence, zero-sites, grammar-remedy-ruled, ontological, informational, adjudication, ${CORPUS_UNEXERCISED_CLASS}} (read ${JSON.stringify(cls ?? null)}); a bare string or a missing class is a ruling the gate cannot check`)
     }
     if (typeof from !== "string" || from.trim() === "") {
       problems.push(`corpusUnexercised "${t}" cites no source; a ruling without a count is prose`)
