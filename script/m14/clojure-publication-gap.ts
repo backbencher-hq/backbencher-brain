@@ -50,10 +50,10 @@ import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs"
 import { resolve } from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-type Row = { key: string; repo: string; file: string; target: string; verdict: string; witness: any }
+type Row = { key: string; repo: string; file: string; target: string; verdict: string; witness: any; evidence: any }
 
 const argv = process.argv.slice(2)
-const argOf = (name: string, dflt?: string) => {
+const argOf = (name: string, dflt: string): string => {
   const i = argv.indexOf(name)
   return i >= 0 && argv[i + 1] ? String(argv[i + 1]) : dflt
 }

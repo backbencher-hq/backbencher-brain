@@ -398,6 +398,12 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
      *  this file also DECLARES that method on one of those protocols, which is
      *  the same class-side pre-pass the Haskell lane applies to `instance`. */
     const overrideCandidates: Array<{ type: string; protos: string[]; method: string; line: number; form: string }> = []
+    /** CLJ-R1 (`renders`): the render-tree CANDIDATES, collected during the walk and resolved
+     *  AFTER it. The candidate is a keyword-led vector (an element) whose child names a
+     *  component; the edge exists only if that name is a CALLABLE declared in this file. See the
+     *  resolution pass below for the measurement that made that test necessary rather than
+     *  optional. */
+    const renderCandidates: Array<{ source: string; target: string; line: number; topLevel: boolean }> = []
     const errors: ASTEngine.ParseError[] = []
 
     const frameworks: Record<string, boolean> = {}
@@ -1524,6 +1530,74 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // c]`) walked their bodies as code before this canonicalisation.
         const canon = resolveQualified(form)
         if (canon === "quote" || canon === "clojure.core/quote" || canon === "clojure.core/comment" || (canon === "comment" && !isShadowedAt("comment", node.startIndex))) continue
+      }
+
+      // ── `renders` — A COMPONENT RENDERS ANOTHER COMPONENT ──────────────────
+      //
+      // THE VOCABULARY'S OWN WORDS (`src/ast/types.ts:131-140`): "A component RENDERS another
+      // component: source = the rendering symbol, target = the rendered component. … NOT
+      // `instantiates`: nothing is `new`ed — React (or the host renderer) constructs the element."
+      // The Clojure spelling of that relation is the Hiccup/Reagent render tree: a KEYWORD-LED
+      // VECTOR whose child is a SYMBOL names a component the enclosing component renders —
+      //
+      //   (defn page [] [:div [widget]])      ; page RENDERS widget
+      //   (defn widget [] [:span "hello"])
+      //
+      // THE RUNG IS R3 AND THE R3 CONDITION IS MEASURED, NOT ASSUMED. The construct arrives as
+      // REAL NODES of the wired grammar — a `vec_lit` whose first named child is a `kwd_lit`, with
+      // the component as a `sym_lit` child — and the wired grammar has no node type for a render
+      // element (0 of its 35 named types match /render|element|component/;
+      // `validation/m14/measurements/clojure-grammar-binding.json`). So NO GRAMMAR CHANGE IS NEEDED
+      // AND NONE IS TAKEN: the two node types that carry the relation are already in the tree, and
+      // the edge exists ONLY when they are read as nodes.
+      //
+      // THE DISCRIMINATOR, AND WHY IT IS NOT A NAMING CONVENTION. The rule is STRUCTURAL: a
+      // keyword-led vector is a render ELEMENT; inside an element, a child that is a SYMBOL, or a
+      // child that is a VECTOR WHOSE HEAD IS A SYMBOL, is a COMPONENT CALL — that is the Reagent
+      // spelling, `[widget]` and `[widget "arg"]` — and the element renders it. A vector whose head
+      // is a SYMBOL is not an element (it is a value), and a keyword-led vector whose children are
+      // all KEYWORDS is a data shape (clj-kondo's own `[:var-definitions :var-usages]`), not a
+      // component. No convention about names, frameworks or file layout is read; only node types.
+      //
+      // THE POPULATION COUNT IS ZERO, AND THAT IS A MEASUREMENT, NOT A HOLE. Over the whole
+      // admitted population (646 files) the corpus contains 900 keyword-led vectors, of which 10
+      // are nested inside another keyword-led vector — and every one of those 10 is DATA (a
+      // metadata map value, a `[:any :any]` type hint, the reader test corpus), measured in
+      // `validation/m14/measurements/clojure-extended-types-census.json`. A corpus of a linter and
+      // the Clojure standard library contains no render tree. The EMISSION SITE is therefore
+      // pinned by the behavioural fixture `validation/m14/fixtures/clojure/renders-component.clj`
+      // instead: it FAILS against the analyzer that had no `renders` emitter and PASSES against
+      // this one, with the controls that make it RED-able.
+      if (node.type === "vec_lit") {
+        const tag = node.namedChild(0)
+        if (tag && tag.type === "kwd_lit") {
+          for (let i = 1; i < node.namedChildCount; i++) {
+            const c = node.namedChild(i)
+            if (!c) continue
+            // A component call is EITHER a bare symbol child (`[:div widget]`) or a child VECTOR
+            // whose head is a symbol (`[:div [widget]]`, `[:div [widget "arg"]]` — the Reagent
+            // spelling). Both are read from the NODES; neither is a text match.
+            let component: Node | null = null
+            if (c.type === "sym_lit") component = c
+            else if (c.type === "vec_lit") {
+              const inner = c.namedChild(0)
+              if (inner && inner.type === "sym_lit") component = inner
+            }
+            if (!component) continue
+            const target = resolveQualified(symName(component))
+            if (!target) continue
+            // THE EDGE IS NOT PUBLISHED HERE. It is a CANDIDATE until the post-walk resolution
+            // pass has checked that the target names a CALLABLE declared in this file — see the
+            // pass below for why that check is the whole difference between a render and a map
+            // key, and for the measurement that forced it.
+            renderCandidates.push({
+              source: activeFunction ? activeFunction.name : currentNamespace,
+              target,
+              line: component.startPosition.row + 1,
+              topLevel: !activeFunction,
+            })
+          }
+        }
       }
 
       const previousActiveFunction = activeFunction
@@ -2683,6 +2757,47 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         const live = new Set(symbols.map((s) => s as object))
         if (activeFunction && !live.has(activeFunction as object)) activeFunction = null
       }
+    }
+
+    // ── Post-loop: the `renders` RESOLUTION PASS ───────────────────────────
+    //
+    // CLJ-R1. A candidate is a keyword-led vector (a render ELEMENT) whose child names a
+    // component. THE CANDIDATE IS NOT THE EDGE, and the difference is MEASURED, not asserted.
+    //
+    // THE NAIVE RULE — "a keyword-led vector with a symbol child IS a render" — was implemented
+    // and run over the whole admitted population (646 files). IT PUBLISHED 86 ROWS IN 19 FILES,
+    // AND EVERY ONE OF THEM WAS WRONG: they are the KEY PATHS of `get-in`/`assoc-in`/`update-in`
+    // (`(get-in ctx [:bindings fn-name :tag])`, `(assoc-in config [:linters linter :skip-args])`),
+    // where the bare symbol is a MAP KEY and the vector is an ordinary data value. The full shape
+    // census is in `validation/m14/measurements/clojure-extended-types-census.json`: 159 keyword-
+    // led vectors carry a bare symbol child (23 files) and 0 of the 159 name a callable declared
+    // in the same file.
+    //
+    // THE TEST THAT SURVIVES THE MEASUREMENT: a component IS a callable, so the edge is
+    // published only when the candidate's target names a CALLABLE (a function, a method or a
+    // macro) DECLARED IN THIS FILE. Over the whole population that test publishes ZERO rows, and
+    // over the fixture corpus it publishes exactly the two the fixture expects. It is a
+    // RESOLUTION test over the analyzer's own symbol table — the same mechanism the own-file
+    // tie-break uses — and NOT a naming convention: no name, spelling, framework or file layout
+    // is consulted.
+    //
+    // WHAT THE TEST CANNOT DO, STATED SO A READER IS NOT MISLED: a component declared in ANOTHER
+    // file is not visible to a per-file analyzer, so a cross-file render tree is a MISS. That is
+    // a limitation of the per-file pass, not a claim that such a tree does not exist.
+    {
+      const callableNames = new Set<string>()
+      for (const s of symbols) {
+        const k = s.kind as string
+        if (k === "function" || k === "method" || k === "macro") callableNames.add(s.name)
+      }
+      let published = 0
+      for (const cand of renderCandidates) {
+        const bare = cand.target.includes("/") ? cand.target.slice(cand.target.lastIndexOf("/") + 1) : cand.target
+        if (!callableNames.has(bare) && !callableNames.has(cand.target)) continue
+        pushRel(cand.source, cand.target, ASTEngine.RelationshipType.Renders, 0.8, { clojureSpecific: true, isRenderElement: true, ...(cand.topLevel ? { isTopLevel: true } : {}) }, cand.line)
+        published++
+      }
+      void published
     }
 
     // ── Post-loop: contains for owned symbols ─────────────────────────────

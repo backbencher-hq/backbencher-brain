@@ -409,6 +409,25 @@ const report = {
     named,
     anonymous,
   },
+  /**
+   * ALL THREE DENOMINATORS, EACH WITH ITS RULE ✓✓ — the cell's denominators, measured, with the
+   * rule that produced each one named ✓✓. THE POPULATION IS NEVER A STRIDE ✓✓.
+   */
+  denominators: {
+    PATHS: {
+      value: walked.paths,
+      rule: "every path under the corpus root whose extension is one of the lane's, walked WITH symlinks followed and symlinked directories counted",
+    },
+    DISTINCT_FILES: {
+      value: walked.distinct,
+      rule: "the same walk, de-duplicated by realpath — a symlinked checkout and its source are ONE file",
+    },
+    ADMITTED: {
+      value: disc.files.length,
+      rule: "the GATE's own admission rule: a real git checkout + `git ls-files` + the lane's extension list {clj,cljs,cljc,edn} + the 1 MB cap",
+    },
+    symlinkedDirsFollowed: walked.symlinkedDirs,
+  },
   population: {
     files: disc.files.length,
     repos: disc.repos.size,
@@ -466,9 +485,28 @@ const report = {
 
 console.log("")
 console.log("THE CELLS — every one of the fourteen, whole population:")
+/* THE DISPOSITION IS READ FROM THE SPEC, NOT INFERRED FROM THE ROW COUNT. A cell that reads 0 rows
+ * is a MEASUREMENT about the CORPUS; whether the type is IMPLEMENTED or RULED is a property of the
+ * LANGUAGE and of the lane's ruling, and the spec is where the ruling lives. The old label
+ * ("0 rows ⇒ RULED") was the old doctrine's shortcut, and it would have called `renders` RULED
+ * while its emission site was live and fixture-proven. */
+const SPEC_PATH = path.join(ROOT, "script/m14/spec/clojure-completeness.json")
+let specImplemented = new Set<string>()
+let specExcluded = new Map<string, string>()
+try {
+  const spec = JSON.parse(readFileSync(SPEC_PATH, "utf8"))
+  for (const t of spec.coverage?.implemented ?? []) specImplemented.add(t)
+  for (const x of spec.coverage?.excluded ?? []) {
+    if (typeof x === "string") specExcluded.set(x, "grammar-absence")
+    else if (x?.label) specExcluded.set(x.label, x.evidence ?? "grammar-absence")
+  }
+} catch { /* the spec is the lane's; a missing one must not invent dispositions here */ }
 for (const t of ALL_TYPES) {
   const c = cells[t]
-  console.log(`  ${c.rows === 0 ? "RULED" : "E    "}  ${t.padEnd(13)} rows ${String(c.rows).padStart(6)} · files ${String(c.files).padStart(5)} · repos ${String(c.repos).padStart(3)}`)
+  const ruled = specExcluded.has(t)
+  const label = ruled ? "RULED" : specImplemented.has(t) ? "E    " : "????"
+  const note = ruled ? `(${specExcluded.get(t)})` : c.rows === 0 ? "(0 rows BY MEASUREMENT — the corpus has no such site)" : ""
+  console.log(`  ${label}  ${t.padEnd(13)} rows ${String(c.rows).padStart(6)} · files ${String(c.files).padStart(5)} · repos ${String(c.repos).padStart(3)} ${note}`)
 }
 console.log("")
 console.log(`THE GRAMMAR's OWN INVENTORY — ${named.length} named type(s): ${named.join(" ")}`)

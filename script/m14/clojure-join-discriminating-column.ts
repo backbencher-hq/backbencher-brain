@@ -64,10 +64,10 @@ const PARITY_PHRASES: { file: string; text: string; what: string }[] = [
   { file: "incoming-gate.ts", text: "const ownFileDeclares = (declPos.get(e.tgt) ?? []).some((d) => d.file === e.srcFile)", what: "the OWN-FILE tie-break's input" },
   { file: "incoming-rule.ts", text: "if (qualifiedJoin !== undefined && qualifiedJoin.count === 1) {", what: "the join's ANSWER CONDITION (count === 1)" },
 ]
-const parity: { what: string; ok: boolean }[] = []
+const parity: { what: string; ok: boolean; text: string }[] = []
 for (const p of PARITY_PHRASES) {
   const src = p.file === "incoming-gate.ts" ? gateSrc : ruleSrc
-  parity.push({ what: p.what, ok: src.includes(p.text) })
+  parity.push({ what: p.what, ok: src.includes(p.text), text: p.text })
 }
 const parityOk = parity.every((p) => p.ok)
 if (!parityOk) {
@@ -268,6 +268,7 @@ for (const f of disc.files) {
   try {
     const content = readFileSync(f, "utf8")
     const tree = parser.parse(content)
+    if (tree === null) throw new Error("the production's own parse returned no tree")
     prodNs = clojureFileNamespace(tree.rootNode as any)
     inNs = hasInNsForm(tree.rootNode)
   } catch { /* the namespace stays unknown; the row is priced by the gate's source alone */ }

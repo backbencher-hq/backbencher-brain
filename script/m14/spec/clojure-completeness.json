@@ -308,40 +308,33 @@
       "extends",
       "implements",
       "overrides",
-      "instantiates"
+      "instantiates",
+      "renders"
     ],
     "excluded": [
       {
         "label": "decorates",
-        "evidence": "grammar-absence",
-        "from": "validation/m14/measurements/clojure-census-whole.json \u2014 0 rows of decorates over 646 admitted files in 3 repositories (0 files, 0 repos), and the pinned grammar wasm/tree-sitter-clojure.wasm (sha256 90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27) has 35 named node types and 72 slots in total, of which none is a node that applies a callable to a declaration (the reader's metadata node `meta_lit` is not a runtime-applied decorator) \u2014 so the construct cannot be expressed and no corpus count can exist",
-        "count": 0,
-        "falsifier": "a node type in the pinned grammar's inventory that applies a callable to a declaration (a `decorator` node) would create the class, and its corpus count would then have to be read",
-        "design_decision": "CLJ-D10"
-      },
-      {
-        "label": "renders",
-        "evidence": "grammar-absence",
-        "from": "validation/m14/measurements/clojure-census-whole.json \u2014 0 rows of renders over 646 admitted files in 3 repositories (0 files, 0 repos), and the pinned grammar wasm/tree-sitter-clojure.wasm (sha256 90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27) has 35 named node types and 72 slots in total, of which none is a markup or view node (the grammar's literal nodes are list/vec/map/set/str/num/kwd/char/bool/nil/regex) \u2014 so the construct cannot be expressed and no corpus count can exist",
-        "count": 0,
-        "falsifier": "a markup or view node type in the pinned grammar's inventory (a `jsx_element`, an `element`, a `template`) would create the class",
-        "design_decision": "CLJ-D10"
+        "evidence": "ontological",
+        "count": 3013,
+        "from": "CLJ-D11 / CLJ-R2: the Clojure language HAS the metadata construct as a real node \u2014 `meta_lit` \u2014 and it is the ONLY candidate this type could ever have. MEASURED over the whole admitted population (646 files, 3 repos, 0 parse errors, validation/m14/measurements/clojure-extended-types-census.json): 3013 metadata carriers in 198 files, decomposed by the metadata VALUE's kind \u2014 323 keyword markers (`^:private`), 2318 symbol type hints (`^String`, `^boolean`, `^java.util.List`), 311 doc/attr maps \u2014 of which 550 sit on a DECLARATION form (the metadata and the name are siblings inside one `sym_lit`, so the form is the GRANDPARENT). 83 of the map-metadata sites name a symbol, and every one of them names a TYPE or a literal (`^{:tag Boolean}`, `^{:arglists '([x seq])}`, `^{:doc \"...\"}`, `^{:test (fn [] ...)}`, `^{:clj-kondo/config '{...}}`) \u2014 0 name an APPLIED CALLABLE. The vocabulary's own words (`src/ast/types.ts:119-132`) are \"A decorator is APPLIED TO a declaration: source = the decorating symbol, target = the decorated declaration\" \u2014 the decorator IS APPLIED, and a metadata carrier is PASSIVE DATA that the language never applies to anything. The class is `ontological` (the csharp precedent: an attribute is passive metadata, a decorator is an applied callable). THE LADDER: R1 UNAVAILABLE \u2014 MEASURED, the newest published build of tree-sitter-clojure (0.4.0) has 0 of its 57 named node types matching /decorat/ (validation/m14/measurements/clojure-grammar-binding.json); R2 AVAILABLE AS A MECHANISM (MEASURED: `tree-sitter generate` + `tree-sitter build --wasm` succeed here with no docker and no emscripten \u2014 grammars/tree-sitter-clojure/build/tree-sitter-clojure.wasm) but a patched node type would still name PASSIVE METADATA, which the vocabulary does not credit, so the reason is NOT the grammar; R3 AVAILABLE AND TAKEN \u2014 the node exists (`meta_lit`) and the analyzer already reads it. Falsifier: a corpus site where a metadata carrier names an APPLIED CALLABLE \u2014 0 of 3013 carriers MEASURED (83 map-metadata sites name a symbol; every one names a type or a literal).",
+        "falsifier": "a corpus site where a metadata carrier names an APPLIED CALLABLE \u2014 0 of 3013 carriers MEASURED (83 map-metadata sites name a symbol; every one names a type or a literal); or a published tree-sitter-clojure build whose inventory HAS a decorator node type \u2014 0 of 57 named types MEASURED",
+        "design_decision": "CLJ-D10/CLJ-D11"
       },
       {
         "label": "mixes_in",
-        "evidence": "grammar-absence",
-        "from": "validation/m14/measurements/clojure-census-whole.json \u2014 0 rows of mixes_in over 646 admitted files in 3 repositories (0 files, 0 repos), and the pinned grammar wasm/tree-sitter-clojure.wasm (sha256 90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27) has 35 named node types and 72 slots in total, of which none is a mixin application or a `with` clause (Clojure's `defprotocol`/`defrecord`/`deftype`/`extend-type`/`extend-protocol` are ordinary list forms, published as implements/extends/overrides) \u2014 so the construct cannot be expressed and no corpus count can exist",
-        "count": 0,
-        "falsifier": "a mixin-application or `with`-clause node type in the pinned grammar's inventory would create the class",
-        "design_decision": "CLJ-D10"
+        "evidence": "ontological",
+        "count": 84,
+        "from": "CLJ-D11 / CLJ-R3: the mixin construct IS reachable as a REAL node in the wired grammar \u2014 a `list_lit` whose `namedChild(0)` is a `sym_lit` head \u2014 and 0 of its 84 extension sites carry an ERROR or MISSING subtree (validation/m14/measurements/clojure-extended-types-census.json), so this is NOT a grammar gap. The nearest construct DECLARES CONFORMANCE: 84 protocol-extension sites (extend 49 \u00b7 extend-protocol 31 \u00b7 extend-type 4) plus 46 `defprotocol` declarations, 54 `reify` and 40 `proxy`, and the vocabulary's own words (`src/ast/types.ts:144-149`) are \"A mixin is not `extends` either (there is no single base and the `with` list is not an inheritance clause); and it is not `implements` (no conformance is declared)\" \u2014 at a Clojure protocol extension the conformance IS declared, so the near miss is NOT a mixin and those rows are ALREADY published as `implements` (286 rows over 47 files). `defmixin` sites: 0. The class is `ontological`: the relation the construct expresses is conformance, and the shared vocabulary excludes a conformance declaration from `mixes_in`. THE LADDER: R1 UNAVAILABLE \u2014 MEASURED, the newest published build (0.4.0) has 0 of its 57 named types matching /mixin|mixes/ and its named-type delta against the wired build is added 56 / removed 34, i.e. it is a DIFFERENT GRAMMAR GENERATION and it does not deliver the construct either; R2 AVAILABLE AS A MECHANISM (MEASURED: generate + build --wasm work here) but it would have to INVENT a node type for a construct the language does not have \u2014 Clojure has no `with`-clause and no mixin composition, so the reason is NOT difficulty and NOT the toolchain, it is that the LANGUAGE does not express the relation; R3 NOT AVAILABLE \u2014 the wired grammar's 35 named types carry no node for a mixin composition. Falsifier: a corpus site where a class COMPOSES a mixin into its supertype chain \u2014 0 sites MEASURED; or a published build whose inventory HAS a mixin node type \u2014 0 of 57 named types MEASURED, so the ruling is VOID the moment R1 becomes available.",
+        "falsifier": "a corpus site where a class composes a mixin into its supertype chain \u2014 0 sites MEASURED (84 protocol-extension sites are conformance declarations, already published as `implements`); or a published tree-sitter-clojure build whose inventory HAS a mixin node type \u2014 0 of 57 named types MEASURED",
+        "design_decision": "CLJ-D10/CLJ-D11"
       },
       {
         "label": "part_of",
-        "evidence": "grammar-absence",
-        "from": "validation/m14/measurements/clojure-census-whole.json \u2014 0 rows of part_of over 646 admitted files in 3 repositories (0 files, 0 repos), and the pinned grammar wasm/tree-sitter-clojure.wasm (sha256 90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27) has 35 named node types and 72 slots in total, of which none is a part or part-of directive (Clojure's `require`/`use`/`import` are ordinary list forms, published as imports) \u2014 so the construct cannot be expressed and no corpus count can exist",
+        "evidence": "grammar-remedy-ruled",
         "count": 0,
-        "falsifier": "a part or part-of directive node type in the pinned grammar's inventory would create the class",
-        "design_decision": "CLJ-D10"
+        "from": "CLJ-D11 / CLJ-R4: Clojure's compilation unit is the NAMESPACE. A part file \u2014 Dart's `part 'x.dart'`, a file that SHARES its library's single scope and imports nothing \u2014 does not exist in the language: MEASURED over the whole admitted population, 588 `ns` forms in 543 files, 89 require/use/import forms and 34 load/load-file/load-string/load-reader forms, and 0 part declarations. THE NAMED RUNG: R1 UNAVAILABLE \u2014 MEASURED, the newest published build of tree-sitter-clojure (0.4.0) has 0 of its 57 named node types matching /part/ (validation/m14/measurements/clojure-grammar-binding.json), so no published build exposes the construct; R2 AVAILABLE AS A MECHANISM (MEASURED: `tree-sitter generate` + `tree-sitter build --wasm` succeed here with no docker and no emscripten \u2014 grammars/tree-sitter-clojure/build/tree-sitter-clojure.wasm) but a patched node type would have to be added for a construct the language does not have, so the reason is NOT the grammar's expressiveness but the LANGUAGE's: the reason is not difficulty, and a rung that is merely HARD is not a reason; R3 NOT AVAILABLE \u2014 the wired grammar's 35 named types carry no part node. Falsifier: a corpus file that declares a part of another scope \u2014 0 sites MEASURED; or a published tree-sitter-clojure build whose inventory HAS a part node type \u2014 0 of 57 named types MEASURED.",
+        "falsifier": "a corpus file that declares a part of another scope \u2014 0 sites MEASURED (588 ns forms, 89 require/use/import, 34 load forms); or a published tree-sitter-clojure build whose inventory HAS a part node type \u2014 0 of 57 named types MEASURED",
+        "design_decision": "CLJ-D10/CLJ-D11"
       }
     ],
     "corpusUnexercised": [],
@@ -392,6 +385,10 @@
         "src/ast/real-clojure-analyzer.ts:2208",
         "src/ast/real-clojure-analyzer.ts:2219",
         "src/ast/real-clojure-analyzer.ts:2227"
+      ],
+      "renders": [
+        "src/ast/real-clojure-analyzer.ts:1533",
+        "src/ast/real-clojure-analyzer.ts:2757"
       ]
     },
     "_implemented_measured": {
@@ -425,21 +422,27 @@
       },
       "instantiates": {
         "edges": 928
+      },
+      "renders": {
+        "edges": 0,
+        "note": "0 rows over the whole admitted population BY MEASUREMENT, not by absence: 900 keyword-led vectors, 159 carrying a bare symbol child (23 files), 0 of the 159 naming a callable declared in the same file. The EMISSION SITE is proven by the behavioural fixture validation/m14/fixtures/clojure/renders-component.clj (RED-able: script/m14/clojure-renders-mutation.ts catches 2 of 2 mutants).",
+        "fixture": "validation/m14/fixtures/clojure/renders-component.clj",
+        "mutationProof": "script/m14/clojure-renders-mutation.ts"
       }
     },
-    "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-clojure-analyzer.ts, named per type in `_emissionSites`, AND a whole-population edge count in `_implemented_measured` over 646 of 646 admitted files in 3 repositories with 0 parse failures. NOTHING IS EXCLUDED because nothing needed to be: every one of the ten types fires corpus-wide, the smallest margin being `extends` at 42 edges and `overrides` at 128. The 120-file stride in validation/m14/results/firing-laptop-b.current.log reads all ten as fired as well, so the stride and the whole-population run agree. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified.",
+    "_from": "DERIVATION. implemented = the 10 canonical types with an emission site in src/ast/real-clojure-analyzer.ts, named per type in `_emissionSites`, AND a whole-population edge count in `_implemented_measured` over 646 of 646 admitted files in 3 repositories with 0 parse failures; PLUS `renders` (CLJ-R1), whose emission site reads the EXISTING node types `vec_lit` + `kwd_lit` + `sym_lit` and whose resolution test (the target must name a callable declared in the same file) is measured over the whole population at 0 rows and pinned by a RED-able fixture. excluded = 3, each with a class, a COUNT, a CITATION to an existing artifact and a FALSIFIER: `decorates` (ontological \u2014 3013 metadata carriers, 2431 of them type hints, 0 naming an applied callable), `mixes_in` (ontological \u2014 84 protocol-extension sites that DECLARE CONFORMANCE, already published as `implements`, and 0 mixin-composition sites), `part_of` (grammar-remedy-ruled \u2014 0 part declarations against 588 ns forms, 89 require/use/import and 34 load forms). CLOSURE: implemented 11 + corpusUnexercised 0 + gaps 0 = applicable 11 = 14 - 3 ruled.",
     "_applicable": {
       "denominator": 14,
-      "denominatorRule": "the 10 canonical values plus the 4 extended ones (decorates, renders, mixes_in, part_of)",
-      "grammarAbsence": 4,
+      "denominatorRule": "the 10 canonical values plus the 4 extended ones (decorates, renders, mixes_in, part_of) \u2014 the whole 14-type vocabulary",
+      "grammarAbsence": 0,
       "unclassified": 0,
-      "applicable": 10,
-      "rule": "an UNCLASSIFIED value STAYS in the denominator; there are none, so applicable = 14 - 4 = 10",
+      "applicable": 11,
+      "rule": "an UNCLASSIFIED value STAYS in the denominator; there are none. `renders` IS EXPRESSIBLE in Clojure and is IMPLEMENTED (R3 \u2014 the construct reaches the analyzer through EXISTING node types, so no grammar change is made and none is needed), so it stays in the denominator AND is published. The 3 ruled types leave the denominator on the strength of a NAMED REASON with a COUNT and a FALSIFIER each, not on the strength of a class name: applicable = 14 - 3 = 11.",
       "censusArtifact": "validation/m14/measurements/clojure-census-whole.json",
       "censusInstrument": "script/m14/clojure-census.ts",
       "censusCommand": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/clojure-census.ts --out validation/m14/measurements/clojure-census-whole.json",
       "censusPopulation": "646 admitted files, 3 repositories, 0 parse errors; PATHS 646, DISTINCT FILES 646, ADMITTED 646; 381 symlinked directories followed",
-      "grammar": "the pinned grammar wasm/tree-sitter-clojure.wasm, sha256 90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27, read from the PRODUCTION parser's own Language object: 35 named node types, 37 anonymous, 72 slots"
+      "grammar": "the pinned grammar wasm/tree-sitter-clojure.wasm, sha256 90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27, read from the PRODUCTION parser's own Language object: 35 named node types, 37 anonymous, 72 slots; the REGISTRY serves the same bytes (validation/m14/measurements/clojure-grammar-binding.json)"
     },
     "_censusCells": {
       "calls": {
@@ -513,6 +516,23 @@
         "repos": 0
       }
     },
-    "_censusCellsNote": "THE ANALYZER's OWN ROWS BY STORED TYPE, whole admitted population (646 files, 3 repos, 0 parse errors) \u2014 script/m14/clojure-census.ts -> validation/m14/measurements/clojure-census-whole.json. These are the ANALYZER's rows; the GATE's per-type rows are smaller because the gate skips a row it cannot CLASSIFY (an empty target, or a stored label its table does not spell) \u2014 both are measurements and neither is the other."
+    "_censusCellsNote": "THE ANALYZER's OWN ROWS BY STORED TYPE, whole admitted population (646 files, 3 repos, 0 parse errors) \u2014 script/m14/clojure-census.ts -> validation/m14/measurements/clojure-census-whole.json. These are the ANALYZER's rows; the GATE's per-type rows are smaller because the gate skips a row it cannot CLASSIFY (an empty target, or a stored label its table does not spell) \u2014 both are measurements and neither is the other. `renders` reads 0 rows BY MEASUREMENT, NOT BY ABSENCE: the population contains 900 keyword-led vectors of which 159 carry a bare symbol child (23 files) and 0 of the 159 name a callable declared in the same file, so the analyzer's resolution test publishes 0 rows; the EMISSION SITE is pinned by the behavioural fixture validation/m14/fixtures/clojure/renders-component.clj, which FAILS against an analyzer without the emitter and PASSES against this one (script/m14/clojure-renders-mutation.ts: 2 of 2 mutants caught).",
+    "denominator": {
+      "n": 11,
+      "types": [
+        "calls",
+        "uses",
+        "contains",
+        "imports",
+        "references",
+        "exports",
+        "extends",
+        "implements",
+        "overrides",
+        "instantiates",
+        "renders"
+      ],
+      "rule": "the denominator is the language's OWN EXPRESSIBLE SET: the 10 canonical values plus `renders`, which the Clojure language DOES express (a component function rendering another component is expressible as a keyword-led render tree) \u2014 so it stays in the denominator, and the analyzer publishes it. The 3 ruled types are excluded on the strength of a NAMED REASON, a COUNT and a FALSIFIER each: `decorates` (ontological), `mixes_in` (ontological), `part_of` (grammar-remedy-ruled). An UNCLASSIFIED type would STAY in the denominator; there are none."
+    }
   }
 }
