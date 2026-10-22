@@ -3455,6 +3455,27 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "build", target: "ex", confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true } }] }),
   },
   {
+    // ★ THE SCALA LANE'S SELF-TYPE MUTANT (scala lane, 2026-10-22), AND THE TRANSFORM IS THE
+    // LEAD'S OWN — NOT A PROXY FOR IT. `relationship-loss` is the analyzer's output with every row
+    // of that type removed and NOTHING else changed; the template is `clojure/reify-no-implements`
+    // above. ⇒ AND THE LANE'S OWN PROOF IS THE POINT: it applies this transform and evaluates the
+    // lane's fixture under the FIXTURE RUNNER'S OWN matcher (`matchConstraints`, imported from
+    // `script/m14/run-fixtures.ts`), so the printed verdict IS the fixture's verdict and not a proxy
+    // for it. MEASURED BY THE LANE: the REAL analyzer publishes 32 rows of which 6 are `implements`
+    // and the fixture PASSES (6/6 asserted rows satisfied); the MUTANT publishes 26 rows of which 0
+    // are `implements` and the fixture FAILS (0/6, 6 problems named).
+    //
+    // ⇒ ⇒ ⇒ AND THE PROOF RUNS THE OPPOSITE DIRECTION TOO, WHICH IS THE HALF A MUTATION PROOF
+    // USUALLY OMITS: the fixture must PASS on the UNMUTATED analyzer, or a fixture that fails
+    // everything catches nothing. THAT CONTROL IS MEASURED HERE, NOT ASSUMED. ⇒ A ONE-SIDED PROOF
+    // OF "THE FIXTURE GOES RED" IS SATISFIED BY A BROKEN FIXTURE.
+    id: "scala/self-type-implements-drop",
+    language: "scala",
+    defectClass: "relationship-loss",
+    description: "the self-type's conformance row is dropped: every `implements` row disappears, and the lane's own fixture (validation/m14/fixtures/scala/self-type-implements.*) is the catcher",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
     id: "clojure/reify-no-implements",
     language: "clojure",
     defectClass: "relationship-loss",
