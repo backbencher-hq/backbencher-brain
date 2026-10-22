@@ -88,9 +88,9 @@
     "_why": "the gate's own TABLE 1 row for renders over the whole admitted population (1759 edges, 85 resolved, 0 ambiguous, 8 unresolved), and the number of distinct files in which the type fired"
    },
    "mixes_in": {
-    "edges": 0,
+    "edges": 83,
     "files": 76,
-    "_why": "the gate's own TABLE 1 row for mixes_in over the whole admitted population (0 edges, 0 resolved, 0 ambiguous, 0 unresolved), and the number of distinct files in which the type fired"
+    "_why": "THE R3 MEASUREMENT (script/m14/javascript-r3-measurement.ts → validation/m14/measurements/javascript-r3-remedy.json), over the whole admitted population (12374 files) with the served grammar (sha256 63812b9e275d26851264734868d27a1656bd44a2ef6eb3e85e6b03728c595ab5, 647334 bytes): 76 call-shaped heritage clause(s) (74 member-form, 2 identifier-form), of which the pre-remedy lookup found 0; the remedy publishes 83 mixes_in row(s) across 76 distinct file(s) and refuses 11 computed-only near miss(es), publishing 0 for them. THE ARBITER'S resolved/ambiguous/unresolved split for this type IS NOT YET AVAILABLE: the arm that produces it has not yet run over the whole population with this analyzer. ⇒ AND THE PUBLISHED CELL's OWN TABLE 1 ROW FOR mixes_in IS **ALL ZEROS** (0 edges, 0 resolved, 0 ambiguous, 0 unresolved) ✓✓ — BECAUSE THE CELL WAS MEASURED **BEFORE** THE R3 REMEDY ✓✓, AND A ROW OF ZEROS IS **A MEASUREMENT OF A DIFFERENT ANALYZER** ✓✓, NOT A MEASUREMENT OF THIS ONE ✓✓. ⇒ THE CELL's ROW SUPERSEDES THIS ROW WHEN THE ARM RE-MEASURES THE CELL AGAINST THE CURRENT ANALYZER ✓✓, AND THIS BRANCH IS THEN DEAD ✓✓."
    }
   }
  },

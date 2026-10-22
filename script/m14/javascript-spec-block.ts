@@ -159,7 +159,14 @@ for (const t of IMPLEMENTED) {
   const files = cell.perTypeFiles ? Object.fromEntries(cell.perTypeFiles) : {}
   const n = files[t] !== undefined ? files[t] : CENSUS_FILES[t]
   if (n === undefined) throw new Error(`no per-type FILE count for ${t} — neither the cell's twin nor the census has one`)
-  if (row) {
+  // ⇒ A ROW WITH **ZERO EDGES** IS NOT A MEASUREMENT OF THIS TYPE ✓✓ — IT IS A MEASUREMENT OF A
+  // DIFFERENT ANALYZER ✓✓. ⇒ THE CELL WAS MEASURED **BEFORE** THE R3 REMEDY, SO ITS `mixes_in` ROW
+  // IS ALL ZEROS ✓✓, AND THE BLOCK WAS PUBLISHING IT AS "THE GATE's OWN TABLE 1 ROW FOR mixes_in
+  // (0 EDGES, 0 RESOLVED, …)" ✓✓ — WHICH IS **THE ABSENCE OF A MEASUREMENT STATED AS A
+  // MEASUREMENT** ✓✓. ⇒ THE FALLBACK MUST FIRE ON A ZERO-EDGED ROW, NOT ONLY ON A MISSING ONE ✓✓.
+  // ⇒ AND THE ARM WILL REPLACE IT: the cell's own TABLE 1 row WINS once the cell is re-measured
+  // against the current analyzer ✓✓, and this branch is then dead ✓✓.
+  if (row && row.edges > 0) {
     measured[t] = {
       edges: row.edges,
       files: n,
@@ -188,8 +195,11 @@ for (const t of IMPLEMENTED) {
         `${c.oldFound}; the remedy publishes ${c.newMixesIn} mixes_in row(s) across ${c.filesWithCallShaped} distinct file(s) ` +
         `and refuses ${c.nearMissComputedOnly} computed-only near miss(es), publishing ${c.nearMissPublished} for them. ` +
         `THE ARBITER'S resolved/ambiguous/unresolved split for this type IS NOT YET AVAILABLE: the arm that produces it ` +
-        `has not yet run over the whole population with this analyzer, and the cell's own TABLE 1 row for mixes_in ` +
-        `SUPERSEDES THIS ROW WHEN IT DOES.`,
+        `has not yet run over the whole population with this analyzer. ` +
+        `⇒ AND THE PUBLISHED CELL's OWN TABLE 1 ROW FOR mixes_in IS **ALL ZEROS** (${row ? `${row.edges} edges, ${row.resolved} resolved, ${row.ambDecl} ambiguous, ${row.unresolved} unresolved` : "absent"}) ✓✓ — BECAUSE THE CELL WAS MEASURED ` +
+        `**BEFORE** THE R3 REMEDY ✓✓, AND A ROW OF ZEROS IS **A MEASUREMENT OF A DIFFERENT ANALYZER** ✓✓, NOT A ` +
+        `MEASUREMENT OF THIS ONE ✓✓. ⇒ THE CELL's ROW SUPERSEDES THIS ROW WHEN THE ARM RE-MEASURES THE CELL ` +
+        `AGAINST THE CURRENT ANALYZER ✓✓, AND THIS BRANCH IS THEN DEAD ✓✓.`,
     }
     continue
   }
