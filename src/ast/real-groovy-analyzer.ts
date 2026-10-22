@@ -252,9 +252,44 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // edge rides the SAME rewrite, gated on `isGroovyImport` so the clause
           // can never capture an unrelated edge whose source happens to equal the
           // package — the same guard java's JPMS `requires` rewrite needs.
-        const isImportMention =
-          (rel.type === ASTEngine.RelationshipType.Imports || rel.type === ASTEngine.RelationshipType.References) &&
-          rel.metadata?.isGroovyImport === true
+          //
+          // THE `imports` ROWS ARE NOT REWRITTEN — 2026-10-22, and this is the
+          // fix of a REAL defect, not a preference.
+          //
+          // The `imports` DEPENDENCY must not resolve to a symbol, because the
+          // consumer that reads it is exact (src/lsp/graph_request.ts:291-297):
+          //
+          //   WHERE relationship_type = 'imports'
+          //     AND source_symbol_id IS NULL AND target_symbol_id IS NULL
+          //     AND source_external = ?      <- the root node's FILE PATH
+          //
+          // and `source_external` is only written when the source resolves to NO
+          // symbol in the file AND `metadata.fileLevel` is true
+          // (src/ast/parallel-indexer.ts:3479-3487). Sourcing the row at the
+          // file's primary type made `source_symbol_id` resolve, so NO groovy
+          // file's imports could ever be returned by that query — the one
+          // surface whose whole job is "what does this file import" had nothing
+          // to show for every file whose class name matches its file name,
+          // which is the NORMAL case in Groovy.
+          //
+          // The family already has this shape: java emits BOTH of its `imports`
+          // rows at the package (`real-java-analyzer.ts:826` and `:894`), and
+          // only its `references` MENTION rides a primary-type source.
+          //
+          // This lane's own fixture pins it and FORBIDS the other shape
+          // (groovy/imports-dependency-edge.expectation.json):
+          //   forbidRelationships: [{"type":"imports","source":"Dep",
+          //     "note":"sourcing the dependency at the primary type resolves
+          //      source_symbol_id, so parallel-indexer never writes
+          //      source_external and bb_graph's file-level dependencies query
+          //      cannot return it"}]
+          //
+          // The `references` MENTION keeps the primary-type source, which is a
+          // DIFFERENT question — "this file's type mentions this path" — and is
+          // pinned by groovy/import-edges (`references[Importer->java.util.List]`).
+          const isImportMention =
+            rel.type === ASTEngine.RelationshipType.References &&
+            rel.metadata?.isGroovyImport === true
         if (isImportMention && (rel.source === walk.currentPackage || rel.source === "(script)" || rel.source === "root")) {
           rel.source = primaryType.name
         }
@@ -901,7 +936,45 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // fixtures became phantom constructors, their own names vanished, and
           // the differential went from 46 FP / 19 FN to 74 / 66. A demoted
           // misnamed constructor is a METHOD, so it keeps its declared name.
-      const memberName = isConstructor ? "constructor" : rawName
+          //
+          // A CONSTRUCTOR'S NAME IS ITS CLASS NAME — the live family position,
+          // measured, and it is NOT the literal "constructor".
+          //
+          // THE MEASUREMENT (script/m14/groovy-family-constructor-probe.ts): the
+          // same `class Foo { Foo() {} Foo(String label) {} }` shape through all
+          // four JVM analyzers:
+          //
+          //   java    kind=constructor name="Foo" owner=Foo   contains[Foo->Foo]
+          //   kotlin  kind=constructor name="Foo" owner=Foo   contains[Foo->Foo]
+          //   scala   (no constructor symbol for this shape)
+          //   groovy  kind=constructor name="constructor"      contains[Foo->constructor]
+          //
+          // ⇒ java and kotlin publish the CLASS NAME; groovy was the last lane
+          // on the literal. The comment that used to sit here said "java,
+          // kotlin and scala all record `constructor:constructor`" — that is
+          // true of the m12 HAND-AUDITED TRUTH FILES, which are STALE for the
+          // whole JVM family: `bun script/m12/verify-analyzer.ts java` reports
+          // `FN sym:UserService.java:13:constructor:constructor` +
+          // `FP sym:UserService.java:13:constructor:UserService` TODAY, and
+          // kotlin reports the same pair. Those truth files predate the java
+          // and kotlin constructor renames and were never re-pinned, so citing
+          // them as the family convention cites a stale artifact.
+          //
+          // The lane's own fixtures pin the class name, and the `contains` edge
+          // they demand (`Split -> Split`, `Alpha -> Alpha`) is only MEANINGFUL
+          // if the constructor's name IS the class name:
+          //   groovy/ctor-identity          symbol Alpha  kind=constructor owner=Alpha
+          //   groovy/ctor-field-split-lines contains Split -> Split @19
+          //   groovy/duplicate-parse-field  contains Split -> Split @24
+          //   groovy/parameters-payload     expectParameters symbol Holder owner Holder
+          //
+          // AND THE MECHANISM IS ALREADY HERE: `isMisnamedCtor` above proves
+          // that a REAL constructor's declared name EQUALS its enclosing class's
+          // name (a `constructor_declaration` whose name differs is a demoted
+          // METHOD, and it keeps its declared name). So the declared name IS
+          // the class name for every constructor this branch keeps — there is
+          // no second lookup and no new name to invent.
+      const memberName = rawName
       const parameters: ASTEngine.Parameter[] = []
       const paramList = this.findChild(node, (n) => n.type === "formal_parameters")
       if (paramList) {
@@ -954,6 +1027,12 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // on a verified exact-signature in-file match (pass 1); explicit
           // tasks keep the companion/guess tiers so overloads never
           // fabricate an override edge.
+      // The line the OVERRIDING declaration is written on — the M59 (#825)
+      // anchor, the method's NAME, and the same anchor the symbol's range
+      // uses. `declarationLineNode` is the fallback for a declaration with no
+      // name node of its own; the name wins because the edge names the
+      // method, and the line a thing is spelled on is the name's line.
+      const declLine = (node.childForFieldName("name") ?? nameNode ?? this.declarationLineNode(node)).startPosition.row + 1
       if (annotations.indexOf("Override") !== -1 && s.newContext) {
         overrideTasks.push({
           fqn,
@@ -961,7 +1040,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           signature,
           ownerFqn: s.newContext.fqn,
           explicit: true,
-          line: this.declarationLineNode(node).startPosition.row + 1,
+          line: declLine,
         })
       } else if (s.newContext && !isConstructor &&
                  modifiers.indexOf("static") === -1 && visibility !== "private") {
@@ -971,7 +1050,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           signature,
           ownerFqn: s.newContext.fqn,
           explicit: false,
-          line: this.declarationLineNode(node).startPosition.row + 1,
+          line: declLine,
         })
       }
 
@@ -980,28 +1059,34 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
         comments: (() => { const d = this.extractGroovyDoc(node); return d ? [d] : [] })(),
         complexity: this.calculateGroovyMethodComplexity(node),
-            // M59 (#825): annotations skipped — `@Override` is not where the
-            // overriding method is written — and the range starts at the NAME.
-            // tree-sitter-groovy absorbs a preceding field's type into a
-            // constructor's node (`final Distance distance` + `Sphere(...)`
-            // parse as one method_declaration starting at the field), so the
-            // node start is the field's line while the name is written 7 lines
-            // lower (measured: grails-core Sphere.groovy). The line belongs to
-            // the name, never to the construct that contains it (java/scala
-            // contract); the contains edge follows the range, so both move.
-            // The annotation anchor has to survive the name-node shortcut. A METHOD
-            // passes its `name` child explicitly so the line follows the name rather
-            // than the token the grammar absorbed first (the Sphere.groovy field-split
-            // case above), but that bypasses `declarationLineNode` entirely, so an
-            // annotated method stayed on its own line: `@Override` L16 / `format` L17
-            // was reported 17, and truth records 16. The name node is the right anchor
-            // ONLY when the declaration carries no annotation; when it does, the
-            // annotation is the earlier line and the same convention java applies
-            // through `annotationLine` wins.
-        range: this.symbolRange(
-          node,
-          this.declarationHasAnnotation(node) ? null : (node.childForFieldName("name") ?? nameNode),
-        ),
+      // The M59 (#825) anchor for a method is its NAME, and it is its name
+      // ALWAYS — the annotation branch that used to sit here is gone.
+      //
+      // It existed because the symbol's range was being read as the
+      // DECLARATION's line, and the hand-audited truth recorded the
+      // ANNOTATION's line for an annotated method (`@Override` L16 /
+      // `format` L17 → truth 16). With the name as the anchor, the line is
+      // the line the method is SPELLED on, which is the contract the M59 note
+      // states ("the line the thing is spelled on, not the declaration's
+      // opening line") — and it is what the whole live family does
+      // (script/m14/groovy-family-line-anchor-probe.ts: java/kotlin/scala all
+      // report the declaration's line for an annotated method, groovy
+      // reported the annotation's).
+      //
+      // THIS LANE'S OWN FIXTURES pin it and forbid the other:
+      //   groovy/lines-825              contains[Wrapped->use] @26, @25 FORBIDDEN
+      //   groovy/anonymous-body-overrides overrides[anonymous_TypeCodec.bsonType->bsonType] @23
+      //   groovy/ctor-field-split-lines contains[Split->Split] @19 (the NAME's line)
+      //
+      // The tree-sitter-groovy field-absorb case is unchanged by this and is
+      // still the reason the NAME is the anchor: `final Distance distance` +
+      // `Sphere(...)` parse as one method_declaration starting at the field, so
+      // the node start is the field's line while the name is written 7 lines
+      // lower (measured: grails-core Sphere.groovy).
+      range: this.symbolRange(
+        node,
+        node.childForFieldName("name") ?? nameNode,
+      ),
         visibility,
         genericParameters: (() => { const tp = this.extractGroovyTypeParameters(node); return tp.length > 0 ? tp : undefined })(),
         parameters,
@@ -1770,6 +1855,44 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    /**
+     * WHO OWNS A DECLARED-TYPE REFERENCE.
+     *
+     * KAD6 (M37 #597), RESTORED — and the restoration is the measured family
+     * position, not a preference. The method arm that used to come SECOND was
+     * moved first on 2026-09-30 (`a781ad20d`) against a 79-row hand-audited
+     * truth that had no method-scoped `references` row; this lane's own
+     * fixtures say the opposite, and the LIVE JVM family agrees with the
+     * fixtures, not with that truth file:
+     *
+     *   script/m14/groovy-family-attribution-probe.ts — the same declaration
+     *   shape (`String greet(String value)`) through all four analyzers:
+     *     kotlin  greet -> String   {return_type}     ← the METHOD owns it
+     *     scala   greet -> String   {return_type}     ← the METHOD owns it
+     *     java    greet -> String   {formal_parameter}← the METHOD owns it
+     *     groovy  Foo   -> String   {declared_type}   ← the CLASS owned it
+     *
+     * The fixture that pins it says the same thing in its own words
+     * (groovy/type-usage-graph.expectation.json: "M37 #597 KAD6 sweep:
+     * return-type refs now source to the METHOD (pre-fix: the enclosing
+     * class/Global) and carry the honest return_type label ... kotlin parity"),
+     * and groovy/scoped-type-references pins `from: "make"` for the return
+     * type, the formal parameter, the local variable and the `as` coercion of
+     * one method.
+     *
+     * WHY THE CLASS ARM CAME FIRST AND WHY THAT WAS WRONG. With the class
+     * first, `String format(String value)` emitted `Foo -> String` ONCE (the
+     * dedupe key collapses the return type and the parameter), and a file with
+     * fifty methods that mention `String` published ONE row. The class-level
+     * edge says "this class mentions String"; the method-level edge says
+     * "this method mentions String", and only the second one can answer "who
+     * uses String".
+     *
+     * A FIELD is still owned by the TYPE: a field declaration has no method
+     * ancestor, so the climb reaches the class on its own — the rule is one
+     * climb, and the position in the tree decides the owner, not a rule per
+     * position.
+     */
     const resolveSource = (start: Node): string => {
       // KAD6 sweep (M37 #597): include the start node when it IS the
       // declaration. The method_declaration case emits its own return type
@@ -1778,24 +1901,12 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // top level) instead of greet. Same bug kotlin's KAD6.
       // R2 (closure audit): closed type alternation as a Set — the regex
       // tested exact membership, nothing more.
-      // A declared TYPE belongs to the DECLARING TYPE, never to the method that
-      // mentions it. The method arm that used to come first attributed every
-      // signature type to the method -- `String format(String value)` produced
-      // `format -> String` twice (return_type and formal_parameter) and
-      // `findAll -> List` / `findAll -> T` for `List<T> findAll()`.
-      //
-      // This lane's hand-audited truth has 79 relationship rows and NOT ONE
-      // method-scoped `references` row: every declared-type edge is sourced at the
-      // class/trait/enum. The import-resolved `java.util.List` /
-      // `com.example.base.Entity` rows are unaffected -- they are emitted by the
-      // import path, not by this resolver.
-      //
-      // The 28 false positives this removed are all of one shape: a bare name
-      // (`String`, `List`, `Map`, `Optional`, `T`, `Date`, `CompletableFuture`,
-      // `User`) sourced at a method. Nothing that truth expects is lost, because
-      // truth expects no such row.
       let p: Node | null = GROOVY_DECLARATION_TYPES.has(start.type) ? start : start.parent
       while (p) {
+        if (p.type === "method_declaration" || p.type === "constructor_declaration" || p.type === "function_definition") {
+          const name = this.findChild(p, (c) => c.type === "identifier")
+          if (name) return name.text
+        }
         if (p.type === "class_declaration" || p.type === "trait_declaration" || p.type === "enum_declaration") {
           const name = this.findChild(p, (c) => c.type === "identifier")
           if (name) return name.text
@@ -1813,23 +1924,34 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const names: NamedNode[] = []
         collectTypeNames(r, names)
         for (const t of names) {
-          // A `declared_type` reference is emitted only for a QUALIFIED name.
+          // THE WRITTEN NAME IS THE NAME. The gate that used to refuse every
+          // BARE name (a name with no `.`) is gone, because the LIVE JVM
+          // family does not refuse it either — the same probe that settled the
+          // attribution prints a bare `String` target for kotlin, scala AND
+          // java (`script/m14/groovy-family-attribution-probe.ts`), and this
+          // lane's own fixtures pin the bare form:
+          //   groovy/as-cast          references run -> String  {cast_type}
+          //   groovy/cast-types       references run -> String  {cast_type}
+          //   groovy/type-usage-graph references m2  -> Map     {return_type}
+          //                           references .. -> List / String / Integer /
+          //                                      Set / Number {declared_type}
+          //   groovy/multicatch-and-varargs references .. -> IOException /
+          //                                      SQLException / Exception
           //
-          // Measured: every one of the 15 `references` rows this lane's hand-audited
-          // truth expects is fully qualified -- java.util.List, java.util.Optional,
-          // java.util.Map, java.util.HashMap, java.util.concurrent.CompletableFuture,
-          // com.example.base.Entity, com.example.base.BaseService,
-          // com.example.repo.Repository -- and every one of them is a type the file
-          // IMPORTS, which is what lets it be written qualified. Truth has no bare
-          // target anywhere in its 79 relationship rows.
+          // The old rule's own justification was "the import path already
+          // publishes the qualified form where one exists" — and that is TRUE,
+          // and it is a DIFFERENT edge. The import path publishes the RESOLVED
+          // dependency (`java.util.List`); the declared-type path publishes the
+          // type as it is WRITTEN at the use site (`List`). A file that writes
+          // `List` and imports `java.util.List` has two true facts about
+          // `List`, and the type-usage graph is the one that needs the written
+          // one: it is the edge that says "this method mentions List", which
+          // is the question a type-usage graph exists to answer.
           //
-          // So `String format(String value)` should not report `format -> String`:
-          // `String` is not imported here, the name cannot be resolved to anything
-          // actionable, and the edge asserts a dependency the reader cannot follow.
-          // The import path already emits the qualified form where one exists
-          // (`UserService -> java.util.Map`), so nothing is lost by dropping the
-          // bare duplicate.
-          if (!t.name.includes(".")) continue
+          // The qualified form is still published as one name, never descended
+          // into (collectTypeNames' scoped_type_identifier arm), so
+          // `java.util.Map.Entry` stays ONE target and `java`/`util`/`Map`
+          // stay out of the graph.
           const key = `${source}|${t.name}|${kind}`
           if (emitted.has(key)) continue
           emitted.add(key)
@@ -3252,29 +3374,43 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
-  // A symbol is anchored at its FIRST ANNOTATION, not at the keyword after it.
+  // A symbol is anchored at the DECLARATION, not at the annotation above it.
   //
-  // This reverses a skip-modifiers rule that was here and that the lane's own hand-audited
-  // truth contradicts. tree-sitter-groovy puts annotations INSIDE the `modifiers` child
-  // (`class_declaration → [modifiers "@Slf4j", identifier "Counter", class_body]`), so
-  // skipping `modifiers` moved every annotated declaration down to the next line. Truth
-  // records the annotation line, in all five cases in the fixtures:
+  // THIS RULE WAS REVERSED ON 2026-10-22, and the reversal is measured, not
+  // preferred. The old rule ("anchor at the FIRST ANNOTATION") was adopted
+  // against a hand-audited truth file that records the annotation's line:
   //     @Slf4j  L18 / class Counter        truth 18, was 19
   //     @Override L16 / String format(…)  truth 16, was 17
-  //     @Override L21 / save(…)           truth 21, was 22
-  //     @Override L36 / String getId()    truth 36, was 37
-  //     @Override L39 / String getName()  truth 39, was 40
-  // and the control confirms the rule is about annotations and nothing else: unannotated
-  // `class UserService` (L10) and `class User` (L27) were already correct, and every
-  // annotated declaration in the fixture set was off by exactly one.
+  // and it claimed the family convention — "the java analyzer anchors a symbol
+  // at its annotation line via `annotationLine`, so groovy was the outlier".
   //
-  // This is also the family convention: the java analyzer anchors a symbol at its
-  // annotation line via `annotationLine` (real-java-analyzer.ts, and its use for
-  // @Table/@FeignClient), so groovy was the outlier.
+  // BOTH CLAIMS ARE MEASURED FALSE TODAY (script/m14/groovy-family-line-anchor-probe.ts,
+  // the same annotated shape through all four JVM analyzers, the annotation on
+  // the line BEFORE each declaration):
   //
-  // A `modifiers` child that carries NO annotation is still skipped — that keeps
-  // `private String label` and `final int hex` on their own line, which is what the
-  // already-correct property rows require.
+  //   java    class@2  label@4  use@6      ← the DECLARATION's line
+  //   kotlin  class@2  label@4  use@6      ← the DECLARATION's line
+  //   scala   class@2  label@4  use@6      ← the DECLARATION's line
+  //   groovy  class@1  label@4  use@5      ← the ANNOTATION's line
+  //
+  // java's `annotationLine` is not what java's SYMBOL range uses (java anchors
+  // the symbol on the declaration and uses the annotation line for a
+  // DIFFERENT edge), and the truth file the old rule cited is stale for the
+  // whole JVM family — the same file is stale for the constructor name (see
+  // the constructor comment) and `bun script/m12/verify-analyzer.ts java` /
+  // `kotlin` report the constructor FN/FP pair at HEAD.
+  //
+  // THIS LANE'S OWN m14 FIXTURES record the DECLARATION's line and FORBID the
+  // annotation's line, so the old anchor is pinned as the pre-fix shape:
+  // groovy/lines-825 pins `contains[Wrapped->use] @26` and FORBIDS @25 (the
+  // `@Deprecated` line), `contains[Wrapped->label] @23`, and the class at 19;
+  // groovy/anonymous-body-overrides pins `overrides[anonymous_TypeCodec.bsonType->bsonType] @23`
+  // and `contains[anonymous_TypeCodec->bsonType] @23` where the `@Override` is
+  // on 22.
+  //
+  // A `modifiers` child is skipped in BOTH cases — annotation-carrying or not —
+  // so `private String label` and `final int hex` stay on their own line, which
+  // is what the already-correct property rows require.
   /** True when this declaration carries at least one annotation (directly or in `modifiers`). */
   private declarationHasAnnotation(node: Node): boolean {
     for (let i = 0; i < node.namedChildCount; i++) {
@@ -3291,13 +3427,51 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       const c = node.namedChild(i)
       if (!c) continue
       if (c.type === "modifiers") {
-        // Anchor at the modifiers node ONLY when it actually carries an annotation;
-        // its start is then the first annotation's line.
-        const hasAnnotation = this.findChild(c, (n) => n.type === "annotation" || n.type === "marker_annotation") !== null
-        if (hasAnnotation) return c
+        // A `modifiers` child that carries NO annotation is skipped — that keeps
+        // `private String label` and `final int hex` on their own line.
+        //
+        // A `modifiers` child that DOES carry an annotation is skipped too, and
+        // that is the change. An annotation is a DECORATOR, a different
+        // declaration from the one it decorates: the class is written where
+        // `class Wrapped` is written, not where `@Deprecated` is written.
+        //
+        // THE MEASUREMENT (script/m14/groovy-family-line-anchor-probe.ts) — the
+        // same annotated shape through all four JVM analyzers, where the
+        // annotation is the line BEFORE each declaration:
+        //
+        //   java    class@2  label@4  use@6      ← the DECLARATION's line
+        //   kotlin  class@2  label@4  use@6      ← the DECLARATION's line
+        //   scala   class@2  label@4  use@6      ← the DECLARATION's line
+        //   groovy  class@1  label@4  use@5      ← the ANNOTATION's line
+        //
+        // ⇒ groovy was the family's outlier, and the rule that made it one is
+        // the one this method used to implement ("a symbol is anchored at its
+        // FIRST ANNOTATION"). That rule was adopted against a hand-audited
+        // truth file whose rows it cites (`@Slf4j L18 / class Counter truth 18`),
+        // and that file is STALE for the whole JVM family — the same file is
+        // stale for the constructor name (see the constructor comment), and
+        // `bun script/m12/verify-analyzer.ts java` / `kotlin` report the
+        // constructor FN/FP pair TODAY.
+        //
+        // THIS LANE'S OWN m14 FIXTURES record the DECLARATION's line, and they
+        // say why in their own text (groovy/lines-825.expectation.json):
+        // "pre-fix: the `@Deprecated` line; the method is written on 26" — and
+        // they forbid the annotation line, so the old anchor is not merely
+        // unpinned, it is PINNED AS THE PRE-FIX SHAPE:
+        //   contains[Wrapped->use]      @26 (not 25)   and  @25 is FORBIDDEN
+        //   contains[Wrapped->label]    @23 (not 22)
+        //   symbol Wrapped (class)      @19 (not 18)
+        // and groovy/anonymous-body-overrides pins the same shape on an
+        // anonymous body's method (`@Override` L22 / `String bsonType()` L23 —
+        // the edge is at 23, and 22 is the annotation's line).
+        //
+        // So the anchor becomes the first substantive child AFTER the
+        // annotation: the class name for a class, the return type for a method
+        // (the method's own range is anchored on its NAME — see the call site),
+        // the declarator for a field.
         continue
       }
-      if (c.type === "annotation" || c.type === "marker_annotation") return c
+      if (c.type === "annotation" || c.type === "marker_annotation") continue
       // M59 (#825) / F6: the grammar's own names. `"comment"` was dead here —
       // tree-sitter-groovy emits `line_comment`/`block_comment` only.
       if (c.type === "line_comment" || c.type === "block_comment") continue
