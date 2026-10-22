@@ -8,9 +8,27 @@
 // (calls, uses, contains, imports, exports, references, extends, implements, overrides,
 // instantiates) plus the two the owner admitted BECAUSE the ten could not spell them honestly —
 // `decorates` (a decorator is applied TO a declaration; `references` claimed the body mentioned it)
-// and `renders` (a JSX element renders a component; `uses` claimed a mention). `mixes_in`/`part_of`
-// are NOT TypeScript constructs and are deliberately not emitted. The applicable-set evidence for
-// every construct and every type is validation/m14/verification/TYPESCRIPT-APPLICABLE-SET.md.
+// and `renders` (a JSX element renders a component; `uses` claimed a mention). The remaining two
+// of the fourteen are NOT emitted, and they are NOT the same kind of absence — stating that they
+// were would be a header that the code does not bear out:
+//   · `mixes_in` — ZERO SITES, and the absence is a fact about THE CORPUS, not about the language.
+//     TypeScript composes a mixin with `class X extends Mixin(Base) {}`, whose extends-expression
+//     is a call_expression; the language CAN express it, so this is not a grammar absence. Over
+//     the whole admitted population (17,689 files / 42 repos, digest 949d0fd6a615bd3e…; 2,186
+//     class heritage clauses, 1,107 interface declaration-merging clauses) the count of call-shaped
+//     heritage sites is 0, no heritage base is named `*mixin*`, and this analyzer emits 0 edges —
+//     the same shape is 76 sites in the javascript lane, so the difference is about the corpora.
+//     It IS expressible, so it STAYS IN THE DENOMINATOR as corpus-unexercised — it does not
+//     shrink n, and no reading of this file may turn it into a claim about the language.
+//   · `part_of` — A REAL CONSTRUCT THE SERVED GRAMMAR MIS-LEXES. The triple-slash directive
+//     (`/// <reference path="…" />`, `types="…"`, `lib="…"`) is lexed as a COMMENT by the served
+//     build (8515404dceed…), so it has no node and no relation can be read from it. It is IN
+//     GRAMMAR REMEDY PENDING and STAYS IN THE DENOMINATOR: a pending type is expressible, so it is
+//     an unimplemented gap and not an exclusion.
+// ⇒⇒⇒ SO THIS LANE IS 12 OF 14, NEVER 12 OF 12: twelve emitted types, `mixes_in` expressible but
+// unexercised, `part_of` expressible but pending a grammar remedy. Both stay in n.
+// The applicable-set evidence for every construct and every type is
+// validation/m14/verification/TYPESCRIPT-APPLICABLE-SET.md.
 // WHERE ITS EVIDENCE LIVES — docs/analyzers/real-typescript-analyzer.md (+ -ontology.md);
 // fixtures validation/m14/fixtures/typescript/** (run `bun run script/m14/run-fixtures.ts
 // --lang typescript`); gate `bun run script/m14/incoming-gate.ts typescript ts 400`; spec

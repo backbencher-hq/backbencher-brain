@@ -2,22 +2,35 @@
  * TS GRAMMAR-BINDING PROBE — WHICH GRAMMAR BUILD DOES PRODUCTION ACTUALLY LOAD, AND WHAT DOES THE
  * DIFFERENCE COST OVER THE ADMITTED POPULATION (L-2026-10-21-11).
  *
- * ## THE FACT THIS INSTRUMENT EXISTS TO ESTABLISH
+ * ## THE FACT THIS INSTRUMENT EXISTS TO ESTABLISH — RE-MEASURED, AND THE EARLIER VERSION OF THIS
+ * ## HEADER ASSERTED SOMETHING THE MEASUREMENT DOES NOT BEAR OUT
  *
- * There are TWO typescript grammar builds in this repository, and they are not the same build:
+ * There are THREE typescript grammar builds visible from this repository, and the fact that matters
+ * is WHICH ONE EACH ROUTE LOADS. The earlier version of this block said 778025db was "the build
+ * PRODUCTION loads". **THAT IS FALSE.** The measured binding is:
  *
- *   · **778025db5a8be0e70f8ccc3671e486dfeddd048c25d9e8a70c26de2e1bf6f97d** — the build PRODUCTION
- *     loads. `src/ast/engine.ts:939` resolves `tree-sitter-typescript/tree-sitter-typescript.wasm`,
- *     which is the npm package's own build.
- *   · **8515404dceed38e1…** — the build the FIXTURE SUITE runs. `script/m14/run-fixtures.ts:704`
- *     does `Language.load(readFileSync(path.join(ROOT, "wasm", cfg.wasm)))`, and `cfg.wasm` for
- *     typescript is `tree-sitter-typescript.wasm`, so the fixture lane reads `wasm/` and NOT the
- *     npm package.
+ *   · **8515404dceed38e1ed86aa34b09fcf3379fff1b4ff9dd3967bcd6d1eb5ac3d8f** — 2,342,690 bytes,
+ *     385 node ids / 191 named types. ⇒⇒⇒ **THIS IS THE BUILD PRODUCTION AND THE FIXTURE SUITE BOTH
+ *     LOAD.** There is no second build in use, and no build difference to cost.
+ *   · **778025db5a8be0e70f8ccc3671e486dfeddd048c25d9e8a70c26de2e1bf6f97d** — 1,413,849 bytes, the
+ *     npm package's own `node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm`.
+ *     ⇒⇒⇒ **LOADED BY NOTHING.** It is on disk and no code path in this repository reaches it: not
+ *     production, not the fixture suite. It is not a fallback; it is an unused file.
+ *   · **6aa3b2c70e76f5d48eafef1093e9c4de383e13f2fdde2f4e9b98a378f6a8f1b6** — the TSX build
+ *     (`wasm/tree-sitter-tsx.wasm`), 405 ids / 203 named. The TSX grammar is a DIFFERENT BUILD from
+ *     the typescript grammar and the two are NOT interchangeable: parsing a `.tsx` file with the
+ *     typescript grammar measures a different population from parsing it with the tsx grammar.
  *
- * **A CELL WHOSE FIXTURES RAN ON A DIFFERENT PARSER IS NOT WRONG — IT IS UNSTATED.** A fixture that
- * passes on one build does not certify the other, and the lane's cell must say which build each
- * of its numbers came from. This probe makes the two builds' relationship to production a
- * MEASUREMENT rather than an inference, and it measures what the difference COSTS.
+ * ⇒⇒⇒ **A GRAMMAR CITATION IS THE SHA-256 OF THE BYTES THE REGISTRY SERVES, NEVER A PATH AND NEVER A
+ * LOG LINE.** The engine logs `language parser loaded {"wasmPath": …}` whenever it (re)loads a
+ * parser; that line names a PATH, and this fleet has already mistaken a path for a build — this
+ * header did. Every number in this lane's pages cites a digest, so a reader can tell which bytes a
+ * count was taken over.
+ *
+ * **A CELL WHOSE FIXTURES RAN ON A DIFFERENT PARSER IS NOT WRONG — IT IS UNSTATED.** Here both
+ * routes load the SAME digest, which is why the cell can state it; that is a MEASUREMENT this probe
+ * makes rather than an inference, and the third build's presence is why "the parser loaded" is not
+ * self-evidently the parser that produced a count.
  *
  * ## WHAT IT MEASURES
  *
