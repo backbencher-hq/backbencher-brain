@@ -15,12 +15,30 @@
 // include|prepend|extend). The relabel happened at UNCHANGED construct sites and the delta closes
 // exactly (cap-50: implements 17 -> 0, extends 48 -> 44, mixes_in 0 -> 21 = 17 + 4, table totals
 // byte-identical). Do not reintroduce `implements` here without a ruling that reverses RUBY-D1.
+// THE REMEDY LADDER, 2026-10-21 (Lead ruling L-14: a ruling is the LAST RESORT, and it must NAME the
+// rung that was unavailable — "a rung that is merely HARD is not a reason"). `mixes_in` is
+// IMPLEMENTED on RUNG R3 (implement the construct with an EXISTING node type, no grammar change):
+// ruby's grammar exposes NO include/extend/prepend node type (0 of the 253 node types in
+// grammars/tree-sitter-ruby/src/node-types.json match /include|extend|prepend|mixin/i) and the
+// construct reaches this analyzer as a real `call` node carrying the keyword in its
+// `method: (identifier)` field, i.e. as a REAL NODE and not as recovery text. The four types this
+// file does NOT emit — implements, decorates, renders, part_of — are RULED UNDECIDABLE, and each
+// ruling names its rung: R1 is unavailable because npm's newest tree-sitter-ruby is 0.23.1 and the
+// named-type delta against the wired build is added 0 / removed 0, and R2 is unavailable because a
+// patched rule would fire on 0 of the 989 admitted files (AST-verified, not a text count). The
+// citations, the positive controls and the near-miss census are in
+// validation/m14/measurements/ruby-grammar-inventory.json and
+// validation/m14/measurements/ruby-near-miss-census-2026-10-21.json; the disposition is in
+// validation/m14/verification/RUBY-D7-LEDGER.md.
 // Where its scripts and validations live: script/m14/spec/ruby-completeness.json · fixtures
 // validation/m14/fixtures/ruby/** (`bun run script/m14/run-fixtures.ts --lang ruby`) · lane doc
-// docs/analyzers/real-ruby-analyzer.md.
+// docs/analyzers/real-ruby-analyzer.md · cell validation/m14/verification/RUBY-CELL-2026-10-21.md ·
+// wall ledger validation/m14/verification/RUBY-D7-LEDGER.md.
 // WHEN THIS FILE CHANGES, EDIT THESE TOO (the co-edit list): docs/analyzers/real-ruby-analyzer.md, the
 // spec JSON's emission sites and requiredKinds row, and the fixtures/expectations pinning a changed edge.
-// Grammar: tree-sitter-ruby (wasm/tree-sitter-ruby.wasm).
+// Grammar: tree-sitter-ruby (wasm/tree-sitter-ruby.wasm, sha256
+// 93a5022855314cdb45458c7bb026a24a0ebc3a5ff6439e542e881f14dfa13a39) — the source it is a build of is
+// vendored at grammars/tree-sitter-ruby/ (tree-sitter-ruby@0.23.1, PROVENANCE.md beside it).
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
