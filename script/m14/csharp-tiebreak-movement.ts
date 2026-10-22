@@ -44,7 +44,7 @@
  * published: a movement measured against a key space the gate does not use is a number about the
  * instrument, not about the lane.
  */
-import { readFileSync } from "node:fs"
+import { readFileSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { classifyEdge, isContainsEdge, type ExternalClaim } from "./incoming-rule"
 
@@ -60,6 +60,10 @@ const KEYSPACE = argOf("--keyspace") ?? path.join(ROOT, ".tmp-csharp", "csharp-k
 const ROWS = argOf("--rows") ?? path.join(ROOT, ".tmp-csharp", "csharp-rows.jsonl")
 
 // ── THE KEY SPACE (the gate's construction, mirrored) ───────────────────────────────────────────
+/** THE KEY SPACE's own counters - the twin and the falsifier are measured over IT. */
+let keyspaceFiles = 0
+let keyspaceEntries = 0
+const keyspaceFileSet = new Set<string>()
 const projectDecl = new Map<string, Map<string, number>>()
 const projectKinds = new Map<string, Map<string, Set<string>>>()
 const declPos = new Map<string, { file: string; line: number }[]>()
@@ -69,10 +73,12 @@ const nsByFile = new Map<string, string>()
   let keyLines = 0
   for (const raw of readFileSync(KEYSPACE, "utf8").split("\n")) {
     if (!raw.trim()) continue
+    keyspaceEntries++
     let r: any
     try { r = JSON.parse(raw) } catch { continue }
     const repo = String(r.r ?? "")
     const file = String(r.f ?? "")
+    keyspaceFileSet.add(file)
     const name = String(r.n ?? "")
     const kind = String(r.k ?? "")
     const line = Number(r.l ?? 0) || 0
@@ -278,3 +284,26 @@ if (!agree || !falsifierHolds) {
 console.log("")
 console.log("The twin agrees with the primary row for row, and the independent falsifier holds: the")
 console.log("movement count is published.")
+
+// THE ARTIFACT - the same numbers in a machine-readable form, so the verdict page and the spec
+// cite a file rather than a transcript.
+const artifact = {
+  lane: "csharp",
+  instrument: "script/m14/csharp-tiebreak-movement.ts",
+  question: "the own-file tie-break's movement (arbiter change e1e2f7a19), counted PER ROW and counted DIRECTLY",
+  method: "the Lead's own classifyEdge is called TWICE per row - once with the tie-break's ownFileDeclares input and once without it - and a row is MOVED when the two verdicts differ",
+  notTheCounter: "collRes is the tie-break's COUNTER (resolved rows whose target had more than one declaration), not its movement; a difference between two TABLES is a difference between two KEY SPACES, not between two ARBITER VERSIONS",
+  population: { rows: total.rows, files: keyspaceFileSet.size, keyspaceEntries },
+  perLabel: summary,
+  total,
+  twin: {
+    primaryMoved: primaryMoved.size,
+    twinMoved: twinMoved.size,
+    disagreement: agree ? "NONE" : { primaryOnly: onlyPrimary.length, twinOnly: onlyTwin.length },
+    falsifierA: { movedRowsWhoseOwnFileDoesNotDeclareTheTarget: movedWithoutOwnFile.length, holds: movedWithoutOwnFile.length === 0 },
+    falsifierB: { strippedMovement: strippedMovement, unstrippedMovement: falsifierMovement, holds: falsifierB },
+  },
+  verdict: agree && falsifierHolds ? "PUBLISHED: the primary and the twin agree row for row and both falsifiers hold" : "WITHHELD: the twin and the primary disagree, or a falsifier fires",
+}
+writeFileSync(path.join(ROOT, "validation/m14/measurements/csharp-tiebreak-movement.json"), JSON.stringify(artifact, null, 2) + "\n")
+console.log(`  written              validation/m14/measurements/csharp-tiebreak-movement.json`)
