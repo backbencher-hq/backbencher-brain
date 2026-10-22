@@ -350,8 +350,39 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // them non-types. G7 (anon exclusion) is unaffected: an anonymous class
       // is never top-level, so the !ownerName half excludes it structurally —
       // the explicit isAnonymousClass check stays as belt-and-braces.
-      if (!s.metadata?.isAnonymousClass && !s.metadata?.isPhantom && !s.ownerName && TOP_LEVEL_TYPE_NODES.has(String(s.metadata?.nodeType ?? ""))) {
-        exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
+      //
+      // A TOP-LEVEL FUNCTION IS AN IMPORTABLE UNIT TOO — 2026-10-22.
+      //
+      // The M49 exports convergence (reviews/jvm-closure-audit.md:27, the
+      // user-approved ruling) settled the SET as "importable units: top-level
+      // types AND top-level functions", and it says why: "kotlin/scala also
+      // export top-level functions (`fun topLevelUtil()` → exports
+      // ["topLevelUtil","Svc"], probe-pinned)". It is measured on the live
+      // kotlin analyzer too — script/m14/groovy-family-exports-probe.ts prints
+      //   kotlin  exports[Publisher->scriptHelper] {kind: function}
+      //
+      // In Groovy the same is true and for a sharper reason: a top-level
+      // `def helper() {}` in a packaged compilation unit is a method of the
+      // SCRIPT CLASS, and an importer binds it with
+      // `import static <pkg>.<Script>.<method>` — so the name IS reachable
+      // from another file, which is what the `exports` edge asserts.
+      //
+      // The unit that stays out is the top-level PROPERTY: a top-level `def x`
+      // is a field of the script class, not an importable unit, and the
+      // 609-top-level-members measurement the comment above cites counted
+      // those (and nested ones) — 609 across 52 files, of which the FUNCTIONS
+      // are now published and the PROPERTIES are not.
+      const nodeType = String(s.metadata?.nodeType ?? "")
+      const isTopLevelType = TOP_LEVEL_TYPE_NODES.has(nodeType)
+      const isTopLevelFunction = nodeType === "method_declaration" || nodeType === "function_definition"
+      if (!s.metadata?.isAnonymousClass && !s.metadata?.isPhantom && !s.ownerName && (isTopLevelType || isTopLevelFunction)) {
+        exports.push({
+          name: s.name,
+          kind: s.kind,
+          range: s.range,
+          visibility: s.visibility,
+          metadata: { exportForm: isTopLevelFunction ? "public_top_level_function" : "public_top_level_type" },
+        })
       }
     }
 
@@ -400,6 +431,11 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // unpublishable the moment one appears — but it is measured at 0
     // occurrences here and is reported as 0 rather than described as working.
     let exportsWithNoPackage = 0
+    // Non-public top-level units: WITHHELD from the `exports` edge (see the
+    // withholding note below) and counted here, so the refusal is visible
+    // rather than silent. A non-zero count means the corpus HAS
+    // non-importable top-level types.
+    let exportsNotImportable = 0
     if (exports.length > 0) {
       const published = new Set<string>()
       for (let i = 0; i < exports.length; i++) {
@@ -410,22 +446,67 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // edge names, and a second row asserting the same pair is noise.
         if (published.has(target)) continue
         published.add(target)
-        const isPublic = e.visibility !== "private" && e.visibility !== "protected"
         if (!walk.currentPackage) { exportsWithNoPackage++; continue }
+        // A NON-PUBLIC top-level type is NOT an importable unit, so it is not
+        // published. This is the Groovy rule, and it is the reason Groovy has
+        // no 0.6 tier where java has one.
+        //
+        // java publishes a package-private top-level type at 0.6 with
+        // `exportForm: package_private_top_level_type` + a reasonCode, and the
+        // java lane's adjudication (validation/m14/fixtures/java/exported-types.expectation.json,
+        // Lead ruling task-9, 2026-10-18) keeps that tier because "JLS 6.6.1
+        // makes a package-private type reachable by name from its OWN package" —
+        // a SAME-PACKAGE reachability claim, which is what the 0.6 discount is
+        // for.
+        //
+        // Groovy has no such tier: there is no package-private, and a
+        // `private`/`protected` top-level class in a Groovy compilation unit is
+        // not reachable by name from another compilation unit at all — not from
+        // another package and not from another file in the same package. So the
+        // same-package reachability java publishes does not EXIST here, and
+        // publishing the row at 0.6 would assert a reachability the language
+        // denies.
+        //
+        // ⇒ The row is WITHHELD and the refusal is COUNTED, exactly as the
+        // no-package refusal is. The lane's own fixture pins the withholding
+        // (groovy/exports-publication.expectation.json):
+        //   forbidRelationships: [{"type":"exports","target":"Hidden"},
+        //                          {"type":"exports","target":"Shielded"}]
+        // and its rationale says why the withholding is not an edge case: "the
+        // corpus has 5 and 1 of those respectively, so a visibility-blind rule
+        // fabricates on real code, not only in this fixture".
+        //
+        // The ARRAY (`ParseResult.exports`) still carries the unit — the
+        // withholding is an EDGE decision, and the array is the surface other
+        // consumers read (groovy/exports-publication-edge pins `expectExports`).
+        if (e.visibility === "private" || e.visibility === "protected") { exportsNotImportable++; continue }
+        const exportForm = String(e.metadata?.exportForm ?? "public_top_level_type")
         relationships.push({
           source: walk.currentPackage,
           target,
           type: ASTEngine.RelationshipType.Exports,
-          confidence: isPublic ? 1.0 : 0.6,
+          confidence: 1.0,
           // M59 (#825): the exported DECLARATION's own line — the name is
           // written there, not at whatever construct encloses it. Absent rather
           // than 0 when the symbol carried no range (#823).
           ...(e.range?.startLine ? { line_number: e.range.startLine } : {}),
           metadata: {
+            // The vocabulary is the java lane's, and it is the Lead-adjudicated
+            // one (java/exported-types, task-9, 2026-10-18): `exported_type` was
+            // superseded by `<lang>_exportable_unit` + `exportForm` when java's
+            // export edge was folded into ONE post-pass, and the surviving
+            // channel is the one with the RICHER metadata — `kind` + `dottedName`
+            // + the `is<Lang>Export` flag. groovy carries the same shape, and
+            // groovy/exports-publication-edge pins it.
             relationshipType: "groovy_exportable_unit",
-            exportForm: isPublic ? "public_top_level_type" : "non_public_top_level_type",
-            ...(isPublic ? {} : { reasonCode: "non_public_top_level_type" }),
-            symbolKind: String(e.kind ?? ""),
+            exportForm,
+            isGroovyExport: true,
+            kind: String(e.kind ?? ""),
+            // The join key, stated because it is not obvious: an `exports` edge
+            // is `package -> simpleName`, so `source + "." + target`
+            // reconstructs the dotted path an `imports` edge targets and the
+            // two labels meet without a resolver (java's key, same meaning).
+            dottedName: `${walk.currentPackage}.${target}`,
           },
         })
       }
@@ -460,6 +541,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // reader of the relationship table cannot see, and it is reported
         // rather than absorbed. Measured over the corpus: 266 of 2,817 files.
         exportsWithNoPackage,
+        exportsNotImportable,
         framework: fw.framework,
         detectedFrameworks: fw.detected,
         analysisVersion: "5.0.0-groovy-pure-ast",
