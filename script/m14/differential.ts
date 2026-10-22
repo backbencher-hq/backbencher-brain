@@ -515,6 +515,17 @@ export function readCodeInputs(root: string): CodeInputs {
 // whole of this file's JSON footprint beyond the two registrations below.
 import { deriveJsonEdges } from "./oracles/json"
 import { deriveXmlTruth } from "./oracles/xml"
+// THE YAML-EXTENDS ORACLE IS LANE-OWNED: `script/m14/oracles/yaml-extends.ts`, written by the yaml
+// lane from YAML's own semantics, sharing no rule table, key set and path helper with
+// `RealYamlAnalyzer`. It derives the `allOf` composition and the `extends:`-key family from the
+// tree, and it agrees 1:1 with the analyzer on the fixtures (2/2, 7/7, 0/0) and on real corpus
+// files (Grace .gitlab-ci.yml 5/5, hasura docker-compose 12/12, fsharp azure-pipelines 2/2, Grace
+// OpenAPI 11/11).
+//
+// ⇒ IT IS WIRED HERE BECAUSE A LANE-OWNED ORACLE THAT IS NOT WIRED IS AN ORACLE GAP, AND AN ORACLE
+// GAP REPORTS ITSELF AS AN ANALYZER GAP. The differential would call the analyzer's `extends` rows
+// `unexplained` — the analyzer's own edges, with nothing on the other side to explain them.
+import { deriveYamlExtendsEdges } from "./oracles/yaml-extends"
 
 export { deriveJsonEdges }
 
@@ -5810,6 +5821,119 @@ export function deriveJavaScriptExtends(root: any): { label: string; from: strin
           if (target && !seen.has(k)) {
             seen.add(k)
             edges.push({ label: "extends", from: "(class)", target })
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) walk(c)
+    }
+  }
+  walk(root)
+  return edges
+}
+
+/**
+ * M14 / R3 — THE JAVASCRIPT `mixes_in` ORACLE.
+ *
+ * A class's supertype may be a CALL, and there are TWO shapes of it, and they put the base and
+ * the mixin in OPPOSITE positions:
+ *
+ *   (A) `class X extends Base.extend(M1, M2)` — a MEMBER call. The RECEIVER names the BASE and
+ *       the ARGUMENTS name the MIXINS composed into X's supertype chain. (Ember / Backbone.)
+ *   (B) `class X extends MixinFn(Base)` — a plain FUNCTION call. The CALLEE names the MIXIN and
+ *       the ARGUMENT names the BASE. (The TypeScript / Redwood mixin-factory idiom, where
+ *       `MixinFn(Base)` evaluates to a class that extends Base.)
+ *
+ * WHY THE SHAPE IS THE DISCRIMINATOR, AND NOT A NAME: `Route.extend(M)` and `_.extend(obj,
+ * props)` are the SAME member-call shape, and the thing that separates the mixin application
+ * from the property copy is that THE CALL IS THE HERITAGE ITSELF. A call in heritage position
+ * is a class-producing expression by construction — the language requires the heritage to
+ * evaluate to a constructor, or the class is a runtime error. A call in ARGUMENT position is
+ * not. That is the same discrimination the analyzer makes, and the two must agree or C6 fails.
+ *
+ * WHY THE BASE AND THE MIXIN LAND ON OPPOSITE SIDES: it is a property of the two idioms, not a
+ * choice. In (A) the member call's receiver is the class being extended and its arguments are
+ * the members composed into the result. In (B) the callee IS the mixin — a factory that takes
+ * the base and returns a class extending it — so the argument is the base.
+ *
+ * WHAT IT DELIBERATELY DOES NOT CLAIM: a call-shaped heritage whose base or whose mixin is
+ * itself a CALL names nothing, so no row is derived for it. The analyzer refuses the same way
+ * (its `resolve` publishes only an identifier or a member_expression), and the two must refuse
+ * the same rows.
+ *
+ * MEASURED over the admitted population by `script/m14/javascript-r3-measurement.ts`: 76
+ * call-shaped clauses — 74 of shape (A) and 2 of shape (B) — of which the pre-remedy lookup
+ * found 0 and published no edge at all. The 11 arguments that are themselves calls are refused
+ * by both sides, and 83 arguments that name something are published by both.
+ */
+export function deriveJavaScriptMixins(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const walk = (n: any): void => {
+    if (n.type === "class_declaration" || n.type === "class") {
+      const heritage = (() => {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "class_heritage") return c
+        }
+        return null
+      })()
+      if (heritage) {
+        // A call-shaped heritage's DIRECT named child is the call_expression itself; the base
+        // and the mixins are GRANDCHILDREN of it, which is why the identifier/member_expression
+        // lookup above found nothing.
+        let call: any = null
+        for (let i = 0; i < heritage.namedChildCount; i++) {
+          const c = heritage.namedChild(i)
+          if (c && c.type === "call_expression") { call = c; break }
+        }
+        if (call) {
+          const callee = call.childForFieldName?.("function")
+          const args = (() => {
+            for (let i = 0; i < call.namedChildCount; i++) {
+              const c = call.namedChild(i)
+              if (c && c.type === "arguments") return c
+            }
+            return null
+          })()
+          const argNodes: any[] = []
+          if (args) for (let i = 0; i < args.namedChildCount; i++) {
+            const a = args.namedChild(i)
+            if (a) argNodes.push(a)
+          }
+
+          // THE SHAPE decides the roles. A MEMBER call extends its RECEIVER and composes its
+          // ARGUMENTS; a plain call IS a mixin and takes the BASE as its argument.
+          const mixins: any[] = []
+          let base: any = null
+          if (callee && callee.type === "member_expression") {
+            base = callee.childForFieldName?.("object") ?? null
+            mixins.push(...argNodes)
+          } else if (callee && callee.type === "identifier") {
+            mixins.push(callee)
+            base = argNodes[0] ?? null
+          }
+
+          // A base the call COMPUTES rather than NAMES is not derivable, and is not claimed.
+          if (base && (base.type === "identifier" || base.type === "member_expression")) {
+            const target = String(base.text ?? "").trim()
+            const k = "extends|" + target
+            if (target && !seen.has(k)) {
+              seen.add(k)
+              edges.push({ label: "extends", from: "(class)", target })
+            }
+          }
+          // A mixin that is itself a CALL names nothing, so it is not claimed either.
+          for (const m of mixins) {
+            if (m.type !== "identifier" && m.type !== "member_expression") continue
+            const target = String(m.text ?? "").trim()
+            const k = "mixes_in|" + target
+            if (target && !seen.has(k)) {
+              seen.add(k)
+              edges.push({ label: "mixes_in", from: "(class)", target })
+            }
           }
         }
       }
@@ -23787,6 +23911,15 @@ async function main() {
         for (const e of deriveJavaScriptExtends(root)) {
           ;(truth as any[]).push(e)
         }
+        // The `mixes_in` oracle (M14 / R3). A class's supertype may be a CALL — `class X extends
+        // Base.extend(M)` (Ember/Backbone) or `class X extends MixinFn(Base)` (the TS/Redwood
+        // mixin-factory idiom) — and the base and the mixin sit at DIFFERENT depths in the tree,
+        // so the `extends` oracle above (which reads the heritage's DIRECT named children) found
+        // neither of them. Measured over the admitted population: 76 call-shaped clauses, 0
+        // found before the remedy, 76 `extends` and 83 `mixes_in` rows after.
+        for (const e of deriveJavaScriptMixins(root)) {
+          ;(truth as any[]).push(e)
+        }
         // The `overrides` oracle, with a declared platform-builtin prototype chain.
         for (const e of deriveJavaScriptOverrides(root)) {
           ;(truth as any[]).push(e)
@@ -24637,6 +24770,14 @@ async function main() {
         for (const e of deriveYamlEdges(root, relPath)) {
           ;(truth as any[]).push(e)
         }
+        // THE YAML-EXTENDS ORACLE (lane-owned, above). The `extends:`-key family and the `allOf`
+        // composition are DERIVED FROM THE TREE, and the analyzer's own rows for them had nothing
+        // on the truth side to meet — which is the DERIVATION-debt shape this file records for
+        // imports/exports ("stored and compared against nothing"). Until this push, those rows
+        // would read as `unexplained`, which is an ORACLE gap and not an analyzer gap.
+        for (const e of deriveYamlExtendsEdges(root, relPath)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "bash") {
       }
@@ -25228,7 +25369,7 @@ async function main() {
           // 2026-10-18: the two canonical values the js lane now emits are COMPARED, not silently
           // dropped. A label in neither the oracle nor this list is the DERIVATION-debt shape this
           // file already records for imports/exports ("stored and compared against nothing").
-          ...(lang === "javascript" ? ["decorates", "renders"] : []),
+          ...(lang === "javascript" ? ["decorates", "renders", "mixes_in"] : []),
           // TYPESCRIPT: its own decorates/renders derivation is pushed in the ts truth block; admit the
           // labels or the oracle compares nothing (the mirror failure the same paragraph records).
           ...(lang === "typescript" ? ["decorates", "renders"] : []),
@@ -27000,7 +27141,12 @@ export function deriveYamlEdges(root: any, relPath: string): { label: string; fr
   const escapePointer = (k: string): string => k.split("~").join("~0").split("/").join("~1")
   const isPointerText = (v: string): boolean => v.length > 2 && v.startsWith("#/") && !v.includes(" ")
   const INCLUDE_TAGS = new Set(["include", "inc", "include_tasks", "include_role", "include_vars", "include_file", "import", "import_tasks", "import_playbook", "import_role", "import_file"])
-  const KEYWORD_INCLUDE_KEYS = new Set(["include_tasks", "import_tasks"])
+  // ★ `include_vars` IS IN THIS SET NOW, AND THE ASYMMETRY IT FIXED WAS MEASURED BY THE YAML LANE:
+  // the include-family TAG set (`INCLUDE_TAGS`, one line above) has carried `include_vars` all
+  // along, and the KEY set did not — so a construct the analyzer's own tag family recognised was
+  // invisible to the key-path check. ⇒ TWO SETS THAT CLAIM THE SAME FAMILY MUST CARRY THE SAME
+  // MEMBERS, OR ONE OF THEM IS LYING ABOUT WHAT THE FAMILY CONTAINS.
+  const KEYWORD_INCLUDE_KEYS = new Set(["include_tasks", "import_tasks", "include_vars"])
   const EXPORT_CONTAINERS = new Set(["schemas", "responses", "parameters", "examples", "requestBodies", "headers", "securitySchemes", "links", "callbacks"])
 
   interface WalkCtx { parentPath: string; pointerPath: string; document: string; siblings: Map<string, number> }
