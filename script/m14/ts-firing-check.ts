@@ -12,7 +12,7 @@
 // it as the ONLY silent type — which reads as "those three lanes close every gap
 // except imports" and means nothing of the kind.
 //
-// So this copy makes exactly two changes and keeps everything else:
+// So this copy makes exactly three changes and keeps everything else:
 //
 //   1. REPO resolves to this worktree, from the script's own location, so the
 //      number describes the branch being reviewed.
@@ -20,9 +20,35 @@
 //      real-*-analyzer.ts files import — and the `src/ast/types.ts` spelling is
 //      read too and printed beside it, so the split is visible in the output
 //      instead of inferred from a SILENT line.
+//   3. THE POPULATION IS THE ROUTER'S ONE TABLE AND THE GATE'S OWN ADMISSION RULE — 2026-10-22.
 //
-// The traversal, the corpus draw, the 120-file sample and the tally logic are
-// unchanged, so the two numbers are comparable. `--all` walks the same lane table.
+//   ⇒⇒⇒ WHY 3. This file carried its OWN per-language extension list, and the Lead's
+//   `script/m14/shape-agreement-scan.ts` found it: the copy said `typescript: [".ts",
+//   ".tsx"]` while the router's one table says `typescript: "ts,tsx,mts,cts"` — so this
+//   instrument was measuring a population that EXCLUDED `.mts` and `.cts`, while the gate
+//   and the denominators counted them. ⇒⇒⇒ **THE INSTRUMENT AND THE DENOMINATOR MUST COUNT
+//   THE SAME POPULATION**, and a table duplicated in two places is one table that WILL
+//   diverge. It did. The fix is not to edit the copy — it is that THERE IS NO SECOND COPY:
+//   `script/m14/language-extensions.ts` is THE ONE TABLE and every consumer reads it.
+//
+//   ⇒⇒⇒ AND THE POPULATION WAS NOT EVEN REACHABLE. This file picked its corpus by a
+//   directory NAMED AFTER THE LANE (`<corpus>/typescript`), and the corpus is REPO-NAMED
+//   (202 repositories under `.corpus`) — so for the typescript lane there was no such
+//   directory, and the instrument printed `TYPESCRIPT NO CORPUS under typescript` and
+//   measured NOTHING. ⇒⇒⇒ **A CLEAN-LOOKING ZERO OVER AN EMPTY POPULATION**: the same shape
+//   the one-table file's own header records for the cpp lane's heritage probe (a probe whose
+//   hand-written map had no `cpp` entry, so it printed "population: 0 GIT-TRACKED admitted
+//   files" and "UNCOVERED 0" and exited 0). ⇒⇒⇒ So the fix is BOTH: read the one table, AND
+//   admit files the way the gate admits them — git-tracked, extension-admitted, at most the
+//   gate's 1 MB SIZE_CAP, present on disk — over the corpus ROOT, not over a lane-named
+//   directory.
+//
+//   ⇒⇒⇒ THE NUMBER BEFORE AND AFTER IS PRINTED BY THIS INSTRUMENT, from its own walk: the
+//   admitted count per extension, the over-cap and absent exclusions, and the sample it
+//   actually read. The BEFORE is in the record: the population was EMPTY.
+//
+// The tally logic and the 120-file sample are unchanged, so the labels this instrument
+// reports are comparable to the master's. `--all` walks the same lane table.
 //
 // NO REGEX in anything this lane wrote: the file picker's directory skips use
 // startsWith/endsWith/indexOf, and the analyzer-class probe reads the export name
@@ -31,44 +57,110 @@
 //
 // Usage: bun run script/m14/ts-firing-check.ts [--files N] [--all]
 import { readdirSync, statSync } from "node:fs"
+import { execFileSync } from "node:child_process"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
+// ⇒⇒⇒ THE ROUTER'S ONE TABLE. `script/m14/language-extensions.ts` holds every lane's spellings and
+// exports `extensionsFor(language)`. `script/m14/incoming-gate.ts` — the gate that computes the
+// denominator — calls THIS function, so reading it here is not a convenience: it is the only way
+// the instrument's population can BE the denominator's population.
+import { extensionsFor } from "./language-extensions"
 
 const REPO = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
 const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const NFILES = Number(process.env.NFILES ?? 120)
 
+// ⇒⇒⇒ THE LANE TABLE CARRIES THE ANALYZER CLASS AND THE LANE NAME — AND NOTHING ELSE. The third
+// element used to be a corpus directory named after the LANE ("typescript", "lodash", "vuejs",
+// "shadcn-svelte"), and that was a SECOND, SILENT COPY OF THE POPULATION: the corpus is
+// REPO-NAMED, so for the typescript lane there was no `typescript` directory under it, and this
+// instrument printed "TYPESCRIPT NO CORPUS under typescript" — a CLEAN-LOOKING ZERO OVER AN EMPTY
+// POPULATION. ⇒⇒⇒ **THE POPULATION IS NOW THE CORPUS ROOT, AND THE LANE NAMES NO DIRECTORY IN IT.**
 const LANES = {
-  TYPESCRIPT: ["typescript", "real-typescript-analyzer", "typescript"],
-  JAVASCRIPT: ["javascript", "real-javascript-analyzer", "lodash"],
-  VUE: ["vue", "real-vue-analyzer", "vuejs"],
-  SVELTE: ["svelte", "real-svelte-analyzer", "shadcn-svelte"],
-}
-const EXTS = {
-  typescript: [".ts", ".tsx"],
-  javascript: [".js", ".mjs"],
-  vue: [".vue"],
-  svelte: [".svelte"],
+  TYPESCRIPT: ["typescript", "real-typescript-analyzer"],
+  JAVASCRIPT: ["javascript", "real-javascript-analyzer"],
+  VUE: ["vue", "real-vue-analyzer"],
+  SVELTE: ["svelte", "real-svelte-analyzer"],
 }
 const SKIP_DIRS = ["node_modules", ".git", "testdata", "fixtures", "dist", "build", "coverage"]
 
-function pickFiles(dir: string, exts: string[], want: number, cap = 400): string[] {
-  const out: string[] = []
-  const walk = (d: string, depth: number): void => {
-    if (out.length >= want || depth > 7) return
-    let ents: { name: string; isDirectory(): boolean }[]
-    try { ents = readdirSync(d, { withFileTypes: true }) as any } catch { return }
-    for (const e of ents) {
-      if (out.length >= want) return
-      const p = join(d, e.name)
-      if (e.isDirectory()) { if (!SKIP_DIRS.some((s) => e.name === s || e.name.startsWith(s))) walk(p, depth + 1) }
-      else if (exts.some((x) => e.name.endsWith(x))) {
-        try { if (statSync(p).size < 400_000) out.push(p) } catch {}
-      }
+// ⇒⇒⇒ THE SIZE CAP IS THE GATE'S CAP. The gate admits a file when it is git-tracked, admitted by
+// extension, AT MOST 1 MB, and present on disk (`script/m14/incoming-gate.ts`: SIZE_CAP =
+// 1024 * 1024). The gate's own header says why the cap is the engine's line: above 1 MB the
+// engine extracts structurally instead of building a full AST. ⇒⇒⇒ **THE INSTRUMENT'S POPULATION
+// AND THE DENOMINATOR'S POPULATION ARE THE SAME SET, OR NEITHER NUMBER MEANS ANYTHING.**
+const SIZE_CAP = 1024 * 1024
+
+interface Admitted {
+  files: string[]
+  repos: Set<string>
+  /** per-extension: how many tracked paths carried that extension, and how many were admitted */
+  byExt: Map<string, { tracked: number; overCap: number; absent: number; admitted: number }>
+  overCap: number
+  absent: number
+  overCapLargest: number
+}
+
+/**
+ * THE GATE'S OWN ADMISSION RULE, APPLIED TO THE CORPUS ROOT.
+ *   - every immediate child that is a real git checkout is a repository (a stray directory is not
+ *     evidence — the gate says so and the rule is copied, not paraphrased);
+ *   - `git ls-files` gives the TRACKED paths, so a file the working tree does not have is counted
+ *     as absent rather than claimed;
+ *   - the extension list comes from THE ROUTER'S ONE TABLE (`extensionsFor`), never from a local
+ *     copy;
+ *   - the size cap and the presence check are the gate's.
+ */
+function admitCorpus(root: string, exts: string[]): Admitted {
+  const out: Admitted = { files: [], repos: new Set(), byExt: new Map(), overCap: 0, absent: 0, overCapLargest: 0 }
+  // ⇒⇒⇒ `extensionsFor` RETURNS DOTTED SPELLINGS (".ts", ".tsx", …) — it normalises a table entry
+  // into the form the gate matches on. ⇒⇒⇒ **THE SPELLING IS THE TABLE'S, UNTOUCHED: adding a
+  // second dot here is how this instrument admitted ZERO FILES while printing a table.** The
+  // lesson is the fleet's: a number that is not produced by a stated rule is a moment, not a
+  // measurement — and a "0" that is a typo in a join is a zero over nothing.
+  const suffix = exts.map((e) => (e.startsWith(".") ? e : `.${e}`))
+  const bump = (ext: string, key: "tracked" | "overCap" | "absent" | "admitted") => {
+    const row = out.byExt.get(ext) ?? { tracked: 0, overCap: 0, absent: 0, admitted: 0 }
+    row[key]++
+    out.byExt.set(ext, row)
+  }
+  let entries: string[]
+  try { entries = readdirSync(root) } catch { return out }
+  for (const name of entries.sort()) {
+    const dir = join(root, name)
+    try { if (!statSync(dir).isDirectory()) continue } catch { continue }
+    try { execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" }) } catch { continue }
+    let tracked: string[]
+    try {
+      tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 })
+        .split("\0").filter(Boolean)
+    } catch { continue }
+    for (const rel of tracked) {
+      const low = rel.toLowerCase()
+      const ext = suffix.find((s) => low.endsWith(s))
+      if (!ext) continue
+      bump(ext.slice(1), "tracked")
+      const abs = join(dir, rel)
+      try {
+        const size = statSync(abs).size
+        if (size > SIZE_CAP) { out.overCap++; out.overCapLargest = Math.max(out.overCapLargest, size); bump(ext.slice(1), "overCap"); continue }
+      } catch { out.absent++; bump(ext.slice(1), "absent"); continue }
+      out.files.push(abs)
+      out.repos.add(name)
+      bump(ext.slice(1), "admitted")
     }
   }
-  walk(dir, 0)
-  return out.slice(0, cap)
+  out.files.sort()
+  return out
+}
+
+/** THE SAMPLE: a stride over the ADMITTED set, so it is not one repository's files. */
+function strideSample(files: string[], want: number): string[] {
+  if (want <= 0 || files.length <= want) return files.slice(0, want)
+  const step = files.length / want
+  const out: string[] = []
+  for (let i = 0; i < want; i++) out.push(files[Math.floor(i * step)])
+  return out
 }
 
 const { readFileSync } = await import("node:fs")
@@ -104,16 +196,26 @@ const targets: string[] = all ? Object.keys(LANES) : named ? [named] : ["TYPESCR
 for (const L of targets) {
   const entry = LANES[L as keyof typeof LANES]
   if (!entry) { console.log(`${L}: no lane entry`); continue }
-  const [lang, mod, corpusDir] = entry
+  const [lang, mod] = entry
   let Cls: any
   try {
     const m: any = await import(join(REPO, "src/ast", `${mod}.ts`))
     Cls = Object.values(m).find((v: any) => typeof v === "function" && String(v.name).endsWith("Analyzer"))
   } catch (e) { console.log(`${L} IMPORT FAIL ${String(e).slice(0, 80)}`); continue }
   if (!Cls) { console.log(`${L} NO ANALYZER CLASS EXPORTED`); continue }
-  const dir = join(CORPUS, corpusDir)
-  const files = pickFiles(dir, EXTS[lang as keyof typeof EXTS] ?? [], NFILES)
-  if (!files.length) { console.log(`${L} NO CORPUS under ${corpusDir}`); continue }
+  // ⇒⇒⇒ THE EXTENSION LIST IS THE ROUTER'S ONE TABLE, READ — NOT A COPY. `extensionsFor` is the
+  // same function `script/m14/incoming-gate.ts` calls, so the instrument's population and the
+  // denominator's population cannot drift apart: there is no second list to drift.
+  const exts = extensionsFor(lang)
+  const admitted = admitCorpus(CORPUS, exts)
+  const extRows = [...admitted.byExt.entries()].sort().map(([e, r]) =>
+    `${e}: tracked ${r.tracked} · admitted ${r.admitted}${r.overCap ? ` · overCap ${r.overCap}` : ""}${r.absent ? ` · absent ${r.absent}` : ""}`).join("   |   ")
+  console.log(`${L}  admitted extensions ${exts.join(" ")}  (THE ROUTER'S ONE TABLE, script/m14/language-extensions.ts — read, not copied)`)
+  console.log(`   POPULATION: admitted ${admitted.files.length} files over ${admitted.repos.size} repos  ·  excluded ${admitted.overCap} over the ${SIZE_CAP} B cap (largest ${admitted.overCapLargest} B) + ${admitted.absent} tracked-but-absent`)
+  console.log(`   per extension: ${extRows}`)
+  if (!admitted.files.length) { console.log(`${L} NO ADMITTED FILES under ${CORPUS} — the population is EMPTY and every number below would be a zero over nothing`); continue }
+  const files = strideSample(admitted.files, NFILES)
+  console.log(`   sample: ${files.length} files, a stride over the admitted set (not one repository)`)
   const tally = new Map<string, number>()
   const errs: string[] = []
   let parsed = 0
