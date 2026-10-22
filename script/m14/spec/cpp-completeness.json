@@ -401,23 +401,13 @@
     "excluded": [
       {
         "label": "renders",
-        "evidence": "grammar-absence",
-        "from": "THE PINNED GRAMMAR'S OWN INVENTORY, MEASURED from the pinned bytes: wasm/tree-sitter-cpp.wasm, sha256 0821b6f64ea5444e8c79d1f4362b1a19d3e9ba5b406a8c371082454d81a71a6b (3,520,521 bytes), enumerated through web-tree-sitter's Language API (nodeTypeCount / nodeTypeIsNamed / nodeTypeForId): 210 named + 286 anonymous = 496 unique node types, and the pin's own surface record says namedUnique 210 / anonUnique 286 - the two agree exactly. The inventory contains NO jsx* node type (0 of 496), so no JSX element production exists and no corpus count for it can exist. Corpus half: 0 edges of the label over the whole admitted population. Instrument: script/m14/cpp-grammar-inventory.ts (lane-owned). Falsifier: a grammar build producing a jsx_element node type, or a single corpus edge of the label, retires the ruling and puts the value back in the denominator."
-      },
-      {
-        "label": "decorates",
-        "evidence": "adjudication (grammar-absence does NOT apply)",
-        "from": "THE GRAMMAR-ABSENCE BASIS DOES NOT HOLD HERE, and the difference is stated rather than glossed: C++ DOES have attributes - the measured inventory carries attribute_specifier, attributed_declarator, attribute_declaration, attributed_statement and the GNU __attribute__ tokens (the probe's list is in the instrument's output). What is measured instead is the ADJUDICATION half: an attribute names no callable declaration of its own (it is a keyword/macro-written specifier), so the analyzer records export attributes as the `exports` edge plus symbol METADATA, and it EMITS NO `decorates` EDGE AT ALL - the six occurrences of the word `decorates` in src/ast/real-cpp-analyzer.ts (lines 4257, 5603, 5633, 5658, 5737, 6741) are ALL SIX PROSE IN COMMENTS and not one is an emission site. Corpus half: 0 edges of the label over the whole admitted population. Instrument: script/m14/cpp-grammar-inventory.ts. Falsifier: a single corpus edge of the label, or an analyzer emission site that binds an attribute to another declaration, retires the ruling."
+        "evidence": "grammar-remedy-ruled",
+        "from": "CPP-FOUR-TYPES-CENSUS 2026-10-21. **THE LADDER WAS WALKED AND THE NAMED RUNG IS UNAVAILABLE, AND WHY.** R1 (bump the npm grammar package) is UNAVAILABLE: the served build is the lane's own vendored patched source (`grammars/tree-sitter-cpp/`) and the npm package's build is installed nowhere - AND NO GRAMMAR CHANGE CAN CREATE A CONSTRUCT THE LANGUAGE DOES NOT EXPRESS. R2 (clone + patch + generate + build) is UNAVAILABLE for the same reason. R3 (implement with an EXISTING node type) is UNAVAILABLE: MEASURED over the ADMITTED POPULATION - 7,435 git-tracked files, 0 failed (instrument `script/m14/cpp-four-types-census.ts`, results `validation/m14/measurements/cpp-four-types-census.json`) - there are **310,252** template sites (the NEAR MISS, COUNTED and NAMED) and **0** call sites that NAME A COMPONENT as a type argument, which is the shape all four working `renders` implementations agree on (typescript's JSX tag, clojure's hiccup vector, csharp's type argument, dart's `build` whose DECLARED RETURN TYPE is the component). => C++ HAS NO RENDERING CONSTRUCT: a template PRODUCES A TYPE, it does not RENDER A COMPONENT, and a template instantiation is a CONSTRUCTION SITE - the side of the line the contract puts on `instantiates`, not `renders` (`src/ast/types.ts:132-138`). => **THIS IS A RULING, NOT A TODO WEARING A RULING'S CLOTHES: the named construct was MEASURED, and there is no 'none measured' parenthetical.** FALSIFIER: a single call site over the admitted population whose callee names a component as a type argument, or a node type in the served build's inventory carrying a rendering construction - either retires the ruling and puts `renders` back in the denominator as a gap."
       },
       {
         "label": "mixes_in",
-        "evidence": "grammar-absence",
-        "from": "THE SAME MEASURED INVENTORY: no mixin* node type (0 of 496), so no mixin production exists. Corpus half: 0 edges of the label over the whole admitted population. Instrument: script/m14/cpp-grammar-inventory.ts. Falsifier: a grammar build producing a mixin node type, or a single corpus edge of the label."
-      },
-      {
-        "label": "part_of",
-        "evidence": "grammar-absence",
-        "from": "THE SAME MEASURED INVENTORY: no part* node type (0 of 496), so no `part` directive exists. Corpus half: 0 edges of the label over the whole admitted population. Instrument: script/m14/cpp-grammar-inventory.ts. Falsifier: a grammar build producing a part node type, or a single corpus edge of the label."
+        "evidence": "grammar-remedy-ruled",
+        "from": "CPP-FOUR-TYPES-CENSUS 2026-10-21. **THE LADDER WAS WALKED AND THE NAMED RUNG IS UNAVAILABLE, AND WHY.** R1 and R2 (a grammar change) are UNAVAILABLE: no grammar change can create a construct the language does not express, and the served build is the lane's own vendored patched source whose npm counterpart is installed nowhere. R3 is UNAVAILABLE: MEASURED over the ADMITTED POPULATION - 7,435 git-tracked files, 0 failed (instrument `script/m14/cpp-four-types-census.ts`, results `validation/m14/measurements/cpp-four-types-census.json`) - there are **4,279** base clauses (the NEAR MISS, COUNTED and NAMED) of which **3,578** compose SEVERAL bases into one chain, and a base clause IS the inheritance clause the contract says is NOT `mixes_in` (`src/ast/types.ts:141-147`: 'a mixin is not extends either (there is no single base and the with list is not an inheritance clause)'). => C++ HAS A SINGLE BASE, NOT A `with` LIST: the `mixes_in` construct - a class COMPOSES a mixin into its supertype chain with no conformance declared - does not exist in C++, and the nearest neighbours are the MULTIPLE-INHERITANCE BASES (3,578 counted) and the EXPRESSION TEMPLATE ARGUMENT. => **THIS IS A RULING, NOT A TODO WEARING A RULING'S CLOTHES: the named construct was MEASURED.** FALSIFIER: a node type in the served build's inventory carrying a mixin application (a `with`-like clause that is not an inheritance clause), or a single such site over the admitted population, retires the ruling."
       }
     ],
     "corpusUnexercised": [],
@@ -517,6 +507,20 @@
       "TOTAL": {
         "edges": 1282777
       }
-    }
+    },
+    "grammarRemedyPending": [
+      {
+        "label": "decorates",
+        "rung": "R3 (implement with an EXISTING node type; no grammar change is taken)",
+        "state": "THE CONSTRUCT EXISTS IN THE LANGUAGE - MEASURED, NOT ASSUMED - AND THE EMISSION IS BEING BUILT",
+        "from": "CPP-FOUR-TYPES-CENSUS 2026-10-21. **THE CONSTRUCT EXISTS IN THE LANGUAGE, SO THE RUNG IS R3** - the node type that carries it is NAMED in the served build (`attribute_specifier`, `attribute`, `attribute_declaration`, `attributed_declarator`, `attributed_statement`), and NO grammar change is taken. MEASURED over the ADMITTED POPULATION - 7,435 git-tracked files, 0 failed (instrument `script/m14/cpp-four-types-census.ts`, results `validation/m14/measurements/cpp-four-types-census.json`): **2,843** attribute sites (the NEAR MISS, COUNTED and NAMED) of which **144** carry an ARGUMENT LIST. An attribute that CARRIES AN ARGUMENT LIST APPLIES A CALLABLE to the declaration, which is the contract's own test (`src/ast/types.ts:120-129`: 'a decorator is APPLIED TO a declaration'); an attribute that carries none MARKS the declaration, which is the csharp lane's ONTOLOGICAL answer shape. => THE POPULATION IS THE 144 APPLYING SITES, and 2,699 of the 2,843 are passive markers (`[[nodiscard]]`, `[[gnu::always_inline]]`) - so THE FILTER IS THE INTERESTING PART, and a filter on the NAME would have caught the impostors. => THE TYPE STAYS IN THE DENOMINATOR AS A GAP until the emission is built and proven with a behavioural fixture whose edge exists only when the construct reaches the analyzer as a REAL NODE."
+      },
+      {
+        "label": "part_of",
+        "rung": "R3 (implement with an EXISTING node type; the node type `preproc_include` is NAMED in the served build - no grammar change is taken)",
+        "state": "THE CONSTRUCT EXISTS IN THE LANGUAGE - MEASURED, NOT ASSUMED - AND THE EMISSION IS BEING BUILT",
+        "from": "CPP-FOUR-TYPES-CENSUS 2026-10-21. **THE CONSTRUCT EXISTS IN THE LANGUAGE, SO THE RUNG IS R3** - `preproc_include` is a NAMED node type of the served build, and NO grammar change is taken. MEASURED over the ADMITTED POPULATION - 7,435 git-tracked files, 0 failed (instrument `script/m14/cpp-four-types-census.ts`, results `validation/m14/measurements/cpp-four-types-census.json`): **51,874** include sites (the NEAR MISS, COUNTED and NAMED), of which **39,665** are QUOTED includes and **12,209** are angle-bracket includes. THE CONTRACT'S OWN TEST DECIDES IT (`src/ast/types.ts:148-160`: a part 'shares the library's single scope, imports nothing, and cannot be resolved as a separate module'): a QUOTED include is a FRAGMENT of the including unit - it shares that unit's scope and is NOT a separate module - so it is the `part_of` shape; an ANGLE-BRACKET include names ANOTHER MODULE'S header, which creates its own binding scope and is the `imports` relation the analyzer already emits. => THE `part_of` POPULATION IS THE 39,665 QUOTED SITES, in the DIRECTIVE'S OWN DIRECTION (the including unit -> the part), and every row must carry `metadata.partRole` ('part' on the part side, 'library' on the library side), which the contract MANDATES. => THE TYPE STAYS IN THE DENOMINATOR AS A GAP until the emission is built and proven with a behavioural fixture whose edge exists only when the construct reaches the analyzer as a REAL NODE."
+      }
+    ]
   }
 }
