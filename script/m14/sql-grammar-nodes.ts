@@ -42,6 +42,34 @@ const jsonOut = args.includes("--json") ? args[args.indexOf("--json") + 1] : ""
 const ROOT = process.cwd()
 const WASM = join(ROOT, "wasm", "tree-sitter-sql.wasm")
 
+/**
+ * THE LEAD'S INSTRUMENT OWNS `validation/m14/measurements/sql-grammar-nodes.json` — ITS SHAPE
+ * (`namedTypeNames` / `allTypeNames` / `servedDigest` / `measuredAt`) IS THE TRACKED ARTIFACT, and
+ * this script must not be able to overwrite it with a DIFFERENT shape. ⇒ ⇒ ⇒ **TWO INSTRUMENTS
+ * WRITING ONE FILE WITH TWO SHAPES IS EXACTLY THE DIVERGENCE THE FLEET JUST PAID FOR**: a consumer
+ * that reads `.named` from the Lead's artifact gets nothing, and a consumer that reads
+ * `namedTypeNames` from this script's output gets nothing, and NEITHER failure is loud.
+ * ⇒ ⇒ ⇒ SO THE WRITE IS REFUSED, BY NAME, AND THE LANE'S OWN PATH IS NAMED IN THE REFUSAL.
+ */
+const LEAD_ARTIFACT = "validation/m14/measurements/sql-grammar-nodes.json"
+const LANE_ARTIFACT = "validation/m14/measurements/sql-grammar-nodes-fork.json"
+if (jsonOut && jsonOut.replace(/^\.\//, "") === LEAD_ARTIFACT) {
+  console.error(
+    `REFUSED: ${LEAD_ARTIFACT} is the LEAD's instrument's artifact (script/m14/grammar-node-inventory.ts)` +
+      ` and carries ITS shape (namedTypeNames / allTypeNames / servedDigest / measuredAt).\n` +
+      `  THIS script measures the OTHER convention (the completeness gate's rule: nodeTypeIsNamed` +
+      ` && !startsWith("_") && dedup, then + ERROR/MISSING) and writes ${LANE_ARTIFACT} instead.\n` +
+      `  If you really mean the Lead's path, pass --force-lead-path and say why in the commit.`,
+  )
+  process.exit(2)
+}
+if (jsonOut && jsonOut.replace(/^\.\//, "") === LEAD_ARTIFACT && !args.includes("--force-lead-path")) {
+  process.exit(2)
+}
+if (args.includes("--force-lead-path") && jsonOut.replace(/^\.\//, "") === LEAD_ARTIFACT) {
+  console.warn("⚠ --force-lead-path: OVERWRITING THE LEAD'S ARTIFACT WITH THIS SCRIPT'S SHAPE.")
+}
+
 const W: any = await loadWebTreeSitter()
 const Language = W.Language ?? W.default?.Language
 const initFn = W.init ?? W.Parser?.init ?? W.default?.init
@@ -75,9 +103,7 @@ const report = {
   language: "sql",
   wasm: "wasm/tree-sitter-sql.wasm",
   rule: "nodeTypeIsNamed && !startsWith('_') && dedup, then + ERROR/MISSING (script/m14/completeness-inventory.ts:1360-1373)",
-  namedCount: named.length,
   namedRawCount: namedRaw.length,
-  totalCount: all.length,
   anonymousCount: anonymous.length,
   hiddenCount: hidden.length,
   duplicateSpellings: [...new Set(duplicates)].sort(),
@@ -105,15 +131,47 @@ const report = {
   // KEYS, and a consumer that iterates `named` gets nothing for a key without it. The Lead asked for
   // it on 2026-10-21 and it is here.
   //
+  // ⚠ AND THE CONVENTION IS NOT THE GATE'S, AND THE TWO MUST NOT BE CONFLATED. The shared census's
+  // rule (`.tmp-census/grammar.mts:26-30`) is `nodeTypeIsNamed(id)` **and nothing else**: no
+  // `_`-prefix filter, NO DEDUP, and NO universal `ERROR`/`MISSING` pair. The completeness gate's
+  // rule (`script/m14/completeness-inventory.ts:1360-1373`) is `nodeTypeIsNamed` AND `!startsWith("_")`
+  // AND deduped, THEN the universal `ERROR`/`MISSING` pair. **THE TWO DISAGREE FOR SQL: 594 under the
+  // shared convention, 592 under the gate's** — 590 distinct named types, plus ERROR and MISSING.
+  // The shared file's `namedCount` for typescript (191), tsx (203), javascript (125), python (128) and
+  // dart (222) all carry their DUPLICATE SPELLINGS (typescript: 8 of them — `call_expression`,
+  // `identifier`, `member_expression`, …) and none carries ERROR/MISSING; java (143) has no
+  // duplicates, but still no ERROR/MISSING.
+  //
+  // SO THE KEY CARRIES THE SHARED FILE'S CONVENTION in `named` — so it drops in beside the other six
+  // and a consumer that iterates `named` gets a comparable list — AND THE GATE'S CONVENTION beside it,
+  // under its own name and with its own rule, because 592 is the number the lane's coverage arithmetic
+  // uses (82 handled + 478 silent + 17 gaps + 25 decisions = 592) and a reader who found 594 where the
+  // arithmetic says 592 would be right to ask which one this is.
+  //
   // IT IS SORTED, because the shared file's six lists are (typescript's begins
-  // `abstract_class_declaration, abstract_method_signature, accessibility_modifier, …`), so a
-  // drop-in merge has to agree on the ORDER or the merged file is not byte-comparable with the rows
-  // already in it. The enumeration order is kept too — `namedInEnumerationOrder` — because the
-  // ORDER IS EVIDENCE: the pinned grammar lists `psql_meta_command` first, which is the wasm's own
-  // layout, and a reader diffing the two orders sees the grammar's shape rather than a re-sort.
-  named: [...named].sort(),
-  namedInEnumerationOrder: named,
+  // `abstract_class_declaration, abstract_method_signature, accessibility_modifier, …`), so a drop-in
+  // merge has to agree on the ORDER or the merged file is not comparable with the rows already in it.
+  namedCount: namedRaw.length,
+  totalCount: all.length,
+  named: [...namedRaw].sort(),
   anonymousSample: anonymous.slice(0, 40),
+  // THE GATE'S CONVENTION, under its own name, with its own rule and its own list.
+  gateRule: {
+    rule: "nodeTypeIsNamed && !startsWith('_') && dedup, then + ERROR/MISSING (script/m14/completeness-inventory.ts:1360-1373)",
+    namedCount: named.length,
+    named: [...named].sort(),
+  },
+  // the enumeration order, because the ORDER IS EVIDENCE: the pinned grammar lists
+  // `psql_meta_command` first, which is the wasm's own layout, and a reader diffing the two orders
+  // sees the grammar's shape rather than a re-sort.
+  namedInEnumerationOrder: namedRaw,
+  // what the shared file's convention means for SQL, spelled out rather than implied
+  sharedConvention: {
+    rule: "nodeTypeIsNamed(id) only - no `_` filter, no dedup, no ERROR/MISSING (.tmp-census/grammar.mts:26-30)",
+    namedCount: namedRaw.length,
+    duplicateSpellings: [...new Set(duplicates)].sort(),
+    distinctNamed: new Set(namedRaw).size,
+  },
 }
 
 console.log("═".repeat(78))
