@@ -140,7 +140,9 @@ const BUILTINS = new Set<string>()
 type Cause = {
   cause: string; count: number; files: Set<string>; byType: Map<string, number>
   qualified: number; bare: number; sample: string[]
-  multiplicity?: Map<string, number>; caseFolded?: number; kinds?: Map<string, number>
+  // THE THREE MAPS ARE ALWAYS PRESENT. A field that is ABSENT is an UNKNOWN, not a zero, and an
+  // optional map here would make "no declaration" and "not measured" the same value.
+  multiplicity: Map<string, number>; caseFolded: number; kinds: Map<string, number>
 }
 const causes = new Map<string, Cause>()
 function cause(name: string): Cause {
