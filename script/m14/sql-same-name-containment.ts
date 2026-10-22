@@ -126,7 +126,7 @@ function membersSharingOwnerName(root: any): { kind: string; owner: string; memb
 // BARE NAMES); after it the edge is published. So the instrument reports, per site, whether the
 // containment edge is now present — which makes the fix falsifiable on the corpus rather than only
 // on a fixture.
-const sites: { file: string; kind: string; owner: string; member: string; line: number; edgePublished: boolean }[] = []
+const sites: { file: string; kind: string; owner: string; member: string; line: number; edgePublished: boolean; matchedSpelling: "bare" | "qualified" | "none"; observedTarget: string }[] = []
 const perRepo: Record<string, number> = {}
 let parsed = 0
 let failures = 0
@@ -141,10 +141,29 @@ for (const abs of absFiles) {
   try { res = new RealSqlAnalyzer().analyze(tree.rootNode, content, abs) } catch { /* counted by the census */ }
   const rels: any[] = res?.relationships ?? []
   for (const s of membersSharingOwnerName(tree.rootNode)) {
-    const edgePublished = rels.some(
-      (r: any) => String(r.relationshipType ?? r.type) === "contains" && String(r.source ?? r.from) === s.owner && String(r.target ?? r.to) === s.member,
-    )
-    sites.push({ file: abs, ...s, edgePublished })
+    // THE SPELLING THE ANALYZER ACTUALLY PUBLISHES, NOT A GUESS ABOUT ONE.
+    //
+    // The analyzer publishes a `contains` target QUALIFIED — `<module>::<owner>.<member>` — and the
+    // site carries the BARE member name. Comparing the two with `===` can never be true, so the
+    // check reported every site as MISSING and the 2026-10-21 same-name fix read as broken. ⇒⇒⇒ A
+    // LEAF-NAME TEST THAT REFUSES A LEGAL NAME SILENTLY EATS EDGES, AND NO COLUMN SHOWS IT.
+    //
+    // ⇒⇒⇒ AND THE REFUSAL IS NOW VISIBLE: the site records WHICH SPELLING matched and the target
+    // the analyzer actually published, so a predicate that stops matching says what it saw.
+    let edgePublished = false
+    let matchedSpelling: "bare" | "qualified" | "none" = "none"
+    let observedTarget = ""
+    for (const r of rels) {
+      if (String(r.relationshipType ?? r.type) !== "contains") continue
+      if (String(r.source ?? r.from) !== s.owner) continue
+      const target = String(r.target ?? r.to)
+      if (target === s.member) { edgePublished = true; matchedSpelling = "bare"; observedTarget = target; break }
+      // THE QUALIFIED SPELLING: `<module>::<owner>.<member>` — the member name is the SUFFIX.
+      if (target.endsWith("." + s.member) || target.endsWith("::" + s.member)) {
+        edgePublished = true; matchedSpelling = "qualified"; observedTarget = target; break
+      }
+    }
+    sites.push({ file: abs, ...s, edgePublished, matchedSpelling, observedTarget })
     const repo = abs.slice(ROOT.length + 1).split("/")[0]
     perRepo[repo] = (perRepo[repo] ?? 0) + 1
   }
@@ -174,6 +193,12 @@ const report = {
     // whose edge is still missing would mean the guard still fires on a name collision, and this
     // number is what says so.
     edgePublished: sites.filter((s) => s.edgePublished).length,
+    // THE SPELLING BREAKDOWN — the column that makes a refusal visible instead of silent.
+    byPublishedSpelling: {
+      bare: sites.filter((s) => s.matchedSpelling === "bare").length,
+      qualified: sites.filter((s) => s.matchedSpelling === "qualified").length,
+      none: sites.filter((s) => s.matchedSpelling === "none").length,
+    },
     edgeStillMissing: sites.filter((s) => !s.edgePublished).length,
     rows: sites,
   },

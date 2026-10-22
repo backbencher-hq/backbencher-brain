@@ -210,3 +210,32 @@ bytes being attributable to this source.
 **THE FORK IS NOT VENDORED.** This directory is the published grammar plus the inheritance patch.
 The wired build's 67 extra types are **not** in it and **cannot be** in it until the fork's source is
 recovered — see the table in §"What was checked for the fork's source".
+
+## A THIRD BUILD, AND IT IS AN UNKNOWN — NOT A RECOVERY
+
+**MEASURED 2026-10-22.** The corpus holds **two** copies of the sql wasm under
+`fixtures/replicas/`, one under `java-lane/` and one under `js-audit/`, and **BOTH are
+`bcb9888e…`** — that is, **neither is the wired build (`848e0812…`) and neither is the
+published build (`a755fdb9…`)**. So the corpus carries a **THIRD** sql grammar build, and
+**THIS RECORD DOES NOT KNOW WHAT IT IS.**
+
+⇒⇒⇒ ⇒⇒⇒ **IT IS RECORDED AS AN UNKNOWN AND NOT AS A RECOVERY**, because nothing in this
+repository claims that build: it is neither the bytes the registry serves, nor the published
+package's build, nor this fork's patched build. **A BUILD THAT NOTHING CLAIMS IS NOT USABLE
+UNTIL SOMETHING CLAIMS IT, AND THE ONLY HONEST MOVE IS TO SAY SO.**
+
+**⇒⇒⇒ ⇒⇒⇒⇒ WHAT WOULD SETTLE IT, AND IT IS NOT DONE:** the build's own `node-types.json`
+would name its 594-or-other types, and a diff against the served build's inventory would say
+whether it is an older or a newer fork. **I HAVE NOT DONE THAT**, and until it is done this
+build is an unexplained artifact in the corpus, not a source of truth.
+
+## `src/parser.c` IS PRESENT ON DISK AND IS NOT COMMITTED
+
+`.gitignore:51` excludes `grammars/tree-sitter-*/src/*`, so the generated `src/parser.c`
+(17,423,977 B) is **on disk but not in the repository**, while `src/grammar.json` and
+`src/node-types.json` ARE committed (they are force-added, and the cpp lane's precedent
+commits them too). **⇒⇒⇒ ⇒⇒⇒⇒ THE COMMITTED TREE REGENERATES RATHER THAN COMPILES**: a fresh
+clone has the patched `grammar.js` and the two committed JSON files, and `tree-sitter generate`
+must be run to rebuild `src/parser.c` before `tree-sitter build --wasm`. **A CLONE THAT DOES
+NOT RUN `tree-sitter generate` BUILDS A DIFFERENT GRAMMAR, AND THE TWO BUILDS ARE THE SAME
+BYTES ONLY IF THE GENERATOR IS THE SAME VERSION** (this lane's: tree-sitter CLI 0.26.9).
