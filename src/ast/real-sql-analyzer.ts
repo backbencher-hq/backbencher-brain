@@ -2402,6 +2402,35 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       },
     )
 
+    /**
+     * THE INHERITANCE CLAUSE AS A REAL NODE — `CREATE TABLE child ( ... ) INHERITS ( parent )`.
+     *
+     * The wired grammar has NO production for this clause, so the words were lexed as identifiers
+     * and the clause ERROR-recovered: the parent's name did not survive the parse, and no edge could
+     * name it. The R2 grammar patch adds an `inherit_clause` node holding the parent list, and THIS
+     * is where it is read — so the `extends` edge exists only when the construct REACHES the
+     * analyzer as a REAL NODE, which is the verification the ruling owes.
+     *
+     * The mis-parse fallback for the wired grammar is NOT here: the CREATE TABLE form has no
+     * recoverable shape at all (the parent name is gone), which is exactly why this path was
+     * needed. The ALTER TABLE form's mis-parse is still read, in `processAlterTable`, because the
+     * wired grammar's mis-parse DOES keep the parent's name.
+     */
+    const childOwner = state.symbols.find((s) => s.name === table.name && s.metadata?.type === "table")
+    for (const clause of this.namedChildren(node).filter((c) => c.type === "inherit_clause")) {
+      const parents = this.namedChildren(clause)
+        .filter((c) => c.type === "object_reference")
+        .map((c) => this.identifierName(this.referenceNameNode(c) ?? c, state))
+        .filter((n) => n.length > 0)
+      if (!childOwner) continue
+      for (const parent of parents) {
+        this.addRelationship(ASTEngine.RelationshipType.Extends, table.name, parent, state, {
+          clause: "inherits",
+          evidenceClass: "structural",
+        }, this.range(clause, state).startLine)
+      }
+    }
+
     const definitions = this.directChild(node, "column_definitions")
     if (definitions) {
       for (const column of this.namedChildren(definitions)) {
@@ -3392,9 +3421,37 @@ private markDeclaration(node: Node, state: ParseState): boolean {
   private processAlterTable(node: Node, state: ParseState): void {
     const table = this.referenceLeaf(this.directChild(node, "object_reference"), state)
     if (!table) return
+    /**
+     * THE INHERITANCE CLAUSE AS A REAL NODE — `ALTER TABLE child INHERIT parent` and
+     * `ALTER TABLE child NO INHERIT parent`.
+     *
+     * Read BEFORE the `add_column` early-return, because under the patched grammar the clause IS
+     * the whole statement and there is no `add_column` to return for. The `NO INHERIT` form is the
+     * REMOVAL of the relation, so it publishes NO edge — under the mis-parse the analyzer had to
+     * work that out structurally (`keyword_no` in the `alter_table`), and here the grammar says so
+     * directly, which is the point of a real node.
+     */
+    /**
+     * THE TABLE MUST BE A DECLARED SYMBOL, on this path exactly as on the mis-parse path below.
+     * An `extends` edge whose SOURCE is an undeclared name is a dangling edge, and the mis-parse
+     * path has always required the declaration — so requiring it here is CONSISTENCY, not a new
+     * rule. (`ALTER TABLE c INHERIT p` in a file that never declares `c` therefore publishes
+     * nothing under either grammar.)
+     */
+    const owner = state.symbols.find((s) => s.name === table && s.metadata?.type === "table")
+    for (const spec of this.namedChildren(node).filter((c) => c.type === "inherit_specification")) {
+      const isRemoval = this.namedChildren(spec).some((c) => c.type === "keyword_no")
+      if (isRemoval) continue
+      const parentNode = this.namedChildren(spec).find((c) => c.type === "object_reference")
+      const parent = parentNode ? this.referenceLeaf(parentNode, state) : ""
+      if (!parent || !owner) continue
+      this.addRelationship(ASTEngine.RelationshipType.Extends, table, parent, state, {
+        clause: "inherit",
+        evidenceClass: "structural",
+      }, this.range(spec, state).startLine)
+    }
     const added = this.namedChildren(node).filter((c) => c.type === "add_column")
     if (added.length === 0) return
-    const owner = state.symbols.find((s) => s.name === table && s.metadata?.type === "table")
     if (!owner) return
     for (const add of added) {
       const definition = this.firstDescendant(add, "column_definition")

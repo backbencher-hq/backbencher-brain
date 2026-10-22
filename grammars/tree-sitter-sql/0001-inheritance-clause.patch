@@ -1,0 +1,63 @@
+--- .tmp-census/verify-pkg/package/grammar.js	1985-10-26 04:15:00.000000000 -0400
++++ grammars/tree-sitter-sql/grammar.js	2026-10-21 20:20:54.712136712 -0400
+@@ -163,6 +163,8 @@
+     keyword_with: _ => make_keyword("with"),
+     keyword_without: _ => make_keyword("without"),
+     keyword_no: _ => make_keyword("no"),
++    keyword_inherit: _ => make_keyword("inherit"),
++    keyword_inherits: _ => make_keyword("inherits"),
+     keyword_data: _ => make_keyword("data"),
+     keyword_type: _ => make_keyword("type"),
+     keyword_rename: _ => make_keyword("rename"),
+@@ -1036,6 +1038,7 @@
+         choice(
+           seq(
+             $.column_definitions,
++            optional($.inherit_clause),
+             repeat($._table_settings),
+             optional(
+               seq(
+@@ -1715,7 +1718,43 @@
+       ),
+     ),
+ 
++    // THE INHERITANCE CLAUSE — PostgreSQL's table inheritance, in BOTH of the forms the language has:
++    //
++    //   CREATE TABLE child ( ... ) INHERITS ( parent [, ...] )   — the parent LIST
++    //   ALTER TABLE child INHERIT parent                         — ONE parent
++    //   ALTER TABLE child NO INHERIT parent                      — the REMOVAL of one parent
++    //
++    // WHY THIS PATCH EXISTS. Before it the grammar had NO production for any of the three, so
++    // `INHERITS` / `INHERIT` were lexed as plain identifiers and the whole clause ERROR-recovered:
++    // the parent name did not survive the parse. That is why the analyzer could publish no `extends`
++    // edge for the CREATE TABLE form at all, and why it had to read the ALTER TABLE form out of a
++    // MIS-PARSE — the clause arrives as a `column_definition` whose name is literally `INHERIT` and
++    // whose type is the parent table. The construct EXISTS in the language and was only PARTIALLY
++    // readable in the grammar; this patch is the R2 rung that makes it readable AS A REAL NODE.
++    //
++    // THE SHAPE, AND WHY IT IS THIS SHAPE. `inherit_clause` holds the parent LIST as
++    // `object_reference` children, and `inherit_specification` holds ONE parent, with `keyword_no`
++    // marking the removal form. Both keep the parent's own name in a node the analyzer can read, so
++    // the edge exists only when the construct REACHES the analyzer as a real node — never as
++    // recovery text. `prec(1)` is on `inherit_specification` because `ALTER TABLE c INHERIT p` is ALSO
++    // readable as `add_column` (a column named `INHERIT` of type `p`), and the inheritance reading
++    // must win: the other reading is the mis-parse this patch exists to remove.
++    inherit_clause: $ => seq(
++      $.keyword_inherits,
++      "(",
++      $.object_reference,
++      repeat(seq(",", $.object_reference)),
++      ")",
++    ),
++
++    inherit_specification: $ => prec(1, seq(
++      optional($.keyword_no),
++      $.keyword_inherit,
++      $.object_reference,
++    )),
++
+     _alter_specifications: $ => choice(
++      $.inherit_specification,
+       $.add_column,
+       $.add_constraint,
+       $.drop_constraint,
