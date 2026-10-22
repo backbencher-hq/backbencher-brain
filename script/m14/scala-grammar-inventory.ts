@@ -208,6 +208,29 @@ const report = {
   },
   nodeTypeCount: scala.totalIds,
   namedCount: scala.namedCount,
+  // ⇒⇒⇒ **A NUMBER THAT DOES NOT SAY WHICH RULE PRODUCED IT CANNOT BE COMPARED**
+  // (validation/m14/verification/FLEET-RULINGS-2026-10-22.md §2). This lane publishes the grammar's
+  // OWN named count and the FLEET's count — the same number under two rules — each with its rule in
+  // the same sentence and the served digest beside both, because the sql lane held 592/594/596 for
+  // one thing and the fix was not to pick one but to NAME EACH RULE. This lane's 189 was right and
+  // said nothing about what it was counting, which is the same defect one turn earlier.
+  namedCountRules: {
+    grammarOwn: {
+      count: scala.namedCount,
+      rule: "the pinned build's OWN named node types: every id the grammar declares for which nodeTypeIsNamed(id) is true, as the wasm reports them",
+      servedDigest: scala.registrySha256,
+      note: "this is what `named` above contains, and what the stem scan and the near-miss census are run over",
+    },
+    fleetRule: {
+      count: scala.namedCount + 2,
+      rule: "the grammar's own named node types PLUS the universal ERROR and MISSING pair, which every tree-sitter parser produces and every analyzer consults",
+      servedDigest: scala.registrySha256,
+      pair: ["ERROR", "MISSING"],
+      note: "a count that omits the pair says those nodes do not exist, which is false; a count that includes them says they exist and are produced by every file",
+    },
+    why: "A COUNT WITHOUT ITS RULE IS A MEASUREMENT OF A MOMENT: the two numbers differ by exactly the pair, so a reader comparing this lane with another must know which rule each used before the numbers mean anything.",
+  },
+  namedCountFleetRule: scala.namedCount + 2,
   named: scala.named,
   anonymousCount: scala.anonymous.length,
   candidatePresence: presence,
@@ -234,7 +257,9 @@ console.log(`  file sha256           ${scala.fileSha256 ?? "(unreadable)"}`)
 console.log(`  AGREE                 ${scala.agree ? "YES" : "NO — a citation on either digest would be FALSE"}`)
 console.log(`  resolved path         ${scala.resolvedPath}`)
 console.log(`  node type ids         ${scala.totalIds}`)
-console.log(`  NAMED node types      ${scala.namedCount}`)
+console.log(`  NAMED node types      ${scala.namedCount}   (rule: the build's OWN named types — nodeTypeIsNamed over every declared id)`)
+console.log(`  NAMED + ERROR/MISSING ${scala.namedCount + 2}   (rule: FLEET-RULINGS-2026-10-22 §2 — the same count PLUS the universal pair)`)
+console.log(`  served digest         ${scala.registrySha256 ?? "(none served)"}  (both counts are over THIS build, not over a path)`)
 console.log(`  written               ${path.relative(ROOT, OUT_PATH)}`)
 console.log("")
 console.log(`  CANDIDATE NODE PRESENCE`)
