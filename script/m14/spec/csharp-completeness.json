@@ -57,7 +57,7 @@
       "ERROR"
     ],
     "_notes": {
-      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-csharp-analyzer.ts:1066-1067), and `literal-callee-recovery.cs` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
+      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-csharp-analyzer.ts:1066-1067), and `literal-callee-recovery.cs` is a committed fixture whose parse tree contains one \u2014 the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
     }
   },
   "internal_silent": {
@@ -234,7 +234,7 @@
       "sample": "400 roslyn files",
       "absent": {
         "count": 48,
-        "meaning": "never occurs in the sample — the verdict is untested, not verified",
+        "meaning": "never occurs in the sample \u2014 the verdict is untested, not verified",
         "types": [
           "string_literal_encoding",
           "verbatim_string_literal",
@@ -288,20 +288,20 @@
       },
       "trivial": {
         "count": 22,
-        "meaning": "occurs and its subtree contains nothing the analyzer publishes — confirmed by measurement"
+        "meaning": "occurs and its subtree contains nothing the analyzer publishes \u2014 confirmed by measurement"
       },
       "suspect": {
         "count": 94,
         "meaning": "occurs AND contains a publishable node; all inspected are structural containers whose contents are published by the nodes inside them (argument holds reads, if_statement holds calls, type_argument_list holds declared-type references, catch_declaration binds a variable). No probable defect found. Containment alone is not a defect, which is why this bucket is reported rather than acted on."
       },
-      "caveat": "This measures OCCURRENCE and CONTAINMENT, not correctness. It cannot prove a verdict right; it can only say which verdicts were never exercised, and that is the finding. A wider corpus would move types between the buckets — the 48 absent are the ones a larger sample would test first."
+      "caveat": "This measures OCCURRENCE and CONTAINMENT, not correctness. It cannot prove a verdict right; it can only say which verdicts were never exercised, and that is the finding. A wider corpus would move types between the buckets \u2014 the 48 absent are the ones a larger sample would test first."
     },
     "_notes": {
-      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-csharp-analyzer.ts:1066-1067); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain \u2014 a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-csharp-analyzer.ts:1066-1067); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
     }
   },
   "gap": {
-    "_description": "csharp differential oracle (deriveCSharpEdges) PINNED at powershell corpus floor 0 missing / 0 unexplained; completeness A-H 8/8 pass. Declared residual (300-file sweep): unsafe C# COM-interop vtable-dispatch calls parse as degenerate tree-sitter invocation_expression subtrees (pointer-slot indexes, `if(...)` statements), so those 4 calls surface as `uses` (confidence 0.7) rather than `calls` — bounded, logged, and outside the gated 60-file floor which is deterministic-unclean-free.",
+    "_description": "csharp differential oracle (deriveCSharpEdges) PINNED at powershell corpus floor 0 missing / 0 unexplained; completeness A-H 8/8 pass. Declared residual (300-file sweep): unsafe C# COM-interop vtable-dispatch calls parse as degenerate tree-sitter invocation_expression subtrees (pointer-slot indexes, `if(...)` statements), so those 4 calls surface as `uses` (confidence 0.7) rather than `calls` \u2014 bounded, logged, and outside the gated 60-file floor which is deterministic-unclean-free.",
     "gaps": []
   },
   "design_decision": {
@@ -318,7 +318,7 @@
         "node_type": "implicit_object_creation_expression (target-typed new in collection/array initializers)",
         "status": "FIXED",
         "question": "OO family closure #613 (fsharp corpus): how do target-typed new() sites inside collection/array member initializers resolve?",
-        "answer": "Through the member ELEMENT type (EnumSettingEntry[] x = [new()] -> EnumSettingEntry); direct field/property initializers use the declared type base; a new() nested in a call argument resolves to nothing. One shared resolver (csharpResolveTargetTypedNew + csharpMemberDeclaredTypeText) now serves the analyzer AND the differential oracle — the old divergent copies shared the self-map blind spot (member NAME read as the type) that F5 could not see. pinned: csd14-array-member-news fixture + csharp/array-member-new-selfmap mutant."
+        "answer": "Through the member ELEMENT type (EnumSettingEntry[] x = [new()] -> EnumSettingEntry); direct field/property initializers use the declared type base; a new() nested in a call argument resolves to nothing. One shared resolver (csharpResolveTargetTypedNew + csharpMemberDeclaredTypeText) now serves the analyzer AND the differential oracle \u2014 the old divergent copies shared the self-map blind spot (member NAME read as the type) that F5 could not see. pinned: csd14-array-member-news fixture + csharp/array-member-new-selfmap mutant."
       },
       {
         "id": "CS-R1",
@@ -345,7 +345,7 @@
         "id": "CS-B3",
         "node_type": "bare catch complexity",
         "status": "RULED",
-        "question": "C# review (2026-09-13): both catch forms parse as catch_clause containing an optional catch_declaration — counting the inner declaration counted typed catches but never bare `catch { }`.",
+        "question": "C# review (2026-09-13): both catch forms parse as catch_clause containing an optional catch_declaration \u2014 counting the inner declaration counted typed catches but never bare `catch { }`.",
         "resolution": "FIXED + GATED: count the clause (exactly once either way) in the file counter and the per-symbol counter (kept in sync per CSD2); matches swift catch_block. Fixture pins Errors/ErrorsTyped complexity 2; mutant bare-catch-complexity-loss CAUGHT."
       },
       {
@@ -366,15 +366,15 @@
         "id": "CS-C1",
         "node_type": "object-initializer designators",
         "status": "RULED",
-        "question": "C# second review (2026-09-13): `new Point { X = v }` parses initializers as assignment_expressions — X must designate (never read) while v reads. Probe-verified on a colliding member.",
+        "question": "C# second review (2026-09-13): `new Point { X = v }` parses initializers as assignment_expressions \u2014 X must designate (never read) while v reads. Probe-verified on a colliding member.",
         "resolution": "FIXED + GATED: the assignment-LHS write gate covers initializer designators (verified identical shape); values read normally. Fixture expects Build->G and forbids Build->X/Y; mutant reemit-initializer-designator-reads CAUGHT."
       },
       {
         "id": "CS-C2",
         "node_type": "type-context name positions",
         "status": "RULED",
-        "question": "C# second review (2026-09-13): this grammar spells ALL type names plain `identifier` (no type_identifier/field_identifier nodes exist — 17 dead disjuncts removed, audit-proven), so type-parameter lists, where-clause and base-list subtrees and tuple types need explicit gates or member-name collisions fabricate reads.",
-        "resolution": "FIXED, partially unpinned: type_parameter_list direct names, where-clause and base-list subtrees, and tuple_type identifiers never read. Unpinnable on valid code by construction (a colliding member in those positions is either invalid code or genuinely ambiguous), so no fixture/mutant covers them — documented with the grammar evidence; lanes + F3 confirm zero valid-code impact."
+        "question": "C# second review (2026-09-13): this grammar spells ALL type names plain `identifier` (no type_identifier/field_identifier nodes exist \u2014 17 dead disjuncts removed, audit-proven), so type-parameter lists, where-clause and base-list subtrees and tuple types need explicit gates or member-name collisions fabricate reads.",
+        "resolution": "FIXED, partially unpinned: type_parameter_list direct names, where-clause and base-list subtrees, and tuple_type identifiers never read. Unpinnable on valid code by construction (a colliding member in those positions is either invalid code or genuinely ambiguous), so no fixture/mutant covers them \u2014 documented with the grammar evidence; lanes + F3 confirm zero valid-code impact."
       },
       {
         "id": "CS-C3",
@@ -394,133 +394,134 @@
         "id": "CONV-CS-1",
         "node_type": "member_access_expression (chain roots) + bare identifier reads",
         "status": "FIXED",
-        "question": "CONV-CS-1 (#750, #739/#744 family): bare member reads emitted ZERO uses edges (`return x;`) and chain roots (`inner` in `inner.deeper.leaf`) were missing while deeper leaves emitted — the THIRD analyzer with the same read-attribution blind spot (java #739, javascript #744).",
-        "resolution": "FIXED + GATED at this wave's commit: the CS-R1 bare-identifier mechanism (identifier_usage edges via lexical-frame resolution) repairs both recorded shapes; probe-verified live (`uses Get->x`, `uses Read->inner/deeper/leaf`). The issue's own code is the fixture csharp/chain-root-reads (verbatim; root + bare reads pin meta.relationshipType=identifier_usage), and the drop-bare-uses mutant reproduces the pre-CS-R1 state and now fails on it — a live gate, not documentation."
+        "question": "CONV-CS-1 (#750, #739/#744 family): bare member reads emitted ZERO uses edges (`return x;`) and chain roots (`inner` in `inner.deeper.leaf`) were missing while deeper leaves emitted \u2014 the THIRD analyzer with the same read-attribution blind spot (java #739, javascript #744).",
+        "resolution": "FIXED + GATED at this wave's commit: the CS-R1 bare-identifier mechanism (identifier_usage edges via lexical-frame resolution) repairs both recorded shapes; probe-verified live (`uses Get->x`, `uses Read->inner/deeper/leaf`). The issue's own code is the fixture csharp/chain-root-reads (verbatim; root + bare reads pin meta.relationshipType=identifier_usage), and the drop-bare-uses mutant reproduces the pre-CS-R1 state and now fails on it \u2014 a live gate, not documentation."
       },
       {
         "id": "CONV-CS-2",
         "node_type": "using_directive / base_list / attribute (framework markers)",
         "status": "FIXED",
-        "question": "CONV-CS-2 (#751): csharp had NO framework detection at all — metadata.detectedFrameworks undefined (python emits [], java a string): the only language missing both the mechanism and the metadata key, so the family payload contract was not uniform.",
-        "resolution": "FIXED + GATED: detectCSharpFrameworks (grammar-level markers: using-directive roots incl. static/alias/global forms, base-list leaf names, attribute names) feeds the family-aligned payload — framework (fixed-priority primary), detectedFrameworks (ALWAYS an array, [] when none), frameworkPatterns, hasFrameworkIntelligence. Emitted order is the fixed CS_FRAMEWORK_ORDER so import order can never change the payload; string ops only (no new regex literals). Fixtures csharp/framework-detection (3 simultaneous families + exact payload pin + 5 forbidFrameworks over-match guards) and csharp/framework-none (the [] shell); mutants framework-detection-dropped + framework-overshoot CAUGHT."
+        "question": "CONV-CS-2 (#751): csharp had NO framework detection at all \u2014 metadata.detectedFrameworks undefined (python emits [], java a string): the only language missing both the mechanism and the metadata key, so the family payload contract was not uniform.",
+        "resolution": "FIXED + GATED: detectCSharpFrameworks (grammar-level markers: using-directive roots incl. static/alias/global forms, base-list leaf names, attribute names) feeds the family-aligned payload \u2014 framework (fixed-priority primary), detectedFrameworks (ALWAYS an array, [] when none), frameworkPatterns, hasFrameworkIntelligence. Emitted order is the fixed CS_FRAMEWORK_ORDER so import order can never change the payload; string ops only (no new regex literals). Fixtures csharp/framework-detection (3 simultaneous families + exact payload pin + 5 forbidFrameworks over-match guards) and csharp/framework-none (the [] shell); mutants framework-detection-dropped + framework-overshoot CAUGHT."
       }
     ]
   },
- "coverage": {
-  "implemented": [
-   "calls",
-   "uses",
-   "contains",
-   "imports",
-   "references",
-   "exports",
-   "extends",
-   "implements",
-   "overrides",
-   "instantiates",
-   "renders"
-  ],
-  "excluded": [
-   {
-    "label": "decorates",
-    "evidence": "ontological",
-    "from": "RULED UNDECIDABLE (ONTOLOGICAL - not a grammar absence, and the inventory proves it): the PINNED grammar DECLARES attribute, attribute_list and attribute_argument, so the construct is IN the grammar; the reason is the ADJUDICATED ONTOLOGY - an annotation/attribute is PASSIVE METADATA and a decorator is an APPLIED CALLABLE (validation/m14/verification/VOCABULARY-EXTENSION-PROPOSAL.md:39 - dart's annotations emit references{isAnnotation, annotatedKind}; the java lane's references{isAnnotation}; the cpp attributes-as-metadata precedent), so a decorates row for a C# attribute would assert an application the vocabulary does not credit. R3 IS TECHNICALLY AVAILABLE (the existing attribute_list node type carries the applied attribute) and is NOT TAKEN for the ONTOLOGICAL reason, not because a grammar could not carry it. INVENTORY: 3 of the 239 named node types of wasm/tree-sitter-c_sharp.wasm (sha256 6f69e1cae44e1c32c1eccc170dc5a9778fb94ff716f71113fe1f8c4299aa2f40) are the attribute family; 0 of 239 are a decorator-application family. NEAR-MISS CENSUS: 7,248 attribute sites over the 2,000-file census sample of the admitted population (the whole-population census lands with the arm and restates this count), published as the symbol metadata decorators and as references on the attribute ARGUMENT types, never as an edge. FALSIFIER: a C# construct that applies a CALLABLE to a declaration. THE NAMED CONSTRUCT IS MEASURED, NOT ASSUMED: the attribute ARGUMENT that carries a CALL - 110 sites over 43 files and 2 repos, out of 5,489 attribute arguments over 443 files and 11 repos - and NONE of them is an applied callable to the declaration (an attribute argument is a VALUE the runtime evaluates; the adjudicated ontology publishes annotations as references{isAnnotation}), while the grammar's own inventory has 0 OF THE 239 NAMED NODE TYPES, BY THE INVENTORY (validation/m14/measurements/csharp-grammar-nodes.json - the served build's own node-type names and its served digest) for a decorator-application family. Files: validation/m14/measurements/csharp-grammar-nodes.json (the SERVED build's own node-type names and its served digest, written by the fleet's own script/m14/grammar-node-inventory.ts - 239 named types over 533 ids) - validation/m14/measurements/csharp-grammar-inventory.json - validation/m14/measurements/csharp-emission-census-cap2000.json (a 2,000-file stride sample of the admitted population - 2,000 of the 14,424 admitted files, 22 repos; the whole-population census lands with the arm and replaces this citation) - validation/m14/verification/CSHARP-VERDICT-2026-10-21.md"
-   },
-   {
-    "label": "mixes_in",
-    "evidence": "grammar-absence",
-    "from": "RULED UNDECIDABLE (grammar matter, the LADDER exhausted - measured, not asserted). R1 UNAVAILABLE (measured): the newest published tree-sitter-c-sharp@0.23.5 builds to the wired vocabulary EXACTLY (the three digests in validation/m14/measurements/csharp-emission-census-cap2000.json (a 2,000-file stride sample of the admitted population - 2,000 of the 14,424 admitted files, 22 repos; the whole-population census lands with the arm and replaces this citation) and validation/m14/verification/CSHARP-VERDICT-2026-10-21.md) and it has 0 of 239 mixin node types. R2 NOT APPLICABLE: a mixin is composed into a class's SUPERTYPE CHAIN (src/ast/types.ts:141-148) and C#'s only supertype composition is the base list - one base (extends) and the interface list (implements), both already in the vocabulary; a patch would have to match a with-style clause C# does not have. R3: the existing parameter node type carries the this modifier (a NAMED modifier node) that marks an EXTENSION METHOD, C#'s member-injection mechanism - MEASURED 418 extension-method sites over the 2,000-file census sample of the admitted population (the whole-population census lands with the arm and restates this count) - but an extension member is resolved AT THE CALL SITE, not inherited into the supertype chain, so it is not the contract's construct and its direction mirrors the contract's. The other near miss is named too: with_expression and with_initializer are C#'s RECORD update form (the name collision with Dart's with), MEASURED 118 sites. FALSIFIER: a C# construct that composes a MIXIN into another type's SUPERTYPE CHAIN. EVERY CONSTRUCT THIS RULING NAMES IS MEASURED: the grammar's own inventory has 0 OF THE 239 NAMED NODE TYPES, BY THE INVENTORY (validation/m14/measurements/csharp-grammar-nodes.json - the served build's own node-type names and its served digest) for a mixin clause; the nearest shapes are 418 extension-method sites (118 files, 6 repos) and 118 record-with sites (47 with_expression + 71 with_initializer), and NEITHER composes a type into a supertype chain - an extension member is resolved at the call site and `with` is the record form. The language's only supertype composition is the base list, already published as extends/implements. Files: validation/m14/measurements/csharp-grammar-nodes.json (the SERVED build's own node-type names and its served digest, written by the fleet's own script/m14/grammar-node-inventory.ts - 239 named types over 533 ids) - validation/m14/measurements/csharp-grammar-inventory.json - validation/m14/measurements/csharp-emission-census-cap2000.json (a 2,000-file stride sample of the admitted population - 2,000 of the 14,424 admitted files, 22 repos; the whole-population census lands with the arm and replaces this citation) - validation/m14/verification/CSHARP-VERDICT-2026-10-21.md"
-   },
-   {
-    "label": "part_of",
-    "evidence": "informational",
-    "from": "RULED UNDECIDABLE (INFORMATIONAL - not a grammar absence, and the counts are what make it one): the PINNED grammar declares no part_* and no partial_* node type (0 of 239), and C# has no construct that names ANOTHER unit as a part; C#'s nearest construct is the partial MODIFIER, a DECLARATION SPLIT OF ONE TYPE whose declarations merge into ONE symbol, so a part_of row would be X -> X and would carry no information (the INFORMATION test). MEASURED over the 2,000-file census sample of the admitted population (the whole-population census lands with the arm and restates this count): 274 partial sites, on the declaration kinds class_declaration, interface_declaration, method_declaration, struct_declaration, of which 9 types are split across more than 1 file. FALSIFIER: a construct that names ANOTHER unit as a part. THE NAMED CONSTRUCT IS MEASURED, NOT ASSUMED: the `partial` MODIFIER - 274 sites on four declaration kinds (class 163, method 90, interface 18, struct 3), of which 9 types are declared across MORE THAN ONE FILE - and it names NO OTHER UNIT: every `partial` site is a piece of ONE type, so a part_of row would read X -> X. The grammar's own inventory has 0 OF THE 239 NAMED NODE TYPES, BY THE INVENTORY (validation/m14/measurements/csharp-grammar-nodes.json - the served build's own node-type names and its served digest) for a part directive. Files: validation/m14/measurements/csharp-grammar-nodes.json (the SERVED build's own node-type names and its served digest, written by the fleet's own script/m14/grammar-node-inventory.ts - 239 named types over 533 ids) - validation/m14/measurements/csharp-grammar-inventory.json - validation/m14/measurements/csharp-emission-census-cap2000.json (a 2,000-file stride sample of the admitted population - 2,000 of the 14,424 admitted files, 22 repos; the whole-population census lands with the arm and replaces this citation) - validation/m14/verification/CSHARP-VERDICT-2026-10-21.md"
-   }
-  ],
-  "corpusUnexercised": [
-   {
-    "label": "renders",
-    "evidence": "zero-sites",
-    "from": "IMPLEMENTED AND CORPUS-UNEXERCISED (the fleet's own class for a value the analyzer publishes and the corpus does not exercise - the graphql and sql precedents). The C# component-render construct is the DYNAMIC RENDER HOST: `builder.RenderComponent<Widget>()` (the component is a TYPE ARGUMENT) and `builder.RenderComponent(typeof(OtherWidget))` (the component is a `typeof` ARGUMENT). The EXISTING `invocation_expression` node type carries both, so this is rung R3 of the remedy ladder - NO grammar change, and R1/R2 are not needed: the construct was never a grammar question. THE ANALYZER EMITS IT (src/ast/real-csharp-analyzer.ts:2285 and :2315) and the PROOF is the BEHAVIOURAL FIXTURE validation/m14/fixtures/csharp/render-host-component.cs, whose edge exists only when the construct reaches the analyzer as a REAL NODE. THE POPULATION IS ZERO, measured: the whole-admitted-population census counts 51 render-host calls, of which 0 name a component by a type argument and 0 name one by a `typeof` argument - the component-render construct itself is RAZOR's, a different language with a different grammar - and the corpus-wide text search finds 0 files with a render host naming a component in either shape (the only render-shaped text in the corpus is the `RenderFragment<T>` delegate TYPE and the unrelated `RenderArgs<TDocument>`). FALSIFIER: a C# file in the admitted population that calls a render host with a component type argument or a `typeof` argument - the count would rise above 0."
-   }
-  ],
-  "_emissionSites": {
-   "calls": [
-    "src/ast/real-csharp-analyzer.ts:1681",
-    "src/ast/real-csharp-analyzer.ts:1941"
-   ],
-   "uses": [
-    "src/ast/real-csharp-analyzer.ts:2979",
-    "src/ast/real-csharp-analyzer.ts:3614"
-   ],
-   "contains": [
-    "src/ast/real-csharp-analyzer.ts:2138"
-   ],
-   "references": [
-    "src/ast/real-csharp-analyzer.ts:1148",
-    "src/ast/real-csharp-analyzer.ts:1185",
-    "src/ast/real-csharp-analyzer.ts:2309"
-   ],
-   "exports": [
-    "src/ast/real-csharp-analyzer.ts:2260"
-   ],
-   "extends": [
-    "src/ast/real-csharp-analyzer.ts:1335",
-    "src/ast/real-csharp-analyzer.ts:1375"
-   ],
-   "implements": [
-    "src/ast/real-csharp-analyzer.ts:1375"
-   ],
-   "overrides": [
-    "src/ast/real-csharp-analyzer.ts:2802",
-    "src/ast/real-csharp-analyzer.ts:2879"
-   ],
-   "renders": [
-   "src/ast/real-csharp-analyzer.ts:2285",
-   "src/ast/real-csharp-analyzer.ts:2315"
-  ],
-  "instantiates": [
-    "src/ast/real-csharp-analyzer.ts:1965",
-    "src/ast/real-csharp-analyzer.ts:1980"
-   ],
-   "imports": [
-    "src/ast/real-csharp-analyzer.ts:1343",
-    "src/ast/real-csharp-analyzer.ts:1382"
-   ]
-  },
-  "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-csharp-analyzer.ts, named per type in `_emissionSites`. THE TENTH WAS A GAP AND IS NOW CLOSED BY RESTORING THIS LANE'S OWN COMMITTED IMPLEMENTATION, not by re-wording: `imports` had 0 `RelationshipType.Imports` sites in the file while `using_directive` was dispatched at :1103 and published as an ImportInfo row (:1138) plus a `references` edge (:1145, isUsingDirective + isImport). No other path minted the edge \u2014 src/ast/parallel-indexer.ts:4311 persists `result.imports` into the brain_import TABLE, and no non-analyzer file in src/ writes a relationship of type `imports` \u2014 so the `imports` column read 0 edges over a 500-file stride while 6854 `references` edges fired on the same files, and the lane's own fixture csharp/import-export-edges FAILED on 8 pinned `imports` rows. The emission, the four-form `importKind` discriminator, the tuple-module rule and the unparsed-directive guard were taken from this lane's committed revisions 7f43f41cf and 9ccd0cb5b (neither an ancestor of this branch: the pins landed without the analyzer). MEASURED AFTER, same 500-file stride of the 14424 admitted .cs/.csx files: `imports` 0 -> 1293 edges, every other type byte-identical (calls 15280 uses 7916 contains 5961 references 6854 exports 431 extends 254 implements 168 overrides 361 instantiates 3230), and csharp/using-tuple-alias now PASSES (20 pass / 4 fail -> 21 pass / 3 fail). CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified. MEASURED AFTER THE FIX, 2026-10-14, SAME STRIDE AND SAME COMMAND: `npx tsx script/m14/incoming-gate.ts csharp cs,csx 500` (instrument disclosure `population: 500 parsed of 500 sampled (corpus has 14424 .cs,csx files across 22 repos; stride sample)`) now reads `imports` 1293 edges (resolved 135, ambiguous 336, unresolved 822) against 0 before, while ALL NINE other types are byte-identical to the before-run (calls 15280 uses 7916 contains 5961 references 6854 exports 431 extends 254 implements 168 overrides 361 instantiates 3230) \u2014 an additive, type-specific movement, not a reshuffle. THE PIN AGREES: csharp/import-export-edges had FAILED on 8 pinned `imports` rows and now has EVERY imports arm green (targets, lines, importKind namespace/static/alias/global_*/extern_alias, alias metadata, evidenceClass import_based); it remains RED on its `exports` arms only, which are the separate half of the same lost revision and are NOT taken here. csharp/using-tuple-alias moved from FAIL to PASS. Lane total 20 pass / 4 fail -> 21 pass / 3 fail.",
-  "_implemented_measured": {
-   "_unit": "STRIDE SAMPLE, NOT POPULATION: `npx tsx script/m14/incoming-gate.ts csharp cs,csx 500` \u2014 the instrument's own disclosure reads `population: 500 parsed of 500 sampled (corpus has 14424 .cs,csx files across 22 repos; stride sample)` and `SAMPLE, NOT POPULATION: 500 of 14424 files`; per-type edges are TABLE 1 of that run, read 2026-10-14; wall clock 242s. NINE of the ten types fire; `imports` is the tenth and reads 0 (see `_from`). The stride is a lower bound, so the nine counts below are lower bounds, not corpus totals.",
-   "calls": {
-    "edges": 15280
-   },
-   "uses": {
-    "edges": 7916
-   },
-   "contains": {
-    "edges": 5961
-   },
-   "references": {
-    "edges": 6854
-   },
-   "exports": {
-    "edges": 431
-   },
-   "extends": {
-    "edges": 254
-   },
-   "implements": {
-    "edges": 168
-   },
-   "overrides": {
-    "edges": 361
-   },
-   "instantiates": {
-    "edges": 3230
-   },
-   "imports": {
-    "edges": 1293
-   }
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates",
+      "renders"
+    ],
+    "excluded": [
+      {
+        "label": "decorates",
+        "evidence": "ontological",
+        "from": "RULED UNDECIDABLE (ONTOLOGICAL - not a grammar absence, and the inventory proves it): the PINNED grammar DECLARES attribute, attribute_list and attribute_argument, so the construct is IN the grammar; the reason is the ADJUDICATED ONTOLOGY - an annotation/attribute is PASSIVE METADATA and a decorator is an APPLIED CALLABLE (validation/m14/verification/VOCABULARY-EXTENSION-PROPOSAL.md:39 - dart's annotations emit references{isAnnotation, annotatedKind}; the java lane's references{isAnnotation}; the cpp attributes-as-metadata precedent), so a decorates row for a C# attribute would assert an application the vocabulary does not credit. R3 IS TECHNICALLY AVAILABLE (the existing attribute_list node type carries the applied attribute) and is NOT TAKEN for the ONTOLOGICAL reason, not because a grammar could not carry it. INVENTORY: 3 of the 239 named node types of wasm/tree-sitter-c_sharp.wasm (sha256 6f69e1cae44e1c32c1eccc170dc5a9778fb94ff716f71113fe1f8c4299aa2f40) are the attribute family; 0 of 239 are a decorator-application family. NEAR-MISS CENSUS: 52,205 attribute sites (cs.attribute) over the WHOLE admitted population - 14,424 parsed of 14,424, 22 repositories - plus 50,609 attribute lists and 39,708 attribute arguments, published as the symbol metadata decorators and as references on the attribute ARGUMENT types, never as an edge. FALSIFIER: a C# construct that applies a CALLABLE to a declaration. THE NAMED CONSTRUCT IS MEASURED, NOT ASSUMED: the attribute ARGUMENT that carries a CALL - 609 sites over 274 files and 3 repositories, out of 39,708 attribute arguments over 3,338 files and 16 repositories - and NONE of them is an applied callable to the declaration (an attribute argument is a VALUE the runtime evaluates; the adjudicated ontology publishes annotations as references{isAnnotation}), while the grammar's own inventory has 0 OF THE 239 NAMED NODE TYPES, BY THE INVENTORY (validation/m14/measurements/csharp-grammar-nodes.json - the served build's own node-type names and its served digest) for a decorator-application family. Files: validation/m14/measurements/csharp-grammar-nodes.json (the SERVED build's own node-type names and its served digest, written by the fleet's own script/m14/grammar-node-inventory.ts - 239 named types over 533 ids) - validation/m14/measurements/csharp-grammar-inventory.json - validation/m14/measurements/csharp-emission-census-whole.json (the WHOLE admitted population - 14,424 parsed of 14,424, 22 repositories, 0 failed, 0 degraded) - validation/m14/verification/CSHARP-VERDICT-2026-10-21.md"
+      },
+      {
+        "label": "mixes_in",
+        "evidence": "grammar-absence",
+        "from": "RULED UNDECIDABLE (grammar matter, the LADDER exhausted - measured, not asserted). R1 UNAVAILABLE (measured): the newest published tree-sitter-c-sharp@0.23.5 builds to the wired vocabulary EXACTLY (the three digests in validation/m14/measurements/csharp-emission-census-whole.json (the WHOLE admitted population - 14,424 parsed of 14,424, 22 repositories, 0 failed, 0 degraded) and validation/m14/verification/CSHARP-VERDICT-2026-10-21.md) and it has 0 of 239 mixin node types. R2 NOT APPLICABLE: a mixin is composed into a class's SUPERTYPE CHAIN (src/ast/types.ts:141-148) and C#'s only supertype composition is the base list - one base (extends) and the interface list (implements), both already in the vocabulary; a patch would have to match a with-style clause C# does not have. R3: the existing parameter node type carries the this modifier (a NAMED modifier node) that marks an EXTENSION METHOD, C#'s member-injection mechanism - MEASURED 3,312 extension-method sites over 875 files and 10 repositories, over the WHOLE admitted population (14,424 parsed of 14,424, 22 repositories) - but an extension member is resolved AT THE CALL SITE, not inherited into the supertype chain, so it is not the contract's construct and its direction mirrors the contract's. The other near miss is named too: with_expression and with_initializer are C#'s RECORD update form (the name collision with Dart's with), MEASURED 673 sites over the whole admitted population (274 with_expression + 399 with_initializer). FALSIFIER: a C# construct that composes a MIXIN into another type's SUPERTYPE CHAIN. EVERY CONSTRUCT THIS RULING NAMES IS MEASURED: the grammar's own inventory has 0 OF THE 239 NAMED NODE TYPES, BY THE INVENTORY (validation/m14/measurements/csharp-grammar-nodes.json - the served build's own node-type names and its served digest) for a mixin clause; the nearest shapes are 3,312 extension-method sites (875 files, 10 repos) and 673 record-with sites (274 with_expression + 399 with_initializer), and NEITHER composes a type into a supertype chain - an extension member is resolved at the call site and `with` is the record form. The language's only supertype composition is the base list, already published as extends/implements. Files: validation/m14/measurements/csharp-grammar-nodes.json (the SERVED build's own node-type names and its served digest, written by the fleet's own script/m14/grammar-node-inventory.ts - 239 named types over 533 ids) - validation/m14/measurements/csharp-grammar-inventory.json - validation/m14/measurements/csharp-emission-census-whole.json (the WHOLE admitted population - 14,424 parsed of 14,424, 22 repositories, 0 failed, 0 degraded) - validation/m14/verification/CSHARP-VERDICT-2026-10-21.md"
+      },
+      {
+        "label": "part_of",
+        "evidence": "informational",
+        "from": "RULED UNDECIDABLE (INFORMATIONAL - not a grammar absence, and the counts are what make it one): the PINNED grammar declares no part_* and no partial_* node type (0 of 239), and C# has no construct that names ANOTHER unit as a part; C#'s nearest construct is the partial MODIFIER, a DECLARATION SPLIT OF ONE TYPE whose declarations merge into ONE symbol, so a part_of row would be X -> X and would carry no information (the INFORMATION test). MEASURED over the WHOLE admitted population (14,424 parsed of 14,424, 22 repositories): 1,873 partial sites on six declaration kinds (class_declaration 1,198, method_declaration 447, interface_declaration 212, struct_declaration 14, property_declaration 1, constructor_declaration 1), of which 300 types are split across more than 1 file, over 1,067 files. FALSIFIER: a construct that names ANOTHER unit as a part. THE NAMED CONSTRUCT IS MEASURED, NOT ASSUMED: the `partial` MODIFIER - 274 sites on four declaration kinds (class 163, method 90, interface 18, struct 3), of which 9 types are declared across MORE THAN ONE FILE - and it names NO OTHER UNIT: every `partial` site is a piece of ONE type, so a part_of row would read X -> X. The grammar's own inventory has 0 OF THE 239 NAMED NODE TYPES, BY THE INVENTORY (validation/m14/measurements/csharp-grammar-nodes.json - the served build's own node-type names and its served digest) for a part directive. Files: validation/m14/measurements/csharp-grammar-nodes.json (the SERVED build's own node-type names and its served digest, written by the fleet's own script/m14/grammar-node-inventory.ts - 239 named types over 533 ids) - validation/m14/measurements/csharp-grammar-inventory.json - validation/m14/measurements/csharp-emission-census-whole.json (the WHOLE admitted population - 14,424 parsed of 14,424, 22 repositories, 0 failed, 0 degraded) - validation/m14/verification/CSHARP-VERDICT-2026-10-21.md"
+      }
+    ],
+    "corpusUnexercised": [
+      {
+        "label": "renders",
+        "evidence": "298 render-host call sites over the WHOLE admitted population (14,424 parsed of 14,424, 22 repositories), over a FOUR-NAME SUPERSET of the analyzer's own two (RenderComponent, RenderChild, Render, AddComponent) - and 0 of them NAME A COMPONENT: the census emits cs.render_host_call_with_component_type and cs.render_host_call_with_typeof_component only when a host names a component, and NEITHER APPEARS, so the component tally is EMPTY over all 14,424 files. The analyzer's renders column is 0 over the whole population. validation/m14/measurements/csharp-emission-census-whole.json",
+        "from": "IMPLEMENTED AND CORPUS-UNEXERCISED (the fleet's own class for a value the analyzer publishes and the corpus does not exercise - the graphql and sql precedents). The C# component-render construct is the DYNAMIC RENDER HOST: `builder.RenderComponent<Widget>()` (the component is a TYPE ARGUMENT) and `builder.RenderComponent(typeof(OtherWidget))` (the component is a `typeof` ARGUMENT). The EXISTING `invocation_expression` node type carries both, so this is rung R3 of the remedy ladder - NO grammar change, and R1/R2 are not needed: the construct was never a grammar question. THE ANALYZER EMITS IT (src/ast/real-csharp-analyzer.ts:2285 and :2315) and the PROOF is the BEHAVIOURAL FIXTURE validation/m14/fixtures/csharp/render-host-component.cs, whose edge exists only when the construct reaches the analyzer as a REAL NODE. THE POPULATION IS ZERO, measured: the whole-admitted-population census counts 51 render-host calls, of which 0 name a component by a type argument and 0 name one by a `typeof` argument - the component-render construct itself is RAZOR's, a different language with a different grammar - and the corpus-wide text search finds 0 files with a render host naming a component in either shape (the only render-shaped text in the corpus is the `RenderFragment<T>` delegate TYPE and the unrelated `RenderArgs<TDocument>`). FALSIFIER: a C# file in the admitted population that calls a render host with a component type argument or a `typeof` argument - the count would rise above 0.",
+        "population": "parsed=14424/14424 admitted=14424 exts=cs,csx index=no"
+      }
+    ],
+    "_emissionSites": {
+      "calls": [
+        "src/ast/real-csharp-analyzer.ts:1681",
+        "src/ast/real-csharp-analyzer.ts:1941"
+      ],
+      "uses": [
+        "src/ast/real-csharp-analyzer.ts:2979",
+        "src/ast/real-csharp-analyzer.ts:3614"
+      ],
+      "contains": [
+        "src/ast/real-csharp-analyzer.ts:2138"
+      ],
+      "references": [
+        "src/ast/real-csharp-analyzer.ts:1148",
+        "src/ast/real-csharp-analyzer.ts:1185",
+        "src/ast/real-csharp-analyzer.ts:2309"
+      ],
+      "exports": [
+        "src/ast/real-csharp-analyzer.ts:2260"
+      ],
+      "extends": [
+        "src/ast/real-csharp-analyzer.ts:1335",
+        "src/ast/real-csharp-analyzer.ts:1375"
+      ],
+      "implements": [
+        "src/ast/real-csharp-analyzer.ts:1375"
+      ],
+      "overrides": [
+        "src/ast/real-csharp-analyzer.ts:2802",
+        "src/ast/real-csharp-analyzer.ts:2879"
+      ],
+      "renders": [
+        "src/ast/real-csharp-analyzer.ts:2285",
+        "src/ast/real-csharp-analyzer.ts:2315"
+      ],
+      "instantiates": [
+        "src/ast/real-csharp-analyzer.ts:1965",
+        "src/ast/real-csharp-analyzer.ts:1980"
+      ],
+      "imports": [
+        "src/ast/real-csharp-analyzer.ts:1343",
+        "src/ast/real-csharp-analyzer.ts:1382"
+      ]
+    },
+    "_from": "DERIVATION. implemented = the ten types with an emission site in src/ast/real-csharp-analyzer.ts, named per type in `_emissionSites`. THE TENTH WAS A GAP AND IS NOW CLOSED BY RESTORING THIS LANE'S OWN COMMITTED IMPLEMENTATION, not by re-wording: `imports` had 0 `RelationshipType.Imports` sites in the file while `using_directive` was dispatched at :1103 and published as an ImportInfo row (:1138) plus a `references` edge (:1145, isUsingDirective + isImport). No other path minted the edge \u2014 src/ast/parallel-indexer.ts:4311 persists `result.imports` into the brain_import TABLE, and no non-analyzer file in src/ writes a relationship of type `imports` \u2014 so the `imports` column read 0 edges over a 500-file stride while 6854 `references` edges fired on the same files, and the lane's own fixture csharp/import-export-edges FAILED on 8 pinned `imports` rows. The emission, the four-form `importKind` discriminator, the tuple-module rule and the unparsed-directive guard were taken from this lane's committed revisions 7f43f41cf and 9ccd0cb5b (neither an ancestor of this branch: the pins landed without the analyzer). MEASURED AFTER, same 500-file stride of the 14424 admitted .cs/.csx files: `imports` 0 -> 1293 edges, every other type byte-identical (calls 15280 uses 7916 contains 5961 references 6854 exports 431 extends 254 implements 168 overrides 361 instantiates 3230), and csharp/using-tuple-alias now PASSES (20 pass / 4 fail -> 21 pass / 3 fail). CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified. MEASURED AFTER THE FIX, 2026-10-14, SAME STRIDE AND SAME COMMAND: `npx tsx script/m14/incoming-gate.ts csharp cs,csx 500` (instrument disclosure `population: 500 parsed of 500 sampled (corpus has 14424 .cs,csx files across 22 repos; stride sample)`) now reads `imports` 1293 edges (resolved 135, ambiguous 336, unresolved 822) against 0 before, while ALL NINE other types are byte-identical to the before-run (calls 15280 uses 7916 contains 5961 references 6854 exports 431 extends 254 implements 168 overrides 361 instantiates 3230) \u2014 an additive, type-specific movement, not a reshuffle. THE PIN AGREES: csharp/import-export-edges had FAILED on 8 pinned `imports` rows and now has EVERY imports arm green (targets, lines, importKind namespace/static/alias/global_*/extern_alias, alias metadata, evidenceClass import_based); it remains RED on its `exports` arms only, which are the separate half of the same lost revision and are NOT taken here. csharp/using-tuple-alias moved from FAIL to PASS. Lane total 20 pass / 4 fail -> 21 pass / 3 fail.",
+    "_implemented_measured": {
+      "_unit": "STRIDE SAMPLE, NOT POPULATION: `npx tsx script/m14/incoming-gate.ts csharp cs,csx 500` \u2014 the instrument's own disclosure reads `population: 500 parsed of 500 sampled (corpus has 14424 .cs,csx files across 22 repos; stride sample)` and `SAMPLE, NOT POPULATION: 500 of 14424 files`; per-type edges are TABLE 1 of that run, read 2026-10-14; wall clock 242s. NINE of the ten types fire; `imports` is the tenth and reads 0 (see `_from`). The stride is a lower bound, so the nine counts below are lower bounds, not corpus totals.",
+      "calls": {
+        "edges": 15280
+      },
+      "uses": {
+        "edges": 7916
+      },
+      "contains": {
+        "edges": 5961
+      },
+      "references": {
+        "edges": 6854
+      },
+      "exports": {
+        "edges": 431
+      },
+      "extends": {
+        "edges": 254
+      },
+      "implements": {
+        "edges": 168
+      },
+      "overrides": {
+        "edges": 361
+      },
+      "instantiates": {
+        "edges": 3230
+      },
+      "imports": {
+        "edges": 1293
+      }
+    }
   }
- }
 }

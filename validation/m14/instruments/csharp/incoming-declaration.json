@@ -4,113 +4,252 @@
     "asked": "the fleet gate MEASURES C# and exits 1 on its fleet-wide bar; this declaration RATCHETS the same measurement per type, so a class can only move deliberately.",
     "instrument": "script/m14/incoming-gate.ts (single measurement; no second instrument)",
     "instrumentVersion": "row schema: edges/resolved/ambiguousByDecl/ambiguousByKind/unresolved/markedExternal + 25-name worklists",
-    "sample": 200,
-    "corpusTotal": 33184,
-    "corpusRepos": 5,
-    "parsed": 200,
+    "sample": 14424,
+    "corpusTotal": 14424,
+    "corpusRepos": 22,
+    "parsed": 14424,
     "qualifiedNameAliases": 0,
     "metric": "ambiguous counted by DECLARATIONS (distinct-file declarations), not distinct kinds",
     "analyzer": "src/ast/real-csharp-analyzer.ts",
-    "analyzerDigest": "sha256:b54175839b7cb0c8",
-    "generated": "2026-10-10",
-    "direction": "resolved/external are FLOORS (may not decrease). ambiguous/otherUnresolved/unclassed are CEILINGS (may not increase). The classes are siblings that partition the edges: edges = resolved + ambiguous + otherUnresolved + external + unclassed, and the last of those is checked to be 0 rather than assumed."
+    "analyzerDigest": "sha256:d3bd2c73c69e55d2",
+    "generated": "2026-10-22",
+    "direction": "resolved/external are FLOORS (may not decrease). ambiguous/otherUnresolved/unclassed are CEILINGS (may not increase). The classes are siblings that partition the edges: edges = resolved + ambiguous + otherUnresolved + external + unclassed, and the last of those is checked to be 0 rather than assumed. The closure is the WHOLE-POPULATION run's, NOT the chunk sum's: the chunk sum's resolution buckets are the chunked measurement's and are biased (measured difference: resolved +14,350, amb(decl) -171,837, unresolved +151,752, extOK +5,668, ext? +67) while its EDGE buckets agree with the whole run's exactly, per type.",
+    "populationNote": "parsed 14424 / corpusTotal 14424 - the WHOLE admitted set, 22 repositories, 14,424 .cs/.csx files, measured in one project-scoped gate run (not a stride sample and not a chunk). The 200-file sample this block used to carry is GONE, and the per-type closure moved with it: the numbers below are the whole-population run's."
   },
   "rules": {
     "resolved": "target matched exactly one declaration in the 200-file sample's declaration pool (name or qualifiedName alias). A floor, not a ceiling: resolution is the point of the lane.",
-    "external": "target matched no declaration and the edge carries the analyzer's provable external marker (isExternalTarget:true + a recorded externalReason). A floor: such an edge must keep being able to say so. Marking is NOT claimed complete — see otherUnresolved.",
-    "ambiguous": "target matched two or more declarations. Counted by DECLARATION (incoming-gate.ts) — a name declared in n files counts n. The pool is file-local, so a member name emitted unqualified by one file can collide with another file's declaration of the same word.",
+    "external": "target matched no declaration and the edge carries the analyzer's provable external marker (isExternalTarget:true + a recorded externalReason). A floor: such an edge must keep being able to say so. Marking is NOT claimed complete \u2014 see otherUnresolved.",
+    "ambiguous": "target matched two or more declarations. Counted by DECLARATION (incoming-gate.ts) \u2014 a name declared in n files counts n. The pool is file-local, so a member name emitted unqualified by one file can collide with another file's declaration of the same word.",
     "otherUnresolved": "target matched no declaration and carries no marker. This is the backlog. It is explicitly NOT asserted to be third-party: each name in it is either (a) a member path of a foreign type the analyzer cannot see, (b) a local declaration question the target spelling defeats, or (c) project code not present in the 200-file sampled pool.",
     "unclassed": "edges with an empty target string. Ceiling 0, always: the instrument can only classify an edge it has a target for, and an empty target is a defect in the emitting type, not a class."
   },
   "notes": [
     "A ceiling is a claim about what is known and accepted, never that the class is fine. Repaying a cluster means lowering its ceiling in the same commit that lowers the number.",
-    "This gate shares the instrument with the fleet gate on purpose: two instruments measuring the same population and disagreeing is the failure mode script/m14/verify-honesty.ts exists to catch. One measurement, two verdicts — the fleet's bar and Csharp's declaration.",
+    "This gate shares the instrument with the fleet gate on purpose: two instruments measuring the same population and disagreeing is the failure mode script/m14/verify-honesty.ts exists to catch. One measurement, two verdicts \u2014 the fleet's bar and Csharp's declaration.",
     "The worklist printed below each type is the instrument's own (up to 25 names per type, per run). A count that cannot be walked back to its names is not a measurement.",
     "EXTERNAL IS 0 on all ten types, and that is a state, not a defect claim: this lane's analyzer emits no provable external marker, so by construction every unbound target in it is backlog (cli/unknown targets included) and the ceiling carries the whole weight. Marking is future work with a proof obligation the Java precedent shows how to meet: an edge may only join the external class if the analyzer can record WHY the target is outside the project (see real-java-analyzer.ts's isExternalTarget + externalReason), because an unmarked unresolved edge and a marked one are different claims.",
-    "IMPORTS IS 0 EDGES on this walk. The instrument's `imports` row counts relationship-channel rows only (`imports`/`brain_import`). C# carries its import SITES on the analyzer's separate `imports[]` channel (`ImportInfo[]` → the brain_import table, mirrored as `references` edges marked isImport:true), so for that lane the zero is a CHANNEL fact, not an absence — see real-csharp-analyzer.md's channel table. Where a lane carries no import channel at all, the zero is a lane truth instead; either way the ratchet locks it.",
-    "ZERO-EDGE TYPES on this walk: imports. Each is a LOCK, not automatically a gap — floors and ceilings are 0, so the type cannot move without a deliberate re-declaration. A zero can be a recorded ruling (python's `implements` is RULED, falsification in its canonical doc), a channel fact (see the imports note when import sites travel on the analyzer's own channel), or simply absent from this 200-file stride sample (go's `overrides` fires 78 times over the corpus). Read it against the lane's canonical doc before calling it a gap.",
+    "IMPORTS IS 0 EDGES on this walk. The instrument's `imports` row counts relationship-channel rows only (`imports`/`brain_import`). C# carries its import SITES on the analyzer's separate `imports[]` channel (`ImportInfo[]` \u2192 the brain_import table, mirrored as `references` edges marked isImport:true), so for that lane the zero is a CHANNEL fact, not an absence \u2014 see real-csharp-analyzer.md's channel table. Where a lane carries no import channel at all, the zero is a lane truth instead; either way the ratchet locks it.",
+    "ZERO-EDGE TYPES on this walk: imports. Each is a LOCK, not automatically a gap \u2014 floors and ceilings are 0, so the type cannot move without a deliberate re-declaration. A zero can be a recorded ruling (python's `implements` is RULED, falsification in its canonical doc), a channel fact (see the imports note when import sites travel on the analyzer's own channel), or simply absent from this 200-file stride sample (go's `overrides` fires 78 times over the corpus). Read it against the lane's canonical doc before calling it a gap.",
     "qualifiedNameAliases 0: this lane publishes no qualified names, so the qualified-endpoint resolution rule (java's qualifiedNameAliases 3,040) has nothing to bind with here and every alias-shaped target stays unbound by rule rather than by accident."
   ],
   "types": {
     "calls": {
-      "resolved": 1218,
+      "resolved": 117318,
       "external": 0,
-      "ambiguous": 512,
-      "otherUnresolved": 6294,
+      "ambiguous": 237935,
+      "otherUnresolved": 60348,
       "unclassed": 0
     },
     "uses": {
-      "resolved": 1120,
+      "resolved": 106494,
       "external": 0,
-      "ambiguous": 254,
-      "otherUnresolved": 3521,
+      "ambiguous": 125432,
+      "otherUnresolved": 27846,
       "unclassed": 0
     },
     "contains": {
-      "resolved": 2106,
+      "resolved": 195367,
       "external": 0,
-      "ambiguous": 334,
-      "otherUnresolved": 7,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
       "unclassed": 0
     },
     "imports": {
-      "resolved": 0,
-      "external": 0,
-      "ambiguous": 0,
-      "otherUnresolved": 0,
+      "resolved": 683,
+      "external": 12009,
+      "ambiguous": 20146,
+      "otherUnresolved": 6925,
       "unclassed": 0
     },
     "references": {
-      "resolved": 272,
+      "resolved": 75334,
       "external": 0,
-      "ambiguous": 44,
-      "otherUnresolved": 3294,
+      "ambiguous": 94086,
+      "otherUnresolved": 54428,
       "unclassed": 0
     },
     "exports": {
-      "resolved": 92,
+      "resolved": 113,
       "external": 0,
-      "ambiguous": 5,
-      "otherUnresolved": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 12968,
       "unclassed": 0
     },
     "extends": {
-      "resolved": 6,
+      "resolved": 4090,
       "external": 0,
-      "ambiguous": 1,
-      "otherUnresolved": 87,
+      "ambiguous": 3506,
+      "otherUnresolved": 1076,
       "unclassed": 0
     },
     "implements": {
-      "resolved": 4,
+      "resolved": 2299,
       "external": 0,
-      "ambiguous": 0,
-      "otherUnresolved": 43,
+      "ambiguous": 1077,
+      "otherUnresolved": 1690,
       "unclassed": 0
     },
     "overrides": {
-      "resolved": 0,
+      "resolved": 14514,
       "external": 0,
       "ambiguous": 0,
-      "otherUnresolved": 136,
+      "otherUnresolved": 0,
       "unclassed": 0
     },
     "instantiates": {
-      "resolved": 97,
+      "resolved": 39114,
       "external": 0,
-      "ambiguous": 75,
-      "otherUnresolved": 916,
+      "ambiguous": 29460,
+      "otherUnresolved": 18239,
+      "unclassed": 0
+    },
+    "decorates": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "renders": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "mixes_in": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "part_of": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
       "unclassed": 0
     }
   },
   "resolution_caveats": [
-    "RESOLVED IS NOT 'THE EDGE POINTS AT THE RIGHT DECLARATION' IN THIS LANE. collRes is OF resolved: the target had MORE THAN ONE declaration, so production's own-file tie-break CHOSE the row. A resolved edge in this lane is 'the edge points at A declaration, and where there was more than one, at the one the tie-break chose'. The gate's own TABLE 1 prints, in every lane's log, that the indexer measures a large share of those tie-break picks as WRONG - so the resolved count is a FLOOR on correct resolution and the tie-break's picks are its largest soft spot. The per-row movement of that tie-break is measured directly by script/m14/csharp-tiebreak-movement.ts, not by this count.",
+    "THE BUCKETS BELOW ARE THE WHOLE-POPULATION RUN'S, AND THE CHUNK SUM'S ARE NOT. The 8 chunks tile the admitted set (offsets 0..14,000, contiguous, no gap, no overlap, 7x2,000 + 424 = 14,424 measured, and every chunk measured every file in its range), and their EDGE buckets agree with the whole-population run's EXACTLY, per type - which is the tiling checked against the DATA, not only against the offsets. Their RESOLUTION buckets DIFFER, and the difference IS the bias: resolved +14,350, amb(decl) -171,837, unresolved +151,752, extOK +5,668, ext? +67. A name that collides in the half that is NOT in the slice is invisible, so it reads unique and the edge RESOLVES; a name whose only declaration is in ANOTHER slice is ABSENT from the slice's key space, so the edge CANNOT resolve. THE DECLARATION THEREFORE CARRIES THE WHOLE RUN'S NUMBERS, because the declaration's closure is a claim about the POPULATION. (validation/m14/measurements/csharp-gate-chunk-sum.json)",
+    "RESOLVED IS NOT 'THE EDGE POINTS AT THE RIGHT DECLARATION' IN THIS LANE. collRes is OF resolved: the target had MORE THAN ONE declaration, so production's own-file tie-break CHOSE the row. A resolved edge in this lane is 'the edge points at A declaration, and where there was more than one, at the one the tie-break chose'. The gate's own TABLE 1 prints, in every lane's log, that the indexer measures a large share of those tie-break picks as WRONG - so the resolved count is a FLOOR on correct resolution and the tie-break's picks are its largest soft spot. The per-row movement of that tie-break is measured directly by script/m14/csharp-tiebreak-movement.ts, not by this count: 131,663 rows moved over 1,263,451 rows, with an independent twin agreeing row for row and two independent falsifiers holding.",
     "THE AMBIGUITY IS PER-PROJECT, AND THAT IS WHY THE POOLED NUMBER IS A DIFFERENT NUMBER. Production resolves a bare name only when its declaration count IN THAT PROJECT is exactly 1, and a qualified name only on an exact project-scoped match; a name that collides in ANOTHER project is NOT ambiguous to production. So TABLE 2 (one pooled corpus key space) and TABLE 1 (per project, the verdict's scope) disagree by construction, and only TABLE 1 is the verdict. A reader comparing this lane's buckets with a lane measured in a pooled key space is comparing two different measurements.",
-    "THE CHUNKED MEASUREMENT'S SCOPE IS PROJECT-SCOPED WHILE THE POPULATION IS GLOBAL. Every admitted file is measured exactly once across the chunks, so the EDGE buckets are the population's and are unbiased. But a collision in the half that is not in the slice is invisible, so the name reads unique and the edge resolves: the chunk sum's resolved is BIASED UP and its unresolved and amb(decl) are BIASED DOWN. The chunks TILE THE GLOBAL ADMITTED LIST (offsets 0, N, 2N, ... contiguous) - that is the GLOBAL form, a LOOSER form than the dart lane's per-repository contiguity check, and the number must not be read as a per-repository population.",
-    "amb(kind) IS A SUBSET OF amb(decl) AND IS REPORTED BESIDE IT, NEVER ADDED; collRes IS A SUBSET OF resolved AND IS REPORTED BESIDE IT, NEVER ADDED. The closure is resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges, and unclassed is 0 always.",
-    "THIS LANE'S `external` BUCKET IS THE EXTERNAL CLAIMS: extOK (the project CONFIRMS the claim) PLUS ext? (a claim no check can reach). A nonzero external is therefore partly a CLAIM, and a claim is a floor like a resolution - it can lose that status. EXTERNAL IS 0 ON EVERY TYPE EXCEPT imports, and that is a STATE, not a defect claim: this lane's analyzer emits no provable external marker for calls/uses/references, so every unbound target in them is BACKLOG and the ceiling carries the whole weight. An unmarked unresolved edge and a marked one are different claims and must not be pooled.",
-    "THE `imports` ROW IS A CHANNEL FACT, NOT AN ABSENCE. C# carries its import SITES on the analyzer's separate imports[] channel (ImportInfo[] -> the brain_import table, mirrored as references edges marked isImport:true), so the imports RELATIONSHIP row is 0 while the import sites exist and are counted elsewhere. Reading the imports row as 'C# has no imports' would be wrong; it says the channel is empty, and the channel is the one thing that is empty.",
-    "causeOK IS A STATED REASON, NEVER A RESOLUTION. It is bucket 3: the target names nothing here and the edge DECLARED why it could not reach the base, so it is stated rather than claimed - and it is folded into otherUnresolved in this declaration's five-bucket shape, never into resolved.",
-    "THE RATCHET DIRECTION. resolved and external are FLOORS (they may not decrease); ambiguous, otherUnresolved and unclassed are CEILINGS (they may not increase). A ceiling is a claim about what is known and accepted, never that the class is fine."
-  ]
+    "THE 525-ROW PROJECT-KEY-SPACE GAP IS CARRIED IN ITS OWN RIGHT. The corpus's declaration map answers 525 targets that the PROJECT's key space does not (515 of them declared by more than one file, 6 by one, 4 twice in one file). It is 0.04 % of the edges and it is COUNTED, not argued: a class that cannot be named is a wall, and a class that is named with its count and a falsifier is a disposition."
+  ],
+  "causeRulings": {
+    "ambiguous-declared-by-more-than-one-file": {
+      "population": "parsed=14424/14424 admitted=14424 exts=cs,csx index=no",
+      "count": 490456,
+      "perType": {
+        "calls": 222506,
+        "uses": 122824,
+        "imports": 20075,
+        "references": 92414,
+        "extends": 3353,
+        "implements": 890,
+        "instantiates": 28394
+      },
+      "what": "The target is a BARE name declared by MORE THAN ONE FILE of the edge's own project. Production resolves a bare name only when its declaration count IN THAT PROJECT is exactly 1, so the edge is published AMBIGUOUS and the arbiter does not pick a winner. This is the largest single cause in the lane.",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" bun run script/m14/incoming-gate.ts csharp cs,csx 0 ; then bun run script/m14/csharp-arm-classify.ts .tmp-csharp/csharp-arm-postfix.log --keyspace .tmp-csharp/csharp-keyspace.jsonl --reconcile .tmp-csharp/csharp-arm-postfix.log --json   # the two instruments, over the same 14,424 admitted files",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `ambiguous-declared-by-more-than-one-file`: the run re-derives the class from the `calls`, `uses`, `references`, `imports`, `extends`, `implements` and `instantiates` edges whose target name is declared by more than one file of the edge's own repository, and it FAILS if (1) the class's count is not the count printed above, or (2) the reconciliation with the gate's TABLE 1 is not EXACT for every label and every outcome (ambiguous, externalVerified, unresolved), or (3) any row in the class has a target that exactly ONE file of the project declares. What is NOT a falsifier here: the size of the ambiguous bucket on its own - the bucket can be ambiguous for another reason, and this ruling is about THIS cause only."
+      }
+    },
+    "ambiguous-declared-twice-in-one-file": {
+      "population": "parsed=14424/14424 admitted=14424 exts=cs,csx index=no",
+      "count": 21050,
+      "perType": {
+        "calls": 15429,
+        "uses": 2608,
+        "imports": 3,
+        "references": 1604,
+        "extends": 153,
+        "implements": 187,
+        "instantiates": 1066
+      },
+      "what": "The target is a bare name declared MORE THAN ONCE IN ONE FILE of the project: ONE file, SEVERAL declarations. The arbiter counts DECLARATIONS and so sees the ambiguity; a file map sees one file and cannot. This cause exists only because the two counting rules differ, and it is counted apart for exactly that reason.",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" bun run script/m14/incoming-gate.ts csharp cs,csx 0 ; then bun run script/m14/csharp-arm-classify.ts .tmp-csharp/csharp-arm-postfix.log --keyspace .tmp-csharp/csharp-keyspace.jsonl --reconcile .tmp-csharp/csharp-arm-postfix.log --json   # the two instruments, over the same 14,424 admitted files",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `ambiguous-declared-twice-in-one-file`: the run counts the `calls`, `uses`, `references`, `instantiates`, `extends` and `implements` edges whose target name is declared more than once in ONE file of the project, and it FAILS if (1) the count is not the count printed above, or (2) the key space shows any of those names declared exactly once in their declaring file, or (3) the reconciliation with the gate's TABLE 1 stops being exact."
+      }
+    },
+    "ambiguous-declared-in-the-edge-own-file": {
+      "population": "parsed=14424/14424 admitted=14424 exts=cs,csx index=no",
+      "count": 136,
+      "perType": {
+        "imports": 68,
+        "references": 68
+      },
+      "what": "The edge's OWN FILE declares the target, and more than one declaration answers it. The own-file tie-break therefore applies to these rows - and the per-row movement of that tie-break is measured separately and directly (script/m14/csharp-tiebreak-movement.ts), not by this count.",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" bun run script/m14/incoming-gate.ts csharp cs,csx 0 ; then bun run script/m14/csharp-arm-classify.ts .tmp-csharp/csharp-arm-postfix.log --keyspace .tmp-csharp/csharp-keyspace.jsonl --reconcile .tmp-csharp/csharp-arm-postfix.log --json   # the two instruments, over the same 14,424 admitted files",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `ambiguous-declared-in-the-edge-own-file`: the run counts the `imports` and `references` edges whose OWN file declares the exact target name, and it FAILS if (1) the count is not the count printed above, or (2) any of those edges' own files does not declare the target."
+      }
+    },
+    "unresolved-declared-in-another-repository": {
+      "population": "parsed=14424/14424 admitted=14424 exts=cs,csx index=no",
+      "count": 54927,
+      "perType": {
+        "calls": 22556,
+        "uses": 8908,
+        "imports": 865,
+        "references": 16515,
+        "extends": 366,
+        "implements": 73,
+        "instantiates": 5644
+      },
+      "what": "The corpus DOES declare the target - in ANOTHER REPOSITORY of the 22 in the corpus. The flat corpus key space would answer; the PROJECT's scope cannot, because the scope is the edge's own repository. This is a different cause from 'nobody declares it' and is counted apart.",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" bun run script/m14/incoming-gate.ts csharp cs,csx 0 ; then bun run script/m14/csharp-arm-classify.ts .tmp-csharp/csharp-arm-postfix.log --keyspace .tmp-csharp/csharp-keyspace.jsonl --reconcile .tmp-csharp/csharp-arm-postfix.log --json   # the two instruments, over the same 14,424 admitted files",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `unresolved-declared-in-another-repository`: the run counts the `references`, `calls`, `uses`, `instantiates`, `imports` and `extends` edges whose target name is declared by some file of the corpus but by NO file of the edge's own repository, and it FAILS if (1) the count is not the count printed above, or (2) the corpus's declaration map shows NO file declaring that name (which would make it a different cause), or (3) the name is declared by a file of the edge's own repository (which would make it resolvable or ambiguous, not unresolved)."
+      }
+    },
+    "unresolved-declared-nowhere-in-the-corpus": {
+      "population": "parsed=14424/14424 admitted=14424 exts=cs,csx index=no",
+      "count": 128068,
+      "perType": {
+        "calls": 37273,
+        "uses": 18932,
+        "imports": 6060,
+        "references": 37913,
+        "exports": 12968,
+        "extends": 710,
+        "implements": 1617,
+        "instantiates": 12595
+      },
+      "what": "No file of the WHOLE CORPUS (22 repositories, 14,424 admitted files) declares the target: a BCL/framework/library name (System.*, Microsoft.*, NUnit, Newtonsoft) or a name that belongs to no declaration at all. These are the edges that no in-corpus declaration can answer, by construction.",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" bun run script/m14/incoming-gate.ts csharp cs,csx 0 ; then bun run script/m14/csharp-arm-classify.ts .tmp-csharp/csharp-arm-postfix.log --keyspace .tmp-csharp/csharp-keyspace.jsonl --reconcile .tmp-csharp/csharp-arm-postfix.log --json   # the two instruments, over the same 14,424 admitted files",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `unresolved-declared-nowhere-in-the-corpus`: the run counts the `exports`, `references`, `calls`, `uses`, `instantiates` and `imports` edges whose target name is declared by no file of the whole corpus, and it FAILS if (1) the count is not the count printed above, or (2) the corpus's declaration map shows ANY file declaring that name, or (3) the class is used as a blanket excuse - the gate's own extFAIL and causeFAIL columns must stay 0, and a declaration that DOES answer the name moves the edge out of this class."
+      }
+    },
+    "project-key-space-gap": {
+      "population": "parsed=14424/14424 admitted=14424 exts=cs,csx index=no",
+      "count": 525,
+      "perType": {
+        "calls": 4,
+        "uses": 6
+      },
+      "what": "The two instruments DISAGREE on these rows: the corpus's declaration map answers the target, and the PROJECT's key space does not. The disagreement is COUNTED, not argued away, and it is the lane's smallest open residual.",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" bun run script/m14/incoming-gate.ts csharp cs,csx 0 ; then bun run script/m14/csharp-arm-classify.ts .tmp-csharp/csharp-arm-postfix.log --keyspace .tmp-csharp/csharp-keyspace.jsonl --reconcile .tmp-csharp/csharp-arm-postfix.log --json   # the two instruments, over the same 14,424 admitted files",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `project-key-space-gap`: the run counts the `calls` and `uses` edges the corpus's declaration map answers and the project's key space does not, and it FAILS if (1) the count GROWS, or (2) the reconciliation between the two instruments stops being exact for every label, or (3) the project key space is shown to carry the declaring file, which would move the row into a different cause and make this class a description rather than a gap."
+      }
+    },
+    "external-claim-confirmed": {
+      "population": "parsed=14424/14424 admitted=14424 exts=cs,csx index=no",
+      "count": 12009,
+      "perType": {
+        "imports": 9546
+      },
+      "what": "The edge carries an EXTERNAL CLAIM and the PROJECT CONFIRMS it (the gate's extOK column). This is the lane's working claim surface, not a wall: 2,463 of the confirmed claims name a target another repository declares and 9,546 name a target nobody declares.",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" bun run script/m14/incoming-gate.ts csharp cs,csx 0 ; then bun run script/m14/csharp-arm-classify.ts .tmp-csharp/csharp-arm-postfix.log --keyspace .tmp-csharp/csharp-keyspace.jsonl --reconcile .tmp-csharp/csharp-arm-postfix.log --json   # the two instruments, over the same 14,424 admitted files",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `external-claim-confirmed`: the run counts the `imports` edges whose external claim the project confirms, and it FAILS if (1) the count is not the count printed above, or (2) the gate's extFAIL column becomes non-zero - a project declaration that REFUTES the claim is counted against the lane - or (3) the gate's ext? column becomes non-zero (a claim no check can reach), or (4) any confirmed claim's target is shown to be declared by the project itself, which would make it resolvable rather than external."
+      }
+    }
+  },
+  "causeRulingsNote": "EVERY CAUSE IS A PARTITION OF THE GATE'S OWN BUCKETS, MEASURED OVER THE WHOLE ADMITTED POPULATION. ambiguous 511,642 = 490,456 (declared by more than one file) + 21,050 (declared twice in one file) + 136 (the edge's own file); unresolved 183,520 = 128,068 (declared nowhere in the corpus) + 54,927 (declared in another repository) + 525 (the two instruments disagree); external-confirmed 12,009. The three sum to the 707,171 non-resolved rows the classifier read, and the per-label buckets RECONCILE EXACTLY with the gate's TABLE 1 for every label and every outcome - two instruments, one population, to the row."
 }

@@ -20,18 +20,18 @@
  * contiguity check is a STRICTER form (the dart lane's); this one is the global form, and the output
  * says so rather than letting the number be read as a per-repository population.
  *
- * THE BOUND IS CARRIED BY THE NUMBER. The EDGE buckets are the POPULATION'S - every admitted file is
- * measured exactly once across the chunks, so the edge counts are unbiased. The RESOLUTION buckets
- * are the CHUNKED MEASUREMENT'S - a collision in the half that is not in the slice is invisible, so
- * the name reads unique and the edge resolves. So the chunk sum's `resolved` is BIASED UP and its
- * `unresolved` and `amb(decl)` are BIASED DOWN. A number without that bound is a claim, so the
- * bound is printed with the number, every time.
+ * THE BOUND IS CARRIED BY THE NUMBER, AND THE NUMBER IS THE DIFFERENCE. The chunked measurement
+ * and the whole-population measurement are TWO MEASUREMENTS OF THE SAME ADMITTED SET. Their EDGE
+ * buckets MUST agree exactly - that is the tiling, checked against the DATA and not only against
+ * the offsets - and their RESOLUTION buckets MUST NOT agree, because the chunked run's project scope
+ * is a SLICE of the population's scope. The DIFFERENCE, bucket by bucket, IS the bias: a count, not
+ * a sentence. `--whole <gate-log>` makes that comparison and prints it, and the tracked artifact
+ * carries it with the sha256 of every log it read.
  *
- * THE STRADDLE CONTROL PUTS A NUMBER ON THAT BIAS. One repository whose files are CONTIGUOUS in
- * the global order can be measured THREE ways over THE SAME FILES - whole (one project scope),
- * half-a and half-b (two scopes) - and the difference between the whole-scope resolved count and
- * the sum of the two halves' resolved counts IS the bias, as a count rather than as a sentence.
- * `--straddle <repo>` does that; it needs the chunk logs to have measured the repository whole.
+ * THE DECLARATION IS WRITTEN FROM THE WHOLE-POPULATION RUN, NOT FROM THE CHUNK SUM. The chunk sum's
+ * RESOLUTION buckets are the CHUNKED MEASUREMENT's and are biased; the declaration's closure is a
+ * claim about the POPULATION, so it must carry the population's numbers. The chunk sum's job is to
+ * PROVE the tiling, to QUANTIFY the bias, and to be the independent check on the edge counts.
  *
  * IT WRITES NOTHING BY DEFAULT. `--write` updates the lane's declaration, and it REFUSES to write
  * unless the chunks tile the admitted set exactly and the closure adds up exactly. A declaration
@@ -46,6 +46,7 @@
  */
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
+import { createHash } from "node:crypto"
 import { resolve } from "node:path"
 
 const REPO = resolve(import.meta.dir, "../..")
@@ -89,20 +90,13 @@ const num = (s: string | undefined): number => {
   return Number.isFinite(v) ? v : 0
 }
 
-const parseChunk = (path: string): Chunk | null => {
-  const text = readFileSync(path, "utf8")
-  const m = text.match(POP_RE)
-  if (!m) return null
-  const offset = Number(m[1])
-  const limit = Number(m[2])
-  const admitted = Number(m[3])
-  const measured = Number(m[4])
-
+// TABLE 1, OUT OF ANY GATE LOG - the chunked one and the whole-population one alike.
+const parseTable1 = (text: string): { rows: Map<string, Record<Col, number>>; total: Record<Col, number> } | null => {
   const rows = new Map<string, Record<Col, number>>()
   const total: Record<Col, number> = Object.fromEntries(COLS.map(c => [c, 0])) as Record<Col, number>
-
   // TABLE 1 lives between its header and the TOTAL row. The header line begins with "type" and the
-  // TOTAL row begins with "TOTAL". Everything between is "<type> <14 numbers>".
+  // TOTAL row begins with "TOTAL". Everything between is "<type> <14 numbers>". TABLE 2's header
+  // does NOT carry "collRes", so this match finds TABLE 1 and never TABLE 2.
   const lines = text.split("\n")
   const start = lines.findIndex(l => /^type\s+edges\s+resolved\s+collRes/.test(l))
   if (start < 0) return null
@@ -122,8 +116,24 @@ const parseChunk = (path: string): Chunk | null => {
     for (let c = 0; c < COLS.length; c++) row[COLS[c]!] = num(parts[c + 1])
     rows.set(type, row)
   }
+  return { rows, total }
+}
 
-  return { offset, limit, admitted, measured, rows, total }
+const parseChunk = (path: string): Chunk | null => {
+  const text = readFileSync(path, "utf8")
+  const m = text.match(POP_RE)
+  if (!m) return null
+  const offset = Number(m[1])
+  // m[2] is the END INDEX of the admitted range, so the WIDTH is end - start. Reading the end index
+  // as the width makes the cursor run past the true end and the tiling check report gaps that the
+  // chunks do not have - a false negative produced by the CHECK, not by the measurement.
+  const limit = Number(m[2]) - Number(m[1])
+  const admitted = Number(m[3])
+  const measured = Number(m[4])
+
+  const table = parseTable1(text)
+  if (!table) return null
+  return { offset, limit, admitted, measured, rows: table.rows, total: table.total }
 }
 
 // ── THE CHUNKS, IN ORDER ──────────────────────────────────────────────────────
@@ -150,11 +160,18 @@ const tiling = (() => {
   let cursor = 0
   for (const c of sorted) {
     if (c.offset !== cursor) problems.push(`gap or overlap at offset ${c.offset} (expected ${cursor})`)
+    // EVERY FILE IN THE CHUNK'S RANGE WAS MEASURED - a chunk that skipped a file would make the
+    // summed edge counts a SAMPLE wearing a population's clothes.
+    if (c.measured !== c.limit) {
+      problems.push(`chunk at ${c.offset} measured ${c.measured} of its ${c.limit} admitted files`)
+    }
     cursor = c.offset + c.limit
   }
   const admitted = sorted.length ? sorted[sorted.length - 1]!.admitted : 0
   const measured = sorted.reduce((a, c) => a + c.measured, 0)
   if (measured !== admitted) problems.push(`summed measured ${measured} != admitted ${admitted}`)
+  // THE CHUNKS MUST END WHERE THE ADMITTED SET ENDS - a set of chunks that stops short is a sample.
+  if (cursor !== admitted) problems.push(`the chunks end at ${cursor} but the admitted set is ${admitted}`)
   return { tiled: problems.length === 0, problems, admitted, measured, count: sorted.length }
 })()
 
@@ -173,6 +190,88 @@ for (const ch of chunks) {
 
 const totals = Object.fromEntries(COLS.map(c => [c, 0])) as Record<Col, number>
 for (const t of TYPES) for (const c of COLS) totals[c]! += sum[t]![c]!
+
+// ── THE WHOLE-POPULATION RUN: THE OTHER MEASUREMENT OF THE SAME ADMITTED SET ──
+// The chunked run and the whole run measure the SAME files. The chunked run measures them in SLICES
+// of the project scope; the whole run measures them in ONE scope. So the EDGE buckets must agree
+// EXACTLY - that is the tiling, checked against the DATA - and the RESOLUTION buckets must not, and
+// the difference is the bias, as a count.
+const sha256 = (p: string): string => createHash("sha256").update(readFileSync(p)).digest("hex")
+const wholeArg = process.argv.indexOf("--whole")
+const wholePath = wholeArg > 0 ? resolve(REPO, process.argv[wholeArg + 1]!) : null
+
+let whole: {
+  path: string
+  sha256: string
+  admitted: number
+  parsed: number
+  isChunk: boolean
+  rows: Map<string, Record<Col, number>>
+  total: Record<Col, number>
+} | null = null
+if (wholePath && existsSync(wholePath)) {
+  const wtext = readFileSync(wholePath, "utf8")
+  const wt = parseTable1(wtext)
+  const wm = wtext.match(/population: (\d+) parsed of (\d+) sampled/)
+  if (wt && wm) {
+    whole = {
+      path: wholePath,
+      sha256: sha256(wholePath),
+      admitted: Number(wm[2]),
+      parsed: Number(wm[1]),
+      isChunk: /★ THIS RUN IS A CHUNK/.test(wtext),
+      rows: wt.rows,
+      total: wt.total,
+    }
+  }
+}
+
+// THE BUCKETS THE BIAS CAN MOVE. `amb(kind)` and `collRes` are REPORTED BESIDE and never added, so
+// they are not in this list either - they are printed beside the difference.
+const BIAS_COLS: Col[] = [
+  "resolved", "ambDecl", "unresolved", "extOK", "extQ", "extFAIL",
+  "bindOK", "bindQ", "bindFAIL", "causeOK", "causeFAIL",
+]
+
+const bias: Record<string, number> = {}
+const edgeDisagreements: string[] = []
+if (whole) {
+  for (const c of BIAS_COLS) bias[c] = (totals[c] ?? 0) - (whole.total[c] ?? 0)
+  for (const t of TYPES) {
+    const w = whole.rows.get(t)
+    const ch = sum[t]!
+    if (!w) {
+      edgeDisagreements.push(`${t}: absent from the whole run's TABLE 1`)
+      continue
+    }
+    if (w.edges! !== ch.edges!) {
+      edgeDisagreements.push(`${t}: edges chunked ${ch.edges!} != whole ${w.edges!}`)
+    }
+  }
+}
+
+// THE WHOLE RUN'S OWN FIVE BUCKETS - these are the POPULATION's numbers, and they are what the
+// declaration must carry.
+const wholeDeclTypes: Record<string, Record<string, number>> = {}
+if (whole) {
+  for (const t of TYPES) {
+    const r = whole.rows.get(t)
+    if (!r) continue
+    wholeDeclTypes[t] = {
+      resolved: r.resolved!,
+      external: r.extOK! + r.extQ!,
+      ambiguous: r.ambDecl!,
+      otherUnresolved:
+        r.unresolved! + r.bindOK! + r.bindQ! + r.bindFAIL! + r.extFAIL! + r.causeOK! + r.causeFAIL!,
+      unclassed: 0,
+    }
+  }
+}
+const wholeClosureSum = whole
+  ? whole.total.resolved! + whole.total.ambDecl! + whole.total.unresolved! + whole.total.bindOK! +
+    whole.total.bindQ! + whole.total.bindFAIL! + whole.total.extOK! + whole.total.extQ! +
+    whole.total.extFAIL! + whole.total.causeOK! + whole.total.causeFAIL!
+  : 0
 
 // ── THE CLOSURE, EXACTLY ──────────────────────────────────────────────────────
 // resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK
@@ -216,10 +315,25 @@ console.log(
   "THE TILING IS THE GLOBAL FORM, NOT THE PER-REPOSITORY FORM - the dart lane's per-repository contiguity check is STRICTER than this one, and this number must not be read as a per-repository population.",
 )
 console.log("")
-console.log("THE BOUND, WITH THE NUMBER:")
-console.log("  the EDGE buckets are the POPULATION'S - every admitted file is measured exactly once across the chunks, so the edge counts are unbiased.")
-console.log("  the RESOLUTION buckets are the CHUNKED MEASUREMENT'S - a collision in the half that is not in the slice is invisible, so the name reads unique and the edge resolves.")
-console.log("  SO THE CHUNK SUM'S `resolved` IS BIASED UP AND ITS `unresolved` AND `amb(decl)` ARE BIASED DOWN. THE EDGE COUNTS ARE UNAFFECTED.")
+console.log("THE BOUND, WITH THE NUMBER - THE BIAS IS THE DIFFERENCE, CHUNKED MINUS WHOLE, OVER THE SAME ADMITTED SET:")
+if (!whole) {
+  console.log("  (no whole-population run given - pass --whole <gate-log> for the comparison)")
+} else {
+  console.log(
+    `  the EDGE buckets AGREE, per type and in total: chunked ${totals.edges} edges = whole ${whole.total.edges} edges` +
+      (edgeDisagreements.length === 0 ? "" : `  *** DISAGREEMENTS: ${edgeDisagreements.join("; ")} ***`),
+  )
+  console.log("  so the chunks TILE the admitted set - checked against the DATA, not only against the offsets.")
+  console.log("  the RESOLUTION buckets DIFFER, and the difference IS the bias:")
+  for (const c of BIAS_COLS) {
+    const d = bias[c] ?? 0
+    console.log(
+      `    ${c.padEnd(12)} chunked ${String(totals[c]).padStart(8)} - whole ${String(whole.total[c]).padStart(8)} = ${d >= 0 ? "+" : ""}${d}`,
+    )
+  }
+  console.log("  WHY, IN ONE SENTENCE: a name that collides in the half that is NOT in the slice is invisible, so it reads unique and the edge RESOLVES (resolved UP); a name whose only declaration is in ANOTHER slice is ABSENT from this slice's key space, so the edge CANNOT resolve (unresolved UP); and the ambiguity count is UNDERSTATED (amb(decl) DOWN). THE EDGE COUNTS ARE UNAFFECTED.")
+  console.log("  THE DECLARATION MUST CARRY THE WHOLE RUN'S NUMBERS - the chunk sum's resolution buckets are the CHUNKED MEASUREMENT's and are biased.")
+}
 console.log("")
 console.log("THE CLOSURE:")
 console.log(`  edges ${totals.edges} = resolved ${totals.resolved} + amb(decl) ${totals.ambDecl} + unresolved ${totals.unresolved} + bindOK ${totals.bindOK} + bind? ${totals.bindQ} + bindFAIL ${totals.bindFAIL} + extOK ${totals.extOK} + ext? ${totals.extQ} + extFAIL ${totals.extFAIL} + causeOK ${totals.causeOK} + causeFAIL ${totals.causeFAIL}`)
@@ -238,12 +352,25 @@ for (const t of TYPES) {
 }
 console.log("")
 console.log("THE DECLARATION'S FIVE BUCKETS (edges = resolved + external + ambiguous + otherUnresolved + unclassed):")
+console.log("  *** THESE ARE THE WHOLE-POPULATION RUN'S - THE CHUNK SUM'S ARE BELOW, AND THEY ARE BIASED ***")
+if (whole) {
+  for (const t of TYPES) {
+    const d = wholeDeclTypes[t]!
+    if (!d) continue
+    const w = whole.rows.get(t)!
+    const e = d.resolved! + d.external! + d.ambiguous! + d.otherUnresolved! + d.unclassed!
+    console.log(`  ${t.padEnd(13)} edges ${String(w.edges!).padStart(8)} = resolved ${d.resolved} + external ${d.external} + ambiguous ${d.ambiguous} + otherUnresolved ${d.otherUnresolved} + unclassed ${d.unclassed}  ${e === w.edges! ? "EXACT" : "*** MISMATCH ***"}`)
+  }
+} else {
+  console.log("  (no whole-population run given - the chunk sum's buckets are shown instead, and they are BIASED)")
+}
+console.log(`  unclassed total: ${whole ? Object.values(wholeDeclTypes).reduce((a, r) => a + r.unclassed!, 0) : unclassedTotal}  (the ceiling is 0, always)`)
+console.log("THE CHUNK SUM'S FIVE BUCKETS (the BIASED ones - for the comparison, not for the declaration):")
 for (const t of TYPES) {
   const d = declTypes[t]!
   const e = d.resolved! + d.external! + d.ambiguous! + d.otherUnresolved! + d.unclassed!
   console.log(`  ${t.padEnd(13)} edges ${String(sum[t]!.edges!).padStart(8)} = resolved ${d.resolved} + external ${d.external} + ambiguous ${d.ambiguous} + otherUnresolved ${d.otherUnresolved} + unclassed ${d.unclassed}  ${e === sum[t]!.edges! ? "EXACT" : "*** MISMATCH ***"}`)
 }
-console.log(`  unclassed total: ${unclassedTotal}  ${unclassedTotal === 0 ? "(the ceiling is 0, always)" : "*** THE CEILING IS 0, ALWAYS ***"}`)
 
 // ── THE STRADDLE CONTROL ─────────────────────────────────────────────────────
 const straddleArg = process.argv.indexOf("--straddle")
@@ -272,10 +399,26 @@ const artifact = {
     chunkCount: tiling.count,
   },
   bound: {
-    edgeBuckets: "the POPULATION's - every admitted file is measured exactly once across the chunks, so the edge counts are unbiased",
-    resolutionBuckets: "the CHUNKED MEASUREMENT's - project-scoped; a collision in the half that is not in the slice is invisible, so the name reads unique and the edge resolves",
-    direction: "the chunk sum's resolved is BIASED UP; its unresolved and amb(decl) are BIASED DOWN; the edge counts are UNAFFECTED",
+    edgeBuckets: "the POPULATION's - every admitted file is measured exactly once across the chunks, and the chunked edge counts are checked AGAINST the whole-population run's, per type, and agree exactly",
+    resolutionBuckets: "the CHUNKED MEASUREMENT's - project-scoped to a slice; a collision in the half that is not in the slice is invisible, so the name reads unique and the edge resolves",
+    direction: "MEASURED, not asserted: the difference chunked-minus-whole is printed bucket by bucket in `bias` below",
+    statement: "the chunk sum's resolved is UP, its unresolved is UP, its amb(decl) is DOWN, and the EDGE COUNTS ARE UNAFFECTED - each of those is a NUMBER in `bias`, not a sentence",
   },
+  wholePopulationRun: whole
+    ? {
+        path: whole.path.replace(REPO + "/", ""),
+        sha256: whole.sha256,
+        admitted: whole.admitted,
+        parsed: whole.parsed,
+        isChunk: whole.isChunk,
+        closure: { edges: whole.total.edges, sum: wholeClosureSum, exact: wholeClosureSum === whole.total.edges },
+        perType: Object.fromEntries([...whole.rows.entries()]),
+        total: whole.total,
+        declarationTypes: wholeDeclTypes,
+      }
+    : null,
+  bias: whole ? { form: "chunked minus whole, over the SAME admitted set", perBucket: bias, edgeDisagreements } : null,
+  sourceHashes: Object.fromEntries(chunks.map(c => [`chunk-${c.offset}.log`, sha256(resolve(CHUNK_DIR, `gate-${c.offset}.log`))])),
   closure: {
     form: "resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges",
     edges: totals.edges,
@@ -314,12 +457,42 @@ if (process.argv.includes("--write")) {
     console.log("\n*** REFUSING TO WRITE: unclassed is not 0, and the ceiling is 0, always. ***")
     process.exit(1)
   }
+  if (!whole) {
+    console.log("\n*** REFUSING TO WRITE: the whole-population run is required. The chunk sum's RESOLUTION buckets are the CHUNKED MEASUREMENT's and are biased; the declaration's closure is a claim about the POPULATION. Pass --whole <gate-log>. ***")
+    process.exit(1)
+  }
+  if (whole.isChunk) {
+    console.log("\n*** REFUSING TO WRITE: the run given with --whole is itself a CHUNK. ***")
+    process.exit(1)
+  }
+  if (whole.admitted !== tiling.admitted) {
+    console.log(`\n*** REFUSING TO WRITE: the whole run's admitted set (${whole.admitted}) is not the chunks' admitted set (${tiling.admitted}). ***`)
+    process.exit(1)
+  }
+  if (whole.parsed !== whole.admitted) {
+    console.log(`\n*** REFUSING TO WRITE: the whole run parsed ${whole.parsed} of ${whole.admitted} - it is not the whole population. ***`)
+    process.exit(1)
+  }
+  if (wholeClosureSum !== whole.total.edges) {
+    console.log(`\n*** REFUSING TO WRITE: the whole run's closure does not add up exactly (${wholeClosureSum} != ${whole.total.edges}). ***`)
+    process.exit(1)
+  }
+  const wholeUnclassed = Object.values(wholeDeclTypes).reduce((a, r) => a + r.unclassed!, 0)
+  if (wholeUnclassed !== 0) {
+    console.log("\n*** REFUSING TO WRITE: unclassed is not 0, and the ceiling is 0, always. ***")
+    process.exit(1)
+  }
+  if (edgeDisagreements.length > 0) {
+    console.log(`\n*** REFUSING TO WRITE: the chunked and whole edge counts disagree - ${edgeDisagreements.join("; ")} ***`)
+    process.exit(1)
+  }
   const decl = JSON.parse(readFileSync(DECL_PATH, "utf8"))
   decl.meta.parsed = tiling.admitted
   decl.meta.sample = tiling.admitted
   decl.meta.corpusTotal = tiling.admitted
-  decl.types = declTypes
+  decl.types = wholeDeclTypes
   writeFileSync(DECL_PATH, `${JSON.stringify(decl, null, 2)}\n`)
   console.log(`declaration updated: ${DECL_PATH.replace(REPO + "/", "")}`)
+  console.log("the declaration's types are the WHOLE-POPULATION run's closure - the chunk sum's resolution buckets are biased and are NOT written into it.")
   console.log("NOTE: the cause rulings and their populations are the lane's own ruling and are written by the lane, not by this script.")
 }

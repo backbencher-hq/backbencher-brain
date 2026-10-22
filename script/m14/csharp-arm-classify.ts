@@ -18,7 +18,7 @@
  * CLI: bun run script/m14/csharp-arm-classify.ts <dump> [--json]
  * EXIT 0 measured · 2 usage
  */
-import { readFileSync, readdirSync, statSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
@@ -79,7 +79,22 @@ const repoOf = (p: string): string => {
 
 const files = walkCorpus(CORPUS).sort()
 // production key space: symbol names + kinds per repo (the gate builds it from the SAME analyzer)
-const repoDecl = new Map<string, Map<string, Set<string>>>()
+const repoDecl = new Map<string, Map<string, Set<string>>>
+// ⇒⇒⇒ THE COUNTING RULE IS THE ARBITER'S, NOT THIS CLASSIFIER'S FIRST VERSION. The arbiter counts
+// DECLARATIONS (distinct files that declare the name); a KIND-SET counts kinds. A name declared by
+// two files of the same repo with the SAME kind is ONE kind and TWO declarations, so a kind-set
+// collapses it and the arbiter does not. `repoDeclFiles` is the map that tells the two apart, and
+// the difference is COUNTED, not argued.
+const repoDeclFiles = new Map<string, Map<string, Set<string>>>()
+// THE CORPUS-WIDE MAP: every file that declares a name, across ALL the repositories. The arbiter's
+// scope is the PROJECT; the corpus's key space is GLOBAL. A name the corpus declares but the
+// project does not is a DIFFERENT cause from a name nobody declares, and it must not be counted as
+// one.
+const globalDeclFiles = new Map<string, Set<string>>()
+// THE DECLARATION COUNT PER (FILE, NAME). The arbiter counts DECLARATIONS; a file map counts FILES.
+// A name declared TWICE IN ONE FILE is one file and two declarations, so the file map cannot see
+// the ambiguity the arbiter sees. One entry in the key space is one declaration.
+const fileDeclCount = new Map<string, Map<string, number>>()
 const fileDecl = new Map<string, Set<string>>()
 
 /**
@@ -120,6 +135,17 @@ if (keyspaceArg) {
     let own = fileDecl.get(abs)
     if (!own) { own = new Set(); fileDecl.set(abs, own) }
     own.add(name)
+    let fmap = repoDeclFiles.get(repo)
+    if (!fmap) { fmap = new Map(); repoDeclFiles.set(repo, fmap) }
+    let fset = fmap.get(name)
+    if (!fset) { fset = new Set(); fmap.set(name, fset) }
+    fset.add(abs)
+    let gset = globalDeclFiles.get(name)
+    if (!gset) { gset = new Set(); globalDeclFiles.set(name, gset) }
+    gset.add(abs)
+    let cmap = fileDeclCount.get(abs)
+    if (!cmap) { cmap = new Map(); fileDeclCount.set(abs, cmap) }
+    cmap.set(name, (cmap.get(name) ?? 0) + 1)
     keyspaceEntries++
   }
   keyspaceFiles = fileDecl.size
@@ -141,6 +167,13 @@ for (const f of files) {
   } catch { /* unreadable: no declarations */ }
   repoDecl.set(repo, map)
   fileDecl.set(f, own)
+  let fmap = repoDeclFiles.get(repo) ?? new Map<string, Set<string>>()
+  for (const nm of own) {
+    let fset = fmap.get(nm)
+    if (!fset) { fset = new Set(); fmap.set(nm, fset) }
+    fset.add(f)
+  }
+  repoDeclFiles.set(repo, fmap)
 }
 }
 
@@ -179,15 +212,74 @@ function receiverKnown(row: Row): boolean {
   }
   return false
 }
-const CLASSES = ["same-file-intended", "cross-file-declared", "kind-mismatch", "nowhere-declared"] as const
+const CLASSES = [
+  "same-file-intended", "cross-file-declared", "cross-file-declared-multi",
+  "declared-twice-in-one-file", "declared-in-another-repo", "kind-mismatch", "nowhere-declared",
+] as const
 type Cls = typeof CLASSES[number]
 function classify(row: Row): Cls {
   const own = fileDecl.get(row.file)
   const kinds = repoDecl.get(repoOf(row.file))?.get(row.target)
   if (own?.has(row.target)) return "same-file-intended"
-  if (kinds && kinds.size > 0) return "cross-file-declared"
+  if (kinds && kinds.size > 0) {
+    // MORE THAN ONE FILE OF THE REPO DECLARES THE NAME - the arbiter sees >1 declaration and calls
+    // the edge AMBIGUOUS, and a kind-set would have collapsed it to one.
+    const files = repoDeclFiles.get(repoOf(row.file))?.get(row.target)
+    if (files && files.size > 1) return "cross-file-declared-multi"
+    // EXACTLY ONE FILE OF THE REPO DECLARES IT - does THAT file declare it MORE THAN ONCE? One file
+    // and two declarations is still an ambiguous name, and a file map cannot see it.
+    if (files && files.size === 1) {
+      const only = [...files][0]!
+      const cnt = fileDeclCount.get(only)?.get(row.target) ?? 0
+      if (cnt > 1) return "declared-twice-in-one-file"
+    }
+    // EXACTLY ONE FILE, ONE DECLARATION, BUT THE CORPUS DECLARES IT MORE THAN ONCE: the ambiguity
+    // is CROSS-REPOSITORY, and the arbiter's scope is the project.
+    const g = globalDeclFiles.get(row.target)
+    if (g && g.size > 1) return "cross-file-declared-multi"
+    return "cross-file-declared"
+  }
+  // THE PROJECT DOES NOT DECLARE IT - but the CORPUS does, in another repository. The flat corpus
+  // key space would answer; the project's scope cannot. That is a DIFFERENT cause from "nobody
+  // declares it", and it is counted apart.
+  const g = globalDeclFiles.get(row.target)
+  if (g && g.size > 0) return "declared-in-another-repo"
   if (row.outcome === "ambBoth") return "kind-mismatch"
   return "nowhere-declared"
+}
+
+// ⇒⇒⇒ THE RECONCILIATION: THIS CLASSIFIER'S COUNTS AGAINST THE GATE'S OWN TABLE 1, OVER THE SAME
+// ROWS. Two instruments, one population, and the per-label buckets must agree EXACTLY - or the
+// difference is a class to be named, not a gap to be argued about.
+const reconcileArg = process.argv.indexOf("--reconcile")
+const reconcilePath = reconcileArg > 0 ? path.resolve(process.argv[reconcileArg + 1]!) : null
+const GATE_COLS = [
+  "edges", "resolved", "collRes", "ambDecl", "ambKind", "unresolved",
+  "extOK", "extQ", "extFAIL", "bindOK", "bindQ", "bindFAIL", "causeOK", "causeFAIL",
+] as const
+const GATE_TYPES = [
+  "calls", "uses", "contains", "imports", "references", "exports",
+  "extends", "implements", "overrides", "instantiates",
+  "decorates", "renders", "mixes_in", "part_of",
+]
+function parseGateTable1(text: string): Map<string, Record<string, number>> | null {
+  const lines = text.split("\n")
+  const start = lines.findIndex(l => /^type\s+edges\s+resolved\s+collRes/.test(l))
+  if (start < 0) return null
+  const out = new Map<string, Record<string, number>>()
+  for (let i = start + 1; i < lines.length; i++) {
+    const line = lines[i]!.trimEnd()
+    if (/^-+/.test(line.trim())) continue
+    if (line.startsWith("TOTAL")) break
+    const parts = line.trim().split(/\s+/)
+    if (parts.length < GATE_COLS.length + 1) break
+    const type = parts[0]!
+    if (!GATE_TYPES.includes(type)) break
+    const row: Record<string, number> = {}
+    for (let c = 0; c < GATE_COLS.length; c++) row[GATE_COLS[c]!] = Number(parts[c + 1]) || 0
+    out.set(type, row)
+  }
+  return out
 }
 
 const agg = new Map<string, { count: number; samples: string[] }>()
@@ -218,6 +310,70 @@ for (const g of groups) {
 }
 const summary = [...byLabelClass.entries()].map(([label, v]) => ({ label, ...v })).sort((a, b) => b.total - a.total)
 const TOTAL_NONRESOLVED = summary.reduce((n, s) => n + s.total, 0)
+// THE RECONCILIATION, COMPUTED
+let reconciliation: any = null
+if (reconcilePath && existsSync(reconcilePath)) {
+  const gt = parseGateTable1(readFileSync(reconcilePath, "utf8"))
+  if (gt) {
+    // THE CLASSIFIER'S OUTCOMES: the dump's non-resolved rows, split by the arbiter's own outcome.
+    const amb = new Map<string, number>()
+    const ext = new Map<string, number>()
+    const unres = new Map<string, number>()
+    // THE CROSS-TAB: the arbiter's outcome BY the classifier's class, per label. This is the CAUSE
+    // PARTITION of the gate's own buckets - two independent instruments, one population, and the
+    // classes are MEASURED inside the buckets the arbiter produced.
+    const ambClasses = new Map<string, Record<string, number>>()
+    const otherClasses = new Map<string, Record<string, number>>()
+    const extClasses = new Map<string, Record<string, number>>()
+    for (const row of rows) {
+      // THE THREE OUTCOMES THE ARBITER PRODUCES ON A NON-RESOLVED ROW: ambiguous, external-verified,
+      // unresolved. The gate's columns are amb(decl), extOK/ext?/extFAIL and unresolved, and the
+      // three must agree - three instruments, one population, to the row.
+      const o = String(row.outcome)
+      const isAmb = o.startsWith("amb")
+      const isExt = o === "externalVerified"
+      const m = isAmb ? amb : isExt ? ext : unres
+      m.set(row.label, (m.get(row.label) ?? 0) + 1)
+      const tab = isAmb ? ambClasses : isExt ? extClasses : otherClasses
+      const cls = classify(row)
+      const rec = tab.get(row.label) ?? {}
+      rec[cls] = (rec[cls] ?? 0) + 1
+      tab.set(row.label, rec)
+    }
+    const rowsOut: any[] = []
+    let allOk = true
+    for (const [label, g] of gt) {
+      const a = amb.get(label) ?? 0
+      const o = unres.get(label) ?? 0
+      const e = ext.get(label) ?? 0
+      const u = unres.get(label) ?? 0
+      const gateAmb = g.ambDecl ?? 0
+      const gateExt = (g.extOK ?? 0) + (g.extQ ?? 0) + (g.extFAIL ?? 0)
+      const gateUnres = (g.unresolved ?? 0) + (g.bindOK ?? 0) + (g.bindQ ?? 0) + (g.bindFAIL ?? 0) +
+        (g.causeOK ?? 0) + (g.causeFAIL ?? 0)
+      const okAmb = a === gateAmb
+      const okOther = o === gateUnres
+      const okExt = e === gateExt
+      if (!okAmb || !okOther || !okExt) allOk = false
+      rowsOut.push({
+        label,
+        classifierAmbiguous: a, gateAmbiguous: gateAmb, ambiguousAgrees: okAmb,
+        classifierOther: o, gateOther: gateUnres, otherAgrees: okOther,
+        classifierExternal: e, gateExternal: gateExt, externalAgrees: okExt,
+        classes: byLabelClass.get(label)?.classes ?? {},
+        ambiguousByCause: ambClasses.get(label) ?? {},
+        unresolvedByCause: otherClasses.get(label) ?? {},
+        externalByCause: extClasses.get(label) ?? {},
+      })
+    }
+    reconciliation = {
+      gateLog: reconcilePath,
+      form: "the classifier's non-resolved rows, split by the arbiter's own outcome, against the gate's TABLE 1 - two instruments, one population, and the per-label buckets must agree EXACTLY",
+      allLabelsAgree: allOk,
+      rows: rowsOut,
+    }
+  }
+}
 if (asJson) {
   console.log(JSON.stringify({
     dump: dumpPath,
@@ -226,12 +382,23 @@ if (asJson) {
     rows: rows.length,
     nonResolvedRows: TOTAL_NONRESOLVED,
     summary,
+    reconciliation,
     groups,
   }, null, 2))
 } else {
   console.log(`corpus files: ${keyspaceArg ? keyspaceFiles : files.length} · dump rows: ${rows.length}` +
     (keyspaceArg ? ` · key space ${keyspaceArg} (${keyspaceEntries} entries, ${rowsWithoutFile} dump rows outside it)` : ""))
   console.log(`non-resolved rows classified: ${TOTAL_NONRESOLVED}`)
+  if (reconciliation) {
+    console.log("\nTHE RECONCILIATION - this classifier against the gate's own TABLE 1, over the same rows:")
+    for (const r of reconciliation.rows) {
+      console.log(`  ${r.label.padEnd(13)} ambiguous ${String(r.classifierAmbiguous).padStart(7)} vs gate ${String(r.gateAmbiguous).padStart(7)} ${r.ambiguousAgrees ? "AGREES" : "*** DIFFERS ***"}   |   other ${String(r.classifierOther).padStart(7)} vs gate ${String(r.gateOther).padStart(7)} ${r.otherAgrees ? "AGREES" : "*** DIFFERS ***"}`)
+      console.log(`      external  ${String(r.classifierExternal).padStart(7)} vs gate ${String(r.gateExternal).padStart(7)} ${r.externalAgrees ? "AGREES" : "*** DIFFERS ***"}   by cause: ${Object.entries(r.externalByCause).map(([k, v]) => `${k}=${v}`).join(" · ") || "(none)"}`)
+      console.log(`      ambiguous by cause: ${Object.entries(r.ambiguousByCause).map(([k, v]) => `${k}=${v}`).join(" · ") || "(none)"}`)
+      console.log(`      unresolved by cause: ${Object.entries(r.unresolvedByCause).map(([k, v]) => `${k}=${v}`).join(" · ") || "(none)"}`)
+    }
+    console.log(`  ALL LABELS AGREE: ${reconciliation.allLabelsAgree}`)
+  }
   for (const s of summary) {
     console.log(`\n${s.label} total ${s.total}: ` + Object.entries(s.classes).map(([k, v]) => `${k}=${v}`).join(" · ") +
       (Object.keys(s.receivers).length > 0 ? " | " + Object.entries(s.receivers).map(([k, v]) => `${k}=${v}`).join(" · ") : ""))
