@@ -131,13 +131,23 @@ const report = {
   // KEYS, and a consumer that iterates `named` gets nothing for a key without it. The Lead asked for
   // it on 2026-10-21 and it is here.
   //
-  // ⚠ AND THE CONVENTION IS NOT THE GATE'S, AND THE TWO MUST NOT BE CONFLATED. The shared census's
-  // rule (`.tmp-census/grammar.mts:26-30`) is `nodeTypeIsNamed(id)` **and nothing else**: no
-  // `_`-prefix filter, NO DEDUP, and NO universal `ERROR`/`MISSING` pair. The completeness gate's
-  // rule (`script/m14/completeness-inventory.ts:1360-1373`) is `nodeTypeIsNamed` AND `!startsWith("_")`
-  // AND deduped, THEN the universal `ERROR`/`MISSING` pair. **THE TWO DISAGREE FOR SQL: 594 under the
-  // shared convention, 592 under the gate's** — 590 distinct named types, plus ERROR and MISSING.
-  // The shared file's `namedCount` for typescript (191), tsx (203), javascript (125), python (128) and
+  // ⚠ AND THE COUNT IS ONE NUMBER SEEN THREE WAYS, NOT THREE NUMBERS. THE FLEET'S RULE (2026-10-22):
+  // the grammar's own named node types, as `nodeTypeForId` reports them, PLUS the universal
+  // `ERROR`/`MISSING` pair, because every parser produces those two and every analyzer consults
+  // them. For sql on the wired bytes that is 594 + 2 = **596**.
+  //
+  // The completeness gate's rule (`script/m14/completeness-inventory.ts:1360-1373`) DEDUPS before
+  // adding the pair, so it reads **592** for sql: 590 DISTINCT named types + the same pair. The
+  // shared census's rule (`.tmp-census/grammar.mts:26-30`) is `nodeTypeIsNamed(id)` and nothing
+  // else, so it reads **594** - the grammar's own count, carrying 4 duplicate spellings
+  // (`cast`, `dollar_quote`, `field`, `from`).
+  //
+  // **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // THE 592 IS NOT A THIRD RULE FOR ONE THING: IT IS THE FLEET'S 596 MINUS THE FOUR DUPLICATE
+  // SPELLINGS, BECAUSE THE GATE DEDUPS AND THE FLEET'S RULE DOES NOT. The fleet's rule is the one
+  // that stands; the deduped number is published as the DECOMPOSITION, named as such. A lane that
+  // held three numbers for one thing could compare none of them - and that shape was found here
+  // twice, once for a population and once for a node census, which is what makes it a shape.  // The shared file's `namedCount` for typescript (191), tsx (203), javascript (125), python (128) and
   // dart (222) all carry their DUPLICATE SPELLINGS (typescript: 8 of them — `call_expression`,
   // `identifier`, `member_expression`, …) and none carries ERROR/MISSING; java (143) has no
   // duplicates, but still no ERROR/MISSING.
@@ -151,13 +161,29 @@ const report = {
   // IT IS SORTED, because the shared file's six lists are (typescript's begins
   // `abstract_class_declaration, abstract_method_signature, accessibility_modifier, …`), so a drop-in
   // merge has to agree on the ORDER or the merged file is not comparable with the rows already in it.
-  namedCount: namedRaw.length,
+  // THE HEADLINE IS THE FLEET'S NUMBER: the grammar's own named types (594) + the universal
+  // ERROR/MISSING pair (2). The raw, undeduped list stays in `namedInEnumerationOrder`, and the
+  // deduped convention stays in `dedupedConvention` -- both NAMED, so a reader is never left
+  // with three numbers for one thing.
+  namedCount: namedRaw.length + 2,
   totalCount: all.length,
-  named: [...namedRaw].sort(),
+  named: [...new Set([...namedRaw, "ERROR", "MISSING"])].sort(),
   anonymousSample: anonymous.slice(0, 40),
-  // THE GATE'S CONVENTION, under its own name, with its own rule and its own list.
-  gateRule: {
-    rule: "nodeTypeIsNamed && !startsWith('_') && dedup, then + ERROR/MISSING (script/m14/completeness-inventory.ts:1360-1373)",
+  // THE FLEET'S RULE, under its own name, with its own rule and its own list.
+  //
+  // THE FLEET'S RULE (2026-10-22): the grammar's own named node types, as nodeTypeForId
+  // reports them, PLUS the universal ERROR/MISSING pair, because every parser produces those
+  // two and every analyzer consults them. For sql on the wired bytes: 594 + 2 = 596.
+  fleetRule: {
+    rule: "nodeTypeForId's named node types (594, carrying 4 duplicate spellings) + the universal ERROR/MISSING pair (2) = 596",
+    namedCount: namedRaw.length + 2,
+    named: [...new Set([...namedRaw, "ERROR", "MISSING"])].sort(),
+  },
+  // THE DEDUPED CONVENTION, and IT IS NOT A THIRD NUMBER FOR ONE THING: it is the fleet's rule
+  // MINUS the four duplicate spellings, because the completeness gate dedups and the fleet's
+  // rule does not. 590 distinct named types + the same universal pair = 592.
+  dedupedConvention: {
+    rule: "nodeTypeIsNamed && !startsWith('_') && dedup, then + ERROR/MISSING (script/m14/completeness-inventory.ts:1360-1373) - the fleet's rule minus the duplicate spellings",
     namedCount: named.length,
     named: [...named].sort(),
   },
@@ -166,11 +192,23 @@ const report = {
   // sees the grammar's shape rather than a re-sort.
   namedInEnumerationOrder: namedRaw,
   // what the shared file's convention means for SQL, spelled out rather than implied
-  sharedConvention: {
-    rule: "nodeTypeIsNamed(id) only - no `_` filter, no dedup, no ERROR/MISSING (.tmp-census/grammar.mts:26-30)",
+  // THE GRAMMAR'S OWN COUNT, before the universal pair and before any dedup. It carries the
+  // duplicate spellings, and that is exactly why the fleet's rule and the deduped rule differ.
+  grammarOwnCount: {
+    rule: "nodeTypeForId's named node types as the grammar reports them - no `_` filter, no dedup, no universal pair (.tmp-census/grammar.mts:26-30)",
     namedCount: namedRaw.length,
     duplicateSpellings: [...new Set(duplicates)].sort(),
     distinctNamed: new Set(namedRaw).size,
+  },
+  // THE DERIVATION, IN ONE PLACE, so the three numbers are ONE number seen three ways.
+  derivation: {
+    note: "ONE NUMBER FOR ONE THING. The fleet's rule is the grammar's own named types (594) plus the universal ERROR/MISSING pair (2) = 596. The deduped convention is the same rule minus the 4 duplicate spellings: 590 distinct + 2 = 592. The 592 is NOT a third rule - it is the fleet's number under a dedup.",
+    grammarOwnNamedTypes: namedRaw.length,
+    duplicateSpellings: [...new Set(duplicates)].sort(),
+    distinctNamedTypes: new Set(namedRaw).size,
+    universalPair: 2,
+    fleetRuleCount: namedRaw.length + 2,
+    dedupedCount: named.length,
   },
 }
 
@@ -183,7 +221,8 @@ console.log(`named (raw)         : ${report.namedRawCount}`)
 console.log(`hidden (_-prefixed) : ${report.hiddenCount}`)
 console.log(`anonymous           : ${report.anonymousCount}`)
 console.log(`duplicate spellings : ${report.duplicateSpellings.join(", ") || "(none)"}`)
-console.log(`NAMED COUNT (gate)  : ${report.namedCount}   ← this is the denominator's node-type base`)
+console.log(`NAMED COUNT (fleet) : ${report.fleetRule.namedCount}   <- the denominator's node-type base (594 named + the universal pair)`)
+console.log(`NAMED COUNT (dedup) : ${report.dedupedConvention.namedCount}   <- the same rule minus the duplicate spellings`)
 console.log("─".repeat(78))
 console.log("CONTROLS:")
 for (const [k, v] of Object.entries(report.control)) console.log(`  ${k.padEnd(30)} ${v}`)

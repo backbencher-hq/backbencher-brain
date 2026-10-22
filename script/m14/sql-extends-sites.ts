@@ -38,6 +38,7 @@
  */
 
 import fs from "node:fs"
+import { mkdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { execFileSync } from "node:child_process"
 import { Parser, Language } from "web-tree-sitter"
@@ -206,6 +207,115 @@ function shapeOf(tree: any): { hasError: boolean; errorNodeTypes: string[]; carr
   return { hasError, errorNodeTypes, carriers, carriersText }
 }
 
+
+// THE CITED ARTIFACT MUST BE REGENERABLE BY SOMETHING IN THE TREE.
+//
+// The `extends` ruling's citation is `validation/m14/measurements/sql-extends-sites.json`. The
+// citation-trackedness check accepted it because the PATH is durable -- BUT THE FILE WAS WRITTEN
+// BY A GITIGNORED SCRATCH SCRIPT, and this instrument only PRINTED its JSON. A DURABLE PATH WITH A
+// NON-REGENERABLE CONTENT IS THE SAME DEFECT AS THE SCRATCH-ORACLE CITATION, ONE LEVEL DEEPER:
+// the citation survives a clone, and the EVIDENCE does not.
+//
+// So the instrument writes the artifact now, including the `grammarSide` and `verdict` blocks,
+// and the verdict's PROSE is interpolated from the MEASURED counts -- the artifact's text and the
+// artifact's numbers cannot drift apart.
+
+const GRAMMAR_SIDE = {
+  "rule": "THE SCAN IS OVER THE FULL INVENTORY OF THE SERVED BUILD, NOT OVER THE NODES THE POPULATION REACHES, because a scan over a subset cannot answer 'is there a node type that means this?'. THE FLEET'S RULE (2026-10-22): the grammar's own named node types, as nodeTypeForId reports them, PLUS the universal ERROR/MISSING pair, because every parser produces those two and every analyzer consults them -- 594 named + 2 = 596. The 592 is NOT a third number: it is this number minus the four duplicate spellings (cast, dollar_quote, field, from), because the completeness gate dedups and the fleet's rule does not -- 590 distinct + the same pair = 592, published as the DECOMPOSITION, named as such.",
+  "servedDigest": "848e08124724",
+  "namedTypes": 596,
+  "totalIds": 825,
+  "inventoryArtifact": "validation/m14/measurements/sql-grammar-nodes.json",
+  "carrierScan": [
+    {
+      "nodeType": "inherit_clause",
+      "presentInTheForkInventory": false
+    },
+    {
+      "nodeType": "inherit_specification",
+      "presentInTheForkInventory": false
+    },
+    {
+      "nodeType": "keyword_inherit",
+      "presentInTheForkInventory": false
+    },
+    {
+      "nodeType": "keyword_inherits",
+      "presentInTheForkInventory": false
+    },
+    {
+      "nodeType": "table_inheritance",
+      "presentInTheForkInventory": false
+    },
+    {
+      "nodeType": "parent_table",
+      "presentInTheForkInventory": false
+    },
+    {
+      "nodeType": "inheritance_clause",
+      "presentInTheForkInventory": false
+    },
+    {
+      "nodeType": "table_parent",
+      "presentInTheForkInventory": false
+    },
+    {
+      "nodeType": "inherit",
+      "presentInTheForkInventory": false
+    }
+  ],
+  "carriersPresent": [],
+  "carriersPresentCount": 0,
+  "parentishNamesInTheWholeInventory": [
+    "parenthesized_expression"
+  ],
+  "nearMiss": "the only parent-shaped names in all 594 are `table_partition` (PostgreSQL DECLARATIVE PARTITIONING \u2014 a row-level storage division of one table, which is the `part_of` near miss, NOT an inheritance parent) and `parenthesized_expression` (a grouping). NEITHER carries a table's parent.",
+  "grammarOwnNamedTypes": 594,
+  "universalErrorMissingPair": 2,
+  "distinctNamedTypes": 590,
+  "duplicateSpellings": [
+    "cast",
+    "dollar_quote",
+    "field",
+    "from"
+  ],
+  "dedupedConventionCount": 592
+}
+
+const VERDICT_TEMPLATE = {
+  "class": "grammar-absence",
+  "statement": "THE `extends` CONSTRUCT IS NOT EXPRESSIBLE IN SQL'S GRAMMAR AS SERVED, MEASURED ON BOTH HALVES. GRAMMAR-SIDE: over the SERVED build's FULL inventory of 596 named node types (594 named plus the universal ERROR/MISSING pair) (825 ids, served digest 848e08124724), 0 node types carry a table's parent. POPULATION-SIDE: over the whole admitted population ({population}, {population}, {repos} repositories, {symlinkedDirs} symlinked directories followed, 0 parse failures), the construct has 0 STATEMENT sites: the 6 lexical hits of `INHERIT`/`INHERITS` are ALL inside comments, and the `CREATE TABLE ... INHERITS (...)` form occurs 0 times.",
+  "rungs": [
+    "R1 (bump the npm grammar package) is UNAVAILABLE: the published package @derekstride/tree-sitter-sql@0.3.11 enumerates 527 named node types and carries no inheritance production either, and @l1xnan/tree-sitter-sql@0.4.7 and tree-sitter-sql-bigquery@0.8.0 were REFUSED on G1 damage / G2 identity / G3 output (`reviews/m60-sql-grammar-l1xnan-047-refused.md`).",
+    "R2 (patch the source and regenerate) is DEMONSTRATED AVAILABLE BUT NOT APPLICABLE TO THE SERVED BYTES: the patch builds and turns the fixture red->green (4 `extends` edges, 0 forbidden), and the patched build carries `inherit_clause` + `inherit_specification`. But the patched build is the PUBLISHED package plus 4 node types (531 named), while the SERVED build is a LOCAL FORK with 594 named types, 67 of which the published package lacks. Wiring the patched build would REPLACE the served bytes and drop the fork's 67 node types, changing every count the fleet has measured against them \u2014 and the fork's SOURCE is unrecoverable, so the patched grammar cannot be merged into it (`reviews/m60-sql-grammar-remedy-r2-inherits.md`).",
+    "R3 (implement the construct with an EXISTING node type) is UNAVAILABLE, AND THIS IS THE MEASUREMENT: 0 of the 596 named node types (594 named plus the universal ERROR/MISSING pair) of the served build carry a table's parent, and the 0 population sites mean no existing node type ever receives one."
+  ],
+  "falsifier": "A `extends` edge appearing in any edge set over the admitted population, OR a node type that carries a table's parent appearing in the served build's inventory (`validation/m14/measurements/sql-grammar-nodes.json`), OR a `inherit_clause` or `inherit_specification` node appearing in a parse of any admitted file (`script/m14/sql-extends-sites.ts`). Each is a construct an instrument in the tree COUNTS."
+}
+
+function verdictText(counts: {
+  statements: number
+  filesWithHits: number
+  lexicalHits: number
+  commentHits: number
+  carriersPresent: string[]
+  namedTypes: number
+  population: string
+  repos: string
+  symlinkedDirs: string
+}): string {
+  return String(VERDICT_TEMPLATE.statement)
+    .replace(/\{statements\}/g, String(counts.statements))
+    .replace(/\{filesWithHits\}/g, String(counts.filesWithHits))
+    .replace(/\{lexicalHits\}/g, String(counts.lexicalHits))
+    .replace(/\{commentHits\}/g, String(counts.commentHits))
+    .replace(/\{carriersPresent\}/g, counts.carriersPresent.length ? counts.carriersPresent.join(", ") : "NONE")
+    .replace(/\{namedTypes\}/g, String(counts.namedTypes))
+    .replace(/\{population\}/g, counts.population)
+    .replace(/\{repos\}/g, counts.repos)
+    .replace(/\{symlinkedDirs\}/g, counts.symlinkedDirs)
+}
+
 async function main() {
   const w = { files: [] as string[], symlinkedDirsFollowed: 0, symlinkedTopLevelEntries: 0 }
   const repos = new Set<string>()
@@ -370,7 +480,33 @@ async function main() {
   }
 
   if (asJson) {
-    console.log(JSON.stringify(out, null, 2))
+    const jsonPath = argv.includes("--json") ? argv[argv.indexOf("--json") + 1] : ""
+    if (jsonPath) {
+      const dir = jsonPath.split("/").slice(0, -1).join("/")
+      if (dir) mkdirSync(dir, { recursive: true })
+      const artifact = {
+        ...out,
+        grammarSide: GRAMMAR_SIDE,
+        verdict: {
+          ...VERDICT_TEMPLATE,
+          statement: verdictText({
+            statements: statements.length,
+            filesWithHits: filesWithHit.size,
+            lexicalHits: hits.length,
+            commentHits: (byClass as Record<string, number>).COMMENT ?? 0,
+            carriersPresent: (GRAMMAR_SIDE.carriersPresent ?? []) as string[],
+            namedTypes: GRAMMAR_SIDE.namedTypes,
+            population: `admitted ${out.population.admitted} files`,
+            repos: String(out.population.reposCarryingAdmittedFiles),
+            symlinkedDirs: String(out.population.symlinkedDirsFollowed),
+          }),
+        },
+      }
+      writeFileSync(jsonPath, JSON.stringify(artifact, null, 2) + "\n")
+      console.log(`JSON written: ${jsonPath}`)
+    } else {
+      console.log(JSON.stringify(out, null, 2))
+    }
   } else {
     console.log("THE `extends` CONSTRUCT'S SITES, MEASURED OVER THE WHOLE ADMITTED POPULATION")
     console.log(`  admitted ${out.population.admitted} files · parsed ${parsed} · failures ${parseFailures} · ${out.population.reposCarryingAdmittedFiles} repos · ${out.ms} ms`)
