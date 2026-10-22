@@ -70,6 +70,27 @@ const TYPES = VOCAB
 const TOTAL = VOCAB.length
 const VOCAB_NAME = LEGACY ? "the ten types" : "the fourteen values"
 
+/* THE RULING CLASSES — the reasons a RULED type leaves the denominator (L-2026-10-21-19).
+ *
+ * THE GATE HAD EXACTLY TWO: `grammar-absence` and `zero-sites`. Under the changed ruling definition
+ * a ruling names ITS REASON, and the lanes correctly started naming reasons the gate did not know:
+ * `grammar-remedy-ruled` (sql), `ontological` and `informational` (csharp), and cpp's own prose
+ * class. The gate was reporting all of them as UNCLASSIFIED, which under the fourteen-limb means
+ * they do NOT shrink the denominator and are counted as GAPS — so three lanes were failing on the
+ * gate's vocabulary, not on their evidence, and their n was overstated.
+ *
+ * A RULING CLASS SHRINKS THE DENOMINATOR, exactly as `grammar-absence` does. IT DOES NOT RELAX THE
+ * TEETH: every one of them still needs a COUNT and a CITATION, and a citation to a file that does
+ * not exist is still a failure (the check at rule 4 below runs on all of them). A lane cannot buy a
+ * ratio with a class name; it can only name the reason it measured.
+ *
+ * `zero-sites` IS NOT IN THIS SET, and that is deliberate: it is a DIFFERENT claim — the construct
+ * EXISTS in the language and occurs 0 times in OUR corpus — so it names a type the language can
+ * express, and it does not shrink the denominator under the fourteen-limb. `grammar-absence` is
+ * not in this set either, because it is the original and is handled by its own branch above.
+ */
+const RULING_CLASSES = new Set<string>(["grammar-remedy-ruled", "ontological", "informational", "adjudication"])
+
 /* THE DRIFT CHECK — THE GATE's LITERAL VOCABULARY MUST STILL EQUAL THE ENGINE's ENUM.
  *
  * The sql lane proposed DERIVING the vocabulary from the enum in `src/ast/types.ts`. The Lead's
@@ -592,6 +613,30 @@ for (const lane of allLanes) {
   for (const t of blk.implemented) if (!TYPES.includes(t)) problems.push(`implemented names "${t}", which is not one of ${VOCAB_NAME}`)
   const excluded: any[] = Array.isArray(blk.excluded) ? blk.excluded : []
   const unex: any[] = Array.isArray(blk.corpusUnexercised) ? blk.corpusUnexercised : []
+  /* THE OTHER TWO VERDICT BLOCKS, WHICH THE GATE DID NOT READ BEFORE THIS CHANGE.
+   *
+   * The doctrine's verdict classes are THREE — IMPLEMENTED / RULED UNDECIDABLE (reason named) /
+   * GRAMMAR REMEDY PENDING (rung available, being taken) — and the lanes started writing the
+   * latter two into blocks the gate did not know about. sql writes `grammarRemedyPending` and
+   * `zeroEmissionFacts`; the gate read neither, so sql's two ZERO-EMISSION FACTS (implements,
+   * exports) and its one PENDING type (extends) were all invisible to the arithmetic, and the gate
+   * computed a denominator that included them.
+   *
+   * WHAT EACH BLOCK MEANS TO THE ARITHMETIC, AND WHY:
+   *   `zeroEmissionFacts` — the type is NOT emitted at all AND the analyzer has no emission site
+   *     for it (measured: the name occurs only as an evidenceClassFor switch arm). The lane calls
+   *     these PERMANENT: no grammar change would make the analyzer attempt a type it does not
+   *     attempt. It is a REAL exclusion and it LEAVES the denominator, exactly like a ruling — but
+   *     it is a DIFFERENT claim from "the grammar has no such construct", and the gate must not
+   *     let the difference hide inside a shared word. Each fact still needs a COUNT and a CITATION.
+   *   `grammarRemedyPending` — the type IS expressible, a rung IS available, and the lane is TAKING
+   *     it. So it is NOT a ruling and it is NOT out of the denominator: the language expresses it,
+   *     which is precisely why the denominator includes it. It LEAVES the denominator AND it is
+   *     counted as a GAP, so the lane reads n-implemented/n rather than n/n — the honest reading of
+   *     "a lane with work still in flight is not done".
+   */
+  const zeroFacts: any[] = Array.isArray(blk.zeroEmissionFacts) ? blk.zeroEmissionFacts : []
+  const pending: any[] = Array.isArray(blk.grammarRemedyPending) ? blk.grammarRemedyPending : []
 
   const gAbs: string[] = [], zero: string[] = [], unclassified: string[] = []
   for (const x of excluded) {
@@ -599,8 +644,34 @@ for (const lane of allLanes) {
     if (!TYPES.includes(label)) { problems.push(`excluded names "${label}", which is not one of ${VOCAB_NAME}`); continue }
     const cls = typeof x === "string" ? "" : x?.evidence
     const from = typeof x === "string" ? "" : x?.from
+    // THE CLASS IS NORMALISED BEFORE IT IS MATCHED. cpp's own class reads
+    // `adjudication (grammar-absence does NOT apply)` — the class NAME with a parenthetical gloss
+    // that says WHY the ordinary class does not fit. Matching the raw string would have made the
+    // lane's class unrecognised and the gate would have reported it as a gap, which is the same
+    // failure this whole change exists to fix. THE NORMALISATION IS THE LEADING TOKEN, so a class
+    // named `adjudication` with a gloss after it is the `adjudication` class, and the gloss is kept
+    // in the citation the gate checks.
+    const clsKey = typeof cls === "string" ? cls.trim().split(/[(\s]/)[0].toLowerCase() : ""
     if (cls === "grammar-absence") gAbs.push(label)
     else if (cls === "zero-sites") zero.push(label)
+    // THE RULING CLASSES (L-2026-10-21-19 — the changed ruling definition). THE GATE'S VOCABULARY
+    // WAS A GENERATION BEHIND THE DOCTRINE AND WAS FAILING THREE LANES (sql, csharp, cpp) ON CLASS
+    // NAMES THAT ARE CORRECT UNDER IT. The doctrine's verdict classes are THREE — IMPLEMENTED /
+    // RULED UNDECIDABLE (reason named) / GRAMMAR REMEDY PENDING (rung available, being taken) — and
+    // a RULED type leaves the denominator on the strength of its REASON, not on the strength of one
+    // hard-coded string. The lanes use the reason as the class:
+    //   `grammar-remedy-ruled` (sql)  — the ladder was walked and the NAMED RUNG was unavailable; the
+    //                                   reason is not difficulty, it is that the construct has no
+    //                                   site in the language.
+    //   `ontological` (csharp)        — the relation would assert something the vocabulary does not
+    //                                   credit (an attribute is passive metadata; a decorator is an
+    //                                   applied callable). The ENUM'S OWN CONTRACT is the citation.
+    //   `informational` (csharp)      — the row would be X -> X and would carry no information.
+    // A RULING CLASS SHRINKS THE DENOMINATOR, exactly as grammar-absence does. WHAT IT DOES NOT DO IS
+    // RELAX THE GATE'S TEETH: every ruling class still needs a COUNT and a CITATION, and a citation
+    // to a file that does not exist is still a FAILURE. A lane cannot buy a ratio with a class name;
+    // it can only name the reason it measured.
+    else if (RULING_CLASSES.has(clsKey)) gAbs.push(label)
     // THE MESSAGE MUST MATCH THE ARITHMETIC, AND IT DID NOT.
     //
     // This line said an unclassified exclusion "does NOT shrink the denominator" while the board's
@@ -619,7 +690,7 @@ for (const lane of allLanes) {
     // carrying a corpus measurement, and `unclassified` is by definition unmeasured.
     else {
       unclassified.push(label)
-      problems.push(`excluded "${label}" is classed "${cls ?? "(none)"}" — only grammar-absence and zero-sites are evidence classes. ${LEGACY
+      problems.push(`excluded "${label}" is classed "${cls ?? "(none)"}" — the evidence classes are grammar-absence, zero-sites, and the RULING CLASSES (grammar-remedy-ruled, ontological, informational, adjudication). ${LEGACY
         ? "NOTE this exclusion STILL shrinks the denominator (the board's arithmetic subtracts it), so an unmeasured claim currently buys the same ratio improvement as a measured one."
         : "UNDER THE FOURTEEN-LIMB IT DOES NOT SHRINK THE DENOMINATOR — it is counted as a GAP, which is the honest reading of an UNMEASURED ruling on a type that is still applicable. A ruling the gate cannot check is still a ruling the gate cannot check, and it is now a gap in your lane rather than a discount in it."} Classify it.`)
     }
@@ -632,7 +703,7 @@ for (const lane of allLanes) {
     // decision and quotes a sentence — "Bash has no classes and no inheritance, so there is no
     // superclass for `overrides` to point at" — with NO number anywhere in it. That is precisely the
     // shape this rule was written for, and a gate that only looked for a filename would pass it.
-    if (cls === "grammar-absence" || cls === "zero-sites") {
+    if (cls === "grammar-absence" || cls === "zero-sites" || RULING_CLASSES.has(clsKey)) {
       if (!from || String(from).trim() === "") problems.push(`exclusion "${label}" (${cls}) cites no source`)
       else {
         const cited = String(from)
@@ -707,17 +778,92 @@ for (const lane of allLanes) {
      */
     const cls = typeof x === "string" ? "" : x?.evidence
     const from = typeof x === "string" ? "" : x?.from
-    if (cls !== "grammar-absence" && cls !== "zero-sites") {
-      problems.push(`corpusUnexercised "${t}" has no evidence class in {grammar-absence, zero-sites} (read ${JSON.stringify(cls ?? null)}); a bare string or a missing class is a ruling the gate cannot check`)
+    const clsKey = typeof cls === "string" ? cls.trim().split(/[(\s]/)[0].toLowerCase() : ""
+    if (cls !== "grammar-absence" && cls !== "zero-sites" && !RULING_CLASSES.has(clsKey)) {
+      problems.push(`corpusUnexercised "${t}" has no evidence class in {grammar-absence, zero-sites, grammar-remedy-ruled, ontological, informational, adjudication} (read ${JSON.stringify(cls ?? null)}); a bare string or a missing class is a ruling the gate cannot check`)
     }
     if (typeof from !== "string" || from.trim() === "") {
       problems.push(`corpusUnexercised "${t}" cites no source; a ruling without a count is prose`)
     }
   }
 
+  /* THE SAME TEETH FOR THE TWO NEW VERDICT BLOCKS. A BLOCK THE GATE READS WITHOUT CHECKING IS A BLOCK
+   * THE GATE CANNOT ARBITRATE, and this gate exists to arbitrate. So a zero-emission fact and a
+   * pending type each need a COUNT and a CITATION to an existing artifact, exactly as an exclusion
+   * does — the difference between the lists is WHERE the type is counted, never how much evidence the
+   * claim needs.
+   *
+   * AND THE ZERO-EMISSION FACT CARRIES ONE EXTRA HALF, because it is a claim about TWO DIFFERENT
+   * SUBJECTS. "The analyzer emits this type zero times" is a claim about the ANALYZER, and an
+   * analyzer that merely lacks an implementation site is an UNIMPLEMENTED type — it would be a GAP,
+   * not an exclusion, and it must not shrink the denominator. What makes it an exclusion is the
+   * GRAMMAR-SIDE half: the language has no such construct, so the type is not expressible and is not
+   * in the expressible set at all. The gate therefore requires the citation to name a GRAMMAR
+   * INVENTORY MEASUREMENT (a node-type census over the pinned build) and not only a behaviour
+   * measurement over the corpus. sql's facts do carry that half — "592 named node types ... 0 of them
+   * contain implement, interface or super" — so this is a check the lane passes, not a new burden.
+   */
+  const GRAMMAR_SIDE = /\b(\d[\d,]*)\s+(named\s+)?(node\s+)?types?\b|\bnode\s+types?\b|\bgrammar[’'s]?\s+own\s+inventory\b|\bnamed\s+types?\b/i
+  for (const x of zeroFacts) {
+    const label = typeof x === "string" ? x : x?.label
+    if (!TYPES.includes(label)) { problems.push(`zeroEmissionFacts names "${label}", which is not one of ${VOCAB_NAME}`); continue }
+    if (impl.includes(label)) problems.push(`"${label}" is BOTH implemented and a zeroEmissionFact`)
+    const from = typeof x === "string" ? "" : x?.from
+    const stmt = typeof x === "string" ? "" : (x?.statement ?? "")
+    if (typeof from !== "string" || from.trim() === "") {
+      problems.push(`zeroEmissionFacts "${label}" cites no source; a ruling without a count is prose`)
+      continue
+    }
+    if (!hasCountToken(from)) problems.push(`zeroEmissionFacts "${label}" cites NO COUNT — rule-book §6: a ruling without a count is prose. Cited: "${String(from).slice(0, 90)}"`)
+    const tok = pathTokensIn(from).find((p) => !existsSync(resolve(ROOT, p)))
+    if (tok) problems.push(`zeroEmissionFacts "${label}" cites a file that does not exist: ${tok}`)
+    // THE GRAMMAR-SIDE HALF. The behaviour count alone is an ANALYZER fact and would make this an
+    // unimplemented type, not an exclusion.
+    if (!GRAMMAR_SIDE.test(String(from) + " " + String(stmt))) {
+      problems.push(`zeroEmissionFacts "${label}" cites only a BEHAVIOUR measurement ("the analyzer never emits it") — an analyzer that merely lacks an emission site is an UNIMPLEMENTED type, not an inapplicable one. Cite the GRAMMAR's own inventory (a node-type census over the pinned build) to show the LANGUAGE does not express the type`)
+    }
+  }
+  for (const x of pending) {
+    const label = typeof x === "string" ? x : x?.label
+    if (!TYPES.includes(label)) { problems.push(`grammarRemedyPending names "${label}", which is not one of ${VOCAB_NAME}`); continue }
+    if (impl.includes(label)) problems.push(`"${label}" is BOTH implemented and grammarRemedyPending`)
+    const from = typeof x === "string" ? "" : (x?.from ?? x?.statement ?? "")
+    if (typeof from !== "string" || from.trim() === "") {
+      problems.push(`grammarRemedyPending "${label}" cites no source; a pending type must name the RUNG being taken`)
+      continue
+    }
+    if (!hasCountToken(String(from))) problems.push(`grammarRemedyPending "${label}" cites NO COUNT — a pending remedy must be measurable`)
+    const tok = pathTokensIn(String(from)).find((p) => !existsSync(resolve(ROOT, p)))
+    if (tok) problems.push(`grammarRemedyPending "${label}" cites a file that does not exist: ${tok}`)
+  }
+
   /* THE DENOMINATOR, UNDER THE OWNER's BAR. An UNCLASSIFIED exclusion does NOT shrink it: only a
    CITED grammar-absence does. (The historical ten-limb keeps the old subtraction — see LEGACY.) */
-  const applicable = LEGACY ? TOTAL - gAbs.length - unclassified.length : TOTAL - gAbs.length
+  //
+  // `zeroEmissionFacts` LEAVE THE DENOMINATOR, and the reason is the DOCTRINE'S, not the lane's: the
+  // denominator is the language's OWN EXPRESSIBLE SET (the owner's words), and a type the language
+  // does not express is not in it. sql's two facts say the language does not express `implements` or
+  // `exports` — the analyzer has no emission site for either AND the grammar's own inventory has no
+  // node type for either — so both are out, and both carry a count and a citation like every other
+  // exclusion. (THE GATE CHECKS THE GRAMMAR-SIDE HALF EXPLICITLY, because "the analyzer never emits
+  // it" on its own would be a claim about the ANALYZER, and an analyzer that simply lacks an
+  // implementation site is an UNIMPLEMENTED type, not an inapplicable one.)
+  //
+  // `grammarRemedyPending` types STAY IN THE DENOMINATOR, as GAPS — and this is the reading the
+  // checkpoint called for, taken against the tempting one. THE DENOMINATOR IS THE EXPRESSIBLE SET,
+  // and a pending type is EXPRESSIBLE: that is precisely why a rung is available and being taken.
+  // So sql's `extends` is in n, and it is not implemented, and sql reads 7/8. THE INCENTIVE IS THE
+  // REASON: a lane that could improve its ratio by DECLARING work in flight would have a cheaper
+  // route to a better number than by DOING the work — which is the julia-lane failure this gate was
+  // written to prevent (8/8 by leaving exclusions unclassified). Keeping pending inside the
+  // denominator removes that route entirely: the ratio cannot improve by reclassifying, and the lane
+  // still reads short. THE "NOT DONE" CONDITION IS SEPARATE AND STILL HOLDS — a lane with a pending
+  // type is not done, and the fleet's DONE criterion is not the ratio.
+  const zeroFactLabels = zeroFacts.map((x) => (typeof x === "string" ? x : x?.label)).filter((t: any) => TYPES.includes(t))
+  const pendingLabels = pending.map((x) => (typeof x === "string" ? x : x?.label)).filter((t: any) => TYPES.includes(t))
+  const applicable = LEGACY
+    ? TOTAL - gAbs.length - unclassified.length
+    : TOTAL - gAbs.length - zeroFactLabels.length
   const unexCount = unex.filter((x) => TYPES.includes(typeof x === "string" ? x : x?.label)).length
   const claimedGaps = unex.length === 0 && problems.length === 0
     ? undefined : undefined
@@ -725,11 +871,42 @@ for (const lane of allLanes) {
   // unexercised — the board computes it; here it is computed and REQUIRED to close.
   // Under the fourteen-limb an unclassified label IS a gap: it is a type the language may express, on
   // which no admissible ruling has been made. (The ten-limb keeps excluding it — LEGACY.)
-  const gaps = TYPES.filter((t) => !impl.includes(t) && !gAbs.includes(t) && (LEGACY ? !unclassified.includes(t) : true) && !unex.map((x) => (typeof x === "string" ? x : x?.label)).includes(t))
+  //
+  // A ZERO-EMISSION FACT IS NOT A GAP: it left the denominator above, so counting it again here
+  // would double-count it. A PENDING TYPE IS A GAP: it stayed in the denominator.
+  const gaps = TYPES.filter((t) =>
+    !impl.includes(t) && !gAbs.includes(t) && !zeroFactLabels.includes(t) &&
+    (LEGACY ? !unclassified.includes(t) : true) &&
+    !unex.map((x) => (typeof x === "string" ? x : x?.label)).includes(t))
   if (impl.length + unexCount + gaps.length !== applicable) {
     problems.push(`DOES NOT CLOSE: implemented ${impl.length} + unexercised ${unexCount} + gaps ${gaps.length} ≠ applicable ${applicable}`)
   }
   void claimedGaps
+
+  /* THE LANE'S DECLARED DENOMINATOR IS CHECKED AGAINST THE COMPUTED ONE. Three numbers disagreed for
+   * one lane this round: the gate read 10, the lane's own spec declared n=7, and the Lead's fleet row
+   * said 8. Each was defensible in isolation, which is exactly why a declaration nobody checks is
+   * worthless. sql's spec is the only one in the fleet that declares a `denominator` block, and it
+   * declares `n` — so the gate now RECOMPUTES n and reports a disagreement. A lane may not publish a
+   * denominator the gate cannot reproduce.
+   *
+   * THE COMPARISON IS AGAINST THE COMPUTED APPLICABLE SET, AND THE PENDING CLASS IS COUNTED IN IT —
+   * so the lane that declared n=7 with one pending type is told n=8, and the reason is named.
+   */
+  const denBlk = blk.denominator
+  if (denBlk && typeof denBlk === "object" && typeof denBlk.n === "number") {
+    if (denBlk.n !== applicable) {
+      problems.push(`DECLARED DENOMINATOR n=${denBlk.n} ≠ the gate's computed applicable ${applicable} — the gate is the arbiter; a lane may not publish a denominator it cannot reproduce`)
+    }
+    if (Array.isArray(denBlk.types)) {
+      const declared = new Set<string>(denBlk.types.filter((t: any) => TYPES.includes(t)))
+      const computed = new Set<string>([...impl, ...unex.map((x) => (typeof x === "string" ? x : x?.label)), ...gaps])
+      const missing = [...computed].filter((t) => !declared.has(t))
+      const extra = [...declared].filter((t) => !computed.has(t))
+      if (missing.length) problems.push(`denominator.types omits ${missing.join(", ")} — every type in the denominator must be named, and a PENDING type IS in the denominator`)
+      if (extra.length) problems.push(`denominator.types names ${extra.join(", ")}, which is not in the denominator`)
+    }
+  }
 
   // 5. FIRE-CHECK: declared-implemented but the log reads SILENT.
   //
