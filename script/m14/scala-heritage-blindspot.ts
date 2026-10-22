@@ -15,9 +15,18 @@
  * ★ AND THE PROBE'S OWN RULE — "a shape table that did not come from the analyzer's own code
  *   measures the table" — IS BINDING HERE. So the shape list below is NOT a list of shapes somebody
  *   remembered: it is the analyzer's OWN dispatch, read out of
- *   `src/ast/real-scala-analyzer.ts` (`extractSupertypes`), and the probe RE-IMplements that
- *   dispatch faithfully and prints the source line it was read from. If the analyzer's dispatch
- *   changes, the probe's table is wrong and the probe says so by printing the line.
+ *   `src/ast/real-scala-analyzer.ts` (`extractSupertypes`).
+ *
+ * ★★ AND THE PROBE NOW CALLS THAT DISPATCH INSTEAD OF RE-IMPLEMENTING IT — and that change was
+ *   forced by a MEASUREMENT, not by taste. The first version re-implemented the dispatch as a
+ *   hand-written table (`type_identifier | identifier | stable_type_identifier | generic_type |
+ *   compound_type`) and RE-IMLEMENTED the compound branch's inner search beside it. When the
+ *   analyzer's dispatch grew a branch (the `annotated_type` branch), the probe's table did NOT —
+ *   and the probe went on reporting 148 uncovered clauses of which 35 were covered by the analyzer
+ *   as it stood. A probe that carries its own COPY of the thing it measures measures the COPY.
+ *   TypeScript's `private` is a compile-time word: the probe now calls the analyzer's OWN
+ *   `extractSupertypes` on the analyzer's OWN instance, so there is no second copy to diverge, and
+ *   the analyzer's source digest is printed so the measurement is anchored to a specific file.
  *
  * WHAT IT MEASURES. For every `extends_clause` in the admitted population: the SHAPE of its DIRECT
  * NAMED CHILDREN, and whether the analyzer's dispatch can EXTRACT a supertype from that shape. A
@@ -35,7 +44,7 @@
  * Usage: bun run script/m14/scala-heritage-blindspot.ts [--max=<files>] [--repo=<name>]
  */
 import { execFileSync } from "node:child_process"
-import { readFileSync } from "node:fs"
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { resolve, join } from "node:path"
 import { createHash } from "node:crypto"
 
@@ -53,21 +62,14 @@ const EXTS = [".scala", ".sc", ".sbt"]
 const SIZE_CAP = 1024 * 1024
 
 /**
- * ★ THE ANALYZER'S OWN DISPATCH, read out of `extractSupertypes`
- *   (src/ast/real-scala-analyzer.ts:3201-3256). The analyzer walks the clause's DIRECT children
- *   (`for (let i = 0; i < extendsClause.childCount; i++)`), keeps the NAMED ones, and dispatches on
- *   the child's type. A type it does not name contributes NOTHING.
+ * ★ THE ANALYZER'S OWN DISPATCH — the analyzer's OWN `extractSupertypes`, called on the analyzer's
+ *   OWN instance. There is NO table of shapes here to go stale: the shape census below is
+ *   analyzer-independent (it reads the grammar's own nodes), and the COVER question is asked of the
+ *   analyzer itself.
  */
-const ANALYZER_DISPATCH: Record<string, "push" | "push-inner"> = {
-  type_identifier: "push",
-  identifier: "push",
-  stable_type_identifier: "push",
-  generic_type: "push",
-  compound_type: "push-inner",
-}
 const ANALYZER_SOURCE =
-  "src/ast/real-scala-analyzer.ts:3201-3256 — `extractSupertypes`: the clause's DIRECT named children, " +
-  "dispatching on type_identifier | identifier | stable_type_identifier | generic_type | compound_type"
+  "src/ast/real-scala-analyzer.ts — `extractSupertypes`: the clause's DIRECT named children, " +
+  "dispatching on the analyzer's own node-type checks (the probe CALLS this method; it does not copy it)"
 
 function corpusFiles(): { files: string[]; followed: number; repos: number; admitted: number; tracked: number; perRepo: Record<string, number> } {
   let entries: string[] = []
@@ -117,6 +119,14 @@ const SPELLING = "tree-sitter-scala.wasm"
 const rb = hasWasmInRegistry(SPELLING)
 const grammarSha = rb && rb.length ? createHash("sha256").update(rb).digest("hex") : null
 const parser = await getParser("scala" as any)
+const { RealScalaAnalyzer } = await import(resolve(ROOT, "src", "ast", "real-scala-analyzer"))
+const analyzer: any = new (RealScalaAnalyzer as any)()
+{
+  const ctor: any = analyzer?.constructor
+  if (typeof ctor?.setGrammar === "function") {
+    try { ctor.setGrammar((parser as any).language, (parser as any).constructor) } catch { /* no grammar */ }
+  }
+}
 
 console.log(`SCALA HERITAGE BLIND-SPOT PROBE`)
 console.log(`corpus root: ${CORPUS}`)
@@ -129,6 +139,7 @@ console.log(`production build: sha256 ${grammarSha} · ${resolveWasmAsset(SPELLI
 console.log()
 
 const shapeCounts = new Map<string, number>()
+const coveredNames = new Map<string, number>()
 const uncovered = new Map<string, number>()
 const uncoveredExamples = new Map<string, string>()
 let clauses = 0
@@ -156,19 +167,22 @@ for (const f of files) {
       }
       const key = direct.length === 0 ? "(no named children)" : direct.map((c) => c.type).join("+")
       shapeCounts.set(key, (shapeCounts.get(key) ?? 0) + 1)
-      // THE DISPATCH, REPRODUCED: does any DIRECT NAMED CHILD carry a shape the analyzer names?
-      let found = false
-      for (const c of direct) {
-        if (ANALYZER_DISPATCH[c.type] === "push") { found = true; break }
-        if (ANALYZER_DISPATCH[c.type] === "push-inner") {
-          for (let j = 0; j < c.namedChildCount; j++) {
-            const ch = c.namedChild(j)
-            if (ch && (ch.type === "type_identifier" || ch.type === "generic_type")) { found = true; break }
-          }
-          if (found) break
+      // ★ THE DISPATCH, ASKED OF THE ANALYZER — the analyzer's OWN `extractSupertypes` on the
+      //   analyzer's OWN instance. TypeScript's `private` is a compile-time word, so this is the
+      //   analyzer's real dispatch and not a copy of it.
+      let names: string[] = []
+      try {
+        const r = analyzer["extractSupertypes"](n)
+        if (Array.isArray(r)) names = r.map((x: any) => String(x?.name ?? ""))
+      } catch { names = [] }
+      const found = names.length > 0
+      if (found) {
+        covered++
+        for (const nm of names) {
+          const k = `${key}  ->  ${nm}`
+          coveredNames.set(k, (coveredNames.get(k) ?? 0) + 1)
         }
       }
-      if (found) covered++
       else {
         uncovered.set(key, (uncovered.get(key) ?? 0) + 1)
         if (!uncoveredExamples.has(key)) uncoveredExamples.set(key, `${f.replace(CORPUS + "/", "")} :: ${n.text.replace(/\s+/g, " ").slice(0, 120)}`)
@@ -186,6 +200,29 @@ console.log(`THE SHAPES OF THE DIRECT NAMED CHILDREN, AND WHICH THE DISPATCH CAN
 for (const [shape, n] of [...shapeCounts.entries()].sort((a, b) => b[1] - a[1])) {
   const miss = uncovered.get(shape) ?? 0
   console.log(`  ${String(n).padStart(6)}  ${shape}${miss > 0 ? `   ★ ${miss} UNCOVERED` : ""}`)
+}
+// ★ THE NAMES THE ANALYZER'S DISPATCH EXTRACTS, by shape — so a shape's COVERAGE is not a bare
+//   count but the supertypes it actually names. This is where the `annotated_type` shapes appear
+//   after the fix: the shape is covered AND the name it yields is printed.
+{
+  const byShape = new Map<string, Map<string, number>>()
+  for (const [k, n] of coveredNames) {
+    const idx = k.indexOf("  ->  ")
+    const shape = k.slice(0, idx)
+    const nm = k.slice(idx + 6)
+    if (!byShape.has(shape)) byShape.set(shape, new Map())
+    const m = byShape.get(shape)!
+    m.set(nm, (m.get(nm) ?? 0) + n)
+  }
+  const interesting = [...byShape.entries()].filter(([shape]) => /annotated|compound|tuple|structural|wildcard|ERROR/i.test(shape))
+  if (interesting.length) {
+    console.log(`THE COVERED SHAPES THAT CARRY A NAME — the names the analyzer's dispatch extracts:`)
+    for (const [shape, m] of interesting.sort((a, b) => b[1].size - a[1].size).slice(0, 24)) {
+      const top = [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([nm, c]) => `${nm}×${c}`).join(", ")
+      console.log(`  ${shape}  ->  ${top}`)
+    }
+    console.log("")
+  }
 }
 if (uncovered.size) {
   console.log()
@@ -206,4 +243,28 @@ console.log(`★ THE BLIND SPOT IS MEASURED: ${missTotal} of ${clauses} extends_
 console.log("  NO EDGE AT ALL, because their direct named child is a shape the dispatch does not name.")
 console.log("  A shape the analyzer does not match is not automatically a defect — the lane's own instrument")
 console.log("  decides, against the analyzer's own stated intent. This file only MEASURES.")
+
+// ★ THE ARTEFACT — the measurement as a file, so a citation can point at a thing that EXISTS.
+{
+  const outDir = join(ROOT, "validation", "m14", "measurements")
+  mkdirSync(outDir, { recursive: true })
+  const byShape: Record<string, number> = {}
+  for (const [k, v] of shapeCounts) byShape[k] = v
+  const uncoveredByShape: Record<string, number> = {}
+  for (const [k, v] of uncovered) uncoveredByShape[k] = v
+  writeFileSync(join(outDir, "scala-heritage-blindspot.json"), JSON.stringify({
+    instrument: "script/m14/scala-heritage-blindspot.ts",
+    corpusRoot: CORPUS,
+    heritageNode: "extends_clause",
+    dispatch: "the analyzer's OWN `extractSupertypes`, CALLED on the analyzer's own instance (TypeScript `private` is a compile-time word)",
+    grammarSha256: grammarSha,
+    population: { admitted: files.length, repos: pop.repos, symlinkedDirsFollowed: pop.followed, tracked: pop.tracked },
+    measurement: { filesParsed: parsed, parseFailures: failed, clauses, covered, uncovered: clauses - covered },
+    shapeCounts: byShape,
+    uncoveredByShape,
+    uncoveredExamples: Object.fromEntries(uncoveredExamples),
+  }, null, 2) + "\n", "utf8")
+  console.log("")
+  console.log(`artefact: validation/m14/measurements/scala-heritage-blindspot.json`)
+}
 process.exit(5)

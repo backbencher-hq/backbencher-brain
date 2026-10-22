@@ -17,6 +17,15 @@
   `validation/m14/fixtures/scala/self-type-implements.*` and the RED PROOF
   `script/m14/scala-implements-red-proof.ts`. Full reasoning:
   `validation/m14/verification/SCALA-IMPLEMENTS-R3.md`.
+- ★ **A SUPERTYPE UNDER AN ANNOTATION (2026-10-21).** `extends AnyRef @MyAnnotation(...)` names the
+  supertype `AnyRef` — the annotation is a MODIFIER on the type, not the type, and the grammar's
+  `annotated_type` node holds the base type and then the annotation. MEASURED over the admitted
+  population with the lane's heritage blind-spot probe: 35 `extends_clause` clauses name a REAL
+  supertype only through an `annotated_type`, and every one of them published NO EDGE before the
+  analyzer read through it. Rung R3 — `annotated_type` is already a named node type of the pinned
+  build, so no grammar change is taken. Fixture `validation/m14/fixtures/scala/annotated-supertype.*`
+  and the RED PROOF `script/m14/scala-implements-red-proof.ts` (1/5 asserted rows without the change,
+  5/5 with it).
 - **Payloads**: ScalaDoc comments, annotation names as symbol metadata (annotations are TYPE MENTIONS
   and publish `references`; `decorates` is RULED **ontological** for scala — an annotation is PASSIVE
   METADATA while the `decorates` row asserts an APPLIED CALLABLE; the near miss is named and counted:

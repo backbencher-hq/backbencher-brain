@@ -3391,19 +3391,77 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (c.type === "compound_type") {
         for (let j = 0; j < c.namedChildCount; j++) {
           const ch = c.namedChild(j)
-          if (ch && (ch.type === "type_identifier" || ch.type === "generic_type")) {
+          if (ch && (ch.type === "type_identifier" || ch.type === "generic_type" || ch.type === "annotated_type")) {
             if (ch.type === "type_identifier") push(ch.text, ch)
-            else {
+            else if (ch.type === "annotated_type") {
+              // SCALA-ANN-SUPERTYPE-BLOCK-B:BEGIN
+              // ★ AN ANNOTATED TYPE INSIDE A COMPOUND — `extends A with B @uncheckedVariance`.
+              //   The annotation is a MODIFIER on the type; the BASE TYPE is inside it.
+              const base = this.annotatedTypeBase(ch)
+              if (base) push(base.name, base.node)
+              // SCALA-ANN-SUPERTYPE-BLOCK-B:END
+            } else {
               const inner = this.extractSupertypes(ch)
               if (inner.length > 0) push(inner[0].name, ch)
               else push(ch.text, ch)
             }
           }
         }
+      } else if (c.type === "annotated_type") {
+        // SCALA-ANN-SUPERTYPE-BLOCK-A:BEGIN
+        // ★ AN ANNOTATED TYPE IS THE TYPE WITH AN ANNOTATION ON IT — `extends AnyRef @MyAnnotation(...)`.
+        //   The clause's DIRECT named child is the `annotated_type`, and the BASE TYPE is its FIRST
+        //   named child (`annotated_type` -> `type_identifier` + `annotation`). The annotation is a
+        //   MODIFIER on the type, not the type, so the supertype is the base.
+        //
+        //   ★ MEASURED over the ADMITTED population (19,347 files, 4 repos) with the lane's own
+        //   heritage blind-spot probe: 35 `extends_clause` clauses name a REAL supertype ONLY
+        //   through an `annotated_type` — 22 whose only direct named child is one
+        //   (`scala3/tests/pos/annotations/MyClass.scala` :: `extends AnyRef @MyAnnotation(Name="Foo")`)
+        //   and 13 with two (`scala3/tests/pos/annot.scala` :: `extends A @uncheckedVariance () with
+        //   B @uncheckedVariance`). EVERY ONE OF THEM PUBLISHED NO EDGE BEFORE THIS BRANCH EXISTED.
+        //   Rung R3 — `annotated_type` is ALREADY a named node type of the pinned build, so no
+        //   grammar change is taken; the analyzer simply was not reading through it.
+        const base = this.annotatedTypeBase(c)
+        if (base) push(base.name, base.node)
+        // SCALA-ANN-SUPERTYPE-BLOCK-A:END
       }
     }
     return out
   }
+
+  /**
+   * ★ THE BASE TYPE UNDER AN ANNOTATION. `annotated_type` holds the TYPE and then the `annotation`,
+   *   so the base is its first named child — and it is the base that names the supertype.
+   *
+   *   The shape is measured from the pinned build, not assumed: `annotated_type` ->
+   *   (`type_identifier` | `generic_type` | `stable_type_identifier`) + `annotation`.
+   */
+  // SCALA-ANN-SUPERTYPE-BLOCK-C:BEGIN
+  private annotatedTypeBase(n: Node): { name: string; node: Node } | null {
+    for (let j = 0; j < n.namedChildCount; j++) {
+      const ch = n.namedChild(j)
+      if (!ch) continue
+      if (ch.type === "type_identifier" || ch.type === "identifier" || ch.type === "stable_type_identifier") {
+        return { name: ch.text, node: ch }
+      }
+      if (ch.type === "generic_type") {
+        // A GENERIC BASE UNDER AN ANNOTATION — `extends List[Int] @ann`: the base is the generic
+        //   type's own head, preferring the DOTTED form (the cross-language convention).
+        for (let k = 0; k < ch.childCount; k++) {
+          const g = ch.child(k)
+          if (g && g.type === "stable_type_identifier") return { name: g.text, node: g }
+        }
+        for (let k = 0; k < ch.childCount; k++) {
+          const g = ch.child(k)
+          if (g && g.type === "type_identifier") return { name: g.text, node: g }
+        }
+        return null
+      }
+    }
+    return null
+  }
+  // SCALA-ANN-SUPERTYPE-BLOCK-C:END
 
   private handleClass(
     node: Node,
