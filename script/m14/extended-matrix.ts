@@ -137,7 +137,7 @@ for (const l of LANES) rows.set(l, readLane(l))
 const out: string[] = []
 out.push("# LANGUAGE MATRIX — EXTENDED (14 emitted relationship values × 48 lanes)")
 out.push("")
-out.push("**Regenerated 2026-10-21 by the Lead, over ALL 48 lanes.** The previous edition carried the")
+out.push(`**Regenerated ${new Date().toISOString().slice(0, 10)} by the Lead, over ALL 48 lanes.** The previous edition carried the`)
 out.push("extended vocabulary for nine lanes only and said the fleet-wide regeneration with per-language")
 out.push("applicable denominators \"remains a Lead-owned obligation, priced and queued\". This is that")
 out.push("regeneration, and the obligation is discharged.")
@@ -212,7 +212,57 @@ for (const l of LANES) {
 }
 out.push(`| **FLEET** | **${totAppl}** | **${totImpl}** | | | | | **${totImpl}/${totAppl}** |`)
 out.push("")
-out.push("## 3 · WHAT THIS TABLE SAYS, AND WHAT IT DOES NOT")
+
+// ★ THE GAP CENSUS, GENERATED FROM THE SAME READS AS THE TABLE, SO IT CANNOT GO STALE. THE LEAD
+// HAND-COMPUTED IT FIRST AND THE HAND-COMPUTED NUMBER WAS THE STALE ONE: the matrix on disk was from
+// 23:57 and the scala lane's `implements` R3 had landed since, so the hand-computed census counted a
+// gap the lane had already closed. ⇒ A NUMBER ABOUT THE TABLE IS GENERATED WITH THE TABLE.
+{
+  const gapCounts = new Map<string, number>()
+  let gapTotal = 0
+  let lanesWithGaps = 0
+  const lanesAtNN: string[] = []
+  const mostGaps: Array<{ lane: string; gaps: string[] }> = []
+  for (const l of LANES) {
+    const r = rows.get(l)
+    if (!r) continue
+    const g = r.gaps.filter((t) => r.applicable.has(t))
+    if (g.length === 0) { lanesAtNN.push(l); continue }
+    lanesWithGaps++
+    gapTotal += g.length
+    for (const t of g) gapCounts.set(t, (gapCounts.get(t) ?? 0) + 1)
+    mostGaps.push({ lane: l, gaps: g })
+  }
+  const byType = [...gapCounts.entries()].sort((a, b) => b[1] - a[1])
+  out.push("## 3 · THE GAP CENSUS — WHERE THE CAMPAIGN'S REMAINING WORK ACTUALLY IS")
+  out.push("")
+  out.push(`**${gapTotal} (lane, type) GAPS across ${lanesWithGaps} of the 48 lanes. ${48 - lanesWithGaps} lanes are at n/n.**`)
+  out.push("")
+  out.push("A GAP IS A (lane, type) PAIR THAT IS EXPRESSIBLE, NOT IMPLEMENTED, AND NOT RULED. It is in")
+  out.push("that lane's denominator and it counts against that lane, which is the point: a lane cannot")
+  out.push("improve its ratio by declaring work in flight instead of doing it.")
+  out.push("")
+  out.push("| type | lanes with it as a gap |")
+  out.push("|---|---|")
+  for (const [t, n] of byType) out.push(`| **${t}** | ${n} |`)
+  out.push("")
+  out.push("**THE FOUR EXTENDED TYPES ARE THE CAMPAIGN.** Every other gap in the fleet is a handful of")
+  out.push("lanes, and the four extended values — `decorates`, `renders`, `mixes_in`, `part_of` — are")
+  out.push("gaps in most of the fleet at once. The 10 canonical types are close to done; the extended")
+  out.push("vocabulary is the work, and it is the work the owner asked for.")
+  out.push("")
+  out.push("**THE LANES AT n/n:** " + (lanesAtNN.length ? lanesAtNN.join(", ") : "(none)") + "")
+  out.push("")
+  out.push("**THE LANES WITH THE MOST GAPS:**")
+  out.push("")
+  out.push("| lane | gaps |")
+  out.push("|---|---|")
+  for (const m of mostGaps.sort((a, b) => b.gaps.length - a.gaps.length).slice(0, 12)) {
+    out.push(`| ${m.lane} | ${m.gaps.length} (${m.gaps.join(", ")}) |`)
+  }
+  out.push("")
+}
+out.push("## 4 · WHAT THIS TABLE SAYS, AND WHAT IT DOES NOT")
 out.push("")
 out.push("THE ROW IS NOT THE FLEET'S SCORE. The denominator differs per lane by construction, so the")
 out.push("**ratio** is a per-lane claim about a per-lane expressible set, and the fleet row above is a sum")
