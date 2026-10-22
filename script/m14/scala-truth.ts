@@ -42,8 +42,25 @@
  */
 export const SCALA_ORACLE_LABELS: ReadonlyArray<string> = [
   "calls", "uses", "contains", "references", "instantiates", "extends", "overrides",
-  "mixes_in", "imports", "exports",
+  "mixes_in", "imports", "exports", "implements",
 ]
+
+/**
+ * ★ WHY `implements` WAS NOT IN THIS LIST UNTIL 2026-10-21, AND WHY IT IS NOW.
+ *
+ *   `script/m60/rel-type-coverage-gate.ts` reads a lane's OWN ORACLE_LABELS INSTEAD of the shared
+ *   filter, because the export is the lane's claim about what its ORACLE covers — and the gate's
+ *   DERIVATION check is that a label in that set really IS derived. So a label in the set with no
+ *   derivation behind it is exactly the failure the gate exists to catch.
+ *
+ *   ⇒ Adding `implements` BEFORE the differential called `deriveScalaImplementsTruth` would have
+ *   turned that gate's DERIVATION check GREEN for a label the differential did not compare — a FALSE
+ *   PASS, in the direction of OVERSTATING coverage. So the word was HELD BACK.
+ *
+ *   ⇒ IT IS RELEASED NOW because the wiring exists and is MEASURED: `script/m14/differential.ts`
+ *   imports `deriveScalaImplementsTruth` and pushes its rows in the scala truth branch (the Lead's
+ *   commit `4c1abbe82`). The derivation is real, so the gate can say true.
+ */
 
 type TruthEdge = { label: string; from: string; target: string }
 
