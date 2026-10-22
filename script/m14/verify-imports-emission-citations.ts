@@ -29,7 +29,19 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs"
 import path from "node:path"
 
-const ROOT = path.resolve(import.meta.dirname ?? path.join(process.cwd(), "script/m14"), "..", "..")
+/**
+ * ★ THE ROOT WAS WRONG BY ONE LEVEL, AND ONLY WORKED BY ACCIDENT (Lead, 2026-10-21).
+ *
+ * `import.meta.dirname` for THIS file is `<repo>/script/m14`, so `path.resolve(that, "..", "..")` is
+ * the PARENT OF THE REPOSITORY — not the repository. The `??` fallback (`process.cwd()/script/m14` plus
+ * the same two levels) happened to land on the right directory only when the process was started from
+ * the repository root, which is what every invocation did, so the bug never fired.
+ *
+ * It is the same class of defect the campaign keeps finding: A PATH THAT IS NOT DERIVED FROM THE FILE
+ * THAT USES IT IS A PATH THAT IS RIGHT BY COINCIDENCE. The root is now derived from the file's own
+ * location with the DEPTH SPELLED OUT, so it is right from any working directory.
+ */
+const ROOT = path.resolve(import.meta.dirname, "..", "..")
 const TABLE = path.join(ROOT, "validation/m14/verification/IMPORTS-EDGE-SHAPE.md")
 /** THE TREE THE TABLE WAS WRITTEN AGAINST. Its content is the evidence of what each citation MEANT. */
 const OLD_TREE = path.join(ROOT, ".tmp-r178-head")
