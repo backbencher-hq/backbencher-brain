@@ -270,4 +270,79 @@ export const JAVASCRIPT_MUTANTS: Mutant[] = [
       return { ...r, relationships: out }
     },
   },
+  {
+    id: "javascript/restore-call-shaped-base-as-mixin",
+    language: "javascript",
+    defectClass: "wrong-name",
+    description:
+      "PRE-FIX (M14 / R3, the call-shaped heritage): `class X extends Base.extend(M)` puts the BASE and the MIXIN at OPPOSITE depths — the base is the member call's RECEIVER and the mixin is its ARGUMENT — and the analyzer's lookup pair read only the heritage's DIRECT named children, so it found neither and published NO edge for the class at all. Measured over the whole admitted population: 76 call-shaped clauses (74 member-form, 2 identifier-form) of which the pre-remedy lookup found 0, and 802 of 2,572 heritage clauses (31.2 %) published no edge. The remedy reads the heritage's direct named child, and if it is a `call_expression` it takes the RECEIVER as the base and the ARGUMENTS as mixins (member form) or the CALLEE as the mixin and the first ARGUMENT as the base (plain form). The role assignment is the whole of the rule, and this mutant breaks it in the direction that is hardest to see: it publishes the BASE as a mixin as well, so `class X extends Base.extend(M)` yields `mixes_in X -> Base` beside `mixes_in X -> M` and `extends X -> Base`. Every such row is a false edge — it says the class composes its own supertype into itself — and it is invisible in a count, because the row COUNT is unchanged. Reverted here by DUPLICATING the base as a mixin row, which is the pre-remedy shape's closest reachable form: the transform layer receives the analyzer's RESULT and no parse tree, so the base is recovered from the `extends` row the remedy published and re-published under `mixes_in` with the same `isMixin` metadata. Caught by javascript/call-shaped-heritage-mixins, whose seven FORBID rows name exactly these false edges (`ApplicationRoute -> Route` is never a mixin, `ApplicationRoute -> WithBlockingActions` is never the base, `RedwoodRecord -> Core` is never a mixin, `RedwoodRecord -> ValidationMixin` is never the base) and whose twelve EXPECT rows keep the correct assignment passing — so a fix that published nothing at all would fail the expect rows rather than pass vacuously.",
+    caughtBy: "javascript/call-shaped-heritage-mixins",
+    transform: (r: any) => {
+      const rels = (r.relationships ?? []) as any[]
+      const mixinRows = rels.filter((x: any) => String(x?.type) === "mixes_in")
+      if (mixinRows.length === 0) return r
+      // The BASE of each call-shaped heritage is the `extends` row the remedy published
+      // for the SAME class — recovered from the result, not hardcoded, so the mutant
+      // cannot silently stop matching if the fixture is renamed.
+      const baseBySource = new Map<string, string>()
+      for (const x of rels) {
+        if (String(x?.type) !== "extends") continue
+        const s = String(x.source ?? "")
+        const t = String(x.target ?? "")
+        if (!s || !t) continue
+        baseBySource.set(s, t)
+      }
+      const injected: any[] = []
+      const seen = new Set<string>()
+      for (const x of mixinRows) {
+        const s = String(x.source ?? "")
+        const base = baseBySource.get(s)
+        if (!base) continue
+        const key = `${s}|${base}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        injected.push({
+          type: "mixes_in",
+          source: s,
+          target: base,
+          confidence: 1.0,
+          metadata: { ...(x.metadata ?? {}), isMixin: true },
+        })
+      }
+      if (injected.length === 0) return r
+      return { ...r, relationships: [...rels, ...injected] }
+    },
+  },
+  {
+    id: "javascript/restore-plain-heritage-as-mixin",
+    language: "javascript",
+    defectClass: "relationship-garbage",
+    description:
+      "PRE-FIX (M14 / R3, the shape guard's other side): the remedy's discriminator is that the heritage's own expression is a CALL — a call in heritage position is a class-producing expression BY CONSTRUCTION, because the language requires the heritage to evaluate to a constructor or the class is a runtime error, while a call in ARGUMENT position is not. The rule therefore never fires on a plain heritage: `class Derived extends PlainBase {}` publishes `extends` and NOTHING else, and a rule that fired on it would publish `mixes_in Derived -> PlainBase` — a class that composes its own supertype into itself, on every class in the corpus. This mutant is the inverse of the previous one and is what proves the rule is SHAPE-gated rather than merely present: it publishes a `mixes_in` row for EVERY plain `extends` row, so the fixture's positive controls (`class PlainBase {} class PlainDerived extends PlainBase {}`) become fabrications while the correct rows are untouched. Caught by javascript/call-shaped-heritage-mixins, whose forbid row names `PlainDerived -> PlainBase` as a mixin, and whose expect rows keep the shape-(A) and shape-(B) rows passing.",
+    caughtBy: "javascript/call-shaped-heritage-mixins",
+    transform: (r: any) => {
+      const rels = (r.relationships ?? []) as any[]
+      const extendsRows = rels.filter((x: any) => String(x?.type) === "extends")
+      if (extendsRows.length === 0) return r
+      const injected: any[] = []
+      const seen = new Set<string>()
+      for (const x of extendsRows) {
+        const s = String(x.source ?? "")
+        const t = String(x.target ?? "")
+        if (!s || !t) continue
+        const key = `${s}|${t}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        injected.push({
+          type: "mixes_in",
+          source: s,
+          target: t,
+          confidence: 1.0,
+          metadata: { isMixin: true },
+        })
+      }
+      if (injected.length === 0) return r
+      return { ...r, relationships: [...rels, ...injected] }
+    },
+  },
 ]

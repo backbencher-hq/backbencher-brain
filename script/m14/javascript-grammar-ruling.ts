@@ -70,6 +70,12 @@ const GATE_WASM = "node_modules/tree-sitter-javascript/tree-sitter-javascript.wa
 const FIXTURE_WASM = "wasm/tree-sitter-javascript.wasm" // run-fixtures.ts:58
 const TS_WASM = "node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm" // the CONTROL
 const DART_WASM = "wasm/tree-sitter-dart.wasm" // the CONTROL
+// THE PRODUCTION BUILD — the bytes the REGISTRY SERVES and the path the GATE's own resolution
+// returns. MEASURED by script/m14/javascript-grammar-binding-probe.ts (exit 0):
+//   registry bytes 63812b9e (647,334 bytes) · resolveWasmAsset -> <repo>/wasm/… 63812b9e ·
+//   fixture suite 63812b9e · the ENGINE'S LOG PATH node_modules/… 4a378293 (served by NOTHING).
+// The citation MUST name 63812b9e (116 named types), not 4a378293 (113). See the header block.
+const PRODUCTION_WASM = "wasm/tree-sitter-javascript.wasm"
 
 const sha256 = (p: string) => createHash("sha256").update(readFileSync(path.join(ROOT, p))).digest("hex")
 const digestOf = (xs: string[]) => createHash("sha256").update(xs.join("\n")).digest("hex")
@@ -182,19 +188,20 @@ async function inventoryOf(relWasm: string): Promise<Inventory> {
   }
 }
 
-const gateInv = await inventoryOf(GATE_WASM)
+const gateInv = await inventoryOf(PRODUCTION_WASM)
 const fixInv = await inventoryOf(FIXTURE_WASM)
+const npmInv = await inventoryOf(GATE_WASM)
 const tsInv = await inventoryOf(TS_WASM)
 const dartInv = await inventoryOf(DART_WASM)
 console.log(`\nGRAMMAR INVENTORIES (named node types)`)
-for (const inv of [gateInv, fixInv, tsInv, dartInv]) {
+for (const inv of [gateInv, fixInv, npmInv, tsInv, dartInv]) {
   console.log(`  ${inv.wasm}\n    sha256 ${inv.sha256}  ${inv.bytes} bytes  ${inv.namedCount} named of ${inv.nodeTypeCount} ids  namedDigest ${inv.namedDigest}`)
 }
-const onlyInGate = gateInv.named.filter((n) => !fixInv.named.includes(n))
-const onlyInFixture = fixInv.named.filter((n) => !gateInv.named.includes(n))
-console.log(`  the two javascript grammars are ${gateInv.sha256 === fixInv.sha256 ? "BYTE-IDENTICAL" : "DIFFERENT BUILDS"}`)
-console.log(`    named types only in the GATE's grammar: ${onlyInGate.length} ${JSON.stringify(onlyInGate)}`)
-console.log(`    named types only in the FIXTURE grammar: ${onlyInFixture.length} ${JSON.stringify(onlyInFixture)}`)
+const onlyInGate = gateInv.named.filter((n) => !npmInv.named.includes(n))
+const onlyInFixture = npmInv.named.filter((n) => !gateInv.named.includes(n))
+console.log(`  PRODUCTION (registry bytes) === FIXTURE SUITE: ${gateInv.sha256 === fixInv.sha256 ? "BYTE-IDENTICAL" : "DIFFERENT BUILDS"}`)
+console.log(`    named types only in the PRODUCTION grammar: ${onlyInGate.length} ${JSON.stringify(onlyInGate)}`)
+console.log(`    named types only in the npm build (served by NOTHING): ${onlyInFixture.length} ${JSON.stringify(onlyInFixture)}`)
 
 // ────────────────────────────────────────────────────────────────────────────────────────────────────
 // THE VOCABULARIES — one per excluded type. A vocabulary is a LITERAL SUBSTRING TEST over the
@@ -221,8 +228,9 @@ const VOCABULARIES: { type: string; label: string; words: string[]; positiveCont
   },
 ]
 const inventories: Record<string, Inventory> = {
-  [GATE_WASM]: gateInv,
+  [PRODUCTION_WASM]: gateInv,
   [FIXTURE_WASM]: fixInv,
+  [GATE_WASM]: npmInv,
   [TS_WASM]: tsInv,
   [DART_WASM]: dartInv,
 }
@@ -231,8 +239,16 @@ for (const v of VOCABULARIES) {
   const ctrlInv = inventories[v.positiveControl.wasm]
   const ctrlHit = ctrlInv.named.includes(v.positiveControl.mustContain)
   console.log(`\n  ${v.type} — ${v.label}`)
-  console.log(`    the GATE's grammar: ${hits.length} named node type(s) match ${JSON.stringify(v.words)} ${JSON.stringify(hits)}`)
+  console.log(`    the PRODUCTION grammar (${PRODUCTION_WASM} sha256 ${gateInv.sha256.slice(0, 16)}): ${hits.length} named node type(s) match ${JSON.stringify(v.words)} ${JSON.stringify(hits)}`)
   console.log(`    the CONTROL: ${v.positiveControl.wasm} declares "${v.positiveControl.mustContain}" — ${ctrlHit ? "PRESENT (the scan is not blind)" : "ABSENT — THE SCAN IS BLIND"}`)
+}
+// THE GLIMMER TYPES — the three node types the PRODUCTION build has and the npm build does not. They
+// are RECORDED here because the remedy ladder's rung for a type that IS in the grammar is R3 (the
+// analyzer must emit it), and the reader has to know which node types are available to emit.
+const GLIMMER = ["glimmer_template", "glimmer_opening_tag", "glimmer_closing_tag"]
+console.log(`\n  THE GLIMMER NODE TYPES (present in the PRODUCTION build, absent from the npm build):`)
+for (const g of GLIMMER) {
+  console.log(`    ${g}: production=${gateInv.named.includes(g)} npm=${npmInv.named.includes(g)}`)
 }
 
 // ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -240,7 +256,7 @@ for (const v of VOCABULARIES) {
 // measurement: it answers "what does this grammar DO with the construct" instead of "did I find it".
 // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 const gateParser = new WSP()
-gateParser.setLanguage(await WSL.load(readFileSync(path.join(ROOT, GATE_WASM))))
+gateParser.setLanguage(await WSL.load(readFileSync(path.join(ROOT, PRODUCTION_WASM))))
 const COUNTERFACTUALS = [
   { src: "class A extends B { }", of: "implements" },
   { src: "class A implements B { }", of: "implements" },
@@ -287,6 +303,16 @@ let mixinNamedClauses = 0
 let extendMixins = 0
 const extendMixinArgs = new Map<string, number>()
 const partExamples: { file: string; text: string; sexp: string }[] = []
+// ── THE GLIMMER NODE-TYPE CENSUS ──────────────────────────────────────────────────────────────
+// THE MEASUREMENT THAT DECIDES WHETHER `mixes_in` IS IMPLEMENTABLE OR RULED.
+// The production build HAS three node types the npm build does not: `glimmer_template`,
+// `glimmer_opening_tag`, `glimmer_closing_tag`. **THE EARLIER "0 GLIMMER HITS" RESULT WAS VACUOUS** —
+// it came from the build that has no Glimmer types at all, so it could only ever have been 0.
+// Here the census runs over the WHOLE admitted population with the PRODUCTION build, and it counts
+// NODE TYPES (not text): a node is counted when the parser produced it as a node.
+const glimmerFiles: string[] = []
+const glimmerNodeCounts = new Map<string, number>()
+let glimmerNodesTotal = 0
 for (const abs of population) {
   let text: string
   try {
@@ -357,6 +383,13 @@ for (const abs of population) {
         }
       }
     }
+    // THE GLIMMER NODE TYPES — counted as NODES, with the file they came from, so the census can
+    // name the population a construct has (or has not) in.
+    if (n.type.startsWith("glimmer_")) {
+      glimmerNodesTotal++
+      glimmerNodeCounts.set(n.type, (glimmerNodeCounts.get(n.type) ?? 0) + 1)
+      if (!glimmerFiles.includes(abs)) glimmerFiles.push(abs)
+    }
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
       if (c) stack.push(c)
@@ -376,6 +409,50 @@ console.log(`  statement-level \`part ...\` DIRECTIVES: ${partTokens}`)
 if (partExamples.length) console.log(`    ${JSON.stringify(partExamples, null, 2)}`)
 console.log(`  the MIXIN IDIOM (\`X.extend(M)\` — a METHOD CALL, not a grammar clause): ${extendMixins}`)
 console.log(`    the most frequent first arguments: ${JSON.stringify([...extendMixinArgs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10))}`)
+console.log(`\nTHE GLIMMER NODE-TYPE CENSUS (the PRODUCTION build ${gateInv.sha256.slice(0, 16)}, over ${trees} admitted files)`)
+console.log(`  glimmer NODES produced: ${glimmerNodesTotal}`)
+console.log(`  by node type: ${JSON.stringify([...glimmerNodeCounts.entries()].sort((a, b) => b[1] - a[1]))}`)
+console.log(`  files with at least one glimmer node: ${glimmerFiles.length}`)
+if (glimmerFiles.length) console.log(`    ${JSON.stringify(glimmerFiles.slice(0, 20))}`)
+
+// ────────────────────────────────────────────────────────────────────────────────────────────────────
+// THE NEAR-MISS CENSUS (L-17) — HOW A RULING IS EARNED.
+// A ruling is not a citation to a grammar inventory; it is an answer to "what was ALMOST there?".
+// For each type this census counts, over the WHOLE admitted population, the TEXT SITES that carry
+// the construct's own word — and says, for a sample of them, what each site actually IS. A near
+// miss that is a DECLARATION would overturn the ruling; a near miss that is a comment, a JSDoc
+// tag, a GraphQL schema line, a lint-rule name or a codemod regex is a SITE THAT IS NOT THE
+// CONSTRUCT, and the count of those is the size of the trap the ruling must not fall into.
+// ────────────────────────────────────────────────────────────────────────────────────────────────────
+const NEAR_MISS: { type: string; re: RegExp }[] = [
+  { type: "implements", re: /\bimplements\b|@implements\b/ },
+  { type: "mixes_in", re: /\bmixins?\b/ },
+  { type: "part_of", re: /^\s*part(\s+of)?\s+['"`]/m },
+]
+const nearMiss: Record<string, { files: number; sites: number; samples: { file: string; text: string }[] }> = {}
+for (const nm of NEAR_MISS) {
+  let sites = 0
+  const files = new Set<string>()
+  const samples: { file: string; text: string }[] = []
+  for (const abs of population) {
+    let text: string
+    try {
+      text = readFileSync(abs, "utf8")
+    } catch {
+      continue
+    }
+    const lines = text.split("\n")
+    for (const line of lines) {
+      if (!nm.re.test(line)) continue
+      sites++
+      files.add(abs)
+      if (samples.length < 12) samples.push({ file: path.relative(CR, abs), text: line.trim().slice(0, 140) })
+    }
+  }
+  nearMiss[nm.type] = { files: files.size, sites, samples }
+  console.log(`\n  NEAR-MISS CENSUS — ${nm.type} — ${sites} text site(s) in ${files.size} file(s)`)
+  for (const s of samples) console.log(`    ${s.file}: ${s.text}`)
+}
 
 // ────────────────────────────────────────────────────────────────────────────────────────────────────
 // THE VERDICT — one row per excluded type, each with BOTH halves and a FALSIFIER.
@@ -394,7 +471,7 @@ const rulings = VOCABULARIES.map((v) => {
     label: v.label,
     evidence: "grammar-absence",
     grammarHalf: {
-      wasm: GATE_WASM,
+      wasm: PRODUCTION_WASM,
       sha256: gateInv.sha256,
       bytes: gateInv.bytes,
       namedNodeTypes: gateInv.namedCount,
@@ -421,12 +498,16 @@ const rulings = VOCABULARIES.map((v) => {
       constructSites: corpusHalf[v.type],
       unit: "the construct's own token in the grammar's own node",
     },
+    nearMissCensus: {
+      ...nearMiss[v.type],
+      rule: "L-17 — the near-miss census is how a ruling is EARNED: the text sites that carry the construct's word but are NOT the construct.",
+    },
     falsifier:
       v.type === "implements"
-        ? "a named node type matching /implement/ appears in the gate's grammar inventory, OR a corpus class_heritage carries an `implements` token, OR the gate's TABLE 1 shows a non-zero `implements` row for javascript"
+        ? "a named node type matching /implement/ appears in the PRODUCTION grammar inventory, OR a corpus class_heritage carries an `implements` token, OR the gate's TABLE 1 shows a non-zero `implements` row for javascript"
         : v.type === "mixes_in"
-          ? "a named node type matching /mixin/ appears in the gate's grammar inventory, OR a corpus class_heritage carries a `with` token, OR the gate's TABLE 1 shows a non-zero `mixes_in` row for javascript"
-          : "a named node type matching /part/ appears in the gate's grammar inventory, OR a corpus statement carries a `part` directive token, OR the gate's TABLE 1 shows a non-zero `part_of` row for javascript",
+          ? "a named node type matching /mixin/ appears in the PRODUCTION grammar inventory, OR a corpus class_heritage carries a `with` token, OR the gate's TABLE 1 shows a non-zero `mixes_in` row for javascript"
+          : "a named node type matching /part/ appears in the PRODUCTION grammar inventory, OR a corpus statement carries a `part` directive token, OR the gate's TABLE 1 shows a non-zero `part_of` row for javascript",
   }
 })
 
@@ -438,19 +519,40 @@ const out = {
     "the gate's own discoverFiles (incoming-gate.ts:454), copied rule-for-rule: git-tracked files only, symlinked corpus roots followed, extensions js/mjs/cjs/jsx, 1 MB cap",
   corpusRoot: CR,
   population: { admitted: population.length, repos: pop.repos, absent: pop.absent, overCap: pop.overCap, overCapLargest: pop.overCapLargest, capped: MAX_FILES > 0 },
+  glimmerCensus: {
+    grammar: { wasm: PRODUCTION_WASM, sha256: gateInv.sha256 },
+    rule: "the census counts NODE TYPES produced by the PRODUCTION build over the WHOLE admitted population — not text matches, and not the build that lacks the types",
+    nodeTypes: GLIMMER,
+    nodesProduced: glimmerNodesTotal,
+    byNodeType: [...glimmerNodeCounts.entries()].sort((a, b) => b[1] - a[1]),
+    filesWithAGlimmerNode: glimmerFiles.length,
+    files: glimmerFiles.slice(0, 50),
+    priorVacuousResult:
+      "the earlier '0 glimmer hits' was measured with the node_modules build (4a378293), which has NO glimmer types at all — so it could only ever have been 0, and it is VACUOUS",
+  },
+  nearMissCensus: nearMiss,
   grammars: {
-    populationInstrument: { wasm: GATE_WASM, sha256: gateInv.sha256, bytes: gateInv.bytes, namedNodeTypes: gateInv.namedCount, nodeTypeIds: gateInv.nodeTypeCount, namedDigest: gateInv.namedDigest },
+    productionInstrument: {
+      wasm: PRODUCTION_WASM,
+      sha256: gateInv.sha256,
+      bytes: gateInv.bytes,
+      namedNodeTypes: gateInv.namedCount,
+      nodeTypeIds: gateInv.nodeTypeCount,
+      namedDigest: gateInv.namedDigest,
+      citationRule: "L-20 — the sha256 of the bytes the REGISTRY SERVES, measured by script/m14/javascript-grammar-binding-probe.ts (exit 0)",
+    },
     fixtureInstrument: { wasm: FIXTURE_WASM, sha256: fixInv.sha256, bytes: fixInv.bytes, namedNodeTypes: fixInv.namedCount, nodeTypeIds: fixInv.nodeTypeCount, namedDigest: fixInv.namedDigest },
+    npmPackageBuild: { wasm: GATE_WASM, sha256: npmInv.sha256, bytes: npmInv.bytes, namedNodeTypes: npmInv.namedCount, nodeTypeIds: npmInv.nodeTypeCount, namedDigest: npmInv.namedDigest, note: "SERVED BY NOTHING — the engine's LOG prints this path, and the bytes it loads are the production build's" },
     controls: [
       { wasm: TS_WASM, sha256: tsInv.sha256, namedNodeTypes: tsInv.namedCount, namedDigest: tsInv.namedDigest },
       { wasm: DART_WASM, sha256: dartInv.sha256, namedNodeTypes: dartInv.namedCount, namedDigest: dartInv.namedDigest },
     ],
     finding:
       gateInv.sha256 === fixInv.sha256
-        ? "the two javascript grammars are byte-identical"
-        : `THE TWO JAVASCRIPT GRAMMARS ARE DIFFERENT BUILDS — the population instrument (incoming-gate.ts) loads ${GATE_WASM} and the fixture instrument (run-fixtures.ts) loads ${FIXTURE_WASM}; only ${onlyInGate.length} named types differ, and the difference is RECORDED so a reader can see it`,
-    onlyInPopulationGrammar: onlyInGate,
-    onlyInFixtureGrammar: onlyInFixture,
+        ? "the PRODUCTION build and the FIXTURE SUITE's build are BYTE-IDENTICAL (63812b9e) — the same grammar parses the population and the fixtures"
+        : `THE PRODUCTION BUILD AND THE FIXTURE BUILD ARE DIFFERENT BUILDS — production ${gateInv.sha256} and fixtures ${fixInv.sha256}; only ${onlyInGate.length} named types differ, and the difference is RECORDED so a reader can see it`,
+    onlyInProductionGrammar: onlyInGate,
+    onlyInNpmBuild: onlyInFixture,
   },
   corpusHalfTotals: { classHeritageClauses: heritageClauses, implementsTokens, withTokens, partTokens, partExamples, extendsCallClauses: extendsCallClausesTotal, extendsIdentifierClauses, mixinNamedClauses, extendMixinCalls: extendMixins, extendMixinArgs: [...extendMixinArgs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20), heritageShapes: [...heritageShapes.entries()].sort((a, b) => b[1] - a[1]), topMixinIdiomCalls: [...extendsCallClauses.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20) },
   rulings,

@@ -796,6 +796,32 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   ...this.lineField(base),
                   metadata: boundBase ? { localBinding: true } : (importedBase ? { importedBinding: importedBase } : {}),
                 })
+              } else {
+                // M14 / R3 — a CALL-shaped heritage (`extends Base.extend(M)` or
+                // `extends MixinFn(Base)`). The base's identifier is a GRANDCHILD of the
+                // call_expression, so the lookup above found nothing and the class published
+                // no edge at all. The base and the mixins are read from the call's SHAPE.
+                const rows = this.callShapedHeritageRows(heritage, name)
+                if (rows.base) {
+                  relationships.push({
+                    source: name,
+                    target: rows.base.target,
+                    type: ASTEngine.RelationshipType.Extends,
+                    confidence: 1.0,
+                    ...this.lineField(rows.base.node),
+                    metadata: rows.base.metadata,
+                  })
+                }
+                for (const mix of rows.mixins) {
+                  relationships.push({
+                    source: name,
+                    target: mix.target,
+                    type: ASTEngine.RelationshipType.MixesIn,
+                    confidence: 1.0,
+                    ...this.lineField(mix.node),
+                    metadata: { ...mix.metadata, isMixin: true },
+                  })
+                }
               }
             }
           }
@@ -838,6 +864,29 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 ...this.lineField(base),
                 metadata: boundBaseExpr ? { localBinding: true } : (importedBaseExpr ? { importedBinding: importedBaseExpr } : {}),
               })
+            } else {
+              // M14 / R3 — the same CALL-shaped heritage the class declaration handles.
+              const rows = this.callShapedHeritageRows(heritage, ownName)
+              if (rows.base) {
+                relationships.push({
+                  source: ownName,
+                  target: rows.base.target,
+                  type: ASTEngine.RelationshipType.Extends,
+                  confidence: 1.0,
+                  ...this.lineField(rows.base.node),
+                  metadata: rows.base.metadata,
+                })
+              }
+              for (const mix of rows.mixins) {
+                relationships.push({
+                  source: ownName,
+                  target: mix.target,
+                  type: ASTEngine.RelationshipType.MixesIn,
+                  confidence: 1.0,
+                  ...this.lineField(mix.node),
+                  metadata: { ...mix.metadata, isMixin: true },
+                })
+              }
             }
           }
           // NOTE: no Class scope is pushed here. Ownership of a class
@@ -3345,6 +3394,102 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (child && child.type === type) return child
     }
     return null
+  }
+
+  /**
+   * M14 / R3 — THE CALL-SHAPED CLASS HERITAGE. A class's supertype may be a CALL, and there are
+   * TWO shapes of it, and they put the base and the mixin in OPPOSITE positions:
+   *
+   *   (A) `class X extends Base.extend(M1, M2)` — a MEMBER call. The RECEIVER names the BASE and
+   *       the ARGUMENTS name the MIXINS composed into X's supertype chain. This is the Ember /
+   *       Backbone class-extension idiom, and it is the shape the corpus overwhelmingly has.
+   *   (B) `class X extends MixinFn(Base)` — a plain FUNCTION call. The CALLEE names the MIXIN and
+   *       the ARGUMENT names the BASE. This is the TypeScript/Redwood mixin-factory idiom, where
+   *       `MixinFn(Base)` evaluates to a class that extends Base.
+   *
+   * WHY THE SHAPE, NOT A NAME, DECIDES: C2 forbids a naming convention as the discriminator.
+   * `Route.extend(M)` and `_.extend(obj, props)` are the same member-call shape, and only the
+   * callee's SHAPE (member vs plain) tells the two apart structurally. The discriminator here is
+   * the node shape of the heritage's own expression — `member_expression` versus `identifier` —
+   * and the role of each operand follows from that shape. It is not "the method is called extend".
+   *
+   * WHY IT MATTERS: `findChildByType` scans the DIRECT named children of the node it is given, and
+   * a call-shaped heritage's single direct named child is the `call_expression` — so the base's
+   * `identifier` and `member_expression` are GRANDCHILDREN of it. Before this, every call-shaped
+   * heritage published NO edge at all: neither the base nor the mixin. Measured over the admitted
+   * population by `script/m14/javascript-heritage-census.ts`: 76 call-shaped clauses, of which the
+   * analyzer's own lookup pair found 0.
+   *
+   * WHAT IT DELIBERATELY DOES NOT DO: it does not look inside the call for a base, so it never
+   * claims a base that the call computes rather than names — the 11 arguments that are themselves
+   * calls (`SortableFactory([...])`) contribute a mixin FACTORY, and this publishes the factory's
+   * own name only when the argument names something.
+   */
+  private callShapedHeritage(heritage: Node): { base: Node | null; mixins: Node[]; shape: "member" | "function" } | null {
+    const call = this.findChildByType(heritage, "call_expression")
+    if (!call) return null
+    const callee = call.childForFieldName("function")
+    if (!callee) return null
+    const args = this.findChildByType(call, "arguments")
+    const argNodes: Node[] = []
+    if (args) {
+      for (let i = 0; i < args.namedChildCount; i++) {
+        const a = args.namedChild(i)
+        if (a) argNodes.push(a)
+      }
+    }
+    if (callee.type === "member_expression") {
+      // (A) `Base.extend(M...)` — the RECEIVER is the base, the arguments are the mixins.
+      const receiver = callee.childForFieldName("object")
+      return { base: receiver ?? null, mixins: argNodes, shape: "member" }
+    }
+    if (callee.type === "identifier") {
+      // (B) `MixinFn(Base)` — the CALLEE is the mixin, and the argument names the base.
+      return { base: argNodes[0] ?? null, mixins: [callee], shape: "function" }
+    }
+    return null
+  }
+
+  /**
+   * M14 / R3 — the relationship rows a call-shaped heritage publishes. The base becomes an
+   * `extends` edge and each mixin becomes a `mixes_in` edge, with the same binding resolution the
+   * identifier form already uses, so the rows are resolvable on exactly the same terms.
+   */
+  private callShapedHeritageRows(
+    heritage: Node,
+    source: string,
+  ): { base: { target: string; node: Node; metadata: Record<string, unknown> } | null; mixins: { target: string; node: Node; metadata: Record<string, unknown> }[] } {
+    const shape = this.callShapedHeritage(heritage)
+    const out = { base: null as { target: string; node: Node; metadata: Record<string, unknown> } | null, mixins: [] as { target: string; node: Node; metadata: Record<string, unknown> }[] }
+    if (!shape) return out
+
+    const resolve = (node: Node | null): { target: string; node: Node; metadata: Record<string, unknown> } | null => {
+      if (!node) return null
+      if (node.type === "identifier") {
+        const bound = this.localBindingTarget(node, node.text, source)
+        const imported = bound ? null : this.importedBindingFor(node, node.text)
+        return {
+          target: bound ?? node.text,
+          node,
+          metadata: bound ? { localBinding: true } : imported ? { importedBinding: imported } : {},
+        }
+      }
+      if (node.type === "member_expression") {
+        // A QUALIFIED base keeps its DOTTED spelling (the JSD19 contract the plain
+        // `extends Lib.Base` form already honours), so the whole member expression's text
+        // is the target — never just its property segment.
+        return { target: node.text, node, metadata: {} }
+      }
+      return null
+    }
+
+    const base = resolve(shape.base)
+    if (base) out.base = base
+    for (const m of shape.mixins) {
+      const r = resolve(m)
+      if (r) out.mixins.push(r)
+    }
+    return out
   }
 
   private detectsJsx(rootNode: Node): boolean {
