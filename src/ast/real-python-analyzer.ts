@@ -6,15 +6,27 @@
 // canonical ones (calls, uses, contains, imports, references, exports, extends, implements,
 // overrides, instantiates) AND `decorates`, the new canonical value python was first to emit — each
 // pinned by validation/m14/fixtures/python/ (declaration of record: script/m14/spec/python-
-// completeness.json; the true applicable set: script/m14/spec/python-spec-table.json).
+// completeness.json, whose `coverage` block is the lane's APPLICABLE SET; the grammar's node census:
+// script/m14/spec/python-spec-table.json).
+// THE APPLICABLE SET IS ELEVEN, NOT FOURTEEN, AND THE THREE THAT ARE NOT ARE RULED WITH A
+// CITATION, NOT LEFT UNCLASSIFIED: the live vocabulary is fourteen values, and python's grammar
+// cannot express `renders` (no `jsx_*`/element/component node type), `mixes_in` (no `mixin*` node
+// type and no mixin field — python's `with_statement` is the CONTEXT MANAGER statement, a decoy,
+// not Dart's `class C with M`) or `part_of` (no `part_*` node type). The pinned grammar
+// (wasm/tree-sitter-python.wasm, sha256 16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47),
+// its node-type inventory and the corpus half are measured by the lane's own instrument
+// script/m14/python-type-census.ts, and the negative direction is pinned by the fixture
+// validation/m14/fixtures/python/ruled-out-extended-values.py. The whole classification, with the
+// cell and the wall ledger, is validation/m14/verification/PYTHON-CLASSIFICATION-2026-10-21.md.
 // WHERE ITS CONTRACT LIVES. docs/analyzers/real-python-analyzer.md (long form), validation/m14/
 // verification/PYTHON-FIX.md + PYTHON-STATE.md (measured rounds) + PYTHON-RESOLUTION-
-// CLASSIFICATION.md + PYTHON-APPLICABLE-SET.md, the instruments under script/m14/ (py-resolution-
-// classify, py-decorates-oracle-diff, python-endpoint-resolution, python-ontology-census) and the
-// fixtures' *.mts probes. Incoming resolution is arbitrated by script/m14/incoming-gate.ts under the
-// rule in script/m14/incoming-rule.ts — READ THAT FIRST when adding a claim: a claim is read ONLY
-// where the target names nothing, is verified against the project key space, and never raises
-// `resolved`.
+// CLASSIFICATION.md + PYTHON-APPLICABLE-SET.md + PYTHON-CLASSIFICATION-2026-10-21.md (the
+// all-out-of-all classification, the cell and the D7 wall ledger), the instruments under script/m14/
+// (py-resolution-classify, py-decorates-oracle-diff, python-endpoint-resolution, python-ontology-
+// census, python-type-census) and the fixtures' *.mts probes. Incoming resolution is arbitrated by
+// script/m14/incoming-gate.ts under the rule in script/m14/incoming-rule.ts — READ THAT FIRST when
+// adding a claim: a claim is read ONLY where the target names nothing, is verified against the
+// project key space, and never raises `resolved`.
 // WHEN THIS FILE CHANGES, ALSO EDIT the fixture(s) pinning the shape, the contract section of the
 // lane doc, and PYTHON-STATE.md. A new metadata KEY the arbiter reads lives in
 // script/m14/incoming-rule.ts, which is SHARED and Lead-owned: propose, never edit it from a lane.

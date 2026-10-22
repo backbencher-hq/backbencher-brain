@@ -78,6 +78,15 @@ const gitHead = (): string => {
     return "unavailable"
   }
 }
+/** the git BLOB id of a file — the instrument's own identity, MEASURED at run time. A hardcoded
+ *  digest is a claim about a tree that may no longer exist, and the lane has paid for that trap. */
+const blobOf = (rel: string): string => {
+  try {
+    return execFileSync("git", ["hash-object", rel], { encoding: "utf8" }).trim()
+  } catch {
+    return "unavailable"
+  }
+}
 
 const ROOT = process.cwd()
 const argv = process.argv.slice(2)
@@ -158,6 +167,22 @@ type Tally = {
   priceMovedClaimCarrying: number
   /** the rows the tie-break CANNOT move, and why they stayed: the outcome they landed in */
   movedTo: Map<string, number>
+  /** THE INDEPENDENT FALSIFIER (L-2026-10-21-16) — a SECOND, DIFFERENT ACCOUNTING of the same
+   *  movement, so a wrong number cannot be published: the two classifications' `resolved`
+   *  COLUMNS, differenced separately, over the SAME rows and the SAME key space.
+   *    movedIntoResolved  the ambiguous rows that landed in `resolved` (the resolved-column gain)
+   *    movedOutOfResolved the resolved rows that STOPPED being resolved (must be 0)
+   *    movedToOther       the ambiguous rows that landed somewhere else (not `resolved`)
+   *    before/afterResolved  the two `resolved` columns' sizes, over EVERY row
+   *  ⇒ THE FALSIFIER AGREES when `movedIntoResolved − movedOutOfResolved === resolvedDelta`
+   *    AND `priceMoved === movedIntoResolved + movedToOther`; the instrument EXITS 5 otherwise. */
+  falsifier: {
+    movedIntoResolved: number
+    movedOutOfResolved: number
+    movedToOther: number
+    beforeResolved: number
+    afterResolved: number
+  }
   byLabel: Map<string, { own: number; genuine: number; free: number; freeOwn: number; price: number }>
 }
 
@@ -168,6 +193,10 @@ const zero = (): Tally => ({
   priceMoved: 0, priceMovedClaimFree: 0, priceMovedClaimCarrying: 0,
   movedTo: new Map(),
   byLabel: new Map(),
+  falsifier: {
+    movedIntoResolved: 0, movedOutOfResolved: 0, movedToOther: 0,
+    beforeResolved: 0, afterResolved: 0,
+  },
 })
 
 /** THE RESUMED REPOS: their tallies are already measured, so they are summed and skipped. */
@@ -309,6 +338,12 @@ for (const repo of repoNames) {
     const before = classifyEdge(pDecl, pKinds, row.target, claim, facts as any, isContains, undefined, ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, row.file)
     const after = classifyEdge(pDecl, pKinds, row.target, claim, facts as any, isContains, ownFileDeclares, ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, row.file)
     const ambiguous = (o: string): boolean => o === "ambDeclOnly" || o === "ambBoth"
+    /* THE INDEPENDENT FALSIFIER — measured over EVERY row, BEFORE the ambiguous filter, so the
+     * two accountings see the SAME rows over the SAME key space with the SAME arbiter. */
+    if (before.outcome === "resolved") t.falsifier.beforeResolved++
+    if (after.outcome === "resolved") t.falsifier.afterResolved++
+    if (ambiguous(before.outcome) && after.outcome === "resolved") t.falsifier.movedIntoResolved++
+    if (before.outcome === "resolved" && after.outcome !== "resolved") t.falsifier.movedOutOfResolved++
     if (!ambiguous(before.outcome)) continue
     t.ambRows++
     const own = ownFileDeclares
@@ -323,12 +358,16 @@ for (const repo of repoNames) {
     // THE PRICE, AS A MOVEMENT: the current arbiter moved this row out of the ambiguous class.
     if (ambiguous(after.outcome)) continue
     t.priceMoved++
+    if (after.outcome !== "resolved") t.falsifier.movedToOther++
     t.movedTo.set(after.outcome, (t.movedTo.get(after.outcome) ?? 0) + 1)
     if (carriesClaim) t.priceMovedClaimCarrying++; else { t.priceMovedClaimFree++; byL.price++ }
   }
   for (const k of Object.keys(global) as Array<keyof Tally>) {
-    if (k === "movedTo" || k === "byLabel") continue
+    if (k === "movedTo" || k === "byLabel" || k === "falsifier") continue
     ;(global as any)[k] += (t as any)[k]
+  }
+  for (const k of Object.keys(global.falsifier) as Array<keyof Tally["falsifier"]>) {
+    ;(global.falsifier as any)[k] += (t.falsifier as any)[k]
   }
   for (const [label, v] of t.byLabel) {
     let g = global.byLabel.get(label)
@@ -350,7 +389,7 @@ const sum = (m: Map<string, number>): Record<string, number> => Object.fromEntri
 console.log(`\nPY TIE-BREAK PRICE — the own-file tie-break's price on the python population`)
 console.log(`population: ${pop.files.length} admitted .py/.pyi/.pyw across ${pop.repos.length} repos · ${repoNames.length} repo(s) run · root ${CR}`)
 console.log(`digests: HEAD ${gitHead()}`)
-console.log(`digests: src/ast/real-python-analyzer.ts 3e3b0ef56a4ee8b28a16fa2f5fb290d09e7618de · script/m14/incoming-rule.ts 227d987e4e7da59a4d78fcd2d0f67e2a2267fcd3 · script/m14/owner-channel.ts a3521d6ebd7ec86f58e1473c4fbb58fa7a386685`)
+console.log(`digests (MEASURED at run time, not remembered): analyzer ${blobOf("src/ast/real-python-analyzer.ts")} · arbiter ${blobOf("script/m14/incoming-rule.ts")} · owner-channel ${blobOf("script/m14/owner-channel.ts")} · instrument ${blobOf("script/m14/py-tiebreak-price.ts")}`)
 console.log(`\nTHE amb(decl) CEILING — production PREFERS THE EDGE'S OWN FILE, so an ambiguous row whose own file declares the target is PRODUCTION-BOUND:`)
 console.log(`  ambiguous rows (the PRE-tie-break classification)          ${String(global.ambRows).padStart(9)}`)
 console.log(`    the row's OWN FILE declares the target                   ${String(global.ambOwnFile).padStart(9)}  ${pct(global.ambOwnFile, global.ambRows).padStart(6)}   <-- the CEILING (the fleet's headline shape)`)
@@ -369,6 +408,21 @@ console.log(`  rows moved out of ambiguous                                ${Stri
 console.log(`    of which CLAIM-FREE                                     ${String(global.priceMovedClaimFree).padStart(9)}   <-- the price, observed`)
 console.log(`    of which CLAIM-CARRYING (the change cannot reach them)   ${String(global.priceMovedClaimCarrying).padStart(9)}`)
 console.log(`  the outcomes they landed in                               ${JSON.stringify(sum(global.movedTo))}`)
+console.log(`\nTHE INDEPENDENT FALSIFIER (L-2026-10-21-16) — a SECOND, DIFFERENT accounting of the SAME movement:`)
+console.log(`  the two classifications' \`resolved\` COLUMNS, differenced separately, over the SAME rows:`)
+console.log(`    before.resolved                                  ${String(global.falsifier.beforeResolved).padStart(9)}`)
+console.log(`    after.resolved                                   ${String(global.falsifier.afterResolved).padStart(9)}`)
+console.log(`    resolvedDelta = after − before                   ${String(global.falsifier.afterResolved - global.falsifier.beforeResolved).padStart(9)}`)
+console.log(`    the ambiguous rows that landed in \`resolved\`      ${String(global.falsifier.movedIntoResolved).padStart(9)}`)
+console.log(`    the resolved rows that stopped being resolved     ${String(global.falsifier.movedOutOfResolved).padStart(9)}   (must be 0)`)
+console.log(`    the ambiguous rows that landed somewhere ELSE     ${String(global.falsifier.movedToOther).padStart(9)}`)
+const falsifierDelta = global.falsifier.afterResolved - global.falsifier.beforeResolved
+const falsifierAgrees =
+  global.falsifier.movedIntoResolved - global.falsifier.movedOutOfResolved === falsifierDelta &&
+  global.priceMoved === global.falsifier.movedIntoResolved + global.falsifier.movedToOther &&
+  global.falsifier.movedOutOfResolved === 0
+console.log(`  ⇒ THE FALSIFIER ${falsifierAgrees ? "AGREES" : "DISAGREES"}: movedIntoResolved − movedOutOfResolved = ${global.falsifier.movedIntoResolved - global.falsifier.movedOutOfResolved} vs resolvedDelta ${falsifierDelta}; priceMoved ${global.priceMoved} vs movedIntoResolved + movedToOther ${global.falsifier.movedIntoResolved + global.falsifier.movedToOther}`)
+console.log(`    ⇒ a movement count without a falsifier is a number without a root; THIS instrument exits 5 if they ever disagree.`)
 console.log(`\nTHE OWN-FILE SHARE PER LABEL (the claim-free rows, and the price per label):`)
 for (const [label, v] of [...global.byLabel.entries()].sort((x, y) => (y[1].own + y[1].genuine) - (x[1].own + x[1].genuine))) {
   console.log(`  ${label.padEnd(14)} ambiguous ${String(v.own + v.genuine).padStart(8)} · own-file ${String(v.own).padStart(8)} · claim-free ${String(v.free).padStart(8)} · claim-free own-file ${String(v.freeOwn).padStart(8)} (${pct(v.freeOwn, v.free).padStart(6)}) · price(moved) ${String(v.price).padStart(8)}`)
@@ -390,6 +444,20 @@ if (OUT) {
       identity: `${global.ambOwnFile} - ${global.claimedOwnFile} = ${global.claimFreeOwnFile}`,
     },
     byLabel: Object.fromEntries([...global.byLabel.entries()].sort((a, b) => (b[1].own + b[1].genuine) - (a[1].own + a[1].genuine))),
+    falsifier: {
+      ...global.falsifier,
+      resolvedDelta: falsifierDelta,
+      agrees: falsifierAgrees,
+      exitCodeOnDisagreement: 5,
+    },
     perRepo: perRepo.map((r) => ({ repo: r.repo, files: r.files, ambiguous: r.t.ambRows, ownFile: r.t.ambOwnFile, claimFree: r.t.claimFree, claimFreeOwnFile: r.t.claimFreeOwnFile, priceMoved: r.t.priceMoved })),
   }, null, 2))
+}
+
+/* ⇒ THE NON-ZERO EXIT ON DISAGREEMENT (L-2026-10-21-16): a wrong number cannot be published.
+ * The instrument has written its artifact; the EXIT is the last word. */
+if (!falsifierAgrees) {
+  console.error(`\nFALSIFIER DISAGREEMENT — the movement count and the independent resolved-column difference do not agree.`)
+  console.error(`  priceMoved ${global.priceMoved} · movedIntoResolved ${global.falsifier.movedIntoResolved} · movedToOther ${global.falsifier.movedToOther} · movedOutOfResolved ${global.falsifier.movedOutOfResolved} · resolvedDelta ${falsifierDelta}`)
+  process.exit(5)
 }
