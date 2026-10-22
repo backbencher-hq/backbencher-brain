@@ -451,8 +451,11 @@ function admitByExtension(rel: string, exts: string[], lang: string): boolean {
   return exts.some((e) => base === e) && detectLanguageFromPath(rel) === lang
 }
 
-function discoverFiles(lang: string, ext: string, exts: string[], maxFiles: number, onlyRepos?: Set<string>): {
+function discoverFiles(lang: string, ext: string, exts: string[], maxFiles: number, onlyRepos?: Set<string>, offset = 0, hasOffset = false): {
   files: string[]; total: number; repos: number
+  /** THE CHUNK'S OWN BOUNDS in the admitted list — [sliceStart, sliceEnd). ZERO means the whole
+   *  admitted population, which is the only case in which the run is not a chunk. */
+  sliceStart: number; sliceEnd: number
   /** THE UNSAMPLED ADMITTED POPULATION — `files` before the stride. A project fact (is this
    *  path in the population at all?) must be answered from THIS, not from the sample, or a
    *  claim would be verified against the run's budget instead of against the project. */
@@ -470,7 +473,7 @@ function discoverFiles(lang: string, ext: string, exts: string[], maxFiles: numb
   try {
     entries = readdirSync(CR)
   } catch {
-    return { files: [], admitted: [], total: 0, repos: 0, absent: 0, overCap: 0, overCapLargest: 0 }
+    return { files: [], admitted: [], total: 0, repos: 0, absent: 0, overCap: 0, overCapLargest: 0, sliceStart: 0, sliceEnd: 0 }
   }
   for (const name of entries.sort()) {
     // A REPO FILTER is a SUBSET of the corpus, and the header says so. It exists because a
@@ -536,14 +539,24 @@ function discoverFiles(lang: string, ext: string, exts: string[], maxFiles: numb
   // silently truncates it back — the population number would look unchanged while 46 real
   // files went unmeasured, which is the defect this file keeps having to fix.
   let files = found
-  if (maxFiles > 0 && total > maxFiles) {
+  let sliceStart = 0
+  let sliceEnd = found.length
+  if (hasOffset) {
+    // ★ THE CHUNK PATH. A SLICE, NOT A STRIDE — see the `--offset` block above for why the
+    // difference is the whole point. The admitted list is SORTED (the `found.sort()` above), so the
+    // same `--offset` over the same `--repo` filter always yields the same chunk, and two chunks
+    // with different offsets are DISJOINT by construction.
+    sliceStart = Math.min(offset, found.length)
+    sliceEnd = maxFiles > 0 ? Math.min(sliceStart + maxFiles, found.length) : found.length
+    files = found.slice(sliceStart, sliceEnd)
+  } else if (maxFiles > 0 && total > maxFiles) {
     const stride = Math.max(1, Math.floor(total / maxFiles))
     const picked: string[] = []
     for (let i = 0; i < found.length && picked.length < maxFiles; i += stride) picked.push(found[i])
     files = picked
   }
   void lang
-  return { files, admitted: found, total, repos: repos.size, ...excluded }
+  return { files, admitted: found, total, repos: repos.size, sliceStart, sliceEnd, ...excluded }
 }
 
 /**
@@ -1159,7 +1172,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   // `yaml,yml` → ["yaml","yml"]; a bare `yaml` keeps its exact old meaning, so no existing
   // invocation changes population. The admitted set travels into the report and is printed.
   const exts = ext.split(",").map((e) => e.trim().toLowerCase().replace(/^\./, "")).filter(Boolean)
-  const { files, admitted, total, repos, absent, overCap, overCapLargest } = discoverFiles(lang, ext, exts, maxFiles, onlyRepos)
+  const { files, admitted, total, repos, absent, overCap, overCapLargest, sliceStart, sliceEnd } = discoverFiles(lang, ext, exts, maxFiles, onlyRepos, OFFSET, HAS_OFFSET)
   // OPT-IN DISCOVERY DISCLOSURE (task-86). Form chosen deliberately: AN ENV VAR, printing to STDERR and exiting
   // BEFORE any parsing — so it cannot alter any existing consumer's stdout, table, numbers or exit code, and it is
   // fast because it stops at discovery. It closes the tooling gap that kept CAUSE 2 open: the runner's own file set
@@ -1985,6 +1998,11 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
 
   return {
     lang, ext: exts.join(","), admittedExts: exts, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, bindingCollapse: BINDING_COLLAPSE, bindingCollapsedKeys: collapsedKeys, rows, fallbackRows, emptyResults,
+    // ★ THE CHUNK'S OWN BOUNDS, so the report can say WHETHER IT IS A CHUNK. `sliceStart === 0 &&
+    // sliceEnd === total` means the run measured the WHOLE admitted population; anything else means it
+    // measured a CHUNK of it, and the numbers are a chunk's. A reader who cannot tell is a reader who
+    // will publish a sample as a population.
+    sliceStart, sliceEnd, isWholePopulation: sliceStart === 0 && sliceEnd === total,
     // CLAUSE 2's NAMED causes with their measured counts — collected in the classification loop and
     // consumed by `clauseResults`. A Map, so the same cause named by many edges is one entry with a
     // count rather than many entries.
@@ -3197,8 +3215,28 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   )
   console.log(
     `population: ${rep.parsed} parsed of ${rep.files.length} sampled ` +
-    `(corpus has ${rep.total} .${rep.ext} files across ${rep.repos} repos; stride sample)`,
+    `(corpus has ${rep.total} .${rep.ext} files across ${rep.repos} repos; ` +
+    (rep.isWholePopulation ? "stride sample)" : "CHUNK)"),
   )
+  // ★ A CHUNK IS NOT A POPULATION, AND THE RUN SAYS SO ON ITS OWN LINE. This is printed whenever the
+  // run measured a SLICE of the admitted set, with the slice's own bounds, so a reader can tell a
+  // chunk from a whole population WITHOUT knowing how the run was invoked. The dart lane's proposal
+  // (2026-10-21) is the reason this exists: the shared instrument's unit of work was a whole
+  // repository, so three of dart's six repositories — dart-sdk 25,727 · flutter-packages 4,028 ·
+  // proxicall 2,350 — REFUSED the small arm slot's 2,000-file cap on their own, and the chunked path
+  // could not reach them at all. ⇒ The chunks are DISJOINT slices of ONE SORTED admitted list, so
+  // walking them from offset 0 covers the population exactly, and the SUM of the chunks' buckets IS
+  // the population's buckets — with `amb(kind)` summed BESIDE it and never added.
+  if (!rep.isWholePopulation) {
+    console.log(
+      `population: ★ THIS RUN IS A CHUNK, NOT A POPULATION — admitted files [${rep.sliceStart}, ` +
+      `${rep.sliceEnd}) of ${rep.total}, and ${rep.files.length} of them were measured.`,
+    )
+    console.log(
+      `population: the chunk is a SLICE of the admitted set, not a stride of it, so it is DISJOINT ` +
+      `from a chunk at another offset and the chunks COVER the population when walked from offset 0.`,
+    )
+  }
   // THE ADMITTED SPELLINGS ARE PART OF THE POPULATION CLAIM (HANDOFF §5.2). Printed on their own
   // line so a run against half the lane's files cannot be read as a run against the lane: on
   // ansible `.yaml` alone is 13 files and `.yaml,.yml` is 2,082, same language, same lane.
@@ -4002,6 +4040,36 @@ const REPO_ARG = argv.find((a) => a.startsWith("--repo="))
 const ONLY_REPOS = REPO_ARG
   ? new Set(REPO_ARG.slice("--repo=".length).split(",").map((s) => s.trim()).filter(Boolean))
   : undefined
+// ★ `--offset=N` MEASURES A DISJOINT CHUNK OF THE ADMITTED POPULATION, AND IT EXISTS BECAUSE THE
+// SMALL ARM SLOT CANNOT REACH THE BIG REPOSITORIES. (Dart lane's proposal, 2026-10-21, and the gap it
+// names is real: this gate's unit of work is a WHOLE REPOSITORY, so three of dart's six repositories —
+// dart-sdk 25,727 · flutter-packages 4,028 · proxicall 2,350 — REFUSE the ≤2,000-file small slot on
+// their own, and the chunked path could not reach them at all.)
+//
+// ⇒ THE CHUNK IS A SLICE OF THE ADMITTED SET, NOT A STRIDE OF IT, AND THE DIFFERENCE IS THE WHOLE
+// POINT: a stride inside a chunk leaves GAPS, and a gap means the summed chunks do not cover the
+// population. A slice of [offset, offset+maxFiles) over the SAME SORTED admitted list is DISJOINT from
+// its neighbours and, walked from 0, COVERS the population exactly. ⇒ THE SUM OF THE CHUNKS' BUCKETS
+// IS THE POPULATION'S BUCKETS, with `amb(kind)` summed BESIDE it and never added.
+//
+// ⇒ AND A CHUNK IS NOT A POPULATION, SO THE HEADER MUST SAY SO. The run prints its own slice bounds
+// and the whole admitted count, so a reader can tell a chunk from a whole population WITHOUT having
+// to know how the run was invoked. A reader who cannot tell is a reader who will sum a sample and
+// publish it as a population.
+const OFFSET_ARG = argv.find((a) => a.startsWith("--offset="))
+const OFFSET = OFFSET_ARG ? Number.parseInt(OFFSET_ARG.slice("--offset=".length), 10) : 0
+// ★ THE PRESENCE OF THE FLAG IS THE MODE, NOT ITS VALUE — and the Lead MEASURED the difference.
+// The first implementation switched on `offset > 0`, so `--offset=0` fell through to the STRIDE
+// path: chunk 0 became a stride across the whole population and OVERLAPPED the slice chunks.
+// MEASURED over dart-sdk (25,727 admitted files, five 2,000-file chunks): 667 DUPLICATE files across
+// the five chunks, and the union was 9,333 of the 10,000 the chunks claimed. ⇒ THE CHUNKS WERE NOT
+// DISJOINT AND THE SUM WOULD HAVE DOUBLE-COUNTED, and a double-counted sum is worse than no sum
+// because it looks like a number. ⇒ A REQUESTED OFFSET IS A SLICE EVEN AT ZERO.
+const HAS_OFFSET = OFFSET_ARG !== undefined
+if (OFFSET_ARG && (!Number.isInteger(OFFSET) || OFFSET < 0)) {
+  console.error(`usage: incoming-gate.ts --offset=N  (N is a non-negative integer; got "${OFFSET_ARG.slice("--offset=".length)}")`)
+  process.exit(2)
+}
 const rest = argv.filter((a) => !a.startsWith("--"))
 // `--board-log [path]` writes the file the board reads; see the block below `printReport`.
 // A bare `--board-log` (or the next token being another flag) uses the canonical path.
