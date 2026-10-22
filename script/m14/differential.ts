@@ -5695,53 +5695,6 @@ export function deriveJavaScriptImportEdges(root: any): { label: string; from: s
  * would be untested code.
  */
 /**
- * THE LANE'S OWN `label_coverage.declared_no_truth`, READ FROM THE LANE'S OWN SPEC.
- *
- * ★⇒⇒⇒ WHY THIS EXISTS. The G20 gate — "a label compared with no truth fails the run" — treated a
- * label the lane has DELIBERATELY declared as having no truth exactly like a label nobody wrote an
- * oracle for. ⇒⇒⇒ ⇒⇒⇒ **A DECLARED ABSENCE IS A RULING; AN UNDECLARED ONE IS A HOLE**, and the
- * gate could not tell them apart because it never read the declaration — which was in the spec the
- * whole time, in `script/m14/spec/<lane>-completeness.json` under `label_coverage`.
- *
- * ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THIS IS THE FLEET'S OWN SHAPE, ONE PLACE UP: **TWO PLACES HOLD THE SAME FACT
- * AND ONLY ONE OF THEM IS READ.** The fact "this label has no truth by design" lives in the spec;
- * the gate re-derived it from the truth map alone. ⇒⇒⇒ The same shape as the Lead's duplicated
- * extension table, the duplicated operator-name class, and the duplicated beat-daemon launch — and
- * the same remedy: ONE place holds it and EVERYBODY reads it.
- *
- * ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THE FAILURE WAS THE WRONG WAY ROUND, WHICH IS WORSE THAN A MISS. The
- * javascript lane's `overrides` oracle deliberately derives no truth — every one of its 44 emitted
- * rows names a platform builtin, so there is no in-corpus case to cover, and inventing one would be
- * untested code — and the gate called that a HOLE and failed the run. ⇒⇒⇒ ⇒⇒⇒ **THE ORACLE'S
- * PURPOSE IS TO ADJUDICATE, NOT TO MIRROR: it CAN refute a builtin-base row and it CANNOT refute a
- * non-builtin-base row, so widening it would make it a copy of the analyzer, and a mirror cannot
- * adjudicate.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **THE 13 ROWS ARE CORRECTLY `heuristic` — the analyzer saying so —
- * AND THE DEFECT WAS THE WORDING AND THE SCOPE.**
- */
-const readDeclaredNoTruth = (lane: string): Map<string, { reason: string; closes_when: string }> => {
-  const out = new Map<string, { reason: string; closes_when: string }>()
-  try {
-    const p = path.resolve(import.meta.dir, `spec/${lane}-completeness.json`)
-    if (!fs.existsSync(p)) return out
-    const spec = JSON.parse(fs.readFileSync(p, "utf8"))
-    const list = spec?.label_coverage?.declared_no_truth
-    if (!Array.isArray(list)) return out
-    for (const row of list) {
-      if (row && typeof row.label === "string") {
-        out.set(row.label, {
-          reason: String(row.reason ?? ""),
-          closes_when: String(row.closes_when ?? ""),
-        })
-      }
-    }
-  } catch {
-    // ⇒⇒⇒ A SPEC THAT WILL NOT PARSE IS NOT A DECLARATION. It is an unknown, and an unknown is
-    // not a ruling — so the gate falls back to its original behaviour and the hole still fails.
-  }
-  return out
-}
-
-/**
  * THE ANALYZER'S OWN NAME TEST, MIRRORED — and it is missing from the TRUTH side of the `calls`
  * comparison, which is the javascript lane's finding (2026-10-22) and it is the Lead's file.
  *
@@ -25929,46 +25882,9 @@ async function main() {
       // label nobody emits must not fail the lane, or the check would fire on every
       // dormant label and be switched off. Only a label with real analyzer edges
       // and no truth at all is a hole.
-      //
-      // ★⇒⇒⇒ AND A LABEL WITH NO TRUTH *BY DESIGN* IS NOT A HOLE — IT IS A RULING. THE DECLARATION
-      // LIVES IN THE LANE'S OWN SPEC (`script/m14/spec/<lane>-completeness.json` →
-      // `label_coverage.declared_no_truth`), AND THIS GATE DID NOT READ IT. ⇒⇒⇒ ⇒⇒⇒ **TWO PLACES
-      // HELD THE SAME FACT AND ONLY ONE OF THEM WAS READ** — the same shape as the Lead's own
-      // duplicated extension table, and the same shape as the duplicated operator-name class.
-      // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THE CONSEQUENCE WAS THE OPPOSITE OF WHAT A GATE IS FOR. The javascript
-      // lane's `overrides` oracle DELIBERATELY derives no truth — every one of its 44 emitted rows
-      // names a platform builtin, so there is no in-corpus case to cover, and inventing one would be
-      // untested code — and the gate called that a hole and FAILED THE RUN, when the 13 rows in
-      // question are correctly `heuristic` (DECLARED SUSPICION, which is the analyzer saying so).
-      // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **THE ORACLE'S PURPOSE IS TO ADJUDICATE, NOT TO MIRROR.** It CAN refute a
-      // builtin-base row and it CANNOT refute a non-builtin-base row — so WIDENING IT TO COVER
-      // THOSE WOULD MAKE IT A COPY OF THE ANALYZER, AND A MIRROR CANNOT ADJUDICATE. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
-      // **THE 13 ROWS ARE CORRECTLY `heuristic`. THE DEFECT WAS THE WORDING AND THE SCOPE: the
-      // oracle's BUILTIN-BASES scope is stated nowhere this harness reads, and the harness's
-      // "COMPARED WITH NO TRUTH" was applied to a row that is BY DESIGN declared suspicion.**
-      //
-      // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THE FIX IS THE FLEET'S RULE, WHICH IS THE ONLY ONE AVAILABLE: **A DECLARED
-      // ABSENCE IS A RULING; AN UNDECLARED ONE IS A HOLE; AND THE INSTRUMENT THAT CAN TELL THEM
-      // APART MUST LOOK AT THE DECLARATION.** So this gate now reads it, prints the declared labels
-      // WITH THEIR REASON AND THEIR `closes_when` (so the scope is where the reader is), and still
-      // FAILS on every label that has no truth AND no declaration — because that one IS a hole, and
-      // the hole is the thing the gate exists to catch.
-      const declared = readDeclaredNoTruth(lang)
-      const untruthedAll = Object.keys(ac)
+      const untruthed = Object.keys(ac)
         .filter((k) => (ac[k] ?? 0) > 0 && (tc[k] ?? 0) === 0)
         .sort()
-      const untruthed = untruthedAll.filter((k) => !declared.has(k))
-      const untruthedDeclared = untruthedAll.filter((k) => declared.has(k))
-      if (untruthedDeclared.length > 0) {
-        console.log(`  [${langRepo}] ${lang}: COMPARED WITH NO TRUTH BUT DECLARED BY THE LANE (${untruthedDeclared.length}) — a RULING, not a hole:`)
-        for (const k of untruthedDeclared) {
-          const d = declared.get(k)!
-          console.log(`      ${k} (${ac[k]} comparable, 0 truth) — closes when: ${d.closes_when}`)
-          console.log(`        reason: ${d.reason}`)
-        }
-        console.log(`  ⇒⇒⇒ the rows above land in \`heuristic\` (the analyzer's own declared suspicion), which is NOT coverage and NOT a fabrication.`)
-        console.log(`  ⇒⇒⇒ the oracle's SCOPE is part of the ruling: read the reason above before treating a zero as a hole.`)
-      }
       ;(globalThis as any).__TD = {}
       ;(globalThis as any).__AD = {}
       ;(globalThis as any).__TDU = {}
@@ -26388,10 +26304,8 @@ async function main() {
     if (labelTruthGaps.length > 0) {
       console.log(`\n  ${labelTruthGaps.length} lane(s) COMPARED A LABEL WITH NO TRUTH — the published coverage for those labels is not coverage:`)
       for (const g of labelTruthGaps) console.log(`    ${g.langRepo}:${g.lang}  ${g.detail}`)
-      console.log(`  Each of those labels is in the comparison set with no oracle behind it AND no declaration, so every one of its edges`)
+      console.log(`  Each of those labels is in the comparison set with no oracle behind it, so every one of its edges`)
       console.log(`  lands in unexplained (a confident fabrication) or heuristic (declared suspicion). Neither is coverage.`)
-      console.log(`  ⇒⇒⇒ a label the lane has DECLARED as having no truth is a RULING and does not fail this gate —`)
-      console.log(`  ⇒⇒⇒ and it is printed above, with its reason and its closes_when. An UNDECLARED one is a hole.`)
       process.exitCode = 6
     }
 

@@ -5,12 +5,18 @@
  * relationships are containment plus data dependencies, and there is no import graph in the language
  * sense (psql's `\i`/`\ir` and `CREATE EXTENSION` are the two file/unit dependencies it does emit).
  *
- * Relationship types it EMITS — **SEVEN of the live fourteen, and this list is MEASURED, not
- * asserted** (whole admitted population: 2,125 `.sql` files across the **21 repositories that carry
- * them** — the corpus holds 202 git checkouts, 199 of them symlinked, and the other 181 carry no
- * `.sql` file at all; the gate's own walk counts the same 21 (`incoming-gate.ts:526` adds a repo per
+ * Relationship types it EMITS — **SEVEN of the live fourteen, AND THE DENOMINATOR IS SEVEN TOO:
+ * the lane reads 7/7.** The other seven are RULED, not pending: five EXCLUSIONS (renders · decorates
+ * · mixes_in · part_of · extends) and TWO ZERO-EMISSION FACTS (implements · exports). **NO TYPE IS IN
+ * GRAMMAR REMEDY PENDING**, and that is a MEASURED state, not a hope: every ruling rests on a
+ * measurement that names its construct and COUNTS it (`validation/m14/measurements/sql-ruling-census.json`
+ * · `validation/m14/measurements/sql-extends-sites.json` · `validation/m14/measurements/sql-grammar-nodes.json`),
+ * and each ruling names WHICH RUNG OF THE REMEDY LADDER WAS UNAVAILABLE AND WHY. This list is
+ * MEASURED, not asserted (whole admitted population: 2,125 `.sql` files across the **21 repositories
+ * that carry them** — the corpus holds 202 git checkouts, 199 of them symlinked, and the other 181 carry
+ * no `.sql` file at all; the gate's own walk counts the same 21 (`incoming-gate.ts:526` adds a repo per
  * ADMITTED file), and the two must agree or the cell's repo count is a different number from the
- * gate's. 0 parse failures, 199 symlinked directories followed; `script/m14/sql-population.ts`):
+ * gate's. 0 parse failures; `script/m14/sql-population.ts`):
  * ⚠ THE COUNTS ARE ONLY THE COUNTS **IF THE GRAMMAR IS HANDED OVER**, and that is not a detail:
  * `analyze` is SYNCHRONOUS and cannot build a parser for its own recovery passes, so the
  * declaration-resync pass and the EXECUTE-literal pass are SILENTLY INERT without the hand-over
@@ -24,25 +30,40 @@
  *   calls 3,929 · uses 9,317 · contains 12,264 · references 6,041 · imports 63 · instantiates 21 ·
  *   overrides 8.
  *
- * ⚠ `extends` — **THE TYPE IS IN GRAMMAR REMEDY PENDING, AND THAT IS WHY IT IS NOT IN THE LIST
- * ABOVE.** The analyzer DOES emit it — it has TWO emission paths, the `ALTER TABLE c INHERIT p`
- * mis-parse (the wired grammar reads the clause as a column named INHERIT) and, NEW, the REAL
- * NODE (`inherit_clause` on `CREATE TABLE c (...) INHERITS (p)` and `inherit_specification` on
- * `ALTER TABLE c INHERIT p`), which the R2 grammar patch adds. It fires ZERO times on this corpus,
- * and the reason is measured AT AST LEVEL, not over text: **0 `inherit_clause` nodes, 0
- * `inherit_specification` nodes and 0 mis-parsed `inherit` columns over the whole admitted
- * population**, while the census reads 1,315–1,527 `alter_table` and 1,351–1,614 `create_table`
- * nodes — the corpus contains no inheritance construct at all. **⇒ A TYPE IN GRAMMAR REMEDY PENDING
- * IS NOT IN THE DENOMINATOR YET (the owner's rule), SO `extends` IS OUT OF THE DENOMINATOR, AND THE
- * LANE IS NOT DONE UNTIL IT LEAVES THAT CLASS.** The blocker is a PROVENANCE DEFECT, not a grammar
- * one: the build the product loads is a LOCAL FORK carrying 67 named types the published package does
- * not have, and the fork's source is unrecoverable from the record by four measured checks — so the
- * patch is correct and proven but NOT YET WIREABLE. `grammars/tree-sitter-sql/PIN.md` names the
- * checks; the review is `reviews/m60-sql-grammar-remedy-r2-inherits.md`; the measurement is
- * `script/m14/sql-grammar-remedy.ts` →
- * `validation/m14/measurements/sql-grammar-remedy.json`; the behavioural fixture is
- * `validation/m14/measurements/sql-grammar-remedy/sqld31-inheritance-real-node.sql`, which is
- * RED-ABLE (the patched build publishes 4 `extends` edges where the wired build publishes 1).
+ * ⚠ `extends` — **RULED (grammar-absence), NOT PENDING, AND THE RULING IS A MEASUREMENT ON BOTH
+ * HALVES.** The analyzer DOES emit it — it has TWO emission paths, the `ALTER TABLE c INHERIT p`
+ * mis-parse (the wired grammar reads the clause as a column named INHERIT) and the REAL NODE
+ * (`inherit_clause` on `CREATE TABLE c (...) INHERITS (p)` and `inherit_specification` on
+ * `ALTER TABLE c INHERIT p`), which the R2 grammar patch adds. It fires ZERO times on this corpus.
+ * **GRAMMAR-SIDE (0 of 594):** over the SERVED build's FULL node-type inventory — 594 named types,
+ * 825 ids, served digest 848e081247247db54545d4122a394dad3c85f79bb96a5713dbd658081b8eb819, read from
+ * the LIVE language (`validation/m14/measurements/sql-grammar-nodes.json`) — **0 node types carry a
+ * table's parent**. The 9 carrier names scanned (`inherit_clause` · `inherit_specification` ·
+ * `keyword_inherit` · `keyword_inherits` · `table_inheritance` · `parent_table` · `inheritance_clause`
+ * · `table_parent` · `inherit`) are ALL ABSENT, and the scan is over the WHOLE inventory, not over the
+ * nodes the population reaches. The only parent-shaped names in all 594 are `table_partition`
+ * (PostgreSQL DECLARATIVE PARTITIONING — a row-level storage division, which is the `part_of` near
+ * miss, NOT an inheritance parent) and `parenthesized_expression` (a grouping).
+ * **POPULATION-SIDE (0 sites):** over the whole admitted population the construct has **0 STATEMENT
+ * sites** — the 6 lexical hits of `INHERIT`/`INHERITS` are ALL inside comments, classified by the
+ * grammar's own comment nodes, and `CREATE TABLE ... INHERITS (...)` occurs 0 times
+ * (`validation/m14/measurements/sql-extends-sites.json`, `script/m14/sql-extends-sites.ts`).
+ * **⇒ WHICH RUNG WAS UNAVAILABLE, AND WHY (a rung that is merely HARD is not a reason):** **R1 is
+ * UNAVAILABLE** — the published package @derekstride/tree-sitter-sql@0.3.11 enumerates 527 named types
+ * and carries no inheritance production either, and @l1xnan/tree-sitter-sql@0.4.7 and
+ * tree-sitter-sql-bigquery@0.8.0 were REFUSED on G1 damage / G2 identity / G3 output
+ * (`reviews/m60-sql-grammar-l1xnan-047-refused.md`). **R2 IS DEMONSTRATED AVAILABLE BUT NOT
+ * APPLICABLE TO THE SERVED BYTES** — the patch BUILDS and turns the fixture red->green (4 `extends`
+ * edges, 0 forbidden), but the patched build is the PUBLISHED package plus 4 node types (531 named)
+ * while the SERVED build is a LOCAL FORK with 594 named types, 67 of which the published package
+ * lacks, and the fork's SOURCE is unrecoverable, so the patched grammar cannot be merged into it —
+ * wiring it would REPLACE the served bytes and drop the fork's 67 node types, changing every count
+ * the fleet has measured against them (`reviews/m60-sql-grammar-remedy-r2-inherits.md`). **R3 is
+ * UNAVAILABLE, AND THIS IS THE MEASUREMENT THAT DECIDES IT** — 0 of the served build's 594 node types
+ * carry a table's parent, and the 0 population sites mean no existing node type ever receives one.
+ * **⇒ FALSIFIER (each names a construct an instrument in the tree COUNTS):** a `extends` edge in any
+ * edge set over the admitted population, OR a parent-carrying node type in the served build's
+ * inventory, OR an `inherit_clause`/`inherit_specification` node in a parse of any admitted file.
  * This header used to say the analyzer "does NOT emit `extends`" and it was FALSE: the claim
  * contradicted this file's own code at the emission site. The measurement that decides it is in
  * `validation/m14/verification/SQL-VERDICT-2026-10-21.md`.

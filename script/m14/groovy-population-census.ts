@@ -67,14 +67,7 @@ import * as path from "node:path"
 const ROOT = path.resolve(import.meta.dir, "../..")
 const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const SIZE_CAP = 1024 * 1024
-// ★ THE ROUTER'S OWN TABLE, AND IT IS READ, NOT COPIED. `script/m14/language-extensions.ts` is the
-// ONE table the fleet's consumers read (the extension set MOVED there from the incoming-gate, so
-// that a second copy is impossible to get right by memory — the heritage probe carried its own and
-// had no `cpp` entry, so it measured an EMPTY POPULATION and printed a clean-looking zero). ⇒ A
-// census that hard-codes its extensions would be a second copy, and a second copy is a population
-// claim that can drift away from the lane it claims to measure.
-const { extensionsFor } = await import("./language-extensions")
-const EXTENSIONS = extensionsFor("groovy").map((e) => e.replace(/^\./, ""))
+const EXTENSIONS = ["groovy", "gvy", "gradle"] // the router's own table (incoming-gate.ts:312)
 
 const argv = process.argv.slice(2)
 const LIMIT = Number(argv.find((a) => a.startsWith("--limit="))?.slice(8) ?? "0") || 0
@@ -163,14 +156,7 @@ function countSymlinkedDirectories(): number {
   let n = 0
   const walk = (dir: string, depth = 0) => {
     if (depth > 12) return
-    // ★ THE ENTRY'S NAME AND ITS KIND ARE DIFFERENT TYPES, AND THE COMPILER IS RIGHT ABOUT THAT.
-    // `readdirSync(dir, { withFileTypes: true })` returns Dirent objects whose `name` is the
-    // ENTRY'S NAME - the path segment - while `isDirectory()` / `isSymbolicLink()` are its KIND.
-    // => An annotation of the form `ReturnType<typeof readdirSync>` resolves the OVERLOAD
-    // WITHOUT the options and pins the element type to a buffer-flavoured Dirent, so `e.name`
-    // stops being a string. => THE FIX IS TO LET THE INFERRED TYPE STAND: the options object is
-    // what selects the Dirent overload, so the declaration has to keep it.
-    let entries
+    let entries: ReturnType<typeof readdirSync>
     try {
       entries = readdirSync(dir, { withFileTypes: true })
     } catch {

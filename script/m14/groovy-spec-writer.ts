@@ -22,7 +22,7 @@
  * RUN: bun script/m14/groovy-spec-writer.ts [--check]
  *      --check prints what it WOULD write and writes nothing.
  */
-import { readFileSync, writeFileSync, existsSync } from "node:fs"
+import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs"
 import * as path from "node:path"
 
 const ROOT = path.resolve(import.meta.dir, "../..")
