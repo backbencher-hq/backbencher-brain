@@ -563,6 +563,18 @@ case "$cmd" in
       queue_remove "$lane"
       echo "ARM SMALL SLOT TAKEN by $lane (declared population $files files) — a SEPARATE lock, so a HEAVY arm may run beside it."
       echo "  ORDINARY-QUEUE PLACE YIELDED while the SMALL arm runs ✓✓ — the head advances to the next lane ✓✓."
+      # ⇒⇒⇒ ★★★ THE CSHARP LANE'S BEAT HOLE, IN THE LEAD'S OWN TOOL. ★★★
+      # `take-small` ENDED THE MOMENT IT TOOK THE SLOT, and it STARTED NO DAEMON AT ALL — so the small
+      # slot's holder NEVER BEAT, and another lane's TTL reclaim could take the slot WHILE A GATE RUN
+      # WAS STILL MEASURING THE CHUNK ⇒⇒⇒ the chunk would have measured a population it did not own.
+      # ⇒⇒⇒ **A HOLDER THAT NEVER STARTED BEATING IS NOT A HOLDER AT ALL, AND NOBODY LOOKED FOR THAT
+      # ONE UNTIL THE CSHARP LANE LOOKED AT ITS OWN SCRIPT.** ⇒⇒⇒ The csharp lane's fix is the right
+      # SHAPE — the beat loop is a CHILD OF THE RUNNER, a process that lives for the whole chunk, and
+      # it beats only between `take-small` and `release`. The tool's form of that is the `loop` verb,
+      # and this verb now STARTS the daemon and PRINTS the durable form.
+      start_beat_daemon "$lane"
+      echo "  *** THE DURABLE BEAT FORM: bash script/m14/arm-token.sh loop $lane   (AS A BACKGROUND JOB) ***" >&2
+      echo "  *** a `setsid nohup` child of a FINISHING SHELL is reaped with it — MEASURED THREE TIMES ***" >&2
       exit 0
     fi
     echo "REFUSED — the small slot is held. Its holder: $(cat "$SMALL_TOKEN_DIR/holder/holder" 2>/dev/null | tr '\n' ' ')"
