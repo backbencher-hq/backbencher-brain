@@ -29,14 +29,24 @@
  * the pass/fail rule is not restated here — and exits non-zero on a survivor. It
  * does NOT write canonical M14 evidence (`validation/m14/results/M14.0.F4.json` is
  * the shared harness's, produced only by a full registry run) and it does NOT edit
- * the registry: wiring the four in needs one import line and one spread in
- * `script/m14/mutate-analyzer.ts`, which is the master's file. Reported there,
- * not taken here.
+ * the registry ✓✓.
+ *
+ * ⇒ AND THIS DOCSTRING USED TO SAY THE REGISTRY NEEDED "ONE IMPORT LINE AND ONE SPREAD … not
+ * taken here" ✓✓ — **AND THE REGISTRY WAS FIXED ON 2026-10-22 ✓✓**, so that sentence became
+ * **FALSE** and stayed ✓✓. ⇒ THE RUNNER NOW **MEASURES** THE REGISTRATION INSTEAD OF ASSERTING IT
+ * ✓✓ — it reads `script/m14/mutate-analyzer.ts`, checks the import, checks the spread, and lists
+ * any of this lane's mutant ids the registry does not carry ✓✓ — so the claim cannot rot the way
+ * prose rots ✓✓. ⇒ **⇒ A NOTE THAT ASSERTS A FACT ABOUT A FILE IT DOES NOT READ IS A NOTE THAT
+ * WILL EVENTUALLY BE WRONG ✓✓.**
  *
  *   bun run script/m14/javascript-mutant-runner.ts
  */
+import { readFileSync as __readFileSync, existsSync as __existsSync } from "node:fs"
+import * as path from "node:path"
 import { runLang, LANGS } from "./run-fixtures"
 import { JAVASCRIPT_MUTANTS } from "./javascript-mutants"
+
+const fs = { readFileSync: __readFileSync, existsSync: __existsSync }
 
 const LANG = "javascript"
 
@@ -72,9 +82,33 @@ for (const m of JAVASCRIPT_MUTANTS) {
 }
 
 console.log(`\n${JAVASCRIPT_MUTANTS.length} lane mutants, ${JAVASCRIPT_MUTANTS.length - survivors} caught, ${survivors} survived`)
-if (!survivors) {
-  console.log(`NOTE: caught here does NOT mean the shared registry runs them. \`script/m14/mutate-analyzer.ts\` does not import`)
-  console.log(`      \`javascript-mutants.ts\`; the four ids are absent from it at this commit, so the canonical`)
-  console.log(`      \`bun run script/m14/mutate-analyzer.ts --lang javascript\` run executes 56 javascript mutants and not these.`)
+
+// ⇒ ⇒ ⇒ THE REGISTRATION CHECK, AS A MEASUREMENT AND NOT A PROSE CLAIM ✓✓.
+// ⇒ THIS NOTE USED TO SAY THE SHARED REGISTRY "does not import `javascript-mutants.ts`" ✓✓ AND
+// THAT BECAME **FALSE** ✓✓ — the registry was fixed on 2026-10-22 ✓✓ — AND THE NOTE KEPT SAYING IT ✓✓.
+// ⇒ **⇒ THAT IS A PAGE THAT REWRITES ITS PRESENT TO MATCH ITS PAST ✓✓**, and it was not harmless ✓✓:
+// it told the reader to run `bun run script/m14/mutate-analyzer.ts --lang javascript` ✓✓, and **THE
+// `--lang` FLAG IS NOT READ BY THAT HARNESS AT ALL ✓✓** — the scope is the ENVIRONMENT VARIABLE
+// `BB_MUTANT_ONLY` ✓✓ — so the reader would have run EVERY lane's mutants and hit a kotlin crash ✓✓,
+// and concluded the lane's mutants were unregistered when they were registered ✓✓.
+// ⇒ ⇒ ⇒ SO THE CHECK BELOW **READS THE REGISTRY AND REPORTS WHAT IT FINDS** ✓✓, and it names the
+// scope command that actually scopes the run ✓✓.
+{
+  const registryPath = path.join(import.meta.dir, "mutate-analyzer.ts")
+  const registry = fs.existsSync(registryPath) ? fs.readFileSync(registryPath, "utf8") : ""
+  const imports = /import\s*\{[^}]*JAVASCRIPT_MUTANTS[^}]*\}\s*from\s*["'][^"']*javascript-mutants["']/.test(registry)
+  const spreads = /\.\.\.JAVASCRIPT_MUTANTS/.test(registry)
+  const absent = JAVASCRIPT_MUTANTS.map((m: any) => m.id).filter((id: string) => !registry.includes(`"${id}"`))
+  console.log(`\nTHE REGISTRATION CHECK (a MEASUREMENT, read from script/m14/mutate-analyzer.ts):`)
+  console.log(`  the shared registry imports JAVASCRIPT_MUTANTS: ${imports ? "YES ✓✓" : "NO ✗✗"}`)
+  console.log(`  the shared registry spreads them into MUTANTS:   ${spreads ? "YES ✓✓" : "NO ✗✗"}`)
+  console.log(`  this lane's ${JAVASCRIPT_MUTANTS.length} mutant id(s) absent from the registry: ${absent.length === 0 ? "NONE ✓✓" : absent.join(", ") + " ✗✗"}`)
+  console.log(`  ⇒ THE CANONICAL SCOPED RUN IS:  BB_MUTANT_ONLY="javascript/" bun run script/m14/mutate-analyzer.ts`)
+  console.log(`  ⇒ **\`--lang\` IS NOT READ BY THAT HARNESS ✓✓** — it is NOT a scope flag there ✓✓, and a run`)
+  console.log(`    with it executes EVERY lane's mutants ✓✓ (968 of them, measured 2026-10-22) ✓✓.`)
+  if (!imports || !spreads || absent.length > 0) {
+    console.log(`  ⇒ ✗✗ THE LANE's MUTANTS ARE **NOT** IN THE CANONICAL RUN ✗✗ — a merge that removed the`)
+    console.log(`    import or the spread would report the lane green while executing none of its mutants ✓✓.`)
+  }
 }
 process.exit(survivors === 0 ? 0 : 1)

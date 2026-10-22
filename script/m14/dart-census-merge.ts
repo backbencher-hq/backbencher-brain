@@ -139,6 +139,111 @@ if (KIND === "constructs") {
   for (const [k, v] of Object.entries(decorates)) console.log(`  ${k.padEnd(38)} ${String(v.rows).padStart(9)} rows  ${String(v.files).padStart(6)} files`)
   console.log(`  THE APPLIED-CALLABLE TEST (the arguments mention the marked declaration): ${merged.decorates.appliedCallableTest.rows} sites`)
   console.log(`  … of those, the mention is OUTSIDE A STRING LITERAL: ${merged.decorates.appliedCallableTrueSites.rows} sites  <-- THE APPLIED-CALLABLE COUNT`)
+} else if (KIND === "gate") {
+  // ══ THE POPULATION ARM'S CHUNKS ══ the shared gate's own JSON, one file per SLICE. The slices
+  // are DISJOINT and walked from 0, so the SUM of the chunks' buckets IS the population's buckets —
+  // and `amb(kind)` is summed BESIDE it and NEVER added to the closure.
+  const NUMERIC: string[] = [
+    "resolved", "resolvedAmongCollision", "ambiguousByDecl", "ambiguousByKind", "unresolved",
+    "markedExternal", "externalVerified", "externalVerifiedByOwner", "externalVerifiedByProjectFacts",
+    "externalUnverified", "externalRefuted", "bindingVerified", "bindingRefuted", "bindingUnverified",
+    "causeDeclared", "causeRefuted",
+  ]
+  function sumBlock(block: any): Record<string, number> {
+    const out: Record<string, number> = {}
+    for (const k of NUMERIC) out[k] = Number(block?.[k] ?? 0)
+    return out
+  }
+  const totals = sumBlock(files[0]?.totals)
+  const totalsPooled = sumBlock(files[0]?.totalsPooled)
+  const perType: Record<string, any> = {}
+  for (const f of files) {
+    for (const [type, v] of Object.entries((f.perType ?? {}) as Record<string, any>)) {
+      const cur = (perType[type] ??= { edges: 0, project: sumBlock({}), pooled: sumBlock({}) })
+      cur.edges += Number((v as any)?.edges ?? 0)
+      for (const k of NUMERIC) cur.project[k] = (cur.project[k] ?? 0) + Number((v as any)?.project?.[k] ?? 0)
+      for (const k of NUMERIC) cur.pooled[k] = (cur.pooled[k] ?? 0) + Number((v as any)?.pooled?.[k] ?? 0)
+    }
+  }
+  // THE NAMED CAUSES — the arm prints each one with its edge count in its reason line, and the
+  // slices are disjoint, so the counts SUM. The names themselves are the union.
+  // ══ THE TILING REFUSAL — A MERGE OVER NON-TILING CHUNKS PRODUCES A NUMBER THAT LOOKS LIKE A
+  // POPULATION. The slices are named `<repo>-<offset>.json`, and the run prints the slice's own
+  // bounds ("admitted files [0, 2000) of 25,727") and says it is a slice. So the merge can CHECK
+  // the tiling instead of trusting it: within every repository the offsets must be 0, 2000, 4000,
+  // … CONTIGUOUS, the last slice must END at that repository's admitted total, and the summed
+  // slices must equal the sum of the admitted totals. A gap, an overlap or a shortfall is REFUSED
+  // HERE, because a merge that cannot cover the population must not print a population's number.
+  const byRepo = new Map<string, { offsets: number[]; parsed: number; total: number }>()
+  for (const [i, f] of files.entries()) {
+    const name = CHUNKS[i].split("/").pop() ?? ""
+    const m = name.match(/^(.*)-(\d+)\.json$/)
+    if (!m) continue
+    const repo = m[1]!
+    const off = Number(m[2])
+    const pop = (f as any).population ?? {}
+    const cur = byRepo.get(repo) ?? { offsets: [], parsed: 0, total: Number(pop.corpusTotal ?? 0) }
+    cur.offsets.push(off)
+    cur.parsed += Number(pop.parsed ?? 0)
+    cur.total = Math.max(cur.total, Number(pop.corpusTotal ?? 0))
+    byRepo.set(repo, cur)
+  }
+  const tilingProblems: string[] = []
+  let admittedTotal = 0
+  for (const [repo, r] of byRepo) {
+    admittedTotal += r.total
+    const sorted = [...r.offsets].sort((a, b) => a - b)
+    const CH = 2000
+    for (let k = 0; k < sorted.length; k++) {
+      if (sorted[k]! !== k * CH) tilingProblems.push(`${repo}: slice ${k} starts at ${sorted[k]}, expected ${k * CH} — the slices do NOT tile`)
+    }
+    if (r.parsed !== r.total) tilingProblems.push(`${repo}: the slices parse ${r.parsed} files, the repository admits ${r.total} — the slices do NOT cover the repository`)
+  }
+  const summedParsed = files.reduce((a, f) => a + Number((f as any).population?.parsed ?? 0), 0)
+  if (summedParsed !== admittedTotal) tilingProblems.push(`the slices parse ${summedParsed} files, the admitted total is ${admittedTotal} — the slices do NOT cover the population`)
+  merged.tiling = {
+    byRepo: Object.fromEntries([...byRepo].map(([k, v]) => [k, { slices: v.offsets.length, parsed: v.parsed, admitted: v.total }])),
+    admittedTotal, summedParsed, problems: tilingProblems, tiles: tilingProblems.length === 0,
+  }
+  console.log("== THE TILING CHECK (a merge over non-tiling chunks refuses to print a population) ==")
+  for (const [repo, v] of merged.tiling.byRepo as any) console.log(`  ${repo.padEnd(18)} ${String(v.slices).padStart(3)} slice(s)  parsed ${String(v.parsed).padStart(7)}  admitted ${String(v.admitted).padStart(7)}`)
+  console.log(`  admitted total ${admittedTotal} · summed parsed ${summedParsed}`)
+  for (const p of tilingProblems) console.log(`  *** ${p}`)
+  if (tilingProblems.length > 0) {
+    console.log("  *** THE TILING REFUSES THIS MERGE — the numbers below are NOT a population ***")
+  }
+  const causes: Record<string, number> = {}
+  for (const f of files) {
+    const reason = String((f as any).reason ?? "")
+    for (const m of reason.matchAll(/cause "([^"]+)" \((\d+) edge\(s\)\)/g)) {
+      causes[m[1]] = (causes[m[1]] ?? 0) + Number(m[2])
+    }
+  }
+  merged.totals = totals
+  merged.totalsPooled = totalsPooled
+  merged.perType = perType
+  merged.causeNames = causes
+  merged.causeCount = Object.keys(causes).length
+  // THE CLOSURE, CHECKED EXACTLY — `resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL
+  // + extOK + ext? + extFAIL + causeOK + causeFAIL = edges`, with `amb(kind)` REPORTED BESIDE.
+  const edges = Object.values(perType).reduce((a, v: any) => a + v.edges, 0)
+  const parts = ["resolved", "ambiguousByDecl", "unresolved", "bindingVerified", "bindingUnverified",
+    "bindingRefuted", "externalVerified", "externalUnverified", "externalRefuted", "causeDeclared", "causeRefuted"]
+  const sum = parts.reduce((a, k) => a + (totals[k] ?? 0), 0)
+  merged.closure = {
+    edges, sum, exact: edges === sum,
+    ambiguousByKind_REPORTED_BESIDE: totals.ambiguousByKind,
+    residual: (totals.ambiguousByDecl ?? 0) + (totals.unresolved ?? 0),
+    formula: parts.join(" + ") + " = edges",
+  }
+  console.log("== THE POPULATION CLOSURE (the disjoint slices, summed) ==")
+  for (const k of parts) console.log(`  ${k.padEnd(20)} ${String(totals[k] ?? 0).padStart(12)}`)
+  console.log(`  ${"SUM".padEnd(20)} ${String(sum).padStart(12)}`)
+  console.log(`  ${"edges".padEnd(20)} ${String(edges).padStart(12)}   ${edges === sum ? "EXACT ✓" : "*** NOT EXACT ***"}`)
+  console.log(`  amb(kind) REPORTED BESIDE (never added): ${totals.ambiguousByKind}`)
+  console.log(`  residual = amb(decl) + unresolved = ${(totals.ambiguousByDecl ?? 0) + (totals.unresolved ?? 0)}`)
+  console.log(`  THE NAMED CAUSES: ${Object.keys(causes).length}`)
+  for (const [k, v] of Object.entries(causes).sort((a, b) => b[1] - a[1]).slice(0, 15)) console.log(`    ${String(v).padStart(7)}  ${k}`)
 } else {
   merged.edgesByType = mergeBuckets((f) => (f.edgesByType ?? {}) as Record<string, Bucket>)
   merged.perRepo = files.flatMap((f) => f.perRepo ?? [])
