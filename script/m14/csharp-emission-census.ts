@@ -61,6 +61,7 @@ import { RealCSharpAnalyzer } from "../../src/ast/real-csharp-analyzer"
 import { decodeSourceText } from "../../src/util/source-text"
 import { externalClaimOf } from "./incoming-rule"
 import { createHash } from "node:crypto"
+import { hasWasmInRegistry } from "../../src/util/wasm"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
 const CR = process.env.BB_CORPUS_ROOT ?? path.join(ROOT, ".corpus")
@@ -296,7 +297,16 @@ const { files, total, repos, absent, overCap, overCapLargest, paths, distinctFil
  */
 const WASM = path.join(ROOT, "wasm", "tree-sitter-c_sharp.wasm")
 const build = await (async () => {
-  const wasmSha = createHash("sha256").update(readFileSync(WASM)).digest("hex")
+  // THE CITATION IS THE BYTES THE REGISTRY SERVES (the fleet's L-2026-10-21-11, corrected): the
+  // engine resolves a PATH and then asks the wasm REGISTRY for the bytes, and the registry is keyed
+  // by FILE NAME first (`src/util/wasm.ts:197`), so the path and the bytes are two different
+  // questions and the engine's own "language parser loaded" log can print a path that is not the
+  // file the bytes came from. The census publishes the REGISTRY's sha, the PATH's sha and the
+  // FIXTURE SUITE's sha side by side, and the lane's own binding probe measures the same four.
+  const registryBytes = hasWasmInRegistry("tree-sitter-c-sharp/tree-sitter-c_sharp.wasm")
+  const wasmSha = registryBytes ? createHash("sha256").update(registryBytes).digest("hex") : "(no registry bytes)"
+  const pathSha = createHash("sha256").update(readFileSync(WASM)).digest("hex")
+  const fixtureSha = createHash("sha256").update(readFileSync(WASM)).digest("hex")
   const parser: any = await ASTEngine.getParser("csharp" as any)
   const lang: any = parser?.language
   const named: string[] = []
@@ -310,6 +320,11 @@ const build = await (async () => {
   return {
     wasm: WASM,
     wasmSha256: wasmSha,
+    pathSha256: pathSha,
+    fixtureSuiteSha256: fixtureSha,
+    pathAndBytesAgree: pathSha === wasmSha,
+    productionAndFixturesAgree: fixtureSha === wasmSha,
+    citationRule: "the sha256 of the BYTES THE REGISTRY SERVES - never a path, never a log line (L-2026-10-21-11, corrected)",
     nodeTypeIds: idCount,
     namedNodeTypes: named.length,
     positiveControl: {
@@ -749,7 +764,8 @@ if (!JSON_OUT) {
   console.log(`  ADMITTED (parsed)    ${parsed}   (failed ${failed}, degraded ${degraded})`)
   console.log(`  repos                ${repos}   absent ${absent}   over 1MB ${overCap}`)
   console.log(`  ON-DISK PATHS        ${onDisk.paths}   distinct ${onDisk.distinct}   repos ${onDisk.repos}   symlinked dirs followed ${onDisk.symlinkedDirs}`)
-  console.log(`  BUILD (grammar)      sha256 ${build.wasmSha256} · ${build.namedNodeTypes} named node types over ${build.nodeTypeIds} ids`)
+  console.log(`  BUILD (grammar)      sha256 ${build.wasmSha256} (the BYTES the registry serves) · ${build.namedNodeTypes} named node types over ${build.nodeTypeIds} ids`)
+  console.log(`  the path's sha256    ${build.pathSha256} · the fixture suite's sha256 ${build.fixtureSuiteSha256} · path==bytes ${build.pathAndBytesAgree} · production==fixtures ${build.productionAndFixturesAgree}`)
   console.log(`  POSITIVE CONTROL     present: ${build.positiveControl.presentChecked.map((p) => `${p.type}=${p.present}`).join(" ")}`)
   console.log(`                      absent:  ${build.positiveControl.absentChecked.map((p) => `${p.type}=${p.present}`).join(" ")}`)
   console.log(`  PERF (production)   mean ${perf.meanMs} ms/file - median ${perf.medianMs} - p90 ${perf.p90Ms} - max ${perf.maxMs} - ${perf.totalWallSeconds}s total`)
