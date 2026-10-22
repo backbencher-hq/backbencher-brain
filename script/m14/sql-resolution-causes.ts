@@ -24,6 +24,7 @@
  * USAGE  bun script/m14/sql-resolution-causes.ts [--json <out>]
  */
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
+import { execFileSync } from "node:child_process"
 import { join, relative, resolve } from "node:path"
 
 const args = process.argv.slice(2)
@@ -59,7 +60,34 @@ let paths = 0, distinct = 0, admitted = 0, overCap = 0, symlinkedDirsFollowed = 
 let symlinkedTopLevelEntries = 0
 const seen = new Set<string>()
 const files: { abs: string; rel: string; repo: string; bytes: number }[] = []
-function walk(dir: string, repo: string): void {
+
+/**
+ * THE GATE'S POPULATION RULE, APPLIED HERE SO THE NUMBER AND THE RULE TRAVEL TOGETHER.
+ *
+ * THE GATE'S POPULATION IS `git ls-files` — THE FILES THE REPOSITORY TRACKS — AND NOT THE FILES
+ * ON DISK. MEASURED 2026-10-22, the whole delta, exactly: 2,132 `.sql` paths on disk, 2,131 of
+ * them TRACKED (6 of those over the 1 MiB cap ⇒ 2,125 admitted), and exactly ONE on-disk `.sql`
+ * file that git does not track: `proxicall/_dev/rls_isolation_proof.sql` (4,457 bytes). A disk
+ * walk therefore admits 2,126 and the gate admits 2,125.
+ *
+ * ⇒⇒⇒ ⇒⇒⇒ A file the repository does not track is not part of the repository's source, so the
+ * gate's rule is the right one — and an instrument that measures a DIFFERENT population from the
+ * one the gate measured produces two numbers that LOOK comparable and are not.
+ */
+function trackedFiles(repoDir: string): Set<string> {
+  const out = new Set<string>()
+  try {
+    const raw = execFileSync("git", ["-C", repoDir, "ls-files", "-z"], {
+      encoding: "utf8", maxBuffer: 512 * 1024 * 1024,
+    })
+    for (const rel of raw.split("\0")) if (rel) out.add(rel.split(/[\\/]/).join("/"))
+  } catch {
+    // A repository git cannot list contributes NOTHING, exactly as the gate's own walk does.
+  }
+  return out
+}
+
+function walk(dir: string, repo: string, tracked: Set<string> | null, repoDir: string): void {
   let entries: any[]
   try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
   for (const e of entries) {
@@ -68,10 +96,15 @@ function walk(dir: string, repo: string): void {
     try { st = statSync(p) } catch { continue } // statSync FOLLOWS the symlink
     if (st.isDirectory()) {
       if (e.isSymbolicLink()) symlinkedDirsFollowed++
-      walk(p, repo)
+      walk(p, repo, tracked, repoDir)
       continue
     }
     if (!e.name.toLowerCase().endsWith(".sql")) continue
+    // THE GATE-S RULE: a file the repository does not TRACK is not in the population.
+    if (tracked) {
+      const rel = relative(repoDir, p).split("/").join("/")
+      if (!tracked.has(rel)) continue
+    }
     paths++
     if (seen.has(p)) continue
     seen.add(p)
@@ -87,7 +120,7 @@ for (const repo of readdirSync(CORPUS, { withFileTypes: true })) {
   try { st = statSync(p) } catch { continue }
   if (!st.isDirectory()) continue
   if (repo.isSymbolicLink()) symlinkedTopLevelEntries++
-  walk(p, repo.name)
+  walk(p, repo.name, trackedFiles(p), p)
 }
 
 // ── THE ANALYZER'S DECLARATIONS, per project (the gate's resolution scope is PER PROJECT).
