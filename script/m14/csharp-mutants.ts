@@ -285,4 +285,15 @@ export const CSHARP_MUTANTS: Mutant[] = [
       ],
     }),
   },
+  {
+    id: "csharp/drop-renders-edges",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description:
+      "ONTOLOGY revert: drops every `renders` relationship. `renders` is the eleventh value the analyzer publishes (the C# component-render construct is the DYNAMIC RENDER HOST - `builder.RenderComponent<Widget>()` names the component as a TYPE ARGUMENT, `builder.RenderComponent(typeof(OtherWidget))` names it as a `typeof` ARGUMENT - and the existing invocation_expression node type carries both, so it needs no grammar change). The fixture that MUST catch it is csharp/render-host-component: it requires the two renders edges, so a revert that drops the value leaves the suite red. The corpus does not exercise the construct, so the FIXTURE is the only evidence that can catch this - which is exactly why the value's proof is a behavioural fixture and not a population.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => x.type !== "renders"),
+    }),
+  },
 ]
