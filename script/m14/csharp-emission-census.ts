@@ -81,6 +81,8 @@ const KEYSPACE_OUT = argOf("--keyspace") ?? path.join(ROOT, ".tmp-csharp", "csha
 const ROWS_OUT = argOf("--rows") ?? path.join(ROOT, ".tmp-csharp", "csharp-rows.jsonl")
 
 /** The 14 emitted relationship values (types.ts, 2026-10-18)  -  a label this census omits is a silence. */
+/** THE BLAZOR RENDER HOSTS - the C# calls that ask a HOST to render a component. */
+const RENDER_HOSTS = new Set(["RenderComponent", "RenderChild", "Render", "AddComponent"])
 const ALL_TYPES = [
   "calls", "uses", "contains", "imports", "references",
   "exports", "extends", "implements", "overrides", "instantiates",
@@ -274,6 +276,12 @@ const partialNames = new Map<string, Tally>()
 const attrKind = new Map<string, Tally>()
 const usingForm = new Map<string, Tally>()
 const withKind = new Map<string, Tally>()
+/** THE NEAR-MISS CENSUS (the fleet's L-2026-10-21-17). A ruling earns its keep by NAMING and
+ *  COUNTING the near-miss construct over the admitted population: a near-miss nobody counted is
+ *  prose. `renderHostType` names the component type a render host was asked to render;
+ *  `extensionReceiver` names the type C#'s extension methods inject into. */
+const renderHostType = new Map<string, Tally>()
+const extensionReceiver = new Map<string, Tally>()
 for (const t of ALL_TYPES) perType.set(t, mk())
 
 const { files, total, repos, absent, overCap, overCapLargest, paths, distinctFiles, repoPaths, repoDistinct } = discover(CAP)
@@ -457,6 +465,36 @@ for (const abs of files) {
         case "using_directive":
           add(constructs, "cs.using_directive", relSlug)
           break
+        case "invocation_expression": {
+          // THE RENDER NEAR-MISS: a call to a RENDER HOST that carries a TYPE ARGUMENT - the C#
+          // shape the `renders` contract describes (the host renderer constructs the component;
+          // the source does not `new` it). The host names are the BLAZOR render hosts; the count
+          // is what decides whether the construct has a measured population here.
+          const fn = n.childForFieldName?.("function")
+          if (fn) {
+            const nameNode = fn.type === "member_access_expression" ? fn.childForFieldName?.("name") : fn
+            if (nameNode) {
+              let leaf = ""
+              let typeArg = ""
+              if (nameNode.type === "generic_name") {
+                const id = nameNode.childForFieldName?.("name") ?? nameNode.namedChild(0)
+                leaf = (id?.text ?? "").split("<")[0]
+                const tal = nameNode.namedChildren.find((c: any) => c.type === "type_argument_list")
+                if (tal) typeArg = (tal.namedChild(0)?.text ?? "")
+              } else {
+                leaf = (nameNode.text ?? "").split("<")[0]
+              }
+              if (RENDER_HOSTS.has(leaf)) {
+                add(constructs, "cs.render_host_call", relSlug)
+                if (typeArg.length > 0) {
+                  add(constructs, "cs.render_host_call_with_component_type", relSlug)
+                  add(renderHostType, typeArg, relSlug)
+                }
+              }
+            }
+          }
+          break
+        }
         case "with_expression":
           add(constructs, "cs.with_expression", relSlug)
           add(withKind, "with_expression", relSlug)
@@ -479,6 +517,23 @@ for (const abs of files) {
         case "conversion_operator_declaration":
         case "delegate_declaration":
         case "namespace_declaration": {
+          // THE EXTENSION-METHOD NEAR-MISS (mixes_in): C#'s member-injection mechanism. The
+          // `this` modifier is a NAMED `modifier` node on the first parameter, so the construct
+          // reaches the analyzer as a REAL NODE - R3 needs no grammar change for it. What it does
+          // NOT do is compose a mixin into a SUPERTYPE chain: an extension member is resolved at
+          // the call site, not inherited. The count is what makes that statement a measurement.
+          if (n.type === "method_declaration") {
+            const pl = n.childForFieldName?.("parameters")
+            const first = pl?.namedChild?.(0)
+            if (first && first.type === "parameter") {
+              const mods = first.namedChildren.filter((c: any) => c.type === "modifier")
+              if (mods.some((m: any) => (m.text ?? "").trim() === "this")) {
+                add(constructs, "cs.extension_method", relSlug)
+                const ty = first.namedChildren.find((c: any) => c.type !== "modifier" && c.type !== "identifier")
+                if (ty) add(extensionReceiver, (ty.text ?? ""), relSlug)
+              }
+            }
+          }
           if (!isPartialDecl(n)) break
           add(constructs, `cs.partial_${n.type}`, relSlug)
           add(partialNames, n.type, relSlug)
@@ -545,7 +600,10 @@ for (const [name, fileset] of partialTypeFiles) {
 const PARITY_N = Number(argOf("--parity") ?? 0)
 let parity: {
   filesCompared: number; directEdges: number; poolWorkerEdges: number
-  filesWithDifference: number; differences: string[]; note: string
+  filesWithDifference: number; differences: string[]
+  /** THE PER-TYPE DELTA between the census's own path and the PRODUCTION path. */
+  perTypeDelta: Record<string, { census: number; production: number; delta: number }>
+  note: string
 } | null = null
 if (PARITY_N > 0 && files.length > 0) {
   const stride = Math.max(1, Math.floor(files.length / PARITY_N))
@@ -683,7 +741,7 @@ const outPath = path.join(OUT_DIR, `csharp-emission-census${CAP > 0 ? `-cap${CAP
 writeFileSync(outPath, JSON.stringify(report, null, 1))
 
 if (!JSON_OUT) {
-  const w = (s: string, n: number) => String(s).padStart(n)
+  const w = (s: string | number, n: number) => String(s).padStart(n)
   console.log("CSHARP EMISSION CENSUS")
   console.log(`  corpus root          ${CR}`)
   console.log(`  PATHS (tracked)      ${paths}`)
@@ -698,7 +756,7 @@ if (!JSON_OUT) {
   if (parity) {
     console.log(`  PARITY CONTROL      ${parity.filesCompared} files: census ${parity.directEdges} edges vs pool-worker ${parity.poolWorkerEdges} edges; files differing ${parity.filesWithDifference}`)
     for (const d of parity.differences) console.log(`    ${d}`)
-    const deltaRows = Object.entries((parity as any).perTypeDelta ?? {})
+    const deltaRows = Object.entries(parity.perTypeDelta)
     for (const [t, v] of deltaRows) console.log(`    ${t.padEnd(14)} census ${v.census} vs production ${v.production} -> delta ${v.delta}`)
   }
   console.log(`  written              ${path.relative(ROOT, outPath)}`)
@@ -732,6 +790,10 @@ if (!JSON_OUT) {
   console.log(`    partial types split across >1 FILE: ${partialSplitTypes} (${partialSplitFiles} files)`)
   for (const e of splitExamples) console.log(`      ${e}`)
   console.log("")
+  console.log("  NEAR-MISS CENSUS (L-17: the near-miss construct is NAMED and COUNTED)")
+  for (const [k, v] of [...constructs.entries()].filter(([k]) => k.startsWith("cs.render") || k.startsWith("cs.extension") || k.startsWith("cs.with") || k.startsWith("cs.attribute")).sort()) {
+    console.log(`    ${k.padEnd(42)} ${w(v.edges, 9)} sites in ${w(v.files.size, 7)} files, ${w(v.repos.size, 4)} repos`)
+  }
   console.log("  WITH FORMS (C#'s `with` is the record form, not a mixin)")
   for (const [k, v] of [...withKind.entries()].sort()) {
     console.log(`    ${k.padEnd(28)} ${w(v.edges, 9)} sites in ${w(v.files.size, 7)} files`)
