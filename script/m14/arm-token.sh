@@ -198,17 +198,38 @@ start_beat_daemon() {  # lane — a DETACHED heartbeat that wants no CPU
   # ★ THE DAEMON IS WHAT MAKES THE BEAT TRUSTWORTHY. It sleeps and writes a file, so it needs no
   # scheduler attention and keeps beating under a saturated load; the lane's own beat calls are
   # OPTIONAL from here on, because the daemon covers them.
-  local d_lane="${1:-}" d_log d_alive
+  local d_lane="${1:-}" d_log d_alive d_marker_age d_now
   [ -n "$d_lane" ] || return 0
   d_log="${BB_ARM_BEAT_LOG:-$PWD/.tmp-lead/arm-beat-daemon.log}"
+  # ⇒⇒⇒ THE LOG PATH IS ABSOLUTE, BECAUSE A RELATIVE PATH IN A DETACHED BACKGROUND JOB IS A WISH.
+  # The daemon is launched by a lane's own driver, and that driver's working directory is not
+  # necessarily the repository root — a relative log path simply loses the daemon's output, and a
+  # lost daemon is a silent one.
   mkdir -p "$(dirname "$d_log")" 2>/dev/null || true
-  # ONE DAEMON PER LANE: a second one would double the writes for no benefit, and the loop is
-  # idempotent anyway. The check is on the daemon's own marker file, not on a process list, because
-  # a process list cannot see another namespace's processes.
+  d_log="$(cd "$(dirname "$d_log")" && pwd)/$(basename "$d_log")" 2>/dev/null || d_log="$PWD/arm-beat-daemon.log"
+  # ⇒⇒⇒ THE MARKER IS A HEARTBEAT OF THE DAEMON ITSELF, NOT A ONE-TIME FLAG. MEASURED 2026-10-22:
+  # the marker was created on the first take and NEVER CLEARED, so every later take returned early
+  # and started NO daemon — and the token's beat then sat stale for 541 s while the holder was
+  # demonstrably running. ⇒⇒⇒ **A GUARD THAT PREVENTS A DUPLICATE DAEMON MUST NOT ALSO PREVENT A
+  # DAEMON FROM EVER STARTING**, and the only way to tell a live daemon from a dead one is the
+  # daemon's OWN pulse. ⇒⇒⇒ The daemon refreshes this marker on every loop; a marker older than
+  # DAEMON_STALE seconds means the daemon is gone, and a new one is started.
   d_alive="$TOKEN_DIR.daemon-$d_lane"
-  if [ -f "$d_alive" ]; then return 0; fi
-  : > "$d_alive" 2>/dev/null || true
-  setsid nohup bash "$0" __beat-daemon-loop "$d_lane" >>"$d_log" 2>&1 &
+  d_now="$(now)"
+  d_marker_age=999999
+  if [ -f "$d_alive" ]; then
+    d_marker_age=$(( d_now - $(sed -n 1p "$d_alive" 2>/dev/null || echo 0) ))
+  fi
+  if [ "$d_marker_age" -lt "${BB_ARM_DAEMON_STALE:-300}" ]; then
+    return 0   # a daemon pulsed recently — it is alive
+  fi
+  printf '%s\n' "$d_now" > "$d_alive" 2>/dev/null || true
+  # ⇒⇒⇒ AND THE SCRIPT PATH IS ABSOLUTE. `"$0"` is whatever the CALLER typed, and a caller that
+  # typed a relative path gets a daemon that cannot find its own script the moment its working
+  # directory is not the repository root. ⇒⇒⇒ A PATH THAT WAS NEVER RUN FROM ELSEWHERE IS A WISH.
+  local d_script
+  d_script="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/$(basename "$0")" 2>/dev/null || d_script="$0"
+  setsid nohup bash "$d_script" __beat-daemon-loop "$d_lane" >>"$d_log" 2>&1 &
   return 0
 }
 
@@ -362,6 +383,10 @@ case "$cmd" in
         rm -f "$TOKEN_DIR.daemon-$lane" 2>/dev/null || true
         exit 0
       fi
+      # ⇒⇒⇒ THE DAEMON PULSES ITS OWN MARKER EVERY LOOP — and the pulse is written BEFORE the beat,
+      # so a daemon that is alive but whose beat is failing is still distinguishable from a dead
+      # one. ⇒⇒⇒ A marker that only ever gets CREATED is a flag, and a flag cannot say "alive".
+      printf '%s\n' "$(now)" > "$TOKEN_DIR.daemon-$lane" 2>/dev/null || true
       "$0" beat "$lane" >/dev/null 2>&1 || true
     done
     ;;
