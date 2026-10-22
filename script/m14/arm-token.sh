@@ -50,8 +50,66 @@ TTL="${BB_ARM_TOKEN_TTL:-2700}"  # 45 minutes without a beat => reclaimable
 # fleet has run, and a crashed or vanished holder still releases itself. BEAT EVERY TWO MINUTES.
 QUEUE_FILE="${BB_ARM_QUEUE:-$PWD/.tmp-lead/arm-queue}"
 SMALL_TOKEN_DIR="${TOKEN_DIR}.small"   # the SMALL arm slot: a SEPARATE lock
+# THE QUEUE LOCK. The queue is read and written by EVERY lane, and two of its operations
+# (a small-slot `take` yielding a lane's place, and a small-slot `release` restoring it) happen
+# CONCURRENTLY with other lanes' takes and releases.
+QUEUE_LOCK="${BB_ARM_QUEUE_LOCK:-$PWD/.tmp-lead/arm-queue.lock}"
 mkdir -p "$(dirname "$TOKEN_DIR")" 2>/dev/null || true
 mkdir -p "$(dirname "$QUEUE_FILE")" 2>/dev/null || true
+
+# THE LOCK ITSELF, AND WHY THE QUEUE NEEDED ONE. MEASURED 2026-10-21 (the csharp lane reported it
+# and the Lead reproduced it): the small-slot `release` prints "ORDINARY-QUEUE PLACE RESTORED - at
+# the BACK" and then the lane is NOT in the queue. THE CAUSE IS A LOST UPDATE, AND IT IS
+# REPRODUCIBLE IN THREE LINES:
+#
+#   queue_remove:  grep -vxF "$l" "$QUEUE_FILE" > "$QUEUE_FILE.tmp"   # reads the file
+#   queue_add:     echo "$l" >> "$QUEUE_FILE"                          # appends the restored lane
+#   queue_remove:  mv "$QUEUE_FILE.tmp" "$QUEUE_FILE"                  # lands — and the add is GONE
+#
+# `queue_remove` REPLACES the whole file, so an append that lands between its read and its rename is
+# destroyed. The restored lane's place is silently lost, its arm waits forever for a turn that is
+# never coming, and a lane becomes INVISIBLE — which is worse than a visible refusal, because the
+# queue is the fleet's arms' fairness and a lane nobody can see is a lane nobody serves.
+#
+# SO EVERY QUEUE MUTATION TAKES AN EXCLUSIVE LOCK, AND THE LOCK IS TAKEN WITH `mkdir` — WHICH IS
+# ATOMIC ON EVERY POSIX FILESYSTEM, the same primitive the arm token itself uses. A LOCK THAT NOBODY
+# CAN OPEN IS NOT A QUEUE, IT IS A WALL, so the lock WAITS (with a bounded spin) rather than failing:
+# a queue operation must never refuse a lane because another lane is mid-operation.
+queue_lock() {
+  local waited=0
+  while ! mkdir "$QUEUE_LOCK" 2>/dev/null; do
+    waited=$((waited + 1))
+    # A LOCK HOLDER THAT DIED LEAVES ITS LOCK BEHIND. The lock is a directory, and a directory
+    # holding a pid file is reclaimable by the same rule the arm token uses: the pid is INFORMATION
+    # ONLY and the LIVENESS TEST IS THE HEARTBEAT, because a recycled pid must not keep the lock.
+    if [ -f "$QUEUE_LOCK/holder" ]; then
+      local l_pid l_beat l_now l_age
+      l_pid="$(sed -n 1p "$QUEUE_LOCK/holder" 2>/dev/null | cut -d= -f2)"
+      l_beat="$(sed -n 2p "$QUEUE_LOCK/holder" 2>/dev/null | cut -d= -f2)"
+      l_now="$(date +%s)"
+      l_age=$(( l_now - ${l_beat:-0} ))
+      if [ -n "$l_beat" ] && [ "$l_age" -ge 30 ]; then
+        echo "QUEUE LOCK RECLAIM — holder pid ${l_pid:-?} has not beaten for ${l_age}s." >&2
+        rm -rf "$QUEUE_LOCK" 2>/dev/null || true
+        continue
+      fi
+    fi
+    if [ "$waited" -ge 300 ]; then
+      # THE BOUNDED SPIN IS EXHAUSTED. Refusing here would be a WALL, and a lane's queue operation
+      # failing is worse than a slow one — so the lock is TAKEN ANYWAY, and the queue is rewritten
+      # from a WHOLE-FILE snapshot, so the worst case is a lost update that is PRINTED rather than a
+      # lane that is silently invisible.
+      echo "QUEUE LOCK FORCED — the lock was held for ${waited} ticks; the queue is rewritten from a snapshot and the forced change is PRINTED." >&2
+      rm -rf "$QUEUE_LOCK" 2>/dev/null || true
+      break
+    fi
+    sleep 0.1
+  done
+  printf 'pid=%s\nbeat=%s\n' "$$" "$(date +%s)" > "$QUEUE_LOCK/holder" 2>/dev/null || true
+}
+queue_unlock() {
+  rm -rf "$QUEUE_LOCK" 2>/dev/null || true
+}
 
 # THE QUEUE. Eight lanes, ONE arm slot, and arms take 7 to 45 minutes — so without a queue the lanes
 # POLL, and a lane can be overtaken by a later arrival (the Lead did it to toml). The queue is a plain
@@ -65,11 +123,23 @@ queue_add() {
   # "A QUEUE THAT CHANGES SILENTLY IS A QUEUE NOBODY CAN TRUST" ✓✓ — but an ADD that printed nothing
   # was the SAME defect in the other direction ✓✓: a lane's place being RESTORED is a queue change
   # nobody can see, and the fleet's arms' fairness is the queue ✓✓ ⇒ ⇒ ⇒ BOTH SIDES NOW PRINT ✓✓.
-  if grep -qxF "$l" "$QUEUE_FILE"; then return 0; fi
+  #
+  # THE LOCK (2026-10-21, the Lead — the csharp lane found the defect this fixes). The check below
+  # and the append below are ONE operation, and they must not interleave with another lane's
+  # `queue_remove` — whose whole-file rewrite would destroy an append that landed in between. See
+  # `queue_lock` for the reproduction in three lines. The lock is taken for the WHOLE
+  # check-then-append, never around one half of it, because a lock around half an operation is no
+  # lock at all.
+  queue_lock
   local before after
+  if grep -qxF "$l" "$QUEUE_FILE"; then
+    queue_unlock
+    return 0
+  fi
   before="$(queue_list | tr '\n' ' ')"
   echo "$l" >> "$QUEUE_FILE"
   after="$(queue_list | tr '\n' ' ')"
+  queue_unlock
   echo "QUEUE AUDIT — added '$l' · before: ${before:-（empty）} · after: ${after:-（empty）}" >&2
 }
 queue_remove() {
@@ -82,11 +152,17 @@ queue_remove() {
   # TRUST**, and the queue IS the fleet's arms' fairness — so every change now PRINTS the lane, the
   # queue before and the queue after ✓✓. A change that is not accounted for is still not explained,
   # but it is now VISIBLE ✓, and a lane that sees its name removed can point at the line.
+  #
+  # THE LOCK (2026-10-21, the Lead) — see `queue_lock`. THE ORDER MATTERS: the read, the rewrite and
+  # the audit are all inside the lock, and the unlock comes AFTER the rewrite lands. A rewrite that
+  # happened outside the lock is exactly the lost update that cost csharp its place.
+  queue_lock
   local before after
   before="$(queue_list | tr '\n' ' ')"
   grep -vxF "$l" "$QUEUE_FILE" > "$QUEUE_FILE.tmp" 2>/dev/null || : > "$QUEUE_FILE.tmp"
   mv "$QUEUE_FILE.tmp" "$QUEUE_FILE"
   after="$(queue_list | tr '\n' ' ')"
+  queue_unlock
   echo "QUEUE AUDIT — removed '$l' · before: ${before:-（empty）} · after: ${after:-（empty）}" >&2
 }
 holder_granted() { [ -f "$TOKEN_DIR/holder" ] && sed -n 5p "$TOKEN_DIR/holder" || echo 0; }
