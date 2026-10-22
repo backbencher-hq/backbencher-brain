@@ -5,8 +5,8 @@
  * relationships are containment plus data dependencies, and there is no import graph in the language
  * sense (psql's `\i`/`\ir` and `CREATE EXTENSION` are the two file/unit dependencies it does emit).
  *
- * Relationship types it EMITS — eight of the live fourteen, and this list is MEASURED, not
- * asserted (whole admitted population: 2,125 `.sql` files across the **21 repositories that carry
+ * Relationship types it EMITS — **SEVEN of the live fourteen, and this list is MEASURED, not
+ * asserted** (whole admitted population: 2,125 `.sql` files across the **21 repositories that carry
  * them** — the corpus holds 202 git checkouts, 199 of them symlinked, and the other 181 carry no
  * `.sql` file at all; the gate's own walk counts the same 21 (`incoming-gate.ts:526` adds a repo per
  * ADMITTED file), and the two must agree or the cell's repo count is a different number from the
@@ -22,35 +22,78 @@
  * contains 12,142 vs 12,255 · references 5,992 vs 6,041) with no error and no visible counter.
  * The numbers below are the HANDED-OVER ones.
  *   calls 3,929 · uses 9,317 · contains 12,264 · references 6,041 · imports 63 · instantiates 21 ·
- *   overrides 8 · **extends 0**.
- * `extends` IS emitted (the `ALTER TABLE c INHERIT p` clause the wired grammar mis-parses as a
- * column named INHERIT; see `processAlterTable` and SQL-D14/SQL-D17). It fires ZERO times on this
- * corpus because the corpus has no inheritance to fire it from — that is a MEASURED ZERO-SITES,
- * not a missing emission, and the type STAYS IN THE DENOMINATOR. This header used to say the
- * analyzer "does NOT emit `extends`" and it was FALSE: the claim contradicted this file's own code
- * at the emission site. The measurement that decides it is in
+ *   overrides 8.
+ *
+ * ⚠ `extends` — **THE TYPE IS IN GRAMMAR REMEDY PENDING, AND THAT IS WHY IT IS NOT IN THE LIST
+ * ABOVE.** The analyzer DOES emit it — it has TWO emission paths, the `ALTER TABLE c INHERIT p`
+ * mis-parse (the wired grammar reads the clause as a column named INHERIT) and, NEW, the REAL
+ * NODE (`inherit_clause` on `CREATE TABLE c (...) INHERITS (p)` and `inherit_specification` on
+ * `ALTER TABLE c INHERIT p`), which the R2 grammar patch adds. It fires ZERO times on this corpus,
+ * and the reason is measured AT AST LEVEL, not over text: **0 `inherit_clause` nodes, 0
+ * `inherit_specification` nodes and 0 mis-parsed `inherit` columns over the whole admitted
+ * population**, while the census reads 1,315–1,527 `alter_table` and 1,351–1,614 `create_table`
+ * nodes — the corpus contains no inheritance construct at all. **⇒ A TYPE IN GRAMMAR REMEDY PENDING
+ * IS NOT IN THE DENOMINATOR YET (the owner's rule), SO `extends` IS OUT OF THE DENOMINATOR, AND THE
+ * LANE IS NOT DONE UNTIL IT LEAVES THAT CLASS.** The blocker is a PROVENANCE DEFECT, not a grammar
+ * one: the build the product loads is a LOCAL FORK carrying 67 named types the published package does
+ * not have, and the fork's source is unrecoverable from the record by four measured checks — so the
+ * patch is correct and proven but NOT YET WIREABLE. `grammars/tree-sitter-sql/PIN.md` names the
+ * checks; the review is `reviews/m60-sql-grammar-remedy-r2-inherits.md`; the measurement is
+ * `script/m14/sql-grammar-remedy.ts` →
+ * `validation/m14/measurements/sql-grammar-remedy.json`; the behavioural fixture is
+ * `validation/m14/measurements/sql-grammar-remedy/sqld31-inheritance-real-node.sql`, which is
+ * RED-ABLE (the patched build publishes 4 `extends` edges where the wired build publishes 1).
+ * This header used to say the analyzer "does NOT emit `extends`" and it was FALSE: the claim
+ * contradicted this file's own code at the emission site. The measurement that decides it is in
  * `validation/m14/verification/SQL-VERDICT-2026-10-21.md`.
  *
- * Relationship types it does NOT emit, each with the citation that removes it from the DENOMINATOR
- * (an UNCLASSIFIED type stays in it — see the lane brief §1). Each ruling cites the PINNED GRAMMAR's
- * node-type inventory under the GATE's own rule (named node types only, no `_` prefix, deduped, plus
- * the universal ERROR/MISSING pair) = **592 named node types** — `validation/m14/measurements/sql-grammar-nodes.json`:
- *   `exports`   — no emission site; SQL's visibility scope is the DATABASE and nothing in a SQL file
- *                 enumerates what it publishes; 0 of the 592 node types contain `export` (SQL-D29).
- *   `implements`— no emission site; SQL has no interface type and no supertype clause; 0 of the 592
- *                 contain `implement`, `interface` or `super` (SQL-D16, re-measured 2026-10-21).
- *   `renders`   — the pinned grammar has no `jsx_*` and no `template*` node type (SQL-D27).
- *   `decorates` — the pinned grammar has no `decorator` node type (SQL-D27).
- *   `mixes_in`  — the pinned grammar has no `mixin*` and no `with_clause` node type (SQL-D27).
+ * ⚠ THE OTHER SIX TYPES, and each one's CLASS is NAMED, because a class is not a preference.
+ * (An UNCLASSIFIED type stays in the denominator — see the lane brief §1.)
+ *
+ *   TWO ZERO-EMISSION FACTS — **not coverage blocks, and PERMANENT.** These are measured facts
+ *   about THIS ANALYZER'S BEHAVIOUR: each is emitted 0 times over the whole admitted population, and
+ *   its name occurs in this file ONLY as an `evidenceClassFor` switch arm — there is NO emission site
+ *   for either, so no grammar change could make the analyzer attempt it. Their falsifier is an
+ *   emission site, or an edge, appearing:
+ *   `exports`   — SQL's visibility scope is the DATABASE and nothing in a SQL file enumerates what it
+ *                 publishes; 0 of the 592 node types contain `export` (SQL-D29).
+ *   `implements`— SQL has no interface type and no supertype clause; 0 of the 592 contain
+ *                 `implement`, `interface` or `super` (SQL-D16, re-measured 2026-10-21).
+ *
+ *   FOUR RULED, and each names THE RUNG that was unavailable and why — and the reason is NOT
+ *   difficulty: **no `.sql` text IS the construct**, so no rule over SQL text can produce one (R2);
+ *   R1 is unavailable for the same reason and R3 because the construct does not occur. The
+ *   near-miss census for each is measured AT AST LEVEL:
+ *   `renders`   — the value's source construct is a JSX/template element; the pinned grammar has no
+ *                 `jsx_*` and no `template*` node type; AST-LEVEL census 0 sites (SQL-D27).
+ *   `decorates` — the source construct is a decorator; no `decorator` node type; AST-LEVEL census
+ *                 0 sites. The nearest SQL analogue is `COMMENT ON … IS …`, a SEPARATE statement
+ *                 (SQL-D27).
+ *   `mixes_in`  — the source construct is dart's `mixins`/`mixin_application`; no `mixin*` and no
+ *                 `with_clause` node type; AST-LEVEL census 0 sites — the nearest analogue (a table
+ *                 mixing in a parent's columns) is 0 of the 1,527 `ALTER TABLE` sites (SQL-D27).
  *   `part_of`   — the value's source construct is a Dart file-level `part_directive`/`part_of_directive`
  *                 and the pinned grammar carries NEITHER; the four "part" node types it DOES have
  *                 (`keyword_partition`, `keyword_partitioned`, `table_partition`, `partition_by`) are
  *                 PostgreSQL's PARTITIONING, a different construct, and the `PARTITION OF <parent>`
- *                 form's parent name does NOT survive the parse (2 sites in the whole population, 0
- *                 recoverable) (SQL-D28).
+ *                 form's parent name does NOT survive the parse — **2 sites in the whole population,
+ *                 and the name survives at NEITHER, for two different measured reasons: one site has
+ *                 no identifier node at all, the other an identifier node whose TEXT IS EMPTY**
+ *                 (SQL-D28). **⇒ THE NEAR MISS IS NOT ZERO, AND IT CARRIES A SECOND R2 CANDIDATE
+ *                 (a `partition_of` clause holding the parent's name) — WHICH IS NOT TAKEN, because
+ *                 whether a partition being part of a partitioned table is the SAME RELATION as a
+ *                 Dart program-level part directive is the VOCABULARY PROPOSAL'S QUESTION: see
+ *                 `validation/m14/verification/SQL-VERDICT-2026-10-21.md` §6.5.**
  *
- * Grammar: `wasm/tree-sitter-sql.wasm`, patched — provenance and the patch list are in the spec's
- * `grammar_provenance`.
+ * Grammar: `wasm/tree-sitter-sql.wasm` — **sha256 `848e081247247db54545d4122a394dad3c85f79bb96a5713dbd658081b8eb819`**
+ * (the bytes the REGISTRY serves; a grammar citation is the BYTES, never a path and never a log line
+ * — `script/m14/sql-grammar-binding-probe.ts` measures the production path, the registry, the
+ * fixture suite and node_modules side by side, and for sql the path and the bytes AGREE). It is a
+ * **LOCAL FORK** of `@derekstride/tree-sitter-sql@0.3.11` carrying **67 named types the published
+ * package does not have**; the fork's source is unrecoverable from the record by four measured
+ * checks, and the record's own old provenance was wrong about its own build. **THE PIN RECORD IS
+ * `grammars/tree-sitter-sql/PIN.md`** — the three digests, the 67 names, every recovery check named,
+ * and the R2 patch that this lane HAS taken and proven.
  *
  * ⚠ THE INVENTORY NUMBERS, because both have been misread before. The wasm enumerates 594 named node
  * types with 4 DUPLICATE spellings (`dollar_quote`, `cast`, `field`, `from`); the inventory gate
