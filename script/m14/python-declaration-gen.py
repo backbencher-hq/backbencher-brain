@@ -210,7 +210,7 @@ cause = {
                        "the emitted direction. The lane moved no edge. The measured price of the "
                        "REJECTED direction is the record: 31,602 of 32,251 rows (98.0 %) change "
                        "class, and it would have left 31,484 unresolved",
-        "from": "validation/m14/verification/PYTHON-CLASSIFICATION-2026-10-21.md:884 (W12) + "
+        "from": "validation/m14/verification/PYTHON-CLASSIFICATION-2026-10-21.md:1155 (W12) + "
                 "src/ast/types.ts:120-135 (the corrected direction) + "
                 "validation/m14/measurements/python-decorates-direction-2026-10-21.json",
         "evidenceClass": "measured whole-population, both directions",
@@ -339,6 +339,40 @@ decl = {
 }
 
 BEFORE = open(OUT, encoding="utf-8").read() if os.path.exists(OUT) else ""
+# (the citation check above runs BEFORE this, so BEFORE==AFTER also means the
+#  citations were re-verified against the files as they are NOW.)
+# ---- EVERY CITATION IS VERIFIED, NOT TRUSTED ----
+# A "file:line" citation is a claim about a file's content at a moment. This lane
+# EDITS the page it cites, so a bare line number ROTS the moment the page moves --
+# and it rots SILENTLY, which is worse than being wrong. Each citation below names
+# a marker that must be ON that line; the generator refuses to write otherwise.
+CITES = [
+    ("validation/m14/verification/PYTHON-D7-WALLS.md", 59, "W1"),
+    ("validation/m14/verification/PYTHON-D7-WALLS.md", 143, "W2"),
+    ("validation/m14/verification/PYTHON-D7-WALLS.md", 182, "W3"),
+    ("validation/m14/verification/PYTHON-D7-WALLS.md", 262, "W4"),
+    ("validation/m14/verification/PYTHON-D7-WALLS.md", 275, "W5"),
+    ("validation/m14/verification/PYTHON-CLASSIFICATION-2026-10-21.md", 1155, "W12"),
+    ("validation/m14/measurements/python-cell-noindex-2026-10-21.txt", 59, "type"),
+    ("validation/m14/measurements/python-cell-noindex-2026-10-21.txt", 60, "calls"),
+    ("validation/m14/measurements/python-cell-noindex-2026-10-21.txt", 61, "uses"),
+    ("validation/m14/measurements/python-cell-noindex-2026-10-21.txt", 63, "imports"),
+    ("validation/m14/measurements/python-cell-noindex-2026-10-21.txt", 74, "TOTAL"),
+]
+for rel, lineno, marker in CITES:
+    path = os.path.join(REPO, rel)
+    if not os.path.exists(path):
+        raise SystemExit("CITATION TO A FILE THAT DOES NOT EXIST: %s:%d" % (rel, lineno))
+    with open(path, encoding="utf-8") as fh:
+        all_lines = fh.read().split("\n")
+    if lineno > len(all_lines):
+        raise SystemExit("CITATION PAST THE END OF THE FILE: %s:%d (%d lines)" % (rel, lineno, len(all_lines)))
+    text = all_lines[lineno - 1]
+    if marker not in text:
+        raise SystemExit("CITATION ROT: %s:%d does not contain %r; it now reads %r"
+                         % (rel, lineno, marker, text[:110]))
+print("  citations  : %d verified, every one still says what it claims" % len(CITES))
+
 with open(OUT, "w", encoding="utf-8") as fh:
     json.dump(decl, fh, indent=2, ensure_ascii=True)
     fh.write("\n")
