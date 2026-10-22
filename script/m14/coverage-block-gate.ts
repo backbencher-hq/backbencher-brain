@@ -578,8 +578,20 @@ function attributionSelfTest(verbose: boolean): { passed: number; failures: stri
 {
   const control = attributionSelfTest(process.argv.includes("--self-test"))
   const ok = control.failures.length === 0
-  console.log(`silence-attribution self-test: ${ok ? "PASS" : "FAIL"} — ${control.passed}/${control.passed + control.failures.length} arms ` +
-    `(fires on a citation about a DIFFERENT type; passes a per-type count or a prose mention beside a count)`)
+  // ⇒⇒⇒ ⇒⇒⇒ **IN `--json` MODE THIS LINE GOES TO STDERR, BECAUSE A MACHINE-READABLE OUTPUT WITH A
+  // HUMAN LINE IN FRONT OF IT IS STILL A THING THE CONSUMER MUST PARSE — AND A CONSUMER THAT PARSES IS
+  // A PARSER THAT CAN BREAK.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ THE COMPLETION GATE GUESSED AT THIS GATE'S
+  // HUMAN TABLE INSTEAD OF ASKING FOR THIS GATE'S OWN JSON, AND ITS GUESS DROPPED TWO LANES: the
+  // `silent` column can hold SEVERAL type names, so a parser that assumes one token per column
+  // silently drops every row with two or more. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // **A PARSER THAT DROPS ROWS MEASURES A SUBSET, AND IT IS THE CLASS OF DEFECT THIS WHOLE PROGRAMME
+  // EXISTS TO END.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **THE CONSUMER MUST ASK THE PRODUCER FOR THE PRODUCER'S OWN SHAPE, NOT GUESS
+  // IT** — the matrix's lesson, one place up.
+  const selfTestLine = `silence-attribution self-test: ${ok ? "PASS" : "FAIL"} — ${control.passed}/${control.passed + control.failures.length} arms ` +
+    `(fires on a citation about a DIFFERENT type; passes a per-type count or a prose mention beside a count)`
+  if (process.argv.slice(2).includes("--json")) console.error(selfTestLine)
+  else console.log(selfTestLine)
   if (!ok) {
     console.error("ATTRIBUTION CONTROL FAILED — this gate refuses to report a substantiation its own control cannot distinguish.")
     for (const f of control.failures) console.error(`  - ${f}`)
