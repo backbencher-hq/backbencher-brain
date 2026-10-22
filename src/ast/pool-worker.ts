@@ -1005,7 +1005,22 @@ export function filterNoiseRelationships(
     // identifier with a TRAILING `=` is exempt. And `[]=` — ruby's own index-setter — was already
     // exempt as an operator name; it stays exempt, and the two rules do not overlap.
     const SETTER_NAME = /^[A-Za-z_$][A-Za-z0-9_$]*=$/
-    if (/[\s'"(),=]/.test(leaf) && !/^[<>=!+\-*/%^&|~]+$/.test(leaf) && !SETTER_NAME.test(leaf)) return false
+    // ⇒⇒⇒ AND THE OPERATOR-NAME CLASS IS NOW COMPLETE, AND IT WAS NOT: THE CLASS WAS
+    // `/^[<>=!+\-*/%^&|~]+$/`, WHICH DOES NOT INCLUDE `[` OR `]` — SO `[]` (ruby's index READER) AND
+    // `[]=` (ruby's index WRITER) NEVER MATCHED IT. ⇒ THE RUBY LANE MEASURED THE CONSEQUENCE: 7 ROWS
+    // STILL DROPPED AFTER THE SETTER EXEMPTION, **ALL SEVEN `[]=`**, ALL SEVEN WITH AN `=` IN THE
+    // LEAF, ALL SEVEN EATEN BY THE FILTER ALONE, AND EVERY ONE'S `=`-STRIPPED CONTROL KEPT.
+    // ⇒⇒⇒ AND THE LEAD'S OWN COMMIT MESSAGE CLAIMED "`[]=` — RUBY'S OWN INDEX-SETTER — WAS ALREADY
+    // EXEMPT AS AN OPERATOR NAME", AND THE LEAD'S OWN COMMENT AT THE OTHER SITE LISTS `[]` AND `[]=`
+    // AMONG RUBY'S LEGAL OPERATOR NAMES. ⇒⇒⇒ **THE COMMENT AND THE CODE DISAGREED, AND THE COMMENT
+    // WAS RIGHT ABOUT THE LANGUAGE AND WRONG ABOUT THE CODE** — the class was never extended. ⇒⇒⇒
+    // THAT IS THE FLEET'S SHAPE, AND IT IS THE LEAD'S OWN INSTANCE OF IT: A COMMENT STATING A FACT
+    // ABOUT THE CODE WHICH THE CODE DOES NOT BEAR OUT. ⇒⇒⇒ THE CLASS IS NOW WHAT THE COMMENT SAYS
+    // IT IS, AND THE MEASUREMENT IS THE RUBY LANE'S: with the class extended, the 7 still-dropped
+    // rows become 0, and the controls stay green — `foo = bar` and `foo=bar` and `a = b` and `x==y`
+    // are still refused, while `level=` and `ast_nodes=` and `[]` and `[]=` are kept.
+    const OPERATOR_NAME = /^[<>=!+\-*/%^&|~\[\]]+$/
+    if (/[\s'"(),=]/.test(leaf) && !OPERATOR_NAME.test(leaf) && !SETTER_NAME.test(leaf)) return false
     // THE ANGLE-BRACKET BAN, AND WHY IT MUST NOT BE UNCONDITIONAL (ruby lane, 2026-10-21).
     //
     // `<` and `>` are banned because a target carrying them is usually a SNIPPET or a template
@@ -1027,7 +1042,10 @@ export function filterNoiseRelationships(
     // ⇒ THE BAN ITSELF IS NOT WEAKENED FOR SNIPPETS: a snippet carries braces, a backtick, a
     // newline or a tab, and those four remain unconditional; only the two angle brackets are
     // relaxed, and only for a leaf made SOLELY of operator characters.
-    const isOperatorName = /^[<>=!+\-*/%^&|~]+$/.test(leaf)
+    // THE SAME CLASS AS THE GUARD ABOVE, AND IT MUST BE THE SAME CLASS — two copies of an
+    // operator-name test that disagree is how a comment ends up right about the language and
+    // wrong about the code. Ruby's `[]` and `[]=` are legal method names, and the class says so.
+    const isOperatorName = /^[<>=!+\-*/%^&|~\[\]]+$/.test(leaf)
     if (!isOperatorName && /[{}`<>\n\r\t]/.test(leaf)) return false
     if (leaf.startsWith(" ") || leaf.includes("  ")) return false
 
