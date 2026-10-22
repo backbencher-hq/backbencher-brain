@@ -38,8 +38,31 @@
  * ## WHAT IS IN THIS TABLE, AND WHAT IS NOT
  *
  * Four entries: `extends`, `implements`, `overrides`, `exports`. Those are
- * exactly the types html's production `parseFile` emits ZERO of, measured over
- * 1,652 corpus `.html`/`.htm` documents (1,652 parsed, 0 failed).
+ * exactly the types html's production `parseFile` emits ZERO of. The population
+ * was 1,652 corpus `.html`/`.htm` documents when this table was written and is
+ * now the lane's WHOLE admitted set — 8,888 git-tracked files, the router's own
+ * thirteen admitted spellings, under the engine's 1 MB cap, 96 repositories, 182
+ * symlinked directories followed (validation/m14/measurements/html-population-2026-10-22.json)
+ * — and the arm over that population still reads 0 for each of the four
+ * (validation/m14/measurements/html-arm-closure-2026-10-22.json).
+ *
+ * ★ WHAT WAS CORRECTED HERE ON 2026-10-22, AND WHY IT MATTERS. Every one of the
+ *   four rows used to open with a sentence about what HTML ITSELF cannot spell —
+ *   "an HTML document has no declaration to attach a base clause to", "HTML has
+ *   no dispatch, no vtable and no inheritance chain" — and every one of those
+ *   sentences was TRUE OF HTML and SILENT ABOUT WHERE THE ROWS COME FROM. The
+ *   html analyzer is a CONTAINER: src/ast/real-html-analyzer.ts:2003 copies the
+ *   embedded-script delegate's relationships VERBATIM, so the javascript and
+ *   typescript delegates DO construct Extends, Implements, Overrides and Exports
+ *   for an inline `<script>` block, and the production path publishes them. The
+ *   `exports` row already carried that correction (it is quoted in the row
+ *   below), and the other three were corrected to the same shape on 2026-10-22:
+ *   WHAT IS RULED, precisely and only, is that NO FILE IN THIS LANE'S CORPUS
+ *   EXERCISES IT — a fact about the corpus and nothing else — with the seam's
+ *   capability stated and measured, and the corpus zero counted over the whole
+ *   admitted population. This is the svelte table's `overrides` row, which was
+ *   corrected for exactly this reason on 2026-10-05; the html table had simply
+ *   not had the correction yet.
  *
  * The other six are absent ON PURPOSE. `calls` (3,147 rows), `uses` (74,919),
  * `contains` (12,174), `references` (78), `instantiates` (47) and `imports`
@@ -212,25 +235,42 @@ export const HTML_RULED: Ruled[] = [
       "object_declaration", "record_declaration",
     ],
     describe:
-      "a base type another type declares itself derived from. INSTRUMENT A, because an " +
-      "HTML document has no declaration to attach a base clause to: tree-sitter-html " +
-      "produces exactly 20 node types over 1,652 corpus documents (1,652 parsed, 0 failed) — " +
-      "tag_name 592313, attribute 325236, attribute_name 325236, quoted_attribute_value 322345, " +
-      "attribute_value 321253, element 298771, start_tag 297885, end_tag 290502, text 172629, " +
-      "ERROR 25730, entity 10462, self_closing_tag 3922, raw_text 3006, script_element 2929, " +
-      "document 1639, comment 1183, doctype 645, erroneous_end_tag 93, erroneous_end_tag_name 93, " +
-      "style_element 77 — and not one of them denotes a declaration, a class, an interface, a " +
-      "member or a method. " +
+      "a base type another type declares itself derived from. " +
+      "CORRECTED 2026-10-22, on the same ground and for the same reason the svelte table's " +
+      "`overrides` row was corrected: this row used to open \"an HTML document has no " +
+      "declaration to attach a base clause to\", and that sentence was TRUE OF HTML and SILENT " +
+      "about where the rows come from. The html analyzer is a CONTAINER: " +
+      "src/ast/real-html-analyzer.ts:2003 (mergeEmbeddedBlocks) copies the embedded-script " +
+      "delegate's relationships VERBATIM, tagging each `metadata.htmlEmbedded = true`, and the " +
+      "javascript delegate DOES construct RelationshipType.Extends — so an HTML document whose " +
+      "inline <script> declares `class Sub extends Base` DOES get an `extends` edge through " +
+      "production ASTEngine.parseFile, and this lane's own fixture " +
+      "validation/m14/fixtures/html/embedded-heritage.html carries them and PASSES. " +
+      "WHAT IS RULED, precisely and only: NO FILE IN THIS LANE'S CORPUS EXERCISES IT, and that " +
+      "is a fact about the corpus and nothing else. MEASURED over the whole admitted population " +
+      "(8,888 git-tracked files, the router's own thirteen admitted spellings, under the engine's " +
+      "1 MB cap): the class-heritage clause — the only spelling a class-extends edge can come " +
+      "from — is 0 clauses in 0 files over 13,768 embedded blocks in 4,644 files " +
+      "(validation/m14/measurements/html-extended-constructs-2026-10-22.json), and the html arm's " +
+      "own `extends` row is 0 edges over the whole population " +
+      "(validation/m14/measurements/html-arm-closure-2026-10-22.json). " +
+      "THE INVENTORY IS STILL WORTH READING, because it says what HTML ITSELF can spell: " +
+      "tree-sitter-html produces 26 named slots over 41 ids and 19 DISTINCT named node types " +
+      "(validation/m14/measurements/html-grammar-nodes.json, served digest 11b3405c1543), and not " +
+      "one of them denotes a declaration, a class, an interface, a member or a method. " +
       "MEASURED ON THE TREE AS WELL, because a grammar inventory cannot see a spelling: the two " +
-      "customized-built-in spellings occur 0 times each in 1,652 documents — `is=\"…\"` " +
+      "customized-built-in spellings occur 0 times each — `is=\"…\"` " +
       "(<button is=\"fancy-button\">) 0, and Polymer's pre-standard `extends=\"paper-item\"` 0. " +
       "Both were probed separately, because probing only the spelling that happens to occur is " +
       "how a ruling ends up scoped to an accident. Note that even if `is=` occurred, the edge it " +
       "implies is INSTANTIATES (this element is an instance of a custom class that extends the " +
       "built-in), and the EXTENDS edge — custom class to HTMLButtonElement — lives in the " +
       "JavaScript file that calls `customElements.define`, where the JavaScript analyzer already " +
-      "emits it. Overturn: any of the node types named above appearing in the inventory, or a " +
-      "non-zero count of `is=` / `extends=` on the tree.",
+      "emits it. " +
+      "READ THIS ROW AS: the corpus cannot currently demonstrate `extends` for html. NOT that html " +
+      "lacks extends. Both readings keep the 0; only one of them is true. " +
+      "Overturn: any of the node types named above appearing in the inventory, a non-zero count " +
+      "of `is=` / `extends=` on the tree, or a non-zero `extends` row in the arm.",
   },
   {
     type: "implements",
@@ -263,22 +303,45 @@ export const HTML_RULED: Ruled[] = [
         hits.push(`${fileLabel}: role=${outside.join(",")} — outside the WAI-ARIA enumeration, so a project-declared name`)
     },
     describe:
-      "a declaration conforming to an interface the project owns. HTML's only conformance " +
-      "construct is the WAI-ARIA `role` attribute, and it names a SPECIFICATION token rather " +
-      "than a project symbol. MEASURED: 365 `role=` occurrences in 350 of 1,652 documents, 9 " +
+      "a declaration conforming to an interface the project owns. " +
+      "CORRECTED 2026-10-22, on the same ground as the `extends` row above and for the same " +
+      "reason: this row used to be about HTML's OWN conformance construct alone, and it was " +
+      "SILENT about the seam. The html analyzer is a CONTAINER, and the CONFORMANCE construct " +
+      "that reaches it is the TYPESCRIPT DELEGATE'S: a `<script lang=\"ts\">` block declaring " +
+      "`class Square implements Shape` DOES publish an `implements` row through production " +
+      "ASTEngine.parseFile, copied verbatim by src/ast/real-html-analyzer.ts:2003 and tagged " +
+      "`metadata.htmlEmbedded = true` with `metadata.embeddedLang = \"ts\"`. MEASURED, on a " +
+      "PLANTED document through the production path: PUBLISHED, `Square → Shape` " +
+      "(validation/m14/measurements/html-extended-seam-2026-10-22.json), and this lane's own " +
+      "fixture validation/m14/fixtures/html/embedded-extended-types.html pins it by name, by " +
+      "direction and by meta.embeddedLang, and PASSES. " +
+      "WHAT IS RULED, precisely and only: NO FILE IN THIS LANE'S CORPUS EXERCISES IT. MEASURED " +
+      "over the whole admitted population (8,888 files): 0 conformance clauses in 0 files over " +
+      "13,768 embedded blocks in 4,644 files, of which exactly ONE is a typescript block " +
+      "(js 13,461, css 306, ts 1) and that block declares no conformance " +
+      "(validation/m14/measurements/html-extended-constructs-2026-10-22.json); and the html " +
+      "arm's own `implements` row is 0 edges over the whole population " +
+      "(validation/m14/measurements/html-arm-closure-2026-10-22.json). " +
+      "AND WHAT THE PROBE BELOW COUNTS, which is HTML's OWN conformance construct and is NOT " +
+      "the seam's: HTML's only native conformance spelling is the WAI-ARIA `role` attribute, and " +
+      "it names a SPECIFICATION token rather than a project symbol. MEASURED: 365 `role=` " +
+      "occurrences in 350 of 1,652 documents, 9 " +
       "distinct values — search 336, button 11, navigation 6, presentation 6, main 2, document 1, " +
       "contentinfo 1, note 1, dialog 1 — and 365 of 365 are members of the WAI-ARIA 1.2 " +
       "enumeration. ZERO fall outside it, which is what this probe counts. The collision is not " +
       "hypothetical: `button`, `main`, `document` and `dialog` are all names html's own identity " +
       "ruling publishes for the `<button id=…>`, `<main id=…>` and `<dialog id=…>` " +
-      "elements and for a file called document.html, so the edge would resolve to a DOM " +
+      "elements and for a file called document.html, so an edge there would resolve to a DOM " +
       "element and claim an interface " +
       "conformance between a `<form role=\"search\">` and an arbitrary `<div>`. A conformance " +
       "edge whose target is a closed 81-token enumeration the project does not own, and whose " +
       "members collide with the analyzer's own symbol names, is a fabricated edge; it would be " +
       "counted `unexplained` by the differential and would poison bb_graph with a false " +
-      "architectural dependency. Overturn: a `role=` value outside the WAI-ARIA enumeration " +
-      "naming something the project declares.",
+      "architectural dependency. " +
+      "READ THIS ROW AS: the corpus cannot currently demonstrate `implements` for html. NOT that " +
+      "html lacks implements — the seam publishes it. Both readings keep the 0; only one of them " +
+      "is true. Overturn: a `role=` value outside the WAI-ARIA enumeration " +
+      "naming something the project declares, or a non-zero `implements` row in the arm.",
   },
   {
     type: "overrides",
@@ -289,9 +352,22 @@ export const HTML_RULED: Ruled[] = [
       "class_body", "interface_body", "override_specifier", "redefinition",
     ],
     describe:
-      "a member replacing an inherited member of the same name. INSTRUMENT A: an override " +
-      "needs a member at BOTH ends, and the 20 node types tree-sitter-html produces over 1,652 " +
-      "documents (listed in the `extends` entry above, the same inventory) contain no member, no " +
+      "a member replacing an inherited member of the same name. " +
+      "CORRECTED 2026-10-22, on the same ground as the `extends` row above: the html analyzer is " +
+      "a CONTAINER and the seam copies the delegate's rows verbatim " +
+      "(src/ast/real-html-analyzer.ts:2003), and the javascript and typescript delegates DO " +
+      "construct RelationshipType.Overrides — so an HTML document whose inline <script> declares " +
+      "a class that replaces a base class's member DOES get an `overrides` edge through " +
+      "production ASTEngine.parseFile, and this lane's own fixture " +
+      "validation/m14/fixtures/html/embedded-heritage.html carries them and PASSES. " +
+      "WHAT IS RULED, precisely and only: NO FILE IN THIS LANE'S CORPUS EXERCISES IT. " +
+      "MEASURED over the whole admitted population (8,888 files): 0 `class_heritage` clauses in 0 " +
+      "files over 13,768 embedded blocks in 4,644 files, and the html arm's own `overrides` row is " +
+      "0 edges over the whole population " +
+      "(validation/m14/measurements/html-arm-closure-2026-10-22.json). " +
+      "INSTRUMENT A, for what HTML ITSELF can spell: an override needs a member at BOTH ends, and " +
+      "the 19 DISTINCT named node types tree-sitter-html produces " +
+      "(validation/m14/measurements/html-grammar-nodes.json) contain no member, no " +
       "field, no method and no class body. HTML has no dispatch, no vtable and no inheritance " +
       "chain, so there is nothing for an override to displace. " +
       "THE ONE CONSTRUCT THAT LOOKS LIKE ONE, MEASURED: `role=\"none\"` / `role=\"presentation\"` " +
@@ -332,9 +408,12 @@ export const HTML_RULED: Ruled[] = [
         hits.push(`${fileLabel}: ${found.join(" ")} — an externally addressable outlet, i.e. an export`)
     },
     describe:
-      "a name this document publishes for a consumer to bind to. An HTML document defines no " +
-      "module surface: there is no `export` keyword, no named declaration another file can name, " +
-      "and no namespace — a document is a document. That is the reason, and prose alone is not a " +
+      "a name this document publishes for a consumer to bind to. " +
+      "WHAT IS RULED, precisely and only: NO FILE IN THIS LANE'S CORPUS EXERCISES HTML's OWN " +
+      "outlet, and the SEAM publishes the rows that do reach the graph. An HTML document " +
+      "defines no module surface of its own: there is no `export` keyword, no named declaration " +
+      "another file can name, and no namespace — a document is a document. That is the reason, " +
+      "and prose alone is not a " +
       "ruling, so the two constructs that could carry the idea are counted on the tree. MEASURED " +
       "over 1,652 corpus documents: `<slot name=\"…\">` 0 occurrences in 0 files, AND `<slot>` in " +
       "ANY form 0 occurrences in 0 files — the ruling's population is the whole slot vocabulary, " +
@@ -347,7 +426,12 @@ export const HTML_RULED: Ruled[] = [
       "inline-JS delegate's, arriving through mergeEmbeddedBlocks. The 2026-10-05 seam fix tags " +
       "them `htmlEmbedded` / `embeddedLang` / `embeddedLineOffset` so a consumer can see that, and " +
       "validation/m14/fixtures/html/embedded-origin-marks pins it. \"markup has no module surface\" " +
-      "was TRUE OF HTML and SILENT about where the rows came from. Overturn: a `<slot name>` or a " +
-      "`part=` in any corpus document.",
+      "was TRUE OF HTML and SILENT about where the rows came from. That correction is the model " +
+      "the `extends`, `implements` and `overrides` rows were corrected to on 2026-10-22. " +
+      "THE CORPUS COUNT IS RESTATED OVER THE LANE'S OWN ADMITTED POPULATION (8,888 git-tracked " +
+      "files): the html arm's own `exports` row is 0 edges over the whole population " +
+      "(validation/m14/measurements/html-arm-closure-2026-10-22.json). " +
+      "Overturn: a `<slot name>` or a " +
+      "`part=` in any corpus document, or a non-zero `exports` row in the arm.",
   },
 ]
