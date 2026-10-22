@@ -160,6 +160,69 @@ const allControlled = dropped.length > 0 && dropped.every(d => d.controlKept)
 const byType: Record<string, number> = {}
 for (const d of dropped) byType[d.type] = (byType[d.type] ?? 0) + 1
 
+// ⇒ THE PROPOSED FIX, MEASURED HERE RATHER THAN CLAIMED THERE. The Lead's file commits
+// `0b86199f8` (the SETTER_NAME exemption) and its commit message states that "`[]=` — ruby's own
+// index-setter — was already exempt as an operator name". **⇒ THAT CLAIM IS TRUE OF THE INTENT AND
+// FALSE OF THE EFFECT: THE OPERATOR CHARACTER CLASS IS `/^[<>=!+\-*/%^&|~]+$/`, AND IT DOES NOT
+// INCLUDE `[` OR `]`.** So `[]=` never matched it, and the 7 rows that survive the Lead's fix are
+// all `[]=`. ⇒ THE PROPOSED CHANGE IS TO EXTEND THE OPERATOR CLASS WITH THE BRACKETS, which makes
+// `[]` and `[]=` operator names — and `[]` IS ruby's index reader, a legal declared method name.
+//
+// ⇒ AND THIS ARM MEASURES THE PROPOSED RULE WITHOUT EDITING THE LEAD's FILE: it applies the
+// extended class to the dropped rows AND to a CONTROL SET of the fragments the rule must keep
+// refusing, so the proposal is judged on both sides.
+if (ARM === "proposal") {
+  const directMap = JSON.parse(readFileSync(path.join(OUT_DIR, "ruby-setter-leaf-census-direct.json"), "utf8")) as Record<string, any[]>
+  const prodMap = JSON.parse(readFileSync(path.join(OUT_DIR, "ruby-setter-leaf-census-production.json"), "utf8")) as Record<string, any[]>
+  const missing: any[] = []
+  for (const rel of Object.keys(directMap)) {
+    const pSet = new Set((prodMap[rel] ?? []).map(key))
+    for (const r of directMap[rel] ?? []) {
+      if (!pSet.has(key(r))) missing.push({ file: rel, ...r })
+    }
+  }
+  // THE PROPOSED OPERATOR CLASS: the current one PLUS the two bracket characters.
+  const PROPOSED_OPERATOR = /^[<>=!+\-*/%^&|~\[\]]+$/
+  const SETTER_NAME = /^[A-Za-z_$][A-Za-z0-9_$]*=$/
+  // THE PROPOSED SHAPE RULE, WRITTEN OUT IN FULL so the proposal is judged, not trusted.
+  const proposedKeeps = (leaf: string) => {
+    if (leaf.includes("\n")) return false
+    if (/[\s'"(),=]/.test(leaf) && !PROPOSED_OPERATOR.test(leaf) && !SETTER_NAME.test(leaf)) return false
+    if (!PROPOSED_OPERATOR.test(leaf) && /[{}`<>\n\r\t]/.test(leaf)) return false
+    if (leaf.startsWith(" ") || leaf.includes("  ")) return false
+    return true
+  }
+  const CONTROLS = [
+    { leaf: "foo = bar", expectKept: false, why: "whitespace and `=` in the middle — a fragment" },
+    { leaf: "foo=bar", expectKept: false, why: "`=` in the middle — a fragment, not a setter name" },
+    { leaf: "a = b", expectKept: false, why: "whitespace — a fragment" },
+    { leaf: "x==y", expectKept: false, why: "`=` inside, not an operator-only leaf" },
+    { leaf: "level=", expectKept: true, why: "a SETTER NAME — identifier plus a trailing `=`" },
+    { leaf: "[]", expectKept: true, why: "ruby's index READER — an operator name" },
+    { leaf: "[]=", expectKept: true, why: "ruby's index WRITER — an operator name" },
+    { leaf: "ast_nodes=", expectKept: true, why: "a SETTER NAME" },
+  ]
+  const rowsStillDropped = missing.filter(m => !proposedKeeps(leafOf(m.target)))
+  const controlResults = CONTROLS.map(c => ({ ...c, kept: proposedKeeps(c.leaf) }))
+  const controlsGreen = controlResults.every(c => c.kept === c.expectKept)
+  console.log("RUBY — THE PROPOSED OPERATOR-CLASS CHANGE, MEASURED (not claimed)")
+  console.log("  rows the PRODUCTION path still drops: " + missing.length)
+  console.log("  of those, the PROPOSED rule would STILL refuse: " + rowsStillDropped.length)
+  for (const r of rowsStillDropped.slice(0, 10)) console.log("      " + r.file + "  " + r.type + " " + r.source + " -> " + r.target + "  leaf=\"" + leafOf(r.target) + "\"")
+  console.log("  the leaf classes still dropped: " + JSON.stringify([...new Set(missing.map(m => leafOf(m.target)))]))
+  console.log("  ⇒ THE CONTROLS ARE GREEN: " + controlsGreen)
+  for (const c of controlResults) console.log("      control leaf=\"" + c.leaf + "\" kept=" + c.kept + " expected=" + c.expectKept + " (" + c.why + ")")
+  writeFileSync(path.join(OUT_DIR, "ruby-setter-leaf-proposal-2026-10-22.json"), JSON.stringify({
+    rowsStillDroppedByProduction: missing.length,
+    rowsTheProposedRuleWouldStillRefuse: rowsStillDropped.length,
+    leafClassesStillDropped: [...new Set(missing.map(m => leafOf(m.target)))],
+    controlsGreen,
+    controlResults,
+    theProposal:
+      "Extend the shared filter's OPERATOR-NAME CHARACTER CLASS with `[` and `]`, so `[]` (ruby's index reader) and `[]=` (ruby's index writer) are operator names. The SETTER_NAME exemption added in 0b86199f8 stays as it is — it is correct — and the two rules do not overlap.",
+  }, null, 2) + "\n")
+}
+
 const report = {
   population: { corpusRoot: CR, admitted: files.length, parseFailures },
   productionRows,

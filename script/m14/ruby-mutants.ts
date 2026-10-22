@@ -102,4 +102,147 @@ const respellMixinKeyword: Mutant = {
   }),
 }
 
-export const RUBY_MUTANTS: Mutant[] = [dropImplementsEdge, respellMixinKeyword]
+/**
+ * THE TWO DISCRIMINATOR MUTANTS — the pair that makes the NEW fixture load-bearing.
+ *
+ * ⇒ WHY THESE TWO EXIST AND WHY THEY ARE SOURCE-DERIVED. The rubric's L-2026-10-21-07 says a
+ * SURVIVOR is a HOLE IN THE BATTERY, and that the fix is "a fixture pinning the defect's OWN
+ * SIGNATURE". The new fixture `ruby/mixin-discriminator` pins that signature — 5 positives, 9
+ * forbids, and a count. **⇒ BUT A FIXTURE THAT NO MUTANT CAN GO RED IS DECORATION**, and this lane
+ * measured exactly that failure once before: the `ruby/drop-implements-edge` mutant filtered a label
+ * the analyzer no longer published, so it was a NO-OP that could never make the suite red (1 → 1
+ * failures). **⇒ A FIXTURE IS ONLY PROVEN BY A MUTANT THAT BREAKS IT.**
+ *
+ * ⇒ AND HERE THE ORDINARY OUTPUT TRANSFORM CANNOT DO THE JOB, AND THE REASON IS WORTH WRITING DOWN.
+ * The harness hands a transform the analyzer's RESULT and, for a source-derived revert, the SOURCE
+ * (`script/m14/mutate-analyzer.ts:19786` — "hand the transform the source too, so a source-derived
+ * revert stays faithful"). The defect this time is a REFUSAL: the discriminator refuses to publish
+ * an impostor row. **⇒ A REFUSED SITE LEAVES NO TRACE IN THE OUTPUT** — the fixed analyzer publishes
+ * no `calls` edge for a mixin keyword either (the mixin branch returns before the calls branch), so
+ * there is no output row for a mutant to convert. **⇒ THE MUTANT MUST RE-DERIVE THE PRE-FIX OUTPUT
+ * FROM THE SOURCE**, and that is what these two do: they re-parse the source, find every mixin call
+ * site with a constant argument, and publish the row the PRE-FIX analyzer published.
+ *
+ * ⇒ THE PRE-FIX RULE WAS SIMPLE, AND SIMPLE IS WHAT MAKES THE REVERT FAITHFUL: any
+ * `include`/`extend`/`prepend` call with a constant argument published a `mixes_in` row attributed to
+ * the enclosing class, or to the file scope when there was none. **⇒ SO THE MUTANT REPRODUCES THAT
+ * RULE AND THE FIXTURE'S FORBIDS CATCH IT.**
+ *
+ * ⇒ WHY TWO AND NOT ONE. The discriminator has TWO independent halves — the explicit-receiver test
+ * and the static-self-type test — and a fix that removed only one of them would still be broken.
+ * A mutant per half means the battery catches a HALF-BROKEN fix, which is the more likely
+ * regression. `ruby/mixes-in-accept-explicit-receiver` restores the receiver half; the instance/top
+ * half is the other.
+ */
+
+async function preFixMixinRows(source: string): Promise<any[]> {
+  const { getParser } = await import("../../src/ast/engine")
+  const parser = await getParser("ruby" as any)
+  const root = parser.parse(source).rootNode
+  const rows: any[] = []
+
+  // THE ENCLOSING OWNER, EXACTLY AS THE PRE-FIX ANALYZER ATTRIBUTED IT: the enclosing class or
+  // module's name, and the FILE SCOPE when there is none.
+  const ownerOf = (node: any): string | undefined => {
+    let cur = node.parent ?? null
+    while (cur) {
+      if (cur.type === "class" || cur.type === "module" || cur.type === "singleton_class") {
+        const name = cur.childForFieldName?.("name")
+        if (name) return name.text
+        // A `class << self` has no name — the pre-fix analyzer fell through to the file scope.
+        return undefined
+      }
+      // THE FACTORY SHAPE: `Factory = Class.new do … end` — the block is class_eval'd, and the
+      // pre-fix analyzer's scope tracker had bound the anonymous class to its ASSIGNMENT NAME.
+      if (cur.type === "do_block" || cur.type === "block") {
+        const p = cur.parent
+        if (p && p.type === "call") {
+          const recv = p.childForFieldName?.("receiver")
+          const meth = p.childForFieldName?.("method")
+          if (recv && meth && (recv.text === "Class" || recv.text === "Module") && meth.text === "new") {
+            const asg = p.parent
+            const left = asg && asg.type === "assignment" ? asg.childForFieldName?.("left") : undefined
+            if (left) return left.text
+          }
+        }
+      }
+      cur = cur.parent ?? null
+    }
+    return undefined
+  }
+
+  const walk = (node: any) => {
+    if (node.type === "call") {
+      const meth = node.childForFieldName?.("method")
+      const name = meth ? meth.text : ""
+      if (name === "include" || name === "extend" || name === "prepend") {
+        const args = node.childForFieldName?.("arguments")
+        if (args) {
+          for (let i = 0; i < args.namedChildCount; i++) {
+            const a = args.namedChild(i)
+            if (!a) continue
+            if (a.type !== "constant" && a.type !== "scope_resolution") continue
+            const owner = ownerOf(node)
+            rows.push({
+              type: "mixes_in",
+              source: owner || "Global",
+              target: a.text,
+              confidence: 1.0,
+              line_number: a.startPosition.row + 1,
+              metadata: { mixinType: name },
+            })
+          }
+        }
+      }
+    }
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c) walk(c)
+    }
+  }
+  walk(root)
+  return rows
+}
+
+/** THE RECEIVER HALF: the pre-fix rule published a row for EVERY mixin call with a constant
+ *  argument — INCLUDING the ones with an explicit receiver, which compose into the RECEIVER and not
+ *  into the enclosing class. */
+const acceptExplicitReceiver: Mutant = {
+  id: "ruby/mixes-in-accept-explicit-receiver",
+  language: "ruby",
+  defectClass: "false-edge",
+  description:
+    "restores the pre-fix rule for the RECEIVER half of the discriminator: every mixin call with a constant argument publishes a `mixes_in` row, INCLUDING the ones with an explicit receiver (`target.extend M`), which compose the mixin into the RECEIVER and not into the enclosing class — and a local-variable receiver names no class at all, so the row is unattributable. SOURCE-DERIVED, because a REFUSED SITE LEAVES NO TRACE IN THE OUTPUT and the fixed analyzer publishes no `calls` edge for a mixin keyword either, so no output transform can restore it. Caught by ruby/mixin-discriminator's forbid rows.",
+  transform: async (r: any, source?: string) => {
+    if (!source) return r
+    const rows = await preFixMixinRows(source)
+    const existing = new Set((r.relationships ?? []).map((x: any) => `${x.type}|${x.source}|${x.target}`))
+    const added = rows.filter(x => !existing.has(`${x.type}|${x.source}|${x.target}`))
+    return { ...r, relationships: [...(r.relationships ?? []), ...added] }
+  },
+}
+
+/** THE SELF-TYPE HALF: the pre-fix rule published a row for every mixin call with a constant
+ *  argument — INCLUDING the ones where `self` is an INSTANCE (a plain `def` body) or the FILE'S TOP
+ *  LEVEL, where `include M` is RSpec's example-group include and not Ruby's `Module#include`. */
+const acceptInstanceSelf: Mutant = {
+  id: "ruby/mixes-in-accept-instance-self",
+  language: "ruby",
+  defectClass: "false-edge",
+  description:
+    "restores the pre-fix rule for the SELF-TYPE half of the discriminator: every mixin call with a constant argument publishes a `mixes_in` row, INCLUDING the ones inside a plain `def` (where `self` is an INSTANCE, so `extend M` extends the instance's singleton class and `include M` is not `Module#include` at all) and the ones at the FILE'S TOP LEVEL (where `self` is `main`, and `include M` in an RSpec file is RSpec's example-group include — the SAME NAME and a DIFFERENT CONSTRUCT). SOURCE-DERIVED, because a REFUSED SITE LEAVES NO TRACE IN THE OUTPUT. Caught by ruby/mixin-discriminator's forbid rows.",
+  transform: async (r: any, source?: string) => {
+    if (!source) return r
+    const rows = await preFixMixinRows(source)
+    const existing = new Set((r.relationships ?? []).map((x: any) => `${x.type}|${x.source}|${x.target}`))
+    const added = rows.filter(x => !existing.has(`${x.type}|${x.source}|${x.target}`))
+    return { ...r, relationships: [...(r.relationships ?? []), ...added] }
+  },
+}
+
+export const RUBY_MUTANTS: Mutant[] = [
+  dropImplementsEdge,
+  respellMixinKeyword,
+  acceptExplicitReceiver,
+  acceptInstanceSelf,
+]
