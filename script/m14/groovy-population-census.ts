@@ -362,6 +362,7 @@ async function main() {
       heritageMissedExamples,
       gspTemplateFiles,
     },
+    trait_names: [...traitNames].sort(),
     applied_trait_names: [...appliedTraitNames].sort(),
   }
 
