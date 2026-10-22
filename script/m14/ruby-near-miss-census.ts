@@ -272,7 +272,35 @@ const nearMiss = {
   requireCalls: 0,
   requireCallsByMethod: new Map<string, number>(),
   requireFiles: new Set<string>(),
+
+  // implements · the CONFORMANCE-SHAPED subset of the compositions. Ruby's "conformance" is
+  // achieved by COMPOSITION, not by declaration: `include Comparable` mixes Comparable's methods
+  // into the class, and the class then SATISFIES Comparable's interface by duck typing. That makes
+  // a stdlib-module composition the nearest thing Ruby has to a declared conformance, and it is
+  // worth counting SEPARATELY from the ordinary compositions, because it is the subset a reader
+  // would most expect to be an `implements` row. Measured over the admitted population, and the
+  // corpus carries NO type-level conformance mechanism at all (no Sorbet `sig {` block, no
+  // `# typed: strict` comment, no `T::Sig`) — so the stdlib composition IS the whole of Ruby's
+  // conformance story in this corpus.
+  stdlibConformances: 0,
+  stdlibConformanceFiles: new Set<string>(),
+  stdlibConformanceByTarget: new Map<string, number>(),
+  typeLevelConformanceFiles: 0,
 }
+
+/** The Ruby standard-library modules whose inclusion is a CONFORMANCE-shaped composition. */
+const STDLIB_CONFORMANCE_MODULES = new Set([
+  "Comparable", "Enumerable", "Forwardable", "Kernel", "Math", "Struct", "Delegator",
+  "Observable", "MonitorMixin", "Marshal",
+])
+
+/** Ruby's type-level conformance mechanisms (Sorbet / RBS). MEASURED: none in this corpus. */
+const TYPE_LEVEL_CONFORMANCE = [
+  /^\s*sig\s*\{/m,          // Sorbet sig block
+  /^\s*#\s*typed:\s*(strict|true)/m, // Sorbet sigil comment
+  /\bT::Sig\b/,             // Sorbet's runtime module
+  /^\s*sig\b/m,             // an inline RBS signature
+]
 
 const RENDER_METHODS = new Set(["render", "render_to_string", "render_to_body", "render_to_string_with_layout", "render_layout"])
 /** The Rails/ActiveRecord DSL that a decorator would be the near miss of. */
@@ -284,8 +312,22 @@ const MACRO_NAMES = new Set([
 ])
 const REQUIRE_METHODS = new Set(["require", "require_relative", "load", "autoload"])
 
-let parsed = 0
-let failed = 0
+  let parsed = 0
+  let failed = 0
+
+// ── THE TYPE-LEVEL CONFORMANCE SCAN — Ruby's other route to a declared conformance ──────────────
+// Sorbet (`sig { ... }`, `# typed: strict`, `T::Sig`) and inline RBS (`sig ...`) let a Ruby file
+// DECLARE that it conforms to an interface. If the corpus used them, a patched grammar could
+// potentially reach them and the implements ruling would have to name them. The scan is a TEXT
+// scan because these constructs are comments or DSL calls, and it is counted over the WHOLE
+// admitted population.
+for (const abs of files) {
+  let content: string
+  try { content = readFileSync(abs, "utf8") } catch { continue }
+  if (TYPE_LEVEL_CONFORMANCE.some(re => re.test(content))) {
+    nearMiss.typeLevelConformanceFiles++
+  }
+}
 
 for (const abs of files) {
   const repoRoot = path.join(CR, abs.slice((CR + path.sep).length).split(path.sep)[0])
@@ -307,6 +349,15 @@ for (const abs of files) {
       nearMiss.moduleCompositionFiles.add(rel)
       const kw = String(md.mixinType ?? "(unlabelled)")
       nearMiss.compositionByKeyword.set(kw, (nearMiss.compositionByKeyword.get(kw) ?? 0) + 1)
+      // THE CONFORMANCE-SHAPED SUBSET — a composition whose target is a standard-library module
+      // whose methods make the class SATISFY that module's interface by duck typing.
+      const tgt = String(r?.target ?? "")
+      const leaf = tgt.split("::").pop() ?? tgt
+      if (STDLIB_CONFORMANCE_MODULES.has(leaf)) {
+        nearMiss.stdlibConformances++
+        nearMiss.stdlibConformanceFiles.add(rel)
+        nearMiss.stdlibConformanceByTarget.set(leaf, (nearMiss.stdlibConformanceByTarget.get(leaf) ?? 0) + 1)
+      }
     }
     if (ty === "extends" && md.definedBy === "Class.new") {
       // a FACTORY base — the superclass-nearest-miss in its factory spelling
@@ -448,6 +499,18 @@ const report = {
       moduleCompositions: nearMiss.moduleCompositions,
       moduleCompositionFiles: nearMiss.moduleCompositionFiles.size,
       compositionByKeyword: Object.fromEntries(nearMiss.compositionByKeyword),
+      conformanceShapedCompositions: {
+        note:
+          "the subset a reader would most expect to be an `implements` row: a composition whose target is a standard-library module whose methods make the class SATISFY that module's interface by duck typing. Ruby's conformance is achieved by COMPOSITION, not by declaration — and these are already published as `mixes_in`.",
+        count: nearMiss.stdlibConformances,
+        files: nearMiss.stdlibConformanceFiles.size,
+        byTarget: Object.fromEntries(nearMiss.stdlibConformanceByTarget),
+      },
+      typeLevelConformance: {
+        note:
+          "Ruby's OTHER route to a declared conformance: Sorbet (`sig { ... }`, `# typed: strict`, `T::Sig`) and inline RBS (`sig ...`). If the corpus used these, a patched grammar could potentially reach them and this ruling would have to name them. MEASURED over the whole admitted population.",
+        files: nearMiss.typeLevelConformanceFiles,
+      },
     },
     renders: {
       construct: "the RENDER CALL (`render`, `render_to_string`, `render_to_body`, …)",
@@ -508,6 +571,8 @@ if (JSON_OUT) {
   console.log("")
   console.log("TEST 1 · THE NEAR-MISS TEST — the nearest thing Ruby HAS, and how many times it occurs:")
   console.log(`  implements → ${nearMiss.superclassClauses} superclass clauses (${nearMiss.superclassFiles.size} files) + ${nearMiss.moduleCompositions} module compositions (${nearMiss.moduleCompositionFiles.size} files) [${Object.entries(nearMiss.compositionByKeyword).map(([k, v]) => `${k} ${v}`).join(", ")}]`)
+  console.log(`             ↳ of which ${nearMiss.stdlibConformances} are CONFORMANCE-SHAPED (a stdlib module whose methods make the class satisfy its interface) [${Object.entries(nearMiss.stdlibConformanceByTarget).map(([k, v]) => `${k} ${v}`).join(", ")}]`)
+  console.log(`             ↳ type-level conformance (Sorbet / RBS): ${nearMiss.typeLevelConformanceFiles} files`)
   console.log(`  renders   → ${nearMiss.renderCalls} render calls (${nearMiss.renderFiles.size} files) [${Object.entries(nearMiss.renderCallsByMethod).map(([k, v]) => `${k} ${v}`).join(", ")}]`)
   console.log(`  decorates → ${nearMiss.macroCalls} class-body macro calls (${nearMiss.macroFiles.size} files) [${Object.entries(nearMiss.macroCallsByName).map(([k, v]) => `${k} ${v}`).join(", ")}]`)
   console.log(`  part_of   → ${nearMiss.requireCalls} require calls (${nearMiss.requireFiles.size} files) [${Object.entries(nearMiss.requireCallsByMethod).map(([k, v]) => `${k} ${v}`).join(", ")}]`)
