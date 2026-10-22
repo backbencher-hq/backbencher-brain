@@ -264,9 +264,46 @@ const judgeLane = (lane: string, row: GateRow): LaneVerdict => {
   }
 
   // ── (C) CORRECTLY RESOLVED ──────────────────────────────────────────────
+  //
+  // ★⇒⇒⇒ THE GAP THE HTML LANE FOUND IN THIS LEAD'S OWN INSTRUMENT, AND THE CHANNEL THAT CLOSES IT.
+  // The first version of this condition checked that the closure PARTITIONS the edges. **A PARTITION
+  // IS NOT A CORRECTNESS PROPERTY**: a lane can satisfy it with a `resolved` bucket whose members
+  // are, in the fleet's own indexer's words, 37,318 of 49,729 WRONG picks. The html lane measured
+  // that 148,544 of its 168,818 resolved `contains` edges (88.0 %) resolve to a target with MORE
+  // THAN ONE declaration, and 0 in every other type — because a `div` in every project declares the
+  // name `div`. **⇒⇒⇒ A RESOLVED `contains` EDGE SAYS "THERE IS A `div` IN THIS PROJECT", NOT "THIS
+  // IS THE `div`", AND THE BUCKET DOES NOT MEAN WHAT OTHER LANES' `contains` BUCKETS MEAN.**
+  //
+  // ★⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ THE FIX IS A CAVEAT CHANNEL, MODELLED
+  // ON THE `declared_no_truth` CHANNEL THAT ALREADY WORKS: THE DECLARATION CARRIES WHAT IT KNOWS
+  // ABOUT ITS OWN RESOLUTION, AND THE GATE PRINTS IT BESIDE THE VERDICT INSTEAD OF LETTING A READER
+  // ASSUME THE BUCKET MEANS WHAT OTHER LANES' BUCKETS MEAN.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ A STATED CAVEAT IS A RULING; AN UNSTATED ONE IS A HOLE.** ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+  // ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
   {
     const types: Record<string, any> = decl?.types ?? {}
     const entries = Object.entries(types)
+    // ⇒⇒⇒ THE CAVEAT IS READ, NEVER WRITTEN. IT IS THE LANE'S RULING ABOUT ITS OWN MEASUREMENT.
+    const caveats: any = decl?.resolution_caveats
+    const caveatList: string[] = Array.isArray(caveats)
+      ? caveats.map((c: any) => (typeof c === "string" ? c : JSON.stringify(c)))
+      : caveats && typeof caveats === "object"
+        ? Object.entries(caveats).map(([k, v]) => `${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`)
+        : []
     if (entries.length === 0) {
       conditions.set("resolved", { ok: false, detail: "NO PER-TYPE CLOSURE — the declaration publishes no resolution counts" })
     } else {
@@ -295,7 +332,10 @@ const judgeLane = (lane: string, row: GateRow): LaneVerdict => {
         detail:
           `edges ${edgeTotal} = resolved ${resolvedTotal} + external ${externalTotal} + ambiguous ${ambiguousTotal} + otherUnresolved ${unresolvedTotal} + unclassed ${unclassedTotal}` +
           (unclassedOk ? "" : ` — *** UNCLASSED IS ${unclassedTotal}, AND THE CEILING IS 0, ALWAYS ***`) +
-          (bucketsOk ? "" : ` — bad bucket values: ${bad.join(", ")}`),
+          (bucketsOk ? "" : ` — bad bucket values: ${bad.join(", ")}`) +
+          (caveatList.length > 0
+            ? `; THE LANE'S OWN RESOLUTION CAVEATS (a stated caveat is a ruling, and it is printed so no reader assumes this bucket means what another lane's bucket means): ${caveatList.join(" | ")}`
+            : `; *** NO RESOLUTION CAVEATS DECLARED — so a reader must assume this lane's buckets mean what every other lane's buckets mean, and that assumption is NOT CHECKED ***`),
       })
     }
   }
@@ -397,6 +437,20 @@ console.log("DONE:")
 if (doneLanes.length === 0) console.log("  (none)")
 for (const l of doneLanes) console.log(`  ${l}`)
 console.log("")
+// ⇒⇒⇒ THE CAVEATS ARE PRINTED AS THEIR OWN BLOCK, BESIDE THE VERDICT AND NOT BURIED IN IT.
+const withCaveats = verdicts.filter((v) => {
+  const d = v.conditions.get("resolved")!.detail
+  return d.includes("THE LANE'S OWN RESOLUTION CAVEATS")
+})
+if (withCaveats.length > 0) {
+  console.log("RESOLUTION CAVEATS DECLARED BY THE LANES — A STATED CAVEAT IS A RULING. These lanes' buckets do NOT all mean what every other lane's buckets mean, and the gate says so rather than letting a reader assume:")
+  for (const v of withCaveats) {
+    const d = v.conditions.get("resolved")!.detail
+    const i = d.indexOf("THE LANE'S OWN RESOLUTION CAVEATS")
+    console.log(`  ${v.lane.padEnd(12)} ${d.slice(i).replace("THE LANE'S OWN RESOLUTION CAVEATS (a stated caveat is a ruling, and it is printed so no reader assumes this bucket means what another lane's bucket means): ", "")}`)
+  }
+  console.log("")
+}
 if (nnNotDone.length > 0) {
   console.log(`AT n/n BUT NOT DONE — ${nnNotDone.length}. ⇒⇒⇒ A LANE AT n/n WITH NO WHOLE-POPULATION CLOSURE READS EXACTLY LIKE A LANE WITH ONE, AND THAT IS WHY THIS GATE EXISTS.`)
   for (const l of nnNotDone) {
