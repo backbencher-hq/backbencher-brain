@@ -156,7 +156,14 @@ function countSymlinkedDirectories(): number {
   let n = 0
   const walk = (dir: string, depth = 0) => {
     if (depth > 12) return
-    let entries: ReturnType<typeof readdirSync>
+    // ★ THE ENTRY'S NAME AND ITS KIND ARE DIFFERENT TYPES, AND THE COMPILER IS RIGHT ABOUT THAT.
+    // `readdirSync(dir, { withFileTypes: true })` returns Dirent objects whose `name` is the
+    // ENTRY'S NAME - the path segment - while `isDirectory()` / `isSymbolicLink()` are its KIND.
+    // => An annotation of the form `ReturnType<typeof readdirSync>` resolves the OVERLOAD
+    // WITHOUT the options and pins the element type to a buffer-flavoured Dirent, so `e.name`
+    // stops being a string. => THE FIX IS TO LET THE INFERRED TYPE STAND: the options object is
+    // what selects the Dirent overload, so the declaration has to keep it.
+    let entries
     try {
       entries = readdirSync(dir, { withFileTypes: true })
     } catch {
