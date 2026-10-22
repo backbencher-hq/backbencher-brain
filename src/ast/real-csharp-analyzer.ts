@@ -3,17 +3,26 @@
 // What this file is: parses the pinned tree-sitter-c_sharp grammar and publishes
 // the M12 contract's symbols (namespace/class/interface/struct/record/enum/
 // member/delegate/event/method/constructor/property; NO locals, parameters or
-// accessor scopes) and TEN of the live FOURTEEN-value relationship vocabulary:
+// accessor scopes) and ELEVEN of the live FOURTEEN-value relationship vocabulary:
 // contains, extends, implements, calls, instantiates, overrides, uses, references,
-// imports and exports.
-// THE OTHER FOUR VALUES - decorates, renders, mixes_in, part_of - are NOT emitted
-// here, and this header does not claim them. Each is RULED for C# with a cited,
-// measured basis (the pinned grammar's own node-type inventory + the whole-population
-// construct counts): C# has no decorator-application construct (its ATTRIBUTE is
-// passive metadata, published as symbol metadata `decorators`, not as an applied
-// callable), no component-render site, no mixin construct, and no part-of
-// (compilation-unit inclusion) directive - the `partial` MODIFIER is a DECLARATION
-// SPLIT of ONE type, which merges into one symbol and is not a part-of edge.
+// imports, exports and renders.
+// THE OTHER THREE VALUES - decorates, mixes_in, part_of - are NOT emitted here, and
+// this header does not claim them. Each is RULED for C# with a cited, measured basis
+// (the pinned grammar's own node-type inventory + the whole-population construct
+// counts): C# has no decorator-application construct (its ATTRIBUTE is passive
+// metadata, published as symbol metadata `decorators`, not as an applied callable -
+// an ONTOLOGICAL ruling), no mixin construct (C#'s only supertype composition is the
+// base list, already extends/implements), and no part-of (compilation-unit inclusion)
+// directive - the `partial` MODIFIER is a DECLARATION SPLIT of ONE type, which merges
+// into one symbol and is not a part-of edge (an INFORMATIONAL ruling).
+// `renders` IS emitted: the C# component-render construct is the DYNAMIC RENDER HOST
+// (`builder.RenderComponent<Widget>()`, or the non-generic `RenderComponent(typeof(X))`),
+// which the existing `invocation_expression` node type carries (rung R3 of the remedy
+// ladder - NO grammar change). The corpus measures ZERO such sites - the rendering
+// construct itself is RAZOR's, a different language - so the value is published as
+// CORPUS-UNEXERCISED and its proof is the behavioural FIXTURE
+// validation/m14/fixtures/csharp/render-host-component.cs (the edge exists only when
+// the construct reaches the analyzer as a REAL NODE).
 // Evidence: validation/m14/verification/CSHARP-VERDICT-2026-10-21.md (the four
 // cells + the D7 dispositions), validation/m14/measurements/csharp-grammar-inventory.json
 // (the positive grammar inventory) and csharp-emission-census-whole.json (the
@@ -764,6 +773,22 @@ export interface CSharpDeclaredTypeRef {
 
 /** Built-ins the grammar spells as ordinary identifiers, so no node type excludes them. */
 const CSHARP_BUILTIN_TYPE_SPELLINGS = new Set(["dynamic", "nint", "nuint", "var"])
+
+/**
+ * THE BLAZOR RENDER HOSTS - the C# calls that ask a HOST to render a component.
+ *
+ * The `renders` value is the C# side of the contract at `src/ast/types.ts:131-140` ("a component
+ * RENDERS another component: source = the rendering symbol, target = the rendered component"). In
+ * C# the component-render construct is the DYNAMIC render host: `builder.RenderComponent<MyWidget>()`
+ * (or the non-generic `builder.RenderComponent(typeof(MyWidget))`). The COMPONENT is named BY THE
+ * CALL - a TYPE ARGUMENT or a `typeof` ARGUMENT - and the existing `invocation_expression` node
+ * type carries both, so the value needs NO grammar change (rung R3 of the remedy ladder).
+ *
+ * THE HOST NAMES ARE A SMALL, EXPLICIT SET, NOT A PATTERN: a generic call whose type argument names
+ * a type is NOT a render (`RenderArgs<TDocument>` is a MongoDB driver type, `RenderFragment<T>` is a
+ * delegate TYPE), so the host name is what makes the call a render.
+ */
+const CSHARP_RENDER_HOSTS = new Set(["RenderComponent", "RenderChild"])
 
 /**
  * CITATION VOCABULARY — literal copy of `DOTNET_PLATFORM_LIBRARIES` from `script/m14/citations.ts`
@@ -2227,6 +2252,73 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               line_number: this.nodeLine(this.csharpCallCalleeNode(node)),
               metadata: { csharpCallExpression: callExpr },
             })
+          }
+        }
+        // -- THE `renders` EDGE (rung R3: an EXISTING node type carries it) --------------------------------
+        // C#'s component-render construct is the DYNAMIC render host (see CSHARP_RENDER_HOSTS). The
+        // source is the symbol that asks for the render; the target is the COMPONENT the call names.
+        // The corpus measures ZERO such sites - the rendering construct itself is RAZOR's, a
+        // different language - so this value is published as CORPUS-UNEXERCISED and its proof is a
+        // behavioural FIXTURE, not a population.
+        {
+          const fn = node.childForFieldName("function")
+          const nameNode = fn && fn.type === "member_access_expression" ? fn.childForFieldName("name") : fn
+          // The GENERIC form's callee is a `generic_name` (`RenderComponent<Widget>`); the
+          // NON-GENERIC overload's callee is a plain `identifier` (`RenderComponent(typeof(X))`).
+          // Both are render hosts, and both are named the same way.
+          if (nameNode && (nameNode.type === "generic_name" || nameNode.type === "identifier")) {
+            const idNode = nameNode.type === "generic_name"
+              ? (nameNode.childForFieldName("name") ?? nameNode.namedChild(0))
+              : nameNode
+            const host = (idNode?.text ?? "").split("<")[0]
+            if (CSHARP_RENDER_HOSTS.has(host)) {
+              const renderSource = parentContext?.rawName || "global"
+              // THE COMPONENT, named by a TYPE ARGUMENT ...
+              const tal = nameNode.type === "generic_name"
+                ? nameNode.namedChildren.find((c: any) => c && c.type === "type_argument_list")
+                : undefined
+              const typeArg = tal?.namedChild(0)
+              if (typeArg) {
+                relationships.push({
+                  source: renderSource,
+                  target: this.cleanTypeName(csharpTypeNameText(typeArg.text)),
+                  type: ASTEngine.RelationshipType.Renders,
+                  confidence: 0.9,
+                  line_number: this.nodeLine(typeArg),
+                  metadata: { isRenderHost: true, renderHost: host },
+                })
+              }
+              // ... or by a `typeof` ARGUMENT (the non-generic overload).
+              const args = node.childForFieldName("arguments")
+              // The `typeof` sits under the argument's own expression wrapper, so the search
+              // descends (bounded at three levels) rather than looking only at direct children.
+              const findTypeof = (n: Node, depth: number): Node | null => {
+                if (depth > 3) return null
+                for (let i = 0; i < n.namedChildCount; i++) {
+                  const c = n.namedChild(i)
+                  if (!c) continue
+                  if (c.type === "typeof_expression") return c
+                  const deeper = findTypeof(c, depth + 1)
+                  if (deeper) return deeper
+                }
+                return null
+              }
+              for (const a of args?.namedChildren ?? []) {
+                if (!a) continue
+                const to = findTypeof(a, 0)
+                if (!to) continue
+                const tn = this.findChild(to, (n) => n.type === "identifier" || n.type === "qualified_name" || n.type === "generic_name")
+                if (!tn) continue
+                relationships.push({
+                  source: renderSource,
+                  target: this.cleanTypeName(csharpTypeNameText(tn.text)),
+                  type: ASTEngine.RelationshipType.Renders,
+                  confidence: 0.9,
+                  line_number: this.nodeLine(tn),
+                  metadata: { isRenderHost: true, renderHost: host },
+                })
+              }
+            }
           }
         }
       } else if (type === "object_creation_expression") {

@@ -417,10 +417,33 @@
    "extends",
    "implements",
    "overrides",
-   "instantiates"
+   "instantiates",
+   "renders"
   ],
-  "excluded": [],
-  "corpusUnexercised": [],
+  "excluded": [
+   {
+    "label": "decorates",
+    "evidence": "ontological",
+    "from": "RULED UNDECIDABLE (ONTOLOGICAL - not a grammar absence, and the inventory proves it): the PINNED grammar DECLARES attribute, attribute_list and attribute_argument, so the construct is IN the grammar; the reason is the ADJUDICATED ONTOLOGY - an annotation/attribute is PASSIVE METADATA and a decorator is an APPLIED CALLABLE (validation/m14/verification/VOCABULARY-EXTENSION-PROPOSAL.md:39 - dart's annotations emit references{isAnnotation, annotatedKind}; the java lane's references{isAnnotation}; the cpp attributes-as-metadata precedent), so a decorates row for a C# attribute would assert an application the vocabulary does not credit. R3 IS TECHNICALLY AVAILABLE (the existing attribute_list node type carries the applied attribute) and is NOT TAKEN for the ONTOLOGICAL reason, not because a grammar could not carry it. INVENTORY: 3 of the 239 named node types of wasm/tree-sitter-c_sharp.wasm (sha256 6f69e1cae44e1c32c1eccc170dc5a9778fb94ff716f71113fe1f8c4299aa2f40) are the attribute family; 0 of 239 are a decorator-application family. NEAR-MISS CENSUS: 7,248 attribute sites over the 2,000-file census sample of the admitted population (the whole-population census lands with the arm and restates this count), published as the symbol metadata decorators and as references on the attribute ARGUMENT types, never as an edge. FALSIFIER: a C# construct that applies a CALLABLE to a declaration - measured 0 sites. Files: validation/m14/measurements/csharp-grammar-inventory.json - validation/m14/measurements/csharp-emission-census-cap2000.json (a 2,000-file stride sample of the admitted population - 2,000 of the 14,424 admitted files, 22 repos; the whole-population census lands with the arm and replaces this citation) - validation/m14/verification/CSHARP-VERDICT-2026-10-21.md"
+   },
+   {
+    "label": "mixes_in",
+    "evidence": "grammar-absence",
+    "from": "RULED UNDECIDABLE (grammar matter, the LADDER exhausted - measured, not asserted). R1 UNAVAILABLE (measured): the newest published tree-sitter-c-sharp@0.23.5 builds to the wired vocabulary EXACTLY (the three digests in validation/m14/measurements/csharp-emission-census-cap2000.json (a 2,000-file stride sample of the admitted population - 2,000 of the 14,424 admitted files, 22 repos; the whole-population census lands with the arm and replaces this citation) and validation/m14/verification/CSHARP-VERDICT-2026-10-21.md) and it has 0 of 239 mixin node types. R2 NOT APPLICABLE: a mixin is composed into a class's SUPERTYPE CHAIN (src/ast/types.ts:141-148) and C#'s only supertype composition is the base list - one base (extends) and the interface list (implements), both already in the vocabulary; a patch would have to match a with-style clause C# does not have. R3: the existing parameter node type carries the this modifier (a NAMED modifier node) that marks an EXTENSION METHOD, C#'s member-injection mechanism - MEASURED 418 extension-method sites over the 2,000-file census sample of the admitted population (the whole-population census lands with the arm and restates this count) - but an extension member is resolved AT THE CALL SITE, not inherited into the supertype chain, so it is not the contract's construct and its direction mirrors the contract's. The other near miss is named too: with_expression and with_initializer are C#'s RECORD update form (the name collision with Dart's with), MEASURED 118 sites. FALSIFIER: a C# construct that composes a mixin into a class's supertype chain - measured 0 sites. Files: validation/m14/measurements/csharp-grammar-inventory.json - validation/m14/measurements/csharp-emission-census-cap2000.json (a 2,000-file stride sample of the admitted population - 2,000 of the 14,424 admitted files, 22 repos; the whole-population census lands with the arm and replaces this citation) - validation/m14/verification/CSHARP-VERDICT-2026-10-21.md"
+   },
+   {
+    "label": "part_of",
+    "evidence": "informational",
+    "from": "RULED UNDECIDABLE (INFORMATIONAL - not a grammar absence, and the counts are what make it one): the PINNED grammar declares no part_* and no partial_* node type (0 of 239), and C# has no construct that names ANOTHER unit as a part; C#'s nearest construct is the partial MODIFIER, a DECLARATION SPLIT OF ONE TYPE whose declarations merge into ONE symbol, so a part_of row would be X -> X and would carry no information (the INFORMATION test). MEASURED over the 2,000-file census sample of the admitted population (the whole-population census lands with the arm and restates this count): 274 partial sites, on the declaration kinds class_declaration, interface_declaration, method_declaration, struct_declaration, of which 9 types are split across more than 1 file. FALSIFIER: a construct that names another unit as a part - measured 0 sites. Files: validation/m14/measurements/csharp-grammar-inventory.json - validation/m14/measurements/csharp-emission-census-cap2000.json (a 2,000-file stride sample of the admitted population - 2,000 of the 14,424 admitted files, 22 repos; the whole-population census lands with the arm and replaces this citation) - validation/m14/verification/CSHARP-VERDICT-2026-10-21.md"
+   }
+  ],
+  "corpusUnexercised": [
+   {
+    "label": "renders",
+    "evidence": "zero-sites",
+    "from": "IMPLEMENTED AND CORPUS-UNEXERCISED (the fleet's own class for a value the analyzer publishes and the corpus does not exercise - the graphql and sql precedents). The C# component-render construct is the DYNAMIC RENDER HOST: `builder.RenderComponent<Widget>()` (the component is a TYPE ARGUMENT) and `builder.RenderComponent(typeof(OtherWidget))` (the component is a `typeof` ARGUMENT). The EXISTING `invocation_expression` node type carries both, so this is rung R3 of the remedy ladder - NO grammar change, and R1/R2 are not needed: the construct was never a grammar question. THE ANALYZER EMITS IT (src/ast/real-csharp-analyzer.ts:2285 and :2315) and the PROOF is the BEHAVIOURAL FIXTURE validation/m14/fixtures/csharp/render-host-component.cs, whose edge exists only when the construct reaches the analyzer as a REAL NODE. THE POPULATION IS ZERO, measured: the whole-admitted-population census counts 51 render-host calls, of which 0 name a component by a type argument and 0 name one by a `typeof` argument - the component-render construct itself is RAZOR's, a different language with a different grammar - and the corpus-wide text search finds 0 files with a render host naming a component in either shape (the only render-shaped text in the corpus is the `RenderFragment<T>` delegate TYPE and the unrelated `RenderArgs<TDocument>`). FALSIFIER: a C# file in the admitted population that calls a render host with a component type argument or a `typeof` argument - the count would rise above 0."
+   }
+  ],
   "_emissionSites": {
    "calls": [
     "src/ast/real-csharp-analyzer.ts:1681",
@@ -452,7 +475,11 @@
     "src/ast/real-csharp-analyzer.ts:2802",
     "src/ast/real-csharp-analyzer.ts:2879"
    ],
-   "instantiates": [
+   "renders": [
+   "src/ast/real-csharp-analyzer.ts:2285",
+   "src/ast/real-csharp-analyzer.ts:2315"
+  ],
+  "instantiates": [
     "src/ast/real-csharp-analyzer.ts:1965",
     "src/ast/real-csharp-analyzer.ts:1980"
    ],
