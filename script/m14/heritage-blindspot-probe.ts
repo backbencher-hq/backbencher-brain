@@ -128,6 +128,15 @@ const HERITAGE: Record<string, { node: string; shapes: string[]; source: string;
   // `class X < Struct.new(:a)` is exactly that. The four uncovered clauses are `call` superclasses,
   // and the analyzer's refusal is CORRECT. The probe reports the shape and the lane's instrument
   // decides; the probe does not claim a defect where the analyzer is right.
+  // CPP (cpp lane, 2026-10-22). The lane MEASURED its own heritage clause — `base_class_clause`,
+  // and the analyzer's children are FLAT (`access_specifier` / `type_identifier` / `template_type`,
+  // per the analyzer's own comment at `src/ast/real-cpp-analyzer.ts:3684-3687`) — and asked for the
+  // entry rather than taking the Lead's file. ⇒ THE SHAPES ARE READ FROM THE ANALYZER'S OWN SOURCE
+  // AT THE LINES IT CITES, so the drift check below can CHECK them. ⇒ AND C++ HAS MORE BASE-CLAUSE
+  // FORMS THAN MOST LANGUAGES — multiple inheritance, virtual bases, template bases, qualified
+  // names — so this is exactly the lane the probe was aimed at.
+  cpp: { node: "base_class_clause", shapes: ["type_identifier", "qualified_identifier", "template_type"],
+    source: "src/ast/real-cpp-analyzer.ts:3682-3692 — the base clause's children are FLAT" },
   ruby: { node: "superclass", shapes: ["constant", "scope_resolution"],
     source: "src/ast/real-ruby-analyzer.ts:311-315 — a `call` superclass is unknowable statically, and refusing it is right" },
 }

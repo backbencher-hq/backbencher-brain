@@ -32,6 +32,7 @@
 # USAGE
 #   script/m14/arm-token.sh take <lane>     # take it, or fail loudly
 #   script/m14/arm-token.sh beat <lane>     # refresh the heartbeat (during a long arm)
+#   script/m14/arm-token.sh beat-daemon <lane>   # DETACHED heartbeat that wants no CPU (see below)
 #   script/m14/arm-token.sh release <lane>  # release it (yours only)
 #   script/m14/arm-token.sh status          # who holds it, and for how long
 #   script/m14/arm-token.sh force <lane>    # break a lock whose holder is known-gone
@@ -275,6 +276,60 @@ case "$cmd" in
     # explicitly ✓✓, so a lane that was never granted cannot inherit one ✓✓.
     write_holder "$lane" "$h_pid" "$h_ticks" "$(holder_granted)"
     echo "ARM TOKEN BEAT by $lane"; exit 0
+    ;;
+  __beat-daemon-loop)
+    # THE INTERNAL LOOP OF THE BEAT DAEMON. It is NOT a lane-facing verb and it is not in USAGE.
+    #
+    # ★ WHY IT EXISTS, AND IT IS A REAL DEFECT MEASURED IN THE FLEET. THE HEARTBEAT IS A LIVENESS
+    # SIGNAL, AND A LIVENESS SIGNAL THAT NEEDS THE CPU IS NOT A LIVENESS SIGNAL IN A FLEET WHOSE
+    # ARMS SATURATE THE CPU. MEASURED: typescript's whole-population arm held the heavy token with
+    # a beat 1,219s old, then 1,302s old, on a machine whose load average was 6.14 on 8 CPUs — the
+    # arm was demonstrably RUNNING (the load said so) and its BEAT was CPU-STARVED, because the
+    # lane's beat call was queued behind its own parse.
+    #
+    # ⇒ ⇒ ⇒ AND THE CONSEQUENCE IS THE WORST ONE THE TOKEN EXISTS TO PREVENT: the reclaim rule is
+    # `age >= TTL`, so a LIVE arm whose beat is starved gets its token RECLAIMED MID-RUN — and then
+    # the next lane in the queue starts a SECOND heavy arm while the first is still running. That is
+    # two heavy arms at once, which is exactly what the one-heavy-arm rule forbids, and it is how a
+    # fleet produces a WRONG measurement rather than merely a slow one.
+    #
+    # ⇒ THE FIX IS THAT THE BEAT MUST NOT NEED THE CPU. This loop is `sleep` and a `sed`: it wants
+    # no scheduler attention at all, so it keeps beating under a saturated load, and the token's
+    # liveness signal stops depending on the very resource the arm is consuming.
+    while :; do
+      sleep 120
+      # THE DAEMON STOPS WHEN THE LANE NO LONGER HOLDS THE TOKEN — so a released token is never
+      # kept alive by a stale daemon, and a daemon cannot outlive its arm into another lane's turn.
+      h="$(holder | sed -n 1p)"
+      small_held=0
+      if [ -f "$SMALL_TOKEN_DIR/holder/holder" ] && grep -q "lane=$lane" "$SMALL_TOKEN_DIR/holder/holder" 2>/dev/null; then
+        small_held=1
+      fi
+      if [ "$h" != "$lane" ] && [ "$small_held" -eq 0 ]; then
+        echo "beat-daemon for $lane stopping: the token is no longer held by $lane (now: ${h:-nobody})."
+        exit 0
+      fi
+      "$0" beat "$lane" >/dev/null 2>&1 || true
+    done
+    ;;
+  beat-daemon)
+    [ -n "$lane" ] || { echo "usage: arm-token.sh beat-daemon <lane>"; exit 2; }
+    # THE LANE MUST ALREADY HOLD THE TOKEN (heavy or small) — a daemon for a token nobody holds is a
+    # daemon that beats nothing.
+    h="$(holder | sed -n 1p)"
+    small_held=0
+    if [ -f "$SMALL_TOKEN_DIR/holder/holder" ] && grep -q "lane=$lane" "$SMALL_TOKEN_DIR/holder/holder" 2>/dev/null; then
+      small_held=1
+    fi
+    if [ "$h" != "$lane" ] && [ "$small_held" -eq 0 ]; then
+      echo "BEAT DAEMON REFUSED — $lane holds neither the heavy token (held by ${h:-nobody}) nor the small slot."
+      exit 3
+    fi
+    DAEMON_LOG="${BB_ARM_BEAT_LOG:-$PWD/.tmp-lead/arm-beat-daemon.log}"
+    mkdir -p "$(dirname "$DAEMON_LOG")" 2>/dev/null || true
+    setsid nohup bash "$0" __beat-daemon-loop "$lane" >>"$DAEMON_LOG" 2>&1 &
+    echo "BEAT DAEMON started for $lane (detached, every 120s, no CPU wanted) — log: $DAEMON_LOG"
+    exit 0
     ;;
   release)
     [ -n "$lane" ] || { echo "usage: arm-token.sh release <lane>"; exit 2; }
