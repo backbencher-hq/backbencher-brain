@@ -22,7 +22,7 @@
  *
  * RUN: bun script/m14/operator-name-proof.ts
  */
-import { filterNoiseRelationships } from "../src/ast/pool-worker"
+import { filterNoiseRelationships } from "../../src/ast/pool-worker"
 
 const ruby = [{ type: "contains", source: "EarlyTime", target: "<=>" }]
 const kept = filterNoiseRelationships(ruby, "ruby", new Set(["EarlyTime"]))
