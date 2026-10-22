@@ -6,6 +6,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
+import { extensionsFor } from "./language-extensions.ts"
 // Resolved from THIS file's location, not hardcoded. It was
 // "$HOME/backbencher-brain", which does not exist on this laptop
 // ($HOME/mcp/backbencher-brain) — so the instrument the programme mandates for
@@ -224,16 +225,21 @@ for (const L of targets) {
   if (!Cls) { report.push([L, "NO ANALYZER CLASS EXPORTED", 0, [], new Map(), 0, 0]); continue }
 
   const dir = join(CORPUS, corpusDir)
-  const exts = { rust: [".rs"], python: [".py"], go: [".go"], kotlin: [".kt", ".kts"], scala: [".scala"],
-    groovy: [".groovy"], haskell: [".hs"], swift: [".swift"], perl: [".pl", ".pm"], clojure: [".clj", ".cljs"],
-    vb: [".vb", ".bas", ".frm", ".cls"], vue: [".vue"], svelte: [".svelte"], html: [".html", ".htm"], css: [".css"],
-    csharp: [".cs"], java: [".java"], "objective-c": [".m"], typescript: [".ts", ".tsx"], javascript: [".js", ".mjs"],
-    bash: [".sh", ".bash"], fsharp: [".fs", ".fsi", ".fsx"], zig: [".zig"], lua: [".lua"],
-    julia: [".jl"], nim: [".nim"], php: [".php"], powershell: [".ps1", ".psm1"], r: [".r", ".R"],
-    dart: [".dart"], sql: [".sql"], graphql: [".graphql", ".gql"], protobuf: [".proto"], json: [".json"],
-    yaml: [".yml", ".yaml"], scss: [".scss"], hcl: [".hcl", ".tf"], make: ["Makefile", ".mk"],
-    toml: [".toml"], xml: [".xml"], markdown: [".md"], clean: [".icl", ".dcl"],
-    elixir: [".ex", ".exs"], cpp: [".cpp", ".cc", ".h"], ruby: [".rb"], erlang: [".erl", ".hrl"], c: [".c", ".h"] }[lang] || []
+  // ⇒⇒⇒ THE EXTENSIONS COME FROM THE ROUTER'S ONE TABLE, AND THEY USED TO COME FROM A SECOND COPY.
+  // THIS IS THE ARBITER — "the instrument the programme mandates for coverage claims" — and it
+  // carried its own per-language extension list, which DISAGREED with the gate's for 24 languages.
+  // ⇒⇒⇒ ⇒⇒⇒ **THE ARBITER'S POPULATION AND THE GATE'S POPULATION WERE DIFFERENT POPULATIONS UNDER
+  // THE SAME NAME**, and the sharpest case is `html`: this copy admitted `[".html", ".htm"]` while
+  // the router's table admits THIRTEEN, including all eleven template dialects — so every firing
+  // check this arbiter ran over html measured a population that EXCLUDED the 2,070 template-dialect
+  // files, and the 23 % of html's admitted population that no lane models was invisible here.
+  // ⇒⇒⇒ ⇒⇒⇒ `cpp` is the same shape: `[".cpp", ".cc", ".h"]` against the table's eleven.
+  // ⇒⇒⇒ ⇒⇒⇒ **THE FIX IS NOT TO EDIT THIS LIST — THE FIX IS THAT THERE IS NO SECOND LIST.** The
+  // table was extracted to `script/m14/language-extensions.ts` and every consumer reads it, because
+  // the Lead's own heritage probe carried a copy with no `cpp` entry, measured an EMPTY POPULATION
+  // and printed a clean-looking zero with exit 0. ⇒⇒⇒ **A TABLE DUPLICATED IN TWO PLACES IS ONE
+  // TABLE THAT WILL DIVERGE**, and it did.
+  const exts = extensionsFor(lang)
   const picked = pickFiles(dir, exts, Number(process.env.NFILES||120))
   const files = picked.files
   if (!files.length) { report.push([L, `NO CORPUS under ${corpusDir}`, 0, [], new Map(), 0, 0]); continue }
