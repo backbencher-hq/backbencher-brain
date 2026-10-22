@@ -217,6 +217,18 @@ export function deriveScalaImplementsTruth(root: any): TruthEdge[] {
   }
 
   const stack: any[] = [root]
+  /** ONE ROW PER (source, target) PAIR PER FILE — the analyzer's published contract.
+   *
+   *  ★ WHY THIS DE-DUPLICATION IS PART OF THE CONTRACT AND NOT A CONVENIENCE. A file can carry the
+   *    same (source, target) pair twice: two declarations with the SAME NAME, each with a self type
+   *    requiring the same type (`scala3/tests/pos/i18351.scala` — `Foo->CrudService` twice; also
+   *    `scala3/tests/pos/i9844.scala` `Bar->Foo`, `scala3/tests/init/warn/inner11.scala`
+   *    `Info->ThisInfo`, and the NEGATIVE test `scala3/tests/neg/i3083.scala` `Addition->Literal`).
+   *    The row is a pair of NAMES, so the pair is one row. The analyzer publishes it once (its
+   *    `emitted` set is keyed per file), and the oracle must publish it once too — an oracle that
+   *    publishes it twice would report a MISSING row against a correct analyzer, and a truth that
+   *    invents a disagreement is worse than one that misses a row. */
+  const seen = new Set<string>()
   while (stack.length > 0) {
     const n = stack.pop()
     if (!n) continue
@@ -229,6 +241,9 @@ export function deriveScalaImplementsTruth(root: any): TruthEdge[] {
           // THE INFORMATION TEST — an X -> X row carries no information.
           const leaf = target.includes(".") ? target.slice(target.lastIndexOf(".") + 1) : target
           if (target === owner || leaf === owner) continue
+          const k = `${owner}->${target}`
+          if (seen.has(k)) continue
+          seen.add(k)
           out.push({ label: "implements", from: owner, target })
         }
       }
