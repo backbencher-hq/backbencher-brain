@@ -224,6 +224,8 @@ start_beat_daemon() {  # lane — a DETACHED heartbeat that wants no CPU
     return 0   # a daemon pulsed recently — it is alive
   fi
   printf '%s\n' "$d_now" > "$d_alive" 2>/dev/null || true
+  # ⇒⇒⇒ AND THE MARKER IS WRITTEN AT START, not only after the daemon's first 120 s sleep, so a take
+  # is observable as "a daemon is on its way" rather than "nothing is known yet".
   # ⇒⇒⇒ AND THE SCRIPT PATH IS ABSOLUTE. `"$0"` is whatever the CALLER typed, and a caller that
   # typed a relative path gets a daemon that cannot find its own script the moment its working
   # directory is not the repository root. ⇒⇒⇒ A PATH THAT WAS NEVER RUN FROM ELSEWHERE IS A WISH.
@@ -403,10 +405,15 @@ case "$cmd" in
       echo "BEAT DAEMON REFUSED — $lane holds neither the heavy token (held by ${h:-nobody}) nor the small slot."
       exit 3
     fi
-    DAEMON_LOG="${BB_ARM_BEAT_LOG:-$PWD/.tmp-lead/arm-beat-daemon.log}"
-    mkdir -p "$(dirname "$DAEMON_LOG")" 2>/dev/null || true
-    setsid nohup bash "$0" __beat-daemon-loop "$lane" >>"$DAEMON_LOG" 2>&1 &
-    echo "BEAT DAEMON started for $lane (detached, every 120s, no CPU wanted) — log: $DAEMON_LOG"
+    # ⇒⇒⇒ THE VERB DELEGATES TO THE SAME HELPER THE `take` USES, BECAUSE THE VERB HAD ITS OWN COPY
+    # OF THE LAUNCH AND THE COPY STILL USED THE RELATIVE `"$0"`. ⇒⇒⇒ **A LAUNCH PATH DUPLICATED IN
+    # TWO PLACES IS ONE PATH THAT WILL BE FIXED IN ONE PLACE ONLY** — the same shape as the
+    # operator-name class that was extended in one place and not the other, which left 7 Ruby
+    # setter rows dropped and a commit message claiming they were exempt. ⇒⇒⇒ ONE HELPER, ONE
+    # LAUNCH, ONE PATH TO BE RIGHT.
+    start_beat_daemon "$lane"
+    echo "BEAT DAEMON started for $lane (detached, every 120s, no CPU wanted)."
+    echo "  log: ${BB_ARM_BEAT_LOG:-$PWD/.tmp-lead/arm-beat-daemon.log}"
     exit 0
     ;;
   release)
