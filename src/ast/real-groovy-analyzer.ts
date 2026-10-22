@@ -2126,7 +2126,15 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // THE INVARIANT, stated once so no future branch can break it: a node is
+    // visited AT MOST ONCE. `emit` already dedupes through `emitted`, so a
+    // duplicate visit could never change the output — it could only add time.
+    // Guarding here makes "walk cost is linear in tree size" true by
+    // construction rather than by every branch being written carefully.
+    const visited = new Set<number>()
     const walk = (n: Node): void => {
+      if (visited.has(n.id)) return
+      visited.add(n.id)
       switch (n.type) {
         case "binary_expression": {
           // Groovy `as` coercion — `o as String`, `[] as Set`,
@@ -2141,13 +2149,31 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           const asType = n.childForFieldName("type")
           if (asType && n.childForFieldName("left")) {
             emit(n, [asType], "as_coercion", "cast_type")
-            // Do not descend further for this node: the generic type-clause
-            // scan below does not apply to expressions.
-            const lt = n.childForFieldName("left")
-            if (lt) walk(lt)
+            // THE COERCION'S CHILDREN ARE WALKED EXACTLY ONCE, BY THE TAIL
+            // LOOP AFTER THIS SWITCH. This branch used to ALSO call
+            // `walk(lt)` and then `break` — and `break` leaves the switch, so
+            // the tail loop then walked `left` a SECOND time. Every `as` on the
+            // way down therefore doubled the visits to everything below it, and
+            // the cost was 2^depth rather than one visit per node. Measured on
+            // graphql-java's IntrospectionTest.groovy (32 KB, 3,023 tree nodes,
+            // max fan-out 39 — so neither size nor fan-out is the cause): the
+            // type-reference walk made 300,000+ recursive calls over a 3,023-
+            // node tree and `analyze()` never returned, which hung the fleet's
+            // incoming gate on that file. Removing the duplicate visit cannot
+            // change the OUTPUT: `emit` dedupes through its `emitted` set, so
+            // the extra visits were already invisible — only the time was not.
+            // `mainwalk` and `fieldAccessWalk` visit exactly 3,023 nodes on the
+            // same file, which is what one visit per node looks like.
             break
           }
-          for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c) }
+          // NO EXPLICIT CHILD WALK HERE: `break` leaves the switch and the
+          // tail loop walks every named child exactly once. This line used to
+          // walk them here TOO, so each nested binary_expression doubled the
+          // visits to everything below it — 2^depth, not one visit per node.
+          // Groovy builds long dotted/builder chains and multi-line strings as
+          // left-nested binary_expressions, so a file with a few hundred of
+          // them (graphql-java's IntrospectionTest.groovy) turned a 3,023-node
+          // tree into 300,000+ recursive calls and `analyze()` never returned.
           break
         }
         case "field_declaration":
