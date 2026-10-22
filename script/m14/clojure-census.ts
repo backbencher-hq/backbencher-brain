@@ -296,6 +296,21 @@ for (const file of disc.files) {
   walk(tree.rootNode)
   let res: any
   try { res = analyzer.analyze(tree.rootNode, content, file) } catch (e) { errors.push({ file: rel, error: `analyze: ${(e as Error).message}` }); continue }
+  // ★ THE TREE IS FREED HERE, AND IT WAS NOT — AND THIS FILE's HEADER CLAIMED IT WAS.
+  //
+  // The dart lane's defect, generalised: a tree-sitter WASM module's memory grows with every parse
+  // and never shrinks, because the TREE's WASM allocation is only released by `tree.delete()`. A
+  // census that holds every tree it parses grows without bound, and at roughly 7,600 real parses the
+  // module ABORTS — every later parse aborts with it, and a single-process walk then PRINTS A
+  // WHOLE-POPULATION HEADER OVER A FRACTION OF THE POPULATION. That is the worst defect in this
+  // campaign, because it looks like a measurement.
+  //
+  // THIS FILE's HEADER SAID "The tree is deleted after each file" and the code DID NOT DO IT. The
+  // population here is 646 files, far below the abort threshold, so no number this file published
+  // was affected — but the CLAIM was false and this file is the fleet's reference implementation,
+  // so the claim is fixed here rather than defended. The extended-types census, which walks the same
+  // population, already called `tree.delete()` after every file.
+  try { tree.delete() } catch { /* a tree that cannot be freed is not a failed measurement */ }
   filesParsed++
   const rels = Array.isArray(res?.relationships) ? res.relationships : []
   const typesInFile = new Set<string>()
