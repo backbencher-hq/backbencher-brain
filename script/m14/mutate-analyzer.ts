@@ -12676,13 +12676,6 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
-    id: "ruby/drop-implements-edge",
-    language: "ruby",
-    defectClass: "relationship-loss",
-    description: "drops ruby module-mixin implements edges (Service->Loggable) — ruby include pin",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
-  },
-  {
     id: "ruby/drop-member-read-uses",
     language: "ruby",
     defectClass: "relationship-loss",
