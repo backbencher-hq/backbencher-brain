@@ -225,6 +225,88 @@ console.log(`HERITAGE BLIND-SPOT PROBE — ${LANG}`)
 console.log(`population: ${files.length} GIT-TRACKED admitted files from ${CORPUS}${REPO ? `/${REPO}` : ""}`)
 console.log(`heritage node: ${conf.node} · the analyzer's lookup: ${conf.mode === "any" ? "EVERY named child" : conf.shapes.join(" ?? ")}`)
 console.log(`the pair, quoted from the analyzer: ${conf.source}`)
+
+// ★★ THE CONFIG DRIFT CHECK, AND IT EXISTS BECAUSE A LANE FOUND THE SAME DEFECT IN ITS OWN
+// INSTRUMENT. The scala lane's heritage probe re-implemented the analyzer's dispatch as a
+// HAND-WRITTEN TABLE, and when the analyzer's dispatch grew a branch the table did not, and the probe
+// went on reporting 148 uncovered clauses of which 35 the analyzer already covered. THE GENERAL FORM:
+// **A MEASURE THAT CANNOT DISTINGUISH "MEASURED" FROM "MEASURED A COPY OF THE THING" IS NOT A
+// MEASURE.** THIS PROBE HAS THE SAME SHAPE — `conf.shapes` below is a hand-written copy of the
+// analyzer's own lookup — and it is the LEAD's own instrument, so the LEAD fixes it.
+//
+// ⇒ THE FIX IS THE SCALA LANE'S FIX, AND IT IS THE ONE THAT WORKS WITHOUT A REWRITE: A MEASUREMENT
+// THAT CANNOT CALL THE THING IT MEASURES MUST AT LEAST BE COMPARED AGAINST IT. The table quotes the
+// analyzer's line numbers in `conf.source`; so this check READS THOSE LINES OUT OF THE ANALYZER'S OWN
+// SOURCE and compares the node-type names it finds there against the table. ⇒ A TABLE THAT HAS
+// DRIFTED FROM THE ANALYZER SAYS SO INSTEAD OF REPORTING A CLEAN RESULT. The probe's verdict becomes
+// "the ANALYZER's lookup can reach these shapes" only while the table and the analyzer agree.
+const drift: { analyzerOnly: string[]; tableOnly: string[]; cited: string[] } = {
+  analyzerOnly: [], tableOnly: [], cited: [],
+}
+{
+  const m = /^(src\/ast\/real-[a-z0-9-]+-analyzer\.ts)/.exec(conf.source)
+  if (m && conf.mode !== "any") {
+    const file = resolve(ROOT, m[1])
+    // EVERY `:NNN` in the citation, wherever it sits in the string. The first version took them
+    // from a group that stopped at the first comma, so a citation of `:786,:831` measured ONE line
+    // and then reported the table's own second shape as missing from the analyzer — a FALSE POSITIVE
+    // manufactured by the checker, which is the last thing a checker may do.
+    const lines = (conf.source.match(/:\d+/g) ?? []).map((x) => Number.parseInt(x.slice(1), 10))
+    drift.cited = lines.map((l) => `${m[1]}:${l}`)
+    let srcText = ""
+    try { srcText = readFileSync(file, "utf8") } catch { srcText = "" }
+    const all = srcText.split("\n")
+    // A WINDOW, because a lookup is often a multi-line condition and quoting one line of it would
+    // half the table and manufacture drift that is not there.
+    const WINDOW = 3
+    const window = new Set<number>()
+    for (const l of lines) for (let d = -WINDOW; d <= WINDOW; d++) window.add(l + d)
+    const found = new Set<string>()
+    for (const ln of window) {
+      const text = all[ln - 1]
+      if (!text) continue
+      for (const lit of text.matchAll(/["'`]([a-z][a-z0-9_]*)["'`]/g)) found.add(lit[1])
+    }
+    // The analyzer's own words are not node types: `identifier` and `type` are, but `node`, `type`,
+    // `name` and `kind` are the vocabulary of the surrounding code. Only a name that LOOKS like a
+    // tree-sitter node type — snake_case with an underscore, or one of the single-word node types the
+    // analyzers actually compare against — is considered.
+    const NODEISH = /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/
+    // THE HERITAGE NODE ITSELF IS NOT A SHAPE — it is the node the analyzer ITERATES, so it appears
+    // in the same region and naming it would be a false positive on every language.
+    const analyzerNames = [...found].filter((x) => NODEISH.test(x) && x !== conf.node).sort()
+    const tableNames = [...conf.shapes].sort()
+    // ⇒ THE COMPARISON IS ONE-DIRECTIONAL, AND IT IS THE DIRECTION THAT MATTERS. The defect the
+    // scala lane found was that the ANALYZER grew a branch the table did not — so the analyzer's
+    // names that the table lacks ARE the drift. The reverse (the table names something the analyzer
+    // does not) is weaker evidence — a table may legitimately name a shape the analyzer handles
+    // elsewhere — so it is reported as a NOTE and does not condemn the verdict.
+    drift.analyzerOnly = analyzerNames.filter((x) => !tableNames.includes(x))
+    drift.tableOnly = tableNames.filter((x) => !analyzerNames.includes(x))
+  }
+}
+if (drift.cited.length > 0) {
+  const clean = drift.analyzerOnly.length === 0
+  console.log(
+    `config drift check: the analyzer's own source at ${drift.cited.join(", ")} ` +
+    (clean
+      ? "names every node type this probe's table names — the table and the analyzer AGREE."
+      : "names a node type this probe's table does NOT — THE TABLE HAS DRIFTED."),
+  )
+  if (drift.analyzerOnly.length > 0) {
+    console.log(`  ★ the analyzer names, and this table does NOT: ${drift.analyzerOnly.join(", ")}`)
+  }
+  if (drift.tableOnly.length > 0) {
+    console.log(`  · note: this table names, and the cited lines do not: ${drift.tableOnly.join(", ")}`)
+  }
+  if (!clean) {
+    console.log(`  ⇒ THE TABLE HAS DRIFTED FROM THE ANALYZER. The shapes this probe REPORTS as uncovered`)
+    console.log(`    are measured against a COPY of the analyzer's lookup, so the clean/uncovered verdict`)
+    console.log(`    below is NOT a verdict about the analyzer until the table is corrected. ⇒ A MEASURE`)
+    console.log(`    THAT CANNOT DISTINGUISH "MEASURED" FROM "MEASURED A COPY OF THE THING" IS NOT A`)
+    console.log(`    MEASURE, and the lane's own instrument — which CALLS the analyzer — is the authority.`)
+  }
+}
 console.log(`production build: ${await productionDigest()}`)
 console.log()
 

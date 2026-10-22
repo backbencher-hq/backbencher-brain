@@ -178,11 +178,53 @@ const isBareRefName = (s: string): boolean => {
  *  - The grammar exposes exactly two fields, `key` and `value`, and both are read
  *    through `childForFieldName`, so no part of the extraction needs a delimiter or a
  *    character offset.
+ *  - INHERITANCE HAS THREE SPELLINGS IN THE CORPUS, and all three are `extends`: the
+ *    MERGE KEY `<<: *anchor`; the JSON SCHEMA COMPOSITION `allOf: [{$ref: Base}]`, whose
+ *    keyword is a superset relation and which the JSON lane had already ruled to be
+ *    `extends` (`BD-allof-extends`); and the CONFIGURATION KEY `extends:`, whose value
+ *    SHAPE says whether the base is a sibling job, a sibling service, a file or another
+ *    tool's config preset. A grammar has no node type for a KEYWORD, so the first two of
+ *    these were attempts the analyzer had not made rather than constructs the language
+ *    cannot express — which is the difference the R3 rung is for.
  *  - A node reached through a damaged enclosing node gets an identity that is unique
  *    and records the damage. A grammar ERROR must not silently collapse eleven
  *    distinct records into one id — the measured case is
  *    `docker/vendor/.../cloudbuild.yaml`, where every sequence item under the file's
  *    single ERROR node became `[13]`.
+ *  - THE FOUR EXTENDED TYPES ARE RULED, EACH ON A COUNTED CONSTRUCT, and the counts are
+ *    the census's (`script/m14/yaml-emission-census.ts`, over the whole admitted
+ *    population). The rule the fleet learned the hard way is that a ruling's FALSIFIER
+ *    MUST NAME A CONSTRUCT AN INSTRUMENT COUNTS — a falsifier that names nothing is a
+ *    sentence, and a construct with "none measured" in its parenthetical is a todo
+ *    wearing a ruling's clothes:
+ *      · `decorates` — a YAML TAG MARKS A VALUE; it applies no callable the document
+ *        names. The decisive count is `yaml.tag_naming_a_declaration_in_the_document`:
+ *        a tag that names a key of its own document would be marking a declaration with
+ *        a type, and the relation the fleet publishes for that is `references` (a name
+ *        mentioned), not `decorates` (an application) — the csharp lane's and the dart
+ *        lane's own readings, and the construct is NOT lost.
+ *      · `renders` — a "returned construction" is an EXPRESSION, and a YAML document has
+ *        none. The component-naming template forms (`{{ template "x" . }}`,
+ *        `{{ include "x" . }}`) exist in the corpus's YAML files and the YAML grammar
+ *        cannot lex them: the file's root is an ERROR node, so the interpolation is
+ *        another language's text inside a YAML file, not a YAML construct. The decisive
+ *        count is `yaml.template_component_named_in_a_scalar`, against the text-level
+ *        count `yaml.template_component_named_in_the_file_text`; the DIFFERENCE between
+ *        the two is the measurement.
+ *      · `mixes_in` — the vocabulary's own reason a mixin is not `extends` is that there
+ *        is NO SINGLE BASE, and YAML's merge key IS the base case (`extends` fires for
+ *        it). The decisive count is `yaml.merge_sequence_with_more_than_one_alias`: a
+ *        merge sequence with more than one alias is the only YAML shape with no single
+ *        base, and every member of it is a base — YAML's merge semantics order the
+ *        mappings by precedence, which is not a supertype chain, and YAML has none.
+ *      · `part_of` — the `!include` family is a LOADER-DEFINED CONVENTION (pyyaml-include's
+ *        own README defines it), and what it does is put the fragment AT A KEY: the
+ *        fragment's content becomes the VALUE at a key position, never merged into the
+ *        including document's scope. The decisive count is
+ *        `yaml.include_family_tag_at_the_document_root`, against the measured
+ *        `yaml.include_family_tag_at_a_key_position`: a tag at the document's ROOT would
+ *        put the fragment's keys at the top level, which is the shared-scope relation
+ *        `part_of` names, and `metadata.partRole` would be mandatory on the row.
  *
  * Three measured decisions, recorded because each was an option the data closed:
  *
@@ -199,8 +241,10 @@ const isBareRefName = (s: string): boolean => {
  *    frameworks for a seven-line file containing `version`, `services`, `jobs`, `on`
  *    and `stages`.
  *
- * The lane's declared limitations live in `script/m14/spec/yaml-completeness.json`
- * (sections A–H) and are restated in `docs/analyzers/real-yaml-analyzer.md`.
+ * The lane's declared limitations live in `script/m14/spec/yaml-completeness.json` — the ruled
+ * types in `coverage.zeroEmissionFacts[]` (each with both halves: the grammar's own node-type
+ * inventory AND the behaviour count), the measured ones in `coverage._implemented_measured` — and
+ * are restated in `docs/analyzers/real-yaml-analyzer.md`.
  */
 
 interface YamlContext {
@@ -259,6 +303,29 @@ interface YamlContext {
    * up on a small corpus.
    */
   serviceIndex: Map<string, string>
+  /**
+   * Docker Compose service NAME (its own key text) -> its qualified path.
+   *
+   * The same relation `serviceIndex` holds, keyed by the KEY rather than by the path's last
+   * segment, because the two differ exactly where a dotted service name does: the qualified
+   * path joins with a dot, so `db.replica` would be indexed as `replica`. A SEPARATE map, so
+   * that `depends_on` resolution — which reads `serviceIndex` — keeps its own behaviour.
+   */
+  serviceKeyIndex: Map<string, string>
+  /**
+   * TOP-LEVEL key -> its qualified path, for keys whose value is an OBJECT.
+   *
+   * Built for the same reason `serviceIndex` is, and used by the `extends:` key family: a GitLab
+   * CI job inherits from a HIDDEN job, and the hidden job is a top-level key of the same file
+   * (`pytest-3.10: {extends: .pytest}` — the base is the key `.pytest`). `serviceIndex` cannot
+   * serve it: it indexes the keys under `services:`, and a `.gitlab-ci.yml` has no `services`
+   * mapping. `declaredNames` cannot serve it either: that index holds K8s `metadata.name` values.
+   *
+   * Only OBJECT-valued top-level keys are indexed, because a base that inherits configuration is
+   * a configuration BLOCK: indexing every top-level key would put scalars like `extends: default`
+   * in as bases.
+   */
+  topLevelObjectIndex: Map<string, string>
   /** Next line -> comments ending on the line before it, with their columns. */
   commentIndex: Map<number, { text: string; column: number }[]>
   /** Own line -> comments starting on it, for trailing notes. */
@@ -477,6 +544,38 @@ const RESOURCE_REF_SCALARS = new Set(["serviceAccountName"])
 const FILE_IMPORT_KEYS = new Set([
   "include_tasks", "import_tasks", "import_playbook", "import_role", "include_role",
   "import_values", "import", "include",
+  // `include_vars` — R3 (2026-10-21, the yaml lane's whole-population open sweep).
+  //
+  // THE ASYMMETRY THIS FIXES IS THE EVIDENCE. `INCLUDE_TAGS` (the line above) has carried
+  // `include_vars` since the include family was written, because the TAG spelling `!include_vars`
+  // names a vars file. The KEY spelling `include_vars:` names the SAME file and was not in this
+  // set, so the same Ansible construct was covered in one spelling and missed in the other.
+  //
+  // MEASURED, not assumed. The open sweep (the census's `yaml.include_family_key` tally, taken
+  // over the WHOLE admitted population from the TREE — never from the analyzer's own decisions)
+  // found the include family and its per-spelling counts; the VALUE SHAPES decided which
+  // spellings are file inclusions and which are not:
+  //
+  //   `include_vars: <file>`            a vars FILE            -> an import
+  //   `include_vars: {file: <file>}`    a vars FILE            -> an import (the `file:` key)
+  //   `include_vars: {dir: …, with_first_found: …}`  a DIRECTORY of vars -> not a file
+  //   `include_vars: "{{ lookup(…) }}"`  an expression          -> a name read, not a known file
+  //
+  // The other out-of-set spellings the sweep found are NOT file inclusions, and the sweep is
+  // what says so rather than the absence of a number: `include-hidden-files: true`,
+  // `include_aggregate_mounts: true`, `include_in_metadata: true` and `include_tags: true` are
+  // BOOLEAN FLAGS; `INCLUDE_DIR: ${{ github.workspace }}/…` is an ENVIRONMENT VARIABLE holding a
+  // C++ include path; and Helm's `import-values:` names VALUE PATHS (`child:`/`parent:`) between
+  // charts, not a file at all. So `import-values` stays out of this set, and `include_vars` is
+  // the one spelling the sweep proved is a file inclusion the analyzer did not attempt.
+  //
+  // WHAT THE EXISTING EXTRACTION ALREADY GETS RIGHT, so the fix adds no new machinery: a value
+  // that is a MAPPING without a `file:` key contributes nothing (`fileImportTargets` refuses a
+  // mapping), a SEQUENCE contributes only its scalar items, and a scalar contributes one
+  // candidate. The file CLAIM is still made by `keywordIncludeClaim`, which states a project-file
+  // claim only when the project actually carries the file and falls back to `isExternal`
+  // otherwise — so this fix can only ADD checkable edges, never weaken one.
+  "include_vars",
 ])
 
 /**
@@ -839,6 +938,8 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       shapeIndex: new Map(),
       documentShapes: new Map(),
       serviceIndex: new Map(),
+      serviceKeyIndex: new Map(),
+      topLevelObjectIndex: new Map(),
       commentIndex: new Map(),
       trailingIndex: new Map(),
       sensitiveDocuments: new Set(),
@@ -873,6 +974,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.resolveSchemaExports(ctx)
     this.resolveAliases(ctx)
     this.resolvePointerReferences(ctx)
+    this.emitSchemaComposition(ctx)
     this.resolveSiblingReferences(ctx)
     this.attachQualifiedCalls(ctx)
     this.applySecurityScore(ctx)
@@ -1417,7 +1519,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (docstring) symbol.docstring = docstring
     this.assignApiContractPath(symbol)
     ctx.shapeIndex.set(path, valueType)
-    this.indexShape(current.document, current.parentPath, path, valueType, ctx)
+    this.indexShape(current.document, current.parentPath, path, valueType, ctx, key)
     if (valueType === "object" || valueType === "array") ctx.pointerIndex.set(pointerPath, path)
 
     this.emitKeySemantics(key, symbol, valueNode, valueType, keyNode, line, current, ctx)
@@ -1458,6 +1560,10 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // THE RUNNER'S ORDER AND SCOPE ARE DOCUMENT FACTS, collected per step as the walk passes them
     // and joined after it — see `materializedActionSource` for the question they answer.
     this.recordStepWithFacts(key, valueNode, current, ctx, line)
+
+    // CONFIGURATION INHERITANCE: the `extends:` key. See `emitConfigExtends` for the dialects,
+    // the shapes and the measurement.
+    if (key === "extends") this.emitConfigExtends(valueNode, line, current, ctx)
 
     // `$ref` and JSON pointers: resolved against the pointer index in a post-pass,
     // because the target may be declared later in the file.
@@ -2389,6 +2495,241 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     serviceAccountName: "ServiceAccount",
   }
 
+  /**
+   * JSON SCHEMA COMPOSITION, as `extends`.
+   *
+   * `allOf` means "must satisfy ALL of these" — a superset-of relationship, and the only schema
+   * keyword that means one. `anyOf` and `oneOf` are ALTERNATIVES, which have no ontology type, so
+   * their `$ref`s correctly contribute only the `references` they already produce.
+   *
+   * THIS IS THE JSON LANE'S OWN SETTLED RULING, applied to the same construct in the YAML
+   * spelling: `script/m14/spec/json-completeness.json` records `BD-allof-extends` — "`allOf` is the
+   * only JSON Schema keyword that means 'must satisfy all of these' … a superset relation, which is
+   * why it is `extends` and not `implements`" — and the JSON analyzer emits it over 1,432 edges.
+   * The YAML corpus carries the same construct in the same documents, because a JSON Schema or an
+   * OpenAPI document is routinely written as YAML, and this lane already reads those documents
+   * (it publishes their schema definitions as `exports` and their `$ref`s as `references`).
+   *
+   * MEASURED over the admitted population (the count is the TEXT sweep's, and the tree census's
+   * number is the one the spec cites): `allOf` appears **974** times, against `anyOf` **446** and
+   * `oneOf` **154** — the shape the reading predicts, composition common and alternatives rare.
+   *
+   * THE SOURCE IS THE SCHEMA THAT COMPOSES, not the `allOf` array that records the composition.
+   * `allOf` is a keyword shared by every schema in the file, so an edge whose source were the
+   * array would bind a consumer resolving by name to an arbitrary one of them. The thing that
+   * inherits is `Request`, not `Request.allOf`.
+   *
+   * THE RULE IS THE PATH'S TAIL, and it is exact on purpose: the `$ref` must be a DIRECT member
+   * of an `allOf` item. A `$ref` DEEPER inside an item — `…allOf[1].properties.OnTimeout.$ref` —
+   * is a property reference, not a composition, and the corpus has both: measured on
+   * `Grace/src/OpenAPI/Approval.Components.OpenAPI.yaml`, `CreateApprovalPolicyParameters.allOf[1]`
+   * holds a `properties` mapping whose members carry their own `$ref`s. A rule that matched
+   * "inside an allOf" would have claimed those as compositions; a rule that matched "the parent
+   * ends with `.allOf`" would have missed the object form (`allOf: {$ref: X}`), which is legal
+   * JSON Schema and which the corpus also carries.
+   *
+   * THE CLAIM IS THE POINTER EDGE'S OWN, because it is the same statement: a local `#/…` pointer
+   * resolves inside the file and the target is the resolved symbol path; a SIBLING-FILE pointer
+   * (`Shared.Components.OpenAPI.yaml#/components/schemas/CommonParameters`) names a file this
+   * document composes with, and the file claim is the one the project can check.
+   */
+  private emitSchemaComposition(ctx: YamlContext): void {
+    for (const r of ctx.relationships) {
+      if (r?.metadata?.relationshipType !== "yaml_json_pointer") continue
+      const source = String(r.source ?? "")
+      const m = /^(.*)\.allOf(?:\[\d+\]|\.\$ref|\.\w+)*$/.exec(source)
+      if (!m) continue
+      // THE DIRECT-MEMBER RULE, applied to the path's tail: `…allOf[N].$ref` and `…allOf.$ref`.
+      const tail = source.slice(m[1].length)
+      if (!/^\.allOf(?:\[\d+\])?\.?\$ref$/.test(tail)) continue
+      const composer = m[1]
+      const target = String(r.target ?? "")
+      if (!composer || !target) continue
+      const md = (r.metadata ?? {}) as Record<string, unknown>
+      const resolved = md.resolved === true
+      this.addRelationship(ctx, composer, target, ASTEngine.RelationshipType.Extends, {
+        relationshipType: "yaml_schema_composition",
+        compositionOperator: "allOf",
+        evidenceClass: "structural",
+        resolved,
+        ...(md.pointer !== undefined ? { pointer: md.pointer } : {}),
+        ...(md.importProjectFile !== undefined ? { importProjectFile: md.importProjectFile } : {}),
+        ...(md.isExternal !== undefined ? { isExternal: md.isExternal } : {}),
+        ...(resolved ? {} : { unresolvedReason: md.unresolvedReason ?? "external-file" }),
+      }, r.line_number ?? 0, resolved ? 1 : 0.9, resolved ? undefined : "composition-target-not-resolved")
+    }
+  }
+
+  /**
+   * CONFIGURATION INHERITANCE — the `extends:` key — as `extends`.
+   *
+   * `extends` on a YAML mapping is the same relation the merge key carries, written the other way
+   * round: "this thing inherits that thing's configuration". A merge key says it with a `<<` and
+   * an anchor; these dialects say it with a KEY, and the key's VALUE SHAPE says what the base is.
+   *
+   * MEASURED over the admitted population (18,997 YAML files read; the count is the census's, the
+   * shape split is the sweep's), the `extends:` key occurs **80** times in five shapes:
+   *
+   *   `extends: .hidden-job`            33   GitLab CI — a SIBLING KEY in the same file
+   *   `extends: {file: F, service: S}`  17   Docker Compose — a service in ANOTHER file
+   *   `extends: {template: T}`          15   Azure Pipelines — a TEMPLATE FILE
+   *   `extends: name`                    8   yamllint — a config of another tool
+   *   `extends: {service: S}`            6   Docker Compose — a SIBLING service in the same file
+   *   `extends: {…}`                     1   a mapping this lane does not recognise
+   *
+   * AND THE CONTRAST THAT KEEPS THE RULING HONEST: the same sweep found the OTHER supertype-
+   * candidate keys in the corpus — `implements` 59, `inherits` 38, `base` 30, `superclass` 2 —
+   * and each of them names something that is NOT a YAML supertype clause: the `implements:` keys
+   * are Dart package plugin lists in Flutter `pubspec.yaml` files, the `inherits:` keys are
+   * `pnpm-lock.yaml` entries, and the `base:` keys are Ansible filter-plugin bases. The `extends:`
+   * key is the only one of the five whose value names another thing whose CONFIGURATION is
+   * inherited, and the four shapes above are read as that.
+   *
+   * THE SOURCE IS THE THING THAT INHERITS, not the `extends` key: the owner of the key. The
+   * `extends` key is shared by every job in the file, so an edge whose source were the key would
+   * bind a consumer resolving by name to an arbitrary one of them.
+   *
+   * THE TARGET IS THE BASE, and the base is named the way the dialect names it — which is why
+   * the shape decides the claim and not the spelling:
+   *
+   *   - A SIBLING in this file (`.hidden-job`, `{service: S}` with no `file:`) resolves to that
+   *     sibling's SYMBOL, because the analyzer can see it. `resolved: true`.
+   *   - A FILE (`{file: F}`, `{template: T}`) is the base, and the file is what the project can
+   *     check: the claim is the same file claim every other file claim in this lane makes
+   *     (`relativePathCandidates` + `projectCarriesFile`), so a file the project carries is
+   *     `importProjectFile` and one it does not is `isExternal`. The base's NAME inside that file
+   *     (`service: S`, the part after `@` in an Azure template ref) rides in the metadata, because
+   *     the analyzer analyses ONE file at a time and cannot name another file's symbols.
+   *   - A CONFIG NAME (`extends: default`) is a name the document does not declare, so the edge
+   *     says so: `isExternal: true`, `resolved: false`, `unresolvedReason: "not-declared-in-file"`
+   *     — the same shape the lane's unresolved sibling names already use.
+   *
+   * WHAT WOULD OVERTURN THIS: a corpus site where `extends:` names something that is NOT a
+   * configuration base — a version, a label, a metric. The measured population has five shapes
+   * and every one of them names a base, so the falsifier is a sixth shape with a different
+   * meaning.
+   */
+  private emitConfigExtends(valueNode: Node | null, line: number, current: VisitContext, ctx: YamlContext): void {
+    if (!valueNode) return
+    const composer = current.parentPath
+    if (!composer) return
+    const node = this.scalarNode(valueNode)
+
+    if (MAPPING_TYPES.has(node.type)) {
+      const service = this.mappingEntryScalar(node, "service")
+      const file = this.mappingEntryScalar(node, "file")
+      const template = this.mappingEntryScalar(node, "template")
+      if (template !== null) {
+        // AZURE PIPELINES: `template: path.yml@Name` — the file, and the template's name in it.
+        const at = template.indexOf("@")
+        const templateFile = at >= 0 ? template.slice(0, at) : template
+        const templateName = at >= 0 ? template.slice(at + 1) : null
+        this.emitExtendsToFile(composer, templateFile, line, ctx, "template", templateName)
+        return
+      }
+      if (file !== null) {
+        // DOCKER COMPOSE: `file: F, service: S` — the base is the service in the OTHER file, and
+        // the file is what the project can check.
+        this.emitExtendsToFile(composer, file, line, ctx, "service", service)
+        return
+      }
+      if (service !== null) {
+        // DOCKER COMPOSE, same file: the base is a SIBLING service, which the analyzer can see.
+        const sibling = ctx.serviceKeyIndex.get(service) ?? ctx.serviceIndex.get(service)
+        if (!sibling) return
+        this.addRelationship(ctx, composer, sibling, ASTEngine.RelationshipType.Extends, {
+          relationshipType: "yaml_config_extends",
+          evidenceClass: "structural",
+          resolved: true,
+          isExternal: false,
+          baseName: service,
+          baseKind: "service",
+        }, line)
+        return
+      }
+      return
+    }
+
+    if (!SCALAR_TYPES.has(node.type)) return
+    const written = this.scalarValueText(node)
+    if (!written) return
+    // A NAME DOES NOT SPAN LINES. A literal block scalar keeps its newlines, and a folded one
+    // joins them with spaces — neither is a config name, and publishing the folded text as a
+    // target would be a name invented out of prose.
+    if (written.includes("\n")) return
+    if (written.startsWith(".")) {
+      // GITLAB CI: the base is a HIDDEN JOB — a top-level key of the same file.
+      const sibling = ctx.topLevelObjectIndex.get(written)
+      if (!sibling) return
+      this.addRelationship(ctx, composer, sibling, ASTEngine.RelationshipType.Extends, {
+        relationshipType: "yaml_config_extends",
+        evidenceClass: "structural",
+        resolved: true,
+        isExternal: false,
+        baseName: written,
+        baseKind: "hidden-job",
+      }, line)
+      return
+    }
+    // A CONFIG NAME of another tool (yamllint's `extends: default`). The document does not
+    // declare it, so the edge says exactly that.
+    this.addRelationship(ctx, composer, written, ASTEngine.RelationshipType.Extends, {
+      relationshipType: "yaml_config_extends",
+      evidenceClass: "structural",
+      resolved: false,
+      isExternal: true,
+      unresolvedReason: "not-declared-in-file",
+      baseName: written,
+      baseKind: "config",
+    }, line, 0.8, "unresolved-sibling-name")
+  }
+
+  /**
+   * The `extends:` edge whose base is a FILE — Docker Compose's `{file: F, service: S}` and Azure
+   * Pipelines' `{template: T}`.
+   *
+   * The FILE is the base the project can check, and the file claim is the one every other file
+   * claim in this lane makes, so the edge can carry `importProjectFile` when the project carries
+   * the file and `isExternal` when it does not. The base's NAME inside that file rides in the
+   * metadata, because the analyzer analyses one file at a time and cannot name another file's
+   * symbols — a claim it could make would be a fabrication.
+   *
+   * THE FILE IS ALSO READ, and that is an `imports` edge: Azure's template is included, and
+   * Compose's `file:` is read. So the same site publishes BOTH, which is what the JSON lane does
+   * for the sibling-file form of a composition ("the file form is still composition: 'inherits
+   * from the schema in that file'"), and the two edges are distinguishable by their marker.
+   */
+  private emitExtendsToFile(
+    composer: string,
+    file: string,
+    line: number,
+    ctx: YamlContext,
+    baseKind: string,
+    baseName: string | null,
+  ): void {
+    if (!file) return
+    const claim = this.relativePathCandidates(file, ctx)
+    const carries = claim !== null && this.projectCarriesFile(ctx, claim)
+    this.addRelationship(ctx, composer, file, ASTEngine.RelationshipType.Extends, {
+      relationshipType: "yaml_config_extends",
+      evidenceClass: "structural",
+      resolved: false,
+      baseKind,
+      ...(baseName ? { baseName } : {}),
+      ...(carries ? { importProjectFile: claim } : { isExternal: true }),
+      unresolvedReason: carries ? "base-symbol-in-another-file" : "external-file",
+    }, line, 0.9, "base-symbol-in-another-file")
+    // The file is READ either way — an Azure template is included and a Compose `file:` is read —
+    // so the `imports` edge is published even when the project does not carry the file, with the
+    // `isExternal` claim, exactly as the include family does for a file outside the project.
+    this.addRelationship(ctx, composer, file, ASTEngine.RelationshipType.Imports, {
+      relationshipType: "yaml_extends_file",
+      evidenceClass: "import_based",
+      ...(carries ? { importProjectFile: claim, isExternal: false } : { isExternal: true }),
+      ...(baseName ? { baseName } : {}),
+    }, line)
+  }
+
   private resolveSiblingReferences(ctx: YamlContext): void {
     for (const ref of ctx.pendingReferences) {
       const resolved = this.resolveDeclaredName(ref.target, ctx) ?? this.resolveJobInDocument(ref, ctx) ?? this.resolveSameDirectoryResource(ref, ctx)
@@ -2420,7 +2761,14 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Record one symbol's shape in the two indexes the post-passes read. Called once per
    * emitted key, so both indexes are O(1) to build and O(1) to query.
    */
-  private indexShape(document: string, parentPath: string, path: string, valueType: string, ctx: YamlContext): void {
+  private indexShape(
+    document: string,
+    parentPath: string,
+    path: string,
+    valueType: string,
+    ctx: YamlContext,
+    key?: string,
+  ): void {
     let shapes = ctx.documentShapes.get(document)
     if (!shapes) {
       shapes = new Map<string, string>()
@@ -2432,6 +2780,27 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `services` mapping, and `depends_on` names it.
     if (valueType === "object" && parentPath.endsWith("services")) {
       ctx.serviceIndex.set(path.slice(path.lastIndexOf(".") + 1), path)
+      // AND BY THE SERVICE'S OWN KEY TEXT, in a SEPARATE index. The index above is keyed by the
+      // path's LAST SEGMENT, and a qualified path joins with a dot, so a service named `db.replica`
+      // lands under `replica` — and `extends: {service: db.replica}` would then miss. The key text
+      // is what the `extends:` value spells, so it is what this index is keyed by.
+      //
+      // A SEPARATE MAP, deliberately: `serviceIndex` also resolves `depends_on`, and changing its
+      // keys would change pre-existing behaviour for a family this change has nothing to do with.
+      if (key !== undefined) ctx.serviceKeyIndex.set(key, path)
+    }
+    // A TOP-LEVEL key whose value is an object is a configuration BLOCK, and a configuration
+    // block is what an `extends:` key names as its base (a GitLab CI hidden job). The DOCUMENT
+    // identity is the test, not the absence of a dot: a document identity is itself dotted
+    // (`Approval.Components.OpenAPI`), so "the parent path has no dot" would index nothing.
+    //
+    // THE INDEX KEY IS THE KEY'S OWN TEXT, not the path's last segment. The two differ exactly
+    // where this family needs them: a GitLab hidden job is spelled `.pytest`, and the qualified
+    // path joins with a dot, so the path's last segment is `pytest` — the leading dot is consumed
+    // by the join and the name could not be found. The key text is what the `extends:` value
+    // spells, so it is what the index is keyed by.
+    if (valueType === "object" && parentPath === document && key !== undefined) {
+      ctx.topLevelObjectIndex.set(key, path)
     }
   }
 
@@ -2997,6 +3366,62 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * THE TEXT OF A SCALAR VALUE, with a BLOCK SCALAR's indicator stripped.
+   *
+   * `scalarText` reads a node's own text, and a `block_scalar`'s own text starts with the block
+   * INDICATOR — `>` for a folded scalar, `|` for a literal one — with the content after it. The
+   * indicator is not part of the value, so a scalar read as raw text carries `>` into the name.
+   *
+   * THIS IS THE SAME DEFECT THE `include_vars` FIX HAD, IN A SECOND SITE: the include-family path
+   * was corrected and the `extends:` key family was left reading raw text, so `extends: >` would
+   * have published the target ">\n  default" — a name that is a folded YAML scalar, not a config
+   * name. ONE reader for both sites, so the second one cannot drift.
+   */
+  private scalarValueText(node: Node): string {
+    return this.blockScalarValue(node) ?? this.scalarText(node)
+  }
+
+  /**
+   * THE VALUE OF A BLOCK SCALAR, or null when the node is not one.
+   *
+   * A `block_scalar` node's own text starts with the block INDICATOR on its first line — `>` for
+   * a folded scalar, `|` for a literal one, with any chomping and indentation modifiers attached
+   * — and the CONTENT follows. The indicator is not part of the value, so a scalar read as raw
+   * text carries `>` into the name.
+   *
+   * MEASURED over the whole corpus: the only include-family value in the admitted population
+   * written this way is `include_vars: >` in
+   * `ansible/test/integration/targets/include_vars/tasks/main.yml:192`, whose value names the
+   * vars file `services/service_vars.yml`. Read as raw text the import target was the string
+   * `>\n    services/service_vars.yml` — a name no project has, so the edge could carry no file
+   * claim and a reader could not tell what was imported.
+   *
+   * THE FOLDING IS DONE AS YAML DEFINES IT, AND THE LIMIT IS STATED: `>` folds the content's
+   * line breaks into spaces and `|` keeps them, and the block's indentation (the DEEPEST
+   * indentation in the block) is stripped from every line. A chomping modifier is not applied,
+   * because a chomped block's trailing newlines are not part of a file name in any spelling this
+   * lane reads, and the caller trims what it is given.
+   */
+  private blockScalarValue(node: Node): string | null {
+    if (node.type !== "block_scalar") return null
+    const raw = node.text
+    const nl = raw.indexOf("\n")
+    if (nl < 0) return null
+    const indicator = raw.slice(0, nl).trim()
+    const folded = indicator.startsWith(">")
+    const body = raw.slice(nl + 1)
+    const lines = body.split("\n")
+    let indent = Number.POSITIVE_INFINITY
+    for (const l of lines) {
+      if (l.trim() === "") continue
+      indent = Math.min(indent, l.length - l.trimStart().length)
+    }
+    if (!Number.isFinite(indent)) return ""
+    const content = lines.map((l) => l.slice(indent)).filter((l) => l.trim() !== "")
+    return (folded ? content.join(" ") : content.join("\n")).trim()
+  }
+
+  /**
    * The names a reference WRAPPER holds: the scalar shorthand (`configMapRef: cm`) or
    * the `name` field of its payload. Never a walk — see `RESOURCE_REF_SOURCES` for the
    * shape this deliberately does not serve.
@@ -3034,7 +3459,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!value) return null
       const scalar = this.scalarNode(value)
       if (!SCALAR_TYPES.has(scalar.type)) return null
-      const text = this.scalarText(scalar)
+      const text = this.scalarValueText(scalar)
       return text || null
     }
     return null
@@ -3059,7 +3484,11 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (SCALAR_TYPES.has(n.type)) {
         if (isKey) return
-        const text = this.scalarText(n)
+        // A BLOCK SCALAR's value is its CONTENT, not its raw text: the indicator (`>` / `|`) is
+        // on the node's first line and is not part of the value. Reading it as raw text carried
+        // `>` into an import target's name — see `blockScalarValue` for the one corpus site and
+        // the folding rule.
+        const text = n.type === "block_scalar" ? this.blockScalarValue(n) ?? "" : this.scalarText(n)
         if (text) out.push(text)
         return
       }

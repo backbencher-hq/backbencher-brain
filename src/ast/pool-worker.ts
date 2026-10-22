@@ -980,7 +980,32 @@ export function filterNoiseRelationships(
      * WHAT IS NO LONGER REFUSED: a long legal identifier, in any language, at any length. There is no
      * length at which a legal name stops being legal, so no length cap can be correct.
      */
-    if (/[\s'"(),=]/.test(leaf) && !/^[<>=!+\-*/%^&|~]+$/.test(leaf)) return false
+    // ★ THE SETTER-NAME EXEMPTION, AND IT IS A SHAPE RULE, NOT A RUBY EXEMPTION (ruby lane,
+    // 2026-10-22). THE MEASUREMENT, WITH A CONTROL, OVER RUBY'S OWN ADMITTED POPULATION: the shape
+    // test above refuses a leaf carrying `=`, and **IN RUBY `=` IS THE SETTER MARKER** —
+    // `attr_accessor :level` declares a writer named `level=`, and `def level=(v)` is an ordinary
+    // setter. ⇒ EVERY RUBY SETTER EDGE WAS SILENTLY EATEN: **48 ROWS** — `contains Skip ->
+    // ast_nodes=`, `contains Connection -> max_page_size=`, `overrides Skip.ast_nodes= ->
+    // RuntimeError.ast_nodes=`, `contains ConcurrentishMap -> []=`. THE CONTROL IS WHAT MAKES THIS A
+    // MEASUREMENT: the production path publishes 85,071 rows and the direct arm 85,119, and **ALL 48
+    // of the dropped rows have an `=` in the target leaf and NOT ONE does not**; handed to the filter
+    // ALONE every one of the 48 is eaten, and every one's `=`-stripped CONTROL is kept. THE LOSS IS
+    // SILENT — the edges are ABSENT from the graph rather than mis-bound, so no column and no count
+    // shows it.
+    //
+    // ⇒ THE RULE IS THE SAME SHAPE AS THE OPERATOR EXEMPTION ALREADY IN THIS FILE, AND IT IS THE
+    // SAME SHAPE FOR THE SAME REASON: a SETTER NAME IS A LEGAL DECLARED NAME IN SEVERAL LANGUAGES
+    // (ruby's `level=` `ast_nodes=` `max_page_size=`, and the same spelling appears in any language
+    // that permits `=` in a method name), so a NAME may END in `=` without being a fragment. A leaf
+    // that is an IDENTIFIER FOLLOWED BY A TRAILING `=` is a SETTER NAME; a leaf that carries `=`
+    // ANYWHERE ELSE is still a fragment and is still refused.
+    //
+    // ⇒ THE CONTROL STAYS GREEN, WHICH IS THE POINT: `foo = bar` carries WHITESPACE and is still
+    // refused; `foo=bar` carries `=` in the MIDDLE and is still refused; only a leaf that is a plain
+    // identifier with a TRAILING `=` is exempt. And `[]=` — ruby's own index-setter — was already
+    // exempt as an operator name; it stays exempt, and the two rules do not overlap.
+    const SETTER_NAME = /^[A-Za-z_$][A-Za-z0-9_$]*=$/
+    if (/[\s'"(),=]/.test(leaf) && !/^[<>=!+\-*/%^&|~]+$/.test(leaf) && !SETTER_NAME.test(leaf)) return false
     // THE ANGLE-BRACKET BAN, AND WHY IT MUST NOT BE UNCONDITIONAL (ruby lane, 2026-10-21).
     //
     // `<` and `>` are banned because a target carrying them is usually a SNIPPET or a template

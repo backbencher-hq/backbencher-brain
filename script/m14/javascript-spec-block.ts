@@ -16,19 +16,29 @@
  *      A type nobody has ruled on is a hole in the lane.
  *
  * ── THE DENOMINATOR, AND WHERE IT COMES FROM ────────────────────────────────────────────────────────
- * n = 14 − (types the grammar cannot express, each ruled with a citation) = **11**:
+ * n = 14 − (types the grammar cannot express, each ruled with a citation) = **12**:
  *
- *   excluded  implements — the grammar has no `implements` clause
- *             mixes_in  — the grammar has no mixin clause
- *             part_of  — the grammar has no part directive
- *   implemented  the other ELEVEN — the 9 the block already declared, plus `overrides`, `renders`
- *             and `decorates`, each with a whole-population count.
+ *   excluded  implements — ruled against the LADDER (R1/R2/R3), the construct does not exist in the
+ *             language
+ *             part_of  — ruled against the LADDER (R1/R2/R3), the construct does not exist in the
+ *             language
+ *   implemented  the other TWELVE — the 9 the block already declared, plus `overrides`, `renders`,
+ *             `decorates` and `mixes_in`, each with a whole-population count.
  *
- * Each exclusion carries the evidence class `grammar-absence`, a citation that names a COUNT and an
- * artifact that EXISTS, and a falsifier. The citations are generated from
- * `validation/m14/measurements/javascript-grammar-ruling.json`, which measured the grammar half (the
- * node-type inventory of the grammar the POPULATION INSTRUMENT loads) and the corpus half (the
- * construct's own sites over the whole admitted population).
+ * ⇒ `mixes_in` WAS AN EXCLUSION HERE AND IS NOT ANY MORE ✓✓. It was excluded on the ground that
+ * telling `Route.extend(M)` from `_.extend(obj, props)` needs a naming convention, which C2 forbids
+ * — and that is HALF the truth, and the half that decides it was wrong: the discriminator is not
+ * the callee's NAME but that the call IS the HERITAGE. A call in heritage position is
+ * class-producing by construction; a call in argument position is not. POSITION, NOT A NAME ⇒ C2 is
+ * not violated ⇒ the construct is real (76 call-shaped clauses over the admitted population) and
+ * the R3 remedy publishes it ✓✓.
+ *
+ * Each exclusion carries the evidence class `grammar-remedy-ruled` — a class the coverage-block
+ * gate treats as SHRINKING the denominator, deliberately unlike `zero-sites` — and a citation that
+ * names the RUNG, a COUNT, the grammar BY ITS BYTES and a falsifier ✓✓. The citations are
+ * generated from `validation/m14/measurements/javascript-remedy-ladder.json` (the three-rung walk)
+ * and `validation/m14/measurements/javascript-grammar-ruling.json` (the grammar half and the corpus
+ * half) ✓✓.
  *
  * ── WHAT IT WRITES, AND WHAT IT LEAVES ALONE ────────────────────────────────────────────────────────
  * It writes ONLY the `coverage` key of `script/m14/spec/javascript-completeness.json`. Every other key

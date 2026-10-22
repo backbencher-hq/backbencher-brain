@@ -121,6 +121,7 @@ import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import * as path from "node:path"
+import { createHash } from "node:crypto"
 import { parseFile } from "../../src/ast/pool-worker"
 // THE ROUTER'S OWN DETECTION, imported rather than re-spelled: the basename clause below has to
 // agree with what production admits, and production admits by `detectLanguageFromPath`.
@@ -1110,6 +1111,22 @@ const INDEX_CACHE = process.env.BB_INDEX_CACHE ?? "/tmp/bb-project-index"
  * across runs and let a sample vouch for a project it never read. The caller's `whole` is the authority,
  * so it overwrites whatever the cache said.
  */
+/**
+ * THE FILE SET'S IDENTITY — a sha256 over the SORTED paths.
+ *
+ * ★ IT EXISTS BECAUSE A COUNT IS NOT AN IDENTITY, AND THE DART LANE'S CHUNKED ARM FOUND IT. The
+ * index cache was keyed on `repoFiles.length` and the newest mtime in the set. TWO DIFFERENT SLICES OF
+ * THE SAME REPOSITORY HAVE THE SAME COUNT AND, VERY OFTEN, THE SAME NEWEST MTIME — so chunk 5 of a
+ * repository was served chunk 3's index, and a population arm would have measured a MIXTURE of
+ * slices while every chunk reported itself as indexed. ⇒ THE IDENTITY IS THE FILE SET, so it is
+ * digested. Cheap next to parsing the files, and exact for the thing the cache holds.
+ */
+function sha256Of(paths: string[]): string {
+  const h = createHash("sha256")
+  for (const p of [...paths].sort()) { h.update(p); h.update("\u0000") }
+  return h.digest("hex")
+}
+
 async function projectIndexesFor(
   lang: string, files: string[], whole: boolean,
 ): Promise<{ byRepo: Map<string, any>; built: number; cached: number; damaged: number; indexed: number }> {
@@ -1134,15 +1151,29 @@ async function projectIndexesFor(
   let indexed = 0
   mkdirSync(INDEX_CACHE, { recursive: true })
   for (const [repo, repoFiles] of perRepo) {
-    const cachePath = path.join(INDEX_CACHE, `${lang}-${path.basename(repo)}.json`)
     // A cache is keyed on the file set AND the newest mtime in it. A count alone would
     // return yesterday's index for a repository that edited a file in place, which is the
     // one case where a stale index silently changes an answer instead of failing.
     let newest = 0
     for (const f of repoFiles) { try { newest = Math.max(newest, statSync(f).mtimeMs) } catch { /* counted by the gate */ } }
+    // ★★ THE FILE SET'S IDENTITY, NOT ITS COUNT — AND THE COUNT WAS A DEFECT THE DART LANE'S CHUNKED
+    // ARM FOUND. The cache was keyed on `repoFiles.length` and the newest mtime in the set. TWO
+    // DIFFERENT SLICES OF THE SAME REPOSITORY HAVE THE SAME COUNT AND, VERY OFTEN, THE SAME NEWEST
+    // MTIME — the repository's newest file lands in one slice and the max over a different slice can
+    // be the same file. ⇒ SO CHUNK 5 OF A REPOSITORY WAS SERVED CHUNK 3'S INDEX, and the population
+    // arm would have measured a MIXTURE of slices while every chunk reported itself as indexed.
+    // ⇒ A COUNT IS NOT AN IDENTITY. The identity is the FILE SET, so it is digested: a sha256 over
+    // the SORTED paths, which is cheap next to parsing them and is exact for the thing the cache
+    // actually holds.
+    const fileSetDigest = sha256Of(repoFiles)
+    // ★ THE PATH CARRIES THE DIGEST TOO, or a slice's index OVERWRITES the whole repository's index
+    // and the next whole-repo run reads a SLICE back — the mirror of the defect above, and just as
+    // silent. The path is built AFTER the digest is known, so the file name names the FILE SET it
+    // holds.
+    const cachePath = path.join(INDEX_CACHE, `${lang}-${path.basename(repo)}-${fileSetDigest.slice(0, 16)}.json`)
     try {
       const raw = JSON.parse(readFileSync(cachePath, "utf8"))
-      if (raw?.files === repoFiles.length && raw?.newest === newest) {
+      if (raw?.files === repoFiles.length && raw?.newest === newest && raw?.fileSetDigest === fileSetDigest) {
         const back = mod.deserializeProjectIndex(raw.index)
         if (back !== null) {
           // THE CALLER'S `whole` WINS OVER THE PAYLOAD'S OWN FLAG. A whole-run index reused by a sampled
@@ -1161,7 +1192,7 @@ async function projectIndexesFor(
     built++
     try {
       writeFileSync(cachePath, JSON.stringify({
-        files: repoFiles.length, newest, index: mod.serializeProjectIndex(index),
+        files: repoFiles.length, newest, fileSetDigest, index: mod.serializeProjectIndex(index),
       }))
     } catch { /* a cache that cannot be written is not a failed measurement */ }
   }

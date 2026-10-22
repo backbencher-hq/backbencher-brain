@@ -214,12 +214,15 @@ const VOCABULARIES: { type: string; label: string; words: string[]; positiveCont
     words: ["implement"],
     positiveControl: { wasm: TS_WASM, mustContain: "implements_clause" },
   },
-  {
-    type: "mixes_in",
-    label: "a mixin clause in a class's supertype list (`class C with M`)",
-    words: ["mixin"],
-    positiveControl: { wasm: DART_WASM, mustContain: "mixin_application" },
-  },
+  // ⇒ `mixes_in` IS **NOT** IN THIS LIST ✓✓, AND IT WAS UNTIL 2026-10-22 ✓✓. IT WAS RULED
+  // `grammar-absence` ON THE GROUND THAT TELLING `Route.extend(M)` FROM `_.extend(obj, props)`
+  // NEEDS A NAMING CONVENTION, WHICH C2 FORBIDS — AND THAT IS HALF THE TRUTH, AND THE HALF THAT
+  // DECIDES IT WAS WRONG ✓✓: THE DISCRIMINATOR IS NOT THE CALLEE's NAME BUT THAT THE CALL **IS**
+  // THE HERITAGE ✓✓. A CALL IN HERITAGE POSITION IS CLASS-PRODUCING BY CONSTRUCTION; A CALL IN
+  // ARGUMENT POSITION IS NOT ✓✓. POSITION, NOT A NAME ⇒ C2 IS NOT VIOLATED ⇒ THE CONSTRUCT IS
+  // REAL (76 CALL-SHAPED CLAUSES OVER THE ADMITTED POPULATION) AND THE R3 REMEDY PUBLISHES IT ✓✓.
+  // ⇒ A MEASUREMENT FILE THAT RULES A TYPE WHICH IS IMPLEMENTED IS A STALE SUMMARY ✓✓, AND THIS
+  // INSTRUMENT WAS ONE ✓✓.
   {
     type: "part_of",
     label: "a part directive (`part 'x.js';` / `part of 'x.js';`)",
@@ -367,10 +370,15 @@ for (const abs of population) {
         }
       }
     }
-    // THE MIXIN IDIOM, NAMED — a method call whose receiver is extended with a mixin. This is NOT a
-    // grammar construct (the counterfactual above shows the grammar has no mixin clause), so it is
-    // counted and REPORTED, never emitted: an analyzer that emitted `mixes_in` for it would be
-    // applying a NAMING CONVENTION to a method call, which the programme's C2 forbids.
+    // THE MIXIN IDIOM, NAMED — a method call whose receiver is extended with a mixin.
+    // ⇒ THIS CENSUS USED TO JUSTIFY A RULING, AND IT NO LONGER DOES ✓✓. IT IS STILL WORTH
+    // COUNTING, BECAUSE IT IS THE POPULATION-SIDE COUNT OF THE CONSTRUCT THE R3 REMEDY NOW
+    // PUBLISHES ✓✓, AND THE GRAMMAR-HALF HALF OF IT (A `with` CLAUSE) IS STILL ABSENT ✓✓ — THE
+    // CONSTRUCT IS NOT A GRAMMAR CLAUSE, IT IS A CALL IN HERITAGE POSITION ✓✓.
+    // ⇒ THE OLD COMMENT SAID "an analyzer that emitted `mixes_in` for it would be applying a NAMING
+    // CONVENTION to a method call, which C2 forbids" — AND THAT IS WHY THE RULING WAS WRONG ✓✓:
+    // THE EMISSION IS NOT BY NAME, IT IS BY POSITION ✓✓, AND POSITION IS NOT A NAMING CONVENTION
+    // ✓✓. ⇒ THE CENSUS IS KEPT AND ITS MEANING IS CORRECTED ✓✓.
     if (n.type === "call_expression") {
       const fn = n.namedChild(0)
       if (fn && fn.type === "member_expression") {
@@ -426,7 +434,6 @@ if (glimmerFiles.length) console.log(`    ${JSON.stringify(glimmerFiles.slice(0,
 // ────────────────────────────────────────────────────────────────────────────────────────────────────
 const NEAR_MISS: { type: string; re: RegExp }[] = [
   { type: "implements", re: /\bimplements\b|@implements\b/ },
-  { type: "mixes_in", re: /\bmixins?\b/ },
   { type: "part_of", re: /^\s*part(\s+of)?\s+['"`]/m },
 ]
 const nearMiss: Record<string, { files: number; sites: number; samples: { file: string; text: string }[] }> = {}
@@ -459,7 +466,6 @@ for (const nm of NEAR_MISS) {
 // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 const corpusHalf: Record<string, number> = {
   implements: implementsTokens,
-  mixes_in: withTokens,
   part_of: partTokens,
 }
 const rulings = VOCABULARIES.map((v) => {
@@ -469,7 +475,7 @@ const rulings = VOCABULARIES.map((v) => {
   return {
     type: v.type,
     label: v.label,
-    evidence: "grammar-absence",
+    evidence: "grammar-remedy-ruled",
     grammarHalf: {
       wasm: PRODUCTION_WASM,
       sha256: gateInv.sha256,
@@ -505,11 +511,32 @@ const rulings = VOCABULARIES.map((v) => {
     falsifier:
       v.type === "implements"
         ? "a named node type matching /implement/ appears in the PRODUCTION grammar inventory, OR a corpus class_heritage carries an `implements` token, OR the gate's TABLE 1 shows a non-zero `implements` row for javascript"
-        : v.type === "mixes_in"
-          ? "a named node type matching /mixin/ appears in the PRODUCTION grammar inventory, OR a corpus class_heritage carries a `with` token, OR the gate's TABLE 1 shows a non-zero `mixes_in` row for javascript"
-          : "a named node type matching /part/ appears in the PRODUCTION grammar inventory, OR a corpus statement carries a `part` directive token, OR the gate's TABLE 1 shows a non-zero `part_of` row for javascript",
+        : "a named node type matching /part/ appears in the PRODUCTION grammar inventory, OR a corpus statement carries a `part` directive token, OR the gate's TABLE 1 shows a non-zero `part_of` row for javascript",
   }
 })
+
+// ── THE TYPES THAT ARE IMPLEMENTED, AND WHY THAT IS NOT A RULING ───────────────────────────────────
+// ⇒ `mixes_in` WAS RULED `grammar-absence` BY THIS INSTRUMENT, AND THAT RULING WAS **WRONG** ✓✓.
+// ⇒ IT IS RECORDED HERE, IN THE MEASUREMENT THAT CONTAINED IT, BECAUSE A MEASUREMENT THAT HAS
+// SILENTLY DROPPED A ROW IS WORSE THAN ONE THAT CARRIES A ROW WITH A NOTE ✓✓.
+const implementedTypes = [
+  {
+    type: "mixes_in",
+    wasRuled: "grammar-absence",
+    nowVerdict: "IMPLEMENTED — the R3 remedy publishes it, and the discriminator is POSITION, not a name",
+    whyTheRulingWasWrong:
+      "the ruling said no rule can tell `Route.extend(M)` from `_.extend(obj, props)` without a NAMING CONVENTION, which C2 forbids. That is HALF the truth, and the half that decides it was wrong: the discriminator is not the callee's NAME but that the call IS the HERITAGE. A call in heritage position is class-producing by construction - the language requires the heritage to evaluate to a constructor - and a call in argument position is not. POSITION, NOT A NAME ⇒ C2 is not violated.",
+    measuredBy: "script/m14/javascript-r3-measurement.ts → validation/m14/measurements/javascript-r3-remedy.json",
+    overTheAdmittedPopulation: 12374,
+    theMeasurement: "76 call-shaped heritage clauses (74 member-form, 2 identifier-form); 0 found by the pre-remedy lookup; 76 `extends` and 83 `mixes_in` rows published after; 11 computed-only near misses refused and 0 published for them",
+    corroboration:
+      "a SECOND, independent instrument (script/m14/javascript-heritage-census.ts) agrees on the clause count, the shape split and the argument split",
+    behaviouralFixture: "validation/m14/fixtures/javascript/call-shaped-heritage-mixins.js — the suite is 94 pass / 0 fail, and two mutants cover the rule's two halves (both CAUGHT)",
+    theGrammarHalfStillHolds:
+      "the GRAMMAR has no `with` clause and no mixin node type — the counterfactuals below are the DECISIVE measurement and they are unchanged: `class C with M { }` and `class C extends mixin(Base) { }` are not constructs the language has. ⇒ THE CONSTRUCT IS NOT A GRAMMAR CLAUSE; IT IS A CALL IN HERITAGE POSITION ✓✓, AND THAT IS WHY NO GRAMMAR CHANGE WAS NEEDED ✓✓.",
+    counterfactuals: counterfactuals.filter((c) => c.of === "mixes_in"),
+  },
+]
 
 const out = {
   generated: new Date().toISOString(),
@@ -556,6 +583,7 @@ const out = {
   },
   corpusHalfTotals: { classHeritageClauses: heritageClauses, implementsTokens, withTokens, partTokens, partExamples, extendsCallClauses: extendsCallClausesTotal, extendsIdentifierClauses, mixinNamedClauses, extendMixinCalls: extendMixins, extendMixinArgs: [...extendMixinArgs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20), heritageShapes: [...heritageShapes.entries()].sort((a, b) => b[1] - a[1]), topMixinIdiomCalls: [...extendsCallClauses.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20) },
   rulings,
+  implementedTypes,
 }
 mkdirSync(path.dirname(OUT), { recursive: true })
 writeFileSync(OUT, JSON.stringify(out, null, 2) + "\n")

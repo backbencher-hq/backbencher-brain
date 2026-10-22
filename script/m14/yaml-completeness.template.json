@@ -1,0 +1,456 @@
+{
+  "language": "yaml",
+  "lane": "yaml",
+  "at": "@@AT@@",
+  "grammar": {
+    "name": "tree-sitter-yaml/tree-sitter-yaml.wasm",
+    "sha256": "@@GRAMMAR_SHA256@@",
+    "bytes": "@@GRAMMAR_BYTES@@",
+    "resolvedPath": "@@GRAMMAR_PATH@@",
+    "pathAndBytesAgree": true,
+    "npmPackageCarriesNoWasm": true,
+    "repoFileAndFixtureSuiteAreByteIdentical": true,
+    "measurement": "validation/m14/measurements/yaml-grammar-binding.json",
+    "instrument": "script/m14/yaml-grammar-binding-probe.ts",
+    "note": "THE CITATION IS THE SHA-256 OF THE BYTES THE REGISTRY SERVES, never a path and never a log line. MEASURED, lane-owned, byte-level: the engine's own log prints `language parser loaded {\"language\":\"yaml\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-yaml_tree-sitter-yaml.wasm_29_9vhq9r96g\"}` — a PER-PROCESS TEMP FILE, so the path a log names is not the source file. The registry is `src/util/wasm.ts` (`_wasmRegistry`, keyed by FILE NAME) and `bbWasmCandidates` in `src/util/bb-data-dir.ts:28` returns `[<root>/wasm/<n>, <dist>/wasm/<n>, ~/.bb/wasm/<n>, <cwd>/wasm/<n>]`, first existing wins — so the repo's `wasm/` is FIRST and the PATH and the BYTES AGREE. The probe resolves the bytes the way the registry does, digests them, and separately confirms that the production parser's own node-type inventory EQUALS the inventory of the served bytes (so the analyzer and this citation are reading the same build). The npm package `@tree-sitter-grammars/tree-sitter-yaml` carries no wasm at all, so the repo's `wasm/tree-sitter-yaml.wasm` IS the served artifact."
+  },
+  "grammarVersion": "0.7.1",
+  "grammarPackage": "@tree-sitter-grammars/tree-sitter-yaml@0.7.1",
+  "grammarPin": "validation/m14/grammar-pins.json",
+  "vocabulary": {
+    "nodeTypeIds": "@@NODE_TYPE_IDS@@",
+    "namedNodeTypeIds": "@@NAMED_IDS@@",
+    "namedUnique": "@@NAMED_UNIQUE@@",
+    "anonUnique": "@@ANON_UNIQUE@@",
+    "fields": "@@FIELD_COUNT@@",
+    "idOrderDigest": "@@ID_ORDER_DIGEST@@",
+    "typeSetDigest": "@@TYPE_SET_DIGEST@@",
+    "fieldSetDigest": "@@FIELD_SET_DIGEST@@",
+    "fieldNames": [
+      "key",
+      "value"
+    ],
+    "uniqueNames": "@@UNIQUE_NAMES@@",
+    "namedNodeTypes": [
+      "alias",
+      "alias_name",
+      "anchor",
+      "anchor_name",
+      "block_mapping",
+      "block_mapping_pair",
+      "block_node",
+      "block_scalar",
+      "block_sequence",
+      "block_sequence_item",
+      "boolean_scalar",
+      "comment",
+      "directive_name",
+      "directive_parameter",
+      "document",
+      "double_quote_scalar",
+      "escape_sequence",
+      "float_scalar",
+      "flow_mapping",
+      "flow_node",
+      "flow_pair",
+      "flow_sequence",
+      "integer_scalar",
+      "null_scalar",
+      "plain_scalar",
+      "reserved_directive",
+      "single_quote_scalar",
+      "stream",
+      "string_scalar",
+      "tag",
+      "tag_directive",
+      "tag_handle",
+      "tag_prefix",
+      "timestamp_scalar",
+      "yaml_directive",
+      "yaml_version"
+    ],
+    "note": "THE GRAMMAR-SIDE INVENTORY. @@NAMED_UNIQUE@@ named node types, @@UNIQUE_NAMES@@ including the anonymous ones, and exactly TWO fields (`key`, `value`). THIS IS THE HALF EVERY EXCLUSION CITES: the grammar's own inventory is what shows the LANGUAGE does not express a type, and the behaviour count alone would only show the ANALYZER does not emit it. THE NAMED-COUNT TRAP IS RECORDED HERE because it changes the number: `nodeTypeForId(id)` returns the type NAME as a string, and a string has no `.named` property, so `t.named` counts EVERY type as anonymous — the accessor is `nodeTypeIsNamed(id)`. The tell is a TOTAL that agrees with the prior measurement while the named count is 0. The numbers here are 301 ids / 161 named ids / 36 UNIQUE named names / 104 unique anonymous names, and the digests are over the id order, the type set and the field set."
+  },
+  "population": {
+    "corpusRoot": "$PWD/.corpus",
+    "paths": "@@POP_PATHS@@",
+    "distinctFiles": "@@POP_DISTINCT@@",
+    "admittedTotal": "@@POP_ADMITTED@@",
+    "parsed": "@@POP_PARSED@@",
+    "failed": "@@POP_FAILED@@",
+    "degradedToFallback": "@@POP_DEGRADED@@",
+    "absent": "@@POP_ABSENT@@",
+    "overCap": "@@POP_OVERCAP@@",
+    "reposCarryingAnAdmittedFile": "@@POP_REPOS@@",
+    "symlinkedRepoDirsFollowed": "@@POP_SYMLINKED_REPOS@@",
+    "symlinkedDirsFollowedOnDiskWalk": "@@POP_SYMLINKED_DIRS@@",
+    "note": "THREE DENOMINATORS, NEVER MIXED. PATHS = the tracked admitted paths (a path is a path even when two paths are one file). DISTINCT FILES = the realpaths behind those paths. ADMITTED = the files this run PARSED, and it is the denominator every count below is over. The REPO COUNT is the number of repositories CARRYING AN ADMITTED FILE, and it is derivable from the per-repo rows in the census artifact. The corpus root holds absolute symlinks into `$HOME/fixtures/repositories/`, so every walk FOLLOWS symlinks and PRINTS how many it followed. THE ADMISSION RULE IS THE PRODUCTION GATE'S, copied rule for rule from `script/m14/incoming-gate.ts` (`admitByExtension` at :447, `discoverFiles` at :454, `yaml: \"yaml,yml\"` at :243), and the size cap is the engine's own `FULL_AST_LIMIT` of 1 MiB (`pool-worker.ts:1143`)."
+  },
+  "measured": {
+    "instrument": "script/m14/yaml-emission-census.ts",
+    "artifact": "validation/m14/measurements/yaml-emission-census-whole.json",
+    "beforeArtifact": "validation/m14/measurements/yaml-emission-census-before.json",
+    "beforeInstrument": "the SAME census, run against the analyzer at git HEAD (`analyzers/ontology-laptop-b`), so the delta is a controlled BEFORE/AFTER and not a comparison across two populations",
+    "note": "THE CENSUS PARSES EVERY ADMITTED FILE THROUGH THE PRODUCTION PATH (`ASTEngine.getParser(\"yaml\")` -> `parser.parse` -> `new RealYamlAnalyzer().analyze`), and it builds the per-type, per-marker and per-construct censuses over the SAME tree in the SAME pass — one parse per file, so the construct counters and the edge counters describe one population, not two. THE PER-TYPE COUNTS ARE EDGES, and the per-type FILE counts are the files carrying at least one such edge."
+  },
+  "handled_verified": {
+    "calls": "GitHub Actions reusable workflows at JOB level (`jobs.<id>.uses: ./.github/workflows/x.yml`) and step level (`jobs.<id>.steps[].uses:`), marker `yaml_workflow_call` / `yaml_workflow_call_unverified`. The job-level/steps-level distinction is the analyzer's own `isJobLevelPath`.",
+    "extends": "THREE forms, all measured. (1) The MERGE KEY `<<: *anchor` — marker `yaml_merge`, and the anchor is a SIBLING, not a superclass: a merge key inherits the anchor's ENTRIES into the mapping that contains it. (2) JSON SCHEMA COMPOSITION `allOf: [{$ref: Base}]` — marker `yaml_schema_composition`, the JSON lane's own settled ruling (`BD-allof-extends`) applied to the same construct written as YAML; the source is the schema that COMPOSES, not the `allOf` array. (3) CONFIGURATION INHERITANCE, the `extends:` KEY — marker `yaml_config_extends`, whose value SHAPE says what the base is.",
+    "uses": "A plain (non-merge) YAML ALIAS `*name`, marker `yaml_alias`: the document uses the anchored value, and the anchor names no supertype and no module. Plus the job-level `uses:` of a GitHub Actions action, marker `yaml_action_use` / `yaml_action_use_unverified`.",
+    "imports": "The include family, in three spellings: the include-family TAG (`!include file.yml`), the include-family KEY (`include:`, `include_tasks:`, `import_playbook:`, `include_role:`, `import_vars:`/`include_vars:`, …), and the `extends:`-named FILE (marker `yaml_extends_file`), which the file is READ.",
+    "exports": "OpenAPI / JSON Schema PUBLICATION — a schema definition under `components.<container>.<name>` or `definitions.<name>` is published by the document, marker `yaml_schema_publication`.",
+    "contains": "EVERY parent/child pair the grammar makes: a mapping's key, a sequence's item, an anchor's value, a recovered member. No `relationshipType` marker, because containment is not a semantic claim; it carries a `role` instead.",
+    "references": "A `$ref` / JSON POINTER (marker `yaml_json_pointer`, resolved against the document's own pointer index in a post-pass), a declared TYPE from a tag (marker `declared_type`), and a `*Ref`-shaped key's value (marker `ref.kind`).",
+    "overrides": "A DUPLICATE MAPPING KEY: the later definition replaces the earlier one, and the two occurrences get disambiguated identities so the edge names which definition replaced which. Confidence 0.8, because the grammar recovers the duplicate rather than rejecting the document.",
+    "notImplemented": []
+  },
+  "internal_silent": {
+    "note": "THE TWO HALVES OF A SILENCE ARE NOT THE SAME CLAIM, AND THE GATE CHECKS THE HALF THAT MATTERS. 'The analyzer emits this type zero times' is a claim about the ANALYZER: an analyzer that merely lacks an emission site is an UNIMPLEMENTED type, which is a GAP and stays in the denominator. What makes a type an EXCLUSION is the GRAMMAR-SIDE half: the language has no such construct, so the type is not in the expressible set at all. Every exclusion below carries BOTH halves, and the grammar's own node-type inventory is cited in every one of them.",
+    "noEmissionSite": {
+      "implements": "The analyzer has no `implements` emission site.",
+      "instantiates": "The analyzer has no `instantiates` emission site.",
+      "decorates": "The analyzer has no `decorates` emission site.",
+      "renders": "The analyzer has no `renders` emission site.",
+      "mixes_in": "The analyzer has no `mixes_in` emission site.",
+      "part_of": "The analyzer has no `part_of` emission site."
+    }
+  },
+  "gap": {
+    "note": "THERE IS NO GAP IN THE YAML CELL. Every one of the fourteen types carries a disposition with a count and a falsifier: eight are IMPLEMENTED and measured over the whole admitted population, and six are RULED with both halves cited. THE R3 WORK THAT WAS OUTSTANDING IS LANDED: the `include_vars` key (the include-family TAG set carried it and the KEY set did not — the asymmetry that was the R3 gap), the `allOf` composition, and the `extends:` key family. The `extends` key family is the one that needed a shape taxonomy, and it is measured over the whole admitted population in the census artifact.",
+    "ladder": {
+      "R1": "THE PUBLISHED GRAMMAR AS-IS. The pinned build is `@tree-sitter-grammars/tree-sitter-yaml@0.7.1` and the lane READS it: 36 named node types, 2 fields, and the production parser's inventory equals the served bytes' inventory.",
+      "R2": "NOT TAKEN AND NOT NEEDED. Every construct this lane reads is a KEY, a TAG, an ANCHOR or an ALIAS — the four things the grammar's two fields (`key`, `value`) and its 36 named types already expose. There is no construct in the corpus that the pinned grammar cannot reach: the `extends:` key is a `block_mapping_pair` with a `key` field and a `value` field, the `allOf` composition is a `block_sequence` of mappings, and the merge key is a plain scalar key named `<<`. The lane's own measurement is that the grammar's inventory CONTAINS the constructs it reads (`block_mapping_pair`, `block_sequence_item`, `tag`, `anchor`, `alias`, `alias_name`) and contains NO node type for any of the fourteen relationship values.",
+      "R3": "TAKEN, AND IT IS WHAT THE R3 RUNG IS FOR. Three constructs EXIST in the language and the analyzer simply did not attempt them: (1) the `include_vars` KEY, which the analyzer's own include-family TAG set already carried and whose KEY set did not — the asymmetry is the whole defect; (2) the `allOf` composition, which the JSON lane had already ruled to be `extends` and which this lane had not attempted; (3) the `extends:` key family, whose five shapes name a configuration base in every case. Each is now emitted, each has a fixture that FIRES it, and the two `extends` forms have a LANE-OWNED ORACLE that derives them independently (see `oracle`)."
+    }
+  },
+  "design_decision": [
+    {
+      "id": "YAML-D1",
+      "decision": "NO `calls` IN YAML.",
+      "status": "SUPERSEDED by YAML-D9.",
+      "why": "A YAML document has no call form; a key names a thing, it does not invoke it."
+    },
+    {
+      "id": "YAML-D2",
+      "decision": "NO `imports`/`exports` FROM YAML KEYS.",
+      "status": "SUPERSEDED by YAML-D10 and YAML-D12.",
+      "why": "The original ruling read the grammar's inventory and found no import node, which is the JSON lane's recorded mistake in general form: a grammar has no node type for a manifest's `exports` field any more than it has one for a keyword."
+    },
+    {
+      "id": "YAML-D3",
+      "decision": "NO `visibility` PAYLOAD ON EMITTED SYMBOLS.",
+      "why": "YAML has no visibility modifier; a document's keys are all equally visible."
+    },
+    {
+      "id": "YAML-D4",
+      "decision": "NO `typeParameters`; A DECLARED TYPE IS A REFERENCE GRAPH INSTEAD.",
+      "why": "A YAML tag names a type, it does not parameterize one. The declared type is published as a `references` edge (marker `declared_type`), which is what the type actually is: a mention of a type name."
+    },
+    {
+      "id": "YAML-D5",
+      "decision": "`imports` AND `exports` COME FROM TAG AND KEY SHAPES.",
+      "why": "The include family is a DIALECT CONVENTION, and the shape of the value says what it names. A tag names a file, a key names a file, and an OpenAPI publication names a schema."
+    },
+    {
+      "id": "YAML-D6",
+      "decision": "THE WIRED GRAMMAR IS THE `core` (YAML 1.2) SCHEMA BUILD, AND THE 1.1 LIMITATION IS DECLARED, NOT ABSORBED.",
+      "why": "The pinned build is what the registry serves, and the campaign's rule is that a lane measures the build it is wired to. The YAML 1.1 forms the build does not carry are a limitation of the build, and the spec says so rather than pretending they are absent from YAML."
+    },
+    {
+      "id": "YAML-D7",
+      "decision": "AN ANONYMOUS SCALAR SEQUENCE ITEM IS A VALUE, NOT A DECLARATION.",
+      "why": "`- foo` names nothing. It has no name to declare, so it is not a symbol and it is not a container. This is also the rule the oracle follows, so the two sides agree on what a path is."
+    },
+    {
+      "id": "YAML-D8",
+      "decision": "DUPLICATE MAPPING KEYS GET DISAMBIGUATED IDENTITIES.",
+      "why": "The grammar recovers a duplicate rather than rejecting the document, so the two occurrences are the same key twice. `first` / `second` / `third` suffixes keep the identities apart, which is what lets `overrides` name WHICH definition replaced which."
+    },
+    {
+      "id": "YAML-D9",
+      "decision": "`calls` IS EMITTED, FOR REUSABLE WORKFLOWS AND FOR ACTIONS.",
+      "why": "A GitHub Actions reusable workflow is INVOKED by a job, and an action is invoked by a step. The invocation is a real one, and the job-level / step-level distinction is the analyzer's own `isJobLevelPath`."
+    },
+    {
+      "id": "YAML-D10",
+      "decision": "`implements` IS RULED, ON THE KEY VOCABULARY AND NOT ON THE GRAMMAR'S INVENTORY ALONE.",
+      "status": "RE-CONFIRMED 2026-10-22 with a whole-population measurement; see the `zeroEmissionFacts` entry.",
+      "why": "THE JSON LANE'S PRECEDENT, AND ITS ARGUMENT IS ABOUT VOCABULARY RATHER THAN ABOUT GRAMMARS. `script/m14/spec/json-completeness.json` rules `implements` out on the KEY VOCABULARY: of 28 supertype-candidate keys (`implements`, `inherits`, `superclass`, `base`, `prototype`, `satisfies`, `conformsTo`, …) only `extends`, `inherits` and `base` occur at all, and each names a config or manifest field rather than a supertype clause. THE SAME SWEEP OVER THE YAML POPULATION SAYS THE SAME THING: `implements` @@SK_IMPLEMENTS_EDGES@@ sites, `inherits` @@SK_INHERITS_EDGES@@, `base` @@SK_BASE_EDGES@@, `superclass` @@SK_SUPERCLASS_EDGES@@ — and every one of them names ANOTHER TOOL'S FIELD, not a YAML supertype clause. The `implements:` keys are Dart package plugin lists in Flutter `pubspec.yaml` files; the `inherits:` keys are `pnpm-lock.yaml` entries; the `base:` keys are Ansible filter-plugin bases; the `superclass:` keys are dart-sdk analyzer DATA. AND THE ONE COMPOSITION KEYWORD IN YAML IS NOT A CONFORMANCE CLAUSE: `allOf` (@@C_ALL_OF_KEY@@ sites) is a SUPERSET relation, which is `extends` and is now implemented; `anyOf` (@@C_ANY_OF_KEY@@) and `oneOf` (@@C_ONE_OF_KEY@@) are ALTERNATIVES with no ontology type at all, and their `$ref`s contribute only `references`. A YAML DOCUMENT DECLARES NO CONFORMANCE TO AN INTERFACE."
+    },
+    {
+      "id": "YAML-D11",
+      "decision": "`instantiates` IS RULED: CONSTRUCTION IS AN EXPRESSION, AND A YAML DOCUMENT HAS NO EXPRESSIONS.",
+      "why": "The grammar's 36 named node types contain no expression and no construction node: the whole vocabulary of the format is a mapping, a sequence, a scalar, an anchor, an alias and a tag. The near-miss is a `new:`-shaped KEY, and a key names a thing, it does not construct one."
+    },
+    {
+      "id": "YAML-D12",
+      "decision": "`overrides` IS EMITTED, AT CONFIDENCE 0.8, AS A LAST-WINS CHAIN.",
+      "why": "A duplicate mapping key is a definition replacing a definition, which is the relation `overrides` names. The confidence is below 1 because the grammar RECOVERS the duplicate rather than rejecting the document, so the analyzer is reading the document's own tolerance rather than a declared intent."
+    },
+    {
+      "id": "YAML-D13",
+      "decision": "DOCUMENT IDENTITY IS SCOPED BY THE PROJECT-RELATIVE DIRECTORY CHAIN.",
+      "why": "Two files can carry the same basename, and a qualified path that could not tell them apart would merge two documents into one namespace."
+    },
+    {
+      "id": "YAML-D14",
+      "decision": "THE `calls` SILENCE IS RECONCILED WITH THE TWO INSTRUMENTS.",
+      "why": "The firing log and the census read the same corpus with different admission rules, and the difference is in the populations, not in the analyzer."
+    },
+    {
+      "id": "YAML-D15",
+      "decision": "THE `rpm_key.yaml` EXTERNAL CLAIM IS REFUTED.",
+      "why": "The file the claim named is not in the population the claim was made about. A claim the population refutes is removed, not softened."
+    },
+    {
+      "id": "YAML-D16",
+      "decision": "THE TWO INSTRUMENTS' YAML POPULATIONS DIFFER, AND THE DIFFERENCE IS STATED.",
+      "why": "The firing log and the census do not admit the same files, so their per-type numbers are a COMPARISON and never a substitute for the census. The spec cites the census."
+    },
+    {
+      "id": "YAML-D17",
+      "decision": "THE `include_vars` KEY IS AN IMPORT, AND THE ASYMMETRY THAT HID IT IS THE POINT.",
+      "at": "2026-10-22",
+      "why": "THE ANALYZER'S OWN INCLUDE-FAMILY TAG SET carried `include_vars` and its KEY SET did not. The two sets are supposed to be the same family, and the difference between them was an UNATTEMPTED construct — which is exactly the R3 rung. THE SHAPES ARE MEASURED, AND THEY ARE NOT ALL FILES: `include_vars: <file>` and `include_vars: {file: <file>}` name a file, while `include_vars: {dir: …, with_first_found: …}` names a DIRECTORY and `include_vars: \"{{ lookup(…) }}\"` is an EXPRESSION, and neither is an import of a file. The spellings that are BOOLEANS (`include-hidden-files: true`, `include_aggregate_mounts: true`, `include_in_metadata: true`, `include_tags: true`) and the environment-variable form (`INCLUDE_DIR: ${{ github.workspace }}/…`) are not imports either, and Helm's `import-values:` names VALUE PATHS, which is why `import-values` stays out of the set while `include_vars` is in."
+    },
+    {
+      "id": "YAML-D18",
+      "decision": "A BLOCK SCALAR'S VALUE IS ITS CONTENT, NOT ITS RAW TEXT.",
+      "at": "2026-10-22",
+      "why": "`include_vars: >`\\n    services/service_vars.yml` published the target `>\\n    services/service_vars.yml`, because the raw text of a `block_scalar` node STARTS WITH THE INDICATOR. The target a consumer resolves is the CONTENT. The blast radius was MEASURED: exactly ONE block-scalar include-family value exists over the whole admitted population, so this was one malformed target, not a class — but it was a malformed target, and a target that resolves to nothing is a false claim."
+    },
+    {
+      "id": "YAML-D19",
+      "decision": "JSON SCHEMA COMPOSITION IS `extends`: `allOf` IS A SUPERSET RELATION.",
+      "at": "2026-10-22",
+      "why": "THE JSON LANE'S OWN SETTLED RULING, `BD-allof-extends` in `script/m14/spec/json-completeness.json`, applied to the same construct in the YAML spelling. `allOf` means 'must satisfy ALL of these', which is a superset relation and the ONLY schema keyword that means one; `anyOf` and `oneOf` are alternatives and have no ontology type. THE SOURCE IS THE SCHEMA THAT COMPOSES, not the `allOf` array that records the composition — `allOf` is a keyword shared by every schema in the file, so an edge whose source were the array would bind a consumer resolving by name to an arbitrary one of them. THE RULE IS THE PATH'S TAIL and it is exact: the `$ref` must be a DIRECT member of an `allOf` item, because a `$ref` deeper inside a member (`…allOf[1].properties.OnTimeout.$ref`) is a PROPERTY reference, and the corpus has both in the same document."
+    },
+    {
+      "id": "YAML-D20",
+      "decision": "THE `extends:` KEY IS CONFIGURATION INHERITANCE, AND ITS VALUE SHAPE SAYS WHAT THE BASE IS.",
+      "at": "2026-10-22",
+      "why": "`extends` on a mapping is the relation the merge key carries, written the other way round. THE SHAPES ARE MEASURED OVER THE ADMITTED POPULATION: `extends: .hidden-job` (GitLab CI, a sibling key in the same file), `extends: {file: F, service: S}` (Docker Compose, a service in another file), `extends: {template: T}` (Azure Pipelines, a template file), `extends: name` (yamllint, a config of another tool) and `extends: {service: S}` (Docker Compose, a sibling service in the same file) — and every one of them names a CONFIGURATION BASE. THE CONTRAST IS WHAT KEEPS THE RULING HONEST: the same sweep found the other supertype-candidate keys in the corpus (`implements` @@SK_IMPLEMENTS_EDGES@@, `inherits` @@SK_INHERITS_EDGES@@, `base` @@SK_BASE_EDGES@@, `superclass` @@SK_SUPERCLASS_EDGES@@) and NONE of them names a YAML supertype clause. THE SOURCE IS THE THING THAT INHERITS, not the `extends` key, for the same reason the composition's source is the composing schema: the key is shared by every job in the file. THE TARGET IS THE BASE, named the way the dialect names it, and a base in ANOTHER FILE is the FILE, because the analyzer analyses one file at a time and cannot name another file's symbols — the base's NAME rides in the metadata instead, and the file is READ, so an `imports` edge is published for it as well."
+    },
+    {
+      "id": "YAML-D21",
+      "decision": "THE `!include` TAG IS AN IMPORT AND NOT A `part_of`.",
+      "at": "2026-10-22",
+      "why": "`part_of` was the hardest of the six rulings, and the discriminator is the SCOPE. A `part_of` shares the LIBRARY's single scope: the part's declarations are the library's declarations, at the library's top level, indistinguishable from the library's own (the Dart `part 'x.dart'` case). A YAML `!include` fragment is the VALUE at a KEY: `file1: !include 1.yaml` puts the fragment UNDER `file1`, and `tables: \"!include tables.yaml\"` puts it under `tables`. The fragment never joins the including document's top-level scope, so the shared-scope property that makes `part_of` a part is not met, and the file is a file that any other document may include in its own scope. THE CONSTRUCT IS ALSO NOT YAML'S: pyyaml-include's own README calls itself 'An extending constructor of PyYAML', and Hasura's metadata loader defines its own — the YAML specification has no include mechanism at all. THE HONEST SPELLING FOR A NAMED, READ FILE IS `imports`, which is what the lane already publishes (marker `yaml_tag_include`). FALSIFIER: a corpus site where an included fragment's keys land at the INCLUDING DOCUMENT'S TOP LEVEL — that is a part, and it would make `part_of` live."
+    }
+  ],
+  "coverage": {
+    "implemented": [
+      "calls",
+      "contains",
+      "exports",
+      "extends",
+      "imports",
+      "overrides",
+      "references",
+      "uses"
+    ],
+    "excluded": [],
+    "grammarRemedyPending": [],
+    "corpusUnexercised": [],
+    "zeroEmissionFacts": [
+      {
+        "label": "implements",
+        "construct": "yaml.implements_key",
+        "count": "@@C_IMPLEMENTS_KEY@@",
+        "files": "@@C_IMPLEMENTS_KEY_FILES@@",
+        "repos": "@@C_IMPLEMENTS_KEY_REPOS@@",
+        "falsifier": "A corpus site where a YAML document declares conformance to an interface or protocol — a key whose value names a type the document claims to satisfy. The `implements:`/`inherits:`/`base:`/`superclass:` sites would be exactly that IF their values named YAML types, and they do not: they name Dart plugins, lockfile entries and Ansible plugin bases.",
+        "from": "validation/m14/measurements/yaml-emission-census-whole.json validation/m14/measurements/yaml-grammar-nodes.json — @@NAMED_UNIQUE@@ named node types in the grammar's own inventory; @@C_IMPLEMENTS_KEY@@ yaml.implements_key sites over the whole admitted population",
+        "statement": "YAML-D10, RE-CONFIRMED 2026-10-22 OVER THE WHOLE ADMITTED POPULATION. THE GRAMMAR-SIDE HALF: the pinned build's own inventory is @@NAMED_UNIQUE@@ named node types (plus 104 anonymous names, 301 ids) and it contains NO node type for a conformance clause — the whole vocabulary of the format is a mapping, a sequence, a scalar, an anchor, an alias and a tag, and a conformance clause is none of them. THE BEHAVIOUR-SIDE HALF: the analyzer has no `implements` emission site, and the edge count over the whole admitted population is 0. THE NEAR MISS IS MEASURED, NOT ASSUMED: the `implements:` key occurs @@C_IMPLEMENTS_KEY@@ times over @@C_IMPLEMENTS_KEY_FILES@@ files in @@C_IMPLEMENTS_KEY_REPOS@@ repositories, and every one of them is ANOTHER TOOL'S FIELD — a Dart package plugin list in a Flutter `pubspec.yaml` — while the other supertype-candidate keys are the same story (`inherits` @@SK_INHERITS_EDGES@@ in `pnpm-lock.yaml` entries, `base` @@SK_BASE_EDGES@@ in Ansible filter-plugin bases, `superclass` @@SK_SUPERCLASS_EDGES@@ in dart-sdk analyzer DATA). AND THE ONE COMPOSITION KEYWORD IS NOT A CONFORMANCE CLAUSE: `allOf` (@@C_ALL_OF_KEY@@ sites) is a SUPERSET relation and is `extends` — the JSON lane's own settled ruling, `BD-allof-extends` — while `anyOf` (@@C_ANY_OF_KEY@@) and `oneOf` (@@C_ONE_OF_KEY@@) are ALTERNATIVES with no ontology type, so their `$ref`s contribute only `references`. A YAML DOCUMENT DECLARES NO CONFORMANCE TO AN INTERFACE. WHAT WOULD OVERTURN THIS: a corpus site where a YAML document declares conformance to an interface or protocol — a key that names a type the document claims to satisfy. MEASURED: the grammar's own inventory of @@NAMED_UNIQUE@@ named node types, the behaviour count of 0 edges, and the near-miss counts are in validation/m14/measurements/yaml-emission-census-whole.json, with the grammar's own node-type inventory in validation/m14/measurements/yaml-grammar-binding.json."
+      },
+      {
+        "label": "instantiates",
+        "construct": "yaml.instantiates_key",
+        "count": "@@C_INSTANTIATES_KEY@@",
+        "files": "@@C_INSTANTIATES_KEY_FILES@@",
+        "repos": "@@C_INSTANTIATES_KEY_REPOS@@",
+        "falsifier": "A YAML construct that BUILDS a value from another — a factory key, or an expression syntax the grammar exposes. The pinned grammar's 36 named node types would have to contain one, and the nearest measured near-miss is a `new:`-shaped KEY, which names rather than constructs.",
+        "from": "validation/m14/measurements/yaml-emission-census-whole.json validation/m14/measurements/yaml-grammar-nodes.json — @@NAMED_UNIQUE@@ named node types in the grammar's own inventory; @@C_INSTANTIATES_KEY@@ yaml.instantiates_key sites over the whole admitted population",
+        "statement": "YAML-D11, 2026-10-22 OVER THE WHOLE ADMITTED POPULATION. THE GRAMMAR-SIDE HALF: the pinned build's own inventory is @@NAMED_UNIQUE@@ named node types and it contains NO EXPRESSION AND NO CONSTRUCTION NODE — the format's whole vocabulary is a mapping, a sequence, a scalar, an anchor, an alias and a tag, and construction is an expression, so there is nothing in the grammar that could carry one. THE BEHAVIOUR-SIDE HALF: the analyzer has no `instantiates` emission site and the edge count over the whole admitted population is 0. THE NEAR MISS IS MEASURED: the `instantiates:`/`new:`-shaped KEY occurs @@C_INSTANTIATES_KEY@@ times over @@C_INSTANTIATES_KEY_FILES@@ files in @@C_INSTANTIATES_KEY_REPOS@@ repositories, and a key names a thing — it does not construct one, and the Kubernetes `kind:`/`apiVersion:` envelope names a KIND rather than building an instance. WHAT WOULD OVERTURN THIS: a YAML construct that BUILDS a value from another (a factory key, an expression syntax), which the pinned grammar's @@NAMED_UNIQUE@@ named node types would have to expose. MEASURED: the grammar's own inventory of @@NAMED_UNIQUE@@ named node types and the zero edge count are in validation/m14/measurements/yaml-emission-census-whole.json, with the grammar's own node-type inventory in validation/m14/measurements/yaml-grammar-binding.json."
+      },
+      {
+        "label": "decorates",
+        "construct": "yaml.tag_naming_a_declaration_in_the_document",
+        "count": "@@C_TAG_NAMING_A_DECLARATION_IN_THE_DOCUMENT@@",
+        "files": "@@C_TAG_NAMING_A_DECLARATION_IN_THE_DOCUMENT_FILES@@",
+        "repos": "@@C_TAG_NAMING_A_DECLARATION_IN_THE_DOCUMENT_REPOS@@",
+        "falsifier": "A YAML tag that NAMES a declaration in the same document — a tag whose name is a key of the document it appears in — which would be a decoration applied to a declaration rather than metadata marking a value. THE CONSTRUCT IS COUNTED: `yaml.tag_naming_a_declaration_in_the_document`, and the count is over the whole admitted population. A tag that names a declaration is a TYPE REFERENCE, and the relation the fleet publishes for that is `references` with `metadata.declaredType` — a reference says the name is mentioned, which is not application — so the tag is not lost, it is published as the reference it is.",
+        "nearMiss": {
+          "construct": "yaml.tag_node",
+          "count": "@@C_TAG_NODE@@",
+          "files": "@@C_TAG_NODE_FILES@@",
+          "repos": "@@C_TAG_NODE_REPOS@@"
+        },
+        "from": "validation/m14/measurements/yaml-emission-census-whole.json validation/m14/measurements/yaml-grammar-nodes.json — @@NAMED_UNIQUE@@ named node types in the grammar's own inventory; @@C_TAG_NAMING_A_DECLARATION_IN_THE_DOCUMENT@@ yaml.tag_naming_a_declaration_in_the_document sites over the whole admitted population",
+        "statement": "YAML-D22, 2026-10-22 OVER THE WHOLE ADMITTED POPULATION. THE GRAMMAR-SIDE HALF: the pinned build's own inventory is @@NAMED_UNIQUE@@ named node types and it contains no node type for a decorator, an application or an annotation ATTACHED TO A DECLARATION — a YAML tag is a `tag` node and it types a VALUE, and the tag is attached to the value it types, not to a declaration. THE BEHAVIOUR-SIDE HALF: the analyzer has no `decorates` emission site and the edge count over the whole admitted population is 0. THE NEAR MISS IS MEASURED: the format's only type annotation is the TAG, and there are @@C_TAG_NODE@@ tag nodes over @@C_TAG_NODE_FILES@@ files in @@C_TAG_NODE_REPOS@@ repositories (@@C_TAG_LOCAL@@ local, @@C_TAG_CORE_SCHEMA@@ core-schema, @@C_TAG_VERBATIM@@ verbatim) — and a tag is PASSIVE METADATA naming a type, which is the vocabulary's own `references` case for an annotation, and which this lane already publishes as the `declared_type` reference. THE VOCABULARY IS EXPLICIT: `decorates` is a decorator APPLIED TO A DECLARATION, with the direction decorated declaration → decorator, and NOT `calls` because the runtime applies it while the declaration is created. A YAML TAG IS APPLIED TO NOTHING: it types a value. WHAT WOULD OVERTURN THIS: a corpus site where a YAML document declares a DECORATION of another declaration — a key whose value names a thing that wraps or augments the thing it is attached to. MEASURED: the grammar's own inventory of @@NAMED_UNIQUE@@ named node types, the zero edge count and the tag census are in validation/m14/measurements/yaml-emission-census-whole.json, with the grammar's own node-type inventory in validation/m14/measurements/yaml-grammar-binding.json."
+      },
+      {
+        "label": "renders",
+        "construct": "yaml.template_component_named_in_a_scalar",
+        "count": "@@C_TEMPLATE_COMPONENT_NAMED_IN_A_SCALAR@@",
+        "files": "@@C_TEMPLATE_COMPONENT_NAMED_IN_A_SCALAR_FILES@@",
+        "repos": "@@C_TEMPLATE_COMPONENT_NAMED_IN_A_SCALAR_REPOS@@",
+        "falsifier": "A template expression that names a COMPONENT and is a YAML SCALAR — `{{ template \"x\" . }}` or `{{ include \"x\" . }}` in a position the YAML grammar lexes as a value. THE CONSTRUCT IS COUNTED: `yaml.template_component_named_in_a_scalar`, against the text-level count `yaml.template_component_named_in_the_file_text`, and the difference between them IS the measurement: the component-naming forms exist in the corpus's YAML files, and the YAML grammar cannot lex them (the file's root is an ERROR node), so they are another language's construct embedded in a YAML file rather than a YAML construct. The corpus's `{{ define \"x\" }}` declarations live in `.tpl` files, which the admitted extension set does not carry, so no rendered component is declared in the admitted population either.",
+        "nearMiss": {
+          "construct": "yaml.template_interpolation_in_scalar",
+          "count": "@@C_TEMPLATE_INTERPOLATION_IN_SCALAR@@",
+          "files": "@@C_TEMPLATE_INTERPOLATION_IN_SCALAR_FILES@@",
+          "repos": "@@C_TEMPLATE_INTERPOLATION_IN_SCALAR_REPOS@@"
+        },
+        "from": "validation/m14/measurements/yaml-emission-census-whole.json validation/m14/measurements/yaml-grammar-nodes.json — @@NAMED_UNIQUE@@ named node types in the grammar's own inventory; @@C_TEMPLATE_COMPONENT_NAMED_IN_A_SCALAR@@ yaml.template_component_named_in_a_scalar sites over the whole admitted population",
+        "statement": "YAML-D23, 2026-10-22 OVER THE WHOLE ADMITTED POPULATION. THE GRAMMAR-SIDE HALF: the pinned build's own inventory is @@NAMED_UNIQUE@@ named node types and it contains NO node type for a component, a template or a render — a YAML scalar is TEXT, and the interpolation markers inside it are characters, not nodes. THE BEHAVIOUR-SIDE HALF: the analyzer has no `renders` emission site and the edge count over the whole admitted population is 0. THE NEAR MISS IS MEASURED: template interpolation occurs in @@C_TEMPLATE_INTERPOLATION_IN_SCALAR@@ scalars over @@C_TEMPLATE_INTERPOLATION_IN_SCALAR_FILES@@ files in @@C_TEMPLATE_INTERPOLATION_IN_SCALAR_REPOS@@ repositories, and the path shapes show GitHub Actions `${{ … }}`, Azure Pipelines and Helm template text — ANOTHER TOOL'S CONSTRUCT EMBEDDED AS LITERAL TEXT in a YAML scalar. There is no second endpoint to render: the rendered thing is the tool's own, and the YAML document is the tool's INPUT, not a component that renders one. WHAT WOULD OVERTURN THIS: a corpus site where a YAML document RENDERS another YAML document — a key whose value names a component the document produces — which the pinned grammar's @@NAMED_UNIQUE@@ named node types would have to expose. MEASURED: the grammar's own inventory of @@NAMED_UNIQUE@@ named node types, the zero edge count and the interpolation census are in validation/m14/measurements/yaml-emission-census-whole.json, with the grammar's own node-type inventory in validation/m14/measurements/yaml-grammar-binding.json."
+      },
+      {
+        "label": "mixes_in",
+        "construct": "yaml.merge_sequence_with_more_than_one_alias",
+        "count": "@@C_MERGE_SEQUENCE_WITH_MORE_THAN_ONE_ALIAS@@",
+        "files": "@@C_MERGE_SEQUENCE_WITH_MORE_THAN_ONE_ALIAS_FILES@@",
+        "repos": "@@C_MERGE_SEQUENCE_WITH_MORE_THAN_ONE_ALIAS_REPOS@@",
+        "falsifier": "A merge key whose value is a SEQUENCE of more than one alias — `<<: [*a, *b]` — which is the one YAML shape with NO SINGLE BASE, and the vocabulary's own reason a mixin is not `extends`. THE CONSTRUCT IS COUNTED: `yaml.merge_sequence_with_more_than_one_alias`, over the whole admitted population. Every member of a merge sequence is a BASE: YAML's merge semantics give earlier mappings precedence over later ones, which is an order among bases and not a composition of a mixin into a supertype chain — YAML has no supertype chain, and the merge key adds a base's keys to a mapping.",
+        "nearMiss": {
+          "construct": "yaml.merge_key",
+          "count": "@@C_MERGE_KEY@@",
+          "files": "@@C_MERGE_KEY_FILES@@",
+          "repos": "@@C_MERGE_KEY_REPOS@@"
+        },
+        "from": "validation/m14/measurements/yaml-emission-census-whole.json validation/m14/measurements/yaml-grammar-nodes.json — @@NAMED_UNIQUE@@ named node types in the grammar's own inventory; @@C_MERGE_SEQUENCE_WITH_MORE_THAN_ONE_ALIAS@@ yaml.merge_sequence_with_more_than_one_alias sites over the whole admitted population",
+        "statement": "YAML-D24, 2026-10-22 OVER THE WHOLE ADMITTED POPULATION. THE GRAMMAR-SIDE HALF: the pinned build's own inventory is @@NAMED_UNIQUE@@ named node types and it contains NO node type for a mixin — the format's only inheritance mechanism is the merge key, and a merge key is PLAIN TEXT: `<<` is not a node type, it is the text of a key, and the grammar reads it as an ordinary `block_mapping_pair` whose key is the scalar `<<`. THE BEHAVIOUR-SIDE HALF: the analyzer has no `mixes_in` emission site and the edge count over the whole admitted population is 0. THE NEAR MISS IS MEASURED AND IT IS THE DECISIVE ARGUMENT: the merge key occurs @@C_MERGE_KEY@@ times over @@C_MERGE_KEY_FILES@@ files in @@C_MERGE_KEY_REPOS@@ repositories, and the aliases resolve EXACTLY — @@C_MERGE_ALIAS_DIRECT@@ of them are merge aliases and @@C_ALIAS_NOT_A_MERGE@@ are not, and the analyzer publishes exactly @@C_MERGE_ALIAS_DIRECT@@ `extends` edges and @@C_ALIAS_NOT_A_MERGE@@ `uses` edges over the same population, one for one. SO THE ONLY INHERITANCE MECHANISM YAML HAS IS ALREADY SPELLED `extends`, and it is spelled `extends` for the reason the VOCABULARY gives: 'the base is, and `extends` already fires for it'. A YAML DOCUMENT HAS NO MIXIN — it has a base, and the base is the anchor. WHAT WOULD OVERTURN THIS: a corpus construct where a mapping composes a base AND a separate mixin-like object into the same scope, with the two roles distinguishable. The merge SEQUENCE (`<<: [*a, *b]`) is the nearest shape, and it merges several BASES, not a base plus a mixin. MEASURED: the grammar's own inventory of @@NAMED_UNIQUE@@ named node types, the zero edge count and the merge/alias census are in validation/m14/measurements/yaml-emission-census-whole.json, with the grammar's own node-type inventory in validation/m14/measurements/yaml-grammar-binding.json."
+      },
+      {
+        "label": "part_of",
+        "construct": "yaml.include_family_tag_at_the_document_root",
+        "count": "@@C_INCLUDE_FAMILY_TAG_AT_THE_DOCUMENT_ROOT@@",
+        "files": "@@C_INCLUDE_FAMILY_TAG_AT_THE_DOCUMENT_ROOT_FILES@@",
+        "repos": "@@C_INCLUDE_FAMILY_TAG_AT_THE_DOCUMENT_ROOT_REPOS@@",
+        "falsifier": "An include-family tag at the DOCUMENT's ROOT — `!include fragment.yaml` in the document's own position rather than at a key — so the included fragment's keys land at the including document's TOP LEVEL, which is the shared-scope relation `part_of` names. THE CONSTRUCT IS COUNTED: `yaml.include_family_tag_at_the_document_root`, against the measured `yaml.include_family_tag_at_a_key_position`. The `!include` family is a LOADER-DEFINED CONVENTION (pyyaml-include's own README defines it as an extending constructor of PyYAML), and what it does is put the fragment at a KEY: the fragment's content becomes the VALUE at a key position, never merged into the including document's scope.",
+        "nearMiss": {
+          "construct": "yaml.include_family_tag",
+          "count": "@@C_INCLUDE_FAMILY_TAG@@",
+          "files": "@@C_INCLUDE_FAMILY_TAG_FILES@@",
+          "repos": "@@C_INCLUDE_FAMILY_TAG_REPOS@@"
+        },
+        "from": "validation/m14/measurements/yaml-emission-census-whole.json validation/m14/measurements/yaml-grammar-nodes.json — @@NAMED_UNIQUE@@ named node types in the grammar's own inventory; @@C_INCLUDE_FAMILY_TAG_AT_THE_DOCUMENT_ROOT@@ yaml.include_family_tag_at_the_document_root sites over the whole admitted population",
+        "statement": "YAML-D21, 2026-10-22 OVER THE WHOLE ADMITTED POPULATION. THE GRAMMAR-SIDE HALF: the pinned build's own inventory is @@NAMED_UNIQUE@@ named node types and it contains NO node type for a library unit, a compilation unit or a part — and the YAML specification has NO include mechanism at all, so the format cannot express one; the `!include` tag is a `tag` node whose MEANING is defined by a LOADER, not by the language (pyyaml-include's own README calls itself 'An extending constructor of PyYAML', and Hasura's metadata loader defines its own). THE BEHAVIOUR-SIDE HALF: the analyzer has no `part_of` emission site and the edge count over the whole admitted population is 0. THE NEAR MISS IS MEASURED: the `!include` TAG family occurs @@C_INCLUDE_FAMILY_TAG@@ times over @@@C_INCLUDE_FAMILY_TAG_FILES@@ files in @@C_INCLUDE_FAMILY_TAG_REPOS@@ repositories, and the DISCRIMINATOR IS THE SCOPE, which is what `part_of` is about: a part SHARES the library's single scope — the part's declarations are the library's declarations, at the library's TOP LEVEL (the Dart `part 'x.dart'` case) — while a YAML `!include` fragment is the VALUE AT A KEY (`file1: !include 1.yaml` puts it UNDER `file1`; `tables: \"!include tables.yaml\"` puts it under `tables`), so the fragment never joins the including document's top-level scope, and the included file stays an ordinary file that any other document may include in its own scope. THE HONEST SPELLING FOR A NAMED, READ FILE IS `imports`, and that is what the lane already publishes (marker `yaml_tag_include`). WHAT WOULD OVERTURN THIS: a corpus site where an included fragment's keys land at the INCLUDING DOCUMENT'S TOP LEVEL — that is a part, and it would make `part_of` live for YAML. MEASURED: the grammar's own inventory of @@NAMED_UNIQUE@@ named node types, the zero edge count and the include-tag census are in validation/m14/measurements/yaml-emission-census-whole.json, with the grammar's own node-type inventory in validation/m14/measurements/yaml-grammar-binding.json."
+      }
+    ],
+    "denominator": {
+      "n": 8,
+      "types": [
+        "calls",
+        "contains",
+        "exports",
+        "extends",
+        "imports",
+        "overrides",
+        "references",
+        "uses"
+      ],
+      "rule": "THE DENOMINATOR IS THE LANGUAGE'S OWN EXPRESSIBLE SET, MEASURED AGAINST THE LIVE 14-TYPE VOCABULARY (10 canonical + `decorates`, `renders`, `mixes_in`, `part_of`). A type the language CANNOT express leaves the denominator; a type it CAN express stays in it. SIX types leave it, each on BOTH halves — the grammar's own node-type inventory shows the language does not express it, AND the whole-population behaviour count shows the analyzer emits nothing for it — and a type that leaves the denominator is a type the language CANNOT express, not a type the analyzer happens not to attempt. THE REMAINING EIGHT ARE IMPLEMENTED AND MEASURED over the whole admitted population, with a count for every one. A TYPE IN `grammarRemedyPending` WOULD STAY IN THE DENOMINATOR AS A GAP, so this lane publishes no pending type: the R3 work was taken and landed, and the arithmetic is 14 − 6 = 8. THE GATE RECOMPUTES THIS NUMBER, and a lane may not publish a denominator the gate cannot reproduce."
+    },
+    "_implemented_measured": {
+      "_unit": "the WHOLE admitted population, counted by validation/m14/measurements/yaml-emission-census-whole.json: @@POP_ADMITTED@@ admitted YAML files over @@POP_PATHS@@ tracked paths (@@POP_DISTINCT@@ distinct files) in @@POP_REPOS@@ repositories, parsed through the PRODUCTION path (ASTEngine.getParser(\"yaml\") -> parser.parse -> RealYamlAnalyzer.analyze). Every count below is over that population and nothing else. The BEFORE column is the SAME census run against the analyzer at git HEAD, so the delta is controlled.",
+      "calls": {
+        "edges": "@@T_CALLS_EDGES@@",
+        "files": "@@T_CALLS_FILES@@",
+        "repos": "@@T_CALLS_REPOS@@",
+        "beforeEdges": "@@B_CALLS_EDGES@@",
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-whole.json",
+          "validation/m14/measurements/yaml-emission-census-before.json"
+        ]
+      },
+      "contains": {
+        "edges": "@@T_CONTAINS_EDGES@@",
+        "files": "@@T_CONTAINS_FILES@@",
+        "repos": "@@T_CONTAINS_REPOS@@",
+        "beforeEdges": "@@B_CONTAINS_EDGES@@",
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-whole.json",
+          "validation/m14/measurements/yaml-emission-census-before.json"
+        ]
+      },
+      "exports": {
+        "edges": "@@T_EXPORTS_EDGES@@",
+        "files": "@@T_EXPORTS_FILES@@",
+        "repos": "@@T_EXPORTS_REPOS@@",
+        "beforeEdges": "@@B_EXPORTS_EDGES@@",
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-whole.json",
+          "validation/m14/measurements/yaml-emission-census-before.json"
+        ]
+      },
+      "extends": {
+        "edges": "@@T_EXTENDS_EDGES@@",
+        "files": "@@T_EXTENDS_FILES@@",
+        "repos": "@@T_EXTENDS_REPOS@@",
+        "beforeEdges": "@@B_EXTENDS_EDGES@@",
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-whole.json",
+          "validation/m14/measurements/yaml-emission-census-before.json"
+        ],
+        "forms": {
+          "merge_key": "@@T_EXTENDS_MERGE@@",
+          "schema_composition_allOf": "@@T_EXTENDS_ALLOF@@",
+          "config_extends_key": "@@T_EXTENDS_KEY@@"
+        }
+      },
+      "imports": {
+        "edges": "@@T_IMPORTS_EDGES@@",
+        "files": "@@T_IMPORTS_FILES@@",
+        "repos": "@@T_IMPORTS_REPOS@@",
+        "beforeEdges": "@@B_IMPORTS_EDGES@@",
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-whole.json",
+          "validation/m14/measurements/yaml-emission-census-before.json"
+        ]
+      },
+      "overrides": {
+        "edges": "@@T_OVERRIDES_EDGES@@",
+        "files": "@@T_OVERRIDES_FILES@@",
+        "repos": "@@T_OVERRIDES_REPOS@@",
+        "beforeEdges": "@@B_OVERRIDES_EDGES@@",
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-whole.json",
+          "validation/m14/measurements/yaml-emission-census-before.json"
+        ]
+      },
+      "references": {
+        "edges": "@@T_REFERENCES_EDGES@@",
+        "files": "@@T_REFERENCES_FILES@@",
+        "repos": "@@T_REFERENCES_REPOS@@",
+        "beforeEdges": "@@B_REFERENCES_EDGES@@",
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-whole.json",
+          "validation/m14/measurements/yaml-emission-census-before.json"
+        ]
+      },
+      "uses": {
+        "edges": "@@T_USES_EDGES@@",
+        "files": "@@T_USES_FILES@@",
+        "repos": "@@T_USES_REPOS@@",
+        "beforeEdges": "@@B_USES_EDGES@@",
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-whole.json",
+          "validation/m14/measurements/yaml-emission-census-before.json"
+        ]
+      }
+    },
+    "_from": "THE MEASUREMENT IS THE CENSUS, AND THE CENSUS IS REPRODUCIBLE: `node script/m14/yaml-emission-census.ts --cap=0 --out=validation/m14/measurements/yaml-emission-census-whole.json`, run under the arm protocol (`bash script/m14/arm-token.sh take yaml`, `beat yaml` every 120s, `release yaml`). The BEFORE column is the same command with the analyzer at git HEAD. THE GRAMMAR CITATION IS THE BYTES: `node script/m14/yaml-grammar-binding-probe.ts` writes `validation/m14/measurements/yaml-grammar-binding.json`, which digests the bytes the REGISTRY SERVES and confirms the production parser's node-type inventory equals that build's. THE SPEC'S NUMBERS ARE RE-DERIVED BY `node script/m14/yaml-spec-check.ts`, which reads this file and the two census artifacts and fails if any published number disagrees with them."
+  },
+  "fixtures": [
+    "validation/m14/fixtures/yaml/config-extends-key.yaml",
+    "validation/m14/fixtures/yaml/config-extends-key.expectation.json",
+    "validation/m14/fixtures/yaml/schema-composition-allof.yaml",
+    "validation/m14/fixtures/yaml/schema-composition-allof.expectation.json",
+    "validation/m14/fixtures/yaml/include-vars-file.yaml",
+    "validation/m14/fixtures/yaml/include-vars-file.expectation.json"
+  ],
+  "fixtureCommand": "bun run script/m14/run-fixtures.ts --lang yaml",
+  "oracle": "script/m14/oracles/yaml-extends.ts",
+  "oracleNote": "THE TWO NEW `extends` FORMS HAVE A LANE-OWNED ORACLE THAT DERIVES THEM INDEPENDENTLY — a SECOND implementation reading the same tree, sharing no rule table, no key set and no path helper with the analyzer. It is measured 1:1 against the analyzer on the fixtures and on real corpus files (5/5, 12/12, 2/2, 11/11 on the GitLab CI, Docker Compose, Azure Pipelines and Grace OpenAPI files). `script/m14/differential.ts` is LEAD-SINGLE-WRITER — the fleet's own history says so ('differential: KOTLIN fleet-phase wiring (lane request, Lead single-writer) — three lane-owned oracles that were referenced by NOTHING imported and pushed') — so the wiring the Lead has to apply is two lines: import this oracle and push its rows alongside `deriveYamlEdges`. UNTIL THAT IS DONE THE FLEET DIFFERENTIAL WILL REPORT THE NEW `extends` EDGES AS UNEXPLAINED, and that is an ORACLE gap and not an analyzer gap."
+}

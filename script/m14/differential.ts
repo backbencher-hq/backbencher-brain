@@ -5694,6 +5694,39 @@ export function deriveJavaScriptImportEdges(root: any): { label: string; from: s
  * name a platform builtin, so there is no in-corpus case to cover and inventing one
  * would be untested code.
  */
+/**
+ * THE ANALYZER'S OWN NAME TEST, MIRRORED — and it is missing from the TRUTH side of the `calls`
+ * comparison, which is the javascript lane's finding (2026-10-22) and it is the Lead's file.
+ *
+ * THE DEFECT: the TRUTH side (`deriveJavaScriptCalls` below) publishes `fn.text` — the WHOLE callee
+ * text — for any callee that is not a member/subscript expression, subject to the length/newline/
+ * backtick/`${`/brace/builtin filters. **THE TRUTH HAS NO NAME TEST: it publishes SOURCE TEXT as a
+ * `calls` TARGET.** The ANALYZER side (`src/ast/real-javascript-analyzer.ts:2564`) applies
+ * `isNameLikeCallTarget` and refuses a callee whose text is not a plain identifier, because a
+ * `calls` TARGET is read by the graph as a symbol NAME — pinned by the fixture
+ * `javascript/non-name-callee-refused`.
+ *
+ * ⇒ ⇒ ⇒ SO THE TRUTH OVER-CLAIMED, AND THE LANE'S INSTRUMENT MEASURED IT EXACTLY: 58 rows, every
+ * one a source-text callee — `(0,r.render)`, `(0,e.jsx)`, `(0,n.useEffect)`, `l()`, `Ko()`,
+ * `t(8227)`, `(r>0?t:n)`, `new Function("return this")` and fifty more. ⇒ AND THE COUNT MOVED FROM 2
+ * TO 58 BECAUSE THE ANALYZER GOT MORE CORRECT: the name test landed in `48092b388` on 2026-10-20,
+ * THREE DAYS AFTER the baseline was recorded on 2026-10-17. Before it, BOTH SIDES published source
+ * text and agreed; after it, the analyzer refuses and the truth's source-text rows surfaced. ⇒ THE
+ * TRUTH IS THE SIDE THAT OVER-CLAIMS.
+ *
+ * ⇒ THE FIX IS ONE PREDICATE, AND IT IS THE ANALYZER'S OWN, UNICODE-AWARE, UNCHANGED: a target that
+ * is not a plain identifier cannot name a declaration, so binding it would fabricate a resolution.
+ *
+ * ⇒ AND THE CONTROL, WHICH IS THE LANE'S: a run at the tree BEFORE the R3 remedy (0
+ * `RelationshipType.MixesIn`, 0 `deriveJavaScriptMixins`) gives a BYTE-IDENTICAL result on both
+ * repos — `Exposed:javascript` hash `4a9ed14bdbe4710e`, `scala3:javascript` hash `a9c9f59e29944638` —
+ * and so does a run with the PRE-Lead-commit `differential.ts`. ⇒ NEITHER IS THE CAUSE; the name
+ * test is.
+ */
+function isNameLikeCallTarget(text: string): boolean {
+  return /^#?[\p{L}\p{Nl}_$][\p{L}\p{Nl}\p{Nd}\p{Mn}\p{Mc}\p{Pc}_$]*$/u.test(text)
+}
+
 export function deriveJavaScriptOverrides(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -6572,6 +6605,15 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
           !targetName.includes("`") &&
           !targetName.includes("${") &&
           !hasBraceEquals(targetName) &&
+          // ★ THE NAME TEST, AND IT IS THE ANALYZER'S OWN (javascript lane, 2026-10-22). WITHOUT
+          // IT THE TRUTH PUBLISHES SOURCE TEXT AS A `calls` TARGET — `(0,r.render)`, `l()`,
+          // `(r>0?t:n)`, `new Function("return this")` — 58 rows the analyzer REFUSES by contract,
+          // pinned by the fixture `javascript/non-name-callee-refused`. ⇒ A `calls` TARGET is read by
+          // the graph as a symbol NAME, so a callee whose text is not a plain identifier cannot name
+          // a declaration and binding it would fabricate a resolution. ⇒ THE TRUTH MUST MIRROR THE
+          // ANALYZER'S RULE EXACTLY, INCLUDING ITS UNICODE-AWARE SHAPE, OR THE COMPARISON MEASURES
+          // THE TRUTH'S OVER-CLAIM INSTEAD OF THE ANALYZER'S UNDER-CLAIM.
+          isNameLikeCallTarget(targetName) &&
           !isBuiltinCall(targetName, fullCallee)
         ) push("calls", targetName)
       }
