@@ -296,6 +296,8 @@ type Row = {
   silenceProseAttributed: string[]
   /** of those, the ones with no attribution to THIS type at all — the defect this check exists for */
   silenceUncited: string[]
+  /** Types that are implemented AND corpus-unexercised — counted once, in implemented. */
+  implAndUnex: string[]
   /** THE LOG HAS NO ENTRY FOR THIS LANE — a measurement gap; never a silence */
   notFired: boolean
   /** THE LOG HAS AN ENTRY BUT THE RUN HAD NO CORPUS — a measurement gap; never a silence */
@@ -596,17 +598,17 @@ for (const lane of allLanes) {
   const abs = resolve(ROOT, rel)
   const problems: string[] = []
   if (!existsSync(abs)) {
-    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: ["no spec file"], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], silenceDetails: [], notFired: !firingFor(lane, fires), noCorpus: false })
+    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: ["no spec file"], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], implAndUnex: [], silenceDetails: [], notFired: !firingFor(lane, fires), noCorpus: false })
     continue
   }
   let doc: any
   try { doc = JSON.parse(readFileSync(abs, "utf8")) } catch (e) {
-    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: [`unparseable JSON: ${String(e).slice(0, 60)}`], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], silenceDetails: [], notFired: !firingFor(lane, fires), noCorpus: false })
+    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: [`unparseable JSON: ${String(e).slice(0, 60)}`], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], implAndUnex: [], silenceDetails: [], notFired: !firingFor(lane, fires), noCorpus: false })
     continue
   }
   const blk = doc?.coverage
   if (!blk || typeof blk !== "object" || !Array.isArray(blk.implemented)) {
-    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: [], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], silenceDetails: [], notFired: !firingFor(lane, fires), noCorpus: false })
+    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: [], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], implAndUnex: [], silenceDetails: [], notFired: !firingFor(lane, fires), noCorpus: false })
     continue
   }
   const impl: string[] = blk.implemented.filter((t: any) => TYPES.includes(t))
@@ -754,7 +756,29 @@ for (const lane of allLanes) {
   for (const x of unex) {
     const t = typeof x === "string" ? x : x?.label
     if (!TYPES.includes(t)) { problems.push(`corpusUnexercised names "${t}", which is not one of ${VOCAB_NAME}`); continue }
-    if (impl.includes(t)) problems.push(`"${t}" is BOTH implemented and corpusUnexercised`)
+    /**
+     * ★ "IMPLEMENTED AND CORPUS-UNEXERCISED" IS A LEGITIMATE STATE, NOT A DOUBLE-COUNT (Lead, 2026-10-21).
+     *
+     * This check used to report the overlap as a defect, and it was WRONG for this list. The DISJOINT
+     * rule is right for `excluded` — a type cannot be both implemented and excluded, because exclusion
+     * means the language does not express it. But `corpusUnexercised` is a DIFFERENT CLAIM: it says the
+     * ANALYZER EMITS THE TYPE and the CORPUS DOES NOT EXERCISE IT. That is a real, measurable state, and
+     * the csharp lane's `renders` is it: the analyzer publishes the edge at
+     * `src/ast/real-csharp-analyzer.ts:2285` and `:2315`, the fixture
+     * `validation/m14/fixtures/csharp/render-host-component.cs` pins it, and the corpus has 0 sites over
+     * the whole admitted population (51 render-host calls, of which 0 name a component in either shape).
+     *
+     * A type that is implemented AND unexercised is counted ONCE — in `implemented` — and its
+     * unexercised status is a PROPERTY of that row, not a second bucket. So the closure below counts
+     * it once, and this list's entries that name an implemented type are counted as a PROPERTY.
+     *
+     * WHAT THE OVERLAP STILL HAS TO CARRY: the same evidence standard every other ruling carries. A
+     * claim that the corpus does not exercise a construct is a claim about a POPULATION, so it needs a
+     * count and a citation, and the citation must say WHICH population. The csharp entry does exactly
+     * that, and the checks below are unchanged — the class, the source and the count are all still
+     * required. Only the "you may not be both" complaint is withdrawn, because the complaint was the
+     * wrong rule rather than the lane's wrong declaration.
+     */
     /**
      * THE SAME EVIDENCE STANDARD `excluded` CARRIES, WHICH THIS LIST DID NOT.
      *
@@ -864,7 +888,16 @@ for (const lane of allLanes) {
   const applicable = LEGACY
     ? TOTAL - gAbs.length - unclassified.length
     : TOTAL - gAbs.length - zeroFactLabels.length
-  const unexCount = unex.filter((x) => TYPES.includes(typeof x === "string" ? x : x?.label)).length
+  // AN UNEXERCISED LABEL THAT IS ALSO IMPLEMENTED IS COUNTED ONCE, IN `implemented` — see the ruling
+  // above at the DISJOINT check. `unexOnly` is the count of unexercised labels that are NOT implemented:
+  // those are types the corpus does not exercise and the analyzer does not publish, and they are their
+  // own bucket in the closure.
+  const unexLabels = unex.map((x) => (typeof x === "string" ? x : x?.label)).filter((t: any) => TYPES.includes(t))
+  const unexOnly = unexLabels.filter((t) => !impl.includes(t))
+  const unexCount = unexOnly.length
+  // THE OVERLAP COUNTED, REPORTED, NOT HIDDEN: how many rows are implemented AND unexercised. This is the
+  // state the csharp lane's `renders` is in, and a reader must be able to see it.
+  const implAndUnex = unexLabels.filter((t) => impl.includes(t))
   const claimedGaps = unex.length === 0 && problems.length === 0
     ? undefined : undefined
   // 1. CLOSURE. `gaps` is what is left after implemented, grammar-absence, unclassified and
@@ -881,6 +914,10 @@ for (const lane of allLanes) {
   if (impl.length + unexCount + gaps.length !== applicable) {
     problems.push(`DOES NOT CLOSE: implemented ${impl.length} + unexercised ${unexCount} + gaps ${gaps.length} ≠ applicable ${applicable}`)
   }
+  // THE OVERLAP IS REPORTED, NOT SILENTLY ABSORBED. A type that is implemented AND corpus-unexercised is
+  // a legitimate state, but a reader of the gate's output must be able to see WHICH rows are in it —
+  // otherwise "implemented 11" and "unexercised 1" would look like the same type was counted twice.
+  // (the per-lane disclosure is carried on the row and printed in the output below)
   void claimedGaps
 
   /* THE LANE'S DECLARED DENOMINATOR IS CHECKED AGAINST THE COMPUTED ONE. Three numbers disagreed for
@@ -941,7 +978,7 @@ for (const lane of allLanes) {
     else uncited.push(t)
   }
 
-  rows.push({ lane, declared: true, implemented: impl.length, applicable, exclusions: excluded.length, problems, unexplainedSilence: unexplained, silenceCounted: counted, silenceProseAttributed: prose, silenceUncited: uncited, silenceDetails: details, notFired, noCorpus })
+  rows.push({ lane, declared: true, implemented: impl.length, applicable, exclusions: excluded.length, problems, unexplainedSilence: unexplained, silenceCounted: counted, silenceProseAttributed: prose, silenceUncited: uncited, implAndUnex, silenceDetails: details, notFired, noCorpus })
   if (problems.length) problemsOf.set(lane, problems)
 }
 
@@ -989,6 +1026,17 @@ if (JSON_MODE) {
   }
   console.log(`SILENT-BUT-DECLARED-IMPLEMENTED, attributed PER TYPE: ${say(nCounted)} with a per-type count · ${say(nProse)} prose-attributed · ${say(nUncited)} UNSUBSTANTIATED`)
   if (undeclared.length) console.log(`NOT DECLARED (board falls back to prose+log, which is conservative but not a contract): ${undeclared.map((r) => r.lane).join(" ")}`)
+  // THE IMPLEMENTED-AND-UNEXERCISED DISCLOSURE. A type the analyzer PUBLISHES and the corpus does not
+  // EXERCISE is a real, measured state — csharp's `renders` is it — and it is counted ONCE, in
+  // `implemented`. It is printed here rather than absorbed, so a reader can see which rows are in that
+  // state and never mistake it for a double count.
+  const implUnexRows = rows.filter((r) => r.implAndUnex.length > 0)
+  if (implUnexRows.length) {
+    console.log()
+    console.log(`IMPLEMENTED AND CORPUS-UNEXERCISED — the analyzer publishes the type and the corpus does not`)
+    console.log(`exercise it. Counted ONCE, in implemented; printed here so it is never read as a double count:`)
+    for (const r of implUnexRows) console.log(`  ${w(r.lane, 12)} ${r.implAndUnex.join(" ")}`)
+  }
   if (unexplained.length) {
     console.log()
     console.log(`SILENT ON THE 120-FILE STRIDE BUT DECLARED IMPLEMENTED — every type below is attributed ON ITS OWN,`)
