@@ -64,11 +64,21 @@ run_chunk () {
   local beat_pid=$!
 
   # ── THE CONSTRUCT CENSUS, OVER THIS CHUNK ──────────────────────────────────────────────────────
-  BB_CORPUS_ROOT="${BB_CORPUS_ROOT:-$PWD/.corpus}" \
-    bun run script/m14/html-extended-construct-probe.ts --offset="$off" --limit="$POP" \
-      --json "$CENSUS_DIR/chunk-$off.json" \
-    > "$CENSUS_DIR/chunk-$off.txt" 2>&1
-  local census_rc=$?
+  # IT IS OPTIONAL, AND THE REASON IS THE SLOT. The census is a whole-population parse and the
+  # small slot is ONE at a time fleet-wide, so spending a slot window on a measurement whose
+  # console artifact already exists (validation/m14/measurements/html-extended-constructs-2026-10-22.txt,
+  # which is what the spec's citations name) would cost the ARM a window it needs more. The
+  # census is a COUNT over the whole population; the arm is the RESOLUTION CLOSURE, and the closure
+  # is the deliverable that does not exist yet. ⇒ ARM-ONLY BY DEFAULT; `HTML_ARM_WITH_CENSUS=1`
+  # re-enables the census in the same windows.
+  local census_rc=0
+  if [ "${HTML_ARM_WITH_CENSUS:-0}" = "1" ]; then
+    BB_CORPUS_ROOT="${BB_CORPUS_ROOT:-$PWD/.corpus}" \
+      bun run script/m14/html-extended-construct-probe.ts --offset="$off" --limit="$POP" \
+        --json "$CENSUS_DIR/chunk-$off.json" \
+      > "$CENSUS_DIR/chunk-$off.txt" 2>&1
+    census_rc=$?
+  fi
 
   # ── THE RESOLUTION ARM, OVER THE SAME CHUNK ──────────────────────────────────────────────────
   BB_CORPUS_ROOT="${BB_CORPUS_ROOT:-$PWD/.corpus}" \

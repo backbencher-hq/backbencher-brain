@@ -28,7 +28,19 @@ const ARM = "validation/m14/measurements/html-arm-closure-2026-10-22.json"
 const CENSUS = "validation/m14/measurements/html-extended-constructs-2026-10-22.txt"
 
 const arm = JSON.parse(readFileSync(resolve(ROOT, ARM), "utf8"))
-const census = JSON.parse(readFileSync(resolve(ROOT, CENSUS), "utf8"))
+// THE CENSUS ARTIFACT IS THE CONSOLE FILE THE GATE-SIDE CITATIONS NAME, AND IT IS PARSED, NOT
+// TRANSCRIBED. The census's own JSON is written by the five-slice re-run; until that lands, the
+// durable artifact is its console output, whose lines carry the counts in a stable shape —
+// "<label>  <description>  <count>  in <files> files" — and whose DESCRIPTIONS are unique
+// ("decorator nodes", "implements clauses", "jsx elements", "mixin clauses", "part directives",
+// "class_heritage clauses"). A number written by hand into a spec is a number nobody measured.
+const censusText = readFileSync(resolve(ROOT, CENSUS), "utf8")
+function censusCount(description: string): { count: number; files: number } {
+  const re = new RegExp(description + "\\s+(\\d+)\\s+in\\s+(\\d+)\\s+files")
+  const m = re.exec(censusText)
+  if (!m) throw new Error(`the census artifact does not carry "${description}" — ${CENSUS}`)
+  return { count: Number(m[1]), files: Number(m[2]) }
+}
 const spec = JSON.parse(readFileSync(resolve(ROOT, SPEC), "utf8"))
 
 const byType: Record<string, any> = {}
@@ -38,11 +50,11 @@ for (const row of arm.perType) byType[row.type] = row
 // counts a CONSTRUCT; the arm counts an EDGE. They are different measurements of the same zero, and
 // both are written: the census says the construct is in 0 files, the arm says the edge is 0.
 const CONSTRUCT_FILES: Record<string, string> = {
-  extends: "filesWithClassHeritage",
-  implements: "filesWithImplements",
-  decorates: "filesWithDecorator",
-  renders: "filesWithJsx",
-  mixes_in: "filesWithMixin",
+  extends: "class_heritage clauses",
+  implements: "implements clauses",
+  decorates: "decorator nodes",
+  renders: "jsx elements",
+  mixes_in: "mixin clauses",
 }
 
 // THE DOABILITY STUDIES — one per type, each naming an artifact that EXISTS and says what the
@@ -104,7 +116,7 @@ for (const [type, entry] of Object.entries(m) as Record<string, any>[]) {
   const row = byType[type]
   if (!row) { console.log(`  !! NO ARM ROW for ${type} — left as it was`); continue }
   entry.edges = row.edges
-  if (CONSTRUCT_FILES[type]) entry.files = census.counts?.[CONSTRUCT_FILES[type]] ?? 0
+  if (CONSTRUCT_FILES[type]) entry.files = censusCount(CONSTRUCT_FILES[type]).files
   else delete entry.files
   if (row.edges <= 0) {
     const why = WHY[type]

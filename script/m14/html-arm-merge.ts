@@ -14,14 +14,25 @@
  * rather than asserting it: every chunk's `[start, end)` must abut its neighbour's, the first must
  * start at 0, and the last must end at the gate's own admitted total.
  *
- * ★ THE STRADDLE, AND WHY THE SUM IS A LOWER BOUND ON `resolved`. The admitted list is sorted by
+ * ★ THE STRADDLE, AND WHICH WAY THE CHUNK SUM'S `resolved` IS BIASED. The admitted list is sorted by
  *   ABSOLUTE PATH, so a repository's files are CONTIGUOUS — but a repository longer than one chunk
  *   STRADDLES a boundary, and a straddling repository's key space is SPLIT across two chunks. The
- *   resolution scope is PER PROJECT, so a split project resolves fewer edges than it would whole:
- *   a name that collides with a declaration in the other half of the same repository cannot be
- *   seen. ⇒ THE CHUNK SUM'S `resolved` IS A LOWER BOUND ON THE WHOLE-POPULATION FIGURE, and its
- *   `unresolved` an UPPER BOUND. The number reported here is the number the measurement produces;
- *   the bound is stated with it, because a number without its bound is a claim about nothing.
+ *   resolution scope is PER PROJECT, so a split project sees only HALF of its own symbol table.
+ *
+ *   ★ THE FIRST VERSION OF THIS NOTE HAD THE SIGN BACKWARDS, AND THE GATE'S OWN HEADER IS WHAT
+ *   CORRECTED IT. It said the chunk sum's `resolved` is a LOWER BOUND — "a name that collides
+ *   with a declaration in the other half of the same repository cannot be seen" — and the reason
+ *   that is wrong is the same sentence read the other way round: a collision that lives in the
+ *   UNSAMPLED half is INVISIBLE, so the name reads UNIQUE and the edge RESOLVES. The gate says so
+ *   in its own population line, which every chunk prints: "A stride sample truncates each
+ *   project's symbol table too, so its project-scoped RESOLVED share is biased UP — a name whose
+ *   collision lives in an unsampled file of the same repository reads unique here."
+ *   ⇒ THE CHUNK SUM'S `resolved` IS BIASED UP, and its `unresolved` and `amb(decl)` BIASED DOWN,
+ *   relative to a whole-population run. The EDGE COUNTS are unaffected: every admitted file is
+ *   measured exactly once (8,888 of 8,888 parsed), and an edge is a per-file fact.
+ *   ⇒ THE MEASURED EDGE BUCKETS ARE THE POPULATION'S. THE RESOLUTION BUCKETS ARE THE CHUNKED
+ *   MEASUREMENT'S, WITH THIS BIAS, AND THE BIAS IS STATED WITH THEM RATHER THAN BOUNDED BY
+ *   ASSERTION — a number without its bias is a claim about nothing.
  *
  * THE CLOSURE IDENTITY, CHECKED PER TYPE AND IN TOTAL:
  *   resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL
@@ -54,7 +65,11 @@ function parseChunk(path: string): { rows: Map<string, Row>; slice: [number, num
   // THE POPULATION HEADER — the gate's own admitted total and the chunk's own slice bounds.
   const sliceM = /admitted files \[(\d+), (\d+)\)/.exec(text)
   const slice: [number, number] | null = sliceM ? [Number(sliceM[1]), Number(sliceM[2])] : null
-  const admM = /corpus has (\d+) admitted/.exec(text)
+  // THE GATE'S OWN ADMITTED TOTAL. Its header line reads "corpus has 8888 .html,htm,xhtml,hbs,… 
+  // files across 96 repos" — the extension list sits between the number and the word "files", so
+  // the first version of this regex ("corpus has (\d+) admitted") matched NOTHING and the merged
+  // artifact recorded `admitted: null` for a measurement whose population it could otherwise name.
+  const admM = /corpus has (\d+) [^\n]*? files across (\d+) repos/.exec(text)
   const admitted = admM ? Number(admM[1]) : null
   const parsedM = /(\d+) parsed of (\d+)/.exec(text)
   const parsed = parsedM ? Number(parsedM[1]) : null

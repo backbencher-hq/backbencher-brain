@@ -1,11 +1,33 @@
 {
   "_comment": "M14.0.SPEC (#419) — html completeness classification, 2026-10-22. Every public NAMED node type of the pinned wasm/tree-sitter-html.wasm (19 distinct; the grammar exposes 26 named slots over 41 ids) is classified as handled_verified (read by the analyzer) or internal_silent (correctly emits nothing), with `entity` decided by an explicit design decision rather than by a bucket. The COVERAGE block below is the 14-VALUE cell: the ten canonical types plus `decorates`, `renders`, `mixes_in` and `part_of`.",
   "handled_verified": {
-    "types": ["ERROR", "attribute", "attribute_name", "attribute_value", "doctype", "document", "element", "quoted_attribute_value", "raw_text", "script_element", "self_closing_tag", "start_tag", "style_element", "tag_name"],
+    "types": [
+      "ERROR",
+      "attribute",
+      "attribute_name",
+      "attribute_value",
+      "doctype",
+      "document",
+      "element",
+      "quoted_attribute_value",
+      "raw_text",
+      "script_element",
+      "self_closing_tag",
+      "start_tag",
+      "style_element",
+      "tag_name"
+    ],
     "note": "Fourteen types, each read in src/ast/real-html-analyzer.ts and each pinned. `document` supplies the module symbol's range and the DOCTYPE; `element`/`start_tag`/`self_closing_tag`/`tag_name` supply the DOM hierarchy and the address space; `attribute`/`attribute_name`/`attribute_value`/`quoted_attribute_value` supply the attributes, the IDREF class and the resource carriers; `script_element`/`style_element`/`raw_text` supply the EMBEDDED-SCRIPT SEAM; `ERROR` is the broken-node boundary the analyzer bypasses by contract. The measured node-type inventory is validation/m14/measurements/html-grammar-nodes.json (26 named slots / 41 ids, 19 distinct named types, served digest 11b3405c1543)."
   },
   "internal_silent": {
-    "types": ["MISSING", "comment", "end_tag", "erroneous_end_tag", "erroneous_end_tag_name", "text"],
+    "types": [
+      "MISSING",
+      "comment",
+      "end_tag",
+      "erroneous_end_tag",
+      "erroneous_end_tag_name",
+      "text"
+    ],
     "note": "Five types that correctly emit nothing and need no analyzer read. `end_tag` needs none because the element's PUBLISHED range already covers its children; `erroneous_end_tag` and `erroneous_end_tag_name` are the broken-markup boundary, which the analyzer bypasses by contract (the `ERROR` row); `comment` and `text` are LITERALS — a comment is not a symbol and a text run is not a symbol, and the whole point of reading the tree instead of scanning the source is that a directive inside a text run cannot masquerade as one. THIS ROW IS ALSO THE REASON `part_of` IS RULED AND NOT IMPLEMENTED: the construct's bytes arrive as `text`."
   },
   "gap": {
@@ -77,27 +99,74 @@
     "denominator": {
       "n": 13,
       "types": [
-        "calls", "uses", "contains", "imports", "references", "exports", "instantiates", "extends",
-        "overrides", "decorates", "implements", "renders", "mixes_in"
+        "calls",
+        "uses",
+        "contains",
+        "imports",
+        "references",
+        "exports",
+        "instantiates",
+        "extends",
+        "overrides",
+        "decorates",
+        "implements",
+        "renders",
+        "mixes_in"
       ],
       "note": "n = 13, not 14: `part_of` is RULED UNDECIDABLE on a counted, cited near miss with a falsifier that names a counted construct, and a ruling class LEAVES the denominator. The gate recomputes applicable as 14 − 1 = 13 and checks this number against its own."
     },
     "_from": "THIRTEEN OF FOURTEEN IMPLEMENTED, ONE RULED UNDECIDABLE — AND THE SHAPE OF THIS LANE IS THAT ITS OWN GRAMMAR IS A MARKUP GRAMMAR WHILE ITS ANALYZER IS A CONTAINER: src/ast/real-html-analyzer.ts merges the relationships of an embedded-script delegate (JS/TS/CSS) via mergeEmbeddedBlocks (src/ast/real-html-analyzer.ts:2003), reading the engine's context (engine.ts:1323 extractHtmlEmbeddedBlocks → engine.ts:1895-1908) and copying each delegate row VERBATIM with metadata.htmlEmbedded=true and metadata.embeddedLang. THE PRODUCTION PATH IS MANDATORY AND THAT IS MEASURED, NOT ASSERTED: the same draw through a bare Analyzer.analyze reads calls 0 — it cannot see the delegate, because the delegate's trees arrive through the engine context — while ASTEngine.parseFile reads the full count. THE POPULATION IS MEASURED AND RECONCILED: 8,888 admitted files = the GIT-TRACKED set (git ls-files), the router's own thirteen admitted spellings (incoming-gate.ts:319), under the engine's 1 MB cap, over 96 repositories, from 202 corpus entries every one of which is a symlink; 182 symlinked directories followed, 147,104 directories visited, 2 files over the cap (largest 2,619,858 bytes), 2 tracked-but-absent, 0 bare-basename admissions. The lane's own census (script/m14/html-population.ts) and the GATE's own admission rule (incoming-gate.ts:447) were run independently and returned the same number and the same per-extension table (.html 6,786 · .hbs 1,531 · .twig 274 · .j2 139 · .pug 70 · .erb 49 · .xhtml 30 · .htm 3 · .liquid 3 · .jinja 3 = 8,888; .mustache, .ejs and .njk are admitted and absent). THE RESOLUTION CLOSURE IS MEASURED OVER THAT WHOLE POPULATION, IN FIVE DISJOINT SLICES of the same sorted admitted list the gate itself sorts (incoming-gate.ts:532), and the closure adds up EXACTLY: validation/m14/measurements/html-arm-closure-2026-10-22.json. THE FIVE OPEN TYPES WERE MEASURED TWO WAYS: a whole-population CONSTRUCT CENSUS (0 decorator nodes, 0 implements clauses, 0 jsx elements, 0 mixin clauses, 0 part directives, and 0 class_heritage clauses, over 13,768 embedded blocks in 4,644 files) and a PLANTED-DOCUMENT SEAM PROBE through ASTEngine.parseFile, which publishes decorates, implements, renders and mixes_in and DROPS part_of. THE FIXTURE PINS ALL FOUR BY NAME, DIRECTION AND meta.embeddedLang AND FORBIDS part_of, AND ITS FOUR CONTROLS FIRED (each construct removed in turn fails its own pin and no other). THE TEMPLATE DIALECTS ARE A FLEET GAP AND ARE DISCLOSED, NOT ABSORBED: 2,070 admitted files (23% of the population) carry 1,920 template directives over 618 files that no lane in the fleet models.",
     "_implemented_measured": {
-      "_unit": "edges published through the PRODUCTION path (ASTEngine.parseFile, which builds the inline <script>/<style> context) over the WHOLE admitted population — 8,888 git-tracked files, the router's own thirteen admitted spellings, under the engine's 1 MB cap, 96 repositories, 182 symlinked directories followed. The measurement is the incoming-gate's own TABLE 1 (PER PROJECT — production's resolution scope), taken in FIVE DISJOINT SLICES of the same sorted admitted list the gate itself sorts and merged by script/m14/html-arm-merge.ts; the per-chunk outputs are validation/m14/measurements/html-arm/chunk-{0,2000,4000,6000,8000}.txt and the merged closure is validation/m14/measurements/html-arm-closure-2026-10-22.json. THE RESOLVED COUNT IS A LOWER BOUND: a repository longer than one slice STRADDLES a slice boundary, and a straddling repository's per-project key space is split, which can only move edges OUT of `resolved`.",
-      "calls": { "edges": 0, "files": 0, "_why": "PLACEHOLDER_CALLS" },
-      "uses": { "edges": 0, "files": 0, "_why": "PLACEHOLDER_USES" },
-      "contains": { "edges": 0, "files": 0, "_why": "PLACEHOLDER_CONTAINS" },
-      "imports": { "edges": 0, "files": 0, "_why": "PLACEHOLDER_IMPORTS" },
-      "references": { "edges": 0, "files": 0, "_why": "PLACEHOLDER_REFERENCES" },
-      "exports": { "edges": 0, "files": 0, "_why": "PLACEHOLDER_EXPORTS" },
-      "instantiates": { "edges": 0, "files": 0, "_why": "PLACEHOLDER_INSTANTIATES" },
-      "extends": { "edges": 0, "files": 0, "_why": "PLACEHOLDER_EXTENDS" },
-      "overrides": { "edges": 0, "files": 0, "_why": "PLACEHOLDER_OVERRIDES" },
-      "decorates": { "edges": 0, "files": 0, "_why": "PLACEHOLDER_DECORATES" },
-      "implements": { "edges": 0, "files": 0, "_why": "PLACEHOLDER_IMPLEMENTS" },
-      "renders": { "edges": 0, "files": 0, "_why": "PLACEHOLDER_RENDERS" },
-      "mixes_in": { "edges": 0, "files": 0, "_why": "PLACEHOLDER_MIXES_IN" }
+      "_unit": "edges published through the PRODUCTION path (ASTEngine.parseFile, which builds the inline <script>/<style> context) over the WHOLE admitted population — 8,888 git-tracked files, the router's own thirteen admitted spellings, under the engine's 1 MB cap, 96 repositories, 182 symlinked directories followed. The measurement is the incoming-gate's own TABLE 1 (PER PROJECT — production's resolution scope), taken in FIVE DISJOINT SLICES of the same sorted admitted list the gate itself sorts and merged by script/m14/html-arm-merge.ts; the per-chunk outputs are validation/m14/measurements/html-arm/chunk-{0,2000,4000,6000,8000}.txt and the merged closure is validation/m14/measurements/html-arm-closure-2026-10-22.json. THE RESOLUTION BUCKETS ARE THE CHUNKED MEASUREMENT'S, AND THEY ARE BIASED UPWARD IN `resolved`, WITH THE BIAS STATED RATHER THAN BOUNDED BY ASSERTION: the resolution scope is PER PROJECT, and a repository longer than one slice STRADDLES a slice boundary, so the split half of the repository cannot see the collisions in the other half — and a collision that is INVISIBLE makes the name read UNIQUE and the edge RESOLVE. The gate says so in its own population line, which every chunk prints: \"A stride sample truncates each project's symbol table too, so its project-scoped RESOLVED share is biased UP — a name whose collision lives in an unsampled file of the same repository reads unique here.\" THE EDGE COUNTS ARE UNAFFECTED: every admitted file is measured exactly once (8,888 of 8,888 parsed, 0 degraded), and an edge is a per-file fact.",
+      "calls": {
+        "edges": 43128
+      },
+      "uses": {
+        "edges": 541755
+      },
+      "contains": {
+        "edges": 168818
+      },
+      "imports": {
+        "edges": 13
+      },
+      "references": {
+        "edges": 5143
+      },
+      "exports": {
+        "edges": 3
+      },
+      "instantiates": {
+        "edges": 284
+      },
+      "extends": {
+        "edges": 0,
+        "files": 0,
+        "_why": "THE PREDICATE COULD HAVE RETURNED NON-ZERO, and what it looked for is named: the census counts `class_heritage` clauses — the only spelling a class-extends edge can come from — over every embedded block in the admitted population, and it found 0 clauses in 0 files over 13,768 blocks in 4,644 files (validation/m14/measurements/html-extended-constructs-2026-10-22.txt). The PATHWAY is not what is missing: the lane's own fixture validation/m14/fixtures/html/embedded-heritage.html PASSES and pins the row, and the seam probe publishes `extends` through the delegate on a planted document (validation/m14/measurements/html-extended-seam-2026-10-22.json). ⇒ WHAT IS MISSING IS THE CORPUS CONSTRUCT, NOT THE PATHWAY."
+      },
+      "overrides": {
+        "edges": 8
+      },
+      "decorates": {
+        "edges": 0,
+        "files": 0,
+        "_why": "THE PREDICATE COULD HAVE RETURNED NON-ZERO, and what it looked for is named: the census counts `decorator` nodes over every embedded block in the admitted population and found 0 in 0 files over 13,768 blocks in 4,644 files (validation/m14/measurements/html-extended-constructs-2026-10-22.txt). The PATHWAY is not what is missing: validation/m14/fixtures/html/embedded-extended-types.html PASSES and pins the row by name, by direction (decorated declaration → decorator) and by meta.embeddedLang=\"js\", the seam probe publishes it (validation/m14/measurements/html-extended-seam-2026-10-22.json), and a FIRED CONTROL — deleting the `@sealed` line from that fixture — fails the `decorates` pin and no other."
+      },
+      "implements": {
+        "edges": 0,
+        "files": 0,
+        "_why": "THE PREDICATE COULD HAVE RETURNED NON-ZERO, and what it looked for is named: the census counts `implements_clause` / `class_implements_clause` nodes over every embedded block in the admitted population and found 0 in 0 files over 13,768 blocks in 4,644 files (validation/m14/measurements/html-extended-constructs-2026-10-22.txt). The construct is reachable ONLY through a `<script lang=\"ts\">` block, and the whole admitted population carries exactly ONE typescript block, which declares no conformance. The PATHWAY is not what is missing: validation/m14/fixtures/html/embedded-extended-types.html PASSES and pins the row by name, by direction and by meta.embeddedLang=\"ts\", and the seam probe publishes it (validation/m14/measurements/html-extended-seam-2026-10-22.json)."
+      },
+      "renders": {
+        "edges": 0,
+        "files": 0,
+        "_why": "THE PREDICATE COULD HAVE RETURNED NON-ZERO, and what it looked for is named: the census counts `jsx_element` / `jsx_opening_element` / `jsx_self_closing_element` nodes over every embedded block in the admitted population and found 0 in 0 files over 13,768 blocks in 4,644 files, of which 13,461 are javascript (validation/m14/measurements/html-extended-constructs-2026-10-22.txt). The PATHWAY is not what is missing: validation/m14/fixtures/html/embedded-extended-types.html PASSES and pins the row by name, by direction (rendering symbol → rendered component) and by meta.embeddedLang=\"js\", the seam probe publishes it (validation/m14/measurements/html-extended-seam-2026-10-22.json), and a FIRED CONTROL — deleting `<Button />` from that fixture — fails the `renders` pin and no other."
+      },
+      "mixes_in": {
+        "edges": 0,
+        "files": 0,
+        "_why": "THE PREDICATE COULD HAVE RETURNED NON-ZERO, and what it looked for is named: the delegate's discriminator is POSITIONAL — a call IN the heritage clause IS the mixin — so the census counts the `class_heritage` clauses the discriminator is read over, and found 0 in 0 files over 13,768 blocks in 4,644 files (validation/m14/measurements/html-extended-constructs-2026-10-22.txt): the whole admitted population has NO class heritage at all to be a mixin in. The PATHWAY is not what is missing: validation/m14/fixtures/html/embedded-extended-types.html PASSES and pins the row by name, by direction and by meta.embeddedLang=\"js\", publishing `mixes_in Record → Timestamped` AND `extends Record → Base` AND `calls Record → Timestamped` from the same clause, and a FIRED CONTROL — deleting `extends Timestamped(Base)` — fails the `mixes_in` pin and no other."
+      }
     }
   }
 }
