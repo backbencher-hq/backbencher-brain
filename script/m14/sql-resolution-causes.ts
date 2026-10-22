@@ -52,6 +52,11 @@ parser.setLanguage(lang)
 // symlinked directories FOLLOWED is printed, because a population count that cannot say how many
 // it followed cannot be compared with another one.
 let paths = 0, distinct = 0, admitted = 0, overCap = 0, symlinkedDirsFollowed = 0
+// THE THREE SYMLINK NUMBERS, each named. A count that does not say which rule produced it
+// cannot be compared with another lane's count — and this one was UNDERCOUNTED: the repo
+// loop took the corpus's own symlinked checkouts as REPOS, so they were never counted as
+// symlinked directories (199 of them), and the fleet's rule asks for the TOTAL.
+let symlinkedTopLevelEntries = 0
 const seen = new Set<string>()
 const files: { abs: string; rel: string; repo: string; bytes: number }[] = []
 function walk(dir: string, repo: string): void {
@@ -81,6 +86,7 @@ for (const repo of readdirSync(CORPUS, { withFileTypes: true })) {
   let st: any
   try { st = statSync(p) } catch { continue }
   if (!st.isDirectory()) continue
+  if (repo.isSymbolicLink()) symlinkedTopLevelEntries++
   walk(p, repo.name)
 }
 
@@ -184,7 +190,10 @@ for (const r of rows) {
 const out: any = {
   instrument: "script/m14/sql-resolution-causes.ts",
   population: {
-    corpusRoot: CORPUS, paths, distinctFiles: distinct, admitted, overCap, symlinkedDirsFollowed,
+    corpusRoot: CORPUS, paths, distinctFiles: distinct, admitted, overCap,
+    symlinkedDirsFollowed: symlinkedDirsFollowed + symlinkedTopLevelEntries,
+    symlinkedDirsFollowedInsideRepos: symlinkedDirsFollowed,
+    symlinkedTopLevelEntries,
     parsed, parseFailures, reposCarryingAdmittedFiles: declsByProject.size,
     rule: "the whole admitted set: every .sql file at or under the 1,048,576-byte cap, walked with statSync so SYMLINKED DIRECTORIES ARE FOLLOWED (439 .sql files live behind one in this corpus); the population's own 1 MiB cap, NOT a stride sample",
     fingerprint: "parsed=2125/2125 admitted=2125 exts=.sql index=no",
@@ -205,7 +214,7 @@ if (jsonOut) { writeFileSync(jsonOut, JSON.stringify(out, null, 2)); console.log
 console.log("═".repeat(78))
 console.log("SQL — THE RESOLUTION CAUSES, MEASURED OVER THE WHOLE ADMITTED POPULATION")
 console.log("═".repeat(78))
-console.log(`  admitted ${admitted} files · parsed ${parsed} · failures ${parseFailures} · ${declsByProject.size} repos · symlinked dirs FOLLOWED ${symlinkedDirsFollowed}`)
+console.log(`  admitted ${admitted} files · parsed ${parsed} · failures ${parseFailures} · ${declsByProject.size} repos · symlinked dirs FOLLOWED ${symlinkedDirsFollowed + symlinkedTopLevelEntries} (${symlinkedTopLevelEntries} top-level checkouts + ${symlinkedDirsFollowed} inside repos)`)
 console.log(`  distinct declared names: ${symbolsByName.size}`)
 for (const c of out.causes) {
   console.log(`  ${c.cause.padEnd(38)} ${String(c.count).padStart(6)} edges / ${String(c.files).padStart(5)} files   qualified=${c.qualifiedTargets} bare=${c.bareTargets}` +

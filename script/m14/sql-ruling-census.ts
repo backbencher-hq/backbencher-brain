@@ -65,7 +65,7 @@ const CANDIDATES: { type: string; nearMiss: string; nodeTypes: string[]; whyNot:
   },
 ]
 
-function walk(dir: string, out: { files: string[]; symlinkedDirsFollowed: number }): void {
+function walk(dir: string, out: { files: string[]; symlinkedDirsFollowed: number; symlinkedTopLevelEntries: number }): void {
   let entries: fs.Dirent[]
   try {
     entries = fs.readdirSync(dir, { withFileTypes: true })
@@ -90,10 +90,14 @@ function walk(dir: string, out: { files: string[]; symlinkedDirsFollowed: number
 }
 
 async function main() {
-  const w = { files: [] as string[], symlinkedDirsFollowed: 0 }
+  const w = { files: [] as string[], symlinkedDirsFollowed: 0, symlinkedTopLevelEntries: 0 }
   const repos = new Set<string>()
   for (const d of fs.readdirSync(CORPUS, { withFileTypes: true })) {
     if (!d.isDirectory() && !d.isSymbolicLink()) continue
+    // THE CORPUS'S OWN SYMLINKED CHECKOUTS. The repo loop took them as REPOS, so they were
+    // never counted as symlinked directories, and the number the fleet's rule asks for was
+    // UNDERCOUNTED by exactly this many.
+    if (d.isSymbolicLink()) w.symlinkedTopLevelEntries++
     const dir = path.join(CORPUS, d.name)
     try {
       if (!fs.statSync(dir).isDirectory()) continue
@@ -171,7 +175,12 @@ async function main() {
       distinctFiles: new Set(w.files).size,
       admitted: admitted.length,
       overCap,
-      symlinkedDirsFollowed: w.symlinkedDirsFollowed,
+      // THE THREE SYMLINK NUMBERS, each named. The repo loop took the corpus's own symlinked
+      // checkouts as REPOS, so they were never counted as symlinked directories and the
+      // number the fleet's rule asks for was UNDERCOUNTED by exactly that many.
+      symlinkedDirsFollowed: w.symlinkedDirsFollowed + w.symlinkedTopLevelEntries,
+      symlinkedDirsFollowedInsideRepos: w.symlinkedDirsFollowed,
+      symlinkedTopLevelEntries: w.symlinkedTopLevelEntries,
       reposCarryingAdmittedFiles: repos.size,
       parsed,
       parseFailures,
@@ -193,7 +202,7 @@ async function main() {
   const p = "validation/m14/measurements/sql-ruling-census.json"
   fs.writeFileSync(p, JSON.stringify(out, null, 2) + "\n")
   console.log("THE NEAR-MISS CENSUS FOR sql's RULED TYPES")
-  console.log(`  admitted ${out.population.admitted} · parsed ${parsed} · failures ${parseFailures} · ${out.population.reposCarryingAdmittedFiles} repos · symlinked dirs followed ${out.population.symlinkedDirsFollowed}`)
+  console.log(`  admitted ${out.population.admitted} · parsed ${parsed} · failures ${parseFailures} · ${out.population.reposCarryingAdmittedFiles} repos · symlinked dirs followed ${out.population.symlinkedDirsFollowed} (${out.population.symlinkedTopLevelEntries} top-level checkouts + ${out.population.symlinkedDirsFollowedInsideRepos} inside repos)`)
   for (const r of out.rulings) {
     console.log(`  ${r.type.padEnd(11)} near miss ${String(r.nearMissSites).padStart(6)} sites / ${String(r.nearMissFiles).padStart(4)} files  [${r.perNodeType.map((x) => `${x.nodeType}=${x.sites}`).join(", ")}]`)
   }

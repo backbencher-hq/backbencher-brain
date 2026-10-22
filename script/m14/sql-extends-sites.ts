@@ -56,7 +56,7 @@ const SAMPLE = sampleArg ? Number(sampleArg.slice(9)) : 40
 // ── THE POPULATION WALK. `statSync` FOLLOWS SYMLINKS; `Dirent.isDirectory()` does not, and the
 // 439 `.sql` files behind a symlink are silently dropped by that. The count of symlinked
 // directories FOLLOWED travels with the number, because a count is only as good as its rule.
-function walk(dir: string, out: { files: string[]; symlinkedDirsFollowed: number }): void {
+function walk(dir: string, out: { files: string[]; symlinkedDirsFollowed: number; symlinkedTopLevelEntries: number }): void {
   let entries: fs.Dirent[]
   try {
     entries = fs.readdirSync(dir, { withFileTypes: true })
@@ -175,10 +175,14 @@ function shapeOf(tree: any): { hasError: boolean; errorNodeTypes: string[]; carr
 }
 
 async function main() {
-  const w = { files: [] as string[], symlinkedDirsFollowed: 0 }
+  const w = { files: [] as string[], symlinkedDirsFollowed: 0, symlinkedTopLevelEntries: 0 }
   const repos = new Set<string>()
   for (const d of fs.readdirSync(CORPUS, { withFileTypes: true })) {
     if (!d.isDirectory() && !d.isSymbolicLink()) continue
+    // THE CORPUS'S OWN SYMLINKED CHECKOUTS. The repo loop took them as REPOS, so they were
+    // never counted as symlinked directories, and the number the fleet's rule asks for was
+    // UNDERCOUNTED by exactly this many.
+    if (d.isSymbolicLink()) w.symlinkedTopLevelEntries++
     const dir = path.join(CORPUS, d.name)
     try {
       if (!fs.statSync(dir).isDirectory()) continue
@@ -299,7 +303,12 @@ async function main() {
       distinctFiles: new Set(w.files).size,
       admitted: admitted.length,
       overCap,
-      symlinkedDirsFollowed: w.symlinkedDirsFollowed,
+      // THE THREE SYMLINK NUMBERS, each named. The repo loop took the corpus's own symlinked
+      // checkouts as REPOS, so they were never counted as symlinked directories and the
+      // number the fleet's rule asks for was UNDERCOUNTED by exactly that many.
+      symlinkedDirsFollowed: w.symlinkedDirsFollowed + w.symlinkedTopLevelEntries,
+      symlinkedDirsFollowedInsideRepos: w.symlinkedDirsFollowed,
+      symlinkedTopLevelEntries: w.symlinkedTopLevelEntries,
       reposCarryingAdmittedFiles: repos.size,
       parsed,
       parseFailures,
@@ -332,7 +341,7 @@ async function main() {
   } else {
     console.log("THE `extends` CONSTRUCT'S SITES, MEASURED OVER THE WHOLE ADMITTED POPULATION")
     console.log(`  admitted ${out.population.admitted} files · parsed ${parsed} · failures ${parseFailures} · ${out.population.reposCarryingAdmittedFiles} repos · ${out.ms} ms`)
-    console.log(`  symlinked directories FOLLOWED: ${out.population.symlinkedDirsFollowed}`)
+    console.log(`  symlinked directories FOLLOWED: ${out.population.symlinkedDirsFollowed} (${out.population.symlinkedTopLevelEntries} top-level checkouts + ${out.population.symlinkedDirsFollowedInsideRepos} inside repos)`)
     console.log(`  by form: ${JSON.stringify(byForm)}`)
     console.log(`  by classification: ${JSON.stringify(byClass)}`)
     console.log(`  STATEMENTS: ${statements.length} in ${filesWithHit.size} files`)
