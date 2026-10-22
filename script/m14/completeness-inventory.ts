@@ -851,8 +851,21 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    // SCALA fleet-phase ruling (§21.4): with-clause traits publish mixes_in; implements is RULED NOT-APPLICABLE.
-    requiredKinds: ["calls", "extends", "mixes_in", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
+    // SCALA fleet-phase ruling (§21.4): with-clause traits publish mixes_in. THE `implements` CLAUSE IS
+    // GONE, AND IT IS GONE BECAUSE IT WAS MEASURED, NOT BECAUSE IT WAS SUPERSEDED BY POLICY: the
+    // ruling said "implements is RULED NOT-APPLICABLE", and the fleet MIXIN RULING (2026-10-19, option
+    // (b)) that carried it named the falsifier — "a Scala construct that declares conformance WITH NO
+    // COMPOSITION semantics" — AND NAMED THE SELF-TYPE `this: T =>` IN THE SAME SENTENCE, with the
+    // parenthetical "none measured". THAT PARENTHETICAL WAS THE DEFECT: the ruling had already
+    // identified the construct and never measured it.
+    //
+    // MEASURED over the ADMITTED population (19,347 files, 4 repos, 0 parse failures): 1,017 `self_type`
+    // sites in 636 files, of which 669 in 398 files carry a REQUIRED TYPE after the `:` (the other 348
+    // bind a self NAME and require nothing). `self_type` IS a named node type of the pinned build
+    // (registry sha256 = file sha256 = 393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917,
+    // 189 named of 455 node types) — so this is rung R3, NO grammar change is taken, and `implements`
+    // WAS A GAP, NOT A RULING.
+    requiredKinds: ["calls", "extends", "mixes_in", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
     payloads: {
       qualified_calls: { key: "expectQualifiedCalls", pin: "scala/qualified-calls-payload" },
       docstrings: { key: "expectComments", pin: "scala/scaladoc-payload" },

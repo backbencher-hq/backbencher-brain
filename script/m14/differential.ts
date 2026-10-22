@@ -201,7 +201,7 @@ import { deriveTypeScriptUsesTruth } from "./oracles/typescript-uses"
 import { deriveRubyEdges as deriveRubyLaneEdges, RUBY_ORACLE_LABELS as RUBY_LANE_LABELS } from "./ruby-truth"
 // SCALA lane oracle additions (2026-10-19, fleet phase): imports/exports emitted-but-unaudited labels,
 // derived by the lane-owned syntax truth — one implementation, imported rather than mirrored.
-import { deriveScalaImportTruth, deriveScalaExportTruth } from "./scala-truth"
+import { deriveScalaImportTruth, deriveScalaExportTruth, deriveScalaImplementsTruth } from "./scala-truth"
 // RUST fleet-phase wiring (2026-10-19): the three missing oracles for 41,737 emitted-but-unmeasured rows
 // (imports 11,704 · exports 4,572 · overrides 2,956) — lane-owned `rust-truth.ts`, tree-only with
 // contract provenance in its header; contains oracle was already imported but never pushed.
@@ -24305,6 +24305,24 @@ async function main() {
           ;(truth as any[]).push(e)
         }
         for (const e of deriveScalaExportTruth(root, relPath)) {
+          ;(truth as any[]).push(e)
+        }
+        // THE SCALA `implements` TRUTH (lane-owned, `script/m14/scala-truth.ts`). MEASURED, and the
+        // finding is worth more than the wiring: the FLEET MIXIN RULING (2026-10-19, option (b))
+        // ruled `implements` NOT-APPLICABLE for scala on the falsifier "a Scala construct that declares
+        // conformance WITH NO COMPOSITION semantics" — and it NAMED the self-type `this: T =>` in the
+        // same sentence, with the parenthetical "none measured". THAT PARENTHETICAL WAS THE DEFECT:
+        // the ruling had already identified the construct and never measured it. MEASURED over the
+        // ADMITTED population (19,347 files, 4 repos, 0 parse failures): 1,017 `self_type` sites in 636
+        // files, of which 669 in 398 files carry a REQUIRED TYPE after the `:` (the other 348 bind a self
+        // NAME and require nothing). The construct is ALREADY EXPRESSIBLE in the wired grammar —
+        // `self_type` IS a named node type of the pinned build (registry sha256 = file sha256 =
+        // 393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917, 189 named of 455 node types)
+        // — so this is rung R3 and NO grammar change is taken. `implements` WAS A GAP, NOT A RULING.
+        //
+        // ⇒ WITHOUT THIS PUSH THE ANALYZER'S OWN ROWS LAND AS UNEXPLAINED, which is an ORACLE gap and
+        // not an analyzer gap.
+        for (const e of deriveScalaImplementsTruth(root)) {
           ;(truth as any[]).push(e)
         }
         // SCALA D4 residual (Lead-owned): the evidence-tree over-derivations compose PLACEHOLDER targets

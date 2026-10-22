@@ -464,6 +464,36 @@ case "$cmd" in
     ;;
   force)
     [ -n "$lane" ] || { echo "usage: arm-token.sh force <lane> [--urgent] [--holder-is-gone]"; exit 2; }
+    # ── THE NAME MUST BE A LANE, AND IT MUST BE THE HOLDER (2026-10-21, the Lead's own mistake) ──
+    # THE LEAD RAN `force small --holder-is-gone` INTENDING TO RECLAIM DART'S STALE SMALL SLOT, AND
+    # `force` TAKES A LANE NAME, NOT A SLOT NAME — so it DELETED THE HEAVY TOKEN DIRECTORY WHILE
+    # TYPESCRIPT HELD IT. The typescript lane lost BOTH the token AND its queue place, because the
+    # `force` path re-queues the displaced holder ONLY in its `--urgent` branch.
+    #
+    # ⇒ THE DEFECT IS NOT THE MISSING `--urgent`; it is that a verb which DELETES A SHARED LOCK
+    # ACCEPTED A NAME THE CALLER INVENTED. "break a lock whose holder is known-gone" and "delete a lock
+    # because I typed the wrong word" are indistinguishable to that verb, and the second one is what
+    # cost a lane an arm.
+    #
+    # ⇒ THE FIX IS A CHECK, AND IT IS A CHECK THAT CANNOT BE SATISFIED BY A TYPO: THE NAME MUST BE
+    # THE CURRENT HOLDER OF THE SLOT BEING FORCED. There is no "small" holder for the heavy token, so
+    # "small" is refused before anything is deleted.
+    f_holder="$(holder | sed -n 1p)"
+    if [ -z "$f_holder" ] || [ "$f_holder" = "?" ]; then
+      echo "REFUSED — the heavy arm token is FREE (no holder), so there is nothing to force."
+      echo "  A lane whose place is missing from the queue is a QUEUE question, not a token question:"
+      echo "  run 'arm-token.sh status' for the queue, and 'take <lane>' for the token."
+      exit 5
+    fi
+    if [ "$f_holder" != "$lane" ]; then
+      echo "REFUSED — 'force' acts on the CURRENT HOLDER of the heavy arm, and the holder is '$f_holder', not '$lane'."
+      echo "  A verb that deletes a shared lock on a name the caller INVENTED cannot tell"
+      echo "  'break a lock whose holder is known-gone' from 'delete a lock because I typed the wrong word'."
+      echo "  The small slot is NOT forced by this verb: it reclaims ITSELF on the TTL path, so the next"
+      echo "  'take-small' after the holder's beat goes stale reclaims it. Run 'arm-token.sh status' to see"
+      echo "  the small slot's holder and its beat age."
+      exit 5
+    fi
     # ── THE LEAD BROKE THE ONE-ARM INVARIANT WITH THIS COMMAND, AND THE FIX IS HERE. ──
     # On 2026-10-20 the Lead ran `arm-token.sh force test` to EXERCISE THE QUEUE, while the dart lane's
     # 33,738-file arm was legitimately holding the token and running. `force` deleted the token directory
