@@ -12,42 +12,62 @@
       "extends",
       "implements",
       "overrides",
-      "instantiates"
+      "instantiates",
+      "decorates"
     ],
-    "excluded": [],
+    "excluded": [
+      {
+        "label": "renders",
+        "evidence": "grammar-absence",
+        "from": "`renders` — GRAMMAR-ABSENCE, 0 sites. The PINNED python grammar `wasm/tree-sitter-python.wasm` (sha256 16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47) has 274 node-type ids, 123 unique named node types and 32 fields, and NOT ONE of them can carry a rendered component: the 15 candidate spellings (`jsx_element`, `jsx_self_closing_element`, `jsx_fragment`, `element`, `self_closing_element`, `component`, `template_element`, …) are all absent, the name markers `jsx`/`element`/`component` hit 0 node types and 0 of the 32 fields, and the whole admitted population holds 0 sites of any of them. The corpus half: a python template (Django, Jinja2) is a STRING LITERAL, so the rendered tree is not in the AST at all; the nearest python construct that produces an object from a name is a CALL, published as `calls`. Measured by `script/m14/python-type-census.ts --grammar` and `--corpus`; artifact `validation/m14/measurements/python-type-census-2026-10-21.json`; the negative direction is pinned by the fixture `validation/m14/fixtures/python/ruled-out-extended-values.py`. THE VOCABULARY'S OWN DEFINITION IS THE SECOND, INDEPENDENT CITATION: `src/ast/types.ts`'s `Renders` member states \u201cMeasured population is TSX/JSX (`<Button/>` inside a component)\u201d \u2014 the construct is a JSX ELEMENT, and python's grammar has no element node of any spelling, so the value's own measured population is a language whose grammar HAS the node type and python's is not that language. The lane cites the source of truth for the vocabulary rather than restating it. THE REMEDY LADDER (L-2026-10-21-14 — a ruling is the last resort and must name WHICH RUNG was unavailable): R1 UNAVAILABLE — the published tree-sitter-python package's inventory has no element/component node (MEASURED on the production parser's own Language object: 274 node types, 123 unique named, 32 fields) and a newer build of the SAME grammar would not have one either, because the relation is between a COMPONENT and the component it renders and python has neither; R2 UNAVAILABLE — a patched element node would define syntax the language does not have, so the population could never hold a site and the zero would be vacuous; R3 UNAVAILABLE — there is no python construct to hang the relation on, the nearest ones are already published under other labels (the render call is `calls`, a template is a string literal). THE NEAR-MISS CENSUS (L-2026-10-21-17), MEASURED over the whole admitted population: the near-miss construct is a TEMPLATE — a string carrying {{ ... }} — 1667 sites in 233 files, carrying 2542 (template, placeholder) merging pairs; is the relation ALREADY PUBLISHED UNDER ANOTHER LABEL? NO for the component relation (a template's placeholders are published under NO label — 0 edges measured), the render call is published as `calls`. VERDICT CLASS: RULED UNDECIDABLE (no rung available, the reason named) — NOT GRAMMAR REMEDY PENDING. THE REVIEW DOC IS THE CITATION: validation/m14/verification/reviews/m60-01-python-extended-values.md:36 (renders), :78 (the measured absence), :104 (the falsifier)."
+      },
+      {
+        "label": "mixes_in",
+        "evidence": "grammar-absence",
+        "from": "`mixes_in` — GRAMMAR-ABSENCE, 0 sites. The PINNED python grammar `wasm/tree-sitter-python.wasm` (sha256 16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47) has 274 node-type ids, 123 unique named node types and 32 fields, and holds NO mixin node type and NO mixin field: the 11 candidate spellings (`mixins`, `mixin`, `mixin_clause`, `mixin_declaration`, `trait`, `trait_declaration`, …) are all absent and the name markers `mixin`/`trait` hit 0 node types and 0 of the 32 fields, and the whole admitted population holds 0 sites of any of them. THE THREE NEAR-MISS DECOYS ARE NAMED, because a ruling that fires on a decoy is not a ruling: the grammar DOES hold `with_statement`, `with_clause` and `with_item`, and those are python's CONTEXT MANAGER statement (`with open(path) as handle:`), which shares nothing with Dart's `class C with M` but the spelling of the keyword. The corpus half: python has ONE superclass clause (`class_definition.superclasses`), so the source CANNOT say which base is the mixin; multiple inheritance (`class C(A, B)`) is the nearest construct and BOTH bases are published as `extends`, measured over the whole admitted population by `script/m14/python-type-census.ts --corpus`; artifact `validation/m14/measurements/python-type-census-2026-10-21.json`; the negative direction is pinned by the fixture `validation/m14/fixtures/python/ruled-out-extended-values.py`. THE VOCABULARY'S OWN DEFINITION IS THE SECOND, INDEPENDENT CITATION: `src/ast/types.ts`'s `MixesIn` member states \u201cMeasured on Dart (`class C with M`)\u201d \u2014 the construct is a `with` MIXIN CLAUSE, a clause SEPARATE from the inheritance clause, and python's grammar has ONE superclass clause and no mixin clause, so the value's own measured population is a language whose grammar HAS the node type and python's is not that language. The lane cites the source of truth for the vocabulary rather than restating it. THE REMEDY LADDER (L-2026-10-21-14 — a ruling is the last resort and must name WHICH RUNG was unavailable): R1 UNAVAILABLE — the published package's inventory has no mixin clause (MEASURED on the production parser's own Language object) and a newer build of the same grammar would not have one either, because python has no mixin syntax; R2 UNAVAILABLE — a patched mixin_clause would parse syntax python does not have, so the zero would be vacuous; R3 UNAVAILABLE — AND THIS IS THE RUNG THAT MATTERS, because R3 normally IS available: python's multiple-inheritance class statement IS an existing node type (class_definition.superclasses), so the construct is reachable, but the relation would be FALSE — EVERY base in `class C(A, B)` is a NOMINAL SUPERTYPE (python's own MRO makes issubclass(C, B) true), and the value's definition requires a mixin that is NOT a supertype, so a mixes_in edge would have to name a member that IS a supertype — exactly the `extends` edge the analyzer already publishes. THE DISCRIMINATOR IS NOT THE SPELLING; IT IS THE SEMANTICS, AND R3 CANNOT REACH IT. THE NEAR-MISS CENSUS (L-2026-10-21-17), MEASURED over the whole admitted population: the near-miss construct is the MERGE — a multiple-inheritance class statement — 3201 sites in 782 files, carrying 4057 (class, merged base) merging pairs (e.g. `class ApiResponse(BaseModel, Generic[T])` -> the pair (ApiResponse, Generic[T])); is the relation ALREADY PUBLISHED UNDER ANOTHER LABEL? YES — `extends`, 21004 edges measured. VERDICT CLASS: RULED UNDECIDABLE (no rung available, the reason named) — NOT GRAMMAR REMEDY PENDING. THE REVIEW DOC IS THE CITATION: validation/m14/verification/reviews/m60-01-python-extended-values.md:52 (mixes_in), :78 (the measured absence), :105 (the falsifier)."
+      },
+      {
+        "label": "part_of",
+        "evidence": "grammar-absence",
+        "from": "`part_of` — GRAMMAR-ABSENCE, 0 sites. The PINNED python grammar `wasm/tree-sitter-python.wasm` (sha256 16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47) has 274 node-type ids, 123 unique named node types and 32 fields, and holds NO part-directive node type: the 13 candidate spellings (`part_directive`, `part_of_directive`, `part`, `parts`, `part_spec`, `include_directive`, `library_directive`, `library`, …) are all absent, the name markers `part`/`include` hit 0 node types and 0 of the 32 fields, and the whole admitted population holds 0 sites of any of them. The corpus half: python has no compile-unit inclusion directive; its unit of inclusion is an IMPORT, which names a module and creates binding scope, and it is published as `imports` (measured over the whole admitted population by `script/m14/python-type-census.ts --corpus`; artifact `validation/m14/measurements/python-type-census-2026-10-21.json`; the negative direction is pinned by the fixture `validation/m14/fixtures/python/ruled-out-extended-values.py`). THE VOCABULARY'S OWN DEFINITION IS THE SECOND, INDEPENDENT CITATION: `src/ast/types.ts`'s `PartOf` member states \u201cMeasured on Dart (`part 'x.dart'` / `part of`)\u201d \u2014 the construct is a PART DIRECTIVE, and python's grammar has no part-directive node of any spelling, so the value's own measured population is a language whose grammar HAS the node type and python's is not that language. The lane cites the source of truth for the vocabulary rather than restating it. THE REMEDY LADDER (L-2026-10-21-14 — a ruling is the last resort and must name WHICH RUNG was unavailable): R1 UNAVAILABLE — the published package's inventory has no part directive (MEASURED on the production parser's own Language object) and a newer build of the same grammar would not have one either, because python has no `part` directive; R2 UNAVAILABLE — a patched part_directive would parse syntax python does not have, so the zero would be vacuous; R3 UNAVAILABLE — python's unit of inclusion IS the import and it is ALREADY published as `imports` (100237 edges measured, covering 15145 of 15145 import-statement sites), and the relations are DIFFERENT: a Dart `part` SHARES the library's single scope, a python import CREATES binding scope and names a module, so no python node type can carry the shared-scope relation. THE NEAR-MISS CENSUS (L-2026-10-21-17), MEASURED over the whole admitted population: the near-miss construct is `import_statement` — python's unit of inclusion — 15145 sites in 6798 files, carrying 15145 (importing module, imported module) merging pairs; is the relation ALREADY PUBLISHED UNDER ANOTHER LABEL? YES — `imports`, 100237 edges, covering 15145 of 15145 sites. VERDICT CLASS: RULED UNDECIDABLE (no rung available, the reason named) — NOT GRAMMAR REMEDY PENDING. THE REVIEW DOC IS THE CITATION: validation/m14/verification/reviews/m60-01-python-extended-values.md:68 (part_of), :78 (the measured absence), :106 (the falsifier)."
+      }
+    ],
     "corpusUnexercised": [],
-    "_from": "TEN OF TEN, MEASURED WHOLE-POPULATION, and this lane needs no exclusion: every one of the ten relationship types fires on the admitted python population. The reading is script/m14/residual-gate.ts --lane python` at whole population \u2014 11,488 files across 49 repos, admitted `.py`/`.pyw`/`.pyi`, 11,488 parsed, 0 parse failures, 0 degraded \u2014 whose per-type totals are 1,293,362 edges (calls 535006 \u00b7 uses 389972 \u00b7 contains 135652 \u00b7 imports 99821 \u00b7 references 61955 \u00b7 overrides 33492 \u00b7 extends 20954 \u00b7 instantiates 13134 \u00b7 exports 3043 \u00b7 implements 333). The smallest margin is `implements` at 333 edges \u2014 SMALL, NOT ZERO, and measured rather than assumed. THIS BLOCK AGREES WITH THE GAP LIST, WHICH IS EMPTY: this spec's `gap._description` records the PYD1 deep review with the lane's own oracle wired into the harness, covered=100% / missing=0 / unexplained=0 over two cold-pool draws of cython and the 37-file requests corpus. THE FIRING LOG'S ROW IS NOT A CONTRADICTION: validation/m14/results/firing-laptop-b.current.log reads `PYTHON 0 types fired  NO CORPUS under python-codesql` with all ten SILENT \u2014 a claim about the pin `python-codesql`, not about python, and the same sample-pin defect this programme has measured on lane after lane. STATED RATHER THAN HIDDEN: the same whole-population run counts 712 files that returned no symbols and no relationships, of which 649 hold no content at all and 63 hold content; the instrument itself declares that it cannot separate a parse failure from content that cannot declare anything, so those 63 are NOT clean and NOT a declared hole, and they are recorded here rather than absorbed into the ten counts.",
+    "_from": "ELEVEN OF ELEVEN, MEASURED WHOLE-POPULATION. The lane's denominator is python's OWN expressible set: the live 14-value vocabulary MINUS the values python's grammar cannot express, each RULED with a citation (the three exclusions below, each naming the pinned grammar wasm, its sha256, the node-type inventory, and the corpus half). The implemented set is now ELEVEN, not ten: `decorates` was emitted by the analyzer since the owner admitted the value (df5a03eb2) and the analyzer's own header has said ELEVEN since that round, but THIS BLOCK listed only the ten, so the block was short by one and the denominator was under-reported. The block is fixed, not the denominator shrunk. THE READING: the no-index control arm `BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts python py,pyi,pyw 0` over the whole admitted population \u2014 11,559 parsed of 11,559 across 51 repos, admitted `.py`/`.pyw`/`.pyi`, 0 parse failures, 0 degraded \u2014 whose per-type edge totals are 1,332,030 (calls 538198 \u00b7 uses 391624 \u00b7 contains 136287 \u00b7 imports 100237 \u00b7 references 62316 \u00b7 overrides 33541 \u00b7 extends 21004 \u00b7 instantiates 13175 \u00b7 decorates 32271 \u00b7 exports 3043 \u00b7 implements 334). The smallest margin is `implements` at 334 edges \u2014 SMALL, NOT ZERO, and measured rather than assumed. The gate's own table prints all FOURTEEN rows, and the three ruled values appear as ZERO rows there, so the ruling is the edge stream's own record and not only this block's prose. The arm's log is the artifact: validation/m14/measurements/python-cell-noindex-2026-10-21.log. The earlier reading (script/m14/residual-gate.ts --lane python at 11,488 files across 49 repos, 1,293,362 edges) was a DIFFERENT population on a DIFFERENT root and is superseded by the arm above; both are stated rather than blended. THIS BLOCK AGREES WITH THE GAP LIST, WHICH IS EMPTY: this spec's `gap._description` records the PYD1 deep review with the lane's own oracle wired into the harness, covered=100% / missing=0 / unexplained=0 over two cold-pool draws of cython and the 37-file requests corpus. THE FIRING LOG'S ROW IS NOT A CONTRADICTION: validation/m14/results/firing-laptop-b.current.log reads `PYTHON 0 types fired  NO CORPUS under python-codesql` with all ten SILENT \u2014 a claim about the pin `python-codesql`, not about python, and the same sample-pin defect this programme has measured on lane after lane. STATED RATHER THAN HIDDEN: the same arm counts 649 files that hold NO CONTENT AT ALL (not a defect) and 73 files that hold CONTENT AND RETURNED NOTHING; the instrument itself declares that it cannot separate a parse failure from content that cannot declare anything, so those 73 are NOT clean and NOT a declared hole, and they are recorded here rather than absorbed into the eleven counts.",
     "_implemented_measured": {
-      "_unit": "edges published through the production path over the WHOLE admitted python population \u2014 11,488 files across 49 repos, admitted .py/.pyw/.pyi, 11,488 parsed of 11,488, 0 parse failures, 0 degraded. Instrument script/m14/residual-gate.ts --lane python. Reading taken at .tmp-pb/fin-python.out, a gitignored scratch artifact.",
+      "_unit": "edges published through the production path over the WHOLE admitted python population \u2014 11,559 parsed of 11,559 across 51 repos, admitted .py/.pyi/.pyw, 0 parse failures, 0 degraded, corpus root $PWD/.corpus (the FARM root; the gate's default root is a DIFFERENT population and the two are never mixed). Instrument: the no-index control arm `bun run script/m14/incoming-gate.ts python py,pyi,pyw 0`; its own TABLE 1 is the per-type reading. Artifact: validation/m14/measurements/python-cell-noindex-2026-10-21.log. The per-type corpus counts and the grammar-inventory citation are re-measured by the lane's own instrument script/m14/python-type-census.ts (artifact validation/m14/measurements/python-type-census-2026-10-21.json).",
       "calls": {
-        "edges": 535006
+        "edges": 538198
       },
       "uses": {
-        "edges": 389972
+        "edges": 391624
       },
       "contains": {
-        "edges": 135652
+        "edges": 136287
       },
       "imports": {
-        "edges": 99821
+        "edges": 100237
       },
       "references": {
-        "edges": 61955
+        "edges": 62316
       },
       "overrides": {
-        "edges": 33492
+        "edges": 33541
       },
       "extends": {
-        "edges": 20954
+        "edges": 21004
       },
       "instantiates": {
-        "edges": 13134
+        "edges": 13175
       },
       "exports": {
         "edges": 3043
       },
       "implements": {
-        "edges": 333
+        "edges": 334
+      },
+      "decorates": {
+        "edges": 32271
       }
     },
     "_claims": {
@@ -58,10 +78,11 @@
         "types": [
           "references",
           "extends",
-          "implements"
+          "implements",
+          "decorates"
         ],
         "landed": "round 18 (PYTHON-FIX.md \u00a76): 400-cap unresolved 27,910 -> 27,656, extOK 264, collRes unchanged 2,313; fixture python/builtin-namespace-is-a-language-claim",
-        "guards": "target in the declared list; file does not declare it; file does not import-bind it; type in the three; reasonCode not local-binding-target/inline-type-parameter/member-read"
+        "guards": "target in the declared list; file does not declare it; file does not import-bind it; type in the four (references, extends, implements, decorates); reasonCode not local-binding-target/inline-type-parameter/member-read"
       },
       "importedExternal": {
         "key": "metadata.isExternalTarget + externalReason + externalSpecifier",
@@ -71,7 +92,8 @@
           "uses",
           "references",
           "extends",
-          "implements"
+          "implements",
+          "decorates"
         ],
         "landed": "round 19 (2026-10-17): 400-cap unresolved 27,656 -> 20,172, extOK 264 -> 7,748, collRes UNCHANGED 2,313, resolved/amb unchanged, binding-intent every row identical; whole-population row in validation/m14/verification/PYTHON-STATE.md \u00a75a",
         "evidence": "the file's OWN import statement; relative imports skipped (they name this project), __future__ skipped (binds no name), route must be a pure dotted identifier chain (an expression receiver such as re.sub(...).strip is refused)",
