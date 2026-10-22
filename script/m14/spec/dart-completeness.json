@@ -596,7 +596,7 @@
     ],
     "lastUpdated": "2026-09-24 (M60 dart lane: DARTD20-DARTD22) · 2026-10-12 (dart lane: DT-EXP, the whole-corpus override-exposure watchdog)"
   },
-  "lastUpdated": "2026-10-18 (dart lane DONE-bar pass: DARTGAP1/2 closed by implementation + counted measurement on whole units -> ZERO open gaps; DARTGAP3-6 ruled earlier; cap-0 whole-population arm + scoped differential + scoped indexed arm measured; annotations/owner channel/vocabulary complete and fixture-pinned)",
+  "lastUpdated": "2026-10-21",
   "label_coverage": {
     "_description": "Which relationship labels this lane actually COMPARES. script/m14/verify-label-coverage.ts reads the differential allowlist, runs this analyzer over a corpus sample, and reports every label the analyzer EMITS that the allowlist DROPS: such a label is compared by nothing while the lane still prints a percentage. `contains` left this list when the M60 oracle landed.",
     "declared_gaps": [],
@@ -639,44 +639,41 @@
       "extends",
       "implements",
       "overrides",
-      "instantiates"
+      "instantiates",
+      "mixes_in",
+      "part_of",
+      "renders"
     ],
-    "excluded": [],
+    "excluded": [
+      {
+        "label": "decorates",
+        "evidence": "ontological",
+        "count": 0,
+        "from": "RULED FOR DART — CLASS `ontological`, AND THE COUNT IS MEASURED OVER THE WHOLE ADMITTED POPULATION, NOT ASSERTED. THE MEASUREMENT IS THE CONTRACT'S OWN TEST: in python the decorator RECEIVES the declaration (`@deco` -> `deco(f)`), and that is what makes it an applied callable; the dart equivalent asks whether the annotation's OWN ARGUMENTS mention the marked declaration. MEASURED over 33,738 admitted files over 6 repos (corpus root $PWD/.corpus): 367,815 annotation sites over 12,101 files, of which 0 carry arguments and 0 are bare markers (0 core markers, 0 user annotation names); 518 sites mention the marked declaration's name in the annotation's arguments; 5 of those name it as a WHOLE IDENTIFIER outside a string literal and are not the annotation's own name, and ALL 5 of those pass a MEMBER of the marked declaration (`C.STATIC_FIELD`, `B.foo`) rather than the declaration itself — so the count of sites where the DECLARATION is passed to its annotation is 0. The other 513 are a mention inside a longer name (`Int` inside `Int32()`, `B` inside `Box()`) or inside a string literal (the `@JsonValue('cancelled')` pattern, where the argument is a STRING that spells the carrier's name). THE APPLIED-CALLABLE COUNT IS THEREFORE 0. THE GRAMMAR HALF, OVER BOTH BUILDS: 0 of 219 named node types in the WIRED build and 0 of 221 in the NEWEST AVAILABLE upstream build is a decorator-application type — `decorator`, `decorator_list`, `decorated_definition`, `decorated_class`, `decorated_function` are ABSENT from both, and the marker `decorat` matches 0 node types in either. THE REASON, IN THE CONTRACT'S OWN TERMS (`src/ast/types.ts:120-129`): a decorator is APPLIED TO a declaration and is NOT a mere mention, and dart's `annotation` node has NO FIELD in which the declaration could be passed — an annotation ASSERTS PASSIVE METADATA, it does not wrap or replace the declaration the way python's `@deco` does. THE CONSTRUCT IS NOT LOST: it is published under the label it actually is, as `references{isAnnotation, annotatedKind}` — 367,815 sites — and the analyzer's own `decorates` rows are 0. THE LADDER, MEASURED: R1 is MEASURED UNAVAILABLE AND A REGRESSION (npm holds exactly ONE published `tree-sitter-dart` 1.0.0; it fails `tree-sitter generate` on CLI 0.26.9 after a one-line patch, and its vocabulary against the wired build is added 2 / removed 41 — the 41 are `part_of_builtin`, the Dart-3 pattern/record/switch vocabulary, `sealed`, `interface`, `extension_type_declaration`, and a 'fix' that DELETES 41 node types is not a fix); R2 is AVAILABLE AND PROVEN BY DIGEST (the wired bytes are a build of upstream UserNobody14/tree-sitter-dart at be07cf7 — idOrderDigest 98855db104b0c7603bdc42cc255e9b98eeb6c73637f835690cad7994dfa7935b, typeSetDigest c844ddcf9fe6d58f7ecd3f18166849c3bfe44d2465a2b82a084d2036b34a9560, fieldSetDigest 1599dfd9ecb9f7719c296102fd845374706d9f0830a4777aaa04787be756fbdb — added 0, removed 0) and was NOT TAKEN because a patch would have to ADD a decorator syntax dart does not have, which fires on 0 corpus sites; R3 is AVAILABLE (the `annotation` node type carries the mention, as `references{isAnnotation}`) and NOT TAKEN for the contract's reason. THE FALSIFIER: a construct in the dart corpus, or in the grammar, that APPLIES a callable to a declaration — an annotation whose own arguments receive the declaration outside a string literal, or a node type for decorator application. MEASURED BY `bun run script/m14/dart-extended-constructs.ts` into validation/m14/measurements/dart-extended-constructs-2026-10-21.json and by `bun run script/m14/dart-grammar-probe.ts` into validation/m14/measurements/dart-grammar-probe-2026-10-21.json; the fixture that pins BOTH directions is validation/m14/fixtures/dart/ruled-out-decorates.dart, and the page is validation/m14/verification/DART-EXTENDED-VALUES.md."
+      }
+    ],
     "corpusUnexercised": [],
+    "denominator": {
+      "n": 13
+    },
     "_implemented_measured": {
-      "_unit": "edges published through the production path over the dart-sdk corpus, BB_PICK_CAP=26000 NFILES=26000 bun script/m14/firing-check.mjs DART → 20,000/20,000 parsed of 20,000 admitted, even stride, `[corpus=dart-sdk WHOLE]`. ALL TEN types fire — there is nothing to exclude and no gap. The instrument's corpus for this lane is `dart-sdk`, whose admitted population is 25,706 files; the run stopped at 20,000 because `BB_SAMPLE_POP` caps the walk's collected population at 20,000 by default and this run did not raise it. So THIS IS A 20,000-of-25,706 CLAIM, stated rather than rounded up: it is 78% of the corpus by even stride, not the whole corpus.",
-      "calls": {
-        "edges": 390264
+      "_unit": "edges published through the PRODUCTION path over the whole admitted dart population",
+      "_command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/dart-extended-census.ts (chunked: one process per 2,000 files, merged by script/m14/dart-census-merge.ts — a tree-sitter WASM module's memory grows with every parse and one process cannot walk 33,738 files without aborting and silently losing the rest)",
+      "_population": "33,738 admitted files over 6 repos, corpus root $PWD/.corpus",
+      "renders": {
+        "rows": 5142,
+        "files": 1814,
+        "measured_by": "the constructs census (the tree, read independently of the analyzer's code path)",
+        "note": "Flutter's `build` method: a `Widget build(...)` whose returned expression names a class (R3, existing node types; the constructs census predicts the same number independently)"
       },
-      "uses": {
-        "edges": 743119
+      "mixes_in": {
+        "rows": 1332
       },
-      "contains": {
-        "edges": 293803
-      },
-      "imports": {
-        "edges": 61352
-      },
-      "references": {
-        "edges": 40856
-      },
-      "exports": {
-        "edges": 834
-      },
-      "extends": {
-        "edges": 17478
-      },
-      "implements": {
-        "edges": 7045
-      },
-      "overrides": {
-        "edges": 53588
-      },
-      "instantiates": {
-        "edges": 64654
+      "part_of": {
+        "rows": 598
       }
     },
-    "_from": "MEASURED, and this is the ONE lane where the answer needs no exclusion and no ruling: all ten types fire, with the smallest margin `exports` at 834 edges. The lane's earlier state was `dart 10/10 from=firing-log`, which was the right NUMBER derived from the wrong source — the firing log's 120-file stride sample. The number is now derived from a declared block over 20,000 files with per-type counts.\n\nTWO THINGS THIS BLOCK DOES NOT CLAIM, both owed and already recorded in the lane's own doc:\n1. INCOMING RESOLUTION IS THE LANE'S REAL GAP and it is large: whole-corpus incoming reads 1,033,665 ambiguous + 170,692 unresolved of 3.4M edges (validation/m14/results/incoming-laptop-b.current.log), with `overrides` the single worst type because its targets are published owner-qualified and the Flutter framework is 0 files in the declared population. Coverage and resolution are different questions and this block answers only the first.\n2. THE 20,000-FILE CAP. `BB_SAMPLE_POP` defaults to 20,000 and this run left it there, so the population is 78% of the admitted 25,706 by even stride. A later run that raises BB_SAMPLE_POP should reproduce or correct these ten counts — they are a lower bound on a stride, not a census."
+    "_from": "MEASURED, AND THE THREE EXTENDED VALUES ARE NOW THREE DIFFERENT VERDICTS, EACH WITH ITS OWN COUNT AND FALSIFIER. `mixes_in` and `part_of` are IMPLEMENTED and published (the with-clause mixin application and the `part`/`part of` directives, with `metadata.partRole` on every row). `renders` is IMPLEMENTED at R3 — NO GRAMMAR CHANGE — because dart's construct is Flutter's `build` method: a `Widget build(BuildContext context) => Scaffold();` names the rendered component in the RETURNED CONSTRUCTION, exactly as the JSX lane names it in a JSX tag, the clojure lane in a hiccup vector and the csharp lane in a type argument. The measured population is 5,142 rows over 1,814 files (5,893 `build` methods in the corpus, 5,460 returning an instance creation, 5,350 of those declaring the return type `Widget` — Flutter's own rendering marker — and 5,142 naming a CLASS). `decorates` is RULED for dart with a MEASURED count: 518 annotation sites mention the marked declaration's name in their arguments and 0 of them mention it outside a string literal, so the count of sites where a callable is APPLIED TO a declaration is 0; and the grammar carries no decorator-application node type in either the wired build or the newest available upstream build. THE FULL PAGE, WITH EVERY COMMAND, IS validation/m14/verification/DART-EXTENDED-VALUES.md."
   },
   "_unionConflicts": {
     "count": 3,

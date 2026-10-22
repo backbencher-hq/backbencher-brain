@@ -8,6 +8,7 @@
 //   contains · uses · calls · references · instantiates · extends · overrides · imports · implements · exports
 //   mixes_in      with-clause mixin application (all three sites; was uses{isMixin:true})
 //   part_of       `part`/`part of` directives, URI and NAMED-library forms (was imports{isPart})
+//   renders       a component RENDERS another component (Flutter's `build` method; R3, no grammar change)
 //   references    additionally carries ANNOTATIONS (references{isAnnotation, annotatedKind}, 16 positions)
 //                 and the mixin `on`-constraint (references{isMixinOn}; was extends{isMixinOn})
 // The rules: leaf identities for calls (`Counter -> Sqrt`); contains from ownerName; extends/implements from
@@ -37,7 +38,19 @@
 // docs · script/m14/differential.ts (`deriveDartEdges` — the TRUTH side; an emission the oracle does not
 // derive lands as MISSING/UNEXPLAINED) · script/m14/completeness-inventory.ts (`dart` LANG_CONFIG) ·
 // src/ast/engine.ts (getAnalyzer + wasm) · src/ast/language-detection.ts (`.dart` routing).
-// Grammar: tree-sitter-dart (wasm/tree-sitter-dart.wasm, resolved through node_modules by engine.ts).
+// Grammar: tree-sitter-dart — the bytes are `wasm/tree-sitter-dart.wasm`, and THIS LINE USED TO BE
+// WRONG: it said the wasm was "resolved through node_modules by engine.ts", and node_modules has NO
+// tree-sitter-dart package at all (MEASURED: `node_modules/tree-sitter-dart` is ABSENT; the registry
+// resolution is `wasm/tree-sitter-dart.wasm`). The engine's own log line prints a path that is not
+// the file the bytes came from (`/tmp/bb-wasm_tree-sitter-dart_tree-sitter-dart.wasm_<hash>`), so the
+// citation is the BYTES, never a path and never a log line: sha256
+// 7d05aa385f3b59a6fa9c10263c1cbabcd002ca5d0880b8b9cd61b3db169d98f1, 527 node-type ids of which 222
+// are named (219 distinct names). THE SOURCE OF THOSE BYTES IS OWNED BY THIS LANE AND PROVEN BY
+// DIGEST, not by a path: they are a build of upstream UserNobody14/tree-sitter-dart at commit
+// be07cf7, whose id-order digest is
+// 98855db104b0c7603bdc42cc255e9b98eeb6c73637f835690cad7994dfa7935b — the digest that survives a
+// rebuild. See validation/m14/verification/GRAMMAR-BINDINGS-2026-10-21.md and the lane's own
+// script/m14/dart-grammar-probe.ts.
 
 import type { Node } from "web-tree-sitter"
 import * as path from "path"
@@ -65,6 +78,9 @@ export const DART_CITATION_ROOTS: ReadonlySet<string> = new Set([
 /** Labels whose bare-name targets may carry a citation claim (the D7 row-6 type-shaped class). */
 const DART_CITATION_TYPE_SHAPED_LABELS = new Set([
   "calls", "uses", "instantiates", "extends", "implements", "overrides", "mixes_in", "part_of",
+  // `renders` names a CLASS (the component a `build` method returns), so its target is a
+  // type-shaped claim exactly like `extends`/`implements` are.
+  "renders",
 ])
 
 // ============================================================================
@@ -859,6 +875,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
 
             // heritage: extends / with / implements
             this.extractClassHeritage(node, name, relationships, patterns)
+            // renders: this component renders the component its `build` method returns
+            this.extractRenderRelationships(node, name, relationships)
           }
           break
         }
@@ -4186,6 +4204,113 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   // ============================================================================
+  // `renders` — A COMPONENT RENDERS ANOTHER COMPONENT
+  // ============================================================================
+  //
+  // THE CONTRACT (`src/ast/types.ts:131-140`): *"A component RENDERS another component: source = the
+  // rendering symbol, target = the rendered component."* The fleet's OTHER lanes publish it in
+  // three different languages and ALL THREE use this shape — the RENDERING SYMBOL as the source and
+  // the RENDERED COMPONENT'S NAME as the target:
+  //
+  //   · typescript/js (`real-typescript-analyzer.ts:6758`, `real-javascript-analyzer.ts:2667`):
+  //     source = the enclosing component function, target = the JSX tag name, and a LOWERCASE tag is
+  //     NOT a component (the language's own capitalization convention).
+  //   · clojure (`real-clojure-analyzer.ts:1584`): source = the enclosing fn, target = the component
+  //     symbol inside a hiccup vector — a VECTOR LITERAL, an EXISTING node type, no grammar change.
+  //   · csharp (`real-csharp-analyzer.ts:2285`): source = the rendering context, target = the
+  //     component named by a TYPE ARGUMENT — an EXISTING node type, no grammar change.
+  //
+  // ⇒⇒ THE VALUE IS NOT JSX-SPECIFIC, AND FOR DART THE CONSTRUCT IS FLUTTER'S `build` METHOD:
+  // `class Home extends StatelessWidget { Widget build(BuildContext context) => Scaffold(); }`
+  // `Home` IS the component and `Scaffold` IS the component it renders — the structural analogue of
+  // a React component returning `<Scaffold/>`. Dart has no JSX, so the syntax that carries the
+  // construct is the rendering ENTRY POINT, which is what the `build` method is.
+  //
+  // THE TRIGGER, AND WHY IT IS NOT THE METHOD NAME ALONE:
+  //   · the method is named `build` (Flutter's rendering entry point), AND
+  //   · its DECLARED RETURN TYPE is `Widget` — the framework's own marker, the same kind of
+  //     language-level convention the JS lane reads off capitalization. Without it, any class with
+  //     a `build()` method would qualify, including the protobuf-style message builders whose
+  //     `build()` returns a message and not a component.
+  // The measured populations behind both halves are in
+  // `validation/m14/measurements/dart-extended-constructs-2026-10-21.json`.
+  //
+  // WHAT DOES NOT FIRE, each for its own reason (and each pinned by the fixture):
+  //   · a `build` method whose body returns a VARIABLE or a CALL — no component is NAMED, so there
+  //     is nothing to render (the nearest construct, a call, stays a `calls` row);
+  //   · a `build` method whose declared return type is not `Widget` — not a rendering host;
+  //   · a construction that is NOT the returned expression — it is a `calls`/`instantiates` row,
+  //     because the widget tree is not the return value;
+  //   · a LOWERCASE name — Dart's class-naming convention, the same test the JS lane applies to a
+  //     JSX tag (`<div>` is an intrinsic, not a component).
+  private extractRenderRelationships(
+    node: Node,
+    className: string,
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const classBody = node.childForFieldName("body")
+    if (!classBody) return
+    for (const member of classBody.namedChildren) {
+      if (!member || member.type !== "method_signature") continue
+      const fsig = member.namedChildren.find((k) => k && k.type === "function_signature")
+      if (!fsig) continue
+      if (fsig.childForFieldName("name")?.text !== "build") continue
+      // THE DECLARED RETURN TYPE — it is the FIRST child of the `function_signature` when there is
+      // one (the name carries the `name` field and the parameters follow it).
+      const first = fsig.namedChild(0)
+      const declared = first && (first.type === "type_identifier" || first.type === "type") ? first.text : ""
+      if (declared !== "Widget") continue
+      // THE BODY — the dart grammar puts a method's signature and its body as SIBLINGS inside
+      // `class_body`, so the body is the sibling that follows the signature.
+      let body: Node | null = member.nextNamedSibling
+      while (body && body.type !== "function_body" && body.type !== "method_signature" && body.type !== "field_signature") {
+        body = body.nextNamedSibling
+      }
+      if (!body || body.type !== "function_body") continue
+      // THE RETURNED EXPRESSION — the `return_statement` inside the body's block, or the body's own
+      // expression for an arrow body (`=> Scaffold()`).
+      const block = body.namedChildren.find((k) => k && k.type === "block")
+      const ret = (block ?? body).namedChildren.find((k) => k && k.type === "return_statement")
+      const expr: Node | null = ret ? ret.namedChild(0) : body.namedChildren.find((k) => k && k.type !== "comment") ?? null
+      const target = this.renderedComponentName(expr)
+      if (!target) continue
+      relationships.push({
+        source: className,
+        target,
+        type: ASTEngine.RelationshipType.Renders,
+        confidence: 0.9,
+        line_number: this.nodeLine(expr!),
+        metadata: { isRenderHost: true, renderHost: "build", renderTarget: target },
+      })
+    }
+  }
+
+  /**
+   * THE NAME OF THE COMPONENT A CONSTRUCTION EXPRESSION NAMES — dart spells a construction three
+   * ways and all three name the type: `const T()` is a `const_object_expression`, `new T()` is a
+   * `new_expression`, and the modern `T()` is a BARE `identifier` FOLLOWED BY A `selector` (the
+   * call). A bare identifier with NO selector is a VARIABLE, not a construction — that distinction
+   * is the refusal, and it is why the selector is checked rather than the identifier alone.
+   */
+  private renderedComponentName(expr: Node | null): string | null {
+    if (!expr) return null
+    let name: string | null = null
+    if (expr.type === "const_object_expression" || expr.type === "new_expression" || expr.type === "instance_creation_expression") {
+      const t = expr.childForFieldName("type") ?? expr.namedChildren.find((k) => k && (k.type === "type_identifier" || k.type === "identifier"))
+      name = t ? t.text : null
+    } else if (expr.type === "identifier") {
+      const sib = expr.nextNamedSibling
+      name = sib && sib.type === "selector" ? expr.text : null
+    }
+    if (!name) return null
+    // THE COMPONENT TEST — Dart's class-naming convention, the same shape of test the JS lane
+    // applies to a JSX tag: a lowercase name is not a component.
+    const first = name[0]
+    if (!first || first === first.toLowerCase()) return null
+    return name
+  }
+
+  // ============================================================================
   // EVIDENCE TIERS
   // ============================================================================
 
@@ -4219,6 +4344,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      // `renders` — a component RENDERS another component. The row is read off the RETURNED
+      // CONSTRUCTION of a `build` method, so the construction is a parse fact; what the row also
+      // rests on is the language's naming conventions (the `Widget` return type and the capitalized
+      // class name), which is the same footing the JS lane's JSX rows stand on. So the tier is
+      // `usage_contextual`, NOT `structural` — naming a convention is not the same as reading a
+      // clause, and the fleet's other three `renders` lanes (typescript, javascript, clojure,
+      // csharp) all land on the same tier.
+      if (type === "renders") { md.evidenceClass = "usage_contextual"; continue }
       // `references` is a MENTION in a type position (a parse fact) bound to a
       // declaration by name (not a parse fact), so it is `usage_contextual` — the
       // same tier `calls` gets — and never `structural`: claiming the binding is
