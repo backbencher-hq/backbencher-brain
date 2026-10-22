@@ -118,9 +118,23 @@ export enum RelationshipType {
 
   // ── EXTENDED 2026-10-18: values the ten could not spell honestly (see the header block) ───────
   /**
-   * A decorator is APPLIED TO a declaration: source = the decorating symbol, target = the decorated
-   * declaration. Python is the measured population (`@deco` on a def/class); TS and JS decorators
-   * emit the same edge once their lanes land the sites.
+   * A decorator is APPLIED TO a declaration. Python is the measured population (`@deco` on a
+   * def/class); TS and JS decorators emit the same edge once their lanes land the sites.
+   *
+   * THE DIRECTION IS THE DECORATED DECLARATION → THE DECORATOR. It was stated the other way round
+   * here until the dart lane caught it (2026-10-21): this line said "source = the decorating symbol,
+   * target = the decorated declaration", and MEASURED EMITTERS SAY THE OPPOSITE — python
+   * (`real-python-analyzer.ts:6112`) and javascript (`real-javascript-analyzer.ts:2953`) both publish
+   * source = the decorated declaration, target = the decorator's name, and the fleet's own ORACLE
+   * agrees with them (`script/m14/differential.ts:6057`: "a decorator name is a `decorates` from the
+   * decorated declaration"). The proposal page that the vocabulary was adopted from says the same
+   * (`validation/m14/verification/VOCABULARY-EXTENSION-PROPOSAL.md:194`, "direction | decorated
+   * declaration → decorator"). So this comment was the outlier against three agreeing sources, and
+   * it is corrected to the emitted direction.
+   *
+   * WHY THAT DIRECTION: the edge is read as "this declaration carries this decorator", and the
+   * decorator is the thing applied TO the declaration. The relation name reads that way round too —
+   * a decorated declaration is decorated BY the decorator.
    *
    * NOT `calls`: the decorated symbol does not invoke the decorator — the runtime applies it while
    * the declaration is created, and a call edge would assert a call site that does not exist.
@@ -147,10 +161,26 @@ export enum RelationshipType {
    */
   MixesIn = "mixes_in",
   /**
-   * A library unit INCLUDES a part file: source = the including library/file symbol, target = the
-   * part's file or its module symbol. Measured on Dart (`part 'x.dart'` / `part of`), published as
+   * A library unit INCLUDES a part file. Measured on Dart (`part 'x.dart'` / `part of`), published as
    * `imports{isPart:true}` — an import names a module and creates binding scope; a part shares the
    * library's single scope, imports nothing, and cannot be resolved as a separate module.
+   *
+   * THE DIRECTION IS THE DIRECTIVE'S OWN: source is always the file carrying the directive, target is
+   * what it names. It was stated here as "source = the including library/file symbol, target = the
+   * part's file or its module symbol" until the dart lane caught it (2026-10-21), and that wording
+   * is not implementable: Dart's two directives point in OPPOSITE textual directions, so a row
+   * normalized to library → part would need the `part` directive's host file to learn the part's
+   * module name, which it never does without reading the part. The proposal page the vocabulary was
+   * adopted from says so in as many words
+   * (`validation/m14/verification/VOCABULARY-EXTENSION-PROPOSAL.md:256`): "Normalizing direction to
+   * part→library is not implementable from the `part` directive alone".
+   *
+   * SO EVERY ROW CARRIES `metadata.partRole`: `"part"` for a `part_of_directive` (this file is a part,
+   * and it names the library) and `"library"` for a `part_directive` (this file is the library, and
+   * it names the part). A CONSUMER reads the logical relation as part_of(part, library) from the
+   * `partRole="part"` rows; a reader wanting a library's file set unions both roles. The emitted
+   * direction and the logical relation are therefore different things, and `partRole` is what tells
+   * them apart — which is why the field is MANDATORY on every row rather than a convenience.
    *
    * DISTINCT FROM the DERIVED `part_of_feature` in graph.ts: that one is a FEATURE grouping the
    * engine derives over symbols; this one is a FILE/Grammar relationship an analyzer emits. They are
