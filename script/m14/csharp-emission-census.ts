@@ -474,9 +474,27 @@ for (const abs of files) {
         case "attribute":
           add(constructs, "cs.attribute", relSlug)
           break
-        case "attribute_argument":
+        case "attribute_argument": {
           add(constructs, "cs.attribute_argument", relSlug)
+          // THE DECORATES FALSIFIER'S MEASURED NEAR MISS: an attribute argument that is a CALL.
+          // The falsifier of the `decorates` ruling is "a C# construct that applies a CALLABLE to a
+          // declaration"; the nearest measurable shape of that is an attribute ARGUMENT carrying an
+          // invocation - so the count is measured rather than asserted (the fleet's rule: a named
+          // construct with no measurement is a TODO wearing a ruling's clothes).
+          let carriesCall = false
+          const scan = (node: any, depth: number): void => {
+            if (carriesCall || depth > 4) return
+            for (let i = 0; i < (node?.namedChildCount ?? 0); i++) {
+              const c = node?.namedChild?.(i)
+              if (!c) continue
+              if (c.type === "invocation_expression") { carriesCall = true; return }
+              scan(c, depth + 1)
+            }
+          }
+          scan(n, 0)
+          if (carriesCall) add(constructs, "cs.attribute_argument_call", relSlug)
           break
+        }
         case "using_directive":
           add(constructs, "cs.using_directive", relSlug)
           break
@@ -504,6 +522,20 @@ for (const abs of files) {
                 if (typeArg.length > 0) {
                   add(constructs, "cs.render_host_call_with_component_type", relSlug)
                   add(renderHostType, typeArg, relSlug)
+                }
+                // THE OTHER SHAPE OF THE DYNAMIC FORM: the non-generic overload names the component
+                // as a `typeof(X)` ARGUMENT instead of a type argument. The census must count BOTH,
+                // or the "zero measured population" it reports would be an artefact of counting one
+                // shape only.
+                const args = fn.parent?.childForFieldName?.("arguments")
+                const argList = args?.type === "argument_list" ? args : null
+                for (const a of argList?.namedChildren ?? []) {
+                  const to = a.namedChildren.find((c: any) => c.type === "typeof_expression")
+                  if (to) {
+                    add(constructs, "cs.render_host_call_with_typeof_component", relSlug)
+                    const tn = to.namedChildren.find((c: any) => c.type !== "identifier")
+                    add(renderHostType, (tn?.text ?? to.text), relSlug)
+                  }
                 }
               }
             }
