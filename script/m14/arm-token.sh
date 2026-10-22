@@ -232,6 +232,15 @@ start_beat_daemon() {  # lane — a DETACHED heartbeat that wants no CPU
   local d_script
   d_script="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/$(basename "$0")" 2>/dev/null || d_script="$0"
   setsid nohup bash "$d_script" __beat-daemon-loop "$d_lane" >>"$d_log" 2>&1 &
+  # ⇒⇒⇒ AND THE START PRINTS ITS OWN LIMIT, BECAUSE A START THAT PROMISES MORE THAN IT DELIVERS IS
+  # A WISH. **A `setsid nohup` CHILD OF A FINISHING SHELL IS REAPED WITH IT** — MEASURED THREE TIMES,
+  # each daemon writing its marker once and dying with an empty log. ⇒⇒⇒ SO THE DURABLE FORM IS:
+  # run `arm-token.sh loop <lane>` AS A BACKGROUND JOB. The `take` start below may or may not survive;
+  # the marker is the daemon's own pulse, so `status` tells the truth either way.
+  echo "BEAT DAEMON STARTED for $d_lane (detached, every 120s, no CPU wanted)." >&2
+  echo "  *** IF THE LANE'S SHELL ENDS AND THE BEAT GOES STALE, RUN THE DURABLE FORM: ***" >&2
+  echo "  ***   bash script/m14/arm-token.sh loop $d_lane     (AS A BACKGROUND JOB) ***" >&2
+  echo "  log: $d_log" >&2
   return 0
 }
 
@@ -391,6 +400,20 @@ case "$cmd" in
       printf '%s\n' "$(now)" > "$TOKEN_DIR.daemon-$lane" 2>/dev/null || true
       "$0" beat "$lane" >/dev/null 2>&1 || true
     done
+    ;;
+  loop)
+    # ★★★ THE DURABLE PATTERN, AND IT IS THE CSHARP LANE'S FINDING. ★★★
+    # A `setsid nohup` daemon launched from inside a bash call is REAPED WITH THAT CALL, because the
+    # call's process namespace is torn down when the call ends. MEASURED 2026-10-22, three times: the
+    # cpp daemon, the sql daemon and the ruby small-slot daemon each wrote their marker once and were
+    # gone by the next pulse, with an EMPTY log — a killed process, not a failing one. The csharp lane
+    # found the working shape: **THE LOOP RUNS AS A HARNESS BACKGROUND JOB DIRECTLY, NOT `nohup` INSIDE
+    # ONE.** ⇒⇒⇒ **A DAEMON'S START IS NOT A DAEMON'S RUNNING, AND A DETACHED CHILD OF A FINISHING
+    # SHELL IS NOT A DAEMON AT ALL.**
+    # ⇒⇒⇒ SO THIS VERB RUNS THE LOOP IN THE FOREGROUND, ON PURPOSE, AND THE CALLER MAKES IT A
+    # BACKGROUND JOB. The script is then a job, not a child of a job.
+    [ -n "$lane" ] || { echo "usage: arm-token.sh loop <lane>  (run THIS as a background job)"; exit 2; }
+    exec bash "$0" __beat-daemon-loop "$lane"
     ;;
   beat-daemon)
     [ -n "$lane" ] || { echo "usage: arm-token.sh beat-daemon <lane>"; exit 2; }
