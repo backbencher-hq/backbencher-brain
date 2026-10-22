@@ -63,12 +63,16 @@ const argOf = (f: string): string | undefined => {
 }
 const JSON_OUT = argOf("--json")
 const LIMIT = Number(argOf("--limit") ?? "0")
-// THE CHUNKING FLAGS. A tree-sitter WASM module's MEMORY GROWS WITH EVERY PARSE and never
-// shrinks, so one process cannot walk the whole 33,738-file population: at ~7,600 parses the
-// module runs out and every later `new Parser` ABORTS — a run that LOOKS complete and silently
-// measures a fraction of it. So the walk is chunked (this lane's own arm cap is 2,000 files),
-// one PROCESS per chunk, and the chunk JSONs are merged by script/m14/dart-census-merge.ts.
-// The chunks are DISJOINT, so summing their rows and their file counts is exact, not an estimate.
+// // THE CHUNKING FLAGS. THE MECHANISM, MEASURED (the Lead, with a control): the growth is the
+// UNFREED TREES, not the parse count — the shared path frees each tree
+// (src/ast/engine.ts:2244-2245, inside parseFile) and is safe; THIS INSTRUMENT IS THE
+// COUNTEREXAMPLE: it holds every tree it parses and never calls tree.delete(), so its
+// module runs out at ~7,600 files and every later `new Parser` ABORTS — a run that
+// LOOKS complete and silently measures a fraction of it. So the walk is chunked (this
+// lane's own arm cap is 2,000 files), one PROCESS per chunk, and the chunk JSONs are
+// merged by script/m14/dart-census-merge.ts. The chunks are DISJOINT, so summing their
+// rows and their file counts is exact, not an estimate. Shared probe:
+// script/m14/wasm-parse-lifetime.ts (exit 5 on an abort).
 const REPO = argOf("--repo") ?? ""
 const OFFSET = Number(argOf("--offset") ?? "0")
 const SIZE_CAP = 1024 * 1024
