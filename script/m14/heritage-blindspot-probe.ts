@@ -47,6 +47,7 @@ import { resolve, join } from "node:path"
 const ROOT = resolve(import.meta.dir, "../..")
 const CORPUS = resolve(ROOT, ".corpus")
 const argv = process.argv.slice(2)
+import { FLEET_LANES, extensionsFor } from "./language-extensions"
 const argOf = (name: string, dflt: string): string => {
   const hit = argv.find((a) => a.startsWith(`--${name}=`))
   return hit ? hit.slice(name.length + 3) : dflt
@@ -55,20 +56,37 @@ const LANG = argOf("lang", "javascript")
 const MAX = Number(argOf("max", "3000"))
 const REPO = argOf("repo", "")
 
-/** THE EXTENSIONS, PER LANGUAGE, SO THE WALK READS THE CORPUS'S REAL FILES. */
-const EXT: Record<string, string[]> = {
-  javascript: [".js", ".jsx", ".mjs", ".cjs"],
-  typescript: [".ts", ".tsx"],
-  dart: [".dart"],
-  python: [".py"],
-  java: [".java"],
-  csharp: [".cs"],
-  php: [".php"],
-  ruby: [".rb"],
-  scala: [".scala"],
-  kotlin: [".kt"],
-  swift: [".swift"],
-}
+/**
+ * THE EXTENSIONS COME FROM THE ROUTER'S OWN TABLE, AND THEY USED TO COME FROM A SECOND COPY.
+ *
+ * ★ THE DEFECT, MEASURED BY THE CPP LANE, AND IT IS THE WORST SHAPE THE FLEET HAS FOUND. This
+ * probe carried its own hand-written extension map, and the map had NO `cpp` entry — so
+ * `EXT[LANG] ?? []` was EMPTY, every tracked file was filtered out BEFORE THE WALK, and the probe
+ * printed:
+ *
+ *   population: 0 GIT-TRACKED admitted files from .../.corpus
+ *   files read 0 · failed 0 · heritage clauses 0
+ *   covered by the lookup pair 0 · UNCOVERED 0
+ *   no base_class_clause clause was found in the population
+ *
+ * …and EXITED 0. ⇒⇒⇒ **THAT IS A CLEAN-LOOKING ZERO OVER AN EMPTY POPULATION**, and it is the most
+ * dangerous shape the fleet has: a measurement that cannot call the thing it measures, taken over
+ * NOTHING, reported with the same confidence as a measurement over everything. ⇒⇒⇒ The cpp lane
+ * answered the substantive question with its own instrument over the whole admitted population —
+ * 4,279 `base_class_clause` clauses, UNCOVERED 0, all four shapes reached — while the probe's zero
+ * sat beside it saying nothing at all.
+ *
+ * ⇒⇒⇒ AND THE FIX IS NOT "ADD `cpp` TO THIS MAP". That only moves the failure to the next language.
+ * The fix is that **THE INSTRUMENT AND THE DENOMINATOR MUST COUNT THE SAME POPULATION**, so the
+ * extension table lives in ONE module — `script/m14/language-extensions.ts`, extracted from
+ * `incoming-gate.ts` because that file RUNS ITS WHOLE BODY ON IMPORT — and every consumer reads it.
+ * ⇒⇒⇒ **A TABLE DUPLICATED IN TWO PLACES IS ONE TABLE THAT WILL DIVERGE**, and it did: the gate's
+ * population and this probe's population were different populations under the same name, which is
+ * the same defect as the index cache keyed on a COUNT.
+ */
+const EXT: Record<string, string[]> = Object.fromEntries(
+  Object.keys(FLEET_LANES).map((k) => [k, extensionsFor(k)]),
+)
 
 /**
  * THE HERITAGE-LIKE NODE TYPES PER LANGUAGE, and the SHAPES THE ANALYZER LOOKS FOR.
@@ -136,7 +154,15 @@ const HERITAGE: Record<string, { node: string; shapes: string[]; source: string;
   // FORMS THAN MOST LANGUAGES — multiple inheritance, virtual bases, template bases, qualified
   // names — so this is exactly the lane the probe was aimed at.
   cpp: { node: "base_class_clause", shapes: ["type_identifier", "qualified_identifier", "template_type"],
-    source: "src/ast/real-cpp-analyzer.ts:3682-3692 — the base clause's children are FLAT" },
+    // ⇒⇒⇒ THE RANGE IS :3682-3694, AND THE CPP LANE CAUGHT IT: the cited range stopped ONE LINE
+    // SHORT of `template_type` at :3693, and the `|| bc` FALLBACK is at :3694. ⇒⇒⇒ THE FALLBACK IS
+    // THE LOAD-BEARING PART, NOT THE PAIR — a child that is none of the three named types is still
+    // matched by the child itself, so the lookup CANNOT miss a shape, and the ONE shape outside the
+    // named pair is `access_specifier`, a VISIBILITY KEYWORD the analyzer skips ON PURPOSE. ⇒⇒⇒
+    // THE CITATION MUST NAME THE FALLBACK, BECAUSE THE FALLBACK IS WHAT MAKES THE ANSWER ZERO
+    // UNCOVERED RATHER THAN 3,693 UNCOVERED. ⇒⇒⇒ **A CITATION THAT STOPS ONE LINE SHORT IS A
+    // CITATION THAT CANNOT BE CHECKED.**
+    source: "src/ast/real-cpp-analyzer.ts:3682-3694 — the base clause's children are FLAT, and the || bc FALLBACK at :3694 is what makes the lookup total" },
   ruby: { node: "superclass", shapes: ["constant", "scope_resolution"],
     source: "src/ast/real-ruby-analyzer.ts:311-315 — a `call` superclass is unknowable statically, and refusing it is right" },
 }
@@ -232,6 +258,28 @@ async function productionDigest(): Promise<string> {
 const files = corpusFiles()
 console.log(`HERITAGE BLIND-SPOT PROBE — ${LANG}`)
 console.log(`population: ${files.length} GIT-TRACKED admitted files from ${CORPUS}${REPO ? `/${REPO}` : ""}`)
+
+// ⇒⇒⇒ A POPULATION OF ZERO IS A CONTROL FAILURE, NOT A MEASUREMENT. MEASURED 2026-10-22 by the cpp
+// lane: this probe's extension map had no `cpp` entry, so the population was EMPTY, and the probe
+// printed "files read 0 · heritage clauses 0 · UNCOVERED 0" and "no base_class_clause clause was
+// found in the population" and EXITED 0. ⇒⇒⇒ **A CLEAN-LOOKING ZERO OVER AN EMPTY POPULATION IS
+// INDISTINGUISHABLE FROM A FINDING, AND THAT IS EXACTLY WHAT A PROBE IS FOR** — it exists to say
+// "this construct is here and the lookup cannot reach it", and a zero over nothing says the
+// opposite of what it appears to say. ⇒⇒⇒ ⇒⇒⇒ **A MEASUREMENT THAT CANNOT CALL THE THING IT
+// MEASURES MUST AT LEAST BE COMPARED AGAINST IT**, and the cheapest comparison against nothing is to
+// SAY so and FAIL LOUDLY. ⇒⇒⇒ ⇒⇒⇒ AND THE PROBE'S OWN OUTPUT IS ITS CONTROL: it publishes the
+// population size on the FIRST line, and every other number it prints is meaningless without it —
+// so the population size is now the first thing checked, not the last.
+if (files.length === 0) {
+  console.error("")
+  console.error("*** THE POPULATION IS EMPTY — THIS IS A CONTROL FAILURE, NOT A FINDING. ***")
+  console.error("*** Every number this probe would print is a statement about NOTHING. ***")
+  console.error(`*** The extension table for '${LANG}' is: ${JSON.stringify(extensionsFor(LANG))}`)
+  console.error("*** A lane with no admitted files in this corpus is a different thing from a lane")
+  console.error("*** whose extensions are wrong, and the two must not look the same. ***")
+  console.error("*** Check the extension table BEFORE reading any count from this probe. ***")
+  process.exit(5)
+}
 console.log(`heritage node: ${conf.node} · the analyzer's lookup: ${conf.mode === "any" ? "EVERY named child" : conf.shapes.join(" ?? ")}`)
 console.log(`the pair, quoted from the analyzer: ${conf.source}`)
 
