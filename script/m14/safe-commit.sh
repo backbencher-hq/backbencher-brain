@@ -229,10 +229,16 @@ shared_after_n="$(git diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
 shared_after="$(git diff --cached --name-only 2>/dev/null | sort | tr '\n' ' ')"
 echo "  shared index staged AFTER : $shared_after_n"
 if [ "$shared_before_n" != "$shared_after_n" ] || [ "$shared_before" != "$shared_after" ]; then
-  echo "  *** THE SHARED INDEX CHANGED UNDER US — another lane touched it during this commit." >&2
-  echo "  *** The commit itself is correct (it used the private index), but the shared index" >&2
-  echo "  *** is not where this tool found it. Report it." >&2
-  exit 3
+  # ⇒⇒⇒ A SUCCESSFUL COMMIT THAT REPORTED A REFUSAL WOULD MAKE A LANE RETRY A COMMIT THAT ALREADY
+  # LANDED — AND A DOUBLE COMMIT IS A REAL HAZARD, NOT A COSMETIC ONE. The shared index moved
+  # because ANOTHER LANE staged something; the tool did not touch it (it used the private index).
+  # ⇒⇒⇒ SO THIS IS A WARNING AND NOT A REFUSAL, and the tool says EXACTLY WHAT IT OBSERVED.
+  echo "  *** THE SHARED INDEX CHANGED UNDER US — another lane staged something during this commit." >&2
+  echo "  *** The commit LANDED and it is correct (it used the private index); the shared index is" >&2
+  echo "  *** simply not where this tool found it. Nothing was lost and nothing needs undoing." >&2
+  echo "  shared index BEFORE: $shared_before"
+  echo "  shared index AFTER : $shared_after"
+else
+  echo "  the shared index was NOT read for the commit and NOT modified by it."
 fi
-echo "  the shared index was NOT read for the commit and NOT modified by it."
 exit 0
