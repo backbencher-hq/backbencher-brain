@@ -124,6 +124,123 @@ export function deriveScalaMixesInTruth(root: any): TruthEdge[] {
   return out
 }
 
+/** implements: the SELF-TYPE's conformance requirement, per the PUBLISHED contract.
+ *
+ *  ★ WHY THIS EXISTS — THE MIXIN RULING'S FALSIFIER FIRED, AND IT FIRED WITH A COUNT.
+ *    The fleet MIXIN RULING (2026-10-19, option (b)) ruled `implements` NOT-APPLICABLE for scala
+ *    on the falsifier "a Scala construct that declares conformance WITH NO COMPOSITION semantics",
+ *    and it named the self-type `this: T =>` in the same sentence WITHOUT MEASURING it. Measured
+ *    over the whole admitted population (script/m14/scala-construct-census.ts ->
+ *    validation/m14/measurements/scala-construct-census.json): 1,017 self_type sites in 636 files,
+ *    671 of them carrying a required type after the ":". The construct is ALREADY EXPRESSIBLE in the
+ *    wired grammar (`self_type` is a NAMED node type of the pinned build, sha256
+ *    393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917, 189 named of 455 ids), so this
+ *    is rung R3 of the remedy ladder and NO grammar change is taken. The analyzer now publishes the
+ *    row, and the lane's oracle derives it INDEPENDENTLY, by the PUBLISHED contract below.
+ *
+ *  THE PUBLISHED CONTRACT (the source comments in real-scala-analyzer.ts are its evidence):
+ *    source = the enclosing trait/class/object/enum's name;
+ *    target = the type named after the ":" in the self type;
+ *    a self type with NO ":" binds a NAME and requires nothing — no row;
+ *    a SINGLETON type (`IO.type`, `acme.Module.type`) names the MODULE;
+ *    a type ARGUMENT is a parameter of the required type, not a second requirement — not descended into;
+ *    a STRUCTURAL type names no conformance target — no row;
+ *    an X -> X row carries no information — no row.
+ *
+ *  INDEPENDENCE. This walks the tree itself and reads the SELF-TYPE node's own children; it does not
+ *  call the analyzer and it is not a copy of the analyzer's walk.
+ */
+export function deriveScalaImplementsTruth(root: any): TruthEdge[] {
+  const out: TruthEdge[] = []
+  const DECL = new Set(["class_definition", "trait_definition", "object_definition", "enum_definition"])
+
+  /** The declaration's own name, found by walking UP from the self type. */
+  const enclosingName = (from: any): string => {
+    let p = from?.parent ?? null
+    while (p) {
+      if (DECL.has(p.type)) {
+        const nameNode = p.childForFieldName?.("name") ?? childOfType(p, "identifier") ?? childOfType(p, "type_identifier")
+        const nm = stripQuoting(nameNode?.text ?? "")
+        if (nm) return nm
+        return ""
+      }
+      p = p.parent
+    }
+    return ""
+  }
+
+  /** The type named after the ":" — the self type's REQUIRED type. */
+  const requiredTypeNode = (st: any): any => {
+    let colon = -1
+    for (let i = 0; i < (st.childCount ?? 0); i++) {
+      const c = st.child(i)
+      if (c && !c.isNamed && c.type === ":") { colon = i; break }
+    }
+    if (colon < 0) return null
+    for (let i = colon + 1; i < (st.childCount ?? 0); i++) {
+      const c = st.child(i)
+      if (!c || !c.isNamed) continue
+      if (c.type === "block_comment" || c.type === "comment") continue
+      return c
+    }
+    return null
+  }
+
+  /** The names a required type names — a union names two, a type argument names none. */
+  const requiredNames = (req: any): string[] => {
+    if (!req) return []
+    if (req.type === "structural_type") return []
+    if (req.type === "singleton_type") {
+      for (let i = 0; i < (req.namedChildCount ?? 0); i++) {
+        const c = req.namedChild(i)
+        if (c && (c.type === "identifier" || c.type === "stable_identifier" || c.type === "stable_type_identifier")) {
+          return [stripQuoting(c.text)]
+        }
+      }
+      return []
+    }
+    const out: string[] = []
+    const walk = (n: any): void => {
+      if (n.type === "type_arguments" || n.type === "wildcard") return
+      if (n.type === "type_identifier" || n.type === "stable_type_identifier") {
+        const nm = stripQuoting(n.text)
+        if (nm && !out.includes(nm)) out.push(nm)
+        return
+      }
+      for (let i = 0; i < (n.namedChildCount ?? 0); i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(req)
+    return out
+  }
+
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()
+    if (!n) continue
+    if (n.type === "self_type") {
+      const owner = enclosingName(n)
+      if (owner) {
+        for (const raw of requiredNames(requiredTypeNode(n))) {
+          const target = stripQuoting(raw)
+          if (!target) continue
+          // THE INFORMATION TEST — an X -> X row carries no information.
+          const leaf = target.includes(".") ? target.slice(target.lastIndexOf(".") + 1) : target
+          if (target === owner || leaf === owner) continue
+          out.push({ label: "implements", from: owner, target })
+        }
+      }
+    }
+    for (let i = (n.namedChildCount ?? 0) - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return out
+}
+
 /** imports: dependency targets per import_declaration, mirroring the analyzer's published import facts
  *  (module path as written + selector names appended per group; excluded selectors skipped; source
  *  "(file)"). Targets are the depended-on module paths — never a truncated prefix. */

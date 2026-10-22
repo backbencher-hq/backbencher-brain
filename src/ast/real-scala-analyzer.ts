@@ -2414,6 +2414,72 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // child; source is the enclosing trait/class.
           const last = n.namedChild(n.namedChildCount - 1)
           if (last) emit(n, [last], "self_type", "self_type")
+          // ─────────────────────────────────────────────────────────────────────
+          // SCALA-IMPL-1 — THE SELF-TYPE IS SCALA'S CONFORMANCE-WITHOUT-COMPOSITION,
+          // AND IT IS THE `implements` ROW THE LANE WAS MEASURED OWING.
+          //
+          // THE FALSIFIER FIRED, AND IT FIRED WITH A COUNT. The fleet MIXIN RULING
+          // (2026-10-19, option (b)) ruled `implements` NOT-APPLICABLE for scala with
+          // the falsifier: "a Scala construct that declares conformance WITH NO
+          // COMPOSITION semantics", and it named the self-type `this: T =>` in the same
+          // sentence without MEASURING it. Measured over the whole admitted population
+          // (script/m14/scala-construct-census.ts → validation/m14/measurements/
+          // scala-construct-census.json): 1,017 self_type sites in 636 files, of which
+          // 671 carry a required type after the ":".
+          //
+          // ⇒ THE LADDER'S RUNG IS R3, NOT A RUING: the construct is ALREADY EXPRESSIBLE
+          // in the WIRED grammar (`self_type` is a NAMED node type of the pinned build,
+          // sha256 393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917,
+          // 189 named of 455 ids — validation/m14/measurements/scala-grammar-inventory.json)
+          // and the ANALYZER could not READ it as a conformance. No grammar change is
+          // needed or taken; the relation's SEMANTICS decide, not the node type's absence.
+          //
+          // THE ROW: source = the type that DECLARES the conformance, target = the type it
+          // REQUIRES. `trait Service { this: Logging => }` says Service can only exist as
+          // part of something that IS a Logging — a conformance with NO supertype position
+          // and NO mixin composition, which is exactly what `implements` credits and what
+          // `extends`/`mixes_in` do NOT.
+          //
+          // THE INFORMATION TEST IS APPLIED, and the corpus decides it: `transparent trait
+          // Pure extends Any: this: Pure =>` (library/src/scala/caps/Pure.scala:19-20)
+          // names ITSELF, and a Pure -> Pure row carries no information, so it is not
+          // published. The same rule refuses the language's own self-references.
+          //
+          // THE `references` EDGE ABOVE IS NOT TOUCHED. It is a DIFFERENT fact — the
+          // required type is NAMED — and it is a pinned contract
+          // (validation/m14/fixtures/scala/self-type-ref.expectation.json). The
+          // conformance is an ADDITIONAL relation, not a replacement.
+          // SCALA-IMPL-EMIT-BLOCK:BEGIN — the removal boundary for the RED PROOF
+          // (script/m14/scala-implements-red-proof.ts). The proof removes EXACTLY this block
+          // from a COPY of this file, runs the copy over the fixture, and prints the
+          // `implements` rows it publishes. Before the block: 0. After it: 6. A RED PROOF
+          // that needs a git round-trip is a proof nobody can re-run while other lanes
+          // work in the same checkout — and this checkout is SHARED.
+          const required = this.selfTypeRequiredTypeNames(n)
+          if (required.length > 0) {
+            const src = resolveSource(n)
+            for (const { name: rname, line: rline } of required) {
+              if (!rname) continue
+              // THE INFORMATION TEST — an X -> X row carries no information. Compared on
+              // the LEAF, because a qualified spelling of the same type is still itself.
+              const leaf = rname.includes(".") ? rname.slice(rname.lastIndexOf(".") + 1) : rname
+              if (rname === src || leaf === src) continue
+              const ikey = `implements|${src}|${rname}`
+              if (emitted.has(ikey)) continue
+              emitted.add(ikey)
+              relationships.push({
+                source: src,
+                target: rname,
+                type: ASTEngine.RelationshipType.Implements,
+                // S1.4: an explicit conformance requirement is 1.0 — the construct says so.
+                confidence: 1.0,
+                // M59 (#825): the NAME's own line, not the declaration's.
+                line_number: rline,
+                metadata: { relationshipType: "self_type", isSelfType: true },
+              })
+            }
+          }
+          // SCALA-IMPL-EMIT-BLOCK:END
           break
         }
         case "field_expression": {
@@ -3178,6 +3244,91 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       cur = p
     }
     return false
+  }
+
+  /**
+   * THE SELF-TYPE'S REQUIRED TYPE — the names a self type REQUIRES.
+   *
+   * ★ WHY THIS IS A DEDICATED READER AND NOT `collectTypeNames`. Two shapes need a decision the
+   *   generic reader does not make, and both are MEASURED over the admitted population
+   *   (validation/m14/measurements/scala-construct-census.json, 1,017 self_type sites in 636 files):
+   *
+   *   1. `singleton_type` — `this: IO.type =>` — spells its target as an `identifier` child
+   *      (`N:identifier A:. A:type`), and the generic reader only pushes `type_identifier` and
+   *      `stable_type_identifier`, so it would publish NOTHING for the 154 singleton sites.
+   *      The target of a singleton type is the MODULE's name, and that is the name the row needs.
+   *   2. `type_arguments` — `this: xs.Cap[A] =>` — the `[A]` is a type PARAMETER of the required
+   *      type, NOT a second conformance requirement. The generic reader recurses into it and
+   *      would publish `A` as a conformance target, which is a fabrication: `A` is bound by the
+   *      required type, not required BY the declaring type.
+   *
+   * ★ AND THE POSITION IS FOUND BY THE ":" TOKEN, NOT BY INDEX. The grammar spells a self type
+   *   `<self-name> [":" <type>] "=>"`, and a trailing block comment is a NAMED child too — the
+   *   measured shape `identifier | block_comment | : | type_identifier | block_comment | =>`
+   *   would make "the second named child" the comment.
+   *
+   * ★ AND A `self =>` WITH NO ":" IS NOT A CONFORMANCE. It binds a self NAME and requires
+   *   nothing: the measured shapes are 344 `identifier =>` and 2 `wildcard =>` against 671 that
+   *   carry a type, so this reader returns nothing for them and the `implements` row is not
+   *   published — a self name is not a conformance requirement.
+   *
+   * ★ AND A `structural_type` REQUIRED TYPE NAMES NO CONFORMANCE TARGET: `this: { def f: Int } =>`
+   *   (4 sites) describes a shape, and the members inside it are not types the declaring type
+   *   conforms to. It is refused rather than mined for a name.
+   */
+  private selfTypeRequiredTypeNames(st: Node): Array<{ name: string; line: number }> {
+    const out: Array<{ name: string; line: number }> = []
+    let colon = -1
+    for (let i = 0; i < st.childCount; i++) {
+      const c = st.child(i)
+      if (c && !c.isNamed && c.type === ":") { colon = i; break }
+    }
+    if (colon < 0) return out
+    let req: Node | null = null
+    for (let i = colon + 1; i < st.childCount; i++) {
+      const c = st.child(i)
+      if (!c || !c.isNamed) continue
+      if (c.type === "block_comment" || c.type === "comment") continue
+      req = c
+      break
+    }
+    if (!req) return out
+    if (req.type === "structural_type") return out
+    if (req.type === "singleton_type") {
+      // `IO.type` is `N:identifier A:. A:type`, `acme.Module.type` is
+      // `N:stable_identifier A:. A:type` and `acme.M.type` is
+      // `N:stable_type_identifier A:. A:type` — the target is the MODULE's name, and a
+      // qualified module keeps the FULL dotted spelling, per the cross-language convention.
+      for (let i = 0; i < req.namedChildCount; i++) {
+        const c = req.namedChild(i)
+        if (c && (c.type === "identifier" || c.type === "stable_identifier" || c.type === "stable_type_identifier")) {
+          const nm = stripScalaQuoting(c.text)
+          if (nm) out.push({ name: nm, line: c.startPosition.row + 1 })
+          return out
+        }
+      }
+      return out
+    }
+    // THE REQUIRED TYPE'S OWN NAME(S). A union (`A | B`) names two requirements; a type
+    // lambda's ARGUMENTS are not requirements, so `type_arguments` is not descended into.
+    const seen = new Set<string>()
+    const walk = (n: Node): void => {
+      if (n.type === "type_arguments" || n.type === "wildcard") return
+      if (n.type === "type_identifier" || n.type === "stable_type_identifier") {
+        const nm = stripScalaQuoting(n.text)
+        if (nm && !seen.has(nm)) {
+          seen.add(nm)
+          out.push({ name: nm, line: n.startPosition.row + 1 })
+        }
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(req)
+    return out
   }
 
   /** Extract supertypes from an extends_clause (direct type children in v0.26.2). */
