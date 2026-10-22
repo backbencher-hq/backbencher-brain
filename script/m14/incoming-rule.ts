@@ -2221,7 +2221,28 @@ export function classifyEdge(
     // is deliberately distinct from the name it shadows. **SO THE TIE-BREAK APPLIES ONLY TO A TARGET
     // THAT IS A PLAIN IDENTIFIER** — which is what a declaration can bind in production anyway ✓.
     if (ownFileDeclares === true && isPlainIdentifier(tgt)) {
-      return { outcome: "resolved", decls, kinds: kindText }
+      // THE CLAIM IS RECORDED HERE TOO (2026-10-21, Lead) — and this is a RECORDING GAP THE
+      // TYPESCRIPT LANE MEASURED AND REPORTED, not a change to any rule.
+      //
+      // THE TIE-BREAK IS THE ONE PATH WHERE A CLAIM ARRIVES ON A ROW THE PROJECT ALREADY HAS AN
+      // ANSWER FOR, and the disposition was being DROPPED: the ambiguous path at the end of this
+      // function attaches it, and this path returned before it could. So a claim that arrived here
+      // was NEITHER READ NOR RECORDED — the typescript lane measured 13 such moved rows, each
+      // carrying an `owner` claim, and could not say what became of the claim. **A CLAIM THAT
+      // ARRIVES AND IS DROPPED IS THE LAUNDERING SHAPE THIS PROGRAMME REFUSES**: the row reads as
+      // a plain resolution and the claim disappears with no trace.
+      //
+      // IT IS A RECORDING, NEVER AN OUTCOME: `tally` reads `claimOnAmbiguous` in the AMBIGUOUS
+      // branch alone, so NO COUNT IN THIS MODULE MOVES; and the standing rule already decides the
+      // row — the own file's declaration IS the project's answer, so a claim saying "this is
+      // external" is CONTRADICTED by the project's own file (`claimDispositionOnAmbiguous`'s generic
+      // branch: `ownFileDeclares === true` ⇒ "contradicted"). The typescript lane's own measurement
+      // agrees: 13 moved rows, the claim DISCARDED, not merged.
+      //
+      // AND A NON-AMBIGUOUS TARGET IS HANDLED HONESTLY: `decls <= 1` returns "unverified" with the
+      // claim's kind, because that is not the branch the function documents.
+      const claimOnAmbiguous = claimDispositionOnAmbiguous(declCount, tgt, claim, facts, ownFileDeclares, edgeFile)
+      return { outcome: "resolved", decls, kinds: kindText, ...(claimOnAmbiguous ? { claimOnAmbiguous } : {}) }
     }
     // ── THE QUALIFIED-NAME JOIN (2026-10-21, clojure lane) ─────────────────────────────────────────
     // PRODUCTION'S PROJECT-SCOPED QUALIFIED-NAME STRATEGY, AS ONE RULE. A target that is ALREADY
@@ -2352,6 +2373,19 @@ export type Outcomes = {
    * resolve. Two things under one word is a disclosure that misleads.
    */
   ambiguousWithClaim: Record<string, { verified: number; unverified: number; refuted: number; contradicted: number; ownFileSilent: number; notApplicable: number }>
+  /**
+   * THE CLAIMS THAT ARRIVED ON A ROW THE TIE-BREAK RESOLVED (2026-10-21, Lead) — the sibling of
+   * `ambiguousWithClaim`, and it exists because of a MEASURED gap: a claim that arrived on a row the
+   * project's OWN FILE already answered was DROPPED (neither read nor recorded), so a reader could
+   * not tell "no claim arrived" from "a claim arrived and was discarded". The typescript lane
+   * counted 13 such moved rows and could not say what became of their claims.
+   *
+   * **THE DISPOSITION IS THE STANDING RULE, NOT A NEW RULE:** the own file's declaration IS the
+   * project's answer, so an externality claim on such a row is CONTRADICTED. It is counted here so
+   * that "how many claim-carrying edges did the name model settle" is READABLE — a claim that is
+   * discarded is a fact about the lane's claims, and it is neither a resolution nor a defect.
+   */
+  resolvedWithClaim: Record<string, { verified: number; unverified: number; refuted: number; contradicted: number; ownFileSilent: number; notApplicable: number }>
 }
 
 /**
@@ -2370,6 +2404,7 @@ export const emptyOutcomes = (): Outcomes => ({
   ambiguousNames: [], unresolvedNames: [], refutedNames: [], causeNames: [],
   namesOmitted: { ambiguous: 0, unresolved: 0, refuted: 0, cause: 0 },
   ambiguousWithClaim: {},
+  resolvedWithClaim: {},
 })
 
 /**
@@ -2406,6 +2441,17 @@ export function tally(out: Outcomes, c: Classified, tgt: string, label: string):
       // one declaration in this key space is only AS resolved as production's tie-break — see
       // `Classified.boundAmongCollision`.
       if (c.boundAmongCollision === true) out.resolvedAmongCollision++
+      // THE CLAIM THAT ARRIVED AND WAS DISCARDED (2026-10-21, Lead) — counted HERE, where the
+      // outcome is counted, and it moves NO count: this is a NEW bucket beside `resolved`, never
+      // added to it. The row was resolved by the OWN FILE's declaration (production's own rule), and
+      // the claim on it was refuted by that same fact — the claim is recorded so the fact is
+      // readable, not so it can be applied.
+      if (c.claimOnAmbiguous) {
+        const { kind, disposition } = c.claimOnAmbiguous
+        const bucket = out.resolvedWithClaim[kind] ??
+          (out.resolvedWithClaim[kind] = { verified: 0, unverified: 0, refuted: 0, contradicted: 0, ownFileSilent: 0, notApplicable: 0 })
+        bucket[disposition]++
+      }
       break
     case "ambDeclOnly":
     case "ambBoth":

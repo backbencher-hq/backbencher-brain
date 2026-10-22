@@ -4011,6 +4011,74 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
         `  resolve it. Size the repairable work from the VERIFIED count, not the raw amb(decl) column.`,
       )
       console.log()
+      // ── THE CLAIMS THAT ARRIVED ON A ROW THE TIE-BREAK RESOLVED (2026-10-21, Lead) ──────────────
+      // THE SIBLING DISCLOSURE of the block above, and it exists because of a MEASURED gap: the
+      // typescript lane counted 13 moved rows that carried a claim, and the claim's disposition was
+      // DROPPED — the arbiter's tie-break path returned before the disposition could be attached, so
+      // a claim that arrived on a row the project already had an answer for left NO TRACE. The
+      // arbiter now RECORDS it (the outcome is untouched: `tally` reads the field in the AMBIGUOUS
+      // branch alone), and the standing rule already decided it — the own file's declaration IS the
+      // project's answer, so an externality claim there is CONTRADICTED.
+      //
+      // ⇒ AND THE READING IS THE POINT: a claim that arrives and is DISCARDED is a fact about the
+      // lane's claims, and it is neither a resolution nor a defect. It is the number a reader needs
+      // to size "how many claim-carrying edges did the name model settle", which was previously
+      // UNREADABLE — the shape this programme keeps finding and fixing.
+      {
+        type RBucket = { verified: number; unverified: number; refuted: number; contradicted: number; ownFileSilent: number; notApplicable: number }
+        const rzero = (): RBucket => ({ verified: 0, unverified: 0, refuted: 0, contradicted: 0, ownFileSilent: 0, notApplicable: 0 })
+        const rByKind = new Map<string, RBucket>()
+        let rWithClaim = 0
+        let rResolved = 0
+        for (const r of rep.rows.values()) {
+          rResolved += r.project.resolved
+          const src = r.project.resolvedWithClaim ?? {}
+          for (const k of Object.keys(src)) {
+            const b = src[k]
+            rWithClaim += b.verified + b.unverified + b.refuted + b.contradicted + b.ownFileSilent + b.notApplicable
+            const acc = rByKind.get(k) ?? rzero()
+            acc.verified += b.verified
+            acc.unverified += b.unverified
+            acc.refuted += b.refuted
+            acc.contradicted += b.contradicted
+            acc.ownFileSilent += b.ownFileSilent
+            acc.notApplicable += b.notApplicable
+            rByKind.set(k, acc)
+          }
+        }
+        const rtot = [...rByKind.values()].reduce((a, b) => ({
+          verified: a.verified + b.verified, unverified: a.unverified + b.unverified, refuted: a.refuted + b.refuted,
+          contradicted: a.contradicted + b.contradicted, ownFileSilent: a.ownFileSilent + b.ownFileSilent,
+          notApplicable: a.notApplicable + b.notApplicable,
+        }), rzero())
+        console.log(
+          `CLAIM-CARRYING RESOLVED EDGES — the tie-break's DISCARDED claims, recorded because they were\n` +
+          `DROPPED. A claim that arrived on a row the OWN FILE already answered is now RECORDED, and it\n` +
+          `moved no count: ${rWithClaim} of this lane's ${rResolved} resolved edge(s) carry a claim the\n` +
+          `tie-break settled — ${rtot.verified} VERIFIED · ${rtot.unverified} NOT verified · ` +
+          `${rtot.refuted} REFUTED · ${rtot.contradicted} CONTRADICTED · ${rtot.ownFileSilent} OWN-FILE-SILENT · ` +
+          `${rtot.notApplicable} n/a.`,
+        )
+        for (const [k, b] of [...rByKind.entries()].sort(
+          (x, y) => (y[1].verified + y[1].unverified + y[1].refuted + y[1].contradicted + y[1].ownFileSilent) -
+                    (x[1].verified + x[1].unverified + x[1].refuted + x[1].contradicted + x[1].ownFileSilent),
+        )) {
+          console.log(
+            `    ${w(k, 16)} VERIFIED ${b.verified} · not verified ${b.unverified} · REFUTED ${b.refuted}` +
+            ` · CONTRADICTED ${b.contradicted} · OWN-FILE-SILENT ${b.ownFileSilent} · n/a ${b.notApplicable}`,
+          )
+        }
+        if (rWithClaim === 0) console.log(
+          `    (none of this lane's ${rResolved} resolved edge(s) carries a claim the tie-break settled — a\n` +
+          `     MEASURED zero of the class, not an absent block.)`,
+        )
+        console.log(
+          `  A CLAIM IS NOT A RESOLUTION, AND A DISCARDED CLAIM IS NOT A DEFECT: the tie-break IS production's\n` +
+          `  own rule (the own file's declaration is the answer), so the claim is refuted rather than applied.\n` +
+          `  It is counted here so that "how many claim-carrying edges did the name model settle" is READABLE.`,
+        )
+        console.log()
+      }
     }
   }
 
