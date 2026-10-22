@@ -5469,6 +5469,55 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
     // #419-D evidence tiers on EVERY edge (family classifier).
     this.classifyEvidenceTier(relationships)
 
+    // ═══════════════════════════════════════════════════════════════════════════════════════════
+    // L-2026-10-21-01 — W4's FALSIFIER: THE MEMBER'S OWNER-QUALIFIED SPELLING, PUBLISHED.
+    //
+    // WHAT THE CENSUS MEASURED (whole admitted population, 871,129 residual rows, 30 repos,
+    // 7,366 files re-parsed — `script/m14/cpp-scope-form-census.ts`, artifact
+    // `.tmp-cpp/scope-form-fmt2.json`): the "::" form DECIDES 22,770 of 871,129 residual rows
+    // (2.61 %) — 7,670 unique-leaf and 15,100 many-leaf. A DECIDED class is a class-like OWNER
+    // that declares the member, so the deciding instrument's falsifier (the Lead's wording:
+    // "if bucket (B) > 0 … then W4's falsifier applies and you publish `qualifiedName` for cpp
+    // members and re-measure") IS IN SCOPE. Bucket (B) > 0. ⇒ THIS BLOCK IS THAT FALSIFIER.
+    //
+    // THE SPELLING CONTRACT. The cpp scope-resolution separator is `::` (`A::B`), NOT the dot
+    // (`A.B`) the analyzer's own OVERRIDE SOURCE uses (`Derived.f`, `FileChannel.open`). The
+    // owner-qualified variant of a member target is therefore `${owner}::${member}` — the same
+    // form the 75 spelling-contract forbid rows now pin.
+    //
+    // WHY IT IS SAFE BY CONSTRUCTION, AND WHY IT STILL HAS TO BE MEASURED. The arbiter's key
+    // space is a SET of identities per declaration (`incoming-gate.ts:1739-1777`): the bare
+    // `name`, the `qualifiedName`, and `metadata.fqn` are ALL counted, and the qualified name is
+    // counted AS THE SAME DECLARATION under a second key. So publishing `qualifiedName` on a
+    // member ADDS a key; it does not REPLACE the leaf key. An `A::B` target, which no key
+    // answered to before, now answers to a real declaration.
+    //
+    // THE ONE WAY THIS COULD HURT, STATED PLAINLY SO IT IS MEASURED RATHER THAN ASSUMED: the
+    // gate's BINDING COLLAPSE (`incoming-gate.ts:1963-1985`) collapses a leaf key to ONE
+    // declaration when every declaration of that key carries the SAME non-empty qualified name.
+    // Today a cpp member's `qualifiedName` IS its leaf (pool-worker's fallback), so the collapse
+    // condition (`symQual !== name`) is FALSE and a leaf key never collapses. Publishing
+    // `Owner::member` makes the condition TRUE for a leaf key whose declarations agree — and
+    // FALSE (differing names) for a leaf key whose declarations disagree, which is exactly the
+    // MANY-LEAF class the census decided. ⇒ the movement in BOTH directions is a MEASUREMENT,
+    // and the re-measurement is the census re-run over the new arm. This block publishes the
+    // spelling; it does not claim the movement.
+    //
+    // THE SCOPE OF THE PUBLICATION, and why it is not wider:
+    //   * a member (a symbol carrying an owner) gets `Owner::member`;
+    //   * a FILE-SCOPE symbol gets NOTHING (its qualified name stays the leaf through
+    //     pool-worker's own fallback) ⇒ no file-scope key space changes at all;
+    //   * a symbol that ALREADY carries a qualified name is left exactly as it is.
+    for (const sym of symbols) {
+      const owner = String((sym as any)?.ownerName ?? "").trim()
+      if (owner === "" || owner === "global") continue
+      const name = String((sym as any)?.name ?? "").trim()
+      if (name === "") continue
+      const existing = (sym as any)?.qualifiedName
+      if (typeof existing === "string" && existing !== "") continue
+      ;(sym as any).qualifiedName = `${owner}::${name}`
+    }
+
     return {
       symbols,
       relationships,

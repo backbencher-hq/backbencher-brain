@@ -372,7 +372,10 @@ if (Object.keys(buckets).length === 0) {
 const ANALYZER_SRC = path.join(ROOT, "src/ast/real-cpp-analyzer.ts")
 const analyzerSrc = fs.readFileSync(ANALYZER_SRC, "utf8")
 const analyzeBody = (() => {
-  const i = analyzerSrc.indexOf("async analyze(")
+  // the method is declared `analyze(` — NOT `async analyze(` — so the previous anchor could not
+  // match and the report printed "analyze() NOT FOUND" while the trigger-site count was taken
+  // over an EMPTY body. A zero over an empty body is not a measurement.
+  const i = analyzerSrc.search(/^\s{2}analyze\s*\(/m)
   if (i < 0) return ""
   // the method body, to its closing brace at the method's own indentation
   const start = analyzerSrc.indexOf("{", i)
@@ -388,8 +391,8 @@ const analyzeBody = (() => {
 })()
 const triggerSites = (analyzeBody.match(/acquireParser\s*\(|getParser\s*\(/g) ?? []).length
 const analyzeSignature = (() => {
-  const m = /async analyze\s*\(([^)]*)\)/.exec(analyzerSrc)
-  return m ? m[0].replace(/\s+/g, " ") : "NOT FOUND"
+  const m = /^\s{2}analyze\s*\(([^)]*)\)/m.exec(analyzerSrc)
+  return m ? m[0].replace(/\s+/g, " ").trim() : "NOT FOUND"
 })()
 
 const DELTA_SAMPLE_CAP = 400
@@ -402,7 +405,11 @@ const perType = (rels: any[]): Map<string, number> => {
   }
   return m
 }
-const directPath: any = await import(path.join(ROOT, "script/m14/run-fixtures.ts")).then((m: any) => m.getParser?.("cpp"))
+// getParser is ASYNC (`run-fixtures.ts:696`) — awaiting the MODULE and calling getParser without
+// awaiting ITS PROMISE yields a Promise, not a parser, so `directPath.parse(...)` was undefined
+// and EVERY direct call threw. That made the per-type delta a measurement over ZERO files
+// while still printing a table of production-path counts. Fixed and re-measured.
+const directPath: any = await (await import(path.join(ROOT, "script/m14/run-fixtures.ts"))).getParser("cpp")
 const deltaTypes = new Set<string>()
 const deltaProd = new Map<string, number>()
 const deltaDirect = new Map<string, number>()
@@ -455,8 +462,8 @@ let symlinkSource: string | null = null
 const DEN = argOf("--denominators")
 if (DEN && fs.existsSync(DEN)) {
   const d = JSON.parse(fs.readFileSync(DEN, "utf8"))
-  const paths = d?.population?.paths ?? d?.paths
-  const files = d?.population?.distinctFiles ?? d?.distinctFiles
+  const paths = d?.population?.paths ?? d?.paths ?? d?.denominators?.PATHS?.count
+  const files = d?.population?.distinctFiles ?? d?.distinctFiles ?? d?.denominators?.DISTINCT_FILES?.count
   if (typeof paths === "number" && typeof files === "number") {
     symlinkCount = paths - files
     symlinkSource = DEN
