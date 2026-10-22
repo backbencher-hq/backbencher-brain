@@ -2790,7 +2790,7 @@ class TypeScriptAnalysisRunner {
     // in the file (fields, params, returns, locals, interface members,
     // as-casts, instanceof checks) references its named types. Absent until
     // M14 — the corpus oracle never checked it.
-    this.extractDeclaredTypeRefs(rootNode, relationships)
+    this.extractDeclaredTypeRefs(rootNode, relationships, symbols)
 
     // DERIV_TS (2026-10-03): ONE mention, ONE label.
     //
@@ -4153,7 +4153,19 @@ class TypeScriptAnalysisRunner {
    * as_expression; instanceof checks as binary_expression with the
    * instanceof operator — both handled here with their own labels.
    */
-  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+  private extractDeclaredTypeRefs(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[] = [],
+  ): void {
+    // THE FILE's OWN SYMBOLS — the resolution gate for the `uses` surface below. A type mention
+    // of a name THIS FILE DOES NOT DECLARE is a `references` row and no `uses` row, because
+    // `uses` has always meant "the target resolves to something here". The gate is the file's own
+    // symbol table, never the project index: an imported name is not declared here, and the
+    // fixture `type-reference-uses-surfaces` pins BOTH halves of that gate (a declared type gets
+    // `uses`, an imported one does not).
+    const declaredHere = new Set<string>()
+    for (const sym of symbols) if (sym?.name) declaredHere.add(sym.name)
     const emitted = new Set<string>()
     const PRIMITIVES = new Set(["string", "number", "boolean", "any", "unknown", "never", "void", "object", "symbol", "bigint", "undefined", "null"])
 
@@ -4247,7 +4259,25 @@ class TypeScriptAnalysisRunner {
      * silence; it is a wrong one, and it was the only source in the graph that no
      * consumer could resolve.
      */
-    const resolveSource = (start: Node): string | null => {
+    // THE OWNING DECLARATIONS — the list is unchanged; what changed is that the owner is now
+    // returned WITH ITS NODE, because the `uses` surface below has to tell a DECLARATION that
+    // writes a type (an interface property, a type alias's right-hand side, a variable's
+    // annotation) from a FUNCTION that mentions one (a parameter, a return type). The two are
+    // different surfaces and the fixture pins them differently: the declaration-owned one carries
+    // `declaredTypeRole`, the function-scoped one carries `isTypeReference` and comes from the
+    // main pass.
+    const DECLARATION_OWNERS = new Set([
+      "class_declaration",
+      "class",
+      "abstract_class_declaration",
+      "interface_declaration",
+      "type_alias_declaration",
+      "enum_declaration",
+      "internal_module",
+      "module",
+      "variable_declarator",
+    ])
+    const resolveOwner = (start: Node): { name: string; node: Node } | null => {
       let p: Node | null = start.parent
       while (p) {
         if (
@@ -4265,12 +4295,13 @@ class TypeScriptAnalysisRunner {
           p.type === "variable_declarator"
         ) {
           const name = this.findNamedChild(p)
-          if (name) return name.text
+          if (name) return { name: name.text, node: p }
         }
         p = p.parent
       }
       return null
     }
+    const resolveSource = (start: Node): string | null => resolveOwner(start)?.name ?? null
 
     /**
      * `references` rows already in the SHARED relationship array, so this pass
@@ -4289,9 +4320,23 @@ class TypeScriptAnalysisRunner {
       if (rel.type === ASTEngine.RelationshipType.References) alreadyPublished.add(`${rel.source}|${rel.target}`)
     }
 
-    const emit = (source: string | null, roots: Node[], relType: string): void => {
+    const emit = (owner: { name: string; node: Node } | null, roots: Node[], relType: string): void => {
       // No owning declaration means no edge. See `resolveSource`.
-      if (source === null) return
+      if (owner === null) return
+      const source = owner.name
+      // THE ROLE OF THE OWNER — the declaration that WRITES the mention.
+      //
+      // `type_alias` for a type alias's right-hand side; `declared_type` for a declaration that
+      // writes a type some other way (an interface property, a variable's annotation, a class
+      // property); and NOTHING for a function or a method, because a function's parameter and
+      // return types are the OTHER surface — the one the main pass publishes with
+      // `isTypeReference`, and the one the fixture pins under that name.
+      const role: "declared_type" | "type_alias" | undefined =
+        owner.node.type === "type_alias_declaration"
+          ? "type_alias"
+          : DECLARATION_OWNERS.has(owner.node.type)
+            ? "declared_type"
+            : undefined
       for (const r of roots) {
         if (!r) continue
         // Expression-position targets (instanceof) lex as plain identifiers;
@@ -4321,6 +4366,40 @@ class TypeScriptAnalysisRunner {
             ...this.lineField(tNode),
             metadata: { relationshipType: relType },
           })
+          // THE DECLARATION-OWNED `uses` SURFACE.
+          //
+          // A type mention is a USE of the type it names, from EVERY declaration that can write
+          // one — not only from a function body. MEASURED: on 150 files of the corpus the
+          // oracle published 718 `uses` rows across 50 files that the analyzer did not publish,
+          // all of them from this surface, and that is larger than the `field` (113) and `expr`
+          // (19) terms of that label's whole disagreement combined.
+          //
+          // THE GATE, in both directions, and it is the gate that makes the row a `uses` row and
+          // not a `references` row: the target must be DECLARED IN THIS FILE. An imported name is
+          // not declared here, so a mention of it stays a `references` row alone.
+          //
+          // AND THE ROW DOES NOT CARRY `isTypeReference`, so the one-label ruling
+          // (`dropDuplicateTypeMentionLabels`) does not drop the `references` row beside it: the
+          // two rows are DIFFERENT surfaces (the position, and the use) and the fixture pins both.
+          //
+          // A SELF-MENTION IS NOT A USE: `interface Rec { next?: Rec }` mentions itself, and a
+          // `uses Rec -> Rec` row would be a declaration using itself. The fixture forbids it.
+          if (
+            role !== undefined &&
+            declaredHere.has(t) &&
+            t !== source &&
+            !alreadyPublished.has(`uses|${source}|${t}`)
+          ) {
+            alreadyPublished.add(`uses|${source}|${t}`)
+            relationships.push({
+              source,
+              target: t,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.9,
+              ...this.lineField(tNode),
+              metadata: { declaredTypeRole: role },
+            })
+          }
         }
       }
     }
@@ -4347,14 +4426,14 @@ class TypeScriptAnalysisRunner {
             }
             return false
             })()
-          emit(resolveSource(n), [n], isReturn ? "return_type" : "declared_type")
+          emit(resolveOwner(n), [n], isReturn ? "return_type" : "declared_type")
           break
         }
         case "as_expression": {
           if (n.namedChildCount >= 2) {
             const right = n.namedChild(n.namedChildCount - 1)
             if (!right) break
-            emit(resolveSource(n), [right], "cast_target")
+            emit(resolveOwner(n), [right], "cast_target")
           }
           break
         }
@@ -4370,7 +4449,7 @@ class TypeScriptAnalysisRunner {
             const right = n.namedChild(n.namedChildCount - 1)
             // Expression position: the target lexes as identifier, not
             // type_identifier — emit() handles both shapes.
-            if (right) emit(resolveSource(n), [right], "instanceof_check")
+            if (right) emit(resolveOwner(n), [right], "instanceof_check")
           }
           break
         }
@@ -4386,7 +4465,7 @@ class TypeScriptAnalysisRunner {
             // The value's own type_parameters (T, K) are bindings, not
             // references — collectTypeNames already skips nothing here, so
             // the RHS value node alone carries the referenced types.
-            emit(aliasName, [value], "type_alias")
+            emit({ name: aliasName, node: n }, [value], "type_alias")
           }
           break
         }
@@ -4395,7 +4474,7 @@ class TypeScriptAnalysisRunner {
           // lives in the first named child (type_arguments wrapper holds
           // the type_identifier(s)).
           const inner = n.namedChild(0)
-          if (inner) emit(resolveSource(n), [inner], "cast_target")
+          if (inner) emit(resolveOwner(n), [inner], "cast_target")
           break
         }
         case "type_arguments": {
@@ -4420,13 +4499,13 @@ class TypeScriptAnalysisRunner {
           if (inAnnotation) break
           const names: string[] = []
           collectTypeNames(n, names)
-          if (names.length > 0) emit(resolveSource(n), [n], "type_argument")
+          if (names.length > 0) emit(resolveOwner(n), [n], "type_argument")
           break
         }
         case "satisfies_expression": {
           // M14 #419 T5: x satisfies T — T is a type reference (TS 4.9).
           const last = n.namedChild(n.namedChildCount - 1)
-          if (last) emit(resolveSource(n), [last], "satisfies_target")
+          if (last) emit(resolveOwner(n), [last], "satisfies_target")
           break
         }
         // TYPE-PARAMETER CONSTRAINTS — `<T extends C>`. The type PARAMETER's own name is a
@@ -4452,11 +4531,11 @@ class TypeScriptAnalysisRunner {
           // row the mention pass publishes for the same position. The binding is forbidden by
           // `type-predicate-and-constraint-refs`' forbid rows (x is not a type).
           const predType = n.childForFieldName("type")
-          if (predType) emit(resolveSource(n), [predType], "type_predicate_target")
+          if (predType) emit(resolveOwner(n), [predType], "type_predicate_target")
           break
         }
         case "constraint": {
-          emit(resolveSource(n), [n], "type_parameter_constraint")
+          emit(resolveOwner(n), [n], "type_parameter_constraint")
           break
         }
       }
@@ -5334,6 +5413,15 @@ class TypeScriptAnalysisRunner {
       // Names exported by THIS statement (used for re-export dependency
       // records — see the sourceNode block below).
       const namesFromThisStatement: string[] = []
+      // THE NAMESPACE-EXPORT LOCAL BINDING — `export * as ns from "./ns"`.
+      //
+      // THE NAME ASKED FOR IS `*` (the WHOLE MODULE) and the LOCAL BINDING `ns` rides `alias`,
+      // which is the field `brain_import.imported_as` is read for. Recording `items: ["ns"]`
+      // instead asks "./ns" for a name "./ns" does not export — it is a question with no answer,
+      // and the import table is the table the module graph is built from. (The re-export's EXPORT
+      // name is still `ns` — that is a different question, and it is answered by the exports
+      // edge, which is unaffected.)
+      let namespaceAlias: string | undefined
 
       // Check for re-exports (export { x } from "y")
       const sourceNode = node.childForFieldName("source")
@@ -5369,6 +5457,7 @@ class TypeScriptAnalysisRunner {
           const nameNode = child.namedChild(child.namedChildCount - 1)
           if (nameNode) {
             foundNamed = true
+            namespaceAlias = nameNode.text
             namesFromThisStatement.push(nameNode.text)
             exports.push({
               name: nameNode.text,
@@ -5482,9 +5571,14 @@ class TypeScriptAnalysisRunner {
           reExportedNames.push("*")
         }
         if (reExportedNames.length > 0) {
+          // A NAMESPACE EXPORT asks the module for the MODULE, so the name ASKED FOR is `*` and
+          // the local binding rides `alias` — see `namespaceAlias` above. The other re-export
+          // shapes ask for the NAMES they list, and are unaffected.
+          const askedFor = namespaceAlias !== undefined ? ["*"] : reExportedNames
           this._pendingReExportImports.push({
             module: modulePath,
-            items: reExportedNames,
+            items: askedFor,
+            ...(namespaceAlias !== undefined ? { alias: namespaceAlias } : {}),
             isDefault: false,
             range: this.nodeRange(node),
             metadata: { reExport: true },

@@ -133,26 +133,45 @@ const sha256 = (p: string): string => {
  * **Every candidate that was checked is printed, and the one that matched is named**, so a
  * reader can see the resolution rather than take the digest on trust.
  */
+/**
+ * THE GRAMMAR'S RESOLUTION — THE ENGINE's OWN, NOT A COPY OF IT.
+ *
+ * **THE FIRST EDITION OF THIS FUNCTION WAS WRONG, AND THE OWNER's L-11 CAUGHT IT.** It built its
+ * own candidate list — `require.resolve(...)` FIRST, then `wasm/<file>`, then `node_modules/...` —
+ * and that order is NOT the engine's. The engine resolves through `resolveWasmAsset`
+ * (`src/util/wasm.ts:187`), which searches the candidate DIRECTORIES in ITS OWN order, and in this
+ * tree it lands on `wasm/tree-sitter-typescript.wasm` (sha 8515404d…) — the build the FIXTURE
+ * SUITE also loads — while `require.resolve` lands on the npm package's build (sha 778025db…).
+ *
+ * **⇒ SO THE CITATION WAS AGAINST A BUILD NOTHING LOADS.** The ruling's conclusion survived
+ * (neither build has a mixin or a part node type), but a citation that names a build the analyzer
+ * never sees is a citation about a different program. This function now calls the ENGINE's own
+ * resolver, and the resolution it took is printed with the ruling, so a reader can check the
+ * citation against the engine rather than against this file's opinion.
+ */
 function resolveGrammarWasm(relPath: string): { resolved: string; candidates: { p: string; hit: boolean }[] } {
   const { existsSync } = require("node:fs")
-  const candidates: string[] = []
-  try { candidates.push(require.resolve(relPath)) } catch { /* the candidate is still reported below */ }
-  const flat = relPath.split("/").pop() ?? relPath
-  const pkg = relPath.split("/")[0] ?? relPath
-  const file = relPath.split("/")[1] ?? flat
-  candidates.push(path.resolve(process.cwd(), "wasm", flat))
-  candidates.push(path.resolve(process.cwd(), "node_modules", pkg, file))
-  const seen = new Set<string>()
-  const out: { p: string; hit: boolean }[] = []
+  const { resolveWasmAsset } = require("../../src/util/wasm")
+  const candidates: { p: string; hit: boolean }[] = []
   let resolved = ""
-  for (const c of candidates) {
-    if (seen.has(c)) continue
-    seen.add(c)
-    const hit = existsSync(c)
-    out.push({ p: c, hit })
-    if (hit && !resolved) resolved = c
+  try {
+    resolved = resolveWasmAsset(relPath)
+    candidates.push({ p: resolved, hit: existsSync(resolved) })
+  } catch (e) {
+    candidates.push({ p: `resolveWasmAsset(${relPath}) THREW: ${(e as Error).message}`, hit: false })
   }
-  return { resolved, candidates: out }
+  // THE CANDIDATES THE ENGINE ITSELF WOULD HAVE CONSIDERED, printed so the resolution is CHECKABLE
+  // and not merely asserted: the wasm directories the engine searches, in its order.
+  const { bbWasmDirs } = require("../../src/util/bb-data-dir")
+  const flat = relPath.split("/").pop() ?? relPath
+  const seen = new Set<string>()
+  for (const dir of bbWasmDirs(path.resolve(process.cwd(), "src/util"))) {
+    const p = path.join(dir, flat)
+    if (seen.has(p)) continue
+    seen.add(p)
+    candidates.push({ p, hit: existsSync(p) })
+  }
+  return { resolved, candidates }
 }
 
 type Inventory = {
