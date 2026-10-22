@@ -140,7 +140,7 @@ async function inventoryOf(lang: string, spelling: string): Promise<Inventory> {
   named.sort()
   anon.sort()
   return {
-    spelling, registrySha, fileSha, resolvedPath, pathExists,
+    spelling, registrySha256: registrySha, fileSha256: fileSha, resolvedPath, pathExists,
     agree: registrySha !== null && fileSha !== null && registrySha === fileSha,
     totalIds, namedCount: named.length, named, anonymous: anon,
   }
@@ -181,7 +181,7 @@ for (const c of CONTROLS) {
     controlResults.push({
       lang: c.lang,
       spelling: c.spelling,
-      registrySha256: inv.registrySha,
+      registrySha256: inv.registrySha256,
       namedCount: inv.namedCount,
       totalIds: inv.totalIds,
       expected: c.expect,
@@ -200,8 +200,8 @@ const report = {
   generatedAt: new Date().toISOString(),
   grammar: {
     spelling: "tree-sitter-scala.wasm",
-    registrySha256: scala.registrySha,
-    fileSha256: scala.fileSha,
+    registrySha256: scala.registrySha256,
+    fileSha256: scala.fileSha256,
     resolvedPath: scala.resolvedPath,
     pathExists: scala.pathExists,
     agree: scala.agree,
@@ -216,8 +216,8 @@ const report = {
   controlsAllFired: controlResults.every((c) => c.controlFired === true),
   buildTest: {
     rule: "L-2026-10-21-05 — the SHA-256 of the bytes the REGISTRY SERVES, beside the node-type count enumerated from the SAME build",
-    registrySha256: scala.registrySha,
-    fileSha256: scala.fileSha,
+    registrySha256: scala.registrySha256,
+    fileSha256: scala.fileSha256,
     agree: scala.agree,
     namedCount: scala.namedCount,
     totalIds: scala.totalIds,
@@ -229,8 +229,8 @@ writeFileSync(OUT_PATH, JSON.stringify(report, null, 1))
 
 console.log(`SCALA PINNED-GRAMMAR INVENTORY`)
 console.log(`  spelling              ${scala.spelling}`)
-console.log(`  registry sha256       ${scala.registrySha ?? "(none served)"}`)
-console.log(`  file sha256           ${scala.fileSha ?? "(unreadable)"}`)
+console.log(`  registry sha256       ${scala.registrySha256 ?? "(none served)"}`)
+console.log(`  file sha256           ${scala.fileSha256 ?? "(unreadable)"}`)
 console.log(`  AGREE                 ${scala.agree ? "YES" : "NO — a citation on either digest would be FALSE"}`)
 console.log(`  resolved path         ${scala.resolvedPath}`)
 console.log(`  node type ids         ${scala.totalIds}`)
