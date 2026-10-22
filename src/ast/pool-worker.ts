@@ -933,7 +933,6 @@ export function filterNoiseRelationships(
     if (target.includes("\n")) return false
 
     const leaf = extractLeaf(target)
-    if (leaf.length > 80) return false
     const lower = leaf.toLowerCase()
 
     // Block targets that are clearly not valid symbol names. `$` is a valid
@@ -941,7 +940,47 @@ export function filterNoiseRelationships(
     // JS `$` bindings) — dropping it silently deleted legitimate Vue call
     // targets; template-literal garbage is still blocked via `{`, `}` and the
     // backtick, and `${x}` contains braces.
-    if (leaf.length > 80 || leaf.length < 1) return false
+    if (leaf.length < 1) return false
+    /* THE LEAF-LENGTH BUDGET IS GONE, AND IT WAS A PROXY FOR A SHAPE TEST (ruby lane, 2026-10-21).
+     *
+     * The budget was `leaf.length > 80`, and its stated intent was to reject a target that is a code
+     * SNIPPET. It was a LENGTH proxy for that intent, and the proxy is WRONG: a legal identifier can
+     * be arbitrarily long, and the corpus proves it.
+     *
+     * MEASURED BY THE RUBY LANE, WITH A CONTROL, OVER ITS OWN ADMITTED POPULATION: 4 edges that the
+     * analyzer DID emit were eaten by this filter — `overrides` and `contains` on
+     * `ExecutionFinalizeTest.test_multiple_offenses_for_non_null_position_without_intersecting_
+     * propagation_report_all_instances` and its sibling, leaf lengths 98, 96, 98 and 96. The CONTROL
+     * is what makes this a measurement and not a report: the same edges with a SHORT target are kept,
+     * so the analyzer emitted them and the filter ate them. The loss is SILENT — the edges are ABSENT
+     * from the graph rather than mis-bound, so no column and no count shows it.
+     *
+     * This is the SECOND lane to be bitten by this budget (php measured 1,132 edges dropped by the
+     * whole-target form of the same rule, which is why the test moved to the leaf at all), so it is
+     * the second measurement against it.
+     *
+     * THE REPLACEMENT IS A SHAPE TEST, AND IT IS THE INTENT STATED HONESTLY: a snippet is not long,
+     * it is not an IDENTIFIER. It carries characters an identifier cannot — whitespace, a quote, a
+     * comma, a parenthesis, an assignment — and those are the same characters that made the old
+     * length rule fire on real code. A long legal identifier carries none of them.
+     *
+     * WHAT IS REFUSED NOW, AND IT IS THE SAME CLASS OF THING:
+     *   - whitespace inside the leaf (a snippet is `foo (a, b)`, an identifier is `foo`)
+     *   - a quote, a comma, a parenthesis, an equals sign
+     *   - and everything the tests below already refused: braces, a backtick, angle brackets, a
+     *     newline, a tab, a leading space, a double space.
+     * The operator-name rule below is unchanged and still exempts a leaf made SOLELY of operator
+     * characters, so ruby's `<=>` still passes — and THIS test carries that same exemption inline,
+     * because an operator name is full of `=` and `<` and `>` and would otherwise be refused here
+     * before the operator rule below ever saw it. (The proof caught exactly that: the first run of
+     * `script/m14/leaf-length-proof.ts` refused 8 of the 12 operator names, because `<=>` contains
+     * `=` and the shape test fired before the operator rule. A proof that fails is worth more than a
+     * proof that was never run.)
+     *
+     * WHAT IS NO LONGER REFUSED: a long legal identifier, in any language, at any length. There is no
+     * length at which a legal name stops being legal, so no length cap can be correct.
+     */
+    if (/[\s'"(),=]/.test(leaf) && !/^[<>=!+\-*/%^&|~]+$/.test(leaf)) return false
     // THE ANGLE-BRACKET BAN, AND WHY IT MUST NOT BE UNCONDITIONAL (ruby lane, 2026-10-21).
     //
     // `<` and `>` are banned because a target carrying them is usually a SNIPPET or a template
