@@ -1650,8 +1650,18 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       const membersByName = new Map<string, Set<string>>()
       const addKey = (m: Map<string, string[]>, k: string, v: string[]) => {
         const cur = m.get(k)
-        if (cur) m.set(k, [...cur, ...v])
-        else m.set(k, v)
+        // APPEND IN PLACE. This used to be `m.set(k, [...cur, ...v])` — a full COPY of the
+        // accumulated array on every add, which is O(N^2) when many records share one key. MEASURED
+        // 2026-10-23 by the dart lane: dart-sdk's `ranges-and-escaped-hyphens_test.dart` (4 KB,
+        // admitted offset 17,656) made the gate never return (>560 s with the index, >150 s without)
+        // while the grammar parsed it in 13 ms and the analyzer ran it in 214 ms — and the gate
+        // finishes that SAME file in seconds when it is run ALONE, because the cost is the
+        // ACCUMULATED record set and not the file. Its content is character-class literals, so many
+        // emitted names begin with `[`, `leaf()` strips at `[`, and they collapse onto one key.
+        // => A ONE-LINE ALGORITHMIC DEFECT IN A SHARED INSTRUMENT LOOKS EXACTLY LIKE A HANG IN
+        // SOMEONE ELSE'S ANALYZER.
+        if (cur) { for (const x of v) cur.push(x) }
+        else m.set(k, v.slice())
       }
       for (const r of recs) {
         if (r.ownerName) {
