@@ -2300,6 +2300,21 @@ function svelteRuneInvocationDropped() {
   })
 }
 
+function svelteRevertRendersToInstantiates() {
+  // 2026-10-23 — THE PRE-MIGRATION STATE: every SFC template render goes back to `instantiates`.
+  // Selective on the SFC provenance marker (`isComponentUsage` is written ONLY by the three template
+  // emission sites; the delegate's script `new` rows never carry it), so the delegate's own
+  // `instantiates` rows survive and a failure is attributable to the render relation rather than to
+  // the seam. This is the negative of the both-directions fixture: it must turn svelte/renders-
+  // component-tags RED, because that fixture forbids `instantiates Card/Widget/Panel.Root`.
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((e: any) =>
+      e.type === "renders" && e?.metadata?.isComponentUsage === true ? { ...e, type: "instantiates" } : e,
+    ),
+  })
+}
+
 function tomlErrorNodeBecomesSymbol() {
   return (r: any) => {
     const mod = (r.symbols ?? []).find((s: any) => s?.kind === "module")
@@ -15593,6 +15608,14 @@ export const MUTANTS: Mutant[] = [
     defectClass: "underclaim",
     description: "D7: rune invocations are dropped. A named function handed to a rune that INVOKES its argument ($effect, $effect.pre, $effect.root, $effect.untracked, $derived.by, $host) is a call site, so a component that runs `fn` on every effect tick must say so in its graph — before the ruling these six forms emitted nothing, because the delegate suppresses the rune and the argument is an ordinary identifier no edge was made for. Selective rather than blanket: a blanket 'drop every calls edge' would be caught by any fixture and would prove nothing about D7. Only edges carrying the rune-pass marker are removed, so the js-delegate call inside `$effect(inlineCall())` and the D8 template-handler call both survive, which is what makes a failure attributable to the ruling rather than to the delegate. Caught by svelte/rune-invocations.",
     transform: svelteRuneInvocationDropped(),
+  },
+  {
+    id: "svelte/renders-reverted-to-instantiates",
+    language: "svelte",
+    defectClass: "misattribution",
+    description:
+      "2026-10-23 — THE PRE-MIGRATION STATE: every SFC template render goes back to `instantiates`. The extended value `renders` is the honest relation for a component tag — the source contains no `new`, so `instantiates` claimed an allocation site the file does not have (types.ts' Renders contract: NOT `instantiates`). The transform is selective on the SFC provenance marker: `isComponentUsage` is written ONLY by the three template emission sites, so the JS/TS delegate's script `new` rows (the rows `instantiates` KEEPS) survive untouched and a failure is attributable to the render relation rather than to the seam. Caught by svelte/renders-component-tags, which forbids `instantiates Card/Widget/Panel.Root` — the negative of the same both-directions pin, so a migration that renames both sides or neither is caught rather than only one.",
+    transform: svelteRevertRendersToInstantiates(),
   },
   {
     id: "go/local-type-declaration-dropped",

@@ -6,8 +6,11 @@
  * `on:` event handlers, props, reactive declarations and script imports/calls/exports are all read from
  * the AST, never from text. Fully regex-free.
  *
- * Relationship types it covers: instantiates (template component usages), calls (`on:` handlers and
- * script calls), imports, exports, contains, references, uses, extends, overrides and **implements**.
+ * Relationship types it covers: renders (template component usages — plain, dotted-namespace and
+ * dynamic `this=` tags), calls (`on:` handlers and script calls), imports, exports, contains,
+ * references, uses, extends, overrides and **implements**; its script-body delegate contributes
+ * `instantiates` (script `new` only, RENDERS is the SFC template relation), `decorates`, `mixes_in`
+ * and `part_of`, copied by the seam with `metadata.sfcDelegated`.
  * `implements` is load-bearing here: this lane emits class-heritage implements edges, and its contract
  * row was once MISSING the kind — the same shape as ruby's row. If the heritage handling below changes,
  * re-check that row: a kind emitted but absent from the row fails section B in the other direction.
@@ -487,7 +490,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: { isSvelteComponent: true, isSfc: true },
     })
 
-    // --- 2. Template pass: component usages → instantiates; on: → calls ------
+    // --- 2. Template pass: component usages → renders; on: → calls ------
     // Walk the SFC tree; skip <script>/<style> subtrees; every non-builtin
     // element tag is a component usage (leaf tag name as written). on: event
     // directives produce a call to the leaf handler identifier in the
@@ -797,7 +800,12 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
           relationships.push({
             source: moduleName,
             target: tag,
-            type: ASTEngine.RelationshipType.Instantiates,
+            // RENDERS, NOT INSTANTIATES (2026-10-23, extended vocabulary). A component tag creates
+            // an element the HOST RENDERER mounts; the source contains no `new`, so an
+            // `instantiates` edge claimed an allocation site the file does not have (types.ts'
+            // Renders contract). `instantiates` keeps its OWN sites: the JS/TS delegate's script
+            // `new` rows, copied by the seam below — the two relations stay distinct.
+            type: ASTEngine.RelationshipType.Renders,
             confidence: 0.95,
             // M59 (#825): the `<Child/>` tag as written.
             ...(tagNode ? { line_number: tagNode.startPosition.row + 1 } : {}),
@@ -1376,7 +1384,8 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         relationships.push({
           source: moduleName,
           target: tag,
-          type: ASTEngine.RelationshipType.Instantiates,
+          // RENDERS: the dotted tag is a component render, exactly like the plain tag above.
+          type: ASTEngine.RelationshipType.Renders,
           confidence: 0.9,
           ...(site.line > 0 ? { line_number: site.line } : {}),
           metadata: {
@@ -1418,7 +1427,8 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         relationships.push({
           source: moduleName,
           target: name,
-          type: ASTEngine.RelationshipType.Instantiates,
+          // RENDERS: a `<svelte:component this={X}/>` mounts X — a component render, not a `new`.
+          type: ASTEngine.RelationshipType.Renders,
           confidence: 0.95,
           // M59 (#825): the `this={X}` value's line. F22: the LAST site, kept
           // deliberately — see the site map's declaration.
@@ -3078,8 +3088,9 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /**
    * #419-D - evidence-tier classification for EVERY emitted relationship.
-   * Same rules as the Vue/JVM family. Template instantiates are
-   * usage_contextual (component usage by tag name).
+   * Same rules as the Vue/JVM family. Template RENDERS are
+   * usage_contextual (component usage by tag name); the delegate's script `new`
+   * `instantiates` rows keep their structural tier.
    */
   private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
     for (const r of relationships) {

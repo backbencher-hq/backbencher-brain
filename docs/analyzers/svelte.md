@@ -10,9 +10,10 @@ JavaScript/TypeScript sub-analyzer and merged back with corrected positions.
   from the file **stem**); `export let` props and `$props()` rune bindings
   (`property`); `$:` reactive targets (`variable`); snippets
   (`{#snippet name()}` → `method`) — plus everything the script sub-analyzer emits.
-- **Relationships** — `instantiates` (non-builtin template component usages),
-  `calls`, `contains`, and the script-side edges merged from the sub-analyzer
-  (`imports`, `exports`, `uses`, `references`, and the rest).
+- **Relationships** — `renders` (non-builtin template component usages: plain, dotted-namespace and
+  dynamic `this=` tags; the extended vocabulary's honest relation, since a component tag has no `new`
+  in the source), `calls`, `contains`, and the script-side edges merged from the sub-analyzer
+  (`imports`, `exports`, `uses`, `references`, `instantiates` for script `new`, and the rest).
 - **Payloads** — complexity (script cyclomatic **plus** template decision blocks
   from `{#if}/{:else if}/{#each}/{#await}/{#key}`), plus the sub-analyzer's
   `comments` and `qualified_calls`.

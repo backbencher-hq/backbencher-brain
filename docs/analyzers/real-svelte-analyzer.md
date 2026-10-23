@@ -48,7 +48,7 @@ over 512 KB. **19,247 symbols, 47,713 relationships**, plus 8,684 `imports[]`
 rows in 3,075 files (9,541 bound items, 1,362 distinct modules).
 
 **Sampled, not exhaustive.** The counts above are over the whole 6,439-file
-population. `instantiates` and `imports` dominate because they are what a Svelte
+population. `renders` and `imports` dominate because they are what a Svelte
 component library *is* — a template tag is an instantiation, and shadcn's
 registry is 1,878 components — which is a property of the format, not a defect.
 
@@ -63,7 +63,7 @@ which no emitter produces — that is the superseded v1 instrument, and
 
 | Relationship type | Verdict | Edges | Files | How resolved | Confidence model |
 | --- | --- | --- | --- | --- | --- |
-| instantiates | EMITTED | 12,857 | 2,618 | template pass: every non-builtin element tag → leaf tag name as written (`<Button />` → Button); builtin HTML tags and `svelte:` primitives filtered | 0.95 (12,753) / 1.0 (104) |
+| renders | EMITTED | 12,857 | 2,618 | template pass: every non-builtin element tag → leaf tag name as written (`<Button />` → Button); builtin HTML tags and `svelte:` primitives filtered. RELABELLED 2026-10-23 from `instantiates` (the pre-migration count above is from the same pass; the label is the extended vocabulary's `renders`) | 0.95 (12,753) / 1.0 (104) |
 | uses | EMITTED | 11,800 | 4,086 | template reads resolving to a name in scope, with `{#each}`/`{#await}`/`{#snippet}`/`{@const}` shadow tracking and the `$store` auto-subscription sigil | 0.95 (8,116) / 0.9 (1) / 0.85 (144) / **0.6 (3,539 — heuristic, see below)** |
 | imports | EMITTED | 9,525 | 3,068 | script `import` → `${modulePath}:${item}`; a namespace import is `mod:*` | 1.0 (9,521) / **0.6 (4 — heuristic)** |
 | contains | EMITTED | 6,566 | 2,962 | component/type/class ownership from `ownerName`, plus the JS delegate's interface-member and object-member containment | 1.0 |
@@ -179,7 +179,7 @@ workstream's lodash/ripgrep 2.5-4.8×, which measures a serialized response.
 - Runes (`$state`, `$derived`, `$props()`, `$effect`, …) are compiler
   keywords — never symbols; destructured `$props()` locals are params, not
   symbols (JS family contract)
-- Template components: non-builtin element tags → instantiates (leaf tag as
+- Template components: non-builtin element tags → renders (leaf tag as
   written) — `App.svelte` (`<Button/>`, `<Card/>`)
 - Events: `on:` directives → calls to the handler leaf — `Button.svelte`
   (`on:click`), `App.svelte` (`on:greet`), `UserList.svelte` (`on:select`)
