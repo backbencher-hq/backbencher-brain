@@ -515,7 +515,7 @@ const buildPreconditions = {
   },
   renders_sfcTemplateTag: {
     reachable: armOk("svelte-template-tag"),
-    via: "SFC template pass: capitalised component tag (currently published as instantiates — the migration job)",
+    via: "SFC template pass: capitalised component tag (published as `renders` since 03b776294; `instantiates` now names only the delegate's script `new`)",
   },
 }
 log("BUILD PRECONDITIONS — each extended type's emission path, checked against the SERVED grammars:")

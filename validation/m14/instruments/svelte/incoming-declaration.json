@@ -1,0 +1,514 @@
+{
+  "meta": {
+    "lang": "svelte",
+    "asked": "the fleet gate MEASURES svelte and exits 1 on its fleet-wide bar; this declaration RATCHETS the same measurement per type, so a class can only move deliberately.",
+    "instrument": "script/m14/incoming-gate.ts (single measurement; no second instrument)",
+    "instrumentVersion": "row schema: edges/resolved/collRes/amb(decl)/amb(kind)/unresolved/extOK/ext?/extFAIL/bindOK/bind?/bindFAIL/causeOK/causeFAIL",
+    "sample": 6147,
+    "corpusTotal": 6147,
+    "corpusRepos": 6,
+    "parsed": 6147,
+    "qualifiedNameAliases": 8160,
+    "metric": "ambiguous counted by DECLARATIONS (distinct-file declarations), not distinct kinds",
+    "analyzer": "src/ast/real-svelte-analyzer.ts",
+    "analyzerDigest": "sha256:659c7d46bd650055",
+    "generated": "2026-10-23",
+    "direction": "resolved and external are FLOORS (they may not decrease); ambiguous, otherUnresolved and unclassed are CEILINGS (they may not increase). The eleven terms partition the edges; the five buckets are their DECLARED COARSENING (see rules.classMapping).",
+    "population": "parsed=6147/6147 admitted=6147 exts=svelte index=no",
+    "populationNote": "THE POPULATION IS THE WHOLE ADMITTED SET, AND THE SAMPLE *IS* THE POPULATION: no stride, no subsample. Rule: git-tracked `*.svelte` per repository entry at the corpus root, then the 1 MiB per-file cap. Measured by this lane's census over $PWD/.corpus: 6147 admitted files, 6 repositories carrying one, 0 over the 1 MiB cap, 0 tracked-but-absent; corpus-root entries 202 (199 symlinked-dir entries + 3 real dirs), 202 distinct real paths, 0 duplicate entries deduplicated. The incoming artifact's own population line records the extension source.",
+    "classMapping": "resolved -> resolved; external -> extOK; ambiguous -> amb(decl); otherUnresolved -> every remaining eleven-term class (unresolved + bindOK + bind? + bindFAIL + ext? + extFAIL + causeOK + causeFAIL); unclassed -> 0 (ceiling). The eleven terms per type are published in `types_eleven` and the closure is exact.",
+    "grammarDigests": {
+      "svelte": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5",
+      "javascript": "63812b9e275d26851264734868d27a1656bd44a2ef6eb3e85e6b03728c595ab5",
+      "typescript": "8586372d50cbdc97dbcc1f8affe66028680a2fe8c9b1e608197587c3ac2c6ab3",
+      "typescriptBuildNote": "The TypeScript digest above is the build the delegate's script-body rows were measured under. The TS lane's R2 patched grammar (`8586372d\u2026`) is provisional \u2014 its own lane measured a regeneration drift on five non-target labels and the Lead reported the wiring is being withdrawn pending a v3 build. Every extended-type row below carries the build it was measured under."
+    },
+    "extendedTypesBuildScope": {
+      "decorates": {
+        "via": "delegate: TS/JS decorator nodes (a standard-grammar construct, not a patch)",
+        "reachable": true,
+        "corpusEdges": 1,
+        "corpusFact": {
+          "singleSite": true,
+          "admittedFiles": 6147,
+          "statement": "ONE edge over 6,147 admitted files \u2014 the only applied decorator the whole corpus carries; it arrives through the JS/TS delegation seam (provenance: delegate 1; sfc 0). It is CORPUS-EXERCISED, not zero-sites: the row is implemented, fires once, and is ambiguous against 445 declarations of `foo` \u2014 a fact a reader should see rather than a count absorbed into a denominator.",
+          "sample": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-decorator/input.svelte:2 Foo -> foo [delegate] conf=1 cls=?"
+        }
+      },
+      "renders": {
+        "via": "SFC template pass: capitalised component tag (currently published as instantiates \u2014 the migration job)",
+        "delegateJsxReachable": true,
+        "corpusEdges": 11512,
+        "sfcAndDelegateRows": "sfc 11512 / delegate 0 \u2014 the SFC template pass is the ONLY renders source in this language; the delegate's JSX branch cannot fire in an SFC script"
+      },
+      "mixes_in": {
+        "via": "delegate: call-shaped heritage `class X extends mix(Base)` (R3, no grammar change)",
+        "reachable": true,
+        "corpusEdges": 0,
+        "seam": "JS/TS delegate row copied by the SFC seam (metadata.sfcDelegated)"
+      },
+      "part_of": {
+        "via": "delegate: reference_directive node carrying role/target fields \u2014 served TS shape: reference_directive (PATCHED served build)",
+        "reachable": true,
+        "corpusEdges": 0,
+        "seam": "JS/TS delegate row copied by the SFC seam; emission path exists only on the PATCHED TS build (provisional wiring)"
+      }
+    },
+    "artifacts": {
+      "postChangeClosure": "validation/m14/measurements/svelte-head-incoming-table1-20261023T144224.txt",
+      "postChangeResidual": "validation/m14/measurements/svelte-head-residual-gate-20261023T144224.txt",
+      "censusMerged": "validation/m14/measurements/svelte-extended-census-20261023T150407.json",
+      "censusEmissionHalf": "validation/m14/measurements/svelte-head-extended-census-emission-20261023T150407.txt",
+      "censusConstructHalf": "validation/m14/measurements/svelte-head-extended-census-construct-20261023T150407.txt",
+      "censusMergeLog": "validation/m14/measurements/svelte-head-extended-census-merge-20261023T150407.txt",
+      "censusEmissionJson": "validation/m14/measurements/svelte-extended-census-emission-20261023T150407.json",
+      "censusConstructJson": "validation/m14/measurements/svelte-extended-census-construct-20261023T150407.json",
+      "beforeStateClosure": "validation/m14/measurements/svelte-head-incoming-table1-20261023T140837.txt",
+      "beforeStateResidual": "validation/m14/measurements/svelte-head-residual-gate-20261023T140837.txt"
+    },
+    "rendersMigration": {
+      "analyzerCommit": "03b776294",
+      "oraclePatchCommit": "44b33cf37",
+      "statement": "`renders` replaced the SFC template `instantiates` at the three column emission sites (plain tag, dotted-namespace tag, dynamic `this=`); `instantiates` KEEPS the JS/TS delegate's script `new` rows (seam provenance metadata.sfcDelegated). THE TOTAL DID NOT MOVE: a label moved and no edge was gained or lost.",
+      "before": {
+        "label": "PRE-change analyzer (before 03b776294)",
+        "instantiates": 11703,
+        "renders": 0,
+        "edges": 45243
+      },
+      "after": {
+        "label": "POST-change analyzer (03b776294 + oracle patch 44b33cf37)",
+        "instantiates": 191,
+        "renders": 11512,
+        "edges": 45243
+      },
+      "crossCheck": {
+        "resolved": "549 (pre instantiates) = 68 (post instantiates) + 481 (post renders)",
+        "unresolved": "9263 = 7 + 9256",
+        "ambiguous": "832 = 0 + 832",
+        "extOK": "945 = 2 + 943",
+        "bindOK": "114 = 114 + 0",
+        "reading": "every pre-change instantiates bucket splits cleanly across the two post-change rows \u2014 the migration renamed the relation, it did not create or destroy an edge"
+      },
+      "provenance": {
+        "renders": {
+          "sfc": 11512,
+          "delegate": 0
+        },
+        "instantiates": {
+          "sfc": 0,
+          "delegate": 191
+        }
+      }
+    },
+    "census": {
+      "population": "6147 admitted; 6144 non-empty files READ + 3 EMPTY + 0 unreadable = 6147 ATTEMPTED (the accounting equality held, and the instrument exits 5 when it does not)",
+      "productionParseFailures": 0,
+      "controlArms": "5/5 PASS (svelte template tag, ts decorator, ts call-shaped heritage, ts triple-slash in BOTH build shapes, js JSX)",
+      "constructLeg": {
+        "templateComponentTags": 17605,
+        "reservedNamespaceTags": 745,
+        "intrinsicTags": 18502,
+        "scriptBlocks": 5243,
+        "tsScriptBlocks": 1844,
+        "decorators": 1,
+        "decoratorsOnClass": 1,
+        "callShapedHeritageClasses": 0,
+        "referenceDirectiveNodes": 0,
+        "tripleSlashCommentNodes": 0,
+        "sfcParseFailures": 0,
+        "subParseFailures": 0
+      },
+      "legs": "SPLIT: the census runs its emission half and its construct half in SEPARATE PROCESSES and merges with a script that REFUSES unless both halves declare their leg and agree on population/grammars/build preconditions/control arms. Reason (measured): the legs INTERLEAVED hang the census reproducibly at admitted file #678 while each leg alone completes 700 files and that file takes 25 ms in isolation \u2014 the instrument's own combination after ~600 files, not a corpus defect.",
+      "instrumentTextCaveat": "The census's BUILD PRECONDITIONS sentence for renders_sfcTemplateTag still reads 'currently published as instantiates \u2014 the migration job' because that text was written before the migration landed at 03b776294; the census's own emission leg counts renders 11,512 (sfc 11,512 / delegate 0) in the same artifact, so the sentence is a pre-migration label, not a pre-migration count. The same sentence is corrected in the instrument source after this run; the artifact is left as generated.",
+      "grammarBuilds": {
+        "served": "svelte 3d601416b595 / javascript 63812b9e275d / typescript 8586372d50cb (the patched R2 build, provisonal \u2014 the TS lane measured a regeneration drift on non-target labels; the wiring is being withdrawn pending v3)",
+        "allExtendedEmissionPaths": "REACHABLE under the served build (BUILD PRECONDITIONS block, 5/5)"
+      }
+    },
+    "beforeState": {
+      "label": "PRE-CHANGE closure (analyzer before the renders migration; same corpus, same instrument)",
+      "artifact": "validation/m14/measurements/svelte-head-incoming-table1-20261023T140837.txt",
+      "residualArtifact": "validation/m14/measurements/svelte-head-residual-gate-20261023T140837.txt",
+      "edges": 45243,
+      "resolved": 20647,
+      "collRes": 5762,
+      "ambiguousByDeclaration": 1519,
+      "ambiguousByKind": 786,
+      "unresolved": 13757,
+      "external": 5640,
+      "bindOK": 3680,
+      "instantiates": 11703,
+      "renders": 0,
+      "role": "This is the BEFORE half of the pair. The declaration's `types`/`types_eleven` are the POST-change closure; this block exists so the `renders` claim is auditable as a MOVE (see meta.rendersMigration.crossCheck) rather than a count asserted from nowhere. A closure that predates the analyzer it describes is evidence, not a verdict \u2014 which is why the post-change one is the declaration and this one is the record."
+    }
+  },
+  "rules": {
+    "measurement": "one arm run over the whole admitted population, transcribed from its own artifact",
+    "population": "the whole admitted set; no stride and no subsample",
+    "direction": "resolved/external are FLOORS; ambiguous/otherUnresolved/unclassed are CEILINGS",
+    "elevenTerms": "resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges. THE FIVE-BUCKET FORM BELOW IS THE DECLARED COARSENING, each bucket summing to the type's edges with `unclassed` at 0; the eleven terms per type are in `types_eleven` so nothing is hidden by the coarsening.",
+    "classMapping": "resolved; external=extOK; ambiguous=amb(decl); otherUnresolved=everything else; unclassed=0",
+    "fourExtendedValues": "`decorates`, `renders`, `mixes_in`, `part_of` are the campaign's extended values. THIS LANE'S RESULT: decorates is implemented and corpus-EXERCISED (1 edge, delegate); renders is implemented in the SFC template pass (3 sites, plain/dotted/dynamic) and fires 11512 edges; mixes_in and part_of are implemented THROUGH THE JS/TS DELEGATION SEAM and are corpus-zero at the measured build \u2014 each disposition carries its count, its grammar build, and a run falsifier in causeRulings."
+  },
+  "types": {
+    "calls": {
+      "resolved": 1345,
+      "external": 264,
+      "ambiguous": 413,
+      "otherUnresolved": 1564,
+      "unclassed": 0
+    },
+    "uses": {
+      "resolved": 9708,
+      "external": 252,
+      "ambiguous": 255,
+      "otherUnresolved": 1257,
+      "unclassed": 0
+    },
+    "contains": {
+      "resolved": 6238,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "imports": {
+      "resolved": 0,
+      "external": 4104,
+      "ambiguous": 0,
+      "otherUnresolved": 4888,
+      "unclassed": 0
+    },
+    "references": {
+      "resolved": 344,
+      "external": 74,
+      "ambiguous": 0,
+      "otherUnresolved": 334,
+      "unclassed": 0
+    },
+    "exports": {
+      "resolved": 2456,
+      "external": 0,
+      "ambiguous": 18,
+      "otherUnresolved": 8,
+      "unclassed": 0
+    },
+    "extends": {
+      "resolved": 6,
+      "external": 1,
+      "ambiguous": 0,
+      "otherUnresolved": 9,
+      "unclassed": 0
+    },
+    "implements": {
+      "resolved": 1,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "overrides": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "instantiates": {
+      "resolved": 68,
+      "external": 2,
+      "ambiguous": 0,
+      "otherUnresolved": 121,
+      "unclassed": 0
+    },
+    "decorates": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 1,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "renders": {
+      "resolved": 481,
+      "external": 943,
+      "ambiguous": 832,
+      "otherUnresolved": 9256,
+      "unclassed": 0
+    },
+    "mixes_in": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "part_of": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    }
+  },
+  "types_eleven": {
+    "calls": {
+      "edges": 3586,
+      "resolved": 1345,
+      "collRes": 0,
+      "ambDecl": 413,
+      "ambKind": 241,
+      "unresolved": 776,
+      "extOK": 264,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 788,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    },
+    "uses": {
+      "edges": 11472,
+      "resolved": 9708,
+      "collRes": 0,
+      "ambDecl": 255,
+      "ambKind": 204,
+      "unresolved": 195,
+      "extOK": 252,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 1062,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    },
+    "contains": {
+      "edges": 6238,
+      "resolved": 6238,
+      "collRes": 5762,
+      "ambDecl": 0,
+      "ambKind": 0,
+      "unresolved": 0,
+      "extOK": 0,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 0,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    },
+    "imports": {
+      "edges": 8992,
+      "resolved": 0,
+      "collRes": 0,
+      "ambDecl": 0,
+      "ambKind": 0,
+      "unresolved": 3333,
+      "extOK": 4104,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 1555,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    },
+    "references": {
+      "edges": 752,
+      "resolved": 344,
+      "collRes": 0,
+      "ambDecl": 0,
+      "ambKind": 0,
+      "unresolved": 181,
+      "extOK": 74,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 153,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    },
+    "exports": {
+      "edges": 2482,
+      "resolved": 2456,
+      "collRes": 0,
+      "ambDecl": 18,
+      "ambKind": 11,
+      "unresolved": 3,
+      "extOK": 0,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 5,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    },
+    "extends": {
+      "edges": 16,
+      "resolved": 6,
+      "collRes": 0,
+      "ambDecl": 0,
+      "ambKind": 0,
+      "unresolved": 6,
+      "extOK": 1,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 3,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    },
+    "implements": {
+      "edges": 1,
+      "resolved": 1,
+      "collRes": 0,
+      "ambDecl": 0,
+      "ambKind": 0,
+      "unresolved": 0,
+      "extOK": 0,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 0,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    },
+    "overrides": {
+      "edges": 0,
+      "resolved": 0,
+      "collRes": 0,
+      "ambDecl": 0,
+      "ambKind": 0,
+      "unresolved": 0,
+      "extOK": 0,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 0,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    },
+    "instantiates": {
+      "edges": 191,
+      "resolved": 68,
+      "collRes": 0,
+      "ambDecl": 0,
+      "ambKind": 0,
+      "unresolved": 7,
+      "extOK": 2,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 114,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    },
+    "decorates": {
+      "edges": 1,
+      "resolved": 0,
+      "collRes": 0,
+      "ambDecl": 1,
+      "ambKind": 1,
+      "unresolved": 0,
+      "extOK": 0,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 0,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    },
+    "renders": {
+      "edges": 11512,
+      "resolved": 481,
+      "collRes": 0,
+      "ambDecl": 832,
+      "ambKind": 329,
+      "unresolved": 9256,
+      "extOK": 943,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 0,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    },
+    "mixes_in": {
+      "edges": 0,
+      "resolved": 0,
+      "collRes": 0,
+      "ambDecl": 0,
+      "ambKind": 0,
+      "unresolved": 0,
+      "extOK": 0,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 0,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    },
+    "part_of": {
+      "edges": 0,
+      "resolved": 0,
+      "collRes": 0,
+      "ambDecl": 0,
+      "ambKind": 0,
+      "unresolved": 0,
+      "extOK": 0,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 0,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0
+    }
+  },
+  "causeRulings": {
+    "corpus-zero:mixes_in": {
+      "population": "parsed=6147/6147 admitted=6147 exts=svelte index=no",
+      "what": "the census's construct leg counts CALL-SHAPED HERITAGE (`class X extends mix(Base)`) in a <script> block over the 6147 admitted .svelte files: 0 sites; the emission leg counts mixes_in edges over the same population: 0. The type is IMPLEMENTED \u2014 the JS/TS delegate emits it (real-javascript-analyzer.ts:819/884, real-typescript-analyzer.ts:8595) and the SFC seam copies it (proven on a controlled production probe, 1 row), and the deletion is corpus-zero, not a ruling against the language. Build precondition: delegate: call-shaped heritage `class X extends mix(Base)` (R3, no grammar change) \u2014 REACHABLE=yes under the served grammars (svelte 3d601416b595, javascript 63812b9e275d, typescript 8586372d50cb).",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/svelte-extended-census.ts --progress /tmp/svelte-census-progress.txt --out /tmp/svelte-extended-census.json",
+        "wouldFail": "a NON-ZERO construct.mixesIn.callShapedHeritageClasses, or a NON-ZERO emission.typeCounts.mixes_in, over the whole admitted population falsifies the corpus-zero disposition."
+      }
+    },
+    "corpus-zero:part_of": {
+      "population": "parsed=6147/6147 admitted=6147 exts=svelte index=no",
+      "what": "the census's construct leg counts TRIPLE-SLASH REFERENCE DIRECTIVES in a <script> block over the 6147 admitted .svelte files, in BOTH shapes the two builds produce: reference_directive nodes (the PATCHED served build) 0, and comment-shaped directives (an UNPATCHED build) 0; the emission leg counts part_of edges: 0. BUILD-SCOPED CLAIM: the emission path exists only when the served TypeScript grammar is the PATCHED build (the TS lane's R2 wiring, commit 09b0a45df; its own lane measured a regeneration drift, so the wiring is provisional). At this run the served shape was delegate: reference_directive node carrying role/target fields \u2014 served TS shape: reference_directive (PATCHED served build) \u2014 REACHABLE=yes. If the wiring is withdrawn, '0 sites under the patched build' and '0 sites under the served build' are DIFFERENT claims: the construct count would still be 0, but the emission path would be unreachable and this disposition would have to be re-stated against the settled build.",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/svelte-extended-census.ts --progress /tmp/svelte-census-progress.txt --out /tmp/svelte-extended-census.json",
+        "wouldFail": "a NON-ZERO directive count in EITHER shape, or a NON-ZERO emission.typeCounts.part_of, falsifies the corpus-zero disposition; and a census whose BUILD PRECONDITIONS block reports part_of REACHABLE='no' falsifies the BUILD half of this claim (it would then be a build fact, not a corpus fact)."
+      }
+    },
+    "corpus-zero:overrides": {
+      "population": "parsed=6147/6147 admitted=6147 exts=svelte index=no",
+      "what": "`overrides` is IMPLEMENTED (the JS/TS delegate emits it, the SFC seam copies and respells `<Base>.<member>` back to the owner spelling, real-svelte-analyzer.ts:1130-1157, and the fixture svelte/heritage-implements-overrides pins 4 rows) and the HEAD whole-population run fires 0 edges over 6147 admitted files: a corpus-zero fact, disclosed rather than counted as coverage.",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus npx tsx script/m14/incoming-gate.ts svelte 0 \u2192 TABLE 1 `overrides` row",
+        "wouldFail": "a NON-ZERO TABLE 1 `overrides` edge count falsifies the corpus-zero claim."
+      }
+    }
+  },
+  "resolution_caveats": [
+    "THE `resolved` BUCKET INCLUDES TIE-BREAK PICKS: collRes 5762 of 20647 resolved edges (27.9 %) are edges whose target had MORE THAN ONE declaration and production's tie-break chose the row. The fleet's own indexer measures 37,318 of 49,729 such picks as WRONG, so this lane's resolved is NOT comparable to a lane whose resolved bucket excludes tie-break picks. Every collRes edge is a `contains` edge in this run.",
+    "`ambiguous` COUNTS DECLARATIONS, NOT KINDS: 1519 by declaration, 786 by kind. The kind count is a SUBSET printed beside it and NEVER added. A number of 1,519 and a number of 786 are the same edges counted two ways.",
+    "`otherUnresolved` CARRIES THE WHOLE NON-RESOLUTION TAIL: 13757 unresolved + 3680 bindOK (targets SPELLED as a binding, `sep<callable>\\0<binding>` \u2014 no declaration can answer them, and they are NOT fabrication) + 0 ext? + 0 extFAIL + 0 cause. It is a backlog, not a proof that each name is third-party.",
+    "`instantiates` AFTER THE RENDERS MIGRATION NAMES ONLY CLASS CONSTRUCTION (script `new`, copied from the JS/TS delegate): 191 edges. The template component-tag relation moved to `renders` (11512 edges) because the source contains no `new` \u2014 the two relations are kept distinct on purpose, and BOTH directions are pinned by svelte/renders-component-tags.",
+    "THE FOUR EXTENDED VALUES CARRY THE BUILD THEY WERE MEASURED UNDER. `mixes_in` and `part_of` arrive through the JS/TS delegation seam (metadata.sfcDelegated: the SFC seam copies every delegate relationship), so their emission path depends on the served TypeScript grammar. At this run the served TS build was the PATCHED `8586372d\u2026` and the census's BUILD PRECONDITIONS block reported the emission paths REACHABLE; the wiring is provisional (the TS lane measured a regeneration drift on non-target labels), so `part_of`'s zero is stated as '0 sites under the patched build', and a build change requires re-running the census rather than reusing this number.",
+    "THE DELEGATION SEAM IS WHY A SOURCE-GREP CANNOT AUDIT THIS LANE: references/exports/implements are emitted by the JS/TS delegate and copied by the seam (measured: references 752, exports 2,482, implements 1 at HEAD), not written by real-svelte-analyzer.ts itself. Recorded as DEFECT FORM 9 in validation/m14/verification/SVELTE-STATE.md \u00a76."
+  ]
+}

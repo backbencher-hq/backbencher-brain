@@ -388,6 +388,10 @@
     ]
   },
   "coverage": {
+    "denominator": {
+      "n": 14,
+      "rule": "14 = the live vocabulary. The lane's language surface (Svelte SFC + JS/TS <script> bodies through the delegation seam) expresses ALL FOURTEEN values: 0 grammar-absence exclusions, 0 zero-sites exclusions on the 14-limb (a zero-sites class does NOT shrink this denominator \u2014 `overrides` is expressed and implemented and its corpus-zero is disclosed in `_implemented_measured`), 0 unclassified. applicable = 14."
+    },
     "implemented": [
       "calls",
       "uses",
@@ -397,46 +401,136 @@
       "exports",
       "extends",
       "implements",
-      "instantiates"
+      "overrides",
+      "instantiates",
+      "decorates",
+      "renders",
+      "mixes_in",
+      "part_of"
     ],
-    "excluded": [
+    "corpusUnexercised": [
       {
         "label": "overrides",
-        "evidence": "zero-sites",
-        "from": "WHOLE admitted population, production path: 6,147 parsed of 6,147 admitted .svelte files across 6 repos, 0 parse failures, and TABLE 1 prints the row `overrides 0` with all fifteen columns zero (validation/m14/measurements/task105/svelte-whole-population-incoming-table1.txt; the residual-gate closure for the same run is validation/m14/measurements/task105/svelte-whole-population-gate.txt, whose nine printed rows sum to its own TOTAL of 45,134). The construct EXISTS and the analyzer IMPLEMENTS it: the SFC seam copies every delegate relationship, and it READS `overrides` rows on purpose to respell their target from `<Base>.<member>` back to the owner spelling (src/ast/real-svelte-analyzer.ts:1118-1124), while the javascript delegate emits them at src/ast/real-javascript-analyzer.ts:1600 and :1687. The lane's own fixtures assert 4 `overrides` edges across validation/m14/fixtures/svelte/relationship-kinds.expectation.json and heritage-implements-overrides.expectation.json. The corpus fires it 0 times in 6,147 files.",
-        "quote": "constructible and implemented, exercised ZERO times by this corpus — zero-sites, disclosed rather than counted as coverage; it stays in the denominator"
+        "evidence": "corpus-unexercised",
+        "from": "MEASURED over the whole admitted population (6147 parsed of 6147 admitted, 6 repositories): emission leg: 0 edge(s) over 6147 admitted files; the analyzer implements the type and the fixture svelte/heritage-implements-overrides pins 4 rows. Artifacts: validation/m14/measurements/svelte-head-incoming-table1-20261023T144224.txt (TABLE 1) and validation/m14/measurements/svelte-extended-census.json (construct leg + build preconditions). "
+      },
+      {
+        "label": "mixes_in",
+        "evidence": "corpus-unexercised",
+        "from": "MEASURED over the whole admitted population (6147 parsed of 6147 admitted, 6 repositories): call-shaped heritage (`class X extends mix(Base)`) AST sites in <script> blocks: 0 over 6147 admitted files; emission leg: 0 edge(s). Artifacts: validation/m14/measurements/svelte-head-incoming-table1-20261023T144224.txt (TABLE 1) and validation/m14/measurements/svelte-extended-census.json (construct leg + build preconditions). BUILD PRECONDITION: delegate: call-shaped heritage `class X extends mix(Base)` (R3, no grammar change) \u2014 reachable=True. "
+      },
+      {
+        "label": "part_of",
+        "evidence": "corpus-unexercised",
+        "from": "MEASURED over the whole admitted population (6147 parsed of 6147 admitted, 6 repositories): triple-slash reference directives in <script> blocks, BOTH build shapes: reference_directive nodes 0 (patched served build) + comment-shaped 0 (unpatched build), over 6147 admitted files; emission leg: 0 edge(s); served TS grammar 8586372d50cb \u2014 part_of emission REACHABLE=True. Artifacts: validation/m14/measurements/svelte-head-incoming-table1-20261023T144224.txt (TABLE 1) and validation/m14/measurements/svelte-extended-census.json (construct leg + build preconditions). BUILD PRECONDITION: delegate: reference_directive node carrying role/target fields \u2014 served TS shape: reference_directive (PATCHED served build) \u2014 reachable=True. "
       }
     ],
-    "corpusUnexercised": [],
-    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. WHOLE admitted population on the production path (`npx tsx script/m14/residual-gate.ts --lane svelte`): 6,147 parsed of 6,147 admitted .svelte files across 6 repos, 0 parse failures. NINE types fire, each measured with its own count: calls 3,591 · uses 11,403 · contains 6,239 · imports 8,972 · references 727 · exports 2,482 · extends 16 · implements 1 · instantiates 11,703 — TOTAL 45,134, exactly the sum of the nine printed rows. ONE TYPE IS zero-sites, NOT an exclusion from the denominator: `overrides` is implemented (the seam reads and respells the rows, the delegate emits them, two fixtures pin them) and fires 0 times on this corpus, so it stays IN `applicable` as a disclosed measured zero. THE 120-FILE FIRING LOG'S SILENCE IS REFUTED ON TWO OF ITS THREE TYPES BY THE WHOLE POPULATION, and this is the fourth lane this programme has caught in the same class: validation/m14/results/firing-laptop-b.current.log line 78 reads `SVELTE ... SILENT (constructible but produced nothing): extends implements overrides` over 120 files, while the whole admitted population fires `extends` 16 edges and `implements` 1 edge. A stride sample invents absences; the log prints only the 120 files it read and states no corpus total, while the admitted population measured here is 6,147 files. ARITHMETIC: 9 implemented + 0 corpus-unexercised + 1 gap (overrides, measured zero-sites) = 10 applicable = 10 − 0 grammar-absence − 0 unclassified. The `gap.gaps` entries above are NODE-TYPE work items and are NOT rewritten by this block: X5 and X8 remain OPEN and neither is a ruling about a relationship type, so nothing here closes or contradicts them.",
+    "excluded": [],
+    "gaps": [],
+    "_from": "DERIVED 2026-10-23 from the HEAD whole-population run at the CURRENT analyzer (the post-`renders` code): population 6147 parsed of 6147 admitted (6 repositories), 0 parse failures; TABLE 1 eleven-term closure EXACT: resolved 20647 + ambDecl 1519 + unresolved 13757 + bindOK 3680 + bindQ 0 + bindFAIL 0 + extOK 5640 + extQ 0 + extFAIL 0 + causeOK 0 + causeFAIL 0 = 45243 edges; collRes 5762 and amb(kind) 786 printed BESIDE and never added. THE FOURTEEN-LIMB ARITHMETIC: 14 implemented + 0 corpus-unexercised-only + 0 gaps = 14 applicable. `overrides` is IMPLEMENTED and CORPUS-ZERO: it is counted once inside `implemented` with the zero printed as a property of the row (`_implemented_measured.overrides._why`), following the csharp precedent \u2014 it is NOT an exclusion. `decorates` is implemented and corpus-EXERCISED (1 edge). `renders` is the SFC template relation (3 emission sites: plain, dotted-namespace, dynamic `this=`), `instantiates` keeps the delegate's script `new` rows (191 edges). ARTIFACTS: validation/m14/measurements/svelte-head-incoming-table1-20261023T144224.txt \u00b7 validation/m14/measurements/svelte-extended-census.json \u00b7 validation/m14/verification/SVELTE-STATE.md. BUILD SCOPE: extended-type rows that arrive through the JS/TS seam were measured under svelte 3d601416b595 / javascript 63812b9e275d / typescript 8586372d50cb (the patched R2 build \u2014 provisional; see the census BUILD PRECONDITIONS block).",
     "_implemented_measured": {
-      "_unit": "edges published through the production path over the WHOLE admitted 6,147-file svelte population (6 repos, 0 parse failures) — CLOSURE block of validation/m14/measurements/task105/svelte-whole-population-gate.txt, whose nine per-type rows sum to its own TOTAL of 45,134",
+      "_unit": "edges published through the production path over the WHOLE admitted svelte population (6147 parsed of 6147 admitted, 6 repositories) \u2014 TABLE 1 of validation/m14/measurements/svelte-head-incoming-table1-20261023T144224.txt, whose per-type eleven-term rows sum to 45243; construct leg + build preconditions in validation/m14/measurements/svelte-extended-census.json",
       "calls": {
-        "edges": 3591
+        "edges": 3586,
+        "resolved": 1345,
+        "ambiguous": 413,
+        "unresolved": 776,
+        "external": 264
       },
       "uses": {
-        "edges": 11403
+        "edges": 11472,
+        "resolved": 9708,
+        "ambiguous": 255,
+        "unresolved": 195,
+        "external": 252
       },
       "contains": {
-        "edges": 6239
+        "edges": 6238,
+        "resolved": 6238,
+        "ambiguous": 0,
+        "unresolved": 0,
+        "external": 0
       },
       "imports": {
-        "edges": 8972
+        "edges": 8992,
+        "resolved": 0,
+        "ambiguous": 0,
+        "unresolved": 3333,
+        "external": 4104
       },
       "references": {
-        "edges": 727
+        "edges": 752,
+        "resolved": 344,
+        "ambiguous": 0,
+        "unresolved": 181,
+        "external": 74
       },
       "exports": {
-        "edges": 2482
+        "edges": 2482,
+        "resolved": 2456,
+        "ambiguous": 18,
+        "unresolved": 3,
+        "external": 0
       },
       "extends": {
-        "edges": 16
+        "edges": 16,
+        "resolved": 6,
+        "ambiguous": 0,
+        "unresolved": 6,
+        "external": 1
       },
       "implements": {
-        "edges": 1
+        "edges": 1,
+        "resolved": 1,
+        "ambiguous": 0,
+        "unresolved": 0,
+        "external": 0
+      },
+      "overrides": {
+        "edges": 0,
+        "resolved": 0,
+        "ambiguous": 0,
+        "unresolved": 0,
+        "external": 0,
+        "_why": "zero is a measurement here, not an absence: the construct leg in validation/m14/measurements/svelte-extended-census.json counts the construct and finds 0 sites (emission leg: 0 edge(s) over 6147 admitted files; the analyzer implements the type and the fixture svelte/heritage-implements-overrides pins 4 rows); the type remains IMPLEMENTED \u2014 the emission path is proven by a controlled production probe and pinned by fixtures (see SVELTE-STATE.md \u00a75.1)"
       },
       "instantiates": {
-        "edges": 11703
+        "edges": 191,
+        "resolved": 68,
+        "ambiguous": 0,
+        "unresolved": 7,
+        "external": 2
+      },
+      "decorates": {
+        "edges": 1,
+        "resolved": 0,
+        "ambiguous": 1,
+        "unresolved": 0,
+        "external": 0,
+        "_rowProperty": "single-site: ONE edge over 6,147 admitted files \u2014 exercised, not zero-sites; the only applied decorator the whole corpus carries (delegate provenance)"
+      },
+      "renders": {
+        "edges": 11512,
+        "resolved": 481,
+        "ambiguous": 832,
+        "unresolved": 9256,
+        "external": 943
+      },
+      "mixes_in": {
+        "edges": 0,
+        "resolved": 0,
+        "ambiguous": 0,
+        "unresolved": 0,
+        "external": 0,
+        "_why": "zero is a measurement here, not an absence: the construct leg in validation/m14/measurements/svelte-extended-census.json counts the construct and finds 0 sites (call-shaped heritage (`class X extends mix(Base)`) AST sites in <script> blocks: 0 over 6147 admitted files; emission leg: 0 edge(s)); the type remains IMPLEMENTED \u2014 the emission path is proven by a controlled production probe and pinned by fixtures (see SVELTE-STATE.md \u00a75.1)"
+      },
+      "part_of": {
+        "edges": 0,
+        "resolved": 0,
+        "ambiguous": 0,
+        "unresolved": 0,
+        "external": 0,
+        "_why": "zero is a measurement here, not an absence: the construct leg in validation/m14/measurements/svelte-extended-census.json counts the construct and finds 0 sites (triple-slash reference directives in <script> blocks, BOTH build shapes: reference_directive nodes 0 (patched served build) + comment-shaped 0 (unpatched build), over 6147 admitted files; emission leg: 0 edge(s); served TS grammar 8586372d50cb \u2014 part_of emission REACHABLE=True); the type remains IMPLEMENTED \u2014 the emission path is proven by a controlled production probe and pinned by fixtures (see SVELTE-STATE.md \u00a75.1)"
       }
     }
   }
