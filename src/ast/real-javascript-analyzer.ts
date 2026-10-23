@@ -267,9 +267,33 @@ function jsProjectModuleLocalityOf(index: { modules?: Set<string> }): (spec: str
  * arbiter's own plain-identifier test (charter §21.41's own-file tie-break) uses the same shape:
  * a target that is not a plain identifier cannot name a declaration, so binding it would fabricate
  * a resolution.
+ *
+ * ⇒⇒⇒ AND THIS TEST IS NOW READ OFF THE GRAMMAR RATHER THAN RE-DECIDED FROM THE TEXT ✓✓ (2026-10-22).
+ *
+ * WHAT IT REPLACED, AND WHY THE REPLACEMENT IS STRICTLY BETTER ✓✓: it used to be
+ * `/^#?[\p{L}\p{Nl}_$][\p{L}\p{Nl}\p{Nd}\p{Mn}\p{Mc}\p{Pc}_$]*$/u` — ECMAScript's own
+ * `IdentifierName`, spelled out in Unicode property classes ✓✓. It was CORRECT, and it was the last
+ * regex in this analyzer's resolution path, which the owner's sixth criterion forbids ✓✓.
+ *
+ * ⇒⇒⇒ AND THE HONEST ANSWER WAS NOT TO REWRITE THE UNICODE CLASSES BY HAND ✓✓. A hand-written
+ * version needs a range table for `\p{L}`, `\p{Nl}`, `\p{Nd}`, `\p{Mn}`, `\p{Mc}` and `\p{Pc}` —
+ * **a second table that diverges from Unicode's**, which is the fleet's own recurring defect ✓✓.
+ *
+ * ⇒⇒⇒ ⇒⇒⇒ **THE ANALYSIS WAS ALREADY DONE, BY THE GRAMMAR.** Every callee arrives as a tree-sitter
+ * node whose TYPE the parser had already decided ✓✓: an `identifier` IS a valid IdentifierName, a
+ * `property_identifier` is one, and a `private_property_identifier` is the `#` clause ✓✓. The
+ * analyzer was re-deciding, from a STRING, a question the parser had answered with MORE information
+ * ✓✓. ⇒ **READ THE NODE TYPE ✓✓.**
+ *
+ * ⇒⇒⇒ WHAT THIS CATCHES THAT THE REGEX COULD NOT ✓✓: a source-text callee can never arrive wearing
+ * an identifier node type ✓✓, so the class the fixture `javascript/non-name-callee-refused` pins is
+ * refused by STRUCTURE rather than by spelling ✓✓. The cheap text guards that remain
+ * (`length > 100`, newline, backtick, `${`, braces) stay beside it for error-recovered text ✓✓.
  */
-function isNameLikeCallTarget(text: string): boolean {
-  return /^#?[\p{L}\p{Nl}_$][\p{L}\p{Nl}\p{Nd}\p{Mn}\p{Mc}\p{Pc}_$]*$/u.test(text)
+const NAME_NODE_TYPES = new Set(["identifier", "property_identifier", "private_property_identifier"])
+
+function isNameNode(node: any): boolean {
+  return !!node && NAME_NODE_TYPES.has(String(node.type ?? ""))
 }
 
 function hasBraceEquals(text: string): boolean {
@@ -2554,9 +2578,17 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           let targetName = fn.text
           let fullCallee = fn.text
           let skip = false
+          // ⇒⇒⇒ THE NODE THE NAME CAME FROM ✓✓ — read its TYPE instead of re-deciding the word ✓✓.
+          // A bare callee is its own name node; a member callee's name is its PROPERTY node ✓✓, which
+          // is what carries the `#` of a private method (`this.#tick` ⇒ `private_property_identifier`)
+          // ✓✓. Anything else keeps `fn` and fails the node test, which is the refusal ✓✓.
+          let nameNode: any = fn
           if (fn.type === "member_expression") {
             const prop = fn.childForFieldName("property")
-            if (prop) targetName = prop.text
+            if (prop) {
+              targetName = prop.text
+              nameNode = prop
+            }
           } else if (fn.type === "subscript_expression") {
             // Computed/dynamic member calls (o[key](...), o["key"]()) are
             // not clean call targets — skip (family contract)
@@ -2570,7 +2602,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             targetName.includes("`") ||
             targetName.includes("${") ||
             hasBraceEquals(targetName) ||
-            !isNameLikeCallTarget(targetName)
+            !isNameNode(nameNode)
           ) {
             // malformed call from error recovery, or a callee that is SOURCE TEXT rather than a name
             // — `(fn)`, `(0, helper.other)`, `(cond ? a : b)` (fixture
