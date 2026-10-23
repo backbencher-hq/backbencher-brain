@@ -1,0 +1,33 @@
+--- .tmp-ts/r2probe/common/define-grammar.js	2026-10-22 18:49:19.623779244 -0400
++++ .tmp-ts/r2patch/common/define-grammar.js	2026-10-22 18:52:03.446496223 -0400
+@@ -131,6 +131,30 @@
+       ]),
+ 
+     rules: {
++      // ⇒⇒⇒ THE LANE'S PATCH (R2), AND IT IS TWO RULES AND ONE PROGRAM. A triple-slash reference
++      // directive is lexed by the SERVED build as a COMMENT, so the construct has no node and no
++      // relation can be read from the tree. This makes it a NODE that carries its ROLE and its
++      // TARGET as FIELDS, so the analyzer reads STRUCTURE and never a comment's text — which is the
++      // difference between a relation and a pattern match.
++      //
++      // THE `token(prec(20, '///'))` IS LOAD-BEARING: the comment token `//` also matches the first
++      // two characters and, being an extra, is valid at every position, so without the precedence
++      // the comment wins the lexer and the directive disappears into it.
++      reference_directive: $ => seq(
++        token(prec(20, '///')),
++        '<reference',
++        field('role', $.reference_role),
++        '=',
++        field('target', $.reference_target),
++        optional('/'),
++        '>',
++      ),
++      reference_role: _ => choice('path', 'types', 'lib'),
++      reference_target: _ => /"[^"\n]*"/,
++      program: $ => seq(
++        optional($.hash_bang_line),
++        repeat(choice($.statement, $.reference_directive)),
++      ),
+       public_field_definition: $ => seq(
+         repeat(field('decorator', $.decorator)),
+         optional(choice(
