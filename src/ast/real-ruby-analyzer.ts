@@ -917,6 +917,16 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // The alias NAME's own node travels with its text: the edge is named by
         // the new name, and `alias a b` writes that name on this line.
         const nameNodes: Node[] = []
+        // THE OLD NAME MAY NOT BE AN IDENTIFIER — `alias store []=` aliases a SETTER, and
+        // `alias plus +` aliases an OPERATOR. The rule used to REQUIRE two identifier-shaped
+        // names, so an alias whose OLD name was a setter or an operator published NOTHING at
+        // all — and the row the oracle publishes for the new name was then a MISSING row.
+        // MEASURED: `rack/lib/rack/headers.rb:117` is `alias store []=`, and the analyzer
+        // published no `calls` row for it while the oracle published `calls:store`.
+        // ⇒ THE NEW NAME IS WHAT THE EDGE IS NAMED BY, AND IT IS READABLE WHATEVER THE OLD
+        // NAME'S SHAPE. The old name is kept as the edge's `aliasedTo` METADATA when it is
+        // readable, and the edge is published either way.
+        let oldName: string | undefined
         for (let i = 0; i < node.namedChildCount && names.length < 2; i++) {
           const c = node.namedChild(i)
           if (!c) continue
@@ -928,16 +938,20 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             // published with a backslash in it.
             const n = this.rubyNameFromLiteral(c)
             if (n !== undefined && n.length > 0) { names.push(n); nameNodes.push(c) }
+          } else if (names.length === 1 && oldName === undefined) {
+            // THE OLD NAME, WHATEVER ITS SHAPE: an operator or a setter name is a legal
+            // alias target, and the edge's `aliasedTo` metadata should say so.
+            oldName = c.text
           }
         }
-        if (names.length === 2) {
+        if (names.length >= 1) {
           relationships.push({
             source: owner || FILE_SCOPE_OWNER,
             target: names[0],
             type: ASTEngine.RelationshipType.Calls,
             confidence: 0.9,
             line_number: this.nodeLine(nameNodes[0]),
-            metadata: { aliasedTo: names[1], keywordAlias: true },
+            metadata: { aliasedTo: names[1] ?? oldName ?? "", keywordAlias: true },
           })
         }
         continue
@@ -2294,6 +2308,30 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // class, so there is nothing to re-source it TO, and a row that cannot be attributed is
         // not a fact. ⇒ THE CAMPAIGN'S OWN RULE APPLIES: A FABRICATED EDGE IS WORSE THAN A
         // MISSING ONE, BECAUSE A MISSING ONE IS A GAP AND A FABRICATED ONE IS A LIE.
+        return
+      }
+      // ⇒ AND THE OWNER MUST BE NAMABLE — THE FOURTH IMPOSTOR CLASS, AND THE ONE THE THREE-WAY
+      // SCOPE AGREEMENT FOUND. The composition goes into the class that `self` IS — and when the
+      // enclosing scope names NO class, that class is ANONYMOUS, so the row's source would have to
+      // be a name for it, and there is none. The row was published with `source: owner ||
+      // FILE_SCOPE_OWNER` — "Global" — and "Global" is NOT what happens: MEASURED over the whole
+      // admitted population, **20 published `mixes_in` rows were a composition into an anonymous
+      // `Class.new { }` block attributed to "Global"**, e.g.
+      // `rack/test/spec_utils.rb:33` (`instance = Class.new { include Rack::Utils … }.new`) and
+      // `gql-ruby/spec/graphql/schema/interface_spec.rb:58`
+      // (`Class.new(GraphQL::Schema::Object) do include(Jazz::GloballyIdentifiableType) end`).
+      //
+      // ⇒ THE WAY IT WAS FOUND IS THE POINT: the ORACLE (`script/m14/ruby-truth.ts`) refused those
+      // 20 sites on its OWN rule — the namable-owner rule every member edge already uses — while
+      // the analyzer published them. The two are INDEPENDENT derivations (the oracle carries the
+      // answer in its walk frame; the analyzer walks the AST's parent links), so their
+      // disagreement was a FINDING rather than a tautology. ⇒ A truth copied from the analyzer
+      // would have agreed by construction and the 20 rows would have survived.
+      //
+      // ⇒ MEASURED: the analyzer's published `mixes_in` rows over the 989-file admitted population
+      // go 416 → 396, and the three readings then agree at EVERY ONE of the 543 mixin sites with
+      // a constant argument (`script/m14/ruby-mixin-scope-agreement.ts`).
+      if (!owner) {
         return
       }
 
