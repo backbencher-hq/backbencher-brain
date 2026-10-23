@@ -674,6 +674,32 @@ export namespace ASTEngine {
   }
 
   // Resolve WASM file paths (enhanced version)
+  /**
+   * ── PATCHED-GRAMMAR OVERRIDES: A COMMITTED, DIGEST-PINNED PER-LANGUAGE SERVING PATH ──────────
+   *
+   * WHY THIS EXISTS, MEASURED 2026-10-23. The typescript lane built and PROVED an R2 grammar patch
+   * (a `reference_directive` node carrying `role`/`target`, so `/// <reference path=… />` reaches the
+   * analyzer as a construct instead of recovery text), then measured its regeneration control at
+   * **0 non-target files of 207** — every other label identical on the population the comparison can
+   * judge. IT COULD NOT BE SERVED: `resolveWasm` resolves `tree-sitter-typescript/tree-sitter-
+   * typescript.wasm` through `require.resolve` into node_modules, which is UNTRACKED — so the patch
+   * would not exist on a fresh checkout, `npm ci` would erase it, and the campaign's rule is that the
+   * code must stay on the remote.
+   *
+   * ⇒ AND THE OBVIOUS FIX WAS WRONG: making `wasm/` first for EVERY language would re-point **67
+   * grammars** at once. So this table names ONE file at a time, and each entry carries the sha256 of
+   * THE BYTES IT EXPECTS. A file whose digest does not match is NOT served — the resolver falls
+   * through to the normal path and says so — because A DIGEST THAT IS NOT CHECKED IS A COMMENT.
+   *
+   * TO ADD AN ENTRY you must (1) commit the .wasm under `wasm/`, (2) record its sha256 here, and
+   * (3) publish the behavioural proof and the regeneration control with the numbers. A grammar is
+   * cited by the digest of the bytes the resolver HANDS THE PARSER, never by a path — a path is how
+   * this fleet cited the wrong typescript build for three rounds.
+   */
+  const PATCHED_GRAMMAR_SHA256: Record<string, string> = {
+    "tree-sitter-typescript.wasm": "b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335",
+  }
+
   function resolveWasm(relativePath: string): string {
     const fs = require("fs")
     const path = require("path")
@@ -715,6 +741,33 @@ export namespace ASTEngine {
     const siblingPath = `${execDir}/${flatWasmName}`
     if (fs.existsSync(siblingPath)) {
       return siblingPath
+    }
+
+    // ── PATCHED GRAMMAR? served from the repo's own wasm/ IF AND ONLY IF its digest matches ────
+    // Placed BEFORE `require.resolve` because that call is what reaches node_modules, and a patch
+    // living in an untracked dependency directory is not a campaign deliverable. The digest check is
+    // the whole safety: a mismatched file falls through to the normal resolution rather than being
+    // served on trust.
+    {
+      const pinned = PATCHED_GRAMMAR_SHA256[flatWasmName]
+      if (pinned) {
+        try {
+          const repoWasm = path.resolve(
+            path.dirname(require("url").fileURLToPath(import.meta.url)), "..", "..", "wasm", flatWasmName,
+          )
+          if (fs.existsSync(repoWasm)) {
+            const crypto = require("crypto")
+            const actual = crypto.createHash("sha256").update(fs.readFileSync(repoWasm)).digest("hex")
+            if (actual === pinned) return repoWasm
+            log.warn(
+              `resolveWasm: REFUSING the pinned patched grammar ${flatWasmName} — its bytes are ${actual.slice(0, 16)}… ` +
+              `but the table pins ${pinned.slice(0, 16)}…. Falling through to the dependency tree.`,
+            )
+          }
+        } catch (e) {
+          log.debug("resolveWasm: patched-grammar probe failed", { error: (e as Error)?.message })
+        }
+      }
     }
 
     // For node_modules packages, resolve relative to this package
