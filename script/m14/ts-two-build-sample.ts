@@ -30,7 +30,11 @@ const argv = process.argv.slice(2)
 const want = Number(argv.find((a) => a.startsWith("--files="))?.slice("--files=".length) ?? 300)
 const jsonOut = argv.find((a) => a.startsWith("--json="))?.slice("--json=".length)
 
-const SERVED = join(REPO, "script/m14/ts-grammar-patch/tree-sitter-typescript-served.wasm")
+// ⇒ THE BASELINE IS THE BYTES THE RESOLVER ACTUALLY HANDS THE PARSER, not a path someone believes is
+// served: `getParser("typescript")` logs node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm
+// (778025db…), and `wasm/` is NOT in the serving path for this language in this checkout.
+const SERVED = argv.find((a) => a.startsWith("--served="))?.slice("--served=".length)
+  ?? join(REPO, "node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm")
 const PATCHED = argv.find((a) => a.startsWith("--patched="))?.slice("--patched=".length)
   ?? join(REPO, "wasm/tree-sitter-typescript.wasm")
 
@@ -66,7 +70,16 @@ for (const f of admitted.files) {
   else rest.push(f)
 }
 const stride = strideSample(rest, Math.max(0, want - withDirective.length))
-const sample = [...withDirective, ...stride].sort()
+// ⇒⇒⇒ THE SAMPLE EXCLUDES JSX FILES, AND THE REASON IS THE INSTRUMENT'S OWN LIMIT RATHER THAN A
+// CONVENIENCE. The two builds compared here are both the TYPESCRIPT grammar; a `.tsx` file needs the
+// TSX grammar, so parsing one with either build is a parse neither build is meant to do — and any
+// difference in such a file is an artefact of THIS INSTRUMENT, not of the grammar swap. Left in, a
+// single `.tsx` file with a parse difference reported as "a non-`part_of` label moved", which is how
+// this instrument once accused a clean patch of moving five labels. ⇒ A COMPARISON THAT CANNOT BE
+// MADE ON A SUBSET MUST NOT BE MADE AND THEN REPORTED AS A RESULT.
+const sample = [...withDirective, ...stride]
+  .filter((f) => !f.toLowerCase().endsWith(".tsx") && !f.toLowerCase().endsWith(".jsx"))
+  .sort()
 
 const counts = (lang: any, f: string, content: string): Record<string, number> | null => {
   const parser = new ParserCls()
