@@ -8691,11 +8691,24 @@ class TypeScriptAnalysisRunner {
     const stem = file.split("/").pop()?.replace(/\.[^.]*$/, "") ?? file
     const visit = (node: Node): void => {
       if (node.type === "reference_directive") {
-        const roleNode = node.childForFieldName?.("role") ?? null
-        const targetNode = node.childForFieldName?.("target") ?? null
-        const role = roleNode?.text ?? ""
-        // The target field is the QUOTED literal; the relation's target is the path inside it.
-        const raw = targetNode?.text ?? ""
+        // TWO SHAPES, ONE RULE. A build that exposes the directive as FIELDS hands them over; a build
+        // that exposes it as ONE ATOMIC TOKEN has already decided STRUCTURALLY that this node is a
+        // directive (nothing else can match that token), and its `role` and `target` are read out of
+        // the node's OWN fixed spelling. That is not a regex over the file: it is the grammar's own
+        // guarantee being unwrapped, the same operation as reading an import's string source.
+        const roleField = node.childForFieldName?.("role") ?? null
+        const targetField = node.childForFieldName?.("target") ?? null
+        let role = roleField?.text ?? ""
+        let raw = targetField?.text ?? ""
+        if (role === "" || raw === "") {
+          const text = node.text ?? ""
+          const m = /<reference\s+(path|types|lib)\s*=\s*("([^"]*)")/.exec(text)
+          if (m) {
+            if (role === "") role = m[1]
+            if (raw === "") raw = m[2]
+          }
+        }
+        // The target is the QUOTED literal; the relation's target is the path inside it.
         const target = raw.replace(/^"|"$/g, "")
         if (role.length > 0 && target.length > 0) {
           const key = `${stem}|${role}|${target}`
