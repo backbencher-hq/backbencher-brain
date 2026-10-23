@@ -9,6 +9,8 @@
   ],
   "c": [
     "calls",
+    "contains",
+    "exports",
     "imports",
     "references",
     "uses"
@@ -20,19 +22,30 @@
   "clojure": [
     "calls",
     "contains",
+    "exports",
+    "imports",
+    "overrides",
     "references",
     "uses"
   ],
   "cpp": [
     "calls",
+    "contains",
+    "exports",
+    "imports",
+    "overrides",
+    "references",
     "uses"
   ],
   "csharp": [
     "calls",
     "contains",
+    "exports",
     "extends",
     "implements",
+    "imports",
     "instantiates",
+    "overrides",
     "references",
     "uses"
   ],
@@ -47,17 +60,25 @@
     "contains",
     "exports",
     "imports",
+    "mixes_in",
     "overrides",
+    "part_of",
     "references",
     "uses"
   ],
   "elixir": [
     "calls",
-    "references"
+    "contains",
+    "exports",
+    "imports",
+    "references",
+    "uses"
   ],
   "erlang": [
     "calls",
     "contains",
+    "exports",
+    "imports",
     "references",
     "uses"
   ],
@@ -71,7 +92,9 @@
   "go": [
     "calls",
     "contains",
+    "exports",
     "imports",
+    "overrides",
     "references",
     "uses"
   ],
@@ -82,22 +105,35 @@
   "haskell": [
     "calls"
   ],
+  "hcl": [
+    "calls",
+    "exports",
+    "imports",
+    "references",
+    "uses"
+  ],
   "html": [
     "contains",
+    "imports",
     "uses"
   ],
   "java": [
     "calls",
     "contains",
+    "exports",
+    "imports",
     "references",
     "uses"
   ],
   "javascript": [
     "calls",
     "contains",
+    "decorates",
     "exports",
     "imports",
+    "mixes_in",
     "references",
+    "renders",
     "uses"
   ],
   "julia": [
@@ -109,6 +145,24 @@
   "kotlin": [
     "calls",
     "contains",
+    "exports",
+    "imports",
+    "references",
+    "uses"
+  ],
+  "lua": [
+    "calls",
+    "contains",
+    "exports",
+    "extends",
+    "imports",
+    "overrides"
+  ],
+  "make": [
+    "calls",
+    "contains",
+    "exports",
+    "imports",
     "references",
     "uses"
   ],
@@ -121,11 +175,17 @@
     "references",
     "uses"
   ],
+  "perl": [
+    "calls",
+    "contains"
+  ],
   "php": [
     "calls",
     "contains",
     "exports",
     "imports",
+    "mixes_in",
+    "part_of",
     "references",
     "uses"
   ],
@@ -139,6 +199,7 @@
   "python": [
     "calls",
     "contains",
+    "decorates",
     "exports",
     "imports",
     "references",
@@ -146,17 +207,28 @@
   ],
   "ruby": [
     "calls",
+    "contains",
+    "exports",
+    "imports",
+    "mixes_in",
+    "references",
     "uses"
   ],
   "rust": [
     "calls",
     "contains",
+    "exports",
+    "imports",
+    "overrides",
     "references",
     "uses"
   ],
   "scala": [
     "calls",
     "contains",
+    "exports",
+    "imports",
+    "mixes_in",
     "references",
     "uses"
   ],
@@ -170,11 +242,17 @@
     "calls",
     "contains",
     "exports",
+    "imports",
     "references",
     "uses"
   ],
+  "sql": [
+    "contains",
+    "references"
+  ],
   "svelte": [
-    "calls"
+    "calls",
+    "imports"
   ],
   "swift": [
     "calls",
@@ -189,11 +267,27 @@
   "typescript": [
     "calls",
     "contains",
+    "decorates",
+    "exports",
+    "imports",
     "references",
+    "renders",
     "uses"
   ],
   "vue": [
-    "calls"
+    "calls",
+    "imports"
+  ],
+  "xml": [
+    "contains"
+  ],
+  "yaml": [
+    "calls",
+    "contains",
+    "exports",
+    "imports",
+    "references",
+    "uses"
   ],
   "zig": [
     "calls",
