@@ -308,6 +308,7 @@ type Arm = {
     samples: string[]
     claimKinds: Map<string, number>
     claimCarryingSamples: string[]
+    dispositions: Map<string, number>
   }
   /** THE SAME TABLE WITH THE TIE-BREAK DISABLED — the second, independent derivation. */
   tableNoTie: Record<string, number[]>
@@ -368,6 +369,7 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
     samples: [] as string[],
     claimKinds: new Map<string, number>(),
     claimCarryingSamples: [] as string[],
+    dispositions: new Map<string, number>(),
   }
   /** THE SAME TABLE, THE SAME ROWS, THE TIE-BREAK DISABLED — the second derivation. Its row
    *  vectors are allocated where `TYPES` is declared, because `TYPES` is a `const` and a use
@@ -699,9 +701,16 @@ const runArm = async (useIndex: boolean): Promise<Arm> => {
         // and the tie-break then resolved the row on the NAME model. The claim is therefore not
         // MERGED into the resolution — it is DISCARDED on it. Both facts are recorded here.
         if (claim !== null) {
+          // THE DISPOSITION — after the Lead's change (the arbiter attaches `claimOnAmbiguous` on
+          // the tie-break path), a moved row CARRIES the claim's verdict instead of dropping it.
+          // It is read off the SAME `classifyEdge` result the row's outcome came from, so it is
+          // the arbiter's own disposition and not this instrument's opinion of it.
+          const disp = (c as any).claimOnAmbiguous as { kind?: string; disposition?: string } | undefined
+          const dispText = disp ? `${disp.kind}/${disp.disposition}` : "(NO DISPOSITION ATTACHED)"
+          tieBreak.dispositions.set(dispText, (tieBreak.dispositions.get(dispText) ?? 0) + 1)
           if (tieBreak.claimCarryingSamples.length < 20) {
             tieBreak.claimCarryingSamples.push(
-              `${rec.label} ${rec.source} -> ${rec.target} @ ${rec.file}:${rec.line}  claim=${claim.kind}/${(claim as any).specifier ?? "-"}  (${k})`,
+              `${rec.label} ${rec.source} -> ${rec.target} @ ${rec.file}:${rec.line}  claim=${claim.kind}/${(claim as any).specifier ?? "-"}  disposition=${dispText}  (${k})`,
             )
           }
           tieBreak.claimKinds.set(claim.kind, (tieBreak.claimKinds.get(claim.kind) ?? 0) + 1)
@@ -1019,6 +1028,14 @@ console.log(`  below it are the instrument's OWN falsifier.`)
   for (const [kind, v] of [...tieBreak.claimKinds.entries()].sort((a, b) => b[1] - a[1])) {
     console.log(`      claim kind ${kind.padEnd(18)} ${String(v).padStart(6)}`)
   }
+  console.log(`    THE DISPOSITIONS THE ARBITER NOW ATTACHES TO THE MOVED CLAIM-CARRYING ROWS:`)
+  if (tieBreak.dispositions.size === 0) console.log(`      (none — no moved row carried a claim)`)
+  for (const [d, v] of [...tieBreak.dispositions.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`      disposition ${d.padEnd(30)} ${String(v).padStart(6)}`)
+  }
+  const withDisp = [...tieBreak.dispositions.entries()].filter(([d]) => !d.startsWith("(NO"))
+  const total = withDisp.reduce((a, [, v]) => a + v, 0)
+  console.log(`    THE MOVED CLAIM-CARRYING ROWS THAT NOW CARRY A DISPOSITION: ${total} of ${tieBreak.movedCarryingClaim}`)
   for (const s2 of tieBreak.claimCarryingSamples) console.log(`        e.g. ${s2}`)
 
   // ── THE FALSIFIER: TWO INDEPENDENT DERIVATIONS MUST AGREE ──────────────────────────────────
