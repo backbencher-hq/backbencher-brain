@@ -14,27 +14,39 @@ the population contains **51 directives in 35 files** of 17,689.
 
 ## WHAT THE PATCH IS
 
-**One rule and one program**, in the derived grammar
-(`common/define-grammar.js`, which extends `tree-sitter-javascript`'s grammar):
+**One rule and one program**, in the derived grammar (`common/define-grammar.js`, which extends
+`tree-sitter-javascript`'s grammar), and the rule is **ONE ATOMIC TOKEN** for the whole directive:
 
-* a `reference_directive` node that carries **`role`** (`path` · `types` · `lib`) and **`target`**
-  (the quoted specifier) as **FIELDS**, so an analyzer reads STRUCTURE and never a comment's text;
-* `program` admits it at statement level, beside the ordinary statements.
+```
+reference_directive: token(prec(20, /\/\/\/\s*<reference\s+(?:path|types|lib)\s*=\s*"[^"\n]*"\s*\/?>/))
+program: seq(optional($.hash_bang_line), repeat(choice($.statement, $.reference_directive)))
+```
 
-**THE PRECEDENCE IS LOAD-BEARING, NOT DECORATION.** The comment token `//` matches the first two
-characters of `///`, and a comment is an *extra* — valid at every position — so without
-`token(prec(20, '///'))` the comment wins the lexer and the directive disappears inside it. That is
-the reason the first patch attempt (a single whole-line `token`) worked but produced a node with no
-fields: it won the lexer, and then there was nothing structured to read.
+**WHY ATOMIC, AND THIS IS THE PART THAT COST A REWRITE.** An earlier version made `///` a
+high-precedence token and handed the rest to separate rules so the node could carry `role` and
+`target` as FIELDS. That shape can start matching on a **`///` line that is an ordinary note**: the
+lexer prefers the high-precedence token, the parser then cannot find `<reference` and RECOVERS. An
+atomic token cannot do that — it wins the lexer only when it matches **in full**, so `/// note` stays
+an ordinary comment.
+
+**THE COST OF LOSING THE FIELDS IS STATED RATHER THAN GLOSSED:** the grammar still decides
+**structurally** that the node is a directive — nothing else can match this token — and the analyzer
+reads `role` and `target` out of the node's **own fixed spelling**, which is the same operation as
+reading an import's string source, and is **not** a regex over the file. The difference between "the
+grammar tells me it is a directive" and "I pattern-match the text" is the whole point, and it
+survives the loss of the field names.
 
 The diff is [`reference-directive.patch`](reference-directive.patch).
 
 ## THE BUILD
 
 ```
-8586372d50cbdc97dbcc1f8affe66028680a2fe8c9b1e608197587c3ac2c6ab3
-tree-sitter-typescript-patched.wasm · 1,672,416 bytes
+b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335
+tree-sitter-typescript-patched.wasm · 1,652,888 bytes
 ```
+
+(`8586372d…`, 1,672,416 B, is the superseded FIELD-carrying build; it is recorded because its
+measurements are in [`typescript-grammar-rebuild-drift.md`](../../validation/m14/measurements/typescript-grammar-rebuild-drift.md).)
 
 Built with the CLI at `tree-sitter 0.26.9`, and **the layout is the load-bearing part of the build
 recipe**: `tree-sitter generate` and `tree-sitter build --wasm` want `grammar.js` at the build
@@ -50,7 +62,7 @@ To rebuild:
 cp -r node_modules/tree-sitter-typescript /tmp/r2 && cd /tmp/r2
 patch -p0 < …/reference-directive.patch          # against common/define-grammar.js
 cd typescript && tree-sitter generate && tree-sitter build --wasm
-sha256sum tree-sitter-typescript.wasm            # must read 8586372d…
+sha256sum tree-sitter-typescript.wasm            # must read b75fa34c…
 ```
 
 ## THE PROOF — BEHAVIOURAL, NOT A NODE LIST
@@ -62,7 +74,7 @@ proof that cannot fail is not a proof:
 | build | sha256 | top-level nodes for 3 directives + 1 comment |
 |---|---|---|
 | SERVED | `8515404d…` | `comment`, `comment`, `comment`, `comment`, `lexical_declaration` |
-| PATCHED | `8586372d…` | **`reference_directive` ×3**, `comment`, `lexical_declaration` |
+| PATCHED | `b75fa34c…` | **`reference_directive` ×3**, `comment`, `lexical_declaration` |
 
 Five conditions: the served build makes them comments; the patched build makes them nodes named
 `reference_directive`; the patched build still makes an ORDINARY comment a comment (the patch does
@@ -85,6 +97,22 @@ The remaining steps, in order, and the lane will not claim `part_of` before all 
 3. run the fixture suite on the patched build (the suite's own parser changes with the wiring);
 4. only then does `extractReferenceDirectives` emit, and only then does `part_of` leave
    `grammarRemedyPending` and the lane read 14 of 14.
+
+## THE COST, MEASURED: A REGENERATED GRAMMAR IS NOT THE SHIPPED GRAMMAR
+
+⇒ **THIS IS THE MOST IMPORTANT SECTION IN THIS FILE, AND IT WAS FOUND BY MEASURING RATHER THAN BY
+REASONING.** A controlled 250-file two-build delta shows five labels other than `part_of` moving after
+the swap — and a **NO-PATCH CONTROL** (the same grammar source with the patch REMOVED, rebuilt by the
+same CLI, `f8b892cc…`) perturbs **22 of 250 files the same way**. So:
+
+**R2 CARRIES PARSER-VERSION DRIFT AS A COST, AND THE COST IS THE REGENERATOR, NOT THE RULE.**
+
+`tree-sitter generate` + `build --wasm` replaces a parser with one built by a different generator
+(here CLI 0.26.9 against whatever generated the npm package's shipped `src/parser.c`), and the
+difference is measurable on ordinary code in both directions. The full table is in
+[`typescript-grammar-rebuild-drift.md`](../../validation/m14/measurements/typescript-grammar-rebuild-drift.md).
+⇒ **A grammar rung therefore needs a THREE-build measurement — served, patched, unpatched-rebuilt — or
+a shift cannot be attributed**, and the two-build population delta alone is not enough.
 
 ## WHY R1 AND R3 WERE NOT TAKEN FOR THIS TYPE
 

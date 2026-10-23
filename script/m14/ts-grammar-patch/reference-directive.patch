@@ -1,29 +1,26 @@
 --- .tmp-ts/r2probe/common/define-grammar.js	2026-10-22 18:49:19.623779244 -0400
-+++ .tmp-ts/r2patch/common/define-grammar.js	2026-10-22 18:52:03.446496223 -0400
-@@ -131,6 +131,30 @@
++++ .tmp-ts/r2patch/common/define-grammar.js	2026-10-23 12:16:37.874517762 -0400
+@@ -131,6 +131,27 @@
        ]),
  
      rules: {
-+      // ⇒⇒⇒ THE LANE'S PATCH (R2), AND IT IS TWO RULES AND ONE PROGRAM. A triple-slash reference
-+      // directive is lexed by the SERVED build as a COMMENT, so the construct has no node and no
-+      // relation can be read from the tree. This makes it a NODE that carries its ROLE and its
-+      // TARGET as FIELDS, so the analyzer reads STRUCTURE and never a comment's text — which is the
-+      // difference between a relation and a pattern match.
++      // ⇒⇒⇒ THE LANE'S PATCH (R2), v3 — THE WHOLE DIRECTIVE AS ONE ATOMIC TOKEN.
 +      //
-+      // THE `token(prec(20, '///'))` IS LOAD-BEARING: the comment token `//` also matches the first
-+      // two characters and, being an extra, is valid at every position, so without the precedence
-+      // the comment wins the lexer and the directive disappears into it.
-+      reference_directive: $ => seq(
-+        token(prec(20, '///')),
-+        '<reference',
-+        field('role', $.reference_role),
-+        '=',
-+        field('target', $.reference_target),
-+        optional('/'),
-+        '>',
-+      ),
-+      reference_role: _ => choice('path', 'types', 'lib'),
-+      reference_target: _ => /"[^"\n]*"/,
++      // v2 made `///` a high-precedence token and handed the rest to separate rules so the node could
++      // carry `role` and `target` as FIELDS. IT PERTURBED FIVE OTHER LABELS, and the mechanism is the
++      // point of this comment: a `prec(20, '///')` token is valid wherever the parse state admits
++      // `reference_directive`, so on a `///` line that is an ORDINARY NOTE and not a directive the
++      // lexer preferred it over the comment extra, the parser consumed `///`, could not find
++      // `<reference`, and RECOVERED — leaving an ERROR node where a clean `comment` had been. Every
++      // tree-walking pass then saw a different tree (measured on 250 files: references -30, uses +17,
++      // calls -9, exports -3, contains -2, extends -1, imports +1, on 23 files that are not directives).
++      //
++      // ⇒ AN ATOMIC TOKEN CANNOT DO THAT. It wins the lexer only when it matches IN FULL, so a
++      // `/// note` line never starts it and stays an ordinary comment. The cost is that the node
++      // carries no field names; the grammar still decides STRUCTURALLY that the node is a directive
++      // (nothing else can match this token), and the analyzer reads the role and the target out of
++      // the node's OWN fixed spelling — the same operation as reading an import's string source.
++      reference_directive: _ => token(prec(20, /\/\/\/\s*<reference\s+(?:path|types|lib)\s*=\s*"[^"\n]*"\s*\/?>/)),
 +      program: $ => seq(
 +        optional($.hash_bang_line),
 +        repeat(choice($.statement, $.reference_directive)),
