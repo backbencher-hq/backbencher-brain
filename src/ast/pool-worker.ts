@@ -1020,7 +1020,18 @@ export function filterNoiseRelationships(
     // rows become 0, and the controls stay green — `foo = bar` and `foo=bar` and `a = b` and `x==y`
     // are still refused, while `level=` and `ast_nodes=` and `[]` and `[]=` are kept.
     const OPERATOR_NAME = /^[<>=!+\-*/%^&|~\[\]]+$/
-    if (/[\s'"(),=]/.test(leaf) && !OPERATOR_NAME.test(leaf) && !SETTER_NAME.test(leaf)) return false
+    // ★ CALLABLE REFERENCES: A SPACE IN A TARGET IS NOT ALWAYS A SNIPPET (scss lane, 2026-10-23).
+    // MEASURED: every scss callable relation targets a PREFIXED spelling — `@mixin clearfix`,
+    // `@function double` — because that is the published symbol name the fixture harness's export
+    // invariant requires and the only form the arbiter's key space can bind. THE GUARD BELOW
+    // DELETED ALL OF THEM: this lane's whole-population arm read `calls 0 · mixes_in 0` while the
+    // analyzer emitted 275 and 78 on two measured samples, because the leaf carries a space.
+    // ⇒ A SHARED FILTER ADDED FOR ONE LANE'S SNIPPETS SILENTLY ATE ANOTHER LANE'S EDGES, which is
+    // this fleet's own "a fix for one lane is not a law for the fleet" class.
+    // The exemption is deliberately NARROW: it matches a Sass at-rule callable reference and nothing
+    // else, so `foo (a, b)` and `foo = bar` are still refused — the controls stay green.
+    const CALLABLE_REF = /^@(?:mixin|function)\s+[A-Za-z_$][\w$-]*$/
+    if (/[\s'"(),=]/.test(leaf) && !OPERATOR_NAME.test(leaf) && !SETTER_NAME.test(leaf) && !CALLABLE_REF.test(leaf)) return false
     // THE ANGLE-BRACKET BAN, AND WHY IT MUST NOT BE UNCONDITIONAL (ruby lane, 2026-10-21).
     //
     // `<` and `>` are banned because a target carrying them is usually a SNIPPET or a template
