@@ -290,6 +290,59 @@ function isIdentifier(text: string): boolean {
   return true
 }
 
+/** ECMAScript WhiteSpace + LineTerminator, READ BY CODE POINT — the set `\s` matched in the
+ *  module-specifier refusal this replaces. A module specifier cannot legally carry any of them,
+ *  so the check is a REFUSAL and must not be narrower than the rule it replaced: tab, LF, VT,
+ *  FF, CR, SP, NBSP, U+1680, U+2000–U+200A, U+2028, U+2029, U+202F, U+205F, U+3000, U+FEFF.
+ *  A character walk, because a regex over source text matches comments and string literals,
+ *  misses nested syntax and breaks silently on the next grammar version (the fleet's rule). */
+export function containsWhitespace(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    if (c === 9 || c === 10 || c === 11 || c === 12 || c === 13 || c === 32 || c === 160 || c === 5760) return true
+    if (c >= 8192 && c <= 8202) return true
+    if (c === 8232 || c === 8233 || c === 8239 || c === 8287 || c === 12288 || c === 65279) return true
+  }
+  return false
+}
+
+/** `^[a-zA-Z][a-zA-Z0-9+.-]*:` — a URI scheme (`virtual:`, `http:`, `data:`). Written as a
+ *  colon split with the HEAD validated by character class, the same accept set as the pattern
+ *  it replaces: at least one character before the colon, the first a letter, the rest
+ *  letter/digit/`+`/`.`/`-`. Anything else is not a scheme and is left to the package rules. */
+export function isUriSchemeSpecifier(spec: string): boolean {
+  const colon = spec.indexOf(":")
+  if (colon <= 0) return false
+  for (let i = 0; i < colon; i++) {
+    const c = spec.charCodeAt(i)
+    const letter = (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+    if (i === 0) {
+      if (!letter) return false
+      continue
+    }
+    const digit = c >= 48 && c <= 57
+    if (!letter && !digit && c !== 43 && c !== 46 && c !== 45) return false
+  }
+  return true
+}
+
+/** `^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*$` — a plain identifier or a
+ *  dotted identifier chain (`Icon`, `AccordionPrimitive.Root`). A SINGLE segment is valid.
+ *  THE EMPTY SEGMENT IS THE CASE A HAND-WRITTEN LOOP GETS WRONG: `a..b`, `.a` and `a.` must
+ *  all be false. Each segment is validated by the analyzer's existing char-walk `isIdentifier`,
+ *  so an empty segment fails by the same rule an empty whole string does — construction, not
+ *  an off-by-one. Proved by `script/m14/svelte-ident-checks.ts` (`bun run`). */
+export function isDottedIdentifierChain(text: string): boolean {
+  let start = 0
+  while (true) {
+    const dot = text.indexOf(".", start)
+    const end = dot < 0 ? text.length : dot
+    if (!isIdentifier(text.slice(start, end))) return false
+    if (dot < 0) return true
+    start = dot + 1
+  }
+}
+
 /**
  * `{#await promise then value}` / `{#await promise as value}` — split the head
  * fragment into the PROMISE expression and everything after the `then`/`as`
@@ -1965,8 +2018,8 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private isExternalPackageSpecifier(spec: string, published: Set<string>): boolean {
     if (spec === "" || spec.startsWith(".") || spec.startsWith("/") || spec.startsWith("$")) return false
-    if (spec.includes("\\") || /\s/.test(spec)) return false
-    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(spec)) return false
+    if (spec.includes("\\") || containsWhitespace(spec)) return false
+    if (isUriSchemeSpecifier(spec)) return false
     const segs = spec.split("/").filter((s) => s !== "")
     if (segs.length === 0) return false
     const root = spec.startsWith("@") ? segs.slice(0, 2).join("/") : segs[0]
@@ -2030,8 +2083,6 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const b of this.importLocalBindings(imp)) if (!bindings.has(b.name)) bindings.set(b.name, b.module)
     }
     const declaredHere = new Set(symbols.map((s) => String(s.name ?? "")))
-    /** a plain identifier or a dotted identifier chain — never a path, a URI or a member spelling */
-    const IDENT_CHAIN = /^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*$/
     for (const r of relationships) {
       const md = r.metadata ?? (r.metadata = {})
       const tgt = String(r.target ?? "")
@@ -2071,7 +2122,10 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       //     project does not publish. Provenance, not a name guess: the analyzer read the
       //     import that binds the name. A target the file ITSELF declares is skipped,
       //     because there the claim would be refutable by the file's own declaration.
-      if (!IDENT_CHAIN.test(tgt)) continue
+      // a plain identifier or a dotted identifier chain — never a path, a URI or a member
+      // spelling; the helper rejects an EMPTY segment (`a..b`), which the single-segment form
+      // below would otherwise slice into a bogus root.
+      if (!isDottedIdentifierChain(tgt)) continue
       const root = tgt.includes(".") ? tgt.slice(0, tgt.indexOf(".")) : tgt
       if (declaredHere.has(root)) continue
       const spec = bindings.get(root)
