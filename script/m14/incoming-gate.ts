@@ -1357,6 +1357,15 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   const t0 = Date.now()
 
   for (const f of files) {
+    // ── PER-FILE WALL TIMER (BB_GATE_SLOW_MS). DIAGNOSTIC ONLY; silent unless asked. ──────────────
+    // MEASURED 2026-10-23: dart-sdk's admitted offset 17,656 (`tests/corelib/regexp/
+    // ranges-and-escaped-hyphens_test.dart`, 4,068 B) makes this run produce NOTHING for over nine
+    // minutes, while the grammar parses it in 13 ms, `RealDartAnalyzer.analyze` runs it in 214-349 ms,
+    // and `pool-worker.parseFile` — THIS gate's own parse path — returns in 527 ms. So the cost is in
+    // the per-file work BELOW this line, not in the parse. This timer names the file and the phase
+    // boundary without changing behaviour: it is silent unless BB_GATE_SLOW_MS is set.
+    const __slowMs = Number(process.env.BB_GATE_SLOW_MS ?? "0")
+    const __fileStart = Date.now()
     if (parsed > 0 && parsed % PROGRESS_EVERY === 0) {
       process.stderr.write(
         `  … ${parsed}/${files.length} parsed (${failed} failed, ${degraded} degraded) ` +
@@ -1389,6 +1398,12 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       continue
     }
     parsed++
+    if (__slowMs > 0) {
+      const __elapsed = Date.now() - __fileStart
+      if (__elapsed >= __slowMs) {
+        process.stderr.write(`  SLOW FILE ${__elapsed} ms after parse: ${f}\n`)
+      }
+    }
     // THE POPULATION HOLE, counted because it is otherwise INVISIBLE.
     //
     // `engine.ts:1991` is the analyzer-timeout path and it returns
