@@ -3355,16 +3355,6 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
-  private scalarText(node: Node): string {
-    const value = this.scalarNode(node).text.trim()
-    if (value.length >= 2) {
-      const first = value[0]
-      const last = value[value.length - 1]
-      if ((first === "\"" || first === "'") && first === last) return value.slice(1, -1)
-    }
-    return value
-  }
-
   /**
    * THE TEXT OF A SCALAR VALUE, with a BLOCK SCALAR's indicator stripped.
    *
@@ -3379,6 +3369,33 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private scalarValueText(node: Node): string {
     return this.blockScalarValue(node) ?? this.scalarText(node)
+  }
+
+  /**
+   * THE SHAPE-GREP, APPLIED TO THIS FILE — AND IT FOUND TWO MORE SITES.
+   *
+   * The fleet's rule is that a defect found once in a SHAPE is a defect in every site of that shape,
+   * and that the fix is to GREP THE SHAPE, not the site. The block-scalar shape was found in the
+   * include-family path and then in the `extends:` family — two sites, two fixes — and the grep of
+   * the shape (`SCALAR_TYPES` CONTAINS `block_scalar`, so any site that reads a scalar's own text
+   * can receive a block scalar) found two MORE: the RESOURCE-REFERENCE path
+   * (`RESOURCE_REF_SCALARS` ⇒ `yaml_resource_ref`) and the reference-WRAPPER path
+   * (`wrapperRefNames`). Both read `scalarText` on a node that `SCALAR_TYPES` admits, and both
+   * would have published a name carrying the indicator.
+   *
+   * ⇒ ⇒ ⇒ THE FIX IS AT THE READER, NOT AT THE SITES: `scalarText` itself now reads a block
+   * scalar's CONTENT, so every one of the eighteen call sites is fixed by construction and a
+   * future site cannot drift. THE SHAPE WAS ONE LINE LONG; IT WAS IN FOUR PLACES.
+   */
+  private scalarText(node: Node): string {
+    const inner = this.scalarNode(node)
+    const value = (this.blockScalarValue(inner) ?? inner.text).trim()
+    if (value.length >= 2) {
+      const first = value[0]
+      const last = value[value.length - 1]
+      if ((first === "\"" || first === "'") && first === last) return value.slice(1, -1)
+    }
+    return value
   }
 
   /**

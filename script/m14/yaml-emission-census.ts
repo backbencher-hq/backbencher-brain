@@ -132,6 +132,22 @@ const ANALYZER_PATH = argOf("--analyzer")
 const CHUNK_IDX = argOf("--chunk-idx") !== undefined ? Number(argOf("--chunk-idx")) : null
 const CHUNK_SIZE = argOf("--chunk-size") !== undefined ? Number(argOf("--chunk-size")) : 2000
 
+/**
+ * PARSE-ONLY: THE FOUR EXTENDED TYPES' DECISIVE COUNTERS DO NOT NEED THE ANALYZER.
+ *
+ * The construct census reads the TREE — a tag's text, a merge key's value shape, an
+ * include-family tag's POSITION, a template interpolation inside a scalar. None of that is the
+ * analyzer's product; the analyzer is only needed for the per-TYPE emission counts. So a ruling's
+ * whole-population count can be taken at parse cost instead of at analyze cost, which is roughly
+ * an order of magnitude cheaper and is the only reason a lane short of the arm can afford it.
+ *
+ * THE COUNTERS ARE IDENTICAL IN BOTH MODES: same walk, same tree, same `add()` calls. The flag
+ * removes ONLY the analyzer and the per-type tallies, so a parse-only count and a full count of
+ * the same construct are the same measurement, and a parse-only run is a SUBSET of a full run's
+ * work by construction — not a different instrument with a different rule.
+ */
+const PARSE_ONLY = process.argv.slice(2).includes("--parse-only")
+
 /** THE FOURTEEN emitted relationship values (types.ts, 2026-10-18) — a label this census omits is a silence. */
 const ALL_TYPES = [
   "calls", "uses", "contains", "imports", "references",
@@ -351,6 +367,76 @@ const sample = (key: string, rel: string) => {
   if (arr.length < SAMPLES_PER_KEY && !arr.includes(rel)) arr.push(rel)
 }
 
+/**
+ * ★ THE COUNTER INVENTORY, DECLARED SO THAT A ZERO IS A MEASUREMENT AND NOT AN ABSENCE.
+ *
+ * THE DEFECT THIS FIXES, FOUND IN THIS LANE'S OWN ARTIFACT: the construct map was built by `add()`,
+ * which creates a key only when it sees a site — so a counter with ZERO sites left NO KEY AT ALL,
+ * and a reader could not tell "this counter ran and found nothing" from "this counter never ran".
+ * The merged whole-population artifact had 42 keys and the four EXTENDED TYPES' decisive counters
+ * were simply MISSING from it, exactly where a ruling needs a number. That is the fleet's own
+ * hazard — "a census that cannot distinguish counted from counted-by-a-convention will report a
+ * shortlist as a census" — appearing in the one artifact a zero-emission ruling cites.
+ *
+ * SO THE CENSUS NOW DECLARES EVERY COUNTER IT MAINTAINS, EMITS A ZERO ROW FOR EVERY ONE OF THEM,
+ * AND SELF-CHECKS THAT NO COUNTER IT OBSERVED IS ABSENT FROM THE DECLARATION (a counter added and
+ * not declared fails the run loudly rather than vanishing into the artifact).
+ */
+const DECLARED_COUNTERS: readonly string[] = [
+  "yaml.alias_NOT_a_merge",
+  "yaml.alias_node",
+  "yaml.allOf_key",
+  "yaml.allOf_with_a_ref",
+  "yaml.allOf_without_a_ref",
+  "yaml.alternative_of_key",
+  "yaml.anchor_node",
+  "yaml.anyOf_key",
+  "yaml.directive",
+  "yaml.duplicate_mapping_key",
+  "yaml.extends_key",
+  "yaml.extends_key_SHAPE_azure_template",
+  "yaml.extends_key_SHAPE_config_preset",
+  "yaml.extends_key_SHAPE_docker_compose_service",
+  "yaml.extends_key_SHAPE_other_mapping",
+  "yaml.extends_key_SHAPE_other_scalar",
+  "yaml.extends_key_SHAPE_sibling_dot_name",
+  "yaml.implements_key",
+  "yaml.include_family_key",
+  "yaml.include_family_key_OUTSIDE_the_analyzer_closed_set",
+  "yaml.include_family_tag",
+  "yaml.include_family_tag_OUTSIDE_the_analyzer_closed_set",
+  "yaml.include_family_tag_at_a_key_position",
+  "yaml.include_family_tag_at_the_document_root",
+  "yaml.instantiates_key",
+  "yaml.job_level_uses",
+  "yaml.json_pointer_ref_key",
+  "yaml.merge_alias_under-a-BLOCK-sequence",
+  "yaml.merge_alias_under-a-FLOW-sequence",
+  "yaml.merge_key",
+  "yaml.merge_key_with_mapping_target",
+  "yaml.merge_key_with_sequence_target",
+  "yaml.merge_list",
+  "yaml.merge_list_with_a_separate_base_clause",
+  "yaml.merge_sequence_with_aliases",
+  "yaml.merge_sequence_with_more_than_one_alias",
+  "yaml.multi_document_stream",
+  "yaml.non_job_level_uses",
+  "yaml.oneOf_key",
+  "yaml.schema_publication_definition",
+  "yaml.supertype_candidate_key",
+  "yaml.tag_core_schema",
+  "yaml.tag_local",
+  "yaml.tag_naming_a_declaration_in_the_document",
+  "yaml.tag_node",
+  "yaml.tag_verbatim",
+  "yaml.tag_with_a_call_shaped_argument",
+  "yaml.tag_with_a_constructor_argument",
+  "yaml.template_component_named_in_a_scalar",
+  "yaml.template_component_named_in_the_file_text",
+  "yaml.template_interpolation_in_scalar",
+  "yaml.uses_key",
+] as const
+
 const perType = new Map<string, Tally>()
 const perMarker = new Map<string, Tally>()
 const perMarkerType = new Map<string, Tally>()
@@ -564,6 +650,20 @@ function keyPathOf(node: any): string[] {
   return segs
 }
 
+/** The SUFFIX of a tag's text — the constructor argument — or null when it has none. */
+function tagSuffixOf(raw: string): string | null {
+  const t = String(raw ?? "")
+  if (!t) return null
+  // A VERBATIM tag (`!<...>`) carries its whole text as the tag URI.
+  if (t.startsWith("!<")) return t.slice(2, t.endsWith(">") ? -1 : undefined)
+  // The suffix is what follows the LAST `!`: `!!str` → "str", `!e!thing` → "thing",
+  // `!include` → "include". A handle with no suffix (`!e!`) has none.
+  const at = t.lastIndexOf("!")
+  if (at < 0) return null
+  const suffix = t.slice(at + 1)
+  return suffix.length ? suffix : null
+}
+
 /** The `alias` node inside a sequence item, if there is one. */
 function findAliasIn(node: any): any {
   if (!node) return null
@@ -596,8 +696,10 @@ for (const abs of files) {
     const parser: any = await ASTEngine.getParser("yaml" as any)
     tree = parser.parse(content, abs)
     if (!tree?.rootNode) { failed++; continue }
-    const analyzer = new AnalyzerClass()
-    result = analyzer.analyze(tree.rootNode, content, abs, { projectRoot: repoRootOf(abs) } as any)
+    if (!PARSE_ONLY) {
+      const analyzer = new AnalyzerClass()
+      result = analyzer.analyze(tree.rootNode, content, abs, { projectRoot: repoRootOf(abs) } as any)
+    }
   } catch (e: any) {
     failed++
     if (parseErrors.length < 25) parseErrors.push(`${rel}: ${String(e?.message ?? e).slice(0, 160)}`)
@@ -607,14 +709,16 @@ for (const abs of files) {
   parsed++
   if (result?.fallback === true) degraded++
 
-  for (const r of (result?.relationships ?? []) as any[]) {
-    const type = String(r?.type ?? "")
-    add(perType, type, relSlug)
-    const md = (r?.metadata ?? {}) as Record<string, unknown>
-    const marker = typeof md.relationshipType === "string" ? md.relationshipType : ""
-    if (marker) {
-      add(perMarker, marker, relSlug)
-      add(perMarkerType, `${type} | ${marker}`, relSlug)
+  if (!PARSE_ONLY) {
+    for (const r of (result?.relationships ?? []) as any[]) {
+      const type = String(r?.type ?? "")
+      add(perType, type, relSlug)
+      const md = (r?.metadata ?? {}) as Record<string, unknown>
+      const marker = typeof md.relationshipType === "string" ? md.relationshipType : ""
+      if (marker) {
+        add(perMarker, marker, relSlug)
+        add(perMarkerType, `${type} | ${marker}`, relSlug)
+      }
     }
   }
 
@@ -627,6 +731,17 @@ for (const abs of files) {
   const fileKeys = new Set<string>()        // every key text in the file
   const fileTagNames: string[] = []         // the tag names, to be checked against the keys
   const includeTagPositions: string[] = []  // "key" | "root", for the `part_of` falsifier
+  // THE `mixes_in` DECISIVE COUNT needs the SHAPE OF A MAPPING, not a single pair: the Dart
+  // contract's own words are that a mixin is not `extends` because "the `with` list is not an
+  // inheritance clause" — so the mixin shape is a LIST OF COMPONENTS ATTACHED SEPARATE FROM THE
+  // BASE CLAUSE. In YAML the base clause is the merge key itself, so the shape is a mapping that
+  // carries a merge LIST and names its base SEPARATELY. Per mapping: the two flags.
+  const mappingShapes = new Map<any, { mergeList: boolean; separateBase: boolean }>()
+  const shapeOf = (m: any) => {
+    let s = mappingShapes.get(m)
+    if (!s) { s = { mergeList: false, separateBase: false }; mappingShapes.set(m, s) }
+    return s
+  }
   let fileText = ""
   try {
     if (!tree?.rootNode) continue
@@ -671,9 +786,19 @@ for (const abs of files) {
               }
               if (aliasCount > 0) add(constructs, "yaml.merge_sequence_with_aliases", relSlug)
               if (aliasCount > 1) add(constructs, "yaml.merge_sequence_with_more_than_one_alias", relSlug)
+              // THE `mixes_in` NEAR MISS: a merge LIST — common in YAML, because merging config
+              // fragments is what YAML merging is FOR. A merge list is NOT a mixin: every member
+              // of it is a base, and YAML's merge semantics order them by precedence.
+              add(constructs, "yaml.merge_list", relSlug)
+              shapeOf(parent).mergeList = true
             }
           }
           if (k === "$ref") add(constructs, "yaml.json_pointer_ref_key", relSlug)
+          // THE `mixes_in` DECISIVE COUNT'S OTHER HALF: a clause that names a BASE separately
+          // from a merge LIST. `extends:` is the configuration family's base clause and `allOf`
+          // is the JSON Schema composition's, so a mapping that carries BOTH a merge list and
+          // one of these has the Dart shape — a list of components attached beside a base.
+          if (k === "extends" || k === "allOf") shapeOf(parent).separateBase = true
           if (k === "uses") {
             add(constructs, "yaml.uses_key", relSlug)
             // THE `calls` CONSTRUCT: a job-level `uses:` names a reusable workflow. The analyzer's own
@@ -838,6 +963,22 @@ for (const abs of files) {
           const raw = String(n.text ?? "")
           const name = tagNameOf(n)
           fileTagNames.push(name)
+          // THE `decorates` DECISIVE COUNT. The csharp lane's measurement is "how many ATTRIBUTES
+          // APPLY A CALLABLE", and its dialect is exact: IF THE CONSTRUCTOR ARGUMENT IS A CALL, IT
+          // IS AN APPLICATION; IF IT IS A PLAIN NAME, IT IS A POINTER. The YAML nearest neighbour of
+          // a constructor argument is a TAG'S SUFFIX — `!include` (the suffix "include"), `!!str`
+          // (the suffix "str"), `!e!thing` (the handle "!e!" and the suffix "thing"). This
+          // grammar keeps a tag's whole text in one node (no `tag_handle` child), so the suffix is
+          // read from the TEXT, and a CALL-SHAPED suffix is one that carries a call's parenthesis —
+          // the shape YAML itself has no syntax for.
+          const suffix = tagSuffixOf(raw)
+          if (suffix !== null) {
+            add(constructs, "yaml.tag_with_a_constructor_argument", relSlug)
+            if (/[(]/.test(suffix)) {
+              add(constructs, "yaml.tag_with_a_call_shaped_argument", relSlug)
+              sample(`tag-call-arg:${suffix}`, relSlug)
+            }
+          }
           // THE `part_of` FALSIFIER'S CONSTRUCT, COUNTED: an include-family tag at the DOCUMENT's
           // ROOT would put the included fragment's keys at the including document's TOP LEVEL — the
           // shared-scope relation `part_of` names. A tag in a VALUE position puts the fragment AT
@@ -913,6 +1054,13 @@ for (const abs of files) {
     for (const m of fileText.matchAll(/\{\{[-]?\s*(template|include|define)\s+\"([^\"]+)\"/g)) {
       add(constructs, "yaml.template_component_named_in_the_file_text", relSlug)
     }
+    // THE `mixes_in` DECISIVE COUNT: a mapping that carries a merge LIST and names its base
+    // SEPARATELY — the Dart contract's shape ("the `with` list is not an inheritance clause")
+    // translated into YAML's own vocabulary. A merge list alone is common and says nothing
+    // about mixins; a merge list BESIDE a separate base clause would be the mixin.
+    for (const shape of mappingShapes.values()) {
+      if (shape.mergeList && shape.separateBase) add(constructs, "yaml.merge_list_with_a_separate_base_clause", relSlug)
+    }
     // THE `decorates` DECISIVE COUNT: a tag whose name names a DECLARATION in the same document.
     // The csharp lane's ontological test — "does the construct APPLY a callable, or MARK the
     // declaration?" — has a countable form in YAML: a tag that names a declaration in the document
@@ -925,6 +1073,24 @@ for (const abs of files) {
   finally {
     try { tree?.delete?.() } catch { /* a tree that is not disposed is a leak the arm pays for */ }
   }
+}
+
+// ── EVERY DECLARED COUNTER GETS A ROW, SO A ZERO IS A MEASUREMENT AND NOT AN ABSENCE ──────────
+// The construct map is built by `add()`, which creates a key only on a hit. Without this block a
+// counter with zero sites leaves NO KEY, and a reader cannot tell "ran and found nothing" from
+// "never ran" — which is how this lane's own whole-population artifact came to have 42 construct
+// keys and NONE of the four extended types' decisive counters, exactly where a ruling needs a
+// number. A DECLARED ZERO IS EVIDENCE; AN ABSENT KEY IS NOT.
+for (const name of DECLARED_COUNTERS) if (!constructs.has(name)) constructs.set(name, mk())
+// AND THE OTHER DIRECTION: a counter that FIRED but is not declared would silently sit outside the
+// declaration, so the run FAILS LOUDLY instead of publishing a shortlist as a census.
+const undeclared = [...constructs.keys()].filter((k) => !DECLARED_COUNTERS.includes(k)).sort()
+if (undeclared.length) {
+  console.error(
+    `FAIL — ${undeclared.length} construct counter(s) emitted but NOT DECLARED: ${undeclared.join(", ")}. ` +
+    `Add them to DECLARED_COUNTERS; a counter outside the declaration is a shortlist pretending to be a census.`,
+  )
+  process.exit(9)
 }
 
 const totalMs = performance.now() - t0All
@@ -947,6 +1113,10 @@ const report = {
   instrument: "script/m14/yaml-emission-census.ts",
   lane: "yaml",
   at: new Date().toISOString(),
+  // WHICH RULE PRODUCED THESE NUMBERS. A parse-only run and a full run count the constructs with
+  // the SAME walk over the SAME tree; the flag removes only the analyzer and the per-type tallies.
+  // A published construct count must say which of the two it came from, so it can be compared.
+  mode: PARSE_ONLY ? "parse-only (constructs only; no analyzer, no per-type tallies)" : "full (analyzer + constructs on one tree)",
   grammar: build,
   chunk: CHUNK_IDX === null
     ? { mode: "single", files: files.length, of: total }
@@ -1000,6 +1170,9 @@ const report = {
   analyzerClosedIncludeTagSet: [...ANALYZER_INCLUDE_TAGS].sort(),
   analyzerClosedIncludeKeySet: [...ANALYZER_INCLUDE_KEYS].sort(),
   parseErrors,
+  // WHICH COUNTERS THIS ARTIFACT EVALUATED — so `countersDeclared` minus the observed keys IS the
+  // set of counters that ran and found nothing, and that subtraction is checkable by a reader.
+  countersDeclared: DECLARED_COUNTERS,
   timing: { totalMs, files: parsed, meanFileMs: parsed ? totalMs / parsed : 0 },
 }
 

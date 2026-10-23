@@ -56,7 +56,10 @@ for (const c of CHUNKS) if (!existsSync(c)) { console.error(`FAIL — no chunk f
 
 const chunks = CHUNKS.map((c) => JSON.parse(readFileSync(c, "utf8")))
 console.log(`MERGING ${chunks.length} CHUNK(S)`)
-for (const c of CHUNKS) console.log(`  ${path.basename(c)} — ${c.chunk?.files ?? "?"} files of ${c.chunk?.of ?? "?"}`)
+for (let i = 0; i < chunks.length; i++) {
+  const c = chunks[i]
+  console.log(`  ${path.basename(CHUNKS[i])} — ${c.chunk?.files ?? "?"} files of ${c.chunk?.of ?? "?"}`)
+}
 
 // ── THE CHUNKS MUST COVER ONE POPULATION. The enumeration is identical in every chunk, so a
 // disagreement means the chunks were taken over different populations and the merge is refused.

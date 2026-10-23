@@ -827,6 +827,81 @@ the declaration — and the predicate falsifier). Two mutants, both CAUGHT:
 re-attaches the MEASURED target to the structural site) and
 `yaml/dependency-marker-guard-overfires` (the `{{` exclusion deleted).
 
+## ROUND 2026-10-22 — THE EXTENDED VOCABULARY: FOUR RULINGS, THREE R3 EMISSIONS, AND A CHUNKED CENSUS
+
+**The vocabulary** (`src/ast/types.ts:114-190`) is ten canonical types plus four extended ones —
+`decorates`, `renders`, `mixes_in`, `part_of` — and the four extended ones are the campaign: the
+generated matrix (`validation/m14/verification/LANGUAGE-MATRIX-EXTENDED.md` §3) counts them as gaps
+in 38 of the 48 lanes each, while every other type is a gap in one or two. This lane's own line in
+that matrix was `yaml — n=12, implemented=8, gaps=4 (decorates, mixes_in, part_of, renders)`.
+
+### THE RULE THIS ROUND IS BUILT ON
+
+**A RULING'S FALSIFIER MUST NAME A CONSTRUCT THAT AN INSTRUMENT IN THE TREE COUNTS.** A falsifier
+that names a construct nothing counts is not a falsifier; it is a sentence. And a named construct
+with "none measured" in its parenthetical is a TODO wearing a ruling's clothes — the scala lane found
+exactly that in the fleet's own mixin ruling, and MEASURING it turned the ruling into an
+implementation. So each of this lane's four rulings names a counter that
+`script/m14/yaml-emission-census.ts` actually reports, and `script/m14/yaml-spec-check.ts` now FAILS
+the spec when a falsifier does not name its own construct.
+
+| type | the counter the falsifier turns on | what the counter measures |
+|---|---|---|
+| `decorates` | `yaml.tag_naming_a_declaration_in_the_document` | a TAG that names a key of its own document — a decoration applied to a declaration rather than metadata marking a value |
+| `renders` | `yaml.template_component_named_in_a_scalar` | a template expression that NAMES A COMPONENT **and** is a YAML scalar — against the text-level `yaml.template_component_named_in_the_file_text` |
+| `mixes_in` | `yaml.merge_sequence_with_more_than_one_alias` | a merge key whose value is a SEQUENCE of more than one alias — the one YAML shape with no single base |
+| `part_of` | `yaml.include_family_tag_at_the_document_root` | an include-family tag at the DOCUMENT's ROOT, against the measured `yaml.include_family_tag_at_a_key_position` |
+
+### `renders` — THE MEASUREMENT THAT SETTLES IT, AND IT IS A PARSE FACT
+
+The fleet's shape for `renders` is "the name in a RETURNED CONSTRUCTION" — typescript's JSX tag,
+clojure's hiccup vector, csharp's type argument, dart's `build` method whose declared return type
+is `Widget`. So the construct is a template expression that names a component. **Such forms exist in
+the corpus's YAML files** — `{{ template "echo-server.fullname" . }}` and
+`{{ include "echo-server.labels" . | nindent 4 }}` — **and the YAML grammar cannot lex them.** The
+tree of a Helm chart's `templates/deployment.yaml` has an `ERROR` node at its ROOT, and the
+interpolation parses as a `flow_mapping` inside that error, not as a scalar. The `{{ define "x" }}`
+declarations live in `_helpers.tpl` files, which the admitted extension set does not carry, so no
+rendered component is declared in the admitted population either. **A component-naming interpolation
+is another language's text inside a YAML file, not a YAML construct** — and a YAML document has no
+expression to return a construction from. The difference between the two counters IS the measurement.
+
+### THE THREE R3 EMISSIONS THAT LANDED, AND THE DEFECT THE SECOND ONE STILL HAD
+
+The `extends:` key family, the `allOf` composition, and the `include_vars` key are all R3 — a rung
+the construct exists in the language and the analyzer simply did not attempt. The `extends:` family
+then carried a defect of its own, and it is worth recording because it was the SECOND occurrence of
+one defect: a `block_scalar` node's own text starts with the block INDICATOR (`>` folded, `|`
+literal) and the content follows, so a value read as raw text carries the indicator into the name.
+The `include_vars` fix had already corrected exactly this in one site; the `extends:` family, written
+after it, read raw text again. It now reads the block scalar's content through one shared reader, so
+the second site cannot drift, and it refuses a value that spans lines — a name does not span lines.
+Pinned by `validation/m14/fixtures/yaml/config-extends-key.yaml` (the folded form publishes the
+config name; the literal form publishes nothing).
+
+### THE CENSUS IS CHUNKED, AND THE CHUNKING IS NOT ONLY A QUEUE MATTER
+
+`script/m14/yaml-emission-census.ts` walks the admitted population in DISJOINT chunks of 2,000
+files, each chunk taking the small arm slot with its own declared population, and
+`script/m14/yaml-census-merge.ts` merges them: the edges and the file counts are exact SUMS (the
+chunks are disjoint — every file is walked by exactly one chunk) and the REPOSITORY counts are the
+size of the UNION of the chunks' repository sets, because a repository spans chunks and a sum would
+overcount it. The merge REFUSES a set of chunks whose indices do not tile the population or whose
+total does not equal the admitted total.
+
+**The second reason the chunking is right is a correctness matter, not a politeness one.** A
+tree-sitter WASM module's memory grows with every parse and never shrinks: the dart lane measured
+that at roughly 7,600 parses the module runs out and every later `new Parser` ABORTS — and a
+single-process walk that LOOKS complete measures a fraction of the population while printing a
+whole-population header. One process per chunk cannot hit that wall.
+
+### THE BEFORE MEASUREMENT DOES NOT TOUCH THE WORKING TREE
+
+The BEFORE census measures a COPY of the git-HEAD analyzer (`git show HEAD:src/ast/real-yaml-analyzer.ts`,
+with its one relative import rewritten for its new home) rather than reverting the analyzer in place.
+Reverting would leave this lane's work MISSING from the repository for the length of the walk, and any
+agent committing in that window would commit it as gone.
+
 ## Issue
 
 M14.7 / M60 / M49 #286. Closes the YAML analyzer wave: 24 measured defect classes, grammar

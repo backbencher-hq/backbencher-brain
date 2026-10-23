@@ -85,7 +85,11 @@ while [ $((idx * SIZE)) -lt "$TOTAL" ]; do
   GOT=0
   for w in $(seq 1 540); do
     if bash script/m14/arm-token.sh take-small yaml "$n" >> "$LOG" 2>&1; then GOT=1; break; fi
-    sleep 20
+    # THE POLL IS EVERY 3 SECONDS, NOT 20. The small slot is FREE only in the window between one
+    # lane's chunk and the next lane's take, and a 20-second poll lands in that window only by
+    # luck; a 3-second poll makes the acquisition a matter of a few seconds' timing rather than of
+    # an hour's luck. The attempt itself is a file-lock check and costs nothing.
+    sleep 3
   done
   if [ "$GOT" != "1" ]; then
     say "FATAL — the small slot was not obtained for chunk $idx after three hours"

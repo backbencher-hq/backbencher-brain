@@ -275,18 +275,18 @@
       },
       {
         "label": "decorates",
-        "construct": "yaml.tag_naming_a_declaration_in_the_document",
-        "count": "@@C_TAG_NAMING_A_DECLARATION_IN_THE_DOCUMENT@@",
-        "files": "@@C_TAG_NAMING_A_DECLARATION_IN_THE_DOCUMENT_FILES@@",
-        "repos": "@@C_TAG_NAMING_A_DECLARATION_IN_THE_DOCUMENT_REPOS@@",
-        "falsifier": "A YAML tag that NAMES a declaration in the same document — a tag whose name is a key of the document it appears in — which would be a decoration applied to a declaration rather than metadata marking a value. THE CONSTRUCT IS COUNTED: `yaml.tag_naming_a_declaration_in_the_document`, and the count is over the whole admitted population. A tag that names a declaration is a TYPE REFERENCE, and the relation the fleet publishes for that is `references` with `metadata.declaredType` — a reference says the name is mentioned, which is not application — so the tag is not lost, it is published as the reference it is.",
+        "construct": "yaml.tag_with_a_call_shaped_argument",
+        "count": "@@C_TAG_WITH_A_CALL_SHAPED_ARGUMENT@@",
+        "files": "@@C_TAG_WITH_A_CALL_SHAPED_ARGUMENT_FILES@@",
+        "repos": "@@C_TAG_WITH_A_CALL_SHAPED_ARGUMENT_REPOS@@",
+        "falsifier": "A YAML tag whose CONSTRUCTOR ARGUMENT IS A CALL — a tag whose suffix carries a call's parenthesis. THE CONSTRUCT IS COUNTED: `yaml.tag_with_a_call_shaped_argument`, over the whole admitted population. The dialect is the csharp lane's, exactly: IF THE CONSTRUCTOR ARGUMENT IS A CALL, IT IS AN APPLICATION; IF IT IS A PLAIN NAME, IT IS A POINTER. A tag's suffix in YAML is a NAME — `!include` (the suffix 'include'), `!!str` (the suffix 'str'), `!e!thing` (the handle '!e!' and the suffix 'thing') — and the grammar has no syntax for a call inside it, so the application shape is not in the language. AND THE CONSTRUCT IS NOT LOST: a tag that names a declaration in its own document is a POINTER to that declaration, and the lane publishes it as the reference it is (`references` with the declared type) — the csharp and dart reading the fleet has accepted twice.",
         "nearMiss": {
-          "construct": "yaml.tag_node",
-          "count": "@@C_TAG_NODE@@",
-          "files": "@@C_TAG_NODE_FILES@@",
-          "repos": "@@C_TAG_NODE_REPOS@@"
+          "construct": "yaml.tag_with_a_constructor_argument",
+          "count": "@@C_TAG_WITH_A_CONSTRUCTOR_ARGUMENT@@",
+          "files": "@@C_TAG_WITH_A_CONSTRUCTOR_ARGUMENT_FILES@@",
+          "repos": "@@C_TAG_WITH_A_CONSTRUCTOR_ARGUMENT_REPOS@@"
         },
-        "from": "validation/m14/measurements/yaml-emission-census-whole.json validation/m14/measurements/yaml-grammar-nodes.json — @@NAMED_UNIQUE@@ named node types in the grammar's own inventory; @@C_TAG_NAMING_A_DECLARATION_IN_THE_DOCUMENT@@ yaml.tag_naming_a_declaration_in_the_document sites over the whole admitted population",
+        "from": "validation/m14/measurements/yaml-emission-census-whole.json validation/m14/measurements/yaml-grammar-nodes.json — @@NAMED_UNIQUE@@ named node types in the grammar's own inventory; @@C_TAG_WITH_A_CALL_SHAPED_ARGUMENT@@ yaml.tag_with_a_call_shaped_argument sites over the whole admitted population",
         "statement": "YAML-D22, 2026-10-22 OVER THE WHOLE ADMITTED POPULATION. THE GRAMMAR-SIDE HALF: the pinned build's own inventory is @@NAMED_UNIQUE@@ named node types and it contains no node type for a decorator, an application or an annotation ATTACHED TO A DECLARATION — a YAML tag is a `tag` node and it types a VALUE, and the tag is attached to the value it types, not to a declaration. THE BEHAVIOUR-SIDE HALF: the analyzer has no `decorates` emission site and the edge count over the whole admitted population is 0. THE NEAR MISS IS MEASURED: the format's only type annotation is the TAG, and there are @@C_TAG_NODE@@ tag nodes over @@C_TAG_NODE_FILES@@ files in @@C_TAG_NODE_REPOS@@ repositories (@@C_TAG_LOCAL@@ local, @@C_TAG_CORE_SCHEMA@@ core-schema, @@C_TAG_VERBATIM@@ verbatim) — and a tag is PASSIVE METADATA naming a type, which is the vocabulary's own `references` case for an annotation, and which this lane already publishes as the `declared_type` reference. THE VOCABULARY IS EXPLICIT: `decorates` is a decorator APPLIED TO A DECLARATION, with the direction decorated declaration → decorator, and NOT `calls` because the runtime applies it while the declaration is created. A YAML TAG IS APPLIED TO NOTHING: it types a value. WHAT WOULD OVERTURN THIS: a corpus site where a YAML document declares a DECORATION of another declaration — a key whose value names a thing that wraps or augments the thing it is attached to. MEASURED: the grammar's own inventory of @@NAMED_UNIQUE@@ named node types, the zero edge count and the tag census are in validation/m14/measurements/yaml-emission-census-whole.json, with the grammar's own node-type inventory in validation/m14/measurements/yaml-grammar-binding.json."
       },
       {
@@ -307,18 +307,18 @@
       },
       {
         "label": "mixes_in",
-        "construct": "yaml.merge_sequence_with_more_than_one_alias",
-        "count": "@@C_MERGE_SEQUENCE_WITH_MORE_THAN_ONE_ALIAS@@",
-        "files": "@@C_MERGE_SEQUENCE_WITH_MORE_THAN_ONE_ALIAS_FILES@@",
-        "repos": "@@C_MERGE_SEQUENCE_WITH_MORE_THAN_ONE_ALIAS_REPOS@@",
-        "falsifier": "A merge key whose value is a SEQUENCE of more than one alias — `<<: [*a, *b]` — which is the one YAML shape with NO SINGLE BASE, and the vocabulary's own reason a mixin is not `extends`. THE CONSTRUCT IS COUNTED: `yaml.merge_sequence_with_more_than_one_alias`, over the whole admitted population. Every member of a merge sequence is a BASE: YAML's merge semantics give earlier mappings precedence over later ones, which is an order among bases and not a composition of a mixin into a supertype chain — YAML has no supertype chain, and the merge key adds a base's keys to a mapping.",
+        "construct": "yaml.merge_list_with_a_separate_base_clause",
+        "count": "@@C_MERGE_LIST_WITH_A_SEPARATE_BASE_CLAUSE@@",
+        "files": "@@C_MERGE_LIST_WITH_A_SEPARATE_BASE_CLAUSE_FILES@@",
+        "repos": "@@C_MERGE_LIST_WITH_A_SEPARATE_BASE_CLAUSE_REPOS@@",
+        "falsifier": "A mapping that carries a merge LIST and names its base SEPARATELY — the shape the vocabulary's own reason for a mixin describes: 'a mixin is not `extends` because there is no single base and the `with` list is not an inheritance clause' (`src/ast/types.ts`). In YAML the merge key IS the base clause, so the mixin shape would be a mapping whose merge value is a LIST (`<<: [*a, *b]`) while a separate clause (`extends:` or `allOf:`) names the base. THE CONSTRUCT IS COUNTED: `yaml.merge_list_with_a_separate_base_clause`, over the whole admitted population. A merge LIST ON ITS OWN is common in YAML — merging config fragments is what YAML merging is FOR — and it is NOT a mixin: every member of it is a base, and YAML's merge semantics order the members by precedence, which is an order among bases and not a supertype chain. YAML has no supertype chain.",
         "nearMiss": {
-          "construct": "yaml.merge_key",
-          "count": "@@C_MERGE_KEY@@",
-          "files": "@@C_MERGE_KEY_FILES@@",
-          "repos": "@@C_MERGE_KEY_REPOS@@"
+          "construct": "yaml.merge_sequence_with_more_than_one_alias",
+          "count": "@@C_MERGE_SEQUENCE_WITH_MORE_THAN_ONE_ALIAS@@",
+          "files": "@@C_MERGE_SEQUENCE_WITH_MORE_THAN_ONE_ALIAS_FILES@@",
+          "repos": "@@C_MERGE_SEQUENCE_WITH_MORE_THAN_ONE_ALIAS_REPOS@@"
         },
-        "from": "validation/m14/measurements/yaml-emission-census-whole.json validation/m14/measurements/yaml-grammar-nodes.json — @@NAMED_UNIQUE@@ named node types in the grammar's own inventory; @@C_MERGE_SEQUENCE_WITH_MORE_THAN_ONE_ALIAS@@ yaml.merge_sequence_with_more_than_one_alias sites over the whole admitted population",
+        "from": "validation/m14/measurements/yaml-emission-census-whole.json validation/m14/measurements/yaml-grammar-nodes.json — @@NAMED_UNIQUE@@ named node types in the grammar's own inventory; @@C_MERGE_LIST_WITH_A_SEPARATE_BASE_CLAUSE@@ yaml.merge_list_with_a_separate_base_clause sites over the whole admitted population",
         "statement": "YAML-D24, 2026-10-22 OVER THE WHOLE ADMITTED POPULATION. THE GRAMMAR-SIDE HALF: the pinned build's own inventory is @@NAMED_UNIQUE@@ named node types and it contains NO node type for a mixin — the format's only inheritance mechanism is the merge key, and a merge key is PLAIN TEXT: `<<` is not a node type, it is the text of a key, and the grammar reads it as an ordinary `block_mapping_pair` whose key is the scalar `<<`. THE BEHAVIOUR-SIDE HALF: the analyzer has no `mixes_in` emission site and the edge count over the whole admitted population is 0. THE NEAR MISS IS MEASURED AND IT IS THE DECISIVE ARGUMENT: the merge key occurs @@C_MERGE_KEY@@ times over @@C_MERGE_KEY_FILES@@ files in @@C_MERGE_KEY_REPOS@@ repositories, and the aliases resolve EXACTLY — @@C_MERGE_ALIAS_DIRECT@@ of them are merge aliases and @@C_ALIAS_NOT_A_MERGE@@ are not, and the analyzer publishes exactly @@C_MERGE_ALIAS_DIRECT@@ `extends` edges and @@C_ALIAS_NOT_A_MERGE@@ `uses` edges over the same population, one for one. SO THE ONLY INHERITANCE MECHANISM YAML HAS IS ALREADY SPELLED `extends`, and it is spelled `extends` for the reason the VOCABULARY gives: 'the base is, and `extends` already fires for it'. A YAML DOCUMENT HAS NO MIXIN — it has a base, and the base is the anchor. WHAT WOULD OVERTURN THIS: a corpus construct where a mapping composes a base AND a separate mixin-like object into the same scope, with the two roles distinguishable. The merge SEQUENCE (`<<: [*a, *b]`) is the nearest shape, and it merges several BASES, not a base plus a mixin. MEASURED: the grammar's own inventory of @@NAMED_UNIQUE@@ named node types, the zero edge count and the merge/alias census are in validation/m14/measurements/yaml-emission-census-whole.json, with the grammar's own node-type inventory in validation/m14/measurements/yaml-grammar-binding.json."
       },
       {
@@ -440,7 +440,7 @@
         ]
       }
     },
-    "_from": "THE MEASUREMENT IS THE CENSUS, AND THE CENSUS IS REPRODUCIBLE: `node script/m14/yaml-emission-census.ts --cap=0 --out=validation/m14/measurements/yaml-emission-census-whole.json`, run under the arm protocol (`bash script/m14/arm-token.sh take yaml`, `beat yaml` every 120s, `release yaml`). The BEFORE column is the same command with the analyzer at git HEAD. THE GRAMMAR CITATION IS THE BYTES: `node script/m14/yaml-grammar-binding-probe.ts` writes `validation/m14/measurements/yaml-grammar-binding.json`, which digests the bytes the REGISTRY SERVES and confirms the production parser's node-type inventory equals that build's. THE SPEC'S NUMBERS ARE RE-DERIVED BY `node script/m14/yaml-spec-check.ts`, which reads this file and the two census artifacts and fails if any published number disagrees with them."
+    "_from": "THE MEASUREMENT IS THE CENSUS, AND THE CENSUS IS REPRODUCIBLE. THE WHOLE POPULATION IS WALKED IN DISJOINT CHUNKS OF 2,000 FILES, each chunk taking the small arm slot with its own declared population: `bash script/m14/yaml-census-chunked.sh after` writes `validation/m14/measurements/yaml-census-chunks-after/chunk-NN.json` and merges them into `validation/m14/measurements/yaml-emission-census-whole.json`; `bash script/m14/yaml-census-chunked.sh before` does the same for the BEFORE column, measuring a COPY of the git-HEAD analyzer (`git show HEAD:src/ast/real-yaml-analyzer.ts`, its one relative import rewritten) so the working tree is never touched. The merge is `node script/m14/yaml-census-merge.ts --out <file> <chunk>...` and it REFUSES a set of chunks whose indices do not tile the population or whose total does not equal the admitted total. A SINGLE CHUNK IS `npx tsx script/m14/yaml-emission-census.ts --chunk-idx=<N> --chunk-size=2000 --out=<file>`; the whole population in one process is the same command without the chunk flags, and it is NOT what was run: a tree-sitter WASM module's memory grows with every parse and never shrinks, so one process cannot walk 19,000 files. THE GRAMMAR CITATION IS THE BYTES: `node script/m14/yaml-grammar-binding-probe.ts` writes `validation/m14/measurements/yaml-grammar-binding.json`, which digests the bytes the REGISTRY SERVES and confirms the production parser's node-type inventory equals that build's; `bun script/m14/grammar-node-inventory.ts yaml` writes the served build's node-type NAMES to `validation/m14/measurements/yaml-grammar-nodes.json`, and the two digests agree. THE SPEC'S NUMBERS ARE RE-DERIVED BY `node script/m14/yaml-spec-check.ts`, which reads this file and the census artifacts and FAILS if any published number disagrees with them — including the rule that a ruling's falsifier must NAME a construct the census counts."
   },
   "fixtures": [
     "validation/m14/fixtures/yaml/config-extends-key.yaml",

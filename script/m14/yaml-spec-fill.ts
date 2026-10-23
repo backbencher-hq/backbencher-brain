@@ -61,6 +61,13 @@ const CONSTRUCTS = [
   "yaml.include_family_tag_at_a_key_position",
   "yaml.merge_alias_under-a-FLOW-sequence",
   "yaml.merge_alias_under-a-BLOCK-sequence",
+  // THE TWO CORRECTED COUNTERS — the shape the csharp lane's dialect names for `decorates` (a
+  // CONSTRUCTOR ARGUMENT THAT IS A CALL) and the Dart contract's shape for `mixes_in` (a LIST OF
+  // COMPONENTS ATTACHED SEPARATE FROM THE BASE CLAUSE).
+  "yaml.tag_with_a_constructor_argument",
+  "yaml.tag_with_a_call_shaped_argument",
+  "yaml.merge_list",
+  "yaml.merge_list_with_a_separate_base_clause",
 ]
 
 const readJson = (p: string): any => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : null)
@@ -118,6 +125,9 @@ for (const t of TYPES) {
 V["T_EXTENDS_MERGE"] = perMarkerType["extends | yaml_merge"]?.edges ?? 0
 V["T_EXTENDS_ALLOF"] = perMarkerType["extends | yaml_schema_composition"]?.edges ?? 0
 V["T_EXTENDS_KEY"] = perMarkerType["extends | yaml_config_extends"]?.edges ?? 0
+// THE ALIAS MARKERS, because the merge key's coverage is checked as an EQUALITY: every alias
+// node in the population must be published as an `extends` (a merge) or a `uses` (a plain alias).
+V["T_USES_YAML_ALIAS"] = perMarkerType["uses | yaml_alias"]?.edges ?? 0
 for (const c of CONSTRUCTS) {
   const key = c.replace(/^yaml\./, "").toUpperCase()
   const row = constructs[c]

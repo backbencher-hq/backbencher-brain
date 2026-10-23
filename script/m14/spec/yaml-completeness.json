@@ -424,9 +424,18 @@
   "coverage": {
     "_implemented_measured": {
       "_unit": "whole yaml corpus: 18,364 admitted files, EMITTED column covering 18,354/18,364 (a LOWER BOUND — 10 files degraded by the regex fallback contribute no edges), measured by the lane's whole-corpus gate — validation/m14/fixtures/yaml/ontology-gate-yaml-whole-corpus-round5.txt, whose own header carries the corpus line. `files` is quoted as the artifact prints it, `4+ files`, i.e. a lower bound, not an exact count.",
-      "calls": { "edges": 327, "files": 4 },
-      "exports": { "edges": 4080, "files": 4 },
-      "overrides": { "edges": 26, "files": 4 }
+      "calls": {
+        "edges": 327,
+        "files": 4
+      },
+      "exports": {
+        "edges": 4080,
+        "files": 4
+      },
+      "overrides": {
+        "edges": 26,
+        "files": 4
+      }
     },
     "implemented": [
       "contains",
@@ -462,6 +471,128 @@
         "retracted": "YAML-D5's prose: 'the tag half is `!include`, and the same entry records ZERO `!include` in any of the eight corpora, so the tag half rests on fixtures'",
         "falsifiedBy": "whole admitted population: 4,080 edges, 4,080 resolved with BOTH ends in the edge's own file, emitted from the `openapi:`/`swagger:` shape gate (`yaml_schema_publication`); the largest single source is one repository's OpenAPI set"
       }
+    },
+    "zeroEmissionFacts": [
+      {
+        "label": "decorates",
+        "evidence": "ontological",
+        "from": "validation/m14/measurements/yaml-emission-census-parse-only.json validation/m14/measurements/yaml-grammar-nodes.json — 161 named node types (of 301 ids) in the grammar's own inventory, served build sha256 e752dc21c359; 0 yaml.tag_with_a_call_shaped_argument sites over the whole admitted population (18997 admitted files in 192 repositories); the near miss 167 yaml.tag_with_a_constructor_argument sites",
+        "statement": "`decorates` is an APPLIED CALLABLE: the contract says the source is the decorated declaration and the target is the decorator's name, and that the decorated symbol does not invoke the decorator — the runtime applies it while the declaration is created. **NOT `references`**: a reference says the decorator's name is mentioned, which is true but says nothing about application. YAML's nearest neighbour of an applied callable is a TAG WITH A CONSTRUCTOR ARGUMENT, and a tag's argument is a NAME — `!include` (suffix `include`), `!!str` (suffix `str`), `!e!thing` (handle `!e!`, suffix `thing`). The csharp lane's dialect decides it, and the fleet accepted it twice: IF THE CONSTRUCTOR ARGUMENT IS A CALL IT IS AN APPLICATION; IF IT IS A PLAIN NAME IT IS A POINTER. A YAML tag is PASSIVE METADATA that marks a value; it applies no callable, and the grammar has no syntax for a call inside a tag (no expression or call node type exists among the grammar's named types). AND THE CONSTRUCT IS NOT LOST: a tag that names a declaration in its own document is a POINTER, and the lane publishes it as the reference it is.\n\n⇒ MEASURED, over the whole admitted population (18997 admitted files in 192 repositories): 0 sites of `yaml.tag_with_a_call_shaped_argument` in 0 files and 0 repositories; the measured near miss is 167 sites of `yaml.tag_with_a_constructor_argument` in 77 files and 9 repositories, and the difference between the two IS the ruling.",
+        "construct": "yaml.tag_with_a_call_shaped_argument",
+        "count": 0,
+        "files": 0,
+        "repos": 0,
+        "nearMiss": {
+          "construct": "yaml.tag_with_a_constructor_argument",
+          "count": 167,
+          "files": 77,
+          "repos": 9
+        },
+        "falsifier": "A YAML tag whose CONSTRUCTOR ARGUMENT IS A CALL — a tag whose suffix carries a call's parenthesis. THE CONSTRUCT IS COUNTED: `yaml.tag_with_a_call_shaped_argument`, over the whole admitted population (and `yaml.tag_with_a_constructor_argument` counts the tags that DO carry an argument, so the pointer shape is measured beside it). If that count is NON-ZERO the application shape IS in the language and `decorates` must be implemented instead of ruled.",
+        "population": "18997 admitted files in 192 repositories",
+        "grammarInventory": "161 named node types (of 301 ids) in the grammar's own inventory, served build sha256 e752dc21c359"
+      },
+      {
+        "label": "renders",
+        "evidence": "grammar-absence",
+        "from": "validation/m14/measurements/yaml-emission-census-parse-only.json validation/m14/measurements/yaml-grammar-nodes.json — 161 named node types (of 301 ids) in the grammar's own inventory, served build sha256 e752dc21c359; 0 yaml.template_component_named_in_a_scalar sites over the whole admitted population (18997 admitted files in 192 repositories); the near miss 245 yaml.template_component_named_in_the_file_text sites",
+        "statement": "`renders` is the name in a RETURNED CONSTRUCTION: the source is the rendering symbol and the target is the rendered component. The fleet's four implementations agree on the shape (a JSX tag, a hiccup vector, a type argument, dart's `build` returning a Widget) — a template expression that NAMES A COMPONENT. Such forms EXIST in the corpus's YAML files (`{{ template \"echo-server.fullname\" . }}`, `{{ include \"echo-server.labels\" . | nindent 4 }}`) AND THE YAML GRAMMAR CANNOT LEX THEM: the tree of a Helm chart template has an ERROR node at its ROOT and the interpolation parses as a `flow_mapping` INSIDE that error, not as a scalar. A component-naming interpolation is therefore ANOTHER LANGUAGE'S TEXT INSIDE A YAML FILE, not a YAML construct, and a YAML document has no expression to return a construction from. The second half is the same fact from the other side: the `{{ define }}` DECLARATIONS live in `_helpers.tpl` files, which the admitted extension set does not carry, so no rendered component is declared in the admitted population either. THE DIFFERENCE BETWEEN THE TWO COUNTERS IS THE MEASUREMENT.\n\n⇒ MEASURED, over the whole admitted population (18997 admitted files in 192 repositories): 0 sites of `yaml.template_component_named_in_a_scalar` in 0 files and 0 repositories; the measured near miss is 245 sites of `yaml.template_component_named_in_the_file_text` in 69 files and 3 repositories, and the difference between the two IS the ruling.",
+        "construct": "yaml.template_component_named_in_a_scalar",
+        "count": 0,
+        "files": 0,
+        "repos": 0,
+        "nearMiss": {
+          "construct": "yaml.template_component_named_in_the_file_text",
+          "count": 245,
+          "files": 69,
+          "repos": 3
+        },
+        "falsifier": "A template expression that NAMES A COMPONENT and IS A YAML SCALAR — the construct counted by `yaml.template_component_named_in_a_scalar`, measured against the text-level `yaml.template_component_named_in_the_file_text` over the whole admitted population. If the scalar count is NON-ZERO then the interpolation IS a YAML value and `renders` must be implemented instead of ruled.",
+        "population": "18997 admitted files in 192 repositories",
+        "grammarInventory": "161 named node types (of 301 ids) in the grammar's own inventory, served build sha256 e752dc21c359"
+      },
+      {
+        "label": "mixes_in",
+        "evidence": "ontological",
+        "from": "validation/m14/measurements/yaml-emission-census-parse-only.json validation/m14/measurements/yaml-grammar-nodes.json — 161 named node types (of 301 ids) in the grammar's own inventory, served build sha256 e752dc21c359; 0 yaml.merge_list_with_a_separate_base_clause sites over the whole admitted population (18997 admitted files in 192 repositories); the near miss 1 yaml.merge_sequence_with_more_than_one_alias sites",
+        "statement": "The vocabulary's own reason a mixin is not `extends` is that THERE IS NO SINGLE BASE and the `with` list is not an inheritance clause — so the mixin shape is a LIST OF COMPONENTS ATTACHED SEPARATE FROM THE BASE CLAUSE. IN YAML THE MERGE KEY **IS** THE BASE CLAUSE: `<<: *a` names a, and `<<: [*a, *b]` names several components IN THE SAME POSITION, which YAML's merge semantics order by PRECEDENCE — an order AMONG BASES, not a supertype chain. So a merge list on its own is common (merging configuration fragments is what YAML merging is FOR) and it is NOT a mixin, while the shape that WOULD be one — a merge list beside a separately named base (`extends:` or `allOf:`) — is the counter. YAML has no supertype chain to compose into.\n\n⇒ MEASURED, over the whole admitted population (18997 admitted files in 192 repositories): 0 sites of `yaml.merge_list_with_a_separate_base_clause` in 0 files and 0 repositories; the measured near miss is 1 sites of `yaml.merge_sequence_with_more_than_one_alias` in 1 files and 1 repositories, and the difference between the two IS the ruling.",
+        "construct": "yaml.merge_list_with_a_separate_base_clause",
+        "count": 0,
+        "files": 0,
+        "repos": 0,
+        "nearMiss": {
+          "construct": "yaml.merge_sequence_with_more_than_one_alias",
+          "count": 1,
+          "files": 1,
+          "repos": 1
+        },
+        "falsifier": "A mapping that carries a merge LIST (`<<: [*a, *b]`) and names its base SEPARATELY (`extends:` or `allOf:`) — the construct counted by `yaml.merge_list_with_a_separate_base_clause`, with `yaml.merge_sequence_with_more_than_one_alias` counting the common merge list beside it so the difference between the two shapes is measured. If that count is NON-ZERO then YAML DOES have the mixin shape and `mixes_in` must be implemented instead of ruled.",
+        "population": "18997 admitted files in 192 repositories",
+        "grammarInventory": "161 named node types (of 301 ids) in the grammar's own inventory, served build sha256 e752dc21c359"
+      },
+      {
+        "label": "part_of",
+        "evidence": "ontological",
+        "from": "validation/m14/measurements/yaml-emission-census-parse-only.json validation/m14/measurements/yaml-grammar-nodes.json — 161 named node types (of 301 ids) in the grammar's own inventory, served build sha256 e752dc21c359; 0 yaml.include_family_tag_at_the_document_root sites over the whole admitted population (18997 admitted files in 192 repositories); the near miss 55 yaml.include_family_tag_at_a_key_position sites",
+        "statement": "`part_of` is the shared-scope relation: a part SHARES the library's single scope, imports nothing, and cannot be resolved as a separate module, and the direction is the directive's own. YAML's only candidate is the include-tag family (`!include` and its spellings), and it fails the contract's own test on a MEASURED ground, not a rhetorical one: IT PUTS THE FRAGMENT AT A KEY, NEVER AT THE INCLUDING DOCUMENT'S TOP LEVEL, so the fragment's content becomes the VALUE at a key position and no scope is shared. The second ground is the same one the fleet already uses: it is a LEADER-DEFINED convention (pyyaml-include's README calls it 'an extending constructor of PyYAML'), not a construct of the format, and the lane already publishes it as `imports` with the marker `yaml_tag_include`, which is an honest label. The Hasura spellings are not even tags — `tables: \"!include default/tables/tables.yaml\"` is a QUOTED STRING (`double_quote_scalar`), a fact read off the tree.\n\n⇒ MEASURED, over the whole admitted population (18997 admitted files in 192 repositories): 0 sites of `yaml.include_family_tag_at_the_document_root` in 0 files and 0 repositories; the measured near miss is 55 sites of `yaml.include_family_tag_at_a_key_position` in 25 files and 2 repositories, and the difference between the two IS the ruling.",
+        "construct": "yaml.include_family_tag_at_the_document_root",
+        "count": 0,
+        "files": 0,
+        "repos": 0,
+        "nearMiss": {
+          "construct": "yaml.include_family_tag_at_a_key_position",
+          "count": 55,
+          "files": 25,
+          "repos": 2
+        },
+        "falsifier": "An include-family tag whose parent is the DOCUMENT (or the stream) rather than a mapping pair — the construct counted by `yaml.include_family_tag_at_the_document_root`, measured against `yaml.include_family_tag_at_a_key_position` over the whole admitted population. If the root-position count is NON-ZERO then an included fragment reaches the including document's top-level scope and `part_of` must be implemented instead of ruled.",
+        "population": "18997 admitted files in 192 repositories",
+        "grammarInventory": "161 named node types (of 301 ids) in the grammar's own inventory, served build sha256 e752dc21c359"
+      }
+    ],
+    "denominator": {
+      "n": 8,
+      "types": [
+        "calls",
+        "extends",
+        "uses",
+        "imports",
+        "exports",
+        "contains",
+        "references",
+        "overrides"
+      ],
+      "rule": "n = the fourteen vocabulary values MINUS the two the grammar does not express (implements, instantiates) MINUS the four zero-emission facts above, which the vocabulary's own contracts rule out and whose falsifiers are counted by the census. Every remaining type is implemented and measured over the whole admitted population.",
+      "excludedFromN": {
+        "grammarAbsence": [
+          "implements",
+          "instantiates"
+        ],
+        "zeroEmissionFacts": [
+          "decorates",
+          "renders",
+          "mixes_in",
+          "part_of"
+        ]
+      }
     }
+  },
+  "meta": {
+    "runEnvironment": {
+      "measuredAt": "2026-10-23T16:03:54.510Z",
+      "declaredAt": "2026-10-23T16:06:51.972Z",
+      "mode": "parse-only (constructs only; no analyzer, no per-type tallies)",
+      "chunking": "2,000 files per process, in DISJOINT chunks that tile the admitted set — one process per chunk, because a tree-sitter WASM module's memory grows with every parse and never shrinks (the dart lane measured the wall at roughly 7,600 parses), so a single-process walk that LOOKS complete would measure a fraction of the population while printing a whole-population header",
+      "corpusRoot": "$HOME/mcp/backbencher-brain/.corpus",
+      "cpus": 8,
+      "loadAvg": "9.05 9.19 6.41",
+      "memoryAvailable": "3.6 GB",
+      "memoryTotal": "15.5 GB",
+      "swapInUse": "3.0 GB",
+      "node": "v22.22.1",
+      "caveat": "THE COUNTS THIS DECLARATION CARRIES ARE ONLY AS HEALTHY AS THE BOX THEY WERE TAKEN ON. At declaration time: load average 9.05 9.19 6.41 on 8 CPUs, 3.6 GB available of 15.5 GB, 3.0 GB of swap in use. This machine spent the afternoon of 2026-10-22 in a 20-GB swap, and a closure measured while the box thrashes is a number ABOUT THE BOX. The chunked walk is what makes the counts safe under that: every chunk is its own process and its own parse, so a slow chunk lengthens the run and CANNOT CHANGE A COUNT."
+    },
+    "measuredOnAHealthyBox": false,
+    "measuredOnAHealthyBoxRule": "healthy = load1 < one runnable task per CPU AND swap in use < 1 GB, both read from /proc at declaration time. The counts do not depend on this flag — the walk is chunked, so a slow or thrashing box lengthens the run and cannot change a count — but the runtime it implies does, and a reader comparing two lanes' runtimes needs to know which box each was measured on."
   }
 }

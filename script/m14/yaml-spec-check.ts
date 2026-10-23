@@ -184,6 +184,29 @@ for (const x of zeroFacts) {
   }
 }
 
+// ── 6b. THE HERITAGE COVERAGE — THE YAML ANSWER TO THE LEAD'S BLIND-SPOT PROBE ──────────────────
+//
+// The Lead's `heritage-blindspot-probe.ts` measures, for a language with a heritage NODE, whether
+// every heritage clause's SHAPE reaches the analyzer's lookup. YAML has no heritage NODE — its
+// heritage is a KEY (`<<`, `allOf`, `extends:`) — so the probe declines to configure it ("nothing
+// is measured and nothing is claimed"), and THIS is the lane's own equivalent: the census counts
+// the heritage CLAUSES (the alias nodes) and the analyzer's published edges, and the two must be
+// EQUAL. A clause that is counted and not published is a blind spot, and a blind spot measured on
+// the whole population is a defect, not a rounding difference.
+{
+  const cited = (census.constructs ?? {}) as Record<string, { edges: number }>
+  const aliasClauses =
+    (cited["yaml.merge_alias_direct"]?.edges ?? 0) +
+    (cited["yaml.merge_alias_under-a-FLOW-sequence"]?.edges ?? 0) +
+    (cited["yaml.merge_alias_under-a-BLOCK-sequence"]?.edges ?? 0)
+  const published = (census.perMarkerType ?? {}) as Record<string, { edges: number }>
+  const mergeEdges = published["extends | yaml_merge"]?.edges ?? 0
+  const aliasEdges = published["uses | yaml_alias"]?.edges ?? 0
+  if (aliasClauses !== mergeEdges + aliasEdges) {
+    fail(`THE HERITAGE COVERAGE: ${aliasClauses} alias heritage clauses in the population, but only ${mergeEdges + aliasEdges} published (${mergeEdges} extends + ${aliasEdges} uses) — a clause that is counted and not published is a BLIND SPOT`)
+  }
+}
+
 // ── 7. THE DISJOINTNESS ───────────────────────────────────────────────────────────────────────
 for (const t of implemented) {
   if (gAbs.includes(t)) fail(`"${t}" is BOTH implemented and excluded`)
