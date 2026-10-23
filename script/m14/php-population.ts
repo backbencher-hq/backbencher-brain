@@ -78,6 +78,22 @@ const EMIT = argv.includes("--emit")
 const DISK = argv.includes("--disk")
 const LIMIT_ARG = argv.find((a) => a.startsWith("--limit=")) ?? (argv.includes("--limit") ? `--limit=${argv[argv.indexOf("--limit") + 1]}` : "")
 const LIMIT = LIMIT_ARG ? Number.parseInt(LIMIT_ARG.slice("--limit=".length), 10) : 0
+/** THE PULSED BEAT (fleet rule, 2026-10-22): a beat is a BYPRODUCT OF THE WORK, not a second
+ *  process. `--beat-every=N` execs `arm-token.sh beat php` every N files FROM INSIDE this arm's own
+ *  loop, so the token's age IS the arm's age — a stalled arm stops beating at exactly the moment it
+ *  stopped working, and there is one liveness signal instead of two that can disagree. The beat can
+ *  never fail the measurement: a refused beat is swallowed and the parse continues (a token problem
+ *  is reported by the token, not by a dropped file). */
+const BEAT_EVERY = (() => {
+  const a = argv.find((x) => x.startsWith("--beat-every="))
+  const n = a ? Number.parseInt(a.slice("--beat-every=".length), 10) : 0
+  return Number.isFinite(n) && n > 0 ? n : 0
+})()
+const beat = (): void => {
+  try {
+    execFileSync("bash", [resolve(REPO, "script/m14/arm-token.sh"), "beat", "php"], { stdio: "ignore", timeout: 20_000 })
+  } catch { /* a refused beat is the token's business, never a reason to fail a measurement */ }
+}
 const ROOT = process.env.BB_CORPUS_ROOT ?? join(process.cwd(), ".corpus")
 
 if (!existsSync(ROOT)) {
@@ -357,10 +373,17 @@ if (EMIT) {
   const targetAdmitted = (fromFile: string, target: string): boolean => {
     if (!target || /^[a-z][a-z0-9+.-]*:\/\//i.test(target)) return false
     const base = dirname(fromFile)
+    // `__DIR__` IS THE FILE'S OWN DIRECTORY — substitute it before resolving, or every magic-constant
+    // spelling reads "not an admitted file" and the dangling count is a statement about the Census's
+    // own spelling rather than about the corpus. (The claim pass does the same substitution through
+    // `fileClaimForTarget`; this is a census, not the claim, so the rule is repeated rather than
+    // imported — and the two must be compared on the arm, not assumed equal.)
+    const byDir = target.replace(/^__DIR__\/??/, "")
     const candidates = [
+      resolve(base, byDir),
       resolve(base, target),
       resolve(base, target.replace(/^\/+/, "")),
-      resolve(ROOT, target.replace(/^\/+/, "")),
+      resolve(ROOT, byDir),
     ]
     for (const c of candidates) {
       try { if (admittedRealSet.has(realpathSync(c))) return true } catch { /* not on disk */ }
@@ -369,7 +392,9 @@ if (EMIT) {
   }
 
   let parsed = 0
+  let sinceBeat = 0
   for (const f of files) {
+    if (BEAT_EVERY > 0 && ++sinceBeat >= BEAT_EVERY) { sinceBeat = 0; beat() }
     let content: string
     try { content = readFileSync(f, "utf8") } catch { parseFailures.push(f); continue }
     let pr: any
@@ -522,6 +547,7 @@ if (emit) {
   console.log(`mixes_in — trait-use rows by the analyzer's own marker: ${say(emit.traitUse.rows)} over ${say(emit.traitUse.files)} files · current type(s): ${JSON.stringify(emit.traitUse.currentTypes)}`)
   console.log(`part_of  — include/require rows by WRITTEN FORM: ${Object.entries(emit.partOfSplit).map(([k, v]) => `${k} ${v.rows}/${v.files}`).join(" · ") || "(none)"}`)
   console.log(`           targets NOT resolved inside the admitted set: ${say(emit.partOfMissingTarget.rows)} (the 'danglingPartOf' class; see the declaration)`)
+  for (const s of emit.partOfMissingTarget.sample.slice(0, 5)) console.log(`             e.g. ${s}`)
   console.log(`decorates — attribute groups ${say(emit.attributes.groups)} · attributes ${say(emit.attributes.attributes)} over ${say(emit.attributes.files)} files · DECISIVE COUNTER (call-shaped attribute argument) ${say(emit.attributes.argumentCallShaped)} over ${say(emit.attributes.argumentCallShapedFiles)} files`)
   console.log(`           annotated declaration kinds: ${JSON.stringify(emit.attributes.annotatedDeclKinds)}`)
   console.log(`renders  — inline HTML: text ${say(emit.inlineHtml.textNodes)} · text_interpolation ${say(emit.inlineHtml.textInterpolationNodes)} over ${say(emit.inlineHtml.files)} files · component/element/render-name stems: ${JSON.stringify(emit.stemMatches["renders"] ?? {})}`)
@@ -541,6 +567,7 @@ if (JSON_OUT) {
       mode: LIMIT > 0 ? `SAMPLE ${LIMIT}` : "WHOLE ADMITTED POPULATION",
       parsed: emit.parsed,
       parseFailures: emit.parseFailures.length,
+      beatEvery: BEAT_EVERY,
       seconds: emit.seconds,
       perType: Object.fromEntries(FOURTEEN.map((t) => [t, { edges: emit.perType[t].edges, files: emit.perType[t].files.size, repos: emit.perType[t].repos.size }])),
       mixes_in: { traitUseRows: emit.traitUse.rows, traitUseFiles: emit.traitUse.files, currentTypes: emit.traitUse.currentTypes, sample: emit.traitUse.sample },
