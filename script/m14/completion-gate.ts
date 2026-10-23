@@ -176,8 +176,36 @@ const readCoverageGate = (): { rows: Map<string, GateRow>; raw: string } => {
 const declarationPath = (lane: string): string =>
   resolve(REPO, `validation/m14/instruments/${lane}/incoming-declaration.json`)
 
-/** The population string the cause rulings carry: `parsed=989/989 admitted=989 exts=rb index=no`. */
-const POPULATION_RE = /parsed=(\d+)\/(\d+)\s+admitted=(\d+)\s+exts=([^ ]*)\s+index=(\S+)/
+/**
+ * The population string the cause rulings carry: `parsed=989/989 admitted=989 exts=rb index=no`.
+ *
+ * ★ THE SHORT FORM IS ACCEPTED, AND THE TWO FAILURES ARE NOW DISTINGUISHED. MEASURED 2026-10-23 by
+ * the yaml lane: a cause ruling that carried `parsed=18997/18997 admitted=18997` — the CORRECT
+ * numbers in a SHORTER spelling — parsed as NULL, and this gate then reported
+ * `fails: whole-population` while the declaration's `meta` block was completely correct.
+ * ⇒ **THE GATE WAS REPORTING A MISSING MEASUREMENT WHEN WHAT IT HAD WAS A MALFORMED ONE**, and a
+ * lane reading that verdict goes hunting for a run it already owns. `exts` and `index` are now
+ * OPTIONAL and the numbers alone are enough; `parsePopulation` distinguishes "no population
+ * mentioned at all" from "a population mentioned that cannot be read", and the caller says which.
+ */
+const POPULATION_RE = /parsed=(\d+)\/(\d+)\s+admitted=(\d+)(?:\s+exts=([^ ]*))?(?:\s+index=(\S+))?/
+
+/** A population string was PRESENT but this gate could not read it — not the same as absent. */
+class MalformedPopulation extends Error {
+  constructor(public readonly raw: string) {
+    super(`a population is present but unreadable: "${raw.slice(0, 160)}"`)
+  }
+}
+
+/** Parse, but TURN a malformed population into a MESSAGE rather than an exception, so the verdict
+ *  says "malformed" where it used to say "missing". */
+const parsePopulationSafe = (s: string | undefined): { pop: Population | null; malformed: string | null } => {
+  try {
+    return { pop: parsePopulation(s), malformed: null }
+  } catch (e: any) {
+    return { pop: null, malformed: e instanceof MalformedPopulation ? e.raw : String(e?.message ?? e) }
+  }
+}
 
 interface Population {
   parsed: number
@@ -190,8 +218,16 @@ interface Population {
 const parsePopulation = (s: string | undefined): Population | null => {
   if (!s) return null
   const m = s.match(POPULATION_RE)
-  if (!m) return null
-  return { parsed: Number(m[1]), total: Number(m[2]), admitted: Number(m[3]), exts: m[4], index: m[5] }
+  if (!m) {
+    // MENTIONED BUT UNREADABLE is its own outcome. Only a string that talks about a population at
+    // all earns this; prose with no numbers is simply absent.
+    if (/\bparsed\s*=/i.test(s)) throw new MalformedPopulation(s)
+    return null
+  }
+  return {
+    parsed: Number(m[1]), total: Number(m[2]), admitted: Number(m[3]),
+    exts: m[4] ?? "(unstated)", index: m[5] ?? "(unstated)",
+  }
 }
 
 /**
@@ -310,11 +346,15 @@ const judgeLane = (lane: string, row: GateRow): LaneVerdict => {
 
   const rulings: Record<string, any> = decl?.causeRulings ?? {}
   const rulingEntries = Object.entries(rulings)
-  const populations = rulingEntries.map(([k, v]) => ({ cause: k, pop: parsePopulation(v?.population) }))
+  const populations = rulingEntries.map(([k, v]) => {
+    const r = parsePopulationSafe(v?.population)
+    return { cause: k, pop: r.pop, malformed: r.malformed }
+  })
 
   // ── (B) MEASURED ON THE WHOLE ADMITTED POPULATION ───────────────────────
   {
     const withPop = populations.filter((r) => r.pop !== null)
+    const malformedPops = populations.filter((r) => r.malformed !== null)
     if (rulingEntries.length === 0) {
       // No walls at all ⇒ nothing to dispose of ⇒ the population condition is satisfied only if the
       // declaration SAYS the whole population was measured. Absence of walls is not absence of a
@@ -439,8 +479,13 @@ const judgeLane = (lane: string, row: GateRow): LaneVerdict => {
     // POPULATION and a FALSIFIER, and the falsifier needs a RUN and a WOULD-FAIL.
     const hollow: string[] = []
     for (const [cause, r] of rulingEntries) {
-      const pop = parsePopulation((r as any)?.population)
+      const parsed = parsePopulationSafe((r as any)?.population)
+      const pop = parsed.pop
       const f = (r as any)?.falsifier
+      if (parsed.malformed !== null) {
+        hollow.push(`${cause} (POPULATION PRESENT BUT UNREADABLE, not absent: "${parsed.malformed.slice(0, 90)}")`)
+        continue
+      }
       const hasRun = typeof f?.run === "string" && f.run.trim().length > 0
       const hasWouldFail = typeof f?.wouldFail === "string" && f.wouldFail.trim().length > 0
       if (!pop) hollow.push(`${cause} (no population)`)
