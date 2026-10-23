@@ -612,18 +612,11 @@
       "instantiates",
       "decorates",
       "renders",
-      "mixes_in",
-      "part_of"
+      "mixes_in"
     ],
     "excluded": [],
-    "corpusUnexercised": [
-      {
-        "label": "mixes_in",
-        "evidence": "corpus-unexercised",
-        "from": "IMPLEMENTED AND CORPUS-UNEXERCISED \u2014 counted ONCE, in `implemented`, with its unexercised status reported beside the verdict (the csharp `renders` precedent). THE EMISSION SITE EXISTS: `extractMixinApplications` publishes a `mixes_in` row when a class's extends-expression is a call_expression, `class X extends Mixin(Base) {}`, with `mixinCalleeShape` and `mixinArgCount` in metadata. THE PROOF THAT IT IS A REAL IMPLEMENTATION AND NOT A DECORATION IS A FIXTURE: validation/m14/fixtures/typescript/mixin-application.ts with its .expectation.json fires `mixes_in Post -> Tagged` and forbids it for the plain subclass; the suite reads 120 pass / 0 fail. THE CORPUS HAS NO SITE: 0 call-shaped heritage clauses in 17,689 files / 42 repos (digest 949d0fd6a615bd3e\u2026), against 2,186 class heritage clauses and 1,107 interface-merging clauses. MEASURED: validation/m14/measurements/typescript-mixin-sites.json; the shape census is script/m14/ts-mixin-sites.ts and the population rule is script/m14/ts-corpus.ts. CROSS-CHECK: the javascript lane measures 76 call-shaped heritage clauses in ITS population, so 76 there and 0 here is a fact about two CORPORA, not two instruments. THIS IS NOT GRAMMAR-ABSENCE: the language expresses the construct and the grammar has the nodes."
-      }
-    ],
-    "_from": "FOURTEEN OF FOURTEEN \u2014 ALL FOURTEEN TYPES ARE IMPLEMENTED, AND NEITHER REMAINING TYPE WAS RULED AWAY. The round opened at TWELVE OF TWELVE with both remaining types declared grammar-absence; that reading was WITHDRAWN because 'TypeScript has no mixin construct' and 'TypeScript has no part directive' are different claims and only the second is even arguable. THE LADDER WAS THEN WALKED FOR BOTH: `mixes_in` at R3 \u2014 no grammar change, because the heritage clause already carried the shape (`class X extends Mixin(Base) {}` is a call_expression in the extends position), so the relation was always in the tree and only the analyzer had to read it; the corpus holds 0 sites, which is a PROPERTY of the implemented row reported beside the verdict, and the fixture proves the edge fires when the shape is present. `part_of` at R2 \u2014 R1 was EXHAUSTED BY MEASUREMENT (all 8 published releases carry 0 reference-directive node types) and R3 was REFUSED BY CONTRACT (the only existing carrier is the `comment` node, and reading a directive out of a comment's text is a text resolution), so this lane PATCHED THE DERIVED GRAMMAR: one rule and one program, a `reference_directive` node carrying `role` and `target` AS FIELDS, built as 8586372d50cb\u2026 and proven behaviourally with script/m14/ts-partof-grammar-proof.ts. \u21d2 THE POPULATION NUMBERS COME FROM THE ARM, NOT FROM THIS BLOCK: the cell's rows are the whole-population measurement and the declaration carries the closure. A type implemented here and unmeasured over the population is implemented and unmeasured, and this block does not pretend otherwise.",
+    "corpusUnexercised": [],
+    "_from": "THIRTEEN OF FOURTEEN, AND THE FOURTEENTH IS A GAP THAT IS BEING CLOSED RATHER THAN ONE THAT IS CLOSED. The round opened at TWELVE OF TWELVE with both remaining types declared grammar-absence; that was withdrawn because the two absences are different claims and only one of them was ever true about the language. `mixes_in` was then TAKEN at R3 \u2014 no grammar change, because the heritage clause already carried the shape \u2014 and the corpus holds 0 sites, a PROPERTY of the implemented row, proved by fixture instead of by population. `part_of` was TAKEN at R2: R1 exhausted by measurement (8 of 8 published releases carry 0 reference-directive node types) and R3 refused by contract (a directive read out of a comment's text is a text resolution). The lane PATCHED THE DERIVED GRAMMAR, BUILT IT, AND PROVED IT BEHAVIOURALLY. It then MEASURED THE SWAP'S COST and found five labels moving \u2014 and a no-patch control showed an unpatched rebuild moving them the same way, so the cost is the regenerator. The wiring is withdrawn pending the Lead's re-wire and a whole-population re-baseline, because a declaration must be a measurement of the bytes in the tree. \u21d2 SO THE LANE READS 13 OF 14. It read 14 of 14 for one commit, on a grammar whose safety it then falsified, and the number came back down without argument.",
     "_implemented_measured": {
       "_unit": "edges published through the production path over the WHOLE ADMITTED population (17,689 files / 42 repos, population digest 949d0fd6a615bd3e\u2026 \u2014 git-tracked, extension-admitted .ts/.tsx/.mts/.cts from the ROUTER'S ONE TABLE, at most the gate's 1 MB SIZE_CAP, present; 0 parse failures; 1 file over the cap and never parsed) \u2014 the arm's own TABLE 1, published in validation/m14/measurements/typescript-cell-3bb68c27fdc4.md, whose twelve rows sum to its own TOTAL and whose class sum closes to the edge count EXACTLY. Population rule: script/m14/ts-corpus.ts (one place, imported by every lane instrument). Command: BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts typescript ts,tsx,mts,cts 0 --index",
       "calls": {
@@ -663,10 +656,15 @@
         "edges": 18744
       }
     },
-    "grammarRemedyPending": [],
+    "grammarRemedyPending": [
+      {
+        "label": "part_of",
+        "from": "THE RUNG IS BUILT AND PROVEN AND THE WIRING IS WITHDRAWN, SO THE TYPE IS A GAP AGAIN. The triple-slash directive is a real construct (`/// <reference path|types|lib=\"\u2026\" />`) and the SERVED build 8515404dceed\u2026 lexes it as an ordinary COMMENT, so the tree has no node for it; the analyzer publishes 0 `part_of` edges. THE POPULATION IS 51 directives in 35 files of 17,689 (path 2 \u00b7 types 48 \u00b7 lib 1). THIS LANE PATCHED THE GRAMMAR AND BUILT IT \u2014 8586372d50cbdc97dbcc1f8affe66028680a2fe8c9b1e608197587c3ac2c6ab3 (v2, fields) and b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335 (v3, atomic token) \u2014 and PROVED the change behaviourally with script/m14/ts-partof-grammar-proof.ts: the served build makes three directives three COMMENTS and the patched build makes them three `reference_directive` NODES while an ordinary comment stays a comment. THE WIRING WAS WITHDRAWN BECAUSE THE RUNG CARRIES A COST: a controlled 250-file two-build delta shows five labels other than `part_of` moving, and a NO-PATCH CONTROL \u2014 the same source with the patch removed, rebuilt by the same CLI, f8b892cc9b0617feda\u2026 \u2014 perturbs 22 of 250 files the same way, so THE COST IS THE REGENERATOR AND NOT THE RULE. MEASURED: validation/m14/measurements/typescript-grammar-rebuild-drift.md. \u21d2 THE TYPE STAYS IN THE DENOMINATOR UNTIL THE RE-WIRING AND THE RE-BASELINE LAND: a declaration must be a measurement of the bytes in the tree. The lane therefore reads 13 of 14, and it will read 14 of 14 only when `part_of` is emitted by the grammar this lane actually runs."
+      }
+    ],
     "denominator": {
       "n": 14,
-      "rule": "applicable = 14 \u2212 grammarAbsence(0) \u2212 zeroEmissionFacts(0) = 14. implemented 14 + corpusUnexercised-that-are-also-implemented 0 extra (mixes_in is counted ONCE, inside `implemented`, with its unexercised status as a PROPERTY reported beside the verdict) + gaps 0 = 14, which is the gate's own closure. NOTHING IS EXCLUDED AND NOTHING IS PENDING: both remaining types were TAKEN BY A RUNG rather than ruled away \u2014 `mixes_in` at R3 (no grammar change; the heritage clause already carried the shape) and `part_of` at R2 (this lane patched and built the grammar, 8586372d\u2026, and proved the change behaviourally).",
+      "rule": "applicable = 14 \u2212 grammarAbsence(0) \u2212 zeroEmissionFacts(0) = 14. implemented 13 + gaps 1 (`part_of`, built and proven but NOT WIRED, so it is a gap) = 14, which is the gate's own closure. NOTHING IS EXCLUDED AND NOTHING IS UNEXERCISED: `mixes_in` was TAKEN at R3 and the population EXERCISES it \u2014 2 edges over 17,689 files, both resolved (the vault UI's `class X extends baseResourceFactory<Mount>()`). The first census reported 0 and was WRONG: its pattern required `Name(` and missed a GENERIC callee. The analyzer's own measurement is what falsified it, which is the falsifier working as written. `part_of` was TAKEN at R2, its build is proven, and the swap is withdrawn pending a re-baseline.",
       "types": [
         "calls",
         "uses",
@@ -684,5 +682,6 @@
         "part_of"
       ]
     }
-  }
+  },
+  "_after_the_arm": "THE WHOLE-POPULATION ARM RAN (17,689 files / 42 repos, --index, on the build that was wired at the time: 8586372d\u2026): 1,011,022 edges, 13 of the 14 types publishing. THE ARM'S OWN RESOLUTION CLOSURE IS OFF BY ONE \u2014 TOTAL resolves to 1,011,021 against 1,011,022 edges, and the single unaccounted edge is in `contains` (94,113 of 94,114) \u2014 so the declaration generator REFUSES to write until the arm closes, because the difference must not be parked in `unclassed`. `part_of` published 50 edges (0 resolved, 12 ambiguous, 38 unresolved) and `mixes_in` 2 (both resolved)."
 }

@@ -74,6 +74,10 @@ const rows: Record<string, number>[] = []
 for (let i = hIdx + 1; i < lines.length; i++) {
   const line = lines[i].trim()
   if (!line) continue
+  // ⇒ THE SEPARATOR ROW. The report prints a dashed rule under every header, and a parser that treats
+  // it as a row reads zero rows and then reports a zero-row closure — the failure this program REFUSES
+  // rather than reports. Skipping it by SHAPE (nothing but dashes) rather than by position is the point.
+  if (/^-+$/.test(line)) continue
   const cells = line.split(/\s+/)
   if (cells.length < 14) break
   const type = cells[0]
