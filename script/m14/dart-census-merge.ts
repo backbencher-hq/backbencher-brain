@@ -204,7 +204,7 @@ if (KIND === "constructs") {
   // … CONTIGUOUS, the last slice must END at that repository's admitted total, and the summed
   // slices must equal the sum of the admitted totals. A gap, an overlap or a shortfall is REFUSED
   // HERE, because a merge that cannot cover the population must not print a population's number.
-  const byRepo = new Map<string, { offsets: number[]; parsed: number; total: number }>()
+  const byRepo = new Map<string, { offsets: number[]; parsed: number; total: number; parsedByOffset: Map<number, number> }>()
   for (const [i, f] of files.entries()) {
     const name = CHUNKS[i].split("/").pop() ?? ""
     const m = name.match(/^(.*)-(\d+)\.json$/)
@@ -212,8 +212,9 @@ if (KIND === "constructs") {
     const repo = m[1]!
     const off = Number(m[2])
     const pop = (f as any).population ?? {}
-    const cur = byRepo.get(repo) ?? { offsets: [], parsed: 0, total: Number(pop.corpusTotal ?? 0) }
+    const cur = byRepo.get(repo) ?? { offsets: [], parsed: 0, total: Number(pop.corpusTotal ?? 0), parsedByOffset: new Map<number, number>() }
     cur.offsets.push(off)
+    cur.parsedByOffset.set(off, Number(pop.parsed ?? 0))
     cur.parsed += Number(pop.parsed ?? 0)
     cur.total = Math.max(cur.total, Number(pop.corpusTotal ?? 0))
     byRepo.set(repo, cur)
@@ -223,9 +224,24 @@ if (KIND === "constructs") {
   for (const [repo, r] of byRepo) {
     admittedTotal += r.total
     const sorted = [...r.offsets].sort((a, b) => a - b)
-    const CH = 2000
-    for (let k = 0; k < sorted.length; k++) {
-      if (sorted[k]! !== k * CH) tilingProblems.push(`${repo}: slice ${k} starts at ${sorted[k]}, expected ${k * CH} — the slices do NOT tile`)
+    // ══ THE WIDTH OF A SLICE IS MEASURED, NOT ASSUMED. A slice's own `parsed` IS the number of files
+    // it walked from its offset, so the tiling rule is exact and width-agnostic: the first slice
+    // starts at 0, EVERY slice ends exactly where the next one begins, and the last slice ends at the
+    // repository's admitted total. A slice's WIDTH is a cost decision — a 2,000-file slice is much
+    // slower than four 500-file slices because the WASM module's memory grows inside one process —
+    // and it is never a rule about what a tiling IS. Assuming a fixed 2,000 would REFUSE a tiling
+    // that covers the population perfectly, which is the very failure this check exists to prevent.
+    if (sorted[0] !== 0) tilingProblems.push(`${repo}: the first slice starts at ${sorted[0]}, not 0 — the slices do NOT tile`)
+    for (let k = 0; k + 1 < sorted.length; k++) {
+      const width = r.parsedByOffset.get(sorted[k]!) ?? 0
+      if (sorted[k]! + width !== sorted[k + 1]) {
+        tilingProblems.push(`${repo}: the slice at ${sorted[k]} parsed ${width} file(s), so it ends at ${sorted[k]! + width}, but the next slice starts at ${sorted[k + 1]} — the slices do NOT tile`)
+      }
+    }
+    const lastOff = sorted[sorted.length - 1]!
+    const lastWidth = r.parsedByOffset.get(lastOff) ?? 0
+    if (lastOff + lastWidth !== r.total) {
+      tilingProblems.push(`${repo}: the last slice starts at ${lastOff} and parsed ${lastWidth} file(s), so it ends at ${lastOff + lastWidth}, but the repository admits ${r.total} — the slices do NOT cover the repository`)
     }
     if (r.parsed !== r.total) tilingProblems.push(`${repo}: the slices parse ${r.parsed} files, the repository admits ${r.total} — the slices do NOT cover the repository`)
   }

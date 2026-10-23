@@ -695,6 +695,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     filePath: string,
     context?: ASTEngine.AnalyzeContext
   ): ASTEngine.ParseResult & { metadata: Partial<ASTEngine.FileMetadata> } {
+    // ══ A PER-FILE CACHE, CLEARED PER FILE. The scope-declaration index below is built once per
+    // enclosing scope and reused for every read inside it; an analyzer instance is reused across
+    // files by the gate, so a cache that outlived this call would serve one file's declarations to
+    // the next file's reads. Cleared here, at the only entry point that starts a file.
+    this.scopeDeclIndex.clear()
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -5148,7 +5153,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (p.type === "block" || p.type === "function_body") {
         const decl = this.scopeOwnDeclaration(p, name, n.startIndex)
         if (decl !== null) {
-          return { localBindingScope: `${p.startIndex}:${decl.startIndex}` }
+          return { localBindingScope: `${p.startIndex}:${decl}` }
         }
       }
       p = p.parent
@@ -5156,29 +5161,64 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
+  // ══ THE SCOPE-DECLARATION INDEX — ONE WALK PER SCOPE, NOT ONE WALK PER READ.
+  //
+  // `scopeOwnDeclaration` used to walk the ENTIRE subtree of the enclosing scope for EVERY local
+  // read. On ordinary files that is invisible; on a file of deeply nested statements it is fatal,
+  // because each of the N reads walks a subtree that contains most of the file, so the pass is
+  // O(N × subtree) — quadratic in DEPTH. Measured on `deep_nesting_statement_test.dart`
+  // (350,435 B, 130,042 nodes): the raw tree walk costs 187 ms (0.0014 ms/node) while the analyzer
+  // spent ~3.8 ms per node-visit, and this function is where that went.
+  //
+  // The fix is the same shape the gate's `addKey` fix had: PAY ONCE. A scope's own declarations are
+  // a property of the SCOPE, so they are indexed on first use and every later read is a lookup.
+  // The key is `${startIndex}:${endIndex}:${type}` and NOT the node object, because web-tree-sitter
+  // hands out FRESH wrappers on every traversal — a memo keyed on the object would never hit and
+  // would grow without bound. A memo that never hits is a leak with extra steps.
+  //
+  // The index is cleared at the top of `analyze()`: an analyzer instance outlives one file, and a
+  // cache that outlived it would serve one file's declarations to the next file's reads.
+  private scopeDeclIndex = new Map<string, Map<string, number[]>>()
+
   /**
    * THE DECLARATION OF `name` THAT BELONGS TO THIS SCOPE — the block's OWN declarations, not
    * the ones in a nested block (a nested block is a DIFFERENT scope, and a declaration there
-   * does not belong to this one).
+   * does not belong to this one). Returns the declaration's START INDEX, which is all the caller
+   * needs (`<scopeStart>:<declStart>`), so no node is retained.
    */
-  private scopeOwnDeclaration(scope: Node, name: string, before: number): Node | null {
-    let found: Node | null = null
-    let foundStart = -1
-    const walk = (n: Node, depth: number): void => {
-      if (depth > 64) return
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const c = n.namedChild(i)
-        if (!c) continue
-        // A NESTED SCOPE IS NOT THIS SCOPE'S DECLARATION.
-        if (c.type === "block" || c.type === "function_body" || c.type === "class_body") continue
-        if (c.type === "identifier" && c.text === name && this.isDartDeclaredName(c) && c.startIndex < before) {
-          if (c.startIndex > foundStart) { found = c; foundStart = c.startIndex }
+  private scopeOwnDeclaration(scope: Node, name: string, before: number): number | null {
+    const key = `${scope.startIndex}:${scope.endIndex}:${scope.type}`
+    let index = this.scopeDeclIndex.get(key)
+    if (!index) {
+      index = new Map<string, number[]>()
+      // THE SAME WALK AS BEFORE, RUN ONCE PER SCOPE: this scope's own declarations only, with every
+      // declared name's start index recorded so the "before this read" test can be answered later.
+      const walk = (n: Node, depth: number): void => {
+        if (depth > 64) return
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          // A NESTED SCOPE IS NOT THIS SCOPE'S DECLARATION.
+          if (c.type === "block" || c.type === "function_body" || c.type === "class_body") continue
+          if (c.type === "identifier" && this.isDartDeclaredName(c)) {
+            const arr = index!.get(c.text)
+            if (arr) arr.push(c.startIndex)
+            else index!.set(c.text, [c.startIndex])
+          }
+          walk(c, depth + 1)
         }
-        walk(c, depth + 1)
       }
+      walk(scope, 0)
+      this.scopeDeclIndex.set(key, index)
     }
-    walk(scope, 0)
-    return found
+    const starts = index.get(name)
+    if (!starts || starts.length === 0) return null
+    // THE NEAREST DECLARATION BEFORE THE READ — the greatest start index strictly below `before`,
+    // which is exactly what the old walk selected. The list holds one scope's declarations of ONE
+    // name, so a scan is both the cheapest and the most honest form.
+    let best = -1
+    for (const s of starts) if (s < before && s > best) best = s
+    return best < 0 ? null : best
   }
 
   /**
