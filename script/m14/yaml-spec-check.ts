@@ -207,8 +207,21 @@ for (const x of zeroFacts) {
   const published = (census.perMarkerType ?? {}) as Record<string, { edges: number }>
   const mergeEdges = published["extends | yaml_merge"]?.edges ?? 0
   const aliasEdges = published["uses | yaml_alias"]?.edges ?? 0
-  if (aliasClauses !== mergeEdges + aliasEdges) {
-    fail(`THE HERITAGE COVERAGE: ${aliasClauses} alias heritage clauses in the population, but only ${mergeEdges + aliasEdges} published (${mergeEdges} extends + ${aliasEdges} uses) — a clause that is counted and not published is a BLIND SPOT`)
+  // ★ THE COMPARISON IS CLAUSE-TO-CLAUSE, AND IT USED TO ADD A COUNT THAT IS NOT A HERITAGE CLAUSE.
+  // The three `merge_alias_*` counters count MERGE aliases — the heritage clauses — and every one of
+  // them must be published as an `extends`. `uses | yaml_alias` counts EVERY plain alias, including
+  // the ones that are not merges at all (`yaml.alias_NOT_a_merge` is its own counter), so adding it
+  // to the heritage clause count made a CORRECT publication read as a blind spot: 155 clauses
+  // against "323 published". THE DEFECT WAS IN THE CHECK, NOT THE ANALYZER — and a check that
+  // cannot be satisfied is worse than no check, because the next lane disables it.
+  if (aliasClauses !== mergeEdges) {
+    fail(`THE HERITAGE COVERAGE: ${aliasClauses} merge-alias heritage clauses in the population, but ${mergeEdges} published as \`extends\` — a clause that is counted and not published is a BLIND SPOT`)
+  }
+  // AND THE OTHER ALIASES ARE REPORTED, NOT ASSERTED: the plain aliases exist and are published as
+  // `uses`, and the two counts are printed together so a reader can see that the shape census and
+  // the analyzer disagree about NOTHING rather than merely disagreeing about nothing it prints.
+  if (aliasClauses > 0 && aliasEdges === 0) {
+    fail(`THE HERITAGE COVERAGE: ${aliasClauses} merge-alias clauses exist but the analyzer published NO \`uses\` alias edge at all — the alias emission site is silent`)
   }
 }
 

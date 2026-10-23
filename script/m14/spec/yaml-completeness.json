@@ -423,18 +423,77 @@
   },
   "coverage": {
     "_implemented_measured": {
-      "_unit": "whole yaml corpus: 18,364 admitted files, EMITTED column covering 18,354/18,364 (a LOWER BOUND — 10 files degraded by the regex fallback contribute no edges), measured by the lane's whole-corpus gate — validation/m14/fixtures/yaml/ontology-gate-yaml-whole-corpus-round5.txt, whose own header carries the corpus line. `files` is quoted as the artifact prints it, `4+ files`, i.e. a lower bound, not an exact count.",
+      "_unit": "the whole admitted population: 18997 admitted .yaml/.yml files in 192 repositories (18997 paths, 18970 distinct), walked from the corpus root with symlinked repositories FOLLOWED (199), read from validation/m14/measurements/yaml-emission-census-full.json",
+      "contains": {
+        "edges": 1413388,
+        "files": 18509,
+        "repos": 192,
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-full.json"
+        ]
+      },
+      "uses": {
+        "edges": 168,
+        "files": 46,
+        "repos": 8,
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-full.json"
+        ]
+      },
+      "references": {
+        "edges": 21807,
+        "files": 950,
+        "repos": 104,
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-full.json"
+        ]
+      },
+      "imports": {
+        "edges": 8632,
+        "files": 1696,
+        "repos": 171,
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-full.json"
+        ]
+      },
+      "extends": {
+        "edges": 1125,
+        "files": 120,
+        "repos": 18,
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-full.json"
+        ],
+        "forms": {
+          "merge_key": 155,
+          "schema_composition_allOf": 892,
+          "config_extends_key": 78,
+          "_sum": 1125,
+          "_note": "the three mechanisms are counted separately; their sum is the row's `edges` when no other marker also emits `extends`, and the census's perMarkerType is the artifact that proves it"
+        }
+      },
+      "overrides": {
+        "edges": 32,
+        "files": 24,
+        "repos": 12,
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-full.json"
+        ]
+      },
       "calls": {
-        "edges": 327,
-        "files": 4
+        "edges": 343,
+        "files": 165,
+        "repos": 54,
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-full.json"
+        ]
       },
       "exports": {
         "edges": 4080,
-        "files": 4
-      },
-      "overrides": {
-        "edges": 26,
-        "files": 4
+        "files": 68,
+        "repos": 7,
+        "artifacts": [
+          "validation/m14/measurements/yaml-emission-census-full.json"
+        ]
       }
     },
     "implemented": [
