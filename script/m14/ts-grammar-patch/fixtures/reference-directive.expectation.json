@@ -1,0 +1,22 @@
+{
+  "fixtureId": "typescript/reference-directive",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The triple-slash reference directive is a REAL construct that the SERVED grammar lexes as a comment, so the tree has no node for it and no relation can be read. This lane's patched grammar (8586372d…, one rule and one program, a `reference_directive` node carrying `role` and `target` AS FIELDS) makes each directive a node, and the analyzer reads the fields rather than a comment's text. All three roles are pinned: `types`, `path`, `lib`. An ordinary comment must produce no edge at all — the negative half that proves the patch does not eat comments.",
+  "expectSymbols": [
+    { "name": "answer" }
+  ],
+  "expectRelationships": [
+    { "type": "part_of", "from": "reference-directive", "targetEndsWith": "vite/client" },
+    { "type": "part_of", "from": "reference-directive", "targetEndsWith": "ambient.d.ts" },
+    { "type": "part_of", "from": "reference-directive", "targetEndsWith": "dom" }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "part_of",
+      "from": "reference-directive",
+      "targetEndsWith": "ordinary comment",
+      "note": "an ordinary comment is not a directive; if this can match, the node has stopped being the thing that distinguishes them"
+    }
+  ]
+}
