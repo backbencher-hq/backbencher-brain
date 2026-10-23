@@ -291,6 +291,12 @@ function scriptBlocksOf(tree: any, content: string): ScriptBlock[] {
 // instrument demonstrates, on inline sources it controls, that it can SEE each construct it counts.
 // A failing arm is a control failure (exit 6), never a clean run.
 type Arm = { name: string; ok: boolean; detail: string }
+/** The shape the SERVED TS grammar gives a triple-slash directive — machine-resolved by control arm 4.
+ *  `part_of`'s emission path EXISTS only on the PATCHED build (commit 09b0a45df wired it; the wiring
+ *  is being withdrawn pending a v3 build that proves every non-target label). The census therefore
+ *  states which build produced every count, and a zero cannot be read as a corpus fact when it is a
+ *  BUILD fact. */
+let tsDirectiveShape = "none"
 const selfTest = async (): Promise<Arm[]> => {
   const arms: Arm[] = []
 
@@ -352,6 +358,7 @@ const selfTest = async (): Promise<Arm[]> => {
     t.delete?.()
     const shape =
       directives > 0 ? "reference_directive (PATCHED served build)" : commentRefs > 0 ? "comment (UNPATCHED served build)" : "NONE"
+    tsDirectiveShape = shape
     arms.push({
       name: "ts-triple-slash",
       ok: directives + commentRefs >= 1,
@@ -452,6 +459,44 @@ if (controlArms.some((a) => !a.ok)) {
   log(`indistinguishable from an instrument that cannot see the construct. Fix the instrument; do not read the zero.`)
   process.exit(6)
 }
+log("")
+
+// BUILD PRECONDITIONS — each extended type's emission path checked against the SERVED grammars, so a
+// zero over the corpus cannot be read as a corpus fact when it is a BUILD fact (and vice versa). The
+// TS grammar's patched build is being withdrawn pending a v3 proof; this block is what makes the
+// dependency machine-readable instead of prose.
+const armOk = (name: string): boolean => controlArms.find((a) => a.name === name)?.ok === true
+const buildPreconditions = {
+  decorates: {
+    reachable: armOk("ts-decorator"),
+    via: "delegate: TS/JS decorator nodes (a standard-grammar construct, not a patch)",
+  },
+  mixes_in: {
+    reachable: armOk("ts-mixin-heritage"),
+    via: "delegate: call-shaped heritage `class X extends mix(Base)` (R3, no grammar change)",
+  },
+  part_of: {
+    reachable: tsDirectiveShape.startsWith("reference_directive"),
+    via: `delegate: reference_directive node carrying role/target fields — served TS shape: ${tsDirectiveShape}`,
+  },
+  renders_delegateJsx: {
+    reachable: armOk("js-jsx-element"),
+    via: "delegate: JSX element in a script block (cannot fire legally in an SFC script; counted for completeness)",
+  },
+  renders_sfcTemplateTag: {
+    reachable: armOk("svelte-template-tag"),
+    via: "SFC template pass: capitalised component tag (currently published as instantiates — the migration job)",
+  },
+}
+log("BUILD PRECONDITIONS — each extended type's emission path, checked against the SERVED grammars:")
+for (const [k, v] of Object.entries(buildPreconditions)) {
+  log(`  ${v.reachable ? "REACHABLE" : "unreachable"}  ${k.padEnd(24)} ${v.via}`)
+}
+log(
+  buildPreconditions.part_of.reachable
+    ? "  ⇒ part_of CAN fire on this build; a 0-edge corpus count is a CORPUS fact."
+    : "  ⇒ part_of CANNOT fire on this build; a 0-edge corpus count is a BUILD fact, not a corpus fact.",
+)
 log("")
 
 const pushSample = (list: string[], s: string): void => {
@@ -740,6 +785,7 @@ const report = {
     javascript: grammarIdentity.javascript,
     typescript: grammarIdentity.typescript,
   },
+  buildPreconditions,
   population: {
     rule: `git-tracked *${EXT} per repository entry at the corpus root, then the 1 MiB per-file cap`,
     corpusRoot: CORPUS,
