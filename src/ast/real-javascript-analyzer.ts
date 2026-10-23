@@ -482,7 +482,16 @@ function isExternalSpecifier(specifier: string): boolean {
   if (specifier.startsWith(".") || specifier.startsWith("/")) return false
   const low = specifier.toLowerCase()
   if (low.startsWith("workspace:") || low.startsWith("file:") || low.startsWith("link:")) return false
-  if (/^[a-zA-Z]:[\\/]/.test(specifier)) return false // windows absolute path
+  // ★ NO REGEX (owner's DONE criterion, 2026-10-23): a Windows drive prefix is three positions —
+  // a letter, a colon, then a separator. The LENGTH guard is the case a hand-written version gets
+  // wrong: a two-character string must be false, and the old pattern required the third character.
+  if (specifier.length >= 3) {
+    const c0 = specifier.charCodeAt(0)
+    const isLetter = (c0 >= 65 && c0 <= 90) || (c0 >= 97 && c0 <= 122)
+    const s1 = specifier[1]
+    const s2 = specifier[2]
+    if (isLetter && s1 === ":" && (s2 === "\\" || s2 === "/")) return false // windows absolute path
+  }
   return true
 }
 

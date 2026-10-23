@@ -4893,7 +4893,20 @@ class TypeScriptAnalysisRunner {
     const published = new Set<string>()
     for (const sym of symbols) {
       if (sym?.name) published.add(String(sym.name))
-      const leaf = String((sym as { qualifiedName?: string })?.qualifiedName ?? "").split(/[:.]/).filter(Boolean).pop()
+      // ★ NO REGEX (owner's DONE criterion, 2026-10-23). `.split(/[:.]/)` splits on EACH ':' or '.'
+      // and keeps empty segments; `filter(Boolean)` then drops them and `.pop()` takes the last.
+      // The scan reproduces that order exactly rather than splitting on the first separator only.
+      const leaf = (() => {
+        const qn = String((sym as { qualifiedName?: string })?.qualifiedName ?? "")
+        const parts: string[] = []
+        let cur = ""
+        for (const ch of qn) {
+          if (ch === ":" || ch === ".") { parts.push(cur); cur = "" } else cur += ch
+        }
+        parts.push(cur)
+        const kept = parts.filter(Boolean)
+        return kept.length > 0 ? kept[kept.length - 1] : undefined
+      })()
       if (leaf) published.add(leaf)
     }
     const labels = new Set(["calls", "uses", "references", "instantiates", "extends", "implements", "decorates"])

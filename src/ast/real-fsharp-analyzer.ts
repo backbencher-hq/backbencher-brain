@@ -33,6 +33,26 @@ import { ASTEngine } from "./engine"
  *  The walk is a filesystem READ of a directory marker, never of source text — the analyzer's
  *  purity claim ("pure AST, no regex on source text") is untouched. */
 const FSHARP_PROJECT_ROOT_CACHE = new Map<string, string | null>()
+/**
+ * FS-P1. THE FILE'S OWN PROJECT-RELATIVE PATH — the dart lane's shape.
+ *
+ * `src/ast/real-dart-analyzer.ts:747-775` publishes ONE file-scoped symbol per file whose
+ * `qualifiedName` IS the file's project-relative path, and that is what lets an `imports`
+ * edge name a FILE rather than a bare library name. F#'s `part_of` row has the same need:
+ * the row's TARGET is a path (`#load "Other.fs"` resolved against the including file's own
+ * directory and expressed relative to the project root), so the target can only bind if some
+ * symbol carries that path as its `qualified_name`.
+ *
+ * NO FILE IS READ: this is a pure path computation over the two strings the caller already
+ * has, so two runs of the same file cannot disagree about it.
+ */
+function fsharpRepoRelPath(projectRoot: string, absPath: string): string | null {
+  const rel = path.relative(path.resolve(projectRoot), path.resolve(absPath))
+  if (rel.length === 0 || path.isAbsolute(rel)) return null
+  if (rel === ".." || rel.startsWith(`..${path.sep}`)) return null
+  return rel.split(path.sep).join("/")
+}
+
 function fsharpProjectRootOf(filePath: string): string | null {
   const start = path.dirname(path.resolve(filePath))
   const seen: string[] = []
@@ -697,6 +717,13 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const typeNamesDeclaredInFile = this.collectDeclaredTypeNames(rootNode)
     // FS-D17: the scope a FILE declares, read before the walk rather than during it.
     const fileScope = this.collectFileScope(rootNode)
+    // FS-P1. THE FILE-SCOPED SYMBOL. An F# FILE IS A COMPILATION UNIT and a `#load`
+    // directive names ANOTHER FILE, so a `part_of` row's target is a PATH — and a path
+    // binds only to a symbol that carries it. The dart lane solves this the same way
+    // (`src/ast/real-dart-analyzer.ts:747-775`): one file-scoped symbol per file whose
+    // `qualifiedName` IS the file's project-relative path.
+    const fileIdentity = this.fsharpFileIdentity(filePath, context)
+    const fileScopeName = fileScope ?? fileIdentity.stem
     // FS-D2: which names a `type X with …` has ALREADY published as the file's own
     // declaration. Scoped to extensions on purpose — a general one-symbol-per-name set
     // would collapse an F# SIGNATURE file's forward declaration into its definition,
@@ -1900,6 +1927,11 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (specifiers.length > 0 && (resourceKeywords.has(directiveKeyword) || isPart)) {
           const dirOwner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
           const source = qualifyScope(dirOwner) || qualifyScope(fileScope) || "Global"
+          // FS-P1. THE `part_of` ROW'S SOURCE IS A PUBLISHED SYMBOL. "Global" is a
+          // placeholder no symbol carries, so an edge that used it could never bind on
+          // its source side either; the file's own scope name is published (the module
+          // symbol) or, for a script that declares no module, the file-scoped symbol.
+          const partSource = qualifyScope(dirOwner) || qualifyScope(fileScope) || fileScopeName
           // A `#load` MAY NAME MORE THAN ONE FILE (`#load "a.fs" "b.fs"`), so THE PART IS ONE ROW
           // PER NAMED FILE, not one row per directive. (The wired grammar MIS-LEXES the
           // multi-file form — the second string arrives as a sibling `const` and the directive
@@ -1925,7 +1957,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               const partTarget = this.fsharpPartTargetPath(filePath, context, specifierValue)
               if (partTarget) {
                 pushRel(
-                  source,
+                  partSource,
                   partTarget,
                   ASTEngine.RelationshipType.PartOf,
                   1.0,
@@ -2787,7 +2819,24 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       "base-member-external",       // the base type is not in this file (:520, :2439)
       "interface-member-external",  // ditto, for the interface form (:2439)
     ])
-    const CAUSE_BASE_SHAPE = /^[A-Za-z_$][A-Za-z0-9_$]*$/
+    // ★ NO REGEX (owner's DONE criterion, 2026-10-23). A plain-identifier test is a character
+    // scan: the first character a letter, `_` or `$`, and the rest alphanumeric, `_` or `$`.
+    // The regex this replaces was `/^[A-Za-z_$][A-Za-z0-9_$]*$/` — the same set, and a scan cannot
+    // match inside a comment or a string literal the way a text regex can.
+    const isPlainIdentifier = (t: string): boolean => {
+      if (t.length === 0) return false
+      const head = t.charCodeAt(0)
+      const headOk =
+        (head >= 65 && head <= 90) || (head >= 97 && head <= 122) || head === 95 || head === 36
+      if (!headOk) return false
+      for (let i = 1; i < t.length; i++) {
+        const c = t.charCodeAt(i)
+        const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95 || c === 36
+        if (!ok) return false
+      }
+      return true
+    }
+    const CAUSE_BASE_SHAPE = { test: isPlainIdentifier }
     // The external-claim keys, spelled as `incoming-rule.ts` EXTERNAL_KEYS spells them. A copy
     // rather than an import because this analyzer imports nothing from the gate layer, and the
     // cost of divergence is bounded and loud: a key added there and not here would let check 5
@@ -2916,6 +2965,25 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Section D of the lane contract asks for >=2 distinct tiers PINNED by fixtures; before
     // this pass the analyzer published NONE, so that section could only fail. The mapping is
     // a property of the RULE, not of the edge: see the method below.
+    // FS-P1. PUBLISH THE FILE-SCOPED SYMBOL — the endpoint a `part_of` target binds to.
+    //
+    // IT CARRIES NO `ownerName`, and that is the point (the dart lane says the same): a
+    // symbol WITH an owner is a MEMBER, and every pass that walks the symbol table on
+    // `ownerName` (`contains`) or on a declaration kind would treat it as one. With no
+    // owner it is inert for those passes and visible only as an edge endpoint.
+    //
+    // IT IS PUBLISHED FOR EVERY FILE, and it is published LAST so that a real module
+    // declaration of the same name keeps the first-wins registration in `fqnOfName`.
+    if (fileIdentity.relPath !== null) {
+      publish({
+        name: fileIdentity.stem,
+        kind: ASTEngine.SymbolKind.Module,
+        qualifiedName: fileIdentity.relPath,
+        range: { startLine: 1, startColumn: 0, endLine: 1, endColumn: 0 },
+        metadata: { nodeType: "file_scope", fsharpFileScope: true },
+      })
+    }
+
     this.classifyEvidenceTier(relationships)
 
     return {
@@ -4314,6 +4382,30 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * NO SOURCE TEXT IS READ: this is a pure path computation over the two strings the caller
    * already has, so the resolution cannot differ between two runs of the same file.
    */
+  /**
+   * FS-P1. THE FILE'S IDENTITY — the path a `part_of` target is spelled in, and the name
+   * the file-scoped symbol carries.
+   *
+   * The path is computed against the SAME root the `part_of` target is computed against
+   * (`context.projectRoot`, the repository root in production — pool-worker.ts:2041), so
+   * the two spellings agree by construction rather than by coincidence.
+   */
+  private fsharpFileIdentity(
+    filePath: string,
+    context: ASTEngine.AnalyzeContext | undefined,
+  ): { relPath: string | null; stem: string } {
+    const base = path.basename(filePath)
+    const dot = base.lastIndexOf(".")
+    const stem = dot > 0 ? base.slice(0, dot) : base
+    const contextRoot = context?.projectRoot
+    const projectRoot =
+      typeof contextRoot === "string" && contextRoot.length > 0
+        ? contextRoot
+        : fsharpProjectRootOf(filePath)
+    if (projectRoot === null) return { relPath: null, stem }
+    return { relPath: fsharpRepoRelPath(projectRoot, filePath), stem }
+  }
+
   private fsharpPartTargetPath(
     filePath: string,
     context: ASTEngine.AnalyzeContext | undefined,

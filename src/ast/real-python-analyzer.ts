@@ -6952,7 +6952,19 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (Array.isArray(md.languageNamespace) && md.languageNamespace.length > 0) continue
       const target = String(r.target ?? "")
       // The arbiter's split: `:` first (python's `module:item`), then `.`/`::` prefix walk.
-      const segs = target.split(/[:.]|::/)
+      // ★ NO REGEX (owner's DONE criterion, 2026-10-23). `split(/[:.]|::/)` is a split on EITHER
+      // of two single characters: the `[:.]` alternative matches one character, so the `::`
+      // alternative could never fire and is dead. The scan below reproduces the live behaviour
+      // exactly, including the empty segments a repeated separator produces.
+      const segs = (() => {
+        const out: string[] = []
+        let cur = ""
+        for (const ch of target) {
+          if (ch === ":" || ch === ".") { out.push(cur); cur = "" } else cur += ch
+        }
+        out.push(cur)
+        return out
+      })()
       let root: string | null = null
       for (let n = segs.length; n >= 1; n--) {
         const cand = segs.slice(0, n).join(".")
