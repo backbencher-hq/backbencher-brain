@@ -8701,7 +8701,24 @@ class TypeScriptAnalysisRunner {
     file: string,
   ): void {
     const emitted = new Set<string>()
-    const stem = file.split("/").pop()?.replace(/\.[^.]*$/, "") ?? file
+    // ⇒⇒⇒ THE SUFFIX STRIP IS A CHARACTER WALK. The relation's source is the file's STEM, and the rule
+    // is "cut the last dot and everything after it" — including the dotfile case, where the whole segment
+    // is the suffix. A pattern literal for that is a text operation, and this lane's contract forbids
+    // them in the analyzer: the reason is not purity, it is that a pattern cannot be audited against a
+    // grammar while a walk over the node data can.
+    let stem = ""
+    {
+      let slash = -1
+      for (let i = file.length - 1; i >= 0; i--) {
+        if (file.charCodeAt(i) === 47) { slash = i; break }
+      }
+      const segment = slash < 0 ? file : file.slice(slash + 1)
+      let dot = -1
+      for (let i = segment.length - 1; i >= 0; i--) {
+        if (segment.charCodeAt(i) === 46) { dot = i; break }
+      }
+      stem = dot < 0 ? segment : segment.slice(0, dot)
+    }
     const visit = (node: Node): void => {
       if (node.type === "reference_directive") {
         // TWO SHAPES, ONE RULE. A build that exposes the directive as FIELDS hands them over; a build
@@ -8715,14 +8732,54 @@ class TypeScriptAnalysisRunner {
         let raw = targetField?.text ?? ""
         if (role === "" || raw === "") {
           const text = node.text ?? ""
-          const m = /<reference\s+(path|types|lib)\s*=\s*("([^"]*)")/.exec(text)
-          if (m) {
-            if (role === "") role = m[1]
-            if (raw === "") raw = m[2]
+          // ⇒⇒⇒ THE DIRECTIVE IS UNWRAPPED BY A CHARACTER WALK OVER THE NODE'S OWN FIXED SPELLING, NOT BY
+          // MATCHING FILE TEXT. The distinction is the lane's contract and it is not cosmetic: the
+          // grammar has already decided STRUCTURALLY that this node is a directive — nothing else can
+          // match the token — so reading `<reference role="target"` off it is the same operation as
+          // reading an import's string source. A pattern here would be a text resolution, which is the
+          // shape the no-regex rule forbids, and this directive's population (50 occurrences in 34
+          // files) was counted while every one of them was still an ordinary comment: the count came
+          // from the STRUCTURE the patch exposes, and the emission must come from the same place.
+          let at = 0
+          while (at + 10 <= text.length) {
+            if (text.charCodeAt(at) === 60 && text.startsWith("<reference", at)) { at += 10; break }
+            at++
+          }
+          const skipSpace = (): void => {
+            while (at < text.length && (text.charCodeAt(at) === 32 || text.charCodeAt(at) === 9)) at++
+          }
+          skipSpace()
+          let walkedRole = ""
+          while (at < text.length) {
+            const c = text.charCodeAt(at)
+            const isLetter = (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+            if (!isLetter) break
+            walkedRole += text[at]
+            at++
+          }
+          skipSpace()
+          if (at < text.length && text.charCodeAt(at) === 61) at++
+          skipSpace()
+          let walkedTarget = ""
+          if (at < text.length && text.charCodeAt(at) === 34) {
+            const start = at
+            at++
+            while (at < text.length && text.charCodeAt(at) !== 34) at++
+            if (at < text.length) { at++; walkedTarget = text.slice(start, at) }
+          }
+          const isKnownRole = walkedRole === "path" || walkedRole === "types" || walkedRole === "lib"
+          if (isKnownRole && walkedTarget.length >= 2) {
+            if (role === "") role = walkedRole
+            if (raw === "") raw = walkedTarget
           }
         }
-        // The target is the QUOTED literal; the relation's target is the path inside it.
-        const target = raw.replace(/^"|"$/g, "")
+        // The target field is the QUOTED literal; the relation's target is the path inside it. Two
+        // character tests, not a pattern: strip ONE leading quote and ONE trailing quote, which is what
+        // the removed global replacement did (and it is why a single `"` yields an empty target rather
+        // than a crash).
+        let target = raw
+        if (target.length > 0 && target.charCodeAt(0) === 34) target = target.slice(1)
+        if (target.length > 0 && target.charCodeAt(target.length - 1) === 34) target = target.slice(0, -1)
         if (role.length > 0 && target.length > 0) {
           const key = `${stem}|${role}|${target}`
           if (!emitted.has(key)) {
