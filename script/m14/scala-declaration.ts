@@ -297,6 +297,20 @@ const caveats = (pop: { parsed: number; total: number }) => ({
     `produced it cannot be compared (FLEET-RULINGS-2026-10-22.md), and a date plus a repo count is the smallest ` +
     `thing that makes two numbers comparable.`,
 
+  measuredOnAHealthyBox:
+    "★ THE CLOSURE ABOVE IS A NUMBER ABOUT THE POPULATION ONLY IF IT WAS MEASURED ON A MACHINE THAT COULD " +
+    "MEASURE IT, AND THIS LANE CAN NOW SAY WHICH MACHINE IT WAS. On 2026-10-22 the host hit 167 MB of 15,860 MB " +
+    "available with 19,956 MB of swap FULL, because four lanes' arms were resident at once; the kernel would have " +
+    "OOM-killed the next large allocation and chosen the victim itself. ⇒ **A WHOLE-POPULATION CLOSURE MEASURED " +
+    "WHILE THE BOX THRASHES SWAP IS A NUMBER ABOUT THE BOX** — a truncated or timed-out slice that still prints a " +
+    "TABLE looks identical to a complete one, which is THIS LANE'S OWN finding (`implements` before the R3 fix, " +
+    "and the seven near-miss censuses) in its general form. " +
+    "⇒ THE DEFENCE IS THE INSTRUMENT, NOT THE PROSE: `script/m14/arm-token.sh take` now REFUSES below a memory " +
+    "floor and names `MemAvailable` and `SwapFree`, so the arm cannot start into an exhausted machine, and this " +
+    "generator records the memory state the arm ran in (`meta.runEnvironment`) so a reader can check the " +
+    "condition instead of trusting a sentence. ⇒ **A MEASUREMENT THAT CANNOT DISTINGUISH ITSELF FROM A BROKEN " +
+    "ONE IS NOT A MEASUREMENT, AND THE MEMORY GATE IS WHAT MAKES THAT CHECKABLE RATHER THAN RHETORICAL.**",
+
   sampleRefusedByTheGenerator:
     "★ THIS DECLARATION IS WRITTEN BY `script/m14/scala-declaration.ts`, WHICH REFUSES A SAMPLE BY NAME: it will " +
     "not write a declaration whose arm output parsed fewer files than the population holds, and it refuses a " +
@@ -406,6 +420,17 @@ if (problems.length) {
 }
 
 const analyzerDigest = createHash("sha256").update(readFileSync(ANALYZER)).digest("hex").slice(0, 16)
+
+/**
+ * ⇒⇒⇒ THE RUN'S OWN ENVIRONMENT, RECORDED BECAUSE THE CLOSURE'S MEANING DEPENDS ON IT.
+ * The arm runner writes `MemAvailable`/`SwapFree` at the moment the token was taken, and this
+ * generator puts them in the declaration. A reader can then check that the box was not thrashing
+ * when the number was taken — the check the 2026-10-22 memory incident showed nobody had.
+ */
+const runEnvPath = resolve(ROOT, ".tmp-lead/scala-arm-env.json")
+const runEnvironment = existsSync(runEnvPath)
+  ? (() => { try { return JSON.parse(readFileSync(runEnvPath, "utf8")) } catch { return null } })()
+  : null
 const bucketRows = rows.map((r) => [r.type, bucketise(r)] as const)
 const sumOf = (k: keyof ReturnType<typeof bucketise>) =>
   bucketRows.reduce((a, [, b]) => a + (b[k] as number), 0)
@@ -481,6 +506,7 @@ const decl = {
     "THEY ARE rather than about a marker the analyzer never writes. ⇒ A LANE THAT PUBLISHED A causeOK COUNT " +
     "IT HAD NOT MEASURED WOULD BE FABRICATING A DISPOSITION; this one rules the absence.",
   types: Object.fromEntries(bucketRows),
+  runEnvironment,
   causeRulings: {
     noDeclaredCauseMarker: {
       population: `parsed=${pop.parsed}/${pop.total} admitted=${admitted} exts=scala,sc,sbt index=no`,
