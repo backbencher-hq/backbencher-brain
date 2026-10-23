@@ -688,6 +688,28 @@ function dartImportTargetPath(projectRoot: string, filePath: string, uri: string
   return dartRepoRelPath(projectRoot, abs)
 }
 
+/**
+ * THE CLASS-NAME SHAPE, BY CHARACTER AND NOT BY PATTERN. A capitalised Dart identifier: the first
+ * character in A..Z, every remaining character in A..Z / a..z / 0..9 / _ / $. The owner's sixth
+ * criterion forbids a regex anywhere in the resolver, and this was a regex that never needed to be
+ * one — a pure character operation over the same set, with the same answer, no backtracking surface,
+ * and nothing for a pattern-checker to find.
+ */
+function isCapitalisedIdentifier(name: string): boolean {
+  if (name.length === 0) return false
+  const first = name.charCodeAt(0)
+  if (first < 65 || first > 90) return false
+  for (let i = 1; i < name.length; i++) {
+    const c = name.charCodeAt(i)
+    if (c >= 65 && c <= 90) continue        // A-Z
+    if (c >= 97 && c <= 122) continue       // a-z
+    if (c >= 48 && c <= 57) continue        // 0-9
+    if (c === 95 || c === 36) continue      // _ $
+    return false
+  }
+  return true
+}
+
 export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -1338,7 +1360,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         const md = (r.metadata ?? {}) as Record<string, unknown>
         const isAnnotation = md.isAnnotation === true
         const label = String(r.type)
-        const typeShaped = DART_CITATION_TYPE_SHAPED_LABELS.has(label) && /^[A-Z][A-Za-z0-9_$]*$/.test(t)
+        const typeShaped = DART_CITATION_TYPE_SHAPED_LABELS.has(label) && isCapitalisedIdentifier(t)
         if (!isAnnotation && !typeShaped) continue
         md.languageNamespace = [t]
         md.languageNamespacePolicy = "strict-absent"
