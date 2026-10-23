@@ -175,7 +175,12 @@ for (const line of armText.split("\n")) {
   if (f[1] === "BOUND" || line.includes("DUMP TRUNCATED")) { dumpTruncated = true; continue }
   if (f.length < 9) { dumpOther++; continue }
   const where = f[4]!
-  const repo = where.includes("/") ? where.slice(0, where.indexOf("/")) : where
+  // THE ARM PRINTS ABSOLUTE PATHS (`/…/.corpus/<repo>/<file>:<line>`), so the repository is the
+  // segment AFTER the corpus root — taking the first path segment would yield "" for every row on
+  // `/`, which silently forces B1 (same-project) to 0 and is exactly the "measure that cannot
+  // distinguish absent from named differently" class. The old relative spelling is kept working.
+  const relWhere = where.includes("/.corpus/") ? where.split("/.corpus/")[1]! : where.replace(/^\/+/, "")
+  const repo = relWhere.includes("/") ? relWhere.slice(0, relWhere.indexOf("/")) : relWhere
   const b = bucketOf(f[2]!)
   if (b === "other") dumpOther++
   dump.push({ label: f[1]!, outcome: f[2]!, target: f[3]!, where, repo, claimKind: f[5]!, claimSpec: f[6]!, bindReason: f[7]!, reasonCode: f[8]!, bucket: b })

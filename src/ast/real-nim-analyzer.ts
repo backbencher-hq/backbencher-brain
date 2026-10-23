@@ -5,9 +5,11 @@
  * and the template/macro surface, plus the call/use graph over expressions.
  * Grammar: tree-sitter-nim.wasm (WASM loaded by engine.ts).
  * Relationship types covered: calls, uses, contains, imports, references, exports, extends,
- * implements, overrides, instantiates, part_of. (`part_of` is the 1:1 RELABEL of `include` rows
- * from `imports`, 2026-10-23, rung R3 — see `readIncludeStatement`'s header; `renders`,
- * `decorates`, `mixes_in` are RULED and this analyzer does not emit them, see
+ * implements, overrides, instantiates, part_of, decorates. (`part_of` is the 1:1 RELABEL of
+ * `include` rows from `imports`, 2026-10-23, rung R3 — see `readIncludeStatement`'s header;
+ * `decorates` is the pragma-TEMPLATE class, 2026-10-23, rung R3 — see `collectPragmaDecorates`'s
+ * header, and note that the ruling that would have excluded it was WITHDRAWN BY ITS OWN FALSIFIER.
+ * `renders` and `mixes_in` are RULED and this analyzer does not emit them, see
  * script/m14/spec/nim-completeness.json.)
  * Where its scripts/validations live: docs/analyzers/real-nim-analyzer.md,
  * script/m14/spec/nim-completeness.json, validation/m14/fixtures/nim/**, and the LANG_CONFIG
@@ -136,6 +138,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
     this.publishModuleSymbol(rootNode, filePath, symbols)
     this.collectContainment(symbols, relationships)
+    this.collectPragmaDecorates(rootNode, symbols, relationships)
     this.collectInheritance(symbols, relationships, fileTypes)
     this.collectContractRefinement(rootNode, symbols, relationships)
     this.pruneForeignReExports(symbols, exports)
@@ -1371,14 +1374,33 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
    *  parses as `colon_expression(left: identifier(raises), …)`, so the pragma
    *  NAME is the left side — the right side is the argument, not the pragma. */
   private readPragmaNames(node: Node): string[] {
-    const out: string[] = []
     const list = node.childForFieldName("pragmas") ?? this.firstChildOfType(node, "pragma_list")
-    if (!list) return out
+    if (!list) return []
+    return this.pragmaNameNodes(list).map((p) => p.name)
+  }
+
+  /**
+   * THE ONE RULE for reading pragma NAMES out of a `pragma_list`, WITH each name's own line.
+   *
+   * `{.raises: [].}` parses as `colon_expression(left: identifier(raises), …)`, so the pragma NAME is
+   * the left side — the right side is the argument, not the pragma. The rule lives here ONCE because
+   * three readers now share it (symbol metadata, the `pragma` template marker, and the `decorates`
+   * emission), and the fleet has paid for a rule copied in two places: the ruby lane's operator-name
+   * class was extended at one of its two sites and 7 rows stayed dropped while a commit message
+   * claimed they were exempt. A COPY OF THIS RULE IS A DEFECT WAITING FOR ITS SECOND FIX.
+   *
+   * The LINE is the name node's own line rather than the declaration's: the fleet's line rule is
+   * "the line of the NAMING node", and for a pragma the naming node is the pragma identifier inside
+   * `{. … .}`. A multi-line pragma list puts its names on later lines than the declaration, and
+   * anchoring to the declaration would point a reader at the wrong line for every such row.
+   */
+  private pragmaNameNodes(list: Node): Array<{ name: string; line: number }> {
+    const out: Array<{ name: string; line: number }> = []
     for (let i = 0; i < list.namedChildCount; i++) {
       let c = list.namedChild(i)
       if (!c) continue
       if (c.type === "colon_expression" || c.type === "equal_expression") c = c.childForFieldName("left") ?? c
-      if (c && c.type === "identifier") out.push(c.text)
+      if (c && c.type === "identifier") out.push({ name: c.text, line: c.startPosition.row + 1 })
     }
     return out
   }
@@ -2197,6 +2219,135 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
         metadata: { relationshipType: "nim_contains", nimNestedRoutine: true },
       })
+    }
+  }
+
+  /**
+   * `decorates` — a declaration carrying a pragma that names a FILE-LOCAL pragma TEMPLATE.
+   *
+   * ## WHY THIS EXISTS, AND WHY IT IS NARROW ON PURPOSE (2026-10-23, rung R3)
+   *
+   * The lane's first plan was to RULE `decorates` ontological, on the csharp/fsharp precedent
+   * ("an annotation is passive metadata; a decorator is an applied callable"). The census
+   * (`script/m14/nim-extended-census.ts`) MEASURED THE FALSIFIER AND IT FIRED: over the whole
+   * 6,063-file admitted population, 294 pragma-use sites name a DECLARED pragma template — 48
+   * distinct `template X() {.pragma.}` / `macro X(...) {.pragma.}` declarations in 20 files — and
+   * a pragma template is INVOKED BY THE COMPILER at the site that names it. Those sites are the
+   * dictionary's decorator (`src/ast/types.ts:131-144`: decorated declaration → applied callable),
+   * and the ruling was WITHDRAWN BY ITS OWN FALSIFIER rather than published. The other 99.1 % of
+   * pragma name sites (`{.inline.}`, `{.cdecl.}`, `{.raises.}`, …) are COMPILER DIRECTIVES and are
+   * deliberately NOT emitted: sweeping them in would turn a 0.9 % construct into a 33,266-row lie.
+   *
+   * ## THE DISCRIMINATOR, AND THE PER-FILE CAVEAT
+   *
+   * A pragma name emits `decorates` ONLY when it resolves to a pragma template DECLARED IN THIS
+   * FILE. Same-file uses resolve (that is the construct a per-file analyzer can prove). A template
+   * imported from ANOTHER file is out of a per-file analyzer's reach, so its `decorates` row is not
+   * invented — this is the lane's standard per-file limitation (NIMD2's overrides scope, and the
+   * same caveat ruby and csharp carry), stated on the page rather than hidden here.
+   *
+   * ## THE CONTRACT DETAILS
+   *
+   *   · SOURCE = the decorated declaration's PUBLISHED symbol spelling (`qualifiedName` where the
+   *     symbol has one — a method is `Receiver.method`, exactly as the `overrides` endpoints are
+   *     spelled, because a bare method name cannot address either end), TARGET = the pragma
+   *     template name. Direction is the contract's (`types.ts:131-144`).
+   *   · NO ROW when the decorated declaration is not a published symbol: the vocabulary proposal's
+   *     decorates MUST-NOT ("no row when no published symbol is decorated") is implemented by the
+   *     symbol lookup below, not by a claim.
+   *   · `metadata.decoratorConstruct: "pragma_template"` is what tells a consumer this row is the
+   *     applied-callable class rather than a hypothetical annotation sweep.
+   *   · The pragma NAME stays on the symbol's `decorators` payload as well: it is the evidence, and
+   *     the java/dart lanes' rule (annotation mentions live in metadata) is not contradicted — this
+   *     row says the pragma is an applied callable, which those lanes' annotations are not.
+   */
+  private collectPragmaDecorates(
+    rootNode: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    // ── THE FILE'S OWN PRAGMA TEMPLATES: a template/macro whose OWN pragma list names `pragma`.
+    const pragmaTemplates = new Set<string>()
+    const templateStack: Node[] = [rootNode]
+    while (templateStack.length > 0) {
+      const n = templateStack.pop()
+      if (!n) continue
+      if (n.type === "template_declaration" || n.type === "macro_declaration") {
+        const list = n.childForFieldName("pragmas") ?? this.firstChildOfType(n, "pragma_list")
+        if (list && this.pragmaNameNodes(list).some((p) => p.name === "pragma")) {
+          const nameNode = n.childForFieldName("name")
+          if (nameNode) {
+            const info = this.readNameNode(nameNode)
+            if (info.name) pragmaTemplates.add(info.name)
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) templateStack.push(c)
+      }
+    }
+    if (pragmaTemplates.size === 0) return
+
+    // ── THE PUBLISHED SYMBOLS, by their own start line. The declaration node and its symbol share
+    //    a start line because the symbol's range is the declaration's range; the NAME test below is
+    //    a second key so a line with two symbols can never pair the wrong one.
+    const symbolsByStart = new Map<number, ASTEngine.UniversalSymbol[]>()
+    for (const s of symbols) {
+      const line = s.range?.startLine
+      if (typeof line === "number" && s.name) {
+        let a = symbolsByStart.get(line)
+        if (!a) { a = []; symbolsByStart.set(line, a) }
+        a.push(s)
+      }
+    }
+
+    // ── THE DECLARATIONS THAT CAN CARRY PRAGMAS AND ARE PUBLISHED AS SYMBOLS.
+    const DECORATABLE = new Set([
+      "proc_declaration", "func_declaration", "method_declaration", "iterator_declaration",
+      "template_declaration", "macro_declaration", "converter_declaration",
+      "type_symbol_declaration", "type_declaration", "enum_declaration", "object_declaration",
+      "variable_declaration", "field_declaration",
+    ])
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()
+      if (!n) continue
+      if (DECORATABLE.has(n.type)) {
+        const list = n.childForFieldName("pragmas") ?? n.childForFieldName("pragma") ?? this.firstChildOfType(n, "pragma_list")
+        if (list) {
+          const nameNode = n.childForFieldName("name")
+          const own = nameNode ? this.readNameNode(nameNode).name : ""
+          const candidates = symbolsByStart.get(n.startPosition.row + 1) ?? []
+          const sym = own ? candidates.find((c) => c.name === own) : candidates[0]
+          // A DIRECTIVE-ONLY declaration carries no row; an unpublished declaration carries no row
+          // (the "no row when no published symbol is decorated" MUST-NOT).
+          if (sym) {
+            for (const p of this.pragmaNameNodes(list)) {
+              if (!pragmaTemplates.has(p.name)) continue
+              relationships.push({
+                source: sym.qualifiedName ?? sym.name,
+                target: p.name,
+                type: ASTEngine.RelationshipType.Decorates,
+                confidence: 1,
+                line_number: p.line,
+                metadata: {
+                  relationshipType: "nim_pragma_template",
+                  decoratorConstruct: "pragma_template",
+                  isDecorator: true,
+                  // Read straight off the declaration's `pragmas` field — a structural declaration,
+                  // the tier `extends` and `implements` carry for the same reason.
+                  evidenceClass: "structural",
+                },
+              })
+            }
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
     }
   }
 

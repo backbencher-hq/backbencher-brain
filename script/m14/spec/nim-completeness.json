@@ -192,48 +192,106 @@
       "references",
       "exports",
       "extends",
+      "implements",
       "overrides",
       "instantiates",
-      "implements"
+      "part_of",
+      "decorates"
     ],
-    "excluded": [],
+    "excluded": [
+      {
+        "label": "renders",
+        "evidence": "grammar-absence",
+        "from": "RULED (GRAMMAR ABSENCE \u2014 measured on the served grammar's OWN inventory, with the positive control that says the scan works, and with EVERY construct the ruling names COUNTED so the falsifier is a thing an instrument in the tree can check). THE GRAMMAR-SIDE HALF, in a DURABLE TRACKED FILE: validation/m14/measurements/nim-grammar-nodes.json records the served build's own 164 named node types over 377 ids, sha256 of the bytes the REGISTRY SERVES 421369fe6a8814dd28d0548f56dbab8877576da877b0b98ca1b905c024b5d1ad (recorded by the Lead-owned script/m14/grammar-node-inventory.ts). The filter /render|jsx|razor|element|component|markup|template|html/i matches 0 of the 164. THE POSITIVE CONTROL (L-2026-10-21-05): the SAME filter fires on 11 jsx/html node types of the javascript grammar (jsx_element, jsx_self_closing_element, jsx_opening_element, \u2026) \u2014 a scan that finds nothing everywhere is not a scan. THE POPULATION HALF, WHOLE ADMITTED SET 6,063 files (validation/m14/measurements/nim-extended-census.json): 696 render-host-shaped calls (588 plain-identifier, 103 dot-calls), and 0 of their ARGUMENTS are capitalized identifiers, so 0 names a COMPONENT TYPE \u2014 the csharp/fsharp component predicate is 0. 1,342 calls name an HTML ELEMENT name (div/span/\u2026 37 distinct names), which is the near miss sized: an htmlgen element macro renders an ELEMENT VALUE, never a component declaration. THE LADDER: R1 has no published alternative build to try (the served build is the pinned one); R2 would have to INVENT SYNTAX \u2014 Nim rendering is a macro DSL over ordinary `call` nodes, and the grammar has no rendering production to patch, so a patch adds a node type nothing in the language produces; R3 is vacuous in the other direction: the node type that carries a call is `call`, and publishing `renders` from a call NAME would be exactly the dart lane's impostor defect (a name filter does not separate a construct from its impostors \u2014 the declared RETURN TYPE filter is what separated dart's build methods, and no Nim construct has that shape here). FALSIFIER (a construct an instrument in the tree COUNTS): a render-host call in the admitted population whose ARGUMENT or explicit type argument names a CONCRETE COMPONENT TYPE \u2014 the census classifies every argument of every render-host call and publishes the count (measured: 0), and script/m14/nim-extended-census.ts re-computes it; OR a node type in the served build matching the render family, counted by script/m14/grammar-node-inventory.ts (measured: 0 of 164), with the javascript positive control named above. Files: validation/m14/measurements/nim-extended-census.json \u00b7 validation/m14/measurements/nim-grammar-nodes.json \u00b7 validation/m14/verification/NIM-EXTENDED-TYPES.md"
+      },
+      {
+        "label": "mixes_in",
+        "evidence": "ontological",
+        "from": "RULED ONTOLOGICAL \u2014 NOT a grammar absence, and the grammar's own inventory PROVES the NAME is present: validation/m14/measurements/nim-grammar-nodes.json carries `mixin_statement` among its 164 named types, so a name-scan 'no mixin node type' ruling would be FALSE here. The reason is the SEMANTICS: Nim's `mixin` statement names SYMBOLS that are open for generic overload resolution; it composes no type into a supertype chain and declares no conformance (src/ast/types.ts:156-162 \u2014 a mixin is neither `extends` nor `implements`). THE POPULATION HALF, WHOLE ADMITTED SET 6,063 files (validation/m14/measurements/nim-extended-census.json): 75 mixin statements, 95 operands \u2014 90 name a DECLARED ROUTINE, 4 name a declared type, 1 neither; an operand naming a type is still a symbol opened for overload resolution, not a supertype member. THE DECISIVE SEPARATION IS COUNTED: 1,047 object declarations carry the grammar's `inherits` field (`object of B`) and that construct is `extends`, already published (extends 627 edges in the arm); 337 concept declarations and 38 refinement lists are `implements`/concept refinement, already published (implements 47 edges); 448 include statements are `part_of`, published by the 2026-10-23 relabel (457 edges); 21,946 of_branch nodes are CASE-VARIANT ALTERNATIVES, not inheritance \u2014 the near miss the ruling names, sized. THE LADDER: R1 \u2014 the grammar's own inventory (164 named types) carries no with-clause/mixin-application node type and nothing in the corpus declares one; R2 \u2014 a patch would have to invent syntax: the four composition-shaped constructs Nim HAS are each already published under the truthful type (extends / implements / part_of / calls), so a patched grammar could not add a construct the language lacks; R3 \u2014 the node type that carries the closest constructs is `expression_list` under `mixin_statement`, and a `mixes_in` row from it would assert a supertype composition the source does not contain. FALSIFIER (a construct an instrument in the tree COUNTS): a mixin statement applied in a TYPE-COMPOSITION position, or a grammar node type for a with-clause/mixin application \u2014 the census counts every `mixin_statement` and every operand's class (measured 75 statements / 95 operands as above) and the inventory counts node types (0 of 164), so a non-zero in either direction refutes the ruling. Files: validation/m14/measurements/nim-extended-census.json \u00b7 validation/m14/measurements/nim-grammar-nodes.json \u00b7 validation/m14/verification/NIM-EXTENDED-TYPES.md"
+      }
+    ],
     "corpusUnexercised": [],
     "_implemented_measured": {
-      "_unit": "edges published through the production path over the WHOLE 3,917-file nim population (no stride, 3,917/3,917 parsed, 0 degraded). Instrument: BB_PICK_CAP=4200 NFILES=4000 bun script/m14/firing-check.mjs NIM.",
+      "_unit": "edges published through the production path over the WHOLE 6,063-file nim population (ONE whole-population incoming-gate run, no stride; parsed 6,063/6,063, 0 parse failures, 0 degraded; TABLE 1 of validation/m14/measurements/nim/nim-gate-whole-2026-10-23.txt). Instrument: BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts nim nim,nims,nimble 0 --dump",
       "calls": {
-        "edges": 66531
+        "edges": 118260,
+        "files": 6063,
+        "_why": "the whole-population TABLE 1 row; the ELEVEN-TERM CLOSURE per type is published in validation/m14/instruments/nim/incoming-declaration.json and re-checked by script/m14/nim-cause-census.ts before every write"
       },
       "uses": {
-        "edges": 27637
+        "edges": 45664,
+        "files": 6063,
+        "_why": "the whole-population TABLE 1 row; the ELEVEN-TERM CLOSURE per type is published in validation/m14/instruments/nim/incoming-declaration.json and re-checked by script/m14/nim-cause-census.ts before every write"
       },
       "contains": {
-        "edges": 20032
+        "edges": 29329,
+        "files": 6063,
+        "_why": "the whole-population TABLE 1 row; the ELEVEN-TERM CLOSURE per type is published in validation/m14/instruments/nim/incoming-declaration.json and re-checked by script/m14/nim-cause-census.ts before every write"
       },
       "imports": {
-        "edges": 7190
+        "edges": 12897,
+        "files": 6063,
+        "_why": "the whole-population TABLE 1 row; the ELEVEN-TERM CLOSURE per type is published in validation/m14/instruments/nim/incoming-declaration.json and re-checked by script/m14/nim-cause-census.ts before every write"
       },
       "references": {
-        "edges": 35221
+        "edges": 55574,
+        "files": 6063,
+        "_why": "the whole-population TABLE 1 row; the ELEVEN-TERM CLOSURE per type is published in validation/m14/instruments/nim/incoming-declaration.json and re-checked by script/m14/nim-cause-census.ts before every write"
       },
       "exports": {
-        "edges": 285
+        "edges": 617,
+        "files": 6063,
+        "_why": "the whole-population TABLE 1 row; the ELEVEN-TERM CLOSURE per type is published in validation/m14/instruments/nim/incoming-declaration.json and re-checked by script/m14/nim-cause-census.ts before every write"
       },
       "extends": {
-        "edges": 543
+        "edges": 627,
+        "files": 6063,
+        "_why": "the whole-population TABLE 1 row; the ELEVEN-TERM CLOSURE per type is published in validation/m14/instruments/nim/incoming-declaration.json and re-checked by script/m14/nim-cause-census.ts before every write"
       },
       "overrides": {
-        "edges": 49
+        "edges": 67,
+        "files": 6063,
+        "_why": "the whole-population TABLE 1 row; the ELEVEN-TERM CLOSURE per type is published in validation/m14/instruments/nim/incoming-declaration.json and re-checked by script/m14/nim-cause-census.ts before every write"
       },
       "instantiates": {
-        "edges": 1868
+        "edges": 2843,
+        "files": 6063,
+        "_why": "the whole-population TABLE 1 row; the ELEVEN-TERM CLOSURE per type is published in validation/m14/instruments/nim/incoming-declaration.json and re-checked by script/m14/nim-cause-census.ts before every write"
       },
       "implements": {
         "edges": 47,
         "files": 6063,
-        "_population": ".tmp-dm/in-nim.out, 6,063 of 6,063 admitted .nim/.nims/.nimble files across 8 repos, ONE RUN",
-        "_why": "NIM `implements` WAS RULED grammar-absence AND IS EMITTED: the population reading prints implements 47 (12 resolved). The ruling's own NIMD3 prose said 0 analyzer and cited 3,917 files; both are stale. The construct is a concept refining a concept / a concept-constrained generic, with two emission sites in real-nim-analyzer.ts (the nimRefines path and the isFormContracts path). Ruling corrected 2026-10-15 by EXCLUSION-AUDIT-S2."
+        "_why": "concept refinement \u2014 `concept x of B` and the `is` form; NOT a nominal-subtype edge. MEASURED 47 edges, 43 resolved, 4 ambiguous over the whole population. The 2026-10-15 exclusion audit corrected an earlier grammar-absence ruling on a measurement; the current declaration counts the emitted rows."
+      },
+      "part_of": {
+        "edges": 457,
+        "files": 6063,
+        "_why": "THE 1:1 RELABEL OF `include`, rung R3, 2026-10-23: same source `(global)`, same target (the analyzer's normalized MODULE NAME), same line, same confidence, same `metadata.relationshipType:\"nim_include\"` marker; every row carries the contract's mandatory `partRole:\"library\"` and `targetResolution:\"module-name\"` \u2014 the RECORDED DIVERGENCE from fsharp/php, which emit project-relative paths. TABLE 1: 457 rows, 411 resolved, 37 ambiguous, 9 unresolved. The census counts 448 include statements / 459 operands (the arm's 457 rows are the operands the analyzer's own path reader resolves; the sample cross-check is exact: census 14 = analyzer 14 on the same files)."
+      },
+      "decorates": {
+        "edges": 30,
+        "files": 6063,
+        "_why": "THE PRAGMA-TEMPLATE CLASS (rung R3, 2026-10-23). Only a declaration-owned pragma name that resolves to a FILE-LOCAL `template/macro X() {.pragma.}` emits a row; tool 30 rows over the whole population, all 30 resolved. The census's construct count is 32 candidate sites and the DELTA OF 2 IS THE CONTRACT'S 'no row when no published symbol is decorated' FILTER, measured: nim/tests/macros/tgettypeinst.nim:201 declares a type named `_` (blank identifier) carrying `{.myAttr, serializationKey.}` \u2014 this analyzer publishes no symbol for `_` (it declares nothing), so no row is invented. 294 pragma-use sites name a declared pragma template in total; the non-declaration-owned remainder is metadata, not a relationship (the 99.1 % directive class must never be swept in). The intended ONTOLOGICAL ruling was WITHDRAWN BY ITS OWN FALSIFIER: 294 applied callables in pragma positions, measured. See validation/m14/verification/NIM-EXTENDED-TYPES.md."
       }
     },
-    "_from": "MEASURED whole-corpus over 3,917 files, no stride. The lane previously read `9/9 from=spec-declared \u222a firing-log` with `implements` classed UNCLASSIFIED (NIMD3) \u2014 a class the board's arithmetic SUBTRACTS while the stated rule does not allow it (HANDOFF \u00a75.9). NIMD3 is now bound to the measured 0 and classified grammar-absence, so the denominator is earned rather than taken. NIM `implements` WAS RULED grammar-absence AND IS EMITTED: the population reading prints implements 47 (12 resolved). The ruling's own NIMD3 prose said 0 analyzer and cited 3,917 files; both are stale. The construct is a concept refining a concept / a concept-constrained generic, with two emission sites in real-nim-analyzer.ts (the nimRefines path and the isFormContracts path). Ruling corrected 2026-10-15 by EXCLUSION-AUDIT-S2."
+    "_from": "MEASURED on the WHOLE admitted population: 6,063 admitted of 6,063 tracked .nim/.nims/.nimble files across 8 repositories, 0 over the 1 MiB cap, 0 tracked-but-absent (validation/m14/measurements/nim-population.json, script/m14/nim-population.ts; the git-tracked-set rule). The population string the declaration carries in meta and in every causeRuling is parsed=6063/6063 admitted=6063 exts=nim,nims,nimble index=no. `part_of` and `decorates` are both R3 implementations (no grammar change) landed 2026-10-23; the four extended types' counts, rulings and falcifiers are in validation/m14/verification/NIM-EXTENDED-TYPES.md and validation/m14/measurements/nim-extended-census.json.",
+    "denominator": {
+      "rule": "THE DENOMINATOR IS THE LANGUAGE'S OWN EXPRESSIBLE SET, AND EVERY TYPE IS ACCOUNTED FOR: the ten canonical types are implemented, `part_of` is implemented by the R3 1:1 relabel of `include` (2026-10-23), and `decorates` is implemented by the R3 pragma-TEMPLATE class (2026-10-23 \u2014 the type was going to be RULED ontological and the census's 294 applied callables in pragma positions FALSIFIED THE RULING, which was withdrawn and replaced by the implementation; see validation/m14/verification/NIM-EXTENDED-TYPES.md). The two remaining extended types carry admissible rulings \u2014 `renders` on grammar absence with the positive control, `mixes_in` on the measured semantics of the statement that shares its name \u2014 so each leaves the denominator (the gate puts a grammar-absence OR a ruling-class exclusion into `gAbs`, which shrinks `applicable`). n = 14 \u2212 2 = 12, and the gate RECOMPUTES n and refuses a declared denominator it cannot reproduce (script/m14/block-coverage-gate.ts:933-946). THE DONE CONDITION IS SEPARATE FROM THE RATIO: the lane is NOT DONE while a type is a gap, and it is not done while a ruling rests on a construct that has not been measured.",
+      "n": 12,
+      "types": [
+        "calls",
+        "uses",
+        "contains",
+        "imports",
+        "references",
+        "exports",
+        "extends",
+        "implements",
+        "overrides",
+        "instantiates",
+        "part_of",
+        "decorates"
+      ]
+    }
   }
 }

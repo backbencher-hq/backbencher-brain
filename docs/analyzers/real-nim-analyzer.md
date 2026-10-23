@@ -75,6 +75,7 @@ re-parsing.
 | --- | --- | --- |
 | `imports` | one edge per module named by `import` and `from M import …`; source is the synthetic `(global)` | the naming node (the path token, not the directive) |
 | `part_of` | one edge per operand of `include` — a TEXTUAL scope-sharing inclusion, not a module import (the included file's declarations join THIS module's single scope; no module is created and nothing can `import` it). 1:1 RELABEL of the old `imports` row, rung R3, 2026-10-23: same source, target, line and confidence, plus `partRole: "library"` and `targetResolution: "module-name"` | the naming node (the path token) |
+| `decorates` | one edge per DECLARATION-OWNED pragma name that resolves to a **pragma template declared in the same file** (`template/macro X() {.pragma.}`) — the APPLIED-CALLABLE class, rung R3, 2026-10-23. Source is the decorated declaration's published spelling (`qualifiedName` for methods), target the template name; `metadata.decoratorConstruct: "pragma_template"` names the class. A builtin directive pragma (`{.inline.}`, `{.cdecl.}`, `{.raises.}`) is passive compiler metadata and emits NO row | the pragma NAME's own line |
 | `exports` | one edge per OPERAND of an `export` statement — a re-export of a name this module imported, which nothing else in the payload records | the operand node |
 | `contains` | one edge per owned member: object fields, enum members, module-level procs/types, methods under their receiver | no, by design |
 | `calls` | `call` and `dot_generic_call` whose callee resolves to a callable this file declares; UFCS member calls included | the callee node |
@@ -350,6 +351,39 @@ asserted) AND forbids the same construct under `imports`; `nim/module-target`'s
 `include "std/prelude"` row moved to `part_of` with its quoted-spelling branch and its
 `nimStdlibModule` marker still asserted. The fixture suite is 14/14 after the move.
 
+## `decorates` — the pragma-TEMPLATE class, and the ruling its own falsifier withdrew
+
+**THE RULING WAS INTENDED TO BE ONTOLOGICAL**, on the csharp/fsharp precedent ("an annotation is
+passive metadata; a decorator is an applied callable", `src/ast/types.ts:131-144`). **The census fired
+the named falsifier and the ruling was withdrawn BEFORE it was published:** `{.inline.}` is a compiler
+directive, but a **user-defined pragma template** (`template X() {.pragma.}`) is INVOKED BY THE
+COMPILER at the site that names it. Over the whole 6,063-file admitted population the census measured
+**294 pragma-use sites naming a declared pragma template — 48 distinct templates in 20 files** — and
+that population is an applied callable in a pragma position. The type was therefore **implemented at
+rung R3, with no grammar change**, and the withdrawal is recorded on
+`validation/m14/verification/NIM-EXTENDED-TYPES.md`.
+
+**The discriminator is the whole design.** Of the 33,266 pragma NAME sites, 99.1 % are compiler
+directives (`importc` 6,667 · `inline` 3,241 · `header` 3,023 · `dynlib` 2,772 · `cdecl` 1,211 · …)
+and stay **symbol metadata**; a `decorates` row is emitted only where a declaration-owned pragma name
+resolves to a pragma template **declared in this file**. The emitted population is measured:
+**30 rows over the whole population, all 30 resolved**; the census's construct count is **32 candidate
+sites**, and the delta of 2 is the contract's own MUST-NOT — *no row when no published symbol is
+decorated* — measured: `nim/tests/macros/tgettypeinst.nim:201` declares a type named `_` (blank
+identifier, which this analyzer never publishes) carrying `{.myAttr, serializationKey.}`.
+
+**THE PER-FILE CAVEAT** is the lane's standard one: a template imported from ANOTHER file is out of a
+per-file analyzer's reach, so no row is invented for it; the census counts that class separately
+(**192 declaration-owned sites** name a template declared in another file) and the page names it
+rather than hiding it. This is the same limitation `overrides` carries (NIMD2).
+
+**Fixtures, both directions:** `nim/pragma-decorates` pins the positive half (a file-local template
+pragma → a row with source/target/line/`decoratorConstruct`) AND the negative half (a builtin
+directive pragma → **no** row, and the declaration carrying only directives → no row at all), because
+without the negative half a partial fix that swept all 33,266 pragma names into `decorates` would
+pass. Two mutants enforce both halves — `nim/pragma-template-decorates-dropped` and
+`nim/pragma-template-carried-too-far` — and both are CAUGHT (30/30 mutants caught, 0 survived).
+
 ## Concept refinement, and the field shape that hides it
 
 `childForFieldName("refines")` on `type A = concept x of B` returns a node whose
@@ -528,7 +562,7 @@ Current tally, `BB_MUTANT_ONLY=nim/`: **69 nim mutants, 66 caught, 3 survived** 
 all three survivors are the stale shared ones named above, none of them in a file this
 lane owns.
 
-## The ten relationship types measured at the ontology round — and the eleventh (`part_of`, 2026-10-23)
+## The ten relationship types measured at the ontology round — and the two added 2026-10-23 (`part_of`, `decorates`)
 
 Every number below comes from production `parseFile` (`src/ast/pool-worker.ts`,
 not `analyze()`) over the corpus at `$HOME/fixtures/repositories`, via
@@ -4308,3 +4342,21 @@ quiet machine will cover all 5,227 through the production path.
     the census after committing the analyzer that removed them (commit `d62782289`). What
     is **not** currently witnessed is the hygiene script's own checks. That is a gap in the
     evidence, stated as one, and it is the supervisor's to close.
+47. **`decorates` IS PER-FILE AND THAT BOUNDS THE CLASS, BY CONSTRUCTION.** A declaration-owned
+    pragma name emits `decorates` only when it resolves to a pragma template DECLARED IN THE SAME
+    FILE, because that is the only template a per-file analyzer can prove. A template imported from
+    another file emits NO row: the census counts that class (**192 declaration-owned sites**) rather
+    than the analyzer claiming it. Measured consequence: **30 rows over the whole population, all 30
+    resolved**, against **32 candidate sites** in the census's construct measurement — the delta of 2
+    is the contract's "no row when no published symbol is decorated", measured at
+    `nim/tests/macros/tgettypeinst.nim:201` where a type named `_` (blank identifier, never published)
+    carries two custom pragmas. This limitation is the same shape as the per-file `overrides` scope
+    (NIMD2) and is the reason the cell is a FLOOR on the decorator population, not the population.
+48. **THE `decorates` DISCRIMINATOR IS A RESOLVED DECLARATION, NOT A NAME LIST, AND THAT IS ITS
+    DEFENCE.** A builtin directive pragma and a user pragma template are both spelled `{.name.}` in
+    the source; the difference is whether the name resolves to a declared `template/macro X()
+    {.pragma.}`. A name-shape filter would sweep the 99.1 % directive class into the 0.9 % class, and
+    the lane's own `nim/pragma-template-carried-too-far` mutant constructs exactly that defect: it is
+    CAUGHT by the fixture's forbid half. What is NOT measured here: a pragma template RE-EXPORTED
+    under a different spelling (Nim allows an aliased import of a pragma), which the per-file scope
+    cannot resolve — that case is not in the corpus's measured 294 and no claim is made about it.

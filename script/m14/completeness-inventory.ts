@@ -703,7 +703,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // which runs this lane over its OWN fixture sources and fails a kind that is emitted
     // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
     // expectation files, so the forward check (required => pinned) stays green.
-    requiredKinds: ["calls", "contains", "extends", "imports", "instantiates", "part_of", "overrides", "references", "uses", "exports", "implements"],
+    requiredKinds: ["calls", "contains", "decorates", "extends", "imports", "instantiates", "part_of", "overrides", "references", "uses", "exports", "implements"],
     // Matrix 1b rows nim actually pins. `complexity` is a per-SYMBOL value
     // (expectComplexity), unlike perl's whole-file decision count.
     payloads: {

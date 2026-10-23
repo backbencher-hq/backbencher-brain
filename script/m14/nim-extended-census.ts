@@ -190,6 +190,12 @@ const pragma = {
   classSites: [] as { file: string; line: number; owner: string; name: string; cls: string }[],
   /** pragma names declared as `template/macro X() {.pragma.}` anywhere in the corpus */
   declaredPragmaTemplates: new Map<string, { kind: string; file: string; line: number }>(),
+  /** PER-FILE pragma templates: the `decorates` implementation resolves a pragma name only against
+   *  the FILE'S OWN templates — a per-file analyzer cannot see another file's declaration — so this
+   *  index measures the implementation's expected population and the cross-file caveat separately. */
+  filePragmaTemplates: new Map<string, Set<string>>(),
+  /** every declaration-owned pragma name occurrence: the emission's candidate population */
+  declarationOwnedSites: [] as { file: string; name: string; owner: string; line: number }[],
   /** sample of concrete sites per class, for the evidence page */
   examples: new Map<string, string[]>(),
 }
@@ -234,9 +240,12 @@ const mixesIn = {
   mixinSites: 0,
   mixinOperands: 0,
   operandShapes: new Map<string, number>(),
+  /** resolved AFTER the pass against the complete declaration index (walk order must not decide) */
   operandsNamingADeclaredType: 0,
   operandsNamingADeclaredRoutine: 0,
   operandsNamingNeither: 0,
+  operandTexts: new Map<string, number>(),
+  operandSites: [] as { label: string; line: number; text: string }[],
   examples: [] as string[],
   objectDeclarations: 0,
   objectDeclarationsWithInherits: 0,
@@ -255,8 +264,14 @@ const renders = {
   renderHostByName: new Map<string, number>(),
   renderHostByFunctionShape: new Map<string, number>(),
   argumentShapes: new Map<string, number>(),
-  /** the falsifier class: a render host argument that names a DECLARED TYPE (the component predicate) */
+  /** the falsifier class: a render host argument that names a DECLARED TYPE (the component predicate).
+   *  RESOLVED AFTER THE PASS against the complete type index — a walk-time index is partial, and a
+   *  falsifier that under-counts because of walk ORDER would be invisible. */
   argsNamingADeclaredType: 0,
+  /** every capitalized-identifier argument text and how many sites carry it */
+  capitalizedArgTexts: new Map<string, number>(),
+  /** sites whose capitalized argument text can be re-resolved (label/line/callee/text), capped */
+  capitalizedArgSites: [] as { label: string; line: number; callee: string; text: string }[],
   argsCapitalizedIdentifier: 0,
   argsDeclaredTypeExamples: [] as string[],
   argsStringLiteral: 0,
@@ -295,15 +310,20 @@ function stemOf(text: string): string {
  * `identifier`. The re-implementation is on purpose — the analyzer's method is private — and the
  * sample cross-check is what stops the copy drifting from the thing it copies.
  */
-function readPragmaNames(list: any, out: { names: string[]; shapes: Map<string, number>; drops: Map<string, number> }): void {
+function readPragmaNames(
+  list: any,
+  out: { names: string[]; shapes: Map<string, number>; drops: Map<string, number>; entries?: { name: string; line: number }[] },
+): void {
   for (let i = 0; i < list.namedChildCount; i++) {
     const raw = list.namedChild(i)
     if (!raw) continue
     bump(out.shapes, raw.type)
     let c = raw
     if (c.type === "colon_expression" || c.type === "equal_expression") c = c.childForFieldName("left") ?? c
-    if (c && c.type === "identifier") out.names.push(c.text)
-    else bump(out.drops, c ? c.type : "null")
+    if (c && c.type === "identifier") {
+      out.names.push(c.text)
+      out.entries?.push({ name: c.text, line: c.startPosition.row + 1 })
+    } else bump(out.drops, c ? c.type : "null")
   }
 }
 /** the declaration's own pragma list: the analyzer's `childForFieldName("pragmas") ?? pragma_list` */
@@ -421,7 +441,12 @@ function walkTree(root: any, label: string): { declaredPragmaNames: string[]; in
       pragma.lists++
       const owner = n.parent?.type ?? "null"
       bump(pragma.ownerTypes, owner)
-      const got = { names: [] as string[], shapes: new Map<string, number>(), drops: new Map<string, number>() }
+      const got = {
+        names: [] as string[],
+        shapes: new Map<string, number>(),
+        drops: new Map<string, number>(),
+        entries: [] as { name: string; line: number }[],
+      }
       readPragmaNames(n, got)
       pragma.entries += got.names.length + [...got.drops.values()].reduce((a, b) => a + b, 0)
       for (const [k, v] of got.shapes) bump(pragma.entryShapes, k, v)
@@ -430,6 +455,9 @@ function walkTree(root: any, label: string): { declaredPragmaNames: string[]; in
       if (DECL_TYPES.has(owner)) {
         pragma.declarationOwnedLists++
         pragma.declarationOwnedEntries += got.names.length
+        for (const p of got.entries ?? []) {
+          pragma.declarationOwnedSites.push({ file: label, name: p.name, owner, line: p.line })
+        }
         for (const name of got.names) declaredPragmaNames.push(name)
       }
     }
@@ -451,6 +479,9 @@ function walkTree(root: any, label: string): { declaredPragmaNames: string[]; in
               if (!pragma.declaredPragmaTemplates.has(name)) {
                 pragma.declaredPragmaTemplates.set(name, { kind: n.type, file: label, line: n.startPosition.row + 1 })
               }
+              let fs = pragma.filePragmaTemplates.get(label)
+              if (!fs) { fs = new Set(); pragma.filePragmaTemplates.set(label, fs) }
+              fs.add(name)
             }
           }
         }
@@ -504,12 +535,9 @@ function walkTree(root: any, label: string): { declaredPragmaNames: string[]; in
         mixesIn.mixinOperands++
         bump(mixesIn.operandShapes, op.type)
         const name = lastSegment(String(op.text ?? ""))
-        const isType = declaredTypeNames.has(name)
-        const isRoutine = declaredRoutineNames.has(name)
-        if (isType) mixesIn.operandsNamingADeclaredType++
-        else if (isRoutine) mixesIn.operandsNamingADeclaredRoutine++
-        else mixesIn.operandsNamingNeither++
-        if (mixesIn.examples.length < 30) mixesIn.examples.push(`${label}:${n.startPosition.row + 1} mixin ${String(op.text).slice(0, 80)} [${op.type}]${isType ? " → DECLARED TYPE" : ""}`)
+        bump(mixesIn.operandTexts, name)
+        if (mixesIn.operandSites.length < 200) mixesIn.operandSites.push({ label, line: n.startPosition.row + 1, text: name })
+        if (mixesIn.examples.length < 30) mixesIn.examples.push(`${label}:${n.startPosition.row + 1} mixin ${String(op.text).slice(0, 80)} [${op.type}]`)
       }
     }
     if (n.type === "object_declaration") {
@@ -548,11 +576,11 @@ function walkTree(root: any, label: string): { declaredPragmaNames: string[]; in
             renders.argsStringLiteral++
           } else if (/^[A-Z][A-Za-z0-9_]*$/.test(t)) {
             renders.argsCapitalizedIdentifier++
-            if (declaredTypeNames.has(t)) {
-              renders.argsNamingADeclaredType++
-              anyComponent = true
-              if (renders.argsDeclaredTypeExamples.length < 20) renders.argsDeclaredTypeExamples.push(`${label}:${n.startPosition.row + 1} ${name}(${t}) — names a DECLARED TYPE`)
+            bump(renders.capitalizedArgTexts, t)
+            if (renders.capitalizedArgSites.length < 200) {
+              renders.capitalizedArgSites.push({ label, line: n.startPosition.row + 1, callee: name, text: t })
             }
+            if (declaredTypeNames.has(t)) anyComponent = true
           } else if (/^[a-z_][A-Za-z0-9_]*$/.test(t)) {
             renders.argsLowercaseIdentifier++
           }
@@ -658,10 +686,80 @@ const PRAGMA_TEMPLATE_NAMES = [...pragma.declaredPragmaTemplates.keys()].sort()
 const pragmaAppliedCallableSites = pragma.classDeclaredPragmaTemplate
 const pragmaTemplateNamesUsed = PRAGMA_TEMPLATE_NAMES.filter((n) => pragma.names.has(n))
 
-// render falsifier resolves after the type index is complete
-// (the argument walk already ran, so re-resolve counts of capitalized identifiers that became
-// declared types only AFTER the file that mentions them — the walk recorded ONLY declared-at-time
-// matches. ⇒ REPORTED SEPARATELY, and the declaration must read the conservative (walk-time) one.)
+// ───────────────────────────────────────────────────────────── post-pass resolution (the indexes
+// are COMPLETE only here; a walk-time membership read is a PARTIAL index and would under-count a
+// falsifier because of WALK ORDER — the same class as "a count is not an identity")
+//  · renders: every capitalized-identifier argument is re-resolved against the complete type index;
+//  · mixes_in: every mixin operand is re-resolved against the complete declaration index.
+const mixedExamples: string[] = []
+for (const [text, n] of renders.capitalizedArgTexts) {
+  if (declaredTypeNames.has(text)) {
+    renders.argsNamingADeclaredType += n
+    for (const site of renders.capitalizedArgSites) {
+      if (site.text !== text) continue
+      if (renders.argsDeclaredTypeExamples.length < 20) {
+        renders.argsDeclaredTypeExamples.push(`${site.label}:${site.line} ${site.callee}(${text}) — names a DECLARED TYPE`)
+      }
+    }
+  }
+}
+for (const [text, n] of mixesIn.operandTexts) {
+  if (declaredTypeNames.has(text)) {
+    mixesIn.operandsNamingADeclaredType += n
+    for (const site of mixesIn.operandSites) {
+      if (site.text !== text) continue
+      if (mixesIn.examples.length < 60) mixedExamples.push(`${site.label}:${site.line} mixin ${text} → DECLARED TYPE (a resolved mixin operand)`)
+    }
+  } else if (declaredRoutineNames.has(text)) {
+    mixesIn.operandsNamingADeclaredRoutine += n
+  } else {
+    mixesIn.operandsNamingNeither += n
+  }
+}
+// THE `decorates` EMISSION'S EXPECTED POPULATION, measured on the construct: declaration-owned
+// pragma names split into (a) names resolving to a FILE-LOCAL pragma template — the rows the
+// analyzer now emits — and (b) names resolving only to another file's template, which a per-file
+// analyzer cannot see (the lane's standard per-file caveat, counted rather than hidden).
+const decoratesEmission = {
+  declarationOwnedSites: pragma.declarationOwnedSites.length,
+  fileLocalPragmaTemplateSites: 0,
+  crossFilePragmaTemplateSites: 0,
+  directiveOrOtherSites: 0,
+  filesWithFileLocalPragmaTemplate: 0,
+  distinctFileLocalPragmaTemplateNames: [] as string[],
+  byOwner: {} as Record<string, number>,
+}
+{
+  const files = new Set<string>()
+  const names = new Set<string>()
+  // The analyzer emits only for declaration nodes it PUBLISHES a symbol for (proc/func/method/
+  // iterator/template/macro/converter/type/type_symbol/enum/object/variable/field); a pragma on a
+  // `proc_type` or a section is declaration-adjacent, not a decorated symbol. The census therefore
+  // reports the emission population over the analyzer's own DECORATABLE set, and the difference
+  // (declarationOwnedSites minus this) is published rather than absorbed.
+  const ANALYZER_DECORATABLE = new Set([
+    "proc_declaration", "func_declaration", "method_declaration", "iterator_declaration",
+    "template_declaration", "macro_declaration", "converter_declaration",
+    "type_symbol_declaration", "type_declaration", "enum_declaration", "object_declaration",
+    "variable_declaration", "field_declaration",
+  ])
+  for (const site of pragma.declarationOwnedSites) {
+    if (!ANALYZER_DECORATABLE.has(site.owner)) continue
+    const local = pragma.filePragmaTemplates.get(site.file)?.has(site.name) ?? false
+    if (local) {
+      decoratesEmission.fileLocalPragmaTemplateSites++
+      files.add(site.file)
+      names.add(site.name)
+      decoratesEmission.byOwner[site.owner] = (decoratesEmission.byOwner[site.owner] ?? 0) + 1
+    } else if (pragma.declaredPragmaTemplates.has(site.name)) {
+      decoratesEmission.crossFilePragmaTemplateSites++
+    } else {
+      decoratesEmission.directiveOrOtherSites++
+    }
+  }
+  decoratesEmission.filesWithFileLocalPragmaTemplate = files.size
+  decoratesEmission.distinctFileLocalPragmaTemplateNames = [...names].sort()
+}
 const rendersComponentPredicateResolvedAfter = renders.argsNamingADeclaredType
 
 // ───────────────────────────────────────────────────────────── the four sections
@@ -695,6 +793,9 @@ say(`    of those, USED in a pragma position        ${pragmaTemplateNamesUsed.le
 say(`    pragma SITES by class                      declared-pragma-template ${pragmaClassCounts.get("declared-pragma-template") ?? 0} · declared-other ${pragmaClassCounts.get("declared-other") ?? 0} · undeclared/directive ${pragmaClassCounts.get("undeclared") ?? 0}`)
 say(`  TOP pragma names                             ${fmt(pragma.names, 30)}`)
 say(`  THE FALSIFIER: an applied callable in a pragma position. Counted above: ${pragmaAppliedCallableSites} site(s) name a declared pragma template.`)
+say(`  THE IMPLEMENTATION'S OWN POPULATION (rung R3, measured on the construct): declaration-owned pragma sites`)
+say(`    ${decoratesEmission.declarationOwnedSites.toLocaleString()} total → resolving to a FILE-LOCAL pragma template ${decoratesEmission.fileLocalPragmaTemplateSites.toLocaleString()} (the rows the analyzer now emits) · to another file's template ${decoratesEmission.crossFilePragmaTemplateSites} (per-file caveat) · directive/other ${decoratesEmission.directiveOrOtherSites.toLocaleString()}`)
+say(`    by owner node type: ${fmt(new Map(Object.entries(decoratesEmission.byOwner)))}`)
 say()
 say("== 2 · part_of — 1:1 RELABEL of `include` (module-name target kept; targetResolution=module-name) ==")
 say(`  include statements                           ${partOf.includeSites.toLocaleString()}`)
@@ -721,7 +822,7 @@ say(`    concept_declaration                         ${mixesIn.conceptDeclaratio
 say(`    refinement_list                             ${mixesIn.refinementLists.toLocaleString()}`)
 say(`    of_branch (VARIANT alternatives, NOT inheritance) ${mixesIn.ofBranches.toLocaleString()}`)
 say(`  examples:`)
-for (const e of mixesIn.examples.slice(0, 12)) say(`    ${e}`)
+for (const e of [...mixedExamples.slice(0, 8), ...mixesIn.examples.slice(0, 8)]) say(`    ${e}`)
 say()
 say("== 4 · renders — RULING SHAPE: no COMPONENT can be named at a rendering site ==")
 say(`  call sites (whole population)                ${renders.callSites.toLocaleString()}`)
@@ -856,6 +957,7 @@ const result = {
         "THIS RULING IS REFUTED IF the applied-callable class is the decorates construct: the census counts every pragma site whose name resolves to a declared pragma template (`template/macro X() {.pragma.}`), and a non-zero count is the discriminator — the count is published above and in the declaration so the claim is checkable rather than asserted. A SECOND half: any grammar node type for an @-decorator application (none in the served inventory).",
     },
   },
+  decoratesEmission,
   part_of: {
     decision: "1:1 RELABEL of imports->part_of for include_statement rows, KEEPING the analyzer's normalized module-name target with metadata.targetResolution = module-name and metadata.partRole = library; the divergence from fsharp/php (which emit project-relative paths) is RECORDED, never flattened",
     count: {
@@ -896,6 +998,7 @@ const result = {
       ofBranchesVariantAlternatives: mixesIn.ofBranches,
     },
     examples: mixesIn.examples.slice(0, 30),
+    operandExamplesResolvingToDeclaredType: mixedExamples.slice(0, 20),
   },
   renders: {
     rulingShape: "Nim has no grammar-level rendering construct; rendering is a macro DSL over ordinary call nodes, so no position in a render-host call can name a COMPONENT TYPE",

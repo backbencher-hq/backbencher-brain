@@ -857,4 +857,61 @@ export const NIM_MUTANTS: NimMutant[] = [
       }),
     }),
   },
+  // ═══════════════════════════════════════════════════════════════════════
+  // THE 2026-10-23 `decorates` WAVE — the R3 pragma-template class, in BOTH directions.
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    id: "nim/pragma-template-decorates-dropped",
+    language: "nim",
+    defectClass: "missing-relationship",
+    description:
+      "the FILE-LOCAL PRAGMA-TEMPLATE RESOLUTION IS REVERTED: a declaration's `{.myMarker.}` is " +
+      "left as symbol metadata and no `decorates` row is published. This is the exact regression " +
+      "the ruling would have made permanent — the lane planned to rule the type ontological and " +
+      "the census's 294 applied callables in pragma positions falsified that ruling — so the " +
+      "positive half of nim/pragma-decorates must catch it. WITHOUT this mutant the entire " +
+      "emission could be deleted and the suite would stay green, which is the failure mode the " +
+      "fleet keeps paying for.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (e: any) => !(String(e?.type ?? "") === "decorates" && String(e?.metadata?.relationshipType ?? "") === "nim_pragma_template"),
+      ),
+    }),
+  },
+  {
+    id: "nim/pragma-template-carried-too-far",
+    language: "nim",
+    defectClass: "wrong-relationship-scope",
+    description:
+      "the discriminator is dropped and EVERY declaration-owned pragma name becomes a `decorates` " +
+      "row — so `{.inline.}` decorates the proc that carries it. This is the partial fix that is " +
+      "WORSE than the bug it replaces: it would turn the 0.9 % applied-callable class into the " +
+      "full 33,266-name pragma population and make the `decorates` cell mean nothing. Caught by " +
+      "nim/pragma-decorates' forbid half (no decorates target `inline`, no decorates from " +
+      "`directiveOnly`), which is why the negative half exists at all.",
+    transform: (r: any) => {
+      const out: any[] = [...(r.relationships ?? [])]
+      for (const s of r.symbols ?? []) {
+        for (const d of s?.decorators ?? []) {
+          const name = String(d)
+          const src = String(s?.qualifiedName ?? s?.name ?? "")
+          if (!src) continue
+          const already = out.some(
+            (e: any) => String(e?.type) === "decorates" && String(e?.source) === src && String(e?.target) === name,
+          )
+          if (already) continue
+          out.push({
+            source: src,
+            target: name,
+            type: "decorates",
+            confidence: 1,
+            line_number: s?.range?.startLine,
+            metadata: { relationshipType: "nim_pragma_template", decoratorConstruct: "pragma_template", isDecorator: true, evidenceClass: "structural" },
+          })
+        }
+      }
+      return { ...r, relationships: out }
+    },
+  },
 ]

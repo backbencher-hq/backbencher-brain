@@ -46,7 +46,15 @@ echo "   population: the GIT-TRACKED set under .corpus, {nim,nims,nimble}, 1 MiB
 echo "   census log:  $CENSUS_LOG"
 echo "   arm log:     $ARM_LOG"
 
-# ── 1. THE TOKEN: wait for svelte (or whoever holds it) to release; nim is the queue head ──────
+# ── 1. THE TOKEN ─────────────────────────────────────────────────────────────────────────────────
+# BB_NIM_TOKEN_ALREADY_HELD=1 means the lane has JUST taken the token with `take-granted` and this
+# driver's job is the WORK, not the waiting. `take-granted` exists for a FREE token behind an
+# INACTIVE head (the Lead's ruling, 2026-10-23): it keeps the lane's queue place, so cpp's order is
+# not forfeited. Without the env var this is the ordinary queue path.
+if [ "${BB_NIM_TOKEN_ALREADY_HELD:-0}" = "1" ]; then
+  TOOK=1
+  echo "   TOKEN ALREADY HELD (granted turn) — skipping the queue wait; $(bash "$TOKEN" status 2>&1 | head -1)"
+else
 t0=$(date +%s)
 while true; do
   if out=$(bash "$TOKEN" take "$LANE" 2>&1); then
@@ -62,6 +70,7 @@ while true; do
   # Keep the queue honest and do not spin: 15 s.
   sleep 15
 done
+fi
 
 # ── the growth-beat watcher: beat only when the run's own output grows ─────────────────────────
 # Args: <log> <pid>. Kills itself when the pid is gone.
@@ -103,8 +112,15 @@ wait "$APID"; AEXIT=$?
 kill "$WATCH" >/dev/null 2>&1 || true
 beat
 echo "== ARM EXIT $AEXIT $(date -Is) =="
-if [ "$AEXIT" -ne 0 ]; then
-  echo "ARM FAILED — see $ARM_LOG (exit $AEXIT)" >&2
+# ★ THE GATE'S EXIT CODE IS ITS VERDICT, NOT ITS MEASUREMENT. `incoming-gate.ts:4324` exits 1 when
+#   the verdict fails, and clause 1 ("every edge resolves, or carries a claim the project verifies")
+#   fails for any lane with a residual — which this lane has, and every lane the fleet has DONE had.
+#   MEASURED 2026-10-23 on the first run: exit 1 was read as a measurement failure and the driver
+#   exited 5, while the TABLE 1 and the dump were COMPLETE on disk. ⇒ THE MEASUREMENT GUARDS ARE
+#   THE POPULATION LINE, THE TABLE, AND THE DUMP'S RECONCILIATION (nim-cause-census exits non-zero
+#   on those), never the verdict code. 2/3/5 mean the instrument could not run at all.
+if [ "$AEXIT" -ne 0 ] && [ "$AEXIT" -ne 1 ]; then
+  echo "ARM FAILED TO MEASURE — exit $AEXIT is an instrument failure (0/1 are verdict codes); see $ARM_LOG" >&2
   tail -20 "$ARM_LOG" >&2
   exit 5
 fi
