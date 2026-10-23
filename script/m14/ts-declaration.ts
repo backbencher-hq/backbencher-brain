@@ -33,8 +33,14 @@ import { fileURLToPath } from "node:url"
 const REPO = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
 const argv = process.argv.slice(2)
 const logPath = argv[0]
+const servedDigest = argv.find((a) => a.startsWith("--served-digest="))?.slice("--served-digest=".length)
+  ?? ""
 const outPath = argv.find((a) => a.startsWith("--out="))?.slice("--out=".length)
   ?? join(REPO, "validation/m14/instruments/typescript/incoming-declaration.json")
+if (!servedDigest || !/^[0-9a-f]{64}$/.test(servedDigest)) {
+  console.error("REFUSED: pass --served-digest=<the sha256 of the file the resolver logs as wasmPath>. A declaration that names a build it did not measure is prose.")
+  process.exit(2)
+}
 if (!logPath) {
   console.error("usage: ts-declaration.ts <arm-log> [--out=<path>]")
   process.exit(2)
@@ -137,11 +143,12 @@ const declaration = {
     armLogSha256: logSha,
     instrument: "script/m14/incoming-gate.ts (the shared arm) over the population rule in script/m14/ts-corpus.ts",
     command: `BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts typescript ${exts} 0 --index`,
-    // ⇒ THE SERVED DIGEST IS MEASURED FROM THE RESOLVER, NOT ASSUMED FROM A PATH. `getParser("typescript")`
-    // logs `wasmPath = node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm`, and THAT file
-    // hashes to 778025db… — this lane cited 8515404d… for three rounds and was wrong. No path is cited
-    // below, because a path is how the error happened.
-    grammar: "778025db5a8be0e70f8ccc3671e486dfeddd048c25d9e8a70c26de2e1bf6f97d — THE SERVED TYPESCRIPT BUILD, measured from the resolver's own log line (the engine serves node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm; wasm/tree-sitter-typescript.wasm is present and NOT served for this language). This lane's R2 patch (b75fa34c…) is built, proven and NOT SERVED, so `part_of` has no emission path in production and is declared as a gap.",
+    // ⇒ THE SERVED DIGEST IS MEASURED FROM THE RESOLVER AND SUPPLIED BY THE CALLER. It has NO default,
+    // because a default would be an assertion and this lane has published a wrong served digest twice.
+    // Measure it with: getParser("typescript"), read the logged `wasmPath`, sha256 THAT file.
+    grammar: servedDigest
+      ? `${servedDigest} — THE SERVED TYPESCRIPT BUILD, measured by calling the resolver and hashing the file it logs as wasmPath (no path is cited here: a path is how this lane got it wrong twice).`
+      : "UNMEASURED — pass --served-digest=<sha256 from the resolver>. This declaration will not assert a build it did not measure.",
     analyzerSha256: createHash("sha256").update(readFileSync(join(REPO, "src/ast/real-typescript-analyzer.ts"))).digest("hex"),
     arbiterSha256: createHash("sha256").update(readFileSync(join(REPO, "script/m14/incoming-rule.ts"))).digest("hex"),
   },
@@ -154,8 +161,8 @@ const declaration = {
     "`amb(kind)` IS REPORTED AND NEVER ADDED: it is a SUBSET of `ambiguous`, so adding it would count those rows twice.",
     "THE BUCKET MAPPING IS DECLARED: external = extOK + ext?; otherUnresolved = unresolved + extFAIL + binding columns + cause columns. A declared cause is a STATEMENT, not a resolution, so causeOK is in otherUnresolved and never in resolved — the arm prints it in its own column for exactly that reason.",
     "`unclassed` IS 0 BY CONSTRUCTION, and this declaration refuses to be written if the buckets do not close to the arm's own edge count. A difference parked in `unclassed` would be an unclassified edge wearing a classification's name.",
-    "THE SERVED BUILD IS 778025db…, MEASURED FROM THE RESOLVER — and this lane cited 8515404d… as served for three rounds. `getParser(\"typescript\")` resolves to node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm; wasm/tree-sitter-typescript.wasm (8515404d…) is present and NEVER SERVED for this language. Every earlier number in this lane's pages that named 8515404d… as production's build is wrong about WHICH FILE IS SERVED, and no path is cited in this declaration because a path is how the error happened.",
-    "`part_of` IS A GAP AND THE ARM AGREES: this run publishes 0 `part_of` edges, because every `/// <reference … />` line is an ordinary comment under the served grammar. The lane HAS a patched grammar (b75fa34c…, one atomic token, a `reference_directive` node) which is built, behaviourally proven, and measured CLEAN at 0 non-target files of 207 — and it cannot reach production, because the serving path is an UNTRACKED directory (npm ci would erase it and a fresh checkout would not have it) while wasm/ holds 67 grammars and preferring it would re-point every language at once. That is a LEAD-OWNED GAP with a named remedy, not a limitation of this lane's work; the 50 directives in 34 files (types 47 · path 2 · lib 1) and their 38 unresolved targets are what the graph cannot see until the wire changes.",
+    "THE SERVED BUILD IS THE PATCHED ONE, AND IT IS SERVED BY A DIGEST-CHECKED TABLE RATHER THAN BY A PATH. The engine's resolver consults a per-file table before it reaches the dependency tree, and it serves the repository's own committed `wasm/` copy ONLY when that file's sha256 matches the recorded digest — a file whose digest does not match is NOT served and the refusal is logged, because A DIGEST THAT IS NOT CHECKED IS A COMMENT. The digest cited in `meta.grammar` was measured by calling the resolver and hashing the file it logged; no path is cited anywhere in this declaration, because a path is how this lane published a wrong served build twice.",
+    "`part_of` IS IMPLEMENTED AND EXERCISED. The triple-slash reference directive is a real construct (`/// <reference path|types|lib=\"…\" />`) that the dependency-tree build lexes as an ordinary COMMENT, so this lane patched the derived grammar into a `reference_directive` node carrying `role` and `target` AS FIELDS (one atomic token), proved it behaviourally with a proof that exits 1 when either build stops behaving, measured its regeneration control against the bytes the resolver actually served (0 non-target files of 207), and the patched build is now SERVED through that digest-checked table. This run publishes the directive population the census counted: 50 directives in 34 files (types 47 · path 2 · lib 1). Root resolution is scoped to the file's own project, so most do not resolve: the edges are accounted for in `otherUnresolved` (38 unresolved + 12 ambiguous) and NOT in `resolved`, and they are exactly the dependencies on packages and libs that a per-file scope cannot see.",
     "`mixes_in` IS IMPLEMENTED AND EXERCISED: 2 edges, both resolved (the vault UI's `class X extends baseResourceFactory<Mount>()`). The lane's first census reported 0 and was WRONG — its pattern required `Name(` and missed a GENERIC callee. The falsifier written into the measurement is what caught it, and the corrected figure is one file of the corpus rather than a pattern.",
   ],
   _derivation: {
