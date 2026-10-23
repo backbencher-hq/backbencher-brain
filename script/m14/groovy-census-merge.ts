@@ -9,20 +9,48 @@
  * THE MERGE CHECKS THE COVERAGE FROM THE SLICES' OWN PRINTED BOUNDS, as the gate merge does: the
  * slices must abut, start at 0, and reach the admitted total the census itself reports.
  */
-import { readFileSync, writeFileSync, existsSync } from "node:fs"
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "node:fs"
+import { execFileSync } from "node:child_process"
 import { resolve } from "node:path"
 
 const ROOT = process.cwd()
 const ARM_DIR = "validation/m14/measurements/groovy-arm"
-const CHUNKS = [0, 2000, 4000, 6000, 8000]
+const CHUNKS = (() => { const out: number[] = []; for (const f of readdirSync(resolve(ROOT, ARM_DIR))) { const mm = /^census-(\d+)\.json$/.exec(f); if (mm) out.push(Number(mm[1])) } return out.sort((a, b) => a - b) })()
 const OUT = "validation/m14/measurements/groovy-population-census-2026-10-22.json"
+const CORPUS_ROOT = "$HOME/fixtures/repositories"
 
 const COUNT_KEYS = [
   "traitDeclarations", "traitAppliedByImplements", "traitAppliedByExtends",
   "gstringTemplateExpressions", "partTokenOccurrences", "parseFailures",
   "heritageClauses", "heritageCoveredByTheAnalyzerLookup", "heritageMissedByTheAnalyzerLookup",
-  "gspTemplateFiles",
 ]
+
+// `gspTemplateFiles` IS NOT ADDITIVE ACROSS SLICES AND MUST NOT BE SUMMED. The census counts it by
+// walking every repository's `git ls-files` per slice, so a repository that contributes admitted files
+// to more than one slice is counted once per slice that touches it. Measured both ways on the same
+// 8,102-file population: 3,415 over five 2,000-file slices and 8,879 over the thirteen-slice tiling,
+// while the truth is 683 (every tracked `.gsp`, all of them in grails-core). A count that changes when
+// the population is cut differently is a property of the cut, not of the population, so it is measured
+// ONCE here instead, by the same rule the census uses (git-tracked, `.gsp` extension, whole corpus).
+const gspTemplateFiles = ((): number => {
+  let n = 0
+  let repos: string[] = []
+  try {
+    repos = readdirSync(CORPUS_ROOT).sort()
+  } catch {
+    return 0
+  }
+  for (const r of repos) {
+    try {
+      if (!statSync(resolve(CORPUS_ROOT, r)).isDirectory()) continue
+      const out = execFileSync("git", ["-C", resolve(CORPUS_ROOT, r), "ls-files"], { maxBuffer: 1 << 28 }).toString()
+      for (const f of out.split("\n")) if (f.endsWith(".gsp")) n++
+    } catch {
+      continue
+    }
+  }
+  return n
+})()
 
 const sum: Record<string, number> = {}
 for (const k of COUNT_KEYS) sum[k] = 0
@@ -87,6 +115,7 @@ const out = {
   },
   counts: {
     ...sum,
+    gspTemplateFiles,
     distinctTraitNames: traitNames.size,
     distinctAppliedTraitNames: appliedTraitNames.size,
     heritageShapes,
@@ -99,6 +128,7 @@ writeFileSync(resolve(ROOT, OUT), JSON.stringify(out, null, 2) + "\n")
 console.log(`GROOVY CENSUS MERGE -> ${OUT}`)
 console.log(`  admitted ${admittedTotal} files across ${reposTotal} repos · measured ${measured} · coverage ${coverageOk ? "OK" : "BROKEN"}`)
 for (const k of COUNT_KEYS) console.log(`  ${k.padEnd(40)} ${sum[k]}`)
+console.log(`  ${"gspTemplateFiles (measured once)".padEnd(40)} ${gspTemplateFiles}`)
 console.log(`  ${"distinctTraitNames".padEnd(40)} ${traitNames.size}`)
 console.log(`  ${"distinctAppliedTraitNames".padEnd(40)} ${appliedTraitNames.size}`)
 for (const [shape, n] of Object.entries(heritageShapes).sort((a, b) => b[1] - a[1])) {

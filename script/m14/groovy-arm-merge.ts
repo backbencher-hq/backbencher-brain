@@ -36,12 +36,12 @@
  * `amb(kind)` is a SUBSET of `amb(decl)` and is reported BESIDE, never added. `collRes` is a subset
  * of `resolved` and is likewise reported beside. The residual is `amb(decl) + unresolved`.
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs"
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs"
 import { resolve } from "node:path"
 
 const ROOT = process.cwd()
 const ARM_DIR = "validation/m14/measurements/groovy-arm"
-const CHUNKS = [0, 2000, 4000, 6000, 8000]
+const CHUNKS = (() => { const out: number[] = []; for (const f of readdirSync(resolve(ROOT, ARM_DIR))) { const m = /^chunk-(\d+)\.txt$/.exec(f); if (m) out.push(Number(m[1])) } return out.sort((a, b) => a - b) })()
 const OUT = "validation/m14/measurements/groovy-arm-closure-2026-10-22.json"
 
 const COLS = [
@@ -58,6 +58,7 @@ type Row = Record<string, number>
 function parseChunk(path: string): {
   rows: Map<string, Row>; slice: [number, number] | null; admitted: number | null
   parsed: number | null; degraded: number | null; parseFailures: number | null; repos: number | null
+  walls: Map<string, { type: string; sig: string; resolved: number; amb: number; unres: number; extClaim: number; binding: number; cause: number }>
 } {
   const text = readFileSync(path, "utf8")
   const rows = new Map<string, Row>()
@@ -72,6 +73,35 @@ function parseChunk(path: string): {
   const degraded = degM ? Number(degM[2]) : null
   const pfM = /parse failures: (\d+)/.exec(text)
   const parseFailures = pfM ? Number(pfM[1]) : null
+
+  // ★ THE WALL CLASSES, IN THE GATE'S OWN WORDS. The gate prints a second table — "EDGES A MARKER
+  // SET EXPLAINS" — whose rows are the metadata-marker SETS that describe each class of edge, and
+  // whose `unres` column is the COUNT of the edges in that class that the project scope could not
+  // resolve. ⇒ A wall with no count is a complaint, and a wall with a count is a ruling, so the
+  // merge carries the classes and their counts out of the gate's own table rather than inventing
+  // a taxonomy beside it.
+  const walls: Map<string, { type: string; sig: string; resolved: number; amb: number; unres: number; extClaim: number; binding: number; cause: number }> = new Map()
+  {
+    const lines2 = text.split("\n")
+    let inMarks = false
+    for (const line of lines2) {
+      if (line.includes("EDGES A MARKER SET EXPLAINS")) { inMarks = true; continue }
+      if (!inMarks) continue
+      if (line.trim().startsWith("type") && line.includes("metadata KEYS")) continue
+      if (line.startsWith("---")) continue
+      const t = line.trim()
+      if (!t) continue
+      const m = /^(\S+)\s+(.+?)\s{2,}(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$/.exec(t)
+      if (!m) continue
+      const type = m[1]
+      if (!TYPES.includes(type)) continue
+      const key = `${type}\u0000${m[2].trim()}`
+      const prev = walls.get(key) ?? { type, sig: m[2].trim(), resolved: 0, amb: 0, unres: 0, extClaim: 0, binding: 0, cause: 0 }
+      prev.resolved += Number(m[3]); prev.amb += Number(m[4]); prev.unres += Number(m[5])
+      prev.extClaim += Number(m[6]); prev.binding += Number(m[7]); prev.cause += Number(m[8])
+      walls.set(key, prev)
+    }
+  }
 
   const lines = text.split("\n")
   let inTable = false
@@ -90,7 +120,7 @@ function parseChunk(path: string): {
     COLS.forEach((c, i) => { row[c] = Number(parts[i + 1]) })
     rows.set(type, row)
   }
-  return { rows, slice, admitted, parsed, degraded, parseFailures, repos }
+  return { rows, slice, admitted, parsed, degraded, parseFailures, repos, walls }
 }
 
 const sum: Map<string, Row> = new Map()
@@ -103,6 +133,7 @@ let degradedTotal = 0
 let parseFailuresTotal = 0
 let coverage: [number, number][] = []
 const missing: string[] = []
+const walls: Map<string, { type: string; sig: string; resolved: number; amb: number; unres: number; extClaim: number; binding: number; cause: number }> = new Map()
 
 for (const off of CHUNKS) {
   const p = `${ARM_DIR}/chunk-${off}.txt`
@@ -121,6 +152,12 @@ for (const off of CHUNKS) {
   for (const [type, row] of c.rows) {
     const dst = sum.get(type)!
     for (const c2 of COLS) dst[c2] = (dst[c2] ?? 0) + (row[c2] ?? 0)
+  }
+  for (const [key, w] of c.walls) {
+    const prev = walls.get(key) ?? { type: w.type, sig: w.sig, resolved: 0, amb: 0, unres: 0, extClaim: 0, binding: 0, cause: 0 }
+    prev.resolved += w.resolved; prev.amb += w.amb; prev.unres += w.unres
+    prev.extClaim += w.extClaim; prev.binding += w.binding; prev.cause += w.cause
+    walls.set(key, prev)
   }
 }
 
@@ -193,6 +230,12 @@ const out = {
     statement:
       "THE EDGE BUCKETS ARE THE POPULATION'S: every admitted file is measured exactly once, and an edge is a per-file fact. THE RESOLUTION BUCKETS ARE THE CHUNKED MEASUREMENT'S, AND `resolved` IS BIASED UP: the resolution scope is PER PROJECT and a repository longer than one slice STRADDLES a slice boundary, so the split half of the repository cannot see the collisions in the other half — and a collision that is INVISIBLE makes the name read UNIQUE and the edge RESOLVE. The gate says so in its own population line, which every chunk prints.",
     direction: "resolved biased UP · amb(decl) and unresolved biased DOWN · edges unaffected",
+  },
+  walls: {
+    note:
+      "THE WALL CLASSES, IN THE GATE'S OWN WORDS: the rows of the gate's own `EDGES A MARKER SET EXPLAINS` table, summed over the slices. A row is a metadata-marker SET on the edge and a count of that class's unresolved edges. ⇒ A CAUSE RULING DISPOSITIONS A CLASS, AND A CLASS WITHOUT A COUNT IS A COMPLAINT.",
+    classes: [...walls.values()].sort((a, b) => b.unres - a.unres),
+    total_unres: [...walls.values()].reduce((a, w) => a + w.unres, 0),
   },
   missing_chunks: missing,
 }
