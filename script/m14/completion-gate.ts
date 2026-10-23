@@ -63,7 +63,7 @@ const REPO = resolve(import.meta.dir, "../..")
 // ═══════════════════════════════════════════════════════════════════════════
 // THE FOUR CONDITIONS, AS THE OWNER STATED THEM. THE NAMES ARE THE OWNER'S.
 // ═══════════════════════════════════════════════════════════════════════════
-type Condition = "implemented" | "whole-population" | "resolved" | "walls-dispositioned" | "fixtures"
+type Condition = "implemented" | "whole-population" | "resolved" | "walls-dispositioned" | "fixtures" | "no-regex"
 
 /** The fixture suite's own language names where they differ from a lane's name. A mapping, not a
  *  guess: a lane whose key is wrong reads as "no suite ran", which is an UNKNOWN and not a pass. */
@@ -74,7 +74,7 @@ const FIXTURE_LANG: Record<string, string> = {
   vbnet: "vb",
 }
 
-const CONDITIONS: Condition[] = ["implemented", "whole-population", "resolved", "walls-dispositioned"]
+const CONDITIONS: Condition[] = ["implemented", "whole-population", "resolved", "walls-dispositioned", "fixtures", "no-regex"]
 
 interface GateRow {
   lane: string
@@ -282,6 +282,58 @@ const runFixtureSuite = (): { summary: Map<string, { pass: number; fail: number 
 }
 const FIXTURES = runFixtureSuite()
 
+/**
+ * ── THE REGEX CENSUS, READ ONCE AND ATTRIBUTED PER LANE ─────────────────────────────────────────
+ *
+ * `script/m14/no-regex-gate.sh` delegates to the tree-sitter census (it used to grep the sources and
+ * reported 187 where the truth was 5, which taught its readers to ignore it). It prints one line per
+ * regex literal — `  real-<lane>-analyzer.ts:<line>  /<re>/  <op>` — and this reads those lines so the
+ * verdict can name the LANE rather than repeat a fleet total.
+ *
+ * ⇒ AND A LANE WITH NO PARSED LINE IS AN UNKNOWN, NOT A PASS: the census must have produced a verdict,
+ * or the condition says so. That is the same rule as every other condition here.
+ */
+function runRegexCensus(): {
+  ran: boolean
+  byLane: Map<string, { count: number; sites: string[] }>
+  total: number
+  note: string
+} {
+  const byLane = new Map<string, { count: number; sites: string[] }>()
+  let out = ""
+  let ran = false
+  let total = 0
+  const absorb = (text: string): void => {
+    for (const line of text.split("\n")) {
+      const m = line.match(/^\s+real-([a-z0-9_]+)-analyzer\.ts:(\d+)\s+(.*)$/)
+      if (!m) continue
+      const lane = m[1]
+      const cur = byLane.get(lane) ?? { count: 0, sites: [] }
+      cur.count++
+      cur.sites.push(`:${m[2]} ${m[3].trim().slice(0, 60)}`)
+      byLane.set(lane, cur)
+    }
+    const t = text.match(/TOTAL\s+(\d+)\s+in scope/)
+    if (t) { total = Number(t[1]); ran = true }
+    if (/PASS — 0 regex literals/.test(text)) { total = 0; ran = true }
+  }
+  try {
+    out = execFileSync("bash", ["script/m14/no-regex-gate.sh"], { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 })
+    absorb(out)
+  } catch (e: any) {
+    // THE GATE EXITS NON-ZERO WHEN IT FINDS SOMETHING — that is the expected path for this census,
+    // so the output on the failure carries the rows and the TOTAL line.
+    absorb(String(e?.stdout ?? "") + String(e?.stderr ?? ""))
+  }
+  return {
+    ran,
+    byLane,
+    total,
+    note: ran ? "" : "THE REGEX CENSUS DID NOT RUN — an unknown is not a pass",
+  }
+}
+const REGEX_CENSUS = runRegexCensus()
+
 const judgeLane = (lane: string, row: GateRow): LaneVerdict => {
   const conditions = new Map<Condition, { ok: boolean; detail: string }>()
   const problems: string[] = []
@@ -314,6 +366,42 @@ const judgeLane = (lane: string, row: GateRow): LaneVerdict => {
       conditions.set("fixtures", {
         ok: f.fail === 0,
         detail: `${f.pass} pass / ${f.fail} fail${f.fail === 0 ? "" : " *** THE SUITE SAYS THE ANALYZER IS BROKEN ***"}`,
+      })
+    }
+  }
+
+  // ── (F) RESOLUTION USES NO REGEX — THE OWNER'S OWN DONE CRITERION ─────────
+  //
+  // ★ THIS CONDITION WAS MISSING AND THE GATE CERTIFIED LANES THAT FAIL IT. MEASURED 2026-10-23:
+  // `script/m14/no-regex-gate.sh` reports **43 regex literals across 17 analyzers**, and NINE of the
+  // then-DONE lanes are among them (clojure 3, scss 8, svelte 3, yaml 2, and one each in dart,
+  // fsharp, javascript, python, typescript). The owner's DONE definition has always said "resolution
+  // uses no regex"; this gate checked five conditions and never this one, so a lane could be certified
+  // DONE while a policy the owner named in the definition was failing. ⇒ **A CRITERION THE ARBITER
+  // DOES NOT READ IS A CRITERION THE FLEET DOES NOT HAVE.**
+  //
+  // The check is per-ANALYZER, not per-run: it asks the shared census which regex literals live in
+  // THIS lane's analyzer file, so the verdict names the lane rather than repeating a fleet total.
+  {
+    // ★ A LANE WITH NO CENSUS LINE IS *ZERO*, NOT UNKNOWN — and this gate's own positive control
+    // caught the first version of this check getting it wrong: ruby has no regex literals, so the
+    // census printed no line for it, and the check reported `THE REGEX CENSUS DID NOT READ THIS
+    // LANE'S ANALYZER` against a lane that is CLEAN. **AN ABSENT ROW AND AN UNREAD ROW ARE DIFFERENT
+    // FACTS**, and only the census's own TOTAL line distinguishes them.
+    const own = REGEX_CENSUS.byLane.get(lane) ?? { count: 0, sites: [] as string[] }
+    if (!REGEX_CENSUS.ran) {
+      conditions.set("no-regex", {
+        ok: false,
+        detail: `THE REGEX CENSUS DID NOT RUN — an unknown is not a pass. ${REGEX_CENSUS.note}`,
+      })
+    } else if (own.count === 0) {
+      conditions.set("no-regex", { ok: true, detail: `0 regex literals in the analyzer` })
+    } else {
+      conditions.set("no-regex", {
+        ok: false,
+        detail:
+          `${own.count} regex literal(s) in the analyzer — the owner's DONE definition says resolution ` +
+          `uses no regex: ${own.sites.slice(0, 4).join(", ")}${own.count > 4 ? ", …" : ""}`,
       })
     }
   }
