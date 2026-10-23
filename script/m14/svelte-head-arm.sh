@@ -67,11 +67,26 @@ run_with_beat() {
     fi
   done | tee "$out"
   rc=$?
-  if [ "$rc" -ne 0 ]; then
-    echo "!! $name EXITED $rc — stopping the arm; the artifact above is retained but is NOT publishable." >&2
+  # A GATE'S VERDICT IS NOT AN INSTRUMENT FAILURE. incoming-gate.ts exits 1 when its CLAUSE-1 verdict
+  # is FAIL — for a lane whose declaration is DERIVED from that FAIL (the ruby precedent), exit 1 IS
+  # the measurement. So a stage may DECLARE the exits it accepts; a non-accepted exit stops the arm.
+  # An accepted non-zero exit is still only publishable if the artifact proves the run COMPLETED:
+  # the gate's own "instrument self-test: PASS" line is that proof.
+  local allowed="${ALLOWED_RC:-0}"
+  if ! printf ' %s ' "$allowed" | grep -qF " $rc "; then
+    echo "!! $name EXITED $rc (allowed: $allowed) — stopping the arm; the artifact is retained but NOT publishable." >&2
     exit 4
   fi
-  echo "   $name ok"
+  if [ "$rc" -ne 0 ]; then
+    if ! grep -q "instrument self-test: PASS" "$out"; then
+      echo "!! $name EXITED $rc with NO 'instrument self-test: PASS' in the artifact — the run did not" >&2
+      echo "   complete (a crashed run also exits non-zero); the artifact is NOT publishable." >&2
+      exit 4
+    fi
+    echo "   $name ok — exit $rc is the GATE'S VERDICT (recorded as an outcome), and the run's own self-test PASS is present"
+  else
+    echo "   $name ok"
+  fi
 }
 
 if [ "$MODE" = "--bounded-check" ]; then
@@ -80,6 +95,28 @@ if [ "$MODE" = "--bounded-check" ]; then
   run_with_beat "census-bounded-check" \
     bun run script/m14/svelte-extended-census.ts --sample=60
   echo "== BOUNDED CHECK COMPLETE — this is NOT a measurement and wrote no population claim =="
+  exit 0
+fi
+
+# ── `--census-only`: take the arm, run ONLY the extended census, release. For the census re-run after
+#    a census-instrument repair, when the two Lead closure instruments are already measured at this
+#    HEAD (their artifacts exist and are stamped). It is still a whole-population arm: one heavy run.
+if [ "$MODE" = "--census-only" ]; then
+  echo "== CENSUS-ONLY ARM (one heavy run; the closure instruments are already measured) =="
+  if ! "$TOKEN" take "$LANE"; then
+    echo "REFUSED — this lane's turn has not arrived (or the memory floor refused). NOTHING WAS RUN." >&2
+    exit 3
+  fi
+  TOOK=1
+  echo "== $LANE holds the arm =="
+  run_with_beat "extended-census" \
+    bun run script/m14/svelte-extended-census.ts \
+      --progress "validation/m14/measurements/svelte-census-progress-$STAMP.txt" \
+      --out "validation/m14/measurements/svelte-extended-census-$STAMP.json"
+  echo
+  echo "== CENSUS-ONLY ARM COMPLETE =="
+  ls -la "$OUTDIR"/svelte-head-extended-census-"$STAMP".txt "$OUTDIR"/svelte-extended-census-"$STAMP".json "$OUTDIR"/svelte-census-progress-"$STAMP".txt 2>/dev/null || true
+  grep -hE "^files measured|^BUILD PRECONDITIONS|REACHABLE|unreachable|part_of CAN|^elapsed" "$OUTDIR"/svelte-head-extended-census-"$STAMP".txt 2>/dev/null | head -14 || true
   exit 0
 fi
 
@@ -95,13 +132,26 @@ echo "== $LANE holds the arm =="
 run_with_beat "residual-gate" \
   npx tsx script/m14/residual-gate.ts --lane "$LANE"
 
-# 2 · THE HEAD ELEVEN-TERM CLOSURE — the incoming gate over the WHOLE admitted set (0 = no cap).
+# 2 · THE HEAD ELEVEN-TERM CLOSURE — the incoming gate over the WHOLE admitted set.
+# THE CANONICAL WHOLE-POPULATION FORM IS `<lang> 0`, NOT `<lang> <lang> 0` (Lead, MEASURED 2026-10-23):
+# the gate reads the lane's spellings from the ONE router table only when the extension argument is
+# OMITTED, and a NUMERIC second argument is the file count. Passing a spelling gives an explicit set
+# the gate honours deliberately — cpp did that and measured 15% of its own population. `0` here means
+# NO CAP. The artifact prints which source the extension came from, so a wrong invocation is visible.
+# Exit 1 is ACCEPTED on purpose: the gate exits 1 on a CLAUSE-1 verdict FAIL, and this lane's
+# declaration IS derived from that FAIL (the same form the ruby declaration uses). The runner still
+# requires the artifact to carry the gate's own "instrument self-test: PASS".
+ALLOWED_RC="0 1"
 run_with_beat "incoming-table1" \
-  npx tsx script/m14/incoming-gate.ts "$LANE" svelte 0
+  npx tsx script/m14/incoming-gate.ts "$LANE" 0
+ALLOWED_RC="0"
 
 # 3 · THE EXTENDED PROVENANCE CENSUS — emission leg (with sfcDelegated provenance) + AST construct leg.
+# `--progress` names the last file in the artifact AND on stdout (so the beat follows real growth and a
+# hang names its file instead of looking like a slow population — the fleet's rule).
 run_with_beat "extended-census" \
   bun run script/m14/svelte-extended-census.ts \
+    --progress "validation/m14/measurements/svelte-census-progress-$STAMP.txt" \
     --out "validation/m14/measurements/svelte-extended-census-$STAMP.json"
 
 echo

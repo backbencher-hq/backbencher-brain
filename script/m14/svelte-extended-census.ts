@@ -61,7 +61,7 @@
  *
  * Exit: 0 ok · 5 control failure (population 0, or every file failed to parse).
  */
-import { lstatSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs"
+import { appendFileSync, lstatSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs"
 import { createHash } from "node:crypto"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
@@ -80,6 +80,18 @@ const OUT = argOf("--out") ?? ""
 const SAMPLE = Number(argOf("--sample") ?? 0)
 const FILTER = argOf("--filter") ?? ""
 const JSON_MODE = argv.includes("--json")
+/** A HANG MUST NAME ITS FILE. The fleet's rule: "a hang is an instrument gap, never a verdict: the
+ *  gate's last progress line is the named file." This instrument's first full-population run printed
+ *  NO progress at all, and its artifact therefore sat still for fifteen minutes with no way to say
+ *  which file the walk was on. `--progress=<path>` appends one line per N files (default 100) with
+ *  the line ALSO printed to stdout, so the runner's beat follows real output growth and a stall
+ *  names its file rather than looking like a slow population. */
+const PROGRESS = argOf("--progress") ?? ""
+const PROGRESS_EVERY = Number(argOf("--progress-every") ?? 100)
+/** A FAST CONSTRUCT-ONLY PASS. The lead instruments already own the emission closure (residual gate +
+ *  incoming gate), so the census's CONSTRUCT leg can be run alone when only the construct counts and
+ *  the build preconditions are needed — the same AST work, without the production parse per file. */
+const SKIP_PRODUCTION = argv.includes("--skip-production")
 const SIZE_CAP = 1024 * 1024
 const EXT = ".svelte"
 const EXTENDED = ["decorates", "renders", "mixes_in", "part_of", "overrides"] as const
@@ -382,6 +394,14 @@ const selfTest = async (): Promise<Arm[]> => {
 const C = {
   filesRead: 0,
   filesEmpty: 0,
+  /** EVERY admitted file is attempted; it lands in exactly one of read / empty / unreadable, and the
+   *  run FAILS unless attempted == the measured set. Why this is load-bearing: a wasm parser aborts
+   *  at ~7,600 parses if trees are not deleted (the cpp lane lost 15,223 of 16,000 files to it and
+   *  still printed a complete-looking table). This lane's population is UNDER that abort point, so a
+   *  leak would be invisible — this equality is the detector, per the Lead's instruction of
+   *  2026-10-23. The instrument also calls tree.delete() on every SFC tree and every script sub-tree. */
+  filesAttempted: 0,
+  filesUnreadable: 0,
   svelteParseFail: 0,
   productionParseFail: 0,
   productionDegraded: 0,
@@ -504,21 +524,36 @@ const pushSample = (list: string[], s: string): void => {
 }
 
 let consecutiveProductionFails = 0
+const progressAbs = PROGRESS ? (path.isAbsolute(PROGRESS) ? PROGRESS : path.join(ROOT, PROGRESS)) : ""
+if (progressAbs) writeFileSync(progressAbs, "")
+const noteProgress = (f: Admitted): void => {
+  if (C.filesAttempted % PROGRESS_EVERY !== 0) return
+  const line =
+    `progress ${new Date().toISOString()} attempted=${C.filesAttempted}/${files.length} ` +
+    `read=${C.filesRead} parseFail=${C.productionParseFail} last=${f.rel}`
+  log(line)
+  if (progressAbs) appendFileSync(progressAbs, line + "\n")
+}
 for (const f of files) {
+  C.filesAttempted++
   let content: string
   try {
     content = readFileSync(f.abs, "utf8")
   } catch {
+    C.filesUnreadable++
+    noteProgress(f)
     continue
   }
   if (content.length === 0) {
     C.filesEmpty++
+    noteProgress(f)
     continue
   }
   C.filesRead++
+  noteProgress(f)
 
   // ── LEG 1: the production path (the emission the lane actually publishes)
-  try {
+  if (!SKIP_PRODUCTION) try {
     const res: any = await parseFile(f.abs, path.dirname(f.abs))
     if (!res || res.success === false) {
       C.productionParseFail++
@@ -707,10 +742,26 @@ for (const f of files) {
   }
 }
 
+// THE POPULATION MUST BE ACCOUNTED FOR ONE-FOR-ONE, AND filesRead IS PRINTED BESIDE THE ADMITTED COUNT.
+// The Lead's warning (2026-10-23): a census that parses in a loop without tree.delete() reaches the
+// WASM abort around 7,600 parses, counts every later file as a failure, AND EXITS 0 PRINTING A
+// COMPLETE-LOOKING TABLE — cpp lost 15,223 of 16,000 files that way. THIS lane's population (6,147) is
+// UNDER the abort point, so the leak would be INVISIBLE; the equality below is the detector. The
+// instrument deletes every SFC tree and every script sub-tree, and every admitted file must land in
+// exactly one of read / empty / unreadable.
+const accounted = C.filesRead + C.filesEmpty + C.filesUnreadable
+if (C.filesAttempted !== files.length || accounted !== files.length) {
+  log(
+    `CONTROL FAILURE — population not accounted for: measured-set ${files.length} · attempted ${C.filesAttempted} · ` +
+      `read ${C.filesRead} + empty ${C.filesEmpty} + unreadable ${C.filesUnreadable} = ${accounted}.`,
+  )
+  log(`A run that silently SKIPS files and prints a table is the cpp-lane defect: a complete-looking table over a fraction.`)
+  process.exit(5)
+}
 // THE CEILING: more than 1% production parse failures (and never fewer than 25) is not a lane defect
 // to report — it is a run that must not publish. The 2026-10-16 whole-population run read 0 of 6,147.
 const failureCeiling = Math.max(25, Math.floor(C.filesRead * 0.01))
-if (C.filesRead === 0 || C.productionParseFail > failureCeiling) {
+if (C.filesRead === 0 || (!SKIP_PRODUCTION && C.productionParseFail > failureCeiling)) {
   log(`CONTROL FAILURE — ${C.filesRead} files read, ${C.productionParseFail} production parses failed (ceiling ${failureCeiling}).`)
   log(`A run with a broken parser measures a fraction and prints it as the population; nothing here is publishable.`)
   process.exit(5)
@@ -719,7 +770,9 @@ if (C.filesRead === 0 || C.productionParseFail > failureCeiling) {
 // ──────────────────────────────────────────────────────────────────── summary
 const fmt = (n: number): string => n.toLocaleString("en-US")
 log("")
-log(`files measured ${fmt(C.filesRead)} · production parse failures ${C.productionParseFail} · degraded ${C.productionDegraded} · wrong-language ${C.productionWrongLanguage}`)
+log(`files measured ${fmt(C.filesRead)} of ${fmt(C.filesAttempted)} attempted · admitted ${fmt(admitted.length)}${bounded ? " (BOUNDED SET)" : ""} · empty ${C.filesEmpty} · unreadable ${C.filesUnreadable}`)
+if (SKIP_PRODUCTION) log(`production leg SKIPPED (--skip-production): the emission closure is the Lead instruments' job; this run measures CONSTRUCTS + build preconditions only`)
+else log(`production parse failures ${C.productionParseFail} · degraded ${C.productionDegraded} · wrong-language ${C.productionWrongLanguage}`)
 log(`SFC parse failures ${C.svelteParseFail} · script blocks ${fmt(C.scriptBlocks)} (ts/tsx ${fmt(C.tsScriptBlocks)}) · sub-parse failures ${C.subParseFail}`)
 log(`relationships ${fmt(C.relationships)}`)
 log("")
@@ -805,6 +858,12 @@ const report = {
   },
   emission: {
     filesMeasured: C.filesRead,
+    filesAttempted: C.filesAttempted,
+    filesEmpty: C.filesEmpty,
+    filesUnreadable: C.filesUnreadable,
+    admitted: admitted.length,
+    boundedSet: bounded ? files.length : null,
+    productionLegSkipped: SKIP_PRODUCTION,
     productionParseFailures: C.productionParseFail,
     degraded: C.productionDegraded,
     wrongLanguage: C.productionWrongLanguage,
