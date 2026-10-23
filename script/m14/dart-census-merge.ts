@@ -184,8 +184,18 @@ if (KIND === "constructs") {
     for (const k of NUMERIC) out[k] = Number(block?.[k] ?? 0)
     return out
   }
-  const totals = sumBlock(files[0]?.totals)
-  const totalsPooled = sumBlock(files[0]?.totalsPooled)
+  // ══ THE TOTALS ARE SUMS OVER THE DISJOINT SLICES, like everything else in this file. Reading them
+  // off `files[0]` prints ONE slice's totals beside the POPULATION's edge count — which is how this
+  // merger first reported `SUM 15371` against `edges 3977705` and a closure that looked broken when
+  // only one side of it was. A closure is a statement about the population or it is not a closure.
+  const totals = sumBlock({})
+  const totalsPooled = sumBlock({})
+  for (const f of files) {
+    const t = sumBlock((f as any).totals)
+    for (const k of NUMERIC) totals[k] = (totals[k] ?? 0) + (t[k] ?? 0)
+    const tp = sumBlock((f as any).totalsPooled)
+    for (const k of NUMERIC) totalsPooled[k] = (totalsPooled[k] ?? 0) + (tp[k] ?? 0)
+  }
   const perType: Record<string, any> = {}
   for (const f of files) {
     for (const [type, v] of Object.entries((f.perType ?? {}) as Record<string, any>)) {
