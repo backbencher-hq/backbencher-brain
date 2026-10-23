@@ -329,6 +329,33 @@ function cppPartTargetPath(filePath: string, specifier: string): string {
   return `${absolute ? "/" : ""}${out.join("/")}`
 }
 
+/**
+ * THE PART'S MODULE SYMBOL — the contract's OTHER half, and the only target the arbiter can bind.
+ *
+ * `src/ast/types.ts:148-160` says the target is "the part's file **or its module symbol**". This lane
+ * first read only the first half and emitted a PATH — and MEASURED **0 resolved of 4,612 `part_of`
+ * edges over a 2,000-file stride sample of the eleven-spelling population, 100 % unresolved**. The
+ * cause is the target's SPACE, not the rows' correctness: **the arbiter does not resolve paths at all;
+ * it resolves TARGET STRINGS AGAINST SYMBOL NAMES.** A specifier is not in that space and neither is
+ * an absolute path — which is why the fsharp lane's rule ("a specifier is a path and no resolver can
+ * bind it") is only half the story: moving the specifier to a path binds nothing either.
+ *
+ * ⇒ SO THE TARGET IS THE PART'S MODULE SYMBOL: its file STEM, without directories and without the
+ * extension. `"util/Service.h"` ⇒ `Service`. That is the name a C++ translation unit's module is
+ * conventionally addressed by, and it is SYMBOL-SHAPED, so the arbiter can bind it when the stem
+ * occurs exactly once in the project. THE PATH IS KEPT IN METADATA (`partPath`) so the file identity
+ * is not lost — the path is evidence, the stem is the target.
+ *
+ * PURE STRING SCAN (the file's D5 contract): no regex.
+ */
+function cppPartSymbol(specifier: string): string {
+  const slash = specifier.lastIndexOf("/")
+  const base = slash >= 0 ? specifier.slice(slash + 1) : specifier
+  const dot = base.lastIndexOf(".")
+  const stem = dot > 0 ? base.slice(0, dot) : base
+  return stem.trim()
+}
+
 // Strip a leading access-specifier keyword from a base-class node text
 // (`private Repository` → `Repository`). Pure-String scan — replaces the
 // legacy `/^public\s+|^protected\s+|^private\s+/` regex.
@@ -3374,7 +3401,12 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
             const isQuotedPart = !isSystem
             relationships.push({
               source: "global",
-              target: isQuotedPart ? cppPartTargetPath(filePath, includePath) : includePath,
+              // ★ THE TARGET IS A SYMBOL, NOT A PATH (owner-ruled 2026-10-22). MEASURED before this
+              // change: emitting the PATH gave 0 resolved of 4,612 `part_of` edges — 100 % unresolved —
+              // because the arbiter resolves TARGET STRINGS AGAINST SYMBOL NAMES and has no space for a
+              // path. The contract permits either ("the part's file or its module symbol"); the symbol is
+              // the only one that can bind.
+              target: isQuotedPart ? cppPartSymbol(includePath) : includePath,
               type: isQuotedPart ? ASTEngine.RelationshipType.PartOf : ASTEngine.RelationshipType.Imports,
               confidence: 1.0,
               // M59.A7 (#825), the C lane's rule: the include directive is the
@@ -3395,7 +3427,17 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
                 // NAMES a part (`part 'x.dart'` / `#include "x.h"`); "library" is the directive that
                 // names the library a part belongs to (`part of 'y.dart'`). C++ has only the first
                 // written form: the including unit names its fragments, never the reverse.
-                ...(isQuotedPart ? { partRole: "part", partFile: true, isQuotedInclude: true } : {}),
+                ...(isQuotedPart
+                  ? {
+                      partRole: "part",
+                      partFile: true,
+                      isQuotedInclude: true,
+                      // THE PATH IS EVIDENCE, THE STEM IS THE TARGET. Keeping both is what makes the
+                      // difference between them checkable rather than a reader's inference.
+                      partPath: cppPartTargetPath(filePath, includePath),
+                      partSymbol: cppPartSymbol(includePath),
+                    }
+                  : {}),
                 // THE SPECIFIER IS KEPT BESIDE THE PATH: the path is what might resolve, the
                 // specifier is what was WRITTEN, and only one of them is evidence.
                 specifier: includePath,
