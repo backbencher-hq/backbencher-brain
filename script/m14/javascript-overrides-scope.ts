@@ -114,7 +114,41 @@ let analysisAborts = 0
 let filesMeasured = 0
 const perBase = new Map<string, number>()
 const classesSeen = new Set<string>()
+
+/**
+ * ⇒⇒⇒ THE PULSE IS A BYPRODUCT OF THE WORK ✓✓, and that is the fleet's structural fix, not a
+ * convenience ✓✓.
+ *
+ * ⇒⇒⇒ THE DEFECT IT CLOSES ✓✓: a beat DAEMON and an arm are two processes, and they can disagree — the
+ * daemon keeps a dead token warm, or (worse) the arm runs and the daemon dies, so the token reads
+ * STALE while a heavy run is mid-flight ✓✓. Both happened on this box today, three holders in a row,
+ * and the fleet spent four hours in a 20-GB swap as a result ✓✓.
+ *
+ * ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ WHEN THE BEAT IS EMITTED BY THE RUN LOOP, THE TOKEN'S AGE IS THE ARM'S AGE ✓✓** and
+ * there is ONE liveness signal that cannot disagree with itself ✓✓. A stalled arm stops beating
+ * exactly when it stopped working ✓✓ — which is the property a daemon can never have ✓✓.
+ *
+ * ⇒⇒⇒ Guarded by `BB_ARM_BEAT=1` so an ordinary run does not touch the token ✓✓, and failing to beat
+ * is NEVER fatal to the measurement ✓✓: a beat that throws must not kill a 12,000-file run ✓✓.
+ */
+const BEAT_EVERY = Number(process.env.BB_ARM_BEAT_EVERY ?? 500)
+const BEAT_ON = process.env.BB_ARM_BEAT === "1"
+const beat = (): void => {
+  if (!BEAT_ON) return
+  try {
+    execFileSync("bash", [join(ROOT, "script/m14/arm-token.sh"), "beat", "javascript"], { stdio: "ignore" })
+  } catch {
+    /* a beat that throws must not kill the measurement */
+  }
+}
+let beatsSent = 0
+
 for (const f of files) {
+  if (filesMeasured > 0 && filesMeasured % BEAT_EVERY === 0 && filesMeasured / BEAT_EVERY > beatsSent) {
+    beatsSent++
+    beat()
+    console.log(`  [beat ${beatsSent}] ${filesMeasured}/${files.length} file(s) — the token's age is the arm's age`)
+  }
   let src = ""
   try {
     src = readFileSync(f.abs, "utf8")
@@ -187,8 +221,14 @@ const out = {
     corpusRoot: CORPUS,
     extensions: EXTS,
     admittedFiles: files.length,
+    // ⇒⇒⇒ THE SHORTFALL IS STATED, NOT HIDDEN ✓✓. `wholePopulation: true` was a CONSTANT here, which
+    // is the same defect as a wholePopulation flag that is asserted rather than measured ✓✓ — **a
+    // path that was never run is not a path, it is a wish** ✓✓. It is now DERIVED from the counts ✓✓.
+    filesMeasured,
     parseFailures,
-    wholePopulation: true,
+    analysisAborts,
+    measuredShare: `${filesMeasured}/${files.length}`,
+    wholePopulation: filesMeasured === files.length,
   },
   oracleScope: {
     where: "script/m14/differential.ts:5777 deriveJavaScriptOverrides; the scope test is `isJsBuiltin(base)` at :5798",

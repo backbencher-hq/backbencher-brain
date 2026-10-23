@@ -38,24 +38,24 @@
     "_why": "the gate's own TABLE 1 row for calls over the whole admitted population (749804 edges, 104440 resolved, 72315 ambiguous, 286424 unresolved), and the number of distinct files in which the type fired"
    },
    "uses": {
-    "edges": 797950,
+    "edges": 797952,
     "files": 10623,
-    "_why": "the gate's own TABLE 1 row for uses over the whole admitted population (797950 edges, 55399 resolved, 21025 ambiguous, 164999 unresolved), and the number of distinct files in which the type fired"
+    "_why": "the gate's own TABLE 1 row for uses over the whole admitted population (797952 edges, 55400 resolved, 21025 ambiguous, 165000 unresolved), and the number of distinct files in which the type fired"
    },
    "contains": {
-    "edges": 28342,
+    "edges": 28327,
     "files": 1850,
-    "_why": "the gate's own TABLE 1 row for contains over the whole admitted population (28342 edges, 28342 resolved, 0 ambiguous, 0 unresolved), and the number of distinct files in which the type fired"
+    "_why": "the gate's own TABLE 1 row for contains over the whole admitted population (28327 edges, 28327 resolved, 0 ambiguous, 0 unresolved), and the number of distinct files in which the type fired"
    },
    "imports": {
     "edges": 43614,
     "files": 10593,
-    "_why": "the gate's own TABLE 1 row for imports over the whole admitted population (43614 edges, 6714 resolved, 2626 ambiguous, 14146 unresolved), and the number of distinct files in which the type fired"
+    "_why": "the gate's own TABLE 1 row for imports over the whole admitted population (43614 edges, 6714 resolved, 2626 ambiguous, 34274 unresolved), and the number of distinct files in which the type fired"
    },
    "references": {
-    "edges": 1574,
+    "edges": 1567,
     "files": 1289,
-    "_why": "the gate's own TABLE 1 row for references over the whole admitted population (1574 edges, 157 resolved, 1 ambiguous, 610 unresolved), and the number of distinct files in which the type fired"
+    "_why": "the gate's own TABLE 1 row for references over the whole admitted population (1567 edges, 157 resolved, 1 ambiguous, 603 unresolved), and the number of distinct files in which the type fired"
    },
    "exports": {
     "edges": 15863,
@@ -63,14 +63,14 @@
     "_why": "the gate's own TABLE 1 row for exports over the whole admitted population (15863 edges, 7615 resolved, 395 ambiguous, 471 unresolved), and the number of distinct files in which the type fired"
    },
    "extends": {
-    "edges": 1736,
+    "edges": 1812,
     "files": 1418,
-    "_why": "the gate's own TABLE 1 row for extends over the whole admitted population (1736 edges, 468 resolved, 103 ambiguous, 1084 unresolved), and the number of distinct files in which the type fired"
+    "_why": "the gate's own TABLE 1 row for extends over the whole admitted population (1812 edges, 470 resolved, 103 ambiguous, 1158 unresolved), and the number of distinct files in which the type fired"
    },
    "overrides": {
-    "edges": 4679,
+    "edges": 4968,
     "files": 1111,
-    "_why": "the gate's own TABLE 1 row for overrides over the whole admitted population (4679 edges, 4674 resolved, 5 ambiguous, 0 unresolved), and the number of distinct files in which the type fired"
+    "_why": "the gate's own TABLE 1 row for overrides over the whole admitted population (4968 edges, 4963 resolved, 5 ambiguous, 0 unresolved), and the number of distinct files in which the type fired"
    },
    "instantiates": {
     "edges": 17993,
@@ -90,7 +90,7 @@
    "mixes_in": {
     "edges": 83,
     "files": 76,
-    "_why": "THE R3 MEASUREMENT (script/m14/javascript-r3-measurement.ts → validation/m14/measurements/javascript-r3-remedy.json), over the whole admitted population (12374 files) with the served grammar (sha256 63812b9e275d26851264734868d27a1656bd44a2ef6eb3e85e6b03728c595ab5, 647334 bytes): 76 call-shaped heritage clause(s) (74 member-form, 2 identifier-form), of which the pre-remedy lookup found 0; the remedy publishes 83 mixes_in row(s) across 76 distinct file(s) and refuses 11 computed-only near miss(es), publishing 0 for them. THE ARBITER'S resolved/ambiguous/unresolved split for this type IS NOT YET AVAILABLE: the arm that produces it has not yet run over the whole population with this analyzer. ⇒ AND THE PUBLISHED CELL's OWN TABLE 1 ROW FOR mixes_in IS **ALL ZEROS** (0 edges, 0 resolved, 0 ambiguous, 0 unresolved) ✓✓ — BECAUSE THE CELL WAS MEASURED **BEFORE** THE R3 REMEDY ✓✓, AND A ROW OF ZEROS IS **A MEASUREMENT OF A DIFFERENT ANALYZER** ✓✓, NOT A MEASUREMENT OF THIS ONE ✓✓. ⇒ THE CELL's ROW SUPERSEDES THIS ROW WHEN THE ARM RE-MEASURES THE CELL AGAINST THE CURRENT ANALYZER ✓✓, AND THIS BRANCH IS THEN DEAD ✓✓."
+    "_why": "the gate's own TABLE 1 row for mixes_in over the whole admitted population (83 edges, 0 resolved, 0 ambiguous, 83 unresolved), and the number of distinct files in which the type fired"
    }
   }
  },
@@ -825,7 +825,7 @@
   "declared_no_truth": [
    {
     "label": "overrides",
-    "reason": "`overrides` sits in the differential's DEFAULT admitted prefix, so every `overrides` row this analyzer emits enters the comparison looking for truth to meet — and this lane's overrides oracle deliberately derives truth for a NARROWER population than the analyzer emits. ⇒⇒⇒ THE SCOPE, STATED AND MEASURED: the oracle (script/m14/differential.ts:5777 deriveJavaScriptOverrides, whose scope test is `isJsBuiltin(base)` at :5798) derives an override edge ONLY for a class whose heritage base is a PLATFORM BUILTIN, because that is the one case it can decide INDEPENDENTLY — it holds a builtin-prototype table of its own and can therefore REFUTE the analyzer without re-reading the analyzer's reasoning. ⇒⇒⇒ MEASURED over the whole admitted population by script/m14/javascript-overrides-scope.ts (validation/m14/measurements/javascript-overrides-scope.json): of (unmeasured) emitted `overrides` rows, (unmeasured) name a platform builtin and are inside the oracle's scope, and (unmeasured) do not (their base is a project class or is not found in the same file) and have NO truth to meet. Those rows are reported `heuristic`, which is the ANALYZER'S OWN DECLARED SUSPICION and not a fabricated edge. ⇒⇒⇒ AND THE SCOPE IS NOT WIDENED, ON PURPOSE: the oracle's job is to ADJUDICATE, NOT TO MIRROR. It can refute a builtin-base row and cannot refute a non-builtin-base row, because deciding the latter means walking the project's own class hierarchy — the same evidence the analyzer walked — and an oracle that agrees with the analyzer by construction cannot catch the analyzer being wrong. Widening this one would have made it a copy of the analyzer, and a mirror cannot adjudicate; it would also have HIDDEN the fact that the oracle's scope was never stated, where DECLARING it STATES the scope and puts the reader where the gap is. ⇒⇒⇒ NOTHING HERE IS A CLAIM THAT THE OUT-OF-SCOPE ROWS ARE CORRECT — it is a claim that this lane has no instrument that can say, and that the absence is deliberate rather than forgotten.",
+    "reason": "`overrides` sits in the differential's DEFAULT admitted prefix, so every `overrides` row this analyzer emits enters the comparison looking for truth to meet — and this lane's overrides oracle deliberately derives truth for a NARROWER population than the analyzer emits. ⇒⇒⇒ THE SCOPE, STATED AND MEASURED: the oracle (script/m14/differential.ts:5777 deriveJavaScriptOverrides, whose scope test is `isJsBuiltin(base)` at :5798) derives an override edge ONLY for a class whose heritage base is a PLATFORM BUILTIN, because that is the one case it can decide INDEPENDENTLY — it holds a builtin-prototype table of its own and can therefore REFUTE the analyzer without re-reading the analyzer's reasoning. ⇒⇒⇒ MEASURED over the whole admitted population by script/m14/javascript-overrides-scope.ts (validation/m14/measurements/javascript-overrides-scope.json): of 7,259 emitted `overrides` rows, 57 name a platform builtin and are inside the oracle's scope, and 7,202 do not (their base is a project class or is not found in the same file) and have NO truth to meet. Those rows are reported `heuristic`, which is the ANALYZER'S OWN DECLARED SUSPICION and not a fabricated edge. ⇒⇒⇒ AND THE SCOPE IS NOT WIDENED, ON PURPOSE: the oracle's job is to ADJUDICATE, NOT TO MIRROR. It can refute a builtin-base row and cannot refute a non-builtin-base row, because deciding the latter means walking the project's own class hierarchy — the same evidence the analyzer walked — and an oracle that agrees with the analyzer by construction cannot catch the analyzer being wrong. Widening this one would have made it a copy of the analyzer, and a mirror cannot adjudicate; it would also have HIDDEN the fact that the oracle's scope was never stated, where DECLARING it STATES the scope and puts the reader where the gap is. ⇒⇒⇒ NOTHING HERE IS A CLAIM THAT THE OUT-OF-SCOPE ROWS ARE CORRECT — it is a claim that this lane has no instrument that can say, and that the absence is deliberate rather than forgotten.",
     "closes_when": "an overrides oracle exists for javascript that can ADJUDICATE a NON-BUILTIN base — i.e. one that decides an override edge from evidence independent of the analyzer's own heritage walk (a project-level class hierarchy the analyzer's per-file, index-less scope does not hold, or a second derivation over the grammar that does not share the analyzer's code path). When it exists: admit it here, delete this declaration, and reconcile this lane's `overrides` rows against it in the same round that lowers the heuristic count. Until then the state is DECLARED rather than silently missing, which is the whole difference between a ruling and a hole."
    }
   ]

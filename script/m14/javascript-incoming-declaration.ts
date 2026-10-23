@@ -62,12 +62,19 @@ const cell: any = JSON.parse(readFileSync(CELL, "utf8"))
 // ────────────────────────────────────────────────────────────────────────────────────────────────
 // THE POPULATION — ONE FUNCTION, ONE STRING, USED EVERYWHERE ✓✓
 // ────────────────────────────────────────────────────────────────────────────────────────────────
-const ADMITTED = Number(scope.population?.admittedFiles ?? NaN)
-const MEASURED = Number(scope.population?.filesMeasured ?? NaN)
+// ⇒⇒⇒ THE POPULATION COMES FROM THE **GATE'S OWN HEADER**, NOT FROM THE SCOPE INSTRUMENT ✓✓, and the
+// difference is not cosmetic ✓✓. ⇒ This declaration RATCHETS **the gate's** per-type measurement ✓✓,
+// so its population must be the gate's ✓✓. The scope instrument is a SECOND instrument with its own
+// parse path, and it loses 80 files to its own parser — **those 80 are a property of THAT instrument,
+// not of the analyzer** ✓✓. ⇒⇒⇒ Putting `parsed=12294` here would UNDERSTATE the gate's coverage and
+// attribute one instrument's shortfall to another ✓✓ — **⇒⇒⇒ a number that does not say WHICH
+// INSTRUMENT produced it cannot be compared** ✓✓.
+const ADMITTED = Number(cell.population?.fromTheArmsOwnHeader?.corpusFiles ?? NaN)
+const MEASURED = Number(cell.population?.fromTheArmsOwnHeader?.parsed ?? NaN)
 const EXTS = (scope.population?.extensions ?? []).map((e: string) => e.replace(/^\./, "")).join(",")
 
 if (!Number.isFinite(ADMITTED) || ADMITTED <= 0) {
-  console.error("javascript-incoming-declaration: the measurement carries no admittedFiles — refusing to declare a population nobody measured.")
+  console.error("javascript-incoming-declaration: the arm's own header carries no corpusFiles — refusing to declare a population nobody measured.")
   process.exit(2)
 }
 if (!Number.isFinite(MEASURED) || MEASURED <= 0) {
@@ -81,7 +88,7 @@ if (!Number.isFinite(MEASURED) || MEASURED <= 0) {
 // string SAYS SO rather than rounding the shortfall away ✓✓ — **a path that was never run is not a
 // path, it is a wish** ✓✓.
 const ABORTS = Number(scope.population?.analysisAborts ?? 0)
-const POPULATION = `parsed=${MEASURED}/${MEASURED} admitted=${ADMITTED} exts=${EXTS} index=no`
+const POPULATION = `parsed=${MEASURED}/${ADMITTED} admitted=${ADMITTED} exts=${EXTS} index=no`
 
 // ────────────────────────────────────────────────────────────────────────────────────────────────
 // THE PER-TYPE CLOSURE — the ELEVEN-TERM formula, ASSERTED ✓✓
