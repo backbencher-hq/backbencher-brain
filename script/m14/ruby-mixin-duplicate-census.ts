@@ -46,6 +46,7 @@ const files: string[] = []
 
 const keyOf = (r: any) => `${r.source}|${r.target}|${(r.metadata as any)?.mixinType}`
 let total = 0
+let parseFailures = 0
 const dupFiles: { file: string; key: string; published: number; callSites: number }[] = []
 let dupRows = 0
 let genuineRepeatedSites = 0
@@ -66,7 +67,10 @@ const callSitesBy = new Map<string, number>()
 for (const abs of files) {
   const content = readFileSync(abs, "utf8")
   let root: any
-  try { root = parser.parse(content).rootNode } catch { continue }
+  // ⇒ THE ROOT IS CHECKED, NOT ASSUMED: `parse()` returns `Tree | null`, and a null root is not a
+  // file with no call sites — it is a file this census did not read. It is COUNTED, never cast.
+  try { root = parser.parse(content)?.rootNode } catch { parseFailures++; continue }
+  if (!root) { parseFailures++; continue }
   const rel = path.relative(CR, abs)
   const walk = (n: any) => {
     if (n.type === "call") {
@@ -139,6 +143,7 @@ mkdirSync(path.join(CR, "..", "validation", "m14", "measurements"), { recursive:
 writeFileSync(path.join(CR, "..", "validation", "m14", "measurements", "ruby-mixin-duplicate-census-2026-10-21.json"), JSON.stringify(report, null, 2) + "\n")
 console.log("RUBY mixes_in — THE ROW DUPLICATION CENSUS")
 console.log(`  population ${files.length} · published mixes_in rows ${total}`)
+console.log(`  files NOT READ (no root node): ${parseFailures} — declared, never counted as a file with no call sites`)
 console.log(`  duplicate groups: ${dupFiles.length} · rows inside them: ${dupRows}`)
 console.log(`  ⇒ rows DUPLICATED BY ONE SITE: ${duplicatedByOneSite}   · rows that are GENUINE repeated sites: ${genuineRepeatedSites}`)
 console.log(`  per keyword: ${JSON.stringify(perKeyword)}`)

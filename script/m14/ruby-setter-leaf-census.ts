@@ -31,6 +31,7 @@ import { getParser } from "../../src/ast/engine"
 import { RealRubyAnalyzer } from "../../src/ast/real-ruby-analyzer"
 import { readFileSync, statSync, readdirSync, writeFileSync, mkdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import * as path from "node:path"
 
 const CR = process.env.BB_CORPUS_ROOT ?? path.resolve(process.cwd(), ".corpus")
@@ -78,6 +79,90 @@ const leafOf = (t: string) => {
 const ARM = (process.argv.find(a => a.startsWith("--arm=")) ?? "--arm=direct").split("=")[1]
 const OUT_DIR = path.join(CR, "..", "validation", "m14", "measurements")
 
+// ═══════════════════════════════════════════════════════════════════════════════════════════════
+// THE ARM FILE'S PROVENANCE — AND WHY IT EXISTS, IN THE WORDS OF THE DEFECT IT PREVENTS.
+//
+// ⇒ WHAT HAPPENED. The Lead ran `--arm=diff` immediately after fixing the shared filter, and the
+// pass printed "dropped by production: 7" — from arm files written BEFORE the fix — while the
+// SAME OUTPUT's live half said "eaten by the filter when handed to it ALONE: false", because that
+// half calls the LIVE filter. **⇒ THE OUTPUT CONTRADICTED ITSELF, AND THE STALE HALF WAS READ AS
+// IF IT WERE A MEASUREMENT OF THE CURRENT CODE.** The arm files' mtimes were 1792649859 and
+// 1792649882; the edited source was 1792650214. **⇒ THE ARTIFACTS WERE OLDER THAN THE CODE.**
+//
+// ⇒ AND THAT IS THE FLEET'S MOST COMMON FAILURE IN ITS OWN WORDS: A MEASUREMENT THAT CANNOT
+// DISTINGUISH WHAT IT MEASURED FROM A COPY OF IT IS NOT A MEASURE. The same shape as the index
+// cache that was keyed on a COUNT rather than on the file set's identity. **⇒ A COUNT IS NOT AN
+// IDENTITY, AND AN MTIME IS NOT AN IDENTITY EITHER — THE IDENTITY IS THE CONTENT HASH.** So:
+//
+//   1. EVERY ARM FILE CARRIES THE SHA-256 OF EVERY SOURCE IT WAS PRODUCED FROM, and the arm
+//      DECLARES which sources it depends on — the `direct` arm reads the analyzer, the
+//      `production` arm reads the analyzer THROUGH the shared filter, so each declares its own.
+//   2. THE DIFF PASS RE-READS THOSE SOURCES AND COMPARES THE HASHES. If any differ, the arms are
+//      STALE and the diff **REFUSES** — loudly, with the table, and with a NON-ZERO exit.
+//   3. AN ARM FILE WITH NO PROVENANCE BLOCK AT ALL IS ALSO REFUSED. A file that does not say
+//      what it was produced from is not a measurement, and reading it as one is the defect.
+//
+// ⇒ AND THE GUARD IS PROVEN TO FIRE, not merely present: `--arm=provenance-self-test` writes a
+// DELIBERATELY STALE arm file and shows the guard REFUSING it, and shows the real arm files
+// PASSING. **⇒ A GUARD THAT CANNOT BE SEEN TO FIRE IS NOT A GUARD.**
+// ═══════════════════════════════════════════════════════════════════════════════════════════════
+
+/** THE REPO ROOT — derived from the corpus root, which is `<repo>/.corpus`, so this holds wherever the instrument is run from. */
+const REPO = path.resolve(CR, "..")
+
+/** THE SOURCES EACH ARM IS PRODUCED FROM. The `direct` arm reads the analyzer directly; the `production` arm reads it THROUGH the shared filter, so the filter is part of its identity too. */
+const ARM_SOURCES: Record<string, string[]> = {
+  direct: ["src/ast/real-ruby-analyzer.ts", "src/ast/engine.ts"],
+  production: ["src/ast/real-ruby-analyzer.ts", "src/ast/engine.ts", "src/ast/pool-worker.ts"],
+}
+
+/** THE SHA-256 OF A FILE'S BYTES — the identity of what was measured. */
+function sha256Of(abs: string): string {
+  return createHash("sha256").update(readFileSync(abs)).digest("hex")
+}
+
+/** The mtime of a file, or -1 when it is unreadable. */
+function mtimeOf(abs: string): number {
+  try { return Math.floor(statSync(abs).mtimeMs) } catch { return -1 }
+}
+
+/** The identity block an arm file carries. */
+function provenanceFor(arm: string): Record<string, any> {
+  const sources: Record<string, { sha256: string; mtimeEpoch: number }> = {}
+  for (const rel of ARM_SOURCES[arm] ?? []) {
+    const abs = path.join(REPO, rel)
+    sources[rel] = { sha256: sha256Of(abs), mtimeEpoch: mtimeOf(abs) }
+  }
+  return {
+    instrument: "script/m14/ruby-setter-leaf-census.ts",
+    arm,
+    writtenAtEpoch: Date.now(),
+    writtenAt: new Date().toISOString(),
+    corpusRoot: CR,
+    sources,
+  }
+}
+
+/**
+ * THE GUARD. Compare an arm file's recorded provenance against the CURRENT sources.
+ * ⇒ Returns the list of mismatches. An empty list means the arm IS a measurement of the current
+ * code; a non-empty list means it is a measurement of a COPY, and the diff must refuse.
+ */
+function stalenessOf(armFile: Record<string, any>): { arm: string; source: string; recorded: string; current: string; recordedMtime: number; currentMtime: number }[] {
+  const out: { arm: string; source: string; recorded: string; current: string; recordedMtime: number; currentMtime: number }[] = []
+  const prov = armFile?.provenance
+  if (!prov) return out
+  for (const [rel, rec] of Object.entries<any>(prov.sources ?? {})) {
+    const abs = path.join(REPO, rel)
+    let current = "MISSING"
+    try { current = sha256Of(abs) } catch { current = "UNREADABLE" }
+    if (current !== rec?.sha256) {
+      out.push({ arm: String(prov.arm ?? "?"), source: rel, recorded: String(rec?.sha256 ?? "?"), current, recordedMtime: Number(rec?.mtimeEpoch ?? -1), currentMtime: mtimeOf(abs) })
+    }
+  }
+  return out
+}
+
 type Dropped = {
   file: string
   type: string
@@ -111,20 +196,119 @@ if (ARM === "direct" || ARM === "production") {
         const content = readFileSync(abs, "utf8")
         const parser = await getParser("ruby" as any)
         const analyzer = new RealRubyAnalyzer()
-        const direct = await analyzer.analyze(parser.parse(content).rootNode, content, abs)
+        // ⇒ THE ROOT IS CHECKED, NOT ASSUMED. `parse()` returns `Tree | null`, and a null root
+        // would be an EMPTY row set — which reads exactly like "this file has no relationships",
+        // and would make the diff's missing-row count a count over an empty population. ⇒ THROW,
+        // so the existing catch COUNTS it as a failure and the file is never silently empty.
+        const root = parser.parse(content)?.rootNode
+        if (!root) throw new Error("no root node")
+        const direct = await analyzer.analyze(root, content, abs)
         rows = (direct.relationships ?? []) as any[]
       }
     } catch (e) { parseFailures++; continue }
     out[rel] = rows.map(r => ({ type: r.type, source: r.source, target: r.target, metadata: r.metadata ?? {} }))
   }
-  writeFileSync(armFile, JSON.stringify(out))
+  writeFileSync(armFile, JSON.stringify({ provenance: provenanceFor(ARM), rows: out }))
   console.log(`RUBY — the ${ARM} arm wrote ${Object.keys(out).length} file(s) to ${armFile} · ${parseFailures} failure(s)`)
+  console.log(`  the arm's PROVENANCE — the identity of what was measured:`)
+  for (const [rel, rec] of Object.entries<any>(provenanceFor(ARM).sources)) {
+    console.log(`      ${rel}  sha256 ${String(rec.sha256).slice(0, 16)}…  mtime ${rec.mtimeEpoch}`)
+  }
   process.exit(0)
 }
 
-// ⇒ THE DIFF PASS. Both arm files exist; nothing is parsed here, so no process touches the parser.
-const directMap = JSON.parse(readFileSync(path.join(OUT_DIR, "ruby-setter-leaf-census-direct.json"), "utf8")) as Record<string, any[]>
-const prodMap = JSON.parse(readFileSync(path.join(OUT_DIR, "ruby-setter-leaf-census-production.json"), "utf8")) as Record<string, any[]>
+/**
+ * READ AN ARM FILE, AND REFUSE A FILE THAT DOES NOT SAY WHAT IT WAS PRODUCED FROM.
+ * ⇒ A file with no provenance block is refused rather than read, because the whole defect this
+ * guard exists for was a stale arm read as a measurement of the current code — and a file with
+ * no identity at all is the same failure with less evidence.
+ */
+function readArmFile(file: string): { rows: Record<string, any[]>; provenance: any } {
+  const raw = JSON.parse(readFileSync(file, "utf8"))
+  if (!raw || typeof raw !== "object" || !raw.provenance || !raw.rows) {
+    console.error(`ARM FILE REFUSED — ${path.basename(file)} carries NO PROVENANCE BLOCK.`)
+    console.error("  An arm file that does not say which sources it was produced from is not a measurement, and")
+    console.error("  reading it as one IS the defect this guard exists for. ⇒ RE-RUN the arms:")
+    console.error("      --arm=direct && --arm=production")
+    process.exit(4)
+  }
+  return { rows: raw.rows as Record<string, any[]>, provenance: raw.provenance }
+}
+
+// ⇒ THE PROVENANCE SELF-TEST — THE GUARD IS PROVEN TO FIRE, NOT MERELY PRESENT.
+if (ARM === "provenance-self-test") {
+  const real = readArmFile(path.join(OUT_DIR, "ruby-setter-leaf-census-direct.json"))
+  const realStale = stalenessOf(real)
+  // A DELIBERATELY STALE ARM: the same rows, with ONE source's hash replaced by a wrong one.
+  const staleCopy = {
+    provenance: {
+      ...real.provenance,
+      arm: "direct",
+      writtenAtEpoch: Date.now() - 3600_000,
+      sources: { ...real.provenance.sources },
+    },
+    rows: real.rows,
+  }
+  const firstKey = Object.keys(staleCopy.provenance.sources)[0]
+  staleCopy.provenance.sources[firstKey] = { ...staleCopy.provenance.sources[firstKey], sha256: "0".repeat(64) }
+  const staleDetected = stalenessOf(staleCopy)
+  const tmp = path.join(OUT_DIR, "ruby-setter-leaf-census-STALE-SELFTEST.json")
+  writeFileSync(tmp, JSON.stringify(staleCopy))
+  const onDisk = readArmFile(tmp)
+  const onDiskDetected = stalenessOf(onDisk)
+  const realArmsFresh = realStale.length === 0
+  console.log("RUBY — THE PROVENANCE SELF-TEST (the guard, shown firing)")
+  console.log(`  the real ${"direct"} arm against the CURRENT sources: ${realStale.length} mismatch(es) → ${realArmsFresh ? "FRESH" : "STALE"}`)
+  console.log(`  a deliberately stale arm (one source hash replaced):   ${staleDetected.length} mismatch(es) → ${staleDetected.length > 0 ? "DETECTED" : "NOT DETECTED"}`)
+  console.log(`  the same stale arm read back from DISK:                ${onDiskDetected.length} mismatch(es) → ${onDiskDetected.length > 0 ? "DETECTED" : "NOT DETECTED"}`)
+  for (const s of onDiskDetected) console.log(`      ${s.arm}  ${s.source}  recorded ${s.recorded.slice(0, 16)}…  current ${s.current.slice(0, 16)}…`)
+  const guardFires = staleDetected.length > 0 && onDiskDetected.length > 0
+  console.log(`  ⇒ THE GUARD FIRES: ${guardFires}`)
+  console.log(`  ⇒ AND THE REAL ARM IS FRESH: ${realArmsFresh}`)
+  writeFileSync(path.join(OUT_DIR, "ruby-setter-leaf-provenance-self-test-2026-10-22.json"), JSON.stringify({
+    realArmMismatches: realStale.length,
+    deliberatelyStaleArmMismatches: staleDetected.length,
+    staleArmReadBackFromDiskMismatches: onDiskDetected.length,
+    theGuardFires: guardFires,
+    theRealArmIsFresh: realArmsFresh,
+    instrument: "script/m14/ruby-setter-leaf-census.ts --arm=provenance-self-test",
+  }, null, 2) + "\n")
+  try { require("node:fs").unlinkSync(tmp) } catch { /* the scratch file may stay; it is inside the measurements dir and is named STALE-SELFTEST */ }
+  process.exit(guardFires ? 0 : 5)
+}
+
+const directArm = readArmFile(path.join(OUT_DIR, "ruby-setter-leaf-census-direct.json"))
+const prodArm = readArmFile(path.join(OUT_DIR, "ruby-setter-leaf-census-production.json"))
+const directMap = directArm.rows
+const prodMap = prodArm.rows
+
+// ⇒ THE STALE-ARM GUARD, IN THE DIFF PASS. The arms are compared against the CURRENT sources,
+// and a mismatch is a REFUSAL, not a warning: a diff over a stale arm is a measurement of a copy.
+const staleArms = [...stalenessOf(directArm), ...stalenessOf(prodArm)]
+if (staleArms.length > 0) {
+  console.log("RUBY — THE SETTER-LEAF CENSUS — THE DIFF REFUSES A STALE ARM")
+  console.log("  ⇒ The arm files were produced from sources that have since CHANGED. A diff over them is a")
+  console.log("    measurement of a COPY of the code, not of the code, and it CONTRADICTS this pass's own")
+  console.log("    live half (which calls the CURRENT filter). ⇒ REFUSING.")
+  for (const s of staleArms) {
+    console.log(`      ${s.arm}  ${s.source}`)
+    console.log(`         recorded sha256 ${s.recorded}  (mtime ${s.recordedMtime})`)
+    console.log(`         current  sha256 ${s.current}  (mtime ${s.currentMtime})`)
+  }
+  console.log(`  ⇒ RE-RUN the arms and the diff, in this order:`)
+  console.log(`      --arm=direct && --arm=production && --arm=diff`)
+  process.exit(3)
+}
+console.log("RUBY — THE SETTER-LEAF CENSUS — the arms are FRESH against the current sources")
+for (const [armName, arm] of [["direct", directArm], ["production", prodArm]] as const) {
+  const p = arm.provenance
+  console.log(`  ${armName}: written ${p.writtenAt} (epoch ${p.writtenAtEpoch})`)
+  for (const [rel, rec] of Object.entries<any>(p.sources)) {
+    console.log(`      ${rel}  sha256 ${String(rec.sha256).slice(0, 16)}…  mtime ${rec.mtimeEpoch}  — MATCHES the current file`)
+  }
+}
+// ⇒ THE DIFF PASS. Both arm files exist and are FRESH (the guard above has already refused a
+// stale one); nothing is parsed here, so no process touches the parser.
 for (const rel of Object.keys(directMap)) {
   const dRows = directMap[rel] ?? []
   const pRows = prodMap[rel] ?? []
@@ -172,8 +356,10 @@ for (const d of dropped) byType[d.type] = (byType[d.type] ?? 0) + 1
 // extended class to the dropped rows AND to a CONTROL SET of the fragments the rule must keep
 // refusing, so the proposal is judged on both sides.
 if (ARM === "proposal") {
-  const directMap = JSON.parse(readFileSync(path.join(OUT_DIR, "ruby-setter-leaf-census-direct.json"), "utf8")) as Record<string, any[]>
-  const prodMap = JSON.parse(readFileSync(path.join(OUT_DIR, "ruby-setter-leaf-census-production.json"), "utf8")) as Record<string, any[]>
+  // ⇒ THE SAME GUARDED READERS AS THE DIFF PASS. The proposal arm measures the dropped rows, and
+  // the dropped rows come from the arm files — so the arm files must be FRESH here too, or the
+  // proposal is measured against a copy of the code. The guard has already run by this point: a
+  // stale arm exits 3 before this branch is reached.
   const missing: any[] = []
   for (const rel of Object.keys(directMap)) {
     const pSet = new Set((prodMap[rel] ?? []).map(key))

@@ -41,6 +41,7 @@ const parser = await getParser("ruby" as any)
 const real = new RealRubyAnalyzer()
 
 let totalMissing = 0
+let parseFailures = 0
 const rowsOut: any[] = []
 
 for (const rel of TARGETS) {
@@ -48,11 +49,22 @@ for (const rel of TARGETS) {
   let content: string
   try { content = readFileSync(abs, "utf8") } catch { continue }
 
-  const direct = await real.analyze(parser.parse(content).rootNode, content, abs)
+  // ⇒ THE ROOT IS CHECKED, NOT ASSUMED. `parse()` returns `Tree | null`, and a null root is not a
+  // file with no edges — it is a file this instrument did not read. The compiler is right to
+  // refuse it, and the fix is to COUNT it rather than to cast it away: a skipped file that is not
+  // declared is a measurement over a population the reader cannot see.
+  const tree = parser.parse(content)
+  const root = tree?.rootNode
+  if (!root) { parseFailures++; continue }
+  const direct = await real.analyze(root, content, abs)
   const prod = await parseFile(abs, "ruby" as any)
 
-  const pSet = new Set((prod.relationships ?? []).map(key))
-  const dSet = new Set((direct.relationships ?? []).map(key))
+  // ⇒ THE ELEMENT TYPE IS PINNED, NOT INHERITED. `analyze()`'s return type carries an index
+  // signature, so `relationships` resolves to `any` and `new Set(any)` infers `Set<unknown>` -
+  // and then every downstream `m` is `unknown`. Pinning `Set<string>` makes the row keys strings,
+  // which is what they are.
+  const pSet = new Set<string>((prod.relationships ?? []).map(key))
+  const dSet = new Set<string>((direct.relationships ?? []).map(key))
   const missing = [...dSet].filter(k => !pSet.has(k))
   const extra = [...pSet].filter(k => !dSet.has(k))
   if (!missing.length && !extra.length) continue
@@ -90,6 +102,7 @@ for (const rel of TARGETS) {
 }
 
 console.log(`\n⇒ TOTAL MISSING ROWS: ${totalMissing}`)
+console.log(`⇒ FILES NOT READ (no root node): ${parseFailures} of ${TARGETS.length} — a file this instrument did not read is declared, never counted as a file with no edges`)
 if (totalMissing > 0) {
   const lens = rowsOut.map(r => r.leafLength)
   const allLong = rowsOut.every(r => r.leafLength > 80)

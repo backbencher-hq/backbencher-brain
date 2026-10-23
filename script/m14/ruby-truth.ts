@@ -101,7 +101,7 @@ export interface RubyTruthEdge {
  * Names that are part of the language rather than a call to a user symbol.
  * Kept as an explicit set, character-split, no regex.
  */
-const RUBY_BUILTINS = new Set(
+export const RUBY_BUILTINS = new Set(
   [
     "puts", "print", "p", "pp", "p$", "print_flush", "putc",
     "raise", "fail", "exit", "exit!", "abort", "warn",
@@ -309,6 +309,63 @@ function isScopeNode(t: string): boolean {
   return t === "method" || t === "singleton_method" || t === "block" || t === "lambda" || t === "do_block"
 }
 
+/**
+ * WHAT `self` DENOTES AT THIS POINT — the oracle's own scope model, extended with the one
+ * question a module-composition edge has to answer.
+ *
+ * ⇒ WHY THIS EXISTS, IN THE ORACLE'S OWN TERMS. `include`/`extend`/`prepend` are METHODS on
+ * `Module`: they compose a module into whatever `self` names at the call site. So the call is a
+ * composition of a CLASS only when `self` IS a class. In every other position it is a call on
+ * something else: an instance's inherited `include` (which does not exist, so it is a runtime
+ * error), a local variable's `include`, or a file's top level, where `self` is `main`.
+ *
+ * ⇒ AND THE FOUR VALUES, EACH NAMED BY WHAT THE ORACLE CAN SEE:
+ *   "top"       — the file's top level. `self` is `main`.
+ *   "class"     — a class or module body. `self` IS the class.
+ *   "singleton" — a singleton-class body (`class << self`) or a singleton-method body
+ *                 (`def self.x`). `self` is a class object.
+ *   "instance"  — an instance-method body. `self` is an INSTANCE of the class.
+ *
+ * ⇒ THIS IS DERIVED FROM THE ORACLE'S OWN WALK, NOT FROM THE ANALYZER'S. The analyzer reaches
+ * the same four answers by walking the AST's parent links from the call node; the oracle reaches
+ * them by carrying the enclosing scope's answer in the frame it already maintains for `cls`,
+ * `inBody` and `methodId`. The two derivations share the LANGUAGE and nothing else — which is
+ * the only way the differential can be a measurement instead of a tautology. If the two ever
+ * disagree, the disagreement is a finding to be dispositioned, and neither side is assumed right
+ * a priori; the site-by-site comparison in `script/m14/ruby-mixin-truth-compare.ts` is where that
+ * happens.
+ */
+type SelfType = "top" | "class" | "singleton" | "instance"
+
+/**
+ * ONE MIXIN CALL SITE, AS THE ORACLE DECIDED IT — published or refused, and WHY.
+ *
+ * ⇒ WHY THE ORACLE REPORTS ITS REFUSALS. A refusal leaves no trace in the published edges: a
+ * site the oracle declines is simply absent, and an absent row is indistinguishable from a site
+ * that was never there. **⇒ A DECISION THAT LEAVES NO TRACE IS NOT A MEASUREMENT** — it is the
+ * same shape as a missing edge being indistinguishable from an edge that was never drawn. So the
+ * oracle can be asked to RECORD what it decided at every mixin site, and the scope-agreement
+ * instrument then compares three independent derivations site by site.
+ */
+export type RubyMixinDecision = {
+  /** The call node's line — the same line the census's site enumeration carries. */
+  line: number
+  /** The keyword: `include`, `extend` or `prepend`. */
+  keyword: string
+  /** The receiver's shape, by the oracle's own reading. */
+  receiver: "none" | "self" | "other"
+  /** What `self` denotes here, by the oracle's own frame. */
+  selfType: SelfType
+  /** The namable owner, when there is one. */
+  owner: string | undefined
+  /** The target's leaf, when the argument names a constant. */
+  target: string | undefined
+  /** DID THE ORACLE PUBLISH A `mixes_in` ROW FOR THIS SITE? */
+  published: boolean
+  /** WHY, when it did not — the one question that refused it. */
+  refusedBecause: "receiver" | "self-is-not-a-class" | "no-namable-owner" | undefined
+}
+
 /** A walk frame. */
 interface Frame {
   n: Node
@@ -330,6 +387,8 @@ interface Frame {
   cls: string | undefined
   /** The enclosing method's name, for `from` on some edges. */
   methodId: string | undefined
+  /** What `self` denotes here — the oracle's own scope model. */
+  selfType: SelfType
 }
 
 /**
@@ -494,7 +553,7 @@ function isBound(bindings: Map<number, Set<string>>, scopes: number[], name: str
   return false
 }
 
-export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
+export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): RubyTruthEdge[] {
   const edges: RubyTruthEdge[] = []
   const bindings = collectBindings(root)
 
@@ -517,7 +576,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
     edges.push(from === undefined ? { label, target, line } : { label, target, from, line })
   }
 
-  const stack: Frame[] = [{ n: root, parent: null, suppress: undefined, inBody: false, scopes: [], cls: undefined, methodId: undefined }]
+  const stack: Frame[] = [{ n: root, parent: null, suppress: undefined, inBody: false, scopes: [], cls: undefined, methodId: undefined, selfType: "top" }]
   const emittedCallTargets = new Set<string>()
 
   while (stack.length > 0) {
@@ -554,6 +613,11 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
           suppress: f.suppress, inBody: false,
           scopes: [...f.scopes, n.id],
           cls: inMethodBody ? undefined : f.cls, methodId: f.methodId,
+          // A `class << self` nested in a METHOD BODY reopens the singleton of an
+          // INSTANCE, so `self` there is an instance and there is no namable owner.
+          // At class level it reopens the CLASS's singleton, and the oracle's own model
+          // already treats a singleton class's members as the enclosing class's members.
+          selfType: inMethodBody ? "instance" : "singleton",
         })
       }
       void body
@@ -619,6 +683,10 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
           scopes: isSuper ? f.scopes : [...f.scopes, n.id],
           cls: isSuper ? f.cls : clsName,
           methodId: f.methodId,
+          // A base expression is evaluated in the OUTER scope - `class C < B` runs
+          // `B` where the class does not yet exist - so the superclass clause keeps
+          // the outer `self`. The class BODY's `self` is the class.
+          selfType: isSuper ? f.selfType : "class",
         })
       }
       continue
@@ -709,6 +777,11 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
           n: c, parent: n,
           suppress: f.suppress, inBody: isReceiver || !isParams ? inBody : false,
           scopes: [...f.scopes, n.id], cls: owner, methodId,
+          // `def m` runs with `self` bound to an INSTANCE of the enclosing class;
+          // `def self.m` runs with `self` bound to the CLASS. A `def` nested in
+          // another `def` is still an instance method of the receiver, so the
+          // def's own kind - not the enclosing scope's - decides.
+          selfType: t === "singleton_method" ? "singleton" : "instance",
         })
       }
       void bodyIsValue
@@ -737,8 +810,20 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       // published `contains` with an owner nothing can resolve, and it was the wrong
       // owner as well as an invented one.
       const callParent = n.parent
-      if (callParent !== null && callParent.type === "call" &&
-          callParent.childForFieldName("method")?.text === "new") {
+      // THE FACTORY'S OWN SELF-TYPE, DERIVED BY THE ORACLE'S OWN HELPERS (`constantPath`
+      // and `leafName`, both already in this file). A block that IS a class body - the
+      // block of `Class.new` or `Module.new` - runs with `self` bound to the class it
+      // is building, so a module composition inside it composes into THAT class. Any
+      // other block runs with the enclosing `self`, which the frame already carries.
+      const factoryRecv = callParent !== null && callParent.type === "call"
+        ? constantPath(callParent.childForFieldName("receiver"))
+        : null
+      const factoryLeaf = factoryRecv !== null ? leafName(factoryRecv) : ""
+      const isFactoryNew = callParent !== null && callParent.type === "call" &&
+        callParent.childForFieldName("method")?.text === "new"
+      const blockSelf: SelfType =
+        isFactoryNew && (factoryLeaf === "Class" || factoryLeaf === "Module") ? "class" : f.selfType
+      if (isFactoryNew) {
         const asg = callParent.parent
         if (asg !== null && asg.type === "assignment") {
           const left = asg.childForFieldName("left")
@@ -746,7 +831,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
             const owner = left.text
             for (let i = n.namedChildCount - 1; i >= 0; i--) {
               const c = n.namedChild(i)
-              if (c) stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: owner, methodId: f.methodId })
+              if (c) stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: owner, methodId: f.methodId, selfType: blockSelf })
             }
             continue
           }
@@ -754,7 +839,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
-        if (c) stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: f.cls, methodId: f.methodId })
+        if (c) stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: f.cls, methodId: f.methodId, selfType: blockSelf })
       }
       continue
     }
@@ -762,7 +847,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
     if (t === "lambda") {
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
-        if (c) stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: f.cls, methodId: f.methodId })
+        if (c) stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: f.cls, methodId: f.methodId, selfType: f.selfType })
       }
       continue
     }
@@ -825,6 +910,10 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
             n: c, parent: n,
             suppress: f.suppress, inBody: false, scopes: isLeft ? f.scopes : [...f.scopes, n.id],
             cls: isLeft ? f.cls : left.text, methodId: f.methodId,
+            // The factory's own block decides its own `self` (the block branch reads the
+            // enclosing `Class.new`/`Module.new` call); the assignment itself does not change
+            // what `self` denotes.
+            selfType: f.selfType,
           })
         }
         continue
@@ -856,7 +945,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
           const c = n.namedChild(i)
           if (!c) continue
-          stack.push({ n: c, parent: n, suppress: f.suppress, inBody: false, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+          stack.push({ n: c, parent: n, suppress: f.suppress, inBody: false, scopes: f.scopes, cls: f.cls, methodId: f.methodId, selfType: f.selfType })
         }
         continue
       }
@@ -899,7 +988,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       void methodName
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
-        if (c) stack.push({ n: c, parent: n, suppress: writeNames ?? f.suppress, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+        if (c) stack.push({ n: c, parent: n, suppress: writeNames ?? f.suppress, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId, selfType: f.selfType })
       }
       continue
     }
@@ -913,10 +1002,10 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
         const isLeft = left !== null && c.id === left.id
         if (isLeft) continue
         if (right !== null && c.id === right.id) {
-          stack.push({ n: c, parent: n, suppress: f.suppress, inBody: true, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+          stack.push({ n: c, parent: n, suppress: f.suppress, inBody: true, scopes: f.scopes, cls: f.cls, methodId: f.methodId, selfType: f.selfType })
           continue
         }
-        stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+        stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId, selfType: f.selfType })
       }
       continue
     }
@@ -983,8 +1072,19 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
 
       // A Kernel conversion suppresses ITSELF but not its arguments: PROBED,
       // `Array(x)` publishes `calls:x` and no `calls:Array`.
+      // ⇒ AND THE LOCAL-BINDING SUPPRESSION DOES NOT APPLY TO A CALL WITH A RECEIVER. The
+      // suppression exists for a RECEIVERLESS identifier, which is a local READ; but a call node
+      // with a receiver is a METHOD CALL, and its method name is not a local read however much
+      // a local shares its name. The suppression was applied to both, and it fired on the
+      // shadowing idiom `x = foo.x` — where the local is assigned FROM the very call whose
+      // method name it takes, so the call was suppressed by the local it was about to create.
+      // MEASURED over rack's 95 files: the unexplained `calls` rows were exactly this shape —
+      // `path_info = Utils.clean_path_info(path_info)` ⇒ `calls:clean_path_info` unpublished;
+      // `request.path_info` ⇒ `calls:path_info` unpublished; `stat.mtime.httpdate` ⇒
+      // `calls:mtime` unpublished; `params[k].class.name` ⇒ `calls:name` unpublished.
+      const hasCallReceiver = n.childForFieldName("receiver") !== null
       if (methodName && !RUBY_BUILTINS.has(methodName) && !isKernelConversion &&
-          methodNode !== null && !isBound(bindings, f.scopes, methodName)) {
+          methodNode !== null && (hasCallReceiver || !isBound(bindings, f.scopes, methodName))) {
         push("calls", methodName, line)
       }
       // ONLY A RECEIVERLESS call is a require. PROBED: `params.require("body-mime")`
@@ -1068,6 +1168,42 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
         }
       }
       if (methodName === "include" || methodName === "extend" || methodName === "prepend") {
+        // ── THE MODULE-COMPOSITION RULE, IN THE ORACLE'S OWN TERMS ─────────────────────────────────
+        // `include`/`extend`/`prepend` are methods on `Module`. A call composes a module into
+        // whatever `self` names AT THE CALL SITE, and into nothing else. So the oracle asks
+        // three questions, and each is answered from the oracle's OWN state:
+        //
+        //   1. IS THERE AN EXPLICIT RECEIVER? `target.include M` composes M into `target`,
+        //      whose type the oracle cannot know - it may be an instance, a module, or a
+        //      local. The oracle publishes NOTHING for it: a `mixes_in` row with an
+        //      unknown owner is a fabricated edge. THE ONE EXCEPTION THE ORACLE CAN
+        //      JUSTIFY FROM ITS OWN MODEL IS `self`, because the frame's `selfType` says
+        //      exactly what `self` is - a class here is a class there.
+        //   2. IS `self` A CLASS HERE? The frame's `selfType` says. A composition in an
+        //      instance-method body, or at a file's top level (`self` is `main`), is not a
+        //      composition of a class.
+        //   3. IS THERE A NAMABLE OWNER? `f.cls` is the oracle's own namable-owner rule,
+        //      the one every member edge uses: an edge with no owner names nothing a
+        //      reader can resolve.
+        //
+        // ⇒ AND THESE THREE QUESTIONS ARE ASKED OF THE ORACLE'S STATE, NOT OF THE
+        // ANALYZER'S CODE. The analyzer reaches the same answers by walking the AST's
+        // parent links; the oracle reaches them by the scope model it already carries.
+        // The two agree because they describe the same LANGUAGE, and they are free to
+        // DISAGREE because they are not the same computation - which is the only thing
+        // that makes the differential a measurement rather than a tautology. A rule
+        // copied from the analyzer would agree by construction and measure nothing.
+        const recvNode = n.childForFieldName("receiver")
+        const selfIsClass = f.selfType === "class" || f.selfType === "singleton"
+        const receiverOk = recvNode === null || (recvNode.type === "self" && selfIsClass)
+        const composes = selfIsClass && receiverOk && f.cls !== undefined
+        const receiverShape: RubyMixinDecision["receiver"] =
+          recvNode === null ? "none" : recvNode.type === "self" ? "self" : "other"
+        const refusedBecause: RubyMixinDecision["refusedBecause"] =
+          !selfIsClass ? "self-is-not-a-class"
+            : !receiverOk ? "receiver"
+              : f.cls === undefined ? "no-namable-owner"
+                : undefined
         const args = n.childForFieldName("arguments")
         if (args) {
           for (let i = 0; i < args.namedChildCount; i++) {
@@ -1089,7 +1225,21 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
             // canonical `mixes_in` (Dart's with-clause is the same value). The old adaptation
             // (extend -> extends, include/prepend -> implements) was wrong on both axes: `implements`
             // is conformance Ruby does not have and `extend M` is not superclass inheritance.
-            if (cn) push("mixes_in", leafName(cn), line)
+            if (cn) {
+              if (decisions) {
+                decisions.push({
+                  line,
+                  keyword: methodName,
+                  receiver: receiverShape,
+                  selfType: f.selfType,
+                  owner: f.cls,
+                  target: leafName(cn),
+                  published: composes,
+                  refusedBecause: composes ? undefined : refusedBecause,
+                })
+              }
+              if (composes) push("mixes_in", leafName(cn), line)
+            }
           }
         }
         // NO `continue` HERE, and that is the fix for 253 UNEXPLAINED `contains`.
@@ -1197,7 +1347,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       // Still walk the arguments: they are real expressions.
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
-        if (c) stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+        if (c) stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId, selfType: f.selfType })
       }
       continue
     }
@@ -1323,7 +1473,20 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       // A class variable is a binding on the class, not a reference to a member.
       // 35 MISSING `uses`, e.g. `integration.rb`'s `@@app`.
       if (t === "class_variable") continue
-      if (f.inBody && !isWrite && !inMultiWrite) push("uses", n.text, line)
+      // ⇒ THE `uses` EDGE IS NOT GATED ON `inBody`. The gate was there because a read inside a
+      // method body is the ordinary case, and the oracle's own `uses` edges carry the enclosing
+      // method by CONTAINMENT. But an instance-variable READ OUTSIDE any method — a spec block
+      // (`it "…" do @response … end`), a class-level read, a top-level read — is a real read,
+      // and the ANALYZER publishes it (`src/ast/real-ruby-analyzer.ts:1119-1131`, the
+      // "Instance-variable reads outside method bodies (RB-D)" rule), attributing it to the
+      // file-level owner. MEASURED over rack's 95 files: **141 `uses` rows the analyzer published
+      // and the oracle did not** — every one of them an out-of-method read (`@response`, `@res`,
+      // `@content_type`, `@env`, `@mtimes`, …). ⇒ THE ANALYZER'S COMMENT AT THAT SITE SAYS "the
+      // oracle truth counts every instance_variable READ … so analyzer and truth stay in parity"
+      // — **⇒ THAT COMMENT WAS RIGHT ABOUT THE INTENT AND FALSE ABOUT THE EFFECT**, which is the
+      // fleet's own recurring defect: a comment stating a fact the code does not bear out. The
+      // parity is now REAL, and it is real on the ORACLE's side, which is where it was missing.
+      if (!isWrite && !inMultiWrite) push("uses", n.text, line)
       void isReceiver
       continue
     }
@@ -1344,6 +1507,8 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
           inBody: inBody,
           scopes: isScopeNode(t) ? [...f.scopes, n.id] : f.scopes,
           cls: f.cls, methodId: f.methodId,
+          // A generic node does not change what `self` denotes.
+          selfType: f.selfType,
         })
       }
     }

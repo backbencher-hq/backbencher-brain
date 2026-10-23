@@ -51,6 +51,7 @@
  * that the analyzer's own filter does not exclude (⇒ the filter needs the discriminator).
  */
 import { getParser } from "../../src/ast/engine"
+import { collectMixinSites, discoverRubyFiles, MIXIN_METHODS, type MixinSite } from "./ruby-mixin-scope"
 import { RealRubyAnalyzer } from "../../src/ast/real-ruby-analyzer"
 import { parseFile } from "../../src/ast/pool-worker"
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from "node:fs"
@@ -60,41 +61,15 @@ import * as path from "node:path"
 const CR = process.env.BB_CORPUS_ROOT ?? path.resolve(process.cwd(), ".corpus")
 const MAX_BYTES = 1024 * 1024
 
-/** The three mixin keywords. */
-const MIXIN_METHODS = new Set(["include", "extend", "prepend"])
-
 // ── THE ADMITTED POPULATION — the SAME rule the census and the gate use ───────────────────────────
 // THE CORPUS IS MANY REPOS, NOT ONE: each directory under the corpus root is its own git repo, and
 // the admitted set is the union of their `git ls-files`. A single `git -C <corpusRoot> ls-files`
 // finds NOTHING, because the corpus root is not a repo — and a census that discovers 0 files reports
 // 0 of everything, which reads as a result and is not one.
-const files: string[] = []
-let repos = 0
-let absent = 0
-let overCap = 0
-{
-  const seen = new Set<string>()
-  let entries: string[] = []
-  try { entries = readdirSync(CR) } catch { entries = [] }
-  for (const name of entries.sort()) {
-    const dir = path.join(CR, name)
-    try { if (!statSync(dir).isDirectory()) continue } catch { continue }
-    try { execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" }) } catch { continue }
-    let tracked: string[]
-    try {
-      tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }).split("\0").filter(Boolean)
-    } catch { continue }
-    for (const rel of tracked) {
-      if (!rel.endsWith(".rb")) continue
-      const abs = path.join(dir, rel)
-      try { if (statSync(abs).size > MAX_BYTES) { overCap++; continue } } catch { absent++; continue }
-      if (seen.has(abs)) continue
-      seen.add(abs)
-      files.push(abs)
-    }
-  }
-  repos = new Set(files.map(f => path.relative(CR, f).split(path.sep)[0])).size
-}
+// ⇒ THE DISCOVERY AND THE SITE MODEL NOW LIVE IN `script/m14/ruby-mixin-scope.ts`, because the
+// scope agreement instrument compares THIS census's reading against the analyzer's and the
+// oracle's, and three readers of one question must not be three copies of one reader.
+const { files, repos, absent, overCap } = discoverRubyFiles(CR, MAX_BYTES)
 
 const parser = await getParser("ruby" as any)
 
@@ -113,25 +88,10 @@ function scopeChain(node: any): { kind: string; name: string }[] {
   return []
 }
 
-type Row = {
-  file: string
-  line: number
-  keyword: string
-  receiver: string | null
-  /** THE RECEIVER'S SHAPE — "none" | "self" | "constant" | "local" | "call" | "other" */
-  receiverShape: "none" | "self" | "constant" | "local" | "call" | "other"
-  /** TRUE when the receiver names a CLASS (a constant), so a row could be RE-SOURCED to it */
-  receiverIsConstant: boolean
-  /** THE STATIC SELF-TYPE AT THE CALL SITE — "class" | "singleton" | "instance" | "top" */
-  selfKind: "class" | "singleton" | "instance" | "top"
-  enclosingClass: string | null
-  selfDefinesSameName: boolean
-  argIsConstant: boolean
-  argText: string
-  /** THE ARGUMENT NODE'S LINE — the analyzer's published row carries this as `line_number` */
-  argLine: number
-  published: boolean
-}
+// ⇒ THE SITE MODEL AND THE DISCOVERY COME FROM THE SHARED MODULE, so that this census's reading
+// and the scope-agreement instrument's reading are ONE reading, and the three derivations being
+// compared (the analyzer's parent walk, the oracle's frame, this census's scope stack) stay three.
+type Row = MixinSite & { published: boolean }
 
 const rows: Row[] = []
 let parseFailures = 0
@@ -139,161 +99,12 @@ let parseFailures = 0
 for (const abs of files) {
   const content = readFileSync(abs, "utf8")
   let root: any
-  try { root = parser.parse(content).rootNode } catch { parseFailures++; continue }
+  // ⇒ THE ROOT IS CHECKED, NOT ASSUMED: `parse()` returns `Tree | null`, and a null root is not a
+  // file with no mixin sites — it is a file this census did not read. It is COUNTED, never cast.
+  try { root = parser.parse(content)?.rootNode } catch { parseFailures++; continue }
+  if (!root) { parseFailures++; continue }
   const rel = path.relative(CR, abs)
-
-  // ── THE STATIC SELF-TYPE, COMPUTED ONCE AND USED FOR EVERYTHING ──────────────────────────────────
-  // THE ONE DISCRIMINATOR. `self` at a call site is:
-  //   "class"     — inside a class/module body, or a Class.new/Module.new block, or `class << self`
-  //   "singleton" — inside a `def self.x` / `def x.y`  (self is still the class)
-  //   "instance"  — inside a plain `def x`            (self is an INSTANCE ⇒ the impostor case)
-  //   "top"       — at the top level of a file        (self is main ⇒ not a class)
-  type SelfKind = "class" | "singleton" | "instance" | "top"
-  type Scope = { kind: "class" | "module" | "def"; name: string; singleton: boolean }
-
-  // THE METHOD NAMES each class/module defines — the (B) discriminator's source.
-  const definesOf = new Map<Scope, Set<string>>()
-  // A SCOPE KEY so a scope can be identified across the two walks.
-  const scopeKey = (s: Scope) => `${s.kind}:${s.name}:${s.singleton}`
-
-  // WALK 1 — build the scopes and the method names each class/module defines.
-  {
-    const stack: Scope[] = []
-    const walk1 = (n: any) => {
-      if (n.type === "class" || n.type === "module" || n.type === "singleton_class") {
-        const nameNode = n.namedChild(0)
-        const s: Scope = { kind: n.type === "module" ? "module" : "class", name: nameNode ? nameNode.text : "(anonymous)", singleton: n.type === "singleton_class" }
-        definesOf.set(s, new Set())
-        stack.push(s)
-        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk1(c) }
-        stack.pop()
-        return
-      }
-      if (n.type === "method" || n.type === "singleton_method") {
-        const nameNode = n.namedChild(0)
-        const name = nameNode ? nameNode.text : ""
-        // THE ENCLOSING CLASS/MODULE — the nearest scope that is not a def.
-        for (let i = stack.length - 1; i >= 0; i--) {
-          if (stack[i].kind !== "def") { definesOf.get(stack[i])?.add(name); break }
-        }
-        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk1(c) }
-        return
-      }
-      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk1(c) }
-    }
-    walk1(root)
-  }
-
-  // WALK 2 — the call sites, each carrying the STATIC SELF-TYPE at its position.
-  const walk3 = (n: any, curClass: Scope | null, curDef: Scope | null, selfKind: SelfKind, parentNode: any = null) => {
-    let nextClass = curClass
-    let nextDef = curDef
-    let nextSelf = selfKind
-
-    if (n.type === "class" || n.type === "module" || n.type === "singleton_class") {
-      const nameNode = n.namedChild(0)
-      nextClass = { kind: n.type === "module" ? "module" : "class", name: nameNode ? nameNode.text : "(anonymous)", singleton: n.type === "singleton_class" }
-      nextDef = null
-      // A `class << self` BODY is a class body: `self` there is the SINGLETON CLASS, and
-      // `include M` inside it composes a mixin into the class. A `singleton_class` node's own
-      // name child is `self`, so the enclosing class's name is recovered from the PARENT.
-      nextSelf = "class"
-    } else if (n.type === "method" || n.type === "singleton_method") {
-      const nameNode = n.namedChild(0)
-      const name = nameNode ? nameNode.text : ""
-      // THE DISCRIMINATOR'S INPUT: is this a SINGLETON method (`def self.x` / `def x.y`)?
-      const isSingleton = n.type === "singleton_method" || name.includes(".")
-      nextDef = { kind: "def", name, singleton: isSingleton }
-      nextSelf = isSingleton ? "singleton" : "instance"
-    } else if (n.type === "do_block" || n.type === "block") {
-      // A `Class.new { }` / `Module.new { }` BLOCK IS A CLASS BODY: `self` inside it is the new class.
-      //
-      // ⇒ THE NODE TYPE IS `do_block`, NOT `block`, AND THE FIRST VERSION CHECKED `block` — so the
-      // branch NEVER FIRED for a `do ... end` block, and every `Class.new(base) do ... end` was
-      // misread as an instance method. The tree is:
-      //     call                      "Class.new(base) do ... end"
-      //       constant                "Class"
-      //       identifier              "new"
-      //       argument_list           "(base)"
-      //       do_block                "do ... end"
-      //         body_statement       "include Bar"
-      // ⇒ SO THE DISCRIMINATOR IS THE ENCLOSING `call`'s RECEIVER AND METHOD, READ FROM THE PARENT.
-      const parent = parentNode
-      if (parent && parent.type === "call") {
-        const recv = parent.namedChild(0)
-        const meth = parent.namedChild(1)
-        const recvText = recv ? recv.text : ""
-        const methText = meth ? meth.text : ""
-        if ((recvText === "Class" || recvText === "Module") && methText === "new") nextSelf = "class"
-      }
-    }
-
-    if (n.type === "call") {
-      // ⇒ THE METHOD NODE IS THE ONE THE FIELD NAMES — `namedChild(0)` is the RECEIVER for a
-      // receivered call, so reading it as the method name skips every receivered call. The analyzer
-      // uses `childForFieldName("method")`; this census must use the same accessor.
-      const m = n.childForFieldName ? n.childForFieldName("method") : n.namedChild(0)
-      const methodName = m ? m.text : ""
-      if (MIXIN_METHODS.has(methodName)) {
-        // THE RECEIVER — the child before the method node, and its SHAPE. The shape decides whether
-        // the row can be RE-SOURCED (a constant receiver names a class) or must be REFUSED (a local
-        // variable names no class, so the row is unattributable and an unattributable row is not a
-        // fact). ⇒ THIS IS DART'S SHAPE EXACTLY: the discriminator decides, and when the
-        // discriminator cannot decide, nothing is published.
-        let receiver: string | null = null
-        let receiverShape: "none" | "self" | "constant" | "local" | "call" | "other" = "none"
-        let receiverIsConstant = false
-        for (let i = 0; i < n.namedChildCount; i++) {
-          const c = n.namedChild(i)
-          if (!c) continue
-          if (c.id === (m as any).id) break
-          receiver = c.text
-          if (c.type === "self") receiverShape = "self"
-          else if (c.type === "constant" || c.type === "scope_resolution") { receiverShape = "constant"; receiverIsConstant = true }
-          else if (c.type === "identifier") receiverShape = "local"
-          else if (c.type === "call" || c.type === "method_call") receiverShape = "call"
-          else receiverShape = "other"
-        }
-        // THE ARGUMENT — is it a constant-shaped mixin target?
-        let argIsConstant = false
-        let argText = ""
-        let argLine = 0
-        const args = n.namedChild(n.namedChildCount - 1)
-        if (args && args.type === "argument_list") {
-          for (let i = 0; i < args.namedChildCount; i++) {
-            const a = args.namedChild(i)
-            if (a && (a.type === "constant" || a.type === "scope_resolution")) { argIsConstant = true; argText = a.text; argLine = a.startPosition.row + 1 }
-          }
-        }
-        // (B) — does the enclosing class define a method of the SAME name?
-        const selfDefinesSameName = nextClass ? (definesOf.get(nextClass)?.has(methodName) ?? false) : false
-        rows.push({
-          file: rel,
-          line: n.startPosition.row + 1,
-          // THE ARGUMENT'S LINE — the analyzer's published row carries `line_number: nodeLine(arg)`,
-          // so this is what the locator matches on. ⇒ MATCHING ON (file, keyword, target) ALONE IS
-          // AMBIGUOUS: a file can hold two sites of the same mixin, and the locator then marks
-          // whichever came first — which is how the first run of this census blamed the LEGITIMATE
-          // `Class.new(base) do include DefaultTraceClass end` site for the row that the IMPOSTOR
-          // site `new_class.include(DefaultTraceClass)` had published. ⇒ A LINE MATCH IS EXACT.
-          argLine,
-          keyword: methodName,
-          receiver,
-          receiverShape,
-          receiverIsConstant,
-          selfKind: nextSelf,
-          enclosingClass: nextClass?.name ?? null,
-          selfDefinesSameName,
-          argIsConstant,
-          argText,
-          published: false,
-        })
-      }
-    }
-
-    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk3(c, nextClass, nextDef, nextSelf, n) }
-  }
-  walk3(root, null, null, "top")
+  for (const site of collectMixinSites(root, rel)) rows.push({ ...site, published: false })
 }
 
 // ── THE CROSS-CHECK AGAINST THE ANALYZER'S OWN PUBLISHED ROWS ────────────────────────────────────

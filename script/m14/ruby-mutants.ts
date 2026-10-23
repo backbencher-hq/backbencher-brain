@@ -135,42 +135,52 @@ const respellMixinKeyword: Mutant = {
  * half is the other.
  */
 
+/**
+ * THE ENCLOSING OWNER, EXACTLY AS THE PRE-FIX ANALYZER ATTRIBUTED IT: the enclosing class or
+ * module's name, and the FILE SCOPE when there is none.
+ * ⇒ AT MODULE SCOPE, because two of the mutants need it: the one that restores the whole pre-fix
+ * rule, and the surgical one that restores ONLY the ownerless half.
+ */
+const ownerOf = (node: any): string | undefined => {
+  let cur = node.parent ?? null
+  while (cur) {
+    if (cur.type === "class" || cur.type === "module" || cur.type === "singleton_class") {
+      const name = cur.childForFieldName?.("name")
+      if (name) return name.text
+      // A `class << self` has no name — the pre-fix analyzer fell through to the file scope.
+      return undefined
+    }
+    // THE FACTORY SHAPE: `Factory = Class.new do … end` — the block is class_eval'd, and the
+    // pre-fix analyzer's scope tracker had bound the anonymous class to its ASSIGNMENT NAME.
+    if (cur.type === "do_block" || cur.type === "block") {
+      const p = cur.parent
+      if (p && p.type === "call") {
+        const recv = p.childForFieldName?.("receiver")
+        const meth = p.childForFieldName?.("method")
+        if (recv && meth && (recv.text === "Class" || recv.text === "Module") && meth.text === "new") {
+          const asg = p.parent
+          const left = asg && asg.type === "assignment" ? asg.childForFieldName?.("left") : undefined
+          if (left) return left.text
+        }
+      }
+    }
+    cur = cur.parent ?? null
+  }
+  return undefined
+}
+
 async function preFixMixinRows(source: string): Promise<any[]> {
   const { getParser } = await import("../../src/ast/engine")
   const parser = await getParser("ruby" as any)
-  const root = parser.parse(source).rootNode
+  // ⇒ THE ROOT IS CHECKED, AND A MISSING ROOT THROWS. This helper reconstructs the PRE-FIX
+  // analyzer's rows, and a mutant that produces NO rows is a NO-OP MUTANT — which is not a pass,
+  // because a no-op mutant cannot show that the battery can see the defect. A null root would be
+  // the most dangerous outcome: a SILENT EMPTY SET that passes by doing nothing. ⇒ THROW.
+  const root = parser.parse(source)?.rootNode
+  if (!root) throw new Error("preFixMixinRows: the source did not parse to a root node — the mutant would be a NO-OP, which is not a pass")
   const rows: any[] = []
 
-  // THE ENCLOSING OWNER, EXACTLY AS THE PRE-FIX ANALYZER ATTRIBUTED IT: the enclosing class or
-  // module's name, and the FILE SCOPE when there is none.
-  const ownerOf = (node: any): string | undefined => {
-    let cur = node.parent ?? null
-    while (cur) {
-      if (cur.type === "class" || cur.type === "module" || cur.type === "singleton_class") {
-        const name = cur.childForFieldName?.("name")
-        if (name) return name.text
-        // A `class << self` has no name — the pre-fix analyzer fell through to the file scope.
-        return undefined
-      }
-      // THE FACTORY SHAPE: `Factory = Class.new do … end` — the block is class_eval'd, and the
-      // pre-fix analyzer's scope tracker had bound the anonymous class to its ASSIGNMENT NAME.
-      if (cur.type === "do_block" || cur.type === "block") {
-        const p = cur.parent
-        if (p && p.type === "call") {
-          const recv = p.childForFieldName?.("receiver")
-          const meth = p.childForFieldName?.("method")
-          if (recv && meth && (recv.text === "Class" || recv.text === "Module") && meth.text === "new") {
-            const asg = p.parent
-            const left = asg && asg.type === "assignment" ? asg.childForFieldName?.("left") : undefined
-            if (left) return left.text
-          }
-        }
-      }
-      cur = cur.parent ?? null
-    }
-    return undefined
-  }
-
+  // THE ENCLOSING OWNER is `ownerOf`, at module scope above.
   const walk = (node: any) => {
     if (node.type === "call") {
       const meth = node.childForFieldName?.("method")
@@ -202,6 +212,84 @@ async function preFixMixinRows(source: string): Promise<any[]> {
   }
   walk(root)
   return rows
+}
+
+/**
+ * THE OWNERLESS HALF — A MUTANT PER HALF, AND THIS IS THE THIRD HALF.
+ *
+ * ⇒ THE DEFECT. A mixin composes into the class that `self` IS. When the enclosing scope names
+ * NO class, that class is ANONYMOUS, so there is no name to attribute the row to — and the row
+ * was published anyway with the file-scope sentinel `Global`, which is a name for nothing.
+ * MEASURED over the whole admitted population: 20 published `mixes_in` rows were exactly this
+ * (e.g. `rack/test/spec_utils.rb:33`, `gql-ruby/spec/graphql/schema/interface_spec.rb:58`).
+ * ⇒ The oracle refused them on its own namable-owner rule; the analyzer published them.
+ *
+ * ⇒ WHY A MUTANT AND NOT A FIXTURE ALONE. A fixture pins the SIGNATURE of the refusal, but the
+ * battery must also show it can SEE a fix that removes that refusal. ⇒ This mutant removes ONLY
+ * the namable-owner guard — the other two halves (the receiver test and the static-self-type
+ * test) stay in place — so it publishes exactly the ownerless rows, and the fixture's
+ * `Global -> AnonymousModule` forbid catches it.
+ *
+ * ⇒ AND IT IS SURGICAL ON PURPOSE: the two earlier mutants restore the WHOLE pre-fix rule, so
+ * each of them also trips the other halves' forbids. A mutant that trips a forbid for the wrong
+ * reason still passes the battery, but it does not show that the battery can see THIS defect.
+ */
+async function ownerlessMixinRows(source: string): Promise<any[]> {
+  const { getParser } = await import("../../src/ast/engine")
+  const parser = await getParser("ruby" as any)
+  const root = parser.parse(source)?.rootNode
+  if (!root) throw new Error("ownerlessMixinRows: the source did not parse to a root node — the mutant would be a NO-OP, which is not a pass")
+  const rows: any[] = []
+  const walk = (node: any) => {
+    if (node.type === "call") {
+      const meth = node.childForFieldName?.("method")
+      const name = meth ? meth.text : ""
+      if (name === "include" || name === "extend" || name === "prepend") {
+        // ONLY THE OWNERLESS SITES: the owner walk is the analyzer's own, and a site with a
+        // NAMABLE owner is left exactly as the analyzer published it.
+        if (ownerOf(node) === undefined) {
+          const args = node.childForFieldName?.("arguments")
+          for (let i = 0; args && i < args.namedChildCount; i++) {
+            const a = args.namedChild(i)
+            if (!a) continue
+            if (a.type !== "constant" && a.type !== "scope_resolution") continue
+            rows.push({
+              type: "mixes_in",
+              source: "Global",
+              target: String(a.text).split(/[.:#]/).pop() ?? "",
+              confidence: 1.0,
+              line_number: a.startPosition.row + 1,
+              metadata: { mixinType: name },
+            })
+          }
+        }
+      }
+    }
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c) walk(c)
+    }
+  }
+  walk(root)
+  return rows
+}
+
+/** THE OWNERLESS HALF: the pre-fix rule published a row for every mixin call with a constant
+ *  argument — INCLUDING the ones whose enclosing scope names NO class, which it attributed to the
+ *  file-scope sentinel `Global`. */
+const acceptOwnerlessFactory: Mutant = {
+  id: "ruby/mixes-in-accept-ownerless-factory",
+  language: "ruby",
+  defectClass: "false-edge",
+  description:
+    "removes ONLY the namable-owner guard: a mixin call whose enclosing scope names NO class publishes a `mixes_in` row with the file-scope sentinel `Global` as its source. But the class such a composition goes into is ANONYMOUS (`anonymous = Class.new { include M }`), so `Global` is a name for nothing and the edge is fabricated. MEASURED over the whole admitted population: 20 published rows were exactly this shape. SOURCE-DERIVED, because a REFUSED SITE LEAVES NO TRACE IN THE OUTPUT. Caught by ruby/mixin-discriminator's `Global -> AnonymousModule` forbid row.",
+  transform: async (r: any, source?: string) => {
+    if (!source) return r
+    const rows = await ownerlessMixinRows(source)
+    const existing = new Set((r.relationships ?? []).map((x: any) => `${x.type}|${x.source}|${x.target}`))
+    const added = rows.filter(x => !existing.has(`${x.type}|${x.source}|${x.target}`))
+    return { ...r, relationships: [...(r.relationships ?? []), ...added] }
+  },
 }
 
 /** THE RECEIVER HALF: the pre-fix rule published a row for EVERY mixin call with a constant
@@ -245,4 +333,5 @@ export const RUBY_MUTANTS: Mutant[] = [
   respellMixinKeyword,
   acceptExplicitReceiver,
   acceptInstanceSelf,
+  acceptOwnerlessFactory,
 ]
