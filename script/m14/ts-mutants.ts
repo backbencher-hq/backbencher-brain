@@ -230,4 +230,55 @@ export const TS_MUTANTS: TsMutant[] = [
       "`overrides` is the type the ontology sweep measured as silent in nine of twenty lanes, and it fires here only 80 times over 260 files — so it is the lane's most fragile type. A revert must fail: typescript/class-implements-interface-overrides expects four overrides rows, including the transitive one and the interface-implements one.",
     transform: dropType("overrides"),
   },
+  // ⇒⇒⇒ THE THREE BEHAVIOURS THIS ROUND ADDED, EACH WITH A MUTANT THAT MUST DIE. A new emission
+  // path with no mutant is an emission path the suite has not been shown to be able to detect — and
+  // this lane has already published one SURVIVOR that turned out to be a NO-OP keyed on a metadata
+  // name the analyzer never emits (L-2026-10-21-07). So each of these keys on the analyzer's OWN
+  // spelling and each is aimed at a specific fixture row.
+  {
+    id: "typescript/mixes-in-not-emitted",
+    language: "typescript",
+    defectClass: "missing-whole-kind",
+    description:
+      "`mixes_in` is the lane's newest emission and its whole population is 2 edges, so a revert is invisible to the corpus and only a fixture can catch it. typescript/mixin-application expects `mixes_in Post -> Tagged`; dropping every `mixes_in` row must fail that expectation and nothing else.",
+    transform: dropType("mixes_in"),
+  },
+  {
+    id: "typescript/mixin-application-flattened-into-extends",
+    language: "typescript",
+    defectClass: "conflation",
+    description:
+      "THE DISCRIMINATOR IS THE SHAPE, SO THE MUTANT ERASES THE SHAPE. It rewrites every `mixes_in` edge into an `extends` edge, which is exactly the collapse a reader would get if the heritage clause's expression were never inspected: `class X extends Mixin(Base)` and `class X extends Base` would publish the same label. typescript/mixin-application forbids `mixes_in` for the PLAIN subclass and expects `extends` for it, so this mutant must die on the fixture's negative half — the half that found the real defect.",
+    transform: (r: any) => {
+      const out = rels(r).map((x: any) =>
+        normRel(x) === "mixes_in" ? { ...x, type: "extends", relationshipType: undefined } : x)
+      return { ...r, relationships: out }
+    },
+  },
+  {
+    id: "typescript/extends-base-name-is-the-whole-call",
+    language: "typescript",
+    defectClass: "fabrication",
+    description:
+      "THE DEFECT A FIXTURE'S NEGATIVE HALF ALREADY CAUGHT ONCE, PINNED SO IT CANNOT COME BACK SILENTLY. Before the fix, `class Post extends Tagged(Timestamped)` published an `extends` edge whose target was THE WHOLE CALL TEXT — a target that names no symbol. This mutant re-fabricates it by appending the call shape to every `extends` target that also has a `mixes_in` edge from the same source, which is precisely the old behaviour. typescript/mixin-application forbids an `extends` target ending in `(`, so it must die there.",
+    transform: (r: any) => {
+      const mix = new Set(rels(r).filter((x: any) => normRel(x) === "mixes_in")
+        .map((x: any) => `${x.source}|${x.target}`))
+      if (mix.size === 0) return r
+      const out = rels(r).map((x: any) => {
+        if (normRel(x) !== "extends") return x
+        if (!mix.has(`${x.source}|${x.target}`)) return x
+        return { ...x, target: `${x.target}(...)` }
+      })
+      return { ...r, relationships: out }
+    },
+  },
+  {
+    id: "typescript/reference-directive-not-emitted",
+    language: "typescript",
+    defectClass: "missing-whole-kind",
+    description:
+      "`part_of` is emitted from a node the SERVED grammar does not produce, so this mutant is the only way to prove the fixture would notice its absence: typescript/reference-directive expects three `part_of` rows (types, path, lib) and dropping them must fail all three.",
+    transform: dropType("part_of"),
+  },
 ]
