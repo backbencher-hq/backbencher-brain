@@ -482,6 +482,17 @@
         "count": 0,
         "files": 0,
         "repos": 0,
+        "reconciliation": {
+          "countersDeclared": 53,
+          "countersObserved": 53,
+          "declaredNotObserved": 0,
+          "decisiveCounterPresentInArtifact": true,
+          "decisiveCounterRow": {
+            "edges": 0,
+            "files": 0,
+            "repos": 0
+          }
+        },
         "nearMiss": {
           "construct": "yaml.tag_with_a_constructor_argument",
           "count": 167,
@@ -501,6 +512,17 @@
         "count": 0,
         "files": 0,
         "repos": 0,
+        "reconciliation": {
+          "countersDeclared": 53,
+          "countersObserved": 53,
+          "declaredNotObserved": 0,
+          "decisiveCounterPresentInArtifact": true,
+          "decisiveCounterRow": {
+            "edges": 0,
+            "files": 0,
+            "repos": 0
+          }
+        },
         "nearMiss": {
           "construct": "yaml.template_component_named_in_the_file_text",
           "count": 245,
@@ -520,6 +542,17 @@
         "count": 0,
         "files": 0,
         "repos": 0,
+        "reconciliation": {
+          "countersDeclared": 53,
+          "countersObserved": 53,
+          "declaredNotObserved": 0,
+          "decisiveCounterPresentInArtifact": true,
+          "decisiveCounterRow": {
+            "edges": 0,
+            "files": 0,
+            "repos": 0
+          }
+        },
         "nearMiss": {
           "construct": "yaml.merge_sequence_with_more_than_one_alias",
           "count": 1,
@@ -539,6 +572,17 @@
         "count": 0,
         "files": 0,
         "repos": 0,
+        "reconciliation": {
+          "countersDeclared": 53,
+          "countersObserved": 53,
+          "declaredNotObserved": 0,
+          "decisiveCounterPresentInArtifact": true,
+          "decisiveCounterRow": {
+            "edges": 0,
+            "files": 0,
+            "repos": 0
+          }
+        },
         "nearMiss": {
           "construct": "yaml.include_family_tag_at_a_key_position",
           "count": 55,
@@ -579,20 +623,70 @@
   },
   "meta": {
     "runEnvironment": {
-      "measuredAt": "2026-10-23T16:03:54.510Z",
-      "declaredAt": "2026-10-23T16:06:51.972Z",
+      "measuredAt": "2026-10-23T17:28:52.323Z",
+      "declaredAt": "2026-10-23T17:29:26.799Z",
       "mode": "parse-only (constructs only; no analyzer, no per-type tallies)",
       "chunking": "2,000 files per process, in DISJOINT chunks that tile the admitted set — one process per chunk, because a tree-sitter WASM module's memory grows with every parse and never shrinks (the dart lane measured the wall at roughly 7,600 parses), so a single-process walk that LOOKS complete would measure a fraction of the population while printing a whole-population header",
       "corpusRoot": "$HOME/mcp/backbencher-brain/.corpus",
       "cpus": 8,
-      "loadAvg": "9.05 9.19 6.41",
-      "memoryAvailable": "3.6 GB",
+      "loadAvg": "1.96 2.96 3.83",
+      "memoryAvailable": "6.4 GB",
       "memoryTotal": "15.5 GB",
-      "swapInUse": "3.0 GB",
+      "swapInUse": "4.9 GB",
       "node": "v22.22.1",
-      "caveat": "THE COUNTS THIS DECLARATION CARRIES ARE ONLY AS HEALTHY AS THE BOX THEY WERE TAKEN ON. At declaration time: load average 9.05 9.19 6.41 on 8 CPUs, 3.6 GB available of 15.5 GB, 3.0 GB of swap in use. This machine spent the afternoon of 2026-10-22 in a 20-GB swap, and a closure measured while the box thrashes is a number ABOUT THE BOX. The chunked walk is what makes the counts safe under that: every chunk is its own process and its own parse, so a slow chunk lengthens the run and CANNOT CHANGE A COUNT."
+      "caveat": "THE COUNTS THIS DECLARATION CARRIES ARE ONLY AS HEALTHY AS THE BOX THEY WERE TAKEN ON. At declaration time: load average 1.96 2.96 3.83 on 8 CPUs, 6.4 GB available of 15.5 GB, 4.9 GB of swap in use. This machine spent the afternoon of 2026-10-22 in a 20-GB swap, and a closure measured while the box thrashes is a number ABOUT THE BOX. The chunked walk is what makes the counts safe under that: every chunk is its own process and its own parse, so a slow chunk lengthens the run and CANNOT CHANGE A COUNT."
     },
     "measuredOnAHealthyBox": false,
-    "measuredOnAHealthyBoxRule": "healthy = load1 < one runnable task per CPU AND swap in use < 1 GB, both read from /proc at declaration time. The counts do not depend on this flag — the walk is chunked, so a slow or thrashing box lengthens the run and cannot change a count — but the runtime it implies does, and a reader comparing two lanes' runtimes needs to know which box each was measured on."
+    "measuredOnAHealthyBoxRule": "healthy = load1 < one runnable task per CPU AND swap in use < 1 GB, both read from /proc at declaration time. The counts do not depend on this flag — the walk is chunked, so a slow or thrashing box lengthens the run and cannot change a count — but the runtime it implies does, and a reader comparing two lanes' runtimes needs to know which box each was measured on.",
+    "counterReconciliation": {
+      "countersDeclared": 53,
+      "countersObserved": 53,
+      "declaredNotObserved": 0,
+      "observedNotDeclared": 0,
+      "rule": "The census instrument DECLARES every counter it maintains and emits a row for every one of them, including the ones with zero sites, so `declared` minus `observed` is empty by construction and a zero is a DECLARED ZERO rather than an absent key. Before this rule the construct map was built by `add()`, which creates a key only on a hit: the first whole-population artifact carried 42 construct keys and NONE of the four decisive counters, and a ruling read from it would have cited a number the document did not contain.",
+      "decisiveCounters": [
+        {
+          "type": "decorates",
+          "construct": "yaml.tag_with_a_call_shaped_argument",
+          "presentInArtifact": true,
+          "row": {
+            "edges": 0,
+            "files": 0,
+            "repos": 0
+          }
+        },
+        {
+          "type": "renders",
+          "construct": "yaml.template_component_named_in_a_scalar",
+          "presentInArtifact": true,
+          "row": {
+            "edges": 0,
+            "files": 0,
+            "repos": 0
+          }
+        },
+        {
+          "type": "mixes_in",
+          "construct": "yaml.merge_list_with_a_separate_base_clause",
+          "presentInArtifact": true,
+          "row": {
+            "edges": 0,
+            "files": 0,
+            "repos": 0
+          }
+        },
+        {
+          "type": "part_of",
+          "construct": "yaml.include_family_tag_at_the_document_root",
+          "presentInArtifact": true,
+          "row": {
+            "edges": 0,
+            "files": 0,
+            "repos": 0
+          }
+        }
+      ],
+      "artifact": "validation/m14/measurements/yaml-emission-census-parse-only.json"
+    }
   }
 }

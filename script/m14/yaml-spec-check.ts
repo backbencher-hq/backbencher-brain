@@ -107,6 +107,11 @@ for (const t of implemented) {
   }
 }
 for (const t of Object.keys(measured)) {
+  // `_unit` and `_why` are the BLOCK'S OWN metadata, not types — this loop once reported
+  // `_implemented_measured names "_unit", which is not in implemented` because it compared every
+  // key against the type list. A key that begins with an underscore is the block talking about
+  // itself, so it is not a claim about a type and is skipped by that rule rather than by a list.
+  if (t.startsWith("_")) continue
   if (!implemented.includes(t)) fail(`_implemented_measured names "${t}", which is not in implemented`)
 }
 

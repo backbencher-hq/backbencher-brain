@@ -411,6 +411,12 @@ const DECLARED_COUNTERS: readonly string[] = [
   "yaml.job_level_uses",
   "yaml.json_pointer_ref_key",
   "yaml.merge_alias_under-a-BLOCK-sequence",
+  // THE THREE SHAPES OF A MERGE ALIAS — `direct` (the alias sits straight under the merge key),
+  // `under-a-FLOW-sequence` and `under-a-BLOCK-sequence`. THE SELF-CHECK CAUGHT `direct` MISSING
+  // from this declaration on the first whole-population re-run (exit 9, "emitted but NOT DECLARED"):
+  // the counter exists at a DYNAMIC name (`yaml.merge_alias_${shape}`), so a declaration written by
+  // grepping the static string literals cannot see it — which is exactly why the self-check exists.
+  "yaml.merge_alias_direct",
   "yaml.merge_alias_under-a-FLOW-sequence",
   "yaml.merge_key",
   "yaml.merge_key_with_mapping_target",
