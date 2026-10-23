@@ -191,6 +191,7 @@ const counts = {
   declarationsWithDefaultFlag: 0,
   contentDeclarations: 0,
   contentCapitalizedComponentShape: 0,
+  contentCapitalizedInStringValue: 0,
   pseudoElementSelectors: 0,
   errorNodes: 0,
   files: 0,
@@ -213,12 +214,19 @@ const samples = {
   important: [] as string[],
   content: [] as string[],
   contentCapitalized: [] as string[],
+  contentCapitalizedInStringValue: [] as string[],
   brokenInclude: [] as string[],
 }
 const mixinNamesSeen = new Set<string>()
 const functionNamesSeen = new Set<string>()
 const includeTargetsSeen = new Set<string>()
 const importSassTargets = new Map<string, number>()
+/** repo -> the `@mixin`/`@function` names IT declares. THE FALSIFIER INVENTORY for the cause
+ *  census's mixin/callable walls: a published `mixes_in` target that this map says is declared in
+ *  the SAME repository is a resolution the project index owes, so a nonzero count refutes the
+ *  class. Bounded: the whole population declares 377 mixins / 80 functions. */
+const repoMixins = new Map<string, Set<string>>()
+const repoFunctions = new Map<string, Set<string>>()
 
 function namedChildren(n: any): any[] {
   const out: any[] = []
@@ -231,21 +239,14 @@ function namedChildren(n: any): any[] {
 function descendantText(n: any): string {
   return String(n?.text ?? "")
 }
-function hasErrorOrMissing(n: any): boolean {
-  let bad = n.isMissing === true
-  const walk = (x: any): void => {
-    if (bad) return
-    if (x.isMissing === true) {
-      bad = true
-      return
-    }
-    for (let i = 0; i < x.childCount; i++) {
-      const c = x.child(i)
-      if (c) walk(c)
-    }
-  }
-  walk(n)
-  return bad
+/** A COMPLETE `@include`: it reaches its OWN terminator (`;`) or carries a content block.
+ *  `node.hasError` is NOT the test — an empty argument list `@include f();` carries a MISSING token
+ *  INSIDE `arguments` and a content block can inherit an error from a nested rule, so both would
+ *  read as broken while naming their mixin. The analyzer uses this same predicate (measured: the
+ *  hasError version skipped 532 of 2,737 include sites). */
+function includeStatementComplete(n: any): boolean {
+  const text = String(n.text ?? "")
+  return /;\s*$/.test(text) || /\{[\s\S]*\}\s*$/.test(text)
 }
 function stripQuotes(s: string): string {
   const t = s.trim()
@@ -324,6 +325,17 @@ for (let index = 0; index < files.length; index++) {
     counts.mixinDeclarations += mixinNames.size
     counts.functionDeclarations += functionNames.size
     if (mixinNames.size > 0) filesBy.mixin.add(rel)
+    // the per-repository declaration inventory the cause census's falsifiers read
+    if (mixinNames.size > 0) {
+      const set = repoMixins.get(repo) ?? new Set<string>()
+      for (const n of mixinNames) set.add(n)
+      repoMixins.set(repo, set)
+    }
+    if (functionNames.size > 0) {
+      const set = repoFunctions.get(repo) ?? new Set<string>()
+      for (const n of functionNames) set.add(n)
+      repoFunctions.set(repo, set)
+    }
 
     let fileHasError = false
     const visit = (n: any): void => {
@@ -336,7 +348,7 @@ for (let index = 0; index < files.length; index++) {
         case "include_statement": {
           counts.includeSites++
           filesBy.include.add(rel)
-          if (hasErrorOrMissing(n)) {
+          if (!includeStatementComplete(n)) {
             counts.includeUnparsable++
             if (samples.brokenInclude.length < 8) samples.brokenInclude.push(`${rel}:${n.startPosition.row + 1} ${descendantText(n).slice(0, 60)}`)
             break
@@ -421,7 +433,17 @@ for (let index = 0; index < files.length; index++) {
             filesBy.content.add(rel)
             if (samples.content.length < 8) samples.content.push(`${rel}:${n.startPosition.row + 1} ${String(n.text).slice(0, 70)}`)
             const valueNodes = namedChildren(n).filter((c: any) => c.type !== "property_name")
-            const cap = valueNodes.find((c: any) => COMPONENT_SHAPE.test(stripQuotes(String(c.text))))
+            // A COMPONENT NAME IS AN IDENTIFIER, NOT A QUOTED STRING. The first predicate stripped
+            // the quotes and then matched a capitalized word, so `content: 'Alpha'` — a TEXT LABEL —
+            // fired it. MEASURED over the whole population: 5 raw matches, ALL FIVE quoted strings
+            // (hasura-engine `content: 'Alpha'/'Beta'`, nomad-ui `content: "Canary"`), so the
+            // component-NAME count is 0 and the string-value matches are counted SEPARATELY, beside.
+            const stringValueShaped = valueNodes.find((c: any) => c.type === "string_value" && COMPONENT_SHAPE.test(stripQuotes(String(c.text))))
+            if (stringValueShaped) {
+              counts.contentCapitalizedInStringValue++
+              if (samples.contentCapitalizedInStringValue.length < 8) samples.contentCapitalizedInStringValue.push(`${rel}:${n.startPosition.row + 1} ${String(n.text).slice(0, 90)}`)
+            }
+            const cap = valueNodes.find((c: any) => c.type !== "string_value" && COMPONENT_SHAPE.test(stripQuotes(String(c.text))))
             if (cap) {
               counts.contentCapitalizedComponentShape++
               if (samples.contentCapitalized.length < 8) samples.contentCapitalized.push(`${rel}:${n.startPosition.row + 1} ${String(n.text).slice(0, 90)}`)
@@ -505,6 +527,14 @@ const artifact = {
     content: filesBy.content.size,
     pseudoElement: filesBy.pseudoElement.size,
   },
+  declarationsByRepo: Object.fromEntries(
+    [...new Set([...repoMixins.keys(), ...repoFunctions.keys()])]
+      .sort()
+      .map((repo) => [repo, {
+        mixins: [...(repoMixins.get(repo) ?? new Set<string>())].sort(),
+        functions: [...(repoFunctions.get(repo) ?? new Set<string>())].sort(),
+      }]),
+  ),
   samples,
   topImportSassTargets: [...importSassTargets.entries()].sort((a, b) => b[1] - a[1]).slice(0, 25),
   includeTargetsSeen: includeTargetsSeen.size,

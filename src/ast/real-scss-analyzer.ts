@@ -1601,9 +1601,24 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * this round.
    */
   private processInclude(node: Node, ctx: ScssContext): void {
-    // THE MEASURED WALL: a namespaced `@include ns.mixin` parses into a damaged node whose only
-    // identifier is the NAMESPACE. Skip it rather than fabricate a target from it.
-    if (this.hasErrorOrMissing(node)) return
+    // THE MEASURED WALL: a namespaced `@include ns.mixin` parses into a TRUNCATED node whose only
+    // identifier is the NAMESPACE (`@include theme`, with the MISSING ';'), so the mixin name is not
+    // a node this walk can read. Skip it rather than fabricate a target from it.
+    //
+    // THE TEST IS THE STATEMENT'S OWN COMPLETENESS, NOT `node.hasError`. The first version used
+    // `hasError` over the subtree, and MEASURED on the whole population it skipped 532 of 2,737
+    // include sites — including ordinary includes that are perfectly clean:
+    //   `@include clearfix();`      → the EMPTY argument list carries a MISSING token INSIDE
+    //                                 `arguments`, so hasError is true while the statement is
+    //                                 complete and names its mixin;
+    //   `@include touch { … }`      → the CONTENT-BLOCK form, clean by construction, reads
+    //                                 hasError when a nested rule inside the block has an error.
+    // A complete statement is one that reaches its OWN terminator: `;`, or a content block. That is
+    // the discriminator the census uses too, so the analyzer's emitted set and the measured site
+    // count cannot drift apart.
+    const includeText = String(node.text ?? "")
+    const complete = /;\s*$/.test(includeText) || /\{[\s\S]*\}\s*$/.test(includeText)
+    if (!complete) return
     const nameNode = this.findChild(node, (c) => c.type === "identifier" || c.type === "plain_value")
     if (!nameNode) return
     const bare = stripAllQuotes(nameNode.text).trim()
@@ -1694,21 +1709,6 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
         evidenceClass: "structural",
       }
     }
-  }
-
-  /** A node that the parser marked with a MISSING token or an ERROR descendant. */
-  private hasErrorOrMissing(node: Node): boolean {
-    if ((node as unknown as { isMissing?: boolean }).isMissing === true) return true
-    const stack: Node[] = [node]
-    while (stack.length > 0) {
-      const n = stack.pop() as Node
-      if ((n as unknown as { isMissing?: boolean }).isMissing === true) return true
-      for (let i = 0; i < n.childCount; i++) {
-        const c = n.child(i)
-        if (c) stack.push(c)
-      }
-    }
-    return false
   }
 
   // ── `@return`: a FACT ABOUT A FUNCTION, NOT AN EDGE ─────────────────────────
