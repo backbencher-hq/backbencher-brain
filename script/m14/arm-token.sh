@@ -280,6 +280,27 @@ done
 case "$cmd" in
   take)
     [ -n "$lane" ] || { echo "usage: arm-token.sh take <lane>"; exit 2; }
+    # ── THE MEMORY GATE. MEASURED 2026-10-22: THE FLEET DID NOT DIE OF A MODEL OUTAGE ALONE. ────────
+    # Fourteen lanes, several WASM parsers and more than one arm ran on a box whose swap had filled to
+    # 19,956 MB of 19,956 MB with 167 MB of RAM available. The kernel does not slow down at that point,
+    # it OOM-KILLS — and what it kills is whatever it chooses, including the harness that carries every
+    # lane. The model 404 was real and it was not the only cause.
+    # ⇒ AN ARM THAT TAKES A TOKEN INTO AN EXHAUSTED MACHINE DOES NOT PRODUCE A MEASUREMENT, IT PRODUCES
+    # A KILLED PROCESS WHOSE PARTIAL OUTPUT LOOKS LIKE A PREFIX OF A RESULT. So the take is REFUSED,
+    # with the numbers, below the floor. BB_ARM_MIN_AVAIL_MB overrides it for a deliberate overcommit.
+    if [ "$lane" != "lead" ]; then
+      mem_floor="${BB_ARM_MIN_AVAIL_MB:-1200}"
+      mem_avail="$(awk '/MemAvailable/ {print int($2/1024)}' /proc/meminfo 2>/dev/null)"
+      swap_free="$(awk '/SwapFree/ {print int($2/1024)}' /proc/meminfo 2>/dev/null)"
+      if [ -n "$mem_avail" ] && [ "$mem_avail" -lt "$mem_floor" ]; then
+        echo "REFUSED — THE MACHINE IS OUT OF MEMORY, SO THIS ARM WOULD MEASURE THE MACHINE."
+        echo "  MemAvailable ${mem_avail} MB is below the ${mem_floor} MB floor; swap free ${swap_free:-?} MB."
+        echo "  A killed arm's partial output looks exactly like a prefix of a result. Wait, then take."
+        echo "  Override deliberately with BB_ARM_MIN_AVAIL_MB=<n> if you have measured that you need less."
+        exit 7
+      fi
+      echo "  memory gate: MemAvailable ${mem_avail:-?} MB >= ${mem_floor} MB floor, swap free ${swap_free:-?} MB"
+    fi
     # THE HEAD OF THE QUEUE GOES FIRST. A lane that is not at the head is REFUSED, and told the order.
     # Polling and hoping was how a lane could be overtaken by a later arrival.
     head="$(queue_head)"
