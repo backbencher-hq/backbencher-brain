@@ -8,6 +8,17 @@
  * contains, imports, exports, references, uses, calls, instantiates, extends, implements,
  * overrides. Wired at `src/ast/engine.ts` `getAnalyzer` → `case "java"`.
  *
+ * THE FOUR EXTENDED VOCABULARY VALUES ARE RULED, NOT IMPLEMENTED (2026-10-23) — `decorates`,
+ * `renders`, `mixes_in`, `part_of` leave the denominator by RULING, each with a whole-population
+ * count and a falsifier (validation/m14/verification/JAVA-EXTENDED-TYPES-2026-10-23.md):
+ * `decorates` is ONTOLOGICAL — an annotation is a type mention with CONSTANT arguments (JLS 9.7.1),
+ * not an applied callable, and it is already published here as references{isAnnotation,
+ * annotatedKind}; `renders`/`mixes_in`/`part_of` are GRAMMAR-ABSENCE — 0 of the served grammar's
+ * 143 named node types is a render, mixin or part-inclusion production, and R2 is unavailable in
+ * principle because a patched node would fire 0. Instrument:
+ * script/m14/java-extended-types-census.ts; measurements in validation/m14/measurements/
+ * java-extended-types-census.json, java-grammar-nodes.json, java-r1-grammar.json.
+ *
  * WHERE THE REST LIVES. Docs: `docs/analyzers/real-java-analyzer.md` (grammar provenance +
  * per-type emission sites). Declaration spec: `script/m14/spec/java-completeness.json`.
  * Fixtures + expectations: `validation/m14/fixtures/java/**`. Gate: `script/m14/

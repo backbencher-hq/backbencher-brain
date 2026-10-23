@@ -732,3 +732,36 @@ external owner claim to the strictly stronger import-evidence class, 85 are acce
 (JLS 6.4.1/6.5.5 import precedence), 47 came from ambiguous. **Verified class unchanged at 72.64%**
 (displacement between verified classes). The corpus's 2,194 project-container static imports are a
 RULED non-claim class (they must resolve internally).
+
+## 2026-10-23 — THE FOUR EXTENDED VOCABULARY VALUES ARE RULED (not implemented, and the reason is measured)
+
+The coverage block now reads **10/10 with four exclusions** (`script/m14/spec/java-completeness.json`),
+and the ruling page is `validation/m14/verification/JAVA-EXTENDED-TYPES-2026-10-23.md`. Whole-population
+construct census: `validation/m14/measurements/java-extended-types-census.json`
+(`parsed=11155/11155 admitted=11155 exts=java index=no`); served-build inventory:
+`validation/m14/measurements/java-grammar-nodes.json`; newest-published-build (R1) measurement:
+`validation/m14/measurements/java-r1-grammar.json`; instrument:
+`script/m14/java-extended-types-census.ts`.
+
+* **`decorates` — ONTOLOGICAL.** The annotation family is in the grammar (7 of 143 named types) and the
+  analyzer already reads it, publishing `references{isAnnotation, annotatedKind}` (100,012 rows
+  whole-population). It is NOT a `decorates`: an annotation is a **type mention with constant arguments**
+  (JLS 9.7.1), and the contract's decorator is an **applied callable**. Measured whole population:
+  **100,013 annotation sites, 100,013/100,013 type-shaped names, 0 of 42,958 annotation-argument nodes
+  carrying a call/lambda/object-creation.** Falsifier: an applied name that is a callable (0 measured) or
+  an argument node that carries a call (0 measured).
+* **`renders` — GRAMMAR-ABSENCE.** 0 of the served build's 143 named node types (0 of 142 in the newest
+  published build) is a render/JSX/component production; `template_expression` / `string_interpolation`
+  are Java 21 **string** templates (0 sites whole-population); JSP/Thymeleaf are not routed to this lane;
+  a Spring view-name return is a string literal, not a component symbol the arbiter can resolve.
+* **`mixes_in` — GRAMMAR-ABSENCE.** 0 of 143 named types is a mixin/with-clause production. The near
+  misses are conformance already published as `implements`/`extends`: 2,265 interfaces, **698 interface
+  default methods** (217 files), `super_interfaces` 3,786, `extends_interfaces` 628, `superclass` 6,049.
+* **`part_of` — GRAMMAR-ABSENCE.** 0 of 143 named types is a part-inclusion directive.
+  `package_declaration` (10,655 sites) is namespace membership (each compilation unit keeps its own
+  imports and top-level scope, JLS 7.3); the 58 module `requires` name an external module dependency
+  already published as `imports` (`module_requires`), and module-info names no member file.
+
+**R2 is not taken and no regeneration control is published: a patched node would fire 0** for each of the
+three grammar constructs (there is no syntax in the language to patch), so there is nothing to wire and
+nothing to control. That is a disclosed reason, not a missing measurement.

@@ -1,4 +1,48 @@
 {
+ "extended_types_2026_10_23": {
+  "_question": "the four extended relationship values are the whole of this lane's gap; each is RULED with a class, a count, a falsifier and the owner's ladder walked",
+  "_ruling_page": "validation/m14/verification/JAVA-EXTENDED-TYPES-2026-10-23.md",
+  "_population": "parsed=11155/11155 admitted=11155 exts=java index=no (whole admitted population; 20 repos; 282 tracked-but-absent; 0 over cap)",
+  "_grammar": "wasm/tree-sitter-java.wasm sha256 637aac4415fb39a211a4f4292d63c66b5ce9c32fa2cd35464af4f681d91b9a1f — 322 ids / 143 named types",
+  "decorates": {
+   "disposition": "excluded",
+   "class": "ontological",
+   "decision": "JAVA-D1",
+   "count": 100013,
+   "count_rule": "annotation application sites over the whole admitted population; 0 of them name a callable and 0 annotation-argument nodes carry a call",
+   "falsifier": "an annotation site whose applied name is a callable (0/100,013) or an annotation argument subtree containing a call/lambda (0/42,958); or a published build with a decorator-family named type (0 of 142 newest / 0 of 143 served)"
+  },
+  "renders": {
+   "disposition": "excluded",
+   "class": "grammar-absence",
+   "decision": "JAVA-D3",
+   "count": 0,
+   "count_rule": "render/JSX/component productions among the served build's 143 named types; template-shaped sites over the whole population (0)",
+   "falsifier": "a Java construct naming a rendered component (0 sites) or a published build with a render production (0 of 142 / 0 of 143)"
+  },
+  "mixes_in": {
+   "disposition": "excluded",
+   "class": "grammar-absence",
+   "decision": "JAVA-D2",
+   "count": 0,
+   "count_rule": "mixin/with-clause productions among the served build's 143 named types; the measured near miss is 698 interface default methods, conformance published as implements",
+   "falsifier": "a Java construct composing a mixin into a supertype chain (0 sites) or a published build with a mixin production (0 of 142 / 0 of 143)"
+  },
+  "part_of": {
+   "disposition": "excluded",
+   "class": "grammar-absence",
+   "decision": "JAVA-D4",
+   "count": 0,
+   "count_rule": "part-inclusion productions among the served build's 143 named types; the candidates (10,655 package declarations, 58 module requires) are namespace membership / module dependency, not file inclusion",
+   "falsifier": "a Java directive naming another compilation unit as a part (0 sites) or a published build with a part-inclusion production (0 of 142 / 0 of 143)"
+  },
+  "_artifacts": [
+   "validation/m14/measurements/java-extended-types-census.json",
+   "validation/m14/measurements/java-r1-grammar.json",
+   "validation/m14/measurements/java-grammar-nodes.json"
+  ],
+  "_r2_control": "NOT PUBLISHED — java takes no R2; a patched node would fire 0 for each construct (no construct in the language to patch). A missing control with a stated reason is a fact."
+ },
  "declarations": {
   "class_declaration": {
    "symbol": "class",
@@ -626,7 +670,7 @@
    },
    "decorates": {
     "applicable": false,
-    "reason": "owner ruling: Java annotations are type mentions -> references + isAnnotation; decorates is defined for runtime callable-wrapper decorators (python/ts/js shape), which Java does not have",
+    "reason": "RULED ONTOLOGICAL 2026-10-23 (JAVA-D1): an annotation is a TYPE mention with constant arguments, not an APPLIED CALLABLE — whole-population census 100,013 annotation sites, 100,013/100,013 type-shaped names, 0 of 42,958 annotation-argument nodes carrying a call/lambda/construction (JLS 9.7.1); already published as references{isAnnotation, annotatedKind} (100,012 rows). Ladder: R1 unavailable (0 of 142 newest published named types is a decorator family), R2 would not change the ontology, R3 available and already taken. Evidence: validation/m14/verification/JAVA-EXTENDED-TYPES-2026-10-23.md §1, validation/m14/measurements/java-extended-types-census.json, validation/m14/measurements/java-r1-grammar.json",
     "implemented": "n/a",
     "fixtures": [],
     "cap50": {
@@ -649,7 +693,7 @@
    },
    "renders": {
     "applicable": false,
-    "reason": "no JVM-language construct emits a render relationship",
+    "reason": "RULED GRAMMAR-ABSENCE 2026-10-23 (JAVA-D3): 0 of the served build's 143 named node types (and 0 of the newest published build's 142) is a render/JSX/component production; template_expression/string_interpolation are Java 21 STRING templates, 0 sites whole-population; JSP/Thymeleaf are not routed to this lane (admitted extension set is `java` only), and a Spring view-name return is a string literal, not a component symbol the arbiter can resolve. R2 unavailable in principle (would invent syntax and fire 0). Evidence: JAVA-EXTENDED-TYPES-2026-10-23.md §2, java-extended-types-census.json, java-grammar-nodes.json, java-r1-grammar.json",
     "cap50": {
      "edges": 0
     },
@@ -663,7 +707,7 @@
    },
    "mixes_in": {
     "applicable": false,
-    "reason": "Java implements multiple interfaces (emitted as implements) and has no mixin mechanism",
+    "reason": "RULED GRAMMAR-ABSENCE 2026-10-23 (JAVA-D2): 0 of the served build's 143 named node types is a mixin/with-clause production; the near misses are MEASURED (2,265 interfaces; 698 default methods in 217 files; super_interfaces 3,786 / extends_interfaces 628 / superclass 6,049) and are CONFORMANCE — already published as implements (5,260) / extends (6,863); the contract says a mixin is not `implements` because no conformance is declared, and at a default method it is. R2 unavailable in principle (no with-clause; a patched node fires 0). Evidence: JAVA-EXTENDED-TYPES-2026-10-23.md §3, java-extended-types-census.json, java-r1-grammar.json",
     "cap50": {
      "edges": 0
     },
@@ -677,7 +721,7 @@
    },
    "part_of": {
     "applicable": false,
-    "reason": "Java's containment is contains; no directive names a compilation unit part",
+    "reason": "RULED GRAMMAR-ABSENCE 2026-10-23 (JAVA-D4): the two candidates are rejected FROM THE CONTRACT — package_declaration 10,655 sites is NAMESPACE MEMBERSHIP (each compilation unit keeps its own imports and top-level scope, JLS 7.3), not the shared library scope the contract's part requires; module `requires` 58 names an EXTERNAL module dependency already published as imports (module_requires), and module-info names no member file. 0 of the served build's 143 named node types is a part-inclusion directive; R2 unavailable in principle (no directive names a part FILE; a patched node fires 0). Evidence: JAVA-EXTENDED-TYPES-2026-10-23.md §4, java-extended-types-census.json, java-r1-grammar.json",
     "cap50": {
      "edges": 0
     },
